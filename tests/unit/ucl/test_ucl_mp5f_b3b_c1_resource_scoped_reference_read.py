@@ -4,8 +4,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Protocol
 
 import pytest
 
@@ -49,6 +51,15 @@ from intergrax.ucl.contracts.ucl_reference_read import (
 )
 
 pytestmark = pytest.mark.gate
+
+
+class _RepositoryWithScopedCatalog(
+    OptimizationArtifactRepository,
+    OptimizationArtifactScopedReferenceCatalog,
+    Protocol,
+):
+    """Test-local intersection: mutable repository + scoped catalog enumeration."""
+
 
 _BASE_TIME = datetime(2026, 9, 18, 12, 0, 0, tzinfo=UTC)
 
@@ -149,7 +160,7 @@ def _publish(repository: OptimizationArtifactRepository, artifact: StoredOptimiz
 
 
 def _reader(
-    catalog: OptimizationArtifactRepository,
+    catalog: OptimizationArtifactScopedReferenceCatalog,
     *,
     tenant_id: str = "tenant-a",
     workspace_id: str = "ws-a",
@@ -166,9 +177,12 @@ def _reader(
 
 
 @pytest.fixture(params=("memory", "sqlite"))
-def catalog_repository(request: pytest.FixtureRequest, tmp_path: Path) -> OptimizationArtifactRepository:
+def catalog_repository(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+) -> Iterator[_RepositoryWithScopedCatalog]:
     if request.param == "memory":
-        repo: OptimizationArtifactRepository = InMemoryOptimizationArtifactRepository()
+        repo: _RepositoryWithScopedCatalog = InMemoryOptimizationArtifactRepository()
     else:
         repo = SQLiteOptimizationArtifactRepository(str(tmp_path / "b3b-c1-read.sqlite"))
     yield repo
@@ -177,7 +191,7 @@ def catalog_repository(request: pytest.FixtureRequest, tmp_path: Path) -> Optimi
 
 @pytest.mark.asyncio
 async def test_resource_scope_before_limit_blocker_regression(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     for index in range(50):
         _publish(
@@ -219,7 +233,7 @@ async def test_resource_scope_before_limit_blocker_regression(
 
 @pytest.mark.asyncio
 async def test_matching_rows_after_nonmatching_still_returned_up_to_limit(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     _publish(
         catalog_repository,
@@ -271,7 +285,7 @@ async def test_matching_rows_after_nonmatching_still_returned_up_to_limit(
 
 @pytest.mark.asyncio
 async def test_no_resource_preserves_workspace_context_behavior(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     _publish(catalog_repository, _stored(artifact_id="artifact-a", workspace_id="ws-a"))
     reader = _reader(catalog_repository)
@@ -291,7 +305,7 @@ async def test_no_resource_preserves_workspace_context_behavior(
 
 @pytest.mark.asyncio
 async def test_cross_scope_source_ref_excluded(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     _publish(
         catalog_repository,
@@ -330,7 +344,7 @@ async def test_cross_scope_source_ref_excluded(
 
 @pytest.mark.asyncio
 async def test_historical_read_respects_source_ref(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     active = _stored(
         artifact_id="active-wanted",

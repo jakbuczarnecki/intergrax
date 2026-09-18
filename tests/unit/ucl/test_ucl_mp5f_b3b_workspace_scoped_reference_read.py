@@ -4,8 +4,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Protocol
 
 import pytest
 
@@ -51,6 +53,15 @@ from intergrax.ucl.contracts.ucl_reference_read import (
 )
 
 pytestmark = pytest.mark.gate
+
+
+class _RepositoryWithScopedCatalog(
+    OptimizationArtifactRepository,
+    OptimizationArtifactScopedReferenceCatalog,
+    Protocol,
+):
+    """Test-local intersection: mutable repository + scoped catalog enumeration."""
+
 
 _BASE_TIME = datetime(2026, 9, 18, 12, 0, 0, tzinfo=UTC)
 _DEFAULT_READER = (
@@ -156,7 +167,7 @@ def _publish(repository: OptimizationArtifactRepository, artifact: StoredOptimiz
 
 
 def _reader(
-    catalog: OptimizationArtifactRepository,
+    catalog: OptimizationArtifactScopedReferenceCatalog,
     *,
     tenant_id: str = "tenant-a",
     workspace_id: str = "ws-a",
@@ -173,9 +184,12 @@ def _reader(
 
 
 @pytest.fixture(params=("memory", "sqlite"))
-def catalog_repository(request: pytest.FixtureRequest, tmp_path: Path) -> OptimizationArtifactRepository:
+def catalog_repository(
+    request: pytest.FixtureRequest,
+    tmp_path: Path,
+) -> Iterator[_RepositoryWithScopedCatalog]:
     if request.param == "memory":
-        repo: OptimizationArtifactRepository = InMemoryOptimizationArtifactRepository()
+        repo: _RepositoryWithScopedCatalog = InMemoryOptimizationArtifactRepository()
     else:
         repo = SQLiteOptimizationArtifactRepository(str(tmp_path / "b3b-read.sqlite"))
     yield repo
@@ -184,7 +198,7 @@ def catalog_repository(request: pytest.FixtureRequest, tmp_path: Path) -> Optimi
 
 @pytest.mark.asyncio
 async def test_correct_tenant_workspace_context_returns_refs(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     artifact = _stored(artifact_id="artifact-a", workspace_id="ws-a")
     _publish(catalog_repository, artifact)
@@ -225,7 +239,7 @@ async def test_wrong_tenant_scope_rejected() -> None:
 
 @pytest.mark.asyncio
 async def test_wrong_binding_workspace_rejected(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     _publish(catalog_repository, _stored(artifact_id="artifact-a", workspace_id="ws-a"))
     reader = _reader(catalog_repository, workspace_id="ws-a")
@@ -244,7 +258,7 @@ async def test_wrong_binding_workspace_rejected(
 
 @pytest.mark.asyncio
 async def test_wrong_binding_context_rejected(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     _publish(catalog_repository, _stored(artifact_id="artifact-a", workspace_id="ws-a"))
     reader = _reader(catalog_repository, context_scope_id="ctx-x")
@@ -263,7 +277,7 @@ async def test_wrong_binding_context_rejected(
 
 @pytest.mark.asyncio
 async def test_cross_workspace_same_context_isolated(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     _publish(catalog_repository, _stored(artifact_id="artifact-a", workspace_id="ws-a"))
     _publish(
@@ -287,7 +301,7 @@ async def test_cross_workspace_same_context_isolated(
 
 @pytest.mark.asyncio
 async def test_same_workspace_different_context_isolated(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     _publish(
         catalog_repository,
@@ -313,7 +327,7 @@ async def test_same_workspace_different_context_isolated(
 
 
 def test_legacy_unknown_cannot_enter_workspace_scoped_catalog(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     legacy = _stored(
         artifact_id="legacy-1",
@@ -338,7 +352,7 @@ def test_legacy_unknown_cannot_enter_workspace_scoped_catalog(
 
 @pytest.mark.asyncio
 async def test_historical_cross_workspace_excluded(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     artifact_a = _stored(artifact_id="artifact-a", workspace_id="ws-a")
     _publish(catalog_repository, artifact_a)
@@ -366,7 +380,7 @@ async def test_historical_cross_workspace_excluded(
 
 @pytest.mark.asyncio
 async def test_resource_filter_with_workspace_scope(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     _publish(
         catalog_repository,
@@ -394,7 +408,7 @@ async def test_resource_filter_with_workspace_scope(
 
 @pytest.mark.asyncio
 async def test_valid_scope_empty_ok(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     reader = _reader(catalog_repository)
     result = await reader.read_references(
@@ -422,7 +436,7 @@ def test_malformed_binding_missing_workspace_rejected() -> None:
 
 @pytest.mark.asyncio
 async def test_limit_applied_after_workspace_scope(
-    catalog_repository: OptimizationArtifactRepository,
+    catalog_repository: _RepositoryWithScopedCatalog,
 ) -> None:
     for index in range(50):
         _publish(
@@ -457,6 +471,17 @@ async def test_limit_applied_after_workspace_scope(
     assert result.outcome is UclReferenceReadOutcome.OK
     assert len(result.references) == 2
     assert all(ref.workspace_id == "ws-a" for ref in result.references)
+
+
+def test_default_backends_statically_implement_repository_and_catalog(
+    tmp_path: Path,
+) -> None:
+    memory: _RepositoryWithScopedCatalog = InMemoryOptimizationArtifactRepository()
+    memory.close()
+    sqlite: _RepositoryWithScopedCatalog = SQLiteOptimizationArtifactRepository(
+        str(tmp_path / "b3b-static-conformance.sqlite"),
+    )
+    sqlite.close()
 
 
 class _CustomCatalog:
