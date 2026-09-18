@@ -9,12 +9,17 @@ from dataclasses import dataclass
 from typing import Awaitable, Callable, Optional
 
 from intergrax.contracts.execution_identity import ActiveExecutionIdentity
+from intergrax.contracts.runtime_event_metric import RuntimeEventMetricScope
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator
-from intergrax.runtime.human.declarative_hitl_grant import DeclarativeHitlGrantCoordinator
-from intergrax.runtime.human.governed_continuation_grant import GovernedContinuationGrantCoordinator
+from intergrax.runtime.human.declarative_hitl_grant import (
+    DeclarativeHitlGrantCoordinator,
+)
+from intergrax.runtime.human.governed_continuation_grant import (
+    GovernedContinuationGrantCoordinator,
+)
 from intergrax.contracts.human_approver import human_approval_event_payload
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
@@ -61,6 +66,7 @@ class NexusIntakeRunner:
         *,
         lifecycle: TaskLifecycle,
         trace_emitter: TaskTraceEmitter,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
     ) -> IntakePhaseOutcome:
         normalize_human_response(task)
         await self.restore_long_running(task)
@@ -116,7 +122,9 @@ class NexusIntakeRunner:
             HumanResponseVerdict.APPROVE,
         }:
             if self.execution_identity is None:
-                raise RuntimeError("active execution identity required for intake emission")
+                raise RuntimeError(
+                    "active execution identity required for intake emission"
+                )
             hitl_run_id, hitl_attempt_id = self.execution_identity.require()
         if verdict == HumanResponseVerdict.REJECT:
             hitl = require_internal_hitl_continuation(self.hitl_continuation)
@@ -134,7 +142,10 @@ class NexusIntakeRunner:
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
             GovernedContinuationGrantCoordinator.clear_grant(task)
             result = await self.hitl.handle_human_rejection(
-                task, trace_emitter, lifecycle
+                task,
+                trace_emitter,
+                lifecycle,
+                runtime_event_metric_scope=runtime_event_metric_scope,
             )
             clear_consumed_human_input(task)
             return IntakePhaseOutcome(early_result=result)
@@ -154,7 +165,10 @@ class NexusIntakeRunner:
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
             GovernedContinuationGrantCoordinator.clear_grant(task)
             result = await self.hitl.handle_human_escalation(
-                task, trace_emitter, lifecycle
+                task,
+                trace_emitter,
+                lifecycle,
+                runtime_event_metric_scope=runtime_event_metric_scope,
             )
             clear_consumed_human_input(task)
             return IntakePhaseOutcome(early_result=result)
@@ -163,20 +177,26 @@ class NexusIntakeRunner:
             run_id = hitl_run_id
             attempt_id = hitl_attempt_id
             if run_id is None or attempt_id is None:
-                raise RuntimeError("active execution identity required for intake emission")
+                raise RuntimeError(
+                    "active execution identity required for intake emission"
+                )
             hitl = require_internal_hitl_continuation(self.hitl_continuation)
-            authorized = HumanPauseCoordinator.resolve_human_response_and_apply_canonical(
-                task,
-                HumanResponseVerdict.APPROVE,
-                approver=approver,  # type: ignore[arg-type]
-                continuation=hitl.port,
-                projection_sink=hitl.projection_sink,
-                pause_id=response_pause_id,
-                human_request_id=response_request_id,
-                run_id=run_id,
-                attempt_id=attempt_id,
-                execution_id=self.execution_identity.execution_id if self.execution_identity else None,
-                response_text=task.options.human.response_text,
+            authorized = (
+                HumanPauseCoordinator.resolve_human_response_and_apply_canonical(
+                    task,
+                    HumanResponseVerdict.APPROVE,
+                    approver=approver,  # type: ignore[arg-type]
+                    continuation=hitl.port,
+                    projection_sink=hitl.projection_sink,
+                    pause_id=response_pause_id,
+                    human_request_id=response_request_id,
+                    run_id=run_id,
+                    attempt_id=attempt_id,
+                    execution_id=self.execution_identity.execution_id
+                    if self.execution_identity
+                    else None,
+                    response_text=task.options.human.response_text,
+                )
             )
             resolution = task.runtime.governance.hitl_resolution
             assert resolution is not None

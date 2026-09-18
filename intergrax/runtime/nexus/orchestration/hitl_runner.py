@@ -9,28 +9,38 @@ from dataclasses import dataclass
 from typing import Awaitable, Callable, Optional
 
 from intergrax.contracts.execution_identity import ActiveExecutionIdentity
+from intergrax.contracts.runtime_event_metric import RuntimeEventMetricScope
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
 from intergrax.runtime.hooks.hook_point import HookPoint
-from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookCoordinator, NexusLifecycleHookError
-from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator, HumanApprovalHookError
+from intergrax.runtime.hooks.nexus_lifecycle_hooks import (
+    NexusLifecycleHookCoordinator,
+    NexusLifecycleHookError,
+)
+from intergrax.runtime.human.hitl_hooks import (
+    HumanApprovalHookCoordinator,
+    HumanApprovalHookError,
+)
 from intergrax.runtime.human.escalation import EscalationRouter
 from intergrax.contracts.human_approver import human_approval_event_payload
 from intergrax.runtime.human.models import HumanResponseVerdict
-from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.notification import NotificationAdapter
-from intergrax.runtime.nexus.planning.task_planner import NexusPlan
+from intergrax.runtime.nexus.orchestration.internal_finish_task_fn import (
+    NexusFinishTaskFn,
+)
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
-from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter, TaskTraceEmitter
+from intergrax.runtime.task.task_trace import (
+    PersistingTaskTraceEmitter,
+    TaskTraceEmitter,
+)
 
 
 PublishFn = Callable[..., Awaitable[None]]
-FinishFn = Callable[..., Awaitable[TaskResult]]
 FinalizeFn = Callable[..., Awaitable[None]]
 CheckpointFn = Callable[..., Awaitable[None]]
 PersistHumanFn = Callable[..., None]
@@ -43,7 +53,7 @@ class NexusHitlRunner:
     lifecycle_hooks: NexusLifecycleHookCoordinator
     escalation_router: EscalationRouter
     notification_adapter: Optional[NotificationAdapter]
-    finish_task: FinishFn
+    finish_task: NexusFinishTaskFn
     finalize_trace: FinalizeFn
     maybe_checkpoint: CheckpointFn
     persist_human_decision: PersistHumanFn
@@ -63,6 +73,7 @@ class NexusHitlRunner:
         phase: ExecutionPhase,
         trace_emitter: TaskTraceEmitter,
         lifecycle: TaskLifecycle,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
         extra: Optional[dict] = None,
     ) -> Optional[TaskResult]:
         try:
@@ -83,6 +94,7 @@ class NexusHitlRunner:
                 plan=None,
                 retry_records=[],
                 graph_id="",
+                runtime_event_metric_scope=runtime_event_metric_scope,
             )
         return None
 
@@ -92,6 +104,7 @@ class NexusHitlRunner:
         trace_emitter: TaskTraceEmitter,
         lifecycle: TaskLifecycle,
         *,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
         agent_id: Optional[str] = None,
         execution: Optional[AgentExecutionResult] = None,
     ) -> Optional[TaskResult]:
@@ -114,6 +127,7 @@ class NexusHitlRunner:
                 plan=None,
                 retry_records=[],
                 graph_id="",
+                runtime_event_metric_scope=runtime_event_metric_scope,
             )
         return None
 
@@ -122,6 +136,7 @@ class NexusHitlRunner:
         task: Task,
         trace_emitter: TaskTraceEmitter,
         lifecycle: TaskLifecycle,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
     ) -> TaskResult:
         resolution = task.runtime.governance.hitl_resolution
         run_id, attempt_id = self._require_execution_identity()
@@ -172,6 +187,7 @@ class NexusHitlRunner:
             plan=None,
             retry_records=[],
             graph_id="",
+            runtime_event_metric_scope=runtime_event_metric_scope,
         )
 
     async def handle_human_escalation(
@@ -179,6 +195,7 @@ class NexusHitlRunner:
         task: Task,
         trace_emitter: TaskTraceEmitter,
         lifecycle: TaskLifecycle,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
     ) -> TaskResult:
         outcome = self.escalation_router.route(task)
         self.escalation_router.apply_to_task(task, outcome)
@@ -237,12 +254,18 @@ class NexusHitlRunner:
                 plan=None,
                 retry_records=[],
                 graph_id="",
+                runtime_event_metric_scope=runtime_event_metric_scope,
             )
 
         if task.state == TaskState.CREATED:
             lifecycle.transition(task, TaskState.CLASSIFIED)
             lifecycle.transition(task, TaskState.PLANNED)
-        hook_failure = await self.run_before_human_pause(task, trace_emitter, lifecycle)
+        hook_failure = await self.run_before_human_pause(
+            task,
+            trace_emitter,
+            lifecycle,
+            runtime_event_metric_scope=runtime_event_metric_scope,
+        )
         if hook_failure is not None:
             if isinstance(trace_emitter, PersistingTaskTraceEmitter):
                 await self.finalize_trace(trace_emitter, [], task_id=task.task_id)
@@ -259,8 +282,11 @@ class NexusHitlRunner:
             trace_emitter,
             answer="",
             executions=[],
-            validation=ValidationResult(valid=False, errors=["awaiting escalated human review"]),
+            validation=ValidationResult(
+                valid=False, errors=["awaiting escalated human review"]
+            ),
             plan=None,
             retry_records=[],
             graph_id="",
+            runtime_event_metric_scope=runtime_event_metric_scope,
         )

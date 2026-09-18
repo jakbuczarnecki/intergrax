@@ -33,7 +33,16 @@ from intergrax.runtime.governance.active_execution_authority import (
     reset_active_execution_authority,
 )
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.runtime.nexus.execution.execution_graph import (
+    ExecutionGraph,
+    ExecutionNode,
+    ExecutionNodeStatus,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
+from intergrax.runtime.nexus.planning.task_planner import NexusPlan
+from intergrax.runtime.task.task_lifecycle import TaskLifecycle
+from intergrax.runtime.task.task_trace import TaskTraceEmitter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
@@ -161,3 +170,88 @@ async def test_handle_task_passes_invocation_metric_scope_to_impl() -> None:
         reset_active_execution_identity(id_t)
     assert len(received) == 1
     assert received[0] is not None
+
+
+@pytest.mark.asyncio
+async def test_graph_failure_finalization_passes_authoritative_metric_scope() -> None:
+    from unittest.mock import AsyncMock, MagicMock
+
+    from intergrax.contracts.execution_identity import mint_task_id
+    from intergrax.contracts.validation import ValidationResult
+
+    bus = RuntimeEventBus()
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    scope = bus.open_runtime_event_metric_scope(task_id, run_id)
+    captured: list[RuntimeEventMetricScope] = []
+
+    async def finish_task(
+        task: Task,
+        trace_emitter: TaskTraceEmitter,
+        *,
+        answer: str,
+        executions: object,
+        validation: ValidationResult,
+        plan: NexusPlan | None,
+        retry_records: object,
+        graph_id: str,
+        runtime_event_metric_scope: RuntimeEventMetricScope,
+    ) -> TaskResult:
+        captured.append(runtime_event_metric_scope)
+        return TaskResult(
+            task_id=task.task_id,
+            run_id=run_id,
+            state=TaskState.FAILED,
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+        )
+
+    runner = NexusGraphRunner(
+        registry=MagicMock(),
+        graph_executor=MagicMock(),
+        validation_engine=MagicMock(),
+        composer=MagicMock(compose_summary=MagicMock(return_value="summary")),
+        hitl=MagicMock(),
+        events=MagicMock(publish_from_task_state=AsyncMock()),
+        finish_task=finish_task,
+        finalize_trace=AsyncMock(),
+        maybe_checkpoint=AsyncMock(),
+        attempt_lifecycle=MagicMock(),
+        execution_terminal=MagicMock(),
+    )
+    task = Task(
+        tenant_id="t1", user_id="u1", agent_id="a1", message="m", task_id=task_id
+    )
+    task.state = TaskState.RUNNING
+    plan = NexusPlan(
+        plan_id="plan-1",
+        task_id=task_id,
+        classification="test",
+    )
+    graph = ExecutionGraph(
+        graph_id="g1",
+        task_id=task_id,
+        nodes=[
+            ExecutionNode(
+                node_id="n1",
+                agent_id="a1",
+                capability="cap",
+                status=ExecutionNodeStatus.FAILED,
+            ),
+        ],
+    )
+    try:
+        outcome = await runner._handle_graph_failure(
+            task,
+            plan=plan,
+            graph=graph,
+            executions=[],
+            retry_records=[],
+            failed_nodes=["n1"],
+            lifecycle=TaskLifecycle(),
+            trace_emitter=MagicMock(),
+            runtime_event_metric_scope=scope,
+        )
+    finally:
+        scope.close()
+    assert outcome.early_result is not None
+    assert captured == [scope]
