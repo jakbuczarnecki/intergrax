@@ -215,7 +215,7 @@ def _resolve_baseline_memory_platform_wiring(
 
     if _mongodb_enabled(profile):
         mongo_bundle = create_mongodb_integration(**_mongodb_integration_overrides(profile))
-        document_store: DocumentStore = mongo_bundle.document_store
+        document_store: DocumentStore = mongo_bundle.document_store.as_document_store()
         org_store = None
         if env.memory_profile.enable_org_memory:
             from intergrax.runtime.organization.stores.in_memory_organization_profile_store import (

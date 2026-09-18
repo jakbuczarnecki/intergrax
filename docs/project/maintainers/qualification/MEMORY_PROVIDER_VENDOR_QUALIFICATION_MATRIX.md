@@ -202,7 +202,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-01 | UserProfile | product + PostgreSQL preset | Durable Memory backend wiring / fail-closed | **CLOSED (5A)** | `memory_provider_admission` + `test_mem_audit5a_production_provider_admission.py` |
 | GAP-4-02 | SessionTurnIndex | `VectorSessionTurnIndexStore` + any vector backend | write → restart/reconnect → recall | P2 | AUDIT-5 P0 candidate |
 | GAP-4-03 | Entity / Procedural / LH | in-memory only | durable vendor + restart | P2 | AUDIT-5 |
-| GAP-4-04 | UserProfile | Mongo DocumentStore | real-vendor qual execution | P2 | AUDIT-5 |
+| GAP-4-04 | UserProfile | Mongo DocumentStore | real-vendor qual execution | **CLOSED (5C)** | `test_mem_final_audit_5c_mongo_user_profile_real_vendor.py` |
 | GAP-4-05 | Organization | Mongo path | durable org store (uses InMemory org on mongo LTM path) | P2 | AUDIT-6 |
 | GAP-4-06 | Task memory | SQLite | restart/failure vendor suite | P2 | AUDIT-5 |
 | GAP-4-07 | All vector backends | Qdrant/pgvector/Chroma | Memory-scoped E2E | P2 | AUDIT-5 |
@@ -269,7 +269,27 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | PRODUCT memory disabled | InMemory baseline allowed (store not admission-gated) |
 | PRODUCT persistent + InMemory | `MemoryProviderAdmissionError` |
 | SQLite PRODUCT | Requires trusted `USER_PROFILE_STORE` evidence (`QUALIFIED`); self-declared qual ignored |
-| DocumentStore UserProfile (Mongo path) | **fail-closed** without trusted evidence until AUDIT-5C |
+| DocumentStore UserProfile (Mongo path) | Requires trusted behavioral + durability evidence (`document_store.user_profile`; proof `real_vendor_reconnect`) |
+
+## MEM-FINAL-AUDIT-5C — Mongo UserProfile real-vendor qualification
+
+| Check | Result |
+| ----- | ------ |
+| Adapter | `DocumentStoreUserProfileStore` → `DocumentStore` → Mongo `mongodb` provider |
+| Memory provider ID | `document_store.user_profile` (`USER_PROFILE_STORE`) |
+| Backend vendor ID | `mongodb` (integration manifest slug) |
+| Infrastructure | HARDEN-4F Docker Mongo (replica set `rs0`, local container) |
+| Behavioral qual | `MemoryProviderQualificationRunner` on real Mongo-backed store |
+| Durability proof | Client/provider reconnect (`REAL_VENDOR_RECONNECT`); not service restart |
+| Evidence source | `mongo_real_vendor_qualification` |
+| PRODUCT admission | Behavioral + durability evidence, matching `qualification_run_id` |
+| Application E2E | MemoryControlPlane remember/recall/forget after Mongo client reconnect |
+| Write semantics | `replace_one` + `upsert=True` on `(partition_key, row_key)` unique index |
+| Verdict | **REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-4-04 | **CLOSED** |
 
 ## MEM-FINAL-AUDIT-5A-R — Trusted qualification evidence
 

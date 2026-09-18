@@ -1363,3 +1363,20 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5B AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5A-R3 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5B.
+
+## MEM-FINAL-AUDIT-5C — Mongo UserProfile real-vendor qualification
+
+| Check | Result |
+| ----- | ------ |
+| Path | `UserProfileStore` → `DocumentStoreUserProfileStore` → `DocumentStore` → `mongodb` provider → Docker Mongo |
+| Memory provider ID | `document_store.user_profile` |
+| Backend | `mongodb` (`intergrax/integrations/providers/document_store/mongodb/`) |
+| Real-vendor suite | `tests/integration/memory/e2e/test_mem_final_audit_5c_mongo_user_profile_real_vendor.py` |
+| Markers | `external_proof`, `qualification`, `docker`, `no_ci` |
+| Durability proof kind | `REAL_VENDOR_RECONNECT` (client/provider recreation; not Mongo service restart) |
+| Evidence source | `mongo_real_vendor_qualification` |
+| GAP-4-04 | **CLOSED** when suite executes green on real Mongo |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5D AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5C muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5D.

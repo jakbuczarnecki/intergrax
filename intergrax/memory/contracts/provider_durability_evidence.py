@@ -38,6 +38,7 @@ class MemoryProviderDurabilityEvidenceResolveStatus(StrEnum):
 class MemoryProviderDurabilityProofKind(StrEnum):
     RESTART_REOPEN = "restart_reopen"
     REFERENCE_DURABLE = "reference_durable"
+    REAL_VENDOR_RECONNECT = "real_vendor_reconnect"
     REAL_VENDOR_RESTART = "real_vendor_restart"
 
 
