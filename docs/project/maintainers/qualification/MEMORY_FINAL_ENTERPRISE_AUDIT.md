@@ -1533,3 +1533,31 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5F AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5E muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5F.
+
+## MEM-FINAL-AUDIT-5E-R — Qdrant + pgvector Real-Vendor Regression Verification
+
+| Check | Result |
+| ----- | ------ |
+| Purpose | Same-codebase regression proof: pgvector qualification did not regress Qdrant STI |
+| Verified SHA | `a640c98f6fee7cb313f371efc102faf8fc0aa8e6` (Qdrant + pgvector suites on identical HEAD) |
+| Audited 5E baseline | `4b5f148b6f04ffed7482039822f5a889908cf260` — ancestor of verified SHA (**YES**) |
+| Production code changes | **NONE** |
+| Qdrant real-vendor suite | `tests/integration/memory/e2e/test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` — **13 passed** |
+| pgvector real-vendor suite | `tests/integration/memory/e2e/test_mem_final_audit_5e_pgvector_session_turn_index_real_vendor.py` — **19 passed** |
+| STI admission / identity (R/R2/R3 + composite) | **36 passed** (`test_mem_final_audit_5d_*` unit set) |
+| Cross-vendor admission | Qdrant↔pgvector evidence/runtime mismatch **FAIL as expected** (5D-R unit + 5E E2E reverse) |
+| Full Memory regression | `tests/unit/memory` + `tests/integration/memory` — **675 passed**, 1 skipped (Windows chmod) |
+| Application wiring regression | memory vector/wiring + SessionManager LTM recall plane — **18 passed** |
+| Durability evidence | Behavioral + `REAL_VENDOR_RECONNECT` per vendor; durability registry entries test-constructed from verified run context (unchanged policy) |
+| Service restart | Qdrant / PostgreSQL service restart **not executed** |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5E-01 | **FULLY CLOSED** (pgvector STI + same-SHA Qdrant regression) |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector) | **CLOSED** |
+| GAP-4-07 (Chroma) | OPEN |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5F AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5E-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5F.
