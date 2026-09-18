@@ -41,6 +41,7 @@ from intergrax.runtime.context_lifecycle.repository import (
     partition_key_for_artifact_metadata,
     partition_key_for_ownership_scope,
     require_workspace_ownership_scope,
+    optimization_artifact_reference_matches_stored,
     validate_supersession_ownership,
 )
 from intergrax.runtime.context_lifecycle.serialization import (
@@ -227,25 +228,7 @@ class SQLiteOptimizationArtifactRepository:
             raise ValueError("reference must be OptimizationArtifactReference")
         with self._lock:
             self._ensure_open()
-            row = self._connection.execute(
-                """
-                SELECT * FROM optimization_artifacts
-                WHERE tenant_id = ? AND artifact_id = ?
-                """,
-                (reference.tenant_id, reference.artifact_id),
-            ).fetchone()
-            if row is None:
-                return None
-            artifact = self._row_to_artifact(row)
-            metadata = artifact.metadata
-            if (
-                compute_artifact_lookup_key_hash(metadata.lookup_key)
-                != reference.artifact_lookup_key_hash
-                or metadata.artifact_content_hash != reference.artifact_content_hash
-                or metadata.lookup_key.artifact_type is not reference.artifact_type
-            ):
-                return None
-            return artifact
+            return self._artifact_for_reference(reference)
 
     def try_acquire_creation_reservation(
         self,
@@ -808,6 +791,33 @@ class SQLiteOptimizationArtifactRepository:
         ).fetchone()
         return self._row_to_artifact(row) if row is not None else None
 
+    def _artifact_for_reference(
+        self,
+        reference: OptimizationArtifactReference,
+    ) -> StoredOptimizationArtifact | None:
+        if reference.workspace_id is not None:
+            row = self._connection.execute(
+                """
+                SELECT * FROM optimization_artifacts
+                WHERE tenant_id = ? AND workspace_id = ? AND artifact_id = ?
+                """,
+                (reference.tenant_id, reference.workspace_id, reference.artifact_id),
+            ).fetchone()
+        else:
+            row = self._connection.execute(
+                """
+                SELECT * FROM optimization_artifacts
+                WHERE tenant_id = ? AND artifact_id = ? AND workspace_id IS NULL
+                """,
+                (reference.tenant_id, reference.artifact_id),
+            ).fetchone()
+        if row is None:
+            return None
+        artifact = self._row_to_artifact(row)
+        if not optimization_artifact_reference_matches_stored(reference, artifact):
+            return None
+        return artifact
+
     @staticmethod
     def _same_artifact(
         left: StoredOptimizationArtifact,
@@ -879,39 +889,48 @@ class SQLiteOptimizationArtifactRepository:
             self._ensure_open()
             self._begin()
             try:
-                artifact = self._artifact_by_id(reference.tenant_id, reference.artifact_id)
+                artifact = self._artifact_for_reference(reference)
                 if artifact is None:
                     self._commit()
                     return None
-                if (
-                    compute_artifact_lookup_key_hash(artifact.metadata.lookup_key)
-                    != reference.artifact_lookup_key_hash
-                    or artifact.metadata.artifact_content_hash != reference.artifact_content_hash
-                    or artifact.metadata.lookup_key.artifact_type is not reference.artifact_type
-                ):
-                    self._commit()
-                    return None
-                workspace_id = reference.workspace_id or ""
+                workspace_id = artifact.metadata.workspace_id or ""
                 state_version = self._next_state_version(
                     reference.tenant_id,
                     reference.artifact_lookup_key_hash,
                     workspace_id,
                 ) + 1
-                self._connection.execute(
-                    """
-                    UPDATE optimization_artifacts
-                    SET status = ?, invalidation_reason = ?, state_version = ?
-                    WHERE tenant_id = ? AND artifact_id = ?
-                    """,
-                    (
-                        status.value,
-                        reason,
-                        state_version,
-                        reference.tenant_id,
-                        reference.artifact_id,
-                    ),
-                )
-                updated = self._artifact_by_id(reference.tenant_id, reference.artifact_id)
+                if reference.workspace_id is not None:
+                    self._connection.execute(
+                        """
+                        UPDATE optimization_artifacts
+                        SET status = ?, invalidation_reason = ?, state_version = ?
+                        WHERE tenant_id = ? AND workspace_id = ? AND artifact_id = ?
+                        """,
+                        (
+                            status.value,
+                            reason,
+                            state_version,
+                            reference.tenant_id,
+                            reference.workspace_id,
+                            reference.artifact_id,
+                        ),
+                    )
+                else:
+                    self._connection.execute(
+                        """
+                        UPDATE optimization_artifacts
+                        SET status = ?, invalidation_reason = ?, state_version = ?
+                        WHERE tenant_id = ? AND artifact_id = ? AND workspace_id IS NULL
+                        """,
+                        (
+                            status.value,
+                            reason,
+                            state_version,
+                            reference.tenant_id,
+                            reference.artifact_id,
+                        ),
+                    )
+                updated = self._artifact_for_reference(reference)
                 self._commit()
                 return updated
             except Exception:

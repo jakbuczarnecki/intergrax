@@ -125,6 +125,49 @@ def require_workspace_ownership_scope(
     return ownership.scope
 
 
+def canonical_workspace_id_for_stored_metadata(
+    metadata: ReusableOptimizationArtifact,
+) -> str | None:
+    """Return canonical workspace owner from metadata.ownership; None for non-WORKSPACE kinds."""
+    if metadata.ownership.kind is not UclArtifactOwnershipKind.WORKSPACE:
+        return None
+    scope = metadata.ownership.scope
+    return scope.workspace_id if scope is not None else None
+
+
+def optimization_artifact_reference_matches_stored(
+    reference: OptimizationArtifactReference,
+    artifact: StoredOptimizationArtifact,
+) -> bool:
+    """Return True when reference is a scoped capability for the stored artifact envelope."""
+    from intergrax.runtime.context_lifecycle.serialization import compute_artifact_lookup_key_hash
+
+    metadata = artifact.metadata
+    lookup_key = metadata.lookup_key
+    if reference.tenant_id != lookup_key.tenant_id:
+        return False
+    if reference.artifact_id != metadata.artifact_id:
+        return False
+    if reference.context_scope_id != lookup_key.context_scope_id:
+        return False
+    if compute_artifact_lookup_key_hash(lookup_key) != reference.artifact_lookup_key_hash:
+        return False
+    if metadata.artifact_content_hash != reference.artifact_content_hash:
+        return False
+    if lookup_key.artifact_type != reference.artifact_type:
+        return False
+
+    canonical_workspace = canonical_workspace_id_for_stored_metadata(metadata)
+    if metadata.ownership.kind is UclArtifactOwnershipKind.WORKSPACE:
+        if reference.workspace_id is None:
+            return False
+        if canonical_workspace != reference.workspace_id:
+            return False
+    elif reference.workspace_id is not None:
+        return False
+    return True
+
+
 def compute_artifact_content_hash(payload: bytes) -> str:
     """Return SHA-256 lowercase hex digest for opaque artifact payload bytes."""
     if type(payload) is not bytes:
@@ -205,7 +248,11 @@ class StoredOptimizationArtifact:
 
 @dataclass(frozen=True, slots=True)
 class OptimizationArtifactReference:
-    """Immutable artifact reference for revision linkage and audit."""
+    """Tenant/workspace-scoped immutable artifact reference (not authentication).
+
+    Carries canonical UCL ownership identity together with artifact identity fields.
+    Repository resolution and lifecycle mutations must enforce the full reference scope.
+    """
 
     tenant_id: str
     artifact_id: str
@@ -261,7 +308,7 @@ def build_optimization_artifact_reference(
         artifact_content_hash=metadata.artifact_content_hash,
         artifact_type=metadata.lookup_key.artifact_type,
         context_scope_id=metadata.lookup_key.context_scope_id,
-        workspace_id=metadata.workspace_id,
+        workspace_id=canonical_workspace_id_for_stored_metadata(metadata),
     )
 
 
@@ -457,7 +504,7 @@ class OptimizationArtifactRepository(Protocol):
         """Return an eligible validated artifact for an exact lookup key or None."""
 
     def resolve(self, reference: OptimizationArtifactReference) -> StoredOptimizationArtifact | None:
-        """Resolve an artifact reference regardless of lifecycle status."""
+        """Resolve reference when full tenant/workspace scope matches stored ownership."""
 
     def try_acquire_creation_reservation(
         self,
@@ -501,7 +548,7 @@ class OptimizationArtifactRepository(Protocol):
         *,
         reason: str,
     ) -> StoredOptimizationArtifact | None:
-        """Invalidate an artifact while preserving payload and history."""
+        """Invalidate when reference scope matches; otherwise None without mutation."""
 
     def retire_artifact(
         self,
@@ -509,7 +556,7 @@ class OptimizationArtifactRepository(Protocol):
         *,
         reason: str,
     ) -> StoredOptimizationArtifact | None:
-        """Retire an artifact while preserving payload and history."""
+        """Retire when reference scope matches; otherwise None without mutation."""
 
     def close(self) -> None:
         """Release process-local repository resources."""

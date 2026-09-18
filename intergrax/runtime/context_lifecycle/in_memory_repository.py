@@ -35,6 +35,7 @@ from intergrax.runtime.context_lifecycle.repository import (
     partition_key_for_artifact_metadata,
     partition_key_for_ownership_scope,
     require_workspace_ownership_scope,
+    optimization_artifact_reference_matches_stored,
     validate_supersession_ownership,
     compute_repository_partition_key_from_reservation,
 )
@@ -560,14 +561,7 @@ class InMemoryOptimizationArtifactRepository:
         stored = self._artifacts_by_id.get((reference.tenant_id, reference.artifact_id))
         if stored is None:
             return None
-
-        metadata = stored.metadata
-        lookup_hash = compute_artifact_lookup_key_hash(metadata.lookup_key)
-        if lookup_hash != reference.artifact_lookup_key_hash:
-            return None
-        if metadata.artifact_content_hash != reference.artifact_content_hash:
-            return None
-        if metadata.lookup_key.artifact_type != reference.artifact_type:
+        if not optimization_artifact_reference_matches_stored(reference, stored):
             return None
         return stored
 
