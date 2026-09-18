@@ -126,14 +126,15 @@ Command (0 errors required):
 
 ```bash
 uv run pyright \
+  tests/unit/ucl/test_ucl_mp5f_b3_ucl_reference_read.py \
   tests/unit/ucl/test_ucl_mp5f_b3b_workspace_scoped_reference_read.py \
   tests/unit/ucl/test_ucl_mp5f_b3b_c1_resource_scoped_reference_read.py \
   tests/unit/runtime/context_lifecycle/test_b3a_c1r1_reference_resolution_hardening.py
 ```
 
-Closeout: **0 errors** (fixture return type aligned to `Iterator[OptimizationArtifactRepository]` for generator fixture).
+Closeout: **0 errors, 0 warnings** on the full B3 qualification Pyright gate (including legacy `test_ucl_mp5f_b3_ucl_reference_read.py` after MP-5F-B3-R1).
 
-Escape hatch scan on B3-owned surfaces (`intergrax/ucl/`, `intergrax/runtime/context_lifecycle/`, listed tests): no new `Any`, `type: ignore`, `cast`, reflection, or dynamic imports on production paths; one pre-existing `# type: ignore[arg-type]` in older B3 test helper (`test_ucl_mp5f_b3_ucl_reference_read.py`) outside this pyright gate set.
+Escape hatch scan on B3 qualification surface (four gate tests above plus `intergrax/ucl/`, `intergrax/runtime/context_lifecycle/` production paths): **0** known `Any`, `type: ignore`, `cast`, reflection, or dynamic dict construction for typed platform DTOs in qualification helpers (MP-5F-B3-R1).
 
 ## 21. Public exports
 
