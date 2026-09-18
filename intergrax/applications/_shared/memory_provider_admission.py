@@ -18,6 +18,7 @@ from intergrax.memory.contracts.provider_admission import (
     evaluate_production_persistent_user_profile_admission,
     lookup_trusted_user_profile_qualification_evidence,
 )
+from intergrax.memory.contracts.provider_identity import MemoryProviderIdentity
 from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidenceLookup,
     MemoryProviderQualificationEvidenceRegistry,
@@ -89,6 +90,7 @@ class DefaultProductionMemoryProviderAdmissionPolicy:
         )
         evaluation = evaluate_production_persistent_user_profile_admission(
             classification,
+            None,
             missing,
         )
         return MemoryProviderAdmissionDecision(
@@ -101,6 +103,7 @@ def validate_memory_platform_wiring_admission(
     env: ApplicationEnvironmentProfile,
     user_profile_store: UserProfileStore,
     *,
+    user_profile_store_identity: MemoryProviderIdentity | None = None,
     policy: MemoryProviderAdmissionPolicy | None = None,
     qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
 ) -> None:
@@ -112,27 +115,41 @@ def validate_memory_platform_wiring_admission(
     registry = qualification_evidence_registry or _EmptyQualificationEvidenceRegistry()
 
     if env.application_profile is ApplicationProfile.PRODUCT:
-        evidence_lookup = lookup_trusted_user_profile_qualification_evidence(
-            registry,
-            classification,
-        )
+        if user_profile_store_identity is None:
+            evidence_lookup = MemoryProviderQualificationEvidenceLookup(
+                resolve_status=MemoryProviderQualificationEvidenceResolveStatus.MISSING,
+            )
+        else:
+            evidence_lookup = lookup_trusted_user_profile_qualification_evidence(
+                registry,
+                user_profile_store_identity,
+            )
         evaluation = evaluate_production_persistent_user_profile_admission(
             classification,
+            user_profile_store_identity,
             evidence_lookup,
         )
         if not evaluation.admitted:
             reason = evaluation.reason_code or MemoryProviderAdmissionReasonCode.PROVIDER_MISSING
+            declared_id = classification.provider_id
+            trusted_id = (
+                user_profile_store_identity.provider_id
+                if user_profile_store_identity is not None
+                else None
+            )
             raise MemoryProviderAdmissionError(
                 capability=classification.capability,
                 execution_mode=env.execution_mode.value,
                 application_profile=env.application_profile.value,
                 reason_code=reason,
-                provider_id=classification.provider_id,
+                provider_id=evaluation.provider_id,
                 durability=classification.durability,
                 declared_qualification_status=classification.declared_qualification_status,
                 trusted_qualification_status=evaluation.trusted_qualification_status,
                 reference_only=classification.reference_only,
                 qualification_run_id=evaluation.qualification_run_id,
+                declared_provider_id=declared_id,
+                trusted_provider_id=trusted_id,
             )
         return
 

@@ -1300,3 +1300,30 @@ Close **GAP-5A-01** (provider self-certified qualification at production admissi
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5B AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5A-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5B.
+
+---
+
+# MEM-FINAL-AUDIT-5A-R2 — Trusted Provider Identity Binding
+
+**Verdict (implementation):** closes **GAP-5A-02** — qualification evidence lookup uses **platform-resolved** `MemoryProviderIdentity`, not provider-declared `memory_provider_id`.
+
+## Hard invariant
+
+`MemoryPlatformWiring.user_profile_store_identity` (platform composition) is the authority for `MemoryProviderQualificationEvidenceRegistry.resolve(...)`. Store-declared `memory_provider_id` is diagnostic only; mismatch with trusted identity → `provider_identity_mismatch` (fail-closed).
+
+## GAP status
+
+| Gap | Status |
+| --- | ------ |
+| GAP-4-01 | CLOSED |
+| GAP-5A-01 | CLOSED |
+| GAP-5A-02 | CLOSED (5A-R2 trusted identity binding) |
+
+## Regression
+
+- `tests/unit/applications/test_mem_audit5a_production_provider_admission.py`
+- `tests/unit/applications/test_mem_audit5a_r2_provider_identity_binding.py`
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5B AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5A-R2 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5B.

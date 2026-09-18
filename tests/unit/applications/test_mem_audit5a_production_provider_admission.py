@@ -28,6 +28,10 @@ from intergrax.memory.contracts.provider_admission import (
     MemoryProviderAdmissionReasonCode,
     MemoryProviderDurability,
 )
+from intergrax.memory.contracts.provider_identity import (
+    MemoryProviderIdentity,
+    MemoryProviderIdentitySource,
+)
 from intergrax.memory.contracts.provider_qualification import (
     MemoryProviderCapabilityKind,
     MemoryProviderDescriptor,
@@ -118,7 +122,7 @@ class _DurableSelfCertifiedUserProfilePlugin:
 
     @classmethod
     def create_user_profile_store(cls, **_kwargs: object) -> UserProfileStore:
-        return _SelfCertifiedDurableUserProfileStore()
+        return _SelfCertifiedDurableUserProfileStore(provider_id=cls.plugin_id())
 
 
 def _evidence_for_provider(
@@ -244,7 +248,7 @@ def test_product_durable_external_plugin_passes_with_trusted_evidence() -> None:
     env.memory_profile = env.memory_profile.model_copy(
         update={"user_profile_store_plugin_id": "test.durable_qualified_user_profile"},
     )
-    registry = _evidence_for_provider("evil.self.certified")
+    registry = _evidence_for_provider("test.durable_qualified_user_profile")
     wiring = resolve_memory_platform_wiring(
         env,
         discover_entry_points=False,
@@ -281,8 +285,7 @@ def test_unknown_durability_metadata_fails_closed_in_product() -> None:
     env.memory_profile = _persistent_memory_profile()
     with pytest.raises(MemoryProviderAdmissionError) as exc_info:
         validate_memory_platform_wiring_admission(env, _OpaqueUserProfileStore())
-    assert exc_info.value.reason_code is MemoryProviderAdmissionReasonCode.PROVIDER_NOT_DURABLE
-    assert exc_info.value.durability is MemoryProviderDurability.UNKNOWN
+    assert exc_info.value.reason_code is MemoryProviderAdmissionReasonCode.PROVIDER_IDENTITY_MISSING
 
 
 def test_strict_lab_not_product_still_allows_reference() -> None:
@@ -311,26 +314,26 @@ def test_provider_spoof_self_certified_fails_without_registry() -> None:
     store = _SelfCertifiedDurableUserProfileStore()
     with pytest.raises(MemoryProviderAdmissionError) as exc_info:
         validate_memory_platform_wiring_admission(env, store)
-    assert (
-        exc_info.value.reason_code
-        is MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISSING
-    )
+    assert exc_info.value.reason_code is MemoryProviderAdmissionReasonCode.PROVIDER_IDENTITY_MISSING
 
 
 def test_wrong_provider_evidence_fails() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.audit5ar.wrong.provider")
     env.memory_profile = _persistent_memory_profile()
     registry = _evidence_for_provider("other.provider")
+    identity = MemoryProviderIdentity(
+        provider_id="evil.self.certified",
+        capability=MemoryProviderCapabilityKind.USER_PROFILE_STORE,
+        source=MemoryProviderIdentitySource.DIRECT_INJECTION,
+    )
     with pytest.raises(MemoryProviderAdmissionError) as exc_info:
         validate_memory_platform_wiring_admission(
             env,
             _SelfCertifiedDurableUserProfileStore(),
+            user_profile_store_identity=identity,
             qualification_evidence_registry=registry,
         )
-    assert exc_info.value.reason_code in {
-        MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH,
-        MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISSING,
-    }
+    assert exc_info.value.reason_code is MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISSING
 
 
 def test_not_qualified_evidence_fails() -> None:
@@ -340,10 +343,16 @@ def test_not_qualified_evidence_fails() -> None:
         "evil.self.certified",
         status=MemoryProviderQualificationStatus.NOT_QUALIFIED,
     )
+    identity = MemoryProviderIdentity(
+        provider_id="evil.self.certified",
+        capability=MemoryProviderCapabilityKind.USER_PROFILE_STORE,
+        source=MemoryProviderIdentitySource.DIRECT_INJECTION,
+    )
     with pytest.raises(MemoryProviderAdmissionError) as exc_info:
         validate_memory_platform_wiring_admission(
             env,
             _SelfCertifiedDurableUserProfileStore(),
+            user_profile_store_identity=identity,
             qualification_evidence_registry=registry,
         )
     assert exc_info.value.reason_code is MemoryProviderAdmissionReasonCode.PROVIDER_NOT_QUALIFIED

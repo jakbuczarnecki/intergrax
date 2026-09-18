@@ -206,7 +206,23 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-08 | PostgreSQL | Memory bundle | implementation | P3 | post-RFC |
 
 **P0:** NONE  
-**P1:** NONE after MEM-FINAL-AUDIT-5A-R (GAP-5A-01 self-certification closed — admission uses trusted evidence registry)
+**P1:** NONE after MEM-FINAL-AUDIT-5A-R2 (GAP-5A-02 identity binding closed)
+
+## MEM-FINAL-AUDIT-5A-R2 — Trusted provider identity binding
+
+| Check | Result |
+| ----- | ------ |
+| Identity contract | `intergrax/memory/contracts/provider_identity.py` (`MemoryProviderIdentity`) |
+| Wiring pair | `MemoryPlatformWiring.user_profile_store` + `user_profile_store_identity` |
+| Evidence lookup authority | `trusted_identity.provider_id` (+ capability, version) |
+| External plugin identity | `plugin_id` from platform overlay → `plugin_user_profile_store_identity` |
+| Spoof (`evil.plugin` → declares `sqlite.user_profile`) | `provider_identity_mismatch` (cannot use sqlite evidence) |
+| Version binding | Exact match; unknown runtime version + versioned evidence → mismatch |
+| Duplicate evidence | `AMBIGUOUS` → fail-closed |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5A-02 | CLOSED |
 
 ## MEM-FINAL-AUDIT-5A — Production admission
 
