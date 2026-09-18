@@ -30,7 +30,7 @@ Intergrax RAG addresses that gap with a native path from **authorized sources** 
 | **Scope / policy** | Tenant + namespace + workspace isolation; source ownership; generation visibility; host/policy gates on retrieve |
 | **Context Engineering** | Consumes retrieval hits as fragments; owns final model-context assembly and budgeting |
 | **Memory** | Parallel domain - session/LTM/episodic recall; `knowledge` index domain is RAG-owned |
-| **ContextView source (MP-5F)** | RAG exposes scoped **reference-read** port (`KnowledgeReferenceReadPort`) — B2 **CLOSED**; adapters **BLOCKED** until B3…B5 |
+| **ContextView source (MP-5F)** | RAG exposes scoped **reference-read** port (`KnowledgeReferenceReadPort`) — B2 **CLOSED**; MP-5F-B5 adapter (`DefaultKnowledgeContextSource`) translates refs only — **CLOSED** |
 | **Maturity** | Four-axis statement in [Current maturity](#current-maturity) - **`PRODUCTION_QUALIFIED_WITH_LIMITATIONS`** |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [pipeline satellite](satellites/RAG_pipelines_detail.md) · [plan](../maintainers/plans/RAG.md) · [proofs](../proofs/PROOFS.md) |
 

@@ -199,7 +199,7 @@ Persistence, APIs, repositories, and enforcement implementation are delivered fo
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; slices **MP-3A…MP-3H — APPROVED / CLOSED** (MP-3H final cross-slice certification).
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-5F — BLOCKED** (B1 Memory **CLOSED**; B2 Knowledge **CLOSED**; **MP-5F-B3 read boundary CLOSED**; **MP-5F-B4 reference read boundary CLOSED**; **MP-5F-B5 — NEXT**). **MP-5E — APPROVED / CLOSED** (ADR-MP-006).
+**Next task:** **MP-5G — NEXT** (E2E qualification). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (**MP-5F-B5 adapters — CLOSED**). **MP-5E — APPROVED / CLOSED** (ADR-MP-006).
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 
@@ -531,7 +531,7 @@ Architecture and implementation rows for MP-6+ remain in their future gates.
 
 ## Principal-scoped ContextView (MP-5)
 
-**MP-5 ownership — FROZEN** ([ADR-MP-006](../technical/adr/entries/2026-09-17/ADR-MP-006.md) **Accepted**). **MP-5A — APPROVED / CLOSED**. **MP-5B — APPROVED / CLOSED**. **MP-5C — APPROVED / CLOSED**. **MP-5D — APPROVED / CLOSED**. **MP-5E — APPROVED / CLOSED**. **MP-5F — NEXT**.
+**MP-5 ownership — FROZEN** ([ADR-MP-006](../technical/adr/entries/2026-09-17/ADR-MP-006.md) **Accepted**). **MP-5A — APPROVED / CLOSED**. **MP-5B — APPROVED / CLOSED**. **MP-5C — APPROVED / CLOSED**. **MP-5D — APPROVED / CLOSED**. **MP-5E — APPROVED / CLOSED**. **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED**. **MP-5G — NEXT**.
 
 Collaborative Work owns **who may see which context categories under which collaborative scope** — not how Memory stores data, how RAG retrieves, how UCL persists revisions, or how Context Engineering budgets tokens.
 
@@ -545,13 +545,16 @@ Collaborative Work owns **who may see which context categories under which colla
 
 **Reference-read boundary (MP-5F-B4):** Collaborative Work owns WorkItem, WorkArtifact and WorkArtifactVersion identity, lifecycle and canonical ownership relationships. The public reference-read boundary exposes scoped canonical references only (`CollaborativeWorkReferenceReadPort` in [`intergrax/collaborative_work/contracts/collaborative_work_reference_read.py`](../../../intergrax/collaborative_work/contracts/collaborative_work_reference_read.py)); default scoped catalog projection (no payload hydration): [`DefaultCollaborativeWorkReferenceReader`](../../../intergrax/collaborative_work/default_collaborative_work_reference_reader.py) over [`CollaborativeWorkScopedReferenceCatalog`](../../../intergrax/collaborative_work/repository.py). MP-5 adapters consume those references but do not own Collaborative Work semantics. **Anti-substitution:** `ContextView ≠ WorkItem`; `ContextView ≠ WorkArtifact`; MP-5 does not choose WorkArtifact current version — CW aggregate `current_version_id` is authoritative.
 
+**Source adapters (MP-5F-B5):** replaceable MP-5D ports in [`intergrax/collaborative_work/context_view_source_adapters.py`](../../../intergrax/collaborative_work/context_view_source_adapters.py) translate only — source domains remain semantic owners. Composition root: [`wire_default_context_view_composer`](../../../intergrax/collaborative_work/context_view_source_wiring.py) (explicit DI: source read ports → default adapters → `DefaultContextViewComposer`). **Pluginability:** replace the MP-5D port implementation and/or the source-domain `*ReferenceReadPort` implementation independently.
+
 ```text
 ContextViewRequest
   → MP-1 effective authority (`CollaborativeWorkAuthorityResolver`)
   → ContextViewVisibilityPolicy
   → ContextViewPolicyDecision
   → DefaultContextViewComposer (MP-5E)
-      → injected MP-5D source ports (eligible categories only)
+      → injected MP-5D consumer-owned source port (replaceable adapter)
+      → source-domain public *ReferenceReadPort → canonical refs (reference-only)
       → MP-5D candidate isolation validators
       → dedupe / order / entry + view identity strategies
   → ContextView

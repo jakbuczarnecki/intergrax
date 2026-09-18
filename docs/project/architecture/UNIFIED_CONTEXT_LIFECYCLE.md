@@ -980,7 +980,7 @@ Metadata-only reusable artifact record: `artifact_id`, `lookup_key`, `artifact_c
 
 **Anti-substitution:** ContextView ≠ UCL artifact. ContextView does not replace UCL lifecycle. MP-5 does not determine active revision.
 
-**Public surface:** `UclReferenceReadPort` / `UclReferenceReadScope` / `UclOptimizationArtifactCanonicalRef` in `intergrax/ucl/contracts/ucl_reference_read.py`. Default scoped catalog projection (no payload hydration): `DefaultUclReferenceReader` over `OptimizationArtifactScopedReferenceCatalog`. **MP-5D source ports are sync; UCL B3 reference-read is async — B5 requires explicit integration.**
+**Public surface:** `UclReferenceReadPort` / `UclReferenceReadScope` / `UclOptimizationArtifactCanonicalRef` in `intergrax/ucl/contracts/ucl_reference_read.py`. Default scoped catalog projection (no payload hydration): `DefaultUclReferenceReader` over `OptimizationArtifactScopedReferenceCatalog`. **MP-5F-B5:** `DefaultUclContextSource` bridges async read via injected `ContextViewAsyncReferenceReadRunner` at composition root (`context_view_source_wiring.py`) — adapters translate only.
 
 ### 9.11 `ModelCallExecutionScope`
 

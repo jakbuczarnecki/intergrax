@@ -1,0 +1,416 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""Pure contract-to-contract mapping helpers for MP-5F-B5 source adapters."""
+
+from __future__ import annotations
+
+from enum import Enum
+
+from intergrax.collaborative_work.contracts.collaborative_work_reference_read import (
+    CollaborativeWorkArtifactCanonicalRef,
+    CollaborativeWorkArtifactVersionCanonicalRef,
+    CollaborativeWorkItemCanonicalRef,
+    CollaborativeWorkReferenceEntityKind,
+    CollaborativeWorkReferenceReadQuery,
+    CollaborativeWorkReferenceReadRequest,
+    CollaborativeWorkReferenceReadScope,
+)
+from intergrax.contracts.agent_run import PrincipalType, RequestIdentity
+from intergrax.contracts.collaborative_work import WorkArtifactVersionRef
+from intergrax.contracts.context_view import (
+    ContextViewCollaborativeWorkSourceRef,
+    ContextViewKnowledgeSourceRef,
+    ContextViewMemorySourceRef,
+    ContextViewOperationScope,
+    ContextViewScope,
+    ContextViewUclSourceRef,
+    ContextViewVisibilityClass,
+)
+from intergrax.contracts.context_view_source_ports import (
+    ContextViewCollaborativeWorkSourceRequest,
+    ContextViewKnowledgeSourceRequest,
+    ContextViewMemorySourceRequest,
+    ContextViewSourceOutcome,
+    ContextViewUclSourceRequest,
+    _ContextViewSourceRequestBase,
+)
+from intergrax.knowledge.contracts.knowledge_reference_read import (
+    KnowledgeChunkCanonicalRef,
+    KnowledgeReferenceReadQuery,
+    KnowledgeReferenceReadRequest,
+    KnowledgeReferenceReadScope,
+    KnowledgeScopedResourceRef,
+)
+from intergrax.memory.contracts.memory_reference_read import (
+    MemoryRecordCanonicalRef,
+    MemoryReferenceReadQuery,
+    MemoryReferenceReadRequest,
+    MemoryReferenceReadScope,
+    MemoryScopedResourceRef,
+)
+from intergrax.ucl.contracts.ucl_reference_read import (
+    UclOptimizationArtifactCanonicalRef,
+    UclReferenceReadQuery,
+    UclReferenceReadRequest,
+    UclReferenceReadScope,
+    UclScopedResourceRef,
+    format_ucl_artifact_locator,
+)
+
+MEMORY_RECORD_REF_PREFIX: str = "memory-record/v1/"
+
+
+class ContextViewSourceAdapterConfigurationError(ValueError):
+    """Adapter or composition wiring violates mandatory DI invariants."""
+
+
+def suggested_visibility_from_request(
+    request: _ContextViewSourceRequestBase,
+) -> ContextViewVisibilityClass:
+    return request.eligible_visibility_classes[0]
+
+
+def request_identity_from_source_request(
+    request: _ContextViewSourceRequestBase,
+) -> RequestIdentity:
+    principal = request.acting_principal_id
+    return RequestIdentity(
+        tenant_id=request.scope.tenant_id,
+        user_id=principal,
+        principal_type=PrincipalType.USER,
+        auth_subject=principal,
+    )
+
+
+def map_domain_read_outcome_to_context_view(outcome: Enum) -> ContextViewSourceOutcome:
+    name = outcome.name if isinstance(outcome, Enum) else str(outcome)
+    if name == "OK":
+        return ContextViewSourceOutcome.OK
+    if name == "UNAVAILABLE":
+        return ContextViewSourceOutcome.SOURCE_UNAVAILABLE
+    if name in {"SCOPE_REJECTED", "ACCESS_DENIED"}:
+        return ContextViewSourceOutcome.SCOPE_REJECTED
+    if name == "INVALID_REQUEST":
+        return ContextViewSourceOutcome.INVALID_REQUEST
+    return ContextViewSourceOutcome.SOURCE_UNAVAILABLE
+
+
+def format_context_view_memory_record_ref(ref: MemoryRecordCanonicalRef) -> str:
+    return f"{MEMORY_RECORD_REF_PREFIX}{ref.memory_id}@{ref.revision}"
+
+
+def parse_context_view_memory_record_ref(
+    *,
+    tenant_id: str,
+    record_ref: str,
+) -> MemoryRecordCanonicalRef | None:
+    if not record_ref.startswith(MEMORY_RECORD_REF_PREFIX):
+        return None
+    body = record_ref[len(MEMORY_RECORD_REF_PREFIX) :]
+    if "@" not in body:
+        return None
+    memory_id, revision_text = body.rsplit("@", 1)
+    memory_id = memory_id.strip()
+    if not memory_id:
+        return None
+    try:
+        revision = int(revision_text)
+    except ValueError:
+        return None
+    try:
+        return MemoryRecordCanonicalRef(
+            tenant_id=tenant_id,
+            memory_id=memory_id,
+            revision=revision,
+        )
+    except Exception:
+        return None
+
+
+def map_memory_record_to_context_view_ref(
+    ref: MemoryRecordCanonicalRef,
+) -> ContextViewMemorySourceRef:
+    return ContextViewMemorySourceRef(
+        tenant_id=ref.tenant_id,
+        record_ref=format_context_view_memory_record_ref(ref),
+    )
+
+
+def memory_read_request_from_context_view(
+    request: ContextViewMemorySourceRequest,
+) -> MemoryReferenceReadRequest:
+    scope = request.scope
+    resource: MemoryScopedResourceRef | None = None
+    if scope.work_item_id is not None:
+        resource = MemoryScopedResourceRef(
+            resource_kind="work_item",
+            resource_id=scope.work_item_id,
+        )
+    return MemoryReferenceReadRequest(
+        scope=MemoryReferenceReadScope(
+            tenant_id=scope.tenant_id,
+            workspace_id=scope.workspace_id,
+            user_id=request.acting_principal_id,
+            resource=resource,
+        ),
+        query=MemoryReferenceReadQuery(),
+    )
+
+
+def candidate_scope_for_memory_ref(
+    *,
+    ref: MemoryRecordCanonicalRef,
+    request_scope: ContextViewScope,
+) -> ContextViewScope:
+    return ContextViewScope(
+        tenant_id=ref.tenant_id,
+        workspace_id=request_scope.workspace_id,
+        work_item_id=request_scope.work_item_id,
+        operation_scope=request_scope.operation_scope,
+    )
+
+
+def memory_ref_within_request_scope(
+    *,
+    ref: MemoryRecordCanonicalRef,
+    request: ContextViewMemorySourceRequest,
+) -> bool:
+    return ref.tenant_id == request.scope.tenant_id
+
+
+def knowledge_read_request_from_context_view(
+    request: ContextViewKnowledgeSourceRequest,
+    *,
+    query_text: str,
+) -> KnowledgeReferenceReadRequest:
+    scope = request.scope
+    resource: KnowledgeScopedResourceRef | None = None
+    if scope.operation_scope is not None and scope.operation_scope.resource_scope is not None:
+        resource = KnowledgeScopedResourceRef(
+            document_id=scope.operation_scope.resource_scope,
+        )
+    return KnowledgeReferenceReadRequest(
+        scope=KnowledgeReferenceReadScope(
+            tenant_id=scope.tenant_id,
+            workspace_id=scope.workspace_id,
+            resource=resource,
+        ),
+        query=KnowledgeReferenceReadQuery(query_text=query_text),
+    )
+
+
+def map_knowledge_chunk_to_context_view_ref(
+    ref: KnowledgeChunkCanonicalRef,
+) -> ContextViewKnowledgeSourceRef:
+    return ContextViewKnowledgeSourceRef(
+        tenant_id=ref.tenant_id,
+        knowledge_ref=ref.knowledge_ref,
+    )
+
+
+def knowledge_ref_within_request_scope(
+    *,
+    ref: KnowledgeChunkCanonicalRef,
+    request: ContextViewKnowledgeSourceRequest,
+) -> bool:
+    return ref.tenant_id == request.scope.tenant_id
+
+
+def candidate_scope_for_knowledge_ref(
+    *,
+    ref: KnowledgeChunkCanonicalRef,
+    request_scope: ContextViewScope,
+) -> ContextViewScope:
+    return ContextViewScope(
+        tenant_id=ref.tenant_id,
+        workspace_id=request_scope.workspace_id,
+        work_item_id=request_scope.work_item_id,
+        operation_scope=request_scope.operation_scope,
+    )
+
+
+def ucl_read_scope_from_context_view(
+    scope: ContextViewScope,
+) -> UclReferenceReadScope | None:
+    operation = scope.operation_scope
+    if operation is None or operation.resource_scope is None:
+        return None
+    resource: UclScopedResourceRef | None = None
+    if scope.work_item_id is not None:
+        resource = UclScopedResourceRef(
+            resource_kind="work_item",
+            resource_id=scope.work_item_id,
+        )
+    return UclReferenceReadScope(
+        tenant_id=scope.tenant_id,
+        workspace_id=scope.workspace_id,
+        context_scope_id=operation.resource_scope,
+        resource=resource,
+    )
+
+
+def ucl_read_request_from_context_view(
+    request: ContextViewUclSourceRequest,
+) -> UclReferenceReadRequest | None:
+    read_scope = ucl_read_scope_from_context_view(request.scope)
+    if read_scope is None:
+        return None
+    return UclReferenceReadRequest(scope=read_scope, query=UclReferenceReadQuery())
+
+
+def map_ucl_ref_to_context_view_ref(
+    ref: UclOptimizationArtifactCanonicalRef,
+) -> ContextViewUclSourceRef:
+    return ContextViewUclSourceRef(
+        tenant_id=ref.tenant_id,
+        ucl_artifact_ref=format_ucl_artifact_locator(ref),
+    )
+
+
+def ucl_ref_within_request_scope(
+    *,
+    ref: UclOptimizationArtifactCanonicalRef,
+    request: ContextViewUclSourceRequest,
+) -> bool:
+    scope = request.scope
+    if ref.tenant_id != scope.tenant_id:
+        return False
+    if ref.workspace_id != scope.workspace_id:
+        return False
+    operation = scope.operation_scope
+    if operation is None or operation.resource_scope is None:
+        return False
+    if ref.context_scope_id != operation.resource_scope:
+        return False
+    if scope.work_item_id is not None and ref.tenant_id != scope.tenant_id:
+        return False
+    return True
+
+
+def candidate_scope_for_ucl_ref(
+    *,
+    ref: UclOptimizationArtifactCanonicalRef,
+    request_scope: ContextViewScope,
+) -> ContextViewScope:
+    operation = request_scope.operation_scope
+    narrowed_operation: ContextViewOperationScope | None = None
+    if operation is not None:
+        narrowed_operation = ContextViewOperationScope(
+            operation_id=operation.operation_id,
+            resource_scope=ref.context_scope_id,
+        )
+    return ContextViewScope(
+        tenant_id=ref.tenant_id,
+        workspace_id=ref.workspace_id,
+        work_item_id=request_scope.work_item_id,
+        operation_scope=narrowed_operation,
+    )
+
+
+def collaborative_work_read_request_from_context_view(
+    request: ContextViewCollaborativeWorkSourceRequest,
+) -> CollaborativeWorkReferenceReadRequest:
+    scope = request.scope
+    return CollaborativeWorkReferenceReadRequest(
+        scope=CollaborativeWorkReferenceReadScope(
+            tenant_id=scope.tenant_id,
+            workspace_id=scope.workspace_id,
+            work_item_id=scope.work_item_id,
+        ),
+        query=CollaborativeWorkReferenceReadQuery(
+            entity_kinds=frozenset(
+                {
+                    CollaborativeWorkReferenceEntityKind.WORK_ITEM,
+                    CollaborativeWorkReferenceEntityKind.WORK_ARTIFACT,
+                    CollaborativeWorkReferenceEntityKind.WORK_ARTIFACT_VERSION,
+                }
+            ),
+        ),
+    )
+
+
+def map_collaborative_work_item_ref(
+    ref: CollaborativeWorkItemCanonicalRef,
+) -> ContextViewCollaborativeWorkSourceRef:
+    return ContextViewCollaborativeWorkSourceRef(
+        tenant_id=ref.tenant_id,
+        workspace_id=ref.workspace_id,
+        work_item_id=ref.work_item_id,
+    )
+
+
+def map_collaborative_work_artifact_ref(
+    ref: CollaborativeWorkArtifactCanonicalRef,
+) -> ContextViewCollaborativeWorkSourceRef:
+    return ContextViewCollaborativeWorkSourceRef(
+        tenant_id=ref.tenant_id,
+        workspace_id=ref.workspace_id,
+        work_artifact_version=WorkArtifactVersionRef(
+            tenant_id=ref.tenant_id,
+            workspace_id=ref.workspace_id,
+            work_item_id=ref.work_item_id,
+            work_artifact_id=ref.work_artifact_id,
+            work_artifact_version_id=ref.current_version_id,
+        ),
+    )
+
+
+def map_collaborative_work_version_ref(
+    ref: CollaborativeWorkArtifactVersionCanonicalRef,
+) -> ContextViewCollaborativeWorkSourceRef:
+    return ContextViewCollaborativeWorkSourceRef(
+        tenant_id=ref.tenant_id,
+        workspace_id=ref.workspace_id,
+        work_artifact_version=WorkArtifactVersionRef(
+            tenant_id=ref.tenant_id,
+            workspace_id=ref.workspace_id,
+            work_item_id=ref.work_item_id,
+            work_artifact_id=ref.work_artifact_id,
+            work_artifact_version_id=ref.work_artifact_version_id,
+        ),
+    )
+
+
+def collaborative_work_ref_within_request_scope(
+    *,
+    ref: (
+        CollaborativeWorkItemCanonicalRef
+        | CollaborativeWorkArtifactCanonicalRef
+        | CollaborativeWorkArtifactVersionCanonicalRef
+    ),
+    request: ContextViewCollaborativeWorkSourceRequest,
+) -> bool:
+    scope = request.scope
+    if ref.tenant_id != scope.tenant_id:
+        return False
+    if ref.workspace_id != scope.workspace_id:
+        return False
+    if scope.work_item_id is not None:
+        work_item = getattr(ref, "work_item_id", None)
+        if work_item != scope.work_item_id:
+            return False
+    return True
+
+
+def candidate_scope_for_collaborative_work_ref(
+    *,
+    ref: (
+        CollaborativeWorkItemCanonicalRef
+        | CollaborativeWorkArtifactCanonicalRef
+        | CollaborativeWorkArtifactVersionCanonicalRef
+    ),
+    request_scope: ContextViewScope,
+) -> ContextViewScope:
+    work_item_id = request_scope.work_item_id
+    if isinstance(ref, CollaborativeWorkItemCanonicalRef):
+        work_item_id = ref.work_item_id
+    elif isinstance(ref, CollaborativeWorkArtifactCanonicalRef):
+        work_item_id = ref.work_item_id
+    else:
+        work_item_id = ref.work_item_id
+    return ContextViewScope(
+        tenant_id=ref.tenant_id,
+        workspace_id=ref.workspace_id,
+        work_item_id=work_item_id,
+        operation_scope=request_scope.operation_scope,
+    )

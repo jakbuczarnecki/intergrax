@@ -40,7 +40,8 @@ _STATUS_DOCS = {
 
 _REQUIRED_MARKERS = (
     "MP-5E — APPROVED / CLOSED",
-    "MP-5F — NEXT",
+    "MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED",
+    "context_view_source_adapters",
     "intergrax/contracts/context_view_composition.py",
     "DefaultContextViewComposer",
     "ContextViewComposer",

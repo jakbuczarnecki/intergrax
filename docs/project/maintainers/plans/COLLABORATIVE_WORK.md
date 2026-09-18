@@ -7,7 +7,7 @@
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004 Accepted; **MP-3A…MP-3H — APPROVED / CLOSED**); **MP-3 architecture decomposition — APPROVED / CLOSED**
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-5F — NEXT** — Source adapters / integration (MP-5E **CLOSED** — ADR-MP-006; see [`MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)).
+**Next task:** **MP-5G — NEXT** — E2E / isolation qualification. **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (B5 adapters — see [`MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)).
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -590,7 +590,17 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Status** | **MP-5E — APPROVED / CLOSED** |
 | **Purpose** | Replaceable `ContextViewComposer` / `DefaultContextViewComposer`: approved policy → injected source ports → validated reference-first `ContextView`; `effective_scope` may narrow but never broaden the originating request scope |
 | **Proof** | `intergrax/contracts/context_view_composition.py`; `intergrax/collaborative_work/context_view_composition.py`; `test_context_view_composition.py`; `test_context_view_composition_architecture_gates.py`; `test_mp5e_documentation_regression_gates.py` |
-| **Next step** | **MP-5F — NEXT** |
+| **Next step** | **MP-5F — CLOSED** |
+
+### MP-5F-B5 — Source adapters integration
+
+| Field | Value |
+|-------|-------|
+| **ID** | MP-5F-B5 |
+| **Status** | **CLOSED** |
+| **Purpose** | Wire Memory / Knowledge / UCL / Collaborative Work public reference-read ports to MP-5D consumer-owned ports via replaceable adapters (translation only) |
+| **Proof** | `intergrax/collaborative_work/context_view_source_adapters.py`; `context_view_source_wiring.py`; `test_mp5f_b5_context_view_source_adapters.py`; `test_mp5f_b5_context_view_source_adapters_architecture_gates.py` |
+| **Next step** | **MP-5G — NEXT** |
 
 | Field | Value |
 |-------|-------|
@@ -600,13 +610,13 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Publication atomicity** | `ArtifactPublicationRepository` required for **both** `create_artifact_with_initial_version(...)` and `publish_version(...)`; typed read/direct ports only for non-authoritative access; no generic UoW; no service-level manual two-repository writes |
 | **MP-3F ordering** | After MP-3E — metadata/content-ref qualification precedes content-provider integration |
 | **Qualification versioning** | Bump owned by MP-3E when semantics change — not preselected here |
-| **Next step** | **MP-5F — NEXT** (**MP-5E — APPROVED / CLOSED**) |
+| **Next step** | **MP-5G — NEXT** (**MP-5F — CLOSED**) |
 
 ---
 
 ## 4. Out of scope (current phase)
 
-- MP-5G+ E2E qualification until MP-5F source adapters land
+- MP-5H final certification until MP-5G E2E qualification completes
 - MP-6 architecture or implementation rows (MP-5 ownership **FROZEN** via ADR-MP-006; MP-4 via ADR-MP-005 — see [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md))
 - LKW product adoption (MP-7)
 - Runtime Python models beyond contract stubs until the relevant COLLAB-WORK-* row opens
