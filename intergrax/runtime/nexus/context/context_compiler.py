@@ -23,7 +23,9 @@ from intergrax.context.budget.contracts import ContextBudgetUnsatisfiableError
 from intergrax.context.budget.mandatory_base_messages import (
     last_user_message_index,
     mandatory_base_message_indices,
+    mandatory_protected_message_indices,
     estimate_mandatory_base_message_tokens,
+    estimate_mandatory_protected_message_tokens,
 )
 from intergrax.context.contracts import ProviderFragmentIdentityMap
 from intergrax.context.budget.degradation import ContextDegradationPolicy, DefaultContextDegradationPolicy
@@ -294,6 +296,11 @@ class ContextCompiler:
           if provider_fragment_identity is not None
           else frozenset()
       )
+      mandatory_provider_entry_ids = (
+          provider_fragment_identity.mandatory_entry_ids()
+          if provider_fragment_identity is not None
+          else frozenset()
+      )
       last_user_tokens = self._count_tokens(messages[last_user].content or "")
       if last_user_tokens > budget_tokens:
           raise ContextBudgetUnsatisfiableError(
@@ -301,21 +308,23 @@ class ContextCompiler:
               mandatory_tokens=last_user_tokens,
               available_tokens=budget_tokens,
           )
-      mandatory_base_tokens = estimate_mandatory_base_message_tokens(
+      mandatory_reserve_tokens = estimate_mandatory_protected_message_tokens(
           messages,
           count_text=self._count_tokens,
           provider_fragment_entry_ids=provider_entry_ids,
+          mandatory_provider_entry_ids=mandatory_provider_entry_ids,
       )
-      if mandatory_base_tokens > budget_tokens:
+      if mandatory_reserve_tokens > budget_tokens:
           raise ContextBudgetUnsatisfiableError(
               detail="mandatory_system_instructions_exceed_budget",
-              mandatory_tokens=mandatory_base_tokens,
+              mandatory_tokens=mandatory_reserve_tokens,
               available_tokens=budget_tokens,
           )
 
-      mandatory_indices = mandatory_base_message_indices(
+      mandatory_indices = mandatory_protected_message_indices(
           messages,
           provider_fragment_entry_ids=provider_entry_ids,
+          mandatory_provider_entry_ids=mandatory_provider_entry_ids,
       )
       policy = ContextBudgetPolicy(
           max_chars=budget_tokens * 4,
@@ -343,9 +352,10 @@ class ContextCompiler:
           )
 
       while total(working) > budget_tokens:
-          mandatory_now = mandatory_base_message_indices(
+          mandatory_now = mandatory_protected_message_indices(
               working,
               provider_fragment_entry_ids=provider_entry_ids,
+              mandatory_provider_entry_ids=mandatory_provider_entry_ids,
           )
           drop_index: int | None = None
           for index in range(len(working) - 1, -1, -1):
@@ -353,10 +363,11 @@ class ContextCompiler:
                   drop_index = index
                   break
           if drop_index is None:
-              mandatory_tokens = estimate_mandatory_base_message_tokens(
+              mandatory_tokens = estimate_mandatory_protected_message_tokens(
                   working,
                   count_text=self._count_tokens,
                   provider_fragment_entry_ids=provider_entry_ids,
+                  mandatory_provider_entry_ids=mandatory_provider_entry_ids,
               )
               raise ContextBudgetUnsatisfiableError(
                   detail="compiled_context_exceeds_budget",
