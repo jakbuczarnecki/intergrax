@@ -10,12 +10,18 @@ from intergrax.tools.invocation_pattern.contracts import (
     ToolInvocationPlannerPort,
     ToolInvocationStopReason,
 )
+from intergrax.tools.invocation_pattern.errors import (
+    ToolInvocationPatternError,
+    ToolInvocationPatternResolutionError,
+)
 from intergrax.tools.invocation_pattern.registry import (
     list_tool_invocation_pattern_ids,
     load_tool_invocation_pattern,
 )
 
 __all__ = [
+    "ToolInvocationPatternError",
+    "ToolInvocationPatternResolutionError",
     "ToolInvocationInvokerPort",
     "ToolInvocationPattern",
     "ToolInvocationPatternContext",

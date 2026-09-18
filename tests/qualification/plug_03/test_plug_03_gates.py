@@ -27,6 +27,7 @@ from intergrax.integrations.examples.custom_memory_kv.plugin import CustomMemory
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import resolve_invocation_pattern
+from intergrax.tools.invocation_pattern.errors import ToolInvocationPatternResolutionError
 from intergrax.tools.registry.bootstrap import reset_default_tools_bootstrap
 from intergrax.tools.registry.catalog import clear_tool_catalog
 from intergrax.tools.registry.factory import build_registry_from_profile
@@ -232,3 +233,382 @@ def test_context_custom_compaction_default_strategy_not_invoked() -> None:
     strategy = registry.compaction_strategy
     assert strategy.strategy_id == "plug_03_custom_compaction"
     assert not isinstance(strategy, NoOpContextCompactionStrategy)
+
+
+def test_explicit_missing_tool_invocation_pattern_id_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(importlib.metadata, "entry_points", lambda: _EntryPoints([]))
+
+    def _forbidden_shipped_default(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError("shipped default pattern must not be instantiated")
+
+    monkeypatch.setattr(
+        "intergrax.runtime.nexus.tools.tool_invocation_pattern.pattern_for_mode",
+        _forbidden_shipped_default,
+    )
+
+    with pytest.raises(ToolInvocationPatternResolutionError, match="missing.custom.pattern"):
+        resolve_invocation_pattern(
+            mode=ToolInvocationMode.SINGLE_PASS,
+            max_iterations=1,
+            entry_point_pattern_id="missing.custom.pattern",
+        )
+
+
+def test_plug03_session_storage_canonical_session_manager_consumer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.applications._shared.memory_wiring import (
+        build_session_manager_from_environment,
+        resolve_memory_platform_wiring,
+    )
+    from intergrax.applications.contracts.environment_profile import (
+        ApplicationEnvironmentProfile,
+        MemoryProfile,
+    )
+    from intergrax.integrations.registry.profile import IntegrationProfile
+    from intergrax.llm.messages import ChatMessage
+    from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+    from tests.fixtures.plugin_packages.memory_store_plugin.memory_store_plugin.fixture_session_storage import (
+        FIXTURE_SESSION_STORAGE_MARKER,
+        FixtureExternalSessionStorage,
+    )
+    from tests.fixtures.plugin_packages.memory_store_plugin.memory_store_plugin.plugin import (
+        ExternalInMemorySessionStoragePlugin,
+    )
+
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="plug03.session.q4")
+    env.integration_profile = IntegrationProfile()
+    env.memory_profile = MemoryProfile(
+        session_storage_plugin_id="external.in_memory_session_storage",
+    )
+    manager = build_session_manager_from_environment(
+        env,
+        memory_wiring=resolve_memory_platform_wiring(
+            env,
+            discover_entry_points=False,
+            explicit_memory_plugins=(ExternalInMemorySessionStoragePlugin,),
+        ),
+    )
+    assert isinstance(manager._storage, FixtureExternalSessionStorage)
+    assert not isinstance(manager._storage, InMemorySessionStorage)
+
+    async def _exercise() -> None:
+        session = await manager.create_session(tenant_id="tenant-a", user_id="user-a")
+        await manager.append_message(
+            tenant_id="tenant-a",
+            session_id=session.id,
+            message=ChatMessage(role="user", content="plug03 session proof"),
+        )
+        history = await manager.get_history(tenant_id="tenant-a", session_id=session.id)
+        assert len(history) == 1
+        assert history[0].content == "plug03 session proof"
+
+    import asyncio
+
+    asyncio.run(_exercise())
+    assert getattr(manager._storage, "fixture_marker", "") == FIXTURE_SESSION_STORAGE_MARKER
+
+
+from intergrax.agents.agent_contract import Agent
+from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.task.task import TaskContext
+from intergrax.skills.examples.custom_pack import CustomPackSkillPlugin
+from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
+from intergrax.runtime.policy.rules.schema import PolicyRuleAction
+from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+
+
+class _Plug03PackAgent(Agent):
+    def __init__(self, *, include_skill: bool) -> None:
+        self._include_skill = include_skill
+
+    def get_contract(self) -> AgentContract:
+        manifests = CustomPackSkillPlugin.skill_manifests() if self._include_skill else ()
+        return AgentContract(
+            id="plug03_pack_stub",
+            name="Plug03 Pack Stub",
+            description="stub",
+            capabilities=["stub.cap"],
+            skills=list(manifests),
+        )
+
+    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
+        config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)
+        return RuntimeContext.build(
+            config=config,
+            session_manager=build_in_memory_session_manager(),
+        )
+
+    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
+        return CapabilityMatchResult(matched=True, agent_id="plug03_pack_stub", score=1.0)
+
+
+class _Plug03ExternalPolicyHandler:
+    rule_id = "plug03_external_policy_handler"
+    evaluate_calls = 0
+
+    def evaluate(self, rule: object, *, context: PolicyEvaluationContext) -> PolicyRuleAction:
+        type(self).evaluate_calls += 1
+        return PolicyRuleAction.ALLOW
+
+
+@pytest.mark.asyncio
+async def test_plug03_custom_skill_enables_canonical_tool_execution() -> None:
+    from intergrax.runtime.nexus.config import RuntimeConfig
+    from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+    from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+    from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+    from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
+    from intergrax.runtime.registry.agent_registry import AgentRegistry
+    from intergrax.skills.registry.factory import build_registry_from_profile as build_skill_registry
+    from intergrax.skills.registry.plugin_register import register_skill_plugin
+    from intergrax.skills.registry.profile import SkillProfile
+    from intergrax.tools.examples.custom_echo import CustomEchoToolPlugin
+    from intergrax.tools.examples.custom_echo.plugin import CUSTOM_ECHO_TOOL_ID, CustomEchoInput
+    from intergrax.tools.execution_models import ToolExecutionRequest
+    from intergrax.tools.registry.factory import build_registry_from_profile as build_tool_registry
+    from intergrax.tools.registry.plugin_register import register_tool_plugin
+    from intergrax.tools.registry.profile import ToolProfile
+    from intergrax.tools.registry.wiring import ToolWiringContext
+    from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager, canonical_execution_identity_scope
+
+    register_skill_plugin(CustomPackSkillPlugin)
+    register_tool_plugin(CustomEchoToolPlugin)
+    skill_registry = build_skill_registry(SkillProfile(enabled_bundles=["custom_pack"]))
+    tool_registry = build_tool_registry(
+        ToolProfile(enabled_bundles=["custom_echo"]),
+        ctx=ToolWiringContext(),
+    )
+    agent_registry = AgentRegistry()
+    agent_registry.register(
+        _Plug03PackAgent(include_skill=True),
+        skill_registry=skill_registry,
+        tool_registry=tool_registry,
+    )
+    contract = agent_registry.get_contract("plug03_pack_stub")
+    assert CUSTOM_ECHO_TOOL_ID in contract.allowed_tools
+
+    assert tool_registry.has(CUSTOM_ECHO_TOOL_ID)
+
+    invoker = RuntimeToolInvoker(
+        registry=tool_registry,
+        executor=RegistryToolExecutor(tool_registry),
+    )
+    config = RuntimeConfig(
+        llm_adapter=FakeLLMAdapter(),
+        production_mode=False,
+        enable_rag=False,
+        enable_websearch=False,
+        tool_invoker=invoker,
+    )
+    ctx = RuntimeContext.build(
+        config=config,
+        session_manager=build_in_memory_session_manager(),
+    )
+    state = RuntimeState(
+        context=ctx,
+        request=RuntimeRequest(
+            agent_id="plug03_pack_stub",
+            user_id="user-1",
+            session_id="session-1",
+            tenant_id="tenant-1",
+            message="plug03 skill proof",
+            task_id="task_00000000000000000000000000000001",
+            run_id="run_00000000000000000000000000000001",
+        ),
+        run_id="run_00000000000000000000000000000001",
+        tool_traces=[],
+    )
+    request = ToolExecutionRequest(
+        run_id=state.run_id,
+        tool_id=CUSTOM_ECHO_TOOL_ID,
+        step_id="1",
+        input=CustomEchoInput(message="plug03-skill-proof"),
+    )
+    with canonical_execution_identity_scope(state.run_id):
+        outcome = invoker.invoke(state=state, agent_id="plug03_pack_stub", request=request)
+    assert outcome.output.message == "plug03-skill-proof"
+
+
+@pytest.mark.asyncio
+async def test_plug03_without_custom_skill_tool_not_allowed() -> None:
+    from intergrax.runtime.nexus.tools.tool_access_policy import ToolAccessPolicy
+    from intergrax.runtime.registry.agent_registry import AgentRegistry
+    from intergrax.skills.registry.factory import build_registry_from_profile as build_skill_registry
+    from intergrax.skills.registry.profile import SkillProfile
+    from intergrax.tools.examples.custom_echo import CustomEchoToolPlugin
+    from intergrax.tools.examples.custom_echo.plugin import CUSTOM_ECHO_TOOL_ID
+    from intergrax.tools.registry.factory import build_registry_from_profile as build_tool_registry
+    from intergrax.tools.registry.plugin_register import register_tool_plugin
+    from intergrax.tools.registry.profile import ToolProfile
+    from intergrax.tools.registry.wiring import ToolWiringContext
+    from intergrax.contracts.execution_identity import (
+        bind_active_execution_identity,
+        mint_attempt_id,
+        mint_execution_id,
+        reset_active_execution_identity,
+    )
+    from intergrax.runtime.nexus.config import RuntimeConfig
+    from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+    from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+    from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+    from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
+    from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+
+    register_tool_plugin(CustomEchoToolPlugin)
+    skill_registry = build_skill_registry(SkillProfile(enabled_bundles=[]))
+    tool_registry = build_tool_registry(
+        ToolProfile(enabled_bundles=["custom_echo"]),
+        ctx=ToolWiringContext(),
+    )
+    agent_registry = AgentRegistry()
+    agent_registry.register(
+        _Plug03PackAgent(include_skill=False),
+        skill_registry=skill_registry,
+        tool_registry=tool_registry,
+    )
+    contract = agent_registry.get_contract("plug03_pack_stub")
+    assert CUSTOM_ECHO_TOOL_ID not in contract.allowed_tools
+    assert not ToolAccessPolicy.is_tool_allowed(CUSTOM_ECHO_TOOL_ID, contract.allowed_tools)
+
+
+from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.runtime.security.defense_plugin import SecurityFailMode, SecurityInspectionResult
+
+
+class _Plug03SentinelDefense:
+    plugin_id = "plug03.sentinel.defense"
+    version = "1.0.0"
+    hook_points = frozenset({HookPoint.BEFORE_TOOL_CALL})
+    priority = 58
+    fail_mode = SecurityFailMode.FAIL_CLOSED
+    inspect_calls = 0
+
+    def inspect(self, point: HookPoint, ctx: object) -> SecurityInspectionResult:
+        type(self).inspect_calls += 1
+        return SecurityInspectionResult(
+            allowed=False,
+            reasons=["plug03-security-sentinel"],
+            plugin_id=self.plugin_id,
+            hook_point=point.value,
+        )
+
+
+@pytest.mark.asyncio
+async def test_plug03_security_defense_canonical_hook_invokes_custom_plugin(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.core.catalog_bootstrap import bootstrap_catalogs
+    from intergrax.core.plugin_env import INTERGRAX_DISCOVER_PLUGINS_ENV
+    from intergrax.core.security_bootstrap import bootstrap_security_providers
+    from intergrax.runtime.hooks.hook_context import HookContext
+    from intergrax.runtime.hooks.hook_point import HookPoint
+    from intergrax.runtime.security.defense_plugin import PluginSecurityDefenseMiddleware
+    from intergrax.runtime.security.defense_registry import get_security_defense_plugin
+
+    _Plug03SentinelDefense.inspect_calls = 0
+    monkeypatch.setenv(INTERGRAX_DISCOVER_PLUGINS_ENV, "1")
+    entries = _EntryPoints(
+        [
+            _EntryPoint(
+                "plug03_sentinel",
+                f"{__name__}:_Plug03SentinelDefense",
+                "intergrax.security_defenses",
+            ),
+        ]
+    )
+    monkeypatch.setattr(importlib.metadata, "entry_points", lambda: entries)
+    bootstrap_catalogs(register_shipped=False, discover_entry_points=True)
+    bootstrap_security_providers(discover_entry_points=True)
+    plugin = get_security_defense_plugin("plug03.sentinel.defense")
+    assert plugin is not None
+
+    middleware = PluginSecurityDefenseMiddleware(plugin)
+    ctx = HookContext(
+        run_id="plug03-sec",
+        task_id="task-1",
+        agent_id="agent-1",
+        runtime_state={"tool_id": "demo.tool", "arguments": {}},
+    )
+    result = await middleware.before(HookPoint.BEFORE_TOOL_CALL, ctx)
+    assert result.action.value == "block"
+    assert _Plug03SentinelDefense.inspect_calls == 1
+
+
+def test_plug03_policy_pipeline_custom_handler_changes_decision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.applications._shared.policy_wiring import wire_policy_bundle
+    from intergrax.applications.contracts.environment_profile import (
+        ApplicationEnvironmentProfile,
+        PolicyRulesProfile,
+    )
+    from intergrax.runtime.policy.declarative_enforcer import DeclarativePolicyEnforcer
+    from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
+    from intergrax.runtime.policy.rules.schema import PolicyRuleAction
+
+    _Plug03ExternalPolicyHandler.evaluate_calls = 0
+    monkeypatch.setenv("INTERGRAX_DISCOVER_PLUGINS", "true")
+    monkeypatch.setattr(
+        importlib.metadata,
+        "entry_points",
+        lambda: _EntryPoints(
+            [
+                _EntryPoint(
+                    "plug03_handler",
+                    f"{__name__}:_Plug03ExternalPolicyHandler",
+                    "intergrax.policy_rules",
+                ),
+            ]
+        ),
+    )
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="plug03.policy.q4")
+    env.policy_rules = PolicyRulesProfile(
+        inline_rules=[
+            {
+                "rule_id": "plug03.sentinel.rule",
+                "handler_id": "plug03_external_policy_handler",
+                "resource_kind": "tool",
+                "resource_id": "plug03.sentinel.tool",
+                "action": "deny",
+            }
+        ],
+        policy_enforcement_mode="enforce",
+        allowed_handler_ids=["plug03_external_policy_handler"],
+    )
+    bundle = wire_policy_bundle(env)
+    runtime = bundle.declarative_policy_runtime
+    assert runtime is not None
+    enforcer = DeclarativePolicyEnforcer(runtime=runtime)
+    decision = enforcer.evaluate_tool_invocation(
+        context=PolicyEvaluationContext(tool_id="plug03.sentinel.tool"),
+    )
+    assert _Plug03ExternalPolicyHandler.evaluate_calls == 1
+    assert decision.action is PolicyRuleAction.ALLOW
+
+    env.policy_rules = PolicyRulesProfile(
+        inline_rules=[
+            {
+                "rule_id": "plug03.sentinel.rule",
+                "handler_id": "deny_tool",
+                "resource_kind": "tool",
+                "resource_id": "plug03.sentinel.tool",
+                "action": "deny",
+            }
+        ],
+        policy_enforcement_mode="enforce",
+    )
+    shipped_bundle = wire_policy_bundle(env)
+    shipped_enforcer = DeclarativePolicyEnforcer(runtime=shipped_bundle.declarative_policy_runtime)
+    shipped_decision = shipped_enforcer.evaluate_tool_invocation(
+        context=PolicyEvaluationContext(tool_id="plug03.sentinel.tool"),
+    )
+    assert shipped_decision.action is PolicyRuleAction.DENY

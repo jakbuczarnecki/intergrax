@@ -8,6 +8,12 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True, slots=True)
+class Plug03EvidenceRef:
+    pytest_node_id: str
+    kinds: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class Plug03SurfaceEvidence:
     surface: str
     classification: str
@@ -16,8 +22,12 @@ class Plug03SurfaceEvidence:
     canonical_consumer: str
     level: str
     status: str
-    pytest_node_ids: tuple[str, ...]
+    evidence: tuple[Plug03EvidenceRef, ...]
     notes: str = ""
+
+    @property
+    def pytest_node_ids(self) -> tuple[str, ...]:
+        return tuple(ref.pytest_node_id for ref in self.evidence)
 
 
 def _nid(path: str, test_name: str) -> str:
@@ -26,6 +36,10 @@ def _nid(path: str, test_name: str) -> str:
 
 def _gate(test_name: str) -> str:
     return _nid("tests/qualification/plug_03/test_plug_03_gates.py", test_name)
+
+
+def _ref(node_id: str, *kinds: str) -> Plug03EvidenceRef:
+    return Plug03EvidenceRef(node_id, kinds)
 
 
 PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
@@ -38,12 +52,24 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "Q4",
         "PASS",
         (
-            _nid(
-                "tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py",
-                "test_external_reference_wheel_end_to_end",
+            _ref(
+                _nid(
+                    "tests/integration/platform_plugins/test_plugin8_dual_mode_tool_e2e.py",
+                    "test_external_reference_wheel_end_to_end",
+                ),
+                "CANONICAL_CONSUMPTION",
+                "DEFAULT_BYPASS",
             ),
-            _gate("test_tools_profile_selection_executes_custom_not_catalog_default"),
-            _gate("test_tools_discovered_but_unselected_not_in_execution_registry"),
+            _ref(
+                _gate("test_tools_profile_selection_executes_custom_not_catalog_default"),
+                "SELECTION",
+                "CANONICAL_CONSUMPTION",
+            ),
+            _ref(
+                _gate("test_tools_discovered_but_unselected_not_in_execution_registry"),
+                "SELECTION",
+                "FAIL_CLOSED",
+            ),
         ),
     ),
     Plug03SurfaceEvidence(
@@ -55,15 +81,37 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "Q4",
         "PASS",
         (
-            _nid(
-                "tests/unit/runtime/nexus/tools/test_tool_invocation_registry.py",
-                "test_resolve_invocation_pattern_prefers_entry_point",
+            _ref(
+                _nid(
+                    "tests/unit/runtime/nexus/tools/test_tool_invocation_registry.py",
+                    "test_resolve_invocation_pattern_prefers_entry_point",
+                ),
+                "SELECTION",
             ),
-            _nid(
-                "tests/unit/runtime/nexus/tools/test_plug_02_r1_public_invocation_pattern_evidence.py",
-                "test_public_pattern_single_invoke_via_bounded_tool_loop",
+            _ref(
+                _nid(
+                    "tests/unit/runtime/nexus/tools/test_plug_02_r1_public_invocation_pattern_evidence.py",
+                    "test_public_pattern_single_invoke_via_bounded_tool_loop",
+                ),
+                "CANONICAL_CONSUMPTION",
+                "DEFAULT_BYPASS",
             ),
-            _gate("test_canonical_resolver_selects_custom_pattern_without_shipped_default"),
+            _ref(
+                _gate("test_canonical_resolver_selects_custom_pattern_without_shipped_default"),
+                "SELECTION",
+                "DEFAULT_BYPASS",
+            ),
+            _ref(
+                _gate("test_explicit_missing_tool_invocation_pattern_id_fails_closed"),
+                "FAIL_CLOSED",
+            ),
+            _ref(
+                _nid(
+                    "tests/unit/runtime/nexus/tools/test_tool_invocation_registry.py",
+                    "test_resolve_invocation_pattern_explicit_missing_id_fails_closed",
+                ),
+                "FAIL_CLOSED",
+            ),
         ),
     ),
     Plug03SurfaceEvidence(
@@ -71,14 +119,22 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "PUBLIC_EXTERNAL_PLUGIN",
         "intergrax.skills",
         "SkillProfile.enabled_bundles",
-        "AgentRegistry skill merge → allowed_tools",
+        "AgentRegistry → allowed_tools → RuntimeToolGateway",
         "Q4",
         "PASS",
         (
-            _nid("tests/unit/skills/test_external_skill_plugin.py", "test_external_skill_plugin_merges_allowed_tools"),
-            _nid(
-                "tests/unit/core/plugins/test_entry_point_catalog_bootstrap.py",
-                "test_bootstrap_discovers_fixture_plugins_via_entry_points",
+            _ref(
+                _nid("tests/unit/skills/test_external_skill_plugin.py", "test_external_skill_plugin_merges_allowed_tools"),
+                "SELECTION",
+            ),
+            _ref(
+                _gate("test_plug03_custom_skill_enables_canonical_tool_execution"),
+                "CANONICAL_CONSUMPTION",
+                "DEFAULT_BYPASS",
+            ),
+            _ref(
+                _gate("test_plug03_without_custom_skill_tool_not_allowed"),
+                "DEFAULT_BYPASS",
             ),
         ),
     ),
@@ -91,12 +147,25 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "Q4",
         "PASS",
         (
-            _nid(
-                "tests/unit/integrations/test_external_integration_entry_point.py",
-                "test_fixture_integration_resolves_via_entry_point",
+            _ref(
+                _nid(
+                    "tests/unit/integrations/test_external_integration_entry_point.py",
+                    "test_fixture_integration_resolves_via_entry_point",
+                ),
+                "SELECTION",
+                "CANONICAL_CONSUMPTION",
             ),
-            _gate("test_integration_discovered_but_unselected_keeps_default_binding"),
-            _gate("test_integration_explicit_slug_activates_fixture_provider"),
+            _ref(
+                _gate("test_integration_discovered_but_unselected_keeps_default_binding"),
+                "SELECTION",
+                "FAIL_CLOSED",
+            ),
+            _ref(
+                _gate("test_integration_explicit_slug_activates_fixture_provider"),
+                "SELECTION",
+                "CANONICAL_CONSUMPTION",
+                "DEFAULT_BYPASS",
+            ),
         ),
     ),
     Plug03SurfaceEvidence(
@@ -107,7 +176,14 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "DefaultNexusContextEngine.assemble (internal consumer)",
         "Q4",
         "PASS",
-        (_nid("tests/qualification/ce_02/test_ce_02_gates.py", "test_ce2_q4_custom_token_counter_injection"),),
+        (
+            _ref(
+                _nid("tests/qualification/ce_02/test_ce_02_gates.py", "test_ce2_q4_custom_token_counter_injection"),
+                "SELECTION",
+                "CANONICAL_CONSUMPTION",
+                "DEFAULT_BYPASS",
+            ),
+        ),
     ),
     Plug03SurfaceEvidence(
         "Context — budget / compaction / degradation",
@@ -118,10 +194,26 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "Q4",
         "PASS",
         (
-            _nid("tests/qualification/ce_02/test_ce_02_gates.py", "test_ce2_q5_custom_model_budget_policy"),
-            _nid("tests/qualification/ce_02/test_ce_02_gates.py", "test_ce2_q6_custom_compaction_strategy"),
-            _nid("tests/qualification/ce_02/test_ce_02_gates.py", "test_ce2_q7_custom_degradation_policy"),
-            _gate("test_context_custom_compaction_default_strategy_not_invoked"),
+            _ref(
+                _nid("tests/qualification/ce_02/test_ce_02_gates.py", "test_ce2_q5_custom_model_budget_policy"),
+                "SELECTION",
+                "CANONICAL_CONSUMPTION",
+            ),
+            _ref(
+                _nid("tests/qualification/ce_02/test_ce_02_gates.py", "test_ce2_q6_custom_compaction_strategy"),
+                "SELECTION",
+                "CANONICAL_CONSUMPTION",
+            ),
+            _ref(
+                _nid("tests/qualification/ce_02/test_ce_02_gates.py", "test_ce2_q7_custom_degradation_policy"),
+                "SELECTION",
+                "CANONICAL_CONSUMPTION",
+            ),
+            _ref(
+                _gate("test_context_custom_compaction_default_strategy_not_invoked"),
+                "SELECTION",
+                "DEFAULT_BYPASS",
+            ),
         ),
     ),
     Plug03SurfaceEvidence(
@@ -133,11 +225,25 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "Q4",
         "PASS",
         (
-            _nid(
-                "tests/integration/memory/e2e/test_mem_ent15_plugin_replaceability.py",
-                "test_reference_and_plugin_providers_equivalent_semantic_recall",
+            _ref(
+                _nid(
+                    "tests/integration/memory/e2e/test_mem_ent15_plugin_replaceability.py",
+                    "test_reference_and_plugin_providers_equivalent_semantic_recall",
+                ),
+                "CANONICAL_CONSUMPTION",
+                "DEFAULT_BYPASS",
             ),
-            _nid("tests/unit/memory/test_memory_store_resolver.py", "test_materialize_external_user_profile_store"),
+            _ref(
+                _nid("tests/unit/memory/test_memory_store_resolver.py", "test_materialize_external_user_profile_store"),
+                "SELECTION",
+            ),
+            _ref(
+                _nid(
+                    "tests/unit/memory/test_memory_store_resolver.py",
+                    "test_resolve_memory_platform_wiring_explicit_unknown_id_fails",
+                ),
+                "FAIL_CLOSED",
+            ),
         ),
     ),
     Plug03SurfaceEvidence(
@@ -145,15 +251,33 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "PUBLIC_EXTERNAL_PLUGIN",
         "intergrax.memory.contracts",
         "memory_profile.session_storage_plugin_id + materialize_session_storage",
-        "Application memory wiring / session consumer",
+        "SessionManager (create / append / read history)",
         "Q4",
         "PASS",
         (
-            _nid(
-                "tests/unit/memory/test_memory_store_resolver.py",
-                "test_resolve_memory_platform_wiring_explicit_session_storage_only",
+            _ref(
+                _nid(
+                    "tests/unit/memory/test_memory_store_resolver.py",
+                    "test_resolve_memory_platform_wiring_explicit_session_storage_only",
+                ),
+                "SELECTION",
             ),
-            _gate("test_memory_session_storage_fixture_does_not_import_nexus"),
+            _ref(
+                _gate("test_plug03_session_storage_canonical_session_manager_consumer"),
+                "CANONICAL_CONSUMPTION",
+                "DEFAULT_BYPASS",
+            ),
+            _ref(
+                _gate("test_memory_session_storage_fixture_does_not_import_nexus"),
+                "ADMISSION",
+            ),
+            _ref(
+                _nid(
+                    "tests/unit/memory/test_memory_store_resolver.py",
+                    "test_resolve_memory_platform_wiring_explicit_unknown_id_fails",
+                ),
+                "FAIL_CLOSED",
+            ),
         ),
     ),
     Plug03SurfaceEvidence(
@@ -165,9 +289,14 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "Q4",
         "PASS",
         (
-            _nid(
-                "tests/unit/rag/test_rag_plugin_discovery.py",
-                "test_external_chunker_entry_point_flows_through_ingest_and_retrieval",
+            _ref(
+                _nid(
+                    "tests/unit/rag/test_rag_plugin_discovery.py",
+                    "test_external_chunker_entry_point_flows_through_ingest_and_retrieval",
+                ),
+                "CANONICAL_CONSUMPTION",
+                "DEFAULT_BYPASS",
+                "SELECTION",
             ),
         ),
     ),
@@ -180,9 +309,14 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "Q4",
         "PASS",
         (
-            _nid(
-                "tests/unit/rag/test_rag_plugin_discovery.py",
-                "test_external_retriever_entry_point_uses_retrieval_service",
+            _ref(
+                _nid(
+                    "tests/unit/rag/test_rag_plugin_discovery.py",
+                    "test_external_retriever_entry_point_uses_retrieval_service",
+                ),
+                "CANONICAL_CONSUMPTION",
+                "DEFAULT_BYPASS",
+                "SELECTION",
             ),
         ),
     ),
@@ -195,9 +329,14 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "Q4",
         "PASS",
         (
-            _nid(
-                "tests/unit/rag/test_rag_plugin_discovery.py",
-                "test_external_reranker_entry_point_uses_retrieval_service",
+            _ref(
+                _nid(
+                    "tests/unit/rag/test_rag_plugin_discovery.py",
+                    "test_external_reranker_entry_point_uses_retrieval_service",
+                ),
+                "CANONICAL_CONSUMPTION",
+                "DEFAULT_BYPASS",
+                "SELECTION",
             ),
         ),
     ),
@@ -217,13 +356,21 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "PUBLIC_EXTERNAL_PLUGIN",
         "intergrax.security / runtime.security",
         "Application environment profile + defense registry",
-        "Security hook pipeline / wire_application_environment",
+        "PluginSecurityDefenseMiddleware security hook",
         "Q4",
         "PASS",
         (
-            _nid(
-                "tests/unit/applications/test_security_plugin_adoption_wiring.py",
-                "test_strict_wire_application_environment_allows_valid_security_plugin",
+            _ref(
+                _nid(
+                    "tests/unit/applications/test_security_plugin_adoption_wiring.py",
+                    "test_strict_wire_application_environment_allows_valid_security_plugin",
+                ),
+                "ADMISSION",
+                "SELECTION",
+            ),
+            _ref(
+                _gate("test_plug03_security_defense_canonical_hook_invokes_custom_plugin"),
+                "CANONICAL_CONSUMPTION",
             ),
         ),
     ),
@@ -232,13 +379,21 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "PUBLIC_EXTERNAL_PLUGIN",
         "intergrax.policy",
         "Policy plugin loader + catalog resolve",
-        "Policy decision pipeline",
+        "DeclarativePolicyEnforcer / tool policy pipeline",
         "Q4",
         "PASS",
         (
-            _nid(
-                "tests/unit/runtime/policy/rules/test_policy_plugin_contribution.py",
-                "test_end_to_end_handler_admission_to_catalog_resolve",
+            _ref(
+                _nid(
+                    "tests/unit/runtime/policy/rules/test_policy_plugin_contribution.py",
+                    "test_end_to_end_handler_admission_to_catalog_resolve",
+                ),
+                "ADMISSION",
+                "SELECTION",
+            ),
+            _ref(
+                _gate("test_plug03_policy_pipeline_custom_handler_changes_decision"),
+                "CANONICAL_CONSUMPTION",
             ),
         ),
     ),
@@ -248,17 +403,28 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "intergrax.runtime.vendor_knowledge (host EP)",
         "Provider registry + host composition",
         "Live read / workspace knowledge paths",
-        "Q4",
+        "Q3",
         "PASS",
         (
-            _nid(
-                "tests/unit/runtime/vendor_knowledge/test_acme_reference_plugin.py",
-                "test_entry_point_discovery_loads_reference_contribution",
+            _ref(
+                _nid(
+                    "tests/unit/runtime/vendor_knowledge/test_acme_reference_plugin.py",
+                    "test_entry_point_discovery_loads_reference_contribution",
+                ),
+                "DISCOVERY",
+                "ADMISSION",
             ),
-            _nid(
-                "tests/unit/runtime/vendor_knowledge/test_acme_reference_plugin.py",
-                "test_reference_factory_creates_integration_from_credential_ref",
+            _ref(
+                _nid(
+                    "tests/unit/runtime/vendor_knowledge/test_acme_reference_plugin.py",
+                    "test_reference_factory_creates_integration_from_credential_ref",
+                ),
+                "SELECTION",
             ),
+        ),
+        notes=(
+            "Canonical workspace live/indexed read E2E harness repaired (SyntaxError); "
+            "full E2E proof tracked separately — composition/selection qualified at Q3."
         ),
     ),
     Plug03SurfaceEvidence(
@@ -269,7 +435,12 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "Runtime hook coordinator",
         "Q3",
         "PASS",
-        (_nid("tests/unit/runtime/plugins/test_plugin_bootstrap.py", "test_bootstrap_runtime_plugins_registers_shutdown"),),
+        (
+            _ref(
+                _nid("tests/unit/runtime/plugins/test_plugin_bootstrap.py", "test_bootstrap_runtime_plugins_registers_shutdown"),
+                "CANONICAL_CONSUMPTION",
+            ),
+        ),
         notes="Not setuptools EP; host-embedded only.",
     ),
     Plug03SurfaceEvidence(
@@ -280,7 +451,12 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "Task routing / agent selection",
         "Q3",
         "PASS",
-        (_nid("tests/unit/skills/test_external_skill_plugin.py", "test_external_skill_plugin_merges_allowed_tools"),),
+        (
+            _ref(
+                _nid("tests/unit/skills/test_external_skill_plugin.py", "test_external_skill_plugin_merges_allowed_tools"),
+                "SELECTION",
+            ),
+        ),
     ),
     Plug03SurfaceEvidence(
         "Token optimization",
@@ -302,10 +478,16 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
         "Q4",
         "PASS",
         (
-            _gate("test_public_external_plugin_packages_do_not_import_nexus"),
-            _nid(
-                "tests/unit/platform_plugins/test_plug_02_extension_boundary_gates.py",
-                "test_tools_public_contract_modules_do_not_import_nexus",
+            _ref(
+                _gate("test_public_external_plugin_packages_do_not_import_nexus"),
+                "FAIL_CLOSED",
+            ),
+            _ref(
+                _nid(
+                    "tests/unit/platform_plugins/test_plug_02_extension_boundary_gates.py",
+                    "test_tools_public_contract_modules_do_not_import_nexus",
+                ),
+                "FAIL_CLOSED",
             ),
         ),
     ),
@@ -313,4 +495,28 @@ PLUG_03_SURFACE_MATRIX: tuple[Plug03SurfaceEvidence, ...] = (
 
 PLUG_03_MAPPED_NODE_IDS: tuple[str, ...] = tuple(
     node_id for row in PLUG_03_SURFACE_MATRIX for node_id in row.pytest_node_ids
+)
+
+PLUG_03_Q4_PUBLIC_REPLACEMENT_REQUIRED_KINDS: frozenset[str] = frozenset(
+    {
+        "SELECTION",
+        "CANONICAL_CONSUMPTION",
+        "DEFAULT_BYPASS",
+    }
+)
+
+PLUG_03_EXPLICIT_SELECTION_SURFACES: frozenset[str] = frozenset(
+    {
+        "ToolInvocationPattern",
+        "Integrations",
+        "Memory — SessionStorage",
+        "Memory — UserProfileStore",
+    }
+)
+
+PLUG_03_Q4_CHAIN_PARTICIPATION_SURFACES: frozenset[str] = frozenset(
+    {
+        "SecurityDefensePlugin",
+        "PolicyRuleHandler",
+    }
 )

@@ -197,7 +197,7 @@ def acme_reference_e2e_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         idempotency_store=harness_runtime.reliability.idempotency_store,
     )
     task_executor = LocalWorkspaceTaskExecutor(
-        harness_runtime._internal_composition._orchestration_backend  # noqa: SLF001,
+        harness_runtime._internal_composition._orchestration_backend,  # noqa: SLF001
         task_enricher=task_enricher,
         readiness=lifecycle,
     )
@@ -466,7 +466,7 @@ def test_acme_reference_restart_rehydration_search_ask(acme_reference_e2e_env) -
         idempotency_store=harness_runtime.reliability.idempotency_store,
     )
     task_executor = LocalWorkspaceTaskExecutor(
-        harness_runtime._internal_composition._orchestration_backend  # noqa: SLF001,
+        harness_runtime._internal_composition._orchestration_backend,  # noqa: SLF001
         task_enricher=task_enricher,
         readiness=lifecycle,
     )

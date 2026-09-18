@@ -179,3 +179,28 @@ def test_load_tool_invocation_pattern_unknown_id_unchanged(
 ) -> None:
     _patch_entry_points(monkeypatch)
     assert load_tool_invocation_pattern("missing_pattern") is None
+
+
+def test_resolve_invocation_pattern_explicit_missing_id_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_entry_points(monkeypatch)
+    from intergrax.tools.invocation_pattern.errors import ToolInvocationPatternResolutionError
+
+    with pytest.raises(ToolInvocationPatternResolutionError, match="missing.custom.pattern"):
+        resolve_invocation_pattern(
+            mode=ToolInvocationMode.SINGLE_PASS,
+            max_iterations=1,
+            entry_point_pattern_id="missing.custom.pattern",
+        )
+
+
+def test_resolve_invocation_pattern_none_id_still_uses_mode_default() -> None:
+    from intergrax.runtime.nexus.tools.patterns.single_pass import SinglePassPattern
+
+    resolved = resolve_invocation_pattern(
+        mode=ToolInvocationMode.SINGLE_PASS,
+        max_iterations=1,
+        entry_point_pattern_id=None,
+    )
+    assert isinstance(resolved, SinglePassPattern)

@@ -106,10 +106,12 @@ def resolve_invocation_pattern(
         from intergrax.runtime.nexus.tools.tool_invocation_registry import (
             load_tool_invocation_pattern,
         )
+        from intergrax.tools.invocation_pattern.errors import ToolInvocationPatternResolutionError
 
         loaded = load_tool_invocation_pattern(entry_point_pattern_id)
         if loaded is not None:
             return loaded
+        raise ToolInvocationPatternResolutionError(entry_point_pattern_id)
     if mode is not None:
         return pattern_for_mode(mode)
     if max_iterations > 1:
