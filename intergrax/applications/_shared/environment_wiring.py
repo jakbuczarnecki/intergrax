@@ -114,6 +114,7 @@ from intergrax.applications.contracts.platform_plugin_evidence import (
     ApplicationPlatformPluginEvidence,
     build_application_platform_plugin_evidence,
 )
+from intergrax.rag.bootstrap.entry_point_load import collect_rag_plugin_load_evidence
 from intergrax.core.catalog_bootstrap import bootstrap_catalogs
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.core.plugins.admission import DomainPluginLoadReport
@@ -546,13 +547,21 @@ def wire_application_environment(
             platform_tool_ids=platform_reserved_tool_ids(),
         )
 
+    rag_plugin_load_evidence = None
+    if env.context_profile.enable_rag:
+        rag_plugin_load_evidence = collect_rag_plugin_load_evidence(
+            discover_entry_points=discover_plugins_enabled(),
+        )
+
     platform_plugin_evidence = build_application_platform_plugin_evidence(
         memory_report=memory_wiring.memory_store_plugin_load_report,
         context_report=context_bootstrap.load_report,
         security_report=security_bootstrap.load_report,
         tools_report=catalog_bootstrap.tool_plugin_load_report,
         skills_report=catalog_bootstrap.skill_plugin_load_report,
+        integrations_report=catalog_bootstrap.integration_plugin_load_report,
         policy_bundle=policy_bundle,
+        rag_plugin_load_evidence=rag_plugin_load_evidence,
     )
 
     return ApplicationEnvironmentWiring(

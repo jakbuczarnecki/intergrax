@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from intergrax.core.plugin_env import discover_plugins_enabled
-from intergrax.core.plugins.discovery import EP_RAG_RETRIEVERS, register_plugins
+from intergrax.rag.bootstrap.entry_point_load import register_rag_retriever_entry_points
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
@@ -47,32 +47,14 @@ def _register_entry_point_retrievers(
     if discover_entry_points is None:
         discover_entry_points = discover_plugins_enabled()
 
-    def _register_entry_point(plugin_type: type) -> None:
-        if issubclass(plugin_type, BaseRetrieverPlugin):
-            retriever = plugin_type.create(
-                vector_store=vector_store,
-                embedding_manager=embedding_manager,
-                toc_vector_store=toc_vector_store,
-                graph_store=graph_store,
-                profile=profile,
-                llm_for_query_expansion=llm_for_query_expansion,
-            )
-        elif issubclass(plugin_type, BaseRetriever):
-            retriever = plugin_type()
-        else:
-            raise TypeError(
-                "RAG retriever plugin must subclass BaseRetriever or "
-                f"BaseRetrieverPlugin: {plugin_type!r}"
-            )
-        if not isinstance(retriever, BaseRetriever):
-            raise TypeError(
-                f"RAG retriever plugin factory must return BaseRetriever: {plugin_type!r}"
-            )
-        registry.register(retriever)
-
-    register_plugins(
-        EP_RAG_RETRIEVERS,
-        _register_entry_point,
+    register_rag_retriever_entry_points(
+        registry,
+        vector_store=vector_store,
+        embedding_manager=embedding_manager,
+        toc_vector_store=toc_vector_store,
+        graph_store=graph_store,
+        profile=profile,
+        llm_for_query_expansion=llm_for_query_expansion,
         discover_entry_points=discover_entry_points,
     )
 
