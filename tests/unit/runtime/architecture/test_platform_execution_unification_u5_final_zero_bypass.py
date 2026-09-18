@@ -38,7 +38,16 @@ _PERSISTENCE_PACKAGE = _REPO_ROOT / "intergrax" / "agents" / "persistence" / "__
 _RUNTIME_CONTEXT = (
     _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "engine" / "runtime_context.py"
 )
-_APPROVED_RUNTIME_TOOL_INVOKER_OWNERS = (
+_RUNTIME_TOOL_INVOKER_COMPOSITION = (
+    _REPO_ROOT
+    / "intergrax"
+    / "runtime"
+    / "nexus"
+    / "tools"
+    / "runtime_tool_invoker_composition.py"
+)
+_APPROVED_RUNTIME_TOOL_INVOKER_OWNERS = (_RUNTIME_TOOL_INVOKER_COMPOSITION,)
+_PRODUCTION_RUNTIME_TOOL_INVOKER_WIRING = (
     _DECLARATIVE_WIRING,
     _RUNTIME_CONTEXT,
 )
@@ -150,6 +159,11 @@ def test_u5_runtime_tool_invoker_construction_sites_are_approved_owners() -> Non
     for path in _APPROVED_RUNTIME_TOOL_INVOKER_OWNERS:
         assert path.is_file()
         assert "RuntimeToolInvoker(" in path.read_text(encoding="utf-8-sig")
+
+    for path in _PRODUCTION_RUNTIME_TOOL_INVOKER_WIRING:
+        source = path.read_text(encoding="utf-8-sig")
+        assert "build_production_runtime_tool_invoker(" in source
+        assert "RuntimeToolInvoker(" not in source
 
     agent_violations: list[str] = []
     for path in _AGENTS_PRODUCTION_ROOT.rglob("*.py"):

@@ -5,15 +5,25 @@
 from __future__ import annotations
 
 import ast
+import inspect
 import json
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import get_type_hints
 
 import pytest
 from pydantic import ValidationError
 
 from intergrax.contracts.collaborative_activity import (
     ActivityIdempotencyKey,
+    CollaborativeActivityAppendIntent,
+    CollaborativeActivityAppendStore,
+    CollaborativeActivityDurabilityClass,
+    CollaborativeActivityPublicationPort,
+    CollaborativeActivityReadPort,
+    CollaborativeActivityTargetRef,
+    CollaborativeActivityWritePort,
     ApprovalActivityProvenanceRef,
     ApprovalActivityTargetRef,
     ArtifactVersionActivityProvenanceRef,
@@ -62,6 +72,9 @@ pytestmark = pytest.mark.unit
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _CONTRACT = _REPO_ROOT / "intergrax" / "contracts" / "collaborative_activity.py"
+_MP6_TEST_DIR = Path(__file__).resolve().parent
+
+_STALE_APPEND_STORE_SIGNATURE_EXEMPT = frozenset({"_WrongAppendStore"})
 
 _NOW = datetime(2026, 9, 18, 12, 0, 0, tzinfo=timezone.utc)
 _RECORDED = datetime(2026, 9, 18, 13, 0, 0, tzinfo=timezone.utc)
@@ -79,13 +92,15 @@ _GOLDEN_ACTIVITY_ID = "cact_35fa0b88b3369040c0378fc68db25a2f"
 def _actor(
     tenant: str = "tenant-a",
     kind: PrincipalKind = PrincipalKind.HUMAN,
-    **kwargs: object,
+    delegation_id: str | None = None,
+    delegator_principal_id: str | None = None,
 ) -> CollaborativeActivityActorRef:
     return CollaborativeActivityActorRef(
         tenant_id=tenant,
         principal_id="principal-1",
         principal_kind=kind,
-        **kwargs,
+        delegation_id=delegation_id,
+        delegator_principal_id=delegator_principal_id,
     )
 
 
@@ -104,7 +119,7 @@ def _scope(
 def _publication(
     *,
     activity_type: CollaborativeActivityTypeId | None = None,
-    target: WorkItemActivityTargetRef | None = None,
+    target: CollaborativeActivityTargetRef | None = None,
     caused_by: str | None = None,
 ) -> CollaborativeActivityPublication:
     at = activity_type or CollaborativeActivityBuiltinType.WORK_ITEM_CREATED
@@ -125,7 +140,14 @@ def _publication(
     )
 
 
-def _materialized(pub: CollaborativeActivityPublication, *, position: int = 1) -> CollaborativeActivity:
+def _materialized(
+    pub: CollaborativeActivityPublication,
+    *,
+    position: int = 1,
+    durability_class: CollaborativeActivityDurabilityClass = (
+        CollaborativeActivityDurabilityClass.COLLABORATIVE
+    ),
+) -> CollaborativeActivity:
     activity_id = mint_collaborative_activity_id(idempotency_key=pub.idempotency_key)
     return CollaborativeActivity(
         activity_id=activity_id,
@@ -141,7 +163,84 @@ def _materialized(pub: CollaborativeActivityPublication, *, position: int = 1) -
         provenance_refs=pub.provenance_refs,
         correlation=pub.correlation,
         caused_by_activity_id=pub.caused_by_activity_id,
+        durability_class=durability_class,
     )
+
+
+def _intent(
+    publication: CollaborativeActivityPublication | None = None,
+    *,
+    effective: CollaborativeActivityDurabilityClass = CollaborativeActivityDurabilityClass.COLLABORATIVE,
+) -> CollaborativeActivityAppendIntent:
+    return CollaborativeActivityAppendIntent(
+        publication=publication or _publication(),
+        effective_durability_class=effective,
+    )
+
+
+def _protocol_method_param(class_name: str, method_name: str) -> tuple[str, str]:
+    tree = ast.parse(_CONTRACT.read_text(encoding="utf-8-sig"))
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name != class_name:
+            continue
+        for item in node.body:
+            if not isinstance(item, ast.FunctionDef) or item.name != method_name:
+                continue
+            args = item.args.args
+            if not args:
+                raise AssertionError(f"{class_name}.{method_name} has no parameters")
+            param = args[1] if args[0].arg == "self" and len(args) > 1 else args[0]
+            annotation = ast.unparse(param.annotation) if param.annotation else ""
+            return param.arg, annotation
+    raise AssertionError(f"{class_name}.{method_name} not found in contract")
+
+
+def _assert_append_store_signature(store_type: type) -> None:
+    """Python Protocol assignment alone does not verify parameter annotations at runtime."""
+    method = store_type.append_idempotent
+    signature = inspect.signature(method)
+    params = list(signature.parameters.values())
+    if len(params) != 2 or params[0].name != "self":
+        raise AssertionError(
+            f"{store_type.__name__}.append_idempotent must accept (self, intent)"
+        )
+    intent_param = params[1]
+    if intent_param.name != "intent":
+        raise AssertionError(
+            f"{store_type.__name__}.append_idempotent parameter must be named intent, "
+            f"got {intent_param.name!r}"
+        )
+    module = sys.modules[store_type.__module__]
+    hints = get_type_hints(method, globalns=module.__dict__, localns=module.__dict__)
+    if hints.get(intent_param.name) is not CollaborativeActivityAppendIntent:
+        raise AssertionError(
+            f"{store_type.__name__}.append_idempotent must accept "
+            f"CollaborativeActivityAppendIntent, got {hints.get(intent_param.name)!r}"
+        )
+
+
+def _stale_append_store_implementations_in_mp6_tests() -> list[str]:
+    offenders: list[str] = []
+    for path in sorted(_MP6_TEST_DIR.glob("test_mp6*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"))
+        for node in tree.body:
+            if not isinstance(node, ast.ClassDef):
+                continue
+            if node.name in _STALE_APPEND_STORE_SIGNATURE_EXEMPT:
+                continue
+            if "AppendStore" not in node.name:
+                continue
+            for item in node.body:
+                if not isinstance(item, ast.FunctionDef) or item.name != "append_idempotent":
+                    continue
+                args = item.args.args
+                if len(args) < 2:
+                    continue
+                param = args[1] if args[0].arg == "self" else args[0]
+                annotation = ast.unparse(param.annotation) if param.annotation else ""
+                if annotation == "CollaborativeActivityPublication":
+                    offenders.append(f"{path.name}:{node.name}.{item.name}")
+    return offenders
 
 
 def test_mp6b_golden_activity_id() -> None:
@@ -233,8 +332,8 @@ def test_mp6b_actor_tenant_mismatch_rejected() -> None:
         CollaborativeActivityRecordTargetRef(activity_id=_GOLDEN_ACTIVITY_ID),
     ],
 )
-def test_mp6b_each_target_constructible(target: object) -> None:
-    _publication(target=target)  # type: ignore[arg-type]
+def test_mp6b_each_target_constructible(target: CollaborativeActivityTargetRef) -> None:
+    _publication(target=target)
 
 
 def test_mp6b_work_item_scope_mismatch_rejected() -> None:
@@ -422,6 +521,140 @@ def test_mp6b_json_schema_publication_and_activity() -> None:
 def test_mp6b_publication_requested_durability_not_effective_field() -> None:
     assert "requested_durability_class" in CollaborativeActivityPublication.model_fields
     assert "durability_class" not in CollaborativeActivityPublication.model_fields
+
+
+def test_mp6b_empty_correlation_object_rejected() -> None:
+    with pytest.raises(ValidationError, match="correlation must include"):
+        CollaborativeActivityCorrelation()
+
+
+def test_mp6b_unknown_target_kind_rejected() -> None:
+    with pytest.raises(ValidationError):
+        CollaborativeActivityPublication.model_validate(
+            {
+                "schema_version": "collaborative_activity_publication.v1",
+                "idempotency_key": _GOLDEN_KEY.model_dump(mode="json"),
+                "actor": _actor().model_dump(mode="json"),
+                "scope": _scope().model_dump(mode="json"),
+                "target": {"kind": "unknown_kind", "work_item_id": "wi-1"},
+                "outcome": {
+                    "schema_version": "collaborative_activity_outcome.v1",
+                    "status": "succeeded",
+                },
+                "occurred_at": _NOW.isoformat(),
+            }
+        )
+
+
+def test_mp6b_publication_extra_field_rejected() -> None:
+    payload = _publication().model_dump(mode="json")
+    payload["unexpected_field"] = "x"
+    with pytest.raises(ValidationError):
+        CollaborativeActivityPublication.model_validate(payload)
+
+
+class _Mp6bFakePublicationPort:
+    def publish(self, publication: CollaborativeActivityPublication) -> CollaborativeActivity:
+        return _materialized(publication)
+
+
+class _Mp6bFakeWritePort:
+    def append(self, publication: CollaborativeActivityPublication) -> CollaborativeActivity:
+        return _materialized(publication)
+
+
+class _Mp6bFakeReadPort:
+    def query(self, query: CollaborativeActivityQuery) -> CollaborativeActivityPage:
+        return CollaborativeActivityPage()
+
+
+class _Mp6bFakeAppendStore:
+    def append_idempotent(
+        self,
+        intent: CollaborativeActivityAppendIntent,
+    ) -> CollaborativeActivity:
+        publication = intent.publication
+        return _materialized(
+            publication,
+            durability_class=intent.effective_durability_class,
+        )
+
+    def get_by_idempotency_key(
+        self,
+        key: ActivityIdempotencyKey,
+    ) -> CollaborativeActivity | None:
+        return None
+
+
+class _WrongAppendStore:
+    def append_idempotent(
+        self,
+        publication: CollaborativeActivityPublication,
+    ) -> CollaborativeActivity:
+        return _materialized(publication)
+
+
+def test_mp6b_c1_r1_contract_port_boundary_matrix() -> None:
+    matrix = (
+        ("CollaborativeActivityPublicationPort", "publish", "publication", "CollaborativeActivityPublication"),
+        ("CollaborativeActivityWritePort", "append", "publication", "CollaborativeActivityPublication"),
+        ("CollaborativeActivityAppendStore", "append_idempotent", "intent", "CollaborativeActivityAppendIntent"),
+        ("CollaborativeActivityReadPort", "query", "query", "CollaborativeActivityQuery"),
+    )
+    for class_name, method_name, param_name, annotation in matrix:
+        name, parsed = _protocol_method_param(class_name, method_name)
+        assert name == param_name, class_name
+        assert parsed == annotation, class_name
+
+
+def test_mp6b_c1_r1_no_stale_append_store_publication_signatures_in_mp6_tests() -> None:
+    offenders = _stale_append_store_implementations_in_mp6_tests()
+    assert not offenders, f"stale append_idempotent(publication) implementations: {offenders}"
+
+
+def test_mp6b_c1_r1_append_store_signature_gate_accepts_current_fake() -> None:
+    _assert_append_store_signature(_Mp6bFakeAppendStore)
+
+
+def test_mp6b_c1_r1_append_store_signature_gate_rejects_stale_publication_input() -> None:
+    with pytest.raises(AssertionError, match="intent"):
+        _assert_append_store_signature(_WrongAppendStore)
+
+
+def test_mp6b_pluginability_custom_ports_satisfy_protocols() -> None:
+    publication_port: CollaborativeActivityPublicationPort = _Mp6bFakePublicationPort()
+    write_port: CollaborativeActivityWritePort = _Mp6bFakeWritePort()
+    read_port: CollaborativeActivityReadPort = _Mp6bFakeReadPort()
+    append_store: CollaborativeActivityAppendStore = _Mp6bFakeAppendStore()
+    _assert_append_store_signature(_Mp6bFakeAppendStore)
+    pub = _publication()
+    assert publication_port.publish(pub).activity_id == mint_collaborative_activity_id(
+        idempotency_key=pub.idempotency_key
+    )
+    assert write_port.append(pub).append_position == 1
+    assert read_port.query(
+        CollaborativeActivityQuery(tenant_id="tenant-a", workspace_id="ws-a")
+    ).activities == ()
+    pub = _publication().model_copy(
+        update={"requested_durability_class": CollaborativeActivityDurabilityClass.INFORMATIONAL}
+    )
+    intent = _intent(
+        pub,
+        effective=CollaborativeActivityDurabilityClass.AUDIT_CRITICAL,
+    )
+    activity = append_store.append_idempotent(intent)
+    assert activity.recorded_at == _RECORDED
+    assert pub.requested_durability_class == CollaborativeActivityDurabilityClass.INFORMATIONAL
+    assert activity.durability_class == CollaborativeActivityDurabilityClass.AUDIT_CRITICAL
+    assert append_store.get_by_idempotency_key(pub.idempotency_key) is None
+
+
+def test_mp6b_contract_no_typing_escape_hatches() -> None:
+    text = _CONTRACT.read_text(encoding="utf-8-sig")
+    assert "type: ignore" not in text
+    assert "pyright: ignore" not in text
+    assert "from typing import Any" not in text
+    assert " cast(" not in text
 
 
 def test_mp6b_core_dto_frozen_ast_gate() -> None:

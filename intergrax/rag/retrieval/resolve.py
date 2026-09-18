@@ -9,7 +9,7 @@ from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.retrievers.bootstrap.retriever_bootstrap import create_default_retriever_manager
 from intergrax.rag.rerankers.bootstrap.reranker_bootstrap import (
     create_default_reranker_engine,
-    create_default_reranker_registry,
+    create_default_reranker_registry_only,
 )
 from intergrax.rag.rerankers.re_ranker_manager import ReRankerManager
 
@@ -36,7 +36,9 @@ def resolve_retrieval_service(
             profile=profile,
         )
     if reranker_manager is None and profile.enable_rerank:
-        registry = create_default_reranker_registry(embedding_manager=embedding_manager)
+        registry = create_default_reranker_registry_only(
+            embedding_manager=embedding_manager,
+        )
         reranker_manager = ReRankerManager(
             engine=create_default_reranker_engine(
                 embedding_manager=embedding_manager,

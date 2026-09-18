@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from intergrax.core.plugin_env import discover_plugins_enabled
+from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.rag.bootstrap.entry_point_load import register_rag_reranker_entry_points
 from intergrax.rag.embedding.bootstrap.default_embedding_engine import create_default_embedding_manager
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
@@ -38,11 +39,11 @@ def _register_entry_point_rerankers(
     *,
     embedding_manager: BaseEmbeddingManager,
     discover_entry_points: bool | None,
-) -> None:
+) -> DomainPluginLoadReport:
     if discover_entry_points is None:
         discover_entry_points = discover_plugins_enabled()
 
-    register_rag_reranker_entry_points(
+    return register_rag_reranker_entry_points(
         registry,
         embedding_manager=embedding_manager,
         discover_entry_points=discover_entry_points,
@@ -55,7 +56,7 @@ def create_default_reranker_registry(
     registry: RerankerRegistry | None = None,
     integration_profile: IntegrationProfile | None = None,
     discover_entry_points: bool | None = None,
-) -> RerankerRegistry:
+) -> tuple[RerankerRegistry, DomainPluginLoadReport]:
     """
     Create RerankerRegistry with built-in reranker providers registered.
 
@@ -95,13 +96,30 @@ def create_default_reranker_registry(
         if preferred in (None, "jina_rerank"):
             registry.register(JinaReranker())
 
-    _register_entry_point_rerankers(
+    load_report = _register_entry_point_rerankers(
         registry,
         embedding_manager=embedding_manager,
         discover_entry_points=discover_entry_points,
     )
 
-    return registry
+    return registry, load_report
+
+
+def create_default_reranker_registry_only(
+    *,
+    embedding_manager: BaseEmbeddingManager | None = None,
+    registry: RerankerRegistry | None = None,
+    integration_profile: IntegrationProfile | None = None,
+    discover_entry_points: bool | None = None,
+) -> RerankerRegistry:
+    """Backward-compatible registry factory without returning load evidence."""
+    registry_only, _report = create_default_reranker_registry(
+        embedding_manager=embedding_manager,
+        registry=registry,
+        integration_profile=integration_profile,
+        discover_entry_points=discover_entry_points,
+    )
+    return registry_only
 
 
 def create_default_reranker_engine(
@@ -119,7 +137,7 @@ def create_default_reranker_engine(
         embedding_manager = create_default_embedding_manager()
 
     if registry is None:
-        registry = create_default_reranker_registry(
+        registry, _load_report = create_default_reranker_registry(
             embedding_manager=embedding_manager,
             discover_entry_points=False,
         )
@@ -154,7 +172,7 @@ def create_default_reranker_pipeline(
 
     if registry is None:
 
-        registry = create_default_reranker_registry(
+        registry, _load_report = create_default_reranker_registry(
             embedding_manager=embedding_manager,
             discover_entry_points=False,
         )

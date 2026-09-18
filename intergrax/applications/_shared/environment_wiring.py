@@ -114,7 +114,6 @@ from intergrax.applications.contracts.platform_plugin_evidence import (
     ApplicationPlatformPluginEvidence,
     build_application_platform_plugin_evidence,
 )
-from intergrax.rag.bootstrap.entry_point_load import collect_rag_plugin_load_evidence
 from intergrax.core.catalog_bootstrap import bootstrap_catalogs
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.core.plugins.admission import DomainPluginLoadReport
@@ -263,6 +262,7 @@ def wire_application_environment(
     )
 
     rag_stack = None
+    rag_llm_adapter = None
     host_embedding_manager = None
     host_rag_profile = None
     if env.context_profile.enable_rag:
@@ -548,10 +548,8 @@ def wire_application_environment(
         )
 
     rag_plugin_load_evidence = None
-    if env.context_profile.enable_rag:
-        rag_plugin_load_evidence = collect_rag_plugin_load_evidence(
-            discover_entry_points=discover_plugins_enabled(),
-        )
+    if rag_stack is not None and rag_stack.plugin_load_evidence is not None:
+        rag_plugin_load_evidence = rag_stack.plugin_load_evidence
 
     platform_plugin_evidence = build_application_platform_plugin_evidence(
         memory_report=memory_wiring.memory_store_plugin_load_report,

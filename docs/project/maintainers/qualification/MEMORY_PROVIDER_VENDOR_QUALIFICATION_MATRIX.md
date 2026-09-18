@@ -57,7 +57,7 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 | Entity indexer | `DefaultEntityMemoryIndexer` | derived | n/a | **CONTRACT QUALIFIED** (service) |
 | Procedural | `intergrax.in_memory_procedural` | **NONE** | **NO** | **NOT QUALIFIED** durable |
 | Long-horizon | `intergrax.in_memory_long_horizon` | **NONE** | **NO** | **NOT QUALIFIED** durable |
-| SessionTurnIndex | `InMemorySessionTurnIndexStore` | `VectorSessionTurnIndexStore` + Qdrant/pgvector backing | **YES (Qdrant + pgvector STI)** | **V6 Qdrant + pgvector reconnect qualified**; Chroma open |
+| SessionTurnIndex | `InMemorySessionTurnIndexStore` | `VectorSessionTurnIndexStore` + Qdrant/pgvector/Chroma backing | **YES (Qdrant + pgvector + Chroma STI)** | **V6 triple-vendor reconnect qualified** |
 | Task memory | `InMemoryTaskMemoryStore` | `SQLiteTaskMemoryStore` | **NO** | **CONDITIONALLY** — env/db path |
 | Organization profile | `InMemoryOrganizationProfileStore` | `SQLiteOrganizationProfileStore` | **NO** | **CONDITIONALLY** — sqlite bundle only |
 | Conversational | `InMemoryConversationalMemoryStore` | `SQLiteConversationalMemoryStore` | **NO** | **LEGACY** — not canonical plane |
@@ -81,7 +81,7 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 | Procedural | `InMemoryProceduralMemoryStore` | in-proc | `ProcedureMemoryStore` | `intergrax.in_memory_procedural` | NO | NO | qual runner | NO | profile flag | V2 | REFERENCE ONLY |
 | Long-horizon | `InMemoryLongHorizonMemoryStore` | in-proc | `LongHorizonMemoryStore` | `intergrax.in_memory_long_horizon` | NO | NO | qual runner | NO | profile flag | V2 | REFERENCE ONLY |
 | SessionTurnIndex | `InMemorySessionTurnIndexStore` | in-proc | `SessionTurnIndexStore` | classifiable | NO | NO | qual runner | NO | qual / tests | V2 | REFERENCE ONLY |
-| SessionTurnIndex | `VectorSessionTurnIndexStore` | vector adapter | `SessionTurnIndexStore` | STI EP optional | Qdrant + pgvector reconnect proved | client reconnect | unit + 5D/5E E2E | **YES (Qdrant, pgvector)** | `enable_session_vector_index` + RAG | V6 | **REAL-VENDOR RECONNECT QUALIFIED (Qdrant, pgvector)** |
+| SessionTurnIndex | `VectorSessionTurnIndexStore` | vector adapter | `SessionTurnIndexStore` | STI EP optional | Qdrant + pgvector + Chroma reconnect proved | client reconnect | unit + 5D/5E/5F E2E | **YES (Qdrant, pgvector, Chroma)** | `enable_session_vector_index` + RAG | V6 | **REAL-VENDOR RECONNECT QUALIFIED (triple vendor)** |
 | Task memory | `InMemoryTaskMemoryStore` | in-proc | `TaskMemoryPersistence` | NO | NO | NO | unit | NO | tests | V2 | REFERENCE ONLY |
 | Task memory | `SQLiteTaskMemoryStore` | sqlite file | `TaskMemoryPersistence` | sqlite opens | YES | partial integ | unit | NO | env `INTERGRAX_TASK_MEMORY_DB` / lab | V4–V5 | DURABILITY QUALIFIED (platform semantics) |
 | Organization | `InMemoryOrganizationProfileStore` | in-proc | `OrganizationProfileStore` | NO | NO | NO | unit | NO | mongo path + org flag | V1 | NOT QUALIFIED durable |
@@ -94,7 +94,7 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 | MongoDB Memory | *(none)* | generic `DocumentStore` only | via adapter | NO | if mongo backend | NO | fake factory tests | NOT_EXECUTED | document_store slug | V0–V2 | **NOT MEMORY-QUALIFIED** as vendor |
 | Qdrant (STI) | `VectorSessionTurnIndexStore` + `qdrant` | integration backing | STI ports | NO Memory EP | reconnect proved (5D) | client reconnect | 5D suite | **YES** | vector flags + Qdrant | V6 | **MEMORY STI QUALIFIED (Qdrant)** |
 | pgvector (STI) | `VectorSessionTurnIndexStore` + `pgvector` | integration backing | STI ports | NO Memory EP | reconnect proved (5E) | client reconnect | 5E suite | **YES** | vector flags + pgvector | V6 | **MEMORY STI QUALIFIED (pgvector)** |
-| Chroma (STI) | same adapter pattern | integration layer | STI ports | NO Memory EP | **NO** | RAG tests only | **NO Memory STI E2E** | vector flags | V1 | **OPEN (5F)** |
+| Chroma (STI) | `VectorSessionTurnIndexStore` + `chroma` | integration backing | STI ports | NO Memory EP | reconnect proved (5F) | client reconnect | 5F suite | **YES** | vector flags + Chroma | V6 | **MEMORY STI QUALIFIED (Chroma)** |
 
 ---
 
@@ -183,7 +183,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | **PostgreSQL** | RFC spike only | `postgres_memory_backend_rfc.py` | **PLANNED ONLY (V0)** |
 | **Qdrant** | `VectorSessionTurnIndexStore` backing via RAG ports | `test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` | **V6 STI reconnect qualified** |
 | **pgvector** | same adapter pattern | pgvector STI E2E (5E) | **V6 RECONNECT QUALIFIED** |
-| **Chroma** | same | none Memory STI | **< V6 (OPEN)** |
+| **Chroma** | Chroma STI E2E (5F) | **V6 RECONNECT QUALIFIED** |
 
 ---
 
@@ -207,7 +207,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-04 | UserProfile | Mongo DocumentStore | real-vendor qual execution | **CLOSED (5C)** | `test_mem_final_audit_5c_mongo_user_profile_real_vendor.py` |
 | GAP-4-05 | Organization | Mongo path | durable org store (uses InMemory org on mongo LTM path) | P2 | AUDIT-6 |
 | GAP-4-06 | Task memory | SQLite | restart/failure vendor suite | P2 | AUDIT-5 |
-| GAP-4-07 | Vector backends | Qdrant **CLOSED (5D)**; pgvector **CLOSED (5E)**; Chroma **OPEN** | Memory-scoped STI E2E | P2 | AUDIT-5 |
+| GAP-4-07 | Vector backends | Qdrant **CLOSED (5D)**; pgvector **CLOSED (5E)**; Chroma **CLOSED (5F)** | Memory-scoped STI E2E | — | AUDIT-5 |
 | GAP-4-08 | PostgreSQL | Memory bundle | implementation | P3 | post-RFC |
 
 **P0:** NONE  
@@ -359,6 +359,24 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-07 (Qdrant) | **CLOSED** |
 | GAP-4-07 (pgvector) | **CLOSED** |
 | GAP-4-07 (Chroma) | OPEN |
+
+## MEM-FINAL-AUDIT-5F — Chroma SessionTurnIndex real-vendor qualification
+
+| Check | Result |
+| ----- | ------ |
+| Verified SHA | `6ebc2b790f04d8ae620d75b3f69b4d16e4873d56` |
+| Chroma suite | `test_mem_final_audit_5f_chroma_session_turn_index_real_vendor.py` — **22 passed** |
+| Triple-vendor same-SHA | Qdrant **13** + pgvector **19** + Chroma **22** |
+| Chroma infra | Docker `intergrax-chroma`, HTTP `localhost:8000`, chromadb **1.4.1**, persistent server volume |
+| Durability | `REAL_VENDOR_RECONNECT`; Chroma service restart **not executed** |
+| Catalog | `CHROMA` preset + `CHROMA_VECTOR_STORE_PROVIDER_ID` |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5F-01 | **CLOSED** |
+| GAP-4-07 (Chroma) | **CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** (regression) |
+| GAP-4-07 (pgvector) | **CLOSED** (regression) |
 
 ## MEM-FINAL-AUDIT-5D-R — SessionTurnIndex trusted production admission
 

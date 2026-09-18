@@ -103,7 +103,7 @@ Tier-0/Tier-1 platform Multiplayer primitives
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-6 — NEXT** (active slice **MP-6B — NEXT**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** identity/extensibility/timeline hardening) (**MP-6 ownership — FROZEN**, ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md)). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (B5 adapters: `context_view_source_adapters.py`). MP-5E **`intergrax/contracts/context_view_composition.py`** — **CLOSED**.
+**Current active task:** **MP-6 — NEXT** (active slice **MP-6C — NEXT**; **MP-6B — CLOSED**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** identity/extensibility/timeline hardening) (**MP-6 ownership — FROZEN**, ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md)). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (B5 adapters: `context_view_source_adapters.py`). MP-5E **`intergrax/contracts/context_view_composition.py`** — **CLOSED**.
 **Previous:** **MP-4D7** — Documentation regression gates — **CLOSED** (SSOT: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) § MP-4D7)
 
 ## Cursor read scope (token budget)
@@ -560,14 +560,17 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 
 **MP-6A-C1:** scoped idempotency identity; namespaced plugin activity types and source producers; opaque pagination cursor (append continuation) vs `occurred_at` event-time presentation.
 
-**MP-6A-C1-R1:** `append_position` and `recorded_at` are assigned only at the atomic `CollaborativeActivityAppendStore.append_idempotent(publication)` boundary; duplicate idempotency keys return the original materialized activity without a new position (per tenant/workspace monotonic uniqueness).
+**MP-6A-C1-R1:** `append_position` and `recorded_at` are assigned only at the atomic `CollaborativeActivityAppendStore.append_idempotent(intent)` boundary; duplicate idempotency keys return the original materialized activity without a new position (per tenant/workspace monotonic uniqueness).
+
+**MP-6B-C1:** `CollaborativeActivityAppendIntent` separates producer `requested_durability_class` from policy-resolved `effective_durability_class`; the append store materializes `durability_class` from the intent only; replay with a different effective durability does not mutate the original record.
 
 | Slice | Purpose | Status |
 |-------|---------|--------|
 | MP-6A | Ownership, contracts architecture, ADR, docs sync | **CLOSED / RECERTIFIED** |
 | MP-6A-C1 | Identity, extensibility, timeline semantics | **CLOSED** |
 | MP-6A-C1-R1 | Atomic append position / materialization ownership | **CLOSED** |
-| MP-6B | Core activity/provenance contracts (runtime hardening) | **NEXT** |
+| MP-6B | Core activity/provenance contracts (runtime hardening) | **CLOSED / RECERTIFIED** (**MP-6B-C1**) |
+| MP-6B-C1 | Policy-resolved append intent boundary | **CLOSED** |
 | MP-6C | Publication / ingestion boundary | PLANNED |
 | MP-6D | Append store + default persistence | PLANNED |
 | MP-6E | Scoped read / query | PLANNED |

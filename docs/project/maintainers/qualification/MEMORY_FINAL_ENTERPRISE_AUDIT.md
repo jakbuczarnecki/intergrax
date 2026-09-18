@@ -1594,3 +1594,36 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5F AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5E-R2 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5F.
+
+## MEM-FINAL-AUDIT-5F — Chroma SessionTurnIndex Real-Vendor Qualification
+
+| Check | Result |
+| ----- | ------ |
+| Path | `SessionTurnIndexStore` → `VectorSessionTurnIndexStore` → vector ports → Chroma integration (`CHROMA_VECTOR_STORE_PROVIDER_ID` / slug `chroma`) |
+| Memory provider ID | `vector.session_turn_index` |
+| Composite identity | `backing_provider_id=chroma` from `IntegrationProfile(vector_store=CHROMA).resolved_slug()` |
+| Real-vendor suite | `tests/integration/memory/e2e/test_mem_final_audit_5f_chroma_session_turn_index_real_vendor.py` — **22 passed** |
+| Harness | `tests/integration/memory/e2e/chroma_session_turn_index_real_vendor_support.py` |
+| Catalog preset | `CHROMA` in `intergrax/integrations/registry/catalog_manifests.py` (preset mirror of provider manifest) |
+| Infrastructure | Docker `infra/docker/chromadb` (`intergrax-chroma`, HTTP `localhost:8000`, persistent volume `IS_PERSISTENT=TRUE`) |
+| Deployment mode | **Chroma HTTP server** (not embedded ephemeral) |
+| chromadb client | **1.4.1** (matches server image `chromadb/chroma:1.4.1`) |
+| Collection / metric | Per-run `mem_audit_5f_*` + `__tenant__` suffix; default metric **cosine** |
+| Durability proof kind | `REAL_VENDOR_RECONNECT` (fresh HttpClient/integration per phase; Chroma **service restart not executed**) |
+| Evidence source | `chroma_session_turn_index_real_vendor_qualification` |
+| Backend scope filtering | Chroma `where` / `$and` / `$eq` on tenant/session/user metadata (integration layer only) |
+| Cross-vendor admission | Chroma↔Qdrant↔pgvector trusted evidence mismatch **FAIL**; adapter-only + missing evidence **FAIL** |
+| Triple-vendor same-SHA | **YES** — `6ebc2b790f04d8ae620d75b3f69b4d16e4873d56`: Qdrant **13** + pgvector **19** + Chroma **22** |
+| Memory vendor leakage | **0** (`chromadb` not imported under `intergrax/memory/**`) |
+| V-level | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (Chroma backing) |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5F-01 (Chroma STI lacked Memory-scoped real-vendor qualification) | **CLOSED** |
+| GAP-4-07 (Chroma) | **CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** (regression on verified SHA) |
+| GAP-4-07 (pgvector) | **CLOSED** (regression on verified SHA) |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5G AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5F muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5G.

@@ -146,6 +146,13 @@ PGVECTOR = IntegrationManifest(
     env_prefix="INTERGRAX_PGVECTOR",
 )
 
+CHROMA = IntegrationManifest(
+    slug="chroma",
+    categories=(IntegrationCategory.VECTOR_STORE,),
+    status=IntegrationStatus.STABLE,
+    env_prefix="INTERGRAX_CHROMA",
+)
+
 DUCKDB = IntegrationManifest(
     slug="duckdb",
     categories=(IntegrationCategory.RELATIONAL_STORE,),
@@ -239,6 +246,7 @@ GITLAB_CI = IntegrationManifest(
 __all__ = [
     "AWS",
     "AZURE",
+    "CHROMA",
     "CLICKHOUSE",
     "COHERE_RERANK",
     "DOCLING",

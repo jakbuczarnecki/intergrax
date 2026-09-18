@@ -106,7 +106,6 @@ def test_gr10_r7_orchestration_partial_inventory() -> None:
         if row.coverage is Gr10CoverageStatus.PARTIAL
     }
     assert partial_caps == {
-        "Inner Governance",
         "MSE",
         "Decision-bound effect",
         "HITL",
@@ -156,7 +155,7 @@ def test_gr10_r7_scenario_catalog_agentic_qualified_slices() -> None:
     by_id = {entry.scenario_id: entry for entry in GR10_SCENARIO_CATALOG}
     assert by_id["AGT-ROOT"].expected_status is Gr10CoverageStatus.QUALIFIED
     assert by_id["AGT-MSE-HITL"].expected_status is Gr10CoverageStatus.QUALIFIED
-    assert by_id["ORCH-INNER"].expected_status is Gr10CoverageStatus.PARTIAL
+    assert by_id["ORCH-INNER"].expected_status is Gr10CoverageStatus.QUALIFIED
     assert by_id["ORCH-HITL"].expected_status is Gr10CoverageStatus.PARTIAL
 
 

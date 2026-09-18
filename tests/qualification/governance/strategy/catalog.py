@@ -271,11 +271,10 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
     Gr10ResidualStrategyCapabilitySemantics(
         "Inner Governance",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "PlanningRunner PRE_MODEL qualified; graph/tool production uses RuntimeToolInvoker + declarative/MSE "
-        "gates but lacks enterprise-qualified CanonicalInnerExecutionGuardPort adoption on every inner GEP "
-        "(graph step AGENT_DECISION, TOOL_PLAN_OR_ACCESS, TOOL_INVOCATION_AUTHORIZATION) — Nexus is internal "
-        "orchestration, not a public governance authority.",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-10-R8: production RuntimeToolInvoker wired via build_production_runtime_tool_invoker with required "
+        "CanonicalInnerExecutionGuardPort before tool authorization gates; TOOL_PLAN_OR_ACCESS remains "
+        "ToolAccessPolicy canonical contract; AGENT_DECISION graph routing reclassified to Policy evaluation row.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Policy evaluation",
@@ -375,8 +374,9 @@ GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
         Gr10CoverageStatus.PARTIAL,
         "UAEP kernel path qualified (GR-10-R3); other agent delegates partial.",
         True,
-        Gr10CoverageStatus.PARTIAL,
-        "Graph step decisions not uniformly inner-guard qualified.",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-10-R8: orchestration graph routing is internal; permission GEP owned by Policy evaluation — "
+        "not duplicate CanonicalInnerExecutionGuardPort boundary.",
     ),
     Gr10GepCoverageRow(
         "INTERRUPT",
@@ -393,8 +393,8 @@ GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
         Gr10CoverageStatus.PARTIAL,
         "UAEP tool plan paths primary; harness/kernel gaps remain.",
         True,
-        Gr10CoverageStatus.PARTIAL,
-        "Planner/tool-loop declarative policy ≠ full GR-3 inner guard adoption.",
+        Gr10CoverageStatus.QUALIFIED,
+        "ToolAccessPolicy + scope policy canonical access gate on production planner/tool exposure (GR-10-R8).",
     ),
     Gr10GepCoverageRow(
         "TOOL_INVOCATION_AUTHORIZATION",
@@ -402,8 +402,8 @@ GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
         Gr10CoverageStatus.PARTIAL,
         "Tool invoke on UAEP qualified slices; not universal.",
         True,
-        Gr10CoverageStatus.PARTIAL,
-        "RuntimeToolInvoker MSE/declarative partial substitute.",
+        Gr10CoverageStatus.QUALIFIED,
+        "RuntimeToolInvoker requires CanonicalInnerExecutionGuardPort before physical invoke (GR-10-R8).",
     ),
     Gr10GepCoverageRow(
         "TOOL_INVOCATION_POLICY",
@@ -470,6 +470,21 @@ GR10_R7_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
 )
 
 
+GR10_R8_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-R9 — ORCHESTRATION MSE production GEP coverage",
+    strategy="ORCHESTRATION",
+    capability="MSE",
+    exact_blocker=(
+        "require_meaningful_side_effect_authorization and MeaningfulSideEffectAuthorizationBoundary "
+        "not enterprise-qualified on every consequential orchestration external-work / graph side-effect seam."
+    ),
+    why_highest=(
+        "Highest remaining ORCHESTRATION capability row still PARTIAL after GR-10-R8 inner guard closure; "
+        "distinct from Inner Governance spine (GR-3 identity binding vs consequential authorization)."
+    ),
+)
+
+
 GR10_PRODUCTION_INVENTORY: tuple[Gr10ProductionEntry, ...] = (
     Gr10ProductionEntry(
         "INFERENCE",
@@ -493,7 +508,7 @@ GR10_PRODUCTION_INVENTORY: tuple[Gr10ProductionEntry, ...] = (
         "ORCHESTRATION",
         "HostTaskExecution.execute (orchestration capability) → same root launcher",
         "OrchestrationExecutor / Nexus graph runners under active identity",
-        "RuntimeToolInvoker + MSE boundary where consequential",
+        "RuntimeToolInvoker (build_production_runtime_tool_invoker + inner guard) + MSE boundary where consequential",
         "GR-5 orchestration HITL + continuation port",
         "External Work compositions — same GR-7 boundary as agentic",
     ),
@@ -513,7 +528,7 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
         gr10_matrix_inference_status("Inner Governance"),
         gr10_matrix_agentic_status("Inner Governance"),
         gr10_matrix_orchestration_status("Inner Governance"),
-        "GR-10-R7: see GR10_AGENTIC/ORCHESTRATION_CAPABILITY_SEMANTICS.",
+        "GR-10-R8: ORCHESTRATION Inner Governance QUALIFIED; AGENTIC residual per SSOT.",
     ),
     Gr10CapabilityCell(
         "Policy evaluation",
@@ -726,9 +741,20 @@ GR10_SCENARIO_CATALOG: tuple[Gr10ScenarioEvidence, ...] = (
     Gr10ScenarioEvidence(
         "ORCH-INNER",
         "ORCHESTRATION",
-        "nested / graph execution under identity",
-        (_nid(_ORCH_TOPO, "test_canonical_orchestration_topology_submission_proof"),),
-        Gr10CoverageStatus.PARTIAL,
+        "nested / graph execution under identity + canonical inner guard on tool invoke",
+        (
+            _nid(_ORCH_TOPO, "test_canonical_orchestration_topology_submission_proof"),
+            _nid(
+                "tests/unit/runtime/nexus/tools/test_gr10_r8_orchestration_inner_guard.py",
+                "test_gr10_r8_custom_guard_deny_zero_physical_invocation",
+            ),
+            _nid(
+                "tests/qualification/governance/strategy/"
+                "test_gr10_r8_orchestration_inner_governance_qualification.py",
+                "test_gr10_r8_orchestration_inner_governance_qualified",
+            ),
+        ),
+        Gr10CoverageStatus.QUALIFIED,
     ),
     Gr10ScenarioEvidence(
         "ORCH-HITL",

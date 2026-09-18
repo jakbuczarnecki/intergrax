@@ -199,7 +199,7 @@ Persistence, APIs, repositories, and enforcement implementation are delivered fo
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; slices **MP-3A…MP-3H — APPROVED / CLOSED** (MP-3H final cross-slice certification).
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-6 — NEXT** (active slice **MP-6B — NEXT**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** at `d0aee066` — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md), [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)).
+**Next task:** **MP-6 — NEXT** (active slice **MP-6C — NEXT**; **MP-6B — CLOSED**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** at `d0aee066` — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md), [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)).
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 
@@ -580,7 +580,7 @@ Capability coordination: [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULT
 
 ## Collaborative Activity & Provenance (MP-6)
 
-**MP-6 ownership — FROZEN** ([ADR-MP-007](../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** / **MP-6A-C1-R1** atomic append ownership). **MP-6B — CLOSED** (runtime contract hardening; subject to independent audit). **MP-6C — NEXT**.
+**MP-6 ownership — FROZEN** ([ADR-MP-007](../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** / **MP-6A-C1-R1** atomic append ownership). **MP-6B — CLOSED / RECERTIFIED** (**MP-6B-C1** policy-resolved append intent; subject to independent audit). **MP-6C — NEXT**.
 
 **Capability statement:** Collaborative Activity is an immutable, typed semantic record of meaningful collaborative actions on the work plane — who acted, on what object, under which scope and authority, with what outcome, and which canonical evidence references enable reconstruction. MP-6 does **not** store WorkArtifact/Memory/UCL/prompt bodies, replace observability traces, duplicate proof receipts, or authorize mutations.
 
@@ -590,11 +590,13 @@ Capability coordination: [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULT
 
 ```text
 Source Domain (authoritative mutation)
-  → CollaborativeActivityPublication (neutral contract)
+  → CollaborativeActivityPublication (neutral contract; requested durability only)
   → CollaborativeActivityPublicationPort / ingestion boundary
-  → MP-6 Activity service (policy validation — no caller-supplied sequencing)
-  → CollaborativeActivityAppendStore.append_idempotent(publication) (replaceable;
-     atomically assigns recorded_at + append_position for new keys only)
+  → MP-6 Activity service (MP-6C policy validation — resolves effective durability)
+  → CollaborativeActivityAppendIntent (policy-resolved persistence input)
+  → CollaborativeActivityAppendStore.append_idempotent(intent) (replaceable;
+     atomically assigns recorded_at + append_position for new keys only;
+     materializes durability_class from intent.effective_durability_class)
   → configured provider
 
 Read:
@@ -604,11 +606,20 @@ Authorized Consumer
   → typed CollaborativeActivity refs
 ```
 
-**Public contracts (MP-6A / MP-6A-C1 gate):** [`intergrax/contracts/collaborative_activity.py`](../../../intergrax/contracts/collaborative_activity.py) — `CollaborativeActivity`, `CollaborativeActivityTypeId`, `CollaborativeActivityBuiltinType`, `CollaborativeActivitySourceId`, `CollaborativeActivityActorRef`, `CollaborativeActivityTargetRef`, `CollaborativeActivityProvenanceRef`, `CollaborativeActivityOutcome`, `ActivityIdempotencyKey`, `CollaborativeActivityPublication`, `CollaborativeActivityQuery`, `CollaborativeActivityPageCursor`; ports `CollaborativeActivityPublicationPort`, `CollaborativeActivityWritePort`, `CollaborativeActivityReadPort`, `CollaborativeActivityAppendStore`.
+**Public contracts (MP-6A / MP-6A-C1 gate):** [`intergrax/contracts/collaborative_activity.py`](../../../intergrax/contracts/collaborative_activity.py) — `CollaborativeActivity`, `CollaborativeActivityTypeId`, `CollaborativeActivityBuiltinType`, `CollaborativeActivitySourceId`, `CollaborativeActivityActorRef`, `CollaborativeActivityTargetRef`, `CollaborativeActivityProvenanceRef`, `CollaborativeActivityOutcome`, `ActivityIdempotencyKey`, `CollaborativeActivityPublication`, `CollaborativeActivityAppendIntent`, `CollaborativeActivityQuery`, `CollaborativeActivityPageCursor`; ports `CollaborativeActivityPublicationPort`, `CollaborativeActivityWritePort`, `CollaborativeActivityReadPort`, `CollaborativeActivityAppendStore`.
 
 **MP-6A-C1 — CLOSED / RECERTIFIED** (activity identity, extensibility, timeline semantics hardening; subject to independent audit). **MP-6A-C1-R1 — CLOSED** (atomic append position and materialization boundary; subject to independent audit).
 
-**MP-6B — CLOSED** (core DTO/runtime invariants; subject to independent audit):
+**MP-6B — CLOSED / RECERTIFIED** (**MP-6B-C1** append intent boundary; subject to independent audit):
+
+```text
+requested durability (publication)
+  → policy resolution (MP-6C)
+  → effective durability (append intent)
+  → materialized durability_class (activity)
+```
+
+**MP-6B core DTO/runtime invariants** (subject to independent audit):
 
 | Area | DTO / seam | Structural (contract) | Semantic (MP-6C+ policy) |
 |------|------------|----------------------|----------------------------|
