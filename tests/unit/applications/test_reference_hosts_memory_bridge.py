@@ -16,7 +16,12 @@ from intergrax.applications._shared.lab_environment_profile import build_lab_env
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
+from intergrax.memory.contracts.provider_identity import BUILTIN_SQLITE_USER_PROFILE_ID
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
+from tests.unit.applications.test_mem_audit5a_production_provider_admission import (
+    _durability_for_provider,
+    _evidence_for_provider,
+)
 from legal_application.host.wiring import build_legal_environment_profile
 from legal_application.host.settings import LegalBackendSettings
 from lab_application.host.settings import LabApplicationSettings
@@ -82,7 +87,11 @@ def test_reference_hosts_sqlite_memory_wiring(tmp_path: Path) -> None:
         **(env.integration_profile.options or {}),
         "sqlite": {"data_dir": str(tmp_path)},
     }
-    wiring = resolve_memory_platform_wiring(env)
+    wiring = resolve_memory_platform_wiring(
+        env,
+        qualification_evidence_registry=_evidence_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID),
+        durability_evidence_registry=_durability_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID),
+    )
     assert wiring.sqlite_bundle is not None
     assert isinstance(wiring.session_storage, SQLiteSessionStorage)
     assert isinstance(wiring.user_profile_store, SQLiteUserProfileStore)

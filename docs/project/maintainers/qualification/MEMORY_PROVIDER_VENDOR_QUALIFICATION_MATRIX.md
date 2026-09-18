@@ -206,7 +206,22 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-08 | PostgreSQL | Memory bundle | implementation | P3 | post-RFC |
 
 **P0:** NONE  
-**P1:** NONE after MEM-FINAL-AUDIT-5A-R2 (GAP-5A-02 identity binding closed)
+**P1:** NONE after MEM-FINAL-AUDIT-5A-R3 (GAP-5A-03 durability evidence closed)
+
+## MEM-FINAL-AUDIT-5A-R3 — Trusted durability evidence admission
+
+| Check | Result |
+| ----- | ------ |
+| Durability evidence contract | `intergrax/memory/contracts/provider_durability_evidence.py` |
+| Declared durability | `memory_provider_durability` on stores — claim only; **not** admission authority |
+| Admission authority | `MemoryProviderDurabilityEvidenceRegistry` + trusted identity binding |
+| Behavioral qual alone | Insufficient for PRODUCT persistent (`DURABILITY_EVIDENCE_MISSING`) |
+| MEM-ENT-13C reopen proof | Mapped via `durability_evidence_from_reopen_proof` (test/composition; 5B extends production feed) |
+| Attack: RAM + claims DURABLE + behavioral QUALIFIED | Fail without platform durability evidence |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5A-03 | CLOSED |
 
 ## MEM-FINAL-AUDIT-5A-R2 — Trusted provider identity binding
 
@@ -229,7 +244,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | Check | Result |
 | ----- | ------ |
 | Admission owner | `applications/_shared/memory_provider_admission.py` (not MemoryControlPlane) |
-| Policy inputs | `MemoryStoreProviderMetadata` durability/reference + **trusted** `MemoryProviderQualificationEvidence` (declared qual **not** trusted) |
+| Policy inputs | reference flag + **trusted** behavioral + **trusted** durability evidence (declared qual/durability **not** trusted) |
 | Overlay ordering | Admission after external plugin overlay on final `user_profile_store` |
 | LAB reference InMemory | Allowed when `ApplicationProfile.LAB` |
 | PRODUCT memory disabled | InMemory baseline allowed (store not admission-gated) |

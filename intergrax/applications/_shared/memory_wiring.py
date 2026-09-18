@@ -80,6 +80,9 @@ from intergrax.memory.contracts.provider_identity import (
     builtin_user_profile_store_identity,
     plugin_user_profile_store_identity,
 )
+from intergrax.memory.contracts.provider_durability_evidence import (
+    MemoryProviderDurabilityEvidenceRegistry,
+)
 from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidenceRegistry,
 )
@@ -311,6 +314,7 @@ def resolve_memory_platform_wiring(
     memory_observability_sink: MemoryObservabilitySink | None = None,
     memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
     qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
+    durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
 ) -> MemoryPlatformWiring:
     """
     Resolve durable memory backends from the integration profile.
@@ -343,6 +347,7 @@ def resolve_memory_platform_wiring(
         wiring.user_profile_store,
         user_profile_store_identity=wiring.user_profile_store_identity,
         qualification_evidence_registry=qualification_evidence_registry,
+        durability_evidence_registry=durability_evidence_registry,
     )
     return wiring
 
@@ -356,6 +361,7 @@ def build_session_manager_from_environment(
     rag_stack: RagStack | None = None,
     memory_control_plane: MemoryControlPlane | None = None,
     qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
+    durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
 ) -> SessionManager:
     """Construct ``SessionManager`` with profile managers driven by ``MemoryProfile``."""
     wiring = memory_wiring or resolve_memory_platform_wiring(
@@ -363,12 +369,14 @@ def build_session_manager_from_environment(
         integration_profile=integration_profile,
         tenant_id=tenant_id,
         qualification_evidence_registry=qualification_evidence_registry,
+        durability_evidence_registry=durability_evidence_registry,
     )
     validate_memory_platform_wiring_admission(
         env,
         wiring.user_profile_store,
         user_profile_store_identity=wiring.user_profile_store_identity,
         qualification_evidence_registry=qualification_evidence_registry,
+        durability_evidence_registry=durability_evidence_registry,
     )
     memory_profile = env.memory_profile
 

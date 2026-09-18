@@ -1327,3 +1327,39 @@ Close **GAP-5A-01** (provider self-certified qualification at production admissi
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5B AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5A-R2 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5B.
+
+---
+
+# MEM-FINAL-AUDIT-5A-R3 — Trusted Durability Evidence Admission
+
+**Verdict (implementation):** closes **GAP-5A-03** — production admission requires **platform-owned** `MemoryProviderDurabilityEvidence` bound to trusted `MemoryProviderIdentity`; `memory_provider_durability` on stores is a **self-declared claim** only (diagnostic).
+
+## Hard invariant
+
+PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidence + **trusted durability evidence** (`MemoryProviderTrustedDurabilityStatus.DURABLE`). Behavioral `QUALIFIED` alone is insufficient. Missing / `NOT_DURABLE` / `UNKNOWN` durability evidence → fail-closed.
+
+## Contracts
+
+- `intergrax/memory/contracts/provider_durability_evidence.py`
+- `MemoryProviderDurabilityEvidenceRegistry` (+ `InMemoryMemoryProviderDurabilityEvidenceRegistry` for tests/composition)
+- Adapter: `durability_evidence_from_reopen_proof` (MEM-ENT-13C durable harness → evidence record; not a substitute for 5B production certification wiring)
+
+## GAP status
+
+| Gap | Status |
+| --- | ------ |
+| GAP-4-01 | CLOSED |
+| GAP-5A-01 | CLOSED |
+| GAP-5A-02 | CLOSED |
+| GAP-5A-03 | CLOSED (5A-R3 trusted durability evidence) |
+
+## Regression
+
+- `tests/unit/applications/test_mem_audit5a_production_provider_admission.py`
+- `tests/unit/applications/test_mem_audit5a_r2_provider_identity_binding.py`
+- `tests/unit/applications/test_mem_audit5a_r3_durability_evidence_admission.py`
+- `tests/unit/memory/test_mem_ent13c_durable_provider_qualification.py` (existing durable proof; admission consumes mapped evidence in R3 tests)
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5B AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5A-R3 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5B.

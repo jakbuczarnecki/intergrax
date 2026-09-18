@@ -38,11 +38,19 @@ from intergrax.memory.contracts.provider_qualification import (
     MemoryProviderCapabilityKind,
     MemoryProviderQualificationStatus,
 )
+from intergrax.memory.contracts.provider_durability_evidence import (
+    MemoryProviderDurabilityEvidence,
+    MemoryProviderDurabilityEvidenceLookup,
+    MemoryProviderDurabilityEvidenceResolveStatus,
+    MemoryProviderDurabilityProofKind,
+    MemoryProviderTrustedDurabilityStatus,
+)
 from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidence,
     MemoryProviderQualificationEvidenceLookup,
     MemoryProviderQualificationEvidenceResolveStatus,
 )
+from intergrax.memory.provider_qualification import InMemoryMemoryProviderDurabilityEvidenceRegistry
 from intergrax.memory.provider_qualification import InMemoryMemoryProviderQualificationEvidenceRegistry
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
@@ -51,6 +59,7 @@ from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySe
 from tests.unit.applications.test_mem_audit5a_production_provider_admission import (
     _DurableSelfCertifiedUserProfilePlugin,
     _SelfCertifiedDurableUserProfileStore,
+    _durability_for_provider,
     _evidence_for_provider,
     _persistent_memory_profile,
 )
@@ -138,11 +147,13 @@ def test_legitimate_external_plugin_passes_with_plugin_id_evidence() -> None:
         update={"user_profile_store_plugin_id": "test.durable_qualified_user_profile"},
     )
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
+    durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
     wiring = resolve_memory_platform_wiring(
         env,
         discover_entry_points=False,
         explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin,),
         qualification_evidence_registry=registry,
+        durability_evidence_registry=durability_registry,
     )
     assert wiring.user_profile_store_identity is not None
     assert wiring.user_profile_store_identity.provider_id == "test.durable_qualified_user_profile"
@@ -177,6 +188,7 @@ def test_direct_wiring_with_trusted_identity_and_evidence_passes() -> None:
         store,
         user_profile_store_identity=identity,
         qualification_evidence_registry=registry,
+        durability_evidence_registry=_durability_for_provider("custom.direct"),
     )
 
 
@@ -220,10 +232,29 @@ def test_version_binding_semantics(
         identity.capability,
         identity.provider_version,
     )
+    durability_registry = InMemoryMemoryProviderDurabilityEvidenceRegistry()
+    durability_registry.register(
+        MemoryProviderDurabilityEvidence(
+            provider_id="versioned.provider",
+            capability=MemoryProviderCapabilityKind.USER_PROFILE_STORE,
+            durability_status=MemoryProviderTrustedDurabilityStatus.DURABLE,
+            qualification_run_id="run-dur-version",
+            reference_time_iso="2025-01-01T00:00:00+00:00",
+            evidence_source="test",
+            proof_kind=MemoryProviderDurabilityProofKind.RESTART_REOPEN,
+            provider_version=evidence_version,
+        ),
+    )
+    durability_lookup = durability_registry.resolve(
+        identity.provider_id,
+        identity.capability,
+        identity.provider_version,
+    )
     evaluation = evaluate_production_persistent_user_profile_admission(
         classification,
         identity,
         lookup,
+        durability_lookup,
     )
     assert evaluation.admitted is expected_admitted
 
@@ -250,10 +281,14 @@ def test_duplicate_qualification_evidence_is_ambiguous_fail_closed() -> None:
         )
     lookup = registry.resolve(identity.provider_id, identity.capability, None)
     assert lookup.resolve_status is MemoryProviderQualificationEvidenceResolveStatus.AMBIGUOUS
+    missing_durability = MemoryProviderDurabilityEvidenceLookup(
+        resolve_status=MemoryProviderDurabilityEvidenceResolveStatus.MISSING,
+    )
     evaluation = evaluate_production_persistent_user_profile_admission(
         classification,
         identity,
         lookup,
+        missing_durability,
     )
     assert not evaluation.admitted
     assert (
@@ -274,11 +309,13 @@ def test_overlay_replaces_store_and_identity_together(tmp_path: Path) -> None:
         update={"user_profile_store_plugin_id": "test.durable_qualified_user_profile"},
     )
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
+    durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
     wiring = resolve_memory_platform_wiring(
         env,
         discover_entry_points=False,
         explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin,),
         qualification_evidence_registry=registry,
+        durability_evidence_registry=durability_registry,
     )
     assert not isinstance(wiring.user_profile_store, SQLiteUserProfileStore)
     assert wiring.user_profile_store_identity is not None
@@ -295,9 +332,11 @@ def test_sqlite_wiring_identity_matches_runner_descriptor(tmp_path: Path) -> Non
         "sqlite": {"data_dir": str(tmp_path)},
     }
     registry = _evidence_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID)
+    durability_registry = _durability_for_provider(BUILTIN_SQLITE_USER_PROFILE_ID)
     wiring = resolve_memory_platform_wiring(
         env,
         qualification_evidence_registry=registry,
+        durability_evidence_registry=durability_registry,
     )
     assert wiring.user_profile_store_identity == builtin_user_profile_store_identity(
         BUILTIN_SQLITE_USER_PROFILE_ID,

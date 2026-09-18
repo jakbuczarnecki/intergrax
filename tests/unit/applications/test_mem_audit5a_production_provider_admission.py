@@ -43,7 +43,13 @@ from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidence,
     qualification_evidence_from_result,
 )
+from intergrax.memory.contracts.provider_durability_evidence import (
+    MemoryProviderDurabilityEvidence,
+    MemoryProviderDurabilityProofKind,
+    MemoryProviderTrustedDurabilityStatus,
+)
 from intergrax.memory.provider_qualification import (
+    InMemoryMemoryProviderDurabilityEvidenceRegistry,
     InMemoryMemoryProviderQualificationEvidenceRegistry,
     MemoryProviderCapabilityFactories,
     MemoryProviderQualificationRunner,
@@ -146,6 +152,29 @@ def _evidence_for_provider(
     return registry
 
 
+def _durability_for_provider(
+    provider_id: str,
+    *,
+    status: MemoryProviderTrustedDurabilityStatus = MemoryProviderTrustedDurabilityStatus.DURABLE,
+    provider_version: str | None = None,
+    run_id: str = "dur-run-test",
+) -> InMemoryMemoryProviderDurabilityEvidenceRegistry:
+    registry = InMemoryMemoryProviderDurabilityEvidenceRegistry()
+    registry.register(
+        MemoryProviderDurabilityEvidence(
+            provider_id=provider_id,
+            capability=MemoryProviderCapabilityKind.USER_PROFILE_STORE,
+            durability_status=status,
+            qualification_run_id=run_id,
+            reference_time_iso="2025-01-01T00:00:00+00:00",
+            evidence_source="test_durability_registry",
+            proof_kind=MemoryProviderDurabilityProofKind.RESTART_REOPEN,
+            provider_version=provider_version,
+        ),
+    )
+    return registry
+
+
 def test_gap_4_01_product_postgres_persistent_memory_fails_closed() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.audit5a.gap401")
     env.memory_profile = _persistent_memory_profile()
@@ -199,9 +228,11 @@ def test_product_sqlite_with_trusted_evidence_passes(tmp_path: Path) -> None:
         "sqlite": {"data_dir": str(tmp_path)},
     }
     registry = _evidence_for_provider("sqlite.user_profile")
+    durability_registry = _durability_for_provider("sqlite.user_profile")
     wiring = resolve_memory_platform_wiring(
         env,
         qualification_evidence_registry=registry,
+        durability_evidence_registry=durability_registry,
     )
     assert isinstance(wiring.user_profile_store, SQLiteUserProfileStore)
 
@@ -249,11 +280,13 @@ def test_product_durable_external_plugin_passes_with_trusted_evidence() -> None:
         update={"user_profile_store_plugin_id": "test.durable_qualified_user_profile"},
     )
     registry = _evidence_for_provider("test.durable_qualified_user_profile")
+    durability_registry = _durability_for_provider("test.durable_qualified_user_profile")
     wiring = resolve_memory_platform_wiring(
         env,
         discover_entry_points=False,
         explicit_memory_plugins=(_DurableSelfCertifiedUserProfilePlugin,),
         qualification_evidence_registry=registry,
+        durability_evidence_registry=durability_registry,
     )
     assert isinstance(wiring.user_profile_store, _SelfCertifiedDurableUserProfileStore)
 
@@ -404,6 +437,10 @@ async def test_runner_result_to_registry_to_admission_passes(tmp_path: Path) -> 
 
     registry = InMemoryMemoryProviderQualificationEvidenceRegistry()
     registry.register(evidence)
+    durability_registry = _durability_for_provider(
+        "sqlite.user_profile",
+        run_id="audit5ar-sqlite",
+    )
 
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.audit5ar.runner")
     env.memory_profile = _persistent_memory_profile()
@@ -415,6 +452,31 @@ async def test_runner_result_to_registry_to_admission_passes(tmp_path: Path) -> 
     wiring = resolve_memory_platform_wiring(
         env,
         qualification_evidence_registry=registry,
+        durability_evidence_registry=durability_registry,
     )
     assert isinstance(wiring.user_profile_store, SQLiteUserProfileStore)
     wiring.user_profile_store.close()
+
+
+def test_product_sqlite_with_behavioral_only_fails_without_durability_evidence(
+    tmp_path: Path,
+) -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(
+        profile_id="mem.audit5ar3.sqlite.behavioral_only",
+    )
+    env.memory_profile = _persistent_memory_profile()
+    env.integration_profile = IntegrationProfile.lab_harness_preset()
+    env.integration_profile.options = {
+        **(env.integration_profile.options or {}),
+        "sqlite": {"data_dir": str(tmp_path)},
+    }
+    registry = _evidence_for_provider("sqlite.user_profile")
+    with pytest.raises(MemoryProviderAdmissionError) as exc_info:
+        resolve_memory_platform_wiring(
+            env,
+            qualification_evidence_registry=registry,
+        )
+    assert (
+        exc_info.value.reason_code
+        is MemoryProviderAdmissionReasonCode.DURABILITY_EVIDENCE_MISSING
+    )

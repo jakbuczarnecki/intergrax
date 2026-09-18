@@ -13,6 +13,13 @@ from intergrax.memory.contracts.provider_qualification import (
     MemoryProviderQualificationStatus,
 )
 from intergrax.memory.contracts.provider_identity import MemoryProviderIdentity
+from intergrax.memory.contracts.provider_durability_evidence import (
+    MemoryProviderDurabilityEvidence,
+    MemoryProviderDurabilityEvidenceLookup,
+    MemoryProviderDurabilityEvidenceRegistry,
+    MemoryProviderDurabilityEvidenceResolveStatus,
+    MemoryProviderTrustedDurabilityStatus,
+)
 from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidence,
     MemoryProviderQualificationEvidenceLookup,
@@ -28,6 +35,7 @@ __all__ = [
     "UserProfileStoreProductionAdmissionEvaluation",
     "classify_user_profile_store_provider",
     "evaluate_production_persistent_user_profile_admission",
+    "lookup_trusted_user_profile_durability_evidence",
     "lookup_trusted_user_profile_qualification_evidence",
 ]
 
@@ -45,6 +53,8 @@ class MemoryProviderAdmissionReasonCode(StrEnum):
     REFERENCE_PROVIDER_NOT_ADMISSIBLE = "reference_provider_not_admissible"
     QUALIFICATION_EVIDENCE_MISSING = "qualification_evidence_missing"
     QUALIFICATION_EVIDENCE_MISMATCH = "qualification_evidence_mismatch"
+    DURABILITY_EVIDENCE_MISSING = "durability_evidence_missing"
+    DURABILITY_EVIDENCE_MISMATCH = "durability_evidence_mismatch"
     PROVIDER_IDENTITY_MISSING = "provider_identity_missing"
     PROVIDER_IDENTITY_MISMATCH = "provider_identity_mismatch"
 
@@ -75,7 +85,7 @@ class MemoryStoreProviderMetadata(Protocol):
 class UserProfileStoreProviderClassification:
     capability: MemoryProviderCapabilityKind
     provider_id: str
-    durability: MemoryProviderDurability
+    durability: MemoryProviderDurability  # provider-declared claim; not trusted for admission
     reference_only: bool
     declared_qualification_status: MemoryProviderQualificationStatus
     provider_version: str | None = None
@@ -89,6 +99,8 @@ class UserProfileStoreProductionAdmissionEvaluation:
     declared_qualification_status: MemoryProviderQualificationStatus
     trusted_qualification_status: MemoryProviderQualificationStatus | None
     qualification_run_id: str | None
+    trusted_durability_status: MemoryProviderTrustedDurabilityStatus | None = None
+    durability_run_id: str | None = None
 
 
 def classify_user_profile_store_provider(
@@ -124,9 +136,33 @@ def lookup_trusted_user_profile_qualification_evidence(
     )
 
 
-def _provider_version_binding_mismatch(
+def lookup_trusted_user_profile_durability_evidence(
+    registry: MemoryProviderDurabilityEvidenceRegistry,
+    trusted_identity: MemoryProviderIdentity,
+) -> MemoryProviderDurabilityEvidenceLookup:
+    return registry.resolve(
+        trusted_identity.provider_id,
+        trusted_identity.capability,
+        trusted_identity.provider_version,
+    )
+
+
+def _provider_version_binding_mismatch_qualification(
     trusted_identity: MemoryProviderIdentity,
     evidence: MemoryProviderQualificationEvidence,
+) -> bool:
+    identity_version = trusted_identity.provider_version
+    evidence_version = evidence.provider_version
+    if identity_version is None and evidence_version is None:
+        return False
+    if identity_version is None or evidence_version is None:
+        return True
+    return identity_version != evidence_version
+
+
+def _provider_version_binding_mismatch_durability(
+    trusted_identity: MemoryProviderIdentity,
+    evidence: MemoryProviderDurabilityEvidence,
 ) -> bool:
     identity_version = trusted_identity.provider_version
     evidence_version = evidence.provider_version
@@ -141,8 +177,9 @@ def evaluate_production_persistent_user_profile_admission(
     classification: UserProfileStoreProviderClassification,
     trusted_identity: MemoryProviderIdentity | None,
     evidence_lookup: MemoryProviderQualificationEvidenceLookup,
+    durability_lookup: MemoryProviderDurabilityEvidenceLookup,
 ) -> UserProfileStoreProductionAdmissionEvaluation:
-    """Mandatory PRODUCT persistent gate; ignores self-declared qualification status."""
+    """Mandatory PRODUCT persistent gate; ignores self-declared qualification and durability."""
     trusted_provider_id = (
         trusted_identity.provider_id if trusted_identity is not None else "none"
     )
@@ -168,15 +205,6 @@ def evaluate_production_persistent_user_profile_admission(
         return UserProfileStoreProductionAdmissionEvaluation(
             admitted=False,
             reason_code=MemoryProviderAdmissionReasonCode.REFERENCE_PROVIDER_NOT_ADMISSIBLE,
-            provider_id=trusted_provider_id,
-            declared_qualification_status=classification.declared_qualification_status,
-            trusted_qualification_status=None,
-            qualification_run_id=None,
-        )
-    if classification.durability is not MemoryProviderDurability.DURABLE:
-        return UserProfileStoreProductionAdmissionEvaluation(
-            admitted=False,
-            reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_NOT_DURABLE,
             provider_id=trusted_provider_id,
             declared_qualification_status=classification.declared_qualification_status,
             trusted_qualification_status=None,
@@ -243,7 +271,7 @@ def evaluate_production_persistent_user_profile_admission(
             trusted_qualification_status=evidence.status,
             qualification_run_id=evidence.qualification_run_id,
         )
-    if _provider_version_binding_mismatch(trusted_identity, evidence):
+    if _provider_version_binding_mismatch_qualification(trusted_identity, evidence):
         return UserProfileStoreProductionAdmissionEvaluation(
             admitted=False,
             reason_code=MemoryProviderAdmissionReasonCode.QUALIFICATION_EVIDENCE_MISMATCH,
@@ -261,6 +289,90 @@ def evaluate_production_persistent_user_profile_admission(
             trusted_qualification_status=evidence.status,
             qualification_run_id=evidence.qualification_run_id,
         )
+    if durability_lookup.resolve_status is MemoryProviderDurabilityEvidenceResolveStatus.MISSING:
+        return UserProfileStoreProductionAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.DURABILITY_EVIDENCE_MISSING,
+            provider_id=trusted_provider_id,
+            declared_qualification_status=classification.declared_qualification_status,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+            trusted_durability_status=None,
+            durability_run_id=None,
+        )
+    if durability_lookup.resolve_status in {
+        MemoryProviderDurabilityEvidenceResolveStatus.AMBIGUOUS,
+        MemoryProviderDurabilityEvidenceResolveStatus.MISMATCH,
+    }:
+        return UserProfileStoreProductionAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.DURABILITY_EVIDENCE_MISMATCH,
+            provider_id=trusted_provider_id,
+            declared_qualification_status=classification.declared_qualification_status,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+            trusted_durability_status=None,
+            durability_run_id=None,
+        )
+    durability_evidence = durability_lookup.evidence
+    if durability_evidence is None:
+        return UserProfileStoreProductionAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.DURABILITY_EVIDENCE_MISSING,
+            provider_id=trusted_provider_id,
+            declared_qualification_status=classification.declared_qualification_status,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+            trusted_durability_status=None,
+            durability_run_id=None,
+        )
+    if durability_evidence.capability is not classification.capability:
+        return UserProfileStoreProductionAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.DURABILITY_EVIDENCE_MISMATCH,
+            provider_id=trusted_provider_id,
+            declared_qualification_status=classification.declared_qualification_status,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+            trusted_durability_status=durability_evidence.durability_status,
+            durability_run_id=durability_evidence.qualification_run_id,
+        )
+    if durability_evidence.provider_id != trusted_identity.provider_id:
+        return UserProfileStoreProductionAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.DURABILITY_EVIDENCE_MISMATCH,
+            provider_id=trusted_provider_id,
+            declared_qualification_status=classification.declared_qualification_status,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+            trusted_durability_status=durability_evidence.durability_status,
+            durability_run_id=durability_evidence.qualification_run_id,
+        )
+    if _provider_version_binding_mismatch_durability(trusted_identity, durability_evidence):
+        return UserProfileStoreProductionAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.DURABILITY_EVIDENCE_MISMATCH,
+            provider_id=trusted_provider_id,
+            declared_qualification_status=classification.declared_qualification_status,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+            trusted_durability_status=durability_evidence.durability_status,
+            durability_run_id=durability_evidence.qualification_run_id,
+        )
+    if (
+        durability_evidence.durability_status
+        is not MemoryProviderTrustedDurabilityStatus.DURABLE
+    ):
+        return UserProfileStoreProductionAdmissionEvaluation(
+            admitted=False,
+            reason_code=MemoryProviderAdmissionReasonCode.PROVIDER_NOT_DURABLE,
+            provider_id=trusted_provider_id,
+            declared_qualification_status=classification.declared_qualification_status,
+            trusted_qualification_status=evidence.status,
+            qualification_run_id=evidence.qualification_run_id,
+            trusted_durability_status=durability_evidence.durability_status,
+            durability_run_id=durability_evidence.qualification_run_id,
+        )
     return UserProfileStoreProductionAdmissionEvaluation(
         admitted=True,
         reason_code=None,
@@ -268,6 +380,8 @@ def evaluate_production_persistent_user_profile_admission(
         declared_qualification_status=classification.declared_qualification_status,
         trusted_qualification_status=evidence.status,
         qualification_run_id=evidence.qualification_run_id,
+        trusted_durability_status=durability_evidence.durability_status,
+        durability_run_id=durability_evidence.qualification_run_id,
     )
 
 
@@ -289,6 +403,8 @@ class MemoryProviderAdmissionError(RuntimeError):
         qualification_run_id: str | None = None,
         declared_provider_id: str | None = None,
         trusted_provider_id: str | None = None,
+        trusted_durability_status: MemoryProviderTrustedDurabilityStatus | None = None,
+        durability_run_id: str | None = None,
     ) -> None:
         self.capability = capability
         self.execution_mode = execution_mode
@@ -302,6 +418,8 @@ class MemoryProviderAdmissionError(RuntimeError):
         self.qualification_run_id = qualification_run_id
         self.declared_provider_id = declared_provider_id
         self.trusted_provider_id = trusted_provider_id
+        self.trusted_durability_status = trusted_durability_status
+        self.durability_run_id = durability_run_id
         super().__init__(
             "memory provider admission failed: "
             f"capability={capability.value}; "
@@ -311,8 +429,11 @@ class MemoryProviderAdmissionError(RuntimeError):
             f"provider_id={provider_id}; "
             f"declared_provider_id={declared_provider_id or provider_id}; "
             f"trusted_provider_id={trusted_provider_id or 'none'}; "
-            f"durability={durability.value}; "
+            f"declared_durability={durability.value}; "
             f"declared_qualification_status={declared_qualification_status.value}; "
+            f"trusted_durability_status="
+            f"{trusted_durability_status.value if trusted_durability_status else 'none'}; "
+            f"durability_run_id={durability_run_id or 'none'}; "
             f"trusted_qualification_status="
             f"{trusted_qualification_status.value if trusted_qualification_status else 'none'}; "
             f"reference_only={reference_only}; "
