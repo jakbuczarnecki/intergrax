@@ -29,6 +29,7 @@ from intergrax.context.provider_lifecycle import (
     validate_required_sources_have_eligible_providers,
 )
 from intergrax.context.budget import global_allocatable_tokens, resolve_authoritative_model_budget
+from intergrax.context.budget.degradation import apply_degradation_ladder
 from intergrax.context.budget.assembly_strategies import snapshot_context_assembly_strategies
 from intergrax.context.budget.compaction_apply import apply_fragment_compaction
 from intergrax.context.budget.mandatory_reserve import estimate_mandatory_reserve_tokens
@@ -422,6 +423,18 @@ class DefaultNexusContextEngine:
         else:
             messages_for_compile = merge_fragment_messages(raw_messages, fragment_messages)
 
+        decision_profile = request.decision_profile
+        pre_planned_messages, pre_plan_degradation_steps = apply_degradation_ladder(
+            messages=list(messages_for_compile),
+            candidates=(),
+            budget_tokens=model_input_budget_tokens,
+            prefer_longterm_memory=decision_profile.prefer_longterm_memory,
+            prefer_rag_when_enabled=decision_profile.prefer_rag_when_enabled,
+            count_tokens=active_compiler.count_tokens,
+            policy=strategy_snapshot.degradation_policy,
+        )
+        messages_for_compile = tuple(pre_planned_messages)
+
         resolved_budget = model_input_budget_tokens
         session_history = await _load_session_history_snapshot(request, ctx)
         optimization_policy = _resolve_optimization_policy(runtime)
@@ -461,9 +474,28 @@ class DefaultNexusContextEngine:
             _record_validation_failed(event_bus, event_ctx, (str(exc),), stage="ucl_resolution")
             raise ValueError(str(exc)) from exc
 
-        planned_hash = compute_model_facing_messages_hash(ucl_resolution.messages)
+        degraded_messages, post_ucl_degradation_steps = apply_degradation_ladder(
+            messages=list(ucl_resolution.messages),
+            candidates=(),
+            budget_tokens=model_input_budget_tokens,
+            prefer_longterm_memory=decision_profile.prefer_longterm_memory,
+            prefer_rag_when_enabled=decision_profile.prefer_rag_when_enabled,
+            count_tokens=active_compiler.count_tokens,
+            policy=strategy_snapshot.degradation_policy,
+        )
+        combined_degradation_steps = (
+            *pre_plan_degradation_steps,
+            *post_ucl_degradation_steps,
+        )
+        canonical_degradation_steps = (
+            combined_degradation_steps
+            if combined_degradation_steps
+            else (DegradationStepKind.FULL.value,)
+        )
+
+        planned_hash = compute_model_facing_messages_hash(degraded_messages)
         compile_result = compile_chat_messages(
-            list(ucl_resolution.messages),
+            list(degraded_messages),
             runtime_config,
             compiler=active_compiler,
             max_output_tokens=max_output_tokens,
@@ -495,7 +527,7 @@ class DefaultNexusContextEngine:
             provenance=provenance,
             total_tokens=compile_result.total_tokens,
             budget_tokens=compile_result.budget_tokens,
-            degradation_steps=compile_result.degradation_steps,
+            degradation_steps=canonical_degradation_steps,
             context_plan=context_plan,
             provider_outcomes=tuple(provider_outcomes),
             provider_set_snapshot=bound_set.snapshot,

@@ -345,9 +345,9 @@ async def test_ce2_q7_custom_degradation_policy() -> None:
                 model_context_window=base.model_context_window,
                 reserved_output_tokens=base.reserved_output_tokens,
                 platform_margin_tokens=base.platform_margin_tokens,
-                available_input_tokens=306,
+                available_input_tokens=280,
                 mandatory_reserve_tokens=base.mandatory_reserve_tokens,
-                allocatable_tokens=max(0, 300 - base.mandatory_reserve_tokens),
+                allocatable_tokens=max(0, 260 - base.mandatory_reserve_tokens),
                 request_cap_tokens=base.request_cap_tokens,
                 policy_id=self.policy_id,
                 policy_version="test",
@@ -388,7 +388,12 @@ async def test_ce2_q7_custom_degradation_policy() -> None:
     )
     assert assembled.degradation_policy_id == "single_step_test"
     assert assembled.total_tokens <= assembled.budget_tokens
-    assert DegradationStepKind.FULL.value in assembled.degradation_steps
+    assert DegradationStepKind.DROP_OPTIONAL_INJECTIONS.value in assembled.degradation_steps
+    assert DegradationStepKind.FULL.value not in assembled.degradation_steps
+    message_contents = [message.content or "" for message in assembled.messages]
+    assert any("Instructions" in content for content in message_contents)
+    assert any(content.strip() == "hi" for content in message_contents)
+    assert not any("WEBSEARCH" in content for content in message_contents)
 
 
 @pytest.mark.asyncio
