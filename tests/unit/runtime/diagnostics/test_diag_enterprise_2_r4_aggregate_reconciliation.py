@@ -257,6 +257,41 @@ def test_a3_occurrence_saved_aggregate_fail_marks_repair_then_converges() -> Non
     assert scan.occurrence_count == 2
 
 
+def test_repair_boundary_scan_paginates_past_single_page() -> None:
+    """Regression: bounded repair scans must preserve document-store v2 cursors."""
+    store = in_memory_document_store_for_problem_tests()
+    occurrence_persistence = document_store_occurrence_persistence_for_tests(store)
+    problem_persistence = document_store_problem_persistence_for_tests(store)
+    problem = sample_problem(tenant_id=_TENANT, occurrence_count=0, observed_at=_OBSERVED_AT)
+    problem_persistence.create(problem, indexed_subject_refs=())
+
+    for index in range(501):
+        subject = _sample_subject_ref(tenant_id=_TENANT)
+        occurrence = sample_occurrences(
+            subject_refs=(subject,),
+            observed_at=_OBSERVED_AT + timedelta(seconds=index),
+        )[0]
+        occurrence_persistence.append_if_absent(
+            tenant_id=_TENANT,
+            problem_id=problem.problem_id,
+            occurrence=occurrence,
+        )
+
+    boundary = occurrence_persistence.capture_occurrence_repair_boundary(
+        tenant_id=_TENANT,
+        problem_id=problem.problem_id,
+    )
+    assert boundary is not None
+    scan = scan_occurrence_aggregate(
+        occurrence_persistence,
+        tenant_id=_TENANT,
+        problem_id=problem.problem_id,
+        page_size=500,
+        repair_boundary=boundary,
+    )
+    assert scan.occurrence_count == 501
+
+
 def test_repair_paginated_exact_100k() -> None:
     store = in_memory_document_store_for_problem_tests()
     occurrence_persistence = document_store_occurrence_persistence_for_tests(store)
