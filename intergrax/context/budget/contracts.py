@@ -5,7 +5,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import Enum
 from typing import TYPE_CHECKING
+
+
+class DegradationStepKind(str, Enum):
+    """Ordered degradation ladder steps (canonical CE contract; MEMORY canon §8.2)."""
+
+    FULL = "full"
+    DROP_OPTIONAL_INJECTIONS = "drop_optional_injections"
+    REDUCE_INJECTION_BLOCKS = "reduce_injection_blocks"
+    TRUNCATE_OLDEST_HISTORY = "truncate_oldest_history"
+    DROP_LOWEST_SCORED = "drop_lowest_scored"
+    TOKENIZER_HARD_TRIM = "tokenizer_hard_trim"
 
 if TYPE_CHECKING:
     from intergrax.context.contracts import ContextAssemblyRequest, ContextBudgetSnapshot

@@ -8,7 +8,16 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List
 
+from intergrax.context.budget.contracts import DegradationStepKind
 from intergrax.llm.messages import ChatMessage
+
+__all__ = (
+    "ContextCandidate",
+    "ContextCandidateSource",
+    "ContextCompileResult",
+    "ContextPreflightResult",
+    "DegradationStepKind",
+)
 
 
 class ContextCandidateSource(str, Enum):
@@ -23,17 +32,6 @@ class ContextCandidateSource(str, Enum):
     TOOLS = "tools"
     USER_TURN = "user_turn"
     OTHER = "other"
-
-
-class DegradationStepKind(str, Enum):
-    """Ordered degradation ladder steps (MEMORY canon §8.2)."""
-
-    FULL = "full"
-    DROP_OPTIONAL_INJECTIONS = "drop_optional_injections"
-    REDUCE_INJECTION_BLOCKS = "reduce_injection_blocks"
-    TRUNCATE_OLDEST_HISTORY = "truncate_oldest_history"
-    DROP_LOWEST_SCORED = "drop_lowest_scored"
-    TOKENIZER_HARD_TRIM = "tokenizer_hard_trim"
 
 
 @dataclass(frozen=True, slots=True)

@@ -7,10 +7,13 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
-from intergrax.context.budget.degradation import ContextDegradationPolicy, DefaultContextDegradationPolicy
+from intergrax.context.budget.degradation import (
+    ContextDegradationPolicy,
+    DegradationStepKind,
+    DefaultContextDegradationPolicy,
+)
 from intergrax.context.contracts import ContextFragmentSource
 from intergrax.context.planning import ContextSourceGroup
-from intergrax.runtime.nexus.context.context_compiler_models import DegradationStepKind
 
 _CE_CONTEXT_TAG = re.compile(
     r"^\[context:(?P<source>[a-z_]+):[^\]]+\]\s",
@@ -29,25 +32,14 @@ _OPTIONAL_INJECTION_SOURCES = frozenset(
 
 
 def detect_optional_injection_source(content: str) -> ContextFragmentSource | None:
-    """Classify non-primary system injections for plan grouping."""
+    """Optional injection source from explicit ``DefaultContextFormatter`` context tag only."""
     match = _CE_CONTEXT_TAG.match(content or "")
-    if match:
-        try:
-            return ContextFragmentSource(match.group("source"))
-        except ValueError:
-            pass
-    lowered = (content or "").lower()
-    if "long-term memory" in lowered or "user memory" in lowered or "ltm:" in lowered:
-        return ContextFragmentSource.LONGTERM_MEMORY
-    if "rag context" in lowered or "retrieved documents" in lowered:
-        return ContextFragmentSource.RAG
-    if "web search" in lowered or "websearch" in lowered:
-        return ContextFragmentSource.WEBSEARCH
-    if "attachments" in lowered or "session attachments" in lowered:
-        return ContextFragmentSource.ATTACHMENT
-    if "tool" in lowered and "context" in lowered:
-        return ContextFragmentSource.TOOL_OUTPUT
-    return None
+    if not match:
+        return None
+    try:
+        return ContextFragmentSource(match.group("source"))
+    except ValueError:
+        return None
 
 
 def _total_selected_tokens(

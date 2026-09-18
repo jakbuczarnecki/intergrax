@@ -6,11 +6,9 @@ from __future__ import annotations
 
 from typing import Callable, Protocol, Sequence, runtime_checkable
 
+from intergrax.context.budget.contracts import DegradationStepKind
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.nexus.context.context_compiler_models import (
-    ContextCandidate,
-    DegradationStepKind,
-)
+from intergrax.runtime.nexus.context.context_compiler_models import ContextCandidate
 
 
 @runtime_checkable

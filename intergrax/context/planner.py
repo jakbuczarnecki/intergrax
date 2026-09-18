@@ -432,6 +432,8 @@ def _group_base_messages(
                     droppable = injection_source in _DROPPABLE_SOURCES
                 else:
                     source = ContextFragmentSource.SYSTEM_INSTRUCTIONS
+                    required = True
+                    protected = True
             else:
                 source = ContextFragmentSource.SYSTEM_INSTRUCTIONS
                 required = True
