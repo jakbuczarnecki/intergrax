@@ -635,8 +635,16 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | Field | Value |
 |-------|-------|
 | **Status** | **CLOSED** (subject to independent audit) |
-| **Purpose** | `CollaborativeActivityAppendStore.append_idempotent(publication)` owns idempotency + `append_position` + `recorded_at` atomically; producers never supply sequencing |
+| **Purpose** | `CollaborativeActivityAppendStore.append_idempotent(intent)` owns idempotency + `append_position` + `recorded_at` atomically; producers never supply sequencing |
 | **Proof** | `test_mp6a_c1_r1_append_ownership_gates.py` |
+
+### MP-6B-C1 — Policy-resolved durability & validated append intent boundary
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED** (subject to independent audit) |
+| **Purpose** | `CollaborativeActivityAppendIntent` carries policy-resolved `effective_durability_class`; append store accepts intent (not raw publication); replay preserves original effective durability |
+| **Proof** | `test_mp6b_c1_policy_resolved_append_intent_boundary.py` |
 
 ---
 

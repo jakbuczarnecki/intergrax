@@ -98,4 +98,4 @@ def test_mp6a_public_ports_declared() -> None:
 def test_mp6a_c1_r1_append_store_atomic_semantics_documented() -> None:
     text = _read_contract()
     assert "atomically resolves duplicate idempotency keys" in text
-    assert "publication: CollaborativeActivityPublication" in text
+    assert "intent: CollaborativeActivityAppendIntent" in text

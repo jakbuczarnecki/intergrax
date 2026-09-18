@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """MP-6A-C1-R1 — atomic append position ownership and materialization boundary gates."""
 
@@ -15,8 +15,10 @@ from intergrax.contracts.collaborative_activity import (
     ActivityIdempotencyKey,
     CollaborativeActivity,
     CollaborativeActivityActorRef,
+    CollaborativeActivityAppendIntent,
     CollaborativeActivityBuiltinSource,
     CollaborativeActivityBuiltinType,
+    CollaborativeActivityDurabilityClass,
     CollaborativeActivityOutcome,
     CollaborativeActivityOutcomeStatus,
     CollaborativeActivityPublication,
@@ -124,6 +126,14 @@ def _publication(
     )
 
 
+def _intent(publication: CollaborativeActivityPublication | None = None) -> CollaborativeActivityAppendIntent:
+    pub = publication or _publication()
+    return CollaborativeActivityAppendIntent(
+        publication=pub,
+        effective_durability_class=CollaborativeActivityDurabilityClass.COLLABORATIVE,
+    )
+
+
 class _ContractFakeCollaborativeActivityAppendStore:
     """Test-only store proving MP-6A-C1-R1 append semantics (not a production implementation)."""
 
@@ -132,7 +142,8 @@ class _ContractFakeCollaborativeActivityAppendStore:
         self._by_key: dict[str, CollaborativeActivity] = {}
         self._next_position: dict[tuple[str, str], int] = defaultdict(lambda: 1)
 
-    def append_idempotent(self, publication: CollaborativeActivityPublication) -> CollaborativeActivity:
+    def append_idempotent(self, intent: CollaborativeActivityAppendIntent) -> CollaborativeActivity:
+        publication = intent.publication
         activity_id = mint_collaborative_activity_id(idempotency_key=publication.idempotency_key)
         existing = self._by_key.get(activity_id)
         if existing is not None:
@@ -159,7 +170,7 @@ class _ContractFakeCollaborativeActivityAppendStore:
             provenance_refs=publication.provenance_refs,
             correlation=publication.correlation,
             caused_by_activity_id=publication.caused_by_activity_id,
-            durability_class=publication.requested_durability_class,
+            durability_class=intent.effective_durability_class,
         )
         self._by_key[activity_id] = materialized
         return materialized
@@ -181,15 +192,15 @@ def test_mp6a_c1_r1_materialized_activity_has_append_position_and_recorded_at() 
     assert "recorded_at" in fields
 
 
-def test_mp6a_c1_r1_append_store_input_is_publication_not_materialized_activity() -> None:
+def test_mp6a_c1_r1_append_store_input_is_append_intent_not_materialized_activity() -> None:
     name, annotation = _append_idempotent_param()
-    assert name == "publication"
-    assert annotation == "CollaborativeActivityPublication"
+    assert name == "intent"
+    assert annotation == "CollaborativeActivityAppendIntent"
 
 
 def test_mp6a_c1_r1_new_publication_materializes_with_position() -> None:
     store = _ContractFakeCollaborativeActivityAppendStore()
-    activity = store.append_idempotent(_publication())
+    activity = store.append_idempotent(_intent(_publication()))
     assert activity.append_position == 1
     assert activity.recorded_at == _RECORDED
 
@@ -197,8 +208,8 @@ def test_mp6a_c1_r1_new_publication_materializes_with_position() -> None:
 def test_mp6a_c1_r1_duplicate_replay_same_identity_and_position() -> None:
     store = _ContractFakeCollaborativeActivityAppendStore()
     pub = _publication()
-    first = store.append_idempotent(pub)
-    second = store.append_idempotent(pub)
+    first = store.append_idempotent(_intent(pub))
+    second = store.append_idempotent(_intent(pub))
     assert second.activity_id == first.activity_id
     assert second.append_position == first.append_position
     assert second.recorded_at == first.recorded_at
@@ -206,8 +217,8 @@ def test_mp6a_c1_r1_duplicate_replay_same_identity_and_position() -> None:
 
 def test_mp6a_c1_r1_distinct_keys_monotonic_positions_same_workspace() -> None:
     store = _ContractFakeCollaborativeActivityAppendStore()
-    a = store.append_idempotent(_publication(source_stable_id="a"))
-    b = store.append_idempotent(_publication(source_stable_id="b"))
+    a = store.append_idempotent(_intent(_publication(source_stable_id="a")))
+    b = store.append_idempotent(_intent(_publication(source_stable_id="b")))
     assert a.append_position < b.append_position
     assert a.append_position == 1
     assert b.append_position == 2
@@ -215,7 +226,7 @@ def test_mp6a_c1_r1_distinct_keys_monotonic_positions_same_workspace() -> None:
 
 def test_mp6a_c1_r1_cross_workspace_independent_position_domains() -> None:
     store = _ContractFakeCollaborativeActivityAppendStore()
-    ws_a = store.append_idempotent(_publication(tenant="t1", workspace="ws-a"))
-    ws_b = store.append_idempotent(_publication(tenant="t1", workspace="ws-b"))
+    ws_a = store.append_idempotent(_intent(_publication(tenant="t1", workspace="ws-a")))
+    ws_b = store.append_idempotent(_intent(_publication(tenant="t1", workspace="ws-b")))
     assert ws_a.append_position == 1
     assert ws_b.append_position == 1

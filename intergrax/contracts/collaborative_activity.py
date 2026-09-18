@@ -1,4 +1,4 @@
-# © Artur Czarnecki. All rights reserved.
+﻿# © Artur Czarnecki. All rights reserved.
 
 """Collaborative Activity & Provenance public contracts (Multiplayer MP-6A).
 
@@ -20,6 +20,8 @@ MP-6A-C1-R1 assigns ``append_position`` and ``recorded_at`` only on materialized
 (producers never supply sequencing or materialization timestamps).
 MP-6B freezes runtime DTO invariants (structural validation, wire symmetry, golden
 identity, reference-only provenance, policy-owned effective durability).
+MP-6B-C1 introduces ``CollaborativeActivityAppendIntent`` — policy-resolved durability
+at the append-store boundary (store receives intent, not raw publication).
 Persistence ships in MP-6D+.
 """
 
@@ -49,6 +51,9 @@ SCHEMA_COLLABORATIVE_ACTIVITY_IDEMPOTENCY_KEY_V1: Final = (
 )
 SCHEMA_COLLABORATIVE_ACTIVITY_PUBLICATION_V1: Final = (
     "collaborative_activity_publication.v1"
+)
+SCHEMA_COLLABORATIVE_ACTIVITY_APPEND_INTENT_V1: Final = (
+    "collaborative_activity_append_intent.v1"
 )
 SCHEMA_COLLABORATIVE_ACTIVITY_QUERY_V1: Final = "collaborative_activity_query.v1"
 SCHEMA_COLLABORATIVE_ACTIVITY_PAGE_CURSOR_V1: Final = (
@@ -934,6 +939,29 @@ class CollaborativeActivityPublication(BaseModel):
         return self
 
 
+class CollaborativeActivityAppendIntent(BaseModel):
+    """Policy-validated append command — store-facing persistence input (MP-6B-C1).
+
+    Produced by the MP-6 policy / ingestion layer after semantic validation.
+    Wraps the producer ``CollaborativeActivityPublication`` and carries the
+    platform-resolved ``effective_durability_class`` authoritative for
+    materialized ``CollaborativeActivity.durability_class``.
+
+    Not a producer DTO, materialized record, or policy object.
+    """
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["collaborative_activity_append_intent.v1"] = (
+        SCHEMA_COLLABORATIVE_ACTIVITY_APPEND_INTENT_V1
+    )
+    publication: CollaborativeActivityPublication
+    effective_durability_class: CollaborativeActivityDurabilityClass = Field(
+        description="Policy-resolved durability — authoritative for persistence",
+    )
+
+
+
 class CollaborativeActivityPageCursor(BaseModel):
     """Opaque provider-neutral continuation token (append/snapshot position — not event time)."""
 
@@ -1039,11 +1067,12 @@ class CollaborativeActivityPublicationPort(Protocol):
 
 
 class CollaborativeActivityWritePort(Protocol):
-    """Internal MP-6 service boundary after policy validation (MP-6C).
+    """Internal MP-6 service boundary — producer publication ingress (MP-6C).
 
-    Delegates durable sequencing and materialization timestamps to
-    ``CollaborativeActivityAppendStore`` — callers must not pre-build
-    materialized ``CollaborativeActivity`` records for append.
+    Implementations resolve ingestion policy (including effective durability),
+    build ``CollaborativeActivityAppendIntent``, and delegate durable sequencing
+    and materialization timestamps to ``CollaborativeActivityAppendStore``.
+    Callers must not pre-build materialized ``CollaborativeActivity`` records.
     """
 
     def append(self, publication: CollaborativeActivityPublication) -> CollaborativeActivity: ...
@@ -1068,14 +1097,18 @@ class CollaborativeActivityAppendStore(Protocol):
     sequence; idempotency, position allocation, timestamp assignment, and
     durable append form one consistent semantic operation.
 
-    Policy (authority, namespace authorization, target semantics) is
-    out of scope — validated ``CollaborativeActivityPublication`` is the
-    append input; the store owns persistence semantics only.
+    Policy (authority, namespace authorization, target semantics, effective
+    durability) is out of scope — validated ``CollaborativeActivityAppendIntent``
+    is the append input; the store owns persistence semantics only and must
+    materialize ``durability_class`` from ``intent.effective_durability_class``
+    (never from ``intent.publication.requested_durability_class``). Duplicate
+    idempotency keys return the original materialized record without mutating
+    historical ``durability_class``.
     """
 
     def append_idempotent(
         self,
-        publication: CollaborativeActivityPublication,
+        intent: CollaborativeActivityAppendIntent,
     ) -> CollaborativeActivity: ...
 
     def get_by_idempotency_key(

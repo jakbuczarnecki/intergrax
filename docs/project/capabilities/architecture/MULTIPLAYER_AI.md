@@ -560,14 +560,17 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 
 **MP-6A-C1:** scoped idempotency identity; namespaced plugin activity types and source producers; opaque pagination cursor (append continuation) vs `occurred_at` event-time presentation.
 
-**MP-6A-C1-R1:** `append_position` and `recorded_at` are assigned only at the atomic `CollaborativeActivityAppendStore.append_idempotent(publication)` boundary; duplicate idempotency keys return the original materialized activity without a new position (per tenant/workspace monotonic uniqueness).
+**MP-6A-C1-R1:** `append_position` and `recorded_at` are assigned only at the atomic `CollaborativeActivityAppendStore.append_idempotent(intent)` boundary; duplicate idempotency keys return the original materialized activity without a new position (per tenant/workspace monotonic uniqueness).
+
+**MP-6B-C1:** `CollaborativeActivityAppendIntent` separates producer `requested_durability_class` from policy-resolved `effective_durability_class`; the append store materializes `durability_class` from the intent only; replay with a different effective durability does not mutate the original record.
 
 | Slice | Purpose | Status |
 |-------|---------|--------|
 | MP-6A | Ownership, contracts architecture, ADR, docs sync | **CLOSED / RECERTIFIED** |
 | MP-6A-C1 | Identity, extensibility, timeline semantics | **CLOSED** |
 | MP-6A-C1-R1 | Atomic append position / materialization ownership | **CLOSED** |
-| MP-6B | Core activity/provenance contracts (runtime hardening) | **NEXT** |
+| MP-6B | Core activity/provenance contracts (runtime hardening) | **CLOSED / RECERTIFIED** (**MP-6B-C1**) |
+| MP-6B-C1 | Policy-resolved append intent boundary | **CLOSED** |
 | MP-6C | Publication / ingestion boundary | PLANNED |
 | MP-6D | Append store + default persistence | PLANNED |
 | MP-6E | Scoped read / query | PLANNED |
