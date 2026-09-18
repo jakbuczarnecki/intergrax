@@ -6,9 +6,9 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 
+from intergrax.context.budget.mandatory_base_messages import estimate_mandatory_base_message_tokens
 from intergrax.context.contracts import ContextFragment
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.nexus.context.context_compiler import classify_candidates
 
 
 def estimate_mandatory_reserve_tokens(
@@ -18,11 +18,10 @@ def estimate_mandatory_reserve_tokens(
     count_text: Callable[[str], int],
 ) -> int:
     """Single mandatory reserve estimate for authoritative budget resolution."""
-    message_mandatory = 0
-    if base_messages:
-        for candidate in classify_candidates(base_messages, count_tokens=count_text):
-            if candidate.mandatory:
-                message_mandatory += candidate.token_estimate
+    message_mandatory = estimate_mandatory_base_message_tokens(
+        base_messages,
+        count_text=count_text,
+    )
     fragment_mandatory = sum(
         max(0, fragment.token_estimate)
         for fragment in collected_fragments

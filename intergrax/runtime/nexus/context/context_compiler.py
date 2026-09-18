@@ -21,6 +21,10 @@ from intergrax.runtime.nexus.context.context_compiler_models import (
     DegradationStepKind,
 )
 from intergrax.context.budget.contracts import ContextBudgetUnsatisfiableError
+from intergrax.context.budget.mandatory_base_messages import (
+    last_user_message_index,
+    mandatory_base_message_indices,
+)
 from intergrax.context.budget.degradation import ContextDegradationPolicy, DefaultContextDegradationPolicy
 from intergrax.runtime.nexus.context.degradation_ladder import apply_degradation_step
 
@@ -34,13 +38,6 @@ def _resolve_decision_profile(config: "RuntimeConfig") -> ContextDecisionProfile
     if raw:
         return ContextDecisionProfile.model_validate(raw)
     return ContextDecisionProfile()
-
-
-def _last_user_index(messages: Sequence[ChatMessage]) -> int:
-    for index in range(len(messages) - 1, -1, -1):
-        if messages[index].role == "user":
-            return index
-    return max(0, len(messages) - 1)
 
 
 _CE_CONTEXT_TAG = re.compile(
@@ -83,13 +80,14 @@ def classify_candidates(
     if not messages:
         return []
 
-    last_user = _last_user_index(messages)
+    last_user = last_user_message_index(messages)
+    mandatory_indices = mandatory_base_message_indices(messages)
     candidates: List[ContextCandidate] = []
 
     for index, message in enumerate(messages):
         content = message.content or ""
         token_estimate = count_tokens(content)
-        mandatory = index == last_user or (index == 0 and message.role == "system")
+        mandatory = index in mandatory_indices
 
         if index == last_user:
             source = ContextCandidateSource.USER_TURN
@@ -100,11 +98,9 @@ def classify_candidates(
         elif message.role == "system" and index < last_user:
             source = _detect_injection_source(content)
             score = 0.75
-            mandatory = False
         elif message.role in {"user", "assistant"}:
             source = ContextCandidateSource.SESSION_HISTORY
             score = 0.65
-            mandatory = index >= last_user - 1
         else:
             source = ContextCandidateSource.OTHER
             score = 0.5
@@ -176,7 +172,7 @@ class ContextCompiler:
 
       working = list(messages)
       if not decision.include_session_history:
-          last_user = _last_user_index(working)
+          last_user = last_user_message_index(working)
           preserved: List[ChatMessage] = []
           for index, message in enumerate(working):
               if index == 0 and message.role == "system":
@@ -281,7 +277,11 @@ class ContextCompiler:
       if total(messages) <= budget_tokens:
           return messages
 
-      last_user = _last_user_index(messages)
+      from intergrax.context.budget.mandatory_base_messages import (
+          estimate_mandatory_base_message_tokens,
+      )
+
+      last_user = last_user_message_index(messages)
       last_user_tokens = self._count_tokens(messages[last_user].content or "")
       if last_user_tokens > budget_tokens:
           raise ContextBudgetUnsatisfiableError(
@@ -289,14 +289,16 @@ class ContextCompiler:
               mandatory_tokens=last_user_tokens,
               available_tokens=budget_tokens,
           )
-      if messages and messages[0].role == "system":
-          system_tokens = self._count_tokens(messages[0].content or "")
-          if system_tokens > budget_tokens:
-              raise ContextBudgetUnsatisfiableError(
-                  detail="mandatory_system_instructions_exceed_budget",
-                  mandatory_tokens=system_tokens,
-                  available_tokens=budget_tokens,
-              )
+      mandatory_base_tokens = estimate_mandatory_base_message_tokens(
+          messages,
+          count_text=self._count_tokens,
+      )
+      if mandatory_base_tokens > budget_tokens:
+          raise ContextBudgetUnsatisfiableError(
+              detail="mandatory_system_instructions_exceed_budget",
+              mandatory_tokens=mandatory_base_tokens,
+              available_tokens=budget_tokens,
+          )
 
       policy = ContextBudgetPolicy(
           max_chars=budget_tokens * 4,

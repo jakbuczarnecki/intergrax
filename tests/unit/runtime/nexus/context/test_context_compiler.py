@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.context.budget.contracts import ContextBudgetUnsatisfiableError
 from intergrax.applications.contracts.environment_profile import ContextDecisionProfile
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -75,13 +76,35 @@ def test_context_compiler_trims_oversized_context() -> None:
     huge = "x" * 20_000
     messages = [
         ChatMessage(role="system", content="Instructions"),
-        ChatMessage(role="system", content=f"WEBSEARCH:\n{huge}"),
+        ChatMessage(role="user", content="prior"),
+        ChatMessage(role="assistant", content=huge),
         ChatMessage(role="user", content="hi"),
     ]
     compiler = ContextCompiler()
     result = compiler.compile(messages, config, max_output_tokens=64)
     assert result.trimmed is True
     assert DegradationStepKind.DROP_OPTIONAL_INJECTIONS.value in result.degradation_steps or result.total_tokens <= result.budget_tokens
+
+
+def test_context_compiler_fail_closed_when_mandatory_system_exceeds_budget() -> None:
+    adapter = _SmallWindowAdapter(window=512)
+    config = RuntimeConfig(
+        llm_adapter=adapter,
+        context_decision_profile=ContextDecisionProfile(
+            include_session_history=True,
+            prefer_longterm_memory=True,
+            prefer_rag_when_enabled=False,
+        ).model_dump(mode="json"),
+    )
+    huge = "x" * 20_000
+    messages = [
+        ChatMessage(role="system", content="Instructions"),
+        ChatMessage(role="system", content=f"WEBSEARCH:\n{huge}"),
+        ChatMessage(role="user", content="hi"),
+    ]
+    compiler = ContextCompiler()
+    with pytest.raises(ContextBudgetUnsatisfiableError):
+        compiler.compile(messages, config, max_output_tokens=64)
 
 
 def test_tokenizer_aware_trim() -> None:
