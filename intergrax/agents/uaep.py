@@ -46,6 +46,9 @@ from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventTyp
 from intergrax.runtime.hooks.governance_hooks import hook_context_for_task, run_hook_pair
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext
 from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.runtime.governance.kernel_step_governance_resolution import (
+    governance_resolution_from_kernel_step_record,
+)
 from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler, GovernanceResolution
 from intergrax.runtime.policy.agent_decision_enforcement import (
     agent_decision_failure_from_resolution,
@@ -529,20 +532,27 @@ class UAEPExecutor:
                 replan_policy = request.metadata.get("replan_policy.v1")
                 if isinstance(replan_policy, dict):
                     replan_context.update(replan_policy)
-                resolution = self._interrupt_handler.resolve_decision(
-                    decision,
-                    task_id=task_id,
-                    run_id=run_id,
-                    agent_id=contract.id,
-                    step_id=step.step_id,
-                    context=replan_context or None,
-                    decision_policy_context=AgentDecisionPolicyContext(
-                        require_human_on_critical=task_options.governance.require_human_on_critical,
-                        has_unresolved_critical_interrupt=bool(
-                            exec_ctx.metadata.get("has_unresolved_critical_interrupt", False)
-                        ),
-                    ),
+                kernel_record = step_result.kernel_step_record
+                resolution = (
+                    governance_resolution_from_kernel_step_record(kernel_record, decision)
+                    if kernel_record is not None
+                    else None
                 )
+                if resolution is None:
+                    resolution = self._interrupt_handler.resolve_decision(
+                        decision,
+                        task_id=task_id,
+                        run_id=run_id,
+                        agent_id=contract.id,
+                        step_id=step.step_id,
+                        context=replan_context or None,
+                        decision_policy_context=AgentDecisionPolicyContext(
+                            require_human_on_critical=task_options.governance.require_human_on_critical,
+                            has_unresolved_critical_interrupt=bool(
+                                exec_ctx.metadata.get("has_unresolved_critical_interrupt", False)
+                            ),
+                        ),
+                    )
                 if resolution.interrupt is not None:
                     interrupt_ctx = hook_context_for_task(
                         task_id=task_id,

@@ -180,9 +180,9 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-7 | External Effect / Reliability Boundary | **IMPLEMENTED** — qualification **OPEN** (ERL path; Reliability ≠ Governance) |
 | GR-8 | Governance Evidence Integration | **CANDIDATE CLOSED — PUBLIC CONTRACT FROZEN** — [ADR-GR-8-001](../../technical/adr/entries/2026-09-17/ADR-GR-8-001.md); independent final audit pending |
 | GR-9 | Diagnostic Consumption Proof | **OPEN** |
-| GR-10 | Execution Strategy Coverage | **PARTIAL** — **GR-10-FINAL** requalification; INFERENCE PRE_MODEL **QUALIFIED**; matrix partial rows remain; **GR-10-R3** UAEP AGENT_DECISION authority semantics |
+| GR-10 | Execution Strategy Coverage | **PARTIAL** — **GR-10-FINAL** requalification; INFERENCE PRE_MODEL **QUALIFIED**; matrix partial rows remain |
 | GR-10-FINAL | Strategy governance requalification | **CLOSED (qualification artifact)** — independent GitHub audit before GR-10 slice CLOSED |
-| GR-10-R3 | UAEP AGENT_DECISION authority on kernel path | **OPEN** — G3B `test_uaep_agent_decision_deny_blocks_subsequent_protected_step` fails: step blocked but `PolicyDecision` ALLOW |
+| GR-10-R3 | UAEP AGENT_DECISION authority on kernel path | **CANDIDATE CLOSED — UAEP POLICY AUTHORITY PRESERVED** — kernel `policy_pre` carried on `StepExecutionResult.kernel_step_record`; G3B deny proof green; independent GitHub audit required |
 | GR-10-R2-ADR1 | PRE_MODEL identity + intake boundary (ADR) | **CANDIDATE CLOSED** — [ADR-GR-10-001](../../technical/adr/entries/2026-09-18/ADR-GR-10-001.md) accepted; independent GitHub audit before CLOSED |
 | GR-10-R2-ADR1-R1 | PRE_MODEL identity SSOT reconciliation | **CANDIDATE CLOSED** — current docs reconciled to GR-10-R1 semantics; independent GitHub audit before CLOSED |
 | GR-10-R2-C1 | PRE_MODEL public contract revision | **CANDIDATE CLOSED** — `principal_id` required on `evaluate_pre_llm`; independent GitHub audit before CLOSED |

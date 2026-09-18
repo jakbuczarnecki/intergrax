@@ -46,12 +46,29 @@ from testing_support.builder import FakeLLMAdapter, build_in_memory_session_mana
 
 
 class _DenyContinuePolicyEngine(RuntimePolicyEngine):
+    def evaluate_pre_llm(
+        self,
+        *,
+        tenant_id: str,
+        principal_id: str,
+        agent_id: str | None = None,
+        message_count: int = 1,
+        context=None,
+    ):
+        return PolicyDecision(
+            action=PolicyAction.DENY,
+            reason="test_deny_continue",
+            policy_rule_id="test.deny_continue",
+            audit_payload={"gate": "gr10-r3"},
+        )
+
     def evaluate_decision(self, decision, *, context=None):
         if decision.type is AgentDecisionType.CONTINUE:
             return PolicyDecision(
                 action=PolicyAction.DENY,
                 reason="test_deny_continue",
                 policy_rule_id="test.deny_continue",
+                audit_payload={"gate": "gr10-r3"},
             )
         return super().evaluate_decision(decision, context=context)
 
@@ -317,7 +334,12 @@ async def test_uaep_agent_decision_deny_blocks_subsequent_protected_step() -> No
 
     assert governance is not None
     assert governance.policy_decision.action is PolicyAction.DENY
+    assert governance.policy_decision.reason == "test_deny_continue"
+    assert governance.policy_decision.policy_rule_id == "test.deny_continue"
+    assert governance.policy_decision.audit_payload == {"gate": "gr10-r3"}
+    assert governance.agent_decision.type is AgentDecisionType.FAIL
     assert governance.should_block_execution is True
+    assert governance.should_fail is True
     assert agent.protected_called is False
     step_events = [
         event
@@ -325,3 +347,10 @@ async def test_uaep_agent_decision_deny_blocks_subsequent_protected_step() -> No
         if event.event_type is RuntimeEventType.STEP_STARTED
     ]
     assert len(step_events) == 1
+    decision_events = [
+        event
+        for event in bus.history
+        if event.event_type is RuntimeEventType.DECISION_EMITTED
+    ]
+    assert len(decision_events) == 1
+    assert decision_events[0].payload["policy_action"] == PolicyAction.DENY.value

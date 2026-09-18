@@ -210,7 +210,11 @@ async def execute_uaep_step_via_kernel(
         decision = kernel_policy_denied_decision(record)
 
     exec_ctx.metadata["uaep_last_kernel_record"] = record.model_dump(mode="json")
-    return StepExecutionResult(output=output, decision=decision)
+    return StepExecutionResult(
+        output=output,
+        decision=decision,
+        kernel_step_record=record,
+    )
 
 
 def build_kernel_session(
