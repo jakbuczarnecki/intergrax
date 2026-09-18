@@ -340,6 +340,26 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-07 (pgvector) | **CLOSED** |
 | GAP-4-07 (Chroma) | OPEN |
 
+## MEM-FINAL-AUDIT-5E-R2 — Current-HEAD Real-Vendor Verification
+
+| Check | Result |
+| ----- | ------ |
+| Previous same-SHA verification (5E-R) | `a640c98f6fee7cb313f371efc102faf8fc0aa8e6` |
+| **Current-head re-verification** | **`9acff5d0925e962e09bca6c525343ff227980bc8`** |
+| Qdrant suite @ SHA | `test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` — **PASS (13)** |
+| pgvector suite @ SHA | `test_mem_final_audit_5e_pgvector_session_turn_index_real_vendor.py` — **PASS (19)**, DSN required |
+| Same-SHA proof | **YES** |
+| Qdrant infra | `intergrax-qdrant` Docker, `localhost:6333` |
+| pgvector infra | PostgreSQL **16.10**, pgvector **0.8.0**, psycopg **3.3.4**, `127.0.0.1:5433/intergrax_pgvector` |
+| Production changes | **NONE** |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5E-01 | **FULLY CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector) | **CLOSED** |
+| GAP-4-07 (Chroma) | OPEN |
+
 ## MEM-FINAL-AUDIT-5D-R — SessionTurnIndex trusted production admission
 
 | Check | Result |

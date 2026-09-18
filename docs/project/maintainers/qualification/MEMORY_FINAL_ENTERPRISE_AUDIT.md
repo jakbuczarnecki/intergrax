@@ -1561,3 +1561,36 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5F AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5E-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5F.
+
+## MEM-FINAL-AUDIT-5E-R2 — Current-HEAD Real-Vendor Verification
+
+| Check | Result |
+| ----- | ------ |
+| Purpose | Re-verify Qdrant + pgvector STI real-vendor gates on **current** `development` HEAD after commits following 5E-R |
+| Previous same-SHA verification (5E-R) | `a640c98f6fee7cb313f371efc102faf8fc0aa8e6` |
+| Audited docs baseline | `d231457932528269fb11f7b63811acbc9be7b865` — ancestor of verified SHA (**YES**) |
+| **Current-head re-verification** | **`9acff5d0925e962e09bca6c525343ff227980bc8`** |
+| Same-SHA proof | **YES** — Qdrant (13) + pgvector (19) on identical HEAD; HEAD unchanged between suites |
+| Working tree @ verification | **clean** — exact-SHA proof valid |
+| pgvector DSN | Required (`INTERGRAX_PGVECTOR_DSN` + `INTERGRAX_PGVECTOR_DIMENSION=4`); run without DSN is **not** certification |
+| Qdrant real-vendor suite | `test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` — **13 passed** |
+| pgvector real-vendor suite | `test_mem_final_audit_5e_pgvector_session_turn_index_real_vendor.py` — **19 passed**, **0** required skips |
+| Qdrant infra | Docker `intergrax-qdrant`, `localhost:6333` (default `INTERGRAX_QDRANT_HOST` / port **6333**) |
+| pgvector infra | PostgreSQL **16.10**, pgvector **0.8.0**, psycopg **3.3.4**, `127.0.0.1:5433` / `intergrax_pgvector` (password omitted); `pg_extension.extname = vector` confirmed in suite |
+| STI admission / identity (R/R2/R3 + composite) | **36 passed** |
+| Full Memory + application/session regression | Single batch: STI R/R2/R3 + `tests/unit/memory` + `tests/integration/memory` + memory vector/wiring + SessionManager LTM — **722 passed**, 1 skipped (Windows chmod) |
+| Cross-vendor admission | Qdrant↔pgvector evidence/runtime mismatch **FAIL as expected**; adapter-only + missing evidence **FAIL** |
+| Vendor leakage (`intergrax/memory/**`) | **0** production vendor imports |
+| Production code changes | **NONE** |
+| Service restart | Qdrant / PostgreSQL service restart **not executed** |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5E-01 | **FULLY CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector) | **CLOSED** |
+| GAP-4-07 (Chroma) | OPEN |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5F AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5E-R2 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5F.
