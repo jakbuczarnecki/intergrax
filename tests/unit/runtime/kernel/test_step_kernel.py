@@ -515,6 +515,7 @@ async def test_kernel_strict_product_fails_closed_without_policy_engine() -> Non
             agent_id="demo",
             task_id=task_id,
             run_id=run_id,
+            principal_id="principal-1",
             production_mode=True,
         )
         outcome = StepOutcome.continue_with({"phase": "plan"})
@@ -554,6 +555,7 @@ async def test_kernel_strict_product_ignores_permissive_missing_policy_flag() ->
             agent_id="demo",
             task_id=task_id,
             run_id=run_id,
+            principal_id="principal-1",
             production_mode=True,
             allow_permissive_missing_policy=True,
         )

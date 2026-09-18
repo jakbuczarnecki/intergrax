@@ -298,5 +298,5 @@ def test_gr10_r2_adr1_r1_current_docs_mark_inference_pre_model_as_real_blocker()
     arch = gr10_architecture_remaining_gaps_slice()
     plan = gr10_maintainer_roadmap_slice()
     assert "PRE_MODEL" in arch and "GR-10-R2" in arch
-    assert "GR-10-R2" in plan and "PRE_MODEL" in plan
-    assert "BLOCKED" in plan
+    assert "GR-10-R2-R1" in plan and "PRE_MODEL" in plan
+    assert "CANDIDATE CLOSED" in plan

@@ -69,11 +69,8 @@ def test_gr10_adr1_evaluate_pre_llm_requires_principal_after_c1() -> None:
 
 def test_gr10_adr1_pre_model_eval_does_not_derive_principal_from_evidence() -> None:
     text = _read(PRE_MODEL_EVAL_PATH)
-    assert "peek_active_execution_evidence_context" in text
-    assert "principal_id" not in text.split("peek_active_execution_evidence_context")[1].split(
-        "def ",
-        1,
-    )[0]
+    assert "peek_active_execution_evidence_context" not in text
+    assert "peek_active_execution_lineage" not in text
 
 
 def test_gr10_adr1_no_global_governance_identity_getter() -> None:

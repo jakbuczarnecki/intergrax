@@ -39,7 +39,8 @@ from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.contracts.runtime_policy_context import PreModelPhase, PreModelPolicyContext
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.policy.policy_engine import PolicyEngine
-from intergrax.runtime.policy.pre_model_principal import principal_id_for_orchestration_task
+from intergrax.runtime.policy.pre_model_policy_evaluation import PreModelPolicyConfigurationError
+from intergrax.runtime.policy.pre_model_principal import require_orchestration_pre_model_governance_scope
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -189,9 +190,33 @@ class NexusPlanningRunner:
 
         planning_policy_action = PolicyAction.ALLOW.value
         if self.policy_engine is not None:
+            try:
+                governance_scope = require_orchestration_pre_model_governance_scope(task)
+            except PreModelPolicyConfigurationError as exc:
+                failure_kind = ReasoningFailureKind.PLANNER_POLICY_BLOCKED
+                task.metadata["reasoning_failure_kind"] = failure_kind.value
+                record_planning_failure(kind=failure_kind.value)
+                task.sync_metadata()
+                lifecycle.transition(task, TaskState.FAILED)
+                return PlanningPhaseOutcome(
+                    early_result=await self.finish_task(
+                        task,
+                        trace_emitter,
+                        answer="",
+                        executions=[],
+                        validation=ValidationResult(
+                            valid=False,
+                            errors=[str(exc)],
+                        ),
+                        plan=None,
+                        retry_records=[],
+                        graph_id="",
+                    ),
+                    classification=classification,
+                )
             policy_decision = self.policy_engine.evaluate_pre_llm(
-                tenant_id=task.tenant_id,
-                principal_id=principal_id_for_orchestration_task(task),
+                tenant_id=governance_scope.tenant_id,
+                principal_id=governance_scope.principal_id,
                 agent_id=task.agent_id,
                 message_count=1,
                 context=PreModelPolicyContext(

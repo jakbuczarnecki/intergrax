@@ -27,12 +27,8 @@ from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.contracts.runtime_policy_context import PreModelPolicyContext
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.execution.failure_evidence.active_context import (
-    peek_active_execution_evidence_context,
-)
-from intergrax.runtime.execution.lineage.active_lineage import peek_active_execution_lineage
 from intergrax.runtime.governance.active_execution_governance_identity import (
-    peek_active_execution_governance_identity,
+    ActiveExecutionGovernanceIdentity,
     require_active_execution_governance_identity,
 )
 from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
@@ -57,27 +53,13 @@ class PreModelPolicyConfigurationError(RuntimeError):
     """PRE_MODEL cannot run — missing policy dependency or governance identity."""
 
 
-def _resolve_tenant_id() -> str:
-    governance = peek_active_execution_governance_identity()
-    if governance is not None:
-        return governance.tenant_id
-    lineage = peek_active_execution_lineage()
-    if lineage is not None:
-        return lineage.scope.tenant_id
-    evidence = peek_active_execution_evidence_context()
-    if evidence is not None:
-        return evidence.tenant_id
-    raise PreModelPolicyConfigurationError("pre_model tenant_id unavailable")
-
-
-def _resolve_governance_identity_for_evidence() -> tuple[str, str, str]:
+def _require_pre_model_governance_identity() -> ActiveExecutionGovernanceIdentity:
     try:
-        identity = require_active_execution_governance_identity()
+        return require_active_execution_governance_identity()
     except RuntimeError as exc:
         raise PreModelPolicyConfigurationError(
             "pre_model governance identity unavailable",
         ) from exc
-    return identity.tenant_id, identity.workspace_id, identity.principal_id
 
 
 def _execution_correlation() -> tuple[TaskId | None, RunId | None, AttemptId | None, ExecutionId | None]:
@@ -160,10 +142,10 @@ def enforce_pre_model_before_structured_inference(
     if policy_engine is None:
         raise PreModelPolicyConfigurationError("pre_model policy engine required")
 
-    tenant_id = _resolve_tenant_id()
-    tenant_id_ev, workspace_id, principal_id = _resolve_governance_identity_for_evidence()
-    if tenant_id_ev != tenant_id:
-        raise PreModelPolicyConfigurationError("pre_model tenant_id identity mismatch")
+    identity = _require_pre_model_governance_identity()
+    tenant_id = identity.tenant_id
+    workspace_id = identity.workspace_id
+    principal_id = identity.principal_id
 
     message_count = len(messages)
     model_id = getattr(adapter, "model", "") or ""

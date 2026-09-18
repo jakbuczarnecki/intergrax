@@ -122,6 +122,16 @@ class StepKernelContext:
     boundary_event_buffer: BoundaryEventBuffer | None = None
 
 
+def _missing_principal_decision(kernel_ctx: StepKernelContext) -> PolicyDecision | None:
+    if kernel_ctx.production_mode and not (kernel_ctx.principal_id or "").strip():
+        return PolicyDecision(
+            action=PolicyAction.DENY,
+            reason="missing_principal_id",
+            policy_rule_id="kernel.missing_principal_id",
+        )
+    return None
+
+
 def _missing_policy_engine_decision(kernel_ctx: StepKernelContext) -> PolicyDecision:
     """Fail closed unless dev/test explicitly opts into permissive missing-policy wiring."""
     if (
@@ -605,6 +615,9 @@ class HarnessKernel:
         step_ctx: AgentStepContext,
         kernel_ctx: StepKernelContext,
     ) -> PolicyDecision:
+        missing_principal = _missing_principal_decision(kernel_ctx)
+        if missing_principal is not None:
+            return missing_principal
         if kernel_ctx.policy_engine is None:
             return _missing_policy_engine_decision(kernel_ctx)
         if step_ctx.metadata.get("policy_pre_deny"):
