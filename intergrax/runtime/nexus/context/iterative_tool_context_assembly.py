@@ -65,11 +65,14 @@ async def assemble_iterative_tool_planner_messages(
     messages: list[ChatMessage],
 ) -> tuple[ChatMessage, ...]:
     """Run canonical CE assembly for the next bounded ReAct planner round."""
+    workspace_raw = state.request.workspace_id
+    workspace_id = workspace_raw.strip() if isinstance(workspace_raw, str) and workspace_raw.strip() else None
     assembly_request = ContextAssemblyRequest(
         trace_id=state.run_id,
         run_id=state.run_id,
         task_id=state.task_id,
         tenant_id=state.tenant_id,
+        workspace_id=workspace_id,
         assembly_scope="acp_step",
         objective=state.request.message or "",
         decision_profile=ContextDecisionSnapshot(),

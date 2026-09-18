@@ -356,6 +356,7 @@ class ContextAssemblyRequest:
     decision_profile: ContextDecisionSnapshot
     budget_policy: ContextBudgetSnapshot
     assembly_options: TaskContextAssemblyOptions
+    workspace_id: str | None = None
     step_index: int | None = None
     graph_node_id: str | None = None
     step_kind: str | None = None
@@ -368,6 +369,12 @@ class ContextAssemblyRequest:
     def __post_init__(self) -> None:
         if not isinstance(self.execution_scope, ModelCallExecutionScope):
             raise ValueError("execution_scope must be ModelCallExecutionScope")
+        if self.workspace_id is not None:
+            stripped = self.workspace_id.strip()
+            if not stripped:
+                raise ValueError("workspace_id must be non-empty when provided")
+            if stripped != self.workspace_id:
+                object.__setattr__(self, "workspace_id", stripped)
 
     def __repr__(self) -> str:
         return (

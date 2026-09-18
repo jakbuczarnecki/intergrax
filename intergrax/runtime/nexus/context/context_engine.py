@@ -71,6 +71,9 @@ from intergrax.runtime.nexus.context.context_preflight import verify_context_pre
 from intergrax.runtime.nexus.context.context_validator import DefaultContextValidator
 from intergrax.runtime.wiring.context_runtime_bridge import resolve_context_optimization_policy
 from intergrax.runtime.nexus.context.assembly_runtime_deps import ContextAssemblyRuntimeDependencies
+from intergrax.runtime.nexus.context.ucl_artifact_ownership_composition import (
+    resolve_ucl_artifact_ownership_scope,
+)
 from intergrax.runtime.nexus.context.ucl_orchestration import (
     NexusUCLExecutionError,
     NexusUCLExecutionReason,
@@ -451,6 +454,11 @@ class DefaultNexusContextEngine:
         if ucl_runtime is not None and not isinstance(ucl_runtime, NexusUCLRuntimeDependencies):
             raise ValueError("ContextAssemblyRuntimeDependencies.ucl_runtime must be NexusUCLRuntimeDependencies")
 
+        artifact_ownership = resolve_ucl_artifact_ownership_scope(
+            request,
+            context_plan=context_plan,
+        )
+
         try:
             ucl_resolution = await resolve_ucl_context_plan(
                 request=request,
@@ -462,6 +470,7 @@ class DefaultNexusContextEngine:
                 ranked_fragments=ranked_fragments,
                 runtime=ucl_runtime,
                 count_tokens=active_compiler.count_tokens,
+                artifact_ownership=artifact_ownership,
             )
         except NexusUCLExecutionError as exc:
             _record_validation_failed(event_bus, event_ctx, (str(exc),), stage="ucl_resolution")
