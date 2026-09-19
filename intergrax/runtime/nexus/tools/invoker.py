@@ -15,6 +15,9 @@ from pydantic import BaseModel
 if TYPE_CHECKING:
     from intergrax.contracts.canonical_inner_governance import CanonicalInnerExecutionGuardPort
     from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
+    from intergrax.runtime.nexus.tools.meaningful_side_effect_authorization_port import (
+        MeaningfulSideEffectAuthorizationPort,
+    )
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     from intergrax.runtime.sandbox.isolation_gate import SandboxAvailabilityProvider
     from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
@@ -28,6 +31,7 @@ from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
 )
 from intergrax.runtime.policy.side_effect_authorization_errors import (
     MeaningfulSideEffectAuthorizationRequiredError,
+    SideEffectAuthorizationFailureReason,
 )
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.tools.tool_invocation import ToolInvocationEndDiagV1, ToolInvocationErrorDiagV1, ToolInvocationStartDiagV1
@@ -152,6 +156,9 @@ class RuntimeToolInvoker:
         sandbox_availability: Optional["SandboxAvailabilityProvider"] = None,
         agent_runtime_governance: Optional["AgentRuntimeGovernancePort"] = None,
         inner_execution_guard: Optional["CanonicalInnerExecutionGuardPort"] = None,
+        meaningful_side_effect_authorization: Optional[
+            "MeaningfulSideEffectAuthorizationPort"
+        ] = None,
         dependency_attempt_boundary: DependencyAttemptExecutionBoundary | None = None,
         external_operation_store: ExternalOperationStateStore | None = None,
         external_operation_owner: ProcessLocalExternalOperationOwner | None = None,
@@ -168,6 +175,7 @@ class RuntimeToolInvoker:
         self._sandbox_availability = sandbox_availability
         self._agent_runtime_governance = agent_runtime_governance
         self._inner_execution_guard = inner_execution_guard
+        self._meaningful_side_effect_authorization = meaningful_side_effect_authorization
         self._dependency_attempt_boundary = dependency_attempt_boundary
         self._external_operation_store = external_operation_store
         if external_operation_store is not None and external_operation_owner is None:
@@ -597,6 +605,106 @@ class RuntimeToolInvoker:
                     matched_rule_ids=decision.matched_rule_ids,
                     reasons=decision.reasons,
                 )
+
+        self._require_canonical_meaningful_side_effect_authorization(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+        )
+
+    def _require_canonical_meaningful_side_effect_authorization(
+        self,
+        *,
+        state: "RuntimeState",
+        agent_id: str,
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> None:
+        """Canonical MSE boundary before idempotency claim / ToolExecutor (GR-10-R9)."""
+        if not contract.side_effects:
+            return
+
+        boundary = self._meaningful_side_effect_authorization
+        if boundary is None:
+            if state.context.config.production_mode:
+                raise MeaningfulSideEffectAuthorizationRequiredError(
+                    run_id=state.run_id,
+                    agent_id=agent_id,
+                    tool_id=contract.tool_id,
+                    reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
+                )
+            return
+
+        from intergrax.contracts.runtime_policy import PolicyAction
+        from intergrax.runtime.agent_governance.errors import (
+            ToolGovernanceApprovalRequiredError,
+            ToolGovernanceDeniedError,
+        )
+        from intergrax.runtime.nexus.tools.tool_invocation_meaningful_side_effect import (
+            build_tool_invocation_meaningful_side_effect_enforcement_request,
+        )
+        from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+        from intergrax.runtime.nexus.tracing.tools.tool_invocation import (
+            ToolInvocationErrorDiagV1,
+        )
+        from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
+        enforcement_request = build_tool_invocation_meaningful_side_effect_enforcement_request(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+        )
+        authorization = boundary.authorize(
+            enforcement_request,
+            source_agent_id=agent_id,
+            source_step_id=str(request.step_id),
+        )
+        decision = authorization.decision
+        capability = contract.category.strip() or contract.tool_id
+        if decision.action is PolicyAction.DENY:
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="meaningful_side_effect_authorization_denied",
+                message="Meaningful side-effect authorization denied tool invocation.",
+                level=TraceLevel.ERROR,
+                payload=ToolInvocationErrorDiagV1(
+                    tool_id=request.tool_id,
+                    step_id=str(request.step_id),
+                    error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                    error_message=decision.reason,
+                ),
+            )
+            raise ToolGovernanceDeniedError(
+                run_id=state.run_id,
+                agent_id=agent_id,
+                tool_id=request.tool_id,
+                capability=capability,
+                reason=decision.reason,
+                policy_results=(),
+            )
+        if decision.action in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE):
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="meaningful_side_effect_authorization_human_required",
+                message="Meaningful side-effect authorization requires human judgment.",
+                level=TraceLevel.ERROR,
+                payload=ToolInvocationErrorDiagV1(
+                    tool_id=request.tool_id,
+                    step_id=str(request.step_id),
+                    error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                    error_message=decision.reason,
+                ),
+            )
+            raise ToolGovernanceApprovalRequiredError(
+                run_id=state.run_id,
+                agent_id=agent_id,
+                tool_id=request.tool_id,
+                capability=capability,
+                approval_id=decision.policy_rule_id or "meaningful_side_effect.require_human",
+                reason=decision.reason,
+                policy_results=(),
+            )
 
     def _require_agent_runtime_governance(
         self,

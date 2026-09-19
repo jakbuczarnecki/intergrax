@@ -167,3 +167,21 @@ def prepare_invocation_inner_guard_before_authorization_indices(
                 auth_idx = index
         break
     return guard_idx, auth_idx
+
+
+def prepare_invocation_mse_before_idempotency_indices(
+    tree: ast.AST,
+) -> tuple[int | None, int | None]:
+    """Return indices of MSE authorization vs idempotency claim in ``invoke``."""
+    mse_idx: int | None = None
+    idempotency_idx: int | None = None
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef) or node.name != "invoke":
+            continue
+        for index, name in enumerate(_self_method_calls_in_function(node)):
+            if name == "_prepare_invocation":
+                mse_idx = index
+            elif name == "before_external_effect":
+                idempotency_idx = index
+        break
+    return mse_idx, idempotency_idx

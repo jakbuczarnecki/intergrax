@@ -287,9 +287,11 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
     Gr10ResidualStrategyCapabilitySemantics(
         "MSE",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "require_meaningful_side_effect_authorization on consequential RuntimeToolInvoker paths; not all "
-        "orchestration external-work / graph side-effect seams enterprise-qualified.",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-10-R9: production RuntimeToolInvoker wires MeaningfulSideEffectAuthorizationPort; "
+        "consequential tools (side_effects=True) require canonical boundary.authorize before "
+        "idempotency claim / ToolExecutor; composition default + host override; External Work "
+        "retains existing boundary injection.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Decision-bound effect",
@@ -421,8 +423,8 @@ GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
         Gr10CoverageStatus.PARTIAL,
         "MP-4R7 / contractor host qualified.",
         True,
-        Gr10CoverageStatus.PARTIAL,
-        "Not all graph/tool external effects.",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-10-R9: orchestration tool invoke via RuntimeToolInvoker canonical MSE boundary.",
     ),
     Gr10GepCoverageRow(
         "PRE_OUTPUT",
@@ -482,6 +484,21 @@ GR10_R8_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
     why_highest=(
         "Highest remaining ORCHESTRATION capability row still PARTIAL after GR-10-R8 inner guard closure; "
         "distinct from Inner Governance spine (GR-3 identity binding vs consequential authorization)."
+    ),
+)
+
+
+GR10_R9_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-R10 — ORCHESTRATION Decision-bound effect production GEP coverage",
+    strategy="ORCHESTRATION",
+    capability="Decision-bound effect",
+    exact_blocker=(
+        "Not all orchestration consequential paths bind DecisionRequirementPolicy / decision governance "
+        "material before physical effect despite MSE boundary closure."
+    ),
+    why_highest=(
+        "Highest remaining ORCHESTRATION capability row after GR-10-R9 MSE QUALIFIED; GR-6 spine "
+        "partial on orchestration graph/tool seams outside External Work host slices."
     ),
 )
 

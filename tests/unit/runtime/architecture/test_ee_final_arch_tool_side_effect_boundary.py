@@ -43,4 +43,8 @@ def test_ee_final_arch_agents_do_not_construct_runtime_tool_invoker() -> None:
 def test_ee_final_arch_approved_runtime_tool_invoker_construction_sites_exist() -> None:
     for path in _APPROVED_INVOKER_OWNERS:
         assert path.is_file()
-        assert "RuntimeToolInvoker(" in path.read_text(encoding="utf-8")
+        source = path.read_text(encoding="utf-8")
+        assert (
+            "RuntimeToolInvoker(" in source
+            or "build_production_runtime_tool_invoker(" in source
+        )

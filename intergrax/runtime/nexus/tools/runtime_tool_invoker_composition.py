@@ -14,6 +14,13 @@ from intergrax.runtime.governance.meaningful_side_effect_authorization_compositi
     build_default_canonical_inner_execution_guard,
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.nexus.tools.meaningful_side_effect_authorization_port import (
+    MeaningfulSideEffectAuthorizationPort,
+)
+from intergrax.runtime.nexus.tools.orchestration_meaningful_side_effect_composition import (
+    as_meaningful_side_effect_authorization_port,
+    build_default_orchestration_meaningful_side_effect_authorization_boundary,
+)
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
     DependencyAttemptExecutionBoundary,
@@ -48,6 +55,7 @@ def build_production_runtime_tool_invoker(
     registry: ToolRegistry,
     executor: ToolExecutor | None = None,
     inner_execution_guard: CanonicalInnerExecutionGuardPort | None = None,
+    meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None,
     scope_policy: ToolScopePolicy | None = None,
     pre_effect_coordinator: IdempotencyPreEffectCoordinator | None = None,
     idempotency_store: IdempotencyStore | None = None,
@@ -73,6 +81,11 @@ def build_production_runtime_tool_invoker(
             raise ProductionRuntimeToolInvokerCompositionError(
                 "canonical inner execution guard is required when production_mode=True",
             )
+    mse_authorization = meaningful_side_effect_authorization
+    if production_mode and mse_authorization is None:
+        mse_authorization = as_meaningful_side_effect_authorization_port(
+            build_default_orchestration_meaningful_side_effect_authorization_boundary(),
+        )
     resolved_executor = executor or RegistryToolExecutor(registry)
     coordinator = pre_effect_coordinator
     if coordinator is None and idempotency_store is not None:
@@ -85,6 +98,7 @@ def build_production_runtime_tool_invoker(
         sandbox_availability=sandbox_availability,
         agent_runtime_governance=agent_runtime_governance,
         inner_execution_guard=guard,
+        meaningful_side_effect_authorization=mse_authorization,
         dependency_attempt_boundary=dependency_attempt_boundary,
         external_operation_store=external_operation_store,
         external_operation_owner=external_operation_owner,
