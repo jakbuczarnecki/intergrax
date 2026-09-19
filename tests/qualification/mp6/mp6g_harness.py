@@ -9,23 +9,40 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Final
 
+from intergrax.collaborative_work.artifact_service import (
+    CollaborativeWorkArtifactService,
+    TRUSTED_OPERATION_WORK_ARTIFACT_CREATE,
+    TRUSTED_OPERATION_WORK_ARTIFACT_PUBLISH,
+)
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
 from intergrax.collaborative_work.collaborative_activity_composition import (
     build_collaborative_activity_ingestion_service,
     build_collaborative_activity_read_service,
 )
+from intergrax.collaborative_work.collaborative_activity_read import CollaborativeActivityReadService
 from intergrax.collaborative_work.collaborative_activity_publisher_resolution import (
     DefaultCollaborativeActivityPublisherContextResolver,
     MappingCollaborativeActivityPublisherAuthoritySource,
 )
 from intergrax.collaborative_work.collaborative_activity_source_adapters import (
+    CollaborativeDecisionBindingServiceWithActivityPublication,
+    CollaborativeWorkArtifactServiceWithActivityPublication,
     CollaborativeWorkServiceWithActivityPublication,
+    ContextViewComposerWithActivityPublication,
 )
 from intergrax.collaborative_work.collaborative_activity_source_mapping import (
     FixedCollaborativeActivityActorPrincipalKindResolver,
 )
 from intergrax.collaborative_work.collaborative_activity_source_wiring import (
+    wire_collaborative_decision_binding_service_with_activity_publication,
+    wire_collaborative_work_artifact_service_with_activity_publication,
     wire_collaborative_work_service_with_activity_publication,
+    wire_context_view_composer_with_activity_publication,
+)
+from intergrax.collaborative_work.context_view_composition import DefaultContextViewComposer
+from intergrax.collaborative_work.decision_binding_service import (
+    CollaborativeDecisionBindingService,
+    TRUSTED_OPERATION_COLLABORATIVE_DECISION_BINDING_CREATE,
 )
 from intergrax.collaborative_work.collaborative_activity_ingestion import (
     CollaborativeActivityIngestionService,
@@ -47,14 +64,24 @@ from intergrax.collaborative_work.repository import (
 from intergrax.collaborative_work.service import (
     CollaborativeWorkService,
     TRUSTED_OPERATION_ASSIGNMENT_CREATE,
+    TRUSTED_OPERATION_ASSIGNMENT_TRANSITION,
     TRUSTED_OPERATION_WORK_ITEM_CREATE,
     TRUSTED_OPERATION_WORK_ITEM_TRANSITION,
+)
+from intergrax.contracts.collaborative_activity_ingestion import CollaborativeActivityIngestionPolicy
+from intergrax.contracts.collaborative_activity_publisher_authority import (
+    CollaborativeActivityPublisherRegistration,
+)
+from intergrax.contracts.context_view_source_ports import (
+    ContextViewMemorySourceCandidatesResult,
+    ContextViewMemorySourceRequest,
+    ContextViewSourceOutcome,
 )
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.collaborative_activity import (
-    CollaborativeActivity,
     CollaborativeActivityAppendStore,
+    CollaborativeActivityPageCursor,
     CollaborativeActivityReadPort,
 )
 from intergrax.contracts.collaborative_activity_publisher_authority import (
@@ -181,6 +208,21 @@ def seed_workspace_principal_authority(
             )
 
 
+@dataclass(frozen=True, slots=True)
+class _Mp6gEmptyMemorySource:
+    """Empty Memory port for DefaultContextViewComposer in qualification wiring."""
+
+    def list_candidates(
+        self,
+        request: ContextViewMemorySourceRequest,
+    ) -> ContextViewMemorySourceCandidatesResult:
+        _ = request
+        return ContextViewMemorySourceCandidatesResult(
+            outcome=ContextViewSourceOutcome.OK,
+            candidates=(),
+        )
+
+
 def build_enforcement_gate(
     bundle: CollaborativeWorkRepositoriesWithArtifacts,
     *,
@@ -221,9 +263,22 @@ class Mp6gHarness:
     append_store: CollaborativeActivityAppendStore
     read_port: CollaborativeActivityReadPort
     ingestion: CollaborativeActivityIngestionService
-    read_service: object
+    ingestion_by_tenant: dict[str, CollaborativeActivityIngestionService]
+    read_service: CollaborativeActivityReadService
+    enforcement_gate: CollaborativeWorkEnforcementGate
+    raw_work_service: CollaborativeWorkService
+    principal_kind_resolver: FixedCollaborativeActivityActorPrincipalKindResolver
     work_service: CollaborativeWorkServiceWithActivityPublication
     work_services_by_tenant: dict[str, CollaborativeWorkServiceWithActivityPublication]
+    artifact_service: CollaborativeWorkArtifactServiceWithActivityPublication
+    artifact_services_by_tenant: dict[str, CollaborativeWorkArtifactServiceWithActivityPublication]
+    decision_binding_service: CollaborativeDecisionBindingServiceWithActivityPublication
+    decision_binding_services_by_tenant: dict[
+        str,
+        CollaborativeDecisionBindingServiceWithActivityPublication,
+    ]
+    context_view_composer: ContextViewComposerWithActivityPublication
+    context_view_composers_by_tenant: dict[str, ContextViewComposerWithActivityPublication]
     authority_resolver: CollaborativeWorkAuthorityResolver
     verified_publisher: VerifiedCollaborativeActivityPublisherIdentity
     clock: Callable[[], datetime]
@@ -231,6 +286,21 @@ class Mp6gHarness:
 
     def work_service_for(self, tenant_id: str) -> CollaborativeWorkServiceWithActivityPublication:
         return self.work_services_by_tenant[tenant_id]
+
+    def artifact_service_for(
+        self,
+        tenant_id: str,
+    ) -> CollaborativeWorkArtifactServiceWithActivityPublication:
+        return self.artifact_services_by_tenant[tenant_id]
+
+    def decision_binding_service_for(
+        self,
+        tenant_id: str,
+    ) -> CollaborativeDecisionBindingServiceWithActivityPublication:
+        return self.decision_binding_services_by_tenant[tenant_id]
+
+    def context_view_composer_for(self, tenant_id: str) -> ContextViewComposerWithActivityPublication:
+        return self.context_view_composers_by_tenant[tenant_id]
 
     def close(self) -> None:
         self.bundle.close()
@@ -241,10 +311,10 @@ def build_mp6g_harness_from_sqlite_bundle(
     *,
     utc_now: Callable[[], datetime],
     clock: Callable[[], datetime],
-    extra_publisher_registrations: tuple = (),
+    extra_publisher_registrations: tuple[CollaborativeActivityPublisherRegistration, ...] = (),
     publisher_principal_id: str = PUBLISHER_PRINCIPAL,
-    publisher_registrations: tuple | None = None,
-    ingestion_policy: object | None = None,
+    publisher_registrations: tuple[CollaborativeActivityPublisherRegistration, ...] | None = None,
+    ingestion_policy: CollaborativeActivityIngestionPolicy | None = None,
 ) -> Mp6gHarness:
     append_store = collaborative_activity_append_store_from_sqlite_bundle(bundle, utc_now=utc_now)
     read_port = collaborative_activity_read_store_from_sqlite_bundle(bundle)
@@ -266,10 +336,10 @@ def build_mp6g_harness_from_postgresql_bundle(
     *,
     utc_now: Callable[[], datetime],
     clock: Callable[[], datetime],
-    extra_publisher_registrations: tuple = (),
+    extra_publisher_registrations: tuple[CollaborativeActivityPublisherRegistration, ...] = (),
     publisher_principal_id: str = PUBLISHER_PRINCIPAL,
-    publisher_registrations: tuple | None = None,
-    ingestion_policy: object | None = None,
+    publisher_registrations: tuple[CollaborativeActivityPublisherRegistration, ...] | None = None,
+    ingestion_policy: CollaborativeActivityIngestionPolicy | None = None,
 ) -> Mp6gHarness:
     append_store = collaborative_activity_append_store_from_postgresql_bundle(bundle, utc_now=utc_now)
     read_port = collaborative_activity_read_store_from_postgresql_bundle(bundle)
@@ -293,10 +363,10 @@ def _assemble_harness(
     read_port: CollaborativeActivityReadPort,
     utc_now: Callable[[], datetime],
     clock: Callable[[], datetime],
-    extra_publisher_registrations: tuple,
+    extra_publisher_registrations: tuple[CollaborativeActivityPublisherRegistration, ...],
     publisher_principal_id: str = PUBLISHER_PRINCIPAL,
-    publisher_registrations: tuple | None = None,
-    ingestion_policy: object | None = None,
+    publisher_registrations: tuple[CollaborativeActivityPublisherRegistration, ...] | None = None,
+    ingestion_policy: CollaborativeActivityIngestionPolicy | None = None,
 ) -> Mp6gHarness:
     seed_workspace_principal_authority(
         bundle,
@@ -310,6 +380,10 @@ def _assemble_harness(
             TRUSTED_OPERATION_WORK_ITEM_CREATE,
             TRUSTED_OPERATION_WORK_ITEM_TRANSITION,
             TRUSTED_OPERATION_ASSIGNMENT_CREATE,
+            TRUSTED_OPERATION_ASSIGNMENT_TRANSITION,
+            TRUSTED_OPERATION_WORK_ARTIFACT_CREATE,
+            TRUSTED_OPERATION_WORK_ARTIFACT_PUBLISH,
+            TRUSTED_OPERATION_COLLABORATIVE_DECISION_BINDING_CREATE,
         ),
         clock=clock,
     )
@@ -402,24 +476,68 @@ def _assemble_harness(
     ingestion = ingestion_by_tenant[TENANT_A]
 
     gate = build_enforcement_gate(bundle, clock=clock)
-    inner = CollaborativeWorkService(
+    raw_work_service = CollaborativeWorkService(
         work_item_repository=bundle.work_item,
         assignment_repository=bundle.assignment,
         enforcement_gate=gate,
         clock=clock,
+    )
+    raw_artifact_service = CollaborativeWorkArtifactService(
+        work_item_repository=bundle.work_item,
+        work_artifact_repository=bundle.artifact,
+        artifact_publication_repository=bundle.publication,
+        enforcement_gate=gate,
+        clock=clock,
+    )
+    raw_decision_binding_service = CollaborativeDecisionBindingService(
+        work_item_repository=bundle.work_item,
+        work_artifact_version_repository=bundle.version,
+        binding_repository=bundle.decision_binding,
+        enforcement_gate=gate,
+        clock=clock,
+    )
+    raw_context_view_composer = DefaultContextViewComposer(
+        memory_source=_Mp6gEmptyMemorySource(),
     )
     principal_kind_resolver = FixedCollaborativeActivityActorPrincipalKindResolver(
         principal_kind=PrincipalKind.HUMAN,
     )
     work_services_by_tenant = {
         tenant_id: wire_collaborative_work_service_with_activity_publication(
-            inner=inner,
+            inner=raw_work_service,
             publication_port=ingestion_by_tenant[tenant_id],
             principal_kind_resolver=principal_kind_resolver,
         )
         for tenant_id in tenant_ids
     }
     work_service = work_services_by_tenant[TENANT_A]
+    artifact_services_by_tenant = {
+        tenant_id: wire_collaborative_work_artifact_service_with_activity_publication(
+            inner=raw_artifact_service,
+            publication_port=ingestion_by_tenant[tenant_id],
+            principal_kind_resolver=principal_kind_resolver,
+        )
+        for tenant_id in tenant_ids
+    }
+    artifact_service = artifact_services_by_tenant[TENANT_A]
+    decision_binding_services_by_tenant = {
+        tenant_id: wire_collaborative_decision_binding_service_with_activity_publication(
+            inner=raw_decision_binding_service,
+            publication_port=ingestion_by_tenant[tenant_id],
+            principal_kind_resolver=principal_kind_resolver,
+        )
+        for tenant_id in tenant_ids
+    }
+    decision_binding_service = decision_binding_services_by_tenant[TENANT_A]
+    context_view_composers_by_tenant = {
+        tenant_id: wire_context_view_composer_with_activity_publication(
+            inner=raw_context_view_composer,
+            publication_port=ingestion_by_tenant[tenant_id],
+            principal_kind_resolver=principal_kind_resolver,
+        )
+        for tenant_id in tenant_ids
+    }
+    context_view_composer = context_view_composers_by_tenant[TENANT_A]
 
     authority_resolver = CollaborativeWorkAuthorityResolver(
         membership_repository=bundle.membership,
@@ -437,9 +555,19 @@ def _assemble_harness(
         append_store=append_store,
         read_port=read_port,
         ingestion=ingestion,
+        ingestion_by_tenant=ingestion_by_tenant,
         read_service=read_service,
+        enforcement_gate=gate,
+        raw_work_service=raw_work_service,
+        principal_kind_resolver=principal_kind_resolver,
         work_service=work_service,
         work_services_by_tenant=work_services_by_tenant,
+        artifact_service=artifact_service,
+        artifact_services_by_tenant=artifact_services_by_tenant,
+        decision_binding_service=decision_binding_service,
+        decision_binding_services_by_tenant=decision_binding_services_by_tenant,
+        context_view_composer=context_view_composer,
+        context_view_composers_by_tenant=context_view_composers_by_tenant,
         authority_resolver=authority_resolver,
         verified_publisher=verified_platform_publisher(TENANT_A, publisher_principal_id),
         clock=clock,
@@ -447,7 +575,7 @@ def _assemble_harness(
     )
 
 
-def count_durable_activities(harness: Mp6gHarness, *, tenant_id: str, workspace_id: str) -> int:
+def count_provider_visible_activities(harness: Mp6gHarness, *, tenant_id: str, workspace_id: str) -> int:
     from intergrax.contracts.collaborative_activity import CollaborativeActivityQuery
 
     page = harness.read_port.query(
@@ -463,9 +591,8 @@ def read_authorized_page(
     workspace_id: str = WS_A,
     acting_principal_id: str = READ_CONSUMER,
     limit: int = 50,
-    cursor: str | None = None,
+    cursor: CollaborativeActivityPageCursor | None = None,
 ):
-    from intergrax.collaborative_work.collaborative_activity_read import CollaborativeActivityReadService
     from intergrax.contracts.collaborative_activity import CollaborativeActivityPage, CollaborativeActivityQuery
     from intergrax.contracts.collaborative_activity_read import CollaborativeActivityReadRequest
 
@@ -475,7 +602,7 @@ def read_authorized_page(
         principal_id=acting_principal_id,
     )
     assert membership is not None
-    service: CollaborativeActivityReadService = harness.read_service  # type: ignore[assignment]
+    service = harness.read_service
     query = CollaborativeActivityQuery(
         tenant_id=tenant_id,
         workspace_id=workspace_id,

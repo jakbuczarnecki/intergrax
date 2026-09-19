@@ -15,7 +15,6 @@ from intergrax.contracts.collaborative_activity_publisher_authority import (
 )
 from tests.qualification.mp6.mp6g_e2e_contract import run_mp6g_e2e_contract_suite
 from tests.qualification.mp6.mp6g_harness import (
-    PUBLISHER_PRINCIPAL,
     TENANT_A,
     WS_A,
     build_mp6g_harness_from_sqlite_bundle,
@@ -32,7 +31,8 @@ _RESTRICTED_PUBLISHER = "platform-activity-publisher-restricted"
 
 
 def test_mp6g_sqlite_e2e_contract_suite(tmp_path: Path) -> None:
-    concurrent_db_path = str(tmp_path / "mp6g-concurrent.sqlite")
+    concurrent_duplicate_db = str(tmp_path / "mp6g-concurrent-duplicate.sqlite")
+    concurrent_distinct_db = str(tmp_path / "mp6g-concurrent-distinct.sqlite")
 
     def harness_factory():
         db_path = str(tmp_path / f"mp6g-{uuid.uuid4().hex}.sqlite")
@@ -70,8 +70,16 @@ def test_mp6g_sqlite_e2e_contract_suite(tmp_path: Path) -> None:
             ingestion_policy=policy,
         )
 
-    def concurrent_pair_factory():
-        bundle = open_sqlite_collaborative_work_repositories(concurrent_db_path)
+    def concurrent_duplicate_pair_factory():
+        bundle = open_sqlite_collaborative_work_repositories(concurrent_duplicate_db)
+        return build_mp6g_harness_from_sqlite_bundle(
+            bundle,
+            utc_now=mp6g_fixed_utc_now,
+            clock=mp6g_fixed_clock,
+        )
+
+    def concurrent_distinct_pair_factory():
+        bundle = open_sqlite_collaborative_work_repositories(concurrent_distinct_db)
         return build_mp6g_harness_from_sqlite_bundle(
             bundle,
             utc_now=mp6g_fixed_utc_now,
@@ -82,5 +90,6 @@ def test_mp6g_sqlite_e2e_contract_suite(tmp_path: Path) -> None:
         harness_factory,
         restricted_harness_factory=restricted_harness_factory,
         policy_harness_factory=policy_harness_factory,
-        concurrent_pair_harness_factory=concurrent_pair_factory,
+        concurrent_pair_harness_factory=concurrent_duplicate_pair_factory,
+        concurrent_distinct_pair_harness_factory=concurrent_distinct_pair_factory,
     )

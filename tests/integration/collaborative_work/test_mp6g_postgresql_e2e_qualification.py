@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 import pytest
 
 from intergrax.collaborative_work.persistence import (
@@ -33,9 +35,12 @@ _RESTRICTED_PUBLISHER = "platform-activity-publisher-restricted"
 def _shared_schema_bundle(
     bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> CollaborativeWorkRepositoriesWithArtifacts:
+    from intergrax.collaborative_work.postgresql_repository import PostgreSQLCollaborativeWorkStore
+
+    store = cast(PostgreSQLCollaborativeWorkStore, bundle.store)
     return open_postgresql_collaborative_work_repositories(
-        config=bundle.store.config,
-        schema_name=bundle.store.schema_name,
+        config=store.config,
+        schema_name=store.schema_name,
     )
 
 
@@ -77,7 +82,15 @@ def test_mp6g_postgresql_e2e_contract_suite(
             ingestion_policy=policy,
         )
 
-    def concurrent_pair_factory():
+    def concurrent_duplicate_pair_factory():
+        bundle = _shared_schema_bundle(primary_bundle)
+        return build_mp6g_harness_from_postgresql_bundle(
+            bundle,
+            utc_now=mp6g_fixed_utc_now,
+            clock=mp6g_fixed_clock,
+        )
+
+    def concurrent_distinct_pair_factory():
         bundle = _shared_schema_bundle(primary_bundle)
         return build_mp6g_harness_from_postgresql_bundle(
             bundle,
@@ -89,5 +102,6 @@ def test_mp6g_postgresql_e2e_contract_suite(
         harness_factory,
         restricted_harness_factory=restricted_harness_factory,
         policy_harness_factory=policy_harness_factory,
-        concurrent_pair_harness_factory=concurrent_pair_factory,
+        concurrent_pair_harness_factory=concurrent_duplicate_pair_factory,
+        concurrent_distinct_pair_harness_factory=concurrent_distinct_pair_factory,
     )
