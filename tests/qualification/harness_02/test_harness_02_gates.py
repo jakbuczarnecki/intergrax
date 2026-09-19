@@ -197,7 +197,7 @@ def test_harness_02_global_deadline_monotonic_consumer_allowlist() -> None:
     assert offenders == []
 
 
-def test_harness_02_tool_invoker_cancellation_not_before_first_attempt() -> None:
+def test_harness_02_tool_invoker_cancellation_before_first_attempt() -> None:
     source = _INVOKER.read_text(encoding="utf-8")
     tree = ast.parse(source, filename=str(_INVOKER))
     policy_methods = [
@@ -206,38 +206,20 @@ def test_harness_02_tool_invoker_cancellation_not_before_first_attempt() -> None
         if isinstance(node, ast.FunctionDef) and node.name == "_execute_with_policy"
     ]
     assert policy_methods, "_execute_with_policy must exist"
-    body = policy_methods[0].body
-    cancel_before_first = False
-    for stmt in body:
-        if isinstance(stmt, ast.For):
-            for inner in ast.walk(stmt):
-                if (
-                    isinstance(inner, ast.If)
-                    and isinstance(inner.test, ast.Compare)
-                    and any(
-                        isinstance(op, ast.Gt)
-                        for op in inner.test.ops
-                    )
-                ):
-                    for sub in ast.walk(inner):
-                        if (
-                            isinstance(sub, ast.Call)
-                            and isinstance(sub.func, ast.Attribute)
-                            and sub.func.attr == "_cooperative_cancellation_requested"
-                        ):
-                            cancel_before_first = True
-    assert cancel_before_first, "cancellation guard must exist for retry attempts"
-    assert "if attempt > 1:" in source or "attempt > 1" in source
+    for_node = next(
+        stmt for stmt in policy_methods[0].body if isinstance(stmt, ast.For)
+    )
+    first_stmt = for_node.body[0]
+    assert isinstance(first_stmt, ast.If)
+    test_src = ast.get_source_segment(source, first_stmt.test) or ""
+    assert "_cooperative_cancellation_requested" in test_src
 
 
-def test_harness_02_global_deadline_not_wired_to_llm_path() -> None:
-    llm_shared = _REPO_ROOT / "intergrax" / "llm_adapters" / "_shared"
-    hits: list[str] = []
-    for path in llm_shared.rglob("*.py"):
-        text = path.read_text(encoding="utf-8")
-        if "peek_active_execution_global_deadline" in text:
-            hits.append(path.relative_to(_REPO_ROOT).as_posix())
-    assert hits == []
+def test_harness_02_llm_path_uses_contract_deadline_guard() -> None:
+    adapter = _REPO_ROOT / "intergrax" / "llm_adapters" / "contracts" / "llm_adapter.py"
+    text = adapter.read_text(encoding="utf-8")
+    assert "assert_protected_provider_call_allowed" in text
+    assert "peek_active_execution_global_deadline" not in text
 
 
 def test_harness_02_findings_include_blockers_for_enforcement_gaps() -> None:

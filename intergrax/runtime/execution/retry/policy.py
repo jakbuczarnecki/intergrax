@@ -72,9 +72,18 @@ def evaluate_execution_retry_eligibility(
         return _result(ExecutionRetryAction.FAIL, "max_attempts_exhausted")
 
     if (
+        request.deadline_at_utc is not None
+        and request.now_utc is not None
+        and request.now_utc.timestamp() + request.proposed_backoff_seconds
+        >= request.deadline_at_utc.timestamp()
+    ):
+        return _result(ExecutionRetryAction.FAIL, "global_deadline_exceeded")
+
+    if (
         request.global_deadline_monotonic is not None
         and request.now_monotonic is not None
-        and request.now_monotonic + request.proposed_backoff_seconds >= request.global_deadline_monotonic
+        and request.now_monotonic + request.proposed_backoff_seconds
+        >= request.global_deadline_monotonic
     ):
         return _result(ExecutionRetryAction.FAIL, "global_deadline_exceeded")
 

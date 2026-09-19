@@ -292,9 +292,23 @@ class LLMAdapter(ABC):
 
     def _execute(self, fn: Callable[[], T]) -> T:
         """Run a provider SDK call with rate limit, circuit breaker, and optional retry."""
+        from intergrax.contracts.execution_deadline.admission import (
+            ExecutionProtectedWorkAdmissionResult,
+        )
+        from intergrax.contracts.execution_deadline.provider_guard import (
+            ExecutionProtectedWorkDeniedError,
+            assert_protected_provider_call_allowed,
+            resolve_active_provider_timeout_seconds,
+        )
         from intergrax.llm_adapters.governance.quota import check_llm_tenant_quota
         from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
 
+        assert_protected_provider_call_allowed()
+        effective_timeout = resolve_active_provider_timeout_seconds(self.call_config.timeout_sec)
+        if effective_timeout is not None and effective_timeout <= 0:
+            raise ExecutionProtectedWorkDeniedError(
+                ExecutionProtectedWorkAdmissionResult.EXPIRED,
+            )
         check_llm_tenant_quota(get_llm_tenant_id())
 
         def physical_attempt() -> T:

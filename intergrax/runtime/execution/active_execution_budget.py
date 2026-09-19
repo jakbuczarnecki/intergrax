@@ -15,6 +15,7 @@ from intergrax.runtime.execution.budget.ledger import (
     ROOT_BUDGET_POOL_PARENT,
 )
 from intergrax.runtime.execution.budget.models import ExecutionBudgetAllocationMode
+from intergrax.contracts.execution_deadline.projection import ExecutionDeadlineProjection
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 
@@ -72,10 +73,13 @@ def bind_root_execution_budget(
     execution_id: ExecutionId,
     ledger: ExecutionBudgetLedger,
     run_budget: RunBudget | None = None,
+    deadline_projection: ExecutionDeadlineProjection | None = None,
 ) -> Token:
     """Bind the canonical per-Run ledger at root execution entry."""
     global_deadline_monotonic: float | None = None
-    if run_budget is not None and run_budget.max_wall_time_seconds is not None:
+    if deadline_projection is not None:
+        global_deadline_monotonic = deadline_projection.global_deadline_monotonic
+    elif run_budget is not None and run_budget.max_wall_time_seconds is not None:
         global_deadline_monotonic = (
             time.monotonic() + run_budget.max_wall_time_seconds
         )

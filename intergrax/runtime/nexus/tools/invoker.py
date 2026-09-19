@@ -67,6 +67,12 @@ from intergrax.contracts.dependency_concurrency_admission import (
 from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
     DependencyAttemptExecutionBoundary,
 )
+from intergrax.contracts.execution_deadline.admission import (
+    ExecutionProtectedWorkAdmissionResult,
+)
+from intergrax.contracts.execution_deadline.active_scope import (
+    peek_active_execution_protected_work_admission,
+)
 from intergrax.runtime.cancellation.coordinator import (
     CancellationCoordinator,
     CooperativeCancellationAbort,
@@ -226,6 +232,15 @@ class RuntimeToolInvoker:
 
         contract = preparation
         claim_context: PreEffectClaimContext | None = None
+
+        admission_denied = self._protected_work_admission_tool_denial(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+        )
+        if admission_denied is not None:
+            return admission_denied
 
         if self._requires_idempotency_coordination(contract, request):
             coordinator = self._pre_effect_coordinator
@@ -901,14 +916,22 @@ class RuntimeToolInvoker:
         last_exc: Optional[Exception] = None
 
         for attempt in range(1, attempts + 1):
+            if self._cooperative_cancellation_requested(state):
+                return self._tool_result_task_cancelled(
+                    state=state,
+                    contract=contract,
+                    request=request,
+                    agent_id=agent_id,
+                )
+            admission_denied = self._protected_work_admission_tool_denial(
+                state=state,
+                agent_id=agent_id,
+                contract=contract,
+                request=request,
+            )
+            if admission_denied is not None:
+                return admission_denied
             if attempt > 1:
-                if self._cooperative_cancellation_requested(state):
-                    return self._tool_result_task_cancelled(
-                        state=state,
-                        contract=contract,
-                        request=request,
-                        agent_id=agent_id,
-                    )
                 if policy.backoff_ms > 0:
                     try:
                         cooperative_delay_seconds(
@@ -1130,6 +1153,68 @@ class RuntimeToolInvoker:
     @staticmethod
     def _cooperative_cancellation_requested(state: "RuntimeState") -> bool:
         return CancellationCoordinator.is_requested(state.request.metadata)
+
+    def _protected_work_admission_tool_denial(
+        self,
+        *,
+        state: "RuntimeState",
+        agent_id: str,
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> ToolExecutionResult[BaseModel] | None:
+        port = peek_active_execution_protected_work_admission()
+        if port is None:
+            return None
+        decision = port.assert_can_start_protected_work()
+        if decision is ExecutionProtectedWorkAdmissionResult.CANCELLED:
+            return self._tool_result_task_cancelled(
+                state=state,
+                contract=contract,
+                request=request,
+                agent_id=agent_id,
+            )
+        if decision is ExecutionProtectedWorkAdmissionResult.EXPIRED:
+            return self._tool_result_deadline_exceeded(
+                state=state,
+                contract=contract,
+                request=request,
+                agent_id=agent_id,
+            )
+        return None
+
+    def _tool_result_deadline_exceeded(
+        self,
+        *,
+        state: "RuntimeState",
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+        agent_id: str,
+    ) -> ToolExecutionResult[BaseModel]:
+        state.trace_event(
+            component=TraceComponent.TOOLS,
+            step="tool_invocation_deadline_exceeded",
+            message="Tool invocation blocked after global execution deadline.",
+            level=TraceLevel.INFO,
+            payload=ToolInvocationErrorDiagV1(
+                tool_id=contract.tool_id,
+                step_id=str(request.step_id),
+                error_code=RuntimeErrorCode.RUNTIME_ERROR,
+                error_message="deadline_exceeded",
+            ),
+        )
+        result = ToolExecutionResult.fail(
+            RuntimeErrorCode.RUNTIME_ERROR,
+            "deadline_exceeded",
+            effect_certainty=ToolEffectCertainty.NOT_STARTED,
+        )
+        self._emit_boundary_event(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+            result=result,
+        )
+        return result
 
     def _tool_result_task_cancelled(
         self,

@@ -19,11 +19,29 @@ from intergrax.contracts.execution_lineage import ExecutionLineageIntegrityError
 from intergrax.runtime.execution.identity_authority import (
     default_execution_identity_authority,
 )
+from intergrax.contracts.execution_deadline.active_scope import (
+    peek_active_execution_deadline_projection,
+    peek_active_execution_protected_work_admission,
+)
+from intergrax.contracts.execution_deadline.admission import (
+    ExecutionProtectedWorkAdmissionResult,
+)
 from intergrax.runtime.execution.active_execution_budget import (
     ActiveExecutionBudgetState,
     bind_active_execution_budget,
     peek_active_execution_budget,
     reset_active_execution_budget,
+)
+from intergrax.runtime.execution.deadline_authority.projection import (
+    narrow_child_deadline_at_utc,
+    project_deadline_at_utc,
+)
+from intergrax.runtime.execution.deadline_authority.system_clocks import (
+    SystemMonotonicClock,
+    SystemUtcClock,
+)
+from intergrax.runtime.execution.protected_work_admission import (
+    ExecutionProtectedWorkAdmissionDeniedError,
 )
 from intergrax.runtime.execution.authority.policy import (
     ChildAuthorityContext,
@@ -154,6 +172,12 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             )
         )
 
+        admission = peek_active_execution_protected_work_admission()
+        if admission is not None:
+            admission_result = admission.assert_can_start_protected_work()
+            if admission_result is not ExecutionProtectedWorkAdmissionResult.AVAILABLE:
+                raise ExecutionProtectedWorkAdmissionDeniedError(admission_result)
+
         child_execution_id = mint_child_execution_id()
         ledger = self._resolve_ledger(parent_budget_state)
 
@@ -162,11 +186,39 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             parent_execution_id=parent_execution_id,
             decision=budget_decision,
         )
-        inherited_deadline = (
-            parent_budget_state.global_deadline_monotonic
-            if parent_budget_state is not None
-            else None
-        )
+        parent_projection = peek_active_execution_deadline_projection()
+        if parent_projection is not None:
+            child_wall_limit = (
+                requested_budget.max_wall_time_seconds if requested_budget is not None else None
+            )
+            utc_clock = SystemUtcClock()
+            monotonic_clock = SystemMonotonicClock()
+            if parent_projection.deadline_at_utc is None:
+                inherited_deadline = parent_projection.global_deadline_monotonic
+                if child_wall_limit is not None:
+                    child_cap = monotonic_clock.monotonic() + child_wall_limit
+                    if inherited_deadline is None:
+                        inherited_deadline = child_cap
+                    else:
+                        inherited_deadline = min(inherited_deadline, child_cap)
+            else:
+                effective_deadline_at_utc = narrow_child_deadline_at_utc(
+                    parent_projection.deadline_at_utc,
+                    child_max_wall_time_seconds=child_wall_limit,
+                    utc_clock=utc_clock,
+                )
+                child_projection = project_deadline_at_utc(
+                    effective_deadline_at_utc,
+                    utc_clock=utc_clock,
+                    monotonic_clock=monotonic_clock,
+                )
+                inherited_deadline = child_projection.global_deadline_monotonic
+        else:
+            inherited_deadline = (
+                parent_budget_state.global_deadline_monotonic
+                if parent_budget_state is not None
+                else None
+            )
         active_budget = ActiveExecutionBudgetState(
             execution_id=child_execution_id,
             mode=grant.mode,

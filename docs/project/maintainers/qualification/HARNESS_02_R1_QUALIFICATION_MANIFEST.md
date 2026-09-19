@@ -32,6 +32,7 @@ Proofs below close HARNESS-02 blockers **B1**, **B2**, **B3** and debt **D1** pe
 | Q14 | Parallel workers same run load identical `deadline_at_utc` | concurrency |
 | Q15 | `enforce_wall_time_budget` / Nexus ticks align with projection (M7) | D1 |
 | Q16 | Idempotency claim after admission guard on tool path | ordering |
+| Q17 | Custom admission cannot override canonical EXPIRED/CANCELLED | hard invariant |
 
 ---
 
