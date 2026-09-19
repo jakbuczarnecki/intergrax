@@ -29,7 +29,7 @@ This guide documents **six public memory store plugin factory surfaces** (five t
 | D15 | Production checklist | COMPLETE | §15 |
 | D16 | Troubleshooting | COMPLETE | §16 |
 
-**Overall:** **COMPLETE** - all three surfaces have shipped Tier-3 resolution paths. User-profile and session-storage materialize via `MemoryProfile` plugin selection + typed resolver; session turn index via shared classifier. Bootstrap counting alone does not activate stores (§9).
+**Overall:** **COMPLETE** (author guide) — **six public** Memory store plugin factory contracts share one EP group and typed classification. **Host activation is surface-specific:** user-profile and session-storage overlay via `MemoryProfile` plugin ids in `resolve_memory_platform_wiring`; session turn index via `enable_session_vector_index` and `build_session_turn_index_store` (classified EP or explicit candidates, not profile plugin ids); entity temporal via feature-gated `entity_graph_wiring` in baseline memory wiring; procedural and long-horizon via dedicated resolver wiring when a composition root calls those modules (`enable_*` flags + optional plugin ids). Bootstrap counting alone does not activate stores (§9).
 
 ---
 
@@ -322,18 +322,20 @@ Memory store plugins follow classified discovery and profile-driven materializat
 
 ```mermaid
 flowchart TB
-  EP[memory EP] --> CL[Classification]
+  EP[memory EP] --> CL[Classification - six factory contracts]
   CL --> UP[UserProfile]
   CL --> SS[SessionStorage]
   CL --> STI[SessionTurnIndex]
-  UP --> MP[MemoryProfile]
+  UP --> MP[MemoryProfile plugin ids]
   SS --> MP
-  STI --> MP
   MP --> RW[resolve_memory_platform_wiring]
-  RW --> MS[Store materialization]
+  RW --> MS[UP/SS materialization]
+  STI --> STIW[build_session_turn_index_store]
+  STIW --> SM[SessionManager]
+  MS --> SM
 ```
 
-*Interpretation:* one EP group, three factory shapes; host profile ids select which plugin materializes each store kind.
+*Interpretation:* one EP group and **six** public factory contracts, all classified the same way; **host activation is not uniform.** `MemoryProfile` plugin ids select user-profile and session-storage overlays in `resolve_memory_platform_wiring`. Session turn index uses dedicated vector wiring (`enable_session_vector_index`, first classified EP match or builtin default) — not profile plugin ids. Entity temporal, procedural, and long-horizon stores use the shared resolver materializers from separate feature-gated wiring modules when the host composition root invokes them (see §11).
 
 ```text
 plugin contract (Protocol + plugin_id)
@@ -342,9 +344,9 @@ entry point (`intergrax.memory_stores`) or explicit plugin class
     ↓
 classified discovery (`discover_classified_memory_store_plugins`)
     ↓
-host profile / wiring (`MemoryProfile` plugin ids, `resolve_memory_platform_wiring`)
+host profile / wiring (surface-specific: `MemoryProfile` ids, feature flags, composition modules)
     ↓
-materialization / activation (`materialize_user_profile_store`, `materialize_session_storage`, `build_session_turn_index_store`)
+materialization / activation (`materialize_*` resolver helpers per kind, or `build_session_turn_index_store` for session turn index)
 ```
 
 ### Discovery semantics
@@ -437,6 +439,28 @@ wiring = resolve_memory_platform_wiring(
 ```
 
 Configuration failures (unknown plugin id, wrong kind, duplicate id, materialization error, invalid factory return) are **fail-closed** (`MemoryStorePluginResolutionError`).
+
+### Entity temporal, procedural, and long-horizon (feature-gated resolver paths)
+
+All three specialized store kinds are **discovered and classified** on the shared EP group and materialized through typed resolver helpers when a host invokes the matching wiring module:
+
+```text
+Entity temporal:
+  MemoryProfile.enable_entity_graph_memory=True
+  MemoryProfile.entity_temporal_memory_store_plugin_id (optional; default in-memory reference id)
+  → resolve_entity_temporal_memory_store / capability (entity_graph_wiring)
+  → materialize_entity_temporal_memory_store
+  → wired into baseline MemoryPlatformWiring (UserProfileManager path when enabled)
+
+Procedural / long-horizon:
+  MemoryProfile.enable_procedural_memory / enable_long_horizon_memory
+  optional procedural_memory_store_plugin_id / long_horizon_memory_store_plugin_id
+  → resolve_procedural_memory_store / resolve_long_horizon_memory_store (dedicated wiring modules)
+  → materialize_procedural_memory_store / materialize_long_horizon_memory_store
+  → capability surfaces when the composition root calls those resolvers (not via resolve_memory_platform_wiring overlay)
+```
+
+Registering EP targets alone does not activate these stores; feature flags and explicit composition-root calls are required.
 
 **Historical baseline (ENTERPRISE-1):** user/session EPs were counted only; no Tier-3 resolver. Closed by ENTERPRISE-5.
 
