@@ -12,8 +12,10 @@ from intergrax.collaborative_work.persistence import (
 from intergrax.collaborative_work.collaborative_activity_read import CollaborativeActivityReadService
 from intergrax.collaborative_work.collaborative_activity_read_authorization import (
     CollaborativeActivityReadAuthorizationEvaluator,
-    DefaultCollaborativeActivityReadAuthorizationPolicy,
     build_default_collaborative_activity_read_authorization_policy,
+)
+from intergrax.contracts.collaborative_activity_read import (
+    CollaborativeActivityReadAuthorizationPolicy,
 )
 from intergrax.collaborative_work.collaborative_activity_ingestion import (
     CollaborativeActivityIngestionService,
@@ -65,9 +67,12 @@ def build_collaborative_activity_read_service(
     *,
     authority_resolver: CollaborativeWorkAuthorityResolver,
     read_port: CollaborativeActivityReadPort,
-    read_authorization_policy: DefaultCollaborativeActivityReadAuthorizationPolicy | None = None,
+    read_authorization_policy: CollaborativeActivityReadAuthorizationPolicy | None = None,
 ) -> CollaborativeActivityReadService:
-    policy = read_authorization_policy or build_default_collaborative_activity_read_authorization_policy()
+    policy = (
+        read_authorization_policy
+        or build_default_collaborative_activity_read_authorization_policy()
+    )
     evaluator = CollaborativeActivityReadAuthorizationEvaluator(
         authority_resolver=authority_resolver,
         read_authorization_policy=policy,

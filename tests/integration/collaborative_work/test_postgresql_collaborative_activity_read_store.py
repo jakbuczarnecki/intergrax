@@ -45,7 +45,7 @@ def test_postgresql_collaborative_activity_read_port_contract(
     )
 
 
-def test_postgresql_collaborative_activity_read_isolation_and_ordering(
+def test_postgresql_collaborative_activity_read_isolation(
     postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
 ) -> None:
     bundle = postgresql_collaborative_work_bundle
@@ -57,6 +57,12 @@ def test_postgresql_collaborative_activity_read_isolation_and_ordering(
         read_port_factory=lambda: _read_store(bundle),
         append_store_factory=lambda: _append_store(bundle),
     )
+
+
+def test_postgresql_collaborative_activity_read_late_occurred_at_ordering(
+    postgresql_collaborative_work_bundle: CollaborativeWorkRepositoriesWithArtifacts,
+) -> None:
+    bundle = postgresql_collaborative_work_bundle
     run_late_occurred_at_ordering_contract(
         read_port_factory=lambda: _read_store(bundle),
         append_store_factory=lambda: _append_store(bundle),

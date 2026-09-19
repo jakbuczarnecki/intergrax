@@ -575,8 +575,7 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 | MP-6B-C1 | Policy-resolved append intent boundary | **CLOSED / RECERTIFIED** |
 | MP-6B-C1-R1 | AppendIntent pluginability / append-store proof | **CLOSED** |
 | MP-6C | Publication / ingestion boundary | **CLOSED** |
-| MP-6D | Persistence / store | **NEXT** |
-| MP-6D | Append store + default persistence | PLANNED |
+| MP-6D | Persistence / store | **CLOSED / RECERTIFIED** |
 | MP-6E | Scoped read / query | **CLOSED / RECERTIFIED** |
 | MP-6F | Source integrations | **NEXT** |
 | MP-6G | E2E / isolation / idempotency qualification | PLANNED |
