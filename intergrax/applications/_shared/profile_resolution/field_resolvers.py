@@ -470,9 +470,9 @@ class CostProfileFieldResolver:
                     ),
                 )
         non_limit_updates = {
-            key: value
-            for key, value in requested.model_dump().items()
-            if key not in _COST_AUTHORITY_LIMIT_FIELDS
+            field_name: getattr(requested, field_name)
+            for field_name in type(requested).model_fields
+            if field_name not in _COST_AUTHORITY_LIMIT_FIELDS
         }
         effective = upstream.model_copy(update={**non_limit_updates, **effective_updates})
         if not decisions:
