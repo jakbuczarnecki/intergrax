@@ -611,9 +611,12 @@ def build_read_service(composition: DiagFinalHostComposition):
 def build_host_problem_lifecycle_engine(
     composition: DiagFinalHostComposition,
 ) -> ProblemLifecycleEngine:
-    """Construct lifecycle engine over the host's shared platform ProblemPersistence."""
+    """Construct lifecycle engine over the host's shared platform diagnostic persistence."""
     deps = resolve_host_diagnostic_read_dependencies(composition.runtime)
-    return ProblemLifecycleEngine(deps.problem_persistence)
+    return ProblemLifecycleEngine(
+        deps.problem_persistence,
+        deps.occurrence_persistence,
+    )
 
 
 def resolve_problem_via_host_lifecycle(
