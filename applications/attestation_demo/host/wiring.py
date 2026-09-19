@@ -6,7 +6,7 @@ from intergrax.applications._shared.environment_wiring import wire_application_e
 from intergrax.applications._shared.wiring import build_manifest_development_registry
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from attestation_demo.host.agent_builders import ATTESTATION_DEMO_AGENT_BUILDERS
+from attestation_demo.host.agent_builders import build_attestation_demo_agent_builders
 from attestation_demo.host.settings import AttestationDemoSettings
 from attestation_demo.manifest import build_attestation_demo_manifest
 
@@ -24,8 +24,16 @@ def build_attestation_demo_registry(
     if manifest.environment is None:
         manifest = manifest.model_copy(update={"environment": env})
     env_wiring = wire_application_environment(manifest, env)
+    composition = env_wiring.composition
+    builders = build_attestation_demo_agent_builders(
+        tool_profile=composition.tool_profile,
+        tool_wiring_context=composition.tool_wiring_context,
+        policy_bundle=composition.policy_bundle,
+        boundary_event_buffer=composition.boundary_event_buffer,
+    )
     return build_manifest_development_registry(
         manifest,
         env_wiring.build_context,
-        builders=ATTESTATION_DEMO_AGENT_BUILDERS,
+        builders=builders,
+        composition=composition,
     )

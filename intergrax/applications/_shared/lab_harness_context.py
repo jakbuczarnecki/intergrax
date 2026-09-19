@@ -10,11 +10,10 @@ from intergrax.agents.reference_harness import (
     LabHarnessContext,
     lab_harness_context_from_modality_tooling,
 )
-from intergrax.applications._shared.application_composition_context import (
-    optional_factory_composition,
-)
 from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 __all__ = [
     "LabHarnessContext",
@@ -25,17 +24,13 @@ __all__ = [
 def lab_harness_context_from_build_context(
     ctx: ApplicationBuildContext,
     *,
+    policy_bundle: RuntimePolicyBundle | None = None,
+    tool_wiring_context: ToolWiringContext | None = None,
     trace_db_path: Path | None = None,
 ) -> LabHarnessContext:
-    """Build harness context from public factory context plus active composition scope."""
-    composition = optional_factory_composition()
+    """Build harness context from public factory context plus explicit host deps."""
     bundle = (
-        composition.policy_bundle
-        if composition is not None and composition.policy_bundle is not None
-        else build_runtime_policy_bundle()
-    )
-    tool_wiring_context = (
-        composition.tool_wiring_context if composition is not None else None
+        policy_bundle if policy_bundle is not None else build_runtime_policy_bundle()
     )
     resolved_trace = trace_db_path if trace_db_path is not None else ctx.trace_db_path
     return lab_harness_context_from_modality_tooling(

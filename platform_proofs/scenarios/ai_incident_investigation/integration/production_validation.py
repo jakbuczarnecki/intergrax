@@ -472,7 +472,6 @@ class IncidentInvestigatorAgentPlatformProofStack:
             self.manifest,
             settings=self.production_settings,
             environment=self.environment,
-            tool_registry=self.production_settings.composition.tool_registry,
         )
 
     def install_from_catalog(self, *, mutation_id: str = "mut-aipv1-install") -> None:

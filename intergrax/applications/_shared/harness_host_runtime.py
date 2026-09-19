@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
     from intergrax.harness.application_host import ApplicationHost
@@ -16,6 +16,9 @@ from intergrax.agents.persistence.compensation_queue_store import CompensationQu
 from intergrax.applications._shared.acp_checkpoint_host_wiring import (
     resolve_host_agent_checkpoint_store,
     resolve_host_compensation_queue_store,
+)
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
 )
 from intergrax.applications._shared.application_host_wiring import (
     apply_application_environment_state_wiring,
@@ -233,6 +236,8 @@ def build_harness_host_runtime(
     idempotency_db_path: Path | None = None,
     use_in_memory_trace: bool = False,
     builders: dict[type, Any] | None = None,
+    compose_builders: Callable[[ApplicationCompositionContext], dict[type, Any]]
+    | None = None,
     registry: AgentRegistry | None = None,
     registry_projection: MaterializedRegistryProjection | None = None,
     registry_assembly_mode: RegistryAssemblyMode | None = None,
@@ -318,14 +323,18 @@ def build_harness_host_runtime(
         effective_environment,
         explicit=registry_assembly_mode,
     )
+    resolved_builders = builders
+    if compose_builders is not None:
+        resolved_builders = compose_builders(env_wiring.composition)
     resolved_registry, registry_evidence = resolve_harness_host_registry(
         manifest=resolved_manifest,
         build_context=env_wiring.build_context,
         environment=effective_environment,
+        composition=env_wiring.composition,
         assembly_mode=assembly_mode,
         registry_projection=registry_projection,
         registry=registry,
-        builders=builders,
+        builders=resolved_builders,
     )
     observability_wiring = wire_application_observability(
         effective_environment,

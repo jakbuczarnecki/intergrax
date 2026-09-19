@@ -8,7 +8,6 @@ from intergrax.agents.reference_harness import LabHarnessContext
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.applications._shared.application_composition_context import (
     ApplicationCompositionContext,
-    optional_factory_composition,
 )
 from intergrax.applications._shared.catalog_runtime_bridge import (
     apply_catalog_profiles_from_composition,
@@ -117,7 +116,7 @@ def materialize_runtime_config(
         strict = harness_ctx.strict_harness
         if harness_ctx.trace_db_path is not None:
             trace_path = str(harness_ctx.trace_db_path)
-        active_composition = composition or optional_factory_composition()
+        active_composition = composition
         if active_composition is not None:
             if active_composition.policy_bundle is not None:
                 policy_bundle = active_composition.policy_bundle
@@ -162,7 +161,7 @@ def materialize_runtime_config(
     apply_observability_profiles_from_environment(config, env)
     boundary_buffer = None
     if isinstance(harness_ctx, ApplicationBuildContext):
-        active_composition = composition or optional_factory_composition()
+        active_composition = composition
         if active_composition is not None:
             boundary_buffer = active_composition.boundary_event_buffer
     apply_attestation_profiles_from_environment(
@@ -215,7 +214,7 @@ def materialize_runtime_config(
 
     apply_tool_engine_hook_to_runtime_config(config, env)
     if isinstance(harness_ctx, ApplicationBuildContext):
-        active_composition = composition or optional_factory_composition()
+        active_composition = composition
         if active_composition is not None:
             apply_integration_profiles_from_composition(config, active_composition)
             apply_catalog_profiles_from_composition(config, active_composition)
@@ -237,7 +236,7 @@ def materialize_runtime_config(
             harness_ctx.manifest,
             ApplicationManifest,
         ):
-            active_composition = composition or optional_factory_composition()
+            active_composition = composition
             if active_composition is None or active_composition.agent_registry is None:
                 raise AgentRuntimeGovernanceMaterializationError(
                     "production agent runtime governance requires "

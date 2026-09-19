@@ -36,7 +36,7 @@ from intergrax.applications._shared.harness_host_composition import (
     resolve_harness_host_middleware_pipeline,
     resolve_harness_host_runtime_event_persistence,
 )
-from attestation_demo.host.agent_builders import ATTESTATION_DEMO_AGENT_BUILDERS
+from attestation_demo.host.agent_builders import build_attestation_demo_agent_builders
 from attestation_demo.host.integration_wiring import wire_attestation_demo_integrations
 from attestation_demo.host.settings import AttestationDemoSettings
 from attestation_demo.manifest import build_attestation_demo_manifest
@@ -69,7 +69,12 @@ def create_attestation_demo_application(
         runtime_events_db_path=runtime_events_db_path,
         use_in_memory_trace=db_path is None,
         checkpoints_db_path=checkpoints_db_path,
-        builders=ATTESTATION_DEMO_AGENT_BUILDERS,
+        compose_builders=lambda composition: build_attestation_demo_agent_builders(
+            tool_profile=composition.tool_profile,
+            tool_wiring_context=composition.tool_wiring_context,
+            policy_bundle=composition.policy_bundle,
+            boundary_event_buffer=composition.boundary_event_buffer or resolved_buffer,
+        ),
         document_store=resolved_document_store,
         boundary_event_buffer=resolved_buffer,
     )

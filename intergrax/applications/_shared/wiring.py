@@ -24,8 +24,6 @@ from intergrax.applications._shared.runtime_agent_factory_resolver import (
 )
 from intergrax.applications._shared.application_composition_context import (
     ApplicationCompositionContext,
-    factory_composition_scope,
-    optional_factory_composition,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.factory import AgentFactory, CanonicalAgentFactory
@@ -116,10 +114,13 @@ def invoke_canonical_agent_factory(
     *,
     composition: ApplicationCompositionContext | None = None,
 ) -> Agent:
-    """Strict production invocation: exactly ``(ctx, binding)`` with no signature probing."""
-    active = composition if composition is not None else optional_factory_composition()
-    with factory_composition_scope(active):
-        result = factory(ctx, binding)
+    """Strict production invocation: exactly ``(ctx, binding)`` with no signature probing.
+
+    ``composition`` is accepted for call-site compatibility; factories must receive
+    dependencies via composition-bound closures, not ambient lookup.
+    """
+    _ = composition
+    result = factory(ctx, binding)
     return _validate_factory_result(result, factory, binding)
 
 
@@ -137,6 +138,7 @@ def invoke_legacy_compatible_agent_factory(
     Production revision-bound assembly must use
     :func:`invoke_canonical_agent_factory` instead.
     """
+    _ = composition
     attempts: list[tuple[tuple[Any, ...], dict[str, Any]]] = [
         ((ctx, binding), {}),
     ]
@@ -144,16 +146,14 @@ def invoke_legacy_compatible_agent_factory(
         attempts.append(((ctx.settings,), {}))
     attempts.extend([((ctx,), {}), ((), {})])
 
-    active = composition if composition is not None else optional_factory_composition()
     last_error: Exception | None = None
-    with factory_composition_scope(active):
-        for args, kwargs in attempts:
-            try:
-                result = factory(*args, **kwargs)
-            except TypeError as exc:
-                last_error = exc
-                continue
-            return _validate_factory_result(result, factory, binding)
+    for args, kwargs in attempts:
+        try:
+            result = factory(*args, **kwargs)
+        except TypeError as exc:
+            last_error = exc
+            continue
+        return _validate_factory_result(result, factory, binding)
 
     message = f"Cannot invoke factory for {binding.display_name()!r}"
     if last_error is not None:
@@ -396,7 +396,7 @@ def _register_binding(
         agent = build_agent_from_binding(
             binding, ctx, builders=builders, composition=composition
         )
-    active = composition if composition is not None else optional_factory_composition()
+    active = composition
     tool_registry = active.tool_registry if active is not None else None
     event_bus = active.runtime_event_bus if active is not None else None
     registry.register(
@@ -447,7 +447,7 @@ def build_application_registry(
     Direct manifest-only callers in production hosts are forbidden; use
     :func:`build_manifest_development_registry` for explicit dev/test assembly.
     """
-    active = composition if composition is not None else optional_factory_composition()
+    active = composition
     skill_registry = active.skill_registry if active is not None else None
     skill_profile = active.skill_profile if active is not None else None
     if skill_registry is None and skill_profile is not None:

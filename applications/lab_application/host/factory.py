@@ -20,7 +20,7 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
 )
-from lab_application.host.agent_builders import LAB_AGENT_BUILDERS
+from lab_application.host.agent_builders import build_lab_agent_builders
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.host.tool_wiring import wire_lab_tools
 from lab_application.host.wiring import bootstrap_lab_integration_wiring
@@ -104,7 +104,11 @@ def create_lab_application(
         trace_db_path=integrations.trace_db_path,
         runtime_events_db_path=integrations.runtime_events_db_path,
         checkpoints_db_path=integrations.checkpoints_db_path,
-        builders=LAB_AGENT_BUILDERS,
+        compose_builders=lambda composition: build_lab_agent_builders(
+            tool_profile=composition.tool_profile,
+            tool_wiring_context=composition.tool_wiring_context,
+            policy_bundle=composition.policy_bundle,
+        ),
         checkpoint_store=integrations.checkpoint_store,
         agent_checkpoint_store=integrations.agent_checkpoint_store,
         notification_adapter=integrations.notification_adapter,

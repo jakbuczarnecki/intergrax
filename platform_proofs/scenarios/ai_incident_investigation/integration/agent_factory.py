@@ -8,9 +8,6 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.applications._shared.application_composition_context import (
-    optional_factory_composition,
-)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import AgentBinding
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -62,24 +59,17 @@ def resolve_incident_investigator_production_settings(
 
 
 def build_agent(ctx: ApplicationBuildContext, binding: AgentBinding) -> Agent:
+    """Materialize investigator from pre-bound production settings (no ambient composition)."""
     del binding
     production_settings = resolve_incident_investigator_production_settings(ctx)
-    composition = optional_factory_composition()
-    tool_registry = composition.tool_registry if composition is not None else None
-    if not isinstance(tool_registry, ToolRegistry):
-        raise TypeError("incident_investigator_factory_requires_tool_registry")
-    evidence_store = register_scenario_tools(
-        tool_registry,
-        production_settings.operational_data,
-    )
+    evidence_store = production_settings.evidence_store
     if not isinstance(evidence_store, ScenarioEvidenceStore):
         raise TypeError(
-            "incident_investigator_factory_requires_scenario_evidence_store"
+            "incident_investigator_factory_requires_prebuilt_scenario_evidence_store"
         )
     composition = production_settings.composition
-    composition.tool_registry = tool_registry
-    composition.llm_adapter_override = production_settings.llm_adapter_override
-    production_settings.evidence_store = evidence_store
+    if production_settings.llm_adapter_override is not None:
+        composition.llm_adapter_override = production_settings.llm_adapter_override
     return IncidentInvestigatorAgent(
         station_id=production_settings.operational_data.station_id,
         runtime_composition=composition,
@@ -97,10 +87,13 @@ def build_default_production_settings(
     investigation_input: IncidentInvestigationInput | None = None,
     llm_adapter_override: LLMAdapter | None = None,
 ) -> IncidentInvestigatorProductionSettings:
+    """Bootstrap scenario tool registry + evidence store before factory invocation."""
     environment = build_scenario_environment_profile()
+    tool_registry = ToolRegistry()
+    evidence_store = register_scenario_tools(tool_registry, operational_data)
     composition = ScenarioRuntimeComposition(
         environment=environment,
-        tool_registry=ToolRegistry(),
+        tool_registry=tool_registry,
         llm_adapter_override=llm_adapter_override,
     )
     return IncidentInvestigatorProductionSettings(
@@ -108,4 +101,5 @@ def build_default_production_settings(
         composition=composition,
         investigation_input=investigation_input,
         llm_adapter_override=llm_adapter_override,
+        evidence_store=evidence_store,
     )
