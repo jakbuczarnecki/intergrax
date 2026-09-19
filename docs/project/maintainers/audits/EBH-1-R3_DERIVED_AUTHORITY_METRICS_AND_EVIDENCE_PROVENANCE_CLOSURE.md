@@ -18,7 +18,7 @@ Close the last formal inconsistency after EBH-1-R2: §5.2 **Peer types with exac
 | Field | SHA / note |
 |-------|------------|
 | **EBH1_R3_SESSION_START_HEAD** | `131b5e8fac9e6c05bcc0415677dee91288691500` |
-| **EBH1_R3_EVIDENCE_HEAD** | *(recorded at task commit)* |
+| **EBH1_R3_EVIDENCE_HEAD** | `320083db32eb71195a15d8ef3ad364af840afac5` |
 | **Branch** | `development` |
 | **HEAD == origin/development @ session open** | **YES** |
 | **Parallel drift** | Unrelated untracked paths only — **not staged** |
