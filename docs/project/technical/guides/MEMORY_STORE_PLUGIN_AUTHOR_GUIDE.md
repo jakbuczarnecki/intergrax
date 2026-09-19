@@ -363,7 +363,7 @@ materialization / activation (`materialize_*` resolver helpers per kind, or `bui
 - Does **not** select which plugin backs a running host
 - Does **not** materialize stores - resolver materialization is separate (`resolve_memory_platform_wiring`)
 
-**Discovery alone does not activate a memory provider.** Use `MemoryProfile` plugin selection or explicit `MemoryPlatformWiring` for materialization.
+**Discovery alone does not activate a memory store surface.** Each surface is gated by its `MemoryProfile` flag and/or plugin id; user/session overlays use `resolve_memory_platform_wiring`, while entity/procedural/long-horizon stores are composed in baseline `MemoryPlatformWiring.specialized_memory` (capabilities require composition-owned canonical authorities).
 
 ---
 
@@ -455,12 +455,14 @@ Entity temporal:
 Procedural / long-horizon:
   MemoryProfile.enable_procedural_memory / enable_long_horizon_memory
   optional procedural_memory_store_plugin_id / long_horizon_memory_store_plugin_id
-  → resolve_procedural_memory_store / resolve_long_horizon_memory_store (dedicated wiring modules)
+  → resolve_memory_platform_wiring → SpecializedMemoryCapabilities (stores)
   → materialize_procedural_memory_store / materialize_long_horizon_memory_store
-  → capability surfaces when the composition root calls those resolvers (not via resolve_memory_platform_wiring overlay)
+  → governed capabilities when composition supplies CanonicalMemoryGovernanceSourceAuthority
+     (and CanonicalMemorySourceAuthority for long-horizon) via resolve_memory_platform_wiring
+  → wire_application_environment exposes stores on ApplicationEnvironmentWiring.specialized_memory
 ```
 
-Registering EP targets alone does not activate these stores; feature flags and explicit composition-root calls are required.
+Registering EP targets alone does not activate these stores; feature flags and platform composition are required. Default in-memory providers are **NON-DURABLE REFERENCE** only (see qualification matrix).
 
 **Historical baseline (ENTERPRISE-1):** user/session EPs were counted only; no Tier-3 resolver. Closed by ENTERPRISE-5.
 

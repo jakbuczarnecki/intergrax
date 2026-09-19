@@ -522,11 +522,16 @@ Entity graph: **enabled** → projection wired in `build_user_profile_manager`; 
 ```text
 resolve_memory_platform_wiring(env)
   → user_profile_store, entity_store, entity_memory_indexer, entity_temporal_memory_capability
+  → specialized_memory: procedural/long-horizon stores (flag-gated); capabilities when canonical authorities injected
+wire_application_environment(env)
+  → ApplicationEnvironmentWiring.specialized_memory (stores; capabilities only with authority injection)
 build_user_profile_manager(store, env, …, entity_memory_indexer, entity_temporal_memory_capability)
   → UserProfileManager + projections
 build_default_memory_control_plane(user_profile_manager=…)
   → DefaultMemoryControlPlane
 ```
+
+Entity temporal, procedural, and long-horizon **default** providers are in-memory reference implementations — **not** durable production stores. Production admission for persistent USER/LTM/STI does not transfer to these specialized surfaces without matrix-backed vendor evidence.
 
 LTM tool: `ltm.write_fact` requires trusted `RequestIdentity` via control plane or explicit extras — **fails closed** without it (`MemoryControlAccessDenied`).
 
@@ -544,8 +549,8 @@ LTM tool: `ltm.write_fact` requires trusted `RequestIdentity` via control plane 
 | Entity capability | `EntityTemporalMemoryCapability` (`contracts/entity_temporal_memory.py`) | `EntityTemporalMemoryService` (`entity_temporal_memory_service.py`) | YES | `entity_graph_wiring` |
 | Projections | `UserProfileMemoryProjection` | entity + LTM vector | YES | `memory_vector_wiring` |
 | Qualification checks | per-store check modules | bundled suite | YES (plugins) | host runner |
-| Long-horizon | `LongHorizonMemoryStore` | in-memory plugin | YES | wiring + service |
-| Procedural | `ProceduralMemoryStore` | in-memory plugin | YES | wiring + service |
+| Long-horizon | `LongHorizonMemoryStore` | in-memory plugin (NON-DURABLE REFERENCE) | YES | `specialized_memory_wiring` + `memory_wiring` |
+| Procedural | `ProceduralMemoryStore` | in-memory plugin (NON-DURABLE REFERENCE) | YES | `specialized_memory_wiring` + `memory_wiring` |
 | SessionTurnIndex | `SessionTurnIndexStore` | vector adapter | YES | `memory_vector_wiring` |
 | Observability sink | `MemoryObservabilitySink` | default emitter | YES | `memory_observability_wiring` |
 | Recall strategies | `MemoryRecallStrategySet` | defaults bundle | YES | control plane injection |

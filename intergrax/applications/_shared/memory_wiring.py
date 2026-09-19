@@ -88,6 +88,14 @@ from intergrax.memory.contracts.provider_durability_evidence import (
 from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidenceRegistry,
 )
+from intergrax.applications._shared.specialized_memory_wiring import (
+    SpecializedMemoryCapabilities,
+    resolve_specialized_memory_capabilities,
+)
+from intergrax.memory.contracts.long_horizon_memory import CanonicalMemorySourceAuthority
+from intergrax.memory.contracts.memory_security_governance import (
+    CanonicalMemoryGovernanceSourceAuthority,
+)
 
 
 @dataclass(frozen=True)
@@ -103,6 +111,7 @@ class MemoryPlatformWiring:
     mongodb_bundle: MongoDBIntegrationBundle | None = None
     entity_temporal_memory_capability: EntityTemporalMemoryCapability | None = None
     entity_memory_indexer: EntityMemoryIndexer | None = None
+    specialized_memory: SpecializedMemoryCapabilities = SpecializedMemoryCapabilities()
     memory_store_plugin_load_report: DomainPluginLoadReport = DomainPluginLoadReport.empty(
         EP_MEMORY_STORES
     )
@@ -181,6 +190,8 @@ def _resolve_baseline_memory_platform_wiring(
     security_governance: MemorySecurityGovernanceService | None = None,
     memory_observability_sink: MemoryObservabilitySink | None = None,
     memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
+    governance_source_authority: CanonicalMemoryGovernanceSourceAuthority | None = None,
+    long_horizon_source_authority: CanonicalMemorySourceAuthority | None = None,
 ) -> MemoryPlatformWiring:
     """Resolve integration-backed memory stores without external plugin overlay."""
     emitter = resolve_memory_diagnostic_emitter(
@@ -207,6 +218,14 @@ def _resolve_baseline_memory_platform_wiring(
             security_governance=governance,
             diagnostic_emitter=emitter,
         )
+    specialized_memory = resolve_specialized_memory_capabilities(
+        env,
+        security_governance=governance,
+        memory_observability_sink=memory_observability_sink,
+        memory_diagnostic_emitter=emitter,
+        governance_source_authority=governance_source_authority,
+        long_horizon_source_authority=long_horizon_source_authority,
+    )
     if _sqlite_enabled(profile):
         bundle = create_sqlite_integration(**_sqlite_integration_overrides(profile))
         return MemoryPlatformWiring(
@@ -220,6 +239,7 @@ def _resolve_baseline_memory_platform_wiring(
             mongodb_bundle=None,
             entity_temporal_memory_capability=entity_temporal_memory_capability,
             entity_memory_indexer=entity_memory_indexer,
+            specialized_memory=specialized_memory,
         )
 
     if _mongodb_enabled(profile):
@@ -245,6 +265,7 @@ def _resolve_baseline_memory_platform_wiring(
             mongodb_bundle=mongo_bundle,
             entity_temporal_memory_capability=entity_temporal_memory_capability,
             entity_memory_indexer=entity_memory_indexer,
+            specialized_memory=specialized_memory,
         )
 
     return MemoryPlatformWiring(
@@ -258,6 +279,7 @@ def _resolve_baseline_memory_platform_wiring(
         mongodb_bundle=None,
         entity_temporal_memory_capability=entity_temporal_memory_capability,
         entity_memory_indexer=entity_memory_indexer,
+        specialized_memory=specialized_memory,
     )
 
 
@@ -326,6 +348,8 @@ def resolve_memory_platform_wiring(
     memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
     qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
     durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
+    governance_source_authority: CanonicalMemoryGovernanceSourceAuthority | None = None,
+    long_horizon_source_authority: CanonicalMemorySourceAuthority | None = None,
 ) -> MemoryPlatformWiring:
     """
     Resolve durable memory backends from the integration profile.
@@ -343,6 +367,8 @@ def resolve_memory_platform_wiring(
         security_governance=security_governance,
         memory_observability_sink=memory_observability_sink,
         memory_diagnostic_emitter=memory_diagnostic_emitter,
+        governance_source_authority=governance_source_authority,
+        long_horizon_source_authority=long_horizon_source_authority,
     )
     discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
     wiring = _apply_external_memory_store_overlay(

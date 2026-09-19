@@ -59,6 +59,9 @@ from intergrax.applications._shared.memory_wiring import (
     assert_strict_memory_bootstrap_acceptable,
     resolve_memory_platform_wiring,
 )
+from intergrax.applications._shared.specialized_memory_wiring import (
+    SpecializedMemoryCapabilities,
+)
 from intergrax.applications._shared.memory_vector_wiring import (
     assert_memory_vector_backend_available,
     build_user_profile_manager,
@@ -163,6 +166,7 @@ class ApplicationEnvironmentWiring:
     event_delivery: ApplicationRuntimeEventDeliveryWiring = (
         ApplicationRuntimeEventDeliveryWiring.disabled()
     )
+    specialized_memory: SpecializedMemoryCapabilities = SpecializedMemoryCapabilities()
 
     @property
     def build_context(self) -> ApplicationBuildContext:
@@ -586,4 +590,5 @@ def wire_application_environment(
         capability_graph=capability_graph,
         platform_plugin_evidence=platform_plugin_evidence,
         event_delivery=event_delivery,
+        specialized_memory=memory_wiring.specialized_memory,
     )
