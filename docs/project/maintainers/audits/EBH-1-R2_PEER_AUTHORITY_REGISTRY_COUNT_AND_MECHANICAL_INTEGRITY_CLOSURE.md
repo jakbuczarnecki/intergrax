@@ -18,7 +18,7 @@ Synchronize declared peer authority count with the active §4.1 register after E
 | Field | SHA / note |
 |-------|------------|
 | **EBH1_R2_SESSION_START_HEAD** | `95b122c8ec8dce1b280edaa6da09b81df57bc13e` |
-| **EBH1_R2_EVIDENCE_HEAD** | *(recorded at task commit)* |
+| **EBH1_R2_EVIDENCE_HEAD** | `31a51b1dd8c53bf63719f0bc5a02f8d89d97ef2b` |
 | **Branch** | `development` |
 | **HEAD == origin/development @ session open** | **YES** |
 | **Parallel drift** | Uncommitted production edits in `intergrax/collaborative_work/` and `intergrax/contracts/` — **not staged** |
@@ -123,7 +123,7 @@ uv run pytest \
 
 ## 15. Final verdict
 
-**EBH-1-R2 — CLOSED / CERTIFIED** when evidence HEAD matches committed gates and `git diff --check` passes.
+**EBH-1-R2 — CLOSED / CERTIFIED** (`EBH1_R2_EVIDENCE_HEAD` = `31a51b1dd8c53bf63719f0bc5a02f8d89d97ef2b`).
 
 ---
 

@@ -307,7 +307,7 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | Peer authority types (§4.A) | 32 |
 | Domain role types (§4.B) | 6 |
 | Subordinate authority types (§4.C) | 1 |
-| Peer types with exactly one canonical owner | 31 |
+| Peer types with exactly one canonical owner | 32 |
 | Peer types with competing canonical owners | 0 |
 | Architecture conflicts (ADR / CL register) | GE↔CW (**CL-EAC1-004**); not taxonomy duplicates |
 

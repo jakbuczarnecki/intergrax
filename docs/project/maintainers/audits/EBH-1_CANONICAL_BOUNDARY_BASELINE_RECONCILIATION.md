@@ -438,8 +438,10 @@ Repository-wide `type: ignore` / `Any` not inventoried (EBH-8 scope).
 2. **EBH-3** — Dependency Direction & Private Boundary Audit (Nexus/agent/contract leaks).
 3. **ADR-GOV-01** — Resolve GE vs CW WHETHER convergence rule (**ARCHITECTURE DECISION REQUIRED**).
 4. **EBH-7** — Application composition & SessionManager decoupling.
-5. **EBH-1-R1** — Principal-scoped ContextView ownership baseline correction — **CLOSED** (documentation only).
-6. Re-run **PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY** @ current HEAD.
+5. **EBH-1-R1** — Principal-scoped ContextView ownership baseline correction — **CLOSED / CERTIFIED** (documentation only).
+6. **EBH-1-R2** — Peer authority registry count & mechanical integrity — **CLOSED / CERTIFIED** ([R2 record](EBH-1-R2_PEER_AUTHORITY_REGISTRY_COUNT_AND_MECHANICAL_INTEGRITY_CLOSURE.md)).
+7. **EBH-1-R3** — Derived authority metrics & evidence provenance — **CLOSED / CERTIFIED** ([R3 record](EBH-1-R3_DERIVED_AUTHORITY_METRICS_AND_EVIDENCE_PROVENANCE_CLOSURE.md)).
+8. Re-run **PLATFORM_EXECUTION_UNIFICATION_P0_BYPASS_INVENTORY** @ current HEAD.
 
 ---
 
@@ -472,10 +474,10 @@ ERL reconciliation → RecoveryLifecycleIntent → EE ExecutionLifecyclePort
 
 ## 25. Final EBH-1 status
 
-| Result | **EBH-1 — BASELINE ESTABLISHED** (ContextView ownership clarified @ EBH-1-R1) |
+| Result | **EBH-1 — BASELINE ESTABLISHED / INTERNALLY CONSISTENT** (@ EBH-1-R3 derived metrics + provenance closure) |
 |--------|-----------------------------------------------|
 
-**Rationale:** Domain and peer-authority taxonomy from EAC **holds** on current `development`. **Material drift** persists on Nexus privacy (public contracts + agents) and **ADR-GOV-01**. No duplicate execution lifecycle owner found. **EBH-F-H-004** (ContextView ownership conflation) **resolved** by EBH-1-R1. Remaining HIGH findings (H-001…H-003) unchanged.
+**Rationale:** Domain and peer-authority taxonomy from EAC **holds** on current `development`. §4.1 peer register and §5.2 derived authority metrics are **mechanically reconciled** (R2 count + R3 single-owner/competing-owner gates). **Material drift** persists on Nexus privacy (public contracts + agents) and **ADR-GOV-01**. No duplicate execution lifecycle owner found. **EBH-F-H-004** (ContextView ownership conflation) **resolved** by EBH-1-R1. Remaining HIGH findings (H-001…H-003) unchanged.
 
 **Next recommended task:** **EBH-2** (public contract ownership @ 605 modules) then **EBH-3** (Nexus/agent leaks) per program table.
 

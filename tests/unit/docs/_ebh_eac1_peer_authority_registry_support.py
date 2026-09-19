@@ -19,7 +19,9 @@ _EAC1 = (
 )
 
 _PEER_SECTION_HEADING = "## 4.1 Strict peer authority register"
+_DOMAIN_ROLE_SECTION_MARKER = "### 4.B DOMAIN ROLE"
 _SUBORDINATE_SECTION_MARKER = "### 4.C SUBORDINATE / INTERNAL AUTHORITY"
+_PEER_COVERAGE_SECTION_MARKER = "### 5.2 Peer authority coverage"
 _DECLARED_COUNT_RE = re.compile(
     r"CURRENT_PEER_AUTHORITY_COUNT\s*=\s*(\d+)",
     re.MULTILINE,
@@ -95,9 +97,10 @@ def _parse_table(section: str) -> list[list[str]]:
         cells = [_strip_md(part) for part in line.split("|")[1:-1]]
         if not any(cells):
             continue
-        if cells[0].lower() == "authority type" or cells[0].lower().startswith(
-            "subordinate authority type"
-        ):
+        if cells[0].lower() in {
+            "authority type",
+            "subordinate authority type",
+        }:
             continue
         rows.append(cells)
     return rows
@@ -166,3 +169,81 @@ def canonical_owner_is_singular(owner: str) -> bool:
 
 def peer_authority_type_names(rows: list[PeerAuthorityRow]) -> list[str]:
     return [row.authority_type for row in rows]
+
+
+def parse_domain_role_register(text: str | None = None) -> list[str]:
+    body = text if text is not None else eac1_text()
+    section = _section_until_next_heading(body, _DOMAIN_ROLE_SECTION_MARKER)
+    names: list[str] = []
+    for cells in _parse_table(section):
+        if not cells:
+            continue
+        names.append(cells[0])
+    return names
+
+
+def count_peer_authorities(rows: list[PeerAuthorityRow]) -> int:
+    return len(rows)
+
+
+def count_peer_types_with_single_canonical_owner(rows: list[PeerAuthorityRow]) -> int:
+    return sum(
+        1
+        for row in rows
+        if row.canonical_owner.strip()
+        and row.canonical_owner.strip() not in {"—", "-", "NONE"}
+        and canonical_owner_is_singular(row.canonical_owner)
+    )
+
+
+def _competing_peer_owner_is_second_canonical(cell: str) -> bool:
+    cleaned = cell.strip()
+    if not cleaned or cleaned in {"—", "-"}:
+        return False
+    upper = cleaned.upper()
+    if upper == "NONE" or upper.startswith("NONE "):
+        return False
+    if "ADR REQUIRED" in upper:
+        return False
+    if upper.startswith("PASS"):
+        return False
+    return True
+
+
+def row_has_competing_canonical_owner(row: PeerAuthorityRow) -> bool:
+    if not canonical_owner_is_singular(row.canonical_owner):
+        return True
+    return _competing_peer_owner_is_second_canonical(row.competing_peer_owner)
+
+
+def count_peer_types_with_competing_canonical_owner(rows: list[PeerAuthorityRow]) -> int:
+    return sum(1 for row in rows if row_has_competing_canonical_owner(row))
+
+
+def count_subordinate_authorities(rows: list[SubordinateAuthorityRow]) -> int:
+    return len(rows)
+
+
+def count_domain_role_types(text: str | None = None) -> int:
+    return len(parse_domain_role_register(text))
+
+
+def parse_peer_authority_coverage_metrics(text: str | None = None) -> dict[str, int]:
+    body = text if text is not None else eac1_text()
+    section = _section_until_next_heading(body, _PEER_COVERAGE_SECTION_MARKER)
+    metrics: dict[str, int] = {}
+    for cells in _parse_table(section):
+        if len(cells) < 2:
+            continue
+        value_cell = cells[1].strip()
+        if not value_cell.isdigit():
+            continue
+        metrics[cells[0].strip()] = int(value_cell)
+    return metrics
+
+
+_COVERAGE_PEER_TYPES_KEY = "Peer authority types (§4.A)"
+_COVERAGE_DOMAIN_ROLES_KEY = "Domain role types (§4.B)"
+_COVERAGE_SUBORDINATE_KEY = "Subordinate authority types (§4.C)"
+_COVERAGE_SINGLE_OWNER_KEY = "Peer types with exactly one canonical owner"
+_COVERAGE_COMPETING_KEY = "Peer types with competing canonical owners"
