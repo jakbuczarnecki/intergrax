@@ -1705,6 +1705,7 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 | Field | Value |
 | ----- | ----- |
 | HEAD before | `37d5c74f5b9ed75ebe685a33f734c3dee6cda8b4` |
+| **VERIFIED_SHA** | `06600da156470330c85601fdb2a693b8ea73101e` |
 | Branch | `development` |
 | 5G-R evidence ancestor (`efdcbfe82f96f8526f7d688e4f0121534a1da583`) | **YES** |
 | Control plane implementation | `intergrax/memory/default_memory_control_plane.py` — `DefaultMemoryControlPlane` |
