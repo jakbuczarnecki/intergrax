@@ -199,6 +199,7 @@ def deny_remember_governance() -> MemorySecurityGovernanceService:
 
 def build_user_control_plane(
     *,
+    store: InMemoryUserProfileStore | None = None,
     tenant_id: str = TENANT_A,
     projection: RecordingMemoryProjection | UserProfileLtmVectorProjection | None = None,
     ltm_projection: UserProfileLtmVectorProjection | None = None,
@@ -206,9 +207,9 @@ def build_user_control_plane(
     governance: MemorySecurityGovernanceService | None = None,
     observability_sink: Any | None = None,
 ) -> tuple[MemoryControlPlane, UserProfileManager]:
-    store = InMemoryUserProfileStore()
+    backing = store or InMemoryUserProfileStore()
     projection_list: list[Any] = []
-    manager_kwargs: dict[str, Any] = {"store": store, "tenant_id": tenant_id}
+    manager_kwargs: dict[str, Any] = {"store": backing, "tenant_id": tenant_id}
     if enable_ltm_vector:
         backend = InMemoryVectorStore(tenant_id)
         vector_manager = VectorstoreManager(backend, scope=VectorStoreScope(tenant_id=tenant_id))
@@ -232,6 +233,23 @@ def build_user_control_plane(
         memory_observability_sink=observability_sink,
     )
     return plane, user_manager
+
+
+def build_shared_user_control_planes_for_tenants(
+    tenant_a: str = TENANT_A,
+    tenant_b: str = TENANT_B,
+) -> tuple[
+    InMemoryUserProfileStore,
+    MemoryControlPlane,
+    MemoryControlPlane,
+    UserProfileManager,
+    UserProfileManager,
+]:
+    """Two tenant-scoped control planes backed by one in-memory store instance."""
+    shared_store = InMemoryUserProfileStore()
+    plane_a, manager_a = build_user_control_plane(store=shared_store, tenant_id=tenant_a)
+    plane_b, manager_b = build_user_control_plane(store=shared_store, tenant_id=tenant_b)
+    return shared_store, plane_a, plane_b, manager_a, manager_b
 
 
 @dataclass

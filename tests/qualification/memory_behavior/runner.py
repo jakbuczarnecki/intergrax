@@ -9,37 +9,54 @@ from collections.abc import Sequence
 
 from tests.qualification.memory_behavior.contracts import (
     BehaviorEvalCase,
+    BehaviorEvalContext,
     BehaviorGateKind,
-    BehaviorViolationLedger,
     MemoryBehaviorEvaluationSummary,
     SemanticQualityMetrics,
 )
 
 
+def assert_behavior_qualification_pass(summary: MemoryBehaviorEvaluationSummary) -> None:
+    if summary.hard_failed:
+        raise AssertionError(f"hard scenarios failed: {summary.hard_failed}")
+    if summary.violations.has_hard_violation:
+        raise AssertionError(f"hard violation counters: {summary.violations}")
+
+
 async def run_behavior_cases(
     cases: Sequence[BehaviorEvalCase],
+    ctx: BehaviorEvalContext | None = None,
+    *,
+    fail_fast: bool = True,
 ) -> MemoryBehaviorEvaluationSummary:
+    eval_ctx = ctx or BehaviorEvalContext()
     hard_passed = 0
     hard_failed = 0
     for case in cases:
         try:
-            await case.runner()
+            await case.runner(eval_ctx)
             if case.gate is BehaviorGateKind.HARD:
                 hard_passed += 1
         except Exception:
             if case.gate is BehaviorGateKind.HARD:
                 hard_failed += 1
-            raise
+            if fail_fast:
+                raise
     return MemoryBehaviorEvaluationSummary(
         scenario_count=len(cases),
         hard_passed=hard_passed,
         hard_failed=hard_failed,
-        violations=BehaviorViolationLedger().counters,
+        violations=eval_ctx.ledger.counters,
     )
 
 
-def run_behavior_cases_sync(cases: Sequence[BehaviorEvalCase]) -> MemoryBehaviorEvaluationSummary:
-    return asyncio.run(run_behavior_cases(cases))
+def run_behavior_cases_sync(
+    cases: Sequence[BehaviorEvalCase],
+    ctx: BehaviorEvalContext | None = None,
+    *,
+    fail_fast: bool = True,
+) -> MemoryBehaviorEvaluationSummary:
+    return asyncio.run(run_behavior_cases(cases, ctx, fail_fast=fail_fast))
 
 
 def build_semantic_metrics(

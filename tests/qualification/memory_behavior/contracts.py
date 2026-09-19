@@ -75,14 +75,6 @@ class BehaviorAssertion(Protocol):
     async def run(self) -> None: ...
 
 
-@dataclass(frozen=True, slots=True)
-class BehaviorEvalCase:
-    scenario_id: str
-    category: BehaviorScenarioCategory
-    gate: BehaviorGateKind
-    runner: Callable[[], Awaitable[None]]
-
-
 @dataclass
 class BehaviorViolationLedger:
     """Session-scoped accumulator for zero-violation metrics (tests reset via fixture)."""
@@ -154,3 +146,18 @@ class BehaviorViolationLedger:
             projection_only_ghosts=c.projection_only_ghosts,
             identity_authority_violations=c.identity_authority_violations + count,
         )
+
+
+@dataclass
+class BehaviorEvalContext:
+    """Per-run evaluation context; owns the violation ledger for scenario aggregation."""
+
+    ledger: BehaviorViolationLedger = field(default_factory=BehaviorViolationLedger)
+
+
+@dataclass(frozen=True, slots=True)
+class BehaviorEvalCase:
+    scenario_id: str
+    category: BehaviorScenarioCategory
+    gate: BehaviorGateKind
+    runner: Callable[[BehaviorEvalContext], Awaitable[None]]

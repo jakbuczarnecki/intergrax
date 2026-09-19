@@ -30,6 +30,7 @@ from intergrax.memory.user_profile_memory import (
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.applications._shared.memory_control_wiring import build_default_memory_control_plane
+from tests.qualification.memory_behavior.contracts import BehaviorViolationLedger
 from tests.qualification.memory_behavior.fixtures import (
     FailingDeleteLtmVectorProjection,
     RecordingMemoryProjection,
@@ -129,7 +130,7 @@ async def test_p04_reconciliation_idempotent() -> None:
 
 
 @pytest.mark.asyncio
-async def test_user_08_stale_vector_after_delete() -> None:
+async def test_user_08_stale_vector_after_delete(violation_ledger: BehaviorViolationLedger) -> None:
     backend = InMemoryVectorStore(TENANT_A)
     vector_manager = VectorstoreManager(backend, scope=VectorStoreScope(tenant_id=TENANT_A))
     stale_ltm = FailingDeleteLtmVectorProjection(
@@ -159,7 +160,11 @@ async def test_user_08_stale_vector_after_delete() -> None:
         scope,
         MemoryControlRecallRequest(query="language Polish", top_k=5),
     )
-    assert all(item.entry_id != remembered.entry_id for item in recall.items)
+    for item in recall.items:
+        if item.entry_id == remembered.entry_id:
+            violation_ledger.record_projection_ghost()
+            violation_ledger.record_deleted_resurrection()
+            raise AssertionError("canonical deleted entry must not appear in recall (projection ghost)")
 
 
 class FailingReconcileProjection(RecordingMemoryProjection):

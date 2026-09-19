@@ -20,11 +20,16 @@ from intergrax.memory.contracts.memory_control import (
     MemoryControlRememberRequest,
     user_memory_scope,
 )
-from intergrax.memory.contracts.memory_recall import MemoryRecallReasonCode, MemorySupersessionIntent
+from intergrax.memory.contracts.memory_recall import MemorySupersessionIntent
+from tests.qualification.memory_behavior.contracts import BehaviorViolationLedger
 from tests.qualification.memory_behavior.fixtures import (
     build_user_control_plane,
     deny_remember_governance,
     request_identity,
+)
+from tests.qualification.memory_behavior.gate_helpers import (
+    assert_superseded_not_current_winner,
+    assert_unresolved_conflict_evidence,
 )
 
 pytestmark = pytest.mark.gate
@@ -115,7 +120,7 @@ async def test_user_05_disabled_semantic_fallback() -> None:
 
 
 @pytest.mark.asyncio
-async def test_user_06_forget_hard_gate() -> None:
+async def test_user_06_forget_hard_gate(violation_ledger: BehaviorViolationLedger) -> None:
     plane, _ = build_user_control_plane()
     identity = request_identity(user_id=_USER)
     scope = user_memory_scope(identity)
@@ -134,7 +139,10 @@ async def test_user_06_forget_hard_gate() -> None:
         scope,
         MemoryControlRecallRequest(query="secret", top_k=5),
     )
-    assert all(item.entry_id != remembered.entry_id for item in recall.items)
+    for item in recall.items:
+        if item.entry_id == remembered.entry_id:
+            violation_ledger.record_deleted_resurrection()
+            raise AssertionError("deleted memory entry resurrected in recall")
 
 
 @pytest.mark.asyncio
@@ -169,7 +177,9 @@ async def test_user_09_supersession_lineage() -> None:
 
 
 @pytest.mark.asyncio
-async def test_user_10_supersession_recall_prefers_new() -> None:
+async def test_user_10_supersession_recall_prefers_new(
+    violation_ledger: BehaviorViolationLedger,
+) -> None:
     plane, _ = build_user_control_plane()
     identity = request_identity(user_id=_USER)
     scope = user_memory_scope(identity)
@@ -198,12 +208,11 @@ async def test_user_10_supersession_recall_prefers_new() -> None:
         scope,
         MemoryControlRecallRequest(query="work", top_k=5),
     )
-    if recall.items:
-        assert recall.items[0].entry_id != old.entry_id or new.entry_id in {
-            item.entry_id for item in recall.items
-        }
-    assert not any(
-        item.entry_id == old.entry_id and not item.conflict_unresolved for item in recall.items
+    assert_superseded_not_current_winner(
+        recall.items,
+        superseded_entry_id=old.entry_id,
+        superseding_entry_id=new.entry_id,
+        ledger=violation_ledger,
     )
 
 
@@ -302,15 +311,13 @@ async def test_user_20_conflicting_facts_unresolved() -> None:
         MemoryControlRecallRequest(query="lives", top_k=5),
     )
     assert len(recall.items) >= 1
-    assert any(
-        MemoryRecallReasonCode.CONFLICT_UNRESOLVED in item.reason_codes
-        or item.conflict_unresolved
-        for item in recall.items
-    ) or len(recall.items) >= 2
+    assert_unresolved_conflict_evidence(recall.items)
 
 
 @pytest.mark.asyncio
-async def test_user_21_supersession_resolves_conflict() -> None:
+async def test_user_21_supersession_resolves_conflict(
+    violation_ledger: BehaviorViolationLedger,
+) -> None:
     plane, _ = build_user_control_plane()
     identity = request_identity(user_id=_USER)
     scope = user_memory_scope(identity)
@@ -339,7 +346,12 @@ async def test_user_21_supersession_resolves_conflict() -> None:
         scope,
         MemoryControlRecallRequest(query="lives", top_k=3),
     )
-    assert any(item.entry_id == b.entry_id for item in recall.items)
+    assert_superseded_not_current_winner(
+        recall.items,
+        superseded_entry_id=a.entry_id,
+        superseding_entry_id=b.entry_id,
+        ledger=violation_ledger,
+    )
 
 
 @pytest.mark.asyncio

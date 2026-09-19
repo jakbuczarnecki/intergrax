@@ -40,6 +40,8 @@ MEM_AUDIT_6_SCENARIOS: tuple[MemAudit6ScenarioRef, ...] = (
     MemAudit6ScenarioRef("SEC-02", BehaviorScenarioCategory.SECURITY, _node("test_mem_final_audit_6_security_behavior.py", "test_identity_tenant_spoof_denied")),
     MemAudit6ScenarioRef("USER-23", BehaviorScenarioCategory.SECURITY, _node("test_mem_final_audit_6_security_behavior.py", "test_cross_user_isolation")),
     MemAudit6ScenarioRef("USER-24", BehaviorScenarioCategory.SECURITY, _node("test_mem_final_audit_6_security_behavior.py", "test_cross_tenant_isolation")),
+    MemAudit6ScenarioRef("SEC-03", BehaviorScenarioCategory.SECURITY, _node("test_mem_final_audit_6_security_behavior.py", "test_cross_tenant_shared_backing_reverse_direction")),
+    MemAudit6ScenarioRef("HARNESS-01", BehaviorScenarioCategory.SECURITY, _node("test_mem_final_audit_6r_harness.py", "test_behavior_runner_aggregates_real_violation_ledger")),
     MemAudit6ScenarioRef("P-01", BehaviorScenarioCategory.PROJECTION_LIFECYCLE, _node("test_mem_final_audit_6_projection_behavior.py", "test_p01_partial_projection_remember")),
     MemAudit6ScenarioRef("P-02", BehaviorScenarioCategory.PROJECTION_LIFECYCLE, _node("test_mem_final_audit_6_projection_behavior.py", "test_p02_partial_projection_forget")),
     MemAudit6ScenarioRef("P-03", BehaviorScenarioCategory.PROJECTION_LIFECYCLE, _node("test_mem_final_audit_6_projection_behavior.py", "test_p03_reconciliation_repair")),

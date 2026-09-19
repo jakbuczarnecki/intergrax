@@ -52,8 +52,9 @@ async def test_semantic_quality_deterministic_dataset() -> None:
         top_k=3,
     )
     assert metrics.dataset_size == 2
-    assert metrics.hit_at_1 >= 0.5
-    assert metrics.recall_at_k >= 0.5
+    assert metrics.hit_at_1 == 1.0
+    assert metrics.recall_at_k == 1.0
+    assert metrics.mrr == 1.0
 
 
 def test_zero_violation_counters_default() -> None:

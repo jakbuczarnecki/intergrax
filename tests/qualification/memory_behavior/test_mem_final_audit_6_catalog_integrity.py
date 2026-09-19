@@ -18,7 +18,7 @@ _MINIMUM_BY_CATEGORY = {
     BehaviorScenarioCategory.SESSION: 4,
     BehaviorScenarioCategory.TASK: 4,
     BehaviorScenarioCategory.PROJECTION_LIFECYCLE: 5,
-    BehaviorScenarioCategory.SECURITY: 4,
+    BehaviorScenarioCategory.SECURITY: 6,
 }
 
 
