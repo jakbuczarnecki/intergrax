@@ -696,7 +696,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Purpose** | Replaceable atomic `CollaborativeActivityAppendStore` — idempotency + `append_position` + `recorded_at` + durable append in one transaction |
 | **Implementation** | `SQLiteCollaborativeActivityAppendStore` / `PostgreSQLCollaborativeActivityAppendStore` in `intergrax/collaborative_work/collaborative_activity_append_store.py`; composition via `persistence.py` factories |
 | **Atomic unit** | idempotency decision + workspace `(tenant_id, workspace_id)` append-position allocation + `recorded_at` assignment + durable insert (gaps in sequence allowed on rollback) |
-| **Provider qualification** | SQLite (unit + concurrency); PostgreSQL (integration when DSN available) |
+| **Provider qualification** | SQLite (unit + concurrency); PostgreSQL live — [`MP-6D-Q1_POSTGRESQL_PROVIDER_QUALIFICATION.md`](../qualification/MP-6D-Q1_POSTGRESQL_PROVIDER_QUALIFICATION.md) (**3 passed**, independent bundle concurrency) |
 | **Next step** | **MP-6E — NEXT** |
 
 ---
