@@ -55,38 +55,6 @@ _PLATFORM_MINIMUM_DURABILITY: dict[str, CollaborativeActivityDurabilityClass] = 
 }
 
 
-def platform_collaborative_activity_publisher_context(
-    *,
-    tenant_id: str,
-    producer_principal_id: str,
-    allowed_workspace_ids: tuple[str, ...] = (),
-) -> CollaborativeActivityPublisherContext:
-    """Trusted platform service caller — may emit reserved ``platform`` namespaces."""
-    return CollaborativeActivityPublisherContext(
-        tenant_id=tenant_id,
-        producer_principal_id=producer_principal_id,
-        kind=CollaborativeActivityPublisherKind.PLATFORM,
-        allowed_workspace_ids=allowed_workspace_ids,
-    )
-
-
-def plugin_collaborative_activity_publisher_context(
-    *,
-    tenant_id: str,
-    producer_principal_id: str,
-    owned_namespace: str,
-    allowed_workspace_ids: tuple[str, ...] = (),
-) -> CollaborativeActivityPublisherContext:
-    """Trusted plugin caller — limited to ``owned_namespace`` for source and activity types."""
-    return CollaborativeActivityPublisherContext(
-        tenant_id=tenant_id,
-        producer_principal_id=producer_principal_id,
-        kind=CollaborativeActivityPublisherKind.PLUGIN,
-        owned_namespace=owned_namespace,
-        allowed_workspace_ids=allowed_workspace_ids,
-    )
-
-
 def _resolve_effective_durability(
     *,
     activity_type: CollaborativeActivityTypeId,
@@ -259,6 +227,4 @@ class CollaborativeActivityIngestionService(
 __all__ = [
     "CollaborativeActivityIngestionService",
     "DefaultCollaborativeActivityIngestionPolicy",
-    "platform_collaborative_activity_publisher_context",
-    "plugin_collaborative_activity_publisher_context",
 ]

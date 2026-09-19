@@ -10,12 +10,19 @@ from datetime import datetime, timezone
 from pathlib import Path
 import pytest
 
+from intergrax.collaborative_work.collaborative_activity_composition import (
+    build_collaborative_activity_ingestion_service,
+)
 from intergrax.collaborative_work.collaborative_activity_ingestion import (
     CollaborativeActivityIngestionService,
     DefaultCollaborativeActivityIngestionPolicy,
-    platform_collaborative_activity_publisher_context,
-    plugin_collaborative_activity_publisher_context,
 )
+from intergrax.collaborative_work.collaborative_activity_publisher_resolution import (
+    DefaultCollaborativeActivityPublisherContextResolver,
+    MappingCollaborativeActivityPublisherAuthoritySource,
+)
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.collaborative_activity import (
     ActivityIdempotencyKey,
     CollaborativeActivity,
@@ -41,7 +48,13 @@ from intergrax.contracts.collaborative_activity_ingestion import (
     CollaborativeActivityIngestionPolicy,
     CollaborativeActivityIngestionPolicyError,
     CollaborativeActivityIngestionRequest,
+    CollaborativeActivityPublisherContext,
+    CollaborativeActivityPublisherKind,
     fail_closed_collaborative_activity_ingestion_decision,
+)
+from intergrax.contracts.collaborative_activity_publisher_authority import (
+    CollaborativeActivityPluginPublisherRegistration,
+    verified_collaborative_activity_publisher_identity_from_request_identity,
 )
 from intergrax.contracts.collaborative_work import PrincipalKind
 
@@ -154,6 +167,22 @@ class _RecordingAppendStore:
         return self._by_key.get(activity_id)
 
 
+def _service_request_identity(tenant: str, producer: str) -> RequestIdentity:
+    return RequestIdentity(
+        tenant_id=tenant,
+        auth_subject=producer,
+        principal_type=PrincipalType.SERVICE,
+    )
+
+
+def _default_resolver(
+    *plugins: CollaborativeActivityPluginPublisherRegistration,
+) -> DefaultCollaborativeActivityPublisherContextResolver:
+    return DefaultCollaborativeActivityPublisherContextResolver(
+        MappingCollaborativeActivityPublisherAuthoritySource(plugin_registrations=plugins),
+    )
+
+
 def _platform_service(
     store: _RecordingAppendStore,
     *,
@@ -161,14 +190,32 @@ def _platform_service(
     producer: str = "platform-producer-1",
     policy: CollaborativeActivityIngestionPolicy | None = None,
 ) -> CollaborativeActivityIngestionService:
-    ctx = platform_collaborative_activity_publisher_context(
-        tenant_id=tenant,
-        producer_principal_id=producer,
+    verified = verified_collaborative_activity_publisher_identity_from_request_identity(
+        _service_request_identity(tenant, producer),
     )
-    return CollaborativeActivityIngestionService(
-        publisher_context=ctx,
-        ingestion_policy=policy or DefaultCollaborativeActivityIngestionPolicy(),
+    return build_collaborative_activity_ingestion_service(
+        verified_publisher_identity=verified,
+        publisher_context_resolver=_default_resolver(),
         append_store=store,
+        ingestion_policy=policy,
+    )
+
+
+def _direct_publisher_context(
+    *,
+    tenant_id: str,
+    producer_principal_id: str,
+    kind: CollaborativeActivityPublisherKind,
+    owned_namespace: str | None = None,
+    allowed_workspace_ids: tuple[str, ...] = (),
+) -> CollaborativeActivityPublisherContext:
+    """Test-only policy fixture — not a trusted production boundary."""
+    return CollaborativeActivityPublisherContext(
+        tenant_id=tenant_id,
+        producer_principal_id=producer_principal_id,
+        kind=kind,
+        owned_namespace=owned_namespace,
+        allowed_workspace_ids=allowed_workspace_ids,
     )
 
 
@@ -249,13 +296,11 @@ def test_mp6c_unauthorized_replay_denied_no_store() -> None:
     authorized.publish(pub)
     assert len(store.append_calls) == 1
 
-    unauthorized_ctx = platform_collaborative_activity_publisher_context(
-        tenant_id="tenant-b",
-        producer_principal_id="producer-b",
-    )
-    unauthorized = CollaborativeActivityIngestionService(
-        publisher_context=unauthorized_ctx,
-        ingestion_policy=DefaultCollaborativeActivityIngestionPolicy(),
+    unauthorized = build_collaborative_activity_ingestion_service(
+        verified_publisher_identity=verified_collaborative_activity_publisher_identity_from_request_identity(
+            _service_request_identity("tenant-b", "producer-b"),
+        ),
+        publisher_context_resolver=_default_resolver(),
         append_store=store,
     )
     with pytest.raises(CollaborativeActivityAdmissionRejected):
@@ -265,14 +310,17 @@ def test_mp6c_unauthorized_replay_denied_no_store() -> None:
 
 def test_mp6c_plugin_own_namespace_allowed() -> None:
     store = _RecordingAppendStore()
-    ctx = plugin_collaborative_activity_publisher_context(
-        tenant_id="tenant-a",
-        producer_principal_id="plugin-producer",
-        owned_namespace="vendor.a",
-    )
-    service = CollaborativeActivityIngestionService(
-        publisher_context=ctx,
-        ingestion_policy=DefaultCollaborativeActivityIngestionPolicy(),
+    service = build_collaborative_activity_ingestion_service(
+        verified_publisher_identity=verified_collaborative_activity_publisher_identity_from_request_identity(
+            _service_request_identity("tenant-a", "plugin-producer"),
+        ),
+        publisher_context_resolver=_default_resolver(
+            CollaborativeActivityPluginPublisherRegistration(
+                tenant_id="tenant-a",
+                producer_principal_id="plugin-producer",
+                owned_namespace="vendor.a",
+            ),
+        ),
         append_store=store,
     )
     pub = CollaborativeActivityPublication(
@@ -295,14 +343,17 @@ def test_mp6c_plugin_own_namespace_allowed() -> None:
 
 def test_mp6c_reserved_namespace_spoof_denied() -> None:
     store = _RecordingAppendStore()
-    ctx = plugin_collaborative_activity_publisher_context(
-        tenant_id="tenant-a",
-        producer_principal_id="evil-plugin",
-        owned_namespace="vendor.a",
-    )
-    service = CollaborativeActivityIngestionService(
-        publisher_context=ctx,
-        ingestion_policy=DefaultCollaborativeActivityIngestionPolicy(),
+    service = build_collaborative_activity_ingestion_service(
+        verified_publisher_identity=verified_collaborative_activity_publisher_identity_from_request_identity(
+            _service_request_identity("tenant-a", "evil-plugin"),
+        ),
+        publisher_context_resolver=_default_resolver(
+            CollaborativeActivityPluginPublisherRegistration(
+                tenant_id="tenant-a",
+                producer_principal_id="evil-plugin",
+                owned_namespace="vendor.a",
+            ),
+        ),
         append_store=store,
     )
     pub = CollaborativeActivityPublication(
@@ -327,14 +378,17 @@ def test_mp6c_reserved_namespace_spoof_denied() -> None:
 
 def test_mp6c_source_type_namespace_mismatch_denied() -> None:
     store = _RecordingAppendStore()
-    ctx = plugin_collaborative_activity_publisher_context(
-        tenant_id="tenant-a",
-        producer_principal_id="plugin-producer",
-        owned_namespace="vendor.a",
-    )
-    service = CollaborativeActivityIngestionService(
-        publisher_context=ctx,
-        ingestion_policy=DefaultCollaborativeActivityIngestionPolicy(),
+    service = build_collaborative_activity_ingestion_service(
+        verified_publisher_identity=verified_collaborative_activity_publisher_identity_from_request_identity(
+            _service_request_identity("tenant-a", "plugin-producer"),
+        ),
+        publisher_context_resolver=_default_resolver(
+            CollaborativeActivityPluginPublisherRegistration(
+                tenant_id="tenant-a",
+                producer_principal_id="plugin-producer",
+                owned_namespace="vendor.a",
+            ),
+        ),
         append_store=store,
     )
     pub = CollaborativeActivityPublication(
@@ -394,9 +448,10 @@ def test_mp6c_custom_policy_injection() -> None:
 
 def test_mp6c_deterministic_policy_decision() -> None:
     policy = DefaultCollaborativeActivityIngestionPolicy()
-    ctx = platform_collaborative_activity_publisher_context(
+    ctx = _direct_publisher_context(
         tenant_id="tenant-a",
         producer_principal_id="p1",
+        kind=CollaborativeActivityPublisherKind.PLATFORM,
     )
     pub = _platform_publication()
     request = CollaborativeActivityIngestionRequest(publication=pub, publisher_context=ctx)
@@ -408,9 +463,10 @@ def test_mp6c_deterministic_policy_decision() -> None:
 
 def test_mp6c_deny_reason_code_stable() -> None:
     policy = DefaultCollaborativeActivityIngestionPolicy()
-    ctx = platform_collaborative_activity_publisher_context(
+    ctx = _direct_publisher_context(
         tenant_id="tenant-a",
         producer_principal_id="p1",
+        kind=CollaborativeActivityPublisherKind.PLATFORM,
     )
     pub = _platform_publication(tenant="tenant-b")
     decision = policy.evaluate(

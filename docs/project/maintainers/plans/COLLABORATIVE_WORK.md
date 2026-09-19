@@ -674,6 +674,16 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Security** | Fail-closed policy; reserved namespace spoof denied; tenant/workspace isolation; actor ≠ publisher; no direct publication → append store |
 | **Next step** | **MP-6D — NEXT** |
 
+### MP-6C-C1 — Trusted publisher identity binding
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED** (subject to independent audit) |
+| **Purpose** | Bind `CollaborativeActivityPublisherContext` to `VerifiedCollaborativeActivityPublisherIdentity` + `CollaborativeActivityPublisherContextResolver`; remove raw caller-controlled publisher factories from production |
+| **Artifacts** | `intergrax/contracts/collaborative_activity_publisher_authority.py`, `collaborative_activity_publisher_resolution.py`, `collaborative_activity_composition.py`, `tests/unit/collaborative_work/test_mp6c_c1_trusted_publisher_identity_binding.py` |
+| **Security** | Fail-closed resolution; plugin cannot self-promote to PLATFORM; namespace/workspace/tenant from authority source; composition rejects raw context injection |
+| **Next step** | **MP-6D — NEXT** |
+
 ### MP-6D — Persistence / store
 
 | Field | Value |
