@@ -53,6 +53,10 @@ from intergrax.collaborative_work.sqlite_repository import (
     SQLiteWorkItemRepository,
     SQLiteWorkspaceMembershipRepository,
 )
+from intergrax.collaborative_work.collaborative_activity_append_store import (
+    PostgreSQLCollaborativeActivityAppendStore,
+    SQLiteCollaborativeActivityAppendStore,
+)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.postgresql.config import (
     PostgreSQLIntegrationConfig,
@@ -318,3 +322,62 @@ def open_postgresql_collaborative_work_repositories(
             publication=PostgreSQLArtifactPublicationRepository(store),
         ),
     )
+
+
+def sqlite_collaborative_activity_append_store(
+    db_path: str,
+    *,
+    utc_now: Callable[[], Any] | None = None,
+) -> SQLiteCollaborativeActivityAppendStore:
+    """Open a SQLite-backed MP-6D append store on a dedicated or shared database file."""
+    path = Path(db_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    store = SQLiteCollaborativeWorkStore(str(path))
+    return SQLiteCollaborativeActivityAppendStore(store, utc_now=utc_now)
+
+
+def collaborative_activity_append_store_from_sqlite_bundle(
+    bundle: CollaborativeWorkMaterializedRepositories,
+    *,
+    utc_now: Callable[[], Any] | None = None,
+) -> SQLiteCollaborativeActivityAppendStore:
+    """Reuse an opened SQLite Collaborative Work store for MP-6D append semantics."""
+    owner = collaborative_work_core_repositories(bundle).store
+    if not isinstance(owner, SQLiteCollaborativeWorkStore):
+        raise TypeError("bundle store is not SQLiteCollaborativeWorkStore")
+    return SQLiteCollaborativeActivityAppendStore(owner, utc_now=utc_now)
+
+
+def postgresql_collaborative_activity_append_store(
+    *,
+    config: PostgreSQLIntegrationConfig | None = None,
+    connection_factory: Callable[[], Any] | None = None,
+    schema_name: str | None = None,
+    utc_now: Callable[[], Any] | None = None,
+) -> PostgreSQLCollaborativeActivityAppendStore:
+    """Open a PostgreSQL-backed MP-6D append store."""
+    resolved = config or PostgreSQLIntegrationConfig.from_env()
+    try:
+        store = PostgreSQLCollaborativeWorkStore(
+            resolved,
+            connection_factory=connection_factory,
+            schema_name=schema_name,
+        )
+    except IntegrationConfigurationError:
+        raise
+    except Exception as exc:
+        raise IntegrationConfigurationError(
+            "PostgreSQL Collaborative Activity append store could not be opened"
+        ) from exc
+    return PostgreSQLCollaborativeActivityAppendStore(store, utc_now=utc_now)
+
+
+def collaborative_activity_append_store_from_postgresql_bundle(
+    bundle: CollaborativeWorkMaterializedRepositories,
+    *,
+    utc_now: Callable[[], Any] | None = None,
+) -> PostgreSQLCollaborativeActivityAppendStore:
+    owner = collaborative_work_core_repositories(bundle).store
+    if not isinstance(owner, PostgreSQLCollaborativeWorkStore):
+        raise TypeError("bundle store is not PostgreSQLCollaborativeWorkStore")
+    return PostgreSQLCollaborativeActivityAppendStore(owner, utc_now=utc_now)

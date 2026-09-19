@@ -199,7 +199,7 @@ Persistence, APIs, repositories, and enforcement implementation are delivered fo
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; slices **MP-3A…MP-3H — APPROVED / CLOSED** (MP-3H final cross-slice certification).
 **Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-6 — NEXT** (active slice **MP-6D — NEXT**; **MP-6C — CLOSED**; **MP-6B — CLOSED**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** at `d0aee066` — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md), [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)).
+**Next task:** **MP-6 — NEXT** (active slice **MP-6E — NEXT**; **MP-6D — CLOSED / CERTIFIED**; **MP-6C — CLOSED**; **MP-6B — CLOSED**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** at `d0aee066` — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md), [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)).
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 
@@ -523,7 +523,7 @@ Future Multiplayer phases that belong on the collaborative work plane extend **t
 | MP-3 | WorkArtifact, WorkArtifactVersion collaborative ownership |
 | MP-4 | Decision / Approval / Governance collaborative semantics — [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md) |
 | MP-5 | Principal-scoped ContextView — **ENTERPRISE CERTIFIED / CLOSED** (MP-5A…MP-5H) |
-| MP-6 | Collaborative Activity + provenance linkage — **MP-6 — IN PROGRESS**; **MP-6A — CLOSED / RECERTIFIED**; **MP-6B — CLOSED / RECERTIFIED**; **MP-6C — CLOSED / RECERTIFIED**; **MP-6D — NEXT** |
+| MP-6 | Collaborative Activity + provenance linkage — **MP-6 — IN PROGRESS**; **MP-6A — CLOSED / RECERTIFIED**; **MP-6B — CLOSED / RECERTIFIED**; **MP-6C — CLOSED / RECERTIFIED**; **MP-6D — CLOSED / CERTIFIED**; **MP-6E — NEXT** |
 
 Architecture and implementation rows for MP-6+ remain in their future gates.
 
@@ -580,7 +580,7 @@ Capability coordination: [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULT
 
 ## Collaborative Activity & Provenance (MP-6)
 
-**MP-6 ownership — FROZEN** ([ADR-MP-007](../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6 — IN PROGRESS**. **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** / **MP-6A-C1-R1** atomic append ownership). **MP-6B — CLOSED / RECERTIFIED** (**MP-6B-C1** / **MP-6B-C1-R1** policy-resolved append intent; subject to independent audit). **MP-6C — CLOSED / RECERTIFIED** (trusted publisher context, `CollaborativeActivityIngestionService`, injectable ingestion policy, append intent only after admission; subject to independent audit). **MP-6D — NEXT**.
+**MP-6 ownership — FROZEN** ([ADR-MP-007](../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6 — IN PROGRESS**. **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** / **MP-6A-C1-R1** atomic append ownership). **MP-6B — CLOSED / RECERTIFIED** (**MP-6B-C1** / **MP-6B-C1-R1** policy-resolved append intent; subject to independent audit). **MP-6C — CLOSED / RECERTIFIED** (trusted publisher context, `CollaborativeActivityIngestionService`, injectable ingestion policy, append intent only after admission; subject to independent audit). **MP-6D — CLOSED / CERTIFIED** (atomic append store: SQLite + PostgreSQL adapters; `append_idempotent(intent)` owns idempotency, per-workspace `append_position`, `recorded_at`, and durable materialization from `effective_durability_class`; replay immutable). **MP-6E — NEXT**.
 
 **MP-6C ingestion boundary (closed / recertified — MP-6C-C1 / MP-6C-C1-R1):** publisher context is derived from a verified platform identity (`VerifiedCollaborativeActivityPublisherIdentity` from canonical `RequestIdentity` at the authenticated composition boundary) by an injected `CollaborativeActivityPublisherContextResolver` — not from caller-provided tenant/kind/namespace/workspace claims. **Publisher authority is explicit registration** (`CollaborativeActivityPublisherRegistration` via replaceable `CollaborativeActivityPublisherAuthoritySource` config snapshot): PLATFORM and PLUGIN require a per-`(tenant_id, producer_principal_id)` record; `resolve_publisher_authority` returning `None` denies (never implicit PLATFORM). **Tenant-wide workspace access requires an explicit `TENANT_WIDE` workspace grant**; missing registration or workspace authority denies (never tenant-wide from a missing grant). `SERVICE` / `ORG_SYSTEM` principal types alone do not grant PLATFORM. `CollaborativeActivityPublisherContext` carries authenticated `producer_principal_id`, distinct from semantic `publication.actor`. `CollaborativeActivityIngestionService` implements `CollaborativeActivityPublicationPort` and `CollaborativeActivityWritePort`, evaluates `CollaborativeActivityIngestionPolicy`, materializes `CollaborativeActivityAppendIntent` only on ALLOW, and calls `CollaborativeActivityAppendStore.append_idempotent` once per successful invocation. DENY, policy failure, and publisher resolution failure → zero store calls. Default policy: fail-closed namespace authorization (reserved `platform` / `intergrax` spoof denied for plugins), tenant/workspace alignment, source/type namespace rules, platform minimum durability resolution. **No direct source → append store.** MP-6 consumes verified identity; authentication itself is owned upstream. Live runtime registry integration is future configuration work (not MP-6C-C1-R1).
 
@@ -657,7 +657,7 @@ requested durability (publication)
 | Persistence providers | `CollaborativeActivityAppendStore` | collaborative semantics |
 | Application / UI (MP-9) | `CollaborativeActivityReadPort` | store internals |
 
-**Roadmap:** MP-6C publication boundary (**CLOSED**) → MP-6D store (**NEXT**) → MP-6E scoped read → MP-6F source integrations → MP-6G qualification → MP-6H certification.
+**Roadmap:** MP-6C publication boundary (**CLOSED**) → MP-6D store (**CLOSED**) → MP-6E scoped read (**NEXT**) → MP-6F source integrations → MP-6G qualification → MP-6H certification.
 
 Capability coordination: [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md) § MP-6.
 

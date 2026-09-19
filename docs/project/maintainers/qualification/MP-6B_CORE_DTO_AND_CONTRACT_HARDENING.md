@@ -130,4 +130,4 @@ No SQL/NoSQL/vendor imports in contract module (MP-6A gate).
 
 ## 22. Final MP-6B verdict
 
-**MP-6B — CLOSED / CERTIFIED** (subject to independent audit on GitHub). **MP-6C — CLOSED / CERTIFIED** (ingestion boundary). **MP-6D — NEXT.**
+**MP-6B — CLOSED / CERTIFIED** (subject to independent audit on GitHub). **MP-6C — CLOSED / CERTIFIED** (ingestion boundary). **MP-6D — CLOSED / CERTIFIED** (atomic append store). **MP-6E — NEXT.**

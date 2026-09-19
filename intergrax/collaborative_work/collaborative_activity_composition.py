@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.collaborative_work.persistence import sqlite_collaborative_activity_append_store
 from intergrax.collaborative_work.collaborative_activity_ingestion import (
     CollaborativeActivityIngestionService,
     DefaultCollaborativeActivityIngestionPolicy,
@@ -43,7 +44,14 @@ def build_collaborative_activity_ingestion_service(
     )
 
 
+def build_sqlite_collaborative_activity_append_store(
+    db_path: str,
+) -> CollaborativeActivityAppendStore:
+    return sqlite_collaborative_activity_append_store(db_path)
+
+
 __all__ = [
     "build_collaborative_activity_ingestion_service",
     "build_default_collaborative_activity_ingestion_policy",
+    "build_sqlite_collaborative_activity_append_store",
 ]

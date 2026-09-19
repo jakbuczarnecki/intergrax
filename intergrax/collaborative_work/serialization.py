@@ -34,6 +34,7 @@ from intergrax.contracts.decision_proposal_ref_wire import (
     decision_proposal_ref_to_canonical_json,
 )
 from intergrax.contracts.decision_record import DecisionProposalRef
+from intergrax.contracts.collaborative_activity import CollaborativeActivity
 from intergrax.contracts.execution_provenance import ExecutionProvenanceRef
 
 
@@ -210,3 +211,11 @@ def collaborative_decision_binding_from_json(payload: str) -> CollaborativeDecis
         created_by_principal_id=raw["created_by_principal_id"],
         created_at=datetime.fromisoformat(raw["created_at"]),
     )
+
+
+def collaborative_activity_to_json(record: CollaborativeActivity) -> str:
+    return record.model_dump_json()
+
+
+def collaborative_activity_from_json(payload: str) -> CollaborativeActivity:
+    return CollaborativeActivity.model_validate_json(payload)
