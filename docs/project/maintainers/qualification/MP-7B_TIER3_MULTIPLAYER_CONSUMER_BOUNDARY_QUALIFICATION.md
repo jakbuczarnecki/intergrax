@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | **Status** | **TIER-3 MULTIPLAYER CONSUMER BOUNDARY QUALIFIED / CLOSED** (subject to independent audit) |
-| **Audit HEAD** | *(filled at commit)* |
+| **Audit HEAD** | `eaf66f759a7830a10243b212ca69fed78ad38487` (MP-7B closure commit) |
 | **ADR** | [ADR-MP-008](../../technical/adr/entries/2026-09-19/ADR-MP-008.md) — **Accepted** (unchanged; Option B preserved) |
 | **Predecessor** | MP-7A — CLOSED / CERTIFIED (`a40dd4107b3c0c3c28177522f1dd278c68fb4da4`) |
 | **Production code** | **NONE** (LKW production unchanged; no platform facade added) |
@@ -12,8 +12,9 @@
 
 ```text
 START_HEAD = a40dd4107b3c0c3c28177522f1dd278c68fb4da4
-MP7A_ANCESTRY = yes (MP-7A commit is ancestor of / equals START_HEAD)
-WORKTREE_STATE = clean at qualification authoring
+FINAL_HEAD = eaf66f759a7830a10243b212ca69fed78ad38487
+MP7A_ANCESTRY = yes (MP-7A commit is ancestor of FINAL_HEAD)
+WORKTREE_STATE = clean at qualification close
 ```
 
 ## 2. Boundary under qualification
