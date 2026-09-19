@@ -176,7 +176,7 @@ Direct inference is still a **full Execution** with Task, Run, Attempt, Executio
 
 **CURRENT IMPLEMENTATION:** `ExecutionBoundary` and `StrategyExecutionRouter` are frozen core components. **Consumer adoption:** legacy harness workloads may still enter via `UnifiedTaskRunner` → `NexusLoop` on orchestrated paths; neutral strategy routing on every surface is not claimed complete.
 
-**Dynamic topology submission (CURRENT):** Under active parent Execution, `OrchestrationTopologySubmissionPort.submit(...)` schedules typed slot work via canonical Nexus `GraphExecutor` → `ChildExecutionRunner` → `OrchestrationSlotExecutor`, returning immutable `OrchestrationResult` ordered by submission.
+**Dynamic topology submission (CURRENT):** Under active parent Execution, `OrchestrationTopologySubmissionPort.submit(...)` schedules typed slot work via canonical Nexus `GraphExecutor` → `ChildExecutionRunner` → `OrchestrationSlotExecutor`, returning immutable `OrchestrationResult` ordered by submission. The canonical composition root `build_orchestration_topology_submission_port` is production-safe and requires slot MSE policy (fail-closed without it); policy-less paths use explicit `build_lab_orchestration_topology_submission_port` only.
 
 ## Direct execution (inference strategy)
 

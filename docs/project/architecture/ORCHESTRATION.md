@@ -111,7 +111,7 @@ Fan-out: `NodeId = researcher` → `Execution E2`, `E3`, `E4`.
 
 ## Dynamic topology submission (CURRENT)
 
-Consumer-defined orchestration topologies may enter the canonical Nexus host through `OrchestrationTopologySubmissionPort` (`intergrax/contracts/orchestration_topology.py` + `build_orchestration_topology_submission_port`).
+Consumer-defined orchestration topologies may enter the canonical Nexus host through `OrchestrationTopologySubmissionPort` (`intergrax/contracts/orchestration_topology.py` + `build_orchestration_topology_submission_port` with mandatory `OrchestrationTopologySlotMsePolicy` — fail-closed when policy is omitted). Non-production / lab composition must use `build_lab_orchestration_topology_submission_port` explicitly.
 
 ```text
 Consumer topology + typed slot payloads

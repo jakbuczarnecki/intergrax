@@ -41,8 +41,8 @@ from intergrax.runtime.execution.fan_out_orchestration_adapter import (
     build_fan_out_orchestration_port,
     map_orchestration_outcome_to_fan_out,
 )
-from intergrax.runtime.execution.orchestration_topology_submission import (
-    build_orchestration_topology_submission_port,
+from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
+    build_production_representative_orchestration_topology_submission_port,
 )
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -75,7 +75,9 @@ def _build_shared_fan_out_service(
     *,
     nexus_loop: NexusLoop,
 ):
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_production_representative_orchestration_topology_submission_port(
+        nexus_loop,
+    )
     coordination = _build_coordination_service(harness)
     orchestration = build_fan_out_orchestration_port(
         submission_port,
@@ -153,7 +155,9 @@ async def test_npsc5b_final_production_fanout_fanin_e2e_qualification() -> None:
         specialist_delegate=_LineageDelayedDelegate(),
     )
     nexus_loop = NexusLoop(AgentRegistry())
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_production_representative_orchestration_topology_submission_port(
+        nexus_loop,
+    )
     coordination = _build_coordination_service(harness)
 
     class _TrackingSubmissionPort:
@@ -164,6 +168,14 @@ async def test_npsc5b_final_production_fanout_fanin_e2e_qualification() -> None:
             class _TrackingSlotExecutor:
                 def __init__(self, wrapped) -> None:
                     self._wrapped = wrapped
+
+                @property
+                def orchestration_slot_effect_authority_owner(self):
+                    return getattr(
+                        self._wrapped,
+                        "orchestration_slot_effect_authority_owner",
+                        None,
+                    )
 
                 async def execute_slot(self, *, slot_id, payload):
                     orchestration_child_ids.append(require_active_execution_id())
