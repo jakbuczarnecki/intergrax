@@ -4,12 +4,13 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from dataclasses import dataclass
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.collaborative_work.persistence import (
+    CollaborativeWorkMaterializedRepositories,
     collaborative_work_core_repositories,
-    open_sqlite_collaborative_work_repositories,
 )
 from intergrax.collaborative_work.persistence_provider import (
     resolve_collaborative_work_repositories,
@@ -23,27 +24,19 @@ from intergrax.runtime.governance.orchestration_meaningful_side_effect_compositi
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
 
-def resolve_collaborative_work_sqlite_path_for_harness_host(
-    checkpoints_db_path: Path | None,
-) -> Path | None:
-    """When checkpoint storage is explicit (harness/test), materialize CW repos on SQLite alongside it."""
-    if checkpoints_db_path is None:
-        return None
-    return checkpoints_db_path.with_name("collaborative_work.db")
+@dataclass(frozen=True, slots=True)
+class HarnessMeaningfulSideEffectAuthorizationWiring:
+    """Resolved MSE authorization plus host-owned Collaborative Work persistence (if any)."""
+
+    authorization_port: MeaningfulSideEffectAuthorizationPort | None
+    owned_collaborative_work_persistence: CollaborativeWorkMaterializedRepositories | None = (
+        None
+    )
 
 
-def build_harness_host_meaningful_side_effect_authorization_port(
-    environment: ApplicationEnvironmentProfile,
-    *,
-    collaborative_work_sqlite_path: Path | None = None,
+def _build_port_from_materialized_repositories(
+    bundle: CollaborativeWorkMaterializedRepositories,
 ) -> MeaningfulSideEffectAuthorizationPort:
-    """Build platform default MSE authorization for strict Tier-3 harness hosts."""
-    if collaborative_work_sqlite_path is not None:
-        bundle = open_sqlite_collaborative_work_repositories(
-            str(collaborative_work_sqlite_path),
-        )
-    else:
-        bundle = resolve_collaborative_work_repositories(environment.integration_profile)
     core = collaborative_work_core_repositories(bundle)
     return build_orchestration_meaningful_side_effect_authorization_boundary(
         profile_repository=core.operation_profile,
@@ -55,25 +48,86 @@ def build_harness_host_meaningful_side_effect_authorization_port(
     )
 
 
+def _collaborative_work_integration_profile(
+    environment: ApplicationEnvironmentProfile,
+    *,
+    collaborative_work_integration_profile: IntegrationProfile | None = None,
+) -> IntegrationProfile:
+    if collaborative_work_integration_profile is not None:
+        return collaborative_work_integration_profile
+    return environment.integration_profile
+
+
+def build_harness_host_meaningful_side_effect_authorization_port(
+    environment: ApplicationEnvironmentProfile,
+    *,
+    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+    collaborative_work_integration_profile: IntegrationProfile | None = None,
+) -> MeaningfulSideEffectAuthorizationPort:
+    """Build platform default MSE authorization for strict Tier-3 harness hosts."""
+    if collaborative_work_repositories is not None:
+        bundle = collaborative_work_repositories
+    else:
+        bundle = resolve_collaborative_work_repositories(
+            _collaborative_work_integration_profile(
+                environment,
+                collaborative_work_integration_profile=collaborative_work_integration_profile,
+            ),
+        )
+    return _build_port_from_materialized_repositories(bundle)
+
+
+def resolve_harness_host_meaningful_side_effect_authorization_wiring(
+    environment: ApplicationEnvironmentProfile,
+    *,
+    explicit: MeaningfulSideEffectAuthorizationPort | None = None,
+    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+    collaborative_work_integration_profile: IntegrationProfile | None = None,
+) -> HarnessMeaningfulSideEffectAuthorizationWiring:
+    """Resolve MSE wiring: injectable override, strict default, or absent in non-strict hosts."""
+    if explicit is not None:
+        return HarnessMeaningfulSideEffectAuthorizationWiring(
+            authorization_port=explicit,
+        )
+    if environment.execution_mode.value != "strict":
+        return HarnessMeaningfulSideEffectAuthorizationWiring(authorization_port=None)
+    if collaborative_work_repositories is not None:
+        return HarnessMeaningfulSideEffectAuthorizationWiring(
+            authorization_port=_build_port_from_materialized_repositories(
+                collaborative_work_repositories,
+            ),
+        )
+    bundle = resolve_collaborative_work_repositories(
+        _collaborative_work_integration_profile(
+            environment,
+            collaborative_work_integration_profile=collaborative_work_integration_profile,
+        ),
+    )
+    return HarnessMeaningfulSideEffectAuthorizationWiring(
+        authorization_port=_build_port_from_materialized_repositories(bundle),
+        owned_collaborative_work_persistence=bundle,
+    )
+
+
 def resolve_harness_host_meaningful_side_effect_authorization_port(
     environment: ApplicationEnvironmentProfile,
     *,
     explicit: MeaningfulSideEffectAuthorizationPort | None = None,
-    collaborative_work_sqlite_path: Path | None = None,
+    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+    collaborative_work_integration_profile: IntegrationProfile | None = None,
 ) -> MeaningfulSideEffectAuthorizationPort | None:
     """Resolve MSE port: injectable override, strict default, or absent in non-strict hosts."""
-    if explicit is not None:
-        return explicit
-    if environment.execution_mode.value != "strict":
-        return None
-    return build_harness_host_meaningful_side_effect_authorization_port(
+    return resolve_harness_host_meaningful_side_effect_authorization_wiring(
         environment,
-        collaborative_work_sqlite_path=collaborative_work_sqlite_path,
-    )
+        explicit=explicit,
+        collaborative_work_repositories=collaborative_work_repositories,
+        collaborative_work_integration_profile=collaborative_work_integration_profile,
+    ).authorization_port
 
 
 __all__ = [
+    "HarnessMeaningfulSideEffectAuthorizationWiring",
     "build_harness_host_meaningful_side_effect_authorization_port",
-    "resolve_collaborative_work_sqlite_path_for_harness_host",
     "resolve_harness_host_meaningful_side_effect_authorization_port",
+    "resolve_harness_host_meaningful_side_effect_authorization_wiring",
 ]

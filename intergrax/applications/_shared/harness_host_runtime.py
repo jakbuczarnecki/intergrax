@@ -90,9 +90,9 @@ from intergrax.applications._shared.harness_control_plane_governance_wiring impo
     HarnessControlPlaneGovernance,
     build_harness_control_plane_governance,
 )
+from intergrax.collaborative_work.persistence import CollaborativeWorkMaterializedRepositories
 from intergrax.applications._shared.harness_meaningful_side_effect_authorization_wiring import (
-    resolve_collaborative_work_sqlite_path_for_harness_host,
-    resolve_harness_host_meaningful_side_effect_authorization_port,
+    resolve_harness_host_meaningful_side_effect_authorization_wiring,
 )
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
@@ -156,6 +156,7 @@ from intergrax.applications.contracts.profile_resolution.store import (
 )
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
@@ -210,6 +211,9 @@ class HarnessHostRuntime:
     effective_profile_pinning_store: EffectiveProfileExecutionPinningStore | None = None
     effective_profile_active_store: ActiveEffectiveProfileRevisionStore | None = None
     skill_pinning_store: SkillExecutionPinningStore | None = None
+    _owned_collaborative_work_persistence: CollaborativeWorkMaterializedRepositories | None = (
+        None
+    )
 
     def close(self) -> None:
         """Stop event bus delivery and release bounded sink workers (W5-B2)."""
@@ -249,6 +253,8 @@ def build_harness_host_runtime(
     application_skill_registry: SkillRegistry | None = None,
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort
     | None = None,
+    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+    collaborative_work_integration_profile: IntegrationProfile | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -365,14 +371,46 @@ def build_harness_host_runtime(
     )
     task_memory = wire_task_memory_from_profile(effective_environment)
     resolved_tenant_id = (tenant_id or "").strip()
-    resolved_meaningful_side_effect_authorization = (
-        resolve_harness_host_meaningful_side_effect_authorization_port(
+    resolved_collaborative_work_integration_profile = (
+        collaborative_work_integration_profile
+    )
+    if (
+        resolved_collaborative_work_integration_profile is None
+        and document_store is not None
+    ):
+        manifest_integration_profile = resolved_manifest.integration_profile
+        if trace_db_path is not None:
+            storage_dir = trace_db_path.parent
+            sqlite_options = dict(manifest_integration_profile.options.get("sqlite", {}))
+            sqlite_options.setdefault("data_dir", str(storage_dir))
+            sqlite_options.setdefault(
+                "relational_db",
+                str(storage_dir / "collaborative_work.db"),
+            )
+            resolved_collaborative_work_integration_profile = (
+                manifest_integration_profile.model_copy(
+                    update={
+                        "options": {
+                            **manifest_integration_profile.options,
+                            "sqlite": sqlite_options,
+                        },
+                    },
+                )
+            )
+        else:
+            resolved_collaborative_work_integration_profile = manifest_integration_profile
+    meaningful_side_effect_wiring = (
+        resolve_harness_host_meaningful_side_effect_authorization_wiring(
             effective_environment,
             explicit=meaningful_side_effect_authorization,
-            collaborative_work_sqlite_path=resolve_collaborative_work_sqlite_path_for_harness_host(
-                checkpoints_db_path,
+            collaborative_work_repositories=collaborative_work_repositories,
+            collaborative_work_integration_profile=(
+                resolved_collaborative_work_integration_profile
             ),
         )
+    )
+    resolved_meaningful_side_effect_authorization = (
+        meaningful_side_effect_wiring.authorization_port
     )
     declarative_tool_invoker = build_declarative_invoker_for_application_host(
         env_wiring.tool_wiring,
@@ -528,6 +566,9 @@ def build_harness_host_runtime(
         effective_profile_pinning_store=profile_persistence.pinning_store,
         effective_profile_active_store=profile_persistence.active_store,
         skill_pinning_store=env_wiring.build_context.skill_pinning_store,
+        _owned_collaborative_work_persistence=(
+            meaningful_side_effect_wiring.owned_collaborative_work_persistence
+        ),
     )
     return host_runtime
 
@@ -546,3 +587,6 @@ def close_harness_host_runtime(runtime: HarnessHostRuntime) -> None:
         runtime.env_wiring.event_delivery,
         event_bus=bus,
     )
+    owned_persistence = runtime._owned_collaborative_work_persistence
+    if owned_persistence is not None:
+        owned_persistence.close()
