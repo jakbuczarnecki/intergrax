@@ -45,10 +45,13 @@ Slack knowledge-source and Slack live-capability tracks; future integrations.
 
 MP-7 (Multiplayer reference consumer) — PARALLEL PLATFORM TRACK
 MP-7A — CLOSED / CERTIFIED (ADR-MP-008 Accepted; architecture gate only)
-MP-7B — NEXT (Principal + collaborative_workspace_ref + composition wiring)
+MP-7B — TIER-3 MULTIPLAYER CONSUMER BOUNDARY QUALIFIED / CLOSED
+(boundary proof only — not LKW Principal/workspace product adoption)
+MP-7 — IN PROGRESS
 LKW remains Tier-3 reference consumer only (**MP-INV-30**).
 Does not block or replace LKW-PLUGIN-CAPABILITY-CONFIGURATION-1 unless operator re-prioritizes.
-Detail: docs/project/maintainers/qualification/MP-7A_LKW_MULTIPLAYER_ADOPTION_ARCHITECTURE_GATE.md
+Detail: docs/project/maintainers/qualification/MP-7B_TIER3_MULTIPLAYER_CONSUMER_BOUNDARY_QUALIFICATION.md
+(and MP-7A gate: docs/project/maintainers/qualification/MP-7A_LKW_MULTIPLAYER_ADOPTION_ARCHITECTURE_GATE.md)
 
 FINAL LKW 1.0 TARGET
 LKW product completion plus one plugin-neutral Intergrax platform proof
