@@ -2,7 +2,7 @@
 
 **This document is the canonical maintainer-level architecture reference for the Integrax Memory layer.**
 
-**Status:** MEM-ENT-1…15 closeout + **MEM-FINAL-AUDIT-7** documentation & visual architecture certification (code-verified at `development` HEAD).  
+**Status:** MEM-ENT-1…15 closeout + **MEM-FINAL-AUDIT-7-R** canonical documentation truth reconciliation (**pending independent 7-R closure**). MEM-FINAL-AUDIT-7 initial pass: independent review **PASS WITH CORRECTIONS** (P1 doc defects addressed in 7-R).
 **Audience:** engineers extending stores, projections, strategies, or Tier-3 wiring  
 **Domain hub (product overview):** [`MEMORY.md`](MEMORY.md)  
 **Plan hub:** [`../maintainers/plans/MEMORY.md`](../maintainers/plans/MEMORY.md)  
@@ -15,7 +15,8 @@ This document describes **what the code actually does** at current `development`
 
 | Term | Meaning |
 | ---- | ------- |
-| **Canonical source** | Durable truth for a memory scope; mutations go here first |
+| **Canonical source** | Authoritative source of truth for a memory scope; mutations go here first (**independent of provider durability**) |
+| **Durable provider** | Provider whose persisted state survives a **certified** reopen/restart boundary for that capability (see durability matrix) |
 | **Derived projection** | Secondary representation updated after canonical commit; never authority |
 | **Specialized store** | Durable/query surface for a memory domain (entity, procedural, long-horizon) |
 | **Capability** | Governed read/disclosure (and sometimes mutation) API over a store |
@@ -33,6 +34,17 @@ This document describes **what the code actually does** at current `development`
 **PL:** Projekcja pochodna nigdy nie jest kanonicznym źródłem prawdy; RAG nie jest źródłem prawdy Memory; STI nie zastępuje UserProfile; CE decyduje o finalnym kontekście modelu.
 
 Summaries, vector indexes, entity graph projections, and long-horizon compacted views are **derived** — not canonical user memory. Shared vector infrastructure with RAG does **not** imply shared authority.
+
+**Authority ≠ durability:** `InMemoryUserProfileStore` may be the **canonical authority** for a lab/test runtime composition while **not** durable across process restart. Canonical source names *who owns truth*; durability names *whether the selected provider survives reopen/restart* (provider-specific, matrix-backed).
+
+| Property | Question |
+| -------- | -------- |
+| **Authority** | Which component is the source of truth for a scope? |
+| **Durability** | Does the **selected** provider survive certified reopen/restart boundaries? |
+| **Projection** | Is the representation derived from authority? |
+| **Admission** | Is the provider trusted for PRODUCT use (evidence-bound)? |
+
+**Qualification ≠ admission:** qualification records demonstrated behavior; admission is host/profile permission to use a provider in PRODUCT composition (fail-closed when required evidence is missing).
 
 ---
 
@@ -367,11 +379,13 @@ contracts → discovery → qualification → materialization → configured pro
 | ---- | ------- |
 | Contract qualification | Protocol shape and required methods |
 | Behavioral qualification | Semantic tests against reference behavior |
-| Durable qualification | Restart/reopen evidence (SQLite reference path) |
+| Durable qualification | Restart/reopen evidence per [`MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md`](../maintainers/qualification/MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md) |
 | Adapter recreation only | In-memory re-instantiation — not durable reopen |
-| Real durable reopen | Proven via SQLite harness (MEM-ENT-13C) |
+| Real durable reopen / reconnect | SQLite reference (MEM-FINAL-AUDIT-5B V5) and **qualified real-vendor paths** (e.g. Mongo UserProfile 5C/5C-R, STI 5D–5F V6 reconnect) |
 
-**External vendors:** Mongo/document paths exist in integration wiring; **full external durable vendor E2E is not certified** in MEM-ENT-15 (simulated/blocked paths in qualification where applicable). **SQLite** is the real durable local qualification/reference proof for user profile store.
+**Mongo-backed UserProfile (current):** `DocumentStoreUserProfileStore` → Integration `DocumentStore` → MongoDB provider. Qualified in **MEM-FINAL-AUDIT-5C / 5C-R** as **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** for composite identity `provider_id=document_store.user_profile`, `backing_provider_id=mongodb`. Proof covers **provider/client recreation and reconnect** (`REAL_VENDOR_RECONNECT`); it does **not** certify Mongo **service restart**, HA/failover, crash recovery, or power-loss recovery. Evidence is **not** transferable to other DocumentStore backings.
+
+**Historical (MEM-ENT-15):** at that milestone, external durable vendor E2E was **not** in the MEM-ENT-15 suite — **superseded** by MEM-FINAL-AUDIT-5C/5C-R and the provider matrix. **SQLite** remains the **reference** durable local harness for UserProfile (5B V5); it is not the only qualified durable/reconnect UserProfile path.
 
 **Persistence abstraction:** persistence is accessed through platform contracts/providers. Domain services must not branch on vendor implementation details.
 
@@ -605,7 +619,7 @@ LTM tool: `ltm.write_fact` requires trusted `RequestIdentity` via control plane 
 | Mechanism | Canonical / Derived |
 | --------- | ------------------- |
 | UserProfile memory entries | **Canonical** |
-| UserProfileStore | **Canonical** durability |
+| UserProfileStore | **Canonical** authority (durability depends on selected provider — see durability matrix) |
 | LTM vector projection | Derived |
 | Entity graph from profile projection | Derived |
 | EntityTemporalMemoryStore content | Specialized derived representation |
@@ -682,20 +696,22 @@ flowchart LR
 
 ---
 
-## E2E certification scope (MEM-ENT-15)
+## E2E certification scope
 
-### Certified (within documented scope)
+### MEM-ENT-15 suite (historical baseline)
 
-Control Plane lifecycle, trusted identity, governance, entity projection, revision, temporal, procedural, long-horizon, reconciliation, observability, SQLite durable restart, plugin contract replaceability, scope isolation, resilience paths exercised in certification suite.
+Within the **MEM-ENT-15** qualification suite: control plane lifecycle, trusted identity, governance, entity projection, revision, temporal, procedural, long-horizon, reconciliation, observability, SQLite durable restart, plugin contract replaceability, scope isolation, resilience paths exercised in that suite.
 
-Use phrase **“Memory core and certified paths”** — not “fully certified” without scope.
+Use phrase **“Memory core and MEM-ENT-15 certified paths”** — not “fully certified” without scope.
 
-### Explicitly not certified
+**Superseded vendor status:** MEM-FINAL-AUDIT-5B–5G and MEM-FINAL-AUDIT-6-R2 extend evidence beyond MEM-ENT-15. **Current** provider qualification is in [Current certified provider status](#current-certified-provider-status) and the [provider matrix](../maintainers/qualification/MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md).
+
+### Explicitly not certified (current)
 
 | Area | Status |
 | ---- | ------ |
-| SessionTurnIndex E2E | Not in MEM-ENT-15 suite |
-| Real external durable vendor (production Mongo/etc.) | Not E2E certified |
+| Mongo UserProfile **service restart / HA / power loss** | NOT TESTED (5C reconnect ≠ service restart) |
+| STI Qdrant/pgvector/Chroma **service restart / HA / power loss** | NOT TESTED (5D–5F reconnect qualified) |
 | Distributed failover | Not certified |
 | Load / performance | Not certified |
 | Cross-layer Memory × CE × Tools × RAG | **MEM-XINT-1** |
@@ -730,7 +746,7 @@ Use phrase **“Memory core and certified paths”** — not “fully certified�
 
 ## Final architecture status
 
-**Memory control plane:** behaviorally qualified (MEM-FINAL-AUDIT-6-R2). **Architecture narrative:** documentation-certified (MEM-FINAL-AUDIT-7). Use **certified behaviors / documented guarantees / known limitations** — not marketing claims (HA, horizontal scale, universal thread-safety, power-loss).
+**Memory control plane:** behaviorally qualified (MEM-FINAL-AUDIT-6-R2). **Architecture narrative:** MEM-FINAL-AUDIT-7 documentation pass complete; **MEM-FINAL-AUDIT-7-R** truth reconciliation **pending independent closure** (do not mark **DOCUMENTATION CERTIFIED** until 7-R evidence SHA). Use **certified behaviors / documented guarantees / known limitations** — not marketing claims (HA, horizontal scale, universal thread-safety, power-loss).
 
 **Cross-layer integration** with Context Engineering, RAG, and Tools remains **MEM-XINT-1** (out of MEM-FINAL-AUDIT-7 scope).
 
@@ -804,7 +820,7 @@ Topology: `SessionTurnIndexStore` → `VectorSessionTurnIndexStore` → neutral 
 
 | Domain | Path |
 | ------ | ---- |
-| USER canonical | `UserProfileStore` ← `InMemoryUserProfileStore` · `SQLiteUserProfileStore` · `DocumentStoreUserProfileStore` (Mongo via Integration) |
+| USER canonical | `UserProfileStore` ← `InMemoryUserProfileStore` · `SQLiteUserProfileStore` · `DocumentStoreUserProfileStore` (Mongo via Integration; composite qual identity `document_store.user_profile` + `mongodb`) |
 | TASK durable | `TaskMemoryCoordinator` → `TaskMemoryPersistence` → `SQLiteTaskMemoryStore` (5G V5 reopen qualified) |
 | Organization | `OrganizationProfileManager` → `OrganizationProfileStore` → `SQLiteOrganizationProfileStore` (5G V5) |
 
@@ -827,7 +843,7 @@ Topology: `SessionTurnIndexStore` → `VectorSessionTurnIndexStore` → neutral 
 | DefaultMemoryControlPlane + UserProfileManager | when host wires | unit/integration | Requires trusted identity |
 | SQLite UserProfile durable | profile-dependent | 5B harness | Fail-closed admission when durable required |
 | InMemory UserProfile | fallback in some integration profiles | default in tests | **Not** silent substitute when durable required + admission enforced |
-| Mongo UserProfile | wiring exists | 5C real-vendor (pymongo) | Suite excluded when pymongo unavailable |
+| Mongo UserProfile | wiring exists; PRODUCT admission evidence-bound | 5C/5C-R V6 reconnect qualified (pymongo) | Not service-restart qualified; suite excluded when pymongo unavailable |
 | STI Qdrant/pgvector/Chroma | `enable_session_vector_index` + RAG stack | 5D–5F suites | Client reconnect proved; service restart not universally certified |
 | Task/Org SQLite | env/db paths | 5G E2E | Parallel to control plane |
 | Fixture external memory plugins | STRICT overlay | qual only | Not normal PRODUCT path |
@@ -875,6 +891,21 @@ Full matrix: [`MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md`](../maintainers/q
 | STI | Qdrant/pgvector/Chroma | vendor-dependent | YES reconnect (5D–5F) | NOT TESTED | NOT TESTED | NOT TESTED |
 | Task memory | SQLite | YES | YES (5G V5) | subprocess 5G | NOT TESTED | NOT TESTED |
 | Organization | SQLite | YES | YES (5G V5) | subprocess 5G | NOT TESTED | NOT TESTED |
+
+### Current certified provider status
+
+Summary only — proofs and identity binding: [`MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md`](../maintainers/qualification/MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md) · [`MEMORY_FINAL_ENTERPRISE_AUDIT.md`](../maintainers/qualification/MEMORY_FINAL_ENTERPRISE_AUDIT.md).
+
+| Path | Current qualification (high level) |
+| ---- | ------------------------------------ |
+| SQLite UserProfile | V5 durable restart/reopen qualified (5B reference harness) |
+| Mongo UserProfile (`document_store.user_profile` + `mongodb`) | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (5C/5C-R); composite adapter/backing identity enforced; **not** service-restart qualified |
+| Qdrant / pgvector / Chroma STI | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (5D–5F); production admission enforced where applicable; service restart / HA **not** certified |
+| SQLite Task memory | V5 durable restart/reopen qualified (5G) |
+| SQLite Organization profile | V5 durable restart/reopen qualified (5G) |
+| Memory Control Plane behavior | **BEHAVIORALLY QUALIFIED** (6-R2): 34 real scenarios, zero hard violation counters |
+
+Cross-vendor evidence reuse is **forbidden** (Mongo DocumentStore proof does not qualify other backings; Qdrant STI proof does not qualify pgvector/Chroma).
 
 ### Behavioral qualification (MEM-FINAL-AUDIT-6-R2)
 
@@ -1021,7 +1052,7 @@ If adding a provider requires editing semantic/domain logic → **stop and redes
 | MEM-FINAL-AUDIT-4 | provider matrix | [`MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md`](../maintainers/qualification/MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md) |
 | MEM-FINAL-AUDIT-5A–5G | vendor / admission / durable | ledger §5A–5G |
 | MEM-FINAL-AUDIT-6-R2 | behavioral | ledger §6-R2 · `VERIFIED_SHA` `957045d86d48d0dfab8c77384f1427e2d46ea95a` |
-| MEM-FINAL-AUDIT-7 | documentation | this document + diagrams doc + ledger §7 |
+| MEM-FINAL-AUDIT-7 | documentation (7-R reconciliation) | this document + diagrams doc + ledger §7 / §7-R |
 
 ### Restart terminology glossary
 
@@ -1051,4 +1082,4 @@ The Memory semantic layer must never require knowledge of a concrete vendor impl
 
 Code paths remain authoritative over commit SHAs.
 
-**Last certified by MEM-FINAL-AUDIT-7** (documentation & visual architecture).
+**Documentation status:** MEM-FINAL-AUDIT-7 initial certification; **MEM-FINAL-AUDIT-7-R** canonical truth reconciliation — pending independent GitHub closure before **DOCUMENTATION CERTIFIED** label.
