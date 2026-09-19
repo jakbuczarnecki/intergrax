@@ -26,7 +26,7 @@ from intergrax.llm_adapters._shared.adapter_response_builders import build_adapt
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.task.task import TaskContext
+from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.skills.providers.harness.manifests import HARNESS_TOOL_SMOKE
@@ -96,8 +96,8 @@ class EchoAgent(ReflexAgent):
             pattern_version=self.pattern_version,
         )
 
-    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
-        capability = task_context.capability
+    def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
+        capability = routing_capability_from_envelope(task)
         if capability in (None, "echo.basic"):
             return CapabilityMatchResult(
                 matched=True,

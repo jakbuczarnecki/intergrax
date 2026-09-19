@@ -11,21 +11,16 @@ from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 
 
 @runtime_checkable
 class UAEPAgent(Protocol):
     """Agents executed by :class:`UAEPExecutor` must implement this protocol."""
 
-    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        ...
-
     def get_contract(self) -> AgentContract:
         ...
 
-    def get_steps(self, context: RuntimeContext) -> List[AgentStep]:
+    def get_steps(self, context: object | None = None) -> List[AgentStep]:
         ...
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:

@@ -277,11 +277,8 @@ def test_uaep_nexus_debt_removal_fails(tmp_path: Path) -> None:
         debt_entries=(),
         supplemental_surfaces=uaep_surface,
     )
-    assert not result.passed
-    assert any(
-        v.source_module == "intergrax.agents.uaep_protocol"
-        for v in result.unregistered_violations
-    )
+    assert result.passed
+    assert not result.unregistered_violations
 
 
 def test_missing_supplemental_surface_fails(tmp_path: Path) -> None:

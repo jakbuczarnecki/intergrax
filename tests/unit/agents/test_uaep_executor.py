@@ -7,6 +7,8 @@ from intergrax.agents import supports_uaep
 from intergrax.agents.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
+from intergrax.contracts.agent_run_enums import AgentRunStatus, TerminalReason
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -32,6 +34,10 @@ class _UaepStubAgent(Agent):
             max_steps=3,
         )
 
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        _ = request
+        raise NotImplementedError("UAEP stub executes via UAEPExecutor")
+
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         config = RuntimeConfig(
             llm_adapter=FakeLLMAdapter(fixed_text="stub-ok"),
@@ -44,7 +50,7 @@ class _UaepStubAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self, context: object | None = None) -> list[AgentStep]:
         _ = context
         return [
             AgentStep(step_id="s1", step_name="first", step_index=0),
@@ -75,6 +81,13 @@ def test_supports_uaep_detects_step_protocol():
 @pytest.mark.unit
 def test_supports_uaep_false_for_legacy_agent():
     class _Legacy(Agent):
+        async def run(self, request: AgentRunRequest) -> AgentRunResult:
+            _ = request
+            raise NotImplementedError
+
+        def get_contract(self) -> AgentContract:
+            return _UaepStubAgent().get_contract()
+
         def build_context(self, request: RuntimeRequest) -> RuntimeContext:
             return _UaepStubAgent().build_context(request)
 

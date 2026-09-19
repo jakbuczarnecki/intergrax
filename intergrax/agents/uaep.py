@@ -11,6 +11,8 @@ from typing import Any, List, Optional
 from uuid import uuid4
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.agent_runtime_context_materializer import AgentRuntimeContextMaterializer
+from intergrax.agents.runtime_request_bridge import agent_run_result_from_runtime_answer
 from intergrax.agents.authoring.uaep_kernel_step_execution import UaepExecutorStepOutcome
 from intergrax.agents.authoring.uaep_step_bridge import (
     build_kernel_session,
@@ -282,6 +284,10 @@ class UAEPExecutor:
             await self._middleware.run_before(HookPoint.BEFORE_CONTEXT_BUILD, hook_base)
         )
 
+        if not isinstance(agent, AgentRuntimeContextMaterializer):
+            raise TypeError(
+                f"{type(agent).__name__} must implement build_context for UAEP execution"
+            )
         runtime_context = agent.build_context(request)
         runtime_context = self._apply_explicit_sandbox_isolation_authority(
             runtime_context,
@@ -667,7 +673,9 @@ class UAEPExecutor:
             await self._guard_hook(
                 await self._middleware.run_before(HookPoint.BEFORE_VALIDATION, hook_val)
             )
-            validation = agent.validate(answer, context=runtime_context)
+            validation = agent.validate(
+                agent_run_result_from_runtime_answer(answer, run_id=run_id)
+            )
             await self._guard_hook(
                 await self._middleware.run_after(HookPoint.AFTER_VALIDATION, hook_val)
             )

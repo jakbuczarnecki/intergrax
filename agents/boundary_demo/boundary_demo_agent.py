@@ -30,7 +30,7 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
-from intergrax.runtime.task.task import TaskContext
+from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.skills.providers.data.manifests import DATA_RECORDS_ADMIN
 RECORDS_PUT_TOOL_ID = "records.put"
 _REFLEX_PATTERN = ReflexAgent  # retain ReflexAgent symbol for fleet inventory scan
@@ -74,8 +74,8 @@ class BoundaryDemoAgent(Agent):
             pattern_version="acp.v1",
         )
 
-    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
-        capability = task_context.capability
+    def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
+        capability = routing_capability_from_envelope(task)
         if capability in (None, CAPABILITY):
             return CapabilityMatchResult(
                 matched=True,

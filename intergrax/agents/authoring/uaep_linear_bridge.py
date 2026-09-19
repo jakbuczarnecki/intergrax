@@ -56,7 +56,7 @@ def linear_ordered_step_ids(agent: IntergraxAgent) -> list[str]:
     return ids
 
 
-def linear_agent_get_steps(agent: IntergraxAgent, context: RuntimeContext) -> list[AgentStep]:
+def linear_agent_get_steps(agent: IntergraxAgent, context: object | None) -> list[AgentStep]:
     _ = context
     contract = agent.get_contract()
     steps: list[AgentStep] = []

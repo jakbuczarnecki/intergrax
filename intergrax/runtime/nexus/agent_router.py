@@ -25,6 +25,10 @@ from intergrax.runtime.registry.capability_routing import (
     validate_task_for_capability_routing,
 )
 from intergrax.runtime.task.task import Task, TaskContext
+from intergrax.runtime.task.agent_capability_intake import (
+    task_envelope_for_agent_capability_match,
+    task_envelope_from_task_context,
+)
 
 
 @dataclass(frozen=True)
@@ -90,7 +94,7 @@ class AgentRouter:
             if route.selected is not None:
                 agent = route.selected
                 score: float | None = None
-                match = agent.can_handle(task.context)
+                match = agent.can_handle(task_envelope_for_agent_capability_match(task))
                 if match.matched:
                     score = match.score
                 selection = AgentRouteSelection(
@@ -120,7 +124,7 @@ class AgentRouter:
         capability: str,
     ) -> tuple[Agent, AgentRouteSelection]:
         match = self._registry.find_best_match(
-            task.context,
+            task_envelope_for_agent_capability_match(task),
             production_mode=self._production_mode,
         )
         if match is not None:
@@ -148,9 +152,10 @@ class AgentRouter:
         context: TaskContext,
         candidates: list[Agent],
     ) -> tuple[Agent, float | None]:
+        envelope = task_envelope_from_task_context(context)
         best: Optional[tuple[float, Agent]] = None
         for agent in candidates:
-            result = agent.can_handle(context)
+            result = agent.can_handle(envelope)
             if not result.matched:
                 continue
             if best is None or result.score > best[0]:

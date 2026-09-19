@@ -22,7 +22,7 @@ from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.task.task import TaskContext
+from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 
 
 class ProblemRadarAgent(ReflexAgent):
@@ -39,8 +39,8 @@ class ProblemRadarAgent(ReflexAgent):
     def get_contract(self):
         return build_agent_contract()
 
-    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
-        capability = task_context.capability
+    def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
+        capability = routing_capability_from_envelope(task)
         supported = set(CAPABILITIES)
         if capability is None or capability in supported:
             return CapabilityMatchResult(

@@ -119,7 +119,7 @@ class CognitiveAgent(IntergraxAgent, ABC):
     def _ordered_step_ids(self) -> list[str]:
         return [self.main_step_id]
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self, context: object | None = None) -> list[AgentStep]:
         _ = context
         contract = self.get_contract()
         return [
