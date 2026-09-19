@@ -103,7 +103,7 @@ Tier-0/Tier-1 platform Multiplayer primitives
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-7 — LKW reference-product adoption — NEXT**. **MP-6 — ENTERPRISE CERTIFIED / CLOSED** (**MP-6H — CLOSED / CERTIFIED** — [`MP-6_FINAL_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-6_FINAL_ENTERPRISE_CERTIFICATION.md)). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** identity/extensibility/timeline hardening) (**MP-6 ownership — FROZEN**, ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md)). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (B5 adapters: `context_view_source_adapters.py`). MP-5E **`intergrax/contracts/context_view_composition.py`** — **CLOSED**.
+**Current active task:** **MP-7B — LKW identity + workspace binding — NEXT**. **MP-7A — CLOSED / CERTIFIED** ([`MP-7A_LKW_MULTIPLAYER_ADOPTION_ARCHITECTURE_GATE.md`](../../maintainers/qualification/MP-7A_LKW_MULTIPLAYER_ADOPTION_ARCHITECTURE_GATE.md); **ADR-MP-008 Accepted**). **MP-7 — IN PROGRESS**. **MP-6 — ENTERPRISE CERTIFIED / CLOSED** (**MP-6H — CLOSED / CERTIFIED** — [`MP-6_FINAL_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-6_FINAL_ENTERPRISE_CERTIFICATION.md)). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** identity/extensibility/timeline hardening) (**MP-6 ownership — FROZEN**, ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md)). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (B5 adapters: `context_view_source_adapters.py`). MP-5E **`intergrax/contracts/context_view_composition.py`** — **CLOSED**.
 **Previous:** **MP-4D7** — Documentation regression gates — **CLOSED** (SSOT: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) § MP-4D7)
 
 ## Cursor read scope (token budget)
@@ -585,13 +585,25 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 
 ### MP-7 - LKW reference-product adoption
 
+**Status:** **MP-7A — CLOSED / CERTIFIED** · **MP-7B — NEXT** · **MP-7 — IN PROGRESS**
+
 **Intent:** Adopt platform Multiplayer primitives in LKW as the first reference consumer; migrate or integrate application-local patterns only through explicit MP-owned integration rows.
 
-**Likely owning domains:** Tier-3 LKW application plans (consumer); platform primitives remain in Tier-0/Tier-1 owning domains - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`**
+**Owning domains:** Tier-3 LKW application (consumer only); platform primitives remain in Collaborative Work / Tier-0 contracts (**MP-INV-30**).
+
+**Architecture gate:** [`MP-7A_LKW_MULTIPLAYER_ADOPTION_ARCHITECTURE_GATE.md`](../../maintainers/qualification/MP-7A_LKW_MULTIPLAYER_ADOPTION_ARCHITECTURE_GATE.md) · [ADR-MP-008](../../technical/adr/entries/2026-09-19/ADR-MP-008.md) **Accepted** — LKW product workspace **Option B** (`collaborative_workspace_ref`); first subset **MP-7B** (Principal + workspace binding + enforcement wiring).
 
 **Reused (not owners):** all prior LKW conversation, Ask, and channel capabilities until explicitly integrated.
 
 **New required:** LKW integration contract per adopted primitive; no ownership transfer to LKW.
+
+| Slice | Status |
+|-------|--------|
+| MP-7A | **CLOSED / CERTIFIED** |
+| MP-7B | **NEXT** — identity + workspace binding |
+| MP-7C…MP-7F | Planned — Shared Work, Artifact/Decision, ContextView, Activity read (mostly deferred per gate) |
+| MP-7G | E2E reference-product qualification |
+| MP-7H | Final adoption certification |
 
 ---
 
@@ -673,7 +685,7 @@ Each decision is required before the relevant implementation:
 | **ADR-MP-007** | AgentDirectory / external interoperability boundary |
 | **ADR-MP-008** | Workspace platformization / LKW migration |
 
-**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED**. **ADR-MP-003 Accepted; implementation COMPLETE** — MP-2 **APPROVED / CLOSED**. **ADR-MP-004 Accepted** — MP-3 **ENTERPRISE CERTIFIED / CLOSED** (**MP-3H — APPROVED / CLOSED**). **ADR-MP-009 Accepted** — **MP-4R0…MP-4R8 CLOSED**; **MP-4 FORMALLY CLOSED**; **MP-4D** documentation certification **CLOSED** (MP-4D1–D8). **ADR-MP-006 Accepted** — **MP-5A — APPROVED / CLOSED**; **MP-5 ownership — FROZEN**; **MP-5B — APPROVED / CLOSED**; **MP-5C — APPROVED / CLOSED**; **MP-5D — APPROVED / CLOSED**. ADR-MP-007…008 remain REQUIRED BEFORE RELEVANT IMPLEMENTATION.
+**Status:** ADR-MP-001 and ADR-MP-002 **Accepted**; MP-1 **CLOSED**. **ADR-MP-003 Accepted; implementation COMPLETE** — MP-2 **APPROVED / CLOSED**. **ADR-MP-004 Accepted** — MP-3 **ENTERPRISE CERTIFIED / CLOSED** (**MP-3H — APPROVED / CLOSED**). **ADR-MP-009 Accepted** — **MP-4R0…MP-4R8 CLOSED**; **MP-4 FORMALLY CLOSED**; **MP-4D** documentation certification **CLOSED** (MP-4D1–D8). **ADR-MP-006 Accepted** — **MP-5A — APPROVED / CLOSED**; **MP-5 ownership — FROZEN**; **MP-5B — APPROVED / CLOSED**; **MP-5C — APPROVED / CLOSED**; **MP-5D — APPROVED / CLOSED**. **ADR-MP-008 Accepted** — **MP-7A CLOSED / CERTIFIED**; **MP-7B NEXT**. ADR-MP-007 remains REQUIRED BEFORE MP-8 RELEVANT IMPLEMENTATION.
 
 ---
 

@@ -107,6 +107,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-MP-004](entries/2026-09-07/ADR-MP-004.md) | WorkArtifact collaborative ownership and version authority | Accepted (architecture only) |
 | [ADR-MP-005](entries/2026-09-08/ADR-MP-005.md) | Decision / Approval / Governance collaborative ownership (MP-4A era) | **Partially Superseded by ADR-MP-009** (historical MP-4A gate) |
 | [ADR-MP-009](entries/2026-09-15/ADR-MP-009.md) | MP-4 core rebase on canonical Decision / Execution / Governance / Evidence / Diagnostics | Accepted (MP-4R0 supersession gate) |
+| [ADR-MP-008](entries/2026-09-19/ADR-MP-008.md) | Workspace platformization / LKW Multiplayer adoption (MP-7A) | Accepted (architecture gate; MP-7B+ not started) |
 | [ADR-AGENT-004](entries/2026-08-12/ADR-AGENT-004.md) | Agent distribution, installation and enablement architecture (AGENT-PLATFORM-1) | Accepted (architecture only) |
 | [ADR-AGENT-005](entries/2026-08-17/ADR-AGENT-005.md) | Reference production process composition and AP-9/AP-10 store ownership (AGENT-CONSOLIDATION-3-ARCH) | Accepted (architecture only) |
 | [ADR-AGENT-006](entries/2026-09-01/ADR-AGENT-006.md) | Canonical runtime materialization authority - `RuntimeMaterializationRecord` (AC-3) | Accepted (architecture only) |

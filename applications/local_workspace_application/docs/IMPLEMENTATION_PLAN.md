@@ -43,6 +43,13 @@ PARALLEL NON-BLOCKING PLATFORM/PLUGIN TRACKS
 Vendor Knowledge core session; individual vendor-plugin sessions;
 Slack knowledge-source and Slack live-capability tracks; future integrations.
 
+MP-7 (Multiplayer reference consumer) — PARALLEL PLATFORM TRACK
+MP-7A — CLOSED / CERTIFIED (ADR-MP-008 Accepted; architecture gate only)
+MP-7B — NEXT (Principal + collaborative_workspace_ref + composition wiring)
+LKW remains Tier-3 reference consumer only (**MP-INV-30**).
+Does not block or replace LKW-PLUGIN-CAPABILITY-CONFIGURATION-1 unless operator re-prioritizes.
+Detail: docs/project/maintainers/qualification/MP-7A_LKW_MULTIPLAYER_ADOPTION_ARCHITECTURE_GATE.md
+
 FINAL LKW 1.0 TARGET
 LKW product completion plus one plugin-neutral Intergrax platform proof
 and a bounded problem radar. The full vendor catalog is not required.

@@ -433,6 +433,23 @@ task delivery and worker execution
 
 Platform task state and product-domain operation state remain separate. Queue/task status must not automatically replace LKW Ingestion Operation state.
 
+#### Multiplayer AI adoption (MP-7) - reference consumer boundary
+
+**Status:** **MP-7A - CLOSED / CERTIFIED** ([MP-7A_LKW_MULTIPLAYER_ADOPTION_ARCHITECTURE_GATE.md](../../../docs/project/maintainers/qualification/MP-7A_LKW_MULTIPLAYER_ADOPTION_ARCHITECTURE_GATE.md)); [ADR-MP-008](../../../docs/project/technical/adr/entries/2026-09-19/ADR-MP-008.md) **Accepted**. **MP-7B+ implementation not started.**
+
+LKW is a Tier-3 **reference consumer** of platform Multiplayer primitives (**MP-INV-30**). LKW does **not** own Principal, Membership, Delegation, WorkItem, Assignment, WorkArtifact, Decision binding, ContextView, or Collaborative Activity authority.
+
+| Concept | LKW role |
+|---------|----------|
+| **Product workspace** (ManagedWorkspace) | LKW-owned knowledge scope, sources, Ask, Conversation Context |
+| **Collaborative workspace scope** | Platform-owned; LKW holds typed **collaborative_workspace_ref** (ADR-MP-008 **Option B**) |
+| **Nexus Task** | Execution transport - not WorkItem (**MP-INV-07**) |
+| **Conversation Context** | LKW-owned - not MP-5 ContextView |
+| **Channel/thread/message ids** | Adapter mappings only |
+
+First adoption subset (**MP-7B**): Principal binding + collaborative workspace reference + platform enforcement wiring at composition root only (intergrax/contracts/collaborative_*; no intergrax.collaborative_work repository imports in LKW domain). MP-7 is a **parallel platform track** and does not override current direct LKW tasks (LKW-PLUGIN-CAPABILITY-CONFIGURATION-1, ...).
+
+
 #### Token Optimization � platform contract, LKW product proof
 
 Token Optimization is a **universal Tier-0/runtime platform capability**. LKW is a **later product client** � it must not own or duplicate Token Optimization mechanisms.
