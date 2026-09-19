@@ -31,7 +31,7 @@ class RemovalStage(str, Enum):
 class ContractDependencyDebtEntry:
     finding_id: str
     source_module: str
-    forbidden_import_prefix: str
+    forbidden_import_module: str
     rule_id: DependencyRuleId
     removal_stage: RemovalStage
 
@@ -59,7 +59,12 @@ class ContractDependencyViolation:
 class PublicContractBoundaryGateResult:
     unregistered_violations: tuple[ContractDependencyViolation, ...]
     stale_debt_entries: tuple[ContractDependencyDebtEntry, ...]
+    registry_validation_errors: tuple[str, ...] = ()
 
     @property
     def passed(self) -> bool:
-        return not self.unregistered_violations and not self.stale_debt_entries
+        return (
+            not self.unregistered_violations
+            and not self.stale_debt_entries
+            and not self.registry_validation_errors
+        )
