@@ -2,7 +2,7 @@
 
 **This document is the canonical maintainer-level architecture reference for the Integrax Memory layer.**
 
-**Status:** MEM-ENT-1…15 closeout + **MEM-FINAL-AUDIT-7-R** canonical documentation truth reconciliation (**pending independent 7-R closure**). MEM-FINAL-AUDIT-7 initial pass: independent review **PASS WITH CORRECTIONS** (P1 doc defects addressed in 7-R).
+**Status:** MEM-ENT-1…15 closeout + **MEM-FINAL-AUDIT-7-R2** exact-SHA documentation evidence closure — **MEMORY ARCHITECTURE — DOCUMENTATION CERTIFIED**. MEM-FINAL-AUDIT-7-R reconciled P1-7-01/P1-7-02 (Mongo V6 qualification; authority ≠ durability).
 **Audience:** engineers extending stores, projections, strategies, or Tier-3 wiring  
 **Domain hub (product overview):** [`MEMORY.md`](MEMORY.md)  
 **Plan hub:** [`../maintainers/plans/MEMORY.md`](../maintainers/plans/MEMORY.md)  
@@ -746,7 +746,7 @@ Use phrase **“Memory core and MEM-ENT-15 certified paths”** — not “fully
 
 ## Final architecture status
 
-**Memory control plane:** behaviorally qualified (MEM-FINAL-AUDIT-6-R2). **Architecture narrative:** MEM-FINAL-AUDIT-7 documentation pass complete; **MEM-FINAL-AUDIT-7-R** truth reconciliation **pending independent closure** (do not mark **DOCUMENTATION CERTIFIED** until 7-R evidence SHA). Use **certified behaviors / documented guarantees / known limitations** — not marketing claims (HA, horizontal scale, universal thread-safety, power-loss).
+**Memory control plane:** behaviorally qualified (MEM-FINAL-AUDIT-6-R2). **Architecture narrative:** **MEMORY ARCHITECTURE — DOCUMENTATION CERTIFIED** (MEM-FINAL-AUDIT-7-R2). Use **certified behaviors / documented guarantees / known limitations** — not marketing claims (HA, horizontal scale, universal thread-safety, power-loss).
 
 **Cross-layer integration** with Context Engineering, RAG, and Tools remains **MEM-XINT-1** (out of MEM-FINAL-AUDIT-7 scope).
 
@@ -1082,4 +1082,4 @@ The Memory semantic layer must never require knowledge of a concrete vendor impl
 
 Code paths remain authoritative over commit SHAs.
 
-**Documentation status:** MEM-FINAL-AUDIT-7 initial certification; **MEM-FINAL-AUDIT-7-R** canonical truth reconciliation — pending independent GitHub closure before **DOCUMENTATION CERTIFIED** label.
+**Documentation status:** **MEMORY ARCHITECTURE — DOCUMENTATION CERTIFIED** (MEM-FINAL-AUDIT-7-R2 exact-SHA closure). Prior **MEM-FINAL-AUDIT-7-R** truth reconciliation preserved at `a24c251c0768c42b1c100e1228d7e4a67eb98cd9`.
