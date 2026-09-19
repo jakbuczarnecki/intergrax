@@ -29,7 +29,7 @@ EBH-1 answers:
 2. Where did documentation or code drift from canonical architecture?
 3. What is the reconciled **DOMAIN → PUBLIC CONTRACT → CONSUMER → ADAPTER/STRATEGY → PROVIDER** map @ evidence HEAD?
 
-**In scope:** 34 canonical DOMAIN rows (EAC-0 §16), 31 peer authority types (EAC-1 §4.A), 99 contract families (EAC-2 §4), import/boundary sampling, composition-root exceptions, Nexus privacy, evidence/control separation.
+**In scope:** 34 canonical DOMAIN rows (EAC-0 §16), 32 peer authority types (EAC-1 §4.A), 99 contract families (EAC-2 §4), import/boundary sampling, composition-root exceptions, Nexus privacy, evidence/control separation.
 
 **Out of scope:** Remediation implementation, MP-6 delivery, new ADR resolution, full EAC-3…EAC-16 dependency proofs (deferred to EBH-2…EBH-10).
 

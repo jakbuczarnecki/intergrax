@@ -237,7 +237,7 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 ∀ peer AUTHORITY_TYPE: canonical_owner_count == 1
 ```
 
-**EAC-1R3:** **31** peer authority types in §4.A; **1** subordinate authority type in §4.C; **0** peer types with dual canonical owners.
+**EAC-1R3:** `CURRENT_PEER_AUTHORITY_COUNT = 32` — **32** peer authority types in §4.A; **1** subordinate authority type in §4.C; **0** peer types with dual canonical owners.
 
 ---
 
@@ -304,7 +304,7 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 
 | Metric | Value |
 |--------|------:|
-| Peer authority types (§4.A) | 31 |
+| Peer authority types (§4.A) | 32 |
 | Domain role types (§4.B) | 6 |
 | Subordinate authority types (§4.C) | 1 |
 | Peer types with exactly one canonical owner | 31 |
@@ -617,7 +617,7 @@ No ADR resolved in EAC-1R2 or EAC-1R3.
 | V6 — ERL does not own Execution lifecycle | **PASS** (EAC-DOM-034 MUST NOT OWN) |
 | V7 — ERL does not own platform **GOVERNANCE_AUTHORITY** | **PASS** |
 | V8 — **EVIDENCE_AUTHORITY** → Observability | **PASS** |
-| V9 — Each peer authority → exactly one owner (31 types) | **PASS** |
+| V9 — Each peer authority → exactly one owner (32 types) | **PASS** |
 | V10 — 34 DOMAIN rows in §5 | **PASS** |
 | V11 — No production code changed in EAC-1R3 session | **PASS** (documentation only) |
 | V12 — No ADR resolved | **PASS** |
