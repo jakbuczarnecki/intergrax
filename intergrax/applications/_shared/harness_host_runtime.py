@@ -90,6 +90,13 @@ from intergrax.applications._shared.harness_control_plane_governance_wiring impo
     HarnessControlPlaneGovernance,
     build_harness_control_plane_governance,
 )
+from intergrax.applications._shared.harness_meaningful_side_effect_authorization_wiring import (
+    resolve_collaborative_work_sqlite_path_for_harness_host,
+    resolve_harness_host_meaningful_side_effect_authorization_port,
+)
+from intergrax.contracts.meaningful_side_effect_authorization import (
+    MeaningfulSideEffectAuthorizationPort,
+)
 from intergrax.applications._shared.harness_registry_authority import (
     RegistryAssemblyMode,
     resolve_harness_host_registry,
@@ -240,6 +247,8 @@ def build_harness_host_runtime(
     llm_adapter: LLMAdapter | None = None,
     application_tool_registry: ToolRegistry | None = None,
     application_skill_registry: SkillRegistry | None = None,
+    meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort
+    | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -356,6 +365,15 @@ def build_harness_host_runtime(
     )
     task_memory = wire_task_memory_from_profile(effective_environment)
     resolved_tenant_id = (tenant_id or "").strip()
+    resolved_meaningful_side_effect_authorization = (
+        resolve_harness_host_meaningful_side_effect_authorization_port(
+            effective_environment,
+            explicit=meaningful_side_effect_authorization,
+            collaborative_work_sqlite_path=resolve_collaborative_work_sqlite_path_for_harness_host(
+                checkpoints_db_path,
+            ),
+        )
+    )
     declarative_tool_invoker = build_declarative_invoker_for_application_host(
         env_wiring.tool_wiring,
         effective_environment,
@@ -363,6 +381,7 @@ def build_harness_host_runtime(
         agent_registry=resolved_registry,
         tenant_id=resolved_tenant_id,
         idempotency_store=reliability_wiring.idempotency_store,
+        meaningful_side_effect_authorization=resolved_meaningful_side_effect_authorization,
     )
     resolved_agent_checkpoint_store = resolve_host_agent_checkpoint_store(
         agent_checkpoint_store=agent_checkpoint_store,
