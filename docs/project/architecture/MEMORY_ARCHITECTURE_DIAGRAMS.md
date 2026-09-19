@@ -358,14 +358,17 @@ flowchart LR
 
 ```mermaid
 flowchart LR
+    EI[Canonical execution identity OPTIONAL]
     OP[Memory operation]
+    EV[MemoryDiagnosticEvent]
     EM[MemoryDiagnosticEmitter]
     SK[MemoryObservabilitySink]
 
-    OP --> EM --> SK
+    EI -.->|correlate only| OP
+    OP --> EM --> EV --> SK
 ```
 
-Outcomes include `SUCCESS`, `DENIED`, `FAILED`, `PARTIAL`, reconcile-related failures. Sink failure does not change Memory business outcomes.
+Execution identity (`task_id`, `run_id`, `attempt_id`, `execution_id`) is owned by the platform; Memory projects it when present. `event_id` identifies the diagnostic record (not interchangeable with `execution_id`). W3C `traceparent` is **not** integrated on Memory diagnostic events. Outcomes include `SUCCESS`, `DENIED`, `FAILED`, `PARTIAL`, reconcile-related failures. Sink failure does not change Memory business outcomes.
 
 ---
 

@@ -430,7 +430,7 @@ Intergrax uses **one vector integration stack** (`EmbeddingManager`, `Vectorstor
 
 **As-built (2026-06-17):** LTM and episodic vector indexes wired via `memory_vector_wiring.py`; `retrieval_service` injected into `UserProfileManager`; `vector_index_namespace` enforced via `collection_name` metadata; Tier-3 hosts inject RAG stack into profile manager and episodic index.
 
-**Pluggable store surfaces:** `UserProfileStorePlugin`, `SessionStoragePlugin`, and `SessionTurnIndexStorePlugin` share entry point group `intergrax.memory_stores`. Authoring workflow, bootstrap semantics (count-only), and runtime resolution paths are documented in [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) - not duplicated here.
+**Pluggable store surfaces:** `UserProfileStorePlugin`, `SessionStoragePlugin`, `EntityTemporalMemoryStorePlugin`, `ProceduralMemoryStorePlugin`, `LongHorizonMemoryStorePlugin`, and `SessionTurnIndexStorePlugin` share entry point group `intergrax.memory_stores`. Host materialization passes **typed creation contexts** (tenant-scoped aliases plus `SessionTurnIndexStoreCreationContext`) — not open `**kwargs` or full `IntegrationProfile` at the public factory boundary. Authoring workflow, bootstrap semantics (count-only), and runtime resolution paths are documented in [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) - not duplicated here.
 
 ---
 

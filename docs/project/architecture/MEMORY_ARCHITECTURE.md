@@ -465,8 +465,20 @@ Retry: idempotency and ambiguous-commit handling are documented per path in MEM-
 
 ## Observability
 
+```text
+Canonical execution identity (TaskId / RunId / AttemptId / ExecutionId) — platform authority
+        ↓ optional projection (never minted by Memory)
+Memory operation
+        ↓
+MemoryDiagnosticEvent (event_id ≠ execution_id)
+        ↓
+MemoryObservabilitySink (pluggable; not vendor-specific)
+```
+
 - `MemoryDiagnosticEmitter` + `MemoryObservabilitySink`
 - Terminal outcomes: SUCCESS / DENIED / FAILED / PARTIAL / reconcile semantics
+- Optional execution correlation fields on `MemoryDiagnosticEvent`: `task_id`, `run_id`, `attempt_id`, `execution_id` (MEM-HARDEN-FINAL-2). Standalone Memory outside execution flow leaves them `None`.
+- **W3C trace propagation on Memory diagnostic events:** **NOT INTEGRATED** (no `traceparent` on `MemoryDiagnosticEvent`). Platform/runtime may emit W3C tracing separately.
 - Sink failure isolation (MEM-ENT-14) — diagnostics **are not** business authority
 
 ---

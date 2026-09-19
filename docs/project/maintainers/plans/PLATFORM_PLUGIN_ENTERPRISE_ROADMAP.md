@@ -415,9 +415,12 @@ load_entry_point_plugins(EP_MEMORY_STORES) → plugin_type
 
 | Protocol | Factory | Classification |
 |----------|---------|----------------|
-| `UserProfileStorePlugin` | `create_user_profile_store(**kwargs)` | `isinstance(cls, UserProfileStorePlugin)` via `runtime_checkable` + structural check in typed classifier |
-| `SessionStoragePlugin` | `create_session_storage(**kwargs)` | Same |
-| `SessionTurnIndexStorePlugin` | `create_session_turn_index(**kwargs)` | Migrate `memory_bootstrap` + `memory_vector_wiring` to same classifier |
+| `UserProfileStorePlugin` | `create_user_profile_store(context: UserProfileStoreCreationContext)` | `isinstance(cls, UserProfileStorePlugin)` via `runtime_checkable` + structural check in typed classifier |
+| `SessionStoragePlugin` | `create_session_storage(context: SessionStorageCreationContext)` | Same |
+| `EntityTemporalMemoryStorePlugin` / `ProceduralMemoryStorePlugin` / `LongHorizonMemoryStorePlugin` | Typed `create_*` with semantic creation-context aliases of `TenantScopedMemoryStoreCreationContext` | Same classifier family |
+| `SessionTurnIndexStorePlugin` | `create_session_turn_index(context: SessionTurnIndexStoreCreationContext)` | Classifier + `memory_vector_wiring` materialization (**Done**) |
+
+**Historical baseline (pre MEM-HARDEN-FINAL-1):** factories accepted `**kwargs`. **Current contract:** typed creation contexts only.
 
 **Critical:** replace `hasattr(plugin_type, "create_*")` in `memory_bootstrap.py` with explicit `MemoryStorePluginClassifier` using Protocol conformance - **zero new `hasattr` for dispatch**.
 
