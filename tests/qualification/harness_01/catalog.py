@@ -21,6 +21,31 @@ FindingSeverity = Literal[
     "FALSE POSITIVE",
 ]
 
+Harness01ProofKind = Literal[
+    "STATIC_BOUNDARY",
+    "CANONICAL_CONSUMPTION",
+    "FAIL_CLOSED",
+    "BUDGET_PRE_EFFECT",
+    "IDENTITY_AUTHORITY",
+    "TRACE_CORRELATION",
+    "GATE",
+    "SELECTION",
+    "EVIDENCE",
+]
+
+HARNESS_01_CANONICAL_MINIMUM_PROOF_KINDS: frozenset[str] = frozenset(
+    {
+        "STATIC_BOUNDARY",
+        "CANONICAL_CONSUMPTION",
+        "FAIL_CLOSED",
+        "BUDGET_PRE_EFFECT",
+        "IDENTITY_AUTHORITY",
+        "TRACE_CORRELATION",
+        "GATE",
+        "EVIDENCE",
+    }
+)
+
 
 @dataclass(frozen=True, slots=True)
 class Harness01EvidenceRef:
@@ -30,6 +55,7 @@ class Harness01EvidenceRef:
 
 @dataclass(frozen=True, slots=True)
 class Harness01ExecutionRow:
+    flow_id: str
     flow: str
     entry: str
     authority: str
@@ -85,10 +111,6 @@ def _bg01(test_name: str) -> str:
     return _nid("tests/qualification/bg_01/test_bg_01_gates.py", test_name)
 
 
-def _gr10(test_name: str) -> str:
-    return _nid("tests/qualification/governance/strategy/test_gr10_gates.py", test_name)
-
-
 def _gr10_r8(test_name: str) -> str:
     return _nid(
         "tests/qualification/governance/strategy/test_gr10_r8_orchestration_inner_governance_qualification.py",
@@ -100,8 +122,32 @@ def _ref(node_id: str, *kinds: str) -> Harness01EvidenceRef:
     return Harness01EvidenceRef(node_id, kinds)
 
 
+# Independent architecture inventory — MUST NOT be derived from HARNESS_01_EXECUTION_MATRIX.
+HARNESS_01_REQUIRED_FLOW_IDS: frozenset[str] = frozenset(
+    {
+        "execution.single_agent_nexus_loop",
+        "execution.bounded_tool_loop",
+        "execution.public_invocation_pattern",
+        "execution.uaep_tool_capability",
+        "execution.application_owned_tools",
+        "execution.integration_backed_tools",
+        "execution.background_host_task",
+        "execution.session_memory",
+        "execution.rag_retrieval",
+        "execution.policy_controlled_tools",
+        "execution.security_gateway_hooks",
+        "execution.runtime_plugin_hooks",
+        "execution.multi_agent_delegation",
+        "execution.llm_invocation",
+        "execution.context_assembly",
+        "execution.declarative_compensation",
+    }
+)
+
+
 HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
     Harness01ExecutionRow(
+        "execution.single_agent_nexus_loop",
         "Standard single-agent run (NexusLoop)",
         "HostTaskExecutionPort / NexusWorkerRuntime → NexusLoop.run",
         "RuntimeState.run_id · ExecutionRequest.agent_id",
@@ -111,9 +157,10 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         "ToolCallTrace · state.tool_traces · run trace store",
         "ToolExecutor via registry",
         "CANONICAL",
-        (_ref(_host01("test_host_q1_production_surfaces_use_host_task_execution_port")),),
+        (_ref(_host01("test_host_q1_production_surfaces_use_host_task_execution_port"), "GATE"),),
     ),
     Harness01ExecutionRow(
+        "execution.bounded_tool_loop",
         "Agentic / bounded tool-loop execution",
         "resolve_invocation_pattern → NexusToolInvocationPattern.execute",
         "RuntimeConfig.tool_invocation_pattern_id",
@@ -123,9 +170,13 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         "PlannedToolCallOutcome.trace",
         "RegistryToolExecutor",
         "CANONICAL",
-        (_ref(_plug03("test_tools_profile_selection_executes_custom_not_catalog_default"), "SELECTION"),),
+        (
+            _ref(_plug03("test_tools_profile_selection_executes_custom_not_catalog_default"), "CANONICAL_CONSUMPTION"),
+            _ref(_h01("test_harness_01_tool_budget_record_precedes_invoker_invoke"), "BUDGET_PRE_EFFECT"),
+        ),
     ),
     Harness01ExecutionRow(
+        "execution.public_invocation_pattern",
         "Custom ToolInvocationPattern (public plugin)",
         "ToolInvocationPattern.execute via PublicToolInvocationPatternBridge",
         "state.request.agent_id (authoritative at invoker)",
@@ -137,10 +188,11 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         "CANONICAL",
         (
             _ref(_plug02("test_public_pattern_single_invoke_via_bounded_tool_loop"), "CANONICAL_CONSUMPTION"),
-            _ref(_h01("test_harness_01_public_pattern_bridge_does_not_trust_port_agent_id"), "GATE"),
+            _ref(_h01("test_harness_01_public_pattern_bridge_ignores_port_agent_id_statically"), "IDENTITY_AUTHORITY"),
         ),
     ),
     Harness01ExecutionRow(
+        "execution.uaep_tool_capability",
         "UAEP / agent step tool capability",
         "exec_ctx.invoke_tool → BoundToolGateway",
         "ToolRequest.agent_id + RuntimeState",
@@ -150,9 +202,10 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         "ToolResponse + gateway trace step",
         "Catalog / capability tools",
         "CANONICAL",
-        (_ref(_u3("test_u3_uaep_tool_path_uses_runtime_tool_gateway_not_local_invoker"), "GATE"),),
+        (_ref(_u3("test_u3_uaep_tool_path_uses_runtime_tool_gateway_not_local_invoker"), "STATIC_BOUNDARY"),),
     ),
     Harness01ExecutionRow(
+        "execution.application_owned_tools",
         "Application-owned / platform tools",
         "ToolProfile → build_registry_from_profile",
         "Tool registry composition root",
@@ -165,6 +218,7 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         (_ref(_plug03("test_tools_discovered_but_unselected_not_in_execution_registry"), "FAIL_CLOSED"),),
     ),
     Harness01ExecutionRow(
+        "execution.integration_backed_tools",
         "Integration-backed tools",
         "IntegrationProfile → provider binding",
         "Integration registry / resolver",
@@ -174,9 +228,10 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         "Tool invocation trace",
         "External APIs via integration adapter",
         "CANONICAL",
-        (_ref(_plug03("test_integration_explicit_slug_activates_fixture_provider"), "SELECTION"),),
+        (_ref(_plug03("test_integration_explicit_slug_activates_fixture_provider"), "CANONICAL_CONSUMPTION"),),
     ),
     Harness01ExecutionRow(
+        "execution.background_host_task",
         "Background / scheduled host task execution",
         "TaskQueue worker → HostTaskExecutionPort",
         "BackgroundExecutionIdentity",
@@ -189,6 +244,7 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         (_ref(_bg01("test_bg_q1_production_background_execution_surfaces_use_host_port"), "GATE"),),
     ),
     Harness01ExecutionRow(
+        "execution.session_memory",
         "Memory / session operations",
         "SessionManager / memory control plane contracts",
         "tenant_id · session_id from runtime context",
@@ -198,9 +254,10 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         "Session/memory provenance evidence",
         "Storage backends",
         "CANONICAL",
-        (_ref(_plug03("test_plug03_session_storage_canonical_session_manager_consumer"), "SELECTION"),),
+        (_ref(_plug03("test_plug03_session_storage_canonical_session_manager_consumer"), "CANONICAL_CONSUMPTION"),),
     ),
     Harness01ExecutionRow(
+        "execution.rag_retrieval",
         "RAG retrieval",
         "RetrievalService / nexus.rag capability",
         "RAG profile composition",
@@ -216,11 +273,12 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
                     "tests/unit/rag/test_rag_plugin_discovery.py",
                     "test_external_retriever_entry_point_uses_retrieval_service",
                 ),
-                "SELECTION",
+                "CANONICAL_CONSUMPTION",
             ),
         ),
     ),
     Harness01ExecutionRow(
+        "execution.policy_controlled_tools",
         "Policy-controlled / declarative tools",
         "RuntimeToolInvoker._prepare_invocation",
         "state + attempt authorization",
@@ -233,6 +291,7 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         (_ref(_gr10_r8("test_gr10_r8_composition_requires_guard_on_production_mode_ast"), "FAIL_CLOSED"),),
     ),
     Harness01ExecutionRow(
+        "execution.security_gateway_hooks",
         "Security middleware / tool hooks",
         "RuntimeToolGateway.invoke → run_tool_call_hooks",
         "MiddlewarePipeline on gateway",
@@ -242,9 +301,18 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         "Hook context + ToolResponse status",
         "Middleware-controlled path",
         "CANONICAL",
-        (_ref(_h01("test_harness_01_tool_gateway_wraps_invoke_with_hooks"), "GATE"),),
+        (
+            _ref(
+                _nid(
+                    "tests/unit/runtime/nexus/tools/test_tool_gateway.py",
+                    "test_tool_gateway_denies_unknown_tool_when_not_allowed",
+                ),
+                "FAIL_CLOSED",
+            ),
+        ),
     ),
     Harness01ExecutionRow(
+        "execution.runtime_plugin_hooks",
         "RuntimePlugin hooks",
         "HOST_COMPOSED RuntimePlugin before/after/shutdown",
         "Host composition only",
@@ -258,6 +326,7 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         "Sandboxing arbitrary plugin Python is out of HARNESS-01 scope; boundary audited only.",
     ),
     Harness01ExecutionRow(
+        "execution.multi_agent_delegation",
         "Multi-agent / delegation",
         "Orchestration graph / delegation contracts",
         "Per-child run identity + narrowed grants",
@@ -270,6 +339,7 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         (_ref(_gr10_r8("test_gr10_r8_orchestration_inner_governance_qualified"), "GATE"),),
     ),
     Harness01ExecutionRow(
+        "execution.llm_invocation",
         "LLM model invocation",
         "LLM adapter / provider registry",
         "Model profile + runtime config",
@@ -279,9 +349,10 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         "LLM trace / modality metrics",
         "Provider HTTP inside adapter",
         "CANONICAL",
-        (_ref(_h01("test_harness_01_runtime_tier_no_direct_vendor_llm_imports"), "GATE"),),
+        (_ref(_h01("test_harness_01_runtime_tier_no_direct_vendor_llm_imports"), "STATIC_BOUNDARY"),),
     ),
     Harness01ExecutionRow(
+        "execution.context_assembly",
         "Context assembly",
         "ContextCompiler / ContextPlanner (CE-02 closed)",
         "Context engine profile",
@@ -292,6 +363,21 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         "Context engine outputs",
         "CANONICAL",
         (_ref(_nid("tests/qualification/ce_02/test_ce_02_gates.py", "test_ce2_q1_single_budget_resolution_entry"), "GATE"),),
+    ),
+    Harness01ExecutionRow(
+        "execution.declarative_compensation",
+        "Declarative compensation side effects",
+        "BoundCompensationToolInvokeSession → ExecutionBoundDeclarativeToolInvoker",
+        "Bound execution identity on declarative port",
+        "ACP compensation admission",
+        "Separate contract plane from RuntimeToolInvoker",
+        "ExecutionBoundDeclarativeToolInvoker (not RuntimeToolInvoker bypass)",
+        "CompensationSideEffectInvokeResult",
+        "Declarative catalog tools via bound port",
+        "AUTHORIZED_INTERNAL",
+        (_ref(_h01("test_harness_01_declarative_compensation_is_separate_contract_plane"), "STATIC_BOUNDARY"),),
+        "ExecutionBoundDeclarativeToolInvoker is owned by agents/persistence + contracts; "
+        "must not be classified as RuntimeToolInvoker.invoke bypass.",
     ),
 )
 
@@ -314,22 +400,82 @@ HARNESS_01_ZERO_BYPASS_FINDINGS: tuple[Harness01FindingRow, ...] = (
 
 HARNESS_01_AUTHORIZED_RUNTIME_TOOL_INVOKER_CALLSITE_FILES: frozenset[str] = frozenset(
     {
-        "intergrax/runtime/nexus/tools/catalog_dispatch.py",
         "intergrax/runtime/nexus/tools/catalog_context.py",
+        "intergrax/runtime/nexus/tools/catalog_dispatch.py",
         "intergrax/runtime/nexus/tools/tool_loop.py",
         "intergrax/runtime/nexus/tools/patterns/deterministic_chain.py",
+    }
+)
+
+HARNESS_01_RUNTIME_TOOL_INVOKER_REFERENCE_ALLOWLIST: frozenset[str] = frozenset(
+    {
+        "intergrax/runtime/attestation/boundary_emitter.py",
+        "intergrax/runtime/agent_governance/ports.py",
+        "intergrax/agents/persistence/catalog_declarative_invoker.py",
+        "intergrax/runtime/nexus/config.py",
+        "intergrax/runtime/nexus/config_sections.py",
+        "intergrax/runtime/nexus/context/iterative_tool_context_assembly.py",
+        "intergrax/runtime/nexus/tools/invoker.py",
+        "intergrax/runtime/nexus/tools/patterns/bounded_react.py",
+        "intergrax/runtime/nexus/tools/patterns/deterministic_chain.py",
+        "intergrax/runtime/nexus/tools/patterns/parallel_batch.py",
+        "intergrax/runtime/nexus/tools/patterns/parallel_semantic_batch.py",
+        "intergrax/runtime/nexus/tools/patterns/single_pass.py",
+        "intergrax/runtime/nexus/tools/planner_bootstrap.py",
+        "intergrax/runtime/nexus/tools/public_tool_invocation_pattern_bridge.py",
+        "intergrax/runtime/nexus/tools/runtime_tool_invoker_composition.py",
+        "intergrax/runtime/nexus/tools/tool_invocation_pattern.py",
+        "intergrax/runtime/nexus/tools/tool_loop.py",
+        "intergrax/runtime/nexus/tools/tool_planner_protocol.py",
+        "intergrax/runtime/nexus/tools/tool_verify_hooks.py",
+        "intergrax/runtime/nexus/tools/uaep_tool_gateway.py",
+        "intergrax/runtime/sandbox/isolation_gate.py",
+        "intergrax/runtime/tools/scope_policy.py",
     }
 )
 
 HARNESS_01_RUNTIME_TOOL_INVOKER_COMPOSITION_ROOTS: frozenset[str] = frozenset(
     {
         "intergrax/runtime/nexus/tools/runtime_tool_invoker_composition.py",
-        "intergrax/runtime/nexus/engine/runtime_context.py",
     }
 )
 
-HARNESS_01_REQUIRED_FLOWS: frozenset[str] = frozenset(row.flow for row in HARNESS_01_EXECUTION_MATRIX)
+HARNESS_01_FORBIDDEN_DIRECT_VENDOR_SDK_PREFIXES: frozenset[str] = frozenset(
+    {
+        "openai",
+        "anthropic",
+        "google.generativeai",
+        "google.genai",
+        "boto3",
+    }
+)
+
+HARNESS_01_VENDOR_SDK_ALLOWED_REL_PREFIXES: frozenset[str] = frozenset(
+    {
+        "intergrax/llm_adapters/",
+        "intergrax/rag/",
+        "intergrax/integrations/",
+        "intergrax/speech_adapters/",
+        "intergrax/model_inference/",
+        "intergrax/websearch/",
+    }
+)
 
 HARNESS_01_MAPPED_NODE_IDS: frozenset[str] = frozenset(
     ref.pytest_node_id for row in HARNESS_01_EXECUTION_MATRIX for ref in row.proof
+)
+
+HARNESS_01_INDEPENDENT_ZERO_BYPASS_GATE_TEST_NAMES: frozenset[str] = frozenset(
+    {
+        "test_harness_01_matrix_covers_required_flow_id_inventory",
+        "test_harness_01_matrix_flow_ids_are_unique",
+        "test_harness_01_runtime_tool_invoker_callsites_are_authorized_internal",
+        "test_harness_01_runtime_tool_invoker_reference_files_are_classified",
+        "test_harness_01_runtime_tool_invoker_constructed_only_at_composition_roots",
+        "test_harness_01_application_host_trees_do_not_construct_runtime_tool_invoker",
+        "test_harness_01_cross_layer_private_nexus_member_access",
+        "test_harness_01_runtime_agents_and_hosts_no_direct_forbidden_vendor_sdk",
+        "test_harness_01_tool_budget_record_precedes_invoker_invoke",
+        "test_harness_01_declarative_compensation_is_separate_contract_plane",
+    }
 )
