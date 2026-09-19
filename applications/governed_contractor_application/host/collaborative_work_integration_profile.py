@@ -7,6 +7,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.catalog_manifests import SQLITE
 from intergrax.integrations.registry.profile import IntegrationProfile
 
@@ -24,6 +25,8 @@ def resolve_governed_contractor_collaborative_work_integration_profile(
     """
     profile = manifest.integration_profile
     if trace_db_path is None:
+        return profile
+    if profile.slug_for_category(IntegrationCategory.RELATIONAL_STORE) != SQLITE.slug:
         return profile
     storage_dir = trace_db_path.parent
     sqlite_options = dict(profile.options.get(SQLITE.slug, {}))
