@@ -2274,9 +2274,11 @@ Post-certification Memory evolution remains **future work** — new capabilities
 | **CERTIFIED_SHA** | `4db4bb69671c7f6091284e448e2d09094ebd54cd` |
 | **ZERO_GAP_AUDIT_SHA** | `4db4bb69671c7f6091284e448e2d09094ebd54cd` |
 | **MEM-FINAL-ZERO-GAP-1_SHA** | `1484ba06a24b2f2bfe2ea6d77c922a9045fffc95` |
-| **CLOSURE_EVIDENCE_SHA** | Recorded at commit `docs(memory): record final enterprise certification closure` (exact SHA = post-closure `git rev-parse HEAD`) |
+| **CLOSURE_EVIDENCE_SHA** | `a24ab6ce90523ddfbc5ef6a26f86091c93ab1216` |
 | Prior MEM-FINAL-AUDIT-8 `VERIFIED_SHA` | `d720f5e96182f53946a4b88699b910c4fdeb0e0a` (subsumed by zero-gap + closure lineage; historical evidence SHAs **immutable**) |
 | Production / contract / runtime changes in closure task | **NONE** (documentation-only) |
+
+**Nota reconciliation:** `CLOSURE_EVIDENCE_SHA` wskazuje na immutable commit dowodu closure (`docs(memory): record final enterprise certification closure`). Commit reconciliation (MEM-ENTERPRISE-CLOSURE-R1) zapisuje wyłącznie ten SHA i nie zmienia certyfikowanego baseline runtime (`CERTIFIED_SHA`), certified surface ani zachowania runtime.
 
 Warstwa Memory została formalnie zamknięta jako **ENTERPRISE CERTIFIED** w dokładnie zdefiniowanym certified surface. Certyfikacja nie rozszerza gwarancji na jawnie wyłączone obszary (non-certified boundaries poniżej).
 
