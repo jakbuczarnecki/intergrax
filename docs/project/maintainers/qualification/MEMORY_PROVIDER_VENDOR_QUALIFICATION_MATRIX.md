@@ -535,6 +535,6 @@ uv run pytest tests/unit/memory/test_mem_ent13_provider_qualification.py \
 
 ---
 
-## MEM-FINAL-AUDIT-6 — behavioral semantics (non-vendor)
+## MEM-FINAL-AUDIT-6 / 6-R — behavioral semantics (non-vendor)
 
-Vendor V-levels unchanged. Behavioral certification uses `tests/qualification/memory_behavior/` against `DefaultMemoryControlPlane` / `build_default_memory_control_plane` (USER · SESSION · TASK scopes, projection lifecycle, identity hard gates). Classification: **BEHAVIORALLY QUALIFIED** (see `MEMORY_FINAL_ENTERPRISE_AUDIT.md` § MEM-FINAL-AUDIT-6).
+Vendor V-levels unchanged. Behavioral certification uses `tests/qualification/memory_behavior/` against `DefaultMemoryControlPlane` / `build_default_memory_control_plane` (USER · SESSION · TASK scopes, projection lifecycle, identity hard gates). Initial MEM-FINAL-AUDIT-6 (`06600da1…`) passed pytest but independent audit required hard-gate harness strengthening (**6-R**, `623a9d5a…`): shared ledger aggregation, shared-store cross-tenant proof, stricter supersession/conflict oracles, negative harness self-test. Violation counters in certification evidence come from the **actual scenario-fed `BehaviorViolationLedger`**, not a default-empty summary. Semantic metrics: **n=2** deterministic fixture only (not a production-scale benchmark). TASK remember/forget certified; TASK recall unsupported at control-plane level per current contract. Classification: **BEHAVIORALLY QUALIFIED** (see `MEMORY_FINAL_ENTERPRISE_AUDIT.md` § MEM-FINAL-AUDIT-6-R).

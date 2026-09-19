@@ -1718,8 +1718,35 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 | Memory regression | unit **605 passed**, 1 skipped (Windows chmod); integration **83 passed**, 13 skipped (pgvector/chmod); Mongo 5C **excluded** (`pymongo` unavailable) |
 | Application regression | `test_mem_audit2_r2_host_memory_control_plane_composition` + `test_mem_ent12_observability` — **13 passed** |
 | Production code changes | **NONE** |
+| Classification | **PASS WITH CORRECTIONS** — initial hard-gate evidence required strengthening (see MEM-FINAL-AUDIT-6-R) |
+| Verdict | **PASS WITH CORRECTIONS — MEM-FINAL-AUDIT-6 NOT CLOSED** (superseded by 6-R closure) |
+| Evidence commit | `7d46bee3a007e32510488f82d34476f221527a52` |
+
+> Initial 6 behavioral run passed tests but hard-gate evidence required strengthening. Independent audit: ledger disconnected from scenarios, cross-tenant isolation used split stores, supersession/conflict assertions too weak.
+
+---
+
+## MEM-FINAL-AUDIT-6-R — Behavioral Hard-Gate Integrity Closure
+
+| Field | Value |
+| ----- | ----- |
+| HEAD before | `5890538c4164f5546bd573a63a725fd007b43d6b` |
+| **VERIFIED_SHA** | `623a9d5a86c07e5353478906159157288909af2a` |
+| Branch | `development` |
+| 6 evidence ancestor (`7d46bee3a007e32510488f82d34476f221527a52`) | **YES** |
+| Production code changes | **NONE** |
+| Harness | `BehaviorEvalContext` + shared `BehaviorViolationLedger`; `run_behavior_cases` aggregates `ctx.ledger.counters`; `assert_behavior_qualification_pass`; `gate_helpers.py`; `build_shared_user_control_planes_for_tenants` |
+| Hard scenarios (catalog) | USER 15 · SESSION 4 · TASK 4 · PROJECTION/LIFECYCLE 6 · SECURITY 6 (incl. SEC-03 reverse cross-tenant, HARNESS-01 aggregation) — **35 catalog refs**; **42** pytest gates total (incl. metrics + harness integrity) |
+| Behavioral runs (#1 / #2) | **42 passed** / **42 passed** (deterministic, identical) |
+| Violation counter source | **actual scenario-fed shared ledger** (no empty default ledger in runner summary) |
+| Zero-violation counters | cross_tenant **0** · cross_user **0** · deleted_resurrections **0** · superseded_as_current **0** · projection_only_ghosts **0** · identity_authority **0** |
+| Semantic metrics | n=**2** deterministic synthetic dataset (`FixedEmbeddingManager`); **not** a production-scale semantic benchmark; Hit@1 **1.0** · Recall@K **1.0** · MRR **1.0** |
+| TASK contract | remember/forget via control plane **PASS**; TASK recall **unsupported** by current public control-plane contract (limitation, not P1) |
+| Memory regression | unit **605 passed**, 1 skipped; integration **83 passed**, 13 skipped; Mongo 5C **excluded** (`pymongo` unavailable) |
+| Application regression | `test_mem_audit2_r2_host_memory_control_plane_composition` — **4 passed** |
+| P0 / P1 | **NONE** |
 | Classification | **MEMORY CONTROL PLANE — BEHAVIORALLY QUALIFIED** |
 | Verdict | **PASS — MEM-FINAL-AUDIT-6 BEHAVIORAL MEMORY EVALS QUALIFIED** |
 | Readiness | **READY FOR MEM-FINAL-AUDIT-7 AFTER INDEPENDENT GITHUB AUDIT** |
 
-> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-6 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-7.
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-6-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-7.
