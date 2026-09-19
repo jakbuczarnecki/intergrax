@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -48,6 +49,15 @@ from intergrax.applications._shared.harness_host_composition import (
     resolve_harness_host_lifecycle_hook_coordinator,
     resolve_harness_host_middleware_pipeline,
     resolve_harness_host_runtime_event_persistence,
+)
+from intergrax.applications._shared.production_agent_platform_runtime import (
+    build_production_agent_platform_runtime,
+)
+from intergrax.applications._shared.production_platform_persistence import (
+    build_reference_production_platform_persistence,
+)
+from intergrax.applications._shared.production_process_composition import (
+    ProductionProcessComposition,
 )
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
@@ -369,6 +379,7 @@ def test_taskcpm_h8_scaffold_product_factory_uses_canonical_task_control_wiring(
 
 
 def test_taskcpm_h1b_governed_contractor_factory_wires_runtime_boundary(
+    tmp_path: Path,
     _stub_host_llm: None,
 ) -> None:
     settings = GovernedContractorBackendSettings(
@@ -377,9 +388,23 @@ def test_taskcpm_h1b_governed_contractor_factory_wires_runtime_boundary(
         include_scheduler=False,
         include_interaction_routes=False,
     )
+    platform_persistence = build_reference_production_platform_persistence(
+        db_path=tmp_path / "platform-kv.db",
+    )
+    process_composition = ProductionProcessComposition(
+        agent_platform_runtime=build_production_agent_platform_runtime(
+            platform_persistence=platform_persistence,
+        ),
+    )
+    trace_db_path = tmp_path / "trace.db"
     app = create_governed_contractor_backend_app(
         registry_projection=build_governed_contractor_test_registry_projection(),
         settings=settings,
+        process_composition=process_composition,
+        trace_db_path=trace_db_path,
+        runtime_events_db_path=tmp_path / "runtime_events.db",
+        checkpoints_db_path=tmp_path / "checkpoints.db",
+        document_store=platform_persistence.document_store,
     )
     paths = {route.path for route in app.routes}
     assert "/v1/tasks/{task_id}/cancel" in paths

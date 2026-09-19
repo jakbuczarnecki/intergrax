@@ -187,13 +187,18 @@ def test_host_composition_dashboard_diagnostics_ready_with_tenant_scope(
 
 
 def test_governed_contractor_factory_mounts_product_observability_dashboard(
+    tmp_path: Path,
     _stub_host_llm: None,
 ) -> None:
     document_store = InMemoryDocumentStore()
     settings = GovernedContractorBackendSettings.from_env()
+    trace_db_path = tmp_path / "trace.db"
     app = create_governed_contractor_backend_app(
         registry_projection=build_governed_contractor_test_registry_projection(),
         settings=settings,
+        trace_db_path=trace_db_path,
+        runtime_events_db_path=tmp_path / "runtime_events.db",
+        checkpoints_db_path=tmp_path / "checkpoints.db",
         document_store=document_store,
     )
     paths = {route.path for route in app.routes}
