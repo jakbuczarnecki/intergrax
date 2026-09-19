@@ -3,8 +3,8 @@
 | Field | Value |
 |-------|-------|
 | **Status** | **TIER-3 HOST COMPOSITION & BOUNDARY E2E QUALIFIED / CLOSED** (subject to independent audit) |
-| **QUALIFICATION_SHA** | _(bound at evidence commit)_ |
-| **EVIDENCE_SHA** | _(this document commit, if distinct)_ |
+| **QUALIFICATION_SHA** | `96f2a63687492b03e0b0302d4f881acc7cb7cc42` |
+| **EVIDENCE_SHA** | _(this evidence commit)_ |
 | **Predecessor** | MP-7B — CLOSED / QUALIFIED (`ab3c71ed0368bba01971851b846aa3462d7be977`) |
 | **MP-7A** | CLOSED / CERTIFIED (`a40dd4107b3c0c3c28177522f1dd278c68fb4da4`) |
 | **Production code** | **NONE** (canonical host wiring unchanged; LKW production unchanged) |
@@ -13,8 +13,10 @@
 
 ```text
 START_HEAD = ab3c71ed0368bba01971851b846aa3462d7be977
-MP7B_ANCESTRY = yes (ab3c71ed… is ancestor of START_HEAD; START_HEAD == ab3c71ed…)
-WORKTREE_STATE = clean at qualification start
+QUALIFICATION_SHA = 96f2a63687492b03e0b0302d4f881acc7cb7cc42
+MP7B_ANCESTRY = yes (ab3c71ed… is ancestor of START_HEAD and of QUALIFICATION_SHA)
+WORKTREE_STATE = clean for MP-7C paths at qualification commit; unrelated parallel WIP preserved unstaged
+NOTE = between START_HEAD and QUALIFICATION_SHA, unrelated parallel commits landed on development (e.g. 5332c8118, 2e4d06124); ancestry remains truthful
 ```
 
 ## 2. Boundary under qualification
