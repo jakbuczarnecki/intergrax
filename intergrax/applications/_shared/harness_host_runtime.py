@@ -371,42 +371,12 @@ def build_harness_host_runtime(
     )
     task_memory = wire_task_memory_from_profile(effective_environment)
     resolved_tenant_id = (tenant_id or "").strip()
-    resolved_collaborative_work_integration_profile = (
-        collaborative_work_integration_profile
-    )
-    if (
-        resolved_collaborative_work_integration_profile is None
-        and document_store is not None
-    ):
-        manifest_integration_profile = resolved_manifest.integration_profile
-        if trace_db_path is not None:
-            storage_dir = trace_db_path.parent
-            sqlite_options = dict(manifest_integration_profile.options.get("sqlite", {}))
-            sqlite_options.setdefault("data_dir", str(storage_dir))
-            sqlite_options.setdefault(
-                "relational_db",
-                str(storage_dir / "collaborative_work.db"),
-            )
-            resolved_collaborative_work_integration_profile = (
-                manifest_integration_profile.model_copy(
-                    update={
-                        "options": {
-                            **manifest_integration_profile.options,
-                            "sqlite": sqlite_options,
-                        },
-                    },
-                )
-            )
-        else:
-            resolved_collaborative_work_integration_profile = manifest_integration_profile
     meaningful_side_effect_wiring = (
         resolve_harness_host_meaningful_side_effect_authorization_wiring(
             effective_environment,
             explicit=meaningful_side_effect_authorization,
             collaborative_work_repositories=collaborative_work_repositories,
-            collaborative_work_integration_profile=(
-                resolved_collaborative_work_integration_profile
-            ),
+            collaborative_work_integration_profile=collaborative_work_integration_profile,
         )
     )
     resolved_meaningful_side_effect_authorization = (
