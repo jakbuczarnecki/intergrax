@@ -155,7 +155,7 @@ def _build_product_runtime(work_dir: Path) -> tuple[HarnessHostRuntime, Conditio
         trace_db_path=work_dir / "trace.db",
         runtime_events_db_path=work_dir / "events.db",
     )
-    wiring_context = runtime.env_wiring.build_context.tool_wiring_context
+    wiring_context = runtime.env_wiring.composition.tool_wiring_context
     if wiring_context is None or wiring_context.document_store is None:
         _fail("document store wiring is required")
     store = assert_conditional_document_store(wiring_context.document_store)

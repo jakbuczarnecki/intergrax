@@ -7,9 +7,12 @@ from __future__ import annotations
 import pytest
 
 from intergrax.agents.reference_harness import default_reference_harness
+from intergrax.applications._shared.application_composition_context import (
+    composition_for_factory_context,
+)
 from intergrax.applications._shared.integration_runtime_bridge import (
     apply_integration_profile_to_runtime_config,
-    apply_integration_profiles_from_build_context,
+    apply_integration_profiles_from_composition,
     apply_integration_profiles_from_environment,
 )
 from intergrax.applications._shared.environment_wiring import wire_application_environment
@@ -49,7 +52,7 @@ def test_apply_integration_profile_to_runtime_config() -> None:
     assert config.integration_profile.slug_for_category("relational_store") == SQLITE.slug
 
 
-def test_apply_integration_profiles_from_build_context_overrides_environment() -> None:
+def test_apply_integration_profiles_from_composition_overrides_environment() -> None:
     env_profile = IntegrationProfile.lab()
     wired_profile = IntegrationProfile(relational_store=SQLITE)
     config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)
@@ -61,12 +64,15 @@ def test_apply_integration_profiles_from_build_context_overrides_environment() -
     )
 
     settings = LabApplicationSettings(include_echo=True, include_mock_agents=False)
-    build_ctx = ApplicationBuildContext.for_manifest(
+    factory_context = ApplicationBuildContext.for_manifest(
         build_lab_manifest(settings),
         settings=settings,
+    )
+    composition = composition_for_factory_context(
+        factory_context,
         integration_profile=wired_profile,
     )
-    apply_integration_profiles_from_build_context(config, build_ctx)
+    apply_integration_profiles_from_composition(config, composition)
 
     assert config.integration_profile is wired_profile
 
@@ -80,9 +86,10 @@ def test_materialize_runtime_config_includes_integration_profile() -> None:
         wiring.build_context,
         env,
         llm_adapter=FakeLLMAdapter(),
+        composition=wiring.composition,
     )
 
-    assert config.integration_profile is wiring.build_context.integration_profile
+    assert config.integration_profile is wiring.composition.integration_profile
 
 
 def test_materialize_runtime_config_lab_harness_uses_environment_integration() -> None:

@@ -403,7 +403,7 @@ def build_scenario_runtime_from_environment(
         shadow_manager=env_wiring.shadow_manager,
         sandbox_manager=env_wiring.sandbox_manager,
         llm_adapter=resolve_environment_llm_adapter(environment, tenant_id=resolved_tenant_id),
-        runtime_event_bus=env_wiring.build_context.runtime_event_bus,
+        runtime_event_bus=env_wiring.composition.runtime_event_bus,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
         decision_wiring=decision_wiring,

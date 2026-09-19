@@ -8,6 +8,9 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.applications._shared.application_composition_context import (
+    optional_factory_composition,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import AgentBinding
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -61,7 +64,8 @@ def resolve_incident_investigator_production_settings(
 def build_agent(ctx: ApplicationBuildContext, binding: AgentBinding) -> Agent:
     del binding
     production_settings = resolve_incident_investigator_production_settings(ctx)
-    tool_registry = ctx.tool_registry
+    composition = optional_factory_composition()
+    tool_registry = composition.tool_registry if composition is not None else None
     if not isinstance(tool_registry, ToolRegistry):
         raise TypeError("incident_investigator_factory_requires_tool_registry")
     evidence_store = register_scenario_tools(

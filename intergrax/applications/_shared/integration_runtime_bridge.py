@@ -4,7 +4,9 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
+)
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -27,11 +29,11 @@ def apply_integration_profiles_from_environment(
     return apply_integration_profile_to_runtime_config(config, env.integration_profile)
 
 
-def apply_integration_profiles_from_build_context(
+def apply_integration_profiles_from_composition(
     config: RuntimeConfig,
-    build_ctx: ApplicationBuildContext,
+    composition: ApplicationCompositionContext,
 ) -> RuntimeConfig:
     """Overlay wired integration profile from Tier-3 bootstrap."""
-    if build_ctx.integration_profile is not None:
-        config.integration_profile = build_ctx.integration_profile
+    if composition.integration_profile is not None:
+        config.integration_profile = composition.integration_profile
     return config

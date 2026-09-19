@@ -105,6 +105,9 @@ from intergrax.applications._shared.tool_wiring import (
     build_application_tool_wiring,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications._shared.security_assembly_resolver import (
     SecurityAssemblyError,
@@ -149,7 +152,7 @@ class ApplicationEnvironmentWiring:
     tool_wiring: ApplicationToolWiring
     skill_wiring: ApplicationSkillWiring
     policy_bundle: Any
-    build_context: ApplicationBuildContext
+    composition: ApplicationCompositionContext
     platform_plugin_evidence: ApplicationPlatformPluginEvidence
     shadow_manager: ShadowWorkspaceManager | None
     sandbox_manager: SandboxSessionManager | None
@@ -160,6 +163,10 @@ class ApplicationEnvironmentWiring:
     event_delivery: ApplicationRuntimeEventDeliveryWiring = (
         ApplicationRuntimeEventDeliveryWiring.disabled()
     )
+
+    @property
+    def build_context(self) -> ApplicationBuildContext:
+        return self.composition.factory_context
 
 
 def _security_plugin_bootstrap_errors(
@@ -496,9 +503,15 @@ def wire_application_environment(
         resolved_runtime_event_bus = runtime_event_bus
         event_delivery = ApplicationRuntimeEventDeliveryWiring.disabled()
 
-    build_context = ApplicationBuildContext.for_manifest(
+    factory_context = ApplicationBuildContext.for_manifest(
         manifest,
         settings=settings,
+        strict_harness=strict_harness,
+        trace_db_path=trace_db_path,
+        environment=env,
+    )
+    composition = ApplicationCompositionContext(
+        factory_context=factory_context,
         integration_profile=resolved_integration,
         tool_profile=tool_wiring.profile,
         tool_wiring_context=tool_wiring.wiring_context,
@@ -508,14 +521,11 @@ def wire_application_environment(
         tool_registry=tool_registry,
         policy_bundle=policy_bundle,
         runtime_event_bus=resolved_runtime_event_bus,
-        strict_harness=strict_harness,
-        trace_db_path=trace_db_path,
-        environment=env,
         prompt_registry=prompt_registry,
         boundary_event_buffer=boundary_event_buffer,
     )
 
-    registry_snapshot = resolve_registry_snapshot(build_context)
+    registry_snapshot = resolve_registry_snapshot(composition)
     capability_graph = resolve_environment_capability_graph(
         manifest, env, registry_snapshot
     )
@@ -567,7 +577,7 @@ def wire_application_environment(
         tool_wiring=tool_wiring,
         skill_wiring=skill_wiring,
         policy_bundle=policy_bundle,
-        build_context=build_context,
+        composition=composition,
         shadow_manager=wire_shadow_workspace(env),
         sandbox_manager=wire_sandbox_sessions(env),
         integration_health=integration_health,

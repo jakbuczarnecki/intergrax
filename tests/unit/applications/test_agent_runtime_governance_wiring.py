@@ -13,6 +13,9 @@ from intergrax.applications._shared.agent_runtime_governance_wiring import (
     capability_grants_from_application_manifest,
     validated_capabilities_for_binding,
 )
+from intergrax.applications._shared.application_composition_context import (
+    composition_for_factory_context,
+)
 from intergrax.applications._shared.runtime_config_bridge import materialize_runtime_config
 from intergrax.applications._shared.wiring import build_application_registry
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
@@ -67,8 +70,12 @@ def _registry_for_manifest(
     *,
     builders: dict[type[Agent], object] | None = None,
 ) -> object:
-    ctx = ApplicationBuildContext.for_manifest(manifest, policy_bundle=RuntimePolicyBundle())
-    return build_application_registry(manifest, ctx, builders=builders)
+    ctx = ApplicationBuildContext.for_manifest(manifest)
+    composition = composition_for_factory_context(
+        ctx,
+        policy_bundle=RuntimePolicyBundle(),
+    )
+    return build_application_registry(manifest, ctx, builders=builders, composition=composition)
 
 
 def test_capability_grants_do_not_instantiate_agent_types(
@@ -165,12 +172,21 @@ def test_production_materialize_requires_agent_registry_on_build_context() -> No
     env = env.model_copy(update={"execution_mode": "strict"})
     build_ctx = ApplicationBuildContext.for_manifest(
         manifest,
-        policy_bundle=RuntimePolicyBundle(),
         strict_harness=True,
+    )
+    composition = composition_for_factory_context(
+        build_ctx,
+        policy_bundle=RuntimePolicyBundle(),
     )
     request = _runtime_request(tenant_id="tenant-prod", agent_id="echo")
     with pytest.raises(AgentRuntimeGovernanceMaterializationError, match="agent_registry"):
-        materialize_runtime_config(request, build_ctx, env, llm_adapter=FakeLLMAdapter())
+        materialize_runtime_config(
+            request,
+            build_ctx,
+            env,
+            llm_adapter=FakeLLMAdapter(),
+            composition=composition,
+        )
 
 
 def test_production_materialize_wires_grants_from_manifest_and_registry() -> None:
@@ -182,8 +198,11 @@ def test_production_materialize_wires_grants_from_manifest_and_registry() -> Non
     env = env.model_copy(update={"execution_mode": "strict"})
     build_ctx = ApplicationBuildContext.for_manifest(
         manifest,
-        policy_bundle=RuntimePolicyBundle(),
         strict_harness=True,
+    )
+    composition = composition_for_factory_context(
+        build_ctx,
+        policy_bundle=RuntimePolicyBundle(),
         agent_registry=registry,
     )
     request = _runtime_request(tenant_id="tenant-prod", agent_id="echo")
@@ -192,6 +211,7 @@ def test_production_materialize_wires_grants_from_manifest_and_registry() -> Non
         build_ctx,
         env,
         llm_adapter=FakeLLMAdapter(),
+        composition=composition,
     )
     assert config.agent_runtime_governance is not None
     assert isinstance(config.agent_runtime_governance, AgentRuntimeGovernanceBoundary)

@@ -4,25 +4,27 @@
 
 from __future__ import annotations
 
-from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
+)
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
 from intergrax.runtime.registry.harness_snapshot import HarnessRegistrySnapshot
 
 
 def resolve_registry_snapshot(
-    ctx: ApplicationBuildContext,
+    composition: ApplicationCompositionContext,
     *,
     agent_registry: AgentRegistry | None = None,
     evaluation_registry: OnlineEvaluationRegistry | None = None,
 ) -> HarnessRegistrySnapshot:
-    """Build typed registry snapshot from :class:`ApplicationBuildContext`."""
+    """Build typed registry snapshot from private composition context."""
     return HarnessRegistrySnapshot(
-        integration_profile=ctx.integration_profile,
-        tool_registry=ctx.tool_registry,
-        skill_registry=ctx.skill_registry,
-        prompt_registry=ctx.prompt_registry,
-        policy_bundle=ctx.policy_bundle,
+        integration_profile=composition.integration_profile,
+        tool_registry=composition.tool_registry,
+        skill_registry=composition.skill_registry,
+        prompt_registry=composition.prompt_registry,
+        policy_bundle=composition.policy_bundle,
         agent_registry=agent_registry,
         evaluation_registry=evaluation_registry,
     )

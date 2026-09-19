@@ -193,7 +193,7 @@ async def test_harness_runtime_wires_distributed_transport_without_execution_cou
     delivery = runtime.env_wiring.event_delivery
     assert delivery.otlp_transport is not None
     assert isinstance(delivery.otlp_transport, CollectorTransport)
-    bus = runtime.env_wiring.build_context.runtime_event_bus
+    bus = runtime.env_wiring.composition.runtime_event_bus
     await bus.publish(_event(".harness"))
     await asyncio.sleep(0.05)
     runtime.close()

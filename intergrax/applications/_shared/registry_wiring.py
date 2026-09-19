@@ -4,19 +4,21 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
+)
 from intergrax.applications._shared.registry_snapshot import (
     HarnessRegistrySnapshot,
     resolve_registry_snapshot,
 )
 from intergrax.applications._shared.registry_snapshot_protocol import RegistrySnapshotProtocol
-from intergrax.applications.contracts.build_context import ApplicationBuildContext
 
 
 def resolve_registry_snapshot_protocol(
-    ctx: ApplicationBuildContext,
+    composition: ApplicationCompositionContext,
 ) -> RegistrySnapshotProtocol:
     """Return snapshot as :class:`RegistrySnapshotProtocol` for conformance checks."""
-    snapshot = resolve_registry_snapshot(ctx)
+    snapshot = resolve_registry_snapshot(composition)
     return snapshot
 
 

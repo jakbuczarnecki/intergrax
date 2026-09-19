@@ -156,7 +156,7 @@ def test_assert_capability_graph_assembly_valid_raises() -> None:
     manifest = build_lab_manifest(settings)
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="cg.raise")
     wiring = wire_application_environment(manifest, env)
-    snapshot = resolve_registry_snapshot(wiring.build_context)
+    snapshot = resolve_registry_snapshot(wiring.composition)
     view = EnvironmentCapabilityGraphView(graph=CapabilityGraph(nodes=[], edges=[]))
 
     with pytest.raises(CapabilityGraphAssemblyError):

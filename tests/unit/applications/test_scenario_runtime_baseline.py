@@ -249,7 +249,7 @@ def test_build_scenario_runtime_returns_nexus_backed_composition(tmp_path: Path)
 
     assert composition.nexus_loop is not None
     assert composition.tenant_id == _TENANT
-    assert composition.env_wiring.build_context.policy_bundle is not None
+    assert composition.env_wiring.composition.policy_bundle is not None
     assert composition.security_wiring is not None
     assert composition.guardrail_wiring is not None
     assert composition.nexus_loop.policy_engine is not None

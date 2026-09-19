@@ -70,8 +70,7 @@ def resolve_host_diagnostic_runtime_dependencies(
 
     Returns ``None`` when the host lacks required platform document-store capabilities.
     """
-    build_context = env_wiring.build_context
-    wiring_context = build_context.tool_wiring_context
+    wiring_context = env_wiring.composition.tool_wiring_context
     if wiring_context is None or wiring_context.document_store is None:
         return None
     document_store = assert_conditional_document_store(wiring_context.document_store)
@@ -175,7 +174,7 @@ def _diagnostic_prerequisite_gaps(
     env_wiring: ApplicationEnvironmentWiring,
     observability: NexusObservabilityStores,
 ) -> tuple[bool, bool]:
-    wiring_context = env_wiring.build_context.tool_wiring_context
+    wiring_context = env_wiring.composition.tool_wiring_context
     missing_document_store = wiring_context is None or wiring_context.document_store is None
     missing_runtime_events = observability.runtime_event_store is None
     return missing_document_store, missing_runtime_events

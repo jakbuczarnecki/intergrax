@@ -15,7 +15,7 @@ def build_host_skill_catalog_wiring_from_environment(
     return HostSkillCatalogWiring(
         skill_profile=env_wiring.skill_wiring.profile,
         skill_registry=env_wiring.skill_wiring.registry,
-        skill_pinning_store=env_wiring.build_context.skill_pinning_store,
+        skill_pinning_store=env_wiring.composition.skill_pinning_store,
     )
 
 

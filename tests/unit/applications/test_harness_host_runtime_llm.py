@@ -49,7 +49,7 @@ def test_build_harness_host_runtime_does_not_invoke_llm_resolution_without_requi
     resolve_mock.assert_not_called()
     assert runtime._internal_composition is not None
     assert runtime.execution is not None
-    assert runtime.env_wiring.build_context.tool_profile is not None
+    assert runtime.env_wiring.composition.tool_profile is not None
 
 
 def test_engine_planner_without_provider_raises_at_orchestration_composition() -> None:
@@ -76,4 +76,4 @@ def test_build_harness_host_runtime_default_planner_without_engine_kind() -> Non
 
     assert runtime._internal_composition is not None
     assert runtime.execution is not None
-    assert runtime.env_wiring.build_context.tool_profile is not None
+    assert runtime.env_wiring.composition.tool_profile is not None

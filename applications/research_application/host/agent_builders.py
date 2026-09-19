@@ -5,6 +5,9 @@
 from __future__ import annotations
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.applications._shared.application_composition_context import (
+    optional_factory_composition,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.factory import AgentFactory
 from intergrax.applications.contracts.manifest import AgentBinding
@@ -24,9 +27,19 @@ def build_research_agent_from_context(
         if isinstance(settings, ResearchBackendSettings)
         else ResearchBackendSettings().enable_websearch
     )
+    composition = optional_factory_composition()
+    environment = ctx.environment
+    tool_profile = (
+        composition.tool_profile
+        if composition is not None and composition.tool_profile is not None
+        else (environment.tool_profile if environment is not None else None)
+    )
+    tool_wiring_context = (
+        composition.tool_wiring_context if composition is not None else None
+    )
     return ResearchAgent(
-        tool_profile=ctx.tool_profile,
-        tool_wiring_context=ctx.tool_wiring_context,
+        tool_profile=tool_profile,
+        tool_wiring_context=tool_wiring_context,
         enable_websearch=enable_websearch,
     )
 

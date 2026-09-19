@@ -129,7 +129,7 @@ def test_shutdown_flush_and_close_exporter() -> None:
     assert bridge is not None
     runtime.close()
     assert bridge.closed
-    bus = runtime.env_wiring.build_context.runtime_event_bus
+    bus = runtime.env_wiring.composition.runtime_event_bus
     assert bus is not None
     assert bus.closed
 

@@ -120,8 +120,7 @@ def resolve_host_queue_execution_dependencies(
     Fails closed when the platform host runtime lacks durable identity KV or
     conditional document-store causal evidence persistence.
     """
-    build_context = runtime.env_wiring.build_context
-    wiring_context = build_context.tool_wiring_context
+    wiring_context = runtime.env_wiring.composition.tool_wiring_context
     if wiring_context is None:
         raise ValueError(
             "queue-enabled host requires tool_wiring_context with platform storage "

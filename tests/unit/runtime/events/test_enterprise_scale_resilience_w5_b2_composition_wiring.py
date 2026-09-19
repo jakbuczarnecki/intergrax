@@ -50,7 +50,7 @@ def test_production_composition_creates_bounded_sink() -> None:
     manifest = build_lab_manifest(settings)
     env = _bounded_delivery_environment()
     runtime = build_harness_host_runtime(manifest, env, settings=settings)
-    bus = runtime.env_wiring.build_context.runtime_event_bus
+    bus = runtime.env_wiring.composition.runtime_event_bus
     assert bus is not None
     assert bus.event_sink is not None
     assert isinstance(bus.event_sink, BoundedEventSink)
@@ -63,7 +63,7 @@ async def test_published_event_reaches_bounded_sink() -> None:
     manifest = build_lab_manifest(settings)
     env = _bounded_delivery_environment()
     runtime = build_harness_host_runtime(manifest, env, settings=settings)
-    bus = runtime.env_wiring.build_context.runtime_event_bus
+    bus = runtime.env_wiring.composition.runtime_event_bus
     assert bus is not None
     delivery = runtime.env_wiring.event_delivery
     export_sink = delivery.event_export_sink
@@ -83,7 +83,7 @@ def test_shutdown_ordering_closes_bus_and_sink() -> None:
     manifest = build_lab_manifest(settings)
     env = _bounded_delivery_environment()
     runtime = build_harness_host_runtime(manifest, env, settings=settings)
-    bus = runtime.env_wiring.build_context.runtime_event_bus
+    bus = runtime.env_wiring.composition.runtime_event_bus
     assert bus is not None
     bounded = runtime.env_wiring.event_delivery.bounded_sink
     assert bounded is not None
@@ -113,7 +113,7 @@ def test_legacy_composition_without_sink_preserves_behavior() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="w5.b2.legacy")
     assert env.observability_profile.bounded_event_delivery_enabled is False
     wiring = wire_application_environment(manifest, env, conformance_check=False)
-    bus = wiring.build_context.runtime_event_bus
+    bus = wiring.composition.runtime_event_bus
     assert isinstance(bus, RuntimeEventBus)
     assert bus.event_sink is None
     assert bus.delivery_metrics is None

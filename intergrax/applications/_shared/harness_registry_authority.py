@@ -15,6 +15,9 @@ from intergrax.applications._shared.wiring import (
     BuilderMap,
     build_manifest_development_registry,
 )
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
@@ -80,6 +83,7 @@ def resolve_harness_host_registry(
     manifest: ApplicationManifest,
     build_context: ApplicationBuildContext,
     environment: ApplicationEnvironmentProfile,
+    composition: ApplicationCompositionContext | None = None,
     assembly_mode: RegistryAssemblyMode,
     registry_projection: MaterializedRegistryProjection | None = None,
     registry: AgentRegistry | None = None,
@@ -119,6 +123,7 @@ def resolve_harness_host_registry(
             manifest,
             build_context,
             builders=builders,
+            composition=composition,
         ),
         None,
     )

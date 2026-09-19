@@ -87,7 +87,7 @@ def test_lineage_enabled_uses_document_store_reader() -> None:
 
 def test_lineage_provider_fail_closed_without_document_store() -> None:
     runtime = _runtime(provider=ExecutionLineagePersistenceProvider.DOCUMENT_STORE)
-    runtime.env_wiring.build_context.tool_wiring_context.document_store = None
+    runtime.env_wiring.composition.tool_wiring_context.document_store = None
     with pytest.raises(ValueError):
         resolve_host_diagnostic_read_dependencies(runtime)
 
