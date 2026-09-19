@@ -348,7 +348,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | **Explicit out of scope** | Activity feeds/UI (MP-9); persistence (MP-6D until scheduled); repository inference |
 | **Architecture/ADR gate** | **CLOSED / RECERTIFIED** (MP-6A-C1 / ADR-MP-007) |
 | **User-visible outcome** | Auditable collaborative activity tied to evidence |
-| **Expected proof/evidence** | `test_mp6a_*`, `test_mp6a_c1_*`; MP-6G qualification (future) |
+| **Expected proof/evidence** | `test_mp6a_*`, `test_mp6a_c1_*`; `MP-6G_E2E_ISOLATION_IDEMPOTENCY_QUALIFICATION.md` |
 
 ### MP-6A — ownership / contract architecture gate
 
@@ -405,7 +405,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-6D | Persistence / store | **CLOSED / RECERTIFIED** ([`MP-6D-Q1_POSTGRESQL_PROVIDER_QUALIFICATION.md`](../../maintainers/qualification/MP-6D-Q1_POSTGRESQL_PROVIDER_QUALIFICATION.md)) |
 | MP-6E | Scoped read / query | **CLOSED / RECERTIFIED** |
 | MP-6F | Source integrations | **CLOSED** (subject to independent audit) |
-| MP-6G | E2E / isolation / idempotency | **PLANNED** |
+| MP-6G | E2E / isolation / idempotency | **CLOSED / CERTIFIED** |
 | MP-6H | Final enterprise certification | **PLANNED** |
 
 ---

@@ -679,7 +679,7 @@ requested durability (publication)
 | Persistence providers | `CollaborativeActivityAppendStore` | collaborative semantics |
 | Application / UI (MP-9) | `CollaborativeActivityReadPort` | store internals |
 
-**Roadmap:** MP-6C publication boundary (**CLOSED**) → MP-6D store (**CLOSED**) → MP-6E scoped read (**CLOSED**) → MP-6F source integrations (**NEXT**) → MP-6G qualification → MP-6H certification.
+**Roadmap:** MP-6C publication boundary (**CLOSED**) → MP-6D store (**CLOSED**) → MP-6E scoped read (**CLOSED**) → MP-6F source integrations (**CLOSED**) → MP-6G E2E qualification (**CLOSED / CERTIFIED**) → MP-6H certification (**NEXT**).
 
 Capability coordination: [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULTIPLAYER_AI.md) § MP-6.
 
