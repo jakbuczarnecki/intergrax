@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.memory.contracts.memory_security_governance import (
     CanonicalMemoryGovernanceSourceAuthority,
@@ -40,6 +42,10 @@ from intergrax.memory.stores.in_memory_procedural_memory_plugin import (
 
 def resolve_procedural_memory_store(
     env: ApplicationEnvironmentProfile,
+    *,
+    discover_entry_points: bool = True,
+    explicit_memory_plugins: Sequence[type] = (),
+    catalog: MemoryStorePluginCatalog | None = None,
 ) -> ProcedureMemoryStore | None:
     """Return procedural store when memory profile enables procedural memory."""
     if not env.memory_profile.enable_procedural_memory:
@@ -49,34 +55,41 @@ def resolve_procedural_memory_store(
         env.memory_profile.procedural_memory_store_plugin_id
         or DEFAULT_IN_MEMORY_PROCEDURAL_PLUGIN_ID
     )
-    discovery = discover_classified_memory_store_plugins(
-        discover_entry_points=True,
-        explicit_plugins=(InMemoryProceduralMemoryStorePlugin,),
-    )
-    catalog = MemoryStorePluginCatalog.from_discovery(discovery)
+    resolved_catalog = catalog
+    if resolved_catalog is None:
+        discovery = discover_classified_memory_store_plugins(
+            discover_entry_points=discover_entry_points,
+            explicit_plugins=_procedural_memory_plugin_candidates(explicit_memory_plugins),
+        )
+        resolved_catalog = MemoryStorePluginCatalog.from_discovery(discovery)
     ctx = MemoryStoreMaterializationContext(
         tenant_id=None,
         integration_profile=env.integration_profile,
     )
-    return materialize_procedural_memory_store(plugin_id, ctx, catalog=catalog)
+    return materialize_procedural_memory_store(plugin_id, ctx, catalog=resolved_catalog)
 
 
-def resolve_procedural_memory_capability(
+def _procedural_memory_plugin_candidates(
+    explicit_memory_plugins: Sequence[type],
+) -> tuple[type, ...]:
+    merged: list[type] = [InMemoryProceduralMemoryStorePlugin]
+    for plugin_type in explicit_memory_plugins:
+        if plugin_type not in merged:
+            merged.append(plugin_type)
+    return tuple(merged)
+
+
+def build_procedural_memory_capability(
+    store: ProcedureMemoryStore,
     env: ApplicationEnvironmentProfile,
     *,
-    governance_source_authority: CanonicalMemoryGovernanceSourceAuthority | None = None,
+    governance_source_authority: CanonicalMemoryGovernanceSourceAuthority,
     security_governance: MemorySecurityGovernanceService | None = None,
     memory_observability_sink: MemoryObservabilitySink | None = None,
     memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
-) -> ProcedureMemoryCapability | None:
-    """Materialize procedural memory capability when enabled."""
-    store = resolve_procedural_memory_store(env)
-    if store is None:
-        return None
-    if governance_source_authority is None:
-        raise ProcedureMemoryViolation(
-            "procedural memory capability requires CanonicalMemoryGovernanceSourceAuthority"
-        )
+) -> ProcedureMemoryCapability:
+    """Construct procedural memory capability from a composition-owned store instance."""
+    _ = env
     emitter = resolve_memory_diagnostic_emitter(
         sink=memory_observability_sink,
         emitter=memory_diagnostic_emitter,
@@ -91,4 +104,43 @@ def resolve_procedural_memory_capability(
         _security_governance=governance,
         _governance_source_authority=governance_source_authority,
         _diagnostic_emitter=emitter,
+    )
+
+
+def resolve_procedural_memory_capability(
+    env: ApplicationEnvironmentProfile,
+    *,
+    store: ProcedureMemoryStore | None = None,
+    discover_entry_points: bool = True,
+    explicit_memory_plugins: Sequence[type] = (),
+    catalog: MemoryStorePluginCatalog | None = None,
+    governance_source_authority: CanonicalMemoryGovernanceSourceAuthority | None = None,
+    security_governance: MemorySecurityGovernanceService | None = None,
+    memory_observability_sink: MemoryObservabilitySink | None = None,
+    memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
+) -> ProcedureMemoryCapability | None:
+    """Materialize procedural memory capability when enabled."""
+    resolved_store = (
+        store
+        if store is not None
+        else resolve_procedural_memory_store(
+            env,
+            discover_entry_points=discover_entry_points,
+            explicit_memory_plugins=explicit_memory_plugins,
+            catalog=catalog,
+        )
+    )
+    if resolved_store is None:
+        return None
+    if governance_source_authority is None:
+        raise ProcedureMemoryViolation(
+            "procedural memory capability requires CanonicalMemoryGovernanceSourceAuthority"
+        )
+    return build_procedural_memory_capability(
+        resolved_store,
+        env,
+        governance_source_authority=governance_source_authority,
+        security_governance=security_governance,
+        memory_observability_sink=memory_observability_sink,
+        memory_diagnostic_emitter=memory_diagnostic_emitter,
     )

@@ -93,6 +93,12 @@ from intergrax.applications._shared.specialized_memory_wiring import (
     resolve_specialized_memory_capabilities,
 )
 from intergrax.memory.contracts.long_horizon_memory import CanonicalMemorySourceAuthority
+from intergrax.memory.stores.in_memory_long_horizon_memory_plugin import (
+    InMemoryLongHorizonMemoryStorePlugin,
+)
+from intergrax.memory.stores.in_memory_procedural_memory_plugin import (
+    InMemoryProceduralMemoryStorePlugin,
+)
 from intergrax.memory.contracts.memory_security_governance import (
     CanonicalMemoryGovernanceSourceAuthority,
 )
@@ -183,6 +189,46 @@ def _document_store_backing_provider_id(profile: IntegrationProfile) -> str | No
     return binding.resolved_slug()
 
 
+_REFERENCE_MEMORY_STORE_PLUGINS: tuple[type, ...] = (
+    InMemoryProceduralMemoryStorePlugin,
+    InMemoryLongHorizonMemoryStorePlugin,
+)
+
+
+def _merge_memory_plugin_type_candidates(*groups: Sequence[type]) -> tuple[type, ...]:
+    merged: list[type] = []
+    for group in groups:
+        for plugin_type in group:
+            if plugin_type not in merged:
+                merged.append(plugin_type)
+    return tuple(merged)
+
+
+def _memory_store_plugin_catalog_required(env: ApplicationEnvironmentProfile) -> bool:
+    memory_profile = env.memory_profile
+    return (
+        memory_profile.enable_procedural_memory
+        or memory_profile.enable_long_horizon_memory
+        or memory_profile.user_profile_store_plugin_id is not None
+        or memory_profile.session_storage_plugin_id is not None
+    )
+
+
+def _compose_memory_store_plugin_catalog(
+    *,
+    discover_entry_points: bool,
+    explicit_memory_plugins: Sequence[type],
+) -> MemoryStorePluginCatalog:
+    discovery = discover_classified_memory_store_plugins(
+        discover_entry_points=discover_entry_points,
+        explicit_plugins=_merge_memory_plugin_type_candidates(
+            _REFERENCE_MEMORY_STORE_PLUGINS,
+            explicit_memory_plugins,
+        ),
+    )
+    return MemoryStorePluginCatalog.from_discovery(discovery)
+
+
 def _resolve_baseline_memory_platform_wiring(
     env: ApplicationEnvironmentProfile,
     profile: IntegrationProfile,
@@ -192,6 +238,9 @@ def _resolve_baseline_memory_platform_wiring(
     memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
     governance_source_authority: CanonicalMemoryGovernanceSourceAuthority | None = None,
     long_horizon_source_authority: CanonicalMemorySourceAuthority | None = None,
+    discover_entry_points: bool = True,
+    explicit_memory_plugins: Sequence[type] = (),
+    memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None,
 ) -> MemoryPlatformWiring:
     """Resolve integration-backed memory stores without external plugin overlay."""
     emitter = resolve_memory_diagnostic_emitter(
@@ -220,6 +269,9 @@ def _resolve_baseline_memory_platform_wiring(
         )
     specialized_memory = resolve_specialized_memory_capabilities(
         env,
+        discover_entry_points=discover_entry_points,
+        explicit_memory_plugins=explicit_memory_plugins,
+        memory_store_plugin_catalog=memory_store_plugin_catalog,
         security_governance=governance,
         memory_observability_sink=memory_observability_sink,
         memory_diagnostic_emitter=emitter,
@@ -291,6 +343,7 @@ def _apply_external_memory_store_overlay(
     tenant_id: str | None,
     discover_entry_points: bool,
     explicit_memory_plugins: Sequence[type] = (),
+    memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None,
 ) -> MemoryPlatformWiring:
     memory_profile = env.memory_profile
     user_plugin_id = memory_profile.user_profile_store_plugin_id
@@ -304,11 +357,13 @@ def _apply_external_memory_store_overlay(
             "or explicit_memory_plugins candidates"
         )
 
-    discovery = discover_classified_memory_store_plugins(
-        discover_entry_points=discover_entry_points,
-        explicit_plugins=explicit_memory_plugins,
-    )
-    catalog = MemoryStorePluginCatalog.from_discovery(discovery)
+    catalog = memory_store_plugin_catalog
+    if catalog is None:
+        discovery = discover_classified_memory_store_plugins(
+            discover_entry_points=discover_entry_points,
+            explicit_plugins=explicit_memory_plugins,
+        )
+        catalog = MemoryStorePluginCatalog.from_discovery(discovery)
 
     materialization_ctx = MemoryStoreMaterializationContext(
         tenant_id=tenant_id,
@@ -361,6 +416,13 @@ def resolve_memory_platform_wiring(
     4. Explicit external Memory store plugin ids overlay their owned slots only.
     """
     profile = integration_profile or env.integration_profile
+    discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
+    memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None
+    if _memory_store_plugin_catalog_required(env):
+        memory_store_plugin_catalog = _compose_memory_store_plugin_catalog(
+            discover_entry_points=discover,
+            explicit_memory_plugins=explicit_memory_plugins,
+        )
     wiring = _resolve_baseline_memory_platform_wiring(
         env,
         profile,
@@ -369,8 +431,10 @@ def resolve_memory_platform_wiring(
         memory_diagnostic_emitter=memory_diagnostic_emitter,
         governance_source_authority=governance_source_authority,
         long_horizon_source_authority=long_horizon_source_authority,
+        discover_entry_points=discover,
+        explicit_memory_plugins=explicit_memory_plugins,
+        memory_store_plugin_catalog=memory_store_plugin_catalog,
     )
-    discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
     wiring = _apply_external_memory_store_overlay(
         wiring,
         env,
@@ -378,6 +442,7 @@ def resolve_memory_platform_wiring(
         tenant_id=tenant_id,
         discover_entry_points=discover,
         explicit_memory_plugins=explicit_memory_plugins,
+        memory_store_plugin_catalog=memory_store_plugin_catalog,
     )
     validate_memory_platform_wiring_admission(
         env,

@@ -4,16 +4,18 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from intergrax.applications._shared.long_horizon_memory_wiring import (
-    resolve_long_horizon_memory_capability,
+    build_long_horizon_memory_capability,
     resolve_long_horizon_memory_store,
 )
 from intergrax.applications._shared.procedural_memory_wiring import (
-    resolve_procedural_memory_capability,
+    build_procedural_memory_capability,
     resolve_procedural_memory_store,
 )
+from intergrax.memory.resolver.discovery import MemoryStorePluginCatalog
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.memory.contracts.long_horizon_memory import (
     CanonicalMemorySourceAuthority,
@@ -45,6 +47,9 @@ class SpecializedMemoryCapabilities:
 def resolve_specialized_memory_capabilities(
     env: ApplicationEnvironmentProfile,
     *,
+    discover_entry_points: bool = True,
+    explicit_memory_plugins: Sequence[type] = (),
+    memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None,
     security_governance: MemorySecurityGovernanceService | None = None,
     memory_observability_sink: MemoryObservabilitySink | None = None,
     memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
@@ -57,12 +62,23 @@ def resolve_specialized_memory_capabilities(
     Store materialization is deterministic from feature flags. Capabilities require
     composition-owned canonical authorities (not minted here).
     """
-    procedural_store = resolve_procedural_memory_store(env)
-    long_horizon_store = resolve_long_horizon_memory_store(env)
+    procedural_store = resolve_procedural_memory_store(
+        env,
+        discover_entry_points=discover_entry_points,
+        explicit_memory_plugins=explicit_memory_plugins,
+        catalog=memory_store_plugin_catalog,
+    )
+    long_horizon_store = resolve_long_horizon_memory_store(
+        env,
+        discover_entry_points=discover_entry_points,
+        explicit_memory_plugins=explicit_memory_plugins,
+        catalog=memory_store_plugin_catalog,
+    )
 
     procedural_capability: ProcedureMemoryCapability | None = None
     if procedural_store is not None and governance_source_authority is not None:
-        procedural_capability = resolve_procedural_memory_capability(
+        procedural_capability = build_procedural_memory_capability(
+            procedural_store,
             env,
             governance_source_authority=governance_source_authority,
             security_governance=security_governance,
@@ -76,7 +92,8 @@ def resolve_specialized_memory_capabilities(
         and governance_source_authority is not None
         and long_horizon_source_authority is not None
     ):
-        long_horizon_capability = resolve_long_horizon_memory_capability(
+        long_horizon_capability = build_long_horizon_memory_capability(
+            long_horizon_store,
             env,
             source_authority=long_horizon_source_authority,
             governance_source_authority=governance_source_authority,
