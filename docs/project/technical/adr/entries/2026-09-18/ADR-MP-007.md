@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Accepted — **MP-6A — CLOSED / RECERTIFIED**; **MP-6B — CLOSED / RECERTIFIED**; **MP-6C — NEXT** (subject to independent audit) |
+| **Status** | Accepted — **MP-6A — CLOSED / RECERTIFIED**; **MP-6B — CLOSED / RECERTIFIED**; **MP-6C — CLOSED / RECERTIFIED**; **MP-6D — NEXT** (subject to independent audit) |
 | **Date** | 2026-09-18 |
 | **Deciders** | Intergrax platform architecture (MP-6A ownership freeze) |
 | **Related** | [`architecture/COLLABORATIVE_WORK.md`](../../../../architecture/COLLABORATIVE_WORK.md) · [`plan/COLLABORATIVE_WORK.md`](../../../../maintainers/plans/COLLABORATIVE_WORK.md) · [`capabilities/architecture/MULTIPLAYER_AI.md`](../../../../capabilities/architecture/MULTIPLAYER_AI.md) · [ADR-MP-006](../2026-09-17/ADR-MP-006.md) · [`DECISION_APPROVAL_GOVERNANCE.md`](../../../../architecture/DECISION_APPROVAL_GOVERNANCE.md) · [`OBSERVABILITY.md`](../../../../architecture/OBSERVABILITY.md) · [`PROOF_RECEIPTS.md`](../../../../architecture/PROOF_RECEIPTS.md) |
@@ -33,6 +33,6 @@ MP-0 provisionally listed `OBSERVABILITY`, `PROOF_RECEIPTS`, and `UNIFIED_EXECUT
 
 ## Status
 
-**MP-6A-C1 — CLOSED** (correction applied; subject to independent audit). **MP-6A — CLOSED / RECERTIFIED**. **MP-6 ownership — FROZEN**. **MP-6B — CLOSED / RECERTIFIED**. **MP-6C — NEXT.**
+**MP-6A-C1 — CLOSED** (correction applied; subject to independent audit). **MP-6A — CLOSED / RECERTIFIED**. **MP-6 ownership — FROZEN**. **MP-6B — CLOSED / RECERTIFIED**. **MP-6C — CLOSED / RECERTIFIED**. **MP-6D — NEXT.**
 
 See [`COLLABORATIVE_WORK.md`](../../../../architecture/COLLABORATIVE_WORK.md) § Collaborative Activity (MP-6) for diagrams, threat model, and roadmap.

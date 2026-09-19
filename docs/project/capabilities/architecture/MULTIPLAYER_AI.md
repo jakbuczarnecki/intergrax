@@ -51,7 +51,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 | **Work artifacts** | MP-3 — **ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004; MP-3A…MP-3H) |
 | **Decision / approval** | **REUSED** canonical Decision System + Governance/HITL + Multiplayer binding/projection (**MP-4R CLOSED**); not Multiplayer-owned authority |
 | **Context view** | MP-5 - principal-scoped; composes UCL/CE/Memory/Knowledge |
-| **Activity / provenance** | MP-6 — **IN PROGRESS**; **MP-6A — CLOSED / RECERTIFIED**; **MP-6B — CLOSED / RECERTIFIED**; **MP-6C — NEXT** |
+| **Activity / provenance** | MP-6 — **IN PROGRESS**; **MP-6A — CLOSED / RECERTIFIED**; **MP-6B — CLOSED / RECERTIFIED**; **MP-6C — CLOSED / RECERTIFIED**; **MP-6D — NEXT** |
 | **LKW relation** | MP-7 reference consumer - not owner |
 | **HITL relation** | **REUSED** Governance/HITL + `ExecutionContinuationPort` — not Decision owner; Nexus internal orchestration only |
 | **External agent interoperability** | MP-8 - future; AgentDirectory ≠ AgentRegistry |
@@ -103,7 +103,7 @@ Tier-0/Tier-1 platform Multiplayer primitives
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-6 — NEXT** (active slice **MP-6C — NEXT**; **MP-6B — CLOSED**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** identity/extensibility/timeline hardening) (**MP-6 ownership — FROZEN**, ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md)). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (B5 adapters: `context_view_source_adapters.py`). MP-5E **`intergrax/contracts/context_view_composition.py`** — **CLOSED**.
+**Current active task:** **MP-6 — NEXT** (active slice **MP-6D — NEXT**; **MP-6C — CLOSED**; **MP-6B — CLOSED**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** identity/extensibility/timeline hardening) (**MP-6 ownership — FROZEN**, ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md)). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (B5 adapters: `context_view_source_adapters.py`). MP-5E **`intergrax/contracts/context_view_composition.py`** — **CLOSED**.
 **Previous:** **MP-4D7** — Documentation regression gates — **CLOSED** (SSOT: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) § MP-4D7)
 
 ## Cursor read scope (token budget)
@@ -540,7 +540,7 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 | MP-5G | E2E / isolation qualification | **CLOSED** (MP-5G-C1 Model B + four-source E2E; MP-5G-C1-R1 runtime `ContextViewScopeCompatibilityPolicy` DI on composer) |
 | MP-5H | Final MP-5 enterprise certification | **CLOSED / FINAL CERTIFICATION PASSED** |
 | MP-5 | Principal-scoped ContextView capability | **ENTERPRISE CERTIFIED / CLOSED** |
-| MP-6 | Collaborative Activity + provenance | **IN PROGRESS** (**MP-6C — NEXT**) |
+| MP-6 | Collaborative Activity + provenance | **IN PROGRESS** (**MP-6D — NEXT**) |
 
 **Threat model (fail-closed):** cross-tenant leak → deny/omit; cross-workspace leak → deny/omit; delegation amplification → deny; private memory leak → omit without explicit promotion; external agent over-sharing → least-context projection; unscoped RAG → scope gate before retrieve; application bypass → contracts only via Tier-0/Tier-1; policy missing → deny/omit.
 
@@ -550,7 +550,7 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 
 **Intent:** Observable collaborative activity stream linked to provenance and evidence for audit, debugging, and governance.
 
-**Owner:** **COLLABORATIVE_WORK** (MP-6) — **MP-6 ownership — FROZEN** ([ADR-MP-007](../../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6 — IN PROGRESS**. **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** identity/extensibility/timeline hardening). **MP-6B — CLOSED / RECERTIFIED** (**MP-6B-C1** / **MP-6B-C1-R1**). **MP-6C — NEXT**.
+**Owner:** **COLLABORATIVE_WORK** (MP-6) — **MP-6 ownership — FROZEN** ([ADR-MP-007](../../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6 — IN PROGRESS**. **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** identity/extensibility/timeline hardening). **MP-6B — CLOSED / RECERTIFIED** (**MP-6B-C1** / **MP-6B-C1-R1**). **MP-6C — CLOSED / RECERTIFIED** (`CollaborativeActivityIngestionService`, trusted publisher context, injectable ingestion policy). **MP-6D — NEXT**.
 
 **Reused (not owners):** `RuntimeEvent` / `AgentRunTrace` (OBSERVABILITY), `ProofReceipt` (PROOF_RECEIPTS), `ExecutionProvenanceRef`, `GovernanceEvidenceRef`, Decision/Approval IDs (MP-4 / governance).
 
@@ -574,7 +574,8 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 | MP-6B | Core activity/provenance contracts (runtime hardening) | **CLOSED / RECERTIFIED** |
 | MP-6B-C1 | Policy-resolved append intent boundary | **CLOSED / RECERTIFIED** |
 | MP-6B-C1-R1 | AppendIntent pluginability / append-store proof | **CLOSED** |
-| MP-6C | Publication / ingestion boundary | **NEXT** |
+| MP-6C | Publication / ingestion boundary | **CLOSED** |
+| MP-6D | Persistence / store | **NEXT** |
 | MP-6D | Append store + default persistence | PLANNED |
 | MP-6E | Scoped read / query | PLANNED |
 | MP-6F | Source integrations | PLANNED |
