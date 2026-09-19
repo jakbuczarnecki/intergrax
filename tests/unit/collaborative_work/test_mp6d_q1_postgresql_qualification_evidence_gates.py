@@ -25,6 +25,9 @@ _REQUIRED_MARKERS = (
     "implementation_sha",
     "131b5e8fac9e6c05bcc0415677dee91288691500",
     "qualification_sha",
+    "7d46bee3a007e32510488f82d34476f221527a52",
+    "evidence_introduction_sha",
+    "5890538c4164f5546bd573a63a725fd007b43d6b",
     "provider",
     "PostgreSQL",
     "16.6",
@@ -53,3 +56,6 @@ def test_mp6d_q1_postgresql_qualification_evidence_markers() -> None:
     text = _read(_EVIDENCE)
     missing = [marker for marker in _REQUIRED_MARKERS if marker not in text]
     assert not missing, f"MP-6D-Q1 evidence: missing markers: {missing}"
+    assert "resolve with `git log" not in text, (
+        "MP-6D-Q1 evidence: dynamic git-log placeholder must not remain"
+    )

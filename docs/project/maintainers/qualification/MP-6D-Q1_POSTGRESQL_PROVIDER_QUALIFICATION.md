@@ -17,7 +17,7 @@
 | **implementation_sha** | `131b5e8fac9e6c05bcc0415677dee91288691500` — MP-6D append store production code (`feat(collaborative-work): add atomic mp6 activity persistence`) |
 | **qualification_docs_sha** | `1d17af1af8aba05da2984dc2260a4ea30aaa326b` — MP-6D-Q1 docs/recertification commit (`test(collaborative-work): qualify mp6 postgres append store`) |
 | **qualification_sha** | `7d46bee3a007e32510488f82d34476f221527a52` — repository `HEAD` at successful live PostgreSQL qualification execution (2026-09-19) |
-| **evidence_commit_sha** | Introducing commit for this file — resolve with `git log -1 --format=%H -- docs/project/maintainers/qualification/MP-6D-Q1_POSTGRESQL_PROVIDER_QUALIFICATION.md` (must be strictly after `qualification_sha`; tests ran before evidence commit) |
+| **evidence_introduction_sha** | `5890538c4164f5546bd573a63a725fd007b43d6b` — commit that first introduced this qualification evidence artifact |
 | **branch** | `development` |
 | **HEAD SHA at execution** | `7d46bee3a007e32510488f82d34476f221527a52` |
 | **origin/development SHA at execution** | `7d46bee3a007e32510488f82d34476f221527a52` |
