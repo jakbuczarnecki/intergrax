@@ -116,9 +116,9 @@ Dimensions (each rated **PASS** / **PARTIAL** / **FAIL** / **N/A** in inventory 
 | EAC-CON-021 | Memory reference read | STATE_REFERENCE_CONTRACT | MEMORY | `memory/contracts/memory_reference_read.py` | CE, ContextView adapters | Memory readers | Public | Yes | PARTIAL | CANONICAL | — |
 | EAC-CON-022 | Memory runtime read (inspection) | PORT | MEMORY | `memory_runtime_read.py` | Observability inspection | Memory | Public | Yes | PARTIAL | CANONICAL | — |
 | EAC-CON-023 | Knowledge reference read | STATE_REFERENCE_CONTRACT | RAG | `knowledge/contracts/knowledge_reference_read.py` | CE adapters | RAG stack | Public | Yes | PARTIAL | CANONICAL | — |
-| EAC-CON-024 | ContextView composition | DOMAIN_CONTRACT | CONTEXT_ENGINEERING | `context_view_composition.py`, `intergrax/context/` | Agent, Nexus consumer | CE composers | Public | Strategy SPI | PARTIAL | CANONICAL | **CL-EAC1-003** impl locus in Nexus |
-| EAC-CON-025 | Context source ports (memory/knowledge/UCL/CW) | PORT | CONTEXT_ENGINEERING | `context_view_source_ports.py` | CE assembly | Domain readers | Public | Yes | PARTIAL | CANONICAL | Aligns MP-5F-B1/B2/B3 |
-| EAC-CON-026 | ContextView visibility policy | DOMAIN_CONTRACT | CONTEXT_ENGINEERING | `context_view_visibility_policy.py` | CE, CW | Policy plugins | Public | Yes | PARTIAL | CANONICAL | — |
+| EAC-CON-024 | ContextView composition (MP-5E) | DOMAIN_CONTRACT | COLLABORATIVE_WORK (MP-5) | `context_view_composition.py`, `collaborative_work/context_view_composition.py` | Agent, runtime consumer | MP-5 composer | Public | Strategy SPI | PARTIAL | CANONICAL | Pre–EBH-1-R1 owner CONTEXT_ENGINEERING — **HISTORICAL**; reconciled @ EBH-1-R1 |
+| EAC-CON-025 | ContextView source ports (MP-5D) | PORT | COLLABORATIVE_WORK (MP-5) | `context_view_source_ports.py` | MP-5 composer | Domain readers via adapters | Public | Yes | PARTIAL | CANONICAL | Consumer-side ports; aligns MP-5F-B1/B2/B3 |
+| EAC-CON-026 | ContextView visibility policy (MP-5C) | DOMAIN_CONTRACT | COLLABORATIVE_WORK (MP-5) | `context_view_visibility_policy.py` | MP-5 pipeline | Policy plugins | Public | Yes | PARTIAL | CANONICAL | Pre–EBH-1-R1 owner CONTEXT_ENGINEERING — **HISTORICAL** |
 | EAC-CON-027 | UCL lifecycle contracts | DOMAIN_CONTRACT | UNIFIED_CONTEXT_LIFECYCLE | `intergrax/ucl/contracts/*` | CE, Nexus (consumer) | UCL optimizer | Public | PARTIAL | PARTIAL | CANONICAL | — |
 | EAC-CON-028 | UCL reference read | STATE_REFERENCE_CONTRACT | UNIFIED_CONTEXT_LIFECYCLE | `ucl/contracts/ucl_reference_read.py` | CE adapters | UCL store | Public | Yes | PARTIAL | CANONICAL | Workspace scope **PARTIAL** @ B3 docstring |
 | EAC-CON-029 | RuntimeEvent / evidence | EVENT_CONTRACT | OBSERVABILITY | `runtime_event.py`, `contracts/observability*` | Diagnostics, export | EE emitters | Public | Sink SPI | PARTIAL | CANONICAL | — |
@@ -400,7 +400,7 @@ Compact register — all **34** domains audited. Empty **Owned** is acceptable.
 
 ### CL-EAC1-003 — CE/UCL/Nexus context (**QUALIFICATION ONLY / LOW**)
 
-Nexus `runtime/nexus/context/*` (EAC-CON-085) is **implementation locus** for CE assembly algorithms — **not** a second CONTEXT_ASSEMBLY authority. **Leak risk:** if Nexus types appear in CE public imports (monitor EAC-3). **No separate public ContextView owner conflict.**
+Nexus `runtime/nexus/context/*` (EAC-CON-085) is **implementation locus** for CE assembly algorithms — **not** a second CONTEXT_ASSEMBLY authority. **Leak risk:** if Nexus types appear in CE public imports (monitor EAC-3). **Principal-scoped ContextView** semantic owner is **COLLABORATIVE_WORK / MP-5** ([ADR-MP-006](../../technical/adr/entries/2026-09-17/ADR-MP-006.md); EBH-1-R1) — distinct from CONTEXT_ASSEMBLY_AUTHORITY.
 
 ### CL-EAC1-004 — GE ↔ CW authority (**ADR REQUIRED / HIGH**)
 
@@ -421,7 +421,8 @@ Nexus `runtime/nexus/context/*` (EAC-CON-085) is **implementation locus** for CE
 | Agents → UNIFIED_EXECUTION_RUNTIME | EAC-CON-002, 019 (not Nexus 064/065) | Prove no upward Nexus leak |
 | Agents → GOVERNED_EXECUTION | EAC-CON-011 | Policy direction |
 | Agents → TOOLS | EAC-CON-015 | Invocation |
-| Agents → CONTEXT_ENGINEERING | EAC-CON-024, 072 | Context budget |
+| Agents → CONTEXT_ENGINEERING | EAC-CON-072 | Context budget / generic assembly |
+| Agents → COLLABORATIVE_WORK (MP-5) | EAC-CON-024, 025, 026 | Principal-scoped ContextView |
 | Agents → UNIFIED_EXECUTION_RUNTIME | EAC-CON-099 | Execution budget |
 | CE → MEMORY | EAC-CON-021 | Reference read |
 | CE → RAG | EAC-CON-023 | Reference read |
@@ -529,7 +530,7 @@ Inherited from EAC-1 §14; no new **ID** from EAC-2 (contract defects are **CL**
 | Memory reference read | MEMORY | `intergrax/memory/contracts/` | CE | Memory readers | **CORRECT** |
 | Knowledge reference read | RAG | `intergrax/knowledge/contracts/` | CE | RAG | **CORRECT** |
 | UCL reference read | UNIFIED_CONTEXT_LIFECYCLE | `intergrax/ucl/contracts/` | CE | UCL | **CORRECT** |
-| ContextView composition | CONTEXT_ENGINEERING | `intergrax/contracts/` + `context/` | Agent, Nexus | CE/Nexus impl | **NEUTRAL_OK** (impl in Nexus) |
+| ContextView composition (MP-5) | COLLABORATIVE_WORK (MP-5) | `intergrax/contracts/context_view_*` + `collaborative_work/` | Agent, runtime | MP-5 composer + adapters | **CORRECT** @ EBH-1-R1 (pre-R1: CONTEXT_ENGINEERING — **HISTORICAL**) |
 | `runtime_event` / obs export | OBSERVABILITY | `intergrax/contracts/` | DIAG, T3 | Obs runtime | **CORRECT** |
 | `diagnostics/*` | DIAGNOSTICS | `intergrax/contracts/` | Ops | DIAG | **CORRECT** |
 | `enterprise_reliability/*` | ENTERPRISE_RELIABILITY_LAYER | `intergrax/contracts/` | EE, GE | ERL | **CORRECT** |

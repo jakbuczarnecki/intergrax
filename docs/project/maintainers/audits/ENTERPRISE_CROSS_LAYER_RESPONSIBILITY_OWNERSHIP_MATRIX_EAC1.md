@@ -152,7 +152,8 @@ Authority means: *final canonical semantic ownership over a decision, lifecycle,
 | **AGENT_ASSEMBLY_AUTHORITY** | AGENT_CONTRACTS_AND_ASSEMBLY | Agent contract, assembly, harness kernel (not tool invocation) |
 | **SKILL_COMPOSITION_AUTHORITY** | SKILLS | Skill composition over tools |
 | **APPLICATION_COMPOSITION_AUTHORITY** | TIER3_APPLICATION_ENVIRONMENT | Application manifests, profiles, host wiring composition |
-| **WORKSPACE_COMPOSITION_AUTHORITY** | COLLABORATIVE_WORK | Workspace, membership, delegation, ContextView authority |
+| **WORKSPACE_COMPOSITION_AUTHORITY** | COLLABORATIVE_WORK | Workspace, membership, delegation (not Principal-scoped ContextView — see **PRINCIPAL_SCOPED_CONTEXT_VIEW_AUTHORITY**) |
+| **PRINCIPAL_SCOPED_CONTEXT_VIEW_AUTHORITY** | COLLABORATIVE_WORK (MP-5) | Principal-scoped ContextView visibility & composition semantics ([ADR-MP-006](../../technical/adr/entries/2026-09-17/ADR-MP-006.md)) |
 | **HOST_DEPLOYMENT_LIFECYCLE_AUTHORITY** | APPLICATION_HOSTING | Deployment/hosting lifecycle (host scope; not EE Run tree) |
 | **WORKER_INSTANCE_STATE_AUTHORITY** | AUTONOMOUS_WORK | WorkerDefinition/Instance durable work semantics |
 | **CAPACITY_COORDINATION_AUTHORITY** | ELASTIC_CAPACITY_AND_SCALING | Capacity admission, scale coordination leases |
@@ -209,7 +210,8 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | AGENT_ASSEMBLY_AUTHORITY | AGENT_CONTRACTS_AND_ASSEMBLY | Agent/harness assembly | — | NONE | PASS |
 | SKILL_COMPOSITION_AUTHORITY | SKILLS | Skills over tools | — | NONE | PASS |
 | APPLICATION_COMPOSITION_AUTHORITY | TIER3_APPLICATION_ENVIRONMENT | T3 manifests/profiles | — | NONE | PASS |
-| WORKSPACE_COMPOSITION_AUTHORITY | COLLABORATIVE_WORK | Workspace/ContextView | — | **ADR REQUIRED** (GE admission vs CW policy — CL-EAC1-004) | PASS* |
+| WORKSPACE_COMPOSITION_AUTHORITY | COLLABORATIVE_WORK | Workspace/membership/delegation | — | **ADR REQUIRED** (GE admission vs CW policy — CL-EAC1-004) | PASS* |
+| PRINCIPAL_SCOPED_CONTEXT_VIEW_AUTHORITY | COLLABORATIVE_WORK (MP-5) | Principal-scoped ContextView | — | NONE (distinct from CONTEXT_ASSEMBLY_AUTHORITY) | PASS |
 | CAPACITY_COORDINATION_AUTHORITY | ELASTIC_CAPACITY_AND_SCALING | Leases/admission | — | NONE | PASS |
 | BACKGROUND_DELIVERY_AUTHORITY | BACKGROUND_TASKS | Queues/worker intake | — | NONE | PASS |
 | CAPABILITY_DISCOVERY_AUTHORITY | CAPABILITY_CATALOG_AND_DISCOVERY | Catalog read/rank | — | NONE | PASS |
