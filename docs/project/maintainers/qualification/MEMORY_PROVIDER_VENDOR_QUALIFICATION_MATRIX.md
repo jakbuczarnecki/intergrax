@@ -83,9 +83,9 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 | SessionTurnIndex | `InMemorySessionTurnIndexStore` | in-proc | `SessionTurnIndexStore` | classifiable | NO | NO | qual runner | NO | qual / tests | V2 | REFERENCE ONLY |
 | SessionTurnIndex | `VectorSessionTurnIndexStore` | vector adapter | `SessionTurnIndexStore` | STI EP optional | Qdrant + pgvector + Chroma reconnect proved | client reconnect | unit + 5D/5E/5F E2E | **YES (Qdrant, pgvector, Chroma)** | `enable_session_vector_index` + RAG | V6 | **REAL-VENDOR RECONNECT QUALIFIED (triple vendor)** |
 | Task memory | `InMemoryTaskMemoryStore` | in-proc | `TaskMemoryPersistence` | NO | NO | NO | unit | NO | tests | V2 | REFERENCE ONLY |
-| Task memory | `SQLiteTaskMemoryStore` | sqlite file | `TaskMemoryPersistence` | sqlite opens | YES | partial integ | unit | NO | env `INTERGRAX_TASK_MEMORY_DB` / lab | V4–V5 | DURABILITY QUALIFIED (platform semantics) |
+| Task memory | `SQLiteTaskMemoryStore` | sqlite file | `TaskMemoryPersistence` | sqlite opens | YES | 5G reopen + subprocess | unit + 5G E2E | NO | env `INTERGRAX_TASK_MEMORY_DB` / lab | V5 | **DURABLE RESTART / REOPEN QUALIFIED (5G)** |
 | Organization | `InMemoryOrganizationProfileStore` | in-proc | `OrganizationProfileStore` | NO | NO | NO | unit | NO | mongo path + org flag | V1 | NOT QUALIFIED durable |
-| Organization | `SQLiteOrganizationProfileStore` | sqlite file | `OrganizationProfileStore` | sqlite bundle | YES | integ persist | unit | NO | sqlite integration | V4 | DURABILITY QUALIFIED (no Memory qual runner) |
+| Organization | `SQLiteOrganizationProfileStore` | sqlite file | `OrganizationProfileStore` | sqlite bundle | YES | 5G reopen + subprocess | unit + 5G E2E | NO | sqlite integration / `INTERGRAX_ORGANIZATION_DB` | V5 | **DURABLE RESTART / REOPEN QUALIFIED (5G)** |
 | Conversational | `InMemoryConversationalMemoryStore` | in-proc | `ConversationalMemoryStore` | NO | NO | NO | unit | NO | session/chat | V2 | LEGACY |
 | Conversational | `SQLiteConversationalMemoryStore` | sqlite | `ConversationalMemoryStore` | NO | YES | partial | unit | NO | session | V4 | LEGACY + local durable |
 | Observability | `NoOpMemoryObservabilitySink` | noop | `MemoryObservabilitySink` | inject | n/a | n/a | n/a | NO | default | V1 | REFERENCE ONLY |
@@ -137,6 +137,9 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | Mongo real qual | `test_mem_ent13c_durable_provider_qualification.py::test_real_mongodb_user_profile_qualification_not_certified_without_infra` → **NOT_EXECUTED** |
 | SQLite CRUD unit | `tests/unit/memory/test_sqlite_user_profile_store.py` |
 | Org sqlite integ | `tests/integration/runtime/organization/test_sqlite_organization_profile_store.py` |
+| Task durable restart (5G) | `tests/integration/memory/e2e/test_mem_final_audit_5g_task_memory_durable_restart.py` |
+| Organization durable restart (5G) | `tests/integration/memory/e2e/test_mem_final_audit_5g_organization_memory_durable_restart.py` |
+| Task/Org lab composition restart (5G) | `tests/unit/applications/test_mem_final_audit_5g_task_org_durable_restart_e2e.py` |
 
 **Fake / in-proc markers:** All `InMemory*` stores, `InMemoryDocumentStore` backend, fixture external plugins — never counted as V6.
 
@@ -206,7 +209,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-03 | Entity / Procedural / LH | in-memory only | durable vendor + restart | P2 | AUDIT-5 |
 | GAP-4-04 | UserProfile | Mongo DocumentStore | real-vendor qual execution | **CLOSED (5C)** | `test_mem_final_audit_5c_mongo_user_profile_real_vendor.py` |
 | GAP-4-05 | Organization | Mongo path | durable org store (uses InMemory org on mongo LTM path) | P2 | AUDIT-6 |
-| GAP-4-06 | Task memory | SQLite | restart/failure vendor suite | P2 | AUDIT-5 |
+| GAP-4-06 | Task memory | SQLite | restart/failure vendor suite | **CLOSED (5G)** | `test_mem_final_audit_5g_task_memory_durable_restart.py` |
 | GAP-4-07 | Vector backends | Qdrant **CLOSED (5D)**; pgvector **CLOSED (5E)**; Chroma **CLOSED (5F)** | Memory-scoped STI E2E | — | AUDIT-5 |
 | GAP-4-08 | PostgreSQL | Memory bundle | implementation | P3 | post-RFC |
 

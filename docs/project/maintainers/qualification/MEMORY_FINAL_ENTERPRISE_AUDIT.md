@@ -1654,3 +1654,23 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5G AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5F-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5G.
+
+## MEM-FINAL-AUDIT-5G — Task/Organization Durable Restart Qualification
+
+| Check | Result |
+| ----- | ------ |
+| Task contract | `TaskMemoryPersistence` — scope `tenant_id` + `task_id` + `namespace` + `key` |
+| Organization contract | `OrganizationProfileStore` — scope `organization_id` |
+| Canonical materialization | `open_task_memory_store_at` / `open_organization_profile_store_at` (`integrations.providers.relational_store.sqlite.opens`) |
+| Application wiring | `wire_task_memory_from_profile` · `resolve_memory_platform_wiring` (lab sqlite bundle) |
+| Tenant → org authority | `SessionProfileInstructionResolver.org_instructions_for_session` uses `organization_id=session.tenant_id` |
+| Durable targets | Separate files: `intergrax_task_memory.db` · `intergrax_organization.db` (via `SqliteStorePaths`) |
+| Restart proof kind | **RESTART_REOPEN** (fresh provider graph) + **fresh subprocess** write/read per domain (`mem_final_audit_5g_restart_worker.py`) |
+| Memory qual runner | **Not used** — no `MemoryProviderCapabilityKind` for Task/Org (domain harness only) |
+| Production change | `SQLiteOrganizationProfileStore.close()` lifecycle parity with UserProfile SQLite store |
+| GAP-4-06 | **CLOSED** |
+| Organization durability gap (restart suite) | **CLOSED** |
+
+**Readiness:** READY FOR MEM-FINAL-AUDIT-6 AFTER INDEPENDENT GITHUB AUDIT
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5G muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-6.
