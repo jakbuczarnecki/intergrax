@@ -74,6 +74,8 @@ _P0 = "tests/unit/runtime/architecture/test_enterprise_scale_resilience_p0_inven
 _W4A = "tests/unit/runtime/architecture/test_enterprise_scale_resilience_w4_a_cancellation_qualification.py"
 _P0C5 = "tests/unit/runtime/cancellation/test_p0c5_cancellation_continuity.py"
 _H02 = "tests/qualification/harness_02/test_harness_02_gates.py"
+_H02R1 = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1_qualification.py"
+_TOOL_ADM = "tests/unit/runtime/execution/test_tool_protected_work_admission.py"
 _H01 = "tests/qualification/harness_01/test_harness_01_gates.py"
 _UE9 = "tests/unit/runtime/execution/budget/test_ue_9ar1_preserve_run_budget_across_redelivery.py"
 
