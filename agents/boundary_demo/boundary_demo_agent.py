@@ -105,8 +105,7 @@ class BoundaryDemoAgent(Agent):
             session_manager=SessionManager(storage=InMemorySessionStorage()),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
-        _ = context
+    def get_steps(self) -> list[AgentStep]:
         return [
             AgentStep(
                 step_id="store_demo_record",

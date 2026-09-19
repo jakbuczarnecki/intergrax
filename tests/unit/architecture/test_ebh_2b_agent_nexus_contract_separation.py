@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
-from typing import get_type_hints
+from typing import List, get_type_hints
 
 import pytest
 
@@ -107,13 +107,18 @@ class _MinimalUaepPlugin(UAEPAgent):
             risk_level=AgentRiskLevel.LOW,
         )
 
-    def get_steps(self, context: object | None = None) -> list[AgentStep]:
-        _ = context
+    def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="main", step_name="main", step_index=0)]
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         _ = ctx
         return StepOutput(step_id=step.step_id, summary="ok")
+
+
+def test_uaep_agent_get_steps_signature_purity() -> None:
+    hints = get_type_hints(UAEPAgent.get_steps)
+    assert "context" not in hints
+    assert hints.get("return") is List[AgentStep]
 
 
 def test_minimal_uaep_plugin_protocol() -> None:

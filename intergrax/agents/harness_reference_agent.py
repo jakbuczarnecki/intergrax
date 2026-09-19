@@ -30,7 +30,7 @@ class HarnessReferenceAgent(Agent):
         )
 
     @abstractmethod
-    def get_steps(self, context: object | None = None) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         ...
 
     @abstractmethod

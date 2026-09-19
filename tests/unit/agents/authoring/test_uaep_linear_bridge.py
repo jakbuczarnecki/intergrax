@@ -60,8 +60,7 @@ def test_linear_bridge_get_steps_and_decide() -> None:
         agent_id="linear-test",
         message="hi",
     )
-    ctx = agent.build_context(request)
-    steps = linear_agent_get_steps(agent, ctx)
+    steps = linear_agent_get_steps(agent)
     assert [step.step_id for step in steps] == ["s1", "s2"]
 
     exec_ctx = build_runtime_execution_context_for_tests(

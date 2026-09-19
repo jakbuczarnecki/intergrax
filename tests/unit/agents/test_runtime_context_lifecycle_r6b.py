@@ -87,6 +87,10 @@ class _UaepStubAgent(Agent):
             max_steps=3,
         )
 
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        _ = request
+        raise NotImplementedError("UAEP stub executes via UAEPExecutor")
+
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         _ = request
         runtime_context = _runtime_context()
@@ -99,10 +103,9 @@ class _UaepStubAgent(Agent):
         runtime_context.close = tracked_close  # type: ignore[method-assign]
         return runtime_context
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         if self.fail_in_steps:
             raise RuntimeError("step resolution failed")
-        _ = context
         return [AgentStep(step_id="s1", step_name="only", step_index=0)]
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:

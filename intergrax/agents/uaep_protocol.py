@@ -20,7 +20,7 @@ class UAEPAgent(Protocol):
     def get_contract(self) -> AgentContract:
         ...
 
-    def get_steps(self, context: object | None = None) -> List[AgentStep]:
+    def get_steps(self) -> List[AgentStep]:
         ...
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:

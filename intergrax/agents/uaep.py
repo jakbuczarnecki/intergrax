@@ -383,7 +383,7 @@ class UAEPExecutor:
                 engine_id="default",
             )
     
-            steps = self._resolve_steps(agent, runtime_context, contract.max_steps)
+            steps = self._resolve_steps(agent, contract.max_steps)
             last_output: Optional[StepOutput] = None
             governance: Optional[GovernanceResolution] = None
             runtime_ckpt = request.runtime_checkpoint
@@ -972,12 +972,11 @@ class UAEPExecutor:
     @staticmethod
     def _resolve_steps(
         agent: Agent,
-        runtime_context: RuntimeContext,
         max_steps: Optional[int],
     ) -> List[AgentStep]:
         if not isinstance(agent, UAEPAgent):
             raise TypeError(f"{type(agent).__name__} is not a UAEPAgent")
-        steps = list(agent.get_steps(runtime_context))
+        steps = list(agent.get_steps())
         if not steps:
             raise ValueError(f"{type(agent).__name__}.get_steps() returned no steps.")
         limit = max_steps if max_steps is not None else len(steps)

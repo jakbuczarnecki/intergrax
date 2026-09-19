@@ -194,9 +194,9 @@ class IntergraxAgent(HarnessReferenceAgent, ABC):
     def _ordered_step_ids(self) -> list[str]:
         return linear_ordered_step_ids(self)
 
-    def get_steps(self, context: object | None = None) -> List[AgentStep]:
+    def get_steps(self) -> List[AgentStep]:
         """UAEP internal — authors use ``@step`` + ``on_next_step``, not override."""
-        return linear_agent_get_steps(self, context)
+        return linear_agent_get_steps(self)
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         for _name, method in self._step_methods():

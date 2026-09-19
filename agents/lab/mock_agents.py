@@ -116,8 +116,7 @@ class _MockAgentBase(HarnessReferenceAgent):
             harness=self._harness,
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
-        _ = context
+    def get_steps(self) -> list[AgentStep]:
         contract = self.get_contract()
         return [
             AgentStep(

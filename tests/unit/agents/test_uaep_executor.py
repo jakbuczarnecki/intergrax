@@ -50,8 +50,7 @@ class _UaepStubAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: object | None = None) -> list[AgentStep]:
-        _ = context
+    def get_steps(self) -> list[AgentStep]:
         return [
             AgentStep(step_id="s1", step_name="first", step_index=0),
             AgentStep(step_id="s2", step_name="second", step_index=1),

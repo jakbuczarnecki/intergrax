@@ -21,6 +21,14 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task_memory import InMemoryTaskMemoryStore
+from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.memory.contracts.memory_control import (
+    MemoryControlPlaneScope,
+    MemoryControlRecallRequest,
+    MemoryControlRecallResult,
+    MemoryControlScopeRef,
+)
+from testing_support.memory_control_plane_test_stub import MemoryControlPlaneTestStub
 from testing_support.builder import (
     FakeLLMAdapter,
     build_in_memory_session_manager,
@@ -31,6 +39,21 @@ from testing_support.builder import (
 pytestmark = pytest.mark.gate
 
 _CANONICAL_TENANT = "tenant-a"
+
+
+class _EmptyRecallMemoryPlane(MemoryControlPlaneTestStub):
+    async def recall(
+        self,
+        identity: RequestIdentity,
+        scope: MemoryControlScopeRef,
+        request: MemoryControlRecallRequest,
+    ) -> MemoryControlRecallResult:
+        _ = identity, scope, request
+        return MemoryControlRecallResult(
+            scope=MemoryControlPlaneScope.USER,
+            items=(),
+            reason="no_hits",
+        )
 
 
 def _canonical_identity(*, tenant_id: str = _CANONICAL_TENANT) -> RequestIdentity:
@@ -55,20 +78,26 @@ class _MemoryProbeAgent(Agent):
             max_steps=1,
         )
 
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        _ = request
+        raise NotImplementedError("UAEP probe executes via UAEPExecutor")
+
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
+        wiring = ToolWiringContext()
+        wiring.extras["memory_control_plane"] = _EmptyRecallMemoryPlane()
         config = RuntimeConfig(
             llm_adapter=FakeLLMAdapter(fixed_text="ok"),
             enable_rag=False,
             production_mode=False,
             tenant_id=request.tenant_id,
+            tool_wiring_context=wiring,
         )
         return RuntimeContext.build(
             config=config,
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
-        _ = context
+    def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="s1", step_name="s1", step_index=0)]
 
     async def run_step(
