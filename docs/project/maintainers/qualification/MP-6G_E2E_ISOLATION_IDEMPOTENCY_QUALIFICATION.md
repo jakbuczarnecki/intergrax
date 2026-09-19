@@ -6,7 +6,8 @@
 
 | Milestone | Status |
 | --- | --- |
-| **MP-6G-C1-Q1** | **CLOSED** |
+| **MP-6G-C1-Q1-D1** | **CLOSED / CERTIFIED** (qualification provenance delta correction) |
+| **MP-6G-C1-Q1** | **CLOSED / RECERTIFIED** |
 | **MP-6G-C1** | **CLOSED / RECERTIFIED** |
 | **MP-6G** | **CLOSED / CERTIFIED** |
 | **MP-6H** | **NEXT** |
@@ -20,10 +21,56 @@
 | **initial_mp6g_harness_sha** | `fefd4bf9b2317ebe0f451c37fce8b1db1972203f` — initial MP-6G harness |
 | **mp6g_c1_harness_sha** | `30900bbd566d956fb5df7f16b00e15057a5a7a91` — MP-6G-C1 hardened harness |
 | **qualification_sha** | `5ff90667569bf23c88a4db98d489966e309f4ab7` — exact committed tree for authoritative live PostgreSQL qualification |
-| **qualification_sha ancestry** | `mp6g_c1_harness_sha` is an ancestor of `qualification_sha`; delta is test-support only (`tests/integration/collaborative_work/test_mp6g_postgresql_e2e_qualification.py` per-scenario isolated PostgreSQL schemas). **No MP-6G production semantic change.** No MP-6A–F production semantic change. |
+| **qualification_sha ancestry** | `mp6g_c1_harness_sha` is an ancestor of `qualification_sha` (see **Git provenance and delta scope** below). |
 | **evidence_update_commit_sha** | _recorded in final evidence commit after this document update (not equal to `qualification_sha`)_ |
 
 > **Evidence vs qualification:** Auditors must bind execution results to `qualification_sha`. Evidence markdown may land in a later commit.
+
+## Git provenance and delta scope
+
+`mp6g_c1_harness_sha` is an ancestor of `qualification_sha`.
+
+| Git field | Value |
+| --- | --- |
+| **base (`mp6g_c1_harness_sha`)** | `30900bbd566d956fb5df7f16b00e15057a5a7a91` |
+| **head (`qualification_sha`)** | `5ff90667569bf23c88a4db98d489966e309f4ab7` |
+| **merge-base** | `30900bbd566d956fb5df7f16b00e15057a5a7a91` |
+| **ahead_by** | 2 |
+
+### Full ancestry range (`30900bbd...` → `5ff906...`)
+
+The **full ancestry range** from `mp6g_c1_harness_sha` to `qualification_sha` is **NOT test-support only**.
+
+It contains:
+
+- **unrelated parallel-session changes** outside the MP-6 Collaborative Activity qualification path (category: memory / plugin / application wiring; committed between harness and qualification head);
+- the **MP-6G PostgreSQL qualification test-support correction** (per-scenario schema isolation in the integration qualification harness).
+
+**Unrelated ancestry changes outside MP-6:** **present** (committed production and test changes on the memory/plugin/application wiring path; not part of MP-6A–G collaborative-activity semantics).
+
+Do **not** conflate this full ancestry delta with the qualification-fix commit alone.
+
+### Qualification-fix commit (`5ff90667569bf23c88a4db98d489966e309f4ab7`)
+
+The **qualification commit** itself is **test-support only**.
+
+It changes only:
+
+```text
+tests/integration/collaborative_work/test_mp6g_postgresql_e2e_qualification.py
+```
+
+Semantics: per-scenario PostgreSQL schema isolation, with shared schema only for concurrent duplicate/distinct pair qualification scenarios.
+
+**MP-6 production code changes introduced by qualification-fix commit:** **NONE**
+
+**No MP-6A–G production semantic delta** was introduced by the qualification correction itself.
+
+### Qualification validity (exact committed tree)
+
+The authoritative PostgreSQL execution remains bound to the complete `qualification_sha` tree `5ff90667569bf23c88a4db98d489966e309f4ab7`.
+
+Unrelated changes present in that tree were committed and are therefore part of the **exact qualified tree** (clean exact committed checkout — not selective-tree qualification and not local working-tree contamination). Those unrelated commits do **not** alter the MP-6 Collaborative Activity path covered by this qualification evidence.
 
 ## Hermeticity and import isolation
 
@@ -197,11 +244,15 @@ Provider-specific qualification setup only: `cast(PostgreSQLCollaborativeWorkSto
 
 ## Production code changes at qualification
 
+**MP-6 production code changes introduced by qualification-fix commit:**
+
 ```text
 NONE
 ```
 
-Test-support change at `qualification_sha` relative to `mp6g_c1_harness_sha`: PostgreSQL qualification harness per-scenario schema isolation only.
+**Full ancestry range** (`mp6g_c1_harness_sha` → `qualification_sha`): includes unrelated committed changes outside MP-6 (see **Git provenance and delta scope**). That range is **not** test-support only.
+
+**Qualification-fix commit** (`5ff90667569bf23c88a4db98d489966e309f4ab7`): test-support only — `tests/integration/collaborative_work/test_mp6g_postgresql_e2e_qualification.py` per-scenario isolated PostgreSQL schemas.
 
 ## Findings
 
