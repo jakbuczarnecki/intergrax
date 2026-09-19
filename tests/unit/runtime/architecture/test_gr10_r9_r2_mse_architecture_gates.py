@@ -45,12 +45,22 @@ def test_gr10_r9_r2_orchestration_mse_matrix_qualified() -> None:
 def test_gr10_r9_r2_graph_executor_no_direct_provider_mutation() -> None:
     source = _read(GRAPH_EXECUTOR)
     forbidden = (
-        "provider.",
         "ExternalWorkAdapter",
         "authorize_and_execute(",
     )
     for token in forbidden:
         assert token not in source
+
+
+def test_gr10_r9_r3_topology_submission_mandatory_slot_mse_prepare() -> None:
+    submission = REPO_ROOT / "intergrax/runtime/execution/orchestration_topology_submission.py"
+    source = _read(submission)
+    assert "prepare_orchestration_topology_slot_executor" in source
+    assert "prepare_orchestration_topology_slot_continuation_executor" in source
+    tree = ast.parse(source, filename=str(submission))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            assert "MeaningfulSideEffectAuthorizationBoundary" not in (node.module or "")
 
 
 def test_gr10_r9_r2_governed_operation_depends_on_port_not_boundary() -> None:

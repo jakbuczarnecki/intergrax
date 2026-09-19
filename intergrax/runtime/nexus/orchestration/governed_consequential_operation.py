@@ -16,6 +16,7 @@ from intergrax.contracts.meaningful_side_effect_authorization import (
     assert_consistent_meaningful_side_effect_authorization_result,
 )
 from intergrax.contracts.orchestration_topology import (
+    OrchestrationSlotContinuationExecutor,
     OrchestrationSlotExecutionError,
     OrchestrationSlotExecutor,
     OrchestrationSlotFailure,
@@ -48,6 +49,7 @@ class GovernedOrchestrationSlotExecutor(Generic[PayloadT, ResultT]):
         [OrchestrationSlotId, PayloadT],
         CollaborativeWorkEnforcementRequest,
     ]
+    is_consequential_slot: Callable[[OrchestrationSlotId, PayloadT], bool] | None = None
     source_agent_id: str = "platform.orchestration.graph_slot"
 
     async def execute_slot(
@@ -56,6 +58,11 @@ class GovernedOrchestrationSlotExecutor(Generic[PayloadT, ResultT]):
         slot_id: OrchestrationSlotId,
         payload: PayloadT,
     ) -> ResultT:
+        if self.is_consequential_slot is not None and not self.is_consequential_slot(
+            slot_id,
+            payload,
+        ):
+            return await self.inner.execute_slot(slot_id=slot_id, payload=payload)
         enforcement_request = self.build_enforcement_request(slot_id, payload)
         try:
             authorize_orchestration_consequential_effect(
@@ -76,6 +83,53 @@ class GovernedOrchestrationSlotExecutor(Generic[PayloadT, ResultT]):
             )
             raise OrchestrationSlotExecutionError(code=code, message=str(exc)) from exc
         return await self.inner.execute_slot(slot_id=slot_id, payload=payload)
+
+
+@dataclass(frozen=True, slots=True)
+class GovernedOrchestrationSlotContinuationExecutor(Generic[PayloadT, ResultT]):
+    """Wrap slot continuation with fresh canonical MSE before physical effect."""
+
+    inner: OrchestrationSlotContinuationExecutor[PayloadT, ResultT]
+    meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None
+    production_mode: bool
+    build_enforcement_request: Callable[
+        [OrchestrationSlotId, PayloadT],
+        CollaborativeWorkEnforcementRequest,
+    ]
+    is_consequential_slot: Callable[[OrchestrationSlotId, PayloadT], bool] | None = None
+    source_agent_id: str = "platform.orchestration.graph_slot"
+
+    async def continue_slot(
+        self,
+        *,
+        slot_id: OrchestrationSlotId,
+        payload: PayloadT,
+    ) -> ResultT:
+        if self.is_consequential_slot is not None and not self.is_consequential_slot(
+            slot_id,
+            payload,
+        ):
+            return await self.inner.continue_slot(slot_id=slot_id, payload=payload)
+        enforcement_request = self.build_enforcement_request(slot_id, payload)
+        try:
+            authorize_orchestration_consequential_effect(
+                self.meaningful_side_effect_authorization,
+                enforcement_request=enforcement_request,
+                production_mode=self.production_mode,
+                source_agent_id=self.source_agent_id,
+                source_step_id=str(slot_id),
+            )
+        except (
+            OrchestrationConsequentialEffectBlockedError,
+            MeaningfulSideEffectAuthorizationRequiredError,
+        ) as exc:
+            code = (
+                "meaningful_side_effect_not_configured"
+                if isinstance(exc, MeaningfulSideEffectAuthorizationRequiredError)
+                else "meaningful_side_effect_blocked"
+            )
+            raise OrchestrationSlotExecutionError(code=code, message=str(exc)) from exc
+        return await self.inner.continue_slot(slot_id=slot_id, payload=payload)
 
 
 def authorize_orchestration_consequential_effect(
@@ -174,6 +228,7 @@ def orchestration_slot_outcome_from_blocked_effect(
 
 
 __all__ = [
+    "GovernedOrchestrationSlotContinuationExecutor",
     "GovernedOrchestrationSlotExecutor",
     "OrchestrationConsequentialEffectBlockedError",
     "authorize_orchestration_consequential_effect",

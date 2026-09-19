@@ -288,10 +288,9 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
         "MSE",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R9-R2: production orchestration consequential paths inventoried; Tier-1 graph runners "
-        "route physical effects through RuntimeToolInvoker MSE, PhysicalDelegationGovernanceBoundary, "
-        "External Work MSE, or GovernedOrchestrationSlotExecutor + MeaningfulSideEffectAuthorizationPort "
-        "(fail-closed; no provider mutation bypass in GraphExecutor).",
+        "GR-10-R9-R3: canonical topology submit/recovery/continuation enforce mandatory MSE for "
+        "consequential custom slots via composition-injected OrchestrationTopologySlotMsePolicy; "
+        "delegated fan-out PhysicalDelegation boundary unchanged; fail-closed production.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Decision-bound effect",
@@ -520,6 +519,21 @@ GR10_R9_R1_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
 )
 
 
+GR10_R9_R3_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-R10 — ORCHESTRATION decision-bound consequential effect coverage",
+    strategy="ORCHESTRATION",
+    capability="Decision-bound effect",
+    exact_blocker=(
+        "Not all production orchestration consequential paths bind DecisionRequirementPolicy before "
+        "effect despite canonical topology MSE enforcement (GR-10-R9-R3)."
+    ),
+    why_highest=(
+        "Highest remaining ORCHESTRATION applicable capability row after GR-10-R9-R3 topology slot MSE "
+        "enforcement closure."
+    ),
+)
+
+
 GR10_R9_R2_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
     task_name="GR-10-R10 — ORCHESTRATION decision-bound consequential effect coverage",
     strategy="ORCHESTRATION",
@@ -623,18 +637,32 @@ GR10_ORCHESTRATION_MSE_NON_TOOL_INVENTORY: tuple[Gr10OrchestrationMseNonToolInve
         "C — N/A (non-consequential read path)",
     ),
     Gr10OrchestrationMseNonToolInventoryRow(
-        "Host-defined OrchestrationSlotExecutor (non-fan-out custom slot)",
+        "CanonicalOrchestrationTopologySubmissionPort.submit (custom slot)",
         True,
         True,
-        "GovernedOrchestrationSlotExecutor + MeaningfulSideEffectAuthorizationPort",
-        "A — consequential + canonical MSE when host wires governed wrapper",
+        "OrchestrationTopologySlotMsePolicy + MeaningfulSideEffectAuthorizationPort",
+        "A — consequential + canonical MSE (mandatory composition enforcement)",
     ),
     Gr10OrchestrationMseNonToolInventoryRow(
-        "Uncertified raw OrchestrationSlotExecutor in production host",
+        "CanonicalOrchestrationTopologySubmissionPort.recover_failed_slot",
+        True,
+        True,
+        "OrchestrationTopologySlotMsePolicy + fresh MeaningfulSideEffectAuthorizationPort",
+        "A — consequential + fresh canonical MSE on recovery",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "CanonicalOrchestrationTopologySubmissionPort.continue_slot (custom continuation)",
+        True,
+        True,
+        "OrchestrationTopologySlotMsePolicy + fresh MeaningfulSideEffectAuthorizationPort",
+        "A — consequential + fresh canonical MSE on continuation physical effect",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "Uncertified raw OrchestrationSlotExecutor bypassing canonical submission port",
         False,
         True,
-        "N/A — not Tier-1 production ORCHESTRATION path",
-        "E — dead/non-production (host certification GR-11)",
+        "N/A — not canonical production topology path",
+        "E — non-production (bypasses CanonicalOrchestrationTopologySubmissionPort)",
     ),
 )
 
