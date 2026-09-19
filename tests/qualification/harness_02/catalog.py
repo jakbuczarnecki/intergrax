@@ -111,7 +111,6 @@ _H02R1C = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1c_q
 _H02R2 = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r2_qualification.py"
 _TOOL_ADM = "tests/unit/runtime/execution/test_tool_protected_work_admission.py"
 _H01 = "tests/qualification/harness_01/test_harness_01_gates.py"
-_UE9 = "tests/unit/runtime/execution/budget/test_ue_9ar1_preserve_run_budget_across_redelivery.py"
 
 
 HARNESS_02_PROPAGATION_MATRIX: tuple[Harness02PropagationRow, ...] = (
@@ -130,8 +129,8 @@ HARNESS_02_PROPAGATION_MATRIX: tuple[Harness02PropagationRow, ...] = (
         source="parent ActiveExecutionBudgetState",
         boundary="ChildExecutionRunner",
         propagated_state="inherited global_deadline_monotonic (no extension)",
-        enforcement="inheritance only; no pre-admission monotonic check",
-        terminal_result="n/a at child gate",
+        enforcement="protected-work admission before mint/grant; narrowed deadline_at_utc projection",
+        terminal_result="ExecutionProtectedWorkAdmissionDeniedError on expired/cancelled",
         evidence=_nid(_H02, "test_harness_02_child_inherits_parent_global_deadline"),
         status="CANONICAL",
     ),
@@ -140,8 +139,8 @@ HARNESS_02_PROPAGATION_MATRIX: tuple[Harness02PropagationRow, ...] = (
         source="root deadline D",
         boundary="nested ChildExecutionRunner",
         propagated_state="same D at child and grandchild",
-        enforcement="inheritance only",
-        terminal_result="n/a at child gate",
+        enforcement="transitive narrowing + admission on each child delegate",
+        terminal_result="ExecutionProtectedWorkAdmissionDeniedError on expired/cancelled",
         evidence=_nid(_H02, "test_harness_02_grandchild_preserves_root_global_deadline"),
         status="CANONICAL",
     ),
@@ -207,13 +206,13 @@ HARNESS_02_PROPAGATION_MATRIX: tuple[Harness02PropagationRow, ...] = (
     ),
     Harness02PropagationRow(
         flow_id="H02-redelivery-resume",
-        source="durable RunBudget ledger",
-        boundary="worker redelivery / checkpoint resume",
-        propagated_state="ledger dimensional remaining; monotonic deadline reminted on bind",
-        enforcement="UE-9AR1 token/tool remaining; wall SLA not monotonic-durable",
-        terminal_result="retry blocked; resume wall clock may reset with new RuntimeState",
-        evidence=_nid(_UE9, "test_attempt_two_gets_remaining_budget_after_attempt_one_consumption"),
-        status="GAP",
+        source="ExecutionDeadlineAuthoritySnapshot (tenant_id + run_id)",
+        boundary="ExecutionRuntime.bind / worker redelivery",
+        propagated_state="same deadline_at_utc; fresh process-local monotonic projection",
+        enforcement="resolve_for_root load-or-create; fail-closed if missing on materialized run",
+        terminal_result="EXPIRED blocks protected work; UE-9AR1 ledger counters preserved",
+        evidence=_nid(_H02R2, "test_q15_3_redelivery_fresh_started_at_same_expired_deadline"),
+        status="CANONICAL",
     ),
     Harness02PropagationRow(
         flow_id="H02-parallel-child-cancellation",
@@ -230,18 +229,18 @@ HARNESS_02_PROPAGATION_MATRIX: tuple[Harness02PropagationRow, ...] = (
 
 HARNESS_02_FINDINGS: tuple[Harness02FindingRow, ...] = (
     Harness02FindingRow(
-        finding="global_deadline_monotonic is not checked before child admission, tool invoke, or LLM call",
-        severity="BLOCKER",
+        finding="Protected-work admission gates child, tool, and LLM paths via ExecutionProtectedWorkAdmissionPort",
+        severity="INTENTIONAL DESIGN",
         flow="H02-tool-pre-effect / H02-child-deadline",
-        consequence="expired monotonic authority can still start new protected work on paths without enforce_wall_time_budget",
-        required_action="contract-driven pre-effect gate using remaining execution deadline (ADR on unification with BudgetEnforcer wall clock)",
+        consequence="expired/cancelled authority blocks new work at admission (HARNESS-02-R1/R1B)",
+        required_action="none (closed)",
     ),
     Harness02FindingRow(
-        finding="RuntimeToolInvoker checks cooperative cancellation only for attempt>1 inside _execute_with_policy",
-        severity="BLOCKER",
+        finding="RuntimeToolInvoker enforces cooperative cancellation before each physical attempt",
+        severity="INTENTIONAL DESIGN",
         flow="H02-tool-pre-effect",
-        consequence="first physical tool attempt may run after cancellation_requested",
-        required_action="check CancellationCoordinator (or should_cancel) in _prepare_invocation before side effect",
+        consequence="cancellation before first attempt and on retries (Q08)",
+        required_action="none (closed)",
     ),
     Harness02FindingRow(
         finding="enforce_wall_time_budget is not called from record_tool_call_and_enforce; only iterative tool loop (iter>=1)",
@@ -258,11 +257,11 @@ HARNESS_02_FINDINGS: tuple[Harness02FindingRow, ...] = (
         required_action="closed in HARNESS-02-R2: enforce_wall_time_budget delegates to canonical monotonic authority",
     ),
     Harness02FindingRow(
-        finding="Durable redelivery preserves ledger counters but remints process-local global_deadline_monotonic from full RunBudget",
-        severity="BLOCKER",
+        finding="Durable redelivery loads ExecutionDeadlineAuthoritySnapshot; projection reminted without extending deadline_at_utc",
+        severity="INTENTIONAL DESIGN",
         flow="H02-redelivery-resume",
-        consequence="worker restart/resume can grant fresh monotonic wall allowance inconsistent with global SLA",
-        required_action="durable absolute deadline or remaining-wall contract on resume (architecture decision)",
+        consequence="same run keeps one durable deadline; expired runs stay expired on new worker (Q14, Q15.3)",
+        required_action="none (closed)",
     ),
     Harness02FindingRow(
         finding="CancellationCoordinator remains task-metadata coordination; canonical execution cancel flows through graph_runner + terminal store",

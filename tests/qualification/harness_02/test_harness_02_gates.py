@@ -234,11 +234,22 @@ def test_harness_02_llm_path_uses_contract_deadline_guard() -> None:
     assert "peek_active_execution_global_deadline" not in text
 
 
-def test_harness_02_findings_include_blockers_for_enforcement_gaps() -> None:
-    blocker_flows = {
-        row.flow
-        for row in HARNESS_02_FINDINGS
-        if row.severity == "BLOCKER"
-    }
-    assert "H02-tool-pre-effect" in blocker_flows
-    assert "H02-redelivery-resume" in blocker_flows
+def test_harness_02_findings_have_no_unresolved_blockers() -> None:
+    blockers = [row for row in HARNESS_02_FINDINGS if row.severity == "BLOCKER"]
+    assert blockers == []
+
+
+def test_harness_02_final_closure_gate() -> None:
+    """Aggregate qualification evidence for HARNESS-02 closure (no GAP flows, all Q PASS)."""
+    gap_flows = [
+        row.flow_id for row in HARNESS_02_PROPAGATION_MATRIX if row.status == "GAP"
+    ]
+    assert gap_flows == []
+    catalog_ids = {row.qualification_id for row in HARNESS_02_R1_QUALIFICATION_MATRIX}
+    assert HARNESS_02_R1_REQUIRED_QUALIFICATION_IDS <= catalog_ids
+    for row in HARNESS_02_R1_QUALIFICATION_MATRIX:
+        if row.qualification_id in HARNESS_02_R1_REQUIRED_QUALIFICATION_IDS:
+            assert row.status == "PASS"
+    assert any(row.qualification_id == "Q15" and row.status == "PASS" for row in HARNESS_02_R1_QUALIFICATION_MATRIX)
+    assert any(row.qualification_id == "Q28" and row.status == "PASS" for row in HARNESS_02_R1_QUALIFICATION_MATRIX)
+    assert any(row.qualification_id == "Q29" and row.status == "PASS" for row in HARNESS_02_R1_QUALIFICATION_MATRIX)
