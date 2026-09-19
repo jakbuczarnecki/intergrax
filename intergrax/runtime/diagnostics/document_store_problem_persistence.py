@@ -11,6 +11,7 @@ from datetime import UTC, datetime, timedelta
 
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
+    DocumentQueryCursorCodec,
     DocumentRecord,
     DocumentStore,
 )

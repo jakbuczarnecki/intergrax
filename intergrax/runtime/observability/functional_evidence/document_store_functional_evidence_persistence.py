@@ -8,6 +8,7 @@ from __future__ import annotations
 from intergrax.contracts.execution_identity import AttemptId, RunId, TaskId, validate_run_id, validate_task_id
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
+    DocumentQueryCursorCodec,
     DocumentRecord,
     DocumentStore,
 )
