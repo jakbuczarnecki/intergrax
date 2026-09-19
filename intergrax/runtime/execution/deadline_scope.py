@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Active execution deadline projection binding (process-local)."""
+"""Active execution deadline projection binding (process-local runtime scope)."""
 
 from __future__ import annotations
 

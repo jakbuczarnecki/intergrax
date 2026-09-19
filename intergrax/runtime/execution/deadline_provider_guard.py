@@ -1,18 +1,18 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Shared provider-call guards derived from active execution deadline scope."""
+"""Provider-call guards derived from active execution deadline scope (runtime)."""
 
 from __future__ import annotations
 
-from intergrax.contracts.execution_deadline.active_scope import (
-    peek_active_execution_deadline_projection,
-    peek_active_execution_protected_work_admission,
-)
 from intergrax.contracts.execution_deadline.admission import (
     ExecutionProtectedWorkAdmissionResult,
 )
 from intergrax.contracts.execution_deadline.provider_timeout import (
     effective_provider_timeout_seconds,
+)
+from intergrax.runtime.execution.deadline_scope import (
+    peek_active_execution_deadline_projection,
+    peek_active_execution_protected_work_admission,
 )
 
 
