@@ -1896,3 +1896,103 @@ Documentation structurally complete; **not** formally closed until 7-R reconcili
 **READY FOR MEM-FINAL-AUDIT-8 AFTER INDEPENDENT GITHUB AUDIT**
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-7-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-8.
+
+---
+
+## MEM-FINAL-AUDIT-7-R2 — Final Exact-SHA Documentation Evidence Closure
+
+| Field | Value |
+| ----- | ----- |
+| HEAD before | `fe79e01769853eb3655bfd90e9f26e1be6e1dcdd` |
+| Branch | `development` |
+| Working tree at start | **clean** |
+| Foreign WIP at start | **none** |
+| `a24c251c0768c42b1c100e1228d7e4a67eb98cd9` ancestor | **YES** |
+| `509e8b5394b1adb8c1dec7aed217dacbdc82231f` ancestor | **YES** |
+| **VERIFIED_SHA** | `c7b767ef97e43186be6fdbfef5e2fe519af72c17` |
+| Certification commit message | `docs(memory): finalize documentation certification snapshot` |
+
+### Intervening commit (7-R evidence chain gap)
+
+| SHA | Classification |
+| --- | -------------- |
+| `8a3dc829327f68b7e5753257de484cac069d48af` | **Memory-irrelevant** — orchestration topology MSE composition (`intergrax/runtime/execution/*`, governance qual tests only) |
+
+### Later commits (`509e8b539` → pre-R2 `fe79e0176`)
+
+| SHA | Summary | Memory-relevant |
+| --- | ------- | ----------------- |
+| `3c7b45d63` | collaborative-work MP-6E scoped read | **NO** |
+| `05f7def66` | public agent contracts vs nexus | **NO** |
+| `c7f6aad16` | deadline authority wiring | **NO** |
+| `8247dda96` | deadline runtime modules | **NO** |
+| `fe79e0176` | echo agent | **NO** |
+
+### Production / contract / test behavior changes (R2)
+
+| Category | R2 delta |
+| -------- | -------- |
+| Production | **NONE** |
+| Contracts | **NONE** |
+| Test behavior | **NONE** |
+
+### Canonical docs (R2 certification commit)
+
+| File | Change |
+| ---- | ------ |
+| `docs/project/architecture/MEMORY_ARCHITECTURE.md` | Final **DOCUMENTATION CERTIFIED** status markers (7-R2) |
+| `docs/project/architecture/MEMORY.md` | Hub status — certified |
+
+### Truth reconciliation preserved (7-R)
+
+| Check | Result |
+| ----- | ------ |
+| Mongo UserProfile V6 reconnect (`document_store.user_profile` + `mongodb`) | **confirmed** |
+| Service restart / HA / power-loss / crash recovery | **NOT CERTIFIED** |
+| Canonical authority ≠ durable provider | **confirmed** |
+| InMemory may be canonical without durable | **confirmed** |
+| Scope matrix USER/TASK/SESSION | **confirmed** |
+| Provider summary (SQLite V5, Mongo V6, STI V6, Task/Org V5, Control Plane) | **confirmed** |
+| Known non-guarantees | **confirmed** |
+
+### Contradiction scan (at `VERIFIED_SHA`)
+
+Stale-claim greps on `docs/project/architecture/MEMORY*`: **no current-status regressions** (hits only **Historical (MEM-ENT-15)** superseded context and provider-extension durable-harness guidance).
+
+### Verification (HEAD stable at `VERIFIED_SHA` throughout)
+
+| Step | Result |
+| ---- | ------ |
+| `git diff --check` (`VERIFIED_SHA^..VERIFIED_SHA`) | **PASS** (no output) |
+| Behavioral smoke `tests/qualification/memory_behavior` | **47 passed** |
+| Composition sanity | **16 passed** (`test_mem_audit2_r2_host_memory_control_plane_composition`, `test_mem_final_audit_5g_task_org_durable_restart_e2e`, `test_platform_plugin_evidence_wiring` minus `@pytest.mark.no_ci` legal host, `test_acceptance_memory_ltm_consolidation`) |
+| Docs validation | **manual** (relative links / headings / tables — no repo validator) |
+| Mermaid validation | **manual syntax sanity** (no local validator) |
+
+### P0 / P1
+
+| Severity | Count |
+| -------- | ----- |
+| P0 | **NONE** |
+| P1 | **NONE** |
+
+### P2 / P3
+
+| ID | Note |
+| -- | ---- |
+| P2 | Optional diagram polish / historical verbose sections unchanged |
+| P3 | Local foreign WIP (orchestration topology tests) appeared **after** certification commit — **unstaged**, not part of `VERIFIED_SHA` or evidence chain |
+
+### Classification
+
+**MEMORY ARCHITECTURE — DOCUMENTATION CERTIFIED**
+
+### Verdict
+
+**PASS — MEM-FINAL-AUDIT-7 DOCUMENTATION & VISUAL ARCHITECTURE CERTIFIED**
+
+### Readiness
+
+**READY FOR MEM-FINAL-AUDIT-8 AFTER INDEPENDENT GITHUB AUDIT**
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-7-R2 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-8.
