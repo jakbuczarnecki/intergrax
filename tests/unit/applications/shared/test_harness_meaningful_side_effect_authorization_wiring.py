@@ -47,6 +47,9 @@ from intergrax.collaborative_work.persistence import CollaborativeWorkRepositori
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
+from intergrax.runtime.governance.decision_requirement_policy import (
+    PermissiveDecisionRequirementPolicy,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -129,7 +132,10 @@ def test_strict_default_uses_provider_resolver_not_sqlite(tmp_path: Path) -> Non
         "intergrax.applications._shared.harness_meaningful_side_effect_authorization_wiring.resolve_collaborative_work_repositories",
         return_value=bundle,
     ) as resolve_mock:
-        wiring = resolve_harness_host_meaningful_side_effect_authorization_wiring(env)
+        wiring = resolve_harness_host_meaningful_side_effect_authorization_wiring(
+            env,
+            decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
+        )
     resolve_mock.assert_called_once_with(env.integration_profile)
     assert wiring.authorization_port is not None
     assert isinstance(wiring.authorization_port, MeaningfulSideEffectAuthorizationPort)
@@ -145,6 +151,7 @@ def test_build_port_with_injected_repositories_does_not_resolve_provider() -> No
         port = build_harness_host_meaningful_side_effect_authorization_port(
             env,
             collaborative_work_repositories=bundle,
+            decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
         )
     resolve_mock.assert_not_called()
     assert isinstance(port, MeaningfulSideEffectAuthorizationPort)
@@ -172,6 +179,7 @@ def test_borrowed_collaborative_work_repositories_are_not_host_owned() -> None:
     wiring = resolve_harness_host_meaningful_side_effect_authorization_wiring(
         env,
         collaborative_work_repositories=bundle,
+        decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
     )
     assert wiring.authorization_port is not None
     assert wiring.owned_collaborative_work_persistence is None
@@ -363,5 +371,20 @@ def test_strict_default_profile_reaches_resolver_without_host_mutation(tmp_path:
         resolve_harness_host_meaningful_side_effect_authorization_wiring(
             env,
             collaborative_work_integration_profile=explicit_profile,
+            decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
         )
     resolve_mock.assert_called_once_with(explicit_profile)
+
+
+def test_strict_harness_missing_decision_policy_fails_closed() -> None:
+    from intergrax.runtime.governance.orchestration_decision_bound_effect_composition import (
+        OrchestrationDecisionBoundCompositionError,
+    )
+
+    env = _strict_product_env()
+    bundle = _in_memory_core_bundle()
+    with pytest.raises(OrchestrationDecisionBoundCompositionError):
+        resolve_harness_host_meaningful_side_effect_authorization_wiring(
+            env,
+            collaborative_work_repositories=bundle,
+        )

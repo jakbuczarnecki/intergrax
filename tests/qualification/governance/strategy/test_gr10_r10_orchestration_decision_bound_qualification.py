@@ -74,6 +74,17 @@ def test_gr10_r10_composition_module_exports_production_builder() -> None:
     source = _COMPOSITION.read_text(encoding="utf-8-sig")
     assert "def build_production_orchestration_meaningful_side_effect_authorization_boundary" in source
     assert "resolve_orchestration_decision_requirement_policy" in source
+    tree = ast.parse(source, filename=str(_COMPOSITION))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == (
+            "resolve_orchestration_decision_requirement_policy"
+        ):
+            body = ast.get_source_segment(source, node) or ""
+            assert "return PermissiveDecisionRequirementPolicy()" not in body
+            assert "default_orchestration_decision_requirement_policy()" not in body
+            break
+    else:
+        raise AssertionError("resolve_orchestration_decision_requirement_policy not found")
 
 
 def test_gr10_r10_mse_boundary_enforces_decision_before_gate_ast() -> None:

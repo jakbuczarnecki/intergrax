@@ -34,9 +34,14 @@ class OrchestrationDecisionBoundCompositionError(RuntimeError):
     """Fail closed when production orchestration cannot bind DecisionRequirementPolicy."""
 
 
-def default_orchestration_decision_requirement_policy() -> DecisionRequirementPolicy:
-    """Explicit production default — host rules may mark specific effects REQUIRED (GR-6-R1)."""
+def lab_orchestration_decision_requirement_policy() -> DecisionRequirementPolicy:
+    """NON-PRODUCTION — explicit permissive policy for lab/test composition only (GR-10-R10-R1)."""
     return PermissiveDecisionRequirementPolicy()
+
+
+def default_orchestration_decision_requirement_policy() -> DecisionRequirementPolicy:
+    """Deprecated alias — use ``lab_orchestration_decision_requirement_policy`` (non-production)."""
+    return lab_orchestration_decision_requirement_policy()
 
 
 def resolve_orchestration_decision_requirement_policy(
@@ -44,12 +49,15 @@ def resolve_orchestration_decision_requirement_policy(
     *,
     production_mode: bool,
 ) -> DecisionRequirementPolicy:
-    """Resolve injectable policy — production composition always binds an explicit policy instance."""
+    """Resolve injectable policy — production composition requires an explicit host/domain policy."""
     if explicit is not None:
         return explicit
     if production_mode:
-        return default_orchestration_decision_requirement_policy()
-    return PermissiveDecisionRequirementPolicy()
+        raise OrchestrationDecisionBoundCompositionError(
+            "production orchestration requires explicit DecisionRequirementPolicy; "
+            "missing configuration is not interpreted as NOT_REQUIRED",
+        )
+    return lab_orchestration_decision_requirement_policy()
 
 
 def build_production_orchestration_meaningful_side_effect_authorization_boundary(
@@ -93,5 +101,6 @@ __all__ = [
     "OrchestrationDecisionBoundCompositionError",
     "build_production_orchestration_meaningful_side_effect_authorization_boundary",
     "default_orchestration_decision_requirement_policy",
+    "lab_orchestration_decision_requirement_policy",
     "resolve_orchestration_decision_requirement_policy",
 ]

@@ -94,6 +94,7 @@ from intergrax.collaborative_work.persistence import CollaborativeWorkMaterializ
 from intergrax.applications._shared.harness_meaningful_side_effect_authorization_wiring import (
     resolve_harness_host_meaningful_side_effect_authorization_wiring,
 )
+from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
@@ -253,6 +254,7 @@ def build_harness_host_runtime(
     application_skill_registry: SkillRegistry | None = None,
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort
     | None = None,
+    orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None,
     collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
     collaborative_work_integration_profile: IntegrationProfile | None = None,
 ) -> HarnessHostRuntime:
@@ -377,6 +379,7 @@ def build_harness_host_runtime(
             explicit=meaningful_side_effect_authorization,
             collaborative_work_repositories=collaborative_work_repositories,
             collaborative_work_integration_profile=collaborative_work_integration_profile,
+            decision_requirement_policy=orchestration_decision_requirement_policy,
         )
     )
     resolved_meaningful_side_effect_authorization = (

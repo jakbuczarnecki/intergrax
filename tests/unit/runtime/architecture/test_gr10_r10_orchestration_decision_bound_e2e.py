@@ -94,8 +94,8 @@ from intergrax.runtime.governance.decision_requirement_policy import (
     decision_governed_side_effect_requirement_policy,
 )
 from intergrax.runtime.governance.orchestration_decision_bound_effect_composition import (
+    OrchestrationDecisionBoundCompositionError,
     build_production_orchestration_meaningful_side_effect_authorization_boundary,
-    default_orchestration_decision_requirement_policy,
 )
 from intergrax.runtime.nexus.orchestration.governed_consequential_operation import (
     GovernedOrchestrationSlotExecutor,
@@ -303,7 +303,7 @@ def _orchestration_boundary(
 
 
 def test_production_orchestration_composition_binds_explicit_policy() -> None:
-    policy = default_orchestration_decision_requirement_policy()
+    policy = PermissiveDecisionRequirementPolicy()
     task_id, run_id, attempt_id, execution_id = default_gr3_identity_bundle()
     boundary = _orchestration_boundary(
         task_id=task_id,
@@ -311,6 +311,20 @@ def test_production_orchestration_composition_binds_explicit_policy() -> None:
         decision_requirement_policy=policy,
     )
     assert boundary._decision_requirement_policy is policy
+
+
+def test_missing_production_orchestration_decision_policy_fails_closed() -> None:
+    with pytest.raises(OrchestrationDecisionBoundCompositionError):
+        build_production_orchestration_meaningful_side_effect_authorization_boundary(
+            profile_repository=InMemoryCollaborativeOperationPolicyProfileRepository(),
+            membership_repository=InMemoryWorkspaceMembershipRepository(),
+            principal_authority_repository=InMemoryPrincipalAuthorityRepository(),
+            delegation_repository=InMemoryAuthorityDelegationRepository(),
+            collaborative_policy_repository=InMemoryCollaborativePolicyRepository(),
+            runtime_policy_evaluator=RuntimePolicyEngine(),
+            decision_requirement_policy=None,
+            production_mode=True,
+        )
 
 
 def test_not_required_policy_allows_effect_without_decision_material() -> None:

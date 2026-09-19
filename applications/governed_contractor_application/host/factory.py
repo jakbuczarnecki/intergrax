@@ -20,6 +20,9 @@ from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from governed_contractor_application.host.orchestration_decision_requirement_policy import (
+    default_governed_contractor_harness_orchestration_decision_requirement_policy,
+)
 from intergrax.applications._shared.production_platform_persistence import (
     resolve_harness_host_profile_persistence_kwargs_from_composition,
     resolve_reference_production_strict_host_environment,
@@ -113,6 +116,9 @@ def create_governed_contractor_backend_app(
         checkpoints_db_path=checkpoints_db_path,
         registry_projection=registry_projection,
         collaborative_work_integration_profile=collaborative_work_integration_profile,
+        orchestration_decision_requirement_policy=(
+            default_governed_contractor_harness_orchestration_decision_requirement_policy()
+        ),
         **profile_persistence_kwargs,
     )
     host_execution = runtime.execution
