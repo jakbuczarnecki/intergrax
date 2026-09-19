@@ -1,6 +1,6 @@
 # Memory
 
-> **Enterprise architecture (MEM-ENT closeout):** canonical control plane, authority map, certification scope, and extension guides live in [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) ([provider](MEMORY_PROVIDER_EXTENSION_GUIDE.md) · [projection](MEMORY_PROJECTION_EXTENSION_GUIDE.md)). This hub remains the product-oriented domain overview.
+> **Enterprise architecture:** canonical maintainer reference [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) · visual flows [`MEMORY_ARCHITECTURE_DIAGRAMS.md`](MEMORY_ARCHITECTURE_DIAGRAMS.md) ([provider](MEMORY_PROVIDER_EXTENSION_GUIDE.md) · [projection](MEMORY_PROJECTION_EXTENSION_GUIDE.md)). This hub remains the product-oriented domain overview.
 
 **Intergrax Memory** is the platform domain that governs **what the harness remembers** - session turns, task-scoped state, user and organization profiles, and durable long-term facts - across execution boundaries, with explicit stores, write policies, and recall contracts.
 

@@ -1779,3 +1779,67 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 | Readiness | **READY FOR MEM-FINAL-AUDIT-7 AFTER INDEPENDENT GITHUB AUDIT** |
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-6-R2 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-7.
+
+---
+
+## MEM-FINAL-AUDIT-7 — Documentation & Visual Architecture Certification
+
+| Field | Value |
+| ----- | ----- |
+| HEAD before | `77953d638e24a699fbc5c1884b864595e4846726` |
+| Branch | `development` |
+| 6-R2 evidence ancestor (`35197e55cdca52bac4fce9520b610d559389059f`) | **YES** |
+| Foreign WIP | none |
+| Production code changes | **NONE** (docs only) |
+| Canonical architecture doc | [`docs/project/architecture/MEMORY_ARCHITECTURE.md`](../../architecture/MEMORY_ARCHITECTURE.md) |
+| Visual architecture doc | [`docs/project/architecture/MEMORY_ARCHITECTURE_DIAGRAMS.md`](../../architecture/MEMORY_ARCHITECTURE_DIAGRAMS.md) |
+| Docs touched | `MEMORY_ARCHITECTURE.md`, `MEMORY_ARCHITECTURE_DIAGRAMS.md` (new), `MEMORY.md`, `MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md`, this ledger |
+| Test/guard changes | **NONE** |
+| Mermaid diagrams | **18** in diagrams doc (+ existing diagrams in architecture doc) |
+| P0 / P1 | **NONE** |
+
+### Documentation inventory (Memory-related)
+
+| Path | Role |
+| ---- | ---- |
+| `docs/project/architecture/MEMORY_ARCHITECTURE.md` | **Canonical** maintainer architecture (updated audit 7) |
+| `docs/project/architecture/MEMORY_ARCHITECTURE_DIAGRAMS.md` | **Canonical** visual supplement (new) |
+| `docs/project/architecture/MEMORY.md` | Product domain hub (links canonical docs) |
+| `docs/project/maintainers/plans/MEMORY.md` | Plan hub |
+| `MEMORY_PROVIDER_EXTENSION_GUIDE.md` / `MEMORY_PROJECTION_EXTENSION_GUIDE.md` | Extension guides (current) |
+| `MEMORY_FINAL_ENTERPRISE_AUDIT.md` / `MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md` | Qualification ledger + provider matrix |
+| `docs/audit_results/**/MEMORY.md` | Historical audit snapshots — not canonical |
+
+### Documentation completion matrix
+
+| Area | Documented | Diagrammed | Code-verified |
+| ---- | ---------: | ---------: | ------------: |
+| authority | YES | YES | YES |
+| control plane | YES | YES | YES |
+| lifecycle | YES | YES | YES |
+| providers | YES | YES | YES |
+| vendor topology | YES | YES | YES |
+| durability | YES | table | YES |
+| failure semantics | YES | YES | YES |
+| security/governance | YES | YES | YES |
+| behavioral guarantees | YES | summary | YES |
+
+### Architecture sanity regressions
+
+| Suite | Result |
+| ----- | ------ |
+| `tests/qualification/memory_behavior` + composition/restart apps | **56 passed** (`.tmp/session/mem-final-audit-7/pytest-sanity.log`) |
+
+### Classification
+
+**MEMORY ARCHITECTURE — DOCUMENTATION CERTIFIED**
+
+### Verdict
+
+**PASS — MEM-FINAL-AUDIT-7 DOCUMENTATION & VISUAL ARCHITECTURE CERTIFIED**
+
+### Readiness
+
+**READY FOR MEM-FINAL-AUDIT-8 AFTER INDEPENDENT GITHUB AUDIT**
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-7 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-8.
