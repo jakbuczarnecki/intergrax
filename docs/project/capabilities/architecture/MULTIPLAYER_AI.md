@@ -51,7 +51,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 | **Work artifacts** | MP-3 — **ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004; MP-3A…MP-3H) |
 | **Decision / approval** | **REUSED** canonical Decision System + Governance/HITL + Multiplayer binding/projection (**MP-4R CLOSED**); not Multiplayer-owned authority |
 | **Context view** | MP-5 - principal-scoped; composes UCL/CE/Memory/Knowledge |
-| **Activity / provenance** | MP-6 — **IN PROGRESS**; **MP-6A — CLOSED / RECERTIFIED**; **MP-6B — CLOSED / RECERTIFIED**; **MP-6C — CLOSED / RECERTIFIED**; **MP-6D — CLOSED / RECERTIFIED**; **MP-6E — CLOSED / RECERTIFIED**; **MP-6F — NEXT** |
+| **Activity / provenance** | MP-6 — **IN PROGRESS**; **MP-6A–E — CLOSED / RECERTIFIED**; **MP-6F — CLOSED** (source integrations; subject to independent audit); **MP-6G — NEXT** |
 | **LKW relation** | MP-7 reference consumer - not owner |
 | **HITL relation** | **REUSED** Governance/HITL + `ExecutionContinuationPort` — not Decision owner; Nexus internal orchestration only |
 | **External agent interoperability** | MP-8 - future; AgentDirectory ≠ AgentRegistry |
@@ -577,7 +577,7 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 | MP-6C | Publication / ingestion boundary | **CLOSED** |
 | MP-6D | Persistence / store | **CLOSED / RECERTIFIED** |
 | MP-6E | Scoped read / query | **CLOSED / RECERTIFIED** |
-| MP-6F | Source integrations | **NEXT** |
+| MP-6F | Source integrations | **CLOSED** (typed adapters → `CollaborativeActivityPublicationPort`; subject to independent audit) |
 | MP-6G | E2E / isolation / idempotency qualification | PLANNED |
 | MP-6H | Final enterprise certification | PLANNED |
 

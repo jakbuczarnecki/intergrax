@@ -594,6 +594,8 @@ Capability coordination: [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULT
 
 ```text
 Source Domain (authoritative mutation)
+  → canonical successful operation result
+  → replaceable MP-6F source integration adapter (translation only)
   → CollaborativeActivityPublication (neutral contract; requested durability only)
   → CollaborativeActivityPublicationPort / ingestion boundary
   → MP-6 Activity service (MP-6C policy validation — resolves effective durability)
@@ -611,6 +613,22 @@ Authorized Consumer
   → CollaborativeActivityReadPort (provider-neutral; no authorization inside store)
   → CollaborativeActivityPage (opaque scope-bound cursor; keyset by append_position)
 ```
+
+**Anti-bypass (MP-6F):** source domains never import or call `CollaborativeActivityAppendStore`, activity SQLite/PostgreSQL providers, or `CollaborativeActivityAppendIntent`. Ingress is **`CollaborativeActivityPublicationPort` only**.
+
+**MP-6F source integration (current):** replaceable typed mappers + service/composer decorators in [`collaborative_activity_source_mapping.py`](../../../intergrax/collaborative_work/collaborative_activity_source_mapping.py), [`collaborative_activity_source_adapters.py`](../../../intergrax/collaborative_work/collaborative_activity_source_adapters.py), [`collaborative_activity_source_wiring.py`](../../../intergrax/collaborative_work/collaborative_activity_source_wiring.py). **`publication.actor`** is source-proven semantic actor; **publisher identity** remains MP-6C (`VerifiedCollaborativeActivityPublisherIdentity` + explicit registration). **`source_stable_id`** is replay-stable operation identity (command `idempotency_key` for Collaborative Work mutations; deterministic `view_id` for ContextView compose).
+
+| Source | Canonical seam | Integrated | `source_stable_id` |
+|--------|----------------|------------|-------------------|
+| WorkItem create / transition | `CollaborativeWorkService` | Yes | request `idempotency_key` |
+| WorkItem field update (`WORK_ITEM_UPDATED`) | — | **No** — no authoritative non-transition update seam | — |
+| Assignment create / transition | `CollaborativeWorkService` | Yes | request `idempotency_key` |
+| WorkArtifact create / publish version | `CollaborativeWorkArtifactService` | Yes | request `idempotency_key` |
+| Collaborative decision binding create | `CollaborativeDecisionBindingService` | Yes | request `idempotency_key` |
+| ContextView compose | `ContextViewComposer.compose` (decorator) | Yes | composed `view_id` |
+| Repository / log inference | — | **Forbidden** | — |
+
+Publication failure after committed source mutation: explicit `CollaborativeActivityPublicationFailurePolicy` (`RAISE` default; optional `LOG_AND_CONTINUE` — not cross-store atomicity).
 
 **MP-6E read semantics (qualified providers):** authorization runs before any `CollaborativeActivityReadPort` call; the page cursor is **not** an authorization token (scope/filter binding only). Continuation uses **keyset pagination by `append_position`** (`append_position > cursor`, `ORDER BY append_position ASC`, **no `OFFSET`**). `occurred_at` is a filter/display dimension, not a continuation watermark. Reads follow **forward live feed** semantics: appends after page *N* may appear on later pages; there is **no fixed historical snapshot** across pages without an explicit snapshot token. **SQLite** and **PostgreSQL** read providers are qualified under [`MP-6E-C1_POSTGRESQL_READ_PROVIDER_QUALIFICATION.md`](../maintainers/qualification/MP-6E-C1_POSTGRESQL_READ_PROVIDER_QUALIFICATION.md).
 

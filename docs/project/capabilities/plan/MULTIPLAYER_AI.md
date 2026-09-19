@@ -404,7 +404,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-6C | Publication / ingestion boundary | **CLOSED** |
 | MP-6D | Persistence / store | **CLOSED / RECERTIFIED** ([`MP-6D-Q1_POSTGRESQL_PROVIDER_QUALIFICATION.md`](../../maintainers/qualification/MP-6D-Q1_POSTGRESQL_PROVIDER_QUALIFICATION.md)) |
 | MP-6E | Scoped read / query | **CLOSED / RECERTIFIED** |
-| MP-6F | Source integrations | **NEXT** |
+| MP-6F | Source integrations | **CLOSED** (subject to independent audit) |
 | MP-6G | E2E / isolation / idempotency | **PLANNED** |
 | MP-6H | Final enterprise certification | **PLANNED** |
 
