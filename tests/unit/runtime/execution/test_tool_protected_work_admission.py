@@ -55,16 +55,30 @@ def _expired_projection() -> ExecutionDeadlineProjection:
     )
 
 
+class _FakeMonotonicClock:
+    def __init__(self, value: float = 1.0) -> None:
+        self._value = value
+
+    def monotonic(self) -> float:
+        return self._value
+
+    def advance(self, seconds: float) -> None:
+        self._value += seconds
+
+
 def test_q09_expired_tool_blocked_before_executor() -> None:
     executor = _CountingExecutor()
     invoker = RuntimeToolInvoker(registry=FakeRegistry(_contract()), executor=executor)
     projection = _expired_projection()
+    monotonic = _FakeMonotonicClock(1.0)
     tokens = bind_active_execution_deadline_scope(
         projection=projection,
         admission=CanonicalHardProtectedWorkAdmission(
             projection=projection,
             cancellation_view=StaticCancellationView(cancelled=False),
+            monotonic_clock=monotonic,
         ),
+        monotonic_clock=monotonic,
     )
     state = build_runtime_state_for_tests(
         run_id=canonical_run_id_for_tests("h02-expired-tool"),

@@ -402,7 +402,7 @@ class HostTaskExecution:
             run_budget_persistence=self._run_budget_persistence,
             deadline_authority_resolver=self._deadline_authority_resolver,
             root_cancellation_view=TaskMetadataCancellationView(
-                metadata=dict(task.metadata or {}),
+                metadata_source=lambda: task.metadata or {},
             ),
         )
 

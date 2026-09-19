@@ -51,6 +51,10 @@ class ExecutionDeadlineAuthorityResolver:
             monotonic_clock if monotonic_clock is not None else SystemMonotonicClock()
         )
 
+    @property
+    def monotonic_clock(self) -> MonotonicClockPort:
+        return self._monotonic_clock
+
     def resolve_for_root(
         self,
         *,

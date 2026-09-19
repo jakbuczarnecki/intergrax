@@ -465,9 +465,11 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
             cancellation_view = self._root_cancellation_view
             if cancellation_view is None:
                 cancellation_view = StaticCancellationView(cancelled=False)
+            monotonic_clock = self._deadline_authority_resolver.monotonic_clock
             canonical_admission = CanonicalHardProtectedWorkAdmission(
                 projection=deadline_resolution.projection,
                 cancellation_view=cancellation_view,
+                monotonic_clock=monotonic_clock,
             )
             admission = ComposedProtectedWorkAdmission(
                 canonical=canonical_admission,
@@ -476,6 +478,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
             deadline_scope_tokens = bind_active_execution_deadline_scope(
                 projection=deadline_resolution.projection,
                 admission=admission,
+                monotonic_clock=monotonic_clock,
             )
         host_token = None
         persistence_token = None

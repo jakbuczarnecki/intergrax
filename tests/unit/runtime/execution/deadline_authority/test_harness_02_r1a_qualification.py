@@ -103,10 +103,12 @@ def _bind_parent_projection(
     admission = CanonicalHardProtectedWorkAdmission(
         projection=projection,
         cancellation_view=StaticCancellationView(cancelled=False),
+        monotonic_clock=monotonic,
     )
     return bind_active_execution_deadline_scope(
         projection=projection,
         admission=admission,
+        monotonic_clock=monotonic,
     )
 
 
@@ -261,6 +263,7 @@ async def test_q06_grandchild_observes_narrowed_projection() -> None:
 
 @pytest.mark.asyncio
 async def test_q07_expired_parent_blocks_child_before_delegate() -> None:
+    monotonic = _FakeMonotonicClock(1.0)
     expired = ExecutionDeadlineProjection(
         deadline_at_utc=datetime(2020, 1, 1, tzinfo=timezone.utc),
         remaining_seconds=0.0,
@@ -272,7 +275,9 @@ async def test_q07_expired_parent_blocks_child_before_delegate() -> None:
         admission=CanonicalHardProtectedWorkAdmission(
             projection=expired,
             cancellation_view=StaticCancellationView(cancelled=False),
+            monotonic_clock=monotonic,
         ),
+        monotonic_clock=monotonic,
     )
     from dataclasses import dataclass
 
@@ -388,6 +393,7 @@ def test_q22_resolver_accepts_clock_ports() -> None:
 
 
 def test_q11_llm_execute_passes_bounded_timeout_to_resilience() -> None:
+    monotonic = _FakeMonotonicClock(100.0)
     projection = ExecutionDeadlineProjection(
         deadline_at_utc=datetime(2026, 1, 1, 0, 0, 4, tzinfo=timezone.utc),
         remaining_seconds=4.0,
@@ -399,7 +405,9 @@ def test_q11_llm_execute_passes_bounded_timeout_to_resilience() -> None:
         admission=CanonicalHardProtectedWorkAdmission(
             projection=projection,
             cancellation_view=StaticCancellationView(cancelled=False),
+            monotonic_clock=monotonic,
         ),
+        monotonic_clock=monotonic,
     )
     captured: list[float | None] = []
 
@@ -436,6 +444,7 @@ def test_q11_llm_execute_passes_bounded_timeout_to_resilience() -> None:
 
 
 def test_q18_streaming_expired_blocks_factory() -> None:
+    monotonic = _FakeMonotonicClock(1.0)
     projection = ExecutionDeadlineProjection(
         deadline_at_utc=datetime(2020, 1, 1, tzinfo=timezone.utc),
         remaining_seconds=0.0,
@@ -447,7 +456,9 @@ def test_q18_streaming_expired_blocks_factory() -> None:
         admission=CanonicalHardProtectedWorkAdmission(
             projection=projection,
             cancellation_view=StaticCancellationView(cancelled=False),
+            monotonic_clock=monotonic,
         ),
+        monotonic_clock=monotonic,
     )
     factory_calls = 0
 

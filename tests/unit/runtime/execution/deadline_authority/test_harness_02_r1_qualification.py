@@ -50,6 +50,7 @@ from intergrax.runtime.execution.protected_work_admission import (
     StaticCancellationView,
 )
 from intergrax.runtime.execution.retry.policy import evaluate_execution_retry_eligibility
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 pytestmark = pytest.mark.unit
@@ -270,6 +271,7 @@ class _AlwaysAvailableContributor(ExecutionProtectedWorkAdmissionPort):
 
 
 def test_q17_custom_available_cannot_override_expired() -> None:
+    monotonic = _FakeMonotonicClock(1.0)
     projection = ExecutionDeadlineProjection(
         deadline_at_utc=datetime(2020, 1, 1, tzinfo=timezone.utc),
         remaining_seconds=0.0,
@@ -280,6 +282,7 @@ def test_q17_custom_available_cannot_override_expired() -> None:
         canonical=CanonicalHardProtectedWorkAdmission(
             projection=projection,
             cancellation_view=StaticCancellationView(cancelled=False),
+            monotonic_clock=monotonic,
         ),
         contributors=(_AlwaysAvailableContributor(),),
     )
@@ -290,6 +293,7 @@ def test_q17_custom_available_cannot_override_expired() -> None:
 
 
 def test_q17_custom_available_cannot_override_cancelled() -> None:
+    monotonic = _FakeMonotonicClock()
     projection = ExecutionDeadlineProjection(
         deadline_at_utc=None,
         remaining_seconds=float("inf"),
@@ -300,6 +304,7 @@ def test_q17_custom_available_cannot_override_cancelled() -> None:
         canonical=CanonicalHardProtectedWorkAdmission(
             projection=projection,
             cancellation_view=StaticCancellationView(cancelled=True, reason="operator"),
+            monotonic_clock=monotonic,
         ),
         contributors=(_AlwaysAvailableContributor(),),
     )
@@ -310,6 +315,7 @@ def test_q17_custom_available_cannot_override_cancelled() -> None:
 
 
 def test_q11_provider_timeout_bounded_by_remaining() -> None:
+    monotonic = _FakeMonotonicClock(100.0)
     projection = ExecutionDeadlineProjection(
         deadline_at_utc=datetime(2026, 1, 1, 0, 0, 4, tzinfo=timezone.utc),
         remaining_seconds=4.0,
@@ -321,7 +327,9 @@ def test_q11_provider_timeout_bounded_by_remaining() -> None:
         admission=CanonicalHardProtectedWorkAdmission(
             projection=projection,
             cancellation_view=StaticCancellationView(cancelled=False),
+            monotonic_clock=monotonic,
         ),
+        monotonic_clock=monotonic,
     )
     try:
         assert resolve_active_provider_timeout_seconds(30.0) == 4.0
@@ -330,6 +338,7 @@ def test_q11_provider_timeout_bounded_by_remaining() -> None:
 
 
 def test_q10_expired_blocks_llm_execute() -> None:
+    monotonic = _FakeMonotonicClock(1.0)
     projection = ExecutionDeadlineProjection(
         deadline_at_utc=datetime(2020, 1, 1, tzinfo=timezone.utc),
         remaining_seconds=0.0,
@@ -341,15 +350,36 @@ def test_q10_expired_blocks_llm_execute() -> None:
         admission=CanonicalHardProtectedWorkAdmission(
             projection=projection,
             cancellation_view=StaticCancellationView(cancelled=False),
+            monotonic_clock=monotonic,
         ),
+        monotonic_clock=monotonic,
     )
+    physical_calls = 0
+
+    class _ProbeAdapter(LLMAdapter):
+        def __init__(self) -> None:
+            super().__init__()
+            self.provider = "openai"
+
+        @property
+        def context_window_tokens(self) -> int:
+            return 8192
+
+        def generate_messages(self, messages):  # type: ignore[no-untyped-def]
+            del messages
+            return self._execute(lambda: "ok")
+
+    adapter = _ProbeAdapter()
+
+    def _physical() -> str:
+        nonlocal physical_calls
+        physical_calls += 1
+        return "ok"
+
     try:
         with pytest.raises(ExecutionProtectedWorkDeniedError):
-            from intergrax.runtime.execution.deadline_provider_guard import (
-                assert_protected_provider_call_allowed,
-            )
-
-            assert_protected_provider_call_allowed()
+            adapter._execute(_physical)
+        assert physical_calls == 0
     finally:
         reset_active_execution_deadline_scope(*tokens)
 

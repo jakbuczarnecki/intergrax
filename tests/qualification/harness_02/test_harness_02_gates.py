@@ -33,6 +33,8 @@ from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from tests.qualification.harness_02.catalog import (
     HARNESS_02_FINDINGS,
     HARNESS_02_PROPAGATION_MATRIX,
+    HARNESS_02_R1_QUALIFICATION_MATRIX,
+    HARNESS_02_R1_REQUIRED_QUALIFICATION_IDS,
     HARNESS_02_REQUIRED_FLOW_IDS,
 )
 
@@ -173,6 +175,16 @@ async def test_harness_02_grandchild_preserves_root_global_deadline() -> None:
 def test_harness_02_catalog_covers_required_flow_ids() -> None:
     covered = {row.flow_id for row in HARNESS_02_PROPAGATION_MATRIX}
     assert HARNESS_02_REQUIRED_FLOW_IDS <= covered
+
+
+def test_harness_02_r1_catalog_covers_required_qualification_ids() -> None:
+    catalog_ids = {row.qualification_id for row in HARNESS_02_R1_QUALIFICATION_MATRIX}
+    assert HARNESS_02_R1_REQUIRED_QUALIFICATION_IDS <= catalog_ids
+    for row in HARNESS_02_R1_QUALIFICATION_MATRIX:
+        if row.qualification_id == "Q15":
+            assert row.status == "PENDING_R2"
+        elif row.qualification_id in HARNESS_02_R1_REQUIRED_QUALIFICATION_IDS:
+            assert row.status == "PASS"
 
 
 def test_harness_02_global_deadline_monotonic_consumer_allowlist() -> None:

@@ -19,6 +19,7 @@ from intergrax.contracts.execution_lineage import ExecutionLineageIntegrityError
 from intergrax.runtime.execution.identity_authority import (
     default_execution_identity_authority,
 )
+from intergrax.contracts.execution_deadline.clock import MonotonicClockPort, UtcClockPort
 from intergrax.contracts.execution_deadline.projection import ExecutionDeadlineProjection
 from intergrax.runtime.execution.deadline_scope import (
     bind_active_execution_deadline_scope,
@@ -101,6 +102,8 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
         "_budget_policy",
         "_ledger",
         "_continuation_state_store",
+        "_utc_clock",
+        "_monotonic_clock",
     )
 
     def __init__(
@@ -109,6 +112,9 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
         budget_policy: ExecutionBudgetAllocationPolicy | None = None,
         ledger: ExecutionBudgetLedger | None = None,
         continuation_state_store: ExecutionContinuationStateStore | None = None,
+        *,
+        utc_clock: UtcClockPort | None = None,
+        monotonic_clock: MonotonicClockPort | None = None,
     ) -> None:
         self._authority_policy = (
             authority_policy
@@ -122,6 +128,10 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
         )
         self._ledger = ledger
         self._continuation_state_store = continuation_state_store
+        self._utc_clock = utc_clock if utc_clock is not None else SystemUtcClock()
+        self._monotonic_clock = (
+            monotonic_clock if monotonic_clock is not None else SystemMonotonicClock()
+        )
 
     async def execute(
         self,
@@ -196,32 +206,25 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             child_wall_limit = (
                 requested_budget.max_wall_time_seconds if requested_budget is not None else None
             )
-            utc_clock = SystemUtcClock()
-            monotonic_clock = SystemMonotonicClock()
-            if parent_projection.deadline_at_utc is None:
-                inherited_monotonic = parent_projection.global_deadline_monotonic
-                if child_wall_limit is not None:
-                    child_cap = monotonic_clock.monotonic() + child_wall_limit
-                    if inherited_monotonic is None:
-                        inherited_monotonic = child_cap
-                    else:
-                        inherited_monotonic = min(inherited_monotonic, child_cap)
-                child_projection = ExecutionDeadlineProjection(
-                    deadline_at_utc=None,
-                    remaining_seconds=parent_projection.remaining_seconds,
-                    is_expired=parent_projection.is_expired,
-                    global_deadline_monotonic=inherited_monotonic,
-                )
-            else:
-                effective_deadline_at_utc = narrow_child_deadline_at_utc(
-                    parent_projection.deadline_at_utc,
-                    child_max_wall_time_seconds=child_wall_limit,
-                    utc_clock=utc_clock,
-                )
+            utc_clock = self._utc_clock
+            monotonic_clock = self._monotonic_clock
+            effective_deadline_at_utc = narrow_child_deadline_at_utc(
+                parent_projection.deadline_at_utc,
+                child_max_wall_time_seconds=child_wall_limit,
+                utc_clock=utc_clock,
+            )
+            if effective_deadline_at_utc is not None:
                 child_projection = project_deadline_at_utc(
                     effective_deadline_at_utc,
                     utc_clock=utc_clock,
                     monotonic_clock=monotonic_clock,
+                )
+            else:
+                child_projection = ExecutionDeadlineProjection(
+                    deadline_at_utc=None,
+                    remaining_seconds=float("inf"),
+                    is_expired=False,
+                    global_deadline_monotonic=parent_projection.global_deadline_monotonic,
                 )
             inherited_deadline = child_projection.global_deadline_monotonic
         else:
@@ -270,10 +273,12 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             child_admission = narrow_protected_work_admission_for_child(
                 child_projection,
                 admission,
+                monotonic_clock=monotonic_clock,
             )
             deadline_scope_tokens = bind_active_execution_deadline_scope(
                 projection=child_projection,
                 admission=child_admission,
+                monotonic_clock=monotonic_clock,
             )
         try:
             return await boundary.execute(request)

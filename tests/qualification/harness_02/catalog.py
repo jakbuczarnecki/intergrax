@@ -21,6 +21,34 @@ FindingSeverity = Literal[
     "FALSE POSITIVE",
 ]
 
+HARNESS_02_R1_REQUIRED_QUALIFICATION_IDS: frozenset[str] = frozenset(
+    {
+        "Q05",
+        "Q06",
+        "Q07",
+        "Q08",
+        "Q09",
+        "Q10",
+        "Q11",
+        "Q12",
+        "Q13",
+        "Q14",
+        "Q15",
+        "Q16",
+        "Q17",
+        "Q18",
+        "Q19",
+        "Q20",
+        "Q21",
+        "Q22",
+        "Q23",
+        "Q24",
+        "Q25",
+        "Q26",
+        "Q27",
+    }
+)
+
 HARNESS_02_REQUIRED_FLOW_IDS: frozenset[str] = frozenset(
     {
         "H02-root-deadline",
@@ -75,6 +103,8 @@ _W4A = "tests/unit/runtime/architecture/test_enterprise_scale_resilience_w4_a_ca
 _P0C5 = "tests/unit/runtime/cancellation/test_p0c5_cancellation_continuity.py"
 _H02 = "tests/qualification/harness_02/test_harness_02_gates.py"
 _H02R1 = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1_qualification.py"
+_H02R1A = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1a_qualification.py"
+_H02R1B = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1b_qualification.py"
 _TOOL_ADM = "tests/unit/runtime/execution/test_tool_protected_work_admission.py"
 _H01 = "tests/qualification/harness_01/test_harness_01_gates.py"
 _UE9 = "tests/unit/runtime/execution/budget/test_ue_9ar1_preserve_run_budget_across_redelivery.py"
@@ -280,4 +310,38 @@ HARNESS_02_CANCELLATION_SURFACES: tuple[dict[str, str], ...] = (
         "terminalization": "mark_observed_cancellation_terminal",
         "evidence": "runtime/external_operations/operation_termination.py",
     },
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Harness02R1QualificationRow:
+    qualification_id: str
+    status: Literal["PASS", "PENDING_R2", "NOT_APPLICABLE"]
+    evidence: str
+
+
+HARNESS_02_R1_QUALIFICATION_MATRIX: tuple[Harness02R1QualificationRow, ...] = (
+    Harness02R1QualificationRow("Q05", "PASS", _nid(_H02R1A, "test_q05_child_effective_deadline_capped_by_parent")),
+    Harness02R1QualificationRow("Q06", "PASS", _nid(_H02R1A, "test_q06_grandchild_observes_narrowed_projection")),
+    Harness02R1QualificationRow("Q07", "PASS", _nid(_H02R1A, "test_q07_expired_parent_blocks_child_before_delegate")),
+    Harness02R1QualificationRow("Q08", "PASS", _nid(_TOOL_ADM, "test_q08_cancelled_first_attempt_blocked")),
+    Harness02R1QualificationRow("Q09", "PASS", _nid(_TOOL_ADM, "test_q09_expired_tool_blocked_before_executor")),
+    Harness02R1QualificationRow("Q10", "PASS", _nid(_H02R1, "test_q10_expired_blocks_llm_execute")),
+    Harness02R1QualificationRow("Q11", "PASS", _nid(_H02R1, "test_q11_provider_timeout_bounded_by_remaining")),
+    Harness02R1QualificationRow("Q12", "PASS", _nid(_H02R1, "test_q12_retry_backoff_respects_deadline_utc")),
+    Harness02R1QualificationRow("Q13", "PASS", _nid(_H02R1, "test_q13_missing_authority_on_existing_run_fails_closed")),
+    Harness02R1QualificationRow("Q14", "PASS", _nid(_H02R1, "test_q14_parallel_workers_same_deadline")),
+    Harness02R1QualificationRow("Q15", "PENDING_R2", "HARNESS-02-R2 M7 legacy wall-time authority closure"),
+    Harness02R1QualificationRow("Q16", "PASS", _nid(_TOOL_ADM, "test_q16_admission_before_idempotency_claim_structural")),
+    Harness02R1QualificationRow("Q17", "PASS", _nid(_H02R1, "test_q17_custom_available_cannot_override_expired")),
+    Harness02R1QualificationRow("Q18", "PASS", _nid(_H02R1B, "test_q18_streaming_deadline_crossed_after_bind")),
+    Harness02R1QualificationRow("Q19", "PASS", _nid(_H02R1A, "test_q19_from_registry_requires_deadline_resolver_with_durable_budget")),
+    Harness02R1QualificationRow("Q20", "PASS", _nid(_H02R1A, "test_q05_child_effective_deadline_capped_by_parent")),
+    Harness02R1QualificationRow("Q21", "PASS", _nid(_H02R1A, "test_q21_contracts_execution_deadline_have_no_runtime_imports")),
+    Harness02R1QualificationRow("Q22", "PASS", _nid(_H02R1A, "test_q22_resolver_accepts_clock_ports")),
+    Harness02R1QualificationRow("Q23", "PASS", _nid(_H02R1B, "test_q23_deadline_crossed_after_bind_blocks_admission")),
+    Harness02R1QualificationRow("Q24", "PASS", _nid(_H02R1B, "test_q24_provider_timeout_uses_live_remaining_not_bind_snapshot")),
+    Harness02R1QualificationRow("Q25", "PASS", _nid(_H02R1B, "test_q25_bounded_child_under_unbounded_parent_gets_effective_deadline")),
+    Harness02R1QualificationRow("Q26", "PASS", _nid(_H02R1B, "test_q26_cancellation_after_start_blocks_llm_sync")),
+    Harness02R1QualificationRow("Q27", "PASS", _nid(_H02R1B, "test_q27_child_narrowing_preserves_live_parent_cancellation")),
 )
