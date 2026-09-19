@@ -14,7 +14,7 @@
 | **HEAD vs origin/development @ artifact commit** | **AHEAD** — local `2c82f7253` (MP-6B doc close) atop `58a842d8`; push publishes both |
 | **Production code changed by EBH-1** | **NO** |
 | **EBH1_R1_SESSION_START_HEAD** | `190af29cc46d358f84c8d66254445284eae0171a` |
-| **EBH1_R1_EVIDENCE_HEAD** | *(set @ EBH-1-R1 commit)* |
+| **EBH1_R1_EVIDENCE_HEAD** | `4aca3ce86a55ab2f351bdb9ef00c27513dcc9a6b` |
 | **Production code changed by EBH-1-R1** | **NO** — [R1 record](EBH-1-R1_CONTEXTVIEW_OWNERSHIP_BASELINE_CORRECTION.md) |
 
 **SSOT strategy:** This document is the **single current enterprise boundary baseline** for ownership, authorities, contract families, and drift vs EAC/RB artifacts. Domain semantics remain owned by `docs/project/architecture/<DOMAIN>.md` pairs. Do not fork a parallel taxonomy — update this file or reconcile EAC rows in place in a follow-up doc pass (EBH-2+). **EBH-1-R1** corrects Principal-scoped ContextView ownership; EAC rows marked **HISTORICAL (pre-R1)** where reconciled in EAC1/EAC2.

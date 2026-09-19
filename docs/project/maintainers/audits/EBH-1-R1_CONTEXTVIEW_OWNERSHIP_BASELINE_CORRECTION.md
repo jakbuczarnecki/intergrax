@@ -20,7 +20,7 @@ Correct the sole semantic inconsistency in EBH-1: conflation of **CONTEXT_ASSEMB
 | Field | SHA / note |
 |-------|------------|
 | **EBH1_R1_SESSION_START_HEAD** | `190af29cc46d358f84c8d66254445284eae0171a` |
-| **EBH1_R1_EVIDENCE_HEAD** | *(commit SHA of this correction)* |
+| **EBH1_R1_EVIDENCE_HEAD** | `4aca3ce86a55ab2f351bdb9ef00c27513dcc9a6b` |
 | **Branch** | `development` |
 | **HEAD == origin/development @ session open** | **YES** (`190af29c…`) |
 | **Git safety** | No reset / rebase / stash / clean / amend / force-push |
