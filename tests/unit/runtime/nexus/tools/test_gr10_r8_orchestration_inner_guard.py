@@ -256,9 +256,14 @@ def test_gr10_r8_production_composition_wires_default_guard() -> None:
     )
 
     registry = FakeRegistry(_contract())
+    from tests.unit.runtime.nexus.tools.test_gr10_r9_orchestration_mse import (
+        _RecordingMseBoundary,
+    )
+
     invoker = build_production_runtime_tool_invoker(
         registry=registry,
         agent_runtime_governance=_allow_all_governance(),
+        meaningful_side_effect_authorization=_RecordingMseBoundary(allow=True),
         production_mode=True,
     )
     assert isinstance(invoker._inner_execution_guard, DefaultCanonicalInnerExecutionGuard)  # noqa: SLF001

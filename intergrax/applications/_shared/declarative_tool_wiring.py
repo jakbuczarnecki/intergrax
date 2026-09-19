@@ -15,7 +15,7 @@ from intergrax.applications._shared.tool_wiring import ApplicationToolWiring
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.canonical_inner_governance import CanonicalInnerExecutionGuardPort
-from intergrax.runtime.nexus.tools.meaningful_side_effect_authorization_port import (
+from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
 from intergrax.contracts.idempotency_store import IdempotencyStore

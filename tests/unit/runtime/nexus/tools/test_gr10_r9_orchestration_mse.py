@@ -39,7 +39,10 @@ from intergrax.runtime.agent_governance.authorization_boundary import (
 from intergrax.runtime.agent_governance.capability_resolver import (
     InMemoryCapabilityGrantResolver,
 )
-from intergrax.runtime.agent_governance.errors import ToolGovernanceDeniedError
+from intergrax.runtime.agent_governance.errors import (
+    ToolGovernanceApprovalRequiredError,
+    ToolGovernanceDeniedError,
+)
 from intergrax.runtime.agent_governance.pipeline import AgentRuntimeGovernancePipeline
 from intergrax.runtime.agent_governance.policy_engine import (
     AgentRuntimePolicyEngine,
@@ -55,14 +58,13 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.meaningful_side_effect_authorization_port import (
+from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
+    MeaningfulSideEffectAuthorizationResult,
 )
 from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
+    ProductionRuntimeToolInvokerCompositionError,
     build_production_runtime_tool_invoker,
-)
-from intergrax.runtime.policy.meaningful_side_effect_authorization import (
-    MeaningfulSideEffectAuthorizationResult,
 )
 from intergrax.runtime.policy.side_effect_authorization_errors import (
     MeaningfulSideEffectAuthorizationRequiredError,
@@ -108,9 +110,19 @@ class _CountingExecutor:
 
 
 class _RecordingMseBoundary:
-    def __init__(self, *, allow: bool) -> None:
+    def __init__(
+        self,
+        *,
+        allow: bool | None = None,
+        action: PolicyAction | None = None,
+    ) -> None:
         self.calls = 0
-        self._allow = allow
+        if action is not None:
+            self._action = action
+            self._permitted = action is PolicyAction.ALLOW
+        else:
+            self._action = PolicyAction.ALLOW if allow else PolicyAction.DENY
+            self._permitted = bool(allow)
         self.last_request: CollaborativeWorkEnforcementRequest | None = None
 
     def authorize(
@@ -122,9 +134,8 @@ class _RecordingMseBoundary:
     ) -> MeaningfulSideEffectAuthorizationResult:
         self.calls += 1
         self.last_request = request
-        action = PolicyAction.ALLOW if self._allow else PolicyAction.DENY
         decision = PolicyDecision(
-            action=action,
+            action=self._action,
             reason="test-mse",
             policy_rule_id="test.mse",
         )
@@ -141,11 +152,15 @@ class _RecordingMseBoundary:
                 collaborative_authority=decision,
             ),
         )
+        requires_continuation = self._action in (
+            PolicyAction.REQUIRE_HUMAN,
+            PolicyAction.ESCALATE,
+        )
         return MeaningfulSideEffectAuthorizationResult(
-            permitted=self._allow,
+            permitted=self._permitted,
             decision=decision,
             enforcement_result=enforcement_result,
-            requires_governed_continuation=False,
+            requires_governed_continuation=requires_continuation,
             governed_continuation_request=None,
         )
 
@@ -266,6 +281,36 @@ def test_gr10_r9_mse_deny_zero_executor_calls() -> None:
     assert executor.calls == 0
 
 
+def test_gr10_r9_mse_modify_zero_executor_calls() -> None:
+    executor = _CountingExecutor()
+    boundary = _RecordingMseBoundary(action=PolicyAction.MODIFY)
+    invoker = _production_invoker(
+        contract=_side_effect_contract(),
+        executor=executor,
+        boundary=boundary,
+    )
+    run_id = canonical_run_id_for_tests("r9-modify")
+    with pytest.raises(ToolGovernanceDeniedError):
+        _invoke_production(invoker, run_id=run_id)
+    assert boundary.calls == 1
+    assert executor.calls == 0
+
+
+def test_gr10_r9_mse_require_human_zero_executor_calls() -> None:
+    executor = _CountingExecutor()
+    boundary = _RecordingMseBoundary(action=PolicyAction.REQUIRE_HUMAN)
+    invoker = _production_invoker(
+        contract=_side_effect_contract(),
+        executor=executor,
+        boundary=boundary,
+    )
+    run_id = canonical_run_id_for_tests("r9-human")
+    with pytest.raises(ToolGovernanceApprovalRequiredError):
+        _invoke_production(invoker, run_id=run_id)
+    assert boundary.calls == 1
+    assert executor.calls == 0
+
+
 def test_gr10_r9_mse_allow_single_executor_call() -> None:
     executor = _CountingExecutor()
     boundary = _RecordingMseBoundary(allow=True)
@@ -333,14 +378,26 @@ def test_gr10_r9_production_missing_boundary_fail_closed() -> None:
     assert executor.calls == 0
 
 
-def test_gr10_r9_production_composition_wires_default_boundary() -> None:
+def test_gr10_r9_production_composition_missing_mse_port_fail_closed() -> None:
+    with pytest.raises(ProductionRuntimeToolInvokerCompositionError, match="meaningful_side_effect"):
+        build_production_runtime_tool_invoker(
+            registry=FakeRegistry(_side_effect_contract()),
+            executor=_CountingExecutor(),
+            agent_runtime_governance=_allow_all_governance(),
+            production_mode=True,
+        )
+
+
+def test_gr10_r9_production_composition_custom_mse_port_wired() -> None:
+    custom = _RecordingMseBoundary(allow=True)
     invoker = build_production_runtime_tool_invoker(
         registry=FakeRegistry(_side_effect_contract()),
         executor=_CountingExecutor(),
         agent_runtime_governance=_allow_all_governance(),
+        meaningful_side_effect_authorization=custom,
         production_mode=True,
     )
-    assert invoker._meaningful_side_effect_authorization is not None  # noqa: SLF001
+    assert invoker._meaningful_side_effect_authorization is custom  # noqa: SLF001
 
 
 def test_gr10_r9_runtime_config_exposes_mse_port() -> None:
@@ -354,7 +411,7 @@ def test_gr10_r9_runtime_config_exposes_mse_port() -> None:
         if isinstance(v, ast.ImportFrom)
         and v.module
         and "meaningful_side_effect_authorization" in v.module
-        and "port" not in v.module
+        and not v.module.startswith("intergrax.contracts.")
     ]
     assert forbidden == []
 

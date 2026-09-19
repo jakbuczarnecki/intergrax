@@ -17,7 +17,7 @@ from intergrax.runtime.nexus.config_types import (
 if TYPE_CHECKING:
     from intergrax.contracts.canonical_inner_governance import CanonicalInnerExecutionGuardPort
     from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
-    from intergrax.runtime.nexus.tools.meaningful_side_effect_authorization_port import (
+    from intergrax.contracts.meaningful_side_effect_authorization import (
         MeaningfulSideEffectAuthorizationPort,
     )
     from intergrax.context.protocols import ContextEngine

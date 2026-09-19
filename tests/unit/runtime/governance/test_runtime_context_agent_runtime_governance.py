@@ -48,6 +48,34 @@ def test_runtime_context_requires_agent_runtime_governance_in_production_mode() 
         )
 
 
+class _LabMsePort:
+    def authorize(self, request, *, source_agent_id: str = "", source_step_id: str | None = None):
+        raise NotImplementedError("not invoked in composition smoke test")
+
+
+def test_runtime_context_requires_mse_port_in_production_mode() -> None:
+    config = RuntimeConfig(
+        llm_adapter=FakeLLMAdapter(),
+        enable_rag=False,
+        enable_websearch=False,
+        production_mode=True,
+        trace_db_path="/tmp/trace.db",
+        agent_runtime_governance=build_agent_runtime_governance_boundary(
+            capability_grants=default_lab_capability_grants("tenant-a"),
+        ),
+    )
+    session_manager = SessionManager(storage=InMemorySessionStorage())
+    with pytest.raises(
+        ProductionRuntimeToolInvokerCompositionError,
+        match="meaningful_side_effect_authorization",
+    ):
+        RuntimeContext.build(
+            config=config,
+            session_manager=session_manager,
+            governance_service=create_lab_allow_governance_service(),
+        )
+
+
 def test_runtime_context_builds_when_agent_runtime_governance_present() -> None:
     config = RuntimeConfig(
         llm_adapter=FakeLLMAdapter(),
@@ -58,6 +86,7 @@ def test_runtime_context_builds_when_agent_runtime_governance_present() -> None:
         agent_runtime_governance=build_agent_runtime_governance_boundary(
             capability_grants=default_lab_capability_grants("tenant-a"),
         ),
+        meaningful_side_effect_authorization=_LabMsePort(),
     )
     session_manager = SessionManager(storage=InMemorySessionStorage())
     ctx = RuntimeContext.build(

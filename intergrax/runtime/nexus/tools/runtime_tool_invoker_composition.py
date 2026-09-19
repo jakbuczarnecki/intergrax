@@ -14,12 +14,8 @@ from intergrax.runtime.governance.meaningful_side_effect_authorization_compositi
     build_default_canonical_inner_execution_guard,
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.meaningful_side_effect_authorization_port import (
+from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
-)
-from intergrax.runtime.nexus.tools.orchestration_meaningful_side_effect_composition import (
-    as_meaningful_side_effect_authorization_port,
-    build_default_orchestration_meaningful_side_effect_authorization_boundary,
 )
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
@@ -83,8 +79,8 @@ def build_production_runtime_tool_invoker(
             )
     mse_authorization = meaningful_side_effect_authorization
     if production_mode and mse_authorization is None:
-        mse_authorization = as_meaningful_side_effect_authorization_port(
-            build_default_orchestration_meaningful_side_effect_authorization_boundary(),
+        raise ProductionRuntimeToolInvokerCompositionError(
+            "meaningful_side_effect_authorization is required when production_mode=True",
         )
     resolved_executor = executor or RegistryToolExecutor(registry)
     coordinator = pre_effect_coordinator

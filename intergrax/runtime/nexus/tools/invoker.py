@@ -15,7 +15,7 @@ from pydantic import BaseModel
 if TYPE_CHECKING:
     from intergrax.contracts.canonical_inner_governance import CanonicalInnerExecutionGuardPort
     from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
-    from intergrax.runtime.nexus.tools.meaningful_side_effect_authorization_port import (
+    from intergrax.contracts.meaningful_side_effect_authorization import (
         MeaningfulSideEffectAuthorizationPort,
     )
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -655,34 +655,34 @@ class RuntimeToolInvoker:
             contract=contract,
             request=request,
         )
+        from intergrax.contracts.meaningful_side_effect_authorization import (
+            MeaningfulSideEffectAuthorizationResult,
+            assert_consistent_meaningful_side_effect_authorization_result,
+        )
+
         authorization = boundary.authorize(
             enforcement_request,
             source_agent_id=agent_id,
             source_step_id=str(request.step_id),
         )
-        decision = authorization.decision
-        capability = contract.category.strip() or contract.tool_id
-        if decision.action is PolicyAction.DENY:
-            state.trace_event(
-                component=TraceComponent.TOOLS,
-                step="meaningful_side_effect_authorization_denied",
-                message="Meaningful side-effect authorization denied tool invocation.",
-                level=TraceLevel.ERROR,
-                payload=ToolInvocationErrorDiagV1(
-                    tool_id=request.tool_id,
-                    step_id=str(request.step_id),
-                    error_code=RuntimeErrorCode.PERMISSION_ERROR,
-                    error_message=decision.reason,
-                ),
-            )
-            raise ToolGovernanceDeniedError(
+        if not isinstance(authorization, MeaningfulSideEffectAuthorizationResult):
+            raise MeaningfulSideEffectAuthorizationRequiredError(
                 run_id=state.run_id,
                 agent_id=agent_id,
-                tool_id=request.tool_id,
-                capability=capability,
-                reason=decision.reason,
-                policy_results=(),
+                tool_id=contract.tool_id,
+                reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
             )
+        try:
+            assert_consistent_meaningful_side_effect_authorization_result(authorization)
+        except ValueError:
+            raise MeaningfulSideEffectAuthorizationRequiredError(
+                run_id=state.run_id,
+                agent_id=agent_id,
+                tool_id=contract.tool_id,
+                reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
+            ) from None
+        decision = authorization.decision
+        capability = contract.category.strip() or contract.tool_id
         if decision.action in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE):
             state.trace_event(
                 component=TraceComponent.TOOLS,
@@ -704,6 +704,38 @@ class RuntimeToolInvoker:
                 approval_id=decision.policy_rule_id or "meaningful_side_effect.require_human",
                 reason=decision.reason,
                 policy_results=(),
+            )
+        if (
+            not authorization.permitted
+            or decision.action is PolicyAction.DENY
+            or decision.action is PolicyAction.MODIFY
+        ):
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="meaningful_side_effect_authorization_denied",
+                message="Meaningful side-effect authorization denied tool invocation.",
+                level=TraceLevel.ERROR,
+                payload=ToolInvocationErrorDiagV1(
+                    tool_id=request.tool_id,
+                    step_id=str(request.step_id),
+                    error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                    error_message=decision.reason,
+                ),
+            )
+            raise ToolGovernanceDeniedError(
+                run_id=state.run_id,
+                agent_id=agent_id,
+                tool_id=request.tool_id,
+                capability=capability,
+                reason=decision.reason,
+                policy_results=(),
+            )
+        if decision.action is not PolicyAction.ALLOW:
+            raise MeaningfulSideEffectAuthorizationRequiredError(
+                run_id=state.run_id,
+                agent_id=agent_id,
+                tool_id=contract.tool_id,
+                reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
             )
 
     def _require_agent_runtime_governance(

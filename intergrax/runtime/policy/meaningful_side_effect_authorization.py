@@ -10,7 +10,6 @@ by the caller/runtime layer.
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import dataclass
 from typing import TypeVar
 
 from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
@@ -52,21 +51,13 @@ from intergrax.runtime.human.governed_continuation_grant import (
 from intergrax.runtime.decision_governance_material import (
     assert_decision_governance_material_bound,
 )
+from intergrax.contracts.meaningful_side_effect_authorization import (
+    MeaningfulSideEffectAuthorizationResult,
+)
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle, TaskState
 
 T = TypeVar("T")
-
-
-@dataclass(frozen=True, slots=True)
-class MeaningfulSideEffectAuthorizationResult:
-    """Outcome of collaborative-work enforcement at the shared side-effect boundary."""
-
-    permitted: bool
-    decision: PolicyDecision
-    enforcement_result: CollaborativeWorkEnforcementResult
-    requires_governed_continuation: bool
-    governed_continuation_request: GovernedContinuationRequest | None = None
 
 
 class MeaningfulSideEffectAuthorizationBoundary:

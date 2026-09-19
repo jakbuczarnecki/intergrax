@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""GR-10-R9 / ADR1 — ORCHESTRATION MSE qualification honesty (tool slice vs strategy row)."""
+"""GR-10-R9 / ADR1 / R9-R1 — ORCHESTRATION MSE qualification honesty."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ import pytest
 from tests.qualification.governance.strategy.catalog import (
     GR10_GEP_COVERAGE_INVENTORY,
     GR10_ORCHESTRATION_CAPABILITY_SEMANTICS,
-    GR10_R9_NEXT_REMEDIATION,
+    GR10_R9_R1_NEXT_REMEDIATION,
     Gr10CoverageStatus,
     gr10_matrix_orchestration_status,
 )
@@ -36,9 +36,10 @@ _COMPOSITION = (
 )
 _INVOKER = _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "tools" / "invoker.py"
 _CONFIG = _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "config.py"
+_CONTRACT = _REPO_ROOT / "intergrax" / "contracts" / "meaningful_side_effect_authorization.py"
 
 
-def test_gr10_r9_orchestration_mse_partial_until_r9_r1() -> None:
+def test_gr10_r9_orchestration_mse_partial_after_r9_r1_authority_migration() -> None:
     row = next(row for row in GR10_ORCHESTRATION_CAPABILITY_SEMANTICS if row.capability == "MSE")
     assert row.coverage is Gr10CoverageStatus.PARTIAL
     assert gr10_matrix_orchestration_status("MSE") is Gr10CoverageStatus.PARTIAL
@@ -49,13 +50,14 @@ def test_gr10_r9_meaningful_side_effect_gep_orchestration_partial() -> None:
     assert row.orchestration_coverage is Gr10CoverageStatus.PARTIAL
 
 
-def test_gr10_r9_production_wiring_uses_composition_builder() -> None:
+def test_gr10_r9_production_wiring_requires_explicit_mse_port() -> None:
     ctx_source = _RUNTIME_CONTEXT.read_text(encoding="utf-8-sig")
     assert "meaningful_side_effect_authorization=config.meaningful_side_effect_authorization" in ctx_source
     decl_source = _DECLARATIVE_WIRING.read_text(encoding="utf-8-sig")
     assert "meaningful_side_effect_authorization=" in decl_source
     comp_source = _COMPOSITION.read_text(encoding="utf-8-sig")
-    assert "build_default_orchestration_meaningful_side_effect_authorization_boundary" in comp_source
+    assert "meaningful_side_effect_authorization is required when production_mode=True" in comp_source
+    assert "build_default_orchestration_meaningful_side_effect_authorization_boundary" not in comp_source
 
 
 def test_gr10_r9_invoker_enforces_boundary_before_effect_ast() -> None:
@@ -66,9 +68,11 @@ def test_gr10_r9_invoker_enforces_boundary_before_effect_ast() -> None:
     config_source = _CONFIG.read_text(encoding="utf-8-sig")
     assert "MeaningfulSideEffectAuthorizationPort" in config_source
     assert "meaningful_side_effect_authorization" in config_source
+    contract_source = _CONTRACT.read_text(encoding="utf-8-sig")
+    assert "class MeaningfulSideEffectAuthorizationPort" in contract_source
     assert tree is not None
 
 
-def test_gr10_r9_next_remediation_is_r9_r1_mse() -> None:
-    assert GR10_R9_NEXT_REMEDIATION.capability == "MSE"
-    assert "GR-10-R9-R1" in GR10_R9_NEXT_REMEDIATION.task_name
+def test_gr10_r9_r1_next_remediation_is_graph_mse_follow_up() -> None:
+    assert GR10_R9_R1_NEXT_REMEDIATION.capability == "MSE"
+    assert "GR-10-R9" in GR10_R9_R1_NEXT_REMEDIATION.task_name
