@@ -157,13 +157,13 @@ async def test_backpressure_qualification_slow_exporter() -> None:
             return
 
     max_capacity = 4
+    policy = EventDeliveryPolicy(max_capacity=max_capacity)
     bridge = RuntimeEventExportSink(OtlpEventExportSink(transport=SlowTransport()))
-    bounded = BoundedEventSink(bridge, EventDeliveryPolicy(max_capacity=max_capacity))
-    assert bounded._queue.maxsize == max_capacity  # noqa: SLF001
+    bounded = BoundedEventSink(bridge, policy)
     bus = RuntimeEventBus(event_sink=bounded)
     for index in range(24):
         await bus.publish(_event())
-        if bounded._queue.qsize() > max_capacity:  # noqa: SLF001
+        if bounded.pending_depth > policy.max_capacity:
             pytest.fail("bounded queue exceeded configured max_capacity")
     await asyncio.sleep(5.5)
     bus.close()
