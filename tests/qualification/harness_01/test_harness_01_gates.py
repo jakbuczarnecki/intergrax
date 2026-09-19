@@ -29,9 +29,17 @@ from tests.qualification.harness_01.invoker_callsite_detector import (
     file_references_runtime_tool_invoker,
     is_governed_runtime_tool_invoker_invoke_call,
 )
+from tests.qualification.harness_01.nexus_boundary_detector import (
+    collect_nexus_private_member_access_violations,
+    file_imports_nexus_module,
+)
+from tests.qualification.harness_01.nexus_import_inventory import (
+    HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTERS,
+)
 from tests.qualification.harness_01.production_scope import (
     iter_application_host_py_files,
     iter_production_agent_py_files,
+    iter_production_execution_py_files,
     iter_production_intergrax_py_files,
     relative_posix,
     repo_root,
@@ -56,7 +64,7 @@ _DECL_PORT = _REPO_ROOT / "intergrax" / "contracts" / "execution_bound_declarati
 
 def _collect_production_governed_invoker_callsites() -> dict[str, list[int]]:
     hits: dict[str, list[int]] = {}
-    for path in iter_production_intergrax_py_files():
+    for path in iter_production_execution_py_files():
         rel = relative_posix(path)
         try:
             source = path.read_text(encoding="utf-8-sig")
@@ -87,44 +95,36 @@ def _collect_runtime_tool_invoker_reference_files() -> set[str]:
     return refs
 
 
-def _nexus_imported_names(tree: ast.Module) -> set[str]:
-    names: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith("intergrax.runtime.nexus"):
-            for alias in node.names:
-                names.add(alias.asname or alias.name.split(".")[-1])
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                mod = alias.name
-                if mod == "intergrax.runtime.nexus" or mod.startswith("intergrax.runtime.nexus."):
-                    names.add(alias.asname or mod.split(".")[-1])
-    return names
+def _collect_higher_layer_nexus_import_files() -> set[str]:
+    discovered: set[str] = set()
+    scan_roots = list(iter_production_execution_py_files())
+    scan_roots.extend(iter_production_agent_py_files())
+    seen: set[str] = set()
+    for path in scan_roots:
+        rel = relative_posix(path)
+        if rel in seen or rel.startswith("intergrax/runtime/nexus/"):
+            continue
+        seen.add(rel)
+        source = path.read_text(encoding="utf-8-sig")
+        if file_imports_nexus_module(source):
+            discovered.add(rel)
+    return discovered
 
 
 def _collect_private_nexus_member_access_violations() -> list[str]:
     violations: list[str] = []
-    scan_roots = list(iter_production_intergrax_py_files())
+    scan_roots = list(iter_production_execution_py_files())
     scan_roots.extend(iter_production_agent_py_files())
-    scan_roots.extend(iter_application_host_py_files())
+    seen: set[str] = set()
     for path in scan_roots:
         rel = relative_posix(path)
-        if rel.startswith("intergrax/runtime/nexus/"):
+        if rel in seen or rel.startswith("intergrax/runtime/nexus/"):
             continue
+        seen.add(rel)
         source = path.read_text(encoding="utf-8-sig")
-        try:
-            tree = ast.parse(source, filename=rel)
-        except SyntaxError:
-            continue
-        nexus_names = _nexus_imported_names(tree)
-        if not nexus_names:
-            continue
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.Attribute):
-                continue
-            if not node.attr.startswith("_") or node.attr.startswith("__"):
-                continue
-            if isinstance(node.value, ast.Name) and node.value.id in nexus_names:
-                violations.append(f"{rel}:{node.lineno}:{node.value.id}{node.attr}")
+        violations.extend(
+            collect_nexus_private_member_access_violations(source, filename=rel)
+        )
     return violations
 
 
@@ -381,3 +381,72 @@ def test_harness_01_synthetic_unauthorized_callsite_would_fail_allowlist() -> No
     assert hits
     rel = "intergrax/foo/bypass.py"
     assert rel not in HARNESS_01_AUTHORIZED_RUNTIME_TOOL_INVOKER_CALLSITE_FILES
+
+
+def test_harness_01_production_execution_scope_includes_application_hosts() -> None:
+    host_files = iter_application_host_py_files()
+    assert host_files, "application host glob must match production host modules"
+    execution_rels = {relative_posix(path) for path in iter_production_execution_py_files()}
+    for path in host_files:
+        assert relative_posix(path) in execution_rels
+
+
+def test_harness_01_production_agent_scope_is_non_empty() -> None:
+    assert iter_production_agent_py_files(), "intergrax/agents production tree must be non-empty"
+
+
+def test_harness_01_synthetic_application_host_invoker_bypass_would_fail_allowlist() -> None:
+    synthetic = (
+        "class Host:\n"
+        "    def __init__(self, invoker):\n"
+        "        self._invoker = invoker\n"
+        "    def execute(self, state, request):\n"
+        "        return self._invoker.invoke(state=state, request=request)\n"
+    )
+    hits = collect_governed_invoker_callsites(synthetic)
+    assert hits
+    rel = "applications/foo/host/bypass.py"
+    assert rel not in HARNESS_01_AUTHORIZED_RUNTIME_TOOL_INVOKER_CALLSITE_FILES
+
+
+def test_harness_01_higher_layer_nexus_imports_are_classified() -> None:
+    discovered = _collect_higher_layer_nexus_import_files()
+    classified = set(HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTERS)
+    unclassified = sorted(discovered - classified)
+    stale = sorted(classified - discovered)
+    assert unclassified == [], (
+        "Higher-layer Nexus importers must be explicitly classified:\n" + "\n".join(unclassified)
+    )
+    assert stale == [], (
+        "Stale Nexus import inventory entries (no longer import Nexus):\n" + "\n".join(stale)
+    )
+
+
+def test_harness_01_nexus_private_boundary_synthetic_access_cases() -> None:
+    direct = (
+        "from intergrax.runtime.nexus.foo import RuntimeThing\n"
+        "def run():\n"
+        "    x = RuntimeThing()\n"
+        "    return x._secret\n"
+    )
+    alias = (
+        "from intergrax.runtime.nexus.foo import RuntimeThing as RT\n"
+        "class Host:\n"
+        "    def __init__(self):\n"
+        "        self._runtime = RT()\n"
+        "    def run(self):\n"
+        "        return self._runtime._secret\n"
+    )
+    module_import = (
+        "import intergrax.runtime.nexus.foo as nexus_foo\n"
+        "def run():\n"
+        "    x = nexus_foo.RuntimeThing()\n"
+        "    return x._secret\n"
+    )
+    for label, source in (
+        ("direct", direct),
+        ("alias_instance", alias),
+        ("module_import", module_import),
+    ):
+        violations = collect_nexus_private_member_access_violations(source, filename=f"synthetic_{label}.py")
+        assert violations, f"expected private Nexus access hit for {label}"

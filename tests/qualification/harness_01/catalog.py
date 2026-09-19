@@ -189,6 +189,10 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         (
             _ref(_plug02("test_public_pattern_single_invoke_via_bounded_tool_loop"), "CANONICAL_CONSUMPTION"),
             _ref(_h01("test_harness_01_public_pattern_bridge_ignores_port_agent_id_statically"), "IDENTITY_AUTHORITY"),
+            _ref(
+                _plug02("test_public_pattern_port_agent_id_cannot_elevate_authoritative_identity"),
+                "IDENTITY_AUTHORITY",
+            ),
         ),
     ),
     Harness01ExecutionRow(
@@ -474,6 +478,7 @@ HARNESS_01_INDEPENDENT_ZERO_BYPASS_GATE_TEST_NAMES: frozenset[str] = frozenset(
         "test_harness_01_runtime_tool_invoker_constructed_only_at_composition_roots",
         "test_harness_01_application_host_trees_do_not_construct_runtime_tool_invoker",
         "test_harness_01_cross_layer_private_nexus_member_access",
+        "test_harness_01_higher_layer_nexus_imports_are_classified",
         "test_harness_01_runtime_agents_and_hosts_no_direct_forbidden_vendor_sdk",
         "test_harness_01_tool_budget_record_precedes_invoker_invoke",
         "test_harness_01_declarative_compensation_is_separate_contract_plane",

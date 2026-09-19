@@ -68,3 +68,13 @@ def iter_application_host_py_files() -> list[Path]:
                 if not is_excluded_qualification_path(rel):
                     out.append(path)
     return out
+
+
+def iter_production_execution_py_files() -> list[Path]:
+    """Intergrax production tree plus application host trees (deduplicated)."""
+    by_rel: dict[str, Path] = {}
+    for path in iter_production_intergrax_py_files():
+        by_rel[relative_posix(path)] = path
+    for path in iter_application_host_py_files():
+        by_rel.setdefault(relative_posix(path), path)
+    return sorted(by_rel.values(), key=relative_posix)
