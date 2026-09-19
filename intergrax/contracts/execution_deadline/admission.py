@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 
 class ExecutionProtectedWorkAdmissionResult(StrEnum):
@@ -14,6 +14,7 @@ class ExecutionProtectedWorkAdmissionResult(StrEnum):
     CANCELLED = "cancelled"
 
 
+@runtime_checkable
 class ExecutionCancellationView(Protocol):
     def is_cancelled(self) -> bool:
         """Whether cooperative cancellation is active for this execution scope."""

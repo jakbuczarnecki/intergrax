@@ -257,6 +257,11 @@ class UAEPExecutor:
         self._attach_sandbox_session(exec_ctx, request, task_id=task_id)
         self._attach_shared_context(exec_ctx, request)
         self._attach_memory_view(exec_ctx, request)
+        from intergrax.runtime.cancellation.runtime_execution_cancellation_view import (
+            attach_runtime_execution_cancellation_view,
+        )
+
+        attach_runtime_execution_cancellation_view(exec_ctx)
 
         kernel_ctx = build_kernel_session(
             agent_id=contract.id,
@@ -334,7 +339,6 @@ class UAEPExecutor:
                     raise UAEPBlockedError(STRUCTURED_MODEL_INPUT_REQUIRED_REASON) from exc
                 if assembled_prompt and assembled_prompt != (request.message or ""):
                     request = replace(request, message=assembled_prompt)
-            exec_ctx.domain_context = runtime_context
             from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     
             exec_ctx.metadata["runtime_state"] = RuntimeState(
