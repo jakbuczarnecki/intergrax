@@ -33,6 +33,9 @@ from intergrax.runtime.nexus.observability_wiring import wire_nexus_observabilit
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from testing_support.admitted_root_governance_identity import (
+    lab_admitted_root_governance_identity_for_task,
+)
 
 pytestmark = [
     pytest.mark.unit,
@@ -66,6 +69,13 @@ class _RaisingExternalDiagnosticPort:
         request: TerminalExecutionDiagnosticRequest,
     ) -> TerminalDiagnosticDispatchResult:
         raise RuntimeError("external diagnostic failure")
+
+
+def _unified_task_runner(loop: NexusLoop) -> UnifiedTaskRunner:
+    return UnifiedTaskRunner(
+        loop,
+        admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
+    )
 
 
 def _parse(path: Path) -> ast.Module:
@@ -104,7 +114,7 @@ async def test_external_port_injected_into_nexus_terminal_path() -> None:
     registry.register(EchoAgent())
     loop = NexusLoop(registry)
     loop.attach_terminal_diagnostic_trigger(external)
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
     run_id = mint_run_id()
 
     result = await runner.run_task(
@@ -128,7 +138,7 @@ async def test_external_port_failure_does_not_change_business_outcome() -> None:
     registry.register(EchoAgent())
     loop = NexusLoop(registry)
     loop.attach_terminal_diagnostic_trigger(_RaisingExternalDiagnosticPort())
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
 
     result = await runner.run_task(
         Task(
