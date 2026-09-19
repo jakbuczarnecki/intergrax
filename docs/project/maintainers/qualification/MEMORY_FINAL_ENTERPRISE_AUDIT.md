@@ -2187,3 +2187,182 @@ AUDIT-8 architectural verdict, provider statuses, and certification claims are *
 Independent GitHub audit required for this reconciliation commit (message `docs(memory): reconcile final audit evidence sha`) and for historical evidence `0e17af498f94204c5a855e85a92c64a4cee87f32`.
 
 > Wprowadzone zmiany MEM-FINAL-AUDIT-8-R muszą zostać niezależnie zaudytowane na podstawie faktycznego commitu reconciliation oraz historycznego evidence SHA z GitHuba. Lokalny raport Cursor AI nie jest samodzielnym dowodem poprawności implementacji.
+
+---
+
+## MEM-HARDEN-FINAL program — enterprise hardening ledger (CLOSED)
+
+| Stage | Status | Scope (summary) |
+| ----- | ------ | ---------------- |
+| MEM-HARDEN-FINAL-1 | **CLOSED** | Typed plugin contracts and creation contexts (six public factory surfaces) |
+| MEM-HARDEN-FINAL-2 | **CLOSED** | Canonical execution correlation on `MemoryDiagnosticEvent` |
+| MEM-HARDEN-FINAL-3 | **CLOSED** | Documentation synchronization (architecture + author guides) |
+| MEM-HARDEN-FINAL-4 | **CLOSED** | Specialized composition hardening (entity / procedural / long-horizon) |
+| MEM-FINAL-ZERO-GAP-AUDIT | **CLOSED** (verdict **FAIL** — findings F-01…F-04) | Independent zero-gap scan before unified discovery closure |
+| MEM-FINAL-ZERO-GAP-1 | **CLOSED** | Unified host discovery policy, platform evidence, STRICT semantics |
+| MEM-FINAL-ZERO-GAP-AUDIT-R2 | **CLOSED** (verdict **PASS — ZERO MATERIAL GAPS FOUND**) | Re-audit at exact SHA after ZERO-GAP-1 |
+| **MEM-ENTERPRISE-CLOSURE** | **CLOSED** | Formal enterprise certification narrative + roadmap closure (this section) |
+
+**Memory Enterprise Hardening = CLOSED** · **Memory Enterprise Certification = CLOSED** (bounded certified surface only; see below).
+
+Post-certification Memory evolution remains **future work** — new capabilities require explicit planning; this closure does not freeze the platform forever.
+
+---
+
+## MEM-FINAL-ZERO-GAP-AUDIT — initial zero-gap scan (historical FAIL)
+
+| Field | Value |
+| ----- | ----- |
+| Verdict (historical) | **FAIL** — material gaps in plugin evidence / discovery / platform evidence |
+| Findings | F-01…F-04 (remediated in MEM-FINAL-ZERO-GAP-1; closure verified in R2) |
+| Provenance | First zero-gap pass **did not** certify; FAIL is retained as audit evidence |
+
+| ID | Finding (historical) | Final status |
+| -- | -------------------- | ------------ |
+| F-01 | Incomplete plugin evidence / STRICT fail-open on platform report | **CLOSED** (MEM-FINAL-ZERO-GAP-1) |
+| F-02 | EntityTemporal forced discovery / activation | **CLOSED** (MEM-FINAL-ZERO-GAP-1) |
+| F-03 | SessionTurnIndex forced discovery | **CLOSED** (MEM-FINAL-ZERO-GAP-1) |
+| F-04 | Incomplete Memory platform evidence in `ApplicationPlatformPluginEvidence` | **CLOSED** (MEM-FINAL-ZERO-GAP-1) |
+
+---
+
+## MEM-FINAL-ZERO-GAP-1 — unified discovery / evidence / STRICT
+
+| Field | Value |
+| ----- | ----- |
+| **MEM-FINAL-ZERO-GAP-1_SHA** | `1484ba06a24b2f2bfe2ea6d77c922a9045fffc95` |
+| Production delta | Unified host discovery policy → `MemoryStorePluginCatalog` → all Memory plugin surfaces → `MemoryPlatformWiring.memory_store_plugin_load_report` → STRICT → `ApplicationPlatformPluginEvidence.memory_report` |
+| Historical fragmented discovery paths | **SUPERSEDED** — not current architecture (documented here for provenance only) |
+| Primary tests | `tests/unit/applications/test_memory_plugin_discovery_unified.py` |
+
+---
+
+## MEM-FINAL-ZERO-GAP-AUDIT-R2 — final zero-gap re-audit
+
+| Field | Value |
+| ----- | ----- |
+| **ZERO_GAP_AUDIT_SHA** | `4db4bb69671c7f6091284e448e2d09094ebd54cd` |
+| **AUDITED_MEMORY_SHA** | `4db4bb69671c7f6091284e448e2d09094ebd54cd` |
+| Verdict | **PASS — ZERO MATERIAL GAPS FOUND** |
+| P0 | **0** |
+| P1 | **0** |
+| Unresolved P2 inside certified surface | **0** |
+| Regression vs MEM-FINAL-ZERO-GAP-1 model | **NONE** |
+| Memory production path drift since `1484ba06a` | **NONE** (architecture drift check paths empty) |
+
+### Bounded Memory verification (R2 test evidence — not full-repo)
+
+| Metric | Result |
+| ------ | ------ |
+| Pytest (bounded Memory verification suite at R2) | **641 passed**, **0 failed**, **1 skipped** |
+| Scope | Memory architecture / admission / resolver / unified discovery / platform evidence gates — **not** a full-repository test run |
+
+### P3 residuals (R2)
+
+| ID | Item | Status |
+| -- | ---- | ------ |
+| R2-01 | `merge_domain_plugin_load_reports` as non-blocking reusable primitive | **ACCEPTED P3** (no roadmap task) |
+| R2-02 | Qualification matrix stale “product preset P1” wording | **CLOSED** (documentation cleanup in MEM-ENTERPRISE-CLOSURE) |
+
+---
+
+## MEM-ENTERPRISE-CLOSURE — formal enterprise certification (canonical)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **ENTERPRISE CERTIFIED / CLOSED** |
+| **CERTIFIED_SHA** | `4db4bb69671c7f6091284e448e2d09094ebd54cd` |
+| **ZERO_GAP_AUDIT_SHA** | `4db4bb69671c7f6091284e448e2d09094ebd54cd` |
+| **MEM-FINAL-ZERO-GAP-1_SHA** | `1484ba06a24b2f2bfe2ea6d77c922a9045fffc95` |
+| **CLOSURE_EVIDENCE_SHA** | Recorded at commit `docs(memory): record final enterprise certification closure` (exact SHA = post-closure `git rev-parse HEAD`) |
+| Prior MEM-FINAL-AUDIT-8 `VERIFIED_SHA` | `d720f5e96182f53946a4b88699b910c4fdeb0e0a` (subsumed by zero-gap + closure lineage; historical evidence SHAs **immutable**) |
+| Production / contract / runtime changes in closure task | **NONE** (documentation-only) |
+
+Warstwa Memory została formalnie zamknięta jako **ENTERPRISE CERTIFIED** w dokładnie zdefiniowanym certified surface. Certyfikacja nie rozszerza gwarancji na jawnie wyłączone obszary (non-certified boundaries poniżej).
+
+> Memory is enterprise-certified within the documented certified surface at the audited exact SHA. Capabilities explicitly marked non-durable or outside certification remain outside the guarantee and do not invalidate the certified architecture.
+
+> Wprowadzone zmiany i finalny status certyfikacji muszą zostać niezależnie zaudytowane na podstawie faktycznego commitu dostępnego na GitHubie. Lokalny raport Cursor AI nie jest samodzielnym dowodem finalnej certyfikacji enterprise.
+
+### Certification evidence table
+
+| Area | Status | Evidence |
+| ---- | ------ | -------- |
+| Contracts | **CERTIFIED** | MEM-FINAL-AUDIT-2…8 + behavioral qual 6-R2 |
+| Pluginability | **CERTIFIED** | MEM-HARDEN-FINAL-1, resolver/catalog suites, six surfaces |
+| Composition | **CERTIFIED** | MEM-HARDEN-FINAL-4, MEM-ENT-15, audit-2-R2 control plane |
+| Governance | **CERTIFIED** | MEM-ENT-10*, AUDIT-3 security/lifecycle |
+| Observability | **CERTIFIED** | MEM-ENT-12, sink non-authority proofs |
+| Execution correlation | **CERTIFIED** (integrated fields) | MEM-HARDEN-FINAL-2 |
+| Provider identity | **CERTIFIED** | 5A-R2 identity binding |
+| Qualification / admission | **CERTIFIED** | 5A-R3 durability evidence admission, production admission suites |
+| Durable certified providers | **BOUNDED** | Qualification matrix + 5B–5G vendor/durable rows (proven paths only) |
+| Specialized durability | **OUTSIDE CERTIFIED DURABILITY** | EntityTemporal / Procedural / LongHorizon default reference plugins |
+| W3C propagation | **OUTSIDE CERTIFIED SCOPE** | Memory-level W3C trace propagation **NOT INTEGRATED** (boundary, not gap) |
+
+### Certified surface (minimum)
+
+**Architecture:** Memory contracts; resolver/classifier; host-controlled plugin discovery; materialization; composition; provider identity; governance/security; observability; execution correlation; lifecycle/control plane; production admission; qualification evidence.
+
+**Public Memory plugin surfaces (six):** `UserProfile`, `SessionStorage`, `EntityTemporal`, `Procedural`, `LongHorizon`, `SessionTurnIndex`.
+
+**Plugin certification properties (all six surfaces):** typed contract; typed creation context; shared classifier; host-controlled discovery; explicit injection; deterministic materialization; fail-closed invalid target; fail-closed duplicate id; canonical evidence; STRICT semantics; runtime composition.
+
+**Specialized default durability (explicit):**
+
+```text
+EntityTemporal = NON-DURABLE REFERENCE by default
+Procedural = NON-DURABLE REFERENCE by default
+LongHorizon = NON-DURABLE REFERENCE by default
+```
+
+**Unified discovery / evidence (current architecture only):**
+
+```text
+host discovery policy
+  → MemoryStorePluginCatalog
+  → all Memory plugin surfaces
+  → MemoryPlatformWiring.memory_store_plugin_load_report
+  → STRICT
+  → ApplicationPlatformPluginEvidence.memory_report
+```
+
+### Public plugin surfaces — final status
+
+| Surface | Final status |
+| ------- | ------------ |
+| UserProfile | **CERTIFIED** (contract + admission + qualified durable paths per matrix) |
+| SessionStorage | **CERTIFIED** (contract + plugin materialization + evidence) |
+| EntityTemporal | **CERTIFIED** (contract/runtime); **NON-DURABLE REFERENCE by default** |
+| Procedural | **CERTIFIED** (contract/runtime); **NON-DURABLE REFERENCE by default** |
+| LongHorizon | **CERTIFIED** (contract/runtime); **NON-DURABLE REFERENCE by default** |
+| SessionTurnIndex | **CERTIFIED** (contract + qualified vector vendor reconnect paths) |
+
+### Non-certified boundaries (explicit)
+
+| Boundary | Status |
+| -------- | ------ |
+| HA / failover | **NOT IN CERTIFIED SCOPE** |
+| Global thread safety | **NOT IN CERTIFIED SCOPE** |
+| General multi-process guarantees | **NOT IN CERTIFIED SCOPE** |
+| General power-loss / crash-safe guarantees | **NOT IN CERTIFIED SCOPE** |
+| Durable specialized persistence (EntityTemporal, Procedural, LongHorizon) | **OUTSIDE CERTIFIED DURABILITY** |
+| Memory-level W3C trace propagation | **NOT INTEGRATED** (canonical execution correlation fields **are** integrated) |
+| Task cross-restart durability | **Outside certified path** except qualified SQLite task/org rows in matrix |
+| Public proof catalog entry for Memory domain | **Not claimed** (enterprise certification = maintainer qualification ledger + exact SHA) |
+
+### Provider qualification wording (unchanged distinctions)
+
+| Level | Meaning |
+| ----- | ------- |
+| Behavioral qualification | Scenario/runner proof — not admission alone |
+| Durability qualification | Reopen/restart/delete harness — trusted evidence feed |
+| Restart/reconnect qualification | Vendor/client reconnect proofs (V6 STI) |
+| Real-vendor qualification | Live infrastructure suites (5C–5F where executed) |
+| Production admission | Host `memory_provider_admission` fail-closed on PRODUCT |
+
+### Verdict
+
+**PASS — MEMORY ENTERPRISE CERTIFICATION CLOSED**
+
+**Memory Enterprise Certification = CLOSED** · **P0 = 0** · **P1 = 0** at **`CERTIFIED_SHA` = `4db4bb69671c7f6091284e448e2d09094ebd54cd`**.

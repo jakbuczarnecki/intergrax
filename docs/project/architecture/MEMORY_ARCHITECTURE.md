@@ -2,7 +2,7 @@
 
 **This document is the canonical maintainer-level architecture reference for the Integrax Memory layer.**
 
-**Status:** MEM-ENT-1…15 closeout + **MEM-FINAL-AUDIT-7-R2** exact-SHA documentation evidence closure — **MEMORY ARCHITECTURE — DOCUMENTATION CERTIFIED**. MEM-FINAL-AUDIT-7-R reconciled P1-7-01/P1-7-02 (Mongo V6 qualification; authority ≠ durability).
+**Status:** **ENTERPRISE CERTIFIED / CLOSED** at **`4db4bb69671c7f6091284e448e2d09094ebd54cd`** (**MEM-ENTERPRISE-CLOSURE**). Prior **MEM-FINAL-AUDIT-7-R2** documentation certification and **MEM-FINAL-ZERO-GAP-AUDIT-R2** (`PASS — ZERO MATERIAL GAPS FOUND`) remain in the qualification ledger. Bounded certified surface and non-certified boundaries: [`MEMORY_FINAL_ENTERPRISE_AUDIT.md`](../maintainers/qualification/MEMORY_FINAL_ENTERPRISE_AUDIT.md) § MEM-ENTERPRISE-CLOSURE.
 **Audience:** engineers extending stores, projections, strategies, or Tier-3 wiring  
 **Domain hub (product overview):** [`MEMORY.md`](MEMORY.md)  
 **Plan hub:** [`../maintainers/plans/MEMORY.md`](../maintainers/plans/MEMORY.md)  

@@ -1,6 +1,6 @@
 # Memory
 
-> **Enterprise architecture:** canonical maintainer reference [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) (**MEMORY ARCHITECTURE — DOCUMENTATION CERTIFIED**, MEM-FINAL-AUDIT-7-R2) · visual flows [`MEMORY_ARCHITECTURE_DIAGRAMS.md`](MEMORY_ARCHITECTURE_DIAGRAMS.md) ([provider](MEMORY_PROVIDER_EXTENSION_GUIDE.md) · [projection](MEMORY_PROJECTION_EXTENSION_GUIDE.md)). This hub remains the product-oriented domain overview.
+> **Enterprise architecture:** canonical maintainer reference [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) — **ENTERPRISE CERTIFIED / CLOSED** at exact SHA **`4db4bb69671c7f6091284e448e2d09094ebd54cd`** ([`MEMORY_FINAL_ENTERPRISE_AUDIT.md`](../maintainers/qualification/MEMORY_FINAL_ENTERPRISE_AUDIT.md) § MEM-ENTERPRISE-CLOSURE). Visual flows [`MEMORY_ARCHITECTURE_DIAGRAMS.md`](MEMORY_ARCHITECTURE_DIAGRAMS.md) ([provider](MEMORY_PROVIDER_EXTENSION_GUIDE.md) · [projection](MEMORY_PROJECTION_EXTENSION_GUIDE.md)). This hub remains the product-oriented domain overview; [public proof catalog](#evidence--proof) entry for Memory is still **not claimed**.
 
 **Intergrax Memory** is the platform domain that governs **what the harness remembers** - session turns, task-scoped state, user and organization profiles, and durable long-term facts - across execution boundaries, with explicit stores, write policies, and recall contracts.
 

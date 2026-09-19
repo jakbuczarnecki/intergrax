@@ -168,14 +168,18 @@ Load **only** the satellite matching your task or cited gap ID.
 
 ---
 
-## Enterprise memory hardening (MEM-ENT)
+## Enterprise memory hardening (MEM-ENT) — program closure
 
-| Task | Status | Notes |
-| ---- | ------ | ----- |
+| Program / stage | Status | Notes |
+| --------------- | ------ | ----- |
+| **Memory Enterprise Hardening** | **CLOSED** | MEM-HARDEN-FINAL-1…4 — see qualification ledger |
+| **Memory Enterprise Certification** | **CLOSED** | **MEM-ENTERPRISE-CLOSURE** · **`CERTIFIED_SHA` = `4db4bb69671c7f6091284e448e2d09094ebd54cd`** |
 | MEM-ENT-1…15 | **CLOSED** | Core, lifecycle, governance, providers, durability, resilience, E2E certification |
 | MEM-ENT-16 | **CLOSED** | Architecture & documentation — [`architecture/MEMORY_ARCHITECTURE.md`](../../architecture/MEMORY_ARCHITECTURE.md) |
-| MEM-XINT-1 | **NEXT** | Memory × Context Engineering × Tools × RAG cross-layer integration |
+| MEM-FINAL-ZERO-GAP-1 | **CLOSED** | `1484ba06a24b2f2bfe2ea6d77c922a9045fffc95` — unified discovery/evidence/STRICT |
+| MEM-FINAL-ZERO-GAP-AUDIT-R2 | **CLOSED** | Zero material gaps at certified SHA |
+| MEM-XINT-1 | **FUTURE** | Memory × Context Engineering × Tools × RAG cross-layer integration (post-certification) |
 
-Baseline pin for MEM-ENT-15 certification: `b7497564eb43050b93fa5eed00e83008b00278cb` (`test(memory): close public composition certification`).
+Baseline pin for MEM-ENT-15 certification (historical): `b7497564eb43050b93fa5eed00e83008b00278cb` (`test(memory): close public composition certification`).
 
 ---

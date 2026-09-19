@@ -4,6 +4,8 @@
 **Audit execution HEAD:** `0ba1a514c60af1c319bd35fc714268de9640bcbd` · branch `development`  
 **Ledger:** [`MEMORY_FINAL_ENTERPRISE_AUDIT.md`](MEMORY_FINAL_ENTERPRISE_AUDIT.md) (authoritative certification narrative)
 
+**Current certification status:** **ENTERPRISE CERTIFIED / CLOSED** at **`4db4bb69671c7f6091284e448e2d09094ebd54cd`** (MEM-ENTERPRISE-CLOSURE). **P0 = 0** · **P1 = 0** (current open severities). Historical gap rows remain for provenance.
+
 ---
 
 ## Qualification ladder (semantic map)
@@ -51,7 +53,7 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 
 | Capability | Reference provider | Durable provider | Real vendor proof | Production qualified |
 | ---------- | ------------------ | ---------------- | ----------------- | -------------------- |
-| UserProfile store | `InMemoryUserProfileStore` | `SQLiteUserProfileStore` (sqlite integration) | **NO** (local file only) | **CONDITIONALLY** — sqlite lab/product harness; product preset gap (see P1) |
+| UserProfile store | `InMemoryUserProfileStore` | `SQLiteUserProfileStore` (sqlite integration) | **NO** (local file only) | **CONDITIONALLY** — sqlite lab/product harness; historical GAP-4-01 product preset **CLOSED (5A)** — PRODUCT fail-closed admission when durable evidence missing |
 | UserProfile projection | `UserProfileLtmVectorProjection` | via RAG vector backend | **NO** Memory E2E | **NOT QUALIFIED** vendor |
 | Entity temporal | `intergrax.in_memory_entity_temporal` | **NONE** in repo | **NO** | **NOT QUALIFIED** durable |
 | Entity indexer | `DefaultEntityMemoryIndexer` | derived | n/a | **CONTRACT QUALIFIED** (service) |
@@ -149,7 +151,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 
 | Capability | Lab / test default | Production-oriented default | Fallback |
 | ---------- | ------------------ | --------------------------- | -------- |
-| UserProfile + session | SQLite when `relational_store.slug==sqlite` | **Gap:** `product_defaults` uses PostgreSQL relational preset — **does not** enable Memory sqlite path | InMemory when neither sqlite nor mongo document_store (`memory_wiring.py` priority 3) |
+| UserProfile + session | SQLite when `relational_store.slug==sqlite` | **Historical:** `product_defaults` PostgreSQL relational preset does not auto-enable Memory sqlite path — **PRODUCT admission fail-closed** when persistent memory required without trusted durable evidence (GAP-4-01 **CLOSED**) | InMemory when neither sqlite nor mongo document_store **and** profile/admission allows (`memory_wiring.py` priority 3) |
 | Entity temporal | `intergrax.in_memory_entity_temporal` if flag on | same unless `entity_temporal_memory_store_plugin_id` set | none (explicit plugin materialize) |
 | Procedural / LH | in-memory plugins when flags on | same | none |
 | STI | none unless flag | `VectorSessionTurnIndexStore` if RAG stack present | `None` if vector backend missing (`assert_memory_vector_backend_available` fail-closed when flags require backend) |
@@ -163,7 +165,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 - **Explicit** non-durable fallback in `_resolve_baseline_memory_platform_wiring` when integration profile lacks sqlite **and** mongodb bindings (`memory_wiring.py` lines 215–223).
 - **Vector memory:** fail-closed via `MemoryVectorBackendUnavailableError` when flags require backend but RAG stack incomplete (`memory_vector_wiring.py`).
 - **STRICT + broken EP bootstrap:** `enforce_strict_memory_plugin_bootstrap` raises (`memory_wiring.py`).
-- **Production silent non-durable for enabled LTM:** **risk** when `product_defaults` integration is PostgreSQL-only (not sqlite) and memory flags enabled — falls through to InMemory without error → **P1** (not hidden exception).
+- **Production silent non-durable for enabled LTM (historical GAP-4-01):** **CLOSED (5A-R3)** — `memory_provider_admission` + STRICT/product gates reject PRODUCT persistent composition without trusted durable evidence; baseline InMemory fallback remains explicit for non-gated lab paths only.
 
 ---
 
@@ -515,7 +517,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | Organization | SQLite | profile persist → reopen | sqlite | YES | optional |
 | Entity temporal | TBD durable plugin | qual runner + reopen | vendor TBD | YES | P1 strategic |
 
-**Priority:** P0 test coverage = STI real vendor (GAP-4-02); P1 = product wiring fail-closed + Mongo durable UserProfile; P2 = specialized durable stores.
+**Priority (historical AUDIT-5 planning — superseded for closure):** P0 STI real vendor (**CLOSED** 5D–5F); product wiring fail-closed (**CLOSED** 5A); Mongo UserProfile real-vendor (**CLOSED** 5C); P2 specialized durable stores remain **future / out of certified durability**.
 
 ---
 

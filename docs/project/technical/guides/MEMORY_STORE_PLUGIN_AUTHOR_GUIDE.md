@@ -318,6 +318,8 @@ Plugins return store instances; managers (`UserProfileManager`, `SessionManager`
 
 ## 9. Registration and discovery (critical)
 
+**Unified host policy (MEM-FINAL-ZERO-GAP-1, current architecture):** one host discovery policy feeds `MemoryStorePluginCatalog` for **all** Memory plugin surfaces; the canonical EP load report is exposed on `MemoryPlatformWiring.memory_store_plugin_load_report`, enforced under STRICT bootstrap, and copied to `ApplicationPlatformPluginEvidence.memory_report`. Do not document pre–ZERO-GAP-1 fragmented per-surface discovery as the current model.
+
 Memory store plugins follow classified discovery and profile-driven materialization (D8):
 
 ```mermaid
