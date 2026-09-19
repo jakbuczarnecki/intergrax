@@ -24,7 +24,7 @@ from intergrax.runtime.execution.deadline_provider_guard import (
     ExecutionProtectedWorkDeniedError,
     resolve_active_provider_timeout_seconds,
 )
-from intergrax.contracts.execution_identity import mint_run_id
+from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
 from intergrax.contracts.execution_retry import (
     ExecutionFailureClassification,
     ExecutionFailureKind,
@@ -123,6 +123,29 @@ class _KV(DistributedKVStore):
             return True
 
 
+class _CreateCountingPersistence(InMemoryExecutionDeadlinePersistence):
+    def __init__(self) -> None:
+        super().__init__()
+        self.cas_create_calls = 0
+
+    def compare_and_create(
+        self,
+        *,
+        tenant_id: str,
+        run_id: object,
+        expected: bytes | None,
+        encoded_snapshot: bytes,
+    ) -> bool:
+        if expected is None:
+            self.cas_create_calls += 1
+        return super().compare_and_create(
+            tenant_id=tenant_id,
+            run_id=run_id,  # type: ignore[arg-type]
+            expected=expected,
+            encoded_snapshot=encoded_snapshot,
+        )
+
+
 def _resolver(
     persistence: InMemoryExecutionDeadlinePersistence,
     *,
@@ -155,6 +178,40 @@ def test_q01_root_creates_authority_once_cas() -> None:
     )
     assert first.snapshot.deadline_at_utc == second.snapshot.deadline_at_utc
     assert persistence.load(tenant_id="t1", run_id=run_id) is not None
+
+
+def test_q03_new_attempt_same_run_preserves_deadline() -> None:
+    persistence = _CreateCountingPersistence()
+    tenant_id = "T"
+    run_id = mint_run_id()
+    attempt_a1 = mint_attempt_id()
+    attempt_a2 = mint_attempt_id()
+    assert attempt_a1 != attempt_a2
+    utc = _FakeUtcClock(datetime(2026, 1, 15, 9, 0, tzinfo=timezone.utc))
+    monotonic = _FakeMonotonicClock(50.0)
+    resolver_attempt1 = _resolver(persistence, utc=utc, monotonic=monotonic)
+    deadline1 = resolver_attempt1.resolve_for_root(
+        tenant_id=tenant_id,
+        run_id=run_id,
+        run_budget=RunBudget(max_wall_time_seconds=30.0),
+        existing_run_materialized=False,
+    )
+    utc.advance(12.0)
+    monotonic.advance(12.0)
+    resolver_attempt2 = _resolver(persistence, utc=utc, monotonic=monotonic)
+    deadline2 = resolver_attempt2.resolve_for_root(
+        tenant_id=tenant_id,
+        run_id=run_id,
+        run_budget=RunBudget(max_wall_time_seconds=999.0),
+        existing_run_materialized=True,
+    )
+    assert deadline2.snapshot.deadline_at_utc == deadline1.snapshot.deadline_at_utc
+    assert deadline2.snapshot.run_id == deadline1.snapshot.run_id
+    assert (
+        deadline2.snapshot.authority_created_at_utc
+        == deadline1.snapshot.authority_created_at_utc
+    )
+    assert persistence.cas_create_calls == 1
 
 
 def test_q02_resume_preserves_deadline() -> None:

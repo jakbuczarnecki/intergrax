@@ -31,6 +31,7 @@ from intergrax.runtime.execution.budget.models import ExecutionBudgetAllocationM
 from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from tests.qualification.harness_02.catalog import (
+    HARNESS_02_FINAL_REQUIRED_QUALIFICATION_IDS,
     HARNESS_02_FINDINGS,
     HARNESS_02_PROPAGATION_MATRIX,
     HARNESS_02_R1_QUALIFICATION_MATRIX,
@@ -43,6 +44,16 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _INVOKER = _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "tools" / "invoker.py"
 _INTERGRAX = _REPO_ROOT / "intergrax"
+
+
+def _assert_qualification_evidence_exists(pytest_node_id: str) -> None:
+    if "::" not in pytest_node_id:
+        raise AssertionError(f"qualification evidence must be a pytest node id: {pytest_node_id}")
+    rel_path, test_name = pytest_node_id.split("::", 1)
+    path = _REPO_ROOT / rel_path
+    assert path.is_file(), f"missing evidence file: {rel_path}"
+    source = path.read_text(encoding="utf-8")
+    assert f"def {test_name}(" in source, f"missing test function: {test_name} in {rel_path}"
 
 
 @dataclass(frozen=True)
@@ -245,11 +256,21 @@ def test_harness_02_final_closure_gate() -> None:
         row.flow_id for row in HARNESS_02_PROPAGATION_MATRIX if row.status == "GAP"
     ]
     assert gap_flows == []
-    catalog_ids = {row.qualification_id for row in HARNESS_02_R1_QUALIFICATION_MATRIX}
-    assert HARNESS_02_R1_REQUIRED_QUALIFICATION_IDS <= catalog_ids
+    blockers = [row for row in HARNESS_02_FINDINGS if row.severity == "BLOCKER"]
+    assert blockers == []
+
+    required = HARNESS_02_FINAL_REQUIRED_QUALIFICATION_IDS
+    matrix_ids = [row.qualification_id for row in HARNESS_02_R1_QUALIFICATION_MATRIX]
+    matrix_id_set = frozenset(matrix_ids)
+    assert len(matrix_ids) == len(required)
+    assert matrix_id_set == required
+    assert len(matrix_ids) == len(set(matrix_ids))
+
     for row in HARNESS_02_R1_QUALIFICATION_MATRIX:
-        if row.qualification_id in HARNESS_02_R1_REQUIRED_QUALIFICATION_IDS:
-            assert row.status == "PASS"
+        assert row.qualification_id in required
+        assert row.status == "PASS"
+        _assert_qualification_evidence_exists(row.evidence)
+
     assert any(row.qualification_id == "Q15" and row.status == "PASS" for row in HARNESS_02_R1_QUALIFICATION_MATRIX)
     assert any(row.qualification_id == "Q28" and row.status == "PASS" for row in HARNESS_02_R1_QUALIFICATION_MATRIX)
     assert any(row.qualification_id == "Q29" and row.status == "PASS" for row in HARNESS_02_R1_QUALIFICATION_MATRIX)

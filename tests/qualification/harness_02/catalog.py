@@ -21,6 +21,11 @@ FindingSeverity = Literal[
     "FALSE POSITIVE",
 ]
 
+HARNESS_02_FINAL_REQUIRED_QUALIFICATION_IDS: frozenset[str] = frozenset(
+    {f"Q{n:02d}" for n in range(1, 30)}
+)
+
+# HARNESS-02-R1 phase gate subset (Q05+); final closure uses FINAL_REQUIRED above.
 HARNESS_02_R1_REQUIRED_QUALIFICATION_IDS: frozenset[str] = frozenset(
     {
         "Q05",
@@ -324,6 +329,14 @@ class Harness02R1QualificationRow:
 
 
 HARNESS_02_R1_QUALIFICATION_MATRIX: tuple[Harness02R1QualificationRow, ...] = (
+    Harness02R1QualificationRow("Q01", "PASS", _nid(_H02R1, "test_q01_root_creates_authority_once_cas")),
+    Harness02R1QualificationRow("Q02", "PASS", _nid(_H02R1, "test_q02_resume_preserves_deadline")),
+    Harness02R1QualificationRow(
+        "Q03",
+        "PASS",
+        _nid(_H02R1, "test_q03_new_attempt_same_run_preserves_deadline"),
+    ),
+    Harness02R1QualificationRow("Q04", "PASS", _nid(_H02R1, "test_q04_new_run_new_authority")),
     Harness02R1QualificationRow("Q05", "PASS", _nid(_H02R1A, "test_q05_child_effective_deadline_capped_by_parent")),
     Harness02R1QualificationRow("Q06", "PASS", _nid(_H02R1A, "test_q06_grandchild_observes_narrowed_projection")),
     Harness02R1QualificationRow("Q07", "PASS", _nid(_H02R1A, "test_q07_expired_parent_blocks_child_before_delegate")),
