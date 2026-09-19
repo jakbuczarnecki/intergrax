@@ -83,9 +83,9 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 | SessionTurnIndex | `InMemorySessionTurnIndexStore` | in-proc | `SessionTurnIndexStore` | classifiable | NO | NO | qual runner | NO | qual / tests | V2 | REFERENCE ONLY |
 | SessionTurnIndex | `VectorSessionTurnIndexStore` | vector adapter | `SessionTurnIndexStore` | STI EP optional | Qdrant + pgvector + Chroma reconnect proved | client reconnect | unit + 5D/5E/5F E2E | **YES (Qdrant, pgvector, Chroma)** | `enable_session_vector_index` + RAG | V6 | **REAL-VENDOR RECONNECT QUALIFIED (triple vendor)** |
 | Task memory | `InMemoryTaskMemoryStore` | in-proc | `TaskMemoryPersistence` | NO | NO | NO | unit | NO | tests | V2 | REFERENCE ONLY |
-| Task memory | `SQLiteTaskMemoryStore` | sqlite file | `TaskMemoryPersistence` | sqlite opens | YES | 5G reopen + subprocess | unit + 5G E2E | NO | env `INTERGRAX_TASK_MEMORY_DB` / lab | V5 | **DURABLE RESTART / REOPEN QUALIFIED (5G)** |
+| Task memory | `SQLiteTaskMemoryStore` | sqlite file | `TaskMemoryPersistence` | sqlite opens | YES | 5G-R reopen + subprocess | unit + 5G E2E | NO | env `INTERGRAX_TASK_MEMORY_DB` / lab | V5 | **DURABLE RESTART / REOPEN QUALIFIED (5G-R)** |
 | Organization | `InMemoryOrganizationProfileStore` | in-proc | `OrganizationProfileStore` | NO | NO | NO | unit | NO | mongo path + org flag | V1 | NOT QUALIFIED durable |
-| Organization | `SQLiteOrganizationProfileStore` | sqlite file | `OrganizationProfileStore` | sqlite bundle | YES | 5G reopen + subprocess | unit + 5G E2E | NO | sqlite integration / `INTERGRAX_ORGANIZATION_DB` | V5 | **DURABLE RESTART / REOPEN QUALIFIED (5G)** |
+| Organization | `SQLiteOrganizationProfileStore` | sqlite file | `OrganizationProfileStore` | sqlite bundle | YES | 5G-R reopen + subprocess | unit + 5G E2E | NO | sqlite integration / `INTERGRAX_ORGANIZATION_DB` | V5 | **DURABLE RESTART / REOPEN QUALIFIED (5G-R)** |
 | Conversational | `InMemoryConversationalMemoryStore` | in-proc | `ConversationalMemoryStore` | NO | NO | NO | unit | NO | session/chat | V2 | LEGACY |
 | Conversational | `SQLiteConversationalMemoryStore` | sqlite | `ConversationalMemoryStore` | NO | YES | partial | unit | NO | session | V4 | LEGACY + local durable |
 | Observability | `NoOpMemoryObservabilitySink` | noop | `MemoryObservabilitySink` | inject | n/a | n/a | n/a | NO | default | V1 | REFERENCE ONLY |
@@ -400,6 +400,23 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-07 (Qdrant) | **CLOSED** |
 | GAP-4-07 (pgvector) | **CLOSED** |
 | GAP-4-07 (Chroma) | **CLOSED** |
+
+## MEM-FINAL-AUDIT-5G-R — Task/Organization final exact-SHA durability verification
+
+| Check | Result |
+| ----- | ------ |
+| Initial 5G implementation commit | `d2eaa798eb18029f3c0296e312c3f013a68322f5` |
+| Final exact-SHA durability re-verification (`VERIFIED_SHA`) | `397cca50592f4b4c030cf8c994050fd638c439cd` |
+| Task restart suite | 11 passed, 1 skipped (failed-write chmod — Windows) |
+| Organization restart suite | 10 passed |
+| Application composition E2E | 2 passed |
+| Memory regression | NOT FULL — Mongo 5C excluded (`pymongo` unavailable) |
+| Production changes during 5G-R | **NONE** |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-4-06 | **CLOSED (5G-R)** |
+| Organization durability restart gap | **CLOSED (5G-R)** |
 
 ## MEM-FINAL-AUDIT-5D-R — SessionTurnIndex trusted production admission
 

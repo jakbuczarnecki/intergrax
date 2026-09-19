@@ -1671,6 +1671,29 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 | GAP-4-06 | **CLOSED** |
 | Organization durability gap (restart suite) | **CLOSED** |
 
+**Initial 5G implementation commit:** `d2eaa798eb18029f3c0296e312c3f013a68322f5`
+
+**Readiness (initial 5G run):** PASS WITH CORRECTIONS — code-under-test SHA (`00fe2ab5752003ecd741731812f2c269f437be56`) ≠ final 5G code SHA; formal exact-SHA closure deferred to 5G-R.
+
+## MEM-FINAL-AUDIT-5G-R — Final Exact-SHA Durability Verification
+
+| Check | Result |
+| ----- | ------ |
+| Initial 5G implementation commit | `d2eaa798eb18029f3c0296e312c3f013a68322f5` |
+| Final exact-SHA durability re-verification (`VERIFIED_SHA`) | `397cca50592f4b4c030cf8c994050fd638c439cd` |
+| Working tree at verification | Unrelated WIP only (`tests/qualification/harness_01/*` — not imported by 5G suites) |
+| Production/runtime changes during 5G-R | **NONE** |
+| Task restart suite | **11 passed, 1 skipped** (failed-write chmod — Windows) |
+| Organization restart suite | **10 passed, 0 skipped** |
+| Application composition rebuild E2E | **2 passed** |
+| Memory regression | **688 passed, 14 skipped** — NOT FULL: Mongo 5C excluded (`pymongo` unavailable; collection error if included) |
+| Restart proof kind | **RESTART_REOPEN** + fresh subprocess (not power-loss / crash-safe) |
+| GAP-4-06 | **CLOSED** |
+| Organization durability gap | **CLOSED** |
+| Task classification | **V5 — DURABLE RESTART / REOPEN QUALIFIED** |
+| Organization classification | **V5 — DURABLE RESTART / REOPEN QUALIFIED** |
+| P0 / P1 | **NONE** |
+
 **Readiness:** READY FOR MEM-FINAL-AUDIT-6 AFTER INDEPENDENT GITHUB AUDIT
 
-> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5G muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-6.
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5G-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-6.
