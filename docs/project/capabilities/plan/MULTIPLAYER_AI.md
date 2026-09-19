@@ -273,7 +273,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-5G | E2E / isolation qualification | **CLOSED** |
 | MP-5H | Final MP-5 enterprise certification | **CLOSED / FINAL CERTIFICATION PASSED** |
 | MP-5 | Principal-scoped ContextView capability | **ENTERPRISE CERTIFIED / CLOSED** |
-| MP-6 | Collaborative Activity + provenance | **MP-6A CLOSED**; **MP-6B — NEXT** |
+| MP-6 | Collaborative Activity + provenance | **IN PROGRESS** (**MP-6C — NEXT**) |
 
 ### MP-5A — ContextView ownership & contract architecture gate
 
@@ -338,7 +338,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**); **MP-6B — NEXT** |
+| **Status** | **MP-6 — IN PROGRESS**; **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**); **MP-6B — CLOSED / RECERTIFIED** (**MP-6B-C1** / **MP-6B-C1-R1**); **MP-6C — NEXT** |
 | **Purpose** | Collaborative activity stream linked to provenance and evidence. |
 | **Owning domain** | **COLLABORATIVE_WORK** — **MP-6 ownership — FROZEN** ([ADR-MP-007](../../technical/adr/entries/2026-09-18/ADR-MP-007.md)) |
 | **Dependencies** | MP-2, MP-3, MP-4, MP-5 recommended |
@@ -356,7 +356,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 |-------|-------|
 | **Status** | **MP-6A — CLOSED / RECERTIFIED** |
 | **Proof** | ADR-MP-007; `test_mp6a_collaborative_activity_architecture_gates.py`; `test_mp6a_documentation_regression_gates.py`; `test_mp6a_c1_identity_extensibility_ordering_gates.py`; `test_mp6a_c1_r1_append_ownership_gates.py` |
-| **Next step** | **MP-6B — NEXT** |
+| **Next step** | **MP-6C — NEXT** |
 
 ### MP-6A-C1 — identity / extensibility / timeline semantics
 
@@ -370,7 +370,43 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Status** | **CLOSED** (subject to independent audit) |
-| **Scope** | Append-store atomic idempotency + per-workspace `append_position` / `recorded_at` materialization; publication is append input |
+| **Scope** | Append-store atomic idempotency + per-workspace `append_position` / `recorded_at` materialization; publication is append input only (no sequencing fields) |
+
+### MP-6B — core contract hardening
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED / RECERTIFIED** (subject to independent audit) |
+| **Proof** | `test_mp6b_collaborative_activity_contracts.py` |
+
+### MP-6B-C1 — policy-resolved append intent
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED / RECERTIFIED** (subject to independent audit) |
+| **Proof** | `test_mp6b_c1_policy_resolved_append_intent_boundary.py` |
+
+### MP-6B-C1-R1 — AppendIntent pluginability proof
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED** (subject to independent audit) |
+| **Scope** | Pluginability proof corrected to verify the current AppendIntent contract |
+
+| Slice | Purpose | Status |
+|-------|---------|--------|
+| MP-6A | Ownership, contracts architecture, ADR, docs sync | **CLOSED / RECERTIFIED** |
+| MP-6A-C1 | Identity, extensibility, timeline semantics | **CLOSED** |
+| MP-6A-C1-R1 | Atomic append position / materialization ownership | **CLOSED** |
+| MP-6B | Core activity/provenance contracts (runtime hardening) | **CLOSED / RECERTIFIED** |
+| MP-6B-C1 | Policy-resolved append intent boundary | **CLOSED / RECERTIFIED** |
+| MP-6B-C1-R1 | AppendIntent append-store proof | **CLOSED** |
+| MP-6C | Publication / ingestion boundary | **NEXT** |
+| MP-6D | Persistence / store | **PLANNED** |
+| MP-6E | Scoped read / query | **PLANNED** |
+| MP-6F | Source integrations | **PLANNED** |
+| MP-6G | E2E / isolation / idempotency | **PLANNED** |
+| MP-6H | Final enterprise certification | **PLANNED** |
 
 ---
 

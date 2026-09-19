@@ -51,7 +51,7 @@ Read this hub conservatively - do not merge roadmap intent with shipped capabili
 | **Work artifacts** | MP-3 — **ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004; MP-3A…MP-3H) |
 | **Decision / approval** | **REUSED** canonical Decision System + Governance/HITL + Multiplayer binding/projection (**MP-4R CLOSED**); not Multiplayer-owned authority |
 | **Context view** | MP-5 - principal-scoped; composes UCL/CE/Memory/Knowledge |
-| **Activity / provenance** | MP-6 — **MP-6A CLOSED**; MP-6B+ planned |
+| **Activity / provenance** | MP-6 — **IN PROGRESS**; **MP-6A — CLOSED / RECERTIFIED**; **MP-6B — CLOSED / RECERTIFIED**; **MP-6C — NEXT** |
 | **LKW relation** | MP-7 reference consumer - not owner |
 | **HITL relation** | **REUSED** Governance/HITL + `ExecutionContinuationPort` — not Decision owner; Nexus internal orchestration only |
 | **External agent interoperability** | MP-8 - future; AgentDirectory ≠ AgentRegistry |
@@ -540,7 +540,7 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 | MP-5G | E2E / isolation qualification | **CLOSED** (MP-5G-C1 Model B + four-source E2E; MP-5G-C1-R1 runtime `ContextViewScopeCompatibilityPolicy` DI on composer) |
 | MP-5H | Final MP-5 enterprise certification | **CLOSED / FINAL CERTIFICATION PASSED** |
 | MP-5 | Principal-scoped ContextView capability | **ENTERPRISE CERTIFIED / CLOSED** |
-| MP-6 | Collaborative Activity + provenance | **MP-6A CLOSED**; **MP-6B — NEXT** |
+| MP-6 | Collaborative Activity + provenance | **IN PROGRESS** (**MP-6C — NEXT**) |
 
 **Threat model (fail-closed):** cross-tenant leak → deny/omit; cross-workspace leak → deny/omit; delegation amplification → deny; private memory leak → omit without explicit promotion; external agent over-sharing → least-context projection; unscoped RAG → scope gate before retrieve; application bypass → contracts only via Tier-0/Tier-1; policy missing → deny/omit.
 
@@ -550,7 +550,7 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 
 **Intent:** Observable collaborative activity stream linked to provenance and evidence for audit, debugging, and governance.
 
-**Owner:** **COLLABORATIVE_WORK** (MP-6) — **MP-6 ownership — FROZEN** ([ADR-MP-007](../../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** identity/extensibility/timeline hardening). **MP-6B — NEXT**.
+**Owner:** **COLLABORATIVE_WORK** (MP-6) — **MP-6 ownership — FROZEN** ([ADR-MP-007](../../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6 — IN PROGRESS**. **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** identity/extensibility/timeline hardening). **MP-6B — CLOSED / RECERTIFIED** (**MP-6B-C1** / **MP-6B-C1-R1**). **MP-6C — NEXT**.
 
 **Reused (not owners):** `RuntimeEvent` / `AgentRunTrace` (OBSERVABILITY), `ProofReceipt` (PROOF_RECEIPTS), `ExecutionProvenanceRef`, `GovernanceEvidenceRef`, Decision/Approval IDs (MP-4 / governance).
 
@@ -564,14 +564,17 @@ consumer (runtime, agent, MP-7 LKW, future MP-8 external projection)
 
 **MP-6B-C1:** `CollaborativeActivityAppendIntent` separates producer `requested_durability_class` from policy-resolved `effective_durability_class`; the append store materializes `durability_class` from the intent only; replay with a different effective durability does not mutate the original record.
 
+**MP-6B-C1-R1:** pluginability proof corrected to verify the current AppendIntent contract (`CollaborativeActivityAppendStore.append_idempotent(intent)`).
+
 | Slice | Purpose | Status |
 |-------|---------|--------|
 | MP-6A | Ownership, contracts architecture, ADR, docs sync | **CLOSED / RECERTIFIED** |
 | MP-6A-C1 | Identity, extensibility, timeline semantics | **CLOSED** |
 | MP-6A-C1-R1 | Atomic append position / materialization ownership | **CLOSED** |
-| MP-6B | Core activity/provenance contracts (runtime hardening) | **CLOSED / RECERTIFIED** (**MP-6B-C1**) |
-| MP-6B-C1 | Policy-resolved append intent boundary | **CLOSED** |
-| MP-6C | Publication / ingestion boundary | PLANNED |
+| MP-6B | Core activity/provenance contracts (runtime hardening) | **CLOSED / RECERTIFIED** |
+| MP-6B-C1 | Policy-resolved append intent boundary | **CLOSED / RECERTIFIED** |
+| MP-6B-C1-R1 | AppendIntent pluginability / append-store proof | **CLOSED** |
+| MP-6C | Publication / ingestion boundary | **NEXT** |
 | MP-6D | Append store + default persistence | PLANNED |
 | MP-6E | Scoped read / query | PLANNED |
 | MP-6F | Source integrations | PLANNED |

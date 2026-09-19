@@ -610,7 +610,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Publication atomicity** | `ArtifactPublicationRepository` required for **both** `create_artifact_with_initial_version(...)` and `publish_version(...)`; typed read/direct ports only for non-authoritative access; no generic UoW; no service-level manual two-repository writes |
 | **MP-3F ordering** | After MP-3E — metadata/content-ref qualification precedes content-provider integration |
 | **Qualification versioning** | Bump owned by MP-3E when semantics change — not preselected here |
-| **Next step** | **MP-6B — NEXT** (**MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**)) |
+| **Next step** | **MP-6C — NEXT** (**MP-6B — CLOSED / RECERTIFIED**; **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**)) |
 
 ### MP-6A — Activity & Provenance ownership / contract architecture gate
 
@@ -621,7 +621,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **NEW CAPABILITY REQUIRED** | `intergrax/contracts/collaborative_activity.py` (architecture gate module) |
 | **Explicit out of scope** | Persistence, ingestion runtime, source integrations, activity feed UI, MP-9 notifications |
 | **Proof** | `test_mp6a_collaborative_activity_architecture_gates.py`; `test_mp6a_documentation_regression_gates.py`; `test_mp6a_c1_identity_extensibility_ordering_gates.py`; `test_mp6a_c1_r1_append_ownership_gates.py`; ADR-MP-007 |
-| **Next step** | **MP-6B — NEXT** |
+| **Next step** | **MP-6C — NEXT** |
 
 ### MP-6A-C1 — Activity identity, extensibility & timeline semantics
 
@@ -638,13 +638,39 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Purpose** | `CollaborativeActivityAppendStore.append_idempotent(intent)` owns idempotency + `append_position` + `recorded_at` atomically; producers never supply sequencing |
 | **Proof** | `test_mp6a_c1_r1_append_ownership_gates.py` |
 
+### MP-6B — Core activity / provenance contract hardening
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED / RECERTIFIED** (subject to independent audit) |
+| **Purpose** | Runtime DTO hardening, port boundaries, JSON/schema gates for collaborative activity contracts |
+| **Proof** | `test_mp6b_collaborative_activity_contracts.py`; [`MP-6B_CORE_DTO_AND_CONTRACT_HARDENING.md`](../qualification/MP-6B_CORE_DTO_AND_CONTRACT_HARDENING.md) |
+| **Next step** | **MP-6C — NEXT** |
+
 ### MP-6B-C1 — Policy-resolved durability & validated append intent boundary
 
 | Field | Value |
 |-------|-------|
-| **Status** | **CLOSED** (subject to independent audit) |
+| **Status** | **CLOSED / RECERTIFIED** (subject to independent audit) |
 | **Purpose** | `CollaborativeActivityAppendIntent` carries policy-resolved `effective_durability_class`; append store accepts intent (not raw publication); replay preserves original effective durability |
 | **Proof** | `test_mp6b_c1_policy_resolved_append_intent_boundary.py` |
+
+### MP-6B-C1-R1 — AppendIntent append-store pluginability proof
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED** (subject to independent audit) |
+| **Purpose** | Pluginability proof corrected to verify the current AppendIntent contract (`CollaborativeActivityAppendStore.append_idempotent(intent)`) |
+| **Proof** | `test_mp6b_collaborative_activity_contracts.py` (append-store signature / pluginability gates) |
+| **Next step** | **MP-6C — NEXT** |
+
+### MP-6C — Publication / ingestion boundary
+
+| Field | Value |
+|-------|-------|
+| **Status** | **NEXT** |
+| **Purpose** | Actor/namespace/semantic policy validation; effective durability resolution at ingestion |
+| **Next step** | **MP-6D — PLANNED** |
 
 ---
 

@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Accepted — architecture and ownership gate; **MP-6A-C1 correction applied** (subject to independent audit); MP-6B+ runtime persistence **NOT STARTED** |
+| **Status** | Accepted — **MP-6A — CLOSED / RECERTIFIED**; **MP-6B — CLOSED / RECERTIFIED**; **MP-6C — NEXT** (subject to independent audit) |
 | **Date** | 2026-09-18 |
 | **Deciders** | Intergrax platform architecture (MP-6A ownership freeze) |
 | **Related** | [`architecture/COLLABORATIVE_WORK.md`](../../../../architecture/COLLABORATIVE_WORK.md) · [`plan/COLLABORATIVE_WORK.md`](../../../../maintainers/plans/COLLABORATIVE_WORK.md) · [`capabilities/architecture/MULTIPLAYER_AI.md`](../../../../capabilities/architecture/MULTIPLAYER_AI.md) · [ADR-MP-006](../2026-09-17/ADR-MP-006.md) · [`DECISION_APPROVAL_GOVERNANCE.md`](../../../../architecture/DECISION_APPROVAL_GOVERNANCE.md) · [`OBSERVABILITY.md`](../../../../architecture/OBSERVABILITY.md) · [`PROOF_RECEIPTS.md`](../../../../architecture/PROOF_RECEIPTS.md) |
@@ -17,7 +17,7 @@ MP-0 provisionally listed `OBSERVABILITY`, `PROOF_RECEIPTS`, and `UNIFIED_EXECUT
 
 **COLLABORATIVE_WORK** (Multiplayer **MP-6**) is the single semantic owner of collaborative activity records, actor/target attribution, ordering semantics for activity history, activity classification, correlation identifiers, and query contracts. It **references** — does not own — run/step trace, Decision/Approval semantics, artifact/memory/UCL payloads, authorization source of truth, `RuntimeEvent`, `AgentRunTrace`, and `ProofReceipt` bodies.
 
-**Integration:** source domains publish `CollaborativeActivityPublication` via `CollaborativeActivityPublicationPort` (neutral contract in `intergrax/contracts/collaborative_activity.py`); MP-6 implementation appends idempotently; read via `CollaborativeActivityReadPort` with authority resolved outside the store (MP-6E). **Forbidden:** repository wrap inference, log parsing, `dict` payload authority, source → store implementation imports.
+**Integration:** source domains publish `CollaborativeActivityPublication` via `CollaborativeActivityPublicationPort` (neutral contract in `intergrax/contracts/collaborative_activity.py`); MP-6 resolves policy at the ingestion boundary, builds CollaborativeActivityAppendIntent, and appends via CollaborativeActivityAppendStore.append_idempotent(intent); read via `CollaborativeActivityReadPort` with authority resolved outside the store (MP-6E). **Forbidden:** repository wrap inference, log parsing, `dict` payload authority, source → store implementation imports.
 
 **Idempotency (MP-6A-C1):** `ActivityIdempotencyKey(tenant_id, workspace_id, source, source_stable_id, activity_type)` where `source` is `CollaborativeActivitySourceId` and `activity_type` is `CollaborativeActivityTypeId`; `activity_id = mint_collaborative_activity_id(...)` over frozen `activity-id/v1` length-prefixed hash material (SHA-256 truncated to 32 hex). Key tenant/workspace must match publication/activity scope. No global idempotency without proven global source-stable uniqueness.
 
@@ -33,6 +33,6 @@ MP-0 provisionally listed `OBSERVABILITY`, `PROOF_RECEIPTS`, and `UNIFIED_EXECUT
 
 ## Status
 
-**MP-6A-C1 — CLOSED** (correction applied; subject to independent audit). **MP-6A — CLOSED / RECERTIFIED**. **MP-6 ownership — FROZEN**. **MP-6B — NEXT.**
+**MP-6A-C1 — CLOSED** (correction applied; subject to independent audit). **MP-6A — CLOSED / RECERTIFIED**. **MP-6 ownership — FROZEN**. **MP-6B — CLOSED / RECERTIFIED**. **MP-6C — NEXT.**
 
 See [`COLLABORATIVE_WORK.md`](../../../../architecture/COLLABORATIVE_WORK.md) § Collaborative Activity (MP-6) for diagrams, threat model, and roadmap.

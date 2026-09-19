@@ -523,7 +523,7 @@ Future Multiplayer phases that belong on the collaborative work plane extend **t
 | MP-3 | WorkArtifact, WorkArtifactVersion collaborative ownership |
 | MP-4 | Decision / Approval / Governance collaborative semantics — [`DECISION_APPROVAL_GOVERNANCE`](DECISION_APPROVAL_GOVERNANCE.md) |
 | MP-5 | Principal-scoped ContextView — **ENTERPRISE CERTIFIED / CLOSED** (MP-5A…MP-5H) |
-| MP-6 | Collaborative Activity + provenance linkage — **MP-6A — CLOSED / RECERTIFIED**; **MP-6B — NEXT** |
+| MP-6 | Collaborative Activity + provenance linkage — **MP-6 — IN PROGRESS**; **MP-6A — CLOSED / RECERTIFIED**; **MP-6B — CLOSED / RECERTIFIED**; **MP-6C — NEXT** |
 
 Architecture and implementation rows for MP-6+ remain in their future gates.
 
@@ -580,7 +580,7 @@ Capability coordination: [`MULTIPLAYER_AI.md`](../capabilities/architecture/MULT
 
 ## Collaborative Activity & Provenance (MP-6)
 
-**MP-6 ownership — FROZEN** ([ADR-MP-007](../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** / **MP-6A-C1-R1** atomic append ownership). **MP-6B — CLOSED / RECERTIFIED** (**MP-6B-C1** policy-resolved append intent; subject to independent audit). **MP-6C — NEXT**.
+**MP-6 ownership — FROZEN** ([ADR-MP-007](../technical/adr/entries/2026-09-18/ADR-MP-007.md) **Accepted**). **MP-6 — IN PROGRESS**. **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1** / **MP-6A-C1-R1** atomic append ownership). **MP-6B — CLOSED / RECERTIFIED** (**MP-6B-C1** / **MP-6B-C1-R1** policy-resolved append intent; subject to independent audit). **MP-6C — NEXT**.
 
 **Capability statement:** Collaborative Activity is an immutable, typed semantic record of meaningful collaborative actions on the work plane — who acted, on what object, under which scope and authority, with what outcome, and which canonical evidence references enable reconstruction. MP-6 does **not** store WorkArtifact/Memory/UCL/prompt bodies, replace observability traces, duplicate proof receipts, or authorize mutations.
 
@@ -608,7 +608,7 @@ Authorized Consumer
 
 **Public contracts (MP-6A / MP-6A-C1 gate):** [`intergrax/contracts/collaborative_activity.py`](../../../intergrax/contracts/collaborative_activity.py) — `CollaborativeActivity`, `CollaborativeActivityTypeId`, `CollaborativeActivityBuiltinType`, `CollaborativeActivitySourceId`, `CollaborativeActivityActorRef`, `CollaborativeActivityTargetRef`, `CollaborativeActivityProvenanceRef`, `CollaborativeActivityOutcome`, `ActivityIdempotencyKey`, `CollaborativeActivityPublication`, `CollaborativeActivityAppendIntent`, `CollaborativeActivityQuery`, `CollaborativeActivityPageCursor`; ports `CollaborativeActivityPublicationPort`, `CollaborativeActivityWritePort`, `CollaborativeActivityReadPort`, `CollaborativeActivityAppendStore`.
 
-**MP-6A-C1 — CLOSED / RECERTIFIED** (activity identity, extensibility, timeline semantics hardening; subject to independent audit). **MP-6A-C1-R1 — CLOSED** (atomic append position and materialization boundary; subject to independent audit).
+**MP-6A-C1 — CLOSED / RECERTIFIED** (activity identity, extensibility, timeline semantics hardening; subject to independent audit). **MP-6A-C1-R1 — CLOSED** (atomic append position and materialization boundary; subject to independent audit). **MP-6B-C1-R1 — CLOSED** (AppendIntent append-store pluginability proof; subject to independent audit).
 
 **MP-6B — CLOSED / RECERTIFIED** (**MP-6B-C1** append intent boundary; subject to independent audit):
 
