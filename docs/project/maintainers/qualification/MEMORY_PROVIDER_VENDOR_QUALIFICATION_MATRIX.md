@@ -364,9 +364,9 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 
 | Check | Result |
 | ----- | ------ |
-| Verified SHA | `6ebc2b790f04d8ae620d75b3f69b4d16e4873d56` |
-| Chroma suite | `test_mem_final_audit_5f_chroma_session_turn_index_real_vendor.py` — **22 passed** |
-| Triple-vendor same-SHA | Qdrant **13** + pgvector **19** + Chroma **22** |
+| Initial 5F qualification SHA | `6ebc2b790f04d8ae620d75b3f69b4d16e4873d56` |
+| Chroma suite @ initial SHA | `test_mem_final_audit_5f_chroma_session_turn_index_real_vendor.py` — **22 passed** |
+| Triple-vendor @ initial SHA | Qdrant **13** + pgvector **19** + Chroma **22** |
 | Chroma infra | Docker `intergrax-chroma`, HTTP `localhost:8000`, chromadb **1.4.1**, persistent server volume |
 | Durability | `REAL_VENDOR_RECONNECT`; Chroma service restart **not executed** |
 | Catalog | `CHROMA` preset + `CHROMA_VECTOR_STORE_PROVIDER_ID` |
@@ -377,6 +377,26 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-07 (Chroma) | **CLOSED** |
 | GAP-4-07 (Qdrant) | **CLOSED** (regression) |
 | GAP-4-07 (pgvector) | **CLOSED** (regression) |
+
+## MEM-FINAL-AUDIT-5F-R — Final current-head triple-vendor re-verification
+
+| Check | Result |
+| ----- | ------ |
+| Initial 5F qualification SHA | `6ebc2b790f04d8ae620d75b3f69b4d16e4873d56` |
+| Intervening non-Memory commits | **YES** — triple-vendor suites re-run required on final HEAD |
+| **Final current-head triple-vendor re-verification SHA** | **`8f25bfcdc95f0ba0c4f5b2c56180beb8b67c6904`** |
+| Qdrant @ final SHA | **13 passed** |
+| pgvector @ final SHA | **19 passed** (DSN required) |
+| Chroma @ final SHA | **22 passed** |
+| Total | **54 passed** |
+| Same-SHA proof | **YES** |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5F-01 | **CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector) | **CLOSED** |
+| GAP-4-07 (Chroma) | **CLOSED** |
 
 ## MEM-FINAL-AUDIT-5D-R — SessionTurnIndex trusted production admission
 

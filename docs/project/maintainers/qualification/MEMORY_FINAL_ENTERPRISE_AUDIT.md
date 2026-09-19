@@ -1613,7 +1613,8 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 | Evidence source | `chroma_session_turn_index_real_vendor_qualification` |
 | Backend scope filtering | Chroma `where` / `$and` / `$eq` on tenant/session/user metadata (integration layer only) |
 | Cross-vendor admission | Chroma↔Qdrant↔pgvector trusted evidence mismatch **FAIL**; adapter-only + missing evidence **FAIL** |
-| Triple-vendor same-SHA | **YES** — `6ebc2b790f04d8ae620d75b3f69b4d16e4873d56`: Qdrant **13** + pgvector **19** + Chroma **22** |
+| Initial qualification proof SHA | `6ebc2b790f04d8ae620d75b3f69b4d16e4873d56` — Chroma STI real-vendor suite **22 passed** at initial implementation commit |
+| Triple-vendor same-SHA (initial) | At initial 5F SHA: Qdrant **13** + pgvector **19** + Chroma **22** (see **5F-R** for final current-head re-verification SHA) |
 | Memory vendor leakage | **0** (`chromadb` not imported under `intergrax/memory/**`) |
 | V-level | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (Chroma backing) |
 
@@ -1624,6 +1625,32 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 | GAP-4-07 (Qdrant) | **CLOSED** (regression on verified SHA) |
 | GAP-4-07 (pgvector) | **CLOSED** (regression on verified SHA) |
 
+**Readiness:** READY FOR MEM-FINAL-AUDIT-5F-R (formal final triple-vendor audit trail)
+
+## MEM-FINAL-AUDIT-5F-R — Final Current-HEAD Evidence Reconciliation
+
+| Check | Result |
+| ----- | ------ |
+| Purpose | Reconcile audit trail: preserve **initial 5F qualification proof** and record **final current-head triple-vendor re-verification** on one explicit SHA |
+| Initial 5F qualification SHA | `6ebc2b790f04d8ae620d75b3f69b4d16e4873d56` |
+| Intervening commits | **YES** — non-Memory production/runtime/test commits existed after initial proof; **`6ebc2b7` → final verified SHA was not docs-only** |
+| **Final current-head triple-vendor re-verification** | **`8f25bfcdc95f0ba0c4f5b2c56180beb8b67c6904`** (`development` HEAD at reconciliation; prior `3a41c33b6` docs record did not separately certify final triple-vendor SHA, and HEAD advanced with intervening non-Memory commits) |
+| Same-SHA proof | **YES** — Qdrant (13) + pgvector (19) + Chroma (22) on identical HEAD |
+| Qdrant real-vendor suite | `test_mem_final_audit_5d_qdrant_session_turn_index_real_vendor.py` — **13 passed** |
+| pgvector real-vendor suite | `test_mem_final_audit_5e_pgvector_session_turn_index_real_vendor.py` — **19 passed** (`INTERGRAX_PGVECTOR_DSN` + `INTERGRAX_PGVECTOR_DIMENSION=4` required) |
+| Chroma real-vendor suite | `test_mem_final_audit_5f_chroma_session_turn_index_real_vendor.py` — **22 passed** |
+| Total | **54 passed** |
+| Chroma deployment | HTTP persistent server (`IS_PERSISTENT=TRUE`, Docker volume); **REAL_VENDOR_RECONNECT** |
+| Service restart | Qdrant / PostgreSQL / Chroma service restart **not executed** |
+| Production / runtime / test changes in 5F-R | **NONE** (docs-only evidence commit follows verified SHA) |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5F-01 | **CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector) | **CLOSED** |
+| GAP-4-07 (Chroma) | **CLOSED** |
+
 **Readiness:** READY FOR MEM-FINAL-AUDIT-5G AFTER INDEPENDENT GITHUB AUDIT
 
-> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5F muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5G.
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5F-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-5G.
