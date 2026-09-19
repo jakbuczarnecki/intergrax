@@ -6,7 +6,9 @@ from __future__ import annotations
 
 import threading
 import time
+from collections.abc import Callable
 from pathlib import Path
+from typing import Generic, TypeVar
 
 import pytest
 
@@ -14,6 +16,7 @@ from intergrax.contracts.event_delivery import (
     DeliverableEvent,
     EventDeliveryAdmissionPolicyPort,
     EventDeliveryBoundaryError,
+    EventDeliveryBufferEntry,
     EventDeliveryDisposition,
     EventDeliveryObligation,
     EventDeliveryPolicy,
@@ -28,16 +31,17 @@ from intergrax.runtime.observability.event_delivery import (
     BoundedEventSink,
     InMemoryEventSink,
 )
-from intergrax.runtime.observability.event_delivery.bounded_event_sink import (
-    _QueuedItem,
-)
 from intergrax.runtime.observability.event_delivery.enterprise_default_event_delivery_admission_policy import (
     EnterpriseDefaultEventDeliveryAdmissionPolicy,
+)
+from intergrax.runtime.observability.event_delivery.queue_backed_event_delivery_buffer import (
+    QueueBackedEventDeliveryBuffer,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _SYNC_TIMEOUT = 10.0
+_TBuffered = TypeVar("_TBuffered")
 
 
 def _event(label: str) -> DeliverableEvent:
@@ -776,7 +780,8 @@ def test_r2_worker_death_rejects_quota_waiter() -> None:
         important_wait_timeout_seconds=5.0,
     )
     downstream, entered, release = _blocking_first_downstream()
-    sink = BoundedEventSink(downstream, policy)
+    buffer = _WorkerDeathEventDeliveryBuffer(capacity=policy.max_capacity)
+    sink = BoundedEventSink(downstream, policy, buffer=buffer)
     non_critical_limit = policy.max_capacity - policy.critical_reserved_capacity
     _fill_non_critical_buffered(
         sink,
@@ -797,14 +802,12 @@ def test_r2_worker_death_rejects_quota_waiter() -> None:
     thread.start()
     thread.join(timeout=0.25)
     assert not waiter_done.is_set()
-    with sink._quota_condition:  # noqa: SLF001 — deterministic lifecycle seam
-        sink._worker = threading.Thread()  # noqa: SLF001 — not started → not alive
-        sink._quota_condition.notify_all()
+    buffer.force_worker_failure.set()
+    release.set()
     assert waiter_done.wait(timeout=_SYNC_TIMEOUT)
     assert results
     assert results[0].disposition is EventDeliveryDisposition.REJECTED
     assert sink.health_state() is EventSinkHealthState.UNHEALTHY
-    release.set()
 
 
 def test_r2_no_post_close_user_delivery_ids() -> None:
@@ -829,32 +832,34 @@ def test_r2_no_post_close_user_delivery_ids() -> None:
     assert pre_ids.issubset(delivered)
 
 
-class _PhysicalEnqueueGate:
-    """Test seam: block ``Queue.put`` / ``put_nowait`` while ``hold`` is set."""
+class _BlockingEventDeliveryBuffer(Generic[_TBuffered]):
+    """Conforming fault buffer: holds physical enqueue until released."""
 
     def __init__(
         self,
         *,
-        sink: BoundedEventSink,
-        release_on_shutdown: bool = False,
+        capacity: int,
+        should_release: Callable[[], bool] | None = None,
     ) -> None:
+        self._inner: QueueBackedEventDeliveryBuffer[_TBuffered] = (
+            QueueBackedEventDeliveryBuffer(capacity=capacity)
+        )
         self.hold = threading.Event()
-        self.in_put = threading.Event()
-        self.put_order: list[_QueuedItem | None] = []
+        self.enqueue_entered = threading.Event()
+        self.recorded_operations: list[str] = []
         self._order_lock = threading.Lock()
         self._hold_condition = threading.Condition()
-        self._sink = sink
-        self.release_on_shutdown = release_on_shutdown
-        self._original_put = sink._queue.put  # noqa: SLF001
-        self._original_put_nowait = sink._queue.put_nowait  # noqa: SLF001
-        sink._queue.put = self.put  # noqa: SLF001
-        sink._queue.put_nowait = self.put_nowait  # noqa: SLF001
+        self._should_release = should_release
 
-    def _record(self, item: _QueuedItem | None) -> None:
-        with self._order_lock:
-            self.put_order.append(item)
+    @property
+    def capacity(self) -> int:
+        return self._inner.capacity
 
-    def release_hold(self) -> None:
+    @property
+    def pending_depth(self) -> int:
+        return self._inner.pending_depth
+
+    def release(self) -> None:
         self.hold.clear()
         with self._hold_condition:
             self._hold_condition.notify_all()
@@ -862,40 +867,109 @@ class _PhysicalEnqueueGate:
     def _gate(self) -> None:
         if not self.hold.is_set():
             return
-        self.in_put.set()
+        self.enqueue_entered.set()
         with self._hold_condition:
             while self.hold.is_set():
-                if self.release_on_shutdown and self._sink.closed:
+                if self._should_release is not None and self._should_release():
                     self.hold.clear()
                     self._hold_condition.notify_all()
                     break
                 self._hold_condition.wait(timeout=0.05)
 
-    def put(
-        self,
-        item: _QueuedItem | None,
-        block: bool = True,
-        timeout: float | None = None,
-    ) -> None:
+    def _record(self, operation: str) -> None:
+        with self._order_lock:
+            self.recorded_operations.append(operation)
+
+    def enqueue_item_nowait(self, item: _TBuffered) -> None:
         self._gate()
-        self._record(item)
-        self._original_put(item, block=block, timeout=timeout)
+        self._record("enqueue_item")
+        self._inner.enqueue_item_nowait(item)
 
-    def put_nowait(self, item: _QueuedItem | None) -> None:
+    def enqueue_item(self, item: _TBuffered, *, timeout: float) -> None:
         self._gate()
-        self._record(item)
-        self._original_put_nowait(item)
+        self._record("enqueue_item")
+        self._inner.enqueue_item(item, timeout=timeout)
+
+    def enqueue_shutdown_nowait(self) -> None:
+        self._gate()
+        self._record("enqueue_shutdown")
+        self._inner.enqueue_shutdown_nowait()
+
+    def take_next(self) -> EventDeliveryBufferEntry[_TBuffered]:
+        return self._inner.take_next()
+
+    def acknowledge_processed(self) -> None:
+        self._inner.acknowledge_processed()
 
 
-def _sink_with_physical_enqueue_gate(
-    downstream: EventSinkPort,
-    policy: EventDeliveryPolicy,
-    *,
-    release_on_shutdown: bool = False,
-) -> tuple[BoundedEventSink, _PhysicalEnqueueGate]:
-    sink = BoundedEventSink(downstream, policy)
-    gate = _PhysicalEnqueueGate(sink=sink, release_on_shutdown=release_on_shutdown)
-    return sink, gate
+class _WorkerDeathEventDeliveryBuffer(Generic[_TBuffered]):
+    """Conforming buffer that fails the drain worker after acknowledge."""
+
+    def __init__(self, *, capacity: int) -> None:
+        self._inner: QueueBackedEventDeliveryBuffer[_TBuffered] = (
+            QueueBackedEventDeliveryBuffer(capacity=capacity)
+        )
+        self.force_worker_failure = threading.Event()
+
+    @property
+    def capacity(self) -> int:
+        return self._inner.capacity
+
+    @property
+    def pending_depth(self) -> int:
+        return self._inner.pending_depth
+
+    def enqueue_item_nowait(self, item: _TBuffered) -> None:
+        self._inner.enqueue_item_nowait(item)
+
+    def enqueue_item(self, item: _TBuffered, *, timeout: float) -> None:
+        self._inner.enqueue_item(item, timeout=timeout)
+
+    def enqueue_shutdown_nowait(self) -> None:
+        self._inner.enqueue_shutdown_nowait()
+
+    def take_next(self) -> EventDeliveryBufferEntry[_TBuffered]:
+        return self._inner.take_next()
+
+    def acknowledge_processed(self) -> None:
+        self._inner.acknowledge_processed()
+        if self.force_worker_failure.is_set():
+            raise RuntimeError("simulated event delivery drain worker failure")
+
+
+class _CountingEventDeliveryBuffer(Generic[_TBuffered]):
+    """Distinct conforming buffer used only to prove injection without subclassing."""
+
+    def __init__(self, *, capacity: int) -> None:
+        self._inner: QueueBackedEventDeliveryBuffer[_TBuffered] = (
+            QueueBackedEventDeliveryBuffer(capacity=capacity)
+        )
+        self.enqueue_item_calls = 0
+
+    @property
+    def capacity(self) -> int:
+        return self._inner.capacity
+
+    @property
+    def pending_depth(self) -> int:
+        return self._inner.pending_depth
+
+    def enqueue_item_nowait(self, item: _TBuffered) -> None:
+        self.enqueue_item_calls += 1
+        self._inner.enqueue_item_nowait(item)
+
+    def enqueue_item(self, item: _TBuffered, *, timeout: float) -> None:
+        self.enqueue_item_calls += 1
+        self._inner.enqueue_item(item, timeout=timeout)
+
+    def enqueue_shutdown_nowait(self) -> None:
+        self._inner.enqueue_shutdown_nowait()
+
+    def take_next(self) -> EventDeliveryBufferEntry[_TBuffered]:
+        return self._inner.take_next()
+
+    def acknowledge_processed(self) -> None:
+        self._inner.acknowledge_processed()
 
 
 def test_r3_pending_enqueue_shutdown_timeout_fails_closed() -> None:
@@ -919,8 +993,9 @@ def test_r3_pending_enqueue_shutdown_timeout_fails_closed() -> None:
         def close(self) -> None:
             downstream_closed.set()
 
-    sink, gated = _sink_with_physical_enqueue_gate(_Downstream(), policy)
-    gated.hold.set()
+    buffer = _BlockingEventDeliveryBuffer(capacity=policy.max_capacity)
+    sink = BoundedEventSink(_Downstream(), policy, buffer=buffer)
+    buffer.hold.set()
     publish_done = threading.Event()
 
     def _producer() -> None:
@@ -929,15 +1004,13 @@ def test_r3_pending_enqueue_shutdown_timeout_fails_closed() -> None:
 
     thread = threading.Thread(target=_producer, name="r3-producer")
     thread.start()
-    assert gated.in_put.wait(timeout=_SYNC_TIMEOUT)
-    with sink._quota_condition:  # noqa: SLF001
-        assert sink._pending_physical_enqueue == 1
+    assert buffer.enqueue_entered.wait(timeout=_SYNC_TIMEOUT)
 
     with pytest.raises(EventDeliveryBoundaryError) as exc_info:
         sink.close()
     assert "pending physical delivery enqueue" in str(exc_info.value)
     assert sink.health_state() is EventSinkHealthState.UNHEALTHY
-    assert None not in gated.put_order
+    assert "enqueue_shutdown" not in buffer.recorded_operations
     assert not downstream_closed.is_set()
 
     with pytest.raises(EventDeliveryBoundaryError):
@@ -945,11 +1018,9 @@ def test_r3_pending_enqueue_shutdown_timeout_fails_closed() -> None:
     post = sink.publish(_event("r3-post-fail"), priority=EventPriority.BEST_EFFORT)
     assert post.disposition is EventDeliveryDisposition.REJECTED
 
-    gated.release_hold()
+    buffer.release()
     assert publish_done.wait(timeout=_SYNC_TIMEOUT)
-    with sink._quota_condition:  # noqa: SLF001
-        assert sink._pending_physical_enqueue == 0
-    assert None not in gated.put_order
+    assert "enqueue_shutdown" not in buffer.recorded_operations
     thread.join(timeout=_SYNC_TIMEOUT)
 
 
@@ -960,12 +1031,22 @@ def test_r3_pending_enqueue_drains_before_deadline_shutdown_succeeds() -> None:
         critical_completion_timeout_seconds=30.0,
         drain_shutdown_timeout_seconds=2.0,
     )
-    sink, gated = _sink_with_physical_enqueue_gate(
-        InMemoryEventSink(),
-        policy,
-        release_on_shutdown=True,
+
+    class _SinkClosedProbe:
+        def __init__(self) -> None:
+            self.sink: BoundedEventSink | None = None
+
+        def __call__(self) -> bool:
+            return self.sink is not None and self.sink.closed
+
+    closed_probe = _SinkClosedProbe()
+    buffer = _BlockingEventDeliveryBuffer(
+        capacity=policy.max_capacity,
+        should_release=closed_probe,
     )
-    gated.hold.set()
+    sink = BoundedEventSink(InMemoryEventSink(), policy, buffer=buffer)
+    closed_probe.sink = sink
+    buffer.hold.set()
     admitted = threading.Event()
 
     def _producer() -> None:
@@ -975,23 +1056,27 @@ def test_r3_pending_enqueue_drains_before_deadline_shutdown_succeeds() -> None:
 
     thread = threading.Thread(target=_producer, name="r3-drain-producer")
     thread.start()
-    assert gated.in_put.wait(timeout=_SYNC_TIMEOUT)
-    with sink._quota_condition:  # noqa: SLF001
-        assert sink._pending_physical_enqueue == 1
+    assert buffer.enqueue_entered.wait(timeout=_SYNC_TIMEOUT)
     sink.close()
     assert admitted.wait(timeout=_SYNC_TIMEOUT)
     assert sink.health_state() is EventSinkHealthState.HEALTHY
-    user_index = next(
-        index
-        for index, item in enumerate(gated.put_order)
-        if item is not None and item.event.event_id == "r3-drain"
-    )
-    sentinel_index = next(
-        (index for index, item in enumerate(gated.put_order) if item is None),
-        None,
-    )
-    assert sentinel_index is not None
-    assert user_index < sentinel_index
+    assert "enqueue_item" in buffer.recorded_operations
+    assert "enqueue_shutdown" in buffer.recorded_operations
+    assert buffer.recorded_operations.index(
+        "enqueue_item"
+    ) < buffer.recorded_operations.index("enqueue_shutdown")
+    thread.join(timeout=_SYNC_TIMEOUT)
+
+
+def test_custom_buffer_pluginability_preserves_qos_admission() -> None:
+    policy = EventDeliveryPolicy(max_capacity=4, critical_reserved_capacity=1)
+    custom = _CountingEventDeliveryBuffer(capacity=policy.max_capacity)
+    sink = BoundedEventSink(InMemoryEventSink(), policy, buffer=custom)
+    accepted = sink.publish(_event("plugin-be"), priority=EventPriority.BEST_EFFORT)
+    assert accepted.disposition is EventDeliveryDisposition.ACCEPTED
+    assert custom.enqueue_item_calls == 1
+    sink.close()
+    assert custom.enqueue_item_calls == 1
 
 
 def test_architecture_gate_r3_no_silent_pending_drain_timeout() -> None:
