@@ -290,7 +290,7 @@ flowchart LR
 | Inner guard | NOT_APPLICABLE | PARTIAL | PARTIAL |
 | Policy evaluation (GEP) | QUALIFIED | PARTIAL | QUALIFIED |
 | Meaningful side effect spine | NOT_APPLICABLE | PARTIAL | PARTIAL |
-| Decision-bound MSE (GR-6) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
+| Decision-bound MSE (GR-6) | NOT_APPLICABLE | QUALIFIED | QUALIFIED |
 | HITL continuation (GR-5) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Continuation (GR-5 port) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Reliability boundary (GR-7) | NOT_APPLICABLE | QUALIFIED | PARTIAL |

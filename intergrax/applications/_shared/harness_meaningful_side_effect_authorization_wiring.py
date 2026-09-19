@@ -15,11 +15,12 @@ from intergrax.collaborative_work.persistence import (
 from intergrax.collaborative_work.persistence_provider import (
     resolve_collaborative_work_repositories,
 )
+from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
-from intergrax.runtime.governance.orchestration_meaningful_side_effect_composition import (
-    build_orchestration_meaningful_side_effect_authorization_boundary,
+from intergrax.runtime.governance.orchestration_decision_bound_effect_composition import (
+    build_production_orchestration_meaningful_side_effect_authorization_boundary,
 )
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
@@ -36,15 +37,19 @@ class HarnessMeaningfulSideEffectAuthorizationWiring:
 
 def _build_port_from_materialized_repositories(
     bundle: CollaborativeWorkMaterializedRepositories,
+    *,
+    decision_requirement_policy: DecisionRequirementPolicy | None = None,
 ) -> MeaningfulSideEffectAuthorizationPort:
     core = collaborative_work_core_repositories(bundle)
-    return build_orchestration_meaningful_side_effect_authorization_boundary(
+    return build_production_orchestration_meaningful_side_effect_authorization_boundary(
         profile_repository=core.operation_profile,
         membership_repository=core.membership,
         principal_authority_repository=core.principal_authority,
         delegation_repository=core.delegation,
         collaborative_policy_repository=core.policy,
         runtime_policy_evaluator=RuntimePolicyEngine(),
+        decision_requirement_policy=decision_requirement_policy,
+        production_mode=True,
     )
 
 
@@ -63,6 +68,7 @@ def build_harness_host_meaningful_side_effect_authorization_port(
     *,
     collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
     collaborative_work_integration_profile: IntegrationProfile | None = None,
+    decision_requirement_policy: DecisionRequirementPolicy | None = None,
 ) -> MeaningfulSideEffectAuthorizationPort:
     """Build platform default MSE authorization for strict Tier-3 harness hosts."""
     if collaborative_work_repositories is not None:
@@ -74,7 +80,10 @@ def build_harness_host_meaningful_side_effect_authorization_port(
                 collaborative_work_integration_profile=collaborative_work_integration_profile,
             ),
         )
-    return _build_port_from_materialized_repositories(bundle)
+    return _build_port_from_materialized_repositories(
+        bundle,
+        decision_requirement_policy=decision_requirement_policy,
+    )
 
 
 def resolve_harness_host_meaningful_side_effect_authorization_wiring(
@@ -83,6 +92,7 @@ def resolve_harness_host_meaningful_side_effect_authorization_wiring(
     explicit: MeaningfulSideEffectAuthorizationPort | None = None,
     collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
     collaborative_work_integration_profile: IntegrationProfile | None = None,
+    decision_requirement_policy: DecisionRequirementPolicy | None = None,
 ) -> HarnessMeaningfulSideEffectAuthorizationWiring:
     """Resolve MSE wiring: injectable override, strict default, or absent in non-strict hosts."""
     if explicit is not None:
@@ -95,6 +105,7 @@ def resolve_harness_host_meaningful_side_effect_authorization_wiring(
         return HarnessMeaningfulSideEffectAuthorizationWiring(
             authorization_port=_build_port_from_materialized_repositories(
                 collaborative_work_repositories,
+                decision_requirement_policy=decision_requirement_policy,
             ),
         )
     bundle = resolve_collaborative_work_repositories(
@@ -104,7 +115,10 @@ def resolve_harness_host_meaningful_side_effect_authorization_wiring(
         ),
     )
     return HarnessMeaningfulSideEffectAuthorizationWiring(
-        authorization_port=_build_port_from_materialized_repositories(bundle),
+        authorization_port=_build_port_from_materialized_repositories(
+            bundle,
+            decision_requirement_policy=decision_requirement_policy,
+        ),
         owned_collaborative_work_persistence=bundle,
     )
 
@@ -115,6 +129,7 @@ def resolve_harness_host_meaningful_side_effect_authorization_port(
     explicit: MeaningfulSideEffectAuthorizationPort | None = None,
     collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
     collaborative_work_integration_profile: IntegrationProfile | None = None,
+    decision_requirement_policy: DecisionRequirementPolicy | None = None,
 ) -> MeaningfulSideEffectAuthorizationPort | None:
     """Resolve MSE port: injectable override, strict default, or absent in non-strict hosts."""
     return resolve_harness_host_meaningful_side_effect_authorization_wiring(
@@ -122,6 +137,7 @@ def resolve_harness_host_meaningful_side_effect_authorization_port(
         explicit=explicit,
         collaborative_work_repositories=collaborative_work_repositories,
         collaborative_work_integration_profile=collaborative_work_integration_profile,
+        decision_requirement_policy=decision_requirement_policy,
     ).authorization_port
 
 
