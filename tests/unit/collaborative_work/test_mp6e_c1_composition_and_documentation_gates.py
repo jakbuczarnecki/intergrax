@@ -59,6 +59,38 @@ _MP6D_ROW = re.compile(
     re.MULTILINE,
 )
 
+_MP6E_C1_PG_QUAL_EVIDENCE = (
+    _REPO_ROOT
+    / "docs"
+    / "project"
+    / "maintainers"
+    / "qualification"
+    / "MP-6E-C1_POSTGRESQL_READ_PROVIDER_QUALIFICATION.md"
+)
+
+_MP6E_C1_Q1_REQUIRED_MARKERS: tuple[str, ...] = (
+    "MP-6E-C1-Q1",
+    "implementation_sha",
+    "eb586ccefea80ff05e0dd4f4f1e784ed1c398350",
+    "mp6e_c1_correction_sha",
+    "3c7b45d63e3c2d9dfd1afd22101506983bf25ce0",
+    "qualification_sha",
+    "fe79e01769853eb3655bfd90e9f26e1be6e1dcdd",
+    "HEAD == origin/development",
+    "test_postgresql_collaborative_activity_read_port_contract",
+    "test_postgresql_collaborative_activity_read_isolation",
+    "test_postgresql_collaborative_activity_read_late_occurred_at_ordering",
+    "passed: 3",
+    "skipped: 0",
+    "xfailed: 0",
+    "failed: 0",
+    "collaborative_activity_read_port_contract",
+    "authorization is upstream of provider",
+    "READ COMMITTED",
+    "MP-6E — CLOSED / RECERTIFIED",
+    "BLOCKING FINDINGS: NONE",
+)
+
 
 def _annotation_name(node: ast.expr) -> str:
     if isinstance(node, ast.Name):
@@ -158,21 +190,15 @@ def test_mp6e_c1_canonical_roadmap_has_single_mp6d_row() -> None:
 
 
 def test_mp6e_c1_mp6e_closed_requires_qualification_artifact() -> None:
-    artifact = (
-        _REPO_ROOT
-        / "docs"
-        / "project"
-        / "maintainers"
-        / "qualification"
-        / "MP-6E-C1_POSTGRESQL_READ_PROVIDER_QUALIFICATION.md"
+    assert _MP6E_C1_PG_QUAL_EVIDENCE.is_file(), (
+        "MP-6E CLOSED requires PostgreSQL read qualification artifact"
     )
-    assert artifact.is_file(), "MP-6E CLOSED requires PostgreSQL read qualification artifact"
-    body = artifact.read_text(encoding="utf-8-sig")
-    assert "MP-6E-C1" in body
-    assert "passed: 3" in body
-    assert "skipped: 0" in body
-    assert "xfailed: 0" in body
-    assert "failed: 0" in body
+    body = _MP6E_C1_PG_QUAL_EVIDENCE.read_text(encoding="utf-8-sig")
+    missing = [marker for marker in _MP6E_C1_Q1_REQUIRED_MARKERS if marker not in body]
+    assert not missing, f"MP-6E-C1-Q1 evidence: missing markers: {missing}"
+    assert "qualification_execution_base_sha" not in body, (
+        "MP-6E-C1-Q1 evidence: ambiguous qualification_execution_base_sha must not remain"
+    )
 
 
 def test_mp6e_c1_adr_repair_helper_documents_sequences() -> None:
