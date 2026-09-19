@@ -26,6 +26,9 @@ from intergrax.agent_distribution.multi_agent_coordination import (
     MultiAgentCoordinationService,
 )
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.runtime.execution.orchestration_topology_slot_mse_enforcement import (
+    OrchestrationTopologySlotEffectAuthorityOwner,
+)
 from intergrax.contracts.orchestration_topology import (
     OrchestrationResult,
     OrchestrationSchedulingPolicy,
@@ -182,6 +185,12 @@ class FanOutCoordinationSlotExecutor(Generic[RequestT, ResultT]):
     coordination: MultiAgentCoordinationService[RequestT, ResultT]
     principal: RequestIdentity
     resume_context: FanOutGovernedSlotContinuationContext | None = None
+
+    @property
+    def orchestration_slot_effect_authority_owner(
+        self,
+    ) -> OrchestrationTopologySlotEffectAuthorityOwner:
+        return OrchestrationTopologySlotEffectAuthorityOwner.PHYSICAL_DELEGATION
 
     async def execute_slot(
         self,

@@ -288,9 +288,10 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
         "MSE",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R9-R3: canonical topology submit/recovery/continuation enforce mandatory MSE for "
-        "consequential custom slots via composition-injected OrchestrationTopologySlotMsePolicy; "
-        "delegated fan-out PhysicalDelegation boundary unchanged; fail-closed production.",
+        "GR-10-R9-R4: production topology composition requires OrchestrationTopologySlotMsePolicy; "
+        "lab builder explicit for policy-less harness; authority delegation via "
+        "orchestration_slot_effect_authority_owner contract surface; fan-out PhysicalDelegation "
+        "unchanged; fail-closed production.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Decision-bound effect",
@@ -656,6 +657,13 @@ GR10_ORCHESTRATION_MSE_NON_TOOL_INVENTORY: tuple[Gr10OrchestrationMseNonToolInve
         True,
         "OrchestrationTopologySlotMsePolicy + fresh MeaningfulSideEffectAuthorizationPort",
         "A — consequential + fresh canonical MSE on continuation physical effect",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "build_lab_orchestration_topology_submission_port (explicit non-production)",
+        False,
+        False,
+        "N/A — lab/qualification only",
+        "E — non-production (build_lab_orchestration_topology_submission_port)",
     ),
     Gr10OrchestrationMseNonToolInventoryRow(
         "Uncertified raw OrchestrationSlotExecutor bypassing canonical submission port",

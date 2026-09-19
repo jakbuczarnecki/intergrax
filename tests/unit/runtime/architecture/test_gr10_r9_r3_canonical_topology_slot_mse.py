@@ -47,7 +47,7 @@ from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.execution.boundary import ExecutionBoundary, ExecutionIdentityBinding
 from intergrax.runtime.execution.orchestration_topology_submission import (
     build_orchestration_topology_host_task,
-    build_orchestration_topology_submission_port,
+    build_production_orchestration_topology_submission_port,
 )
 from intergrax.runtime.execution.orchestration_topology_slot_mse_enforcement import (
     build_orchestration_topology_slot_mse_policy,
@@ -211,7 +211,7 @@ async def test_r9_r3_submit_deny_blocks_inner_executor(_identity_ctx) -> None:
         meaningful_side_effect_authorization=mse,
         production_mode=True,
     )
-    port = build_orchestration_topology_submission_port(
+    port = build_production_orchestration_topology_submission_port(
         NexusLoop(AgentRegistry()),
         slot_mse_policy=policy,
     )
@@ -248,7 +248,7 @@ async def test_r9_r3_submit_allow_runs_inner_once(_identity_ctx) -> None:
         meaningful_side_effect_authorization=mse,
         production_mode=True,
     )
-    port = build_orchestration_topology_submission_port(
+    port = build_production_orchestration_topology_submission_port(
         NexusLoop(AgentRegistry()),
         slot_mse_policy=policy,
     )
@@ -284,7 +284,7 @@ async def test_r9_r3_submit_missing_mse_port_fail_closed(_identity_ctx) -> None:
         meaningful_side_effect_authorization=None,
         production_mode=True,
     )
-    port = build_orchestration_topology_submission_port(
+    port = build_production_orchestration_topology_submission_port(
         NexusLoop(AgentRegistry()),
         slot_mse_policy=policy,
     )
@@ -357,7 +357,7 @@ async def test_r9_r3_recovery_fresh_mse_deny_after_prior_allow(_identity_ctx) ->
         meaningful_side_effect_authorization=flip_port,
         production_mode=True,
     )
-    port = build_orchestration_topology_submission_port(
+    port = build_production_orchestration_topology_submission_port(
         NexusLoop(AgentRegistry()),
         slot_mse_policy=policy,
     )

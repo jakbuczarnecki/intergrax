@@ -1,12 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Mandatory MSE enforcement for canonical orchestration topology slot paths (GR-10-R9-R3)."""
+"""Mandatory MSE enforcement for canonical orchestration topology slot paths (GR-10-R9-R3/R4)."""
 
 from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+from enum import Enum, auto
 from typing import Generic, TypeVar
 
 from intergrax.contracts.collaborative_work import CollaborativeWorkEnforcementRequest
@@ -31,14 +32,37 @@ from intergrax.runtime.nexus.orchestration.orchestration_graph_meaningful_side_e
 PayloadT = TypeVar("PayloadT")
 ResultT = TypeVar("ResultT")
 
-_DELEGATED_MSE_EXECUTOR_TYPE_NAMES: frozenset[str] = frozenset(
-    {"FanOutCoordinationSlotExecutor"},
-)
+
+class OrchestrationTopologySlotEffectAuthorityOwner(Enum):
+    """Which canonical boundary owns orchestration slot physical effects (composition-internal)."""
+
+    MSE = auto()
+    PHYSICAL_DELEGATION = auto()
 
 
-def orchestration_topology_slot_mse_delegated(executor: object) -> bool:
+def default_resolve_orchestration_topology_slot_effect_authority_owner(
+    executor: object,
+) -> OrchestrationTopologySlotEffectAuthorityOwner | None:
+    """Resolve declared slot effect authority from executor contract surface (not implementation type)."""
+    owner = getattr(executor, "orchestration_slot_effect_authority_owner", None)
+    if isinstance(owner, OrchestrationTopologySlotEffectAuthorityOwner):
+        return owner
+    return None
+
+
+def orchestration_topology_slot_mse_delegated(
+    executor: object,
+    *,
+    resolve_effect_authority_owner: Callable[
+        [object],
+        OrchestrationTopologySlotEffectAuthorityOwner | None,
+    ],
+) -> bool:
     """True when another canonical boundary already authorizes slot physical effects."""
-    return type(executor).__name__ in _DELEGATED_MSE_EXECUTOR_TYPE_NAMES
+    return (
+        resolve_effect_authority_owner(executor)
+        is OrchestrationTopologySlotEffectAuthorityOwner.PHYSICAL_DELEGATION
+    )
 
 
 def default_consequential_topology_slot(
@@ -84,6 +108,10 @@ class OrchestrationTopologySlotMsePolicy:
     is_consequential_slot: Callable[[OrchestrationSlotId, object], bool] = (
         default_consequential_topology_slot
     )
+    resolve_effect_authority_owner: Callable[
+        [object],
+        OrchestrationTopologySlotEffectAuthorityOwner | None,
+    ] = default_resolve_orchestration_topology_slot_effect_authority_owner
 
 
 def build_orchestration_topology_slot_mse_policy(
@@ -96,6 +124,11 @@ def build_orchestration_topology_slot_mse_policy(
     ]
     | None = None,
     is_consequential_slot: Callable[[OrchestrationSlotId, object], bool] | None = None,
+    resolve_effect_authority_owner: Callable[
+        [object],
+        OrchestrationTopologySlotEffectAuthorityOwner | None,
+    ]
+    | None = None,
 ) -> OrchestrationTopologySlotMsePolicy:
     return OrchestrationTopologySlotMsePolicy(
         meaningful_side_effect_authorization=meaningful_side_effect_authorization,
@@ -104,6 +137,10 @@ def build_orchestration_topology_slot_mse_policy(
             build_enforcement_request or default_topology_slot_enforcement_request
         ),
         is_consequential_slot=is_consequential_slot or default_consequential_topology_slot,
+        resolve_effect_authority_owner=(
+            resolve_effect_authority_owner
+            or default_resolve_orchestration_topology_slot_effect_authority_owner
+        ),
     )
 
 
@@ -124,11 +161,14 @@ def prepare_orchestration_topology_slot_executor(
     *,
     policy: OrchestrationTopologySlotMsePolicy | None,
 ) -> OrchestrationSlotExecutor[PayloadT, ResultT]:
-    if orchestration_topology_slot_mse_delegated(slot_executor):
+    if policy is None:
+        return slot_executor
+    if orchestration_topology_slot_mse_delegated(
+        slot_executor,
+        resolve_effect_authority_owner=policy.resolve_effect_authority_owner,
+    ):
         return slot_executor
     if _already_governed_slot_executor(slot_executor):
-        return slot_executor
-    if policy is None:
         return slot_executor
     return GovernedOrchestrationSlotExecutor(
         inner=slot_executor,
@@ -144,11 +184,14 @@ def prepare_orchestration_topology_slot_continuation_executor(
     *,
     policy: OrchestrationTopologySlotMsePolicy | None,
 ) -> OrchestrationSlotContinuationExecutor[PayloadT, ResultT]:
-    if orchestration_topology_slot_mse_delegated(slot_continuation_executor):
+    if policy is None:
+        return slot_continuation_executor
+    if orchestration_topology_slot_mse_delegated(
+        slot_continuation_executor,
+        resolve_effect_authority_owner=policy.resolve_effect_authority_owner,
+    ):
         return slot_continuation_executor
     if _already_governed_continuation_executor(slot_continuation_executor):
-        return slot_continuation_executor
-    if policy is None:
         return slot_continuation_executor
     return GovernedOrchestrationSlotContinuationExecutor(
         inner=slot_continuation_executor,
@@ -160,9 +203,11 @@ def prepare_orchestration_topology_slot_continuation_executor(
 
 
 __all__ = [
+    "OrchestrationTopologySlotEffectAuthorityOwner",
     "OrchestrationTopologySlotMsePolicy",
     "build_orchestration_topology_slot_mse_policy",
     "default_consequential_topology_slot",
+    "default_resolve_orchestration_topology_slot_effect_authority_owner",
     "default_topology_slot_enforcement_request",
     "orchestration_topology_slot_mse_delegated",
     "prepare_orchestration_topology_slot_executor",
