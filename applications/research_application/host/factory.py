@@ -47,6 +47,9 @@ from intergrax.applications._shared.harness_host_composition import (
     resolve_harness_host_middleware_pipeline,
     resolve_harness_host_runtime_event_persistence,
 )
+from research_application.host.orchestration_decision_requirement_policy import (
+    resolve_research_harness_orchestration_decision_requirement_policy,
+)
 from research_application.host.settings import ResearchBackendSettings
 from research_application.host.environment_profile import (
     build_research_environment_profile,
@@ -98,6 +101,9 @@ def create_research_backend_app(
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
         registry_projection=registry_projection,
+        orchestration_decision_requirement_policy=(
+            resolve_research_harness_orchestration_decision_requirement_policy(settings)
+        ),
         **profile_persistence_kwargs,
     )
     host_execution = runtime.execution

@@ -9,6 +9,7 @@ from typing import ClassVar, FrozenSet, Literal, Mapping, Optional
 
 from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
+from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.fastapi_core.config import ApiEnvironment
 
 DisputeSimIdentitySource = Literal["body_or_context", "context_only"]
@@ -59,6 +60,7 @@ class DisputeSimBackendSettings(IntergraxApplicationSettingsBase):
     openapi_enabled_override: Optional[bool] = None
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
     interaction_execute_default: bool = True
+    orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None
 
     # ------------------------------------------------------------------
     # Application-specific settings

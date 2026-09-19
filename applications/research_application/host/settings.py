@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from typing import ClassVar
 
 from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
+from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -26,6 +27,7 @@ class ResearchBackendSettings(IntergraxApplicationSettingsBase):
     websearch_executor: object | None = None
     llm_provider: str | None = None
     llm_model: str | None = None
+    orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None
 
     @property
     def enabled_tool_ids(self) -> list[str]:

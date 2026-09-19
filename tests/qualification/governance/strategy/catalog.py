@@ -567,6 +567,114 @@ GR10_R10_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
 
 
 @dataclass(frozen=True, slots=True)
+class Gr10OrchestrationStrictHostDecisionPolicyInventoryRow:
+    host: str
+    strict_capable: bool
+    production: bool
+    orchestration_mse_applicable: bool
+    policy_source: str
+    explicit_policy: bool
+    coverage: str
+
+
+GR10_ORCHESTRATION_STRICT_HOST_DECISION_POLICY_INVENTORY: tuple[
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow,
+    ...,
+] = (
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "governed_contractor_application",
+        True,
+        True,
+        True,
+        "host/orchestration_decision_requirement_policy.default_governed_contractor_harness_orchestration_decision_requirement_policy",
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "research_application",
+        True,
+        True,
+        True,
+        "host/orchestration_decision_requirement_policy.resolve_research_harness_orchestration_decision_requirement_policy",
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "legal_application",
+        True,
+        True,
+        True,
+        "host/orchestration_decision_requirement_policy.resolve_legal_harness_orchestration_decision_requirement_policy",
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "dispute_sim_application",
+        True,
+        True,
+        True,
+        "host/orchestration_decision_requirement_policy.resolve_dispute_sim_harness_orchestration_decision_requirement_policy",
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "local_workspace_application",
+        True,
+        True,
+        True,
+        "host/host_runtime_composition + orchestration_decision_requirement_policy.resolve_local_workspace_harness_orchestration_decision_requirement_policy",
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "lab_application",
+        False,
+        False,
+        False,
+        "N/A — lab_defaults execution_mode balanced",
+        False,
+        "N/A",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "attestation_demo",
+        False,
+        False,
+        False,
+        "N/A — partner PoC lab profile",
+        False,
+        "N/A",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "poc_template_application",
+        False,
+        False,
+        False,
+        "N/A — lab scaffold template",
+        False,
+        "N/A",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "intergrax_assistant_application",
+        False,
+        False,
+        False,
+        "N/A — harness chat lab",
+        False,
+        "N/A",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "HarnessApplication (intergrax.harness.app)",
+        True,
+        False,
+        True,
+        "caller-supplied orchestration_decision_requirement_policy on build_runtime when execution_mode strict",
+        True,
+        "N/A",
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
 class Gr10OrchestrationDecisionBoundInventoryRow:
     path: str
     production: bool

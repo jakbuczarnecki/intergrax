@@ -24,6 +24,9 @@ from intergrax.integrations.contracts.document_store import DocumentStore
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
 )
+from local_workspace_application.host.orchestration_decision_requirement_policy import (
+    resolve_local_workspace_harness_orchestration_decision_requirement_policy,
+)
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 from local_workspace_application.workspaces.document_store_factory import (
@@ -137,6 +140,9 @@ def build_local_workspace_harness_host_runtime(
         idempotency_db_path=resolved_idempotency,
         document_store=resolved_document_store,
         registry_projection=registry_projection,
+        orchestration_decision_requirement_policy=(
+            resolve_local_workspace_harness_orchestration_decision_requirement_policy(settings)
+        ),
     )
     return LocalWorkspaceHarnessHostRuntimeComposition(
         tenant_binding=resolved_tenant,

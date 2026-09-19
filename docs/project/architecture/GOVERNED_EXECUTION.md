@@ -665,6 +665,7 @@ Governance **authorizes** consequential effects; Decision System supplies **mate
 - **`DecisionGovernanceMaterialRef`** binds decision subject, canonical action identity, and resource scope (GR-6-ARCH / GR-6-RS1).
 - **`DecisionGovernedSideEffectCoordinator`** (Execution Engine) sequences decision material with **`authorize_and_execute`** — Governance evaluation remains in the boundary; provider invocation runs only after authorization (fail-closed).
 - Production composition: governed contractor host wires policy + collaborative governance (`GR-6-WIRE`, `GR-6-CW1`, `GR-6-R2`); dynamic clock (GR-6-T1).
+- **GR-10-R10-R2 (orchestration MSE):** each strict production Tier-3 host owns `DecisionRequirementPolicy` semantics in `host/orchestration_decision_requirement_policy.py` (or equivalent) and injects it into `build_harness_host_runtime(..., orchestration_decision_requirement_policy=...)`. Generic harness runtime does not invent domain rules; missing policy with `execution_mode=strict` fails closed at production MSE composition (GR-10-R10-R1). Product scaffolds emit the same seam.
 
 Full Decision / Approval integration SSOT: [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md). Task history: gap ledger — not duplicated here.
 

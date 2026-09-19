@@ -1061,6 +1061,11 @@ def _create_product_application(
     _write(target / "host" / "agent_builders.py", product_tpl.agent_builders_py(names, specs), force=force)
     _write(target / "host" / "agent_factories.py", product_tpl.agent_factories_py(names, specs), force=force)
     _write(target / "host" / "environment_profile.py", product_tpl.environment_profile_py(names), force=force)
+    _write(
+        target / "host" / "orchestration_decision_requirement_policy.py",
+        product_tpl.orchestration_decision_requirement_policy_py(names),
+        force=force,
+    )
     _write(target / "host" / "policy" / "rules" / ".gitkeep", "", force=force)
     _write(target / "extensions" / "__init__.py", "", force=force)
     _write(target / "extensions" / "README.md", extensions_readme(names), force=force)

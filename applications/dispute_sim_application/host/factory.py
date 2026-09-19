@@ -51,6 +51,9 @@ from intergrax.applications._shared.harness_host_composition import (
     resolve_harness_host_middleware_pipeline,
     resolve_harness_host_runtime_event_persistence,
 )
+from dispute_sim_application.host.orchestration_decision_requirement_policy import (
+    resolve_dispute_sim_harness_orchestration_decision_requirement_policy,
+)
 from dispute_sim_application.host.settings import DisputeSimBackendSettings
 from dispute_sim_application.host.environment_profile import build_dispute_sim_environment_profile
 from dispute_sim_application.manifest import build_dispute_sim_manifest
@@ -82,6 +85,9 @@ def create_dispute_sim_backend_app(
         registry_projection=registry_projection,
         document_store=document_store,
         key_value_cache=key_value_cache,
+        orchestration_decision_requirement_policy=(
+            resolve_dispute_sim_harness_orchestration_decision_requirement_policy(settings)
+        ),
     )
     host_execution = runtime.execution
     platform = bootstrap_harness_host_platform(runtime)

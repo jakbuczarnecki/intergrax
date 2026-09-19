@@ -55,6 +55,9 @@ from intergrax.applications._shared.harness_host_composition import (
     resolve_harness_host_middleware_pipeline,
     resolve_harness_host_runtime_event_persistence,
 )
+from legal_application.host.orchestration_decision_requirement_policy import (
+    resolve_legal_harness_orchestration_decision_requirement_policy,
+)
 from legal_application.host.settings import LegalBackendSettings
 from legal_application.host.wiring import build_legal_environment_profile, build_legal_manifest
 
@@ -94,6 +97,9 @@ def create_legal_backend_app(
         registry_projection=registry_projection,
         document_store=document_store,
         key_value_cache=key_value_cache,
+        orchestration_decision_requirement_policy=(
+            resolve_legal_harness_orchestration_decision_requirement_policy(settings)
+        ),
     )
     host_execution = runtime.execution
     registry = runtime.registry
