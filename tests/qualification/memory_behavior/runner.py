@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Sequence
 
+from tests.qualification.memory_behavior.behavior_registry import MEM_AUDIT_6_BEHAVIOR_CASES
 from tests.qualification.memory_behavior.contracts import (
     BehaviorEvalCase,
     BehaviorEvalContext,
@@ -14,6 +15,8 @@ from tests.qualification.memory_behavior.contracts import (
     MemoryBehaviorEvaluationSummary,
     SemanticQualityMetrics,
 )
+
+EXPECTED_MEM_AUDIT_6_BEHAVIOR_SCENARIO_COUNT = len(MEM_AUDIT_6_BEHAVIOR_CASES)
 
 
 def assert_behavior_qualification_pass(summary: MemoryBehaviorEvaluationSummary) -> None:
@@ -57,6 +60,16 @@ def run_behavior_cases_sync(
     fail_fast: bool = True,
 ) -> MemoryBehaviorEvaluationSummary:
     return asyncio.run(run_behavior_cases(cases, ctx, fail_fast=fail_fast))
+
+
+async def run_mem_final_audit_6_behavioral_qualification() -> MemoryBehaviorEvaluationSummary:
+    """Execute all Memory behavioral scenarios on one shared evidence context."""
+    ctx = BehaviorEvalContext()
+    return await run_behavior_cases(MEM_AUDIT_6_BEHAVIOR_CASES, ctx, fail_fast=True)
+
+
+def run_mem_final_audit_6_behavioral_qualification_sync() -> MemoryBehaviorEvaluationSummary:
+    return asyncio.run(run_mem_final_audit_6_behavioral_qualification())
 
 
 def build_semantic_metrics(
