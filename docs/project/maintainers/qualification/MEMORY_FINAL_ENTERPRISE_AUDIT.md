@@ -1996,3 +1996,142 @@ Stale-claim greps on `docs/project/architecture/MEMORY*`: **no current-status re
 **READY FOR MEM-FINAL-AUDIT-8 AFTER INDEPENDENT GITHUB AUDIT**
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-7-R2 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-8.
+
+---
+
+## MEM-FINAL-AUDIT-8 — Final Memory Enterprise Certification
+
+| Field | Value |
+| ----- | ----- |
+| HEAD before (session start) | `ef82921797ce730a3205cb9af209c422ffce6b95` |
+| Branch | `development` |
+| Working tree at verification | **dirty** — foreign WIP (orchestration / harness / execution topology); **not staged**, not part of certification SHA |
+| 7-R2 evidence ancestor (`fbdd7b86c6f8662dc8552d5eaed0be28f663e220`) | **YES** |
+| **VERIFIED_SHA** | `d720f5e96182f53946a4b88699b910c4fdeb0e0a` |
+| **EVIDENCE_SHA** | `45960be20dbb8300eac653762dd8412e5d7886ff` |
+| Production / contract / Memory runtime changes during Audit-8 | **NONE** |
+| Memory path drift since `fbdd7b86` | **NONE** (`git log fbdd7b86..VERIFIED_SHA -- intergrax/memory` empty) |
+
+### Intervening commits (`fbdd7b86` → `VERIFIED_SHA`)
+
+| SHA | Summary | Memory-relevant |
+| --- | ------- | ----------------- |
+| `a2d901b1b` | collaborative-work MP-6E doc binding | **NO** |
+| `ccd53d99b` | execution deadline / cancellation | **NO** |
+| `1beec7e41` | harness-02 Q20 catalog evidence | **NO** |
+| `ef8292179` | diagnostics document query cursor contract | **NO** |
+| `82ed682e0` | agents UAEP step context refactor | **NO** |
+| `d2f29df1e` | collaborative-work MP-6E qualification docs | **NO** |
+| `37a949ee0` | governed-contractor sqlite CW profile guard | **NO** |
+| `d720f5e96` | execution child admission contributors | **NO** |
+
+### Prior stage closure SHAs (ledger source)
+
+| Stage | VERIFIED_SHA (final closure) | Notes |
+| ----- | ---------------------------- | ----- |
+| 5A-R3 | (5A-R3 section — trusted durability admission) | GAP-4-01 / GAP-5A-* **CLOSED** |
+| 5B | SQLite UserProfile V5 restart/reopen | qualified in 5B + admission suites |
+| 5C-R | Mongo `document_store.user_profile` + `mongodb` | V6 reconnect |
+| 5D-R3 | Qdrant STI | V6 + production admission |
+| 5E | pgvector STI | V6 |
+| 5F-R | Chroma STI | V6 |
+| 5G-R | `397cca50592f4b4c030cf8c994050fd638c439cd` | Task/Org V5 subprocess restart |
+| 6-R2 | `957045d86d48d0dfab8c77384f1427e2d46ea95a` | 34 behavioral hard scenarios |
+| 7-R2 | `c7b767ef97e43186be6fdbfef5e2fe519af72c17` | documentation certified |
+| 7-R2 evidence | `fbdd7b86c6f8662dc8552d5eaed0be28f663e220` | docs-only evidence chain |
+
+### Final system dimensions (at `VERIFIED_SHA`)
+
+| Dimension | Result |
+| --------- | ------ |
+| Architecture (one semantic control plane) | **PASS** |
+| Contract-first / tier boundaries | **PASS** — no `intergrax/memory` → applications; vendor SDK grep **empty** |
+| Security & authority | **PASS** — `test_mem_audit3_security_lifecycle_certification` |
+| Scope-operation matrix | **PASS** — matches `MEMORY_ARCHITECTURE.md` USER/TASK/SESSION table |
+| Lifecycle / projection / reconcile | **PASS** — AUDIT-3 + behavioral PROJECTION scenarios |
+| Pluginability vs hard invariants | **PASS** — admission + identity suites |
+| Provider identity / admission / no silent InMemory fallback (PRODUCT) | **PASS** — 5A-R3 matrix |
+| Durability & vendor qualification | **PASS WITH DOCUMENTED BOUNDARIES** — per-provider V5/V6 classifications unchanged |
+| Behavioral semantics | **PASS** — 34 hard scenarios · aggregate **0** violations |
+| Observability | **PASS** — sink failure non-authority (AUDIT-3) |
+| Composition | **PASS** — `test_mem_audit2_r2_host_memory_control_plane_composition` + 5G/5B wiring |
+| Documentation | **PASS** — canonical docs certified at 7-R2; stale-claim scan **no current contradictions** |
+| Composition / CE / RAG boundaries | **PASS** — prior AUDIT-2-R2 + architecture doc |
+
+### Provider drift (5C–5G)
+
+| Provider path | Drift since qualification | Local real-vendor rerun |
+| ------------- | ------------------------- | ------------------------ |
+| Mongo UserProfile 5C | **NONE** on `intergrax/memory` + adapter paths | **REUSED** — `pymongo` unavailable (collection error) |
+| Qdrant STI 5D | **NONE** | **REUSED** — non-vendor integration suite **83 passed** (excl. mongo/pg skips) |
+| pgvector STI 5E | **NONE** | **REUSED** — **12 skipped** (no `INTERGRAX_PGVECTOR_DSN`) |
+| Chroma STI 5F | **NONE** | **REUSED** — included in integration pass set |
+| Task/Org SQLite 5G | **NONE** | **REUSED** — `test_mem_final_audit_5g_*` + e2e unit matrix **PASS** |
+
+### Behavioral qualification (final)
+
+| Metric | Run #1 | Run #2 |
+| ------ | ------ | ------ |
+| Pytest gates (`tests/qualification/memory_behavior`) | **47 passed** | **47 passed** |
+| Hard behavioral scenarios (aggregate) | **34** / **0** failed | identical |
+| Violation counters | all **0** | all **0** |
+| Semantic smoke | n=**2** · Hit@1 **1.0** · Recall@K **1.0** · MRR **1.0** | deterministic smoke only |
+
+### Regression (at `VERIFIED_SHA`, sequential pytest)
+
+| Suite | Result |
+| ----- | ------ |
+| Phase A (architecture / admission / catalog) | **46 passed** |
+| Phase C unit `tests/unit/memory` | **605 passed**, **1 skipped** (Windows chmod 5B) |
+| Phase D integration `tests/integration/memory` | **83 passed**, **13 skipped**; Mongo 5C module **excluded** (`pymongo` import); not full vendor matrix locally |
+| Phase E+F composition + provider qual | **65 passed**, **1 skipped** |
+| Flakiness | **NONE** (behavioral duplicate runs identical) |
+
+### Open severity ledger scan
+
+| Class | Count |
+| ----- | ----- |
+| Currently open **P0** | **0** |
+| Currently open **P1** | **0** |
+| Historical **OPEN** / **P1** rows in early AUDIT-1…4 sections | **closed** in AUDIT-2-R2, 5A-R*, 5C–5F, 6-R2, 7-R2 |
+
+### P2 / P3 / NOT CERTIFIED (explicit residuals)
+
+| ID | Classification |
+| -- | -------------- |
+| Power-loss / crash-safe durability | **NOT CERTIFIED** |
+| HA / failover | **NOT CERTIFIED** |
+| Mongo service-restart / HA | **NOT CERTIFIED** (5C caveat preserved) |
+| Chroma reconnect ≠ service restart | **NOT CERTIFIED** (5F caveat) |
+| Production-scale / cross-lingual semantic benchmark | **OUT OF SCOPE** |
+| TASK semantic recall via `MemoryControlPlane` | **P2** — documented; `TaskMemoryCapability.read` path |
+| Provider-specific concurrency | **P2** — per-provider only |
+| Global Memory thread-safety | **NOT CERTIFIED** |
+| Foreign WIP in working tree | **P3** — excluded from SHA chain |
+
+### Final architecture classification
+
+**INTEGRAX MEMORY — ENTERPRISE CERTIFIED** (enterprise-certified within documented guarantees and explicitly recorded non-guarantees).
+
+| Subsystem | Status |
+| --------- | ------ |
+| Architecture | CERTIFIED |
+| Contracts | CERTIFIED |
+| Security & Authority | CERTIFIED |
+| Lifecycle & Resilience | CERTIFIED |
+| Provider Architecture | CERTIFIED |
+| Durability | CERTIFIED WITH DOCUMENTED BOUNDARIES |
+| Behavioral Semantics | CERTIFIED |
+| Documentation | CERTIFIED |
+
+### Verdict
+
+**PASS — MEM-FINAL-AUDIT-8 FINAL MEMORY ENTERPRISE CERTIFICATION COMPLETE**
+
+**MEM-FINAL-AUDIT PROGRAM COMPLETE** — no further mandatory MEM-FINAL-AUDIT stage.
+
+### Readiness
+
+Independent GitHub compare required: `VERIFIED_SHA` → evidence commit (**ahead_by = 1**, qualification docs only).
+
+> Wynik MEM-FINAL-AUDIT-8 i finalna certyfikacja warstwy Memory muszą zostać niezależnie zaudytowane na podstawie exact VERIFIED_SHA oraz evidence SHA z GitHuba. Dopiero po takim audycie status `INTEGRAX MEMORY — ENTERPRISE CERTIFIED` może zostać uznany za ostatecznie zamknięty.
