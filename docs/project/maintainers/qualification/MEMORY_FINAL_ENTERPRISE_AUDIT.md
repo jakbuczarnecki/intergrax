@@ -1745,8 +1745,37 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 | Memory regression | unit **605 passed**, 1 skipped; integration **83 passed**, 13 skipped; Mongo 5C **excluded** (`pymongo` unavailable) |
 | Application regression | `test_mem_audit2_r2_host_memory_control_plane_composition` — **4 passed** |
 | P0 / P1 | **NONE** |
+| Classification | **PASS WITH CORRECTIONS** — scenario hard gates strong; final certification aggregation was synthetic (no-op catalog runners) until **6-R2** |
+| Verdict | **PASS WITH CORRECTIONS — MEM-FINAL-AUDIT-6 NOT CLOSED** (superseded by 6-R2 aggregation closure) |
+| Readiness | Blocked on **6-R2** real aggregate execution |
+
+> Independent audit after 6-R: individual scenarios fed the ledger, but `test_mem_final_audit_6r_behavioral_summary_has_zero_hard_violations` used `_noop` runners over catalog refs — certification summary did not reflect real scenario execution.
+
+---
+
+## MEM-FINAL-AUDIT-6-R2 — Real Scenario Aggregation Closure
+
+| Field | Value |
+| ----- | ----- |
+| HEAD before | `6bd8e23ba1862bfc1237ffbe81ca40cd54127757` |
+| **VERIFIED_SHA** | `957045d86d48d0dfab8c77384f1427e2d46ea95a` |
+| Branch | `development` |
+| 6-R evidence ancestor (`6bd8e23ba1862bfc1237ffbe81ca40cd54127757`) | **YES** |
+| Production code changes | **NONE** |
+| Harness | `scenarios/` reusable runners · `behavior_registry.MEM_AUDIT_6_BEHAVIOR_CASES` · `run_mem_final_audit_6_behavioral_qualification()` · shared `BehaviorEvalContext` / ledger across aggregate run · per-scenario fresh Memory state |
+| Memory behavioral scenarios | **34** (USER **15** · SECURITY **5** · PROJECTION/LIFECYCLE **6** · SESSION **4** · TASK **4**) |
+| Harness integrity tests | **8** (ledger aggregation, negative self-test, mutation with real USER-01 + synthetic leak, shared-ctx proof, duplicate aggregate runs) — `BehaviorScenarioCategory.HARNESS_INTEGRITY` (**HARNESS-01** not counted as SECURITY) |
+| Metrics tests | **2** (deterministic semantic smoke + default counters) |
+| Pytest gates (total) | **47 passed** / **47 passed** (runs #1 / #2, identical) |
+| Aggregate qualification (#1 / #2) | **34** hard passed · **0** hard failed · violation counters all **0** |
+| Violation counter source | **actual real behavioral scenario execution** through one shared `BehaviorEvalContext` (`summary.violations = shared_ctx.ledger.counters`) |
+| Semantic metrics | n=**2** deterministic synthetic dataset; **not** a production-scale semantic benchmark; Hit@1 **1.0** · Recall@K **1.0** · MRR **1.0** |
+| TASK contract | remember/forget + capability read **PASS**; TASK recall via `MemoryControlPlane` **unsupported** (documented; not P1) |
+| Memory regression | unit **605 passed**, 1 skipped; integration **83 passed**, 13 skipped; Mongo 5C e2e **excluded** (`pymongo` unavailable) |
+| Application regression | `test_mem_audit2_r2_host_memory_control_plane_composition` + `test_mem_final_audit_5b_sqlite_production_restart_e2e` — **9 passed** |
+| P0 / P1 | **NONE** |
 | Classification | **MEMORY CONTROL PLANE — BEHAVIORALLY QUALIFIED** |
 | Verdict | **PASS — MEM-FINAL-AUDIT-6 BEHAVIORAL MEMORY EVALS QUALIFIED** |
 | Readiness | **READY FOR MEM-FINAL-AUDIT-7 AFTER INDEPENDENT GITHUB AUDIT** |
 
-> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-6-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-7.
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-6-R2 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-7.
