@@ -99,17 +99,6 @@ def _cancellation_view_for_child_narrowing(
     return _ParentAdmissionCancellationView(parent_admission)
 
 
-def _canonical_hard_from_parent(
-    parent_admission: ExecutionProtectedWorkAdmissionPort | None,
-) -> CanonicalHardProtectedWorkAdmission | None:
-    if isinstance(parent_admission, CanonicalHardProtectedWorkAdmission):
-        return parent_admission
-    if isinstance(parent_admission, ComposedProtectedWorkAdmission):
-        if isinstance(parent_admission.canonical, CanonicalHardProtectedWorkAdmission):
-            return parent_admission.canonical
-    return None
-
-
 def narrow_protected_work_admission_for_child(
     child_projection: ExecutionDeadlineProjection,
     parent_admission: ExecutionProtectedWorkAdmissionPort | None,
@@ -125,8 +114,7 @@ def narrow_protected_work_admission_for_child(
     )
     if parent_admission is None:
         return child_canonical
-    parent_canonical = _canonical_hard_from_parent(parent_admission)
-    if parent_canonical is not None:
+    if isinstance(parent_admission, CanonicalHardProtectedWorkAdmission):
         return child_canonical
     if isinstance(parent_admission, ComposedProtectedWorkAdmission):
         return ComposedProtectedWorkAdmission(

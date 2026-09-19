@@ -46,6 +46,8 @@ HARNESS_02_R1_REQUIRED_QUALIFICATION_IDS: frozenset[str] = frozenset(
         "Q25",
         "Q26",
         "Q27",
+        "Q28",
+        "Q29",
     }
 )
 
@@ -105,6 +107,7 @@ _H02 = "tests/qualification/harness_02/test_harness_02_gates.py"
 _H02R1 = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1_qualification.py"
 _H02R1A = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1a_qualification.py"
 _H02R1B = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1b_qualification.py"
+_H02R1C = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1c_qualification.py"
 _TOOL_ADM = "tests/unit/runtime/execution/test_tool_protected_work_admission.py"
 _H01 = "tests/qualification/harness_01/test_harness_01_gates.py"
 _UE9 = "tests/unit/runtime/execution/budget/test_ue_9ar1_preserve_run_budget_across_redelivery.py"
@@ -348,4 +351,14 @@ HARNESS_02_R1_QUALIFICATION_MATRIX: tuple[Harness02R1QualificationRow, ...] = (
     Harness02R1QualificationRow("Q25", "PASS", _nid(_H02R1B, "test_q25_bounded_child_under_unbounded_parent_gets_effective_deadline")),
     Harness02R1QualificationRow("Q26", "PASS", _nid(_H02R1B, "test_q26_cancellation_after_start_blocks_llm_sync")),
     Harness02R1QualificationRow("Q27", "PASS", _nid(_H02R1B, "test_q27_child_narrowing_preserves_live_parent_cancellation")),
+    Harness02R1QualificationRow(
+        "Q28",
+        "PASS",
+        _nid(_H02R1C, "test_q28_root_contributor_preserved_in_child"),
+    ),
+    Harness02R1QualificationRow(
+        "Q29",
+        "PASS",
+        _nid(_H02R1C, "test_q29_root_contributor_preserved_through_grandchild"),
+    ),
 )
