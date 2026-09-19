@@ -182,7 +182,7 @@ def test_harness_02_r1_catalog_covers_required_qualification_ids() -> None:
     assert HARNESS_02_R1_REQUIRED_QUALIFICATION_IDS <= catalog_ids
     for row in HARNESS_02_R1_QUALIFICATION_MATRIX:
         if row.qualification_id == "Q15":
-            assert row.status == "PENDING_R2"
+            assert row.status == "PASS"
         elif row.qualification_id in HARNESS_02_R1_REQUIRED_QUALIFICATION_IDS:
             assert row.status == "PASS"
 

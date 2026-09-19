@@ -108,6 +108,7 @@ _H02R1 = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1_qua
 _H02R1A = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1a_qualification.py"
 _H02R1B = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1b_qualification.py"
 _H02R1C = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1c_qualification.py"
+_H02R2 = "tests/unit/runtime/execution/deadline_authority/test_harness_02_r2_qualification.py"
 _TOOL_ADM = "tests/unit/runtime/execution/test_tool_protected_work_admission.py"
 _H01 = "tests/qualification/harness_01/test_harness_01_gates.py"
 _UE9 = "tests/unit/runtime/execution/budget/test_ue_9ar1_preserve_run_budget_across_redelivery.py"
@@ -254,7 +255,7 @@ HARNESS_02_FINDINGS: tuple[Harness02FindingRow, ...] = (
         severity="NON-BLOCKING DEBT",
         flow="H02-root-deadline",
         consequence="clock skew can diverge the two authorities",
-        required_action="single monotonic remaining-time contract at enforcement checkpoints",
+        required_action="closed in HARNESS-02-R2: enforce_wall_time_budget delegates to canonical monotonic authority",
     ),
     Harness02FindingRow(
         finding="Durable redelivery preserves ledger counters but remints process-local global_deadline_monotonic from full RunBudget",
@@ -334,7 +335,7 @@ HARNESS_02_R1_QUALIFICATION_MATRIX: tuple[Harness02R1QualificationRow, ...] = (
     Harness02R1QualificationRow("Q12", "PASS", _nid(_H02R1, "test_q12_retry_backoff_respects_deadline_utc")),
     Harness02R1QualificationRow("Q13", "PASS", _nid(_H02R1, "test_q13_missing_authority_on_existing_run_fails_closed")),
     Harness02R1QualificationRow("Q14", "PASS", _nid(_H02R1, "test_q14_parallel_workers_same_deadline")),
-    Harness02R1QualificationRow("Q15", "PENDING_R2", "HARNESS-02-R2 M7 legacy wall-time authority closure"),
+    Harness02R1QualificationRow("Q15", "PASS", _nid(_H02R2, "test_q15_1_canonical_future_legacy_started_at_would_expire")),
     Harness02R1QualificationRow("Q16", "PASS", _nid(_TOOL_ADM, "test_q16_admission_before_idempotency_claim_structural")),
     Harness02R1QualificationRow("Q17", "PASS", _nid(_H02R1, "test_q17_custom_available_cannot_override_expired")),
     Harness02R1QualificationRow("Q18", "PASS", _nid(_H02R1B, "test_q18_streaming_deadline_crossed_after_bind")),

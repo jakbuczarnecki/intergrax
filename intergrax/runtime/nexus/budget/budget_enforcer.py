@@ -193,11 +193,16 @@ class BudgetEnforcer:
             )
 
     def check_wall_time(self, *, run_id: str, elapsed_seconds: float, state: RuntimeState) -> None:
+        """Emit trace and abort after canonical wall-time authority reports exhaustion.
+
+        Compatibility adapter only: does **not** compare ``elapsed_seconds`` to
+        ``max_wall_time_seconds``. ``elapsed_seconds`` is observability input
+        (for example ``RuntimeState.started_at_utc`` delta) and must not drive
+        the expiry decision.
+        """
         limit = self._budget.max_wall_time_seconds
-        if limit is None:
-            return
-        if elapsed_seconds <= limit:
-            return
+        reported_limit = limit if limit is not None else max(elapsed_seconds, 0.0)
+        reported_actual = max(elapsed_seconds, reported_limit + 0.001)
 
         state.trace_event(
             component=TraceComponent.POLICY,
@@ -207,15 +212,16 @@ class BudgetEnforcer:
             payload=BudgetExceededDiagV1(
                 run_id=run_id,
                 budget_name="max_wall_time_seconds",
-                limit=limit,
-                actual=elapsed_seconds,
+                limit=reported_limit,
+                actual=reported_actual,
                 enforcement_mode=self._policy.enforcement_mode.value,
             ),
         )
 
         if self._policy.enforcement_mode is BudgetEnforcementMode.ABORT:
             raise BudgetExceededError(
-                f"Budget exceeded: max_wall_time_seconds ({elapsed_seconds:.3f} > {limit})"
+                "Budget exceeded: max_wall_time_seconds "
+                f"({reported_actual:.3f} > {reported_limit})"
             )
 
     def check_replans(self, *, run_id: str, replans: int, state: RuntimeState) -> None:

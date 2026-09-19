@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
 
 from intergrax.runtime.nexus.budget.budget_enforcer import BudgetExceededError
@@ -79,13 +81,87 @@ def test_planner_iteration_second_round_aborts_when_limit_one() -> None:
             record_planner_iteration_and_enforce(st)
 
 
-def test_wall_time_budget_aborts_when_elapsed_exceeds_limit() -> None:
-    from datetime import datetime, timedelta, timezone
+def test_wall_time_budget_aborts_when_canonical_deadline_expired() -> None:
+    from intergrax.contracts.execution_deadline.projection import ExecutionDeadlineProjection
+    from intergrax.runtime.execution.deadline_scope import (
+        bind_active_execution_deadline_scope,
+        reset_active_execution_deadline_scope,
+    )
+    from intergrax.runtime.execution.protected_work_admission import (
+        CanonicalHardProtectedWorkAdmission,
+        StaticCancellationView,
+    )
 
-    with governed_runtime_state_scope("wall-budget") as st:
-        st.context.config.run_budget = RunBudget(max_wall_time_seconds=1.0)
-        st.context.config.budget_policy = BudgetPolicy(enforcement_mode=BudgetEnforcementMode.ABORT)
-        st.started_at_utc = (datetime.now(timezone.utc) - timedelta(seconds=5)).isoformat()
-        assert run_elapsed_seconds(st) > 1.0
-        with pytest.raises(BudgetExceededError, match="max_wall_time_seconds"):
+    class _Clock:
+        def __init__(self, value: float) -> None:
+            self._value = value
+
+        def monotonic(self) -> float:
+            return self._value
+
+    clock = _Clock(200.0)
+    projection = ExecutionDeadlineProjection(
+        deadline_at_utc=datetime(2020, 1, 1, tzinfo=timezone.utc),
+        remaining_seconds=0.0,
+        is_expired=True,
+        global_deadline_monotonic=100.0,
+    )
+    tokens = bind_active_execution_deadline_scope(
+        projection=projection,
+        admission=CanonicalHardProtectedWorkAdmission(
+            projection=projection,
+            cancellation_view=StaticCancellationView(cancelled=False),
+            monotonic_clock=clock,
+        ),
+        monotonic_clock=clock,
+    )
+    try:
+        with governed_runtime_state_scope("wall-budget") as st:
+            st.context.config.run_budget = RunBudget(max_wall_time_seconds=3600.0)
+            st.context.config.budget_policy = BudgetPolicy(enforcement_mode=BudgetEnforcementMode.ABORT)
+            st.started_at_utc = datetime.now(timezone.utc).isoformat()
+            with pytest.raises(BudgetExceededError, match="max_wall_time_seconds"):
+                enforce_wall_time_budget(st)
+    finally:
+        reset_active_execution_deadline_scope(*tokens)
+
+
+def test_wall_time_budget_unbounded_ignores_legacy_started_at() -> None:
+    from intergrax.contracts.execution_deadline.projection import ExecutionDeadlineProjection
+    from intergrax.runtime.execution.deadline_scope import (
+        bind_active_execution_deadline_scope,
+        reset_active_execution_deadline_scope,
+    )
+    from intergrax.runtime.execution.protected_work_admission import (
+        CanonicalHardProtectedWorkAdmission,
+        StaticCancellationView,
+    )
+
+    class _Clock:
+        def monotonic(self) -> float:
+            return 1.0
+
+    projection = ExecutionDeadlineProjection(
+        deadline_at_utc=None,
+        remaining_seconds=float("inf"),
+        is_expired=False,
+        global_deadline_monotonic=None,
+    )
+    clock = _Clock()
+    tokens = bind_active_execution_deadline_scope(
+        projection=projection,
+        admission=CanonicalHardProtectedWorkAdmission(
+            projection=projection,
+            cancellation_view=StaticCancellationView(cancelled=False),
+            monotonic_clock=clock,
+        ),
+        monotonic_clock=clock,
+    )
+    try:
+        with governed_runtime_state_scope("wall-unbounded") as st:
+            st.context.config.run_budget = RunBudget(max_wall_time_seconds=1.0)
+            st.context.config.budget_policy = BudgetPolicy(enforcement_mode=BudgetEnforcementMode.ABORT)
+            st.started_at_utc = (datetime.now(timezone.utc) - timedelta(seconds=5)).isoformat()
             enforce_wall_time_budget(st)
+    finally:
+        reset_active_execution_deadline_scope(*tokens)
