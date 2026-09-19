@@ -1797,7 +1797,16 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 | Docs touched | `MEMORY_ARCHITECTURE.md`, `MEMORY_ARCHITECTURE_DIAGRAMS.md` (new), `MEMORY.md`, `MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md`, this ledger |
 | Test/guard changes | **NONE** |
 | Mermaid diagrams | **18** in diagrams doc (+ existing diagrams in architecture doc) |
-| P0 / P1 | **NONE** |
+| P0 / P1 (initial agent closeout) | **NONE** |
+
+### Independent review (GitHub audit of `VERIFIED_SHA` `ef5a8fd75e8361f386459ee1dfada03be94c040c`)
+
+| ID | Defect |
+| ---- | ------ |
+| P1-7-01 | Stale Mongo qualification claim in canonical architecture (external durable vendor “not certified”) |
+| P1-7-02 | Glossary conflated **canonical source** with durability (“durable truth”) |
+
+**PASS WITH CORRECTIONS — MEM-FINAL-AUDIT-7 NOT YET FORMALLY CLOSED** (repaired in MEM-FINAL-AUDIT-7-R).
 
 ### Documentation inventory (Memory-related)
 
@@ -1831,6 +1840,49 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 | ----- | ------ |
 | `tests/qualification/memory_behavior` + composition/restart apps | **56 passed** (`.tmp/session/mem-final-audit-7/pytest-sanity.log`) |
 
+### Classification (initial closeout at `ef5a8fd75`)
+
+Documentation structurally complete; **not** formally closed until 7-R reconciliation (see below).
+
+### Verdict (initial closeout)
+
+**PASS WITH CORRECTIONS — MEM-FINAL-AUDIT-7 NOT YET FORMALLY CLOSED**
+
+### Readiness (initial)
+
+**MEM-FINAL-AUDIT-7-R required** before MEM-FINAL-AUDIT-8.
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-7 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-8.
+
+---
+
+## MEM-FINAL-AUDIT-7-R — Canonical Documentation Truth Reconciliation
+
+| Field | Value |
+| ----- | ----- |
+| HEAD before | `ea80ec82050d54b28509018e4f77dfddbed5fa1a` |
+| **VERIFIED_SHA** | `a24c251c0768c42b1c100e1228d7e4a67eb98cd9` |
+| Branch | `development` |
+| 7 evidence ancestor (`7eabdc5280b453bb64f84fbcac7e61c7728fae0b`) | **YES** |
+| Foreign WIP | orchestration topology / GR10 tests (not staged) |
+| Production / contract / test behavior changes | **NONE** |
+| Docs touched | `MEMORY_ARCHITECTURE.md`, `MEMORY.md`, this ledger |
+| Provider matrix | unchanged (already V6 Mongo composite) |
+
+### Findings reconciled
+
+| ID | Action |
+| ---- | ------ |
+| P1-7-01 | Removed stale “Mongo / external durable not certified” current claims; documented **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (`document_store.user_profile` + `mongodb`) with service-restart / HA / power-loss non-claims |
+| P1-7-02 | Split **canonical authority** from **durable provider**; added authority/durability/admission table and InMemory canonical nuance |
+
+### Architecture sanity regressions (at `VERIFIED_SHA`)
+
+| Suite | Result |
+| ----- | ------ |
+| `tests/qualification/memory_behavior` | **47 passed** (`.tmp/session/mem-final-audit-7-r/pytest-behavior.log`) |
+| `git diff --check` (Memory docs scope) | **PASS** |
+
 ### Classification
 
 **MEMORY ARCHITECTURE — DOCUMENTATION CERTIFIED**
@@ -1843,4 +1895,4 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 
 **READY FOR MEM-FINAL-AUDIT-8 AFTER INDEPENDENT GITHUB AUDIT**
 
-> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-7 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-8.
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-7-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-8.
