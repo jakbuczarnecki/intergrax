@@ -1787,6 +1787,7 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 | Field | Value |
 | ----- | ----- |
 | HEAD before | `77953d638e24a699fbc5c1884b864595e4846726` |
+| **VERIFIED_SHA** | `ef5a8fd75e8361f386459ee1dfada03be94c040c` |
 | Branch | `development` |
 | 6-R2 evidence ancestor (`35197e55cdca52bac4fce9520b610d559389059f`) | **YES** |
 | Foreign WIP | none |
