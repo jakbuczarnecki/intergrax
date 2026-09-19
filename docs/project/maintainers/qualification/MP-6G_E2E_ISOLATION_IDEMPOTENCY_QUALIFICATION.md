@@ -10,8 +10,8 @@
 | **MP-6G-C1-Q1** | **CLOSED / RECERTIFIED** |
 | **MP-6G-C1** | **CLOSED / RECERTIFIED** |
 | **MP-6G** | **CLOSED / CERTIFIED** |
-| **MP-6H** | **NEXT** |
-| **MP-6** | **IN PROGRESS** (final enterprise certification awaits MP-6H) |
+| **MP-6H** | **CLOSED / CERTIFIED** ([`MP-6_FINAL_ENTERPRISE_CERTIFICATION.md`](MP-6_FINAL_ENTERPRISE_CERTIFICATION.md)) |
+| **MP-6** | **ENTERPRISE CERTIFIED / CLOSED** |
 
 ## Qualification identity
 
