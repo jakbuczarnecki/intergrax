@@ -1697,3 +1697,28 @@ PRODUCT persistent USER/LTM: trusted identity + behavioral qualification evidenc
 **Readiness:** READY FOR MEM-FINAL-AUDIT-6 AFTER INDEPENDENT GITHUB AUDIT
 
 > Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-5G-R muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-6.
+
+---
+
+## MEM-FINAL-AUDIT-6 — Behavioral Memory Evals
+
+| Field | Value |
+| ----- | ----- |
+| HEAD before | `37d5c74f5b9ed75ebe685a33f734c3dee6cda8b4` |
+| Branch | `development` |
+| 5G-R evidence ancestor (`efdcbfe82f96f8526f7d688e4f0121534a1da583`) | **YES** |
+| Control plane implementation | `intergrax/memory/default_memory_control_plane.py` — `DefaultMemoryControlPlane` |
+| Composition root | `intergrax/applications/_shared/memory_control_wiring.py` — `build_default_memory_control_plane` |
+| Eval harness | `tests/qualification/memory_behavior/` (contracts, fixtures, runner, catalog, scoped pytest gates) |
+| Hard scenarios (catalog) | USER 15 · SESSION 4 · TASK 4 · PROJECTION/LIFECYCLE 6 · SECURITY 4 |
+| Behavioral runs (#1 / #2) | **37 passed** / **37 passed** (deterministic, identical) |
+| Zero-violation counters | all **0** (hard gates) |
+| Semantic metrics (deterministic LTM fixture) | dataset **2** · Hit@1 **1.0** · Recall@K **1.0** · MRR **1.0** (top_k=3) |
+| Memory regression | unit **605 passed**, 1 skipped (Windows chmod); integration **83 passed**, 13 skipped (pgvector/chmod); Mongo 5C **excluded** (`pymongo` unavailable) |
+| Application regression | `test_mem_audit2_r2_host_memory_control_plane_composition` + `test_mem_ent12_observability` — **13 passed** |
+| Production code changes | **NONE** |
+| Classification | **MEMORY CONTROL PLANE — BEHAVIORALLY QUALIFIED** |
+| Verdict | **PASS — MEM-FINAL-AUDIT-6 BEHAVIORAL MEMORY EVALS QUALIFIED** |
+| Readiness | **READY FOR MEM-FINAL-AUDIT-7 AFTER INDEPENDENT GITHUB AUDIT** |
+
+> Wprowadzone zmiany i wynik MEM-FINAL-AUDIT-6 muszą zostać niezależnie zaudytowane na podstawie exact SHA z GitHuba przed rozpoczęciem MEM-FINAL-AUDIT-7.

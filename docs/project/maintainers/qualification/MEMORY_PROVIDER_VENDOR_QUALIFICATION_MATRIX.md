@@ -532,3 +532,9 @@ uv run pytest tests/unit/memory/test_mem_ent13_provider_qualification.py \
 ```
 
 **Result:** 86 passed (log: `.tmp/session/mem-final-audit-4/pytest-qual.log`).
+
+---
+
+## MEM-FINAL-AUDIT-6 — behavioral semantics (non-vendor)
+
+Vendor V-levels unchanged. Behavioral certification uses `tests/qualification/memory_behavior/` against `DefaultMemoryControlPlane` / `build_default_memory_control_plane` (USER · SESSION · TASK scopes, projection lifecycle, identity hard gates). Classification: **BEHAVIORALLY QUALIFIED** (see `MEMORY_FINAL_ENTERPRISE_AUDIT.md` § MEM-FINAL-AUDIT-6).
