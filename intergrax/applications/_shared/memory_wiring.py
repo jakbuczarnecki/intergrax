@@ -96,6 +96,9 @@ from intergrax.memory.contracts.long_horizon_memory import CanonicalMemorySource
 from intergrax.memory.stores.in_memory_long_horizon_memory_plugin import (
     InMemoryLongHorizonMemoryStorePlugin,
 )
+from intergrax.memory.stores.in_memory_entity_temporal_memory_plugin import (
+    InMemoryEntityTemporalMemoryStorePlugin,
+)
 from intergrax.memory.stores.in_memory_procedural_memory_plugin import (
     InMemoryProceduralMemoryStorePlugin,
 )
@@ -121,6 +124,7 @@ class MemoryPlatformWiring:
     memory_store_plugin_load_report: DomainPluginLoadReport = DomainPluginLoadReport.empty(
         EP_MEMORY_STORES
     )
+    memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None
 
 
 def memory_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[str, ...]:
@@ -192,6 +196,7 @@ def _document_store_backing_provider_id(profile: IntegrationProfile) -> str | No
 _REFERENCE_MEMORY_STORE_PLUGINS: tuple[type, ...] = (
     InMemoryProceduralMemoryStorePlugin,
     InMemoryLongHorizonMemoryStorePlugin,
+    InMemoryEntityTemporalMemoryStorePlugin,
 )
 
 
@@ -209,6 +214,8 @@ def _memory_store_plugin_catalog_required(env: ApplicationEnvironmentProfile) ->
     return (
         memory_profile.enable_procedural_memory
         or memory_profile.enable_long_horizon_memory
+        or memory_profile.enable_entity_graph_memory
+        or memory_profile.enable_session_vector_index
         or memory_profile.user_profile_store_plugin_id is not None
         or memory_profile.session_storage_plugin_id is not None
     )
@@ -251,7 +258,12 @@ def _resolve_baseline_memory_platform_wiring(
         security_governance=security_governance,
         memory_diagnostic_emitter=emitter,
     )
-    entity_store = resolve_entity_temporal_memory_store(env)
+    entity_store = resolve_entity_temporal_memory_store(
+        env,
+        discover_entry_points=discover_entry_points,
+        explicit_memory_plugins=explicit_memory_plugins,
+        catalog=memory_store_plugin_catalog,
+    )
     entity_temporal_memory_capability = resolve_entity_temporal_memory_capability(
         env,
         security_governance=governance,
@@ -388,7 +400,7 @@ def _apply_external_memory_store_overlay(
             catalog=catalog,
         )
         updated = replace(updated, session_storage=session_storage)
-    return replace(updated, memory_store_plugin_load_report=catalog.load_report)
+    return updated
 
 
 def resolve_memory_platform_wiring(
@@ -451,6 +463,12 @@ def resolve_memory_platform_wiring(
         qualification_evidence_registry=qualification_evidence_registry,
         durability_evidence_registry=durability_evidence_registry,
     )
+    if memory_store_plugin_catalog is not None:
+        wiring = replace(
+            wiring,
+            memory_store_plugin_load_report=memory_store_plugin_catalog.load_report,
+            memory_store_plugin_catalog=memory_store_plugin_catalog,
+        )
     return wiring
 
 
@@ -466,14 +484,17 @@ def build_session_manager_from_environment(
     durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
     session_turn_index_store: SessionTurnIndexStore | None = None,
     session_turn_index_store_identity: MemoryProviderIdentity | None = None,
+    discover_entry_points: bool | None = None,
 ) -> SessionManager:
     """Construct ``SessionManager`` with profile managers driven by ``MemoryProfile``."""
+    discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
     wiring = memory_wiring or resolve_memory_platform_wiring(
         env,
         integration_profile=integration_profile,
         tenant_id=tenant_id,
         qualification_evidence_registry=qualification_evidence_registry,
         durability_evidence_registry=durability_evidence_registry,
+        discover_entry_points=discover,
     )
     validate_memory_platform_wiring_admission(
         env,
@@ -519,6 +540,8 @@ def build_session_manager_from_environment(
             rag_stack=rag_stack,
             integration_profile=resolved_integration,
             qualification_evidence_registry=qualification_evidence_registry,
+            discover_entry_points=discover,
+            memory_store_plugin_catalog=wiring.memory_store_plugin_catalog,
         )
 
     resolved_memory_control_plane = memory_control_plane

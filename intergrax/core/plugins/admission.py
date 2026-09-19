@@ -94,6 +94,60 @@ class DomainPluginLoadReport:
         )
 
 
+def _entry_point_spec_identity(spec: EntryPointSpec) -> tuple[str, str]:
+    return (spec.name, spec.value)
+
+
+def merge_domain_plugin_load_reports(
+    *reports: DomainPluginLoadReport,
+) -> DomainPluginLoadReport:
+    """Merge bootstrap evidence from multiple discovery passes (same plugin group only)."""
+    if not reports:
+        raise ValueError("merge_domain_plugin_load_reports requires at least one report")
+    group = reports[0].group
+    for report in reports[1:]:
+        if report.group != group:
+            raise ValueError(
+                "Cannot merge plugin load reports with differing groups: "
+                f"{group!r} vs {report.group!r}"
+            )
+
+    accepted_by_key: dict[tuple[str, str], EntryPointSpec] = {}
+    rejected_by_key: dict[tuple[str, str], PluginAdmissionRejection] = {}
+    failed_by_key: dict[tuple[str, str], EntryPointLoadResult] = {}
+
+    for report in reports:
+        for spec in report.accepted:
+            accepted_by_key[_entry_point_spec_identity(spec)] = spec
+        for item in report.rejected:
+            rejected_by_key[_entry_point_spec_identity(item.spec)] = item
+        for item in report.failed:
+            failed_by_key[_entry_point_spec_identity(item.spec)] = item
+
+    accepted = tuple(
+        sorted(accepted_by_key.values(), key=lambda spec: (spec.name, spec.value))
+    )
+    rejected = tuple(
+        sorted(
+            rejected_by_key.values(),
+            key=lambda item: (item.spec.name, item.spec.value),
+        )
+    )
+    failed = tuple(
+        sorted(
+            failed_by_key.values(),
+            key=lambda item: (item.spec.name, item.spec.value),
+        )
+    )
+    return DomainPluginLoadReport(
+        group=group,
+        accepted=accepted,
+        rejected=rejected,
+        failed=failed,
+        registered_count=len(accepted),
+    )
+
+
 def _spec_audit(spec: EntryPointSpec) -> dict[str, object]:
     return {
         "name": spec.name,

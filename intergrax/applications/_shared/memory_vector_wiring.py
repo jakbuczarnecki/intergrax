@@ -33,7 +33,10 @@ from intergrax.memory.resolver.classifier import (
     MemoryStorePluginKind,
     classify_memory_store_plugin_record,
 )
-from intergrax.memory.resolver.discovery import index_classified_memory_store_plugins
+from intergrax.memory.resolver.discovery import (
+    MemoryStorePluginCatalog,
+    index_classified_memory_store_plugins,
+)
 from intergrax.memory.resolver.errors import MemoryStorePluginResolutionError
 from intergrax.memory.session_turn_index_service import VectorSessionTurnIndexStore
 from intergrax.memory.user_profile_manager import UserProfileManager
@@ -123,10 +126,32 @@ def _select_session_turn_index_plugin(
     return records[0]
 
 
-def _discover_classified_session_turn_index_plugins() -> tuple[ClassifiedMemoryStorePlugin, ...]:
+def _session_turn_index_plugins_from_catalog(
+    catalog: MemoryStorePluginCatalog,
+) -> tuple[ClassifiedMemoryStorePlugin, ...]:
+    records = [
+        item
+        for item in catalog.index.values()
+        if item.kind is MemoryStorePluginKind.SESSION_TURN_INDEX
+    ]
+    return tuple(sorted(records, key=lambda record: record.plugin_id))
+
+
+def _discover_classified_session_turn_index_plugins(
+    *,
+    discover_entry_points: bool,
+    memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None,
+) -> tuple[ClassifiedMemoryStorePlugin, ...]:
+    if memory_store_plugin_catalog is not None:
+        return _session_turn_index_plugins_from_catalog(memory_store_plugin_catalog)
+    if not discover_entry_points:
+        return ()
+
     from intergrax.memory.resolver.discovery import discover_classified_memory_store_plugins
 
-    discovery = discover_classified_memory_store_plugins(discover_entry_points=True)
+    discovery = discover_classified_memory_store_plugins(
+        discover_entry_points=discover_entry_points,
+    )
     records = [
         item
         for item in discovery.plugins
@@ -258,6 +283,8 @@ def build_session_turn_index_store(
     rag_stack: RagStack | None = None,
     integration_profile: IntegrationProfile | None = None,
     session_turn_index_plugins: Sequence[type[SessionTurnIndexStorePlugin]] = (),
+    discover_entry_points: bool = True,
+    memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None,
     qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
     admission_evidence: MemoryProviderAdmissionEvidenceContext | None = None,
 ) -> SessionTurnIndexStore | None:
@@ -292,7 +319,10 @@ def build_session_turn_index_store(
     if session_turn_index_plugins:
         selected_plugin = _select_session_turn_index_plugin(session_turn_index_plugins)
     else:
-        discovered = _discover_classified_session_turn_index_plugins()
+        discovered = _discover_classified_session_turn_index_plugins(
+            discover_entry_points=discover_entry_points,
+            memory_store_plugin_catalog=memory_store_plugin_catalog,
+        )
         selected_plugin = _select_session_turn_index_plugin(
             tuple(record.plugin_type for record in discovered),
         )
