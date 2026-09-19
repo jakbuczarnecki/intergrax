@@ -2008,7 +2008,7 @@ Stale-claim greps on `docs/project/architecture/MEMORY*`: **no current-status re
 | Working tree at verification | **dirty** — foreign WIP (orchestration / harness / execution topology); **not staged**, not part of certification SHA |
 | 7-R2 evidence ancestor (`fbdd7b86c6f8662dc8552d5eaed0be28f663e220`) | **YES** |
 | **VERIFIED_SHA** | `d720f5e96182f53946a4b88699b910c4fdeb0e0a` |
-| **EVIDENCE_SHA** | `45960be20dbb8300eac653762dd8412e5d7886ff` |
+| **EVIDENCE_SHA** | `0e17af498f94204c5a855e85a92c64a4cee87f32` |
 | Production / contract / Memory runtime changes during Audit-8 | **NONE** |
 | Memory path drift since `fbdd7b86` | **NONE** (`git log fbdd7b86..VERIFIED_SHA -- intergrax/memory` empty) |
 
@@ -2135,3 +2135,55 @@ Stale-claim greps on `docs/project/architecture/MEMORY*`: **no current-status re
 Independent GitHub compare required: `VERIFIED_SHA` → evidence commit (**ahead_by = 1**, qualification docs only).
 
 > Wynik MEM-FINAL-AUDIT-8 i finalna certyfikacja warstwy Memory muszą zostać niezależnie zaudytowane na podstawie exact VERIFIED_SHA oraz evidence SHA z GitHuba. Dopiero po takim audycie status `INTEGRAX MEMORY — ENTERPRISE CERTIFIED` może zostać uznany za ostatecznie zamknięty.
+
+---
+
+## MEM-FINAL-AUDIT-8-R — Final Certification Evidence SHA Reconciliation
+
+| Field | Value |
+| ----- | ----- |
+| HEAD before (session start) | `e81a0ed0c7011579753745ffa17184839ee6992f` |
+| Branch | `development` |
+| Working tree at start | **clean** |
+| Foreign WIP at start | **none** |
+| **AUDIT-8 VERIFIED_SHA** (unchanged) | `d720f5e96182f53946a4b88699b910c4fdeb0e0a` |
+| **AUDIT-8 EVIDENCE_SHA (corrected ledger)** | `0e17af498f94204c5a855e85a92c64a4cee87f32` |
+| **Prior incorrect AUDIT-8 EVIDENCE_SHA** | `45960be20dbb8300eac653762dd8412e5d7886ff` (**invalid** — not present on GitHub) |
+| Historical evidence commit message | `docs(memory): record final enterprise memory certification` |
+| Production / contract / Memory runtime changes | **NONE** |
+| Test behavior changes | **NONE** |
+| Architecture claims / AUDIT-8 verdict | **UNCHANGED** |
+
+### Reconciliation scope
+
+| Item | Result |
+| ---- | ------ |
+| MEM-FINAL-AUDIT-8 substantive certification | **CONFIRMED** — merytorycznie poprawna |
+| Defect | **EVIDENCE_SHA ledger typo only** |
+| Correct historical evidence commit | `0e17af498f94204c5a855e85a92c64a4cee87f32` |
+| Commits after evidence (e.g. `e81a0ed0c7011579753745ffa17184839ee6992f`) | **Memory-irrelevant** — do not alter historical AUDIT-8 evidence meaning |
+
+### Production / contract / test behavior changes (8-R)
+
+| Category | 8-R delta |
+| -------- | --------- |
+| Production | **NONE** |
+| Contracts | **NONE** |
+| Test behavior | **NONE** |
+| Architecture | **NONE** |
+
+### Classification
+
+**INTEGRAX MEMORY — ENTERPRISE CERTIFIED** (unchanged; ledger evidence SHA corrected only).
+
+### Verdict
+
+**PASS — MEM-FINAL-AUDIT-8-R EVIDENCE SHA RECONCILIATION COMPLETE**
+
+AUDIT-8 architectural verdict, provider statuses, and certification claims are **unchanged**.
+
+### Readiness
+
+Independent GitHub audit required for this reconciliation commit (message `docs(memory): reconcile final audit evidence sha`) and for historical evidence `0e17af498f94204c5a855e85a92c64a4cee87f32`.
+
+> Wprowadzone zmiany MEM-FINAL-AUDIT-8-R muszą zostać niezależnie zaudytowane na podstawie faktycznego commitu reconciliation oraz historycznego evidence SHA z GitHuba. Lokalny raport Cursor AI nie jest samodzielnym dowodem poprawności implementacji.
