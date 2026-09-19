@@ -6,8 +6,8 @@
 **ADR:** [ADR-MP-001](../../technical/adr/entries/2026-08-11/ADR-MP-001.md) · [ADR-MP-002](../../technical/adr/entries/2026-08-11/ADR-MP-002.md) · [ADR-MP-003](../../technical/adr/entries/2026-09-06/ADR-MP-003.md) · [ADR-MP-004](../../technical/adr/entries/2026-09-07/ADR-MP-004.md)
 
 **Status:** Domain registered - **MP-1 — CLOSED / FINAL INDEPENDENT REVIEW PASS**; **MP-2 — APPROVED / CLOSED** (ADR-MP-003 Accepted; implementation **COMPLETE**); **MP-3 — ENTERPRISE CERTIFIED / CLOSED** (ADR-MP-004 Accepted; **MP-3A…MP-3H — APPROVED / CLOSED**); **MP-3 architecture decomposition — APPROVED / CLOSED**; **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED**; **MP-5 — ENTERPRISE CERTIFIED / CLOSED**
-**Current active task:** **MP-6C — Publication / Ingestion Boundary — NEXT**.
-**Next task:** **MP-6 — NEXT** (active slice **MP-6C — NEXT**). **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**) (**MP-6 ownership — FROZEN** via ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md), [`MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)).
+**Current active task:** **MP-7 — LKW reference-product adoption — NEXT** ([`capabilities/plan/MULTIPLAYER_AI.md`](../../capabilities/plan/MULTIPLAYER_AI.md)).
+**MP-6 — ENTERPRISE CERTIFIED / CLOSED** (**MP-6H — CLOSED / CERTIFIED** — [`qualification/MP-6_FINAL_ENTERPRISE_CERTIFICATION.md`](qualification/MP-6_FINAL_ENTERPRISE_CERTIFICATION.md); subject to independent audit). **MP-6G — CLOSED / CERTIFIED** (`qualification_sha` `5ff90667569bf23c88a4db98d489966e309f4ab7`). **MP-6F — CLOSED / RECERTIFIED**. **MP-6E — CLOSED / RECERTIFIED**. **MP-6D — CLOSED / RECERTIFIED**. **MP-6C — CLOSED / RECERTIFIED**. **MP-6B — CLOSED / RECERTIFIED**. **MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**) (**MP-6 ownership — FROZEN** via ADR-MP-007).
 **First consumer:** `applications/local_workspace_application` (LKW)
 
 ---
@@ -610,7 +610,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Publication atomicity** | `ArtifactPublicationRepository` required for **both** `create_artifact_with_initial_version(...)` and `publish_version(...)`; typed read/direct ports only for non-authoritative access; no generic UoW; no service-level manual two-repository writes |
 | **MP-3F ordering** | After MP-3E — metadata/content-ref qualification precedes content-provider integration |
 | **Qualification versioning** | Bump owned by MP-3E when semantics change — not preselected here |
-| **Next step** | **MP-6B — NEXT** (**MP-6A — CLOSED / RECERTIFIED** (**MP-6A-C1**)) |
+| **Next step** | **MP-7 — LKW reference-product adoption — NEXT**; **MP-6 — ENTERPRISE CERTIFIED / CLOSED** |
 
 ### MP-6A — Activity & Provenance ownership / contract architecture gate
 
@@ -621,9 +621,7 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **NEW CAPABILITY REQUIRED** | `intergrax/contracts/collaborative_activity.py` (architecture gate module) |
 | **Explicit out of scope** | Persistence, ingestion runtime, source integrations, activity feed UI, MP-9 notifications |
 | **Proof** | `test_mp6a_collaborative_activity_architecture_gates.py`; `test_mp6a_documentation_regression_gates.py`; `test_mp6a_c1_identity_extensibility_ordering_gates.py`; `test_mp6a_c1_r1_append_ownership_gates.py`; ADR-MP-007 |
-| **Next step** | **MP-6B — NEXT** |
-
-### MP-6A-C1 — Activity identity, extensibility & timeline semantics
+| **Next step** | **MP-6B — CLOSED / RECERTIFIED** |
 
 | Field | Value |
 |-------|-------|
@@ -638,18 +636,84 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 | **Purpose** | `CollaborativeActivityAppendStore.append_idempotent(intent)` owns idempotency + `append_position` + `recorded_at` atomically; producers never supply sequencing |
 | **Proof** | `test_mp6a_c1_r1_append_ownership_gates.py` |
 
+### MP-6B — Core activity / provenance contract hardening
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED / RECERTIFIED** (subject to independent audit) |
+| **Purpose** | Runtime DTO hardening, port boundaries, JSON/schema gates for collaborative activity contracts |
+| **Proof** | `test_mp6b_collaborative_activity_contracts.py`; [`MP-6B_CORE_DTO_AND_CONTRACT_HARDENING.md`](../qualification/MP-6B_CORE_DTO_AND_CONTRACT_HARDENING.md) |
+| **Next step** | **MP-6C — CLOSED / RECERTIFIED** |
+
 ### MP-6B-C1 — Policy-resolved durability & validated append intent boundary
 
 | Field | Value |
 |-------|-------|
-| **Status** | **CLOSED** (subject to independent audit) |
+| **Status** | **CLOSED / RECERTIFIED** (subject to independent audit) |
 | **Purpose** | `CollaborativeActivityAppendIntent` carries policy-resolved `effective_durability_class`; append store accepts intent (not raw publication); replay preserves original effective durability |
 | **Proof** | `test_mp6b_c1_policy_resolved_append_intent_boundary.py` |
+
+### MP-6B-C1-R1 — AppendIntent append-store pluginability proof
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED** (subject to independent audit) |
+| **Purpose** | Pluginability proof corrected to verify the current AppendIntent contract (`CollaborativeActivityAppendStore.append_idempotent(intent)`) |
+| **Proof** | `test_mp6b_collaborative_activity_contracts.py` (append-store signature / pluginability gates) |
+
+### MP-6C — Publication / ingestion boundary
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED / RECERTIFIED** (subject to independent audit) |
+| **Purpose** | Trusted `CollaborativeActivityPublisherContext`, injectable `CollaborativeActivityIngestionPolicy`, `CollaborativeActivityIngestionService` (`PublicationPort` / `WritePort`), append intent only after ALLOW |
+| **Artifacts** | `intergrax/contracts/collaborative_activity_ingestion.py`, `intergrax/collaborative_work/collaborative_activity_ingestion.py`, `collaborative_activity_composition.py`, `tests/unit/collaborative_work/test_mp6c_activity_ingestion_gates.py` |
+| **Security** | Fail-closed policy; reserved namespace spoof denied; tenant/workspace isolation; actor ≠ publisher; no direct publication → append store |
+| **Next step** | **MP-6D — CLOSED / RECERTIFIED** |
+
+### MP-6C-C1 — Trusted publisher identity binding
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED / RECERTIFIED** (MP-6C-C1-R1 — subject to independent audit) |
+| **Purpose** | Bind `CollaborativeActivityPublisherContext` to `VerifiedCollaborativeActivityPublisherIdentity` + `CollaborativeActivityPublisherContextResolver`; explicit `CollaborativeActivityPublisherRegistration` (PLATFORM/PLUGIN) and workspace grants; remove raw caller-controlled publisher factories from production |
+| **Artifacts** | `intergrax/contracts/collaborative_activity_publisher_authority.py`, `collaborative_activity_publisher_resolution.py`, `collaborative_activity_composition.py`, `tests/unit/collaborative_work/test_mp6c_c1_trusted_publisher_identity_binding.py`, `tests/unit/collaborative_work/test_mp6c_c1_r1_explicit_publisher_authority.py` |
+| **Security** | Fail-closed resolution; empty authority denies all; unknown SERVICE/ORG_SYSTEM never PLATFORM; explicit tenant-wide workspace grant; missing grant denies; duplicate PLATFORM+PLUGIN registration rejected; plugin cannot self-promote to PLATFORM; composition rejects raw context injection |
+
+### MP-6C-C1-R1 — Explicit publisher authority registration
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED** (subject to independent audit) |
+| **Purpose** | Eliminate fail-open `unregistered → PLATFORM` and `missing workspace grant → tenant-wide`; unified authority lookup via `resolve_publisher_authority` |
+| **Proof** | `test_mp6c_c1_r1_explicit_publisher_authority.py` |
+
+### MP-6D — Persistence / store
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED / CERTIFIED** (subject to independent audit) |
+| **Purpose** | Replaceable atomic `CollaborativeActivityAppendStore` — idempotency + `append_position` + `recorded_at` + durable append in one transaction |
+| **Implementation** | `SQLiteCollaborativeActivityAppendStore` / `PostgreSQLCollaborativeActivityAppendStore` in `intergrax/collaborative_work/collaborative_activity_append_store.py`; composition via `persistence.py` factories |
+| **Atomic unit** | idempotency decision + workspace `(tenant_id, workspace_id)` append-position allocation + `recorded_at` assignment + durable insert (gaps in sequence allowed on rollback) |
+| **Provider qualification** | SQLite (unit + concurrency); PostgreSQL live — [`MP-6D-Q1_POSTGRESQL_PROVIDER_QUALIFICATION.md`](../qualification/MP-6D-Q1_POSTGRESQL_PROVIDER_QUALIFICATION.md) (**3 passed**, independent bundle concurrency) |
+| **Next step** | **MP-6E — CLOSED / RECERTIFIED** |
+
+### MP-6E — Scoped read / query
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED / RECERTIFIED** (subject to independent audit) |
+| **Purpose** | Injectable read authorization before provider; tenant/workspace scoped `CollaborativeActivityQuery`; opaque scope-bound cursor; keyset pagination by `append_position` (no `OFFSET`; `occurred_at` not continuation watermark) |
+| **Artifacts** | `intergrax/contracts/collaborative_activity_read.py`, `collaborative_activity_read_authorization.py`, `collaborative_activity_read.py`, `collaborative_activity_read_store.py`, `collaborative_activity_page_cursor_codec.py`, `tests/unit/collaborative_work/test_mp6e_collaborative_activity_read.py`, `collaborative_activity_read_port_contract.py` |
+| **Security** | Fail-closed authority; deny/policy failure → zero provider calls; cursor is continuation only (not authorization); no authorization inside store |
+| **Provider qualification** | SQLite (unit); PostgreSQL live — `tests/integration/collaborative_work/test_postgresql_collaborative_activity_read_store.py` when integration DB configured |
+| **Next step** | **MP-6F — CLOSED / RECERTIFIED** |
 
 ---
 
 ## 4. Out of scope (current phase)
 
-- MP-6C+ runtime until scheduled (MP-6A **CLOSED**; ownership **FROZEN** via ADR-MP-007; MP-5 via ADR-MP-006; MP-4 via ADR-MP-005 — see [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md))
+- MP-6G E2E / isolation qualification (**MP-6F — CLOSED** — `collaborative_activity_source_*.py`; subject to independent audit)
 - LKW product adoption (MP-7)
 - Runtime Python models beyond contract stubs until the relevant COLLAB-WORK-* row opens

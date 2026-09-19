@@ -152,7 +152,8 @@ Authority means: *final canonical semantic ownership over a decision, lifecycle,
 | **AGENT_ASSEMBLY_AUTHORITY** | AGENT_CONTRACTS_AND_ASSEMBLY | Agent contract, assembly, harness kernel (not tool invocation) |
 | **SKILL_COMPOSITION_AUTHORITY** | SKILLS | Skill composition over tools |
 | **APPLICATION_COMPOSITION_AUTHORITY** | TIER3_APPLICATION_ENVIRONMENT | Application manifests, profiles, host wiring composition |
-| **WORKSPACE_COMPOSITION_AUTHORITY** | COLLABORATIVE_WORK | Workspace, membership, delegation, ContextView authority |
+| **WORKSPACE_COMPOSITION_AUTHORITY** | COLLABORATIVE_WORK | Workspace, membership, delegation (not Principal-scoped ContextView — see **PRINCIPAL_SCOPED_CONTEXT_VIEW_AUTHORITY**) |
+| **PRINCIPAL_SCOPED_CONTEXT_VIEW_AUTHORITY** | COLLABORATIVE_WORK (MP-5) | Principal-scoped ContextView visibility & composition semantics ([ADR-MP-006](../../technical/adr/entries/2026-09-17/ADR-MP-006.md)) |
 | **HOST_DEPLOYMENT_LIFECYCLE_AUTHORITY** | APPLICATION_HOSTING | Deployment/hosting lifecycle (host scope; not EE Run tree) |
 | **WORKER_INSTANCE_STATE_AUTHORITY** | AUTONOMOUS_WORK | WorkerDefinition/Instance durable work semantics |
 | **CAPACITY_COORDINATION_AUTHORITY** | ELASTIC_CAPACITY_AND_SCALING | Capacity admission, scale coordination leases |
@@ -209,7 +210,8 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 | AGENT_ASSEMBLY_AUTHORITY | AGENT_CONTRACTS_AND_ASSEMBLY | Agent/harness assembly | — | NONE | PASS |
 | SKILL_COMPOSITION_AUTHORITY | SKILLS | Skills over tools | — | NONE | PASS |
 | APPLICATION_COMPOSITION_AUTHORITY | TIER3_APPLICATION_ENVIRONMENT | T3 manifests/profiles | — | NONE | PASS |
-| WORKSPACE_COMPOSITION_AUTHORITY | COLLABORATIVE_WORK | Workspace/ContextView | — | **ADR REQUIRED** (GE admission vs CW policy — CL-EAC1-004) | PASS* |
+| WORKSPACE_COMPOSITION_AUTHORITY | COLLABORATIVE_WORK | Workspace/membership/delegation | — | **ADR REQUIRED** (GE admission vs CW policy — CL-EAC1-004) | PASS* |
+| PRINCIPAL_SCOPED_CONTEXT_VIEW_AUTHORITY | COLLABORATIVE_WORK (MP-5) | Principal-scoped ContextView | — | NONE (distinct from CONTEXT_ASSEMBLY_AUTHORITY) | PASS |
 | CAPACITY_COORDINATION_AUTHORITY | ELASTIC_CAPACITY_AND_SCALING | Leases/admission | — | NONE | PASS |
 | BACKGROUND_DELIVERY_AUTHORITY | BACKGROUND_TASKS | Queues/worker intake | — | NONE | PASS |
 | CAPABILITY_DISCOVERY_AUTHORITY | CAPABILITY_CATALOG_AND_DISCOVERY | Catalog read/rank | — | NONE | PASS |
@@ -235,7 +237,7 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 ∀ peer AUTHORITY_TYPE: canonical_owner_count == 1
 ```
 
-**EAC-1R3:** **31** peer authority types in §4.A; **1** subordinate authority type in §4.C; **0** peer types with dual canonical owners.
+**EAC-1R3:** `CURRENT_PEER_AUTHORITY_COUNT = 32` — **32** peer authority types in §4.A; **1** subordinate authority type in §4.C; **0** peer types with dual canonical owners.
 
 ---
 
@@ -302,10 +304,10 @@ Subordinate authority is **valid only inside** the parent-owned boundary and **M
 
 | Metric | Value |
 |--------|------:|
-| Peer authority types (§4.A) | 31 |
+| Peer authority types (§4.A) | 32 |
 | Domain role types (§4.B) | 6 |
 | Subordinate authority types (§4.C) | 1 |
-| Peer types with exactly one canonical owner | 31 |
+| Peer types with exactly one canonical owner | 32 |
 | Peer types with competing canonical owners | 0 |
 | Architecture conflicts (ADR / CL register) | GE↔CW (**CL-EAC1-004**); not taxonomy duplicates |
 
@@ -615,7 +617,7 @@ No ADR resolved in EAC-1R2 or EAC-1R3.
 | V6 — ERL does not own Execution lifecycle | **PASS** (EAC-DOM-034 MUST NOT OWN) |
 | V7 — ERL does not own platform **GOVERNANCE_AUTHORITY** | **PASS** |
 | V8 — **EVIDENCE_AUTHORITY** → Observability | **PASS** |
-| V9 — Each peer authority → exactly one owner (31 types) | **PASS** |
+| V9 — Each peer authority → exactly one owner (32 types) | **PASS** |
 | V10 — 34 DOMAIN rows in §5 | **PASS** |
 | V11 — No production code changed in EAC-1R3 session | **PASS** (documentation only) |
 | V12 — No ADR resolved | **PASS** |

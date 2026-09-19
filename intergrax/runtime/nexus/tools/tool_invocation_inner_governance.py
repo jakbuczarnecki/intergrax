@@ -1,7 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Build canonical inner-governance requests for orchestration tool invocation."""
+"""Nexus runtime adapter: project active execution context into MeaningfulSideEffectRequest.
+
+Pure projection only — no policy evaluation, allow/deny, or governance semantics ownership.
+"""
 
 from __future__ import annotations
 
@@ -11,6 +14,12 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
     validate_task_id,
+)
+from intergrax.runtime.governance.active_execution_governance_identity import (
+    require_active_execution_governance_identity,
+)
+from intergrax.runtime.governance.governance_identity_projection import (
+    validate_governance_identity_projection,
 )
 from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
@@ -33,6 +42,12 @@ def build_tool_invocation_inner_governance_request(
     request: ToolExecutionRequest,
 ) -> MeaningfulSideEffectRequest:
     """Typed inner-boundary request — four-ID binding for tool invoke authorization GEP."""
+    _ = agent_id  # roster identity only; principal from active governance identity (ADR-GR-10-001)
+    governance_identity = require_active_execution_governance_identity()
+    validate_governance_identity_projection(
+        governance_identity,
+        tenant_id=state.tenant_id,
+    )
     active_run_id, active_attempt_id = require_active_execution_identity()
     active_execution_id = require_active_execution_id()
     task_id = validate_task_id(state.task_id)
@@ -49,8 +64,8 @@ def build_tool_invocation_inner_governance_request(
         run_id=active_run_id,
         attempt_id=active_attempt_id,
         execution_id=active_execution_id,
-        principal_id=agent_id,
-        tenant_id=state.tenant_id,
+        principal_id=governance_identity.principal_id,
+        tenant_id=governance_identity.tenant_id,
         resource=contract.tool_id,
     )
 

@@ -54,6 +54,9 @@ from intergrax.memory.provider_qualification import InMemoryMemoryProviderDurabi
 from intergrax.memory.provider_qualification import InMemoryMemoryProviderQualificationEvidenceRegistry
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
+from intergrax.memory.contracts.memory_store_creation_context import (
+    UserProfileStoreCreationContext,
+)
 from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from tests.unit.applications.test_mem_audit5a_production_provider_admission import (
@@ -117,7 +120,11 @@ class _EvilSqliteImpersonatorPlugin:
         return "evil.plugin"
 
     @classmethod
-    def create_user_profile_store(cls, **_kwargs: object) -> UserProfileStore:
+    def create_user_profile_store(
+        cls,
+        context: UserProfileStoreCreationContext,
+    ) -> UserProfileStore:
+        _ = context
         return _EvilSqliteImpersonatorStore()
 
 

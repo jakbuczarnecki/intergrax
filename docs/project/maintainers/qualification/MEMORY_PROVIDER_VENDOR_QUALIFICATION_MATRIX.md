@@ -4,6 +4,8 @@
 **Audit execution HEAD:** `0ba1a514c60af1c319bd35fc714268de9640bcbd` · branch `development`  
 **Ledger:** [`MEMORY_FINAL_ENTERPRISE_AUDIT.md`](MEMORY_FINAL_ENTERPRISE_AUDIT.md) (authoritative certification narrative)
 
+**Current certification status:** **ENTERPRISE CERTIFIED / CLOSED** at **`4db4bb69671c7f6091284e448e2d09094ebd54cd`** (MEM-ENTERPRISE-CLOSURE). **P0 = 0** · **P1 = 0** (current open severities). Historical gap rows remain for provenance.
+
 ---
 
 ## Qualification ladder (semantic map)
@@ -51,7 +53,7 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 
 | Capability | Reference provider | Durable provider | Real vendor proof | Production qualified |
 | ---------- | ------------------ | ---------------- | ----------------- | -------------------- |
-| UserProfile store | `InMemoryUserProfileStore` | `SQLiteUserProfileStore` (sqlite integration) | **NO** (local file only) | **CONDITIONALLY** — sqlite lab/product harness; product preset gap (see P1) |
+| UserProfile store | `InMemoryUserProfileStore` | `SQLiteUserProfileStore` (sqlite integration) | **NO** (local file only) | **CONDITIONALLY** — sqlite lab/product harness; historical GAP-4-01 product preset **CLOSED (5A)** — PRODUCT fail-closed admission when durable evidence missing |
 | UserProfile projection | `UserProfileLtmVectorProjection` | via RAG vector backend | **NO** Memory E2E | **NOT QUALIFIED** vendor |
 | Entity temporal | `intergrax.in_memory_entity_temporal` | **NONE** in repo | **NO** | **NOT QUALIFIED** durable |
 | Entity indexer | `DefaultEntityMemoryIndexer` | derived | n/a | **CONTRACT QUALIFIED** (service) |
@@ -83,9 +85,9 @@ Enterprise ladder **V0–V8** (audit vocabulary — map to official status + evi
 | SessionTurnIndex | `InMemorySessionTurnIndexStore` | in-proc | `SessionTurnIndexStore` | classifiable | NO | NO | qual runner | NO | qual / tests | V2 | REFERENCE ONLY |
 | SessionTurnIndex | `VectorSessionTurnIndexStore` | vector adapter | `SessionTurnIndexStore` | STI EP optional | Qdrant + pgvector + Chroma reconnect proved | client reconnect | unit + 5D/5E/5F E2E | **YES (Qdrant, pgvector, Chroma)** | `enable_session_vector_index` + RAG | V6 | **REAL-VENDOR RECONNECT QUALIFIED (triple vendor)** |
 | Task memory | `InMemoryTaskMemoryStore` | in-proc | `TaskMemoryPersistence` | NO | NO | NO | unit | NO | tests | V2 | REFERENCE ONLY |
-| Task memory | `SQLiteTaskMemoryStore` | sqlite file | `TaskMemoryPersistence` | sqlite opens | YES | partial integ | unit | NO | env `INTERGRAX_TASK_MEMORY_DB` / lab | V4–V5 | DURABILITY QUALIFIED (platform semantics) |
+| Task memory | `SQLiteTaskMemoryStore` | sqlite file | `TaskMemoryPersistence` | sqlite opens | YES | 5G-R reopen + subprocess | unit + 5G E2E | NO | env `INTERGRAX_TASK_MEMORY_DB` / lab | V5 | **DURABLE RESTART / REOPEN QUALIFIED (5G-R)** |
 | Organization | `InMemoryOrganizationProfileStore` | in-proc | `OrganizationProfileStore` | NO | NO | NO | unit | NO | mongo path + org flag | V1 | NOT QUALIFIED durable |
-| Organization | `SQLiteOrganizationProfileStore` | sqlite file | `OrganizationProfileStore` | sqlite bundle | YES | integ persist | unit | NO | sqlite integration | V4 | DURABILITY QUALIFIED (no Memory qual runner) |
+| Organization | `SQLiteOrganizationProfileStore` | sqlite file | `OrganizationProfileStore` | sqlite bundle | YES | 5G-R reopen + subprocess | unit + 5G E2E | NO | sqlite integration / `INTERGRAX_ORGANIZATION_DB` | V5 | **DURABLE RESTART / REOPEN QUALIFIED (5G-R)** |
 | Conversational | `InMemoryConversationalMemoryStore` | in-proc | `ConversationalMemoryStore` | NO | NO | NO | unit | NO | session/chat | V2 | LEGACY |
 | Conversational | `SQLiteConversationalMemoryStore` | sqlite | `ConversationalMemoryStore` | NO | YES | partial | unit | NO | session | V4 | LEGACY + local durable |
 | Observability | `NoOpMemoryObservabilitySink` | noop | `MemoryObservabilitySink` | inject | n/a | n/a | n/a | NO | default | V1 | REFERENCE ONLY |
@@ -137,6 +139,9 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | Mongo real qual | `test_mem_ent13c_durable_provider_qualification.py::test_real_mongodb_user_profile_qualification_not_certified_without_infra` → **NOT_EXECUTED** |
 | SQLite CRUD unit | `tests/unit/memory/test_sqlite_user_profile_store.py` |
 | Org sqlite integ | `tests/integration/runtime/organization/test_sqlite_organization_profile_store.py` |
+| Task durable restart (5G) | `tests/integration/memory/e2e/test_mem_final_audit_5g_task_memory_durable_restart.py` |
+| Organization durable restart (5G) | `tests/integration/memory/e2e/test_mem_final_audit_5g_organization_memory_durable_restart.py` |
+| Task/Org lab composition restart (5G) | `tests/unit/applications/test_mem_final_audit_5g_task_org_durable_restart_e2e.py` |
 
 **Fake / in-proc markers:** All `InMemory*` stores, `InMemoryDocumentStore` backend, fixture external plugins — never counted as V6.
 
@@ -146,7 +151,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 
 | Capability | Lab / test default | Production-oriented default | Fallback |
 | ---------- | ------------------ | --------------------------- | -------- |
-| UserProfile + session | SQLite when `relational_store.slug==sqlite` | **Gap:** `product_defaults` uses PostgreSQL relational preset — **does not** enable Memory sqlite path | InMemory when neither sqlite nor mongo document_store (`memory_wiring.py` priority 3) |
+| UserProfile + session | SQLite when `relational_store.slug==sqlite` | **Historical:** `product_defaults` PostgreSQL relational preset does not auto-enable Memory sqlite path — **PRODUCT admission fail-closed** when persistent memory required without trusted durable evidence (GAP-4-01 **CLOSED**) | InMemory when neither sqlite nor mongo document_store **and** profile/admission allows (`memory_wiring.py` priority 3) |
 | Entity temporal | `intergrax.in_memory_entity_temporal` if flag on | same unless `entity_temporal_memory_store_plugin_id` set | none (explicit plugin materialize) |
 | Procedural / LH | in-memory plugins when flags on | same | none |
 | STI | none unless flag | `VectorSessionTurnIndexStore` if RAG stack present | `None` if vector backend missing (`assert_memory_vector_backend_available` fail-closed when flags require backend) |
@@ -160,7 +165,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 - **Explicit** non-durable fallback in `_resolve_baseline_memory_platform_wiring` when integration profile lacks sqlite **and** mongodb bindings (`memory_wiring.py` lines 215–223).
 - **Vector memory:** fail-closed via `MemoryVectorBackendUnavailableError` when flags require backend but RAG stack incomplete (`memory_vector_wiring.py`).
 - **STRICT + broken EP bootstrap:** `enforce_strict_memory_plugin_bootstrap` raises (`memory_wiring.py`).
-- **Production silent non-durable for enabled LTM:** **risk** when `product_defaults` integration is PostgreSQL-only (not sqlite) and memory flags enabled — falls through to InMemory without error → **P1** (not hidden exception).
+- **Production silent non-durable for enabled LTM (historical GAP-4-01):** **CLOSED (5A-R3)** — `memory_provider_admission` + STRICT/product gates reject PRODUCT persistent composition without trusted durable evidence; baseline InMemory fallback remains explicit for non-gated lab paths only.
 
 ---
 
@@ -206,7 +211,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-03 | Entity / Procedural / LH | in-memory only | durable vendor + restart | P2 | AUDIT-5 |
 | GAP-4-04 | UserProfile | Mongo DocumentStore | real-vendor qual execution | **CLOSED (5C)** | `test_mem_final_audit_5c_mongo_user_profile_real_vendor.py` |
 | GAP-4-05 | Organization | Mongo path | durable org store (uses InMemory org on mongo LTM path) | P2 | AUDIT-6 |
-| GAP-4-06 | Task memory | SQLite | restart/failure vendor suite | P2 | AUDIT-5 |
+| GAP-4-06 | Task memory | SQLite | restart/failure vendor suite | **CLOSED (5G)** | `test_mem_final_audit_5g_task_memory_durable_restart.py` |
 | GAP-4-07 | Vector backends | Qdrant **CLOSED (5D)**; pgvector **CLOSED (5E)**; Chroma **CLOSED (5F)** | Memory-scoped STI E2E | — | AUDIT-5 |
 | GAP-4-08 | PostgreSQL | Memory bundle | implementation | P3 | post-RFC |
 
@@ -364,9 +369,9 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 
 | Check | Result |
 | ----- | ------ |
-| Verified SHA | `6ebc2b790f04d8ae620d75b3f69b4d16e4873d56` |
-| Chroma suite | `test_mem_final_audit_5f_chroma_session_turn_index_real_vendor.py` — **22 passed** |
-| Triple-vendor same-SHA | Qdrant **13** + pgvector **19** + Chroma **22** |
+| Initial 5F qualification SHA | `6ebc2b790f04d8ae620d75b3f69b4d16e4873d56` |
+| Chroma suite @ initial SHA | `test_mem_final_audit_5f_chroma_session_turn_index_real_vendor.py` — **22 passed** |
+| Triple-vendor @ initial SHA | Qdrant **13** + pgvector **19** + Chroma **22** |
 | Chroma infra | Docker `intergrax-chroma`, HTTP `localhost:8000`, chromadb **1.4.1**, persistent server volume |
 | Durability | `REAL_VENDOR_RECONNECT`; Chroma service restart **not executed** |
 | Catalog | `CHROMA` preset + `CHROMA_VECTOR_STORE_PROVIDER_ID` |
@@ -377,6 +382,43 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | GAP-4-07 (Chroma) | **CLOSED** |
 | GAP-4-07 (Qdrant) | **CLOSED** (regression) |
 | GAP-4-07 (pgvector) | **CLOSED** (regression) |
+
+## MEM-FINAL-AUDIT-5F-R — Final current-head triple-vendor re-verification
+
+| Check | Result |
+| ----- | ------ |
+| Initial 5F qualification SHA | `6ebc2b790f04d8ae620d75b3f69b4d16e4873d56` |
+| Intervening non-Memory commits | **YES** — triple-vendor suites re-run required on final HEAD |
+| **Final current-head triple-vendor re-verification SHA** | **`8f25bfcdc95f0ba0c4f5b2c56180beb8b67c6904`** |
+| Qdrant @ final SHA | **13 passed** |
+| pgvector @ final SHA | **19 passed** (DSN required) |
+| Chroma @ final SHA | **22 passed** |
+| Total | **54 passed** |
+| Same-SHA proof | **YES** |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-5F-01 | **CLOSED** |
+| GAP-4-07 (Qdrant) | **CLOSED** |
+| GAP-4-07 (pgvector) | **CLOSED** |
+| GAP-4-07 (Chroma) | **CLOSED** |
+
+## MEM-FINAL-AUDIT-5G-R — Task/Organization final exact-SHA durability verification
+
+| Check | Result |
+| ----- | ------ |
+| Initial 5G implementation commit | `d2eaa798eb18029f3c0296e312c3f013a68322f5` |
+| Final exact-SHA durability re-verification (`VERIFIED_SHA`) | `397cca50592f4b4c030cf8c994050fd638c439cd` |
+| Task restart suite | 11 passed, 1 skipped (failed-write chmod — Windows) |
+| Organization restart suite | 10 passed |
+| Application composition E2E | 2 passed |
+| Memory regression | NOT FULL — Mongo 5C excluded (`pymongo` unavailable) |
+| Production changes during 5G-R | **NONE** |
+
+| Gap | Status |
+| --- | ------ |
+| GAP-4-06 | **CLOSED (5G-R)** |
+| Organization durability restart gap | **CLOSED (5G-R)** |
 
 ## MEM-FINAL-AUDIT-5D-R — SessionTurnIndex trusted production admission
 
@@ -475,7 +517,7 @@ Qualification descriptor IDs (harness, not EP): `sqlite.user_profile`, `document
 | Organization | SQLite | profile persist → reopen | sqlite | YES | optional |
 | Entity temporal | TBD durable plugin | qual runner + reopen | vendor TBD | YES | P1 strategic |
 
-**Priority:** P0 test coverage = STI real vendor (GAP-4-02); P1 = product wiring fail-closed + Mongo durable UserProfile; P2 = specialized durable stores.
+**Priority (historical AUDIT-5 planning — superseded for closure):** P0 STI real vendor (**CLOSED** 5D–5F); product wiring fail-closed (**CLOSED** 5A); Mongo UserProfile real-vendor (**CLOSED** 5C); P2 specialized durable stores remain **future / out of certified durability**.
 
 ---
 
@@ -492,3 +534,11 @@ uv run pytest tests/unit/memory/test_mem_ent13_provider_qualification.py \
 ```
 
 **Result:** 86 passed (log: `.tmp/session/mem-final-audit-4/pytest-qual.log`).
+
+---
+
+## MEM-FINAL-AUDIT-6 / 6-R / 6-R2 — behavioral semantics (non-vendor)
+
+Vendor V-levels unchanged. Behavioral certification uses `tests/qualification/memory_behavior/` against `DefaultMemoryControlPlane` / `build_default_memory_control_plane` (USER · SESSION · TASK scopes, projection lifecycle, identity hard gates). Initial MEM-FINAL-AUDIT-6 (`06600da1…`) passed pytest but independent audit required hard-gate harness strengthening (**6-R**, `623a9d5a…`). Post–6-R audit: final certification summary still used catalog **no-op** runners — **6-R2** (`957045d86…`) closes aggregation: `MEM_AUDIT_6_BEHAVIOR_CASES` + `run_mem_final_audit_6_behavioral_qualification()` execute real scenario bodies (`scenarios/`) on one shared `BehaviorEvalContext`; pytest gates call the same runners. **34** Memory behavioral scenarios; harness integrity and metrics counted separately (**8** + **2** pytest gates). Violation counters in aggregate evidence come from **real scenario execution** on the shared ledger. Semantic metrics: **n=2** deterministic synthetic smoke only. TASK remember/forget/capability read certified; TASK recall unsupported at control-plane level. Classification: **BEHAVIORALLY QUALIFIED** (see `MEMORY_FINAL_ENTERPRISE_AUDIT.md` § MEM-FINAL-AUDIT-6-R2).
+
+**Architecture narrative (MEM-FINAL-AUDIT-7):** canonical maintainer docs [`MEMORY_ARCHITECTURE.md`](../../architecture/MEMORY_ARCHITECTURE.md) + [`MEMORY_ARCHITECTURE_DIAGRAMS.md`](../../architecture/MEMORY_ARCHITECTURE_DIAGRAMS.md). V-levels in this matrix are **not** changed by audit 7.

@@ -42,6 +42,7 @@ from intergrax.runtime.execution.budget.persistence import (
     RunBudgetPersistence,
     create_durable_run_budget_ledger_factory,
 )
+from intergrax.runtime.execution.deadline_authority import ExecutionDeadlineAuthorityResolver
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_run_bridge import (
@@ -110,6 +111,7 @@ class NexusWorkerRuntime:
         lifecycle: Optional[WorkerRunLifecycle] = None,
         run_budget: RunBudget | None = None,
         run_budget_persistence: RunBudgetPersistence | None = None,
+        deadline_authority_resolver: ExecutionDeadlineAuthorityResolver | None = None,
         execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
         execution_terminal: ExecutionTerminalService | None = None,
         orchestration_triggers: frozenset[str] = frozenset(),
@@ -139,12 +141,18 @@ class NexusWorkerRuntime:
             build_reference_allowing_root_execution_authority_admission,
         )
 
+        if run_budget_persistence is not None and deadline_authority_resolver is None:
+            raise ValueError(
+                "durable run_budget_persistence requires deadline_authority_resolver",
+            )
         host_execution = build_host_task_execution(
             loop,
             orchestration_triggers=orchestration_triggers,
             pipeline_capability_suffix=pipeline_capability_suffix,
             root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
             admit_root_governance_identity=admit_root_governance_identity,
+            run_budget_persistence=run_budget_persistence,
+            deadline_authority_resolver=deadline_authority_resolver,
         )
         return cls(
             host_execution,

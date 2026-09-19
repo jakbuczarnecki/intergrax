@@ -7,11 +7,17 @@ from __future__ import annotations
 import pytest
 from pydantic import BaseModel
 
+from echo.echo_agent import EchoAgent
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
+    composition_for_factory_context,
+)
 from intergrax.applications._shared.runtime_config_bridge import (
     build_runtime_context_from_environment,
     materialize_runtime_config,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.tool_request import ToolRequest
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -65,22 +71,32 @@ def _request() -> RuntimeRequest:
     )
 
 
-def _build_context(registry: ToolRegistry) -> ApplicationBuildContext:
+def _build_composition(
+    registry: ToolRegistry,
+) -> tuple[ApplicationBuildContext, ApplicationCompositionContext]:
     tool_profile = ToolProfile(enabled=(PARITY_TOOL_ID,))
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="registry.parity")
-    return ApplicationBuildContext.for_manifest(
-        object(),
+    manifest = ApplicationManifest.lab(
+        app_id="registry_parity",
+        name="Registry Parity",
+        route_prefix="/v1/registry_parity",
+        env_prefix="REGISTRY_PARITY_",
+        agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
+    )
+    factory_context = ApplicationBuildContext.for_manifest(manifest, environment=env)
+    composition = composition_for_factory_context(
+        factory_context,
         tool_profile=tool_profile,
         tool_registry=registry,
         policy_bundle=RuntimePolicyBundle(),
-        environment=env,
     )
+    return factory_context, composition
 
 
 @pytest.mark.asyncio
 async def test_runtime_gateway_uses_wired_application_tool_registry() -> None:
     registry = _wired_registry()
-    build_ctx = _build_context(registry)
+    build_ctx, composition = _build_composition(registry)
     env = build_ctx.environment
     assert env is not None
 
@@ -89,6 +105,7 @@ async def test_runtime_gateway_uses_wired_application_tool_registry() -> None:
         build_ctx,
         env,
         llm_adapter=FakeLLMAdapter(),
+        composition=composition,
     )
     assert config.tool_registry is registry
 
@@ -97,6 +114,7 @@ async def test_runtime_gateway_uses_wired_application_tool_registry() -> None:
         build_ctx,
         env,
         llm_adapter=FakeLLMAdapter(),
+        composition=composition,
     )
     runtime_registry = resolve_tool_registry(runtime_ctx.config.tool_invoker)
     assert runtime_registry is registry

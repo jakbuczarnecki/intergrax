@@ -11,6 +11,9 @@ from intergrax.runtime.agent_governance.authorization_boundary import (
 )
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
+    ProductionRuntimeToolInvokerCompositionError,
+)
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.wiring.agent_runtime_governance_factory import (
@@ -34,11 +37,42 @@ def test_runtime_context_requires_agent_runtime_governance_in_production_mode() 
     session_manager = SessionManager(storage=InMemorySessionStorage())
     governance_service = create_lab_allow_governance_service()
 
-    with pytest.raises(ValueError, match="agent_runtime_governance is required"):
+    with pytest.raises(
+        ProductionRuntimeToolInvokerCompositionError,
+        match="agent_runtime_governance is required",
+    ):
         RuntimeContext.build(
             config=config,
             session_manager=session_manager,
             governance_service=governance_service,
+        )
+
+
+class _LabMsePort:
+    def authorize(self, request, *, source_agent_id: str = "", source_step_id: str | None = None):
+        raise NotImplementedError("not invoked in composition smoke test")
+
+
+def test_runtime_context_requires_mse_port_in_production_mode() -> None:
+    config = RuntimeConfig(
+        llm_adapter=FakeLLMAdapter(),
+        enable_rag=False,
+        enable_websearch=False,
+        production_mode=True,
+        trace_db_path="/tmp/trace.db",
+        agent_runtime_governance=build_agent_runtime_governance_boundary(
+            capability_grants=default_lab_capability_grants("tenant-a"),
+        ),
+    )
+    session_manager = SessionManager(storage=InMemorySessionStorage())
+    with pytest.raises(
+        ProductionRuntimeToolInvokerCompositionError,
+        match="meaningful_side_effect_authorization",
+    ):
+        RuntimeContext.build(
+            config=config,
+            session_manager=session_manager,
+            governance_service=create_lab_allow_governance_service(),
         )
 
 
@@ -52,6 +86,7 @@ def test_runtime_context_builds_when_agent_runtime_governance_present() -> None:
         agent_runtime_governance=build_agent_runtime_governance_boundary(
             capability_grants=default_lab_capability_grants("tenant-a"),
         ),
+        meaningful_side_effect_authorization=_LabMsePort(),
     )
     session_manager = SessionManager(storage=InMemorySessionStorage())
     ctx = RuntimeContext.build(

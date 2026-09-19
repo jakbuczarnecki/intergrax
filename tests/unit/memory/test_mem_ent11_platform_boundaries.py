@@ -13,8 +13,6 @@ from pathlib import Path
 import pytest
 
 from intergrax.applications._shared.entity_graph_wiring import resolve_entity_temporal_memory_capability
-from intergrax.applications._shared.long_horizon_memory_wiring import resolve_long_horizon_memory_capability
-from intergrax.applications._shared.procedural_memory_wiring import resolve_procedural_memory_capability
 from intergrax.applications._shared.memory_control_wiring import build_default_memory_control_plane
 from intergrax.applications._shared.memory_wiring import resolve_memory_platform_wiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -365,17 +363,14 @@ def test_shared_governance_instance_across_memory_capabilities() -> None:
     assert wiring.entity_temporal_memory_capability is not None
     reader = _EmptyGovernanceReader()
     governance_authority = resolve_canonical_memory_governance_source_authority(reader)
-    procedural = resolve_procedural_memory_capability(
+    wiring_with_caps = resolve_memory_platform_wiring(
         env,
-        governance_source_authority=governance_authority,
         security_governance=shared,
-    )
-    long_horizon = resolve_long_horizon_memory_capability(
-        env,
-        source_authority=_FixedSourceAuthority(),
         governance_source_authority=governance_authority,
-        security_governance=shared,
+        long_horizon_source_authority=_FixedSourceAuthority(),
     )
+    procedural = wiring_with_caps.specialized_memory.procedural_memory_capability
+    long_horizon = wiring_with_caps.specialized_memory.long_horizon_memory_capability
     assert isinstance(procedural, ProcedureMemoryCapability)
     assert isinstance(wiring.entity_temporal_memory_capability, EntityTemporalMemoryCapability)
     assert long_horizon is not None

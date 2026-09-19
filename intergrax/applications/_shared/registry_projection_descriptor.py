@@ -66,12 +66,14 @@ class BuildContextDescriptorSnapshot(BaseModel):
     def from_build_context(cls, build_context: ApplicationBuildContext) -> BuildContextDescriptorSnapshot:
         environment_identity = None
         environment = build_context.environment
+        skill_profile = environment.skill_profile if environment is not None else None
+        tool_profile = environment.tool_profile if environment is not None else None
         if environment is not None:
             environment_identity = EnvironmentIdentitySnapshot(profile_id=environment.profile_id)
         return cls(
             strict_harness=build_context.strict_harness,
-            skill_profile=build_context.skill_profile,
-            tool_profile=build_context.tool_profile,
+            skill_profile=skill_profile,
+            tool_profile=tool_profile,
             environment_identity=environment_identity,
         )
 
@@ -90,8 +92,6 @@ class BuildContextDescriptorSnapshot(BaseModel):
         return ApplicationBuildContext(
             manifest=manifest,
             strict_harness=self.strict_harness,
-            skill_profile=self.skill_profile,
-            tool_profile=self.tool_profile,
             environment=environment,
         )
 

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.task_routing import validate_task_routing_payload
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.task.agent_capability_intake import task_envelope_for_agent_capability_match
 from intergrax.runtime.task.task import Task
 
 
@@ -67,7 +68,7 @@ def select_best_capability_match(
 
     best: tuple[float, Agent] | None = None
     for agent in candidates:
-        result = agent.can_handle(task.context)
+        result = agent.can_handle(task_envelope_for_agent_capability_match(task))
         if not result.matched:
             continue
         if best is None or result.score > best[0]:

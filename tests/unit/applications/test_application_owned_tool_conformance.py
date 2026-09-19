@@ -14,6 +14,9 @@ from intergrax.applications._shared.application_owned_tool_conformance import (
     validate_application_owned_tool_conformance,
 )
 from intergrax.applications._shared.environment_wiring import wire_application_environment
+from intergrax.applications._shared.application_composition_context import (
+    composition_for_factory_context,
+)
 from intergrax.applications._shared.registry_snapshot import resolve_registry_snapshot
 from intergrax.applications.contracts.application_owned_tools import ApplicationOwnedToolDeclaration
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
@@ -159,8 +162,8 @@ def test_collision_with_platform_catalog_fails_closed() -> None:
         manifest,
         env,
         resolve_registry_snapshot(
-            ApplicationBuildContext.for_manifest(
-                manifest,
+            composition_for_factory_context(
+                ApplicationBuildContext.for_manifest(manifest, environment=env),
                 tool_profile=env.tool_profile,
                 tool_registry=ToolRegistry(),
             ),
@@ -181,8 +184,8 @@ def test_profile_outside_closure_fails_closed() -> None:
         manifest,
         env,
         resolve_registry_snapshot(
-            ApplicationBuildContext.for_manifest(
-                manifest,
+            composition_for_factory_context(
+                ApplicationBuildContext.for_manifest(manifest, environment=env),
                 tool_profile=env.tool_profile,
                 tool_registry=application_registry,
             ),
@@ -226,8 +229,8 @@ def test_assert_application_owned_tool_conformance_raises() -> None:
             manifest,
             env,
             resolve_registry_snapshot(
-                ApplicationBuildContext.for_manifest(
-                    manifest,
+                composition_for_factory_context(
+                    ApplicationBuildContext.for_manifest(manifest, environment=env),
                     tool_profile=env.tool_profile,
                     tool_registry=ToolRegistry(),
                 ),

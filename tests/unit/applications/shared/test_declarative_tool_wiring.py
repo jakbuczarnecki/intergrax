@@ -15,6 +15,9 @@ from intergrax.applications.contracts.manifest import AgentBinding, ApplicationM
 from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.tool_wiring import ApplicationToolWiring
 from intergrax.applications._shared.wiring import build_application_registry
+from intergrax.applications._shared.application_composition_context import (
+    composition_for_factory_context,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext
@@ -49,8 +52,12 @@ def test_build_declarative_invoker_for_application_host_skips_governance_when_to
         env_prefix="DECL_SKIP_GOV_",
         agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
     )
-    build_ctx = ApplicationBuildContext.for_manifest(manifest, policy_bundle=RuntimePolicyBundle())
-    registry = build_application_registry(manifest, build_ctx)
+    build_ctx = ApplicationBuildContext.for_manifest(manifest)
+    composition = composition_for_factory_context(
+        build_ctx,
+        policy_bundle=RuntimePolicyBundle(),
+    )
+    registry = build_application_registry(manifest, build_ctx, composition=composition)
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="decl_skip_gov.strict").model_copy(
         update={"execution_mode": ExecutionMode.STRICT},
     )

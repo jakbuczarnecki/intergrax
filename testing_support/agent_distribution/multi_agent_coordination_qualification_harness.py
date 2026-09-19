@@ -32,7 +32,10 @@ from intergrax.runtime.execution.fan_out_orchestration_adapter import (
     build_fan_out_orchestration_port,
 )
 from intergrax.runtime.execution.orchestration_topology_submission import (
-    build_orchestration_topology_submission_port,
+    build_production_orchestration_topology_submission_port,
+)
+from intergrax.runtime.execution.orchestration_topology_slot_mse_enforcement import (
+    build_orchestration_topology_slot_mse_policy,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -147,12 +150,28 @@ def build_fan_out_delegated_subtask_qualification_harness(
     return harness
 
 
+def build_production_representative_orchestration_topology_submission_port(
+    nexus_loop: NexusLoop,
+):
+    """Production-representative topology port for agent-distribution qualification proofs."""
+    policy = build_orchestration_topology_slot_mse_policy(
+        meaningful_side_effect_authorization=None,
+        production_mode=True,
+    )
+    return build_production_orchestration_topology_submission_port(
+        nexus_loop,
+        slot_mse_policy=policy,
+    )
+
+
 def build_bounded_multi_agent_fan_out_qualification_service(
     harness: DelegatedSubtaskQualificationHarness,
 ) -> BoundedMultiAgentFanOutService[OcrQualificationRequest, OcrQualificationResult]:
     coordination = build_multi_agent_coordination_qualification_service(harness)
     nexus_loop = NexusLoop(AgentRegistry())
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_production_representative_orchestration_topology_submission_port(
+        nexus_loop,
+    )
     orchestration = build_fan_out_orchestration_port(
         submission_port,
         coordination,

@@ -20,6 +20,9 @@ from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from governed_contractor_application.host.orchestration_decision_requirement_policy import (
+    default_governed_contractor_harness_orchestration_decision_requirement_policy,
+)
 from intergrax.applications._shared.production_platform_persistence import (
     resolve_harness_host_profile_persistence_kwargs_from_composition,
     resolve_reference_production_strict_host_environment,
@@ -57,6 +60,9 @@ from intergrax.applications._shared.product_observability_dashboard_wiring impor
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from governed_contractor_application.host.execution_wiring import build_governed_contractor_host_task_execution
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+from governed_contractor_application.host.collaborative_work_integration_profile import (
+    resolve_governed_contractor_collaborative_work_integration_profile,
+)
 from governed_contractor_application.host.environment_profile import build_governed_contractor_environment_profile
 from governed_contractor_application.manifest import build_governed_contractor_manifest
 from governed_contractor_application.serving.fastapi_router import mount_governed_contractor_routes
@@ -92,6 +98,14 @@ def create_governed_contractor_backend_app(
         )
     elif document_store is not None:
         profile_persistence_kwargs = {"document_store": document_store}
+    collaborative_work_integration_profile = None
+    if document_store is not None:
+        collaborative_work_integration_profile = (
+            resolve_governed_contractor_collaborative_work_integration_profile(
+                manifest_for_runtime,
+                trace_db_path=trace_db_path,
+            )
+        )
     runtime = build_harness_host_runtime(
         manifest_for_runtime,
         env,
@@ -101,6 +115,10 @@ def create_governed_contractor_backend_app(
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
         registry_projection=registry_projection,
+        collaborative_work_integration_profile=collaborative_work_integration_profile,
+        orchestration_decision_requirement_policy=(
+            default_governed_contractor_harness_orchestration_decision_requirement_policy()
+        ),
         **profile_persistence_kwargs,
     )
     host_execution = runtime.execution

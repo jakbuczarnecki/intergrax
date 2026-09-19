@@ -797,12 +797,12 @@ def test_no_direct_child_execution_runner_in_partial_recovery() -> None:
 def test_submission_port_exposes_recover_failed_slot() -> None:
     from intergrax.runtime.execution.orchestration_topology_submission import (
         CanonicalOrchestrationTopologySubmissionPort,
-        build_orchestration_topology_submission_port,
+        build_lab_orchestration_topology_submission_port,
     )
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.registry.agent_registry import AgentRegistry
 
-    port = build_orchestration_topology_submission_port(NexusLoop(AgentRegistry()))
+    port = build_lab_orchestration_topology_submission_port(NexusLoop(AgentRegistry()))
     assert isinstance(port, CanonicalOrchestrationTopologySubmissionPort)
     assert inspect.iscoroutinefunction(port.recover_failed_slot)
 

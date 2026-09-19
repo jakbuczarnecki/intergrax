@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from intergrax.contracts.agent_handoff import AgentHandoff
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
+from intergrax.runtime.task.agent_capability_intake import task_envelope_from_task_context
 from intergrax.runtime.task.task import Task, TaskContext
 
 
@@ -117,8 +118,9 @@ class HandoffCoordinator:
     def _best_capability_match(context: TaskContext, candidates: list) -> object:
         best = None
         best_score = -1.0
+        envelope = task_envelope_from_task_context(context)
         for agent in candidates:
-            result = agent.can_handle(context)
+            result = agent.can_handle(envelope)
             if not result.matched:
                 continue
             if result.score > best_score:

@@ -8,6 +8,8 @@ from abc import abstractmethod
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.uaep_protocol import UAEPAgent
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
+from intergrax.contracts.agent_run_enums import AgentRunErrorCode, AgentRunStatus, TerminalReason
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -21,8 +23,14 @@ class HarnessReferenceAgent(Agent):
   ``isinstance(agent, UAEPAgent)`` when ``requires_uaep`` is set on the binding.
     """
 
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        _ = request
+        raise NotImplementedError(
+            f"{type(self).__name__} is executed via AgentEngine/UAEPExecutor, not direct run()."
+        )
+
     @abstractmethod
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         ...
 
     @abstractmethod

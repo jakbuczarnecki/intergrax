@@ -5,6 +5,7 @@
 import pytest
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.agents.agent_engine import AgentEngine
 
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext

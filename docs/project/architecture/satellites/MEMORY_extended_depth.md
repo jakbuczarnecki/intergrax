@@ -185,9 +185,9 @@ enable_websearch: bool
 
 | Protocol | EP group | Factory | Replaces |
 |----------|----------|---------|----------|
-| `UserProfileStorePlugin` | `intergrax.memory_stores` | `create_user_profile_store(**kwargs)` | Default SQLite / Mongo / in-memory LTM store |
-| `SessionStoragePlugin` | `intergrax.memory_stores` | `create_session_storage(**kwargs)` | Default session persistence |
-| `SessionTurnIndexStore` (MEM-VEC-2.1; plugin EP MEM-VEC-3.1 **Done**) | `intergrax.memory_stores` | `create_session_turn_index(**kwargs)` | Default: `VectorSessionTurnIndexStore` over `VectorstoreManager` |
+| `UserProfileStorePlugin` | `intergrax.memory_stores` | `create_user_profile_store(context: UserProfileStoreCreationContext)` | Default SQLite / Mongo / in-memory LTM store |
+| `SessionStoragePlugin` | `intergrax.memory_stores` | `create_session_storage(context: SessionStorageCreationContext)` | Default session persistence |
+| `SessionTurnIndexStore` (MEM-VEC-2.1; plugin EP MEM-VEC-3.1 **Done**) | `intergrax.memory_stores` | `create_session_turn_index(context: SessionTurnIndexStoreCreationContext)` | Default: `VectorSessionTurnIndexStore` over `VectorstoreManager` |
 
 Vector **integration** providers (Chroma, pgvector, Qdrant, …) remain in the integrations catalog - memory plugins select **how** indexes are written, not which vendor SDK is used. Custom Tier-3 hosts register EP plugins; Tier-2 agents still use Nexus APIs and tools only.
 

@@ -133,3 +133,55 @@ def collect_forbidden_concrete_task_scope_imports_in_default_guard(
                     )
                 )
     return violations
+
+
+def _self_method_calls_in_function(func_def: ast.FunctionDef) -> list[str]:
+    calls: list[str] = []
+    for stmt in func_def.body:
+        for node in ast.walk(stmt):
+            if not isinstance(node, ast.Call):
+                continue
+            func = node.func
+            if (
+                isinstance(func, ast.Attribute)
+                and isinstance(func.value, ast.Name)
+                and func.value.id == "self"
+            ):
+                calls.append(func.attr)
+    return calls
+
+
+def prepare_invocation_inner_guard_before_authorization_indices(
+    tree: ast.AST,
+) -> tuple[int | None, int | None]:
+    """Return statement-order indices of inner guard vs current-attempt auth in ``_prepare_invocation``."""
+    guard_idx: int | None = None
+    auth_idx: int | None = None
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef) or node.name != "_prepare_invocation":
+            continue
+        for index, name in enumerate(_self_method_calls_in_function(node)):
+            if name == "_require_canonical_inner_execution_guard":
+                guard_idx = index
+            elif name == "_require_current_attempt_authorization":
+                auth_idx = index
+        break
+    return guard_idx, auth_idx
+
+
+def prepare_invocation_mse_before_idempotency_indices(
+    tree: ast.AST,
+) -> tuple[int | None, int | None]:
+    """Return indices of MSE authorization vs idempotency claim in ``invoke``."""
+    mse_idx: int | None = None
+    idempotency_idx: int | None = None
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef) or node.name != "invoke":
+            continue
+        for index, name in enumerate(_self_method_calls_in_function(node)):
+            if name == "_prepare_invocation":
+                mse_idx = index
+            elif name == "before_external_effect":
+                idempotency_idx = index
+        break
+    return mse_idx, idempotency_idx

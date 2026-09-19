@@ -81,7 +81,7 @@ from intergrax.runtime.execution.fan_out_orchestration_adapter import (
     to_orchestration_slot_id,
 )
 from intergrax.runtime.execution.orchestration_topology_submission import (
-    build_orchestration_topology_submission_port,
+    build_lab_orchestration_topology_submission_port,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -196,7 +196,7 @@ def _fan_out_item(
 def _build_fan_out_service(harness) -> BoundedMultiAgentFanOutService[OcrRequest, OcrResult]:
     coordination = _build_coordination_service(harness)
     nexus_loop = NexusLoop(AgentRegistry())
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     orchestration = build_fan_out_orchestration_port(
         submission_port,
         coordination,
@@ -761,7 +761,7 @@ async def test_fan_out_uses_coordination_service_not_direct_runner() -> None:
     inner = _build_coordination_service(harness)
     tracker = _TrackingCoordinationService(inner=inner)
     nexus_loop = NexusLoop(AgentRegistry())
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     orchestration = build_fan_out_orchestration_port(
         submission_port,
         tracker,
@@ -1458,7 +1458,7 @@ async def test_fan_out_canonical_path_preserves_two_level_child_execution_lineag
         ),
     )
     nexus_loop = NexusLoop(AgentRegistry())
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     coordination = _build_coordination_service(harness)
 
     class _TrackingSubmissionPort:
@@ -1469,6 +1469,14 @@ async def test_fan_out_canonical_path_preserves_two_level_child_execution_lineag
             class _TrackingSlotExecutor:
                 def __init__(self, wrapped):
                     self._wrapped = wrapped
+
+                @property
+                def orchestration_slot_effect_authority_owner(self):
+                    return getattr(
+                        self._wrapped,
+                        "orchestration_slot_effect_authority_owner",
+                        None,
+                    )
 
                 async def execute_slot(self, *, slot_id, payload):
                     orchestration_child_ids.append(require_active_execution_id())

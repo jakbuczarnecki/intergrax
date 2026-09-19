@@ -34,10 +34,10 @@ from intergrax.contracts.agent_run_enums import AgentRunErrorCode, AgentRunStatu
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
-from intergrax.runtime.task.task import TaskContext
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 
 
 def _step_id_on_callable(value: object) -> str | None:
@@ -59,7 +59,7 @@ class IntergraxAgent(HarnessReferenceAgent, ABC):
     """
     Authoring base: declare ``contract_id``, ``capabilities``, implement ``@step`` methods.
 
-    Subclasses must implement :meth:`build_context`.
+    Subclasses implement ``@step`` methods and optional ``build_context`` for UAEP runtime wiring.
     """
 
     contract_id: ClassVar[str] = "agent"
@@ -73,12 +73,8 @@ class IntergraxAgent(HarnessReferenceAgent, ABC):
     extra_tool_ids: ClassVar[tuple[str, ...]] = ()
     session_state_type: ClassVar[type[AcpSessionState]] = AcpSessionState
 
-    async def run(self, request: AgentRunRequest | RuntimeRequest) -> AgentRunResult | RuntimeAnswer:
-        if isinstance(request, AgentRunRequest):
-            return await run_acp_session(self, request)
-        from intergrax.agents.agent_engine import AgentEngine
-
-        return await AgentEngine.run_agent(self, request)
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        return await run_acp_session(self, request)
 
     def configure_run(self, merged: EffectiveAgentRunEnvironment) -> dict[str, object]:
         """Per-run domain overlay merged into session metadata (§29.5)."""
@@ -179,8 +175,8 @@ class IntergraxAgent(HarnessReferenceAgent, ABC):
             state_delta={"iteration": step_ctx.step_index + 1},
         )
 
-    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
-        capability = task_context.capability
+    def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
+        capability = routing_capability_from_envelope(task)
         supported = set(self.capabilities)
         if capability is None or capability in supported:
             return CapabilityMatchResult(
@@ -198,9 +194,9 @@ class IntergraxAgent(HarnessReferenceAgent, ABC):
     def _ordered_step_ids(self) -> list[str]:
         return linear_ordered_step_ids(self)
 
-    def get_steps(self, context: RuntimeContext) -> List[AgentStep]:
+    def get_steps(self) -> List[AgentStep]:
         """UAEP internal — authors use ``@step`` + ``on_next_step``, not override."""
-        return linear_agent_get_steps(self, context)
+        return linear_agent_get_steps(self)
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
         for _name, method in self._step_methods():

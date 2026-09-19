@@ -88,6 +88,23 @@ from intergrax.memory.contracts.provider_durability_evidence import (
 from intergrax.memory.contracts.provider_qualification_evidence import (
     MemoryProviderQualificationEvidenceRegistry,
 )
+from intergrax.applications._shared.specialized_memory_wiring import (
+    SpecializedMemoryCapabilities,
+    resolve_specialized_memory_capabilities,
+)
+from intergrax.memory.contracts.long_horizon_memory import CanonicalMemorySourceAuthority
+from intergrax.memory.stores.in_memory_long_horizon_memory_plugin import (
+    InMemoryLongHorizonMemoryStorePlugin,
+)
+from intergrax.memory.stores.in_memory_entity_temporal_memory_plugin import (
+    InMemoryEntityTemporalMemoryStorePlugin,
+)
+from intergrax.memory.stores.in_memory_procedural_memory_plugin import (
+    InMemoryProceduralMemoryStorePlugin,
+)
+from intergrax.memory.contracts.memory_security_governance import (
+    CanonicalMemoryGovernanceSourceAuthority,
+)
 
 
 @dataclass(frozen=True)
@@ -103,9 +120,11 @@ class MemoryPlatformWiring:
     mongodb_bundle: MongoDBIntegrationBundle | None = None
     entity_temporal_memory_capability: EntityTemporalMemoryCapability | None = None
     entity_memory_indexer: EntityMemoryIndexer | None = None
+    specialized_memory: SpecializedMemoryCapabilities = SpecializedMemoryCapabilities()
     memory_store_plugin_load_report: DomainPluginLoadReport = DomainPluginLoadReport.empty(
         EP_MEMORY_STORES
     )
+    memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None
 
 
 def memory_plugin_bootstrap_errors(report: DomainPluginLoadReport) -> tuple[str, ...]:
@@ -174,6 +193,49 @@ def _document_store_backing_provider_id(profile: IntegrationProfile) -> str | No
     return binding.resolved_slug()
 
 
+_REFERENCE_MEMORY_STORE_PLUGINS: tuple[type, ...] = (
+    InMemoryProceduralMemoryStorePlugin,
+    InMemoryLongHorizonMemoryStorePlugin,
+    InMemoryEntityTemporalMemoryStorePlugin,
+)
+
+
+def _merge_memory_plugin_type_candidates(*groups: Sequence[type]) -> tuple[type, ...]:
+    merged: list[type] = []
+    for group in groups:
+        for plugin_type in group:
+            if plugin_type not in merged:
+                merged.append(plugin_type)
+    return tuple(merged)
+
+
+def _memory_store_plugin_catalog_required(env: ApplicationEnvironmentProfile) -> bool:
+    memory_profile = env.memory_profile
+    return (
+        memory_profile.enable_procedural_memory
+        or memory_profile.enable_long_horizon_memory
+        or memory_profile.enable_entity_graph_memory
+        or memory_profile.enable_session_vector_index
+        or memory_profile.user_profile_store_plugin_id is not None
+        or memory_profile.session_storage_plugin_id is not None
+    )
+
+
+def _compose_memory_store_plugin_catalog(
+    *,
+    discover_entry_points: bool,
+    explicit_memory_plugins: Sequence[type],
+) -> MemoryStorePluginCatalog:
+    discovery = discover_classified_memory_store_plugins(
+        discover_entry_points=discover_entry_points,
+        explicit_plugins=_merge_memory_plugin_type_candidates(
+            _REFERENCE_MEMORY_STORE_PLUGINS,
+            explicit_memory_plugins,
+        ),
+    )
+    return MemoryStorePluginCatalog.from_discovery(discovery)
+
+
 def _resolve_baseline_memory_platform_wiring(
     env: ApplicationEnvironmentProfile,
     profile: IntegrationProfile,
@@ -181,6 +243,11 @@ def _resolve_baseline_memory_platform_wiring(
     security_governance: MemorySecurityGovernanceService | None = None,
     memory_observability_sink: MemoryObservabilitySink | None = None,
     memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
+    governance_source_authority: CanonicalMemoryGovernanceSourceAuthority | None = None,
+    long_horizon_source_authority: CanonicalMemorySourceAuthority | None = None,
+    discover_entry_points: bool = True,
+    explicit_memory_plugins: Sequence[type] = (),
+    memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None,
 ) -> MemoryPlatformWiring:
     """Resolve integration-backed memory stores without external plugin overlay."""
     emitter = resolve_memory_diagnostic_emitter(
@@ -191,7 +258,12 @@ def _resolve_baseline_memory_platform_wiring(
         security_governance=security_governance,
         memory_diagnostic_emitter=emitter,
     )
-    entity_store = resolve_entity_temporal_memory_store(env)
+    entity_store = resolve_entity_temporal_memory_store(
+        env,
+        discover_entry_points=discover_entry_points,
+        explicit_memory_plugins=explicit_memory_plugins,
+        catalog=memory_store_plugin_catalog,
+    )
     entity_temporal_memory_capability = resolve_entity_temporal_memory_capability(
         env,
         security_governance=governance,
@@ -207,6 +279,17 @@ def _resolve_baseline_memory_platform_wiring(
             security_governance=governance,
             diagnostic_emitter=emitter,
         )
+    specialized_memory = resolve_specialized_memory_capabilities(
+        env,
+        discover_entry_points=discover_entry_points,
+        explicit_memory_plugins=explicit_memory_plugins,
+        memory_store_plugin_catalog=memory_store_plugin_catalog,
+        security_governance=governance,
+        memory_observability_sink=memory_observability_sink,
+        memory_diagnostic_emitter=emitter,
+        governance_source_authority=governance_source_authority,
+        long_horizon_source_authority=long_horizon_source_authority,
+    )
     if _sqlite_enabled(profile):
         bundle = create_sqlite_integration(**_sqlite_integration_overrides(profile))
         return MemoryPlatformWiring(
@@ -220,6 +303,7 @@ def _resolve_baseline_memory_platform_wiring(
             mongodb_bundle=None,
             entity_temporal_memory_capability=entity_temporal_memory_capability,
             entity_memory_indexer=entity_memory_indexer,
+            specialized_memory=specialized_memory,
         )
 
     if _mongodb_enabled(profile):
@@ -245,6 +329,7 @@ def _resolve_baseline_memory_platform_wiring(
             mongodb_bundle=mongo_bundle,
             entity_temporal_memory_capability=entity_temporal_memory_capability,
             entity_memory_indexer=entity_memory_indexer,
+            specialized_memory=specialized_memory,
         )
 
     return MemoryPlatformWiring(
@@ -258,6 +343,7 @@ def _resolve_baseline_memory_platform_wiring(
         mongodb_bundle=None,
         entity_temporal_memory_capability=entity_temporal_memory_capability,
         entity_memory_indexer=entity_memory_indexer,
+        specialized_memory=specialized_memory,
     )
 
 
@@ -269,6 +355,7 @@ def _apply_external_memory_store_overlay(
     tenant_id: str | None,
     discover_entry_points: bool,
     explicit_memory_plugins: Sequence[type] = (),
+    memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None,
 ) -> MemoryPlatformWiring:
     memory_profile = env.memory_profile
     user_plugin_id = memory_profile.user_profile_store_plugin_id
@@ -282,11 +369,13 @@ def _apply_external_memory_store_overlay(
             "or explicit_memory_plugins candidates"
         )
 
-    discovery = discover_classified_memory_store_plugins(
-        discover_entry_points=discover_entry_points,
-        explicit_plugins=explicit_memory_plugins,
-    )
-    catalog = MemoryStorePluginCatalog.from_discovery(discovery)
+    catalog = memory_store_plugin_catalog
+    if catalog is None:
+        discovery = discover_classified_memory_store_plugins(
+            discover_entry_points=discover_entry_points,
+            explicit_plugins=explicit_memory_plugins,
+        )
+        catalog = MemoryStorePluginCatalog.from_discovery(discovery)
 
     materialization_ctx = MemoryStoreMaterializationContext(
         tenant_id=tenant_id,
@@ -311,7 +400,7 @@ def _apply_external_memory_store_overlay(
             catalog=catalog,
         )
         updated = replace(updated, session_storage=session_storage)
-    return replace(updated, memory_store_plugin_load_report=catalog.load_report)
+    return updated
 
 
 def resolve_memory_platform_wiring(
@@ -326,6 +415,8 @@ def resolve_memory_platform_wiring(
     memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
     qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
     durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
+    governance_source_authority: CanonicalMemoryGovernanceSourceAuthority | None = None,
+    long_horizon_source_authority: CanonicalMemorySourceAuthority | None = None,
 ) -> MemoryPlatformWiring:
     """
     Resolve durable memory backends from the integration profile.
@@ -337,14 +428,25 @@ def resolve_memory_platform_wiring(
     4. Explicit external Memory store plugin ids overlay their owned slots only.
     """
     profile = integration_profile or env.integration_profile
+    discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
+    memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None
+    if _memory_store_plugin_catalog_required(env):
+        memory_store_plugin_catalog = _compose_memory_store_plugin_catalog(
+            discover_entry_points=discover,
+            explicit_memory_plugins=explicit_memory_plugins,
+        )
     wiring = _resolve_baseline_memory_platform_wiring(
         env,
         profile,
         security_governance=security_governance,
         memory_observability_sink=memory_observability_sink,
         memory_diagnostic_emitter=memory_diagnostic_emitter,
+        governance_source_authority=governance_source_authority,
+        long_horizon_source_authority=long_horizon_source_authority,
+        discover_entry_points=discover,
+        explicit_memory_plugins=explicit_memory_plugins,
+        memory_store_plugin_catalog=memory_store_plugin_catalog,
     )
-    discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
     wiring = _apply_external_memory_store_overlay(
         wiring,
         env,
@@ -352,6 +454,7 @@ def resolve_memory_platform_wiring(
         tenant_id=tenant_id,
         discover_entry_points=discover,
         explicit_memory_plugins=explicit_memory_plugins,
+        memory_store_plugin_catalog=memory_store_plugin_catalog,
     )
     validate_memory_platform_wiring_admission(
         env,
@@ -360,6 +463,12 @@ def resolve_memory_platform_wiring(
         qualification_evidence_registry=qualification_evidence_registry,
         durability_evidence_registry=durability_evidence_registry,
     )
+    if memory_store_plugin_catalog is not None:
+        wiring = replace(
+            wiring,
+            memory_store_plugin_load_report=memory_store_plugin_catalog.load_report,
+            memory_store_plugin_catalog=memory_store_plugin_catalog,
+        )
     return wiring
 
 
@@ -375,14 +484,17 @@ def build_session_manager_from_environment(
     durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
     session_turn_index_store: SessionTurnIndexStore | None = None,
     session_turn_index_store_identity: MemoryProviderIdentity | None = None,
+    discover_entry_points: bool | None = None,
 ) -> SessionManager:
     """Construct ``SessionManager`` with profile managers driven by ``MemoryProfile``."""
+    discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
     wiring = memory_wiring or resolve_memory_platform_wiring(
         env,
         integration_profile=integration_profile,
         tenant_id=tenant_id,
         qualification_evidence_registry=qualification_evidence_registry,
         durability_evidence_registry=durability_evidence_registry,
+        discover_entry_points=discover,
     )
     validate_memory_platform_wiring_admission(
         env,
@@ -428,6 +540,8 @@ def build_session_manager_from_environment(
             rag_stack=rag_stack,
             integration_profile=resolved_integration,
             qualification_evidence_registry=qualification_evidence_registry,
+            discover_entry_points=discover,
+            memory_store_plugin_catalog=wiring.memory_store_plugin_catalog,
         )
 
     resolved_memory_control_plane = memory_control_plane

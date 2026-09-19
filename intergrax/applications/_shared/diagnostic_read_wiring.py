@@ -73,8 +73,7 @@ def resolve_host_diagnostic_read_dependencies(
     Uses the same document_store, runtime event store, and causal evidence adapters
     as platform queue-worker and diagnostic lifecycle composition — no dashboard-local stores.
     """
-    build_context = runtime.env_wiring.build_context
-    wiring_context = build_context.tool_wiring_context
+    wiring_context = runtime.env_wiring.composition.tool_wiring_context
     if wiring_context is None or wiring_context.document_store is None:
         raise ValueError(
             "diagnostics-enabled product host requires platform document_store for shared "

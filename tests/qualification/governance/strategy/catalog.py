@@ -272,9 +272,10 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
         "Inner Governance",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R8: production RuntimeToolInvoker wired via build_production_runtime_tool_invoker with required "
-        "CanonicalInnerExecutionGuardPort before tool authorization gates; TOOL_PLAN_OR_ACCESS remains "
-        "ToolAccessPolicy canonical contract; AGENT_DECISION graph routing reclassified to Policy evaluation row.",
+        "GR-10-R8 / R8-R1: production host exposes CanonicalInnerExecutionGuardPort via RuntimeConfig and "
+        "declarative composition; build_production_runtime_tool_invoker wires guard before tool authorization; "
+        "inner request projects ActiveExecutionGovernanceIdentity.principal_id (GR-3 execution-binding spine, "
+        "not full GEP matrix closure); TOOL_PLAN_OR_ACCESS remains ToolAccessPolicy.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Policy evaluation",
@@ -286,16 +287,19 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
     Gr10ResidualStrategyCapabilitySemantics(
         "MSE",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "require_meaningful_side_effect_authorization on consequential RuntimeToolInvoker paths; not all "
-        "orchestration external-work / graph side-effect seams enterprise-qualified.",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-10-R9-R4: production topology composition requires OrchestrationTopologySlotMsePolicy; "
+        "lab builder explicit for policy-less harness; authority delegation via "
+        "orchestration_slot_effect_authority_owner contract surface; fan-out PhysicalDelegation "
+        "unchanged; fail-closed production.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Decision-bound effect",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "External Work host slices prove GR-6 wiring; not all orchestration consequential paths bind "
-        "DecisionRequirementPolicy before effect.",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-10-R10: production orchestration MSE composition binds explicit DecisionRequirementPolicy "
+        "before physical effect; canonical boundary enforces REQUIRED/UNDETERMINED material; External "
+        "Work host retains decision-governed coordinator; Physical Delegation owns separate boundary.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "HITL",
@@ -420,8 +424,9 @@ GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
         Gr10CoverageStatus.PARTIAL,
         "MP-4R7 / contractor host qualified.",
         True,
-        Gr10CoverageStatus.PARTIAL,
-        "Not all graph/tool external effects.",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-10-R9-R2: tool + graph/non-tool orchestration consequential seams closed via canonical "
+        "MeaningfulSideEffectAuthorizationPort (ADR-GR-10-002).",
     ),
     Gr10GepCoverageRow(
         "PRE_OUTPUT",
@@ -485,6 +490,434 @@ GR10_R8_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
 )
 
 
+GR10_R9_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-R9-R1 — Canonical MSE Contract Migration & Fail-Closed Production Composition",
+    strategy="ORCHESTRATION",
+    capability="MSE",
+    exact_blocker=(
+        "Nexus-local MeaningfulSideEffectAuthorizationPort returns object; production orchestration "
+        "composition synthesizes membership/authority and default ALLOW via InMemory repositories "
+        "(ADR-GR-10-002 rejected design)."
+    ),
+    why_highest=(
+        "P0 authority architecture blocker before ORCHESTRATION MSE can re-qualify or GR-10-R10 "
+        "decision-bound remediation proceeds on honest MSE foundation."
+    ),
+)
+
+
+GR10_R9_R1_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-R9-R2 — ORCHESTRATION graph/non-tool consequential MSE seam closure",
+    strategy="ORCHESTRATION",
+    capability="MSE",
+    exact_blocker=(
+        "Production orchestration graph runners and non-tool consequential mutations lack canonical "
+        "MSE boundary coverage beyond RuntimeToolInvoker side_effects=True tool slice."
+    ),
+    why_highest=(
+        "Highest remaining ORCHESTRATION MSE PARTIAL row after GR-10-R9-R1 authority migration; "
+        "must close or honestly delegate before ORCHESTRATION MSE re-qualification."
+    ),
+)
+
+
+GR10_R9_R3_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-R10 — ORCHESTRATION decision-bound consequential effect coverage",
+    strategy="ORCHESTRATION",
+    capability="Decision-bound effect",
+    exact_blocker=(
+        "Not all production orchestration consequential paths bind DecisionRequirementPolicy before "
+        "effect despite canonical topology MSE enforcement (GR-10-R9-R3)."
+    ),
+    why_highest=(
+        "Highest remaining ORCHESTRATION applicable capability row after GR-10-R9-R3 topology slot MSE "
+        "enforcement closure."
+    ),
+)
+
+
+GR10_R9_R2_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-R10 — ORCHESTRATION decision-bound consequential effect coverage",
+    strategy="ORCHESTRATION",
+    capability="Decision-bound effect",
+    exact_blocker=(
+        "Not all production orchestration consequential paths bind DecisionRequirementPolicy before "
+        "effect despite MSE spine qualification."
+    ),
+    why_highest=(
+        "Highest remaining ORCHESTRATION applicable capability row after GR-10-R9-R2 MSE qualification; "
+        "Decision-bound remediation requires honest MSE foundation."
+    ),
+)
+
+
+GR10_R10_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-R11 — ORCHESTRATION HITL enterprise closure",
+    strategy="ORCHESTRATION",
+    capability="HITL",
+    exact_blocker=(
+        "GR-5 orchestration slices partial — human judgment evidence ≠ Governance ALLOW; fresh governance "
+        "+ continuation port not enterprise-closed on all orchestration pause/resume paths."
+    ),
+    why_highest=(
+        "Highest remaining ORCHESTRATION applicable capability row after GR-10-R10 decision-bound "
+        "effect qualification."
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Gr10OrchestrationStrictHostDecisionPolicyInventoryRow:
+    host: str
+    strict_capable: bool
+    production: bool
+    orchestration_mse_applicable: bool
+    policy_source: str
+    explicit_policy: bool
+    coverage: str
+
+
+GR10_ORCHESTRATION_STRICT_HOST_DECISION_POLICY_INVENTORY: tuple[
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow,
+    ...,
+] = (
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "governed_contractor_application",
+        True,
+        True,
+        True,
+        "host/orchestration_decision_requirement_policy.default_governed_contractor_harness_orchestration_decision_requirement_policy",
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "research_application",
+        True,
+        True,
+        True,
+        "host/orchestration_decision_requirement_policy.resolve_research_harness_orchestration_decision_requirement_policy",
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "legal_application",
+        True,
+        True,
+        True,
+        "host/orchestration_decision_requirement_policy.resolve_legal_harness_orchestration_decision_requirement_policy",
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "dispute_sim_application",
+        True,
+        True,
+        True,
+        "host/orchestration_decision_requirement_policy.resolve_dispute_sim_harness_orchestration_decision_requirement_policy",
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "local_workspace_application",
+        True,
+        True,
+        True,
+        "host/host_runtime_composition + orchestration_decision_requirement_policy.resolve_local_workspace_harness_orchestration_decision_requirement_policy",
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "lab_application",
+        False,
+        False,
+        False,
+        "N/A — lab_defaults execution_mode balanced",
+        False,
+        "N/A",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "attestation_demo",
+        False,
+        False,
+        False,
+        "N/A — partner PoC lab profile",
+        False,
+        "N/A",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "poc_template_application",
+        False,
+        False,
+        False,
+        "N/A — lab scaffold template",
+        False,
+        "N/A",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "intergrax_assistant_application",
+        False,
+        False,
+        False,
+        "N/A — harness chat lab",
+        False,
+        "N/A",
+    ),
+    Gr10OrchestrationStrictHostDecisionPolicyInventoryRow(
+        "HarnessApplication (intergrax.harness.app)",
+        True,
+        False,
+        True,
+        "caller-supplied orchestration_decision_requirement_policy on build_runtime when execution_mode strict",
+        True,
+        "N/A",
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Gr10OrchestrationDecisionBoundInventoryRow:
+    path: str
+    production: bool
+    consequential: bool
+    decision_requirement_applicable: bool
+    policy: str
+    decision_binding: str
+    effect_boundary: str
+    coverage: str
+
+
+GR10_ORCHESTRATION_DECISION_BOUND_EFFECT_INVENTORY: tuple[
+    Gr10OrchestrationDecisionBoundInventoryRow,
+    ...
+] = (
+    Gr10OrchestrationDecisionBoundInventoryRow(
+        "RuntimeToolInvoker.invoke (side_effects=True)",
+        True,
+        True,
+        True,
+        "explicit host/domain DecisionRequirementPolicy → production orchestration MSE port",
+        "MeaningfulSideEffectAuthorizationBoundary._enforce_decision_requirement",
+        "MeaningfulSideEffectAuthorizationPort.authorize before ToolExecutor",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationDecisionBoundInventoryRow(
+        "RuntimeToolInvoker.invoke (side_effects=False)",
+        True,
+        False,
+        False,
+        "N/A",
+        "N/A",
+        "N/A",
+        "N/A",
+    ),
+    Gr10OrchestrationDecisionBoundInventoryRow(
+        "External Work / governed contractor host",
+        True,
+        True,
+        True,
+        "host default_external_work_decision_requirement_policy (injectable)",
+        "authorize_and_execute_decision_bound_side_effect + boundary",
+        "MeaningfulSideEffectAuthorizationBoundary",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationDecisionBoundInventoryRow(
+        "CanonicalOrchestrationTopologySubmissionPort.submit",
+        True,
+        True,
+        True,
+        "explicit host/domain DecisionRequirementPolicy → production MSE port",
+        "boundary authorize before slot execute",
+        "GovernedOrchestrationSlotExecutor",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationDecisionBoundInventoryRow(
+        "CanonicalOrchestrationTopologySubmissionPort.recover_failed_slot",
+        True,
+        True,
+        True,
+        "explicit host/domain DecisionRequirementPolicy → production MSE port (recovery)",
+        "boundary authorize before recovery physical effect",
+        "GovernedOrchestrationSlotExecutor",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationDecisionBoundInventoryRow(
+        "CanonicalOrchestrationTopologySubmissionPort.continue_slot",
+        True,
+        True,
+        True,
+        "explicit host/domain DecisionRequirementPolicy → production MSE port (continuation)",
+        "boundary authorize before continuation physical effect",
+        "GovernedOrchestrationSlotContinuationExecutor",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationDecisionBoundInventoryRow(
+        "Decision-governed side effect helper (GR-6)",
+        True,
+        True,
+        True,
+        "caller-supplied DecisionRequirementPolicy",
+        "decision material attach + boundary",
+        "authorize_and_execute_decision_bound_side_effect",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationDecisionBoundInventoryRow(
+        "Physical delegation / fan-out coordination slot",
+        True,
+        True,
+        False,
+        "N/A — PhysicalDelegationGovernancePort",
+        "delegated to Physical Delegation canonical boundary",
+        "PhysicalDelegationGovernanceBoundary",
+        "delegated to another canonical owner",
+    ),
+    Gr10OrchestrationDecisionBoundInventoryRow(
+        "OrchestrationExecutor graph routing / checkpoints",
+        True,
+        False,
+        False,
+        "N/A",
+        "N/A",
+        "internal orchestration control",
+        "N/A",
+    ),
+    Gr10OrchestrationDecisionBoundInventoryRow(
+        "build_lab_orchestration_topology_submission_port",
+        False,
+        False,
+        False,
+        "N/A",
+        "N/A",
+        "lab qualification only",
+        "N/A",
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Gr10OrchestrationMseNonToolInventoryRow:
+    path: str
+    production: bool
+    consequential: bool
+    boundary: str
+    classification: str
+
+
+GR10_ORCHESTRATION_MSE_NON_TOOL_INVENTORY: tuple[Gr10OrchestrationMseNonToolInventoryRow, ...] = (
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "RuntimeToolInvoker.invoke (contract.side_effects=True)",
+        True,
+        True,
+        "MeaningfulSideEffectAuthorizationPort",
+        "A — consequential + canonical MSE",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "RuntimeToolInvoker.invoke (side_effects=False)",
+        True,
+        False,
+        "N/A",
+        "C — N/A",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "External Work / governed contractor host boundary",
+        True,
+        True,
+        "MeaningfulSideEffectAuthorizationBoundary (host-composed)",
+        "A — consequential + already canonical MSE",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "OrchestrationExecutor / Nexus graph routing & state transitions",
+        True,
+        False,
+        "CanonicalInnerExecutionGuardPort (identity) + Policy evaluation",
+        "C — N/A (non-consequential orchestration control)",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "PlanningRunner PRE_MODEL structured planning",
+        True,
+        False,
+        "Runtime policy PRE_MODEL",
+        "D — owned by Policy evaluation GEP",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "Physical delegation / agent distribution mutations",
+        True,
+        True,
+        "PhysicalDelegationGovernanceBoundary",
+        "D — owned by another canonical effect boundary",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "Decision-governed side effect helper (GR-6)",
+        True,
+        True,
+        "MeaningfulSideEffectAuthorizationBoundary",
+        "A — consequential + canonical MSE (non-tool caller)",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "GraphExecutor nested child agent execution (ChildExecutionRunner → StrategyExecutionRouter)",
+        True,
+        True,
+        "RuntimeToolInvoker / CatalogDeclarativeToolInvoker (ACP metadata)",
+        "A — consequential effects only via governed tool contract",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "GraphExecutor orchestration topology slot (production fan-out coordination)",
+        True,
+        True,
+        "PhysicalDelegationGovernanceBoundary via MultiAgentCoordinationService",
+        "D — owned by Physical Delegation canonical boundary",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "GraphExecutor handoff / runtime events / execution-tree checkpoint",
+        True,
+        False,
+        "Internal orchestration bookkeeping",
+        "C — N/A (non-consequential platform control)",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "ContextEngine provider.collect (graph context assembly)",
+        True,
+        False,
+        "Read-only provider collection",
+        "C — N/A (non-consequential read path)",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "CanonicalOrchestrationTopologySubmissionPort.submit (custom slot)",
+        True,
+        True,
+        "OrchestrationTopologySlotMsePolicy + MeaningfulSideEffectAuthorizationPort",
+        "A — consequential + canonical MSE (mandatory composition enforcement)",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "CanonicalOrchestrationTopologySubmissionPort.recover_failed_slot",
+        True,
+        True,
+        "OrchestrationTopologySlotMsePolicy + fresh MeaningfulSideEffectAuthorizationPort",
+        "A — consequential + fresh canonical MSE on recovery",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "CanonicalOrchestrationTopologySubmissionPort.continue_slot (custom continuation)",
+        True,
+        True,
+        "OrchestrationTopologySlotMsePolicy + fresh MeaningfulSideEffectAuthorizationPort",
+        "A — consequential + fresh canonical MSE on continuation physical effect",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "build_lab_orchestration_topology_submission_port (explicit non-production)",
+        False,
+        False,
+        "N/A — lab/qualification only",
+        "E — non-production (build_lab_orchestration_topology_submission_port)",
+    ),
+    Gr10OrchestrationMseNonToolInventoryRow(
+        "Uncertified raw OrchestrationSlotExecutor bypassing canonical submission port",
+        False,
+        True,
+        "N/A — not canonical production topology path",
+        "E — non-production (bypasses CanonicalOrchestrationTopologySubmissionPort)",
+    ),
+)
+
+
 GR10_PRODUCTION_INVENTORY: tuple[Gr10ProductionEntry, ...] = (
     Gr10ProductionEntry(
         "INFERENCE",
@@ -542,14 +975,14 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
         gr10_matrix_inference_status("MSE"),
         gr10_matrix_agentic_status("MSE"),
         gr10_matrix_orchestration_status("MSE"),
-        "INFERENCE N/A; residual host coverage per GR-10-R7.",
+        "INFERENCE N/A; ORCHESTRATION MSE QUALIFIED (GR-10-R9-R2); AGENTIC residual per SSOT.",
     ),
     Gr10CapabilityCell(
         "Decision-bound effect",
         gr10_matrix_inference_status("Decision-bound effect"),
         gr10_matrix_agentic_status("Decision-bound effect"),
         gr10_matrix_orchestration_status("Decision-bound effect"),
-        "MP-4R7 agentic qualified; orchestration External Work partial.",
+        "MP-4R7 agentic qualified; orchestration QUALIFIED (GR-10-R10 explicit policy binding).",
     ),
     Gr10CapabilityCell(
         "HITL",
@@ -752,6 +1185,24 @@ GR10_SCENARIO_CATALOG: tuple[Gr10ScenarioEvidence, ...] = (
                 "tests/qualification/governance/strategy/"
                 "test_gr10_r8_orchestration_inner_governance_qualification.py",
                 "test_gr10_r8_orchestration_inner_governance_qualified",
+            ),
+        ),
+        Gr10CoverageStatus.QUALIFIED,
+    ),
+    Gr10ScenarioEvidence(
+        "ORCH-DECISION-BOUND",
+        "ORCHESTRATION",
+        "decision requirement before orchestration consequential effect",
+        (
+            _nid(
+                "tests/unit/runtime/architecture/"
+                "test_gr10_r10_orchestration_decision_bound_e2e.py",
+                "test_mse_allow_without_required_decision_zero_effect",
+            ),
+            _nid(
+                "tests/qualification/governance/strategy/"
+                "test_gr10_r10_orchestration_decision_bound_qualification.py",
+                "test_gr10_r10_orchestration_decision_bound_qualified",
             ),
         ),
         Gr10CoverageStatus.QUALIFIED,

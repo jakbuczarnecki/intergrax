@@ -12,11 +12,17 @@ from intergrax.contracts.acp_state import ACP_STATE_KEY
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import (
     AgentExecutionOptions,
+    AgentRunError,
     AgentRunRequest,
     AgentRunResult,
     RequestIdentity,
 )
-from intergrax.contracts.agent_run_enums import PrincipalType
+from intergrax.contracts.agent_run_enums import (
+    AgentRunErrorCode,
+    AgentRunStatus,
+    PrincipalType,
+    TerminalReason,
+)
 from intergrax.contracts.request_identity_spine import (
     assert_untrusted_metadata_identity_compatible,
 )
@@ -80,6 +86,36 @@ def runtime_request_to_agent_run(
             else None
         ),
         execution_options=execution_options,
+    )
+
+
+def agent_run_result_from_runtime_answer(
+    answer: RuntimeAnswer,
+    *,
+    run_id: str,
+) -> AgentRunResult:
+    """Minimal canonical result for Agent.validate() during UAEP bridge execution."""
+    text = (answer.answer or "").strip()
+    if text:
+        return AgentRunResult(
+            status=AgentRunStatus.SUCCEEDED,
+            output=answer.answer,
+            run_id=run_id,
+            trace_id=run_id,
+            terminal_reason=TerminalReason.GOAL_MET,
+        )
+    return AgentRunResult(
+        status=AgentRunStatus.FAILED,
+        output="",
+        run_id=run_id,
+        trace_id=run_id,
+        terminal_reason=TerminalReason.ERROR,
+        errors=[
+            AgentRunError(
+                code=AgentRunErrorCode.VALIDATION_FAILED,
+                message="empty answer",
+            )
+        ],
     )
 
 

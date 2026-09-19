@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications._shared.memory_observability_wiring import (
     resolve_memory_diagnostic_emitter,
@@ -33,8 +35,22 @@ from intergrax.memory.stores.in_memory_entity_temporal_memory_plugin import (
 )
 
 
+def _entity_temporal_memory_plugin_candidates(
+    explicit_memory_plugins: Sequence[type],
+) -> tuple[type, ...]:
+    merged: list[type] = [InMemoryEntityTemporalMemoryStorePlugin]
+    for plugin_type in explicit_memory_plugins:
+        if plugin_type not in merged:
+            merged.append(plugin_type)
+    return tuple(merged)
+
+
 def resolve_entity_temporal_memory_store(
     env: ApplicationEnvironmentProfile,
+    *,
+    discover_entry_points: bool = True,
+    explicit_memory_plugins: Sequence[type] = (),
+    catalog: MemoryStorePluginCatalog | None = None,
 ) -> EntityTemporalMemoryStore | None:
     """Return entity/temporal store when memory profile enables entity graph memory."""
     if not env.memory_profile.enable_entity_graph_memory:
@@ -44,16 +60,22 @@ def resolve_entity_temporal_memory_store(
         env.memory_profile.entity_temporal_memory_store_plugin_id
         or DEFAULT_IN_MEMORY_ENTITY_TEMPORAL_PLUGIN_ID
     )
-    discovery = discover_classified_memory_store_plugins(
-        discover_entry_points=True,
-        explicit_plugins=(InMemoryEntityTemporalMemoryStorePlugin,),
-    )
-    catalog = MemoryStorePluginCatalog.from_discovery(discovery)
+    resolved_catalog = catalog
+    if resolved_catalog is None:
+        discovery = discover_classified_memory_store_plugins(
+            discover_entry_points=discover_entry_points,
+            explicit_plugins=_entity_temporal_memory_plugin_candidates(explicit_memory_plugins),
+        )
+        resolved_catalog = MemoryStorePluginCatalog.from_discovery(discovery)
     ctx = MemoryStoreMaterializationContext(
         tenant_id=None,
         integration_profile=env.integration_profile,
     )
-    return materialize_entity_temporal_memory_store(plugin_id, ctx, catalog=catalog)
+    return materialize_entity_temporal_memory_store(
+        plugin_id,
+        ctx,
+        catalog=resolved_catalog,
+    )
 
 
 def resolve_entity_temporal_memory_capability(

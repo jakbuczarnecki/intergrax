@@ -22,6 +22,11 @@ from intergrax.applications._shared.runtime_agent_factory_resolver import (
     RuntimeAgentFactoryResolutionError,
     RuntimeAgentFactoryResolver,
 )
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
+    factory_composition_scope,
+    optional_factory_composition,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.factory import AgentFactory, CanonicalAgentFactory
 from intergrax.applications.contracts.errors import (
@@ -108,9 +113,13 @@ def invoke_canonical_agent_factory(
     factory: CanonicalAgentFactory,
     ctx: ApplicationBuildContext,
     binding: AgentBinding,
+    *,
+    composition: ApplicationCompositionContext | None = None,
 ) -> Agent:
     """Strict production invocation: exactly ``(ctx, binding)`` with no signature probing."""
-    result = factory(ctx, binding)
+    active = composition if composition is not None else optional_factory_composition()
+    with factory_composition_scope(active):
+        result = factory(ctx, binding)
     return _validate_factory_result(result, factory, binding)
 
 
@@ -118,6 +127,8 @@ def invoke_legacy_compatible_agent_factory(
     factory: Callable[..., Any],
     ctx: ApplicationBuildContext,
     binding: AgentBinding,
+    *,
+    composition: ApplicationCompositionContext | None = None,
 ) -> Agent:
     """
     DEV / LAB / COMPATIBILITY ONLY — multi-signature factory invocation.
@@ -133,14 +144,16 @@ def invoke_legacy_compatible_agent_factory(
         attempts.append(((ctx.settings,), {}))
     attempts.extend([((ctx,), {}), ((), {})])
 
+    active = composition if composition is not None else optional_factory_composition()
     last_error: Exception | None = None
-    for args, kwargs in attempts:
-        try:
-            result = factory(*args, **kwargs)
-        except TypeError as exc:
-            last_error = exc
-            continue
-        return _validate_factory_result(result, factory, binding)
+    with factory_composition_scope(active):
+        for args, kwargs in attempts:
+            try:
+                result = factory(*args, **kwargs)
+            except TypeError as exc:
+                last_error = exc
+                continue
+            return _validate_factory_result(result, factory, binding)
 
     message = f"Cannot invoke factory for {binding.display_name()!r}"
     if last_error is not None:
@@ -152,9 +165,13 @@ def invoke_agent_factory(
     factory: Callable[..., Any],
     ctx: ApplicationBuildContext,
     binding: AgentBinding,
+    *,
+    composition: ApplicationCompositionContext | None = None,
 ) -> Agent:
     """Backward-compatible alias for :func:`invoke_legacy_compatible_agent_factory`."""
-    return invoke_legacy_compatible_agent_factory(factory, ctx, binding)
+    return invoke_legacy_compatible_agent_factory(
+        factory, ctx, binding, composition=composition
+    )
 
 
 def build_agent_from_binding(
@@ -162,15 +179,18 @@ def build_agent_from_binding(
     ctx: ApplicationBuildContext,
     *,
     builders: BuilderMap | None = None,
+    composition: ApplicationCompositionContext | None = None,
 ) -> Agent:
     """Materialize one agent: typed factory → builders map → serialized path → ctor."""
     factory = resolve_builder(binding, builders)
     if factory is not None:
-        return invoke_agent_factory(factory, ctx, binding)
+        return invoke_agent_factory(factory, ctx, binding, composition=composition)
 
     if binding.factory_path is not None and binding.factory is None:
         loaded = load_callable(binding.factory_path)
-        return invoke_agent_factory(loaded, ctx, binding)
+        return invoke_legacy_compatible_agent_factory(
+            loaded, ctx, binding, composition=composition
+        )
 
     agent_cls = binding.resolved_agent_type()
     try:
@@ -365,18 +385,26 @@ def _register_binding(
     *,
     builders: BuilderMap | None,
     skill_registry: SkillRegistry | None,
+    composition: ApplicationCompositionContext | None = None,
     resolved_factory: CanonicalAgentFactory | None = None,
 ) -> None:
     if resolved_factory is not None:
-        agent = invoke_canonical_agent_factory(resolved_factory, ctx, binding)
+        agent = invoke_canonical_agent_factory(
+            resolved_factory, ctx, binding, composition=composition
+        )
     else:
-        agent = build_agent_from_binding(binding, ctx, builders=builders)
+        agent = build_agent_from_binding(
+            binding, ctx, builders=builders, composition=composition
+        )
+    active = composition if composition is not None else optional_factory_composition()
+    tool_registry = active.tool_registry if active is not None else None
+    event_bus = active.runtime_event_bus if active is not None else None
     registry.register(
         agent,
         contract=contract_for_binding(agent, binding),
         skill_registry=skill_registry,
-        tool_registry=ctx.tool_registry,
-        event_bus=ctx.runtime_event_bus,
+        tool_registry=tool_registry,
+        event_bus=event_bus,
         requires_uaep=binding.requires_uaep,
     )
 
@@ -387,6 +415,7 @@ def build_manifest_development_registry(
     *,
     builders: BuilderMap | None = None,
     require_enabled: bool = True,
+    composition: ApplicationCompositionContext | None = None,
 ) -> AgentRegistry:
     """Explicit non-production manifest-only registry assembly (dev/test/lab/scaffold)."""
     return build_application_registry(
@@ -394,6 +423,7 @@ def build_manifest_development_registry(
         ctx,
         builders=builders,
         require_enabled=require_enabled,
+        composition=composition,
     )
 
 
@@ -406,6 +436,7 @@ def build_application_registry(
     effective_roster: EffectiveRoster | None = None,
     runtime_revision: RuntimeRevision | None = None,
     factory_resolver: RuntimeAgentFactoryResolver | None = None,
+    composition: ApplicationCompositionContext | None = None,
 ) -> AgentRegistry:
     """Canonical Tier-3 registry builder: manifest roster + context + optional builders.
 
@@ -416,10 +447,12 @@ def build_application_registry(
     Direct manifest-only callers in production hosts are forbidden; use
     :func:`build_manifest_development_registry` for explicit dev/test assembly.
     """
-    skill_registry = ctx.skill_registry
-    if skill_registry is None and ctx.skill_profile is not None:
+    active = composition if composition is not None else optional_factory_composition()
+    skill_registry = active.skill_registry if active is not None else None
+    skill_profile = active.skill_profile if active is not None else None
+    if skill_registry is None and skill_profile is not None:
         register_default_skills()
-        skill_registry = build_registry_from_profile(ctx.skill_profile)
+        skill_registry = build_registry_from_profile(skill_profile)
 
     if effective_roster is None:
         structural = validate_manifest_wiring(manifest)
@@ -439,6 +472,7 @@ def build_application_registry(
                 ctx,
                 builders=builders,
                 skill_registry=skill_registry,
+                composition=composition,
             )
         return registry
 
@@ -494,6 +528,7 @@ def build_application_registry(
                 ctx,
                 builders=None,
                 skill_registry=skill_registry,
+                composition=composition,
                 resolved_factory=resolved,
             )
             continue
@@ -503,6 +538,7 @@ def build_application_registry(
             ctx,
             builders=builders,
             skill_registry=skill_registry,
+            composition=composition,
         )
     return registry
 

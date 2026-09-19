@@ -15,7 +15,11 @@ from intergrax.runtime.nexus.config_types import (
 )
 
 if TYPE_CHECKING:
+    from intergrax.contracts.canonical_inner_governance import CanonicalInnerExecutionGuardPort
     from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
+    from intergrax.contracts.meaningful_side_effect_authorization import (
+        MeaningfulSideEffectAuthorizationPort,
+    )
     from intergrax.context.protocols import ContextEngine
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
     from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
@@ -282,6 +286,14 @@ class RuntimeConfig:
 
     # NPSC-4 pre-execution agent governance (required when production_mode=True).
     agent_runtime_governance: Optional["AgentRuntimeGovernancePort"] = None
+
+    # GR-3 / GR-10-R8 orchestration inner guard (optional override; composition default when None).
+    canonical_inner_execution_guard: Optional["CanonicalInnerExecutionGuardPort"] = None
+
+    # GR-10-R9 orchestration MSE boundary (optional override; composition default when None).
+    meaningful_side_effect_authorization: Optional[
+        "MeaningfulSideEffectAuthorizationPort"
+    ] = None
 
     # Memory toggles
     enable_user_profile_memory: bool = True

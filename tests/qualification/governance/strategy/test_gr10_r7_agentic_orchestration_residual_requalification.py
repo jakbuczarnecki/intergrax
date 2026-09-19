@@ -106,8 +106,6 @@ def test_gr10_r7_orchestration_partial_inventory() -> None:
         if row.coverage is Gr10CoverageStatus.PARTIAL
     }
     assert partial_caps == {
-        "MSE",
-        "Decision-bound effect",
         "HITL",
         "Continuation",
         "Reliability",

@@ -59,6 +59,9 @@ from intergrax.applications._shared.memory_wiring import (
     assert_strict_memory_bootstrap_acceptable,
     resolve_memory_platform_wiring,
 )
+from intergrax.applications._shared.specialized_memory_wiring import (
+    SpecializedMemoryCapabilities,
+)
 from intergrax.applications._shared.memory_vector_wiring import (
     assert_memory_vector_backend_available,
     build_user_profile_manager,
@@ -105,6 +108,9 @@ from intergrax.applications._shared.tool_wiring import (
     build_application_tool_wiring,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications._shared.security_assembly_resolver import (
     SecurityAssemblyError,
@@ -149,7 +155,7 @@ class ApplicationEnvironmentWiring:
     tool_wiring: ApplicationToolWiring
     skill_wiring: ApplicationSkillWiring
     policy_bundle: Any
-    build_context: ApplicationBuildContext
+    composition: ApplicationCompositionContext
     platform_plugin_evidence: ApplicationPlatformPluginEvidence
     shadow_manager: ShadowWorkspaceManager | None
     sandbox_manager: SandboxSessionManager | None
@@ -160,6 +166,11 @@ class ApplicationEnvironmentWiring:
     event_delivery: ApplicationRuntimeEventDeliveryWiring = (
         ApplicationRuntimeEventDeliveryWiring.disabled()
     )
+    specialized_memory: SpecializedMemoryCapabilities = SpecializedMemoryCapabilities()
+
+    @property
+    def build_context(self) -> ApplicationBuildContext:
+        return self.composition.factory_context
 
 
 def _security_plugin_bootstrap_errors(
@@ -496,9 +507,15 @@ def wire_application_environment(
         resolved_runtime_event_bus = runtime_event_bus
         event_delivery = ApplicationRuntimeEventDeliveryWiring.disabled()
 
-    build_context = ApplicationBuildContext.for_manifest(
+    factory_context = ApplicationBuildContext.for_manifest(
         manifest,
         settings=settings,
+        strict_harness=strict_harness,
+        trace_db_path=trace_db_path,
+        environment=env,
+    )
+    composition = ApplicationCompositionContext(
+        factory_context=factory_context,
         integration_profile=resolved_integration,
         tool_profile=tool_wiring.profile,
         tool_wiring_context=tool_wiring.wiring_context,
@@ -508,14 +525,11 @@ def wire_application_environment(
         tool_registry=tool_registry,
         policy_bundle=policy_bundle,
         runtime_event_bus=resolved_runtime_event_bus,
-        strict_harness=strict_harness,
-        trace_db_path=trace_db_path,
-        environment=env,
         prompt_registry=prompt_registry,
         boundary_event_buffer=boundary_event_buffer,
     )
 
-    registry_snapshot = resolve_registry_snapshot(build_context)
+    registry_snapshot = resolve_registry_snapshot(composition)
     capability_graph = resolve_environment_capability_graph(
         manifest, env, registry_snapshot
     )
@@ -567,7 +581,7 @@ def wire_application_environment(
         tool_wiring=tool_wiring,
         skill_wiring=skill_wiring,
         policy_bundle=policy_bundle,
-        build_context=build_context,
+        composition=composition,
         shadow_manager=wire_shadow_workspace(env),
         sandbox_manager=wire_sandbox_sessions(env),
         integration_health=integration_health,
@@ -576,4 +590,5 @@ def wire_application_environment(
         capability_graph=capability_graph,
         platform_plugin_evidence=platform_plugin_evidence,
         event_delivery=event_delivery,
+        specialized_memory=memory_wiring.specialized_memory,
     )

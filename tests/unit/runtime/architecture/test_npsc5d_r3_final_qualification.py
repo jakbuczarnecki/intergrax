@@ -838,8 +838,8 @@ async def test_npsc5d_r3_multiple_blocked_slot_identity_independent() -> None:
     from intergrax.runtime.execution.fan_out_orchestration_adapter import (
         build_fan_out_orchestration_port,
     )
-    from intergrax.runtime.execution.orchestration_topology_submission import (
-        build_orchestration_topology_submission_port,
+    from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
+        build_production_representative_orchestration_topology_submission_port,
     )
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -847,7 +847,7 @@ async def test_npsc5d_r3_multiple_blocked_slot_identity_independent() -> None:
     nexus_loop = NexusLoop(AgentRegistry())
     topology_port = cast(
         Any,
-        build_orchestration_topology_submission_port(nexus_loop),
+        build_production_representative_orchestration_topology_submission_port(nexus_loop),
     )
     adapter = build_fan_out_orchestration_port(topology_port, coordination_service)
     fan_out_service = BoundedMultiAgentFanOutService(orchestration=adapter)
@@ -910,8 +910,8 @@ async def test_npsc5d_r3_one_approval_does_not_authorize_other_slot() -> None:
     from intergrax.runtime.execution.fan_out_orchestration_adapter import (
         build_fan_out_orchestration_port,
     )
-    from intergrax.runtime.execution.orchestration_topology_submission import (
-        build_orchestration_topology_submission_port,
+    from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
+        build_production_representative_orchestration_topology_submission_port,
     )
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
     from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -920,7 +920,7 @@ async def test_npsc5d_r3_one_approval_does_not_authorize_other_slot() -> None:
     nexus_loop = NexusLoop(AgentRegistry())
     topology_port = cast(
         Any,
-        build_orchestration_topology_submission_port(nexus_loop),
+        build_production_representative_orchestration_topology_submission_port(nexus_loop),
     )
     adapter = build_fan_out_orchestration_port(topology_port, coordination)
     fan_out = BoundedMultiAgentFanOutService(orchestration=adapter)

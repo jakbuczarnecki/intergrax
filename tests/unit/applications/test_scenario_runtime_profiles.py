@@ -138,7 +138,7 @@ async def test_lab_document_store_supports_problem_persistence(
         registry=_echo_registry(),
         tenant_id=_TENANT,
     )
-    wiring_context = composition.env_wiring.build_context.tool_wiring_context
+    wiring_context = composition.env_wiring.composition.tool_wiring_context
     assert wiring_context is not None
     assert wiring_context.document_store is not None
     persistence = wire_problem_persistence(list_cursor_secret=TEST_PROBLEM_LIST_CURSOR_SECRET, document_store=wiring_context.document_store)

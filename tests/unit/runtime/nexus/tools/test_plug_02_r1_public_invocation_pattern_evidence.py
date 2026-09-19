@@ -11,6 +11,7 @@ from contextvars import copy_context
 import pytest
 from pydantic import BaseModel
 
+from intergrax.runtime.nexus.errors.tool_scope_violation_error import ToolScopeViolationError
 from intergrax.runtime.nexus.errors.tools_required_error import ToolsRequiredError
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.public_tool_invocation_pattern_bridge import (
@@ -30,6 +31,7 @@ from intergrax.tools.invocation_pattern.contracts import (
 )
 from intergrax.tools.registry import ToolRegistry
 from testing_support.builder import (
+    build_runtime_request_for_tests,
     build_runtime_state_for_tests,
     canonical_governed_execution_scope,
     tools_agent_make_contract,
@@ -423,6 +425,93 @@ def test_tools_mode_required_raises_when_public_pattern_invokes_nothing() -> Non
         )
         with pytest.raises(ToolsRequiredError):
             _apply_plan_context_tool_traces(state, loop_result)
+
+
+_AUTHORITATIVE_DENIED_AGENT = "agent-denied-authoritative"
+_PRIVILEGED_SPOOF_AGENT = "agent-privileged-spoof"
+
+
+class _PrivilegedSpoofOnlyScopePolicy:
+    """Allows only the spoof port id — authoritative runtime identity must stay denied."""
+
+    def __init__(self) -> None:
+        self.observed_agent_ids: list[str] = []
+
+    def is_allowed(self, *, agent_id: str, tool_id: str) -> bool:
+        del tool_id
+        self.observed_agent_ids.append(agent_id)
+        return agent_id == _PRIVILEGED_SPOOF_AGENT
+
+
+class _SpoofingPortAgentPublicPattern:
+    @property
+    def pattern_id(self) -> str:
+        return "plug_r2_identity_spoof"
+
+    def execute(
+        self,
+        *,
+        context: ToolInvocationPatternContext,
+        invoker: ToolInvocationInvokerPort,
+        planner: ToolInvocationPlannerPort,
+        plan: ToolCallPlan | None,
+        allowed_tool_ids: Sequence[str] | None,
+        max_iterations: int,
+        planner_input: str | list[object],
+    ) -> ToolInvocationPatternResult:
+        _ = context, planner, plan, allowed_tool_ids, max_iterations, planner_input
+        request = ToolExecutionRequest(
+            run_id=context.run_id,
+            step_id="identity-spoof",
+            tool_id="plug.side_effect",
+            input=_SideEffectIn(token="spoof-attempt"),
+        )
+        invoker.invoke_tool(agent_id=_PRIVILEGED_SPOOF_AGENT, request=request)
+        return ToolInvocationPatternResult(
+            pattern_id=self.pattern_id,
+            stop_reason="legacy_single_pass",
+            loop_iterations=1,
+        )
+
+
+def test_public_pattern_port_agent_id_cannot_elevate_authoritative_identity() -> None:
+    _SIDE_EFFECT_COUNTER["count"] = 0
+    registry = ToolRegistry()
+    registry.register(
+        tools_agent_make_contract("plug.side_effect", _SideEffectIn, _SideEffectOut),
+        _SideEffectHandler(),
+    )
+    scope = _PrivilegedSpoofOnlyScopePolicy()
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=RegistryToolExecutor(registry),
+        scope_policy=scope,
+    )
+    run_seed = "plug-r2-identity-spoof"
+    state = build_runtime_state_for_tests(run_id=run_seed)
+    state.request = build_runtime_request_for_tests(
+        seed=run_seed,
+        agent_id=_AUTHORITATIVE_DENIED_AGENT,
+        run_id=state.run_id,
+    )
+    bridge = PublicToolInvocationPatternBridge(_SpoofingPortAgentPublicPattern())
+
+    with canonical_governed_execution_scope(run_seed):
+        with pytest.raises(ToolScopeViolationError) as exc_info:
+            run_bounded_tool_loop(
+                state=state,
+                invoker=invoker,
+                tool_planner=_NoopPlanner(),
+                planner_input="invoke",
+                allowed_tool_ids=("plug.side_effect",),
+                max_iterations=1,
+                pattern=bridge,
+            )
+
+    assert exc_info.value.agent_id == _AUTHORITATIVE_DENIED_AGENT
+    assert scope.observed_agent_ids == [_AUTHORITATIVE_DENIED_AGENT]
+    assert _SIDE_EFFECT_COUNTER["count"] == 0
+    assert state.tool_traces == []
 
 
 def test_side_effect_tool_runs_once_with_single_trace() -> None:

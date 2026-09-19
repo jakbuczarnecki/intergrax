@@ -8,13 +8,14 @@ from __future__ import annotations
 import hashlib
 import json
 import time
-from typing import Any, Dict, List, Optional, Protocol, TYPE_CHECKING, runtime_checkable
+from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field, field_validator
 
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_trace import GatewayCallStatus, RagCallRecord, ToolCallRecord
+from intergrax.contracts.execution_deadline import ExecutionCancellationView
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -30,15 +31,14 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.memory_write_policy import MemoryWritePolicy
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.runtime_event import RuntimeEvent
+from intergrax.contracts.runtime_event_type import RuntimeEventType
 
 _PENDING_TOOL_CALLS_KEY = "_pending_tool_call_records"
 _PENDING_RAG_CALLS_KEY = "_pending_rag_call_records"
 RAG_RETRIEVE_TOOL_ID = "rag.retrieve"
 RAG_INGEST_TOOL_ID = "rag.ingest_document"
 WORKSPACE_WRITE_FILE_TOOL_ID = "workspace.write_file"
-
-if TYPE_CHECKING:
-    from intergrax.runtime.events.runtime_event import RuntimeEvent
 
 
 @runtime_checkable
@@ -70,11 +70,6 @@ class MemoryView(Protocol):
     ) -> None: ...
 
     async def list(self, namespace: str, prefix: str = "") -> List[Any]: ...
-
-
-@runtime_checkable
-class TraceWriter(Protocol):
-    def write(self, label: str, payload: Dict[str, Any]) -> None: ...
 
 
 class RuntimeExecutionContext(BaseModel):
@@ -129,12 +124,11 @@ class RuntimeExecutionContext(BaseModel):
             raise ValueError("workspace_id must be non-empty when provided")
         return stripped
 
-    tool_gateway: Optional[Any] = Field(default=None, exclude=True)
-    event_emitter: Optional[Any] = Field(default=None, exclude=True)
-    memory_view: Optional[Any] = Field(default=None, exclude=True)
-    trace: Optional[Any] = Field(default=None, exclude=True)
-    request: Optional[MetadataCarrier] = Field(default=None, exclude=True)
-    domain_context: Optional[Any] = Field(default=None, exclude=True)
+    tool_gateway: ToolGateway | None = Field(default=None, exclude=True)
+    event_emitter: EventEmitter | None = Field(default=None, exclude=True)
+    memory_view: MemoryView | None = Field(default=None, exclude=True)
+    request: MetadataCarrier | None = Field(default=None, exclude=True)
+    cancellation: ExecutionCancellationView | None = Field(default=None, exclude=True)
 
     async def emit_event(self, event: RuntimeEvent) -> None:
         if self.event_emitter is not None:
@@ -176,7 +170,7 @@ class RuntimeExecutionContext(BaseModel):
 
     async def _emit_immediate_tool_event(
         self,
-        event_type: Any,
+        event_type: RuntimeEventType,
         *,
         request: ToolRequest,
         args_digest: str,
@@ -184,8 +178,6 @@ class RuntimeExecutionContext(BaseModel):
         latency_ms: int | None = None,
         error_code: str | None = None,
     ) -> None:
-        from intergrax.runtime.events.runtime_event import RuntimeEvent
-
         payload: dict[str, Any] = {
             "tool_id": request.tool_name,
             "status": status,
@@ -269,12 +261,9 @@ class RuntimeExecutionContext(BaseModel):
             self.metadata[_PENDING_RAG_CALLS_KEY] = pending_rag
 
     def should_cancel(self) -> bool:
-        from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
-
-        if isinstance(self.request, MetadataCarrier):
-            if CancellationCoordinator.is_requested(self.request.metadata):
-                return True
-        return CancellationCoordinator.is_requested(self.metadata)
+        if self.cancellation is None:
+            return False
+        return self.cancellation.is_cancelled()
 
 
 def _tool_input_digest(payload: dict[str, Any]) -> str:
@@ -282,15 +271,11 @@ def _tool_input_digest(payload: dict[str, Any]) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()[:16]
 
 
-def _tool_requested_event_type() -> Any:
-    from intergrax.runtime.events.runtime_event import RuntimeEventType
-
+def _tool_requested_event_type() -> RuntimeEventType:
     return RuntimeEventType.TOOL_REQUESTED
 
 
-def _immediate_tool_outcome_event_type(status: ToolResponseStatus) -> Any:
-    from intergrax.runtime.events.runtime_event import RuntimeEventType
-
+def _immediate_tool_outcome_event_type(status: ToolResponseStatus) -> RuntimeEventType:
     if status == ToolResponseStatus.SUCCESS:
         return RuntimeEventType.TOOL_COMPLETED
     if status == ToolResponseStatus.DENIED:

@@ -25,7 +25,7 @@ def test_legal_manifest_round_trip() -> None:
     from legal_application.manifest import LEGAL_APPLICATION_MANIFEST
 
     ctx = ApplicationBuildContext.for_manifest(LEGAL_APPLICATION_MANIFEST)
-    assert ctx.integration_profile is not None
+    assert ctx.manifest.integration_profile is not None
     assert LEGAL_APPLICATION_MANIFEST.profile.value == "product"
 
 

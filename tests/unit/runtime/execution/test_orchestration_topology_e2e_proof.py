@@ -36,7 +36,7 @@ from intergrax.runtime.execution.active_execution_budget import (
 )
 from intergrax.runtime.execution.orchestration_topology_submission import (
     build_orchestration_topology_host_task,
-    build_orchestration_topology_submission_port,
+    build_lab_orchestration_topology_submission_port,
 )
 from intergrax.runtime.governance.active_governed_execution_task import (
     ActiveGovernedExecutionTask,
@@ -116,7 +116,7 @@ class ProofTopologySlotExecutor:
 async def test_canonical_orchestration_topology_submission_proof() -> None:
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry)
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     assert submission_port is not None
     assert nexus_loop.graph_executor is nexus_loop.graph_executor
 
@@ -183,7 +183,7 @@ async def test_canonical_orchestration_topology_submission_proof() -> None:
 async def test_orchestration_topology_deterministic_fan_in_order() -> None:
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry)
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",
         user_id="user-proof",
@@ -262,7 +262,7 @@ async def test_orchestration_topology_deterministic_fan_in_order() -> None:
 async def test_orchestration_topology_bounded_concurrency_enforced_by_graph_executor() -> None:
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry)
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",
         user_id="user-proof",
@@ -404,7 +404,7 @@ class _TrackedSlotExecutor:
 async def test_concurrent_topology_submissions_preserve_independent_scheduling_limits() -> None:
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry)
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",
         user_id="user-proof",
@@ -466,7 +466,7 @@ async def test_concurrent_topology_submissions_preserve_independent_scheduling_l
 async def test_orchestration_topology_global_platform_cap_limits_submission() -> None:
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry, max_parallel_nodes=3)
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",
         user_id="user-proof",
@@ -491,7 +491,7 @@ async def test_orchestration_topology_global_platform_cap_limits_submission() ->
 async def test_orchestration_topology_submission_cap_limits_when_platform_higher() -> None:
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry, max_parallel_nodes=10)
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",
         user_id="user-proof",
@@ -521,7 +521,7 @@ class _BugWork:
 async def test_orchestration_topology_programming_error_propagates_fail_fast() -> None:
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry)
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",
         user_id="user-proof",
@@ -575,7 +575,7 @@ async def test_orchestration_topology_programming_error_propagates_fail_fast() -
 async def test_orchestration_topology_success_with_none_result() -> None:
     registry = AgentRegistry()
     nexus_loop = NexusLoop(registry)
-    submission_port = build_orchestration_topology_submission_port(nexus_loop)
+    submission_port = build_lab_orchestration_topology_submission_port(nexus_loop)
     host_task = build_orchestration_topology_host_task(
         tenant_id="tenant-proof",
         user_id="user-proof",

@@ -251,8 +251,16 @@ async def test_build_acp_session_host_from_harness_strict_tenant_governance_deni
 
 def test_build_acp_session_host_from_harness_strict_missing_tenant_fails_closed() -> None:
     manifest = _echo_manifest("acp_strict_missing_tenant")
-    build_ctx = ApplicationBuildContext.for_manifest(manifest, policy_bundle=RuntimePolicyBundle())
-    registry = build_application_registry(manifest, build_ctx)
+    from intergrax.applications._shared.application_composition_context import (
+        composition_for_factory_context,
+    )
+
+    build_ctx = ApplicationBuildContext.for_manifest(manifest)
+    composition = composition_for_factory_context(
+        build_ctx,
+        policy_bundle=RuntimePolicyBundle(),
+    )
+    registry = build_application_registry(manifest, build_ctx, composition=composition)
     runtime = MagicMock()
     runtime.tenant_id = "   "
     runtime.environment = _strict_lab_environment("acp_strict_missing_tenant.lab")

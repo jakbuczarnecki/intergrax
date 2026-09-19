@@ -89,10 +89,10 @@ def test_wire_application_environment_shares_host_memory_control_plane(
         env,
         tenant_id="tenant-mem-r2",
     )
-    session_manager = wiring.build_context.tool_wiring_context.extras["session_manager"]
+    session_manager = wiring.composition.tool_wiring_context.extras["session_manager"]
     host_plane = session_manager.memory_control_plane
     assert host_plane is not None
-    assert wiring.build_context.tool_wiring_context.extras.get("memory_control_plane") is host_plane
+    assert wiring.composition.tool_wiring_context.extras.get("memory_control_plane") is host_plane
 
 
 def test_custom_memory_control_plane_injected_via_host_builder(tmp_path: Path) -> None:

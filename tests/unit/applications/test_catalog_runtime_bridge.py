@@ -7,8 +7,11 @@ from __future__ import annotations
 import pytest
 
 from intergrax.agents.reference_harness import default_reference_harness
+from intergrax.applications._shared.application_composition_context import (
+    composition_for_factory_context,
+)
 from intergrax.applications._shared.catalog_runtime_bridge import (
-    apply_catalog_profiles_from_build_context,
+    apply_catalog_profiles_from_composition,
     apply_catalog_profiles_from_environment,
     apply_skill_profile_to_runtime_config,
     apply_tool_engine_settings_from_environment,
@@ -79,20 +82,23 @@ def test_apply_catalog_profiles_from_environment() -> None:
     assert list(config.skill_profile.enabled_bundles) == ["bundle.a"]
 
 
-def test_apply_catalog_profiles_from_build_context_overrides_environment() -> None:
+def test_apply_catalog_profiles_from_composition_overrides_environment() -> None:
     env_profile = ToolProfile(enabled=("tool.env",))
     wired_profile = ToolProfile(enabled=("tool.wired",))
     config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)
     apply_tool_profile_to_runtime_config(config, env_profile)
 
     settings = LabApplicationSettings(include_echo=True, include_mock_agents=False)
-    build_ctx = ApplicationBuildContext.for_manifest(
+    factory_context = ApplicationBuildContext.for_manifest(
         build_lab_manifest(settings),
         settings=settings,
+    )
+    composition = composition_for_factory_context(
+        factory_context,
         tool_profile=wired_profile,
         skill_profile=SkillProfile(enabled_bundles=("wired.bundle",)),
     )
-    apply_catalog_profiles_from_build_context(config, build_ctx)
+    apply_catalog_profiles_from_composition(config, composition)
 
     assert config.tool_profile is wired_profile
     assert config.skill_profile is not None
@@ -108,11 +114,12 @@ def test_materialize_runtime_config_includes_catalog_profiles() -> None:
         wiring.build_context,
         env,
         llm_adapter=FakeLLMAdapter(),
+        composition=wiring.composition,
     )
 
     assert config.tool_profile is not None
     assert config.skill_profile is not None
-    assert config.tool_wiring_context is wiring.build_context.tool_wiring_context
+    assert config.tool_wiring_context is wiring.composition.tool_wiring_context
 
 
 def test_apply_tool_engine_settings_from_environment() -> None:

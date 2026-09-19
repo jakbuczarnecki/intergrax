@@ -19,7 +19,7 @@ from intergrax.llm_adapters.routing import LLMRoutingProfile
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
-from intergrax.runtime.task.task import TaskContext
+from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from model_routing_qualifier.capabilities import CAPABILITIES
 from model_routing_qualifier.contract import build_agent_contract
 from model_routing_qualifier.diagnostics import model_routing_diagnostic_from_output
@@ -47,8 +47,8 @@ class ModelRoutingQualifierAgent(DiagnosticReflexAgent):
     def get_contract(self):
         return build_agent_contract()
 
-    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
-        capability = task_context.capability
+    def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
+        capability = routing_capability_from_envelope(task)
         supported = set(CAPABILITIES)
         if capability is None or capability in supported:
             return CapabilityMatchResult(

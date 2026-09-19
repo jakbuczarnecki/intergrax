@@ -12,6 +12,26 @@ from pathlib import Path
 import pytest
 
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+    reset_active_execution_identity,
+)
+from intergrax.memory.contracts.memory_observability import (
+    MemoryDiagnosticExecutionCorrelation,
+)
+from intergrax.memory.memory_observability_support import (
+    emit_control_plane_terminal,
+    emit_governance_diagnostic,
+    emit_reconciliation_terminal,
+)
 from intergrax.memory.contracts.memory_control import (
     MemoryControlGovernanceDenied,
     MemoryControlRememberRequest,
@@ -24,6 +44,10 @@ from intergrax.memory.contracts.memory_observability import (
     MemoryDiagnosticPhase,
     NoOpMemoryObservabilitySink,
     RecordingMemoryObservabilitySink,
+)
+from intergrax.memory.contracts.memory_lifecycle import (
+    MemoryReconciliationDisposition,
+    MemoryReconciliationOutcome,
 )
 from intergrax.memory.contracts.memory_security_governance import (
     MemoryGovernanceDecision,
@@ -281,6 +305,156 @@ def test_memory_domain_no_vendor_observability_imports() -> None:
                 if root in _VENDOR_PATTERNS:
                     violations.append(f"{path}:{node.lineno}:{node.module}")
     assert not violations
+
+
+def test_standalone_memory_events_have_no_execution_correlation() -> None:
+    recording = RecordingMemoryObservabilitySink()
+    emitter = MemoryDiagnosticEmitter(_sink=recording)
+    plane = build_default_memory_control_plane(
+        user_profile_manager=UserProfileManager(
+            store=InMemoryUserProfileStore(),
+            tenant_id=_TENANT,
+        ),
+        memory_diagnostic_emitter=emitter,
+    )
+
+    async def _run() -> None:
+        await plane.remember(
+            _identity(),
+            _scope(),
+            MemoryControlRememberRequest(content="standalone"),
+        )
+
+    import asyncio
+
+    asyncio.run(_run())
+    for event in recording.events:
+        assert event.task_id is None
+        assert event.run_id is None
+        assert event.attempt_id is None
+        assert event.execution_id is None
+
+
+def test_active_execution_identity_propagates_to_control_plane_terminal() -> None:
+    recording = RecordingMemoryObservabilitySink()
+    emitter = MemoryDiagnosticEmitter(_sink=recording)
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    token = bind_active_execution_identity(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    try:
+        plane = build_default_memory_control_plane(
+            user_profile_manager=UserProfileManager(
+                store=InMemoryUserProfileStore(),
+                tenant_id=_TENANT,
+            ),
+            memory_diagnostic_emitter=emitter,
+        )
+
+        async def _run() -> None:
+            await plane.remember(
+                _identity(),
+                _scope(),
+                MemoryControlRememberRequest(content="correlated"),
+            )
+
+        import asyncio
+
+        asyncio.run(_run())
+    finally:
+        reset_active_execution_identity(token)
+
+    success = [
+        e
+        for e in recording.events
+        if e.operation is MemoryDiagnosticOperation.REMEMBER
+        and e.outcome is MemoryDiagnosticOutcome.SUCCESS
+    ]
+    assert success
+    event = success[0]
+    assert event.task_id == task_id
+    assert event.run_id == run_id
+    assert event.attempt_id == attempt_id
+    assert event.execution_id == execution_id
+    assert event.event_id != execution_id
+
+
+def test_explicit_execution_correlation_preserved_without_remint() -> None:
+    recording = RecordingMemoryObservabilitySink()
+    emitter = MemoryDiagnosticEmitter(_sink=recording)
+    correlation = MemoryDiagnosticExecutionCorrelation(
+        task_id=TaskId("task_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"),
+        run_id=RunId("run_bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"),
+        attempt_id=AttemptId("attempt_cccccccccccccccccccccccccccccc"),
+        execution_id=ExecutionId("exec_dddddddddddddddddddddddddddddddd"),
+    )
+    emit_control_plane_terminal(
+        emitter,
+        identity=_identity(),
+        scope=_scope(),
+        operation=MemoryDiagnosticOperation.RECALL,
+        outcome=MemoryDiagnosticOutcome.NOT_FOUND,
+        execution_correlation=correlation,
+    )
+    assert len(recording.events) == 1
+    event = recording.events[0]
+    assert event.task_id == correlation.task_id
+    assert event.run_id == correlation.run_id
+    assert event.attempt_id == correlation.attempt_id
+    assert event.execution_id == correlation.execution_id
+
+
+def test_governance_and_reconciliation_emit_execution_correlation() -> None:
+    recording = RecordingMemoryObservabilitySink()
+    emitter = MemoryDiagnosticEmitter(_sink=recording)
+    correlation = MemoryDiagnosticExecutionCorrelation(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    request = MemoryGovernanceEvaluationRequest(
+        context=MemorySecurityContext(
+            identity=_identity(),
+            scope=_scope(),
+            operation=MemoryGovernanceOperation.REMEMBER,
+        ),
+    )
+    decision = MemoryGovernanceDecision(
+        outcome=MemoryGovernanceOutcome.ALLOW,
+        reason_code=MemoryGovernanceReasonCode.ALLOWED,
+        policy_id="test.allow",
+        policy_version="1",
+        operation=MemoryGovernanceOperation.REMEMBER,
+    )
+    emit_governance_diagnostic(
+        emitter,
+        request,
+        decision,
+        execution_correlation=correlation,
+    )
+    emit_reconciliation_terminal(
+        emitter,
+        tenant_id=_TENANT,
+        user_id=_USER,
+        outcome=MemoryReconciliationOutcome(
+            user_id=_USER,
+            disposition=MemoryReconciliationDisposition.CONSISTENT,
+            projection_evidence=(),
+        ),
+        execution_correlation=correlation,
+    )
+    for event in recording.events:
+        assert event.task_id == correlation.task_id
+        assert event.run_id == correlation.run_id
+        assert event.attempt_id == correlation.attempt_id
+        assert event.execution_id == correlation.execution_id
 
 
 def test_observability_contracts_no_untyped_payload_fields() -> None:

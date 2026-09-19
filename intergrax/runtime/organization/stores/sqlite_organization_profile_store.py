@@ -36,8 +36,19 @@ class SQLiteOrganizationProfileStore(OrganizationProfileStore):
 
     def __init__(self, db_path: str) -> None:
         self._db_path: str = db_path
+        self._closed = False
         self._connection: sqlite3.Connection = self._create_connection(db_path)
         self._initialize_schema()
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._connection.close()
+        self._closed = True
+
+    def _ensure_open(self) -> None:
+        if self._closed:
+            raise RuntimeError("SQLiteOrganizationProfileStore is closed")
 
     # ------------------------------------------------------------------
     # Infrastructure
@@ -97,6 +108,7 @@ class SQLiteOrganizationProfileStore(OrganizationProfileStore):
     # ------------------------------------------------------------------
 
     async def get_profile(self, organization_id: str) -> OrganizationProfile:
+        self._ensure_open()
         cursor = self._connection.cursor()
 
         cursor.execute(
@@ -202,6 +214,7 @@ class SQLiteOrganizationProfileStore(OrganizationProfileStore):
         return profile
 
     async def save_profile(self, profile: OrganizationProfile) -> None:
+        self._ensure_open()
         cursor = self._connection.cursor()
 
         profile.last_updated_utc = SystemTimeProvider.utc_now()
@@ -284,6 +297,7 @@ class SQLiteOrganizationProfileStore(OrganizationProfileStore):
         self._connection.commit()
 
     async def delete_profile(self, organization_id: str) -> None:
+        self._ensure_open()
         cursor = self._connection.cursor()
 
         cursor.execute(

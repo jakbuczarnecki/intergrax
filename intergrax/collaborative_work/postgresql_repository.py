@@ -394,6 +394,44 @@ class PostgreSQLCollaborativeWorkStore:
                         published_at,
                         work_artifact_version_id
                     );
+
+                CREATE TABLE IF NOT EXISTS collaborative_activity_workspace_sequence (
+                    tenant_id TEXT NOT NULL,
+                    workspace_id TEXT NOT NULL,
+                    next_append_position INTEGER NOT NULL,
+                    PRIMARY KEY (tenant_id, workspace_id)
+                );
+
+                CREATE TABLE IF NOT EXISTS collaborative_activities (
+                    tenant_id TEXT NOT NULL,
+                    workspace_id TEXT NOT NULL,
+                    activity_id TEXT NOT NULL,
+                    source_qualified_id TEXT NOT NULL,
+                    source_stable_id TEXT NOT NULL,
+                    activity_type_qualified_id TEXT NOT NULL,
+                    append_position INTEGER NOT NULL,
+                    recorded_at TEXT NOT NULL,
+                    record_json TEXT NOT NULL,
+                    schema_version TEXT NOT NULL,
+                    PRIMARY KEY (activity_id),
+                    UNIQUE (
+                        tenant_id,
+                        workspace_id,
+                        source_qualified_id,
+                        source_stable_id,
+                        activity_type_qualified_id
+                    ),
+                    UNIQUE (tenant_id, workspace_id, append_position)
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_collaborative_activities_lookup
+                    ON collaborative_activities (
+                        tenant_id,
+                        workspace_id,
+                        source_qualified_id,
+                        source_stable_id,
+                        activity_type_qualified_id
+                    );
                 """
             )
             self._schema_ready = True

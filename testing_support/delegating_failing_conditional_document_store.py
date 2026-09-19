@@ -12,6 +12,10 @@ from intergrax.integrations.contracts.document_store import (
     DocumentQueryPageV1,
     DocumentRecord,
 )
+from intergrax.integrations.contracts.partition_atomic_document_store import (
+    PartitionAtomicBatch,
+    PartitionAtomicBatchResult,
+)
 
 
 class ControlledDocumentStoreWriteFailure(RuntimeError):
@@ -93,6 +97,13 @@ class DelegatingFailingConditionalDocumentStore:
             expected=expected,
             replacement=replacement,
         )
+
+    def execute_partition_atomic_batch(
+        self,
+        batch: PartitionAtomicBatch,
+    ) -> PartitionAtomicBatchResult:
+        self._maybe_fail_write()
+        return self._delegate.execute_partition_atomic_batch(batch)
 
     def delete_if_match(self, *, expected: DocumentRecord) -> bool:
         return self._delegate.delete_if_match(expected=expected)

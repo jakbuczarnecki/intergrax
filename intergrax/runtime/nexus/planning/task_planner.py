@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.orchestration_enums import MultiAgentOrder
 from intergrax.contracts.delegation import DelegationSpec
+from intergrax.contracts.task_envelope import task_envelope_for_capability_routing
 from intergrax.runtime.task.task import TaskContext
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
@@ -166,7 +167,7 @@ class TaskPlanner:
         if self._multi_agent_order is MultiAgentOrder.STABLE_ALPHA:
             return sorted(agents, key=lambda agent: agent.get_contract().id)
         if self._multi_agent_order is MultiAgentOrder.PRIORITY:
-            context = TaskContext(capability=capability) if capability else TaskContext()
+            context = task_envelope_for_capability_routing(capability=capability) if capability else task_envelope_for_capability_routing()
             return sorted(
                 agents,
                 key=lambda agent: agent.can_handle(context).score,

@@ -90,6 +90,14 @@ from intergrax.applications._shared.harness_control_plane_governance_wiring impo
     HarnessControlPlaneGovernance,
     build_harness_control_plane_governance,
 )
+from intergrax.collaborative_work.persistence import CollaborativeWorkMaterializedRepositories
+from intergrax.applications._shared.harness_meaningful_side_effect_authorization_wiring import (
+    resolve_harness_host_meaningful_side_effect_authorization_wiring,
+)
+from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
+from intergrax.contracts.meaningful_side_effect_authorization import (
+    MeaningfulSideEffectAuthorizationPort,
+)
 from intergrax.applications._shared.harness_registry_authority import (
     RegistryAssemblyMode,
     resolve_harness_host_registry,
@@ -149,6 +157,7 @@ from intergrax.applications.contracts.profile_resolution.store import (
 )
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
@@ -203,6 +212,9 @@ class HarnessHostRuntime:
     effective_profile_pinning_store: EffectiveProfileExecutionPinningStore | None = None
     effective_profile_active_store: ActiveEffectiveProfileRevisionStore | None = None
     skill_pinning_store: SkillExecutionPinningStore | None = None
+    _owned_collaborative_work_persistence: CollaborativeWorkMaterializedRepositories | None = (
+        None
+    )
 
     def close(self) -> None:
         """Stop event bus delivery and release bounded sink workers (W5-B2)."""
@@ -240,6 +252,11 @@ def build_harness_host_runtime(
     llm_adapter: LLMAdapter | None = None,
     application_tool_registry: ToolRegistry | None = None,
     application_skill_registry: SkillRegistry | None = None,
+    meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort
+    | None = None,
+    orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None,
+    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+    collaborative_work_integration_profile: IntegrationProfile | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -356,6 +373,18 @@ def build_harness_host_runtime(
     )
     task_memory = wire_task_memory_from_profile(effective_environment)
     resolved_tenant_id = (tenant_id or "").strip()
+    meaningful_side_effect_wiring = (
+        resolve_harness_host_meaningful_side_effect_authorization_wiring(
+            effective_environment,
+            explicit=meaningful_side_effect_authorization,
+            collaborative_work_repositories=collaborative_work_repositories,
+            collaborative_work_integration_profile=collaborative_work_integration_profile,
+            decision_requirement_policy=orchestration_decision_requirement_policy,
+        )
+    )
+    resolved_meaningful_side_effect_authorization = (
+        meaningful_side_effect_wiring.authorization_port
+    )
     declarative_tool_invoker = build_declarative_invoker_for_application_host(
         env_wiring.tool_wiring,
         effective_environment,
@@ -363,6 +392,7 @@ def build_harness_host_runtime(
         agent_registry=resolved_registry,
         tenant_id=resolved_tenant_id,
         idempotency_store=reliability_wiring.idempotency_store,
+        meaningful_side_effect_authorization=resolved_meaningful_side_effect_authorization,
     )
     resolved_agent_checkpoint_store = resolve_host_agent_checkpoint_store(
         agent_checkpoint_store=agent_checkpoint_store,
@@ -509,6 +539,9 @@ def build_harness_host_runtime(
         effective_profile_pinning_store=profile_persistence.pinning_store,
         effective_profile_active_store=profile_persistence.active_store,
         skill_pinning_store=env_wiring.build_context.skill_pinning_store,
+        _owned_collaborative_work_persistence=(
+            meaningful_side_effect_wiring.owned_collaborative_work_persistence
+        ),
     )
     return host_runtime
 
@@ -527,3 +560,6 @@ def close_harness_host_runtime(runtime: HarnessHostRuntime) -> None:
         runtime.env_wiring.event_delivery,
         event_bus=bus,
     )
+    owned_persistence = runtime._owned_collaborative_work_persistence
+    if owned_persistence is not None:
+        owned_persistence.close()

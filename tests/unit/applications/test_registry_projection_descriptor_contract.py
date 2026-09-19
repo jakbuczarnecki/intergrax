@@ -19,6 +19,7 @@ from intergrax.applications._shared.registry_projection_descriptor import (
     SCHEMA_RUNTIME_REGISTRY_PROJECTION_DESCRIPTOR_V1,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.skills.registry.profile import SkillProfile
@@ -46,12 +47,16 @@ def _descriptor() -> RuntimeRegistryProjectionDescriptor:
     manifest = _manifest()
     skill_profile = SkillProfile(enabled=["skill.alpha"])
     tool_profile = ToolProfile(enabled=["tool.beta"])
+    environment = ApplicationEnvironmentProfile.lab_defaults(profile_id=_ENV).model_copy(
+        update={
+            "skill_profile": skill_profile,
+            "tool_profile": tool_profile,
+        },
+    )
     build_context = ApplicationBuildContext.for_manifest(
         manifest,
-        skill_profile=skill_profile,
-        tool_profile=tool_profile,
         strict_harness=True,
-        environment=None,
+        environment=environment,
     )
     snapshot = BuildContextDescriptorSnapshot.from_build_context(build_context)
     snapshot = snapshot.model_copy(

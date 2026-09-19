@@ -116,3 +116,13 @@ def test_mp6a_no_forbidden_ownership_drift_in_mp6_section() -> None:
         assert pattern.search(mp6_block) is None, (
             f"forbidden drift in MP-6 block: {pattern.pattern}"
         )
+
+
+def test_mp6e_closure_current_status_points_to_mp6f_next() -> None:
+    for name, path in _STATUS_DOCS.items():
+        text = _read(path)
+        assert "**MP-6E — NEXT**" not in text, f"{name}: stale active MP-6E NEXT"
+        assert "MP-6F" in text, f"{name}: missing MP-6F roadmap"
+    adr = _read(_ADR_MP007)
+    assert "MP-6E - NEXT" not in adr, "ADR still marks MP-6E NEXT"
+    assert "MP-6F" in adr, "ADR missing MP-6F roadmap"

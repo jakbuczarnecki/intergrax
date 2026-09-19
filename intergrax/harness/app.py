@@ -12,6 +12,7 @@ from fastapi import FastAPI
 from intergrax.agents.agent_contract import Agent
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.applications.contracts.graph_builder import AgentGraph
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.harness.application_host import ApplicationHost
@@ -157,6 +158,7 @@ class HarnessApplication:
         use_in_memory_trace: bool = True,
         trace_db_path: Path | None = None,
         runtime_events_db_path: Path | None = None,
+        orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None,
     ) -> HarnessHostRuntime:
         from intergrax.applications._shared.harness_host_runtime import (
             build_harness_host_runtime,
@@ -172,6 +174,7 @@ class HarnessApplication:
             runtime_events_db_path=runtime_events_db_path,
             use_in_memory_trace=use_in_memory_trace,
             application_host=self._host,
+            orchestration_decision_requirement_policy=orchestration_decision_requirement_policy,
         )
         return self._runtime
 

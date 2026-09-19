@@ -4,7 +4,7 @@
 **Architecture owner:** [`docs/project/architecture/MEMORY.md`](../../architecture/MEMORY.md)
 **Platform catalog:** [`EXTENSION_AUTHOR_GUIDE.md`](EXTENSION_AUTHOR_GUIDE.md) · [`PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md)
 
-This guide documents **three separate public memory plugin surfaces**. There is no single `MemoryPlugin` protocol - do not collapse factory contracts.
+This guide documents **six public memory store plugin factory surfaces** (five tenant-scoped store kinds plus session turn index). There is no single `MemoryPlugin` protocol - do not collapse factory contracts or creation-context types.
 
 ---
 
@@ -29,7 +29,7 @@ This guide documents **three separate public memory plugin surfaces**. There is 
 | D15 | Production checklist | COMPLETE | §15 |
 | D16 | Troubleshooting | COMPLETE | §16 |
 
-**Overall:** **COMPLETE** - all three surfaces have shipped Tier-3 resolution paths. User-profile and session-storage materialize via `MemoryProfile` plugin selection + typed resolver; session turn index via shared classifier. Bootstrap counting alone does not activate stores (§9).
+**Overall:** **COMPLETE** (author guide) — **six public** Memory store plugin factory contracts share one EP group and typed classification. **Host activation is surface-specific:** user-profile and session-storage overlay via `MemoryProfile` plugin ids in `resolve_memory_platform_wiring`; session turn index via `enable_session_vector_index` and `build_session_turn_index_store` (classified EP or explicit candidates, not profile plugin ids); entity temporal via feature-gated `entity_graph_wiring` in baseline memory wiring; procedural and long-horizon via dedicated resolver wiring when a composition root calls those modules (`enable_*` flags + optional plugin ids). Bootstrap counting alone does not activate stores (§9).
 
 ---
 
@@ -39,11 +39,14 @@ Memory plugins swap **store backends** behind Tier-1 facades (`SessionManager`, 
 
 | Surface | Protocol | Factory method | Replaces |
 |---------|----------|----------------|----------|
-| User profile store | `UserProfileStorePlugin` | `create_user_profile_store(**kwargs)` | `InMemoryUserProfileStore`, SQLite/Mongo bundles |
-| Session storage | `SessionStoragePlugin` | `create_session_storage(**kwargs)` | `InMemorySessionStorage`, SQLite bundle |
-| Session turn vector index | `SessionTurnIndexStorePlugin` | `create_session_turn_index(**kwargs)` | `VectorSessionTurnIndexStore` over host vector stack |
+| User profile store | `UserProfileStorePlugin` | `create_user_profile_store(context: UserProfileStoreCreationContext)` | `InMemoryUserProfileStore`, SQLite/Mongo bundles |
+| Session storage | `SessionStoragePlugin` | `create_session_storage(context: SessionStorageCreationContext)` | `InMemorySessionStorage`, SQLite bundle |
+| Entity temporal memory | `EntityTemporalMemoryStorePlugin` | `create_entity_temporal_memory_store(context: EntityTemporalMemoryStoreCreationContext)` | `InMemoryEntityTemporalMemoryStore` (reference) |
+| Procedural memory | `ProceduralMemoryStorePlugin` | `create_procedural_memory_store(context: ProceduralMemoryStoreCreationContext)` | `InMemoryProceduralMemoryStore` (reference) |
+| Long-horizon memory | `LongHorizonMemoryStorePlugin` | `create_long_horizon_memory_store(context: LongHorizonMemoryStoreCreationContext)` | `InMemoryLongHorizonMemoryStore` (reference) |
+| Session turn vector index | `SessionTurnIndexStorePlugin` | `create_session_turn_index(context: SessionTurnIndexStoreCreationContext)` | `VectorSessionTurnIndexStore` over host vector ports |
 
-Entry point group (all three share one group; dispatch is by factory method shape):
+All Memory store plugin factory surfaces share one entry-point group; dispatch is by factory method shape:
 
 ```text
 intergrax.memory_stores
@@ -63,7 +66,22 @@ intergrax.memory_stores
 
 ## 2. Public contracts
 
-Import from `intergrax.memory.contracts`:
+Import from `intergrax.memory.contracts` (plugin protocols) and `intergrax.memory.contracts.memory_store_creation_context` (tenant-scoped creation contexts).
+
+### Typed creation context (tenant-scoped stores)
+
+`UserProfileStoreCreationContext`, `SessionStorageCreationContext`, `EntityTemporalMemoryStoreCreationContext`, `ProceduralMemoryStoreCreationContext`, and `LongHorizonMemoryStoreCreationContext` are **semantic type aliases** of one frozen value object:
+
+```python
+# intergrax/memory/contracts/memory_store_creation_context.py
+@dataclass(frozen=True, slots=True)
+class TenantScopedMemoryStoreCreationContext:
+    tenant_id: str | None
+```
+
+Each public plugin surface uses a **semantically named** creation-context type in its factory signature even though the underlying fields are shared today.
+
+Host materialization resolves platform configuration into `MemoryStoreMaterializationContext` (internal resolver DTO: `tenant_id`, `integration_profile`, …). The resolver projects that into `TenantScopedMemoryStoreCreationContext` for plugin factories. Plugins do **not** receive the full `IntegrationProfile` or an open `**kwargs` bag at the public factory boundary.
 
 ### UserProfileStorePlugin
 
@@ -75,7 +93,10 @@ class UserProfileStorePlugin(Protocol):
     def plugin_id(cls) -> str: ...
 
     @classmethod
-    def create_user_profile_store(cls, **kwargs: Any) -> UserProfileStore: ...
+    def create_user_profile_store(
+        cls,
+        context: UserProfileStoreCreationContext,
+    ) -> UserProfileStore: ...
 ```
 
 ### SessionStoragePlugin
@@ -87,18 +108,48 @@ class SessionStoragePlugin(Protocol):
     def plugin_id(cls) -> str: ...
 
     @classmethod
-    def create_session_storage(cls, **kwargs: Any) -> SessionStorage: ...
+    def create_session_storage(
+        cls,
+        context: SessionStorageCreationContext,
+    ) -> SessionStorage: ...
+```
+
+### EntityTemporalMemoryStorePlugin · ProceduralMemoryStorePlugin · LongHorizonMemoryStorePlugin
+
+```python
+@runtime_checkable
+class EntityTemporalMemoryStorePlugin(Protocol):
+    @classmethod
+    def plugin_id(cls) -> str: ...
+
+    @classmethod
+    def create_entity_temporal_memory_store(
+        cls,
+        context: EntityTemporalMemoryStoreCreationContext,
+    ) -> EntityTemporalMemoryStore: ...
+
+# ProceduralMemoryStorePlugin.create_procedural_memory_store(context: ProceduralMemoryStoreCreationContext)
+# LongHorizonMemoryStorePlugin.create_long_horizon_memory_store(context: LongHorizonMemoryStoreCreationContext)
 ```
 
 ### SessionTurnIndexStorePlugin
 
 ```python
 # intergrax/memory/contracts/session_turn_index.py
+@dataclass(frozen=True, slots=True)
+class SessionTurnIndexStoreCreationContext:
+    tenant_id: str
+    index_roles: tuple[str, ...] = ("user", "assistant")
+    vector_index_namespace: str | None = None
+    workspace_id: str | None = None
+    embedding_manager: SessionTurnIndexEmbeddingPort | None = None
+    vectorstore_manager: SessionTurnIndexVectorstorePort | None = None
+
 @runtime_checkable
 class SessionTurnIndexStore(Protocol):
     async def upsert_turn(...) -> None: ...
     async def tombstone_turn(self, entry_id: str) -> None: ...
-    async def search_turns(...) -> list[dict[str, Any]]: ...
+    async def search_turns(...) -> list[SessionTurnIndexHit]: ...
 
 @runtime_checkable
 class SessionTurnIndexStorePlugin(Protocol):
@@ -106,10 +157,13 @@ class SessionTurnIndexStorePlugin(Protocol):
     def plugin_id(cls) -> str: ...
 
     @classmethod
-    def create_session_turn_index(cls, **kwargs: Any) -> SessionTurnIndexStore: ...
+    def create_session_turn_index(
+        cls,
+        context: SessionTurnIndexStoreCreationContext,
+    ) -> SessionTurnIndexStore: ...
 ```
 
-`SessionTurnIndexStore` is an index **over** `SessionStorage`, not a replacement for session persistence.
+`SessionTurnIndexStore` is an index **over** `SessionStorage`, not a replacement for session persistence. Search hits are typed `SessionTurnIndexHit` (not `list[dict[str, Any]]`).
 
 There is **no** `register_memory_store_plugin()` helper.
 
@@ -122,8 +176,9 @@ There is **no** `register_memory_store_plugin()` helper.
 Reference: `tests/fixtures/plugin_packages/memory_store_plugin/memory_store_plugin/plugin.py` (**test fixture - packaging reference, not production sample**)
 
 ```python
-from typing import Any
-
+from intergrax.memory.contracts.memory_store_creation_context import (
+    UserProfileStoreCreationContext,
+)
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.user_profile_store import UserProfileStore
 
@@ -134,8 +189,11 @@ class ExternalInMemoryUserProfileStorePlugin:
         return "external.in_memory_user_profile"
 
     @classmethod
-    def create_user_profile_store(cls, **kwargs: Any) -> UserProfileStore:
-        _ = kwargs
+    def create_user_profile_store(
+        cls,
+        context: UserProfileStoreCreationContext,
+    ) -> UserProfileStore:
+        _ = context.tenant_id
         return InMemoryUserProfileStore()
 ```
 
@@ -144,8 +202,7 @@ class ExternalInMemoryUserProfileStorePlugin:
 Reference: `tests/fixtures/plugin_packages/session_turn_index_plugin/session_turn_index_plugin/plugin.py` (**test fixture**)
 
 ```python
-from typing import Any
-
+from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStoreCreationContext
 from intergrax.memory.session_turn_index_service import VectorSessionTurnIndexStore
 
 
@@ -155,17 +212,23 @@ class ExternalSessionTurnIndexStorePlugin:
         return "external.session_turn_index"
 
     @classmethod
-    def create_session_turn_index(cls, **kwargs: Any) -> VectorSessionTurnIndexStore:
+    def create_session_turn_index(
+        cls,
+        context: SessionTurnIndexStoreCreationContext,
+    ) -> VectorSessionTurnIndexStore:
+        if context.embedding_manager is None or context.vectorstore_manager is None:
+            raise ValueError("embedding_manager and vectorstore_manager are required")
         return VectorSessionTurnIndexStore(
-            embedding_manager=kwargs["embedding_manager"],
-            vectorstore_manager=kwargs["vectorstore_manager"],
-            index_roles=kwargs.get("index_roles", ("user", "assistant")),
-            tenant_id=str(kwargs.get("tenant_id") or "default"),
-            vector_index_namespace=kwargs.get("vector_index_namespace"),
+            embedding_port=context.embedding_manager,
+            vectorstore_port=context.vectorstore_manager,
+            index_roles=context.index_roles,
+            tenant_id=context.tenant_id,
+            vector_index_namespace=context.vector_index_namespace,
+            workspace_id=context.workspace_id,
         )
 ```
 
-Host passes `embedding_manager`, `vectorstore_manager`, `tenant_id`, and optional `vector_index_namespace` / `index_roles` via `**kwargs`.
+Host wiring builds `SessionTurnIndexStoreCreationContext` (tenant scope, vector ports, index roles, namespace) before calling the plugin factory.
 
 ---
 
@@ -190,7 +253,7 @@ acme_user_profile = "my_intergrax_memory_stores.user_profile:ExternalInMemoryUse
 acme_session_turn = "my_intergrax_memory_stores.session_turn:ExternalSessionTurnIndexStorePlugin"
 ```
 
-One package may expose multiple EP targets. Dispatch at bootstrap counts plugins by which factory method exists (`create_user_profile_store`, `create_session_storage`, or `create_session_turn_index`).
+One package may expose multiple EP targets. Dispatch at bootstrap counts plugins by which factory method exists (`create_user_profile_store`, `create_session_storage`, specialized `create_*_memory_store`, or `create_session_turn_index`).
 
 Discovery is **opt-in** (`discover_entry_points=True` or `INTERGRAX_DISCOVER_PLUGINS=true`).
 
@@ -234,9 +297,9 @@ Vector memory flags require a resolvable RAG stack with vector backends (`assert
 
 ## 7. Secrets and credentials
 
-Memory plugins should consume **host-resolved dependencies** passed as factory `**kwargs` or constructor arguments. Do not encourage arbitrary `os.environ` lookup in plugin factories unless your domain contract explicitly documents that pattern.
+Memory plugins should consume **host-resolved dependencies** via typed creation contexts (tenant-scoped fields today) or constructor arguments on the returned store. Do not encourage arbitrary `os.environ` lookup in plugin factories unless your domain contract explicitly documents that pattern.
 
-Integration credentials belong in `IntegrationProfile` and provider bundles - the memory plugin receives constructed clients/managers from the host.
+Integration credentials belong in `IntegrationProfile` and provider bundles - the host resolver uses them when materializing baseline stores. External plugins receive bounded creation contexts at the public factory boundary, not the full integration profile.
 
 ---
 
@@ -245,8 +308,8 @@ Integration credentials belong in `IntegrationProfile` and provider bundles - th
 | Dependency | Who provides |
 |------------|--------------|
 | `UserProfileStore` / `SessionStorage` instances | Host wiring or custom `MemoryPlatformWiring` |
-| `embedding_manager`, `vectorstore_manager` | Host RAG stack (`RagStack`) for vector indexes |
-| `tenant_id` | Runtime tenant scope from host |
+| `embedding_manager`, `vectorstore_manager` (session turn index ports) | Host RAG stack (`RagStack`) packaged into `SessionTurnIndexStoreCreationContext` |
+| `tenant_id` | `TenantScopedMemoryStoreCreationContext.tenant_id` or `SessionTurnIndexStoreCreationContext.tenant_id` from host materialization |
 | `rag_stack` | `resolve_rag_stack_for_memory_wiring` / `create_default_rag_stack` |
 
 Plugins return store instances; managers (`UserProfileManager`, `SessionManager`) remain Tier-1.
@@ -255,22 +318,26 @@ Plugins return store instances; managers (`UserProfileManager`, `SessionManager`
 
 ## 9. Registration and discovery (critical)
 
+**Unified host policy (MEM-FINAL-ZERO-GAP-1, current architecture):** one host discovery policy feeds `MemoryStorePluginCatalog` for **all** Memory plugin surfaces; the canonical EP load report is exposed on `MemoryPlatformWiring.memory_store_plugin_load_report`, enforced under STRICT bootstrap, and copied to `ApplicationPlatformPluginEvidence.memory_report`. Do not document pre–ZERO-GAP-1 fragmented per-surface discovery as the current model.
+
 Memory store plugins follow classified discovery and profile-driven materialization (D8):
 
 ```mermaid
 flowchart TB
-  EP[memory EP] --> CL[Classification]
+  EP[memory EP] --> CL[Classification - six factory contracts]
   CL --> UP[UserProfile]
   CL --> SS[SessionStorage]
   CL --> STI[SessionTurnIndex]
-  UP --> MP[MemoryProfile]
+  UP --> MP[MemoryProfile plugin ids]
   SS --> MP
-  STI --> MP
   MP --> RW[resolve_memory_platform_wiring]
-  RW --> MS[Store materialization]
+  RW --> MS[UP/SS materialization]
+  STI --> STIW[build_session_turn_index_store]
+  STIW --> SM[SessionManager]
+  MS --> SM
 ```
 
-*Interpretation:* one EP group, three factory shapes; host profile ids select which plugin materializes each store kind.
+*Interpretation:* one EP group and **six** public factory contracts, all classified the same way; **host activation is not uniform.** `MemoryProfile` plugin ids select user-profile and session-storage overlays in `resolve_memory_platform_wiring`. Session turn index uses dedicated vector wiring (`enable_session_vector_index`, first classified EP match or builtin default) — not profile plugin ids. Entity temporal, procedural, and long-horizon stores use the shared resolver materializers from separate feature-gated wiring modules when the host composition root invokes them (see §11).
 
 ```text
 plugin contract (Protocol + plugin_id)
@@ -279,9 +346,9 @@ entry point (`intergrax.memory_stores`) or explicit plugin class
     ↓
 classified discovery (`discover_classified_memory_store_plugins`)
     ↓
-host profile / wiring (`MemoryProfile` plugin ids, `resolve_memory_platform_wiring`)
+host profile / wiring (surface-specific: `MemoryProfile` ids, feature flags, composition modules)
     ↓
-materialization / activation (`materialize_user_profile_store`, `materialize_session_storage`, `build_session_turn_index_store`)
+materialization / activation (`materialize_*` resolver helpers per kind, or `build_session_turn_index_store` for session turn index)
 ```
 
 ### Discovery semantics
@@ -298,7 +365,7 @@ materialization / activation (`materialize_user_profile_store`, `materialize_ses
 - Does **not** select which plugin backs a running host
 - Does **not** materialize stores - resolver materialization is separate (`resolve_memory_platform_wiring`)
 
-**Discovery alone does not activate a memory provider.** Use `MemoryProfile` plugin selection or explicit `MemoryPlatformWiring` for materialization.
+**Discovery alone does not activate a memory store surface.** Each surface is gated by its `MemoryProfile` flag and/or plugin id; user/session overlays use `resolve_memory_platform_wiring`, while entity/procedural/long-horizon stores are composed in baseline `MemoryPlatformWiring.specialized_memory` (capabilities require composition-owned canonical authorities).
 
 ---
 
@@ -319,7 +386,7 @@ MemoryProfile.enable_session_vector_index=True
   → resolve_rag_stack_for_memory_wiring(env, tenant_id=…)
   → build_session_turn_index_store(env, tenant_id=…, rag_stack=…)
       → discover_session_turn_index_plugin_types()  # EP scan
-      → plugin.create_session_turn_index(**kwargs)  # first match
+      → plugin.create_session_turn_index(SessionTurnIndexStoreCreationContext)  # first match
       → else VectorSessionTurnIndexStore (default)
   → SessionManager(session_turn_index_store=…)
 ```
@@ -346,8 +413,9 @@ MemoryProfile.user_profile_store_plugin_id / session_storage_plugin_id (optional
         OR explicit_memory_plugins candidates (local delivery)
       → materialize_user_profile_store(plugin_id, ctx, catalog=…)
         / materialize_session_storage(plugin_id, ctx, catalog=…)
-      → MemoryStoreMaterializationContext (tenant_id, integration_profile, …)
-  → IntegrationProfile baseline (SQLite / MongoDB / in-memory) for unselected slots
+      → MemoryStoreMaterializationContext (internal: tenant_id, integration_profile, …)
+      → TenantScopedMemoryStoreCreationContext passed to plugin factories
+  → IntegrationProfile baseline (SQLite / MongoDB / in-memory) for unselected slots (host resolver — not passed to plugin factories)
   → MemoryPlatformWiring(session_storage, user_profile_store, memory_store_plugin_load_report, …)
   → build_session_manager_from_environment(env, memory_wiring=wiring, tenant_id=…, rag_stack=…)
 ```
@@ -374,7 +442,45 @@ wiring = resolve_memory_platform_wiring(
 
 Configuration failures (unknown plugin id, wrong kind, duplicate id, materialization error, invalid factory return) are **fail-closed** (`MemoryStorePluginResolutionError`).
 
+### Entity temporal, procedural, and long-horizon (feature-gated resolver paths)
+
+All three specialized store kinds are **discovered and classified** on the shared EP group and materialized through typed resolver helpers when a host invokes the matching wiring module:
+
+```text
+Entity temporal:
+  MemoryProfile.enable_entity_graph_memory=True
+  MemoryProfile.entity_temporal_memory_store_plugin_id (optional; default in-memory reference id)
+  → resolve_entity_temporal_memory_store / capability (entity_graph_wiring)
+  → materialize_entity_temporal_memory_store
+  → wired into baseline MemoryPlatformWiring (UserProfileManager path when enabled)
+
+Procedural / long-horizon:
+  MemoryProfile.enable_procedural_memory / enable_long_horizon_memory
+  optional procedural_memory_store_plugin_id / long_horizon_memory_store_plugin_id
+  → resolve_memory_platform_wiring → SpecializedMemoryCapabilities (stores)
+  → materialize_procedural_memory_store / materialize_long_horizon_memory_store
+  → governed capabilities when composition supplies CanonicalMemoryGovernanceSourceAuthority
+     (and CanonicalMemorySourceAuthority for long-horizon) via resolve_memory_platform_wiring
+  → wire_application_environment exposes stores on ApplicationEnvironmentWiring.specialized_memory
+```
+
+Registering EP targets alone does not activate these stores; feature flags and platform composition are required. Default in-memory providers are **NON-DURABLE REFERENCE** only (see qualification matrix).
+
 **Historical baseline (ENTERPRISE-1):** user/session EPs were counted only; no Tier-3 resolver. Closed by ENTERPRISE-5.
+
+**Historical baseline (pre MEM-HARDEN-FINAL-1):** public store factories accepted `**kwargs`. **Current contract:** typed creation contexts only (MEM-HARDEN-FINAL-1).
+
+### Observability and execution correlation
+
+Memory emits vendor-neutral `MemoryDiagnosticEvent` records via `MemoryDiagnosticEmitter` into a pluggable `MemoryObservabilitySink` (not OpenTelemetry/Datadog-specific).
+
+Canonical platform execution identity (`TaskId`, `RunId`, `AttemptId`, `ExecutionId` from `intergrax.contracts.execution_identity`) may be **projected** onto diagnostic events when Memory runs inside an execution flow. Memory **does not mint, own, or mutate** execution identity.
+
+- `MemoryDiagnosticEvent.event_id` identifies the diagnostic event (distinct from `execution_id`).
+- Standalone Memory (outside execution flow): `task_id`, `run_id`, `attempt_id`, and `execution_id` remain `None` — no synthetic identifiers.
+- **Memory W3C trace propagation:** **NOT INTEGRATED** (`traceparent` is not part of the Memory diagnostic contract). Platform/runtime tracing may carry W3C headers separately; that boundary is intentional.
+
+Sink failure does not change Memory business outcomes (`OBSERVABILITY = NOT AUTHORITY`).
 
 ---
 
@@ -431,7 +537,7 @@ wiring = resolve_memory_platform_wiring(
 
 - [ ] Correct protocol for your surface (do not mix factory method names)
 - [ ] Stable `plugin_id` per class
-- [ ] For episodic index: handle `embedding_manager`, `vectorstore_manager`, `tenant_id` kwargs
+- [ ] For episodic index: read `SessionTurnIndexStoreCreationContext` (`embedding_manager`, `vectorstore_manager`, `tenant_id`, …)
 - [ ] Do not assume entry-point discovery alone activates your store - use profile `plugin_id` or explicit wiring
 - [ ] For user/session stores: set `user_profile_store_plugin_id` / `session_storage_plugin_id` or pass explicit plugin candidates
 - [ ] Tombstone semantics for vector indexes when primary store deletes entries

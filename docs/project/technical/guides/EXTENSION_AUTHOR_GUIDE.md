@@ -173,7 +173,7 @@ All canonical setuptools entry-point surfaces (architecture §20.1). One row per
 | Tool | New LLM-invokable operation | `ToolPlugin` | `intergrax.tools` | `register_tool_plugin()` + scaffold `extensions/` | `ToolWiringContext` | [§3](#3-external-tool-plugin) · [§16](#16-dual-mode-developer-quickstarts-platform-plugin-8) · [`TOOLS.md`](../../architecture/TOOLS.md) |
 | Skill | Reusable agent capability bundle | `SkillPlugin` | `intergrax.skills` | `register_skill_plugin()` | `SkillProfile` | [§4](#4-external-skill-plugin) · [§16.6–§16.7](#166-external-skill-package-quickstart) · [`SKILLS.md`](../../architecture/SKILLS.md) |
 | Context | Custom context / prompt material | `ContextPlugin` | `intergrax.context` | `register_context_plugin()` - **no scaffold hook yet** | `ContextProfile` | [`CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](CONTEXT_PLUGIN_AUTHOR_GUIDE.md) · multi-capability example: [`intergrax_reference_enterprise_plugin`](../../../../examples/platform_plugins/intergrax_reference_enterprise_plugin/) |
-| Memory store | Swap profile / session / episodic storage | `UserProfileStorePlugin` / `SessionStoragePlugin` / `SessionTurnIndexStorePlugin` | `intergrax.memory_stores` | Host factory / `MemoryPlatformWiring` - **no `register_*` helper** | `MemoryProfile` + host `**kwargs` | [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) · [`MEMORY.md`](../../architecture/MEMORY.md) §5.3 |
+| Memory store | Swap profile / session / episodic / specialized stores | `UserProfileStorePlugin` / `SessionStoragePlugin` / `EntityTemporalMemoryStorePlugin` / `ProceduralMemoryStorePlugin` / `LongHorizonMemoryStorePlugin` / `SessionTurnIndexStorePlugin` | `intergrax.memory_stores` | Host factory / `MemoryPlatformWiring` - **no `register_*` helper** | `MemoryProfile` + typed creation contexts from host materialization | [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) · [`MEMORY.md`](../../architecture/MEMORY.md) §5.3 |
 | RAG chunker | Custom chunking strategy | `BaseChunkingStrategy` | `intergrax.rag.chunkers` | Advanced host registry composition - **external-EP-first** | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
 | RAG retriever | Custom retrieval implementation | `BaseRetriever` / `BaseRetrieverPlugin` | `intergrax.rag.retrievers` | Advanced host registry composition - **external-EP-first** | `RagProfile` + vector store bindings | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
 | RAG reranker | Custom reranking | `BaseReranker` / `BaseRerankerPlugin` | `intergrax.rag.rerankers` | Advanced host registry composition - **external-EP-first** | `RagProfile` + bootstrap kwargs | [`RAG_EXTENSION_GUIDE.md`](RAG_EXTENSION_GUIDE.md) · [`RAG.md`](../../architecture/RAG.md) |
@@ -1024,9 +1024,12 @@ Entry point group: `intergrax.memory_stores`
 
 | Protocol | Factory method | Replaces |
 |----------|----------------|----------|
-| `UserProfileStorePlugin` | `create_user_profile_store(**kwargs)` | Default `InMemoryUserProfileStore` / sqlite bundle / optional Mongo `document_store` (MEM-PERS.2) |
-| `SessionStoragePlugin` | `create_session_storage(**kwargs)` | Default `InMemorySessionStorage` / sqlite bundle |
-| `SessionTurnIndexStorePlugin` | `create_session_turn_index(**kwargs)` | Default episodic vector adapter over host `VectorstoreManager` |
+| `UserProfileStorePlugin` | `create_user_profile_store(context: UserProfileStoreCreationContext)` | Default `InMemoryUserProfileStore` / sqlite bundle / optional Mongo `document_store` (MEM-PERS.2) |
+| `SessionStoragePlugin` | `create_session_storage(context: SessionStorageCreationContext)` | Default `InMemorySessionStorage` / sqlite bundle |
+| `EntityTemporalMemoryStorePlugin` | `create_entity_temporal_memory_store(context: EntityTemporalMemoryStoreCreationContext)` | Reference in-memory entity temporal store |
+| `ProceduralMemoryStorePlugin` | `create_procedural_memory_store(context: ProceduralMemoryStoreCreationContext)` | Reference in-memory procedural store |
+| `LongHorizonMemoryStorePlugin` | `create_long_horizon_memory_store(context: LongHorizonMemoryStoreCreationContext)` | Reference in-memory long-horizon store |
+| `SessionTurnIndexStorePlugin` | `create_session_turn_index(context: SessionTurnIndexStoreCreationContext)` | Default episodic vector adapter over host vector ports |
 
 **Discovery and activation:** register under `intergrax.memory_stores` (or pass explicit plugin classes); host wiring calls classified discovery and materializes the store selected by `MemoryProfile` plugin ids. Discovery alone does **not** activate a store. See the memory author guide §9.
 
@@ -1236,7 +1239,7 @@ Use the **domain-owned** primitive for your surface - the platform does not prov
 | Skill | `SkillProfile` | Via tools at invoke time | `register_skills(registry)` |
 | Context | `ContextProfile` | Typically none at plugin boundary | `register(registry)` - see [`CONTEXT_PLUGIN_AUTHOR_GUIDE.md`](CONTEXT_PLUGIN_AUTHOR_GUIDE.md) |
 | RAG component | `RagProfile` + bootstrap kwargs | Via integrations passed into bootstrap | `BaseRetrieverPlugin.create(…)` / registry bootstrap |
-| Memory store | `MemoryProfile` | Host `**kwargs` to factory | `create_user_profile_store(**kwargs)` |
+| Memory store | `MemoryProfile` | Host resolver (credentials stay in `IntegrationProfile` for baseline paths) | Typed creation context → `create_user_profile_store(context)` / `create_session_storage(context)` / specialized `create_*` / `create_session_turn_index(context)` |
 | Security defense | Host security profile | `HookContext` only | Middleware wraps plugin at host - see [`SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md`](SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md) |
 | Policy rule | `PolicyRulesProfile` / YAML | None in EP | `evaluate(rule, context=…)` - see [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) |
 | Tool invocation pattern | `ToolInvocationMode` / pattern id | None | `execute(state, invoker, …)` - see [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) |

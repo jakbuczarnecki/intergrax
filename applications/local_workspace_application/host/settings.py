@@ -13,6 +13,7 @@ from intergrax.applications.contracts.settings import (
     IntergraxApplicationSettingsBase,
 )
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
+from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.fastapi_core.config import ApiEnvironment
 from intergrax.integrations.providers.relational_store.sqlite.paths import IDEMPOTENCY_DB_NAME
 from intergrax.runtime.observability.operator_wiring import (
@@ -115,6 +116,7 @@ class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
     host_tenant_id: str = ""
     interaction_execute_default: bool = True
+    orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None
     # Observability export settings (env-driven; disabled by default)
     observability_export_enabled: bool = False
     observability_export_backend: str = "otlp"

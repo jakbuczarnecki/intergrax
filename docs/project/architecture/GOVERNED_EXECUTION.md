@@ -58,7 +58,7 @@ Unchanged platform intent: contract-first evaluation at named **Governance Evalu
 ### D. Remaining platform gaps (explicit)
 
 - **Governance Evidence (GR-8):** public contract **frozen** — [ADR-GR-8-001](../technical/adr/entries/2026-09-17/ADR-GR-8-001.md); spine **CANDIDATE CLOSED — PUBLIC CONTRACT FROZEN** (independent final audit before CLOSED); **evaluation-point adoption** (AGENT_DECISION, INTERRUPT, PRE_MODEL, TOOL*, PRE_OUTPUT, POST_RUN, CONTROL_PLANE_MUTATION, fresh post-human re-evaluation) remains **open** under **GR-10 / GR-13**.
-- **Strategy coverage (GR-10):** **GR-10-FINAL** requalification on current production code — status **PARTIAL** (typed matrix §9 + `tests/qualification/governance/strategy/`). **INFERENCE:** PRE_MODEL **QUALIFIED** on `InferenceExecutor` structured path (**GR-10-R2-C1/R1** — [ADR-GR-10-001](../technical/adr/entries/2026-09-18/ADR-GR-10-001.md)); root admission **NOT_APPLICABLE** (**GR-10-R4**); Inner Governance **NOT_APPLICABLE** (**GR-10-R5**); Governance Evidence **QUALIFIED** (**GR-10-R6 / R6-R1**); remaining INFERENCE blockers **NONE**. **AGENTIC / ORCHESTRATION:** **GR-10-R7** requalified via `GR10_AGENTIC_CAPABILITY_SEMANTICS` / `GR10_ORCHESTRATION_CAPABILITY_SEMANTICS` — residual **PARTIAL** rows documented with precise gaps; **GR-10-R3** kernel `policy_pre`→`GovernanceResolution` **CANDIDATE CLOSED** (not an active AGENTIC Policy evaluation blocker). **Next bounded remediation:** **GR-10-R8** — ORCHESTRATION Inner Governance production GEP coverage.
+- **Strategy coverage (GR-10):** **GR-10-FINAL** requalification on current production code — status **PARTIAL** (typed matrix §9 + `tests/qualification/governance/strategy/`). **INFERENCE:** PRE_MODEL **QUALIFIED** on `InferenceExecutor` structured path (**GR-10-R2-C1/R1** — [ADR-GR-10-001](../technical/adr/entries/2026-09-18/ADR-GR-10-001.md)); root admission **NOT_APPLICABLE** (**GR-10-R4**); Inner Governance **NOT_APPLICABLE** (**GR-10-R5**); Governance Evidence **QUALIFIED** (**GR-10-R6 / R6-R1**); remaining INFERENCE blockers **NONE**. **AGENTIC / ORCHESTRATION:** **GR-10-R7** requalified via `GR10_AGENTIC_CAPABILITY_SEMANTICS` / `GR10_ORCHESTRATION_CAPABILITY_SEMANTICS` — residual **PARTIAL** rows documented with precise gaps; **GR-10-R3** kernel `policy_pre`→`GovernanceResolution` **CANDIDATE CLOSED** (not an active AGENTIC Policy evaluation blocker). **Next bounded remediation:** **GR-10-R9-R2** — ORCHESTRATION graph/non-tool consequential MSE seam closure (after **GR-10-R9-R1** canonical contract + fail-closed production authority) composition ([ADR-GR-10-002](../technical/adr/entries/2026-09-19/ADR-GR-10-002.md); GR-10-R9-ADR1 closed).
 - **Control-plane mutation (GR-12):** **GAP** — no shared live enforcement across activation, AHI, ECP, plugins, live task control.
 - **Plugin enterprise certification (GR-11)** and **full proof matrix (GR-13)** open.
 - **Transitional Task/Nexus coupling** on some pause bridges — Execution owns lifecycle target; port integration incomplete on non-orchestration strategies.
@@ -290,7 +290,7 @@ flowchart LR
 | Inner guard | NOT_APPLICABLE | PARTIAL | PARTIAL |
 | Policy evaluation (GEP) | QUALIFIED | PARTIAL | QUALIFIED |
 | Meaningful side effect spine | NOT_APPLICABLE | PARTIAL | PARTIAL |
-| Decision-bound MSE (GR-6) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
+| Decision-bound MSE (GR-6) | NOT_APPLICABLE | QUALIFIED | QUALIFIED |
 | HITL continuation (GR-5) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Continuation (GR-5 port) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Reliability boundary (GR-7) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
@@ -665,6 +665,7 @@ Governance **authorizes** consequential effects; Decision System supplies **mate
 - **`DecisionGovernanceMaterialRef`** binds decision subject, canonical action identity, and resource scope (GR-6-ARCH / GR-6-RS1).
 - **`DecisionGovernedSideEffectCoordinator`** (Execution Engine) sequences decision material with **`authorize_and_execute`** — Governance evaluation remains in the boundary; provider invocation runs only after authorization (fail-closed).
 - Production composition: governed contractor host wires policy + collaborative governance (`GR-6-WIRE`, `GR-6-CW1`, `GR-6-R2`); dynamic clock (GR-6-T1).
+- **GR-10-R10-R2 (orchestration MSE):** each strict production Tier-3 host owns `DecisionRequirementPolicy` semantics in `host/orchestration_decision_requirement_policy.py` (or equivalent) and injects it into `build_harness_host_runtime(..., orchestration_decision_requirement_policy=...)`. Generic harness runtime does not invent domain rules; missing policy with `execution_mode=strict` fails closed at production MSE composition (GR-10-R10-R1). Product scaffolds emit the same seam.
 
 Full Decision / Approval integration SSOT: [`DECISION_APPROVAL_GOVERNANCE.md`](DECISION_APPROVAL_GOVERNANCE.md). Task history: gap ledger — not duplicated here.
 

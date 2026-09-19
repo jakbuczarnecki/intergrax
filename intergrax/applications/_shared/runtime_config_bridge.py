@@ -6,12 +6,16 @@ from __future__ import annotations
 
 from intergrax.agents.reference_harness import LabHarnessContext
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
+    optional_factory_composition,
+)
 from intergrax.applications._shared.catalog_runtime_bridge import (
-    apply_catalog_profiles_from_build_context,
+    apply_catalog_profiles_from_composition,
     apply_catalog_profiles_from_environment,
 )
 from intergrax.applications._shared.integration_runtime_bridge import (
-    apply_integration_profiles_from_build_context,
+    apply_integration_profiles_from_composition,
     apply_integration_profiles_from_environment,
 )
 from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
@@ -88,6 +92,7 @@ def materialize_runtime_config(
     env: ApplicationEnvironmentProfile,
     *,
     llm_adapter: LLMAdapter | None = None,
+    composition: ApplicationCompositionContext | None = None,
 ) -> RuntimeConfig:
     """
     Map ``ApplicationEnvironmentProfile`` → ``RuntimeConfig`` (H-APP.1.5, MEM-1).
@@ -112,10 +117,14 @@ def materialize_runtime_config(
         strict = harness_ctx.strict_harness
         if harness_ctx.trace_db_path is not None:
             trace_path = str(harness_ctx.trace_db_path)
-        policy_bundle = harness_ctx.policy_bundle
-        tool_wiring_context = harness_ctx.tool_wiring_context
-        if harness_ctx.integration_profile is not None:
-            integration_profile = harness_ctx.integration_profile
+        active_composition = composition or optional_factory_composition()
+        if active_composition is not None:
+            if active_composition.policy_bundle is not None:
+                policy_bundle = active_composition.policy_bundle
+            if active_composition.tool_wiring_context is not None:
+                tool_wiring_context = active_composition.tool_wiring_context
+            if active_composition.integration_profile is not None:
+                integration_profile = active_composition.integration_profile
 
     routing_context = build_routing_context_from_runtime(
         tenant_id=request.tenant_id,
@@ -153,7 +162,9 @@ def materialize_runtime_config(
     apply_observability_profiles_from_environment(config, env)
     boundary_buffer = None
     if isinstance(harness_ctx, ApplicationBuildContext):
-        boundary_buffer = harness_ctx.boundary_event_buffer
+        active_composition = composition or optional_factory_composition()
+        if active_composition is not None:
+            boundary_buffer = active_composition.boundary_event_buffer
     apply_attestation_profiles_from_environment(
         config,
         env,
@@ -204,11 +215,13 @@ def materialize_runtime_config(
 
     apply_tool_engine_hook_to_runtime_config(config, env)
     if isinstance(harness_ctx, ApplicationBuildContext):
-        apply_integration_profiles_from_build_context(config, harness_ctx)
-        apply_catalog_profiles_from_build_context(config, harness_ctx)
+        active_composition = composition or optional_factory_composition()
+        if active_composition is not None:
+            apply_integration_profiles_from_composition(config, active_composition)
+            apply_catalog_profiles_from_composition(config, active_composition)
+            if active_composition.tool_wiring_context is not None:
+                tool_wiring_context = active_composition.tool_wiring_context
     rag_wiring_context = tool_wiring_context
-    if isinstance(harness_ctx, ApplicationBuildContext) and harness_ctx.tool_wiring_context is not None:
-        rag_wiring_context = harness_ctx.tool_wiring_context
     apply_rag_for_environment(config, env, tool_wiring_context=rag_wiring_context)
     from intergrax.runtime.nexus.context.routing_snapshot_sync import (
         wire_secondary_llm_routing_surfaces,
@@ -224,15 +237,16 @@ def materialize_runtime_config(
             harness_ctx.manifest,
             ApplicationManifest,
         ):
-            if harness_ctx.agent_registry is None:
+            active_composition = composition or optional_factory_composition()
+            if active_composition is None or active_composition.agent_registry is None:
                 raise AgentRuntimeGovernanceMaterializationError(
                     "production agent runtime governance requires "
-                    "ApplicationBuildContext.agent_registry",
+                    "application composition agent_registry",
                 )
             grants = capability_grants_from_application_manifest(
                 harness_ctx.manifest,
                 tenant_id=tenant_id,
-                agent_registry=harness_ctx.agent_registry,
+                agent_registry=active_composition.agent_registry,
             )
         elif isinstance(harness_ctx, LabHarnessContext):
             grants = default_lab_capability_grants(tenant_id)
@@ -246,6 +260,7 @@ def build_runtime_context_from_environment(
     env: ApplicationEnvironmentProfile,
     *,
     llm_adapter: LLMAdapter | None = None,
+    composition: ApplicationCompositionContext | None = None,
 ) -> RuntimeContext:
     """Build ``RuntimeContext`` from environment profile with resolved memory backends."""
     from dataclasses import replace
@@ -255,6 +270,7 @@ def build_runtime_context_from_environment(
         harness_ctx,
         env,
         llm_adapter=llm_adapter,
+        composition=composition,
     )
     integration_profile = config.integration_profile or env.integration_profile
     memory_wiring = resolve_memory_platform_wiring(

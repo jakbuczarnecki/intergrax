@@ -1,6 +1,6 @@
 # Memory
 
-> **Enterprise architecture (MEM-ENT closeout):** canonical control plane, authority map, certification scope, and extension guides live in [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) ([provider](MEMORY_PROVIDER_EXTENSION_GUIDE.md) · [projection](MEMORY_PROJECTION_EXTENSION_GUIDE.md)). This hub remains the product-oriented domain overview.
+> **Enterprise architecture:** canonical maintainer reference [`MEMORY_ARCHITECTURE.md`](MEMORY_ARCHITECTURE.md) — **ENTERPRISE CERTIFIED / CLOSED** at exact SHA **`4db4bb69671c7f6091284e448e2d09094ebd54cd`** ([`MEMORY_FINAL_ENTERPRISE_AUDIT.md`](../maintainers/qualification/MEMORY_FINAL_ENTERPRISE_AUDIT.md) § MEM-ENTERPRISE-CLOSURE). Visual flows [`MEMORY_ARCHITECTURE_DIAGRAMS.md`](MEMORY_ARCHITECTURE_DIAGRAMS.md) ([provider](MEMORY_PROVIDER_EXTENSION_GUIDE.md) · [projection](MEMORY_PROJECTION_EXTENSION_GUIDE.md)). This hub remains the product-oriented domain overview; [public proof catalog](#evidence--proof) entry for Memory is still **not claimed**.
 
 **Intergrax Memory** is the platform domain that governs **what the harness remembers** - session turns, task-scoped state, user and organization profiles, and durable long-term facts - across execution boundaries, with explicit stores, write policies, and recall contracts.
 
@@ -430,7 +430,7 @@ Intergrax uses **one vector integration stack** (`EmbeddingManager`, `Vectorstor
 
 **As-built (2026-06-17):** LTM and episodic vector indexes wired via `memory_vector_wiring.py`; `retrieval_service` injected into `UserProfileManager`; `vector_index_namespace` enforced via `collection_name` metadata; Tier-3 hosts inject RAG stack into profile manager and episodic index.
 
-**Pluggable store surfaces:** `UserProfileStorePlugin`, `SessionStoragePlugin`, and `SessionTurnIndexStorePlugin` share entry point group `intergrax.memory_stores`. Authoring workflow, bootstrap semantics (count-only), and runtime resolution paths are documented in [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) - not duplicated here.
+**Pluggable store surfaces:** `UserProfileStorePlugin`, `SessionStoragePlugin`, `EntityTemporalMemoryStorePlugin`, `ProceduralMemoryStorePlugin`, `LongHorizonMemoryStorePlugin`, and `SessionTurnIndexStorePlugin` share entry point group `intergrax.memory_stores`. Host materialization passes **typed creation contexts** (tenant-scoped aliases plus `SessionTurnIndexStoreCreationContext`) — not open `**kwargs` or full `IntegrationProfile` at the public factory boundary. Authoring workflow, bootstrap semantics (count-only), and runtime resolution paths are documented in [`MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md`](../technical/guides/MEMORY_STORE_PLUGIN_AUTHOR_GUIDE.md) - not duplicated here.
 
 ---
 

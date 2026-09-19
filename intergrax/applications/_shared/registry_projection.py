@@ -28,6 +28,10 @@ from intergrax.applications._shared.wiring import (
     factory_reference_for_roster_entry,
     _index_manifest_bindings,
 )
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
+    composition_for_factory_context,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.runtime.attestation.canonical_json import stable_payload_hash
@@ -120,6 +124,7 @@ class RegistryProjectionInputBundle:
     effective_roster: EffectiveRoster
     manifest: ApplicationManifest
     build_context: ApplicationBuildContext
+    composition: ApplicationCompositionContext | None = None
     factory_resolver: RuntimeAgentFactoryResolver | None = None
     builders: BuilderMap | None = None
     materialization_artifact_digest: str | None = None
@@ -191,13 +196,16 @@ def _build_context_environment_id(ctx: ApplicationBuildContext) -> str | None:
 def _build_context_fingerprint(ctx: ApplicationBuildContext) -> dict[str, object]:
     manifest = ctx.manifest
     app_id = manifest.app_id if isinstance(manifest, ApplicationManifest) else None
+    environment = ctx.environment
+    skill_profile = environment.skill_profile if environment is not None else None
+    tool_profile = environment.tool_profile if environment is not None else None
     return {
         "manifest_app_id": app_id,
         "skill_profile": (
-            ctx.skill_profile.model_dump(mode="json") if ctx.skill_profile is not None else None
+            skill_profile.model_dump(mode="json") if skill_profile is not None else None
         ),
         "tool_profile": (
-            ctx.tool_profile.model_dump(mode="json") if ctx.tool_profile is not None else None
+            tool_profile.model_dump(mode="json") if tool_profile is not None else None
         ),
         "strict_harness": ctx.strict_harness,
     }
@@ -450,6 +458,7 @@ def build_registry_projection(
             effective_roster=bundle.effective_roster,
             runtime_revision=bundle.runtime_revision,
             factory_resolver=bundle.factory_resolver,
+            composition=bundle.composition,
         )
     except RuntimeAgentFactoryResolutionError as exc:
         raise RegistryProjectionError(str(exc)) from exc
@@ -482,8 +491,11 @@ def build_registry_projection(
         f"{content_digest_for_model(seed)}"
     )
     evidence = seed.model_copy(update={"readiness_token": readiness_token})
-    harness_snapshot = resolve_registry_snapshot(
+    composition = bundle.composition or composition_for_factory_context(
         bundle.build_context,
+    )
+    harness_snapshot = resolve_registry_snapshot(
+        composition,
         agent_registry=registry,
     )
     return MaterializedRegistryProjection(

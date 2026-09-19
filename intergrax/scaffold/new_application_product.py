@@ -104,6 +104,7 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
         from typing import ClassVar, FrozenSet, Literal, Mapping, Optional
 
         from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
+        from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
         from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
         from intergrax.fastapi_core.config import ApiEnvironment
 
@@ -155,6 +156,7 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
             openapi_enabled_override: Optional[bool] = None
             api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
             interaction_execute_default: bool = True
+            orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None
 
             # ------------------------------------------------------------------
             # Application-specific settings
@@ -427,6 +429,50 @@ def integration_wiring_py(names: ScaffoldApplicationNames) -> str:
     )
 
 
+def orchestration_decision_requirement_policy_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    short = names.short
+    pascal = names.pascal
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        """Host-owned orchestration DecisionRequirementPolicy for {pkg} (GR-10-R10-R2)."""
+
+        from __future__ import annotations
+
+        from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
+        from intergrax.runtime.governance.decision_requirement_policy import (
+            PermissiveDecisionRequirementPolicy,
+        )
+
+        from {pkg}.host.settings import {pascal}BackendSettings
+
+
+        def default_{short}_harness_orchestration_decision_requirement_policy() -> (
+            DecisionRequirementPolicy
+        ):
+            """Explicit host strategy — replace with configured policy when decision-bound effects exist."""
+            return PermissiveDecisionRequirementPolicy()
+
+
+        def resolve_{short}_harness_orchestration_decision_requirement_policy(
+            settings: {pascal}BackendSettings,
+        ) -> DecisionRequirementPolicy:
+            override = settings.orchestration_decision_requirement_policy
+            if override is not None:
+                return override
+            return default_{short}_harness_orchestration_decision_requirement_policy()
+
+
+        __all__ = [
+            "default_{short}_harness_orchestration_decision_requirement_policy",
+            "resolve_{short}_harness_orchestration_decision_requirement_policy",
+        ]
+        '''
+    )
+
+
 def factory_py(names: ScaffoldApplicationNames) -> str:
     pkg = names.pkg
     short = names.short
@@ -470,6 +516,9 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
             wire_harness_product_observability_dashboard,
         )
         from intergrax.debug.store import open_default_task_checkpoint_persistence
+        from {pkg}.host.orchestration_decision_requirement_policy import (
+            resolve_{short}_harness_orchestration_decision_requirement_policy,
+        )
         from {pkg}.host.settings import {pascal}BackendSettings
         from {pkg}.host.environment_profile import build_{short}_environment_profile
         from {pkg}.manifest import build_{short}_manifest
@@ -498,6 +547,9 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 checkpoints_db_path=checkpoints_db_path,
                 use_in_memory_trace=trace_db_path is None,
                 registry_projection=registry_projection,
+                orchestration_decision_requirement_policy=(
+                    resolve_{short}_harness_orchestration_decision_requirement_policy(settings)
+                ),
             )
             host_execution = runtime.execution
             registry = runtime.registry

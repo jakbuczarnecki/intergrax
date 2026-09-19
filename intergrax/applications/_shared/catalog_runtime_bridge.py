@@ -5,7 +5,9 @@
 from __future__ import annotations
 
 from intergrax.applications._shared.reasoning_wiring import resolve_engine_planner_prompt_config
-from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
+)
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.skills.registry.profile import SkillProfile
@@ -66,9 +68,9 @@ def apply_catalog_profiles_from_environment(
     return config
 
 
-def apply_catalog_profiles_from_build_context(
+def apply_catalog_profiles_from_composition(
     config: RuntimeConfig,
-    build_ctx: ApplicationBuildContext,
+    composition: ApplicationCompositionContext,
 ) -> RuntimeConfig:
     """
     Overlay wired catalog artifacts from Tier-3 bootstrap.
@@ -76,16 +78,16 @@ def apply_catalog_profiles_from_build_context(
     Wired profiles (sandbox-adjusted tools, resolved registries) take precedence
     over raw environment defaults.
     """
-    if build_ctx.tool_profile is not None:
-        config.tool_profile = build_ctx.tool_profile
-    if build_ctx.tool_wiring_context is not None:
-        config.tool_wiring_context = build_ctx.tool_wiring_context
-    if build_ctx.tool_registry is not None:
-        config.tool_registry = build_ctx.tool_registry
-    if build_ctx.skill_profile is not None:
-        config.skill_profile = build_ctx.skill_profile
-    if build_ctx.skill_registry is not None:
-        config.skill_registry = build_ctx.skill_registry
-    if build_ctx.skill_pinning_store is not None:
-        config.skill_pinning_store = build_ctx.skill_pinning_store
+    if composition.tool_profile is not None:
+        config.tool_profile = composition.tool_profile
+    if composition.tool_wiring_context is not None:
+        config.tool_wiring_context = composition.tool_wiring_context
+    if composition.tool_registry is not None:
+        config.tool_registry = composition.tool_registry
+    if composition.skill_profile is not None:
+        config.skill_profile = composition.skill_profile
+    if composition.skill_registry is not None:
+        config.skill_registry = composition.skill_registry
+    if composition.skill_pinning_store is not None:
+        config.skill_pinning_store = composition.skill_pinning_store
     return config

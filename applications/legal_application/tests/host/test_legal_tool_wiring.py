@@ -39,11 +39,11 @@ def test_build_legal_agent_returns_canonical_reflex_agent() -> None:
         enable_rag=True,
     )
     tool_wiring = wire_legal_tools(settings=settings)
+    from legal_application.manifest import build_legal_manifest
+
     ctx = ApplicationBuildContext.for_manifest(
-        object(),
+        build_legal_manifest(settings),
         settings=settings,
-        tool_profile=tool_wiring.profile,
-        tool_wiring_context=tool_wiring.wiring_context,
     )
     agent = build_legal_agent(settings, ctx=ctx)
     assert isinstance(agent, LegalAgent)

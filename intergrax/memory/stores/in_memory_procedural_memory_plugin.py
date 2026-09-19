@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+from intergrax.memory.contracts.memory_store_creation_context import (
+    ProceduralMemoryStoreCreationContext,
+)
 from intergrax.memory.stores.in_memory_procedural_memory_store import (
     InMemoryProceduralMemoryStore,
 )
@@ -19,5 +22,9 @@ class InMemoryProceduralMemoryStorePlugin:
         return DEFAULT_IN_MEMORY_PROCEDURAL_PLUGIN_ID
 
     @classmethod
-    def create_procedural_memory_store(cls, **kwargs: object) -> InMemoryProceduralMemoryStore:
+    def create_procedural_memory_store(
+        cls,
+        context: ProceduralMemoryStoreCreationContext,
+    ) -> InMemoryProceduralMemoryStore:
+        _ = context
         return InMemoryProceduralMemoryStore()

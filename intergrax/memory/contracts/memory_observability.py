@@ -8,7 +8,13 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol
 
-from intergrax.contracts.execution_identity import EventId
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    EventId,
+    ExecutionId,
+    RunId,
+    TaskId,
+)
 from intergrax.memory.contracts.memory_security_governance import (
     MemoryGovernanceOperation,
     MemoryGovernanceReasonCode,
@@ -17,6 +23,7 @@ from intergrax.memory.contracts.memory_security_governance import (
 __all__ = [
     "MemoryDiagnosticComponent",
     "MemoryDiagnosticCounts",
+    "MemoryDiagnosticExecutionCorrelation",
     "MemoryDiagnosticEvent",
     "MemoryDiagnosticFailureClass",
     "MemoryDiagnosticOperation",
@@ -91,6 +98,16 @@ class MemoryDiagnosticFailureClass(str, Enum):
 
 
 @dataclass(frozen=True, slots=True)
+class MemoryDiagnosticExecutionCorrelation:
+    """Optional projection of canonical platform execution identity (never minted here)."""
+
+    task_id: TaskId | None = None
+    run_id: RunId | None = None
+    attempt_id: AttemptId | None = None
+    execution_id: ExecutionId | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class MemoryDiagnosticCounts:
     sources_requested: int | None = None
     sources_resolved: int | None = None
@@ -108,6 +125,10 @@ class MemoryDiagnosticEvent:
     outcome: MemoryDiagnosticOutcome
     component: MemoryDiagnosticComponent
     reference_time_iso: str
+    task_id: TaskId | None = None
+    run_id: RunId | None = None
+    attempt_id: AttemptId | None = None
+    execution_id: ExecutionId | None = None
     tenant_id: str | None = None
     user_id: str | None = None
     workspace_id: str | None = None

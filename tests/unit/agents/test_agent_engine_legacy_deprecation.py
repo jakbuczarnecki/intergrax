@@ -3,6 +3,7 @@
 import pytest
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -19,6 +20,10 @@ class _LegacyPipelineAgent(Agent):
             description="no uaep",
             capabilities=["legacy.basic"],
         )
+
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        _ = request
+        raise NotImplementedError
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         config = RuntimeConfig(

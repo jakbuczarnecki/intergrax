@@ -29,6 +29,10 @@ class TaskRiskTier(str, Enum):
     REGULATED = "regulated"
 
 
+CAPABILITY_ROUTING_METADATA_KEY = "routing_capability"
+INTENT_ROUTING_METADATA_KEY = "routing_intent"
+
+
 class TaskEnvelope(BaseModel):
     """Unified intake contract across HTTP, CLI, worker, and interaction adapters."""
 
@@ -58,3 +62,34 @@ class TaskEnvelope(BaseModel):
         meta["actor_kind"] = actor_kind
         meta["actor_id"] = actor_id
         return self.model_copy(update={"metadata": meta})
+
+
+def routing_capability_from_envelope(envelope: TaskEnvelope) -> str | None:
+    raw = envelope.metadata.get(CAPABILITY_ROUTING_METADATA_KEY)
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return None
+
+
+def routing_intent_from_envelope(envelope: TaskEnvelope) -> str | None:
+    raw = envelope.metadata.get(INTENT_ROUTING_METADATA_KEY)
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return None
+
+
+def task_envelope_for_capability_routing(
+    *,
+    capability: str | None = None,
+    intent: str | None = None,
+    metadata: dict[str, Any] | None = None,
+    tenant_id: str = "routing",
+    user_id: str = "routing",
+) -> TaskEnvelope:
+    """Minimal envelope for agent capability pre-check (ACP-CON-6)."""
+    meta = dict(metadata or {})
+    if capability is not None and capability.strip():
+        meta[CAPABILITY_ROUTING_METADATA_KEY] = capability.strip()
+    if intent is not None and intent.strip():
+        meta[INTENT_ROUTING_METADATA_KEY] = intent.strip()
+    return TaskEnvelope(tenant_id=tenant_id, user_id=user_id, metadata=meta)

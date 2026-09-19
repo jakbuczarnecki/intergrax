@@ -22,6 +22,9 @@ from intergrax.memory.resolver.discovery import (
     discover_classified_memory_store_plugins,
 )
 from intergrax.memory.resolver.errors import MemoryStorePluginResolutionError
+from intergrax.memory.contracts.memory_store_creation_context import (
+    EntityTemporalMemoryStoreCreationContext,
+)
 from intergrax.memory.resolver.materialization import MemoryStoreMaterializationContext
 from intergrax.memory.resolver.resolver import materialize_entity_temporal_memory_store
 from intergrax.memory.stores.in_memory_entity_temporal_memory_plugin import (
@@ -898,7 +901,11 @@ class _FakeEntityTemporalMemoryStorePlugin:
         return "test.fake_entity_temporal"
 
     @classmethod
-    def create_entity_temporal_memory_store(cls, **kwargs: object) -> _RecordingEntityStore:
+    def create_entity_temporal_memory_store(
+        cls,
+        context: EntityTemporalMemoryStoreCreationContext,
+    ) -> _RecordingEntityStore:
+        _ = context
         return _RecordingEntityStore()
 
 

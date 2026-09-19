@@ -29,7 +29,7 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.task.task import TaskContext
+from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
@@ -93,8 +93,8 @@ class OrganizationWorkerAgent(ReflexAgent):
             pattern_version=self.pattern_version,
         )
 
-    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
-        capability = task_context.capability
+    def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
+        capability = routing_capability_from_envelope(task)
         if capability in (None, ORG_VENDOR_REPORT_CAPABILITY):
             return CapabilityMatchResult(
                 matched=True,

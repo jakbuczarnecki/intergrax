@@ -5,6 +5,11 @@
 from __future__ import annotations
 
 from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.execution_identity import (
+    peek_active_execution_id,
+    peek_active_execution_identity,
+    peek_active_execution_task_id,
+)
 from intergrax.memory.contracts.memory_control import MemoryControlScopeRef
 from intergrax.memory.contracts.memory_lifecycle import (
     MemoryLifecycleDisposition,
@@ -18,6 +23,7 @@ from intergrax.memory.contracts.memory_observability import (
     MemoryDiagnosticComponent,
     MemoryDiagnosticCounts,
     MemoryDiagnosticEvent,
+    MemoryDiagnosticExecutionCorrelation,
     MemoryDiagnosticFailureClass,
     MemoryDiagnosticOperation,
     MemoryDiagnosticOutcome,
@@ -41,10 +47,49 @@ __all__ = [
     "emit_compaction_terminal",
     "emit_entity_projection_terminal",
     "emit_procedural_terminal",
+    "optional_active_execution_correlation",
+    "resolve_diagnostic_execution_correlation",
     "scope_identity_fields",
     "governance_diagnostic_outcome",
     "governance_failure_class",
 ]
+
+
+def optional_active_execution_correlation() -> MemoryDiagnosticExecutionCorrelation | None:
+    """Read bound canonical execution identity; never mints identifiers."""
+    bound = peek_active_execution_identity()
+    if bound is None:
+        return None
+    run_id, attempt_id = bound
+    return MemoryDiagnosticExecutionCorrelation(
+        task_id=peek_active_execution_task_id(),
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=peek_active_execution_id(),
+    )
+
+
+def resolve_diagnostic_execution_correlation(
+    execution_correlation: MemoryDiagnosticExecutionCorrelation | None,
+) -> MemoryDiagnosticExecutionCorrelation:
+    if execution_correlation is not None:
+        return execution_correlation
+    active = optional_active_execution_correlation()
+    if active is not None:
+        return active
+    return MemoryDiagnosticExecutionCorrelation()
+
+
+def _execution_correlation_fields(
+    execution_correlation: MemoryDiagnosticExecutionCorrelation | None,
+) -> MemoryDiagnosticExecutionCorrelation:
+    return resolve_diagnostic_execution_correlation(execution_correlation)
+
+
+def _event_execution_identity_kwargs(
+    execution_correlation: MemoryDiagnosticExecutionCorrelation | None,
+) -> MemoryDiagnosticExecutionCorrelation:
+    return _execution_correlation_fields(execution_correlation)
 
 
 def scope_identity_fields(
@@ -106,8 +151,10 @@ def emit_control_plane_terminal(
     revision: int | None = None,
     failure_class: MemoryDiagnosticFailureClass | None = None,
     duration_seconds: float | None = None,
+    execution_correlation: MemoryDiagnosticExecutionCorrelation | None = None,
 ) -> None:
     tenant_id, user_id, workspace_id = scope_identity_fields(identity, scope)
+    execution = _event_execution_identity_kwargs(execution_correlation)
     emitter.emit(
         MemoryDiagnosticEvent(
             event_id=emitter.new_event_id(),
@@ -116,6 +163,10 @@ def emit_control_plane_terminal(
             phase=MemoryDiagnosticPhase.TERMINAL,
             outcome=outcome,
             component=MemoryDiagnosticComponent.CONTROL_PLANE,
+            task_id=execution.task_id,
+            run_id=execution.run_id,
+            attempt_id=execution.attempt_id,
+            execution_id=execution.execution_id,
             tenant_id=tenant_id,
             user_id=user_id,
             workspace_id=workspace_id,
@@ -139,7 +190,9 @@ def emit_entity_projection_terminal(
     revision: int | None = None,
     projection_id: str | None = None,
     failure_class: MemoryDiagnosticFailureClass | None = None,
+    execution_correlation: MemoryDiagnosticExecutionCorrelation | None = None,
 ) -> None:
+    execution = _event_execution_identity_kwargs(execution_correlation)
     emitter.emit(
         MemoryDiagnosticEvent(
             event_id=emitter.new_event_id(),
@@ -148,6 +201,10 @@ def emit_entity_projection_terminal(
             phase=MemoryDiagnosticPhase.PROJECTION,
             outcome=outcome,
             component=MemoryDiagnosticComponent.ENTITY_TEMPORAL,
+            task_id=execution.task_id,
+            run_id=execution.run_id,
+            attempt_id=execution.attempt_id,
+            execution_id=execution.execution_id,
             tenant_id=tenant_id,
             user_id=user_id,
             workspace_id=workspace_id,
@@ -170,7 +227,9 @@ def emit_procedural_terminal(
     outcome: MemoryDiagnosticOutcome,
     memory_id: str | None = None,
     failure_class: MemoryDiagnosticFailureClass | None = None,
+    execution_correlation: MemoryDiagnosticExecutionCorrelation | None = None,
 ) -> None:
+    execution = _event_execution_identity_kwargs(execution_correlation)
     emitter.emit(
         MemoryDiagnosticEvent(
             event_id=emitter.new_event_id(),
@@ -179,6 +238,10 @@ def emit_procedural_terminal(
             phase=MemoryDiagnosticPhase.TERMINAL,
             outcome=outcome,
             component=MemoryDiagnosticComponent.PROCEDURAL,
+            task_id=execution.task_id,
+            run_id=execution.run_id,
+            attempt_id=execution.attempt_id,
+            execution_id=execution.execution_id,
             tenant_id=tenant_id,
             user_id=user_id,
             workspace_id=workspace_id,
@@ -192,6 +255,8 @@ def emit_governance_diagnostic(
     emitter: MemoryDiagnosticEmitter,
     request: MemoryGovernanceEvaluationRequest,
     decision: MemoryGovernanceDecision,
+    *,
+    execution_correlation: MemoryDiagnosticExecutionCorrelation | None = None,
 ) -> None:
     tenant_id, user_id, workspace_id = scope_identity_fields(
         request.context.identity,
@@ -207,6 +272,7 @@ def emit_governance_diagnostic(
         revision = request.proposed_record.revision
     elif request.target is not None:
         revision = request.target.revision
+    execution = _event_execution_identity_kwargs(execution_correlation)
     emitter.emit(
         MemoryDiagnosticEvent(
             event_id=emitter.new_event_id(),
@@ -215,6 +281,10 @@ def emit_governance_diagnostic(
             phase=MemoryDiagnosticPhase.GOVERNANCE,
             outcome=governance_diagnostic_outcome(decision),
             component=MemoryDiagnosticComponent.GOVERNANCE,
+            task_id=execution.task_id,
+            run_id=execution.run_id,
+            attempt_id=execution.attempt_id,
+            execution_id=execution.execution_id,
             tenant_id=tenant_id,
             user_id=user_id,
             workspace_id=workspace_id,
@@ -245,6 +315,7 @@ def emit_lifecycle_terminal(
     tenant_id: str | None,
     outcome: MemoryLifecycleOutcome,
     duration_seconds: float | None = None,
+    execution_correlation: MemoryDiagnosticExecutionCorrelation | None = None,
 ) -> None:
     if outcome.disposition is MemoryLifecycleDisposition.PARTIAL_PROJECTION_FAILURE:
         diagnostic_outcome = MemoryDiagnosticOutcome.PARTIAL
@@ -253,6 +324,7 @@ def emit_lifecycle_terminal(
     else:
         diagnostic_outcome = MemoryDiagnosticOutcome.SUCCESS
     memory_id = outcome.memory_entity_ids[0] if outcome.memory_entity_ids else None
+    execution = _event_execution_identity_kwargs(execution_correlation)
     emitter.emit(
         MemoryDiagnosticEvent(
             event_id=emitter.new_event_id(),
@@ -261,6 +333,10 @@ def emit_lifecycle_terminal(
             phase=MemoryDiagnosticPhase.TERMINAL,
             outcome=diagnostic_outcome,
             component=MemoryDiagnosticComponent.LIFECYCLE,
+            task_id=execution.task_id,
+            run_id=execution.run_id,
+            attempt_id=execution.attempt_id,
+            execution_id=execution.execution_id,
             tenant_id=tenant_id,
             user_id=user_id,
             memory_id=memory_id,
@@ -278,6 +354,10 @@ def emit_lifecycle_terminal(
                 phase=MemoryDiagnosticPhase.PROJECTION,
                 outcome=MemoryDiagnosticOutcome.FAILED,
                 component=MemoryDiagnosticComponent.LIFECYCLE,
+                task_id=execution.task_id,
+                run_id=execution.run_id,
+                attempt_id=execution.attempt_id,
+                execution_id=execution.execution_id,
                 tenant_id=tenant_id,
                 user_id=user_id,
                 memory_id=memory_id,
@@ -317,6 +397,7 @@ def emit_reconciliation_terminal(
     user_id: str,
     outcome: MemoryReconciliationOutcome,
     duration_seconds: float | None = None,
+    execution_correlation: MemoryDiagnosticExecutionCorrelation | None = None,
 ) -> None:
     if outcome.disposition is MemoryReconciliationDisposition.FAILED:
         diagnostic_outcome = MemoryDiagnosticOutcome.FAILED
@@ -324,6 +405,7 @@ def emit_reconciliation_terminal(
         diagnostic_outcome = MemoryDiagnosticOutcome.SUCCESS
     else:
         diagnostic_outcome = MemoryDiagnosticOutcome.SUCCESS
+    execution = _event_execution_identity_kwargs(execution_correlation)
     emitter.emit(
         MemoryDiagnosticEvent(
             event_id=emitter.new_event_id(),
@@ -332,6 +414,10 @@ def emit_reconciliation_terminal(
             phase=MemoryDiagnosticPhase.RECONCILIATION,
             outcome=diagnostic_outcome,
             component=MemoryDiagnosticComponent.RECONCILIATION,
+            task_id=execution.task_id,
+            run_id=execution.run_id,
+            attempt_id=execution.attempt_id,
+            execution_id=execution.execution_id,
             tenant_id=tenant_id,
             user_id=user_id,
             duration_seconds=duration_seconds,
@@ -348,6 +434,10 @@ def emit_reconciliation_terminal(
                         phase=MemoryDiagnosticPhase.RECONCILIATION,
                         outcome=MemoryDiagnosticOutcome.SUCCESS,
                         component=MemoryDiagnosticComponent.RECONCILIATION,
+                        task_id=execution.task_id,
+                        run_id=execution.run_id,
+                        attempt_id=execution.attempt_id,
+                        execution_id=execution.execution_id,
                         tenant_id=tenant_id,
                         user_id=user_id,
                         projection_id=evidence.projection_id,
@@ -365,6 +455,10 @@ def emit_reconciliation_terminal(
                 phase=MemoryDiagnosticPhase.RECONCILIATION,
                 outcome=MemoryDiagnosticOutcome.FAILED,
                 component=MemoryDiagnosticComponent.RECONCILIATION,
+                task_id=execution.task_id,
+                run_id=execution.run_id,
+                attempt_id=execution.attempt_id,
+                execution_id=execution.execution_id,
                 tenant_id=tenant_id,
                 user_id=user_id,
                 projection_id=evidence.projection_id,
@@ -380,6 +474,7 @@ def emit_compaction_terminal(
     user_id: str | None,
     result: CompactionResult,
     duration_seconds: float | None = None,
+    execution_correlation: MemoryDiagnosticExecutionCorrelation | None = None,
 ) -> None:
     failures = len(result.failures)
     created = len(result.created) + len(result.updated)
@@ -389,6 +484,7 @@ def emit_compaction_terminal(
         outcome = MemoryDiagnosticOutcome.FAILED
     else:
         outcome = MemoryDiagnosticOutcome.SUCCESS
+    execution = _event_execution_identity_kwargs(execution_correlation)
     emitter.emit(
         MemoryDiagnosticEvent(
             event_id=emitter.new_event_id(),
@@ -397,6 +493,10 @@ def emit_compaction_terminal(
             phase=MemoryDiagnosticPhase.TERMINAL,
             outcome=outcome,
             component=MemoryDiagnosticComponent.LONG_HORIZON,
+            task_id=execution.task_id,
+            run_id=execution.run_id,
+            attempt_id=execution.attempt_id,
+            execution_id=execution.execution_id,
             tenant_id=tenant_id,
             user_id=user_id,
             duration_seconds=duration_seconds,

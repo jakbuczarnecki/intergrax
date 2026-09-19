@@ -15,6 +15,9 @@ from pydantic import BaseModel
 if TYPE_CHECKING:
     from intergrax.contracts.canonical_inner_governance import CanonicalInnerExecutionGuardPort
     from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
+    from intergrax.contracts.meaningful_side_effect_authorization import (
+        MeaningfulSideEffectAuthorizationPort,
+    )
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     from intergrax.runtime.sandbox.isolation_gate import SandboxAvailabilityProvider
     from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
@@ -28,6 +31,7 @@ from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
 )
 from intergrax.runtime.policy.side_effect_authorization_errors import (
     MeaningfulSideEffectAuthorizationRequiredError,
+    SideEffectAuthorizationFailureReason,
 )
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.tools.tool_invocation import ToolInvocationEndDiagV1, ToolInvocationErrorDiagV1, ToolInvocationStartDiagV1
@@ -62,6 +66,12 @@ from intergrax.contracts.dependency_concurrency_admission import (
 )
 from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
     DependencyAttemptExecutionBoundary,
+)
+from intergrax.contracts.execution_deadline.admission import (
+    ExecutionProtectedWorkAdmissionResult,
+)
+from intergrax.runtime.execution.deadline_scope import (
+    peek_active_execution_protected_work_admission,
 )
 from intergrax.runtime.cancellation.coordinator import (
     CancellationCoordinator,
@@ -152,6 +162,9 @@ class RuntimeToolInvoker:
         sandbox_availability: Optional["SandboxAvailabilityProvider"] = None,
         agent_runtime_governance: Optional["AgentRuntimeGovernancePort"] = None,
         inner_execution_guard: Optional["CanonicalInnerExecutionGuardPort"] = None,
+        meaningful_side_effect_authorization: Optional[
+            "MeaningfulSideEffectAuthorizationPort"
+        ] = None,
         dependency_attempt_boundary: DependencyAttemptExecutionBoundary | None = None,
         external_operation_store: ExternalOperationStateStore | None = None,
         external_operation_owner: ProcessLocalExternalOperationOwner | None = None,
@@ -168,6 +181,7 @@ class RuntimeToolInvoker:
         self._sandbox_availability = sandbox_availability
         self._agent_runtime_governance = agent_runtime_governance
         self._inner_execution_guard = inner_execution_guard
+        self._meaningful_side_effect_authorization = meaningful_side_effect_authorization
         self._dependency_attempt_boundary = dependency_attempt_boundary
         self._external_operation_store = external_operation_store
         if external_operation_store is not None and external_operation_owner is None:
@@ -218,6 +232,15 @@ class RuntimeToolInvoker:
 
         contract = preparation
         claim_context: PreEffectClaimContext | None = None
+
+        admission_denied = self._protected_work_admission_tool_denial(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+        )
+        if admission_denied is not None:
+            return admission_denied
 
         if self._requires_idempotency_coordination(contract, request):
             coordinator = self._pre_effect_coordinator
@@ -598,6 +621,138 @@ class RuntimeToolInvoker:
                     reasons=decision.reasons,
                 )
 
+        self._require_canonical_meaningful_side_effect_authorization(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+        )
+
+    def _require_canonical_meaningful_side_effect_authorization(
+        self,
+        *,
+        state: "RuntimeState",
+        agent_id: str,
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> None:
+        """Canonical MSE boundary before idempotency claim / ToolExecutor (GR-10-R9)."""
+        if not contract.side_effects:
+            return
+
+        boundary = self._meaningful_side_effect_authorization
+        if boundary is None:
+            if state.context.config.production_mode:
+                raise MeaningfulSideEffectAuthorizationRequiredError(
+                    run_id=state.run_id,
+                    agent_id=agent_id,
+                    tool_id=contract.tool_id,
+                    reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
+                )
+            return
+
+        from intergrax.contracts.runtime_policy import PolicyAction
+        from intergrax.runtime.agent_governance.errors import (
+            ToolGovernanceApprovalRequiredError,
+            ToolGovernanceDeniedError,
+        )
+        from intergrax.runtime.nexus.tools.tool_invocation_meaningful_side_effect import (
+            build_tool_invocation_meaningful_side_effect_enforcement_request,
+        )
+        from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+        from intergrax.runtime.nexus.tracing.tools.tool_invocation import (
+            ToolInvocationErrorDiagV1,
+        )
+        from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
+        enforcement_request = build_tool_invocation_meaningful_side_effect_enforcement_request(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+        )
+        from intergrax.contracts.meaningful_side_effect_authorization import (
+            MeaningfulSideEffectAuthorizationResult,
+            assert_consistent_meaningful_side_effect_authorization_result,
+        )
+
+        authorization = boundary.authorize(
+            enforcement_request,
+            source_agent_id=agent_id,
+            source_step_id=str(request.step_id),
+        )
+        if not isinstance(authorization, MeaningfulSideEffectAuthorizationResult):
+            raise MeaningfulSideEffectAuthorizationRequiredError(
+                run_id=state.run_id,
+                agent_id=agent_id,
+                tool_id=contract.tool_id,
+                reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
+            )
+        try:
+            assert_consistent_meaningful_side_effect_authorization_result(authorization)
+        except ValueError:
+            raise MeaningfulSideEffectAuthorizationRequiredError(
+                run_id=state.run_id,
+                agent_id=agent_id,
+                tool_id=contract.tool_id,
+                reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
+            ) from None
+        decision = authorization.decision
+        capability = contract.category.strip() or contract.tool_id
+        if decision.action in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE):
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="meaningful_side_effect_authorization_human_required",
+                message="Meaningful side-effect authorization requires human judgment.",
+                level=TraceLevel.ERROR,
+                payload=ToolInvocationErrorDiagV1(
+                    tool_id=request.tool_id,
+                    step_id=str(request.step_id),
+                    error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                    error_message=decision.reason,
+                ),
+            )
+            raise ToolGovernanceApprovalRequiredError(
+                run_id=state.run_id,
+                agent_id=agent_id,
+                tool_id=request.tool_id,
+                capability=capability,
+                approval_id=decision.policy_rule_id or "meaningful_side_effect.require_human",
+                reason=decision.reason,
+                policy_results=(),
+            )
+        if (
+            not authorization.permitted
+            or decision.action is PolicyAction.DENY
+            or decision.action is PolicyAction.MODIFY
+        ):
+            state.trace_event(
+                component=TraceComponent.TOOLS,
+                step="meaningful_side_effect_authorization_denied",
+                message="Meaningful side-effect authorization denied tool invocation.",
+                level=TraceLevel.ERROR,
+                payload=ToolInvocationErrorDiagV1(
+                    tool_id=request.tool_id,
+                    step_id=str(request.step_id),
+                    error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                    error_message=decision.reason,
+                ),
+            )
+            raise ToolGovernanceDeniedError(
+                run_id=state.run_id,
+                agent_id=agent_id,
+                tool_id=request.tool_id,
+                capability=capability,
+                reason=decision.reason,
+                policy_results=(),
+            )
+        if decision.action is not PolicyAction.ALLOW:
+            raise MeaningfulSideEffectAuthorizationRequiredError(
+                run_id=state.run_id,
+                agent_id=agent_id,
+                tool_id=contract.tool_id,
+                reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
+            )
+
     def _require_agent_runtime_governance(
         self,
         *,
@@ -761,14 +916,22 @@ class RuntimeToolInvoker:
         last_exc: Optional[Exception] = None
 
         for attempt in range(1, attempts + 1):
+            if self._cooperative_cancellation_requested(state):
+                return self._tool_result_task_cancelled(
+                    state=state,
+                    contract=contract,
+                    request=request,
+                    agent_id=agent_id,
+                )
+            admission_denied = self._protected_work_admission_tool_denial(
+                state=state,
+                agent_id=agent_id,
+                contract=contract,
+                request=request,
+            )
+            if admission_denied is not None:
+                return admission_denied
             if attempt > 1:
-                if self._cooperative_cancellation_requested(state):
-                    return self._tool_result_task_cancelled(
-                        state=state,
-                        contract=contract,
-                        request=request,
-                        agent_id=agent_id,
-                    )
                 if policy.backoff_ms > 0:
                     try:
                         cooperative_delay_seconds(
@@ -990,6 +1153,68 @@ class RuntimeToolInvoker:
     @staticmethod
     def _cooperative_cancellation_requested(state: "RuntimeState") -> bool:
         return CancellationCoordinator.is_requested(state.request.metadata)
+
+    def _protected_work_admission_tool_denial(
+        self,
+        *,
+        state: "RuntimeState",
+        agent_id: str,
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> ToolExecutionResult[BaseModel] | None:
+        port = peek_active_execution_protected_work_admission()
+        if port is None:
+            return None
+        decision = port.assert_can_start_protected_work()
+        if decision is ExecutionProtectedWorkAdmissionResult.CANCELLED:
+            return self._tool_result_task_cancelled(
+                state=state,
+                contract=contract,
+                request=request,
+                agent_id=agent_id,
+            )
+        if decision is ExecutionProtectedWorkAdmissionResult.EXPIRED:
+            return self._tool_result_deadline_exceeded(
+                state=state,
+                contract=contract,
+                request=request,
+                agent_id=agent_id,
+            )
+        return None
+
+    def _tool_result_deadline_exceeded(
+        self,
+        *,
+        state: "RuntimeState",
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+        agent_id: str,
+    ) -> ToolExecutionResult[BaseModel]:
+        state.trace_event(
+            component=TraceComponent.TOOLS,
+            step="tool_invocation_deadline_exceeded",
+            message="Tool invocation blocked after global execution deadline.",
+            level=TraceLevel.INFO,
+            payload=ToolInvocationErrorDiagV1(
+                tool_id=contract.tool_id,
+                step_id=str(request.step_id),
+                error_code=RuntimeErrorCode.RUNTIME_ERROR,
+                error_message="deadline_exceeded",
+            ),
+        )
+        result = ToolExecutionResult.fail(
+            RuntimeErrorCode.RUNTIME_ERROR,
+            "deadline_exceeded",
+            effect_certainty=ToolEffectCertainty.NOT_STARTED,
+        )
+        self._emit_boundary_event(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+            result=result,
+        )
+        return result
 
     def _tool_result_task_cancelled(
         self,

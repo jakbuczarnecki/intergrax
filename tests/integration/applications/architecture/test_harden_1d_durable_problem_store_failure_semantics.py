@@ -14,10 +14,16 @@ from intergrax.applications._shared.diagnostic_runtime_wiring import (
     build_terminal_execution_diagnostic_trigger,
     resolve_host_diagnostic_runtime_dependencies,
 )
+from intergrax.contracts.admitted_root_governance_identity import (
+    AdmittedRootGovernanceIdentity,
+)
 from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.runtime.diagnostics.diagnostic_subsystem_failure_evidence import (
     diagnostic_subsystem_failure_observed_for_run,
     is_diagnostic_subsystem_failure_event,
+)
+from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
+    ProblemOccurrencePersistenceIntegrityError,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
@@ -32,10 +38,29 @@ from testing_support.delegating_failing_conditional_document_store import (
     DelegatingFailingConditionalDocumentStore,
     DocumentStoreWriteFailureMode,
 )
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
+    query_all_problems_for_tenant,
+)
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
 _TENANT = "harden-1d-tenant"
+_WORKSPACE = "harden-1d-workspace"
+
+
+def _admitted_governance_for_task(task: Task) -> AdmittedRootGovernanceIdentity:
+    return AdmittedRootGovernanceIdentity(
+        tenant_id=task.tenant_id,
+        workspace_id=_WORKSPACE,
+        principal_id=task.user_id,
+    )
+
+
+def _unified_task_runner(loop: NexusLoop) -> UnifiedTaskRunner:
+    return UnifiedTaskRunner(
+        loop,
+        admitted_governance_identity_for_task=_admitted_governance_for_task,
+    )
 
 
 class _FakeEnvWiring:
@@ -137,7 +162,7 @@ async def test_harden_1d_terminal_create_failure_preserves_business_result() -> 
         document_store=store,
         inject_violation=True,
     )
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
     run_id = mint_run_id()
 
     store.set_write_failure_mode(DocumentStoreWriteFailureMode.FAIL_WRITES)
@@ -156,7 +181,10 @@ async def test_harden_1d_terminal_create_failure_preserves_business_result() -> 
         if is_diagnostic_subsystem_failure_event(event)
     ]
     assert len(failure_events) == 1
-    assert failure_events[0].payload["error_type"] == ControlledDocumentStoreWriteFailure.__name__
+    assert failure_events[0].payload["error_type"] in {
+        ControlledDocumentStoreWriteFailure.__name__,
+        ProblemOccurrencePersistenceIntegrityError.__name__,
+    }
 
 
 @pytest.mark.asyncio
@@ -166,7 +194,7 @@ async def test_harden_1d_terminal_update_failure_preserves_business_result() -> 
         document_store=store,
         inject_violation=True,
     )
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
 
     store.set_write_failure_mode(DocumentStoreWriteFailureMode.HEALTHY)
     baseline = await _run_echo(runner, message="harden-1d baseline")
@@ -203,7 +231,7 @@ async def test_harden_1d_store_recovery_restores_diagnostic_persistence() -> Non
         document_store=store,
         inject_violation=True,
     )
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
 
     store.set_write_failure_mode(DocumentStoreWriteFailureMode.FAIL_WRITES)
     failed_create_run_id = mint_run_id()

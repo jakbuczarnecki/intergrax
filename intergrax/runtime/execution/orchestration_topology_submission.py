@@ -42,11 +42,20 @@ from intergrax.runtime.nexus.execution.orchestration_node_execution import (
 from intergrax.runtime.nexus.execution.orchestration_topology_graph import (
     orchestration_topology_to_execution_graph,
 )
+from intergrax.runtime.execution.orchestration_topology_slot_mse_enforcement import (
+    OrchestrationTopologySlotMsePolicy,
+    prepare_orchestration_topology_slot_executor,
+    prepare_orchestration_topology_slot_continuation_executor,
+)
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.task.task import Task, TaskContext
 
 PayloadT = TypeVar("PayloadT")
 ResultT = TypeVar("ResultT")
+
+
+class OrchestrationTopologyMseCompositionError(RuntimeError):
+    """Raised when canonical production topology composition omits mandatory slot MSE policy."""
 
 
 def _resolve_orchestration_host_task() -> Task:
@@ -89,9 +98,17 @@ class CanonicalOrchestrationTopologySubmissionPort(
     """Submit consumer-defined topology to the canonical Nexus graph scheduler."""
 
     _graph_executor: GraphExecutor
+    _slot_mse_policy: OrchestrationTopologySlotMsePolicy | None = None
+    _production_topology: bool = True
     _registry: _OrchestrationExecutionRegistry = field(
         default_factory=_OrchestrationExecutionRegistry,
     )
+
+    def __post_init__(self) -> None:
+        if self._production_topology and self._slot_mse_policy is None:
+            raise OrchestrationTopologyMseCompositionError(
+                "production orchestration topology requires OrchestrationTopologySlotMsePolicy",
+            )
 
     async def submit(
         self,
@@ -110,9 +127,13 @@ class CanonicalOrchestrationTopologySubmissionPort(
             task_id=host_task.task_id,
         )
         payloads = {slot.slot_id: slot.payload for slot in topology.slots}
+        governed_slot_executor = prepare_orchestration_topology_slot_executor(
+            slot_executor,
+            policy=self._slot_mse_policy,
+        )
         node_execution = bind_orchestration_node_execution(
             payloads=payloads,
-            slot_executor=slot_executor,
+            slot_executor=governed_slot_executor,
         )
         result = await self._graph_executor.execute_orchestration_topology(
             graph,
@@ -206,9 +227,13 @@ class CanonicalOrchestrationTopologySubmissionPort(
                     code="slot_not_continuable",
                 )
 
+        governed_continuation = prepare_orchestration_topology_slot_continuation_executor(
+            slot_continuation_executor,
+            policy=self._slot_mse_policy,
+        )
         node_execution = bind_orchestration_slot_continuation_execution(
             payloads=record.payloads,
-            slot_continuation_executor=slot_continuation_executor,
+            slot_continuation_executor=governed_continuation,
         )
         resumed = await self._graph_executor.continue_orchestration_topology_slot(
             record.graph,
@@ -309,9 +334,13 @@ class CanonicalOrchestrationTopologySubmissionPort(
                 code="require_human",
             )
 
+        governed_slot_executor = prepare_orchestration_topology_slot_executor(
+            slot_executor,
+            policy=self._slot_mse_policy,
+        )
         node_execution = bind_orchestration_node_execution(
             payloads=record.payloads,
-            slot_executor=slot_executor,
+            slot_executor=governed_slot_executor,
         )
         recovered = await self._graph_executor.continue_orchestration_topology_slot(
             record.graph,
@@ -331,21 +360,111 @@ class CanonicalOrchestrationTopologySubmissionPort(
         )
 
 
-def build_orchestration_topology_submission_port(
+def _build_canonical_orchestration_topology_submission_port(
     nexus_loop: NexusLoop,
-) -> OrchestrationTopologySubmissionPort[object, object]:
-    """Composition-root factory wiring topology submission to the canonical Nexus host."""
+    *,
+    slot_mse_policy: OrchestrationTopologySlotMsePolicy | None,
+    production_topology: bool,
+) -> CanonicalOrchestrationTopologySubmissionPort[object, object]:
+    if production_topology and slot_mse_policy is None:
+        raise OrchestrationTopologyMseCompositionError(
+            "production orchestration topology requires OrchestrationTopologySlotMsePolicy",
+        )
     return CanonicalOrchestrationTopologySubmissionPort(
         _graph_executor=nexus_loop.graph_executor,
+        _slot_mse_policy=slot_mse_policy,
+        _production_topology=production_topology,
+    )
+
+
+def build_production_orchestration_topology_submission_port(
+    nexus_loop: NexusLoop,
+    *,
+    slot_mse_policy: OrchestrationTopologySlotMsePolicy | None = None,
+) -> OrchestrationTopologySubmissionPort[object, object]:
+    """Production composition-root factory — slot MSE policy is mandatory."""
+    return _build_canonical_orchestration_topology_submission_port(
+        nexus_loop,
+        slot_mse_policy=slot_mse_policy,
+        production_topology=True,
+    )
+
+
+def build_lab_orchestration_topology_submission_port(
+    nexus_loop: NexusLoop,
+    *,
+    slot_mse_policy: OrchestrationTopologySlotMsePolicy | None = None,
+) -> OrchestrationTopologySubmissionPort[object, object]:
+    """NON-PRODUCTION — LAB / TEST / QUALIFICATION ONLY.
+
+    Explicit policy-less topology composition (raw slot executors allowed when policy omitted).
+    """
+    return _build_canonical_orchestration_topology_submission_port(
+        nexus_loop,
+        slot_mse_policy=slot_mse_policy,
+        production_topology=False,
+    )
+
+
+def build_orchestration_topology_submission_port(
+    nexus_loop: NexusLoop,
+    *,
+    slot_mse_policy: OrchestrationTopologySlotMsePolicy | None = None,
+) -> OrchestrationTopologySubmissionPort[object, object]:
+    """Production-safe composition root wiring topology submission to the canonical Nexus host."""
+    if slot_mse_policy is None:
+        raise OrchestrationTopologyMseCompositionError(
+            "canonical orchestration topology submission requires "
+            "OrchestrationTopologySlotMsePolicy; use "
+            "build_lab_orchestration_topology_submission_port for non-production composition",
+        )
+    return build_production_orchestration_topology_submission_port(
+        nexus_loop,
+        slot_mse_policy=slot_mse_policy,
+    )
+
+
+def build_production_orchestration_topology_continuation_port(
+    nexus_loop: NexusLoop,
+    *,
+    slot_mse_policy: OrchestrationTopologySlotMsePolicy | None = None,
+) -> OrchestrationTopologyContinuationPort[object, object]:
+    """Production continuation port — slot MSE policy is mandatory."""
+    return _build_canonical_orchestration_topology_submission_port(
+        nexus_loop,
+        slot_mse_policy=slot_mse_policy,
+        production_topology=True,
+    )
+
+
+def build_lab_orchestration_topology_continuation_port(
+    nexus_loop: NexusLoop,
+    *,
+    slot_mse_policy: OrchestrationTopologySlotMsePolicy | None = None,
+) -> OrchestrationTopologyContinuationPort[object, object]:
+    """NON-PRODUCTION — LAB / TEST / QUALIFICATION ONLY. Explicit non-production continuation port."""
+    return _build_canonical_orchestration_topology_submission_port(
+        nexus_loop,
+        slot_mse_policy=slot_mse_policy,
+        production_topology=False,
     )
 
 
 def build_orchestration_topology_continuation_port(
     nexus_loop: NexusLoop,
+    *,
+    slot_mse_policy: OrchestrationTopologySlotMsePolicy | None = None,
 ) -> OrchestrationTopologyContinuationPort[object, object]:
-    """Composition-root factory wiring exact slot continuation to the canonical Nexus host."""
-    return CanonicalOrchestrationTopologySubmissionPort(
-        _graph_executor=nexus_loop.graph_executor,
+    """Production-safe composition root wiring exact slot continuation to the canonical Nexus host."""
+    if slot_mse_policy is None:
+        raise OrchestrationTopologyMseCompositionError(
+            "canonical orchestration topology continuation requires "
+            "OrchestrationTopologySlotMsePolicy; use "
+            "build_lab_orchestration_topology_continuation_port for non-production composition",
+        )
+    return build_production_orchestration_topology_continuation_port(
+        nexus_loop,
+        slot_mse_policy=slot_mse_policy,
     )
 
 

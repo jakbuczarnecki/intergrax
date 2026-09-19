@@ -14,6 +14,9 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
+from intergrax.contracts.execution_deadline.clock import MonotonicClockPort
+from intergrax.contracts.execution_deadline.projection import ExecutionDeadlineProjection
+from intergrax.runtime.execution.active_execution_budget import peek_active_execution_budget
 from intergrax.runtime.execution.budget.consumption import (
     consume_planner_iteration,
     consume_rag_invocation,
@@ -22,7 +25,13 @@ from intergrax.runtime.execution.budget.consumption import (
     consume_wall_time_delta,
     consume_websearch_invocation,
 )
-from intergrax.runtime.nexus.budget.budget_enforcer import BudgetEnforcer
+from intergrax.runtime.execution.deadline_authority.system_clocks import SystemMonotonicClock
+from intergrax.runtime.execution.deadline_scope import (
+    peek_active_execution_deadline_projection,
+    peek_active_execution_monotonic_clock,
+)
+from intergrax.runtime.execution.live_deadline_evaluator import execution_is_expired_now
+from intergrax.runtime.nexus.budget.budget_enforcer import BudgetEnforcer, BudgetExceededError
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.utils.time_provider import SystemTimeProvider
 
@@ -85,11 +94,56 @@ def enforce_tool_call_budget(state: RuntimeState) -> None:
 
 
 def run_elapsed_seconds(state: RuntimeState) -> float:
-    """Wall-clock elapsed time since ``RuntimeState.started_at_utc``."""
+    """Observability elapsed since ``RuntimeState.started_at_utc`` (not wall-time authority)."""
     started = datetime.fromisoformat(state.started_at_utc)
     if started.tzinfo is None:
         started = started.replace(tzinfo=timezone.utc)
     return (SystemTimeProvider.utc_now() - started).total_seconds()
+
+
+def _wall_checkpoint_projection_and_clock(
+    state: RuntimeState,
+) -> tuple[ExecutionDeadlineProjection, MonotonicClockPort] | None:
+    """Resolve active canonical monotonic authority for mid-loop checkpoints."""
+    projection = peek_active_execution_deadline_projection()
+    monotonic_clock = peek_active_execution_monotonic_clock()
+    if projection is not None:
+        if projection.global_deadline_monotonic is None:
+            return None
+        if monotonic_clock is None:
+            raise RuntimeError(
+                "active execution monotonic clock required for bounded wall-time checkpoint",
+            )
+        return projection, monotonic_clock
+
+    budget_state = peek_active_execution_budget()
+    if budget_state is not None and budget_state.global_deadline_monotonic is not None:
+        clock = SystemMonotonicClock()
+        bound = budget_state.global_deadline_monotonic
+        remaining = max(0.0, bound - clock.monotonic())
+        ephemeral = ExecutionDeadlineProjection(
+            deadline_at_utc=None,
+            remaining_seconds=remaining,
+            is_expired=remaining <= 0.0,
+            global_deadline_monotonic=bound,
+        )
+        return ephemeral, clock
+
+    run_budget = state.context.config.run_budget
+    if run_budget is not None and run_budget.max_wall_time_seconds is not None:
+        raise RuntimeError(
+            "canonical execution deadline projection required for bounded wall-time checkpoint",
+        )
+    return None
+
+
+def _canonical_global_wall_time_expired(state: RuntimeState) -> bool | None:
+    """``True`` expired, ``False`` available, ``None`` when globally unbounded."""
+    resolved = _wall_checkpoint_projection_and_clock(state)
+    if resolved is None:
+        return None
+    projection, monotonic_clock = resolved
+    return execution_is_expired_now(projection, monotonic_clock)
 
 
 def record_planner_iteration_and_enforce(state: RuntimeState) -> None:
@@ -119,9 +173,12 @@ def record_replan_and_enforce(state: RuntimeState) -> None:
 
 
 def enforce_wall_time_budget(state: RuntimeState) -> None:
-    """Mid-run wall-time check using canonical ``RuntimeState.started_at_utc``."""
+    """Mid-run cooperative checkpoint delegating global wall-time to canonical authority."""
     elapsed = run_elapsed_seconds(state)
     consume_wall_time_delta(elapsed)
+    expired = _canonical_global_wall_time_expired(state)
+    if expired is None or not expired:
+        return
     enc = _enforcer(state)
     if enc is not None:
         enc.check_wall_time(
@@ -129,3 +186,5 @@ def enforce_wall_time_budget(state: RuntimeState) -> None:
             elapsed_seconds=elapsed,
             state=state,
         )
+        return
+    raise BudgetExceededError("Budget exceeded: max_wall_time_seconds (canonical deadline expired)")

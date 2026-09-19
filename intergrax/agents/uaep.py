@@ -11,6 +11,8 @@ from typing import Any, List, Optional
 from uuid import uuid4
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.agent_runtime_context_materializer import AgentRuntimeContextMaterializer
+from intergrax.agents.runtime_request_bridge import agent_run_result_from_runtime_answer
 from intergrax.agents.authoring.uaep_kernel_step_execution import UaepExecutorStepOutcome
 from intergrax.agents.authoring.uaep_step_bridge import (
     build_kernel_session,
@@ -255,6 +257,11 @@ class UAEPExecutor:
         self._attach_sandbox_session(exec_ctx, request, task_id=task_id)
         self._attach_shared_context(exec_ctx, request)
         self._attach_memory_view(exec_ctx, request)
+        from intergrax.runtime.cancellation.runtime_execution_cancellation_view import (
+            attach_runtime_execution_cancellation_view,
+        )
+
+        attach_runtime_execution_cancellation_view(exec_ctx)
 
         kernel_ctx = build_kernel_session(
             agent_id=contract.id,
@@ -282,6 +289,10 @@ class UAEPExecutor:
             await self._middleware.run_before(HookPoint.BEFORE_CONTEXT_BUILD, hook_base)
         )
 
+        if not isinstance(agent, AgentRuntimeContextMaterializer):
+            raise TypeError(
+                f"{type(agent).__name__} must implement build_context for UAEP execution"
+            )
         runtime_context = agent.build_context(request)
         runtime_context = self._apply_explicit_sandbox_isolation_authority(
             runtime_context,
@@ -328,7 +339,6 @@ class UAEPExecutor:
                     raise UAEPBlockedError(STRUCTURED_MODEL_INPUT_REQUIRED_REASON) from exc
                 if assembled_prompt and assembled_prompt != (request.message or ""):
                     request = replace(request, message=assembled_prompt)
-            exec_ctx.domain_context = runtime_context
             from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     
             exec_ctx.metadata["runtime_state"] = RuntimeState(
@@ -377,7 +387,7 @@ class UAEPExecutor:
                 engine_id="default",
             )
     
-            steps = self._resolve_steps(agent, runtime_context, contract.max_steps)
+            steps = self._resolve_steps(agent, contract.max_steps)
             last_output: Optional[StepOutput] = None
             governance: Optional[GovernanceResolution] = None
             runtime_ckpt = request.runtime_checkpoint
@@ -667,7 +677,9 @@ class UAEPExecutor:
             await self._guard_hook(
                 await self._middleware.run_before(HookPoint.BEFORE_VALIDATION, hook_val)
             )
-            validation = agent.validate(answer, context=runtime_context)
+            validation = agent.validate(
+                agent_run_result_from_runtime_answer(answer, run_id=run_id)
+            )
             await self._guard_hook(
                 await self._middleware.run_after(HookPoint.AFTER_VALIDATION, hook_val)
             )
@@ -964,12 +976,11 @@ class UAEPExecutor:
     @staticmethod
     def _resolve_steps(
         agent: Agent,
-        runtime_context: RuntimeContext,
         max_steps: Optional[int],
     ) -> List[AgentStep]:
         if not isinstance(agent, UAEPAgent):
             raise TypeError(f"{type(agent).__name__} is not a UAEPAgent")
-        steps = list(agent.get_steps(runtime_context))
+        steps = list(agent.get_steps())
         if not steps:
             raise ValueError(f"{type(agent).__name__}.get_steps() returned no steps.")
         limit = max_steps if max_steps is not None else len(steps)

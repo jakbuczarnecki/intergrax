@@ -58,7 +58,9 @@ from intergrax.runtime.execution.fan_out_partial_recovery import (
 )
 from intergrax.runtime.execution.orchestration_topology_submission import (
     CanonicalOrchestrationTopologySubmissionPort,
-    build_orchestration_topology_submission_port,
+)
+from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
+    build_production_representative_orchestration_topology_submission_port,
 )
 from intergrax.runtime.long_running.checkpoint_revision import StaleCheckpointWriteError
 from intergrax.runtime.long_running.execution_tree_checkpoint import (
@@ -186,7 +188,7 @@ def _build_stack(
     NexusLoop,
 ]:
     loop = nexus_loop or NexusLoop(AgentRegistry())
-    submission = build_orchestration_topology_submission_port(loop)
+    submission = build_production_representative_orchestration_topology_submission_port(loop)
     coordination = _build_coordination_service(harness)
     adapter = build_fan_out_orchestration_port(submission, coordination)
     fan_out = BoundedMultiAgentFanOutService(orchestration=adapter)
@@ -387,7 +389,13 @@ def test_no_reflection_in_partial_recovery_production() -> None:
 
 
 def test_submission_port_exposes_recover_failed_slot() -> None:
-    port = build_orchestration_topology_submission_port(NexusLoop(AgentRegistry()))
+    from intergrax.runtime.execution.orchestration_topology_submission import (
+        build_lab_orchestration_topology_submission_port,
+    )
+    from intergrax.runtime.nexus.nexus_loop import NexusLoop
+    from intergrax.runtime.registry.agent_registry import AgentRegistry
+
+    port = build_lab_orchestration_topology_submission_port(NexusLoop(AgentRegistry()))
     assert hasattr(port, "recover_failed_slot")
     assert inspect.iscoroutinefunction(port.recover_failed_slot)
 

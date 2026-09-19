@@ -256,16 +256,21 @@ def build_reference_registry_projection_input_bundle(
             wire_application_environment,
         )
 
-        ctx = wire_application_environment(
+        wiring = wire_application_environment(
             manifest,
             environment,
             settings=settings,
-        ).build_context
+        )
+        composition = wiring.composition
+        ctx = composition.factory_context
+    else:
+        composition = None
     return RegistryProjectionInputBundle(
         runtime_revision=revision,
         effective_roster=roster,
         manifest=manifest,
         build_context=ctx,
+        composition=composition,
         factory_resolver=_resolver_for_bindings(
             manifest,
             entries,

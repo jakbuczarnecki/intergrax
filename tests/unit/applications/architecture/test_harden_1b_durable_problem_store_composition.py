@@ -104,7 +104,7 @@ def test_harden_1b_write_and_read_share_platform_conditional_document_store(
         trace_db_path=tmp_path / "trace.db",
         runtime_events_db_path=tmp_path / "events.db",
     )
-    wiring_context = runtime.env_wiring.build_context.tool_wiring_context
+    wiring_context = runtime.env_wiring.composition.tool_wiring_context
     assert wiring_context is not None
     assert wiring_context.document_store is store
     assert_conditional_document_store(wiring_context.document_store)

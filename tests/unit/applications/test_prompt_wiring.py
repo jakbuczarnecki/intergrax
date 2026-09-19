@@ -68,7 +68,7 @@ def test_wire_application_environment_includes_prompt_registry() -> None:
     wiring = wire_application_environment(build_lab_manifest(settings), env)
 
     assert wiring.prompt_registry is not None
-    assert wiring.build_context.prompt_registry is wiring.prompt_registry
+    assert wiring.composition.prompt_registry is wiring.prompt_registry
 
 
 @pytest.mark.no_ci
@@ -84,7 +84,8 @@ def test_build_runtime_context_from_environment_injects_prompt_registry() -> Non
         wiring.build_context,
         env,
         llm_adapter=FakeLLMAdapter(),
+        composition=wiring.composition,
     )
 
     assert ctx.prompt_registry is not None
-    assert isinstance(ctx.prompt_registry, YamlPromptRegistry)
+    assert isinstance(wiring.composition.prompt_registry, YamlPromptRegistry)

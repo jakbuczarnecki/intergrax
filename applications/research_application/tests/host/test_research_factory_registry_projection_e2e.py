@@ -20,6 +20,9 @@ from intergrax.applications._shared.production_platform_persistence import (
     resolve_reference_production_strict_host_environment,
 )
 from research_application.host.factory import create_research_backend_app
+from research_application.host.orchestration_decision_requirement_policy import (
+    resolve_research_harness_orchestration_decision_requirement_policy,
+)
 from research_application.host.settings import ResearchBackendSettings
 from research_application.host.wiring import build_research_environment_profile
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
@@ -64,6 +67,9 @@ def test_research_factory_uses_projected_registry_not_manifest_extra_agents(
         registry_projection=projection,
         key_value_cache=platform.kv_store,
         document_store=platform.document_store,
+        orchestration_decision_requirement_policy=(
+            resolve_research_harness_orchestration_decision_requirement_policy(settings)
+        ),
     )
     assert runtime.registry_projection_evidence is not None
     assert runtime.registry_projection_evidence.runtime_revision_id == "rev-research-e2e"

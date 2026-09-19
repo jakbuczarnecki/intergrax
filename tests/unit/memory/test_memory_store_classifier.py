@@ -6,6 +6,10 @@ from __future__ import annotations
 
 import pytest
 
+from intergrax.memory.contracts.memory_store_creation_context import (
+    SessionStorageCreationContext,
+    UserProfileStoreCreationContext,
+)
 from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStoreCreationContext
 from intergrax.memory.resolver import MemoryStorePluginKind, classify_memory_store_plugin
 from intergrax.memory.session_turn_index_service import VectorSessionTurnIndexStore
@@ -21,7 +25,7 @@ class _UserProfilePlugin:
         return "test.user_profile"
 
     @classmethod
-    def create_user_profile_store(cls, **_kwargs):
+    def create_user_profile_store(cls, _context: UserProfileStoreCreationContext):
         return InMemoryUserProfileStore()
 
 
@@ -31,7 +35,7 @@ class _SessionStoragePlugin:
         return "test.session_storage"
 
     @classmethod
-    def create_session_storage(cls, **_kwargs):
+    def create_session_storage(cls, _context: SessionStorageCreationContext):
         return InMemorySessionStorage()
 
 
@@ -67,11 +71,11 @@ def test_classifier_prefers_session_turn_index_when_all_methods_present() -> Non
             return "test.multi"
 
         @classmethod
-        def create_user_profile_store(cls, **_kwargs):
+        def create_user_profile_store(cls, _context: UserProfileStoreCreationContext):
             return InMemoryUserProfileStore()
 
         @classmethod
-        def create_session_storage(cls, **_kwargs):
+        def create_session_storage(cls, _context: SessionStorageCreationContext):
             return InMemorySessionStorage()
 
         @classmethod

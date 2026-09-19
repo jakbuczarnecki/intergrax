@@ -55,6 +55,9 @@ from intergrax.memory.resolver.discovery import (
     discover_classified_memory_store_plugins,
 )
 from intergrax.memory.resolver.errors import MemoryStorePluginResolutionError
+from intergrax.memory.contracts.memory_store_creation_context import (
+    LongHorizonMemoryStoreCreationContext,
+)
 from intergrax.memory.resolver.materialization import MemoryStoreMaterializationContext
 from intergrax.memory.resolver.resolver import materialize_long_horizon_memory_store
 from intergrax.memory.stores.in_memory_long_horizon_memory_plugin import (
@@ -481,7 +484,11 @@ class _FakeLongHorizonMemoryStorePlugin:
         return "test.fake_long_horizon"
 
     @classmethod
-    def create_long_horizon_memory_store(cls, **kwargs: object) -> _RecordingLongHorizonStore:
+    def create_long_horizon_memory_store(
+        cls,
+        context: LongHorizonMemoryStoreCreationContext,
+    ) -> _RecordingLongHorizonStore:
+        _ = context
         return _RecordingLongHorizonStore()
 
 

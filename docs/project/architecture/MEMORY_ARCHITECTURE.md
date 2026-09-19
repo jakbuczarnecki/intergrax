@@ -1,17 +1,22 @@
-# Memory — Enterprise architecture (MEM-ENT closeout)
+# Memory — Enterprise architecture
 
-**Status:** canonical architecture for the Memory core delivered in MEM-ENT-1…15  
+**This document is the canonical maintainer-level architecture reference for the Integrax Memory layer.**
+
+**Status:** **ENTERPRISE CERTIFIED / CLOSED** at **`4db4bb69671c7f6091284e448e2d09094ebd54cd`** (**MEM-ENTERPRISE-CLOSURE**). Prior **MEM-FINAL-AUDIT-7-R2** documentation certification and **MEM-FINAL-ZERO-GAP-AUDIT-R2** (`PASS — ZERO MATERIAL GAPS FOUND`) remain in the qualification ledger. Bounded certified surface and non-certified boundaries: [`MEMORY_FINAL_ENTERPRISE_AUDIT.md`](../maintainers/qualification/MEMORY_FINAL_ENTERPRISE_AUDIT.md) § MEM-ENTERPRISE-CLOSURE.
 **Audience:** engineers extending stores, projections, strategies, or Tier-3 wiring  
 **Domain hub (product overview):** [`MEMORY.md`](MEMORY.md)  
-**Plan hub:** [`../maintainers/plans/MEMORY.md`](../maintainers/plans/MEMORY.md)
+**Plan hub:** [`../maintainers/plans/MEMORY.md`](../maintainers/plans/MEMORY.md)  
+**Diagrams (sequences & topology):** [`MEMORY_ARCHITECTURE_DIAGRAMS.md`](MEMORY_ARCHITECTURE_DIAGRAMS.md)  
+**Qualification ledger:** [`../maintainers/qualification/MEMORY_FINAL_ENTERPRISE_AUDIT.md`](../maintainers/qualification/MEMORY_FINAL_ENTERPRISE_AUDIT.md) · [`../maintainers/qualification/MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md`](../maintainers/qualification/MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md)
 
-This document describes **what the code actually does** at `development` HEAD after enterprise hardening. It is not an aspirational target design.
+This document describes **what the code actually does** at current `development` HEAD. It is not an aspirational target design. Git is the version source of truth (no hand-maintained doc version numbers).
 
 ## Glossary
 
 | Term | Meaning |
 | ---- | ------- |
-| **Canonical source** | Durable truth for a memory scope; mutations go here first |
+| **Canonical source** | Authoritative source of truth for a memory scope; mutations go here first (**independent of provider durability**) |
+| **Durable provider** | Provider whose persisted state survives a **certified** reopen/restart boundary for that capability (see durability matrix) |
 | **Derived projection** | Secondary representation updated after canonical commit; never authority |
 | **Specialized store** | Durable/query surface for a memory domain (entity, procedural, long-horizon) |
 | **Capability** | Governed read/disclosure (and sometimes mutation) API over a store |
@@ -19,12 +24,27 @@ This document describes **what the code actually does** at `development` HEAD af
 | **Control Plane** | Single semantic entry (`remember` / `recall` / `forget` / `reconcile` / supersession) |
 | **Provider** | Replaceable implementation behind a platform contract, discovered and qualified by the host |
 
-### Hard invariant (EN / PL)
+### Hard invariants (literal)
 
-**Derived projection is never canonical authority.**  
-**Projekcja pochodna nigdy nie jest kanonicznym źródłem prawdy.**
+- **Projection is not authority.** Derived projections (LTM vector, entity indexer output, long-horizon compaction) never override canonical primary stores.
+- **RAG is not Memory authority.** Document/corpus retrieval does not define remembered user state.
+- **SessionTurnIndex is not USER Memory authority.** Episodic/session index is authoritative for its own `SessionTurnIndexStore` capability domain, not for user-profile canonical facts.
+- **Context Engineering is final model-context authority.** Memory supplies recall outputs; CE assembles the prompt/context budget.
 
-Summaries, vector indexes, entity graph projections, and long-horizon compacted views are **derived** — not canonical user memory.
+**PL:** Projekcja pochodna nigdy nie jest kanonicznym źródłem prawdy; RAG nie jest źródłem prawdy Memory; STI nie zastępuje UserProfile; CE decyduje o finalnym kontekście modelu.
+
+Summaries, vector indexes, entity graph projections, and long-horizon compacted views are **derived** — not canonical user memory. Shared vector infrastructure with RAG does **not** imply shared authority.
+
+**Authority ≠ durability:** `InMemoryUserProfileStore` may be the **canonical authority** for a lab/test runtime composition while **not** durable across process restart. Canonical source names *who owns truth*; durability names *whether the selected provider survives reopen/restart* (provider-specific, matrix-backed).
+
+| Property | Question |
+| -------- | -------- |
+| **Authority** | Which component is the source of truth for a scope? |
+| **Durability** | Does the **selected** provider survive certified reopen/restart boundaries? |
+| **Projection** | Is the representation derived from authority? |
+| **Admission** | Is the provider trusted for PRODUCT use (evidence-bound)? |
+
+**Qualification ≠ admission:** qualification records demonstrated behavior; admission is host/profile permission to use a provider in PRODUCT composition (fail-closed when required evidence is missing).
 
 ---
 
@@ -137,6 +157,20 @@ Contract: `MemoryControlPlane` (`intergrax/memory/contracts/memory_control.py`).
 | `recall_session_turns` | Minimal | `EpisodicMemoryCapability` placeholder surface |
 
 Task memory uses separate `TaskMemoryCapability` when injected; not all hosts wire it.
+
+### Scope × operation matrix (`DefaultMemoryControlPlane`)
+
+Authority gate on every operation: `RequestIdentity` + `MemoryControlScopeRef` → `assert_memory_scope_authorized` (`intergrax/memory/memory_scope_authority.py`).
+
+| Scope | remember | recall | forget | supersession (`apply_memory_supersession`) | reconcile |
+| ----- | -------: | -----: | -----: | -----------------------------------------: | --------: |
+| **USER** | YES | YES | YES | YES | YES |
+| **TASK** | YES | **NO** (raises `MemoryControlUnsupportedScope`) | YES | NO | NO |
+| **SESSION** | NO | YES (session episodic path) | NO | NO | NO |
+
+**TASK recall nuance:** `MemoryControlPlane.recall` does **not** support TASK scope. Durable task reads use **`TaskMemoryCapability.read`** (and runtime `TaskMemoryCoordinator` / `TaskMemoryPersistence`) — parallel domain, not the semantic USER recall pipeline.
+
+**SESSION remember:** not routed through USER lifecycle; episodic capture uses SessionTurnIndex / session wiring when enabled.
 
 ### Reference-read port (MP-5F-B1 — CLOSED)
 
@@ -321,7 +355,7 @@ Enabled when `MemoryProfile.enable_entity_graph_memory` and indexer + capability
 | Typed adapters | `session_turn_index_rag_adapters`, `VectorSessionTurnIndexStore` |
 | RAG-facing managers | Wired via `build_session_turn_index_store` when `enable_session_vector_index` |
 
-**Certification gap:** MEM-ENT-15 E2E certification **did not include** SessionTurnIndex end-to-end. Boundary is documented; E2E proof is out of scope for MEM-ENT-15.
+**Qualification:** MEM-FINAL-AUDIT-5D–5F closed **real-vendor reconnect** for Qdrant, pgvector, and Chroma STI paths. MEM-ENT-15 did not include full STI product E2E; behavioral SESSION scenarios exist in audit 6. STI remains **indexed episodic authority**, not USER canonical memory.
 
 ---
 
@@ -345,11 +379,13 @@ contracts → discovery → qualification → materialization → configured pro
 | ---- | ------- |
 | Contract qualification | Protocol shape and required methods |
 | Behavioral qualification | Semantic tests against reference behavior |
-| Durable qualification | Restart/reopen evidence (SQLite reference path) |
+| Durable qualification | Restart/reopen evidence per [`MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md`](../maintainers/qualification/MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md) |
 | Adapter recreation only | In-memory re-instantiation — not durable reopen |
-| Real durable reopen | Proven via SQLite harness (MEM-ENT-13C) |
+| Real durable reopen / reconnect | SQLite reference (MEM-FINAL-AUDIT-5B V5) and **qualified real-vendor paths** (e.g. Mongo UserProfile 5C/5C-R, STI 5D–5F V6 reconnect) |
 
-**External vendors:** Mongo/document paths exist in integration wiring; **full external durable vendor E2E is not certified** in MEM-ENT-15 (simulated/blocked paths in qualification where applicable). **SQLite** is the real durable local qualification/reference proof for user profile store.
+**Mongo-backed UserProfile (current):** `DocumentStoreUserProfileStore` → Integration `DocumentStore` → MongoDB provider. Qualified in **MEM-FINAL-AUDIT-5C / 5C-R** as **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** for composite identity `provider_id=document_store.user_profile`, `backing_provider_id=mongodb`. Proof covers **provider/client recreation and reconnect** (`REAL_VENDOR_RECONNECT`); it does **not** certify Mongo **service restart**, HA/failover, crash recovery, or power-loss recovery. Evidence is **not** transferable to other DocumentStore backings.
+
+**Historical (MEM-ENT-15):** at that milestone, external durable vendor E2E was **not** in the MEM-ENT-15 suite — **superseded** by MEM-FINAL-AUDIT-5C/5C-R and the provider matrix. **SQLite** remains the **reference** durable local harness for UserProfile (5B V5); it is not the only qualified durable/reconnect UserProfile path.
 
 **Persistence abstraction:** persistence is accessed through platform contracts/providers. Domain services must not branch on vendor implementation details.
 
@@ -429,8 +465,20 @@ Retry: idempotency and ambiguous-commit handling are documented per path in MEM-
 
 ## Observability
 
+```text
+Canonical execution identity (TaskId / RunId / AttemptId / ExecutionId) — platform authority
+        ↓ optional projection (never minted by Memory)
+Memory operation
+        ↓
+MemoryDiagnosticEvent (event_id ≠ execution_id)
+        ↓
+MemoryObservabilitySink (pluggable; not vendor-specific)
+```
+
 - `MemoryDiagnosticEmitter` + `MemoryObservabilitySink`
 - Terminal outcomes: SUCCESS / DENIED / FAILED / PARTIAL / reconcile semantics
+- Optional execution correlation fields on `MemoryDiagnosticEvent`: `task_id`, `run_id`, `attempt_id`, `execution_id` (MEM-HARDEN-FINAL-2). Standalone Memory outside execution flow leaves them `None`.
+- **W3C trace propagation on Memory diagnostic events:** **NOT INTEGRATED** (no `traceparent` on `MemoryDiagnosticEvent`). Platform/runtime may emit W3C tracing separately.
 - Sink failure isolation (MEM-ENT-14) — diagnostics **are not** business authority
 
 ---
@@ -474,11 +522,16 @@ Entity graph: **enabled** → projection wired in `build_user_profile_manager`; 
 ```text
 resolve_memory_platform_wiring(env)
   → user_profile_store, entity_store, entity_memory_indexer, entity_temporal_memory_capability
+  → specialized_memory: procedural/long-horizon stores (flag-gated); capabilities when canonical authorities injected
+wire_application_environment(env)
+  → ApplicationEnvironmentWiring.specialized_memory (stores; capabilities only with authority injection)
 build_user_profile_manager(store, env, …, entity_memory_indexer, entity_temporal_memory_capability)
   → UserProfileManager + projections
 build_default_memory_control_plane(user_profile_manager=…)
   → DefaultMemoryControlPlane
 ```
+
+Entity temporal, procedural, and long-horizon **default** providers are in-memory reference implementations — **not** durable production stores. Production admission for persistent USER/LTM/STI does not transfer to these specialized surfaces without matrix-backed vendor evidence.
 
 LTM tool: `ltm.write_fact` requires trusted `RequestIdentity` via control plane or explicit extras — **fails closed** without it (`MemoryControlAccessDenied`).
 
@@ -496,8 +549,8 @@ LTM tool: `ltm.write_fact` requires trusted `RequestIdentity` via control plane 
 | Entity capability | `EntityTemporalMemoryCapability` (`contracts/entity_temporal_memory.py`) | `EntityTemporalMemoryService` (`entity_temporal_memory_service.py`) | YES | `entity_graph_wiring` |
 | Projections | `UserProfileMemoryProjection` | entity + LTM vector | YES | `memory_vector_wiring` |
 | Qualification checks | per-store check modules | bundled suite | YES (plugins) | host runner |
-| Long-horizon | `LongHorizonMemoryStore` | in-memory plugin | YES | wiring + service |
-| Procedural | `ProceduralMemoryStore` | in-memory plugin | YES | wiring + service |
+| Long-horizon | `LongHorizonMemoryStore` | in-memory plugin (NON-DURABLE REFERENCE) | YES | `specialized_memory_wiring` + `memory_wiring` |
+| Procedural | `ProceduralMemoryStore` | in-memory plugin (NON-DURABLE REFERENCE) | YES | `specialized_memory_wiring` + `memory_wiring` |
 | SessionTurnIndex | `SessionTurnIndexStore` | vector adapter | YES | `memory_vector_wiring` |
 | Observability sink | `MemoryObservabilitySink` | default emitter | YES | `memory_observability_wiring` |
 | Recall strategies | `MemoryRecallStrategySet` | defaults bundle | YES | control plane injection |
@@ -558,12 +611,32 @@ LTM tool: `ltm.write_fact` requires trusted `RequestIdentity` via control plane 
 
 ---
 
+## Authority model (concern → canonical authority)
+
+| Concern | Canonical authority |
+| ------- | ------------------- |
+| USER identity | `RequestIdentity` (trusted; not reconstructed from payload) |
+| Tenant / workspace scope | `RequestIdentity` + `MemoryControlScopeRef.tenant_id` alignment |
+| USER Memory truth | `UserProfileStore` via `UserProfileManager` |
+| SESSION episodic retrieval | `SessionTurnIndexStore` / episodic capability (STI domain) |
+| TASK durable state | `TaskMemoryPersistence` (+ `TaskMemoryCoordinator` runtime) |
+| Organization state | `OrganizationProfileStore` / `OrganizationProfileManager` |
+| Model context | Context Engineering (Nexus context assembly) |
+| Semantic LTM projection | Derived; never canonical |
+| RAG evidence | Evidence retrieval; never Memory authority |
+
+**Tenant isolation:** identical `user_id` in two tenants is **not** the same memory scope (`assert_memory_scope_authorized` enforces `scope.tenant_id == identity.tenant_id`).
+
+**Organization mapping (runtime):** `session.tenant_id` is passed as `organization_id` when loading org profile instructions (`intergrax/runtime/nexus/session/session_profile_instructions.py`). The org store does not infer organization authority from payloads alone.
+
+**TASK keys (durable):** `tenant_id`, task identity in outer persistence model, `namespace`, `key` on `TaskMemoryPersistence` — distinct from `MemoryControlPlane` TASK scope refs (orchestration layer).
+
 ## Authority map
 
 | Mechanism | Canonical / Derived |
 | --------- | ------------------- |
 | UserProfile memory entries | **Canonical** |
-| UserProfileStore | **Canonical** durability |
+| UserProfileStore | **Canonical** authority (durability depends on selected provider — see durability matrix) |
 | LTM vector projection | Derived |
 | Entity graph from profile projection | Derived |
 | EntityTemporalMemoryStore content | Specialized derived representation |
@@ -640,20 +713,22 @@ flowchart LR
 
 ---
 
-## E2E certification scope (MEM-ENT-15)
+## E2E certification scope
 
-### Certified (within documented scope)
+### MEM-ENT-15 suite (historical baseline)
 
-Control Plane lifecycle, trusted identity, governance, entity projection, revision, temporal, procedural, long-horizon, reconciliation, observability, SQLite durable restart, plugin contract replaceability, scope isolation, resilience paths exercised in certification suite.
+Within the **MEM-ENT-15** qualification suite: control plane lifecycle, trusted identity, governance, entity projection, revision, temporal, procedural, long-horizon, reconciliation, observability, SQLite durable restart, plugin contract replaceability, scope isolation, resilience paths exercised in that suite.
 
-Use phrase **“Memory core and certified paths”** — not “fully certified” without scope.
+Use phrase **“Memory core and MEM-ENT-15 certified paths”** — not “fully certified” without scope.
 
-### Explicitly not certified
+**Superseded vendor status:** MEM-FINAL-AUDIT-5B–5G and MEM-FINAL-AUDIT-6-R2 extend evidence beyond MEM-ENT-15. **Current** provider qualification is in [Current certified provider status](#current-certified-provider-status) and the [provider matrix](../maintainers/qualification/MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md).
+
+### Explicitly not certified (current)
 
 | Area | Status |
 | ---- | ------ |
-| SessionTurnIndex E2E | Not in MEM-ENT-15 suite |
-| Real external durable vendor (production Mongo/etc.) | Not E2E certified |
+| Mongo UserProfile **service restart / HA / power loss** | NOT TESTED (5C reconnect ≠ service restart) |
+| STI Qdrant/pgvector/Chroma **service restart / HA / power loss** | NOT TESTED (5D–5F reconnect qualified) |
 | Distributed failover | Not certified |
 | Load / performance | Not certified |
 | Cross-layer Memory × CE × Tools × RAG | **MEM-XINT-1** |
@@ -688,9 +763,329 @@ Use phrase **“Memory core and certified paths”** — not “fully certified�
 
 ## Final architecture status
 
-**Memory core architecture:** enterprise-certified **within the scope documented above** (MEM-ENT-1…15).
+**Memory control plane:** behaviorally qualified (MEM-FINAL-AUDIT-6-R2). **Architecture narrative:** **MEMORY ARCHITECTURE — DOCUMENTATION CERTIFIED** (MEM-FINAL-AUDIT-7-R2). Use **certified behaviors / documented guarantees / known limitations** — not marketing claims (HA, horizontal scale, universal thread-safety, power-loss).
 
-**Cross-layer integration** with Context Engineering, RAG, and Tools is evaluated separately under **MEM-XINT-1**.
+**Cross-layer integration** with Context Engineering, RAG, and Tools remains **MEM-XINT-1** (out of MEM-FINAL-AUDIT-7 scope).
+
+---
+
+## MEM-FINAL-AUDIT-7 — certification overlay
+
+### Source-of-truth hierarchy
+
+1. Contracts (`intergrax/memory/contracts/`)
+2. Canonical Memory Control Plane (`DefaultMemoryControlPlane`)
+3. Canonical primary stores (`UserProfileStore`, `TaskMemoryPersistence`, `OrganizationProfileStore`)
+4. Projection contracts (`UserProfileMemoryProjection`, STI as indexed episodic store)
+5. Provider abstractions + qualification descriptors
+6. Provider implementations (`intergrax/memory/stores/`, runtime task/org stores)
+7. Vendor integrations (SQLite file, Mongo `DocumentStore`, Qdrant/pgvector/Chroma via vector ports)
+8. Composition roots (`applications/_shared/memory_*_wiring.py`, `resolve_memory_platform_wiring`)
+9. Application / runtime consumers (CE, Nexus, tools)
+
+### One host-owned control plane
+
+Production hosts wire **one** canonical `MemoryControlPlane` instance (`build_default_memory_control_plane`). Duplicate planes are not normal architecture.
+
+### Conflict vs supersession
+
+| Situation | Semantics |
+| --------- | --------- |
+| Two active contradictory facts without lineage | Recall conflict strategies may surface **unresolved conflict** (behavioral scenarios) |
+| Explicit `apply_memory_supersession` | **Resolved:** old record superseded; new record current; lineage on enterprise record |
+
+### Projection lifecycle outcomes (actual enums)
+
+| Primary | Projection | `MemoryLifecycleDisposition` / reconciliation |
+| ------- | ---------- | --------------------------------------------- |
+| success | success | `CONSISTENT` |
+| success | fail | `PARTIAL_PROJECTION_FAILURE` → reconcile required |
+| delete success | projection delete fail | `PARTIAL_PROJECTION_FAILURE` |
+| reconcile repaired projection | — | `MemoryProjectionReconciliationDisposition.REPAIRED` / aggregate `MemoryReconciliationDisposition.REPAIRED` |
+| already consistent | — | `CONSISTENT` |
+| reconcile failed | — | `MemoryReconciliationDisposition.FAILED` |
+
+**Hard rule:** reconciliation repairs **derived** state from canonical active IDs; it never promotes projection to authority.
+
+### Temporal states (code-backed)
+
+Active filtering uses `memory_temporal.is_memory_entry_active` / enterprise record flags (active, validity window, deleted, superseded lineage). Do not claim states that lack fields in `UserProfileMemoryEntry` / enterprise record helpers.
+
+### Provider materialization boundary
+
+```text
+domain/service code in intergrax/memory/ DOES NOT instantiate concrete vendors
+```
+
+Selection happens in **integration**, **provider materialization** (`resolver/materialization.py`), and **composition roots**. `ConditionalDocumentStore` belongs to **Integration**, not Memory core.
+
+### Provider composite identity
+
+`MemoryProviderDescriptor` (`provider_qualification.py`): `provider_id`, capability, `provider_version`, optional `backing_provider_id` / `backing_provider_version`. Qualification evidence is bound to **exact** identity — Qdrant STI evidence does not qualify pgvector/Chroma.
+
+### STI vendor qualification (isolated)
+
+| Semantic capability | Backing vendor | Qualification |
+| -------------------- | -------------- | ------------- |
+| `vector.session_turn_index` | qdrant | MEM-FINAL-AUDIT-5D — V6 reconnect qualified |
+| `vector.session_turn_index` | pgvector | MEM-FINAL-AUDIT-5E — V6 reconnect qualified |
+| `vector.session_turn_index` | chroma | MEM-FINAL-AUDIT-5F — V6 reconnect qualified (`REAL_VENDOR_RECONNECT` ≠ service restart proof) |
+
+Topology: `SessionTurnIndexStore` → `VectorSessionTurnIndexStore` → neutral vector ports → `VectorstoreManager` → vendor integration. See diagrams doc § STI.
+
+### UserProfile / Task / Organization topology (summary)
+
+| Domain | Path |
+| ------ | ---- |
+| USER canonical | `UserProfileStore` ← `InMemoryUserProfileStore` · `SQLiteUserProfileStore` · `DocumentStoreUserProfileStore` (Mongo via Integration; composite qual identity `document_store.user_profile` + `mongodb`) |
+| TASK durable | `TaskMemoryCoordinator` → `TaskMemoryPersistence` → `SQLiteTaskMemoryStore` (5G V5 reopen qualified) |
+| Organization | `OrganizationProfileManager` → `OrganizationProfileStore` → `SQLiteOrganizationProfileStore` (5G V5) |
+
+### Forbidden dependencies
+
+| Forbidden dependency | Status |
+| -------------------- | ------ |
+| Memory core → chromadb | forbidden (guarded) |
+| Memory core → qdrant SDK | forbidden |
+| Memory core → psycopg/pgvector vendor | forbidden |
+| Domain service → concrete SQLite provider | forbidden (composition only) |
+| Projection → canonical authority override | forbidden |
+| SessionTurnIndex → USER Memory authority | forbidden |
+| RAG → Memory authority | forbidden |
+
+### PRODUCT vs LAB (reachability)
+
+| Capability / path | PRODUCT | LAB / test | Notes |
+| ----------------- | ------: | ---------: | ----- |
+| DefaultMemoryControlPlane + UserProfileManager | when host wires | unit/integration | Requires trusted identity |
+| SQLite UserProfile durable | profile-dependent | 5B harness | Fail-closed admission when durable required |
+| InMemory UserProfile | fallback in some integration profiles | default in tests | **Not** silent substitute when durable required + admission enforced |
+| Mongo UserProfile | wiring exists; PRODUCT admission evidence-bound | 5C/5C-R V6 reconnect qualified (pymongo) | Not service-restart qualified; suite excluded when pymongo unavailable |
+| STI Qdrant/pgvector/Chroma | `enable_session_vector_index` + RAG stack | 5D–5F suites | Client reconnect proved; service restart not universally certified |
+| Task/Org SQLite | env/db paths | 5G E2E | Parallel to control plane |
+| Fixture external memory plugins | STRICT overlay | qual only | Not normal PRODUCT path |
+
+### Provider admission (trusted)
+
+```text
+provider identity → qualification evidence → admission evaluation → production composition
+```
+
+PRODUCT persistent USER paths: behavioral + **trusted durability evidence** (`MemoryProviderTrustedDurabilityStatus.DURABLE`); missing evidence → **fail-closed** (see qualification ledger MEM-FINAL-AUDIT-5A-R3).
+
+### Fail-open vs fail-closed
+
+| Concern | Mode |
+| ------- | ---- |
+| Identity / scope mismatch | fail closed (`MemoryControlAccessDenied`) |
+| Missing required PRODUCT provider evidence | fail closed |
+| Governance deny | fail closed |
+| Projection failure after primary commit | primary preserved + `PARTIAL` / partial lifecycle |
+| Observability sink failure | isolated (not business authority) |
+| Optional LAB capability | per `MemoryProfile` / host profile |
+
+### Failure taxonomy
+
+| Failure | Expected behavior |
+| ------- | ------------------- |
+| Authority mismatch | DENIED |
+| Governance deny | DENIED |
+| Canonical store fail | FAILED |
+| Projection fail after primary success | PARTIAL / `PARTIAL_PROJECTION_FAILURE` |
+| Projection reconcile failure | FAILED reconciliation |
+| Missing required provider | fail closed at materialization/admission |
+| Observability sink failure | isolated per contract |
+| Vendor unavailable | explicit provider/integration failure |
+
+### Durability guarantee matrix (audit evidence only)
+
+Full matrix: [`MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md`](../maintainers/qualification/MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md). Use **YES / NO / NOT TESTED / N/A** only with cited proofs.
+
+| Capability | Provider | Persistence | Reopen / fresh provider | Process restart | Service restart | Power loss |
+| ---------- | -------- | ----------- | ----------------------- | --------------- | --------------- | ---------- |
+| UserProfile | SQLite | YES | YES (5B V5) | partial (composition 5B) | NOT TESTED | NOT TESTED |
+| UserProfile | Mongo DocumentStore | YES (5C) | YES client reconnect | NOT TESTED | NOT TESTED | NOT TESTED |
+| STI | Qdrant/pgvector/Chroma | vendor-dependent | YES reconnect (5D–5F) | NOT TESTED | NOT TESTED | NOT TESTED |
+| Task memory | SQLite | YES | YES (5G V5) | subprocess 5G | NOT TESTED | NOT TESTED |
+| Organization | SQLite | YES | YES (5G V5) | subprocess 5G | NOT TESTED | NOT TESTED |
+
+### Current certified provider status
+
+Summary only — proofs and identity binding: [`MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md`](../maintainers/qualification/MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md) · [`MEMORY_FINAL_ENTERPRISE_AUDIT.md`](../maintainers/qualification/MEMORY_FINAL_ENTERPRISE_AUDIT.md).
+
+| Path | Current qualification (high level) |
+| ---- | ------------------------------------ |
+| SQLite UserProfile | V5 durable restart/reopen qualified (5B reference harness) |
+| Mongo UserProfile (`document_store.user_profile` + `mongodb`) | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (5C/5C-R); composite adapter/backing identity enforced; **not** service-restart qualified |
+| Qdrant / pgvector / Chroma STI | **V6 REAL-VENDOR DURABILITY/RECONNECT QUALIFIED** (5D–5F); production admission enforced where applicable; service restart / HA **not** certified |
+| SQLite Task memory | V5 durable restart/reopen qualified (5G) |
+| SQLite Organization profile | V5 durable restart/reopen qualified (5G) |
+| Memory Control Plane behavior | **BEHAVIORALLY QUALIFIED** (6-R2): 34 real scenarios, zero hard violation counters |
+
+Cross-vendor evidence reuse is **forbidden** (Mongo DocumentStore proof does not qualify other backings; Qdrant STI proof does not qualify pgvector/Chroma).
+
+### Behavioral qualification (MEM-FINAL-AUDIT-6-R2)
+
+**Memory Control Plane — Behaviorally Qualified:** 34 real behavioral scenarios, shared `BehaviorEvalContext`, zero hard violation counters, two deterministic aggregate runs, semantic smoke metrics **n=2** (not production-scale semantic benchmark).
+
+Hard invariant counters (must remain 0 in qual runs): `cross_tenant_leaks`, `cross_user_leaks`, `deleted_resurrections`, `superseded_as_current`, `projection_only_ghosts`, `identity_authority_violations`.
+
+### Security attack examples
+
+| Attack | Result |
+| ------ | ------ |
+| User A identity + user B scope | DENIED |
+| Tenant A identity + tenant B scope | DENIED |
+| Same user ID across tenants | Isolated scopes |
+| Stale projection after delete | Filtered by canonical authority on recall |
+
+### Data ownership
+
+| Data | Owner |
+| ---- | ----- |
+| USER canonical profile/memory | UserProfile domain |
+| SESSION episodic turns | SessionTurnIndex / episodic capability |
+| TASK state | Task memory domain |
+| Organization profile | Organization domain |
+| Vector embeddings (LTM/STI) | projection / provider layer |
+| Final model context | Context Engineering |
+
+### Lifecycle ownership
+
+- **Primary mutation:** `UserProfileManager` + store contracts
+- **Projection lifecycle:** `UserProfileMemoryLifecycleCoordinator`
+- **Reconciliation:** `reconcile` / `reconcile_memory_projections` (USER scope only on plane)
+
+### Retry / consistency
+
+- **No global retry engine** in Memory; provider-local behavior only where implemented.
+- Distinguish **canonical store consistency**, **projection eventual repair**, and **vector projection consistency** — no blanket “strongly consistent” claim.
+
+### Governance ≠ identity
+
+`assert_memory_scope_authorized` enforces **scope authorization**; `MemorySecurityGovernanceService` enforces **memory governance policies** (remember/recall/forget/supersession). Both fail closed on deny.
+
+### Pluginability (contract-level)
+
+| Capability | Contract | Default | Replaceable externally |
+| ---------- | -------- | ------- | ---------------------- |
+| UserProfile store | `UserProfileStore` | SQLite / InMemory / DocumentStore | YES |
+| Task memory | `TaskMemoryPersistence` | SQLite when configured | YES |
+| Organization profile | `OrganizationProfileStore` | SQLite bundle | YES |
+| STI vector backing | `SessionTurnIndexStore` | Vector adapter | YES |
+| Projections | `UserProfileMemoryProjection` | LTM vector + entity | YES |
+| Recall strategies | `MemoryRecallStrategySet` | defaults bundle | YES |
+| Governance strategies | policy inject on `MemorySecurityGovernanceService` | defaults | partial (invariants fixed) |
+| Diagnostics sink | `MemoryObservabilitySink` | default emitter | YES |
+
+**Hard platform invariants (not strategies):** trusted identity, tenant/user scope authority, canonical primary authority, projection-not-authority, lineage integrity, governance envelope, revision/timestamp validity.
+
+### Extension — new provider (safe)
+
+1. Implement platform contract  
+2. Expose canonical `MemoryProviderDescriptor` identity  
+3. Register materialization / discovery  
+4. Add qualification evidence  
+5. Map admission for PRODUCT paths  
+6. Add contract tests (+ real-vendor tests if external)  
+7. Do **not** change Memory domain logic  
+
+If adding a provider requires editing semantic/domain logic → **stop and redesign the boundary.**
+
+### Change impact matrix
+
+| Change | Mandatory regression |
+| ------ | -------------------- |
+| `MemoryControlPlane` contract | behavioral + application composition |
+| `UserProfileManager` | USER / lifecycle / projection |
+| Vector store abstraction (STI) | vendor qual suites 5D–5F |
+| Provider identity / admission | 5A + affected vendors |
+| Task / Organization store | 5G |
+| Recall pipeline | behavioral 6 |
+| Governance | security behavioral gates |
+| Projection lifecycle | lifecycle + reconcile gates |
+
+### Maintainer onboarding — If you modify Memory, start here
+
+1. Identify owning **contract**  
+2. Identify **canonical authority** (table above)  
+3. Identify **composition root**  
+4. Check provider / projection implications  
+5. Check **qualification impact**  
+6. Run relevant audit / regression suites  
+
+### Architecture invariants (checklist)
+
+- Platform depends on contracts, not vendor implementations  
+- Concrete vendors never imported in Memory core  
+- `RequestIdentity` is trusted authority  
+- Tenant/user scope enforced before semantic action  
+- Canonical store wins over projections  
+- Projections cannot resurrect deleted canonical data  
+- Superseded records cannot become current truth without proper lineage  
+- RAG does not become Memory authority  
+- Provider evidence bound to exact provider identity  
+- Production admission fails closed when evidence missing  
+- Provider failure cannot silently select the wrong durable backend (where admission applies)  
+
+### KNOWN NON-GUARANTEES / NOT CERTIFIED
+
+- Power-loss recovery **not certified**  
+- HA / cluster failover **not certified**  
+- Qdrant / pgvector / Chroma **service restart** not universally certified (client reconnect ≠ service restart)  
+- **TASK recall via `MemoryControlPlane` unsupported**  
+- Mongo 5C cannot be rerun in CI without `pymongo`  
+- Cross-lingual semantic quality **not** production-benchmarked  
+- Semantic metric dataset is small (**n=2** smoke)  
+- Distributed / load / performance claims **not** certified  
+- `product_defaults` PostgreSQL-only integration may fall through to InMemory UserProfile when memory flags on — **documented P1 risk** in provider matrix  
+
+### File index (maintainer map)
+
+| Concern | Main files |
+| ------- | ---------- |
+| Control plane | `default_memory_control_plane.py`, `contracts/memory_control.py` |
+| Scope authority | `memory_scope_authority.py` |
+| Contracts | `contracts/*.py` |
+| UserProfile | `user_profile_manager.py`, `user_profile_store.py`, `stores/*user_profile*` |
+| Recall | `recall/pipeline.py`, `recall_strategy_bundle.py`, `strategies/` |
+| Lifecycle | `user_profile_memory_lifecycle.py`, `contracts/memory_lifecycle.py` |
+| Security / governance | `memory_security_governance_service.py`, `contracts/memory_security_governance.py` |
+| Observability | `memory_diagnostic_emitter.py`, `contracts/memory_observability.py` |
+| Task | `intergrax/runtime/task_memory/**` |
+| Organization | `intergrax/runtime/organization/**` |
+| SessionTurnIndex | `session_turn_index_service.py`, `contracts/session_turn_index.py` |
+| Vector providers | `applications/_shared/memory_vector_wiring.py`, integration RAG stack |
+| Composition roots | `applications/_shared/memory_wiring.py`, `memory_control_wiring.py` |
+| Qualification | `provider_qualification/**`, `tests/qualification/memory_behavior/**` |
+
+### Qualification evidence index (stages 1–7)
+
+| Stage | Status | Evidence |
+| ----- | ------ | -------- |
+| MEM-FINAL-AUDIT-1 | inventory closed | [`MEMORY_FINAL_ENTERPRISE_AUDIT.md`](../maintainers/qualification/MEMORY_FINAL_ENTERPRISE_AUDIT.md) §1 |
+| MEM-FINAL-AUDIT-2 | contracts / layers | same ledger §2 |
+| MEM-FINAL-AUDIT-3 | security / lifecycle | same ledger §3 |
+| MEM-FINAL-AUDIT-4 | provider matrix | [`MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md`](../maintainers/qualification/MEMORY_PROVIDER_VENDOR_QUALIFICATION_MATRIX.md) |
+| MEM-FINAL-AUDIT-5A–5G | vendor / admission / durable | ledger §5A–5G |
+| MEM-FINAL-AUDIT-6-R2 | behavioral | ledger §6-R2 · `VERIFIED_SHA` `957045d86d48d0dfab8c77384f1427e2d46ea95a` |
+| MEM-FINAL-AUDIT-7 | documentation (7-R reconciliation) | this document + diagrams doc + ledger §7 / §7-R |
+
+### Restart terminology glossary
+
+| Term | Meaning |
+| ---- | ------- |
+| **reopen** | Same process, new store/provider instance on same path |
+| **fresh provider** | New materialized implementation object |
+| **fresh client** | New SDK/client handle (reconnect qual) |
+| **fresh process** | Subprocess / new PID (5G proofs) |
+| **service restart** | Vendor daemon/container restart — largely **NOT TESTED** for Memory qual |
+| **cluster failover** | **NOT CERTIFIED** |
+| **power-loss recovery** | **NOT CERTIFIED** |
+
+### Zero direct vendor coupling
+
+The Memory semantic layer must never require knowledge of a concrete vendor implementation. Custom providers must not require domain logic changes.
 
 ---
 
@@ -699,6 +1094,9 @@ Use phrase **“Memory core and certified paths”** — not “fully certified�
 | Milestone | Baseline commit (operator pin) |
 | --------- | ------------------------------ |
 | MEM-ENT-15 public composition certification | `b7497564eb43050b93fa5eed00e83008b00278cb` |
-| MEM-ENT-16 documentation closeout | documented at commit applying this file |
+| MEM-FINAL-AUDIT-6-R2 behavioral qualification | `957045d86d48d0dfab8c77384f1427e2d46ea95a` |
+| MEM-FINAL-AUDIT-7 documentation certification | see qualification ledger `VERIFIED_SHA` |
 
 Code paths remain authoritative over commit SHAs.
+
+**Documentation status:** **MEMORY ARCHITECTURE — DOCUMENTATION CERTIFIED** (MEM-FINAL-AUDIT-7-R2 exact-SHA closure). Prior **MEM-FINAL-AUDIT-7-R** truth reconciliation preserved at `a24c251c0768c42b1c100e1228d7e4a67eb98cd9`.

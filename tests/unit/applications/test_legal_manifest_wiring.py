@@ -69,11 +69,15 @@ def test_build_legal_registry_passes_tool_context() -> None:
     from legal_application.host.tool_wiring import wire_legal_tools
 
     tool_wiring = wire_legal_tools(settings=settings)
-    ctx = ApplicationBuildContext.for_manifest(
-        manifest,
-        settings=settings,
+    from intergrax.applications._shared.application_composition_context import (
+        composition_for_factory_context,
+    )
+
+    ctx = ApplicationBuildContext.for_manifest(manifest, settings=settings)
+    composition = composition_for_factory_context(
+        ctx,
         tool_profile=tool_wiring.profile,
         tool_wiring_context=tool_wiring.wiring_context,
     )
-    registry = build_application_registry(manifest, ctx)
+    registry = build_application_registry(manifest, ctx, composition=composition)
     assert registry.list_agent_ids()

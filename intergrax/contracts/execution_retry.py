@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from enum import StrEnum
 
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.contracts.execution_terminal import ExecutionTerminalOutcome
@@ -63,6 +65,8 @@ class ExecutionRetryEligibilityRequest(BaseModel):
     terminal_outcome: ExecutionTerminalOutcome | None = None
     global_deadline_monotonic: float | None = None
     now_monotonic: float | None = None
+    deadline_at_utc: datetime | None = None
+    now_utc: datetime | None = None
     proposed_backoff_seconds: float = Field(default=0.0, ge=0.0)
     side_effect_idempotency_guaranteed: bool = False
 

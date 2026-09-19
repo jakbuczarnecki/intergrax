@@ -48,8 +48,8 @@ from intergrax.runtime.execution.fan_out_orchestration_adapter import (
     FanOutGovernedSlotContinuationContext,
     build_fan_out_orchestration_port,
 )
-from intergrax.runtime.execution.orchestration_topology_submission import (
-    build_orchestration_topology_submission_port,
+from testing_support.agent_distribution.multi_agent_coordination_qualification_harness import (
+    build_production_representative_orchestration_topology_submission_port,
 )
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -602,7 +602,9 @@ def _build_governed_fan_out_stack(candidates):
     harness.service._child_execution = child
     coordination = _build_coordination_service(harness)
     nexus_loop = NexusLoop(AgentRegistry())
-    topology_port = build_orchestration_topology_submission_port(nexus_loop)
+    topology_port = build_production_representative_orchestration_topology_submission_port(
+        nexus_loop,
+    )
     adapter = build_fan_out_orchestration_port(topology_port, coordination)
     fan_out = BoundedMultiAgentFanOutService(orchestration=adapter)
     return harness, selector, task_scoped, specialist, child, adapter, fan_out

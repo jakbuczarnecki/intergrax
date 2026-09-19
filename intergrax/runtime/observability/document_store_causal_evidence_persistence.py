@@ -24,6 +24,7 @@ from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
     DocumentDataSort,
+    DocumentQueryCursorCodec,
     DocumentRecord,
     DocumentStore,
 )
