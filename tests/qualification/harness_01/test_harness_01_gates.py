@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import ast
-import importlib
 from pathlib import Path
 
 import pytest
@@ -34,6 +33,7 @@ from tests.qualification.harness_01.nexus_boundary_detector import (
     file_imports_nexus_module,
 )
 from tests.qualification.harness_01.nexus_import_inventory import (
+    HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS,
     HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTERS,
 )
 from tests.qualification.harness_01.production_scope import (
@@ -325,17 +325,23 @@ def test_harness_01_runtime_tier_no_direct_vendor_llm_imports() -> None:
     )
 
 
+def _mapped_evidence_test_function_defined(path_part: str, func: str) -> bool:
+    """AST existence check — must not require importing optional evidence-module deps."""
+    file_path = _REPO_ROOT / path_part
+    if not file_path.is_file():
+        return False
+    tree = ast.parse(file_path.read_text(encoding="utf-8-sig"), filename=path_part)
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == func:
+            return True
+    return False
+
+
 def test_harness_01_mapped_evidence_references_exist() -> None:
     missing: list[str] = []
     for node_id in sorted(HARNESS_01_MAPPED_NODE_IDS):
         path_part, func = node_id.split("::", 1)
-        module_path = path_part.replace("/", ".").removesuffix(".py")
-        try:
-            mod = importlib.import_module(module_path)
-        except ModuleNotFoundError:
-            missing.append(node_id)
-            continue
-        if not hasattr(mod, func):
+        if not _mapped_evidence_test_function_defined(path_part, func):
             missing.append(node_id)
     assert missing == [], f"mapped evidence references missing test functions: {missing}"
 
@@ -419,6 +425,26 @@ def test_harness_01_higher_layer_nexus_imports_are_classified() -> None:
     )
     assert stale == [], (
         "Stale Nexus import inventory entries (no longer import Nexus):\n" + "\n".join(stale)
+    )
+    by_path = {row.path: row for row in HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS}
+    assert set(by_path) == classified
+    violations = sorted(
+        path
+        for path, row in by_path.items()
+        if row.classification == "BOUNDARY_VIOLATION" or row.boundary_status == "VIOLATION"
+    )
+    assert violations == [], (
+        "BOUNDARY_VIOLATION importers must be removed before inventory allowlisting:\n"
+        + "\n".join(violations)
+    )
+    incomplete = sorted(
+        path
+        for path, row in by_path.items()
+        if not (row.reason.strip() and row.owner_layer.strip() and row.evidence.strip())
+    )
+    assert incomplete == [], (
+        "Nexus importer inventory rows require reason/owner_layer/evidence:\n"
+        + "\n".join(incomplete)
     )
 
 
