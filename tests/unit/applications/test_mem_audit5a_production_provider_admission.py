@@ -59,6 +59,9 @@ from intergrax.memory.resolver import MemoryStorePluginResolutionError
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from intergrax.memory.user_profile_memory import UserIdentity, UserPreferences, UserProfile
+from intergrax.memory.contracts.memory_store_creation_context import (
+    UserProfileStoreCreationContext,
+)
 from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from tests.fixtures.plugin_packages.memory_store_plugin.memory_store_plugin.plugin import (
@@ -127,7 +130,11 @@ class _DurableSelfCertifiedUserProfilePlugin:
         return "test.durable_qualified_user_profile"
 
     @classmethod
-    def create_user_profile_store(cls, **_kwargs: object) -> UserProfileStore:
+    def create_user_profile_store(
+        cls,
+        context: UserProfileStoreCreationContext,
+    ) -> UserProfileStore:
+        _ = context
         return _SelfCertifiedDurableUserProfileStore(provider_id=cls.plugin_id())
 
 

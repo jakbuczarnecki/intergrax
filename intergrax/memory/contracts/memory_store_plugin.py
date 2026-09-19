@@ -4,8 +4,15 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+from intergrax.memory.contracts.memory_store_creation_context import (
+    EntityTemporalMemoryStoreCreationContext,
+    LongHorizonMemoryStoreCreationContext,
+    ProceduralMemoryStoreCreationContext,
+    SessionStorageCreationContext,
+    UserProfileStoreCreationContext,
+)
 from intergrax.memory.contracts.session_storage import SessionStorage
 
 if TYPE_CHECKING:
@@ -23,7 +30,10 @@ class UserProfileStorePlugin(Protocol):
     def plugin_id(cls) -> str: ...
 
     @classmethod
-    def create_user_profile_store(cls, **kwargs: Any) -> UserProfileStore: ...
+    def create_user_profile_store(
+        cls,
+        context: UserProfileStoreCreationContext,
+    ) -> UserProfileStore: ...
 
 
 @runtime_checkable
@@ -34,7 +44,10 @@ class SessionStoragePlugin(Protocol):
     def plugin_id(cls) -> str: ...
 
     @classmethod
-    def create_session_storage(cls, **kwargs: Any) -> SessionStorage: ...
+    def create_session_storage(
+        cls,
+        context: SessionStorageCreationContext,
+    ) -> SessionStorage: ...
 
 
 @runtime_checkable
@@ -47,7 +60,7 @@ class EntityTemporalMemoryStorePlugin(Protocol):
     @classmethod
     def create_entity_temporal_memory_store(
         cls,
-        **kwargs: Any,
+        context: EntityTemporalMemoryStoreCreationContext,
     ) -> EntityTemporalMemoryStore: ...
 
 
@@ -61,7 +74,7 @@ class ProceduralMemoryStorePlugin(Protocol):
     @classmethod
     def create_procedural_memory_store(
         cls,
-        **kwargs: Any,
+        context: ProceduralMemoryStoreCreationContext,
     ) -> ProcedureMemoryStore: ...
 
 
@@ -75,5 +88,5 @@ class LongHorizonMemoryStorePlugin(Protocol):
     @classmethod
     def create_long_horizon_memory_store(
         cls,
-        **kwargs: Any,
+        context: LongHorizonMemoryStoreCreationContext,
     ) -> LongHorizonMemoryStore: ...

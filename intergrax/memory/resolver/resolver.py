@@ -14,6 +14,9 @@ from intergrax.memory.resolver.discovery import (
     find_rejected_entry_point_for_plugin_id,
 )
 from intergrax.memory.resolver.errors import MemoryStorePluginResolutionError
+from intergrax.memory.contracts.memory_store_creation_context import (
+    TenantScopedMemoryStoreCreationContext,
+)
 from intergrax.memory.resolver.materialization import MemoryStoreMaterializationContext
 from intergrax.memory.contracts.entity_temporal_memory import EntityTemporalMemoryStore
 from intergrax.memory.contracts.long_horizon_memory import LongHorizonMemoryStore
@@ -22,18 +25,10 @@ from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.memory.contracts.session_storage import SessionStorage
 
 
-def _user_profile_factory_kwargs(ctx: MemoryStoreMaterializationContext) -> dict[str, object]:
-    kwargs: dict[str, object] = {}
-    if ctx.tenant_id is not None:
-        kwargs["tenant_id"] = ctx.tenant_id
-    return kwargs
-
-
-def _session_storage_factory_kwargs(ctx: MemoryStoreMaterializationContext) -> dict[str, object]:
-    kwargs: dict[str, object] = {}
-    if ctx.tenant_id is not None:
-        kwargs["tenant_id"] = ctx.tenant_id
-    return kwargs
+def _plugin_creation_context(
+    ctx: MemoryStoreMaterializationContext,
+) -> TenantScopedMemoryStoreCreationContext:
+    return TenantScopedMemoryStoreCreationContext(tenant_id=ctx.tenant_id)
 
 
 def _select_classified_plugin(
@@ -134,7 +129,7 @@ def materialize_user_profile_store(
     )
     try:
         store = record.plugin_type.create_user_profile_store(
-            **_user_profile_factory_kwargs(ctx)
+            _plugin_creation_context(ctx)
         )
     except Exception as exc:
         raise MemoryStorePluginResolutionError(
@@ -157,7 +152,7 @@ def materialize_entity_temporal_memory_store(
     )
     try:
         store = record.plugin_type.create_entity_temporal_memory_store(
-            **_user_profile_factory_kwargs(ctx)
+            _plugin_creation_context(ctx)
         )
     except Exception as exc:
         raise MemoryStorePluginResolutionError(
@@ -180,7 +175,7 @@ def materialize_procedural_memory_store(
     )
     try:
         store = record.plugin_type.create_procedural_memory_store(
-            **_user_profile_factory_kwargs(ctx)
+            _plugin_creation_context(ctx)
         )
     except Exception as exc:
         raise MemoryStorePluginResolutionError(
@@ -203,7 +198,7 @@ def materialize_long_horizon_memory_store(
     )
     try:
         store = record.plugin_type.create_long_horizon_memory_store(
-            **_user_profile_factory_kwargs(ctx)
+            _plugin_creation_context(ctx)
         )
     except Exception as exc:
         raise MemoryStorePluginResolutionError(
@@ -226,7 +221,7 @@ def materialize_session_storage(
     )
     try:
         store = record.plugin_type.create_session_storage(
-            **_session_storage_factory_kwargs(ctx)
+            _plugin_creation_context(ctx)
         )
     except Exception as exc:
         raise MemoryStorePluginResolutionError(

@@ -54,6 +54,9 @@ from intergrax.memory.resolver.discovery import (
     discover_classified_memory_store_plugins,
 )
 from intergrax.memory.resolver.errors import MemoryStorePluginResolutionError
+from intergrax.memory.contracts.memory_store_creation_context import (
+    ProceduralMemoryStoreCreationContext,
+)
 from intergrax.memory.resolver.materialization import MemoryStoreMaterializationContext
 from intergrax.memory.resolver.resolver import materialize_procedural_memory_store
 from intergrax.memory.stores.in_memory_procedural_memory_plugin import (
@@ -420,7 +423,11 @@ class _FakeProceduralMemoryStorePlugin:
         return "test.fake_procedural"
 
     @classmethod
-    def create_procedural_memory_store(cls, **kwargs: object) -> _RecordingProceduralStore:
+    def create_procedural_memory_store(
+        cls,
+        context: ProceduralMemoryStoreCreationContext,
+    ) -> _RecordingProceduralStore:
+        _ = context
         return _RecordingProceduralStore()
 
 

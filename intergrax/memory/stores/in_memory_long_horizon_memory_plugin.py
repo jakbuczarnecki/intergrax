@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+from intergrax.memory.contracts.memory_store_creation_context import (
+    LongHorizonMemoryStoreCreationContext,
+)
 from intergrax.memory.stores.in_memory_long_horizon_memory_store import (
     InMemoryLongHorizonMemoryStore,
 )
@@ -19,5 +22,9 @@ class InMemoryLongHorizonMemoryStorePlugin:
         return DEFAULT_IN_MEMORY_LONG_HORIZON_PLUGIN_ID
 
     @classmethod
-    def create_long_horizon_memory_store(cls, **kwargs: object) -> InMemoryLongHorizonMemoryStore:
+    def create_long_horizon_memory_store(
+        cls,
+        context: LongHorizonMemoryStoreCreationContext,
+    ) -> InMemoryLongHorizonMemoryStore:
+        _ = context
         return InMemoryLongHorizonMemoryStore()

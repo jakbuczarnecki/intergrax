@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+from intergrax.memory.contracts.memory_store_creation_context import (
+    EntityTemporalMemoryStoreCreationContext,
+)
 from intergrax.memory.stores.in_memory_entity_temporal_memory_store import (
     InMemoryEntityTemporalMemoryStore,
 )
@@ -19,5 +22,9 @@ class InMemoryEntityTemporalMemoryStorePlugin:
         return DEFAULT_IN_MEMORY_ENTITY_TEMPORAL_PLUGIN_ID
 
     @classmethod
-    def create_entity_temporal_memory_store(cls, **kwargs: object) -> InMemoryEntityTemporalMemoryStore:
+    def create_entity_temporal_memory_store(
+        cls,
+        context: EntityTemporalMemoryStoreCreationContext,
+    ) -> InMemoryEntityTemporalMemoryStore:
+        _ = context
         return InMemoryEntityTemporalMemoryStore()

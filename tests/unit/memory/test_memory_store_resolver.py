@@ -13,6 +13,10 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     MemoryProfile,
 )
+from intergrax.memory.contracts.memory_store_creation_context import (
+    TenantScopedMemoryStoreCreationContext,
+    UserProfileStoreCreationContext,
+)
 from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStoreCreationContext
 from intergrax.core.memory_bootstrap import discover_session_turn_index_plugin_types
 from intergrax.core.plugins.admission import PluginAdmissionReasonCode
@@ -26,8 +30,20 @@ from intergrax.memory.resolver import (
     MemoryStorePluginResolutionError,
     classify_memory_store_plugin,
     discover_classified_memory_store_plugins,
+    materialize_entity_temporal_memory_store,
+    materialize_long_horizon_memory_store,
+    materialize_procedural_memory_store,
     materialize_session_storage,
     materialize_user_profile_store,
+)
+from intergrax.memory.stores.in_memory_entity_temporal_memory_plugin import (
+    InMemoryEntityTemporalMemoryStorePlugin,
+)
+from intergrax.memory.stores.in_memory_long_horizon_memory_plugin import (
+    InMemoryLongHorizonMemoryStorePlugin,
+)
+from intergrax.memory.stores.in_memory_procedural_memory_plugin import (
+    InMemoryProceduralMemoryStorePlugin,
 )
 from intergrax.memory.resolver.discovery import index_classified_memory_store_plugins
 from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
@@ -58,7 +74,7 @@ class _WrongKindSessionPlugin:
         return "test.wrong_kind_session"
 
     @classmethod
-    def create_session_storage(cls, **_kwargs):
+    def create_session_storage(cls, _context: TenantScopedMemoryStoreCreationContext):
         return InMemorySessionStorage()
 
 
@@ -68,7 +84,7 @@ class _InvalidUserProfilePlugin:
         return "test.invalid_user_profile"
 
     @classmethod
-    def create_user_profile_store(cls, **_kwargs):
+    def create_user_profile_store(cls, _context: TenantScopedMemoryStoreCreationContext):
         return object()
 
 
@@ -78,7 +94,7 @@ class _BrokenUserProfilePlugin:
         return "test.broken_user_profile"
 
     @classmethod
-    def create_user_profile_store(cls, **_kwargs):
+    def create_user_profile_store(cls, _context: TenantScopedMemoryStoreCreationContext):
         raise RuntimeError("materialization failed")
 
 
@@ -88,7 +104,7 @@ class _DuplicateIdUserProfilePluginA:
         return "test.duplicate_id"
 
     @classmethod
-    def create_user_profile_store(cls, **_kwargs):
+    def create_user_profile_store(cls, _context: TenantScopedMemoryStoreCreationContext):
         return InMemoryUserProfileStore()
 
 
@@ -98,7 +114,7 @@ class _DuplicateIdUserProfilePluginB:
         return "test.duplicate_id"
 
     @classmethod
-    def create_user_profile_store(cls, **_kwargs):
+    def create_user_profile_store(cls, _context: TenantScopedMemoryStoreCreationContext):
         return InMemoryUserProfileStore()
 
 
@@ -603,7 +619,7 @@ def test_canonical_session_storage_runtime_checkable_invalid() -> None:
 
 
 def test_tenant_id_propagation_to_factory(monkeypatch: pytest.MonkeyPatch) -> None:
-    captured: dict[str, object] = {}
+    captured: list[UserProfileStoreCreationContext] = []
 
     class _TenantCapturingPlugin:
         @classmethod
@@ -611,8 +627,8 @@ def test_tenant_id_propagation_to_factory(monkeypatch: pytest.MonkeyPatch) -> No
             return "test.tenant_capture"
 
         @classmethod
-        def create_user_profile_store(cls, **kwargs):
-            captured.update(kwargs)
+        def create_user_profile_store(cls, context: UserProfileStoreCreationContext):
+            captured.append(context)
             return InMemoryUserProfileStore()
 
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.resolver.tenant")
@@ -624,7 +640,48 @@ def test_tenant_id_propagation_to_factory(monkeypatch: pytest.MonkeyPatch) -> No
         discover_entry_points=False,
         explicit_memory_plugins=(_TenantCapturingPlugin,),
     )
-    assert captured.get("tenant_id") == "tenant-z"
+    assert len(captured) == 1
+    assert isinstance(captured[0], TenantScopedMemoryStoreCreationContext)
+    assert captured[0].tenant_id == "tenant-z"
+
+
+def test_materialize_builtin_entity_temporal_memory_store() -> None:
+    ctx = MemoryStoreMaterializationContext(
+        tenant_id="tenant-a",
+        integration_profile=IntegrationProfile(),
+    )
+    store = materialize_entity_temporal_memory_store(
+        InMemoryEntityTemporalMemoryStorePlugin.plugin_id(),
+        ctx,
+        catalog=_catalog(InMemoryEntityTemporalMemoryStorePlugin),
+    )
+    assert store is not None
+
+
+def test_materialize_builtin_procedural_memory_store() -> None:
+    ctx = MemoryStoreMaterializationContext(
+        tenant_id="tenant-a",
+        integration_profile=IntegrationProfile(),
+    )
+    store = materialize_procedural_memory_store(
+        InMemoryProceduralMemoryStorePlugin.plugin_id(),
+        ctx,
+        catalog=_catalog(InMemoryProceduralMemoryStorePlugin),
+    )
+    assert store is not None
+
+
+def test_materialize_builtin_long_horizon_memory_store() -> None:
+    ctx = MemoryStoreMaterializationContext(
+        tenant_id="tenant-a",
+        integration_profile=IntegrationProfile(),
+    )
+    store = materialize_long_horizon_memory_store(
+        InMemoryLongHorizonMemoryStorePlugin.plugin_id(),
+        ctx,
+        catalog=_catalog(InMemoryLongHorizonMemoryStorePlugin),
+    )
+    assert store is not None
 
 
 def test_both_external_stores_use_single_discovery_pass(
