@@ -24,7 +24,10 @@ from intergrax.llm_adapters._shared.adapter_response_builders import build_adapt
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.memory.conversational_memory import ChatMessage
-from intergrax.runtime.task.task import TaskContext
+from intergrax.contracts.task_envelope import (
+    TaskEnvelope,
+    routing_capability_from_envelope,
+)
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
