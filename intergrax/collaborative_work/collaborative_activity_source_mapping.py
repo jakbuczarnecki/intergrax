@@ -7,7 +7,9 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Protocol, runtime_checkable
 
-from intergrax.collaborative_work.repository import PublishedWorkArtifactVersion
+from intergrax.collaborative_work.collaborative_activity_source_ports import (
+    PublishedWorkArtifactPublicationResult,
+)
 from intergrax.contracts.collaborative_activity import (
     ActivityIdempotencyKey,
     ArtifactVersionActivityProvenanceRef,
@@ -20,6 +22,7 @@ from intergrax.contracts.collaborative_activity import (
     CollaborativeActivityOutcome,
     CollaborativeActivityOutcomeStatus,
     CollaborativeActivityPublication,
+    CollaborativeActivityProvenanceRef,
     CollaborativeActivityScope,
     CollaborativeActivitySourceId,
     CollaborativeActivityTypeId,
@@ -148,7 +151,7 @@ def _succeeded_outcome() -> CollaborativeActivityOutcome:
     return CollaborativeActivityOutcome(status=CollaborativeActivityOutcomeStatus.SUCCEEDED)
 
 
-def _work_artifact_version_ref(version: PublishedWorkArtifactVersion) -> WorkArtifactVersionRef:
+def _work_artifact_version_ref(version: PublishedWorkArtifactPublicationResult) -> WorkArtifactVersionRef:
     v = version.version
     return WorkArtifactVersionRef(
         tenant_id=v.tenant_id,
@@ -329,7 +332,7 @@ def map_assignment_state_changed_publication(
 def map_work_artifact_created_publication(
     *,
     request: CreateWorkArtifactRequest | CreateWorkArtifactFromExecutionRequest,
-    published: PublishedWorkArtifactVersion,
+    published: PublishedWorkArtifactPublicationResult,
     principal_kind_resolver: CollaborativeActivityActorPrincipalKindResolver,
     requested_durability_class: CollaborativeActivityDurabilityClass = (
         CollaborativeActivityDurabilityClass.COLLABORATIVE
@@ -346,10 +349,9 @@ def map_work_artifact_created_publication(
     execution = version.execution
     if isinstance(request, CreateWorkArtifactFromExecutionRequest):
         execution = request.execution
-    provenance: tuple[ArtifactVersionActivityProvenanceRef, ...] = (
+    provenance: tuple[CollaborativeActivityProvenanceRef, ...] = (
         ArtifactVersionActivityProvenanceRef(version_ref=version_ref),
-    )
-    provenance = provenance + _execution_provenance_refs(execution)
+    ) + _execution_provenance_refs(execution)
     return CollaborativeActivityPublication(
         idempotency_key=_activity_idempotency_key(
             tenant_id=request.tenant_id,
@@ -378,7 +380,7 @@ def map_work_artifact_created_publication(
 def map_work_artifact_version_published_publication(
     *,
     request: PublishWorkArtifactVersionRequest | PublishWorkArtifactVersionFromExecutionRequest,
-    published: PublishedWorkArtifactVersion,
+    published: PublishedWorkArtifactPublicationResult,
     principal_kind_resolver: CollaborativeActivityActorPrincipalKindResolver,
     requested_durability_class: CollaborativeActivityDurabilityClass = (
         CollaborativeActivityDurabilityClass.COLLABORATIVE
@@ -554,14 +556,14 @@ class CollaborativeWorkActivitySourceMapper(Protocol):
         self,
         *,
         request: CreateWorkArtifactRequest | CreateWorkArtifactFromExecutionRequest,
-        published: PublishedWorkArtifactVersion,
+        published: PublishedWorkArtifactPublicationResult,
     ) -> CollaborativeActivityPublication: ...
 
     def map_work_artifact_version_published(
         self,
         *,
         request: PublishWorkArtifactVersionRequest | PublishWorkArtifactVersionFromExecutionRequest,
-        published: PublishedWorkArtifactVersion,
+        published: PublishedWorkArtifactPublicationResult,
     ) -> CollaborativeActivityPublication: ...
 
     def map_decision_binding_created(
@@ -660,7 +662,7 @@ class DefaultCollaborativeWorkActivitySourceMapper:
         self,
         *,
         request: CreateWorkArtifactRequest | CreateWorkArtifactFromExecutionRequest,
-        published: PublishedWorkArtifactVersion,
+        published: PublishedWorkArtifactPublicationResult,
     ) -> CollaborativeActivityPublication:
         return map_work_artifact_created_publication(
             request=request,
@@ -672,7 +674,7 @@ class DefaultCollaborativeWorkActivitySourceMapper:
         self,
         *,
         request: PublishWorkArtifactVersionRequest | PublishWorkArtifactVersionFromExecutionRequest,
-        published: PublishedWorkArtifactVersion,
+        published: PublishedWorkArtifactPublicationResult,
     ) -> CollaborativeActivityPublication:
         return map_work_artifact_version_published_publication(
             request=request,

@@ -10,9 +10,15 @@ from datetime import UTC, datetime
 import pytest
 
 from intergrax.collaborative_work.collaborative_activity_source_adapters import (
-    CollaborativeActivityPublicationFailurePolicy,
     CollaborativeActivitySourcePublicationSideEffect,
     CollaborativeWorkServiceWithActivityPublication,
+    ContextViewComposerWithActivityPublication,
+)
+from intergrax.collaborative_work.collaborative_activity_source_mapping import (
+    DefaultCollaborativeWorkActivitySourceMapper,
+)
+from intergrax.collaborative_work.collaborative_activity_source_ports import (
+    CollaborativeWorkActivityMutationPort,
 )
 from intergrax.collaborative_work.collaborative_activity_source_mapping import (
     CollaborativeActivitySourceMappingError,
@@ -29,10 +35,19 @@ from intergrax.contracts.collaborative_activity import (
     mint_collaborative_activity_id,
 )
 from intergrax.contracts.collaborative_work import (
+    Assignment,
+    CreateAssignmentRequest,
     CreateWorkItemRequest,
     PrincipalKind,
+    TransitionAssignmentRequest,
+    TransitionWorkItemRequest,
     WorkItem,
     WorkItemState,
+)
+from intergrax.contracts.context_view import ContextView
+from intergrax.contracts.context_view_composition import (
+    ContextViewComposer,
+    ContextViewCompositionRequest,
 )
 
 pytestmark = pytest.mark.unit
@@ -69,7 +84,7 @@ class _PublicationSpy:
         )
 
 
-class _StubCollaborativeWorkService:
+class _StubCollaborativeWorkService(CollaborativeWorkActivityMutationPort):
     def __init__(self, *, work_item: WorkItem | None = None, fail: bool = False) -> None:
         self._work_item = work_item
         self._fail = fail
@@ -82,13 +97,13 @@ class _StubCollaborativeWorkService:
         assert self._work_item is not None
         return self._work_item
 
-    def transition_work_item(self, request: object) -> WorkItem:
+    def transition_work_item(self, request: TransitionWorkItemRequest) -> WorkItem:
         raise NotImplementedError
 
-    def create_assignment(self, request: object) -> object:
+    def create_assignment(self, request: CreateAssignmentRequest) -> Assignment:
         raise NotImplementedError
 
-    def transition_assignment(self, request: object) -> object:
+    def transition_assignment(self, request: TransitionAssignmentRequest) -> Assignment:
         raise NotImplementedError
 
 
@@ -196,18 +211,17 @@ def test_mp6f_actor_is_semantic_actor_not_publication_port_identity() -> None:
     assert publication.actor.principal_id != "mp6c-publisher-principal"
 
 
-class _CustomMapper:
+class _CustomMapper(DefaultCollaborativeWorkActivitySourceMapper):
+    def __init__(self) -> None:
+        super().__init__(principal_kind_resolver=_principal_kind_resolver())
+
     def map_work_item_created(
         self,
         *,
         request: CreateWorkItemRequest,
         work_item: WorkItem,
     ) -> CollaborativeActivityPublication:
-        base = map_work_item_created_publication(
-            request=request,
-            work_item=work_item,
-            principal_kind_resolver=_principal_kind_resolver(),
-        )
+        base = super().map_work_item_created(request=request, work_item=work_item)
         key = ActivityIdempotencyKey(
             tenant_id=base.idempotency_key.tenant_id,
             workspace_id=base.idempotency_key.workspace_id,
@@ -223,9 +237,9 @@ def test_mp6f_replaceable_mapper_used_by_adapter() -> None:
     inner = _StubCollaborativeWorkService(work_item=_work_item())
     side_effect = CollaborativeActivitySourcePublicationSideEffect(publication_port=spy)
     wrapped = CollaborativeWorkServiceWithActivityPublication(
-        inner=inner,  # type: ignore[arg-type]
+        inner=inner,
         side_effect=side_effect,
-        mapper=_CustomMapper(),  # type: ignore[arg-type]
+        mapper=_CustomMapper(),
     )
     result = wrapped.create_work_item(_create_request(idempotency_key="idem-1"))
     assert result.work_item_id == "wi-1"
@@ -236,13 +250,9 @@ def test_mp6f_replaceable_mapper_used_by_adapter() -> None:
 def test_mp6f_successful_source_operation_emits_one_publication() -> None:
     spy = _PublicationSpy()
     inner = _StubCollaborativeWorkService(work_item=_work_item())
-    from intergrax.collaborative_work.collaborative_activity_source_mapping import (
-        DefaultCollaborativeWorkActivitySourceMapper,
-    )
-
     side_effect = CollaborativeActivitySourcePublicationSideEffect(publication_port=spy)
     wrapped = CollaborativeWorkServiceWithActivityPublication(
-        inner=inner,  # type: ignore[arg-type]
+        inner=inner,
         side_effect=side_effect,
         mapper=DefaultCollaborativeWorkActivitySourceMapper(
             principal_kind_resolver=_principal_kind_resolver(),
@@ -255,13 +265,9 @@ def test_mp6f_successful_source_operation_emits_one_publication() -> None:
 def test_mp6f_failed_source_operation_emits_zero_publications() -> None:
     spy = _PublicationSpy()
     inner = _StubCollaborativeWorkService(fail=True)
-    from intergrax.collaborative_work.collaborative_activity_source_mapping import (
-        DefaultCollaborativeWorkActivitySourceMapper,
-    )
-
     side_effect = CollaborativeActivitySourcePublicationSideEffect(publication_port=spy)
     wrapped = CollaborativeWorkServiceWithActivityPublication(
-        inner=inner,  # type: ignore[arg-type]
+        inner=inner,
         side_effect=side_effect,
         mapper=DefaultCollaborativeWorkActivitySourceMapper(
             principal_kind_resolver=_principal_kind_resolver(),
@@ -272,19 +278,12 @@ def test_mp6f_failed_source_operation_emits_zero_publications() -> None:
     assert spy.calls == []
 
 
-def test_mp6f_publication_failure_raise_policy_propagates() -> None:
+def test_mp6f_publication_failure_propagates() -> None:
     spy = _PublicationSpy(fail_next=True)
     inner = _StubCollaborativeWorkService(work_item=_work_item())
-    from intergrax.collaborative_work.collaborative_activity_source_mapping import (
-        DefaultCollaborativeWorkActivitySourceMapper,
-    )
-
-    side_effect = CollaborativeActivitySourcePublicationSideEffect(
-        publication_port=spy,
-        failure_policy=CollaborativeActivityPublicationFailurePolicy.RAISE,
-    )
+    side_effect = CollaborativeActivitySourcePublicationSideEffect(publication_port=spy)
     wrapped = CollaborativeWorkServiceWithActivityPublication(
-        inner=inner,  # type: ignore[arg-type]
+        inner=inner,
         side_effect=side_effect,
         mapper=DefaultCollaborativeWorkActivitySourceMapper(
             principal_kind_resolver=_principal_kind_resolver(),
@@ -295,26 +294,101 @@ def test_mp6f_publication_failure_raise_policy_propagates() -> None:
     assert inner.create_calls == 1
 
 
-def test_mp6f_publication_failure_log_and_continue_preserves_source_result() -> None:
-    spy = _PublicationSpy(fail_next=True)
+def test_mp6f_mapping_failure_after_source_success_propagates() -> None:
+    class _FailingMapper(DefaultCollaborativeWorkActivitySourceMapper):
+        def __init__(self) -> None:
+            super().__init__(principal_kind_resolver=_principal_kind_resolver())
+
+        def map_work_item_created(
+            self,
+            *,
+            request: CreateWorkItemRequest,
+            work_item: WorkItem,
+        ) -> CollaborativeActivityPublication:
+            raise CollaborativeActivitySourceMappingError("mapper failed")
+
+    spy = _PublicationSpy()
     inner = _StubCollaborativeWorkService(work_item=_work_item())
-    from intergrax.collaborative_work.collaborative_activity_source_mapping import (
-        DefaultCollaborativeWorkActivitySourceMapper,
+    wrapped = CollaborativeWorkServiceWithActivityPublication(
+        inner=inner,
+        side_effect=CollaborativeActivitySourcePublicationSideEffect(publication_port=spy),
+        mapper=_FailingMapper(),
+    )
+    with pytest.raises(CollaborativeActivitySourceMappingError, match="mapper failed"):
+        wrapped.create_work_item(_create_request())
+    assert inner.create_calls == 1
+    assert spy.calls == []
+
+
+class _StubContextViewComposer(ContextViewComposer):
+    def compose(self, composition_request: ContextViewCompositionRequest) -> ContextView:
+        request = composition_request.request
+        return ContextView(
+            view_id="view-stub",
+            scope=request.scope,
+            acting_principal_id=request.acting_principal_id,
+        )
+
+
+class _RecordingContextMapper:
+    def map_context_view_composed(
+        self,
+        *,
+        composition_request: ContextViewCompositionRequest,
+        view: ContextView,
+        composition_completed_at: datetime,
+    ) -> CollaborativeActivityPublication:
+        return map_work_item_created_publication(
+            request=_create_request(),
+            work_item=_work_item(),
+            principal_kind_resolver=_principal_kind_resolver(),
+        )
+
+
+def test_mp6f_context_view_custom_composer_without_type_ignore() -> None:
+    from intergrax.contracts.agent_run import PrincipalType, RequestIdentity
+    from intergrax.contracts.context_view import ContextViewCategory, ContextViewRequest, ContextViewScope
+    from intergrax.contracts.context_view_visibility_policy import (
+        ContextViewPolicyDecision,
+        ContextViewPolicyOutcome,
+        DEFAULT_CONTEXT_VIEW_VISIBILITY_POLICY_ID,
     )
 
-    side_effect = CollaborativeActivitySourcePublicationSideEffect(
-        publication_port=spy,
-        failure_policy=CollaborativeActivityPublicationFailurePolicy.LOG_AND_CONTINUE,
+    spy = _PublicationSpy()
+    inner = _StubContextViewComposer()
+    wrapped = ContextViewComposerWithActivityPublication(
+        inner=inner,
+        side_effect=CollaborativeActivitySourcePublicationSideEffect(publication_port=spy),
+        mapper=_RecordingContextMapper(),
+        clock=lambda: _NOW,
     )
-    wrapped = CollaborativeWorkServiceWithActivityPublication(
-        inner=inner,  # type: ignore[arg-type]
-        side_effect=side_effect,
-        mapper=DefaultCollaborativeWorkActivitySourceMapper(
-            principal_kind_resolver=_principal_kind_resolver(),
+    assert isinstance(wrapped, ContextViewComposer)
+    scope = ContextViewScope(tenant_id=_TENANT, workspace_id=_WORKSPACE)
+    cv_request = ContextViewRequest(
+        scope=scope,
+        acting_principal_id=_ACTING,
+        operation_id="op.read_context",
+        requested_categories=(ContextViewCategory.MEMORY,),
+    )
+    decision = ContextViewPolicyDecision(
+        outcome=ContextViewPolicyOutcome.ALLOW,
+        policy_id=DEFAULT_CONTEXT_VIEW_VISIBILITY_POLICY_ID,
+        effective_scope=scope,
+        eligible_categories=(ContextViewCategory.MEMORY,),
+    )
+    composition = ContextViewCompositionRequest(
+        request=cv_request,
+        policy_decision=decision,
+        principal_identity=RequestIdentity(
+            tenant_id=_TENANT,
+            user_id=_ACTING,
+            principal_type=PrincipalType.USER,
+            auth_subject=_ACTING,
         ),
     )
-    result = wrapped.create_work_item(_create_request())
-    assert result.work_item_id == "wi-1"
+    view = wrapped.compose(composition)
+    assert view.view_id == "view-stub"
+    assert len(spy.calls) == 1
 
 
 def test_mp6f_replaceable_publication_port_spy() -> None:
@@ -328,12 +402,8 @@ def test_mp6f_replaceable_publication_port_spy() -> None:
 
     alt = _AltPort()
     inner = _StubCollaborativeWorkService(work_item=_work_item())
-    from intergrax.collaborative_work.collaborative_activity_source_mapping import (
-        DefaultCollaborativeWorkActivitySourceMapper,
-    )
-
     wrapped = CollaborativeWorkServiceWithActivityPublication(
-        inner=inner,  # type: ignore[arg-type]
+        inner=inner,
         side_effect=CollaborativeActivitySourcePublicationSideEffect(publication_port=alt),
         mapper=DefaultCollaborativeWorkActivitySourceMapper(
             principal_kind_resolver=_principal_kind_resolver(),

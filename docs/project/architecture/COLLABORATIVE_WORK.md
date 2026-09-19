@@ -616,19 +616,19 @@ Authorized Consumer
 
 **Anti-bypass (MP-6F):** source domains never import or call `CollaborativeActivityAppendStore`, activity SQLite/PostgreSQL providers, or `CollaborativeActivityAppendIntent`. Ingress is **`CollaborativeActivityPublicationPort` only**.
 
-**MP-6F source integration (current):** replaceable typed mappers + service/composer decorators in [`collaborative_activity_source_mapping.py`](../../../intergrax/collaborative_work/collaborative_activity_source_mapping.py), [`collaborative_activity_source_adapters.py`](../../../intergrax/collaborative_work/collaborative_activity_source_adapters.py), [`collaborative_activity_source_wiring.py`](../../../intergrax/collaborative_work/collaborative_activity_source_wiring.py). **`publication.actor`** is source-proven semantic actor; **publisher identity** remains MP-6C (`VerifiedCollaborativeActivityPublisherIdentity` + explicit registration). **`source_stable_id`** is replay-stable operation identity (command `idempotency_key` for Collaborative Work mutations; deterministic `view_id` for ContextView compose).
+**MP-6F source integration (MP-6F-C1 — contract-driven):** replaceable typed mappers + decorators in [`collaborative_activity_source_mapping.py`](../../../intergrax/collaborative_work/collaborative_activity_source_mapping.py), [`collaborative_activity_source_ports.py`](../../../intergrax/collaborative_work/collaborative_activity_source_ports.py), [`collaborative_activity_source_adapters.py`](../../../intergrax/collaborative_work/collaborative_activity_source_adapters.py), [`collaborative_activity_source_wiring.py`](../../../intergrax/collaborative_work/collaborative_activity_source_wiring.py). Adapters depend on **source-operation Protocols** (`CollaborativeWorkActivityMutationPort`, `CollaborativeWorkArtifactActivityMutationPort`, `CollaborativeDecisionBindingActivitySourcePort`, `ContextViewComposer`); concrete services are composition-root choices only. Artifact publication results use structural `PublishedWorkArtifactPublicationResult` (not repository imports). **`publication.actor`** is source-proven semantic actor; **publisher identity** remains MP-6C (`VerifiedCollaborativeActivityPublisherIdentity` + explicit registration). **`source_stable_id`** is replay-stable operation identity (command `idempotency_key` for Collaborative Work mutations; deterministic `view_id` for ContextView compose).
 
-| Source | Canonical seam | Integrated | `source_stable_id` |
-|--------|----------------|------------|-------------------|
-| WorkItem create / transition | `CollaborativeWorkService` | Yes | request `idempotency_key` |
+| Source | Adapter contract | Integrated | `source_stable_id` |
+|--------|------------------|------------|-------------------|
+| WorkItem create / transition | `CollaborativeWorkActivityMutationPort` | Yes | request `idempotency_key` |
 | WorkItem field update (`WORK_ITEM_UPDATED`) | — | **No** — no authoritative non-transition update seam | — |
-| Assignment create / transition | `CollaborativeWorkService` | Yes | request `idempotency_key` |
-| WorkArtifact create / publish version | `CollaborativeWorkArtifactService` | Yes | request `idempotency_key` |
-| Collaborative decision binding create | `CollaborativeDecisionBindingService` | Yes | request `idempotency_key` |
-| ContextView compose | `ContextViewComposer.compose` (decorator) | Yes | composed `view_id` |
+| Assignment create / transition | `CollaborativeWorkActivityMutationPort` | Yes | request `idempotency_key` |
+| WorkArtifact create / publish version | `CollaborativeWorkArtifactActivityMutationPort` | Yes | request `idempotency_key` |
+| Collaborative decision binding create | `CollaborativeDecisionBindingActivitySourcePort` | Yes | request `idempotency_key` |
+| ContextView compose | `ContextViewComposer` | Yes | composed `view_id` |
 | Repository / log inference | — | **Forbidden** | — |
 
-Publication failure after committed source mutation: explicit `CollaborativeActivityPublicationFailurePolicy` (`RAISE` default; optional `LOG_AND_CONTINUE` — not cross-store atomicity).
+**Publication vs source mutation (fail-safe):** source mutation and activity publication are separate operations — **no cross-store atomicity**. On publication failure after a committed source mutation, the adapter **propagates** the publication error (no silent swallow). The caller may observe a successful source result only when publication also succeeded; if publication fails, the source mutation may already be committed and **no rollback is implied**. MP-6F does not classify final audit-critical durability: **MP-6C owns effective durability resolution**, so integration cannot safely discard failed publication. ContextView `occurred_at` in activity mapping is **composition completion time observed at the integration boundary**, not a fabricated domain event timestamp.
 
 **MP-6E read semantics (qualified providers):** authorization runs before any `CollaborativeActivityReadPort` call; the page cursor is **not** an authorization token (scope/filter binding only). Continuation uses **keyset pagination by `append_position`** (`append_position > cursor`, `ORDER BY append_position ASC`, **no `OFFSET`**). `occurred_at` is a filter/display dimension, not a continuation watermark. Reads follow **forward live feed** semantics: appends after page *N* may appear on later pages; there is **no fixed historical snapshot** across pages without an explicit snapshot token. **SQLite** and **PostgreSQL** read providers are qualified under [`MP-6E-C1_POSTGRESQL_READ_PROVIDER_QUALIFICATION.md`](../maintainers/qualification/MP-6E-C1_POSTGRESQL_READ_PROVIDER_QUALIFICATION.md).
 

@@ -4,19 +4,20 @@
 
 from __future__ import annotations
 
-import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import StrEnum
 
-from intergrax.collaborative_work.artifact_service import CollaborativeWorkArtifactService
 from intergrax.collaborative_work.collaborative_activity_source_mapping import (
     CollaborativeWorkActivitySourceMapper,
     ContextViewActivitySourceMapper,
 )
-from intergrax.collaborative_work.decision_binding_service import CollaborativeDecisionBindingService
-from intergrax.collaborative_work.service import CollaborativeWorkService
+from intergrax.collaborative_work.collaborative_activity_source_ports import (
+    CollaborativeDecisionBindingActivitySourcePort,
+    CollaborativeWorkActivityMutationPort,
+    CollaborativeWorkArtifactActivityMutationPort,
+    PublishedWorkArtifactPublicationResult,
+)
 from intergrax.contracts.collaborative_activity import (
     CollaborativeActivityPublication,
     CollaborativeActivityPublicationPort,
@@ -39,17 +40,10 @@ from intergrax.contracts.collaborative_work import (
     WorkItem,
 )
 from intergrax.contracts.context_view import ContextView
-from intergrax.contracts.context_view_composition import ContextViewCompositionRequest
-from intergrax.collaborative_work.repository import PublishedWorkArtifactVersion
-
-_LOGGER = logging.getLogger(__name__)
-
-
-class CollaborativeActivityPublicationFailurePolicy(StrEnum):
-    """Explicit semantics when source mutation succeeded but activity publication fails."""
-
-    RAISE = "raise"
-    LOG_AND_CONTINUE = "log_and_continue"
+from intergrax.contracts.context_view_composition import (
+    ContextViewComposer,
+    ContextViewCompositionRequest,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,31 +51,21 @@ class CollaborativeActivitySourcePublicationSideEffect:
     """Stateless publication orchestration — depends on ``CollaborativeActivityPublicationPort`` only."""
 
     publication_port: CollaborativeActivityPublicationPort
-    failure_policy: CollaborativeActivityPublicationFailurePolicy = (
-        CollaborativeActivityPublicationFailurePolicy.RAISE
-    )
 
     def publish_after_source_success(
         self,
         publication: CollaborativeActivityPublication,
     ) -> None:
-        try:
-            self.publication_port.publish(publication)
-        except Exception:
-            if self.failure_policy is CollaborativeActivityPublicationFailurePolicy.RAISE:
-                raise
-            _LOGGER.exception(
-                "collaborative activity publication failed after authoritative source success",
-            )
+        self.publication_port.publish(publication)
 
 
 class CollaborativeWorkServiceWithActivityPublication:
-    """Decorator — preserves ``CollaborativeWorkService`` semantics and results."""
+    """Decorator — preserves Shared Work mutation semantics and results."""
 
     def __init__(
         self,
         *,
-        inner: CollaborativeWorkService,
+        inner: CollaborativeWorkActivityMutationPort,
         side_effect: CollaborativeActivitySourcePublicationSideEffect,
         mapper: CollaborativeWorkActivitySourceMapper,
     ) -> None:
@@ -127,7 +111,7 @@ class CollaborativeWorkArtifactServiceWithActivityPublication:
     def __init__(
         self,
         *,
-        inner: CollaborativeWorkArtifactService,
+        inner: CollaborativeWorkArtifactActivityMutationPort,
         side_effect: CollaborativeActivitySourcePublicationSideEffect,
         mapper: CollaborativeWorkActivitySourceMapper,
     ) -> None:
@@ -135,7 +119,10 @@ class CollaborativeWorkArtifactServiceWithActivityPublication:
         self._side_effect = side_effect
         self._mapper = mapper
 
-    def create_artifact(self, request: CreateWorkArtifactRequest) -> PublishedWorkArtifactVersion:
+    def create_artifact(
+        self,
+        request: CreateWorkArtifactRequest,
+    ) -> PublishedWorkArtifactPublicationResult:
         published = self._inner.create_artifact(request)
         publication = self._mapper.map_work_artifact_created(request=request, published=published)
         self._side_effect.publish_after_source_success(publication)
@@ -144,7 +131,7 @@ class CollaborativeWorkArtifactServiceWithActivityPublication:
     def create_artifact_from_execution(
         self,
         request: CreateWorkArtifactFromExecutionRequest,
-    ) -> PublishedWorkArtifactVersion:
+    ) -> PublishedWorkArtifactPublicationResult:
         published = self._inner.create_artifact_from_execution(request)
         publication = self._mapper.map_work_artifact_created(request=request, published=published)
         self._side_effect.publish_after_source_success(publication)
@@ -153,7 +140,7 @@ class CollaborativeWorkArtifactServiceWithActivityPublication:
     def publish_version(
         self,
         request: PublishWorkArtifactVersionRequest,
-    ) -> PublishedWorkArtifactVersion:
+    ) -> PublishedWorkArtifactPublicationResult:
         published = self._inner.publish_version(request)
         publication = self._mapper.map_work_artifact_version_published(
             request=request,
@@ -165,7 +152,7 @@ class CollaborativeWorkArtifactServiceWithActivityPublication:
     def publish_version_from_execution(
         self,
         request: PublishWorkArtifactVersionFromExecutionRequest,
-    ) -> PublishedWorkArtifactVersion:
+    ) -> PublishedWorkArtifactPublicationResult:
         published = self._inner.publish_version_from_execution(request)
         publication = self._mapper.map_work_artifact_version_published(
             request=request,
@@ -179,7 +166,7 @@ class CollaborativeDecisionBindingServiceWithActivityPublication:
     def __init__(
         self,
         *,
-        inner: CollaborativeDecisionBindingService,
+        inner: CollaborativeDecisionBindingActivitySourcePort,
         side_effect: CollaborativeActivitySourcePublicationSideEffect,
         mapper: CollaborativeWorkActivitySourceMapper,
     ) -> None:
@@ -240,12 +227,12 @@ class CollaborativeDecisionBindingServiceWithActivityPublication:
 
 
 class ContextViewComposerWithActivityPublication:
-    """Wraps any composer exposing ``compose`` — typically ``DefaultContextViewComposer``."""
+    """Wraps a ``ContextViewComposer`` — publishes after composition completes."""
 
     def __init__(
         self,
         *,
-        inner: object,
+        inner: ContextViewComposer,
         side_effect: CollaborativeActivitySourcePublicationSideEffect,
         mapper: ContextViewActivitySourceMapper,
         clock: Callable[[], datetime] | None = None,
@@ -256,7 +243,7 @@ class ContextViewComposerWithActivityPublication:
         self._clock = clock or (lambda: datetime.now(UTC))
 
     def compose(self, composition_request: ContextViewCompositionRequest) -> ContextView:
-        view = self._inner.compose(composition_request)  # type: ignore[attr-defined]
+        view = self._inner.compose(composition_request)
         completed_at = self._require_timezone_aware(self._clock())
         publication = self._mapper.map_context_view_composed(
             composition_request=composition_request,
@@ -274,7 +261,6 @@ class ContextViewComposerWithActivityPublication:
 
 
 __all__ = [
-    "CollaborativeActivityPublicationFailurePolicy",
     "CollaborativeActivitySourcePublicationSideEffect",
     "CollaborativeDecisionBindingServiceWithActivityPublication",
     "CollaborativeWorkArtifactServiceWithActivityPublication",
