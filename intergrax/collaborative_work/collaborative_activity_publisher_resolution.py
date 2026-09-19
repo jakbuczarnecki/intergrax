@@ -9,14 +9,14 @@ from intergrax.contracts.collaborative_activity_ingestion import (
     CollaborativeActivityPublisherKind,
 )
 from intergrax.contracts.collaborative_activity_publisher_authority import (
-    CollaborativeActivityPluginPublisherRegistration,
+    CollaborativeActivityPublisherAuthority,
     CollaborativeActivityPublisherAuthoritySource,
     CollaborativeActivityPublisherContextResolver,
+    CollaborativeActivityPublisherRegistration,
     CollaborativeActivityPublisherResolutionError,
     VerifiedCollaborativeActivityPublisherIdentity,
+    allowed_workspace_ids_for_publisher_context,
 )
-
-_RESERVED_NAMESPACES = frozenset({"intergrax", "platform"})
 
 
 class MappingCollaborativeActivityPublisherAuthoritySource:
@@ -25,49 +25,38 @@ class MappingCollaborativeActivityPublisherAuthoritySource:
     def __init__(
         self,
         *,
-        plugin_registrations: tuple[CollaborativeActivityPluginPublisherRegistration, ...] = (),
-        platform_workspace_grants: dict[tuple[str, str], tuple[str, ...]] | None = None,
+        registrations: tuple[CollaborativeActivityPublisherRegistration, ...] = (),
     ) -> None:
-        self._plugins: dict[tuple[str, str], CollaborativeActivityPluginPublisherRegistration] = {}
-        for registration in plugin_registrations:
+        self._registrations: dict[
+            tuple[str, str],
+            CollaborativeActivityPublisherRegistration,
+        ] = {}
+        for registration in registrations:
             key = (
                 registration.tenant_id.strip(),
                 registration.producer_principal_id.strip(),
             )
-            if key in self._plugins:
-                raise ValueError("duplicate plugin publisher registration")
-            self._plugins[key] = registration
-        self._platform_workspace_grants = platform_workspace_grants or {}
+            if key in self._registrations:
+                raise ValueError("duplicate publisher authority registration")
+            self._registrations[key] = registration
 
-    def registered_plugin_namespace(
+    def resolve_publisher_authority(
         self,
         identity: VerifiedCollaborativeActivityPublisherIdentity,
-    ) -> str | None:
+    ) -> CollaborativeActivityPublisherAuthority | None:
         key = (identity.tenant_id.strip(), identity.producer_principal_id.strip())
-        registration = self._plugins.get(key)
+        registration = self._registrations.get(key)
         if registration is None:
             return None
-        return registration.owned_namespace.strip().lower()
-
-    def allowed_workspace_ids(
-        self,
-        identity: VerifiedCollaborativeActivityPublisherIdentity,
-        *,
-        publisher_is_platform: bool,
-    ) -> tuple[str, ...]:
-        key = (identity.tenant_id.strip(), identity.producer_principal_id.strip())
-        registration = self._plugins.get(key)
-        if registration is not None:
-            return registration.allowed_workspace_ids
-        if publisher_is_platform:
-            return self._platform_workspace_grants.get(key, ())
-        raise CollaborativeActivityPublisherResolutionError(
-            "workspace authority unavailable for unresolved publisher principal",
+        return CollaborativeActivityPublisherAuthority(
+            publisher_kind=registration.publisher_kind,
+            workspace_authority=registration.workspace_authority,
+            owned_namespace=registration.owned_namespace,
         )
 
 
 class DefaultCollaborativeActivityPublisherContextResolver:
-    """Platform default binder — plugin namespace and kind from authority source only."""
+    """Platform default binder — publisher kind and namespace from authority source only."""
 
     def __init__(
         self,
@@ -82,29 +71,22 @@ class DefaultCollaborativeActivityPublisherContextResolver:
         if type(identity) is not VerifiedCollaborativeActivityPublisherIdentity:
             raise TypeError("identity must be VerifiedCollaborativeActivityPublisherIdentity")
 
-        plugin_namespace = self._authority_source.registered_plugin_namespace(identity)
-        if plugin_namespace is not None:
-            owned = plugin_namespace.strip().lower()
-            if owned in _RESERVED_NAMESPACES:
-                raise CollaborativeActivityPublisherResolutionError(
-                    "registered plugin namespace cannot be reserved",
-                )
-            workspaces = self._authority_source.allowed_workspace_ids(
-                identity,
-                publisher_is_platform=False,
+        authority = self._authority_source.resolve_publisher_authority(identity)
+        if authority is None:
+            raise CollaborativeActivityPublisherResolutionError(
+                "publisher principal has no explicit authority registration",
             )
+
+        workspaces = allowed_workspace_ids_for_publisher_context(authority.workspace_authority)
+        if authority.publisher_kind is CollaborativeActivityPublisherKind.PLUGIN:
             return CollaborativeActivityPublisherContext(
                 tenant_id=identity.tenant_id,
                 producer_principal_id=identity.producer_principal_id,
                 kind=CollaborativeActivityPublisherKind.PLUGIN,
-                owned_namespace=owned,
+                owned_namespace=authority.owned_namespace,
                 allowed_workspace_ids=workspaces,
             )
 
-        workspaces = self._authority_source.allowed_workspace_ids(
-            identity,
-            publisher_is_platform=True,
-        )
         return CollaborativeActivityPublisherContext(
             tenant_id=identity.tenant_id,
             producer_principal_id=identity.producer_principal_id,

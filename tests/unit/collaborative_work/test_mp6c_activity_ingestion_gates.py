@@ -17,9 +17,9 @@ from intergrax.collaborative_work.collaborative_activity_ingestion import (
     CollaborativeActivityIngestionService,
     DefaultCollaborativeActivityIngestionPolicy,
 )
-from intergrax.collaborative_work.collaborative_activity_publisher_resolution import (
-    DefaultCollaborativeActivityPublisherContextResolver,
-    MappingCollaborativeActivityPublisherAuthoritySource,
+from tests.unit.collaborative_work.mp6c_publisher_authority_test_support import (
+    default_ingestion_resolver,
+    plugin_publisher_registration,
 )
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
@@ -53,7 +53,6 @@ from intergrax.contracts.collaborative_activity_ingestion import (
     fail_closed_collaborative_activity_ingestion_decision,
 )
 from intergrax.contracts.collaborative_activity_publisher_authority import (
-    CollaborativeActivityPluginPublisherRegistration,
     verified_collaborative_activity_publisher_identity_from_request_identity,
 )
 from intergrax.contracts.collaborative_work import PrincipalKind
@@ -175,14 +174,6 @@ def _service_request_identity(tenant: str, producer: str) -> RequestIdentity:
     )
 
 
-def _default_resolver(
-    *plugins: CollaborativeActivityPluginPublisherRegistration,
-) -> DefaultCollaborativeActivityPublisherContextResolver:
-    return DefaultCollaborativeActivityPublisherContextResolver(
-        MappingCollaborativeActivityPublisherAuthoritySource(plugin_registrations=plugins),
-    )
-
-
 def _platform_service(
     store: _RecordingAppendStore,
     *,
@@ -195,7 +186,7 @@ def _platform_service(
     )
     return build_collaborative_activity_ingestion_service(
         verified_publisher_identity=verified,
-        publisher_context_resolver=_default_resolver(),
+        publisher_context_resolver=default_ingestion_resolver(),
         append_store=store,
         ingestion_policy=policy,
     )
@@ -300,7 +291,7 @@ def test_mp6c_unauthorized_replay_denied_no_store() -> None:
         verified_publisher_identity=verified_collaborative_activity_publisher_identity_from_request_identity(
             _service_request_identity("tenant-b", "producer-b"),
         ),
-        publisher_context_resolver=_default_resolver(),
+        publisher_context_resolver=default_ingestion_resolver(),
         append_store=store,
     )
     with pytest.raises(CollaborativeActivityAdmissionRejected):
@@ -314,12 +305,8 @@ def test_mp6c_plugin_own_namespace_allowed() -> None:
         verified_publisher_identity=verified_collaborative_activity_publisher_identity_from_request_identity(
             _service_request_identity("tenant-a", "plugin-producer"),
         ),
-        publisher_context_resolver=_default_resolver(
-            CollaborativeActivityPluginPublisherRegistration(
-                tenant_id="tenant-a",
-                producer_principal_id="plugin-producer",
-                owned_namespace="vendor.a",
-            ),
+        publisher_context_resolver=default_ingestion_resolver(
+            plugin_publisher_registration("tenant-a", "plugin-producer", "vendor.a"),
         ),
         append_store=store,
     )
@@ -347,12 +334,8 @@ def test_mp6c_reserved_namespace_spoof_denied() -> None:
         verified_publisher_identity=verified_collaborative_activity_publisher_identity_from_request_identity(
             _service_request_identity("tenant-a", "evil-plugin"),
         ),
-        publisher_context_resolver=_default_resolver(
-            CollaborativeActivityPluginPublisherRegistration(
-                tenant_id="tenant-a",
-                producer_principal_id="evil-plugin",
-                owned_namespace="vendor.a",
-            ),
+        publisher_context_resolver=default_ingestion_resolver(
+            plugin_publisher_registration("tenant-a", "evil-plugin", "vendor.a"),
         ),
         append_store=store,
     )
@@ -382,12 +365,8 @@ def test_mp6c_source_type_namespace_mismatch_denied() -> None:
         verified_publisher_identity=verified_collaborative_activity_publisher_identity_from_request_identity(
             _service_request_identity("tenant-a", "plugin-producer"),
         ),
-        publisher_context_resolver=_default_resolver(
-            CollaborativeActivityPluginPublisherRegistration(
-                tenant_id="tenant-a",
-                producer_principal_id="plugin-producer",
-                owned_namespace="vendor.a",
-            ),
+        publisher_context_resolver=default_ingestion_resolver(
+            plugin_publisher_registration("tenant-a", "plugin-producer", "vendor.a"),
         ),
         append_store=store,
     )

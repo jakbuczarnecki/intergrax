@@ -21,6 +21,12 @@ from intergrax.collaborative_work.collaborative_activity_publisher_resolution im
     DefaultCollaborativeActivityPublisherContextResolver,
     MappingCollaborativeActivityPublisherAuthoritySource,
 )
+from tests.unit.collaborative_work.mp6c_publisher_authority_test_support import (
+    mapping_authority_source,
+    platform_publisher_registration,
+    plugin_publisher_registration,
+    publisher_context_resolver,
+)
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.collaborative_activity import (
@@ -46,10 +52,11 @@ from intergrax.contracts.collaborative_activity_ingestion import (
     CollaborativeActivityPublisherKind,
 )
 from intergrax.contracts.collaborative_activity_publisher_authority import (
-    CollaborativeActivityPluginPublisherRegistration,
     CollaborativeActivityPublisherContextResolver,
+    CollaborativeActivityPublisherRegistration,
     CollaborativeActivityPublisherResolutionError,
     VerifiedCollaborativeActivityPublisherIdentity,
+    restricted_collaborative_activity_workspace_authority,
     verified_collaborative_activity_publisher_identity_from_request_identity,
 )
 from intergrax.contracts.collaborative_work import PrincipalKind
@@ -85,22 +92,12 @@ def _verified(tenant: str, principal: str) -> VerifiedCollaborativeActivityPubli
     )
 
 
-def _authority(
-    *plugins: CollaborativeActivityPluginPublisherRegistration,
-    platform_workspace_grants: dict[tuple[str, str], tuple[str, ...]] | None = None,
-) -> MappingCollaborativeActivityPublisherAuthoritySource:
-    return MappingCollaborativeActivityPublisherAuthoritySource(
-        plugin_registrations=plugins,
-        platform_workspace_grants=platform_workspace_grants,
-    )
-
-
 def _resolver(
-    authority: MappingCollaborativeActivityPublisherAuthoritySource | None = None,
+    *registrations: CollaborativeActivityPublisherRegistration,
 ) -> DefaultCollaborativeActivityPublisherContextResolver:
-    return DefaultCollaborativeActivityPublisherContextResolver(
-        authority or _authority(),
-    )
+    if registrations:
+        return publisher_context_resolver(*registrations)
+    return DefaultCollaborativeActivityPublisherContextResolver(mapping_authority_source())
 
 
 class _RecordingAppendStore:
@@ -214,65 +211,45 @@ def test_mp6c_c1_resolution_failure_zero_store_calls() -> None:
 
 
 def test_mp6c_c1_platform_service_identity_resolves_platform_kind() -> None:
-    resolver = _resolver()
+    resolver = _resolver(platform_publisher_registration("tenant-a", "platform-producer"))
     ctx = resolver.resolve(_verified("tenant-a", "platform-producer"))
     assert ctx.kind is CollaborativeActivityPublisherKind.PLATFORM
     assert ctx.owned_namespace is None
 
 
 def test_mp6c_c1_registered_plugin_cannot_self_promote_to_platform() -> None:
-    authority = _authority(
-        CollaborativeActivityPluginPublisherRegistration(
-            tenant_id="tenant-a",
-            producer_principal_id="plugin-producer",
-            owned_namespace="vendor.a",
-        ),
+    resolver = _resolver(
+        plugin_publisher_registration("tenant-a", "plugin-producer", "vendor.a"),
     )
-    resolver = _resolver(authority)
     ctx = resolver.resolve(_verified("tenant-a", "plugin-producer"))
     assert ctx.kind is CollaborativeActivityPublisherKind.PLUGIN
     assert ctx.owned_namespace == "vendor.a"
 
 
 def test_mp6c_c1_plugin_cannot_claim_peer_namespace() -> None:
-    authority = _authority(
-        CollaborativeActivityPluginPublisherRegistration(
-            tenant_id="tenant-a",
-            producer_principal_id="plugin-a",
-            owned_namespace="vendor.a",
-        ),
-    )
-    resolver = _resolver(authority)
+    resolver = _resolver(plugin_publisher_registration("tenant-a", "plugin-a", "vendor.a"))
     ctx = resolver.resolve(_verified("tenant-a", "plugin-a"))
     assert ctx.owned_namespace == "vendor.a"
     assert ctx.owned_namespace != "vendor.b"
 
 
 def test_mp6c_c1_cross_tenant_identity_binding() -> None:
-    authority = _authority(
-        CollaborativeActivityPluginPublisherRegistration(
-            tenant_id="tenant-a",
-            producer_principal_id="plugin-a",
-            owned_namespace="vendor.a",
-        ),
-    )
-    resolver = _resolver(authority)
+    resolver = _resolver(plugin_publisher_registration("tenant-a", "plugin-a", "vendor.a"))
     ctx = resolver.resolve(_verified("tenant-a", "plugin-a"))
     assert ctx.tenant_id == "tenant-a"
-    unregistered = resolver.resolve(_verified("tenant-b", "plugin-a"))
-    assert unregistered.kind is CollaborativeActivityPublisherKind.PLATFORM
+    with pytest.raises(CollaborativeActivityPublisherResolutionError):
+        resolver.resolve(_verified("tenant-b", "plugin-a"))
 
 
 def test_mp6c_c1_workspace_binding_enforced() -> None:
-    authority = _authority(
-        CollaborativeActivityPluginPublisherRegistration(
-            tenant_id="tenant-a",
-            producer_principal_id="plugin-a",
-            owned_namespace="vendor.a",
-            allowed_workspace_ids=("ws-a",),
+    resolver = _resolver(
+        plugin_publisher_registration(
+            "tenant-a",
+            "plugin-a",
+            "vendor.a",
+            workspace_authority=restricted_collaborative_activity_workspace_authority("ws-a"),
         ),
     )
-    resolver = _resolver(authority)
     ctx = resolver.resolve(_verified("tenant-a", "plugin-a"))
     store = _RecordingAppendStore()
     service = build_collaborative_activity_ingestion_service(
@@ -301,17 +278,12 @@ def test_mp6c_c1_workspace_binding_enforced() -> None:
 
 
 def test_mp6c_c1_plugin_reserved_namespace_publication_denied() -> None:
-    authority = _authority(
-        CollaborativeActivityPluginPublisherRegistration(
-            tenant_id="tenant-a",
-            producer_principal_id="evil-plugin",
-            owned_namespace="vendor.a",
-        ),
-    )
     store = _RecordingAppendStore()
     service = build_collaborative_activity_ingestion_service(
         verified_publisher_identity=_verified("tenant-a", "evil-plugin"),
-        publisher_context_resolver=_resolver(authority),
+        publisher_context_resolver=_resolver(
+            plugin_publisher_registration("tenant-a", "evil-plugin", "vendor.a"),
+        ),
         append_store=store,
     )
     pub = CollaborativeActivityPublication(
@@ -360,7 +332,9 @@ def test_mp6c_c1_actor_distinct_from_publisher() -> None:
     store = _RecordingAppendStore()
     service = build_collaborative_activity_ingestion_service(
         verified_publisher_identity=_verified("tenant-a", "platform-producer"),
-        publisher_context_resolver=_resolver(),
+        publisher_context_resolver=_resolver(
+            platform_publisher_registration("tenant-a", "platform-producer"),
+        ),
         append_store=store,
     )
     activity = service.publish(_platform_publication())
@@ -369,4 +343,7 @@ def test_mp6c_c1_actor_distinct_from_publisher() -> None:
 
 
 def test_mp6c_c1_resolver_protocol_runtime_checkable() -> None:
-    assert isinstance(_resolver(), CollaborativeActivityPublisherContextResolver)
+    assert isinstance(
+        _resolver(platform_publisher_registration("tenant-a", "platform-producer")),
+        CollaborativeActivityPublisherContextResolver,
+    )

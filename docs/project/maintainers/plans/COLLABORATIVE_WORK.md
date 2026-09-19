@@ -678,11 +678,19 @@ WorkItem → zero..N WorkArtifact → one..N WorkArtifactVersion (immutable appe
 
 | Field | Value |
 |-------|-------|
-| **Status** | **CLOSED** (subject to independent audit) |
-| **Purpose** | Bind `CollaborativeActivityPublisherContext` to `VerifiedCollaborativeActivityPublisherIdentity` + `CollaborativeActivityPublisherContextResolver`; remove raw caller-controlled publisher factories from production |
-| **Artifacts** | `intergrax/contracts/collaborative_activity_publisher_authority.py`, `collaborative_activity_publisher_resolution.py`, `collaborative_activity_composition.py`, `tests/unit/collaborative_work/test_mp6c_c1_trusted_publisher_identity_binding.py` |
-| **Security** | Fail-closed resolution; plugin cannot self-promote to PLATFORM; namespace/workspace/tenant from authority source; composition rejects raw context injection |
+| **Status** | **CLOSED / RECERTIFIED** (MP-6C-C1-R1 — subject to independent audit) |
+| **Purpose** | Bind `CollaborativeActivityPublisherContext` to `VerifiedCollaborativeActivityPublisherIdentity` + `CollaborativeActivityPublisherContextResolver`; explicit `CollaborativeActivityPublisherRegistration` (PLATFORM/PLUGIN) and workspace grants; remove raw caller-controlled publisher factories from production |
+| **Artifacts** | `intergrax/contracts/collaborative_activity_publisher_authority.py`, `collaborative_activity_publisher_resolution.py`, `collaborative_activity_composition.py`, `tests/unit/collaborative_work/test_mp6c_c1_trusted_publisher_identity_binding.py`, `tests/unit/collaborative_work/test_mp6c_c1_r1_explicit_publisher_authority.py` |
+| **Security** | Fail-closed resolution; empty authority denies all; unknown SERVICE/ORG_SYSTEM never PLATFORM; explicit tenant-wide workspace grant; missing grant denies; duplicate PLATFORM+PLUGIN registration rejected; plugin cannot self-promote to PLATFORM; composition rejects raw context injection |
 | **Next step** | **MP-6D — NEXT** |
+
+### MP-6C-C1-R1 — Explicit publisher authority registration
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED** (subject to independent audit) |
+| **Purpose** | Eliminate fail-open `unregistered → PLATFORM` and `missing workspace grant → tenant-wide`; unified authority lookup via `resolve_publisher_authority` |
+| **Proof** | `test_mp6c_c1_r1_explicit_publisher_authority.py` |
 
 ### MP-6D — Persistence / store
 
