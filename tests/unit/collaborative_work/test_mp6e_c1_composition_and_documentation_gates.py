@@ -69,7 +69,11 @@ _MP6E_C1_PG_QUAL_EVIDENCE = (
 )
 
 _MP6E_C1_Q1_REQUIRED_MARKERS: tuple[str, ...] = (
+    "MP-6E-C1-Q1-R1",
     "MP-6E-C1-Q1",
+    "source_tree_hermetic",
+    "git archive",
+    "qualification executed from isolated exact-SHA exported tree",
     "implementation_sha",
     "eb586ccefea80ff05e0dd4f4f1e784ed1c398350",
     "mp6e_c1_correction_sha",
