@@ -336,7 +336,11 @@ HARNESS_02_R1_QUALIFICATION_MATRIX: tuple[Harness02R1QualificationRow, ...] = (
     Harness02R1QualificationRow("Q17", "PASS", _nid(_H02R1, "test_q17_custom_available_cannot_override_expired")),
     Harness02R1QualificationRow("Q18", "PASS", _nid(_H02R1B, "test_q18_streaming_deadline_crossed_after_bind")),
     Harness02R1QualificationRow("Q19", "PASS", _nid(_H02R1A, "test_q19_from_registry_requires_deadline_resolver_with_durable_budget")),
-    Harness02R1QualificationRow("Q20", "PASS", _nid(_H02R1A, "test_q05_child_effective_deadline_capped_by_parent")),
+    Harness02R1QualificationRow(
+        "Q20",
+        "PASS",
+        _nid(_H02R1B, "test_q25_bounded_child_under_unbounded_parent_gets_effective_deadline"),
+    ),
     Harness02R1QualificationRow("Q21", "PASS", _nid(_H02R1A, "test_q21_contracts_execution_deadline_have_no_runtime_imports")),
     Harness02R1QualificationRow("Q22", "PASS", _nid(_H02R1A, "test_q22_resolver_accepts_clock_ports")),
     Harness02R1QualificationRow("Q23", "PASS", _nid(_H02R1B, "test_q23_deadline_crossed_after_bind_blocks_admission")),
