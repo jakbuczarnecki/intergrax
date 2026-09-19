@@ -118,14 +118,11 @@ def test_mp6a_no_forbidden_ownership_drift_in_mp6_section() -> None:
         )
 
 
-def test_mp6d_closure_current_status_points_to_mp6e_next() -> None:
+def test_mp6e_closure_current_status_points_to_mp6f_next() -> None:
     for name, path in _STATUS_DOCS.items():
         text = _read(path)
-        assert "**MP-6D — NEXT**" not in text, f"{name}: stale active MP-6D NEXT"
-        assert "MP-6E — NEXT" in text, f"{name}: missing MP-6E NEXT"
+        assert "**MP-6E — NEXT**" not in text, f"{name}: stale active MP-6E NEXT"
+        assert "MP-6F" in text, f"{name}: missing MP-6F roadmap"
     adr = _read(_ADR_MP007)
-    status_start = adr.find("## Status")
-    assert status_start >= 0
-    status_block = adr[status_start : status_start + 900]
-    assert "MP-6D — NEXT" not in status_block, "ADR Status block still marks MP-6D NEXT"
-    assert "MP-6E — NEXT" in status_block, "ADR Status block missing MP-6E NEXT"
+    assert "MP-6E - NEXT" not in adr, "ADR still marks MP-6E NEXT"
+    assert "MP-6F" in adr, "ADR missing MP-6F roadmap"

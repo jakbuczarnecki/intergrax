@@ -4,12 +4,23 @@
 
 from __future__ import annotations
 
-from intergrax.collaborative_work.persistence import sqlite_collaborative_activity_append_store
+from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
+from intergrax.collaborative_work.persistence import (
+    sqlite_collaborative_activity_append_store,
+    sqlite_collaborative_activity_read_store,
+)
+from intergrax.collaborative_work.collaborative_activity_read import CollaborativeActivityReadService
+from intergrax.collaborative_work.collaborative_activity_read_authorization import (
+    CollaborativeActivityReadAuthorizationEvaluator,
+    DefaultCollaborativeActivityReadAuthorizationPolicy,
+    build_default_collaborative_activity_read_authorization_policy,
+)
 from intergrax.collaborative_work.collaborative_activity_ingestion import (
     CollaborativeActivityIngestionService,
     DefaultCollaborativeActivityIngestionPolicy,
 )
 from intergrax.contracts.collaborative_activity import CollaborativeActivityAppendStore
+from intergrax.contracts.collaborative_activity import CollaborativeActivityReadPort
 from intergrax.contracts.collaborative_activity_ingestion import (
     CollaborativeActivityIngestionPolicy,
     DefaultCollaborativeActivityIngestionPolicyConfig,
@@ -50,8 +61,33 @@ def build_sqlite_collaborative_activity_append_store(
     return sqlite_collaborative_activity_append_store(db_path)
 
 
+def build_collaborative_activity_read_service(
+    *,
+    authority_resolver: CollaborativeWorkAuthorityResolver,
+    read_port: CollaborativeActivityReadPort,
+    read_authorization_policy: DefaultCollaborativeActivityReadAuthorizationPolicy | None = None,
+) -> CollaborativeActivityReadService:
+    policy = read_authorization_policy or build_default_collaborative_activity_read_authorization_policy()
+    evaluator = CollaborativeActivityReadAuthorizationEvaluator(
+        authority_resolver=authority_resolver,
+        read_authorization_policy=policy,
+    )
+    return CollaborativeActivityReadService(
+        read_authorization=evaluator,
+        read_port=read_port,
+    )
+
+
+def build_sqlite_collaborative_activity_read_store(
+    db_path: str,
+) -> CollaborativeActivityReadPort:
+    return sqlite_collaborative_activity_read_store(db_path)
+
+
 __all__ = [
     "build_collaborative_activity_ingestion_service",
+    "build_collaborative_activity_read_service",
     "build_default_collaborative_activity_ingestion_policy",
     "build_sqlite_collaborative_activity_append_store",
+    "build_sqlite_collaborative_activity_read_store",
 ]
