@@ -126,7 +126,7 @@ def test_gr10_r9_r1_graph_non_tool_inventory_no_tbd() -> None:
         assert row.classification != "TBD"
 
 
-def test_gr10_r9_r1_matrix_mse_partial_honest_after_authority_migration() -> None:
+def test_gr10_r9_r1_matrix_mse_qualified_after_r9_r2_closure() -> None:
     row = next(r for r in GR10_ORCHESTRATION_CAPABILITY_SEMANTICS if r.capability == "MSE")
-    assert row.coverage is Gr10CoverageStatus.PARTIAL
-    assert gr10_matrix_orchestration_status("MSE") is Gr10CoverageStatus.PARTIAL
+    assert row.coverage is Gr10CoverageStatus.QUALIFIED
+    assert gr10_matrix_orchestration_status("MSE") is Gr10CoverageStatus.QUALIFIED

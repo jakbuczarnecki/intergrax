@@ -64,7 +64,7 @@ def test_gr10_r9_adr1_boundary_authorize_is_typed_at_runtime_impl() -> None:
     assert "MeaningfulSideEffectAuthorizationResult" in str(sig.return_annotation)
 
 
-def test_gr10_r9_adr1_matrix_honesty_orchestration_mse_partial() -> None:
+def test_gr10_r9_adr1_matrix_honesty_orchestration_mse_qualified() -> None:
     row = next(r for r in GR10_ORCHESTRATION_CAPABILITY_SEMANTICS if r.capability == "MSE")
-    assert row.coverage is Gr10CoverageStatus.PARTIAL
-    assert gr10_matrix_orchestration_status("MSE") is Gr10CoverageStatus.PARTIAL
+    assert row.coverage is Gr10CoverageStatus.QUALIFIED
+    assert gr10_matrix_orchestration_status("MSE") is Gr10CoverageStatus.QUALIFIED

@@ -77,6 +77,7 @@ from tests.unit.runtime.architecture.gr3_inner_enforcement_ast import (
     collect_forbidden_concrete_inner_guard_imports,
 )
 from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
+from intergrax.contracts.runtime_policy import PolicyAction
 from tests.unit.runtime.nexus.tools.test_gr10_r8_orchestration_inner_guard import (
     _CountingExecutor,
     _RecordingGuard,
@@ -84,6 +85,9 @@ from tests.unit.runtime.nexus.tools.test_gr10_r8_orchestration_inner_guard impor
     _bind_test_governance_identity,
     _contract,
     _invoke_with_identity,
+)
+from tests.unit.runtime.nexus.tools.test_gr10_r9_orchestration_mse import (
+    _RecordingMseBoundary,
 )
 
 pytestmark = pytest.mark.unit
@@ -178,6 +182,9 @@ def test_gr10_r8_r1_runtime_context_custom_guard_end_to_end() -> None:
         tool_registry=FakeRegistry(_contract()),
         agent_runtime_governance=_allow_all_governance(),
         canonical_inner_execution_guard=custom,
+        meaningful_side_effect_authorization=_RecordingMseBoundary(
+            action=PolicyAction.ALLOW,
+        ),
     )
     ctx = RuntimeContext.build(
         config=config,
@@ -206,6 +213,9 @@ def test_gr10_r8_r1_runtime_context_default_guard_when_custom_absent() -> None:
         agent_runtime_governance=build_agent_runtime_governance_boundary(
             capability_grants=default_lab_capability_grants("test-tenant"),
         ),
+        meaningful_side_effect_authorization=_RecordingMseBoundary(
+            action=PolicyAction.ALLOW,
+        ),
     )
     ctx = RuntimeContext.build(
         config=config,
@@ -228,6 +238,9 @@ def test_gr10_r8_r1_declarative_wiring_custom_guard_end_to_end() -> None:
         wiring,
         agent_runtime_governance=_allow_all_governance(),
         canonical_inner_execution_guard=custom,
+        meaningful_side_effect_authorization=_RecordingMseBoundary(
+            action=PolicyAction.ALLOW,
+        ),
         production_mode=True,
     )
     assert catalog is not None
