@@ -1,11 +1,11 @@
-# MP-7C — Tier-3 Host Composition & Boundary E2E Qualification
+﻿# MP-7C â€” Tier-3 Host Composition & Boundary E2E Qualification
 
 | Field | Value |
 |-------|-------|
 | **Status** | **TIER-3 HOST COMPOSITION & BOUNDARY E2E QUALIFIED / CLOSED** (subject to independent audit) |
 | **QUALIFICATION_SHA** | `96f2a63687492b03e0b0302d4f881acc7cb7cc42` |
-| **EVIDENCE_SHA** | _(this evidence commit)_ |
-| **Predecessor** | MP-7B — CLOSED / QUALIFIED (`ab3c71ed0368bba01971851b846aa3462d7be977`) |
+| **EVIDENCE_SHA** | `214a20aed4f2ca27c672fe9be6629da306e38e61` |
+| **Predecessor** | MP-7B â€” CLOSED / QUALIFIED (`ab3c71ed0368bba01971851b846aa3462d7be977`) |
 | **MP-7A** | CLOSED / CERTIFIED (`a40dd4107b3c0c3c28177522f1dd278c68fb4da4`) |
 | **Production code** | **NONE** (canonical host wiring unchanged; LKW production unchanged) |
 
@@ -14,7 +14,7 @@
 ```text
 START_HEAD = ab3c71ed0368bba01971851b846aa3462d7be977
 QUALIFICATION_SHA = 96f2a63687492b03e0b0302d4f881acc7cb7cc42
-MP7B_ANCESTRY = yes (ab3c71ed… is ancestor of START_HEAD and of QUALIFICATION_SHA)
+MP7B_ANCESTRY = yes (ab3c71edâ€¦ is ancestor of START_HEAD and of QUALIFICATION_SHA)
 WORKTREE_STATE = clean for MP-7C paths at qualification commit; unrelated parallel WIP preserved unstaged
 NOTE = between START_HEAD and QUALIFICATION_SHA, unrelated parallel commits landed on development (e.g. 5332c8118, 2e4d06124); ancestry remains truthful
 ```
@@ -23,15 +23,15 @@ NOTE = between START_HEAD and QUALIFICATION_SHA, unrelated parallel commits land
 
 ```text
 Tier-3 host environment
-→ resolve_harness_host_meaningful_side_effect_authorization_wiring(...)
-→ MeaningfulSideEffectAuthorizationPort (public Protocol)
-→ Tier3MultiplayerConsumer (MP-7B reuse)
-→ CollaborativeWorkEnforcementRequest (public contract)
-→ real platform authorization implementation
-→ ALLOW / DENY
+â†’ resolve_harness_host_meaningful_side_effect_authorization_wiring(...)
+â†’ MeaningfulSideEffectAuthorizationPort (public Protocol)
+â†’ Tier3MultiplayerConsumer (MP-7B reuse)
+â†’ CollaborativeWorkEnforcementRequest (public contract)
+â†’ real platform authorization implementation
+â†’ ALLOW / DENY
 ```
 
-This is **Tier-3 host composition boundary E2E qualification** — not LKW product adoption.
+This is **Tier-3 host composition boundary E2E qualification** â€” not LKW product adoption.
 
 ## 3. Canonical host composition
 
@@ -48,9 +48,9 @@ No new composition architecture (`LkwMultiplayerComposition` / facades) was intr
 
 ```text
 Tier3MultiplayerConsumer
-→ MeaningfulSideEffectAuthorizationPort
-→ host composition (qualification fixture)
-→ real platform implementation OR explicit custom conforming port
+â†’ MeaningfulSideEffectAuthorizationPort
+â†’ host composition (qualification fixture)
+â†’ real platform implementation OR explicit custom conforming port
 ```
 
 Consumer module: `tests/qualification/multiplayer/mp7b/consumer.py` (reused; contracts only).
@@ -59,8 +59,8 @@ Consumer module: `tests/qualification/multiplayer/mp7b/consumer.py` (reused; con
 
 ```text
 strict environment + no explicit override
-→ platform builds real MeaningfulSideEffectAuthorizationPort
-→ surface type is public Protocol (not concrete class in public annotations)
+â†’ platform builds real MeaningfulSideEffectAuthorizationPort
+â†’ surface type is public Protocol (not concrete class in public annotations)
 ```
 
 Injected in-memory CW repositories are allowed as materialized persistence dependencies; consumer does not see them.
@@ -69,10 +69,10 @@ Injected in-memory CW repositories are allowed as materialized persistence depen
 
 ```text
 explicit: MeaningfulSideEffectAuthorizationPort
-→ resolver returns that implementation
-→ resolve_collaborative_work_repositories not called
-→ _build_port_from_materialized_repositories not called
-→ owned_collaborative_work_persistence = None
+â†’ resolver returns that implementation
+â†’ resolve_collaborative_work_repositories not called
+â†’ _build_port_from_materialized_repositories not called
+â†’ owned_collaborative_work_persistence = None
 ```
 
 Custom ports reuse MP-7B `AllowingAuthorizationPort` / `DenyingAuthorizationPort` (no inheritance from platform implementation).
@@ -98,22 +98,22 @@ Custom ports reuse MP-7B `AllowingAuthorizationPort` / `DenyingAuthorizationPort
 | strict + no override | real port (or raise on materialization/composition failure) |
 | non-strict | `authorization_port=None`, `owned_collaborative_work_persistence=None` |
 
-Non-strict `None` means **host mode does not enable this strict boundary** — not fail-open ALLOW. Consumer is not constructed with `None`.
+Non-strict `None` means **host mode does not enable this strict boundary** â€” not fail-open ALLOW. Consumer is not constructed with `None`.
 
 ## 10. ALLOW proof
 
-Host-resolved default port + seeded authoritative CW state (membership, principal authority, workspace/resource policy, operation profile) + process-local active task registry + host-equivalent runtime MSE rules at the wiring `RuntimePolicyEngine` construction site → consumer **ALLOW**.
+Host-resolved default port + seeded authoritative CW state (membership, principal authority, workspace/resource policy, operation profile) + process-local active task registry + host-equivalent runtime MSE rules at the wiring `RuntimePolicyEngine` construction site â†’ consumer **ALLOW**.
 
 Note: production default constructs empty `RuntimePolicyEngine()` (fail-closed indeterminate). Qualification supplies host-equivalent rules at the same construction site without replacing the authorization port or leaking providers to the consumer.
 
 ## 11. DENY proof
 
-Host-resolved default port + empty authoritative CW state + caller-supplied embedded membership → consumer **DENY** (request fields are not authority).
+Host-resolved default port + empty authoritative CW state + caller-supplied embedded membership â†’ consumer **DENY** (request fields are not authority).
 
 ## 12. Failure semantics
 
-- Missing `decision_requirement_policy` on strict injected-repo path → `OrchestrationDecisionBoundCompositionError` (raise, not `None`).
-- Provider materialization failure → raise, not `authorization_port=None`.
+- Missing `decision_requirement_policy` on strict injected-repo path â†’ `OrchestrationDecisionBoundCompositionError` (raise, not `None`).
+- Provider materialization failure â†’ raise, not `authorization_port=None`.
 
 ## 13. Implementation containment
 
@@ -177,11 +177,11 @@ BLOCKING FINDINGS: NONE
 ## 18. Status transition
 
 ```text
-MP-7C — CLOSED / QUALIFIED
-MP-7D — NEXT (Final Reference-Consumer Boundary Enterprise Certification)
-MP-7 — IN PROGRESS
+MP-7C â€” CLOSED / QUALIFIED
+MP-7D â€” NEXT (Final Reference-Consumer Boundary Enterprise Certification)
+MP-7 â€” IN PROGRESS
 ```
 
 ## 19. Independent audit requirement
 
-MP-7C musi zostać niezależnie zaudytowane na podstawie rzeczywistego qualification code, publicznych kontraktów, canonical host composition, lifecycle ownership, testów, evidence oraz commitów z GitHuba. Audyt musi w szczególności potwierdzić, że rzeczywisty Tier-3 host composition resolver materializuje Multiplayer authorization jako `MeaningfulSideEffectAuthorizationPort`, a consumer pozostaje całkowicie niezależny od `intergrax.collaborative_work.*`, repositories i provider implementations; że strict default path używa rzeczywistej platform implementation; że ten sam consumer działa z zewnętrzną conforming implementation bez zmian kodu; że explicit override ma pierwszeństwo przed default implementation i nie powoduje niepotrzebnej materializacji Collaborative Work persistence; że externally supplied repository bundle zachowuje caller-owned lifecycle, podczas gdy resolver-created bundle jest jawnie host-owned; że nie istnieje duplicate materialization ani provider leakage; że ALLOW i DENY przechodzą przez rzeczywistą host-resolved composition path; że strict/non-strict semantics pozostają jawne i nie tworzą fail-open authority; że żaden problem `runtime_event_bus` spoza Multiplayer boundary nie został użyty do maskowania rzeczywistego defektu composition; że LKW production code, ManagedWorkspace, Hybrid Ask, Conversation Context, persistence, endpoints i UI pozostały niezmienione; że nie wprowadzono WorkItem, Assignment, WorkArtifact, Decision, ContextView ani Activity product adoption; oraz że platform operates on contracts, not implementations. Sam raport Cursor AI nie jest podstawą do uznania MP-7C za enterprise-qualified i zamknięte.
+MP-7C musi zostaÄ‡ niezaleĹĽnie zaudytowane na podstawie rzeczywistego qualification code, publicznych kontraktĂłw, canonical host composition, lifecycle ownership, testĂłw, evidence oraz commitĂłw z GitHuba. Audyt musi w szczegĂłlnoĹ›ci potwierdziÄ‡, ĹĽe rzeczywisty Tier-3 host composition resolver materializuje Multiplayer authorization jako `MeaningfulSideEffectAuthorizationPort`, a consumer pozostaje caĹ‚kowicie niezaleĹĽny od `intergrax.collaborative_work.*`, repositories i provider implementations; ĹĽe strict default path uĹĽywa rzeczywistej platform implementation; ĹĽe ten sam consumer dziaĹ‚a z zewnÄ™trznÄ… conforming implementation bez zmian kodu; ĹĽe explicit override ma pierwszeĹ„stwo przed default implementation i nie powoduje niepotrzebnej materializacji Collaborative Work persistence; ĹĽe externally supplied repository bundle zachowuje caller-owned lifecycle, podczas gdy resolver-created bundle jest jawnie host-owned; ĹĽe nie istnieje duplicate materialization ani provider leakage; ĹĽe ALLOW i DENY przechodzÄ… przez rzeczywistÄ… host-resolved composition path; ĹĽe strict/non-strict semantics pozostajÄ… jawne i nie tworzÄ… fail-open authority; ĹĽe ĹĽaden problem `runtime_event_bus` spoza Multiplayer boundary nie zostaĹ‚ uĹĽyty do maskowania rzeczywistego defektu composition; ĹĽe LKW production code, ManagedWorkspace, Hybrid Ask, Conversation Context, persistence, endpoints i UI pozostaĹ‚y niezmienione; ĹĽe nie wprowadzono WorkItem, Assignment, WorkArtifact, Decision, ContextView ani Activity product adoption; oraz ĹĽe platform operates on contracts, not implementations. Sam raport Cursor AI nie jest podstawÄ… do uznania MP-7C za enterprise-qualified i zamkniÄ™te.
