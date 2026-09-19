@@ -10,6 +10,8 @@ from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
     InMemoryVectorStore,
 )
+from intergrax.core.plugins.discovery import reset_entry_point_spec_cache_for_tests
+from intergrax.rag.bootstrap.entry_point_load import register_rag_chunker_entry_points
 from intergrax.rag.document_splitters.bootstrap.default_chunking_engine import (
     create_default_document_splitter,
 )
@@ -552,19 +554,21 @@ def test_rag_entry_point_id_collisions_do_not_override(
         {"intergrax.rag.chunkers": (_ConflictingChunker,)},
     )
     registry = ChunkingStrategyRegistry([RecursiveChunkingStrategy()])
+    builtin = registry.resolve("recursive")
 
-    with pytest.raises(ValueError, match="Chunking strategy already registered: recursive"):
-        create_default_document_splitter(
-            registry=registry,
-            discover_entry_points=True,
-        )
+    create_default_document_splitter(
+        registry=registry,
+        discover_entry_points=True,
+    )
+    assert registry.resolve("recursive") is builtin
 
+    reset_entry_point_spec_cache_for_tests()
     _patch_entry_points(
         monkeypatch,
         {"intergrax.rag.chunkers": (_DuplicateChunker, _DuplicateChunker)},
     )
-    with pytest.raises(ValueError, match="Chunking strategy already registered: duplicate_chunker"):
-        create_default_document_splitter(
-            registry=ChunkingStrategyRegistry(),
-            discover_entry_points=True,
-        )
+    dup_registry = ChunkingStrategyRegistry()
+    report = register_rag_chunker_entry_points(dup_registry, discover_entry_points=True)
+    assert dup_registry.resolve("duplicate_chunker").strategy_id() == "duplicate_chunker"
+    assert len(report.failed) == 1
+    assert "duplicate_chunker" in str(report.failed[0].error)

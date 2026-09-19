@@ -35,11 +35,10 @@ from intergrax.tools.registry.catalog import clear_tool_catalog
 from intergrax.tools.registry.factory import build_registry_from_profile
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.registry.wiring import ToolWiringContext
-from tests.fixtures.plugin_packages.intergrax_catalog_fixture.src.intergrax_catalog_fixture.tool import (
-    FIXTURE_ECHO_TOOL_ID,
-)
-
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.usefixtures("catalog_fixture_installed")]
+
+# Catalog fixture EP tool id (avoid importing fixture package before session install).
+_FIXTURE_ECHO_TOOL_ID = "fixture_ep.echo"
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
@@ -129,7 +128,7 @@ def test_tools_discovered_but_unselected_not_in_execution_registry() -> None:
     assert "fixture_ep" in snap.tool_bundle_ids
 
     registry = build_registry_from_profile(ToolProfile.lab(), ctx=ToolWiringContext())
-    assert not registry.has(FIXTURE_ECHO_TOOL_ID)
+    assert not registry.has(_FIXTURE_ECHO_TOOL_ID)
 
 
 def test_tools_profile_selection_executes_custom_not_catalog_default() -> None:
@@ -138,7 +137,7 @@ def test_tools_profile_selection_executes_custom_not_catalog_default() -> None:
         ToolProfile(enabled_bundles=["fixture_ep"]),
         ctx=ToolWiringContext(),
     )
-    assert registry.has(FIXTURE_ECHO_TOOL_ID)
+    assert registry.has(_FIXTURE_ECHO_TOOL_ID)
 
 
 def test_integration_discovered_but_unselected_keeps_default_binding() -> None:
