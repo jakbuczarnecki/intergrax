@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""GR-10-R9 — ORCHESTRATION MSE enterprise qualification."""
+"""GR-10-R9 / ADR1 — ORCHESTRATION MSE qualification honesty (tool slice vs strategy row)."""
 
 from __future__ import annotations
 
@@ -38,15 +38,15 @@ _INVOKER = _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "tools" / "invoker.p
 _CONFIG = _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "config.py"
 
 
-def test_gr10_r9_orchestration_mse_qualified() -> None:
+def test_gr10_r9_orchestration_mse_partial_until_r9_r1() -> None:
     row = next(row for row in GR10_ORCHESTRATION_CAPABILITY_SEMANTICS if row.capability == "MSE")
-    assert row.coverage is Gr10CoverageStatus.QUALIFIED
-    assert gr10_matrix_orchestration_status("MSE") is Gr10CoverageStatus.QUALIFIED
+    assert row.coverage is Gr10CoverageStatus.PARTIAL
+    assert gr10_matrix_orchestration_status("MSE") is Gr10CoverageStatus.PARTIAL
 
 
-def test_gr10_r9_meaningful_side_effect_gep_qualified() -> None:
+def test_gr10_r9_meaningful_side_effect_gep_orchestration_partial() -> None:
     row = next(row for row in GR10_GEP_COVERAGE_INVENTORY if row.gep == "MEANINGFUL_SIDE_EFFECT")
-    assert row.orchestration_coverage is Gr10CoverageStatus.QUALIFIED
+    assert row.orchestration_coverage is Gr10CoverageStatus.PARTIAL
 
 
 def test_gr10_r9_production_wiring_uses_composition_builder() -> None:
@@ -69,5 +69,6 @@ def test_gr10_r9_invoker_enforces_boundary_before_effect_ast() -> None:
     assert tree is not None
 
 
-def test_gr10_r9_next_remediation_not_mse() -> None:
-    assert GR10_R9_NEXT_REMEDIATION.capability != "MSE"
+def test_gr10_r9_next_remediation_is_r9_r1_mse() -> None:
+    assert GR10_R9_NEXT_REMEDIATION.capability == "MSE"
+    assert "GR-10-R9-R1" in GR10_R9_NEXT_REMEDIATION.task_name

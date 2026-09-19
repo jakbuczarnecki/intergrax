@@ -287,11 +287,11 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
     Gr10ResidualStrategyCapabilitySemantics(
         "MSE",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R9: production RuntimeToolInvoker wires MeaningfulSideEffectAuthorizationPort; "
-        "consequential tools (side_effects=True) require canonical boundary.authorize before "
-        "idempotency claim / ToolExecutor; composition default + host override; External Work "
-        "retains existing boundary injection.",
+        Gr10CoverageStatus.PARTIAL,
+        "GR-10-R9-ADR1: RuntimeToolInvoker pre-effect gate is a qualified slice; authority port "
+        "must move to intergrax/contracts with typed MeaningfulSideEffectAuthorizationResult; "
+        "production must fail closed (no synthetic membership/grant, no default ALLOW, no InMemory "
+        "authority fallback). Graph/non-tool orchestration consequential seams open — GR-10-R9-R1.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Decision-bound effect",
@@ -423,8 +423,9 @@ GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
         Gr10CoverageStatus.PARTIAL,
         "MP-4R7 / contractor host qualified.",
         True,
-        Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R9: orchestration tool invoke via RuntimeToolInvoker canonical MSE boundary.",
+        Gr10CoverageStatus.PARTIAL,
+        "GR-10-R9-ADR1: tool invoke pre-effect gate wired; orchestration authority composition "
+        "not enterprise-closed until GR-10-R9-R1 (ADR-GR-10-002).",
     ),
     Gr10GepCoverageRow(
         "PRE_OUTPUT",
@@ -489,16 +490,17 @@ GR10_R8_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
 
 
 GR10_R9_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
-    task_name="GR-10-R10 — ORCHESTRATION Decision-bound effect production GEP coverage",
+    task_name="GR-10-R9-R1 — Canonical MSE Contract Migration & Fail-Closed Production Composition",
     strategy="ORCHESTRATION",
-    capability="Decision-bound effect",
+    capability="MSE",
     exact_blocker=(
-        "Not all orchestration consequential paths bind DecisionRequirementPolicy / decision governance "
-        "material before physical effect despite MSE boundary closure."
+        "Nexus-local MeaningfulSideEffectAuthorizationPort returns object; production orchestration "
+        "composition synthesizes membership/authority and default ALLOW via InMemory repositories "
+        "(ADR-GR-10-002 rejected design)."
     ),
     why_highest=(
-        "Highest remaining ORCHESTRATION capability row after GR-10-R9 MSE QUALIFIED; GR-6 spine "
-        "partial on orchestration graph/tool seams outside External Work host slices."
+        "P0 authority architecture blocker before ORCHESTRATION MSE can re-qualify or GR-10-R10 "
+        "decision-bound remediation proceeds on honest MSE foundation."
     ),
 )
 

@@ -124,6 +124,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-MEM-XINT-002](entries/2026-09-17/ADR-MEM-XINT-002.md) | Unified information & context authority (Memory × CE × RAG × Tools) | Accepted (architecture) |
 | [ADR-GR-8-001](entries/2026-09-17/ADR-GR-8-001.md) | Canonical Governance Evidence public contract and persistence boundary (GR-8 spine freeze) | Accepted |
 | [ADR-GR-10-001](entries/2026-09-18/ADR-GR-10-001.md) | PRE_MODEL subject identity and execution governance context boundary (GR-10-R2-ADR1) | Accepted |
+| [ADR-GR-10-002](entries/2026-09-19/ADR-GR-10-002.md) | Canonical orchestration MSE authorization contract and fail-closed production composition (GR-10-R9-ADR1) | Accepted |
 | [ADR-GOVERNED-EXECUTION-003](entries/2026-09-18/ADR-GOVERNED-EXECUTION-003-ROOT-GOVERNANCE-IDENTITY-AUTHORITY.md) | Root governance identity authority boundary (OBS-DIAG-RECERT-P2C-R0A-ADR1) | Proposed |
 
 **Consolidation:** platform ownership, lifecycle, and invariants for GEC-0â€¦GEC-6 - [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
