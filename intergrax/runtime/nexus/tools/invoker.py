@@ -651,7 +651,6 @@ class RuntimeToolInvoker:
                 )
             return
 
-        from intergrax.contracts.runtime_policy import PolicyAction
         from intergrax.runtime.agent_governance.errors import (
             ToolGovernanceApprovalRequiredError,
             ToolGovernanceDeniedError,
@@ -696,9 +695,24 @@ class RuntimeToolInvoker:
                 tool_id=contract.tool_id,
                 reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
             ) from None
-        decision = authorization.decision
+        from intergrax.runtime.governance.active_governed_execution_task import (
+            peek_governed_execution_task,
+        )
+        from intergrax.runtime.policy.mse_hitl_effect_gate import (
+            MseHitlEffectGateDisposition,
+            evaluate_mse_hitl_effect_gate,
+        )
+
         capability = contract.category.strip() or contract.tool_id
-        if decision.action in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE):
+        gate = evaluate_mse_hitl_effect_gate(
+            authorization,
+            enforcement_request=enforcement_request,
+            task=peek_governed_execution_task(),
+        )
+        decision = gate.authorization.decision
+        if gate.disposition is MseHitlEffectGateDisposition.PROCEED:
+            return
+        if gate.disposition is MseHitlEffectGateDisposition.REQUIRE_HITL:
             state.trace_event(
                 component=TraceComponent.TOOLS,
                 step="meaningful_side_effect_authorization_human_required",
@@ -719,39 +733,28 @@ class RuntimeToolInvoker:
                 approval_id=decision.policy_rule_id or "meaningful_side_effect.require_human",
                 reason=decision.reason,
                 policy_results=(),
+                governed_continuation_request=gate.governed_continuation_request,
             )
-        if (
-            not authorization.permitted
-            or decision.action is PolicyAction.DENY
-            or decision.action is PolicyAction.MODIFY
-        ):
-            state.trace_event(
-                component=TraceComponent.TOOLS,
-                step="meaningful_side_effect_authorization_denied",
-                message="Meaningful side-effect authorization denied tool invocation.",
-                level=TraceLevel.ERROR,
-                payload=ToolInvocationErrorDiagV1(
-                    tool_id=request.tool_id,
-                    step_id=str(request.step_id),
-                    error_code=RuntimeErrorCode.PERMISSION_ERROR,
-                    error_message=decision.reason,
-                ),
-            )
-            raise ToolGovernanceDeniedError(
-                run_id=state.run_id,
-                agent_id=agent_id,
+        state.trace_event(
+            component=TraceComponent.TOOLS,
+            step="meaningful_side_effect_authorization_denied",
+            message="Meaningful side-effect authorization denied tool invocation.",
+            level=TraceLevel.ERROR,
+            payload=ToolInvocationErrorDiagV1(
                 tool_id=request.tool_id,
-                capability=capability,
-                reason=decision.reason,
-                policy_results=(),
-            )
-        if decision.action is not PolicyAction.ALLOW:
-            raise MeaningfulSideEffectAuthorizationRequiredError(
-                run_id=state.run_id,
-                agent_id=agent_id,
-                tool_id=contract.tool_id,
-                reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
-            )
+                step_id=str(request.step_id),
+                error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                error_message=decision.reason,
+            ),
+        )
+        raise ToolGovernanceDeniedError(
+            run_id=state.run_id,
+            agent_id=agent_id,
+            tool_id=request.tool_id,
+            capability=capability,
+            reason=decision.reason,
+            policy_results=(),
+        )
 
     def _require_agent_runtime_governance(
         self,

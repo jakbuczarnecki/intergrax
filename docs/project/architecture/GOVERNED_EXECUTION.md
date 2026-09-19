@@ -51,7 +51,7 @@ Unchanged platform intent: contract-first evaluation at named **Governance Evalu
 | Root execution admission | `RuntimeExecutionPolicyAdmissionPort`, MODEL C1 gates | `test_gr2_*`, `test_gr2_r3_*` | **No** (GR-2 candidate; audit pending) |
 | Inner enforcement / task scope | `CanonicalInnerExecutionGuardPort`, composition modules | `test_gr3_*`, architecture AST gates | **No** (GR-3 candidate) |
 | Policy resolution / catalog core | `RuntimePolicyEngine`, `PolicyCatalog`, PG-FIX-B/D behavior | `test_pg_fix_b_*`, `test_pg_fix_d_*`, `test_gr4_policy_core_architecture_gates.py` | **No** (GR-4 candidate; GR-4-R1 assembly decouple open) |
-| HITL continuation contract + UER integration | `ExecutionContinuationPort`, ADR-GR-5-001 | `test_gr5_*`, MP-4 SSOT cross-checks | **No** (strategy-wide HITL qual open) |
+| HITL continuation contract + UER integration | `ExecutionContinuationPort`, ADR-GR-5-001 | `test_gr5_*`, MP-4 SSOT cross-checks, GR-10-R11 | **Yes** (ORCHESTRATION HITL QUALIFIED; Continuation row remains PARTIAL) |
 | Decision → Governance at meaningful effects | `DecisionRequirementPolicy`, `DecisionGovernanceMaterialRef`, canonical boundary | `test_gr6_*`, governed contractor host GR-6 suites | **No** (host-qualified paths; not all strategies/effects) |
 | External effect reliability boundary | `ProviderInvocation` store, ERL repeat/recovery/reconciliation, reliability evidence | `test_gr7_*`, governed contractor GR-7 host suites | **No** (Reliability ≠ Governance authority; not universal) |
 
@@ -291,7 +291,7 @@ flowchart LR
 | Policy evaluation (GEP) | QUALIFIED | PARTIAL | QUALIFIED |
 | Meaningful side effect spine | NOT_APPLICABLE | PARTIAL | PARTIAL |
 | Decision-bound MSE (GR-6) | NOT_APPLICABLE | QUALIFIED | QUALIFIED |
-| HITL continuation (GR-5) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
+| HITL continuation (GR-5) | NOT_APPLICABLE | QUALIFIED | QUALIFIED |
 | Continuation (GR-5 port) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Reliability boundary (GR-7) | NOT_APPLICABLE | QUALIFIED | PARTIAL |
 | Governance Evidence (GR-8) | QUALIFIED | PARTIAL | PARTIAL |
@@ -654,7 +654,7 @@ Status vocabulary: **COVERED** (wired enforcement on demonstrated production-cla
 | Inner guard / MSE spine (GR-3) | NOT_APPLICABLE (GR-10-R5 — no MSE/tool inner spine; PRE_MODEL is Policy evaluation row) | PARTIAL | PARTIAL (primary proofs) |
 | Tool invoke policy | NOT_APPLICABLE | COVERED | COVERED |
 | Decision-required MSE (GR-6) | NOT_APPLICABLE | QUALIFIED (MP-4R7 / governed contractor) | PARTIAL (External Work host) |
-| HITL continuation port (GR-5) | NOT_APPLICABLE (no strategy-path REQUIRE_HUMAN) | QUALIFIED (MP-4R7) | PARTIAL (orchestration HITL slices) |
+| HITL continuation port (GR-5) | NOT_APPLICABLE (no strategy-path REQUIRE_HUMAN) | QUALIFIED (MP-4R7) | QUALIFIED (GR-10-R11 — MSE HITL gate + governed continuation) |
 | Provider reliability boundary (GR-7) | NOT_APPLICABLE (not a GR-7 external effect) | QUALIFIED (governed contractor GR-7) | PARTIAL (External Work) |
 
 ### Decision → Governance (GR-6 result model)
@@ -686,7 +686,7 @@ Intergrax has **one canonical HITL system**. **Governance owns permission semant
 - **Human APPROVED ≠ automatic Governance ALLOW** — post-human governance re-evaluation can still DENY.
 - Human approval cannot bypass a fresh **DENY**.
 - **Resume requires valid scoped authorization** (grant / continuation contract), not merely stored approval evidence.
-- Some production bridges remain **transitional** (Task-shaped pause materialization); treat as **limitation** until GR-10 strategy qualification closes.
+- Some production bridges remain **transitional** for **Continuation** (Task-shaped pause materialization) — GR-10-R12; **ORCHESTRATION HITL** permission boundary is **QUALIFIED** (GR-10-R11).
 
 `REQUIRE_HUMAN` connects conceptually to:
 

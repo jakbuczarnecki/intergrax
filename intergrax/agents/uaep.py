@@ -460,12 +460,18 @@ class UAEPExecutor:
                     from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
                         DeclarativePolicyHitlPauseRequired,
                     )
-    
-                    if not isinstance(exc, DeclarativePolicyHitlPauseRequired):
-                        raise
-                    governance = exc.governance.model_copy(
-                        update={"declarative_hitl_pending": exc.pending}
+                    from intergrax.runtime.nexus.tools.mse_governed_continuation_hitl_bridge import (
+                        GovernedContinuationHitlPauseRequired,
                     )
+    
+                    if isinstance(exc, DeclarativePolicyHitlPauseRequired):
+                        governance = exc.governance.model_copy(
+                            update={"declarative_hitl_pending": exc.pending}
+                        )
+                    elif isinstance(exc, GovernedContinuationHitlPauseRequired):
+                        governance = exc.governance
+                    else:
+                        raise
                     exec_ctx.metadata["governance_resolution"] = governance
                     runtime_snapshot = self._build_runtime_checkpoint(
                         request=request,

@@ -304,10 +304,11 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
     Gr10ResidualStrategyCapabilitySemantics(
         "HITL",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "GR-5 orchestration slices (ORCH-HITL); HumanPauseCoordinator Task projection remains transitional — "
-        "human judgment evidence ≠ Governance ALLOW; fresh governance + continuation port not enterprise-closed "
-        "on all orchestration pause/resume paths.",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-10-R11: orchestration MSE HITL gate — human judgment evidence ≠ Governance ALLOW; "
+        "REQUIRE_HUMAN/ESCALATE surface GovernedContinuationRequest; continue_slot / RuntimeToolInvoker "
+        "reauthorize via evaluate_mse_hitl_effect_gate (grant match or fresh ALLOW); External Work retains "
+        "authorize_and_execute; Physical Delegation HITL delegated; Continuation row remains PARTIAL.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Continuation",
@@ -566,6 +567,21 @@ GR10_R10_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
 )
 
 
+GR10_R11_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-R12 — ORCHESTRATION Continuation enterprise closure",
+    strategy="ORCHESTRATION",
+    capability="Continuation",
+    exact_blocker=(
+        "ExecutionContinuationPort wired in GR-5-R4 proofs; residual Task-shaped projection in "
+        "internal_continuation_orchestration — not full ORCHESTRATION Continuation enterprise qualification."
+    ),
+    why_highest=(
+        "Highest remaining ORCHESTRATION applicable capability row after GR-10-R11 HITL qualification; "
+        "distinct from HITL human-judgment vs permission boundary."
+    ),
+)
+
+
 @dataclass(frozen=True, slots=True)
 class Gr10OrchestrationStrictHostDecisionPolicyInventoryRow:
     host: str
@@ -789,6 +805,120 @@ GR10_ORCHESTRATION_DECISION_BOUND_EFFECT_INVENTORY: tuple[
         "N/A",
         "lab qualification only",
         "N/A",
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Gr10OrchestrationHitlInventoryRow:
+    path: str
+    production: bool
+    hitl_applicable: bool
+    human_evidence_owner: str
+    continuation_authority: str
+    reauthorization_boundary: str
+    coverage: str
+
+
+GR10_ORCHESTRATION_HITL_INVENTORY: tuple[Gr10OrchestrationHitlInventoryRow, ...] = (
+    Gr10OrchestrationHitlInventoryRow(
+        "MeaningfulSideEffectAuthorizationBoundary.authorize_and_execute",
+        True,
+        True,
+        "Human Review / GovernedContinuationGrantCoordinator (evidence + grant only)",
+        "ExecutionContinuationPort via apply_governed_continuation_pause",
+        "fresh authorize_and_execute (grant match or ALLOW)",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationHitlInventoryRow(
+        "RuntimeToolInvoker.invoke (side_effects=True)",
+        True,
+        True,
+        "Human Review evidence; grant on task.runtime.governance",
+        "ExecutionContinuationPort (pause) + GovernedContinuationApprovalGrant",
+        "evaluate_mse_hitl_effect_gate after fresh boundary.authorize",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationHitlInventoryRow(
+        "RuntimeToolInvoker.invoke (side_effects=False)",
+        True,
+        False,
+        "N/A",
+        "N/A",
+        "N/A",
+        "N/A",
+    ),
+    Gr10OrchestrationHitlInventoryRow(
+        "External Work / governed contractor host",
+        True,
+        True,
+        "Human Review via GovernedContinuationRequest surface",
+        "ExecutionContinuationPort + grant coordinator",
+        "authorize_and_execute / decision-bound coordinator",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationHitlInventoryRow(
+        "GovernedOrchestrationSlotExecutor.execute_slot",
+        True,
+        True,
+        "Human Review (continuation request on REQUIRE_HUMAN/ESCALATE)",
+        "host register_governed_continuation_slots + ExecutionContinuationPort on pause paths",
+        "evaluate_mse_hitl_effect_gate (effect 0 until PROCEED)",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationHitlInventoryRow(
+        "GovernedOrchestrationSlotContinuationExecutor.continue_slot",
+        True,
+        True,
+        "Human Review grant evidence (REQUIRE_HUMAN path)",
+        "topology continuable_slots + matching GovernedContinuationApprovalGrant",
+        "fresh authorize + evaluate_mse_hitl_effect_gate",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationHitlInventoryRow(
+        "CanonicalOrchestrationTopologySubmissionPort.recover_failed_slot",
+        True,
+        True,
+        "N/A — recovery refuses continuable HITL slots (require continue_slot)",
+        "continable_slots gate blocks recovery reuse of HITL path",
+        "fresh MSE on non-HITL recovery only",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationHitlInventoryRow(
+        "governed_continuation_bridge / grant coordinator",
+        True,
+        True,
+        "Human Review evidence owner",
+        "ExecutionContinuationPort (canonical)",
+        "compose from Governance result; grant ≠ ALLOW",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationHitlInventoryRow(
+        "HumanPauseCoordinator / task pause projection",
+        True,
+        True,
+        "projection only — not permission",
+        "must not be used as continuation authority (GR-5-R4)",
+        "N/A — projection",
+        "delegated to canonical owner",
+    ),
+    Gr10OrchestrationHitlInventoryRow(
+        "Physical delegation / fan-out coordination slot",
+        True,
+        True,
+        "Physical Delegation human evidence / continuation grant",
+        "PhysicalDelegationGovernedContinuation + grant coordinator",
+        "PhysicalDelegationGovernancePort (MSE delegated)",
+        "delegated to another canonical owner",
+    ),
+    Gr10OrchestrationHitlInventoryRow(
+        "Declarative policy REQUIRE_HITL tool path",
+        True,
+        True,
+        "DeclarativeHitlPendingApproval / DeclarativeHitlApprovalGrant",
+        "ExecutionContinuationPort via declarative HITL bridge",
+        "declarative grant scope match then fresh tool MSE authorize",
+        "QUALIFIED",
     ),
 )
 
@@ -1211,8 +1341,25 @@ GR10_SCENARIO_CATALOG: tuple[Gr10ScenarioEvidence, ...] = (
         "ORCH-HITL",
         "ORCHESTRATION",
         "HITL / continuation",
-        (_nid(_GR5_ORCH, "test_resume_authorized_blocks_planning"),),
-        Gr10CoverageStatus.PARTIAL,
+        (
+            _nid(_GR5_ORCH, "test_resume_authorized_blocks_planning"),
+            _nid(
+                "tests/qualification/governance/strategy/"
+                "test_gr10_r11_orchestration_hitl_qualification.py",
+                "test_gr10_r11_orchestration_hitl_qualified",
+            ),
+            _nid(
+                "tests/unit/runtime/architecture/"
+                "test_gr10_r11_orchestration_hitl_e2e.py",
+                "test_scenario_b_approval_plus_allow_executes_once",
+            ),
+            _nid(
+                "tests/unit/runtime/architecture/"
+                "test_gr10_r11_orchestration_hitl_e2e.py",
+                "test_scenario_c_approval_plus_deny_zero_effect",
+            ),
+        ),
+        Gr10CoverageStatus.QUALIFIED,
     ),
     Gr10ScenarioEvidence(
         "ARCH-C1",

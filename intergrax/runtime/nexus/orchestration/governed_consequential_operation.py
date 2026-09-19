@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 from intergrax.contracts.collaborative_work import CollaborativeWorkEnforcementRequest
+from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
     MeaningfulSideEffectAuthorizationResult,
@@ -24,7 +25,13 @@ from intergrax.contracts.orchestration_topology import (
     OrchestrationSlotOutcome,
     OrchestrationSlotStatus,
 )
-from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.runtime.governance.active_governed_execution_task import (
+    peek_governed_execution_task,
+)
+from intergrax.runtime.policy.mse_hitl_effect_gate import (
+    MseHitlEffectGateDisposition,
+    evaluate_mse_hitl_effect_gate,
+)
 from intergrax.runtime.policy.side_effect_authorization_errors import (
     MeaningfulSideEffectAuthorizationRequiredError,
     SideEffectAuthorizationFailureReason,
@@ -36,6 +43,15 @@ ResultT = TypeVar("ResultT")
 
 class OrchestrationConsequentialEffectBlockedError(RuntimeError):
     """Raised when MSE denies or blocks a non-tool orchestration consequential effect."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        governed_continuation_request: GovernedContinuationRequest | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.governed_continuation_request = governed_continuation_request
 
 
 @dataclass(frozen=True, slots=True)
@@ -81,13 +97,18 @@ class GovernedOrchestrationSlotExecutor(Generic[PayloadT, ResultT]):
                 if isinstance(exc, MeaningfulSideEffectAuthorizationRequiredError)
                 else "meaningful_side_effect_blocked"
             )
+            if (
+                isinstance(exc, OrchestrationConsequentialEffectBlockedError)
+                and exc.governed_continuation_request is not None
+            ):
+                code = "meaningful_side_effect_require_human"
             raise OrchestrationSlotExecutionError(code=code, message=str(exc)) from exc
         return await self.inner.execute_slot(slot_id=slot_id, payload=payload)
 
 
 @dataclass(frozen=True, slots=True)
 class GovernedOrchestrationSlotContinuationExecutor(Generic[PayloadT, ResultT]):
-    """Wrap slot continuation with fresh canonical MSE before physical effect."""
+    """Wrap slot continuation with fresh canonical MSE + HITL gate before physical effect."""
 
     inner: OrchestrationSlotContinuationExecutor[PayloadT, ResultT]
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None
@@ -128,6 +149,11 @@ class GovernedOrchestrationSlotContinuationExecutor(Generic[PayloadT, ResultT]):
                 if isinstance(exc, MeaningfulSideEffectAuthorizationRequiredError)
                 else "meaningful_side_effect_blocked"
             )
+            if (
+                isinstance(exc, OrchestrationConsequentialEffectBlockedError)
+                and exc.governed_continuation_request is not None
+            ):
+                code = "meaningful_side_effect_require_human"
             raise OrchestrationSlotExecutionError(code=code, message=str(exc)) from exc
         return await self.inner.continue_slot(slot_id=slot_id, payload=payload)
 
@@ -140,7 +166,7 @@ def authorize_orchestration_consequential_effect(
     source_agent_id: str,
     source_step_id: str | None,
 ) -> MeaningfulSideEffectAuthorizationResult:
-    """Fail-closed MSE gate before a non-tool orchestration physical effect."""
+    """Fail-closed MSE + HITL gate before a non-tool orchestration physical effect."""
     if boundary is None:
         if production_mode:
             raise MeaningfulSideEffectAuthorizationRequiredError(
@@ -175,17 +201,19 @@ def authorize_orchestration_consequential_effect(
             reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
         ) from None
 
-    decision = authorization.decision
-    if decision.action in (
-        PolicyAction.REQUIRE_HUMAN,
-        PolicyAction.ESCALATE,
-        PolicyAction.DENY,
-        PolicyAction.MODIFY,
-    ) or not authorization.permitted:
-        raise OrchestrationConsequentialEffectBlockedError(
-            f"orchestration consequential effect blocked: {decision.action.value}",
-        )
-    return authorization
+    gate = evaluate_mse_hitl_effect_gate(
+        authorization,
+        enforcement_request=enforcement_request,
+        task=peek_governed_execution_task(),
+    )
+    if gate.disposition is MseHitlEffectGateDisposition.PROCEED:
+        return gate.authorization
+
+    decision = gate.authorization.decision
+    raise OrchestrationConsequentialEffectBlockedError(
+        f"orchestration consequential effect blocked: {decision.action.value}",
+        governed_continuation_request=gate.governed_continuation_request,
+    )
 
 
 async def execute_governed_orchestration_consequential_effect(
@@ -217,6 +245,11 @@ def orchestration_slot_outcome_from_blocked_effect(
     code = "meaningful_side_effect_blocked"
     if isinstance(exc, MeaningfulSideEffectAuthorizationRequiredError):
         code = "meaningful_side_effect_not_configured"
+    elif (
+        isinstance(exc, OrchestrationConsequentialEffectBlockedError)
+        and exc.governed_continuation_request is not None
+    ):
+        code = "meaningful_side_effect_require_human"
     return OrchestrationSlotOutcome(
         slot_id=slot_id,
         status=OrchestrationSlotStatus.FAILURE,

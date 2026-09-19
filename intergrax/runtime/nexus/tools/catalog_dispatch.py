@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel, ValidationError
 
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
+from intergrax.runtime.agent_governance.errors import ToolGovernanceApprovalRequiredError
 from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyHitlRequiredError,
 )
@@ -23,6 +24,9 @@ from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
     raise_hitl_pause_from_tool_invocation,
     resolve_grant_scope_candidate,
     unique_candidate_from_resolution,
+)
+from intergrax.runtime.nexus.tools.mse_governed_continuation_hitl_bridge import (
+    raise_mse_governed_continuation_hitl_pause,
 )
 from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
@@ -204,6 +208,15 @@ def invoke_catalog_tool_ids(
                 request=exec_request,
                 agent_id=agent_id,
             )
+        except ToolGovernanceApprovalRequiredError as exc:
+            if exc.governed_continuation_request is not None:
+                raise_mse_governed_continuation_hitl_pause(
+                    exc,
+                    state=state,
+                    request=exec_request,
+                    agent_id=agent_id,
+                )
+            raise
         state.used_tools = True
         dispatched += 1
 
@@ -325,6 +338,15 @@ def invoke_catalog_tool_request(
             request=exec_request,
             agent_id=request.agent_id,
         )
+    except ToolGovernanceApprovalRequiredError as exc:
+        if exc.governed_continuation_request is not None:
+            raise_mse_governed_continuation_hitl_pause(
+                exc,
+                state=state,
+                request=exec_request,
+                agent_id=request.agent_id,
+            )
+        raise
     except Exception as exc:  # noqa: BLE001 — gateway boundary
         return ToolResponse(
             request_id=request.request_id,
