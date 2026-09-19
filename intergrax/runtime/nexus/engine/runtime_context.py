@@ -357,6 +357,7 @@ class RuntimeContext:
             pre_effect_coordinator=pre_effect_coordinator,
             sandbox_availability=sandbox_availability_provider(wiring_ctx),
             agent_runtime_governance=config.agent_runtime_governance,
+            inner_execution_guard=config.canonical_inner_execution_guard,
             production_mode=config.production_mode,
         )
 

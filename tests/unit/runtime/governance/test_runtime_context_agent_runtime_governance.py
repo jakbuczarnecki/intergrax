@@ -11,6 +11,9 @@ from intergrax.runtime.agent_governance.authorization_boundary import (
 )
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
+    ProductionRuntimeToolInvokerCompositionError,
+)
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.wiring.agent_runtime_governance_factory import (
@@ -34,7 +37,10 @@ def test_runtime_context_requires_agent_runtime_governance_in_production_mode() 
     session_manager = SessionManager(storage=InMemorySessionStorage())
     governance_service = create_lab_allow_governance_service()
 
-    with pytest.raises(ValueError, match="agent_runtime_governance is required"):
+    with pytest.raises(
+        ProductionRuntimeToolInvokerCompositionError,
+        match="agent_runtime_governance is required",
+    ):
         RuntimeContext.build(
             config=config,
             session_manager=session_manager,

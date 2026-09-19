@@ -37,6 +37,11 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
     validate_run_id,
 )
+from intergrax.runtime.governance.active_execution_governance_identity import (
+    ActiveExecutionGovernanceIdentity,
+    bind_active_execution_governance_identity,
+    reset_active_execution_governance_identity,
+)
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.runtime.agent_governance.errors import ToolGovernanceDeniedError
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
@@ -48,6 +53,7 @@ from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
 from tests.unit.runtime.architecture.gr3_inner_enforcement_ast import (
     collect_forbidden_concrete_inner_guard_imports,
+    prepare_invocation_inner_guard_before_authorization_indices,
 )
 from tests.unit.runtime.governance.test_gr3_r1_explicit_inner_guard_composition import (
     _AllowingTestGuard,
@@ -84,9 +90,9 @@ class _CountingExecutor:
 
 def _allow_all_governance() -> AgentRuntimeGovernanceBoundary:
     grant = CapabilityGrant(
-        tenant_id="tenant-test",
+        tenant_id="test-tenant",
         agent_id="agent-1",
-        allowed_capabilities=frozenset({"*"}),
+        allowed_capabilities=frozenset({"probe.tool"}),
     )
     pipeline = AgentRuntimeGovernancePipeline(
         capability_resolver=InMemoryCapabilityGrantResolver((grant,)),
@@ -122,12 +128,25 @@ def _contract() -> ToolContract:
     )
 
 
+def _bind_test_governance_identity() -> object:
+    return bind_active_execution_governance_identity(
+        ActiveExecutionGovernanceIdentity(
+            tenant_id="test-tenant",
+            workspace_id="test-workspace",
+            principal_id="principal-A",
+        ),
+    )
+
+
 def _invoke_with_identity(
     invoker: RuntimeToolInvoker,
     *,
     run_id: str,
+    production_mode: bool = False,
 ) -> None:
     state = build_runtime_state_for_tests(run_id=run_id)
+    if production_mode:
+        state.context.config.production_mode = True
     request = ToolExecutionRequest(
         run_id=validate_run_id(run_id),
         tool_id="probe.tool",
@@ -142,9 +161,11 @@ def _invoke_with_identity(
         attempt_id=attempt,
         execution_id=execution,
     )
+    gov_token = _bind_test_governance_identity()
     try:
         invoker.invoke(state=state, agent_id="agent-1", request=request)
     finally:
+        reset_active_execution_governance_identity(gov_token)
         reset_active_execution_identity(token)
 
 
@@ -181,6 +202,8 @@ def test_gr10_r8_custom_guard_allow_single_physical_invocation() -> None:
     assert executor.calls == 1
     assert guard.last_request is not None
     assert guard.last_request.action.endswith(":probe.tool")
+    assert guard.last_request.principal_id == "principal-A"
+    assert guard.last_request.principal_id != "agent-1"
 
 
 def test_gr10_r8_production_mode_missing_guard_fail_closed() -> None:
@@ -204,6 +227,7 @@ def test_gr10_r8_production_mode_missing_guard_fail_closed() -> None:
         attempt_id=mint_attempt_id(),
         execution_id=mint_execution_id(),
     )
+    gov_token = _bind_test_governance_identity()
     try:
         try:
             invoker.invoke(state=state, agent_id="agent-1", request=request)
@@ -212,6 +236,7 @@ def test_gr10_r8_production_mode_missing_guard_fail_closed() -> None:
         else:
             pytest.fail("expected ToolGovernanceDeniedError")
     finally:
+        reset_active_execution_governance_identity(gov_token)
         reset_active_execution_identity(token)
     assert executor.calls == 0
 
@@ -244,6 +269,13 @@ def test_gr10_r8_invoker_has_no_concrete_inner_guard_import() -> None:
     rel = _INVOKER.relative_to(_REPO_ROOT).as_posix()
     violations = collect_forbidden_concrete_inner_guard_imports(tree, rel_path=rel)
     assert violations == []
+
+
+def test_gr10_r8_prepare_invocation_ast_call_order() -> None:
+    tree = ast.parse(_INVOKER.read_text(encoding="utf-8-sig"), filename=str(_INVOKER))
+    guard_idx, auth_idx = prepare_invocation_inner_guard_before_authorization_indices(tree)
+    assert guard_idx is not None and auth_idx is not None
+    assert guard_idx < auth_idx
 
 
 def test_gr10_r8_allowing_and_rejecting_guards_are_swappable() -> None:

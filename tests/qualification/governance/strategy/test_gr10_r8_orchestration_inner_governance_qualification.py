@@ -9,6 +9,10 @@ from pathlib import Path
 
 import pytest
 
+from tests.unit.runtime.architecture.gr3_inner_enforcement_ast import (
+    collect_forbidden_concrete_inner_guard_imports,
+    prepare_invocation_inner_guard_before_authorization_indices,
+)
 from tests.qualification.governance.strategy.catalog import (
     GR10_GEP_COVERAGE_INVENTORY,
     GR10_ORCHESTRATION_CAPABILITY_SEMANTICS,
@@ -51,10 +55,16 @@ def test_gr10_r8_tool_invocation_authorization_gep_qualified() -> None:
 
 
 def test_gr10_r8_production_wiring_uses_composition_builder() -> None:
+    ctx_source = _RUNTIME_CONTEXT.read_text(encoding="utf-8-sig")
+    assert "build_production_runtime_tool_invoker(" in ctx_source
+    assert "inner_execution_guard=config.canonical_inner_execution_guard" in ctx_source
+    decl_source = _DECLARATIVE_WIRING.read_text(encoding="utf-8-sig")
+    assert "build_production_runtime_tool_invoker(" in decl_source
+    assert "inner_execution_guard=canonical_inner_execution_guard" in decl_source
     for path in (_RUNTIME_CONTEXT, _DECLARATIVE_WIRING):
-        source = path.read_text(encoding="utf-8-sig")
-        assert "build_production_runtime_tool_invoker(" in source
-        assert "inner_execution_guard" not in source or "build_production_runtime_tool_invoker" in source
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        rel = path.relative_to(_REPO_ROOT).as_posix()
+        assert collect_forbidden_concrete_inner_guard_imports(tree, rel_path=rel) == []
 
 
 def test_gr10_r8_composition_requires_guard_on_production_mode_ast() -> None:
@@ -67,10 +77,10 @@ def test_gr10_r8_composition_requires_guard_on_production_mode_ast() -> None:
 
 def test_gr10_r8_invoker_calls_inner_guard_before_authorization_ast() -> None:
     source = _INVOKER.read_text(encoding="utf-8-sig")
-    guard_pos = source.index("_require_canonical_inner_execution_guard")
-    auth_pos = source.index("def _require_current_attempt_authorization")
-    prepare_pos = source.index("def _prepare_invocation")
-    assert prepare_pos < guard_pos < auth_pos
+    tree = ast.parse(source, filename=str(_INVOKER))
+    guard_idx, auth_idx = prepare_invocation_inner_guard_before_authorization_indices(tree)
+    assert guard_idx is not None and auth_idx is not None
+    assert guard_idx < auth_idx
     assert "guard.assert_meaningful_side_effect_bound" in source
 
 

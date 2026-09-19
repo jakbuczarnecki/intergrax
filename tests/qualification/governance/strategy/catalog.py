@@ -272,9 +272,10 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
         "Inner Governance",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R8: production RuntimeToolInvoker wired via build_production_runtime_tool_invoker with required "
-        "CanonicalInnerExecutionGuardPort before tool authorization gates; TOOL_PLAN_OR_ACCESS remains "
-        "ToolAccessPolicy canonical contract; AGENT_DECISION graph routing reclassified to Policy evaluation row.",
+        "GR-10-R8 / R8-R1: production host exposes CanonicalInnerExecutionGuardPort via RuntimeConfig and "
+        "declarative composition; build_production_runtime_tool_invoker wires guard before tool authorization; "
+        "inner request projects ActiveExecutionGovernanceIdentity.principal_id (GR-3 execution-binding spine, "
+        "not full GEP matrix closure); TOOL_PLAN_OR_ACCESS remains ToolAccessPolicy.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Policy evaluation",
