@@ -11,7 +11,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from intergrax.contracts.execution_deadline.active_scope import (
+from intergrax.runtime.execution.deadline_scope import (
     bind_active_execution_deadline_scope,
     reset_active_execution_deadline_scope,
 )
@@ -20,7 +20,7 @@ from intergrax.contracts.execution_deadline.admission import (
     ExecutionProtectedWorkAdmissionResult,
 )
 from intergrax.contracts.execution_deadline.projection import ExecutionDeadlineProjection
-from intergrax.contracts.execution_deadline.provider_guard import (
+from intergrax.runtime.execution.deadline_provider_guard import (
     ExecutionProtectedWorkDeniedError,
     resolve_active_provider_timeout_seconds,
 )
@@ -130,8 +130,8 @@ def _resolver(
 ) -> ExecutionDeadlineAuthorityResolver:
     return ExecutionDeadlineAuthorityResolver(
         persistence,
-        utc_clock=utc,  # type: ignore[arg-type]
-        monotonic_clock=monotonic,  # type: ignore[arg-type]
+        utc_clock=utc,
+        monotonic_clock=monotonic,
     )
 
 
@@ -345,7 +345,7 @@ def test_q10_expired_blocks_llm_execute() -> None:
     )
     try:
         with pytest.raises(ExecutionProtectedWorkDeniedError):
-            from intergrax.contracts.execution_deadline.provider_guard import (
+            from intergrax.runtime.execution.deadline_provider_guard import (
                 assert_protected_provider_call_allowed,
             )
 

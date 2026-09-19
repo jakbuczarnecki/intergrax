@@ -54,12 +54,16 @@ from intergrax.runtime.execution.decision_checkpoint_persistence import (
 from intergrax.runtime.execution.decision_finalization_persistence import (
     DecisionFinalizationPersistence,
 )
-from intergrax.contracts.execution_deadline.active_scope import (
+from intergrax.contracts.execution_deadline.admission import (
+    ExecutionCancellationView,
+    ExecutionProtectedWorkAdmissionPort,
+)
+from intergrax.contracts.execution_deadline.persistence_port import (
+    ExecutionDeadlinePersistenceError,
+)
+from intergrax.runtime.execution.deadline_scope import (
     bind_active_execution_deadline_scope,
     reset_active_execution_deadline_scope,
-)
-from intergrax.contracts.execution_deadline.admission import (
-    ExecutionProtectedWorkAdmissionPort,
 )
 from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
@@ -258,6 +262,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         "_deadline_authority_resolver",
         "_run_budget_persistence",
         "_protected_work_admission_contributors",
+        "_root_cancellation_view",
     )
 
     def __init__(
@@ -287,6 +292,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
             ExecutionProtectedWorkAdmissionPort,
             ...,
         ] = (),
+        root_cancellation_view: ExecutionCancellationView | None = None,
     ) -> None:
         self._delegate = delegate
         self._ledger_factory = (
@@ -307,6 +313,20 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         self._deadline_authority_resolver = deadline_authority_resolver
         self._run_budget_persistence = run_budget_persistence
         self._protected_work_admission_contributors = protected_work_admission_contributors
+        self._root_cancellation_view = root_cancellation_view
+        if run_budget_persistence is not None and deadline_authority_resolver is None:
+            raise ExecutionDeadlinePersistenceError(
+                "durable run budget persistence requires deadline authority resolver",
+            )
+        if (
+            run_budget_persistence is not None
+            and run_budget is not None
+            and run_budget.max_wall_time_seconds is not None
+            and deadline_authority_resolver is None
+        ):
+            raise ExecutionDeadlinePersistenceError(
+                "durable execution with wall-time budget requires deadline authority resolver",
+            )
 
     async def execute(
         self,
@@ -395,6 +415,15 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
             continuation_state_store=self._continuation_state_store,
         )
         deadline_resolution = None
+        if self._run_budget_persistence is not None:
+            if self._deadline_authority_resolver is None:
+                raise ExecutionDeadlinePersistenceError(
+                    "durable run execution requires deadline authority resolver",
+                )
+            if root_context.tenant_id is None:
+                raise ValueError(
+                    "durable run execution requires tenant_id on root execution context",
+                )
         if (
             self._deadline_authority_resolver is not None
             and root_context.tenant_id is not None
@@ -414,6 +443,15 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 run_budget=self._run_budget,
                 existing_run_materialized=existing_run_materialized,
             )
+        if (
+            self._run_budget_persistence is not None
+            and self._run_budget is not None
+            and self._run_budget.max_wall_time_seconds is not None
+            and deadline_resolution is None
+        ):
+            raise ExecutionDeadlinePersistenceError(
+                "durable execution could not resolve deadline authority for wall-time budget",
+            )
         budget_token = bind_root_execution_budget(
             execution_id=execution_id,
             ledger=ledger,
@@ -424,9 +462,12 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         )
         deadline_scope_tokens: tuple[Token, Token] | None = None
         if deadline_resolution is not None:
+            cancellation_view = self._root_cancellation_view
+            if cancellation_view is None:
+                cancellation_view = StaticCancellationView(cancelled=False)
             canonical_admission = CanonicalHardProtectedWorkAdmission(
                 projection=deadline_resolution.projection,
-                cancellation_view=StaticCancellationView(cancelled=False),
+                cancellation_view=cancellation_view,
             )
             admission = ComposedProtectedWorkAdmission(
                 canonical=canonical_admission,

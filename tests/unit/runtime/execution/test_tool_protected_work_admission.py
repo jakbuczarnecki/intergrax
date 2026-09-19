@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 from pydantic import BaseModel
 
-from intergrax.contracts.execution_deadline.active_scope import (
+from intergrax.runtime.execution.deadline_scope import (
     bind_active_execution_deadline_scope,
     reset_active_execution_deadline_scope,
 )

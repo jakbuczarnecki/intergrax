@@ -44,6 +44,9 @@ from intergrax.contracts.runtime_execution_admission import (
 )
 from intergrax.runtime.execution.agentic import AgentEnginePort
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
+from intergrax.runtime.execution.budget.persistence import RunBudgetPersistence
+from intergrax.runtime.execution.deadline_authority import ExecutionDeadlineAuthorityResolver
+from intergrax.runtime.execution.protected_work_admission import TaskMetadataCancellationView
 from intergrax.runtime.execution.execution_terminal.persistence import (
     terminal_outcome_from_task_state,
 )
@@ -337,6 +340,8 @@ class HostTaskExecution:
     _continuation_state_store: ExecutionContinuationStateStore | None = None
     _declarative_tool_invoker: DeclarativeToolInvoker | None = None
     _skill_host_wiring: HostSkillCatalogWiring | None = None
+    _run_budget_persistence: RunBudgetPersistence | None = None
+    _deadline_authority_resolver: ExecutionDeadlineAuthorityResolver | None = None
 
     def _launcher_for_task(
         self,
@@ -394,6 +399,11 @@ class HostTaskExecution:
             failure_evidence_recorder=self._failure_evidence_recorder,
             execution_capacity_admission=execution_capacity_admission,
             continuation_state_store=self._continuation_state_store,
+            run_budget_persistence=self._run_budget_persistence,
+            deadline_authority_resolver=self._deadline_authority_resolver,
+            root_cancellation_view=TaskMetadataCancellationView(
+                metadata=dict(task.metadata or {}),
+            ),
         )
 
     async def execute(

@@ -19,9 +19,12 @@ from intergrax.contracts.execution_lineage import ExecutionLineageIntegrityError
 from intergrax.runtime.execution.identity_authority import (
     default_execution_identity_authority,
 )
-from intergrax.contracts.execution_deadline.active_scope import (
+from intergrax.contracts.execution_deadline.projection import ExecutionDeadlineProjection
+from intergrax.runtime.execution.deadline_scope import (
+    bind_active_execution_deadline_scope,
     peek_active_execution_deadline_projection,
     peek_active_execution_protected_work_admission,
+    reset_active_execution_deadline_scope,
 )
 from intergrax.contracts.execution_deadline.admission import (
     ExecutionProtectedWorkAdmissionResult,
@@ -42,6 +45,7 @@ from intergrax.runtime.execution.deadline_authority.system_clocks import (
 )
 from intergrax.runtime.execution.protected_work_admission import (
     ExecutionProtectedWorkAdmissionDeniedError,
+    narrow_protected_work_admission_for_child,
 )
 from intergrax.runtime.execution.authority.policy import (
     ChildAuthorityContext,
@@ -187,6 +191,7 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             decision=budget_decision,
         )
         parent_projection = peek_active_execution_deadline_projection()
+        child_projection: ExecutionDeadlineProjection | None = None
         if parent_projection is not None:
             child_wall_limit = (
                 requested_budget.max_wall_time_seconds if requested_budget is not None else None
@@ -194,13 +199,19 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             utc_clock = SystemUtcClock()
             monotonic_clock = SystemMonotonicClock()
             if parent_projection.deadline_at_utc is None:
-                inherited_deadline = parent_projection.global_deadline_monotonic
+                inherited_monotonic = parent_projection.global_deadline_monotonic
                 if child_wall_limit is not None:
                     child_cap = monotonic_clock.monotonic() + child_wall_limit
-                    if inherited_deadline is None:
-                        inherited_deadline = child_cap
+                    if inherited_monotonic is None:
+                        inherited_monotonic = child_cap
                     else:
-                        inherited_deadline = min(inherited_deadline, child_cap)
+                        inherited_monotonic = min(inherited_monotonic, child_cap)
+                child_projection = ExecutionDeadlineProjection(
+                    deadline_at_utc=None,
+                    remaining_seconds=parent_projection.remaining_seconds,
+                    is_expired=parent_projection.is_expired,
+                    global_deadline_monotonic=inherited_monotonic,
+                )
             else:
                 effective_deadline_at_utc = narrow_child_deadline_at_utc(
                     parent_projection.deadline_at_utc,
@@ -212,7 +223,7 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
                     utc_clock=utc_clock,
                     monotonic_clock=monotonic_clock,
                 )
-                inherited_deadline = child_projection.global_deadline_monotonic
+            inherited_deadline = child_projection.global_deadline_monotonic
         else:
             inherited_deadline = (
                 parent_budget_state.global_deadline_monotonic
@@ -254,9 +265,21 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
             continuation_state_store=self._continuation_state_store,
         )
         budget_token = bind_active_execution_budget(active_budget)
+        deadline_scope_tokens = None
+        if child_projection is not None:
+            child_admission = narrow_protected_work_admission_for_child(
+                child_projection,
+                admission,
+            )
+            deadline_scope_tokens = bind_active_execution_deadline_scope(
+                projection=child_projection,
+                admission=child_admission,
+            )
         try:
             return await boundary.execute(request)
         finally:
+            if deadline_scope_tokens is not None:
+                reset_active_execution_deadline_scope(*deadline_scope_tokens)
             reset_active_execution_budget(budget_token)
             ledger.release_child_budget(child_execution_id)
 

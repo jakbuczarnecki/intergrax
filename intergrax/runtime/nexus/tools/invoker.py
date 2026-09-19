@@ -70,7 +70,7 @@ from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
 from intergrax.contracts.execution_deadline.admission import (
     ExecutionProtectedWorkAdmissionResult,
 )
-from intergrax.contracts.execution_deadline.active_scope import (
+from intergrax.runtime.execution.deadline_scope import (
     peek_active_execution_protected_work_admission,
 )
 from intergrax.runtime.cancellation.coordinator import (

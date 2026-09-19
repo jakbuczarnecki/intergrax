@@ -149,6 +149,7 @@ HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTERS: frozenset[str] = frozenset(
         "intergrax/runtime/execution/budget/registry.py",
         "intergrax/runtime/execution/budget/snapshot.py",
         "intergrax/runtime/execution/child.py",
+        "intergrax/runtime/execution/deadline_authority/resolver.py",
         "intergrax/runtime/execution/compensation_side_effect.py",
         "intergrax/runtime/execution/delegated_execution/context_projection.py",
         "intergrax/runtime/execution/delegated_execution/service.py",

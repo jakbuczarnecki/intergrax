@@ -23,6 +23,7 @@ from intergrax.runtime.execution.deadline_authority.codec import (
 )
 from intergrax.runtime.execution.deadline_authority.persistence import ExecutionDeadlineCodecError
 from intergrax.runtime.execution.deadline_authority.projection import project_execution_deadline
+from intergrax.contracts.execution_deadline.clock import MonotonicClockPort, UtcClockPort
 from intergrax.runtime.execution.deadline_authority.system_clocks import (
     SystemMonotonicClock,
     SystemUtcClock,
@@ -41,8 +42,8 @@ class ExecutionDeadlineAuthorityResolver:
         self,
         persistence: ExecutionDeadlineAuthorityPersistencePort,
         *,
-        utc_clock: SystemUtcClock | None = None,
-        monotonic_clock: SystemMonotonicClock | None = None,
+        utc_clock: UtcClockPort | None = None,
+        monotonic_clock: MonotonicClockPort | None = None,
     ) -> None:
         self._persistence = persistence
         self._utc_clock = utc_clock if utc_clock is not None else SystemUtcClock()

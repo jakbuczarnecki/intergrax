@@ -40,7 +40,9 @@ from intergrax.runtime.background_execution.admission_wiring import (
     wire_background_execution_admission_dependencies,
 )
 from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
-from intergrax.runtime.execution.budget.persistence import wire_run_budget_persistence
+from intergrax.runtime.execution.durable_execution_wiring import (
+    wire_durable_execution_runtime_dependencies,
+)
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
 )
@@ -63,9 +65,9 @@ def build_nexus_task_execution_registry(
     task_enricher=None,
 ) -> TaskExecutionRegistry:
     """Register ``nexus.task.v2`` on a worker TaskExecutionRegistry."""
-    run_budget_persistence = None
+    durable_deps = None
     if kv_store is not None:
-        run_budget_persistence = wire_run_budget_persistence(kv_store=kv_store)
+        durable_deps = wire_durable_execution_runtime_dependencies(kv_store=kv_store)
     worker_registry = TaskExecutionRegistry()
     if host_execution is not None:
         runtime = NexusWorkerRuntime(
@@ -81,7 +83,12 @@ def build_nexus_task_execution_registry(
             execution_continuation_state_store=execution_continuation_state_store,
             lifecycle=lifecycle,
             run_budget=run_budget,
-            run_budget_persistence=run_budget_persistence,
+            run_budget_persistence=(
+                durable_deps.run_budget_persistence if durable_deps is not None else None
+            ),
+            deadline_authority_resolver=(
+                durable_deps.deadline_authority_resolver if durable_deps is not None else None
+            ),
             execution_terminal=execution_terminal,
             orchestration_triggers=orchestration_triggers,
             pipeline_capability_suffix=pipeline_capability_suffix,

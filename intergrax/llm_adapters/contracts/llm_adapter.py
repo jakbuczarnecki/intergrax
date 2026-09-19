@@ -292,10 +292,12 @@ class LLMAdapter(ABC):
 
     def _execute(self, fn: Callable[[], T]) -> T:
         """Run a provider SDK call with rate limit, circuit breaker, and optional retry."""
+        from dataclasses import replace
+
         from intergrax.contracts.execution_deadline.admission import (
             ExecutionProtectedWorkAdmissionResult,
         )
-        from intergrax.contracts.execution_deadline.provider_guard import (
+        from intergrax.runtime.execution.deadline_provider_guard import (
             ExecutionProtectedWorkDeniedError,
             assert_protected_provider_call_allowed,
             resolve_active_provider_timeout_seconds,
@@ -310,6 +312,9 @@ class LLMAdapter(ABC):
                 ExecutionProtectedWorkAdmissionResult.EXPIRED,
             )
         check_llm_tenant_quota(get_llm_tenant_id())
+        effective_config = self.call_config
+        if effective_timeout is not None:
+            effective_config = replace(self.call_config, timeout_sec=effective_timeout)
 
         def physical_attempt() -> T:
             return self._run_physical_provider_attempt(fn)
@@ -317,13 +322,23 @@ class LLMAdapter(ABC):
         return execute_with_resilience(
             physical_attempt,
             provider=self._provider_slug(),
-            config=self.call_config,
-            retry_fn=lambda f: call_with_retry(f, config=self.call_config),
+            config=effective_config,
+            retry_fn=lambda f: call_with_retry(f, config=effective_config),
             tenant_id=get_llm_tenant_id(),
         )
 
     def _execute_streaming(self, factory: Callable[[], Iterable[T]]) -> Iterable[T]:
         """Acquire permit per creation attempt; hold through stream consumption."""
+        from dataclasses import replace
+
+        from intergrax.contracts.execution_deadline.admission import (
+            ExecutionProtectedWorkAdmissionResult,
+        )
+        from intergrax.runtime.execution.deadline_provider_guard import (
+            ExecutionProtectedWorkDeniedError,
+            assert_protected_provider_call_allowed,
+            resolve_active_provider_timeout_seconds,
+        )
         from intergrax.llm_adapters.governance.quota import check_llm_tenant_quota
         from intergrax.llm_adapters.tracking.context import get_llm_tenant_id
         from intergrax.llm_adapters._shared.provider_stream_admission import (
@@ -335,7 +350,16 @@ class LLMAdapter(ABC):
             llm_external_operation_identity,
         )
 
+        assert_protected_provider_call_allowed()
+        effective_timeout = resolve_active_provider_timeout_seconds(self.call_config.timeout_sec)
+        if effective_timeout is not None and effective_timeout <= 0:
+            raise ExecutionProtectedWorkDeniedError(
+                ExecutionProtectedWorkAdmissionResult.EXPIRED,
+            )
         check_llm_tenant_quota(get_llm_tenant_id())
+        effective_config = self.call_config
+        if effective_timeout is not None:
+            effective_config = replace(self.call_config, timeout_sec=effective_timeout)
 
         def physical_attempt() -> Iterable[T]:
             admission_attempt = self._admit_llm_provider_intent(call_scope="stream")
@@ -381,8 +405,8 @@ class LLMAdapter(ABC):
         return execute_with_resilience(
             physical_attempt,
             provider=self._provider_slug(),
-            config=self.call_config,
-            retry_fn=lambda f: call_with_retry(f, config=self.call_config),
+            config=effective_config,
+            retry_fn=lambda f: call_with_retry(f, config=effective_config),
             tenant_id=get_llm_tenant_id(),
         )
 

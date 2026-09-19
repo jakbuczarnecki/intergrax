@@ -67,6 +67,39 @@ class ExecutionProtectedWorkAdmissionDeniedError(RuntimeError):
         super().__init__(result.value)
 
 
+def narrow_protected_work_admission_for_child(
+    child_projection: ExecutionDeadlineProjection,
+    parent_admission: ExecutionProtectedWorkAdmissionPort | None,
+) -> ExecutionProtectedWorkAdmissionPort:
+    """Rebind canonical admission to a narrowed child projection (parent scope unchanged)."""
+    if parent_admission is None:
+        return CanonicalHardProtectedWorkAdmission(
+            projection=child_projection,
+            cancellation_view=StaticCancellationView(cancelled=False),
+        )
+    if isinstance(parent_admission, ComposedProtectedWorkAdmission):
+        return ComposedProtectedWorkAdmission(
+            canonical=CanonicalHardProtectedWorkAdmission(
+                projection=child_projection,
+                cancellation_view=parent_admission.canonical.cancellation_view,
+            ),
+            contributors=parent_admission.contributors,
+        )
+    if isinstance(parent_admission, CanonicalHardProtectedWorkAdmission):
+        return CanonicalHardProtectedWorkAdmission(
+            projection=child_projection,
+            cancellation_view=parent_admission.cancellation_view,
+        )
+    return ComposedProtectedWorkAdmission(
+        canonical=CanonicalHardProtectedWorkAdmission(
+            projection=child_projection,
+            cancellation_view=StaticCancellationView(cancelled=False),
+        ),
+        contributors=(parent_admission,),
+    )
+
+
+@dataclass(frozen=True, slots=True)
 class TaskMetadataCancellationView:
     """Adapter from cooperative task metadata to ExecutionCancellationView."""
 
