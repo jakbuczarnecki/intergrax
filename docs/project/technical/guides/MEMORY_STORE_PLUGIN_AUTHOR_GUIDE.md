@@ -46,7 +46,7 @@ Memory plugins swap **store backends** behind Tier-1 facades (`SessionManager`, 
 | Long-horizon memory | `LongHorizonMemoryStorePlugin` | `create_long_horizon_memory_store(context: LongHorizonMemoryStoreCreationContext)` | `InMemoryLongHorizonMemoryStore` (reference) |
 | Session turn vector index | `SessionTurnIndexStorePlugin` | `create_session_turn_index(context: SessionTurnIndexStoreCreationContext)` | `VectorSessionTurnIndexStore` over host vector ports |
 
-Entry point group (all three share one group; dispatch is by factory method shape):
+All Memory store plugin factory surfaces share one entry-point group; dispatch is by factory method shape:
 
 ```text
 intergrax.memory_stores
