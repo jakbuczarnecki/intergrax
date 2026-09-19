@@ -80,6 +80,7 @@ _MP6E_C1_Q1_REQUIRED_MARKERS: tuple[str, ...] = (
     "3c7b45d63e3c2d9dfd1afd22101506983bf25ce0",
     "qualification_sha",
     "fe79e01769853eb3655bfd90e9f26e1be6e1dcdd",
+    "mp6e_c1_correction_sha is an ancestor of qualification_sha",
     "HEAD == origin/development",
     "test_postgresql_collaborative_activity_read_port_contract",
     "test_postgresql_collaborative_activity_read_isolation",
@@ -203,6 +204,8 @@ def test_mp6e_c1_mp6e_closed_requires_qualification_artifact() -> None:
     assert "qualification_execution_base_sha" not in body, (
         "MP-6E-C1-Q1 evidence: ambiguous qualification_execution_base_sha must not remain"
     )
+    assert "mp6e_c1_correction_sha is an ancestor of qualification_sha" in body
+    assert "qualification_sha is an ancestor of mp6e_c1_correction_sha" not in body
 
 
 def test_mp6e_c1_adr_repair_helper_documents_sequences() -> None:

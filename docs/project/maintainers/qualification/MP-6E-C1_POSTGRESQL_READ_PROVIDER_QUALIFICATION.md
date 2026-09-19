@@ -21,7 +21,7 @@
 | --- | --- |
 | **implementation_sha** | `eb586ccefea80ff05e0dd4f4f1e784ed1c398350` — MP-6E scoped read stack (`feat(collaborative-work): add mp6e scoped activity read`) |
 | **mp6e_c1_correction_sha** | `3c7b45d63e3c2d9dfd1afd22101506983bf25ce0` — MP-6E-C1 composition / documentation correction |
-| **qualification_sha** | `fe79e01769853eb3655bfd90e9f26e1be6e1dcdd` — exact committed Git tree materialized for live PostgreSQL read qualification (ancestor of `mp6e_c1_correction_sha`; no MP-6E read-path delta between the two SHAs) |
+| **qualification_sha** | `fe79e01769853eb3655bfd90e9f26e1be6e1dcdd` — exact committed Git tree used for hermetic live PostgreSQL read qualification; mp6e_c1_correction_sha is an ancestor of qualification_sha (commit `3c7b45d63e3c2d9dfd1afd22101506983bf25ce0`); no MP-6E read-path semantic delta invalidates the qualification |
 | **source repo HEAD at qualification** | `ef82921797ce730a3205cb9af209c422ffce6b95` — **not used as qualification source tree** |
 | **source repo origin/development at qualification** | `ef82921797ce730a3205cb9af209c422ffce6b95` |
 | **HEAD == origin/development at qualification** | **yes** (source repo refs aligned; **qualification source tree** remains `qualification_sha` via `git archive`, not HEAD) |
