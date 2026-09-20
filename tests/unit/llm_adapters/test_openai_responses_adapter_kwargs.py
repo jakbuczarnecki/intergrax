@@ -27,7 +27,7 @@ from intergrax.llm_adapters.providers.openai_responses_adapter import (
     _map_tools_to_responses_api,
     _prepare_responses_tools_and_mapping,
 )
-from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter
 
 pytestmark = pytest.mark.unit
 
@@ -97,7 +97,7 @@ def test_profile_passes_api_key_to_client_constructor() -> None:
     with patch("intergrax.llm_adapters.providers.openai_responses_adapter.Client") as client_cls:
         client_instance = MagicMock()
         client_cls.return_value = client_instance
-        adapter = profile.create_adapter(secrets={"api_key": _TEST_API_KEY})
+        adapter = create_adapter(profile, secrets={"api_key": _TEST_API_KEY})
         client_cls.assert_called_once_with(
             api_key=_TEST_API_KEY,
             base_url="https://example.test/v1",

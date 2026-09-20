@@ -10,7 +10,7 @@ from typing import Any
 from intergrax.contracts.runtime_environment import RuntimeEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.registry.model_router import ModelRouter
-from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter, create_adapter_with_failover, llm_profile_from_env
 from intergrax.llm_adapters.registry.registration_contract import LLMProviderNotConfiguredError
 from intergrax.llm_adapters.routing import LLMRoutingEvaluator, RoutingContext, RoutingEvaluation
 from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
@@ -119,8 +119,8 @@ def _resolve_llm_adapter_impl(
     )
     selected = router.ordered_profiles()[0]
     if selected.fallback_profiles or hint or selected.routing_policy_hint:
-        return selected.create_adapter_with_failover(policy_route_hint=hint)
-    return selected.create_adapter()
+        return create_adapter_with_failover(selected, policy_route_hint=hint)
+    return create_adapter(selected)
 
 
 def resolve_optional_llm_adapter(

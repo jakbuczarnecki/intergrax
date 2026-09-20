@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
 from intergrax.skills.registry.factory import build_registry_from_profile, enabled_skill_ids_for_profile
-from intergrax.skills.registry.profile import SkillProfile
+from intergrax.skills.registry.profile import SkillProfile, is_skill_enabled
 from intergrax.skills.registry.runtime import RegisteredSkill, SkillRegistry
 
 __all__ = [
@@ -10,4 +10,5 @@ __all__ = [
     "SkillRegistry",
     "build_registry_from_profile",
     "enabled_skill_ids_for_profile",
+    "is_skill_enabled",
 ]

@@ -1,7 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 # Integrax framework – proprietary and confidential.
 
-from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
+from intergrax.llm_adapters.registry.profile import (
+    LLMProfile,
+    create_adapter,
+    create_adapter_from_secrets_store,
+    create_adapter_with_failover,
+    llm_profile_from_env,
+    validate_runtime,
+)
 from intergrax.llm_adapters.registry.secrets import (
     default_secret_path_for_provider,
     load_api_key_from_secrets_store,
@@ -18,7 +25,11 @@ from intergrax.llm_adapters.tracking.exposition import register_llm_metrics_rout
 
 __all__ = [
     "LLMProfile",
+    "create_adapter",
+    "create_adapter_from_secrets_store",
+    "create_adapter_with_failover",
     "llm_profile_from_env",
+    "validate_runtime",
     "default_secret_path_for_provider",
     "load_api_key_from_secrets_store",
     "merge_secrets_into_options",

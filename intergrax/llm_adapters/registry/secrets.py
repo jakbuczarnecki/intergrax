@@ -5,7 +5,7 @@
 Resolve LLM API keys for Tier-3 hosts (env + optional secrets map).
 
 Tier-3 applications SHOULD load vault/Integration ``secrets_store`` values into
-``secrets`` before ``LLMProfile.create_adapter()`` — never commit raw keys.
+``secrets`` before ``create_adapter(profile, secrets=...)`` — never commit raw keys.
 """
 
 from __future__ import annotations

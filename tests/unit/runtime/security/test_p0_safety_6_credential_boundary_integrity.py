@@ -13,7 +13,7 @@ from pydantic import ValidationError
 
 from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter, create_adapter_from_secrets_store, create_adapter_with_failover, validate_runtime
 from intergrax.llm_adapters.registry.secrets import (
     default_secret_path_for_provider,
     load_api_key_from_secrets_store,
@@ -91,7 +91,7 @@ def test_explicit_ephemeral_secret_reaches_provider() -> None:
         "intergrax.llm_adapters.llm_provider_registry.LLMAdapterRegistry.create",
         return_value=MagicMock(),
     ) as create:
-        profile.create_adapter(secrets={"api_key": _SENTINEL}, client=MagicMock())
+        create_adapter(profile, secrets={"api_key": _SENTINEL}, client=MagicMock())
         assert create.call_args.kwargs.get("api_key") == _SENTINEL
     _assert_sentinel_absent(profile.model_dump())
 
@@ -104,7 +104,7 @@ def test_create_adapter_from_secrets_store_passes_secret_without_durable_profile
         "intergrax.llm_adapters.llm_provider_registry.LLMAdapterRegistry.create",
         return_value=MagicMock(),
     ) as create:
-        profile.create_adapter_from_secrets_store(store, client=MagicMock())
+        create_adapter_from_secrets_store(profile, store, client=MagicMock())
         assert create.call_args.kwargs.get("api_key") == _SENTINEL
     _assert_sentinel_absent(profile.model_dump())
 
@@ -113,7 +113,7 @@ def test_missing_secret_fails_closed_before_provider_operation() -> None:
     profile = LLMProfile(provider=LLMProvider.GROQ, model="m")
     with patch.dict("os.environ", {}, clear=True):
         with pytest.raises(RuntimeError, match="GROQ_API_KEY"):
-            profile.create_adapter()
+            create_adapter(profile)
 
 
 def test_failover_does_not_persist_secrets() -> None:
@@ -128,7 +128,7 @@ def test_failover_does_not_persist_secrets() -> None:
         "intergrax.llm_adapters.llm_provider_registry.LLMAdapterRegistry.create",
         return_value=MagicMock(),
     ) as create:
-        profile.create_adapter_with_failover(secrets={"api_key": _SENTINEL})
+        create_adapter_with_failover(profile, secrets={"api_key": _SENTINEL})
         for call in create.call_args_list:
             assert call.kwargs.get("api_key") == _SENTINEL
     _assert_sentinel_absent(profile.model_dump())
@@ -138,7 +138,7 @@ def test_failover_does_not_persist_secrets() -> None:
 
 def test_sentinel_absent_from_validate_runtime_diagnostics() -> None:
     profile = LLMProfile(provider=LLMProvider.GROQ, model="m")
-    warnings = profile.validate_runtime(secrets={"api_key": _SENTINEL})
+    warnings = validate_runtime(profile, secrets={"api_key": _SENTINEL})
     _assert_sentinel_absent(warnings)
 
 
@@ -161,7 +161,7 @@ def test_default_secret_path_is_platform_defined() -> None:
         "intergrax.llm_adapters.llm_provider_registry.LLMAdapterRegistry.create",
         return_value=MagicMock(),
     ):
-        profile.create_adapter_from_secrets_store(store, client=MagicMock())
+        create_adapter_from_secrets_store(profile, store, client=MagicMock())
     assert store.lookup_paths == [default_secret_path_for_provider(LLMProvider.GROQ)]
 
 

@@ -8,6 +8,7 @@ from intergrax.integrations.providers.llm_guardrail._factory import create_guard
 from intergrax.integrations.providers.llm_guardrail.register_all import register_llm_guardrail_integrations
 from intergrax.integrations.registry.catalog import get_entry
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -39,5 +40,5 @@ def test_register_llm_guardrail_integrations() -> None:
 def test_integration_profile_resolves_llm_guardrail() -> None:
     register_llm_guardrail_integrations(override=True)
     profile = IntegrationProfile(llm_guardrail="llm_guard")
-    backend = profile.resolve(IntegrationCategory.LLM_GUARDRAIL)
+    backend = resolve_from_profile(profile, IntegrationCategory.LLM_GUARDRAIL)
     assert_llm_guardrail_backend(backend)

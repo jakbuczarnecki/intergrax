@@ -45,20 +45,13 @@ class ToolProfile(BaseModel):
         return dict(self.options.get(tool_id, {}))
 
     def is_tool_enabled(self, tool_id: str) -> bool:
+        """Exact-id / flag semantics only — catalog bundle expansion is registry-owned."""
         if self.register_all_catalog_bundles:
             return True
         if tool_id in self.enabled:
             return True
         if not self.enabled and not self.enabled_bundles:
             return False
-        
-        for bundle_id in self.enabled_bundles:
-            try:
-                entry = get_bundle(bundle_id)
-            except KeyError:
-                continue
-            if tool_id in entry.tool_ids:
-                return True
         return False
 
     def should_register_bundle(self, bundle_id: str, *, tool_ids: tuple[str, ...]) -> bool:

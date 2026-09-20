@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Compatibility re-export — canonical: skills.contracts.skill_profile."""
+"""Compatibility re-export plus catalog-aware skill enablement evaluator."""
 
 from __future__ import annotations
 
@@ -8,14 +8,15 @@ from intergrax.skills.contracts.skill_profile import SkillProfile
 from intergrax.skills.registry.catalog import get_bundle
 
 
-def _catalog_is_skill_enabled(self: SkillProfile, skill_id: str) -> bool:
-    if self.register_all_catalog_bundles:
+def is_skill_enabled(profile: SkillProfile, skill_id: str) -> bool:
+    """Evaluate enablement including catalog bundle membership."""
+    if profile.register_all_catalog_bundles:
         return True
-    if skill_id in self.enabled:
+    if skill_id in profile.enabled:
         return True
-    if not self.enabled and not self.enabled_bundles:
+    if not profile.enabled and not profile.enabled_bundles:
         return False
-    for bundle_id in self.enabled_bundles:
+    for bundle_id in profile.enabled_bundles:
         try:
             entry = get_bundle(bundle_id)
         except KeyError:
@@ -25,6 +26,4 @@ def _catalog_is_skill_enabled(self: SkillProfile, skill_id: str) -> bool:
     return False
 
 
-setattr(SkillProfile, "is_skill_enabled", _catalog_is_skill_enabled)
-
-__all__ = ["SkillProfile"]
+__all__ = ["SkillProfile", "is_skill_enabled"]

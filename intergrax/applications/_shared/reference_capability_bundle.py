@@ -12,10 +12,6 @@ from intergrax.applications.contracts.environment_profile.presets import (
 )
 from intergrax.applications.contracts.environment_profile.sub_profiles import MemoryProfile
 from intergrax.tools.contracts.tool_profile import ToolProfile
-from intergrax.tools.registry.profile import ToolProfile as _ToolProfileRuntimeAttach
-
-# Ensure catalog-aware ToolProfile.is_tool_enabled is attached for callers of this module.
-_ = _ToolProfileRuntimeAttach
 
 __all__ = [
     "CapabilityBundle",

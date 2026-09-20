@@ -4,7 +4,7 @@
 """
 Resolve runtime persistence from ``IntegrationProfile`` (Phase M.8).
 
-Prefer ``profile.resolve(IntegrationCategory.RELATIONAL_STORE)`` or
+Prefer ``resolve_from_profile(profile, IntegrationCategory.RELATIONAL_STORE)`` or
 ``create_sqlite_integration()`` over direct imports of runtime SQLite classes.
 """
 
@@ -19,6 +19,7 @@ from intergrax.integrations.providers.relational_store.sqlite.bundle import (
     create_sqlite_integration,
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.factory import resolve_from_profile
 from intergrax.runtime.events.stores.validating_runtime_event_store import (
     ValidatingRuntimeEventPersistence,
 )
@@ -85,7 +86,7 @@ def open_runtime_event_store_from_profile(
             runtime_event_persistence_from_cassandra,
         )
 
-        resolved = profile.resolve(IntegrationCategory.DOCUMENT_STORE)
+        resolved = resolve_from_profile(profile, IntegrationCategory.DOCUMENT_STORE)
         if isinstance(resolved, CassandraDocumentStore):
             return _validating(runtime_event_persistence_from_cassandra(resolved))
 
@@ -98,7 +99,7 @@ def open_runtime_event_store_from_profile(
             runtime_event_persistence_from_elasticsearch_backend,
         )
 
-        resolved = profile.resolve(IntegrationCategory.OBSERVABILITY_BACKEND)
+        resolved = resolve_from_profile(profile, IntegrationCategory.OBSERVABILITY_BACKEND)
         if isinstance(resolved, ElasticsearchObservabilityIntegration):
             return _validating(runtime_event_persistence_from_elasticsearch_backend(resolved))
 

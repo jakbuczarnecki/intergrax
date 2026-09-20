@@ -12,7 +12,14 @@ from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResu
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
-from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
+from intergrax.llm_adapters.registry.profile import (
+    LLMProfile,
+    create_adapter,
+    create_adapter_from_secrets_store,
+    create_adapter_with_failover,
+    llm_profile_from_env,
+    validate_runtime,
+)
 
 __all__ = [
     "LLMAdapter",
@@ -26,5 +33,9 @@ __all__ = [
     "LLMTokenUsage",
     "LLMToolCall",
     "LLMProvider",
+    "create_adapter",
+    "create_adapter_from_secrets_store",
+    "create_adapter_with_failover",
     "llm_profile_from_env",
+    "validate_runtime",
 ]

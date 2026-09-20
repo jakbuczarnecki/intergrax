@@ -9,7 +9,7 @@ from typing import Collection
 
 from intergrax.skills.registry.runtime import SkillRegistry
 from intergrax.tools.registry.catalog import list_catalog_tool_ids
-from intergrax.tools.registry.profile import ToolProfile
+from intergrax.tools.registry.profile import ToolProfile, is_tool_enabled
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,7 +98,7 @@ def available_tool_ids_for_profile(tool_profile: ToolProfile) -> tuple[str, ...]
 
     available = {tool_id.strip() for tool_id in tool_profile.enabled if tool_id.strip()}
     for tool_id in list_catalog_tool_ids():
-        if tool_profile.is_tool_enabled(tool_id):
+        if is_tool_enabled(tool_profile, tool_id):
             available.add(tool_id)
     return tuple(sorted(available))
 

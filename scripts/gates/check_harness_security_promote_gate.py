@@ -21,6 +21,7 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.security_scanner import ScanFinding, ScanReport, SecurityScannerBackend
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.presets import harness_security_stack
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 CRITICAL_SEVERITIES = frozenset({"critical", "high", "CRITICAL", "HIGH"})
 
@@ -162,7 +163,7 @@ def main() -> int:
         primary = TrivyCliScanner()
         semgrep = SemgrepCliScanner()
     else:
-        primary = profile.resolve(IntegrationCategory.SECURITY_SCANNER)
+        primary = resolve_from_profile(profile, IntegrationCategory.SECURITY_SCANNER)
         if not isinstance(primary, SecurityScannerBackend):
             print("security promote gate: primary scanner not configured")
             return 1

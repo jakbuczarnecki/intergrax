@@ -19,7 +19,7 @@ from intergrax.llm_adapters.providers.openai_compat_providers import (
     TogetherChatAdapter,
     XaiChatAdapter,
 )
-from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter
 
 pytestmark = pytest.mark.unit
 
@@ -63,7 +63,7 @@ def test_profile_passes_api_key_to_openai_client_constructor(
     with patch("intergrax.llm_adapters.providers.openai_compat_factory.OpenAI") as openai_cls:
         client_instance = MagicMock()
         openai_cls.return_value = client_instance
-        adapter = profile.create_adapter(secrets={"api_key": _TEST_API_KEY})
+        adapter = create_adapter(profile, secrets={"api_key": _TEST_API_KEY})
         openai_cls.assert_called_once_with(
             api_key=_TEST_API_KEY,
             base_url=_TEST_BASE_URL,

@@ -8,6 +8,7 @@ from intergrax.applications.contracts.environment_profile import AdaptiveMode, A
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 
 def resolve_effective_adaptive_profile(
@@ -35,7 +36,7 @@ def resolve_effective_adaptive_profile(
     if not slug:
         return profile.model_copy(update={"mode": "observe"})
 
-    backend = integration_profile.resolve(IntegrationCategory.FEATURE_FLAG)
+    backend = resolve_from_profile(integration_profile, IntegrationCategory.FEATURE_FLAG)
     if not isinstance(backend, FeatureFlagBackend):
         return profile.model_copy(update={"mode": "observe"})
     if backend.is_enabled(flag_key, tenant_id=tenant_id, user_id=user_id):

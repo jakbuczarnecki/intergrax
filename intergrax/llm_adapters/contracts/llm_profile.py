@@ -14,7 +14,7 @@ from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
 _RAW_CREDENTIAL_OPTIONS_ERROR = (
     "raw credentials are not allowed in LLMProfile.options; "
-    "pass credentials via create_adapter(secrets=...) or SecretsStore"
+    "pass credentials via registry create_adapter(profile, secrets=...) or SecretsStore"
 )
 
 _FORBIDDEN_CREDENTIAL_OPTION_KEYS = frozenset({"api_key"})
@@ -31,7 +31,7 @@ class LLMProfile(BaseModel):
             model="llama-3.3-70b-versatile",
             options={"max_retries": 2},
         )
-        llm = profile.create_adapter()
+        llm = create_adapter(profile)
     """
 
     model_config = ConfigDict(extra="forbid", use_enum_values=False)

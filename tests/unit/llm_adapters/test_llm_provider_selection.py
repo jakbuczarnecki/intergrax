@@ -17,7 +17,7 @@ from intergrax.applications._shared.llm_resolver import (
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
-from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter, llm_profile_from_env
 from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterDependencyError,
     LLMProviderNotConfiguredError,
@@ -87,7 +87,7 @@ def test_llm_profile_from_env_explicit_non_ollama_does_not_touch_ollama_factory(
     ):
         profile = llm_profile_from_env()
     assert profile is not None
-    adapter = profile.create_adapter()
+    adapter = create_adapter(profile)
     assert isinstance(adapter, LLMAdapter)
     assert adapter.provider == "custom_gateway_env"
 
@@ -135,6 +135,6 @@ def test_explicit_ollama_missing_sdk_raises_dependency_error(monkeypatch: pytest
 def test_explicit_groq_does_not_import_ollama() -> None:
     profile = LLMProfile(provider=LLMProvider.GROQ, model="llama-3.3-70b-versatile")
     with patch.dict("os.environ", {"GROQ_API_KEY": "k"}, clear=False):
-        adapter = profile.create_adapter(client=MagicMock())
+        adapter = create_adapter(profile, client=MagicMock())
     inner = unwrap_catalog_capability_adapter(adapter)
     assert isinstance(inner, GroqChatAdapter)

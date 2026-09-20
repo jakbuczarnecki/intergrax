@@ -38,6 +38,7 @@ from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrche
 from intergrax.contracts.execution_environment_isolation import ProfileSandboxIsolationSource
 from intergrax.model_inference.media_boundary import RemoteMediaEgressPolicy
 from intergrax.runtime.workspace.execution_port import WorkspaceExecutionPort
+from intergrax.integrations.registry.factory import resolve_from_profile
 from intergrax.tools.registry.runtime_bindings import (
     AgentRegistryBinding,
     HumanDecisionStoreBinding,
@@ -159,7 +160,7 @@ class ToolWiringContext:
             if slug is None:
                 return None
             try:
-                return profile.resolve(category)
+                return resolve_from_profile(profile, category)
             except Exception:
                 return None
 

@@ -20,6 +20,7 @@ from intergrax.harness.yaml_loader import merge_manifest_with_files
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.integrations.registry.presets import lab_stack
 
 if TYPE_CHECKING:
     from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
@@ -34,7 +35,7 @@ class HarnessApplication:
         app = (
             HarnessApplication("my_lab")
             .agents(EchoAgent, contract_id="echo")
-            .integrations(IntegrationProfile.lab_stack())
+            .integrations(lab_stack())
             .mode("balanced")
             .build_fastapi()
         )

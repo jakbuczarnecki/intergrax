@@ -25,6 +25,8 @@ from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_f
 from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
+from intergrax.tools.contracts.tool_profile import ToolProfile
+from intergrax.tools.registry.profile import is_tool_enabled as catalog_is_tool_enabled
 
 
 class ResearchAgent(ReflexAgent):
@@ -39,12 +41,20 @@ class ResearchAgent(ReflexAgent):
         self,
         harness: LabHarnessContext | None = None,
         *,
-        tool_profile: ToolEnablementProfile | None = None,
+        tool_profile: ToolProfile | ToolEnablementProfile | None = None,
         enable_websearch: bool = False,
     ) -> None:
         self._harness = harness or default_reference_harness()
         self._tool_profile = tool_profile
         self._enable_websearch = enable_websearch
+
+    def _tool_enables(self, tool_id: str) -> bool:
+        profile = self._tool_profile
+        if profile is None:
+            return False
+        if isinstance(profile, ToolProfile):
+            return catalog_is_tool_enabled(profile, tool_id)
+        return profile.is_tool_enabled(tool_id)
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -81,7 +91,7 @@ class ResearchAgent(ReflexAgent):
         has_web = bool(
             self._enable_websearch
             and self._tool_profile
-            and self._tool_profile.is_tool_enabled("websearch.query")
+            and self._tool_enables("websearch.query")
         )
         runtime_context = build_lab_agent_runtime_context(
             request=request,

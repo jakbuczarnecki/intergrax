@@ -12,7 +12,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.catalog_capabilities import unwrap_catalog_capability_adapter
-from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter, llm_profile_from_env
 from testing_support.strict_tool_contract_validator import STRICT_CAPABILITY_BLOCK_REASON
 
 _BINDING_SOURCE = "application_environment_profile.llm_profile"
@@ -73,7 +73,7 @@ def bind_qualification_llm_profile(
     environment.llm_profile = profile
 
     try:
-        profile.create_adapter()
+        create_adapter(profile)
     except (OSError, RuntimeError, ValueError, TypeError) as exc:
         if requested_provider is not None or requested_model is not None:
             return None, (

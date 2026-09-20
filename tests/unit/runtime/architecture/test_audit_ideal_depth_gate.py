@@ -247,7 +247,7 @@ def test_audit_ideal_16_1_context_drift_monitor() -> None:
 
 def test_audit_ideal_29_1_live_vision_profile() -> None:
     profile = resolve_live_vision_profile()
-    assert profile.create_adapter().slug
+    assert create_adapter(profile).slug
 
 
 def test_audit_ideal_30_2_deploy_slo_evidence() -> None:
@@ -915,9 +915,9 @@ def test_audit_ideal_6_6_step_llm_router_adapter_bridge() -> None:
 
 
 def test_audit_ideal_6_7_llm_profile_validate_runtime() -> None:
-    from intergrax.llm_adapters.registry.profile import LLMProfile
+    from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter, validate_runtime
 
-    warnings = LLMProfile.lab().validate_runtime()
+    warnings = validate_runtime(LLMProfile.lab(), )
     assert isinstance(warnings, list)
 
 

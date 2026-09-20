@@ -25,6 +25,7 @@ from intergrax.runtime.sandbox.network_egress import (
 from intergrax.runtime.sandbox.session import SandboxSession
 from intergrax.tools.providers.sandbox._session import resolve_sandbox_session
 from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,7 +188,7 @@ def _resolve_integration_sandbox_host(
         slug = integration_profile.slug_for_category(IntegrationCategory.SANDBOX_HOST)
         if slug is None:
             return None
-        backend = integration_profile.resolve(IntegrationCategory.SANDBOX_HOST)
+        backend = resolve_from_profile(integration_profile, IntegrationCategory.SANDBOX_HOST)
     if not isinstance(backend, SandboxHostBackend):
         return None
     return backend

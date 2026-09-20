@@ -11,6 +11,7 @@ from echo.echo_agent import EchoAgent
 from intergrax.applications.contracts.graph_builder import AgentGraph
 from intergrax.harness import HarnessApplication
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.presets import lab_stack
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -19,7 +20,7 @@ def test_harness_application_echo_run() -> None:
     app = (
         HarnessApplication("harness_test", route_prefix="/v1/harness_test")
         .agents(EchoAgent, contract_id="echo")
-        .integrations(IntegrationProfile.lab_stack())
+        .integrations(lab_stack())
         .graph(AgentGraph().default(EchoAgent))
         .build_fastapi()
     )

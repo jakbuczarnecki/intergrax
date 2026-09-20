@@ -9,7 +9,7 @@ import pytest
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
-from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter, llm_profile_from_env
 from intergrax.runtime.config.forbidden_generation_model_env import (
     FORBIDDEN_GENERATION_MODEL_ENV_NAMES,
 )
@@ -47,7 +47,7 @@ def _restore_registry_state():
 def test_llm_profile_create_adapter() -> None:
     profile = LLMProfile(provider=LLMProvider.GROQ, model="llama-3.3-70b-versatile", options={"max_retries": 1})
     with patch.dict("os.environ", {"GROQ_API_KEY": "k"}, clear=False):
-        adapter = profile.create_adapter(client=MagicMock())
+        adapter = create_adapter(profile, client=MagicMock())
     inner = unwrap_catalog_capability_adapter(adapter)
     assert isinstance(inner, GroqChatAdapter)
     assert adapter.model == "llama-3.3-70b-versatile"
@@ -84,7 +84,7 @@ def test_llm_profile_from_env_registered_custom_provider(_restore_registry_state
         profile = llm_profile_from_env()
     assert profile.provider == "custom_gateway_env"
     assert profile.model == "custom-model"
-    adapter = profile.create_adapter()
+    adapter = create_adapter(profile)
     assert isinstance(adapter, LLMAdapter)
     assert adapter.provider == "custom_gateway_env"
 
@@ -119,7 +119,7 @@ def test_llm_profile_propagates_canonical_model_and_ignores_legacy_env() -> None
         clear=False,
     ):
         profile = llm_profile_from_env()
-        adapter = profile.create_adapter(client=MagicMock())
+        adapter = create_adapter(profile, client=MagicMock())
     inner = unwrap_catalog_capability_adapter(adapter)
     assert isinstance(inner, GroqChatAdapter)
     assert adapter.model == "canonical-model"

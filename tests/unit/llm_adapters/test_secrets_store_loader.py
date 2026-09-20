@@ -7,7 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter_from_secrets_store
 from intergrax.llm_adapters.registry.secrets import (
     default_secret_path_for_provider,
     load_api_key_from_secrets_store,
@@ -35,5 +35,5 @@ def test_profile_create_adapter_from_secrets_store() -> None:
         "intergrax.llm_adapters.llm_provider_registry.LLMAdapterRegistry.create",
         return_value=MagicMock(),
     ) as create:
-        profile.create_adapter_from_secrets_store(store, client=MagicMock())
+        create_adapter_from_secrets_store(profile, store, client=MagicMock())
         assert create.call_args.kwargs.get("api_key") == "k"

@@ -10,6 +10,7 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.presets import lab_stack
 from echo.echo_agent import EchoAgent
 
 
@@ -23,7 +24,7 @@ def build_poc_template_manifest() -> ApplicationManifest:
         name="Poc Template Lab Application",
         route_prefix="/v1/poc_template",
         env_prefix="POC_TEMPLATE_",
-        integration_profile=IntegrationProfile.lab_stack(),
+        integration_profile=lab_stack(),
         environment=environment,
         agents=[
             AgentBinding.mount(

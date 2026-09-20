@@ -14,6 +14,7 @@ from intergrax.integrations.providers.relational_store.sqlite.register import re
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.catalog_manifests import LOG, REDIS, SQLITE
 from intergrax.integrations.registry.profile import IntegrationProfile, default_lab_profile
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 pytestmark = pytest.mark.unit
 
@@ -90,7 +91,7 @@ def test_profile_resolve_uses_typed_category(tmp_path) -> None:
         relational_store=SQLITE,
         options={SQLITE: {"data_dir": str(tmp_path)}},
     )
-    store = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
+    store = resolve_from_profile(profile, IntegrationCategory.RELATIONAL_STORE)
     assert store is not None
 
 
@@ -114,7 +115,7 @@ def test_custom_manifest_without_enum(tmp_path) -> None:
     profile = IntegrationProfile(relational_store=custom)
     assert profile.relational_store is not None
     assert profile.relational_store.resolved_slug() == "acme_warehouse"
-    resolved = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
+    resolved = resolve_from_profile(profile, IntegrationCategory.RELATIONAL_STORE)
     assert resolved == {"backend": "acme"}
 
 

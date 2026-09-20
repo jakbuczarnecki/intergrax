@@ -45,6 +45,7 @@ from intergrax.scaffold.application_pyproject import (
     render_application_pyproject,
 )
 from intergrax.scaffold.package_emit import write_scaffold_package_json
+from intergrax.integrations.registry.presets import lab_stack
 
 _PROFILES = ("lab", "product")
 
@@ -98,7 +99,7 @@ def _manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
                 name="{names.display} Lab Application",
                 route_prefix="{route_prefix}",
                 env_prefix="{env_prefix_value}",
-                integration_profile=IntegrationProfile.lab_stack(),
+                integration_profile=lab_stack(),
                 environment=environment,
                 agents=[
         {mounts_block}

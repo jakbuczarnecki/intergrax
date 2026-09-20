@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Compatibility re-export — canonical: tools.contracts.tool_profile."""
+"""Compatibility re-export plus catalog-aware tool enablement evaluator."""
 
 from __future__ import annotations
 
@@ -8,14 +8,15 @@ from intergrax.tools.contracts.tool_profile import ToolProfile, default_lab_tool
 from intergrax.tools.registry.catalog import get_bundle
 
 
-def _catalog_is_tool_enabled(self: ToolProfile, tool_id: str) -> bool:
-    if self.register_all_catalog_bundles:
+def is_tool_enabled(profile: ToolProfile, tool_id: str) -> bool:
+    """Evaluate enablement including catalog bundle membership."""
+    if profile.register_all_catalog_bundles:
         return True
-    if tool_id in self.enabled:
+    if tool_id in profile.enabled:
         return True
-    if not self.enabled and not self.enabled_bundles:
+    if not profile.enabled and not profile.enabled_bundles:
         return False
-    for bundle_id in self.enabled_bundles:
+    for bundle_id in profile.enabled_bundles:
         try:
             entry = get_bundle(bundle_id)
         except KeyError:
@@ -25,6 +26,4 @@ def _catalog_is_tool_enabled(self: ToolProfile, tool_id: str) -> bool:
     return False
 
 
-setattr(ToolProfile, "is_tool_enabled", _catalog_is_tool_enabled)
-
-__all__ = ["ToolProfile", "default_lab_tool_profile"]
+__all__ = ["ToolProfile", "default_lab_tool_profile", "is_tool_enabled"]

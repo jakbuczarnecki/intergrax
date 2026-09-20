@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter, llm_profile_from_env
 
 from testing_support.decision_e2e.independence import (
     ProviderIndependenceLevel,
@@ -115,7 +115,7 @@ def resolve_qualification_environment() -> tuple[QualificationEnvironment | None
         return None, "INTERGRAX_LLM_MODEL is required for Ollama qualification"
 
     try:
-        producer_adapter = producer_profile.create_adapter()
+        producer_adapter = create_adapter(producer_profile)
     except (OSError, RuntimeError, ValueError) as exc:
         return None, f"producer adapter unavailable: {type(exc).__name__}"
 
@@ -136,9 +136,9 @@ def resolve_qualification_environment() -> tuple[QualificationEnvironment | None
     )
 
     try:
-        verifier_adapter = verifier_profile.create_adapter()
-        council_adapter_b = council_b_profile.create_adapter()
-        council_adapter_c = council_c_profile.create_adapter()
+        verifier_adapter = create_adapter(verifier_profile)
+        council_adapter_b = create_adapter(council_b_profile)
+        council_adapter_c = create_adapter(council_c_profile)
     except (OSError, RuntimeError, ValueError) as exc:
         return None, f"secondary adapter unavailable: {type(exc).__name__}"
 

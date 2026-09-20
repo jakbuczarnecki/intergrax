@@ -16,6 +16,7 @@ from intergrax.applications.contracts.manifest import AgentBinding, ApplicationM
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.scaffold.agent_catalog import ScaffoldAgentSpec
 from intergrax.scaffold.application_names import ScaffoldApplicationNames
+from intergrax.integrations.registry.presets import lab_stack
 
 
 def _bindings_from_specs(specs: list[ScaffoldAgentSpec]) -> list[AgentBinding]:
@@ -48,7 +49,7 @@ def build_scaffold_manifest_and_env(
             route_prefix=names.route_prefix,
             env_prefix=names.env_prefix,
             default_port=names.port,
-            integration_profile=IntegrationProfile.lab_stack(),
+            integration_profile=lab_stack(),
             environment=environment,
             agents=agents,
             description=f"Scaffolded Tier-3 product environment ({names.pkg})",
@@ -61,7 +62,7 @@ def build_scaffold_manifest_and_env(
         name=f"{names.display} Lab Application",
         route_prefix=names.route_prefix,
         env_prefix=names.env_prefix,
-        integration_profile=IntegrationProfile.lab_stack(),
+        integration_profile=lab_stack(),
         environment=environment,
         agents=agents,
         description="Scaffolded Tier-3 lab environment (Phase DX-1.5)",

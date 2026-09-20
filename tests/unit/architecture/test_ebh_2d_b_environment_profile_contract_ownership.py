@@ -184,3 +184,158 @@ def test_enum_value_parity_for_moved_enums() -> None:
     assert {m.value for m in CanonicalComplianceDomainClass} == {
         m.value for m in LegacyComplianceDomainClass
     }
+
+
+_COMPAT_PROFILE_MODULES = (
+    _REPO_ROOT / "intergrax/integrations/registry/profile.py",
+    _REPO_ROOT / "intergrax/llm_adapters/registry/profile.py",
+    _REPO_ROOT / "intergrax/tools/registry/profile.py",
+    _REPO_ROOT / "intergrax/skills/registry/profile.py",
+)
+
+_CANONICAL_PROFILE_CONTRACTS = (
+    _REPO_ROOT / "intergrax/integrations/contracts/integration_profile.py",
+    _REPO_ROOT / "intergrax/llm_adapters/contracts/llm_profile.py",
+    _REPO_ROOT / "intergrax/tools/contracts/tool_profile.py",
+    _REPO_ROOT / "intergrax/skills/contracts/skill_profile.py",
+)
+
+_RUNTIME_AUGMENTATION_METHODS = frozenset(
+    {
+        "resolve",
+        "lab_stack",
+        "legal_stack",
+        "research_stack",
+        "data_stack",
+        "observability_stack",
+        "harness_production_stack",
+        "create_adapter",
+        "create_adapter_with_failover",
+        "validate_runtime",
+        "create_adapter_from_secrets_store",
+    }
+)
+
+
+def _setattr_targets(path: Path) -> list[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    hits: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Name) and func.id == "setattr":
+            if node.args:
+                target = node.args[0]
+                hits.append(ast.unparse(target))
+        elif isinstance(func, ast.Attribute) and func.attr == "setattr":
+            if node.args:
+                hits.append(ast.unparse(node.args[0]))
+    return hits
+
+
+def test_legacy_profile_modules_forbid_canonical_setattr() -> None:
+    problems: list[str] = []
+    for path in _COMPAT_PROFILE_MODULES:
+        for target in _setattr_targets(path):
+            problems.append(f"{path.name}: setattr({target}, ...)")
+    assert not problems, "\n".join(problems)
+
+
+def test_canonical_profile_contracts_forbid_registry_imports() -> None:
+    problems: list[str] = []
+    for path in _CANONICAL_PROFILE_CONTRACTS:
+        for imported in _module_imports(path):
+            if ".registry." in f".{imported}.":
+                problems.append(f"{path.name}: {imported}")
+            if imported.startswith("intergrax.runtime."):
+                problems.append(f"{path.name}: {imported}")
+    assert not problems, "\n".join(problems)
+
+
+def test_import_order_stability_no_runtime_method_augmentation() -> None:
+    import subprocess
+    import sys
+
+    script = r"""
+import importlib
+
+integration = importlib.import_module(
+    "intergrax.integrations.contracts.integration_profile",
+).IntegrationProfile
+llm = importlib.import_module("intergrax.llm_adapters.contracts.llm_profile").LLMProfile
+tool = importlib.import_module("intergrax.tools.contracts.tool_profile").ToolProfile
+skill = importlib.import_module("intergrax.skills.contracts.skill_profile").SkillProfile
+
+runtime_methods = {
+    "resolve",
+    "lab_stack",
+    "legal_stack",
+    "research_stack",
+    "data_stack",
+    "observability_stack",
+    "harness_production_stack",
+    "create_adapter",
+    "create_adapter_with_failover",
+    "validate_runtime",
+    "create_adapter_from_secrets_store",
+}
+before = {
+    "IntegrationProfile": frozenset(runtime_methods & set(vars(integration))),
+    "LLMProfile": frozenset(runtime_methods & set(vars(llm))),
+}
+tool_before = tool.is_tool_enabled
+skill_before = skill.is_skill_enabled
+
+importlib.import_module("intergrax.integrations.registry.profile")
+importlib.import_module("intergrax.llm_adapters.registry.profile")
+importlib.import_module("intergrax.tools.registry.profile")
+importlib.import_module("intergrax.skills.registry.profile")
+
+after = {
+    "IntegrationProfile": frozenset(runtime_methods & set(vars(integration))),
+    "LLMProfile": frozenset(runtime_methods & set(vars(llm))),
+}
+assert before == after
+assert tool.is_tool_enabled is tool_before
+assert skill.is_skill_enabled is skill_before
+assert not hasattr(integration, "resolve")
+assert not hasattr(llm, "create_adapter")
+print("OK")
+"""
+    completed = subprocess.run(
+        [sys.executable, "-c", script],
+        check=False,
+        capture_output=True,
+        text=True,
+        cwd=str(_REPO_ROOT),
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "OK" in completed.stdout
+
+
+def test_tool_profile_standalone_exact_id_semantics() -> None:
+    profile = CanonicalToolProfile(enabled=["echo.ping"], enabled_bundles=["jira"])
+    assert profile.is_tool_enabled("echo.ping") is True
+    assert profile.is_tool_enabled("jira.get_issue") is False
+
+
+def test_skill_profile_standalone_exact_id_semantics() -> None:
+    profile = CanonicalSkillProfile(enabled=["skill.a"], enabled_bundles=["harness"])
+    assert profile.is_skill_enabled("skill.a") is True
+    assert profile.is_skill_enabled("harness.run") is False
+
+
+def test_catalog_evaluators_remain_registry_owned() -> None:
+    from intergrax.skills.registry.profile import is_skill_enabled
+    from intergrax.tools.registry.bootstrap import register_default_tools
+    from intergrax.tools.registry.profile import is_tool_enabled
+
+    register_default_tools()
+    tools = CanonicalToolProfile(enabled_bundles=["harness"])
+    assert is_tool_enabled(tools, "harness.get_run") is True
+    assert tools.is_tool_enabled("harness.get_run") is False
+
+    skills = CanonicalSkillProfile(enabled=["explicit.skill"])
+    assert is_skill_enabled(skills, "explicit.skill") is True
+    assert skills.is_skill_enabled("explicit.skill") is True

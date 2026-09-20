@@ -55,7 +55,7 @@ class IntegrationProfile(BaseModel):
             key_value_cache=REDIS,
             options={SQLITE: {"data_dir": "build/lab"}},
         )
-        store = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
+        store = resolve_from_profile(profile, IntegrationCategory.RELATIONAL_STORE)
     """
 
     model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)

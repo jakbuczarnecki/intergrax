@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.registry.factory import resolve_from_profile
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
@@ -71,14 +72,14 @@ def create_notification_adapter_from_profile(
     backend_name = settings.backend.value
     catalog_slug = _CATALOG_NOTIFICATION_SLUGS.get(backend_name)
     if catalog_slug is not None and slug == catalog_slug:
-        channel = profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)
+        channel = resolve_from_profile(profile, IntegrationCategory.NOTIFICATION_CHANNEL)
         return channel  # type: ignore[return-value]
     return create_resilient_notification_adapter(profile, delivery_ledger=delivery_ledger)
 
 
 def create_harness_notification_adapter(profile: IntegrationProfile) -> NotificationAdapter:
     """Resolve notification channel directly from harness ``IntegrationProfile``."""
-    return profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)  # type: ignore[return-value]
+    return resolve_from_profile(profile, IntegrationCategory.NOTIFICATION_CHANNEL)  # type: ignore[return-value]
 
 
 def create_resilient_notification_adapter(
@@ -91,9 +92,9 @@ def create_resilient_notification_adapter(
     if backend in _CATALOG_NOTIFICATION_SLUGS:
         slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
         if slug == _CATALOG_NOTIFICATION_SLUGS[backend]:
-            return profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)  # type: ignore[return-value]
+            return resolve_from_profile(profile, IntegrationCategory.NOTIFICATION_CHANNEL)  # type: ignore[return-value]
     if settings.backend == NotificationBackend.LOG:
-        return profile.resolve(IntegrationCategory.NOTIFICATION_CHANNEL)  # type: ignore[return-value]
+        return resolve_from_profile(profile, IntegrationCategory.NOTIFICATION_CHANNEL)  # type: ignore[return-value]
 
     resilient_delivery = create_resilient_delivery(
         HttpWebhookDelivery(),

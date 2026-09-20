@@ -17,6 +17,7 @@ from intergrax.integrations.contracts.vector_store import VectorStore
 from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend
 from intergrax.integrations.contracts.ci_cd import CiCdBackend
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 T = TypeVar("T")
 
@@ -48,7 +49,7 @@ def resolve_contract(
     expected: type[Any] | None = None,
 ) -> Any:
     """Resolve and optionally assert instance type for IDE-friendly call sites."""
-    value = profile.resolve(category, config=config)
+    value = resolve_from_profile(profile, category, config=config)
     if expected is not None and not isinstance(value, expected):
         raise TypeError(
             f"Integration for {category.value!r} resolved to {type(value).__name__}, "

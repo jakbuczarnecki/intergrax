@@ -8,7 +8,7 @@ import os
 
 import pytest
 
-from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter
 from testing_support.native_planner_action_context_transport import (
     live_transport_enabled,
     qualify_planner_transport,
@@ -47,7 +47,7 @@ def test_qwen32_atomic_planner_transport_gate() -> None:
     profile = _ollama_profile()
     if profile is None:
         pytest.skip("Ollama model not configured for DS-E2E-12")
-    adapter = profile.create_adapter()
+    adapter = create_adapter(profile)
     if not adapter.supports_tools():
         pytest.skip("Ollama adapter does not support native tools in this environment")
     result = qualify_planner_transport(adapter, provider="ollama", required_attempts=3)
@@ -66,7 +66,7 @@ def test_openai_control_planner_transport_diagnostic() -> None:
     profile = _openai_profile()
     if profile is None:
         pytest.skip("BLOCKED_CREDENTIAL: OPENAI_API_KEY not set")
-    adapter = profile.create_adapter()
+    adapter = create_adapter(profile)
     if not adapter.supports_tools():
         pytest.skip("OpenAI adapter does not support native tools in this environment")
     result = qualify_planner_transport(adapter, provider="openai", required_attempts=1)

@@ -10,6 +10,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
+from intergrax.llm_adapters.registry.profile import create_adapter
 
 
 def resolve_tool_planning_config(
@@ -62,7 +63,7 @@ def resolve_planner_llm_adapter(
     """
     separate = env.reasoning_profile.planner_llm_profile
     if separate is not None:
-        return separate.create_adapter()
+        return create_adapter(separate)
     return producer_adapter
 
 
