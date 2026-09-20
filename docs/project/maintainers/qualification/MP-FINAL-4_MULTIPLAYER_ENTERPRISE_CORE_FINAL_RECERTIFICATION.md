@@ -17,7 +17,7 @@ BRANCH                        = development
 WORKTREE_STATE                = unrelated WIP present (not staged for MP-FINAL-4)
 MP_FINAL_3_BINDER_ANCESTRY    = 76c64c6f9cadc52a69cdea82e560975afd3230e3 (ancestor of START_HEAD)
 QUALIFICATION_SHA             = acdfc1d2b3f99244ee2776d3f286541fe3d43c93
-EVIDENCE_SHA                  = (see §29 — docs binder commit)
+EVIDENCE_SHA                  = 7dcf7a5cd10288419cf23b476bad6e81dc3373d9
 BINDER_SHA                    = (optional; not self-stamped in this file)
 ```
 
@@ -183,8 +183,8 @@ BLOCKING DOCUMENTATION FINDINGS: NONE
 
 ## 29. Commit(s)
 
-QUALIFICATION_SHA = acdfc1d2b3f99244ee2776d3f286541fe3d43c93 (gates + evidence artifact)
-EVIDENCE_SHA      = (docs(multiplayer): certify final enterprise core — §30 binder)
+QUALIFICATION_SHA = acdfc1d2b3f99244ee2776d3f286541fe3d43c93
+EVIDENCE_SHA      = 7dcf7a5cd10288419cf23b476bad6e81dc3373d9
 
 ## 30. Status transition
 
