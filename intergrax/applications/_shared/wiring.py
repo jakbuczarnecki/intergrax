@@ -26,7 +26,8 @@ from intergrax.applications._shared.application_composition_context import (
     ApplicationCompositionContext,
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
-from intergrax.applications.contracts.factory import AgentFactory, CanonicalAgentFactory
+from intergrax.applications.contracts.factory import CanonicalAgentFactory
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.applications.contracts.errors import (
     AgentImportError,
     ApplicationManifestConformanceError,
@@ -38,9 +39,11 @@ from intergrax.skills.registry.bootstrap import register_default_skills
 from intergrax.skills.registry.factory import build_registry_from_profile
 from intergrax.skills.registry.runtime import SkillRegistry
 
+LegacyAgentFactoryCallable = Callable[..., Tier2Agent]
+
 BuilderMap = Union[
-    Mapping[type[Agent], AgentFactory],
-    Mapping[str, AgentFactory],
+    Mapping[type[Agent], CanonicalAgentFactory],
+    Mapping[str, CanonicalAgentFactory],
 ]
 
 
@@ -70,7 +73,7 @@ def load_callable(import_path: str) -> Callable[..., Any]:
 def resolve_builder(
     binding: AgentBinding,
     builders: BuilderMap | None,
-) -> Callable[..., Any] | None:
+) -> CanonicalAgentFactory | None:
     """Resolve factory: typed callable on binding, then type-keyed, then string key."""
     if binding.factory is not None:
         return binding.factory
@@ -78,14 +81,17 @@ def resolve_builder(
     if builders is None:
         return None
 
-    if binding.builder_key is not None and binding.builder_key in builders:
-        return builders[binding.builder_key]  # type: ignore[index]
+    if binding.builder_key is not None:
+        keyed = builders.get(binding.builder_key)
+        if keyed is not None:
+            return keyed
 
     from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
 
     agent_type = resolve_agent_type_from_binding(binding)
-    if agent_type in builders:
-        return builders[agent_type]  # type: ignore[index]
+    typed = builders.get(agent_type)
+    if typed is not None:
+        return typed
 
     return None
 
@@ -94,10 +100,10 @@ def _validate_factory_result(
     result: object,
     factory: object,
     binding: AgentBinding,
-) -> Agent:
-    if not isinstance(result, Agent):
+) -> Tier2Agent:
+    if not isinstance(result, Tier2Agent):
         raise AgentImportError(
-            f"Factory {factory!r} must return Agent, got {type(result)!r}"
+            f"Factory {factory!r} must return Tier2Agent, got {type(result)!r}"
         )
     if binding.agent_type is not None or binding.import_path is not None:
         from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
@@ -117,7 +123,7 @@ def invoke_canonical_agent_factory(
     binding: AgentBinding,
     *,
     composition: ApplicationCompositionContext | None = None,
-) -> Agent:
+) -> Tier2Agent:
     """Strict production invocation: exactly ``(ctx, binding)`` with no signature probing.
 
     ``composition`` is accepted for call-site compatibility; factories must receive
@@ -129,12 +135,12 @@ def invoke_canonical_agent_factory(
 
 
 def invoke_legacy_compatible_agent_factory(
-    factory: Callable[..., Any],
+    factory: LegacyAgentFactoryCallable,
     ctx: ApplicationBuildContext,
     binding: AgentBinding,
     *,
     composition: ApplicationCompositionContext | None = None,
-) -> Agent:
+) -> Tier2Agent:
     """
     DEV / LAB / COMPATIBILITY ONLY — multi-signature factory invocation.
 
@@ -166,12 +172,12 @@ def invoke_legacy_compatible_agent_factory(
 
 
 def invoke_agent_factory(
-    factory: Callable[..., Any],
+    factory: LegacyAgentFactoryCallable,
     ctx: ApplicationBuildContext,
     binding: AgentBinding,
     *,
     composition: ApplicationCompositionContext | None = None,
-) -> Agent:
+) -> Tier2Agent:
     """Backward-compatible alias for :func:`invoke_legacy_compatible_agent_factory`."""
     return invoke_legacy_compatible_agent_factory(
         factory, ctx, binding, composition=composition
@@ -184,11 +190,13 @@ def build_agent_from_binding(
     *,
     builders: BuilderMap | None = None,
     composition: ApplicationCompositionContext | None = None,
-) -> Agent:
+) -> Tier2Agent:
     """Materialize one agent: typed factory → builders map → serialized path → ctor."""
     factory = resolve_builder(binding, builders)
     if factory is not None:
-        return invoke_agent_factory(factory, ctx, binding, composition=composition)
+        return invoke_canonical_agent_factory(
+            factory, ctx, binding, composition=composition
+        )
 
     if binding.factory_path is not None and binding.factory is None:
         loaded = load_callable(binding.factory_path)
@@ -213,7 +221,7 @@ def build_agent_from_binding(
     return agent
 
 
-def contract_for_binding(agent: Agent, binding: AgentBinding) -> AgentContract | None:
+def contract_for_binding(agent: Tier2Agent, binding: AgentBinding) -> AgentContract | None:
     if binding.contract_id is None:
         return None
     return agent.get_contract().model_copy(update={"id": binding.contract_id})

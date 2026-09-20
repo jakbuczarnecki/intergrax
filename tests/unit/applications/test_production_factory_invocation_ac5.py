@@ -23,6 +23,7 @@ from intergrax.applications._shared.runtime_agent_factory_resolver import (
     InMemoryRuntimeAgentFactoryResolver,
     RuntimeAgentFactoryResolutionError,
 )
+from intergrax.applications.contracts.agent_ref import qualname_for_agent
 from intergrax.applications._shared.wiring import (
     build_application_registry,
     build_manifest_development_registry,
@@ -160,17 +161,17 @@ def test_internal_typeerror_invoked_once_in_production_path() -> None:
 
 
 def test_legacy_zero_arg_factory_works_in_development_registry() -> None:
-    def legacy_zero_arg_factory() -> EchoAgent:
-        return EchoAgent()
-
     manifest = ApplicationManifest.lab(
         app_id=_APP,
         name="AC5 dev",
         agents=[
-            AgentBinding.mount(
-                EchoAgent,
+            AgentBinding.deserialize(
+                import_path=qualname_for_agent(EchoAgent),
                 contract_id="echo",
-                factory=legacy_zero_arg_factory,
+                factory_path=(
+                    "testing_support.legacy_agent_factory_fixtures"
+                    ".build_ac5_legacy_zero_arg_factory"
+                ),
             ),
         ],
     )
@@ -239,7 +240,7 @@ def test_invalid_factory_result_fails_closed() -> None:
     ctx = ApplicationBuildContext.for_manifest(manifest)
     binding = manifest.agents[0]
 
-    with pytest.raises(AgentImportError, match="must return Agent"):
+    with pytest.raises(AgentImportError, match="must return Tier2Agent"):
         invoke_canonical_agent_factory(_bad_factory, ctx, binding)
 
 
