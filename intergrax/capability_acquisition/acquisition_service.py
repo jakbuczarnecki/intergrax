@@ -249,14 +249,11 @@ def _assert_result_matches_request(
         raise CapabilityAcquisitionIntegrityError("result request_id mismatch")
     if result.gap_id != request.capability_gap.gap_id:
         raise CapabilityAcquisitionIntegrityError("result gap_id mismatch")
-    if result.strategy_id is not None and result.strategy_id != strategy_id:
+    if result.strategy_id != strategy_id:
         raise CapabilityAcquisitionIntegrityError("result strategy_id mismatch")
-    if (
-        result.correlation_id is not None
-        and result.correlation_id != request.correlation_id
-    ):
+    if result.correlation_id != request.correlation_id:
         raise CapabilityAcquisitionIntegrityError("result correlation_id mismatch")
-    if result.causation_id is not None and result.causation_id != request.causation_id:
+    if result.causation_id != request.causation_id:
         raise CapabilityAcquisitionIntegrityError("result causation_id mismatch")
 
 

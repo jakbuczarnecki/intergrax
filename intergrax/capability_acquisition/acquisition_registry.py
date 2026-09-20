@@ -95,12 +95,11 @@ def _assert_supports_aligned_with_declared_kinds(
     need = request.capability_need
     if need is None or not need.kinds:
         return
-    for kind in need.kinds:
-        if kind not in declared:
-            raise CapabilityAcquisitionIntegrityError(
-                f"strategy {strategy.strategy_id!r} supports request but "
-                f"declared kinds omit {kind.value!r}",
-            )
+    if declared.isdisjoint(need.kinds):
+        raise CapabilityAcquisitionIntegrityError(
+            f"strategy {strategy.strategy_id!r} supports request but "
+            f"declared kinds are disjoint from need kinds",
+        )
 
 
 __all__ = [

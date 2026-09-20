@@ -347,6 +347,310 @@ def test_supports_declared_kinds_inconsistency_fails_closed() -> None:
     assert strategy.calls == 0
 
 
+def test_multi_kind_need_tool_strategy_eligible() -> None:
+    strategy = _FakeStrategy(
+        strategy_id="tool.only",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,))
+    result = service.acquire(
+        _request(_gap(), kinds=(CapabilityKind.TOOL, CapabilityKind.SKILL)),
+    )
+    assert result.outcome is CapabilityAcquisitionOutcome.SUCCEEDED
+    assert strategy.calls == 1
+
+
+def test_multi_kind_need_skill_strategy_eligible() -> None:
+    strategy = _FakeStrategy(
+        strategy_id="skill.only",
+        kinds=frozenset({CapabilityKind.SKILL}),
+    )
+    service = _service((strategy,))
+    result = service.acquire(
+        _request(_gap(), kinds=(CapabilityKind.TOOL, CapabilityKind.SKILL)),
+    )
+    assert result.outcome is CapabilityAcquisitionOutcome.SUCCEEDED
+    assert strategy.calls == 1
+
+
+def test_disjoint_declared_kinds_with_supports_true_fails_closed() -> None:
+    strategy = _FakeStrategy(
+        strategy_id="agent.only",
+        kinds=frozenset({CapabilityKind.AGENT}),
+        supports_override=True,
+    )
+    service = _service((strategy,))
+    result = service.acquire(
+        _request(_gap(), kinds=(CapabilityKind.TOOL, CapabilityKind.SKILL)),
+    )
+    assert result.outcome is CapabilityAcquisitionOutcome.FAILED
+    assert (
+        result.reason_code
+        is CapabilityAcquisitionReasonCode.STRATEGY_METADATA_INCONSISTENT
+    )
+    assert strategy.calls == 0
+
+
+def test_empty_need_kinds_does_not_reject_by_declaration() -> None:
+    strategy = _FakeStrategy(
+        strategy_id="skill.declared",
+        kinds=frozenset({CapabilityKind.SKILL}),
+    )
+    service = _service((strategy,))
+    result = service.acquire(_request(_gap(), kinds=()))
+    assert result.outcome is CapabilityAcquisitionOutcome.SUCCEEDED
+    assert strategy.calls == 1
+
+
+def test_post_dispatch_failed_without_strategy_id_raises() -> None:
+    class _MissingStrategyId(_FakeStrategy):
+        def acquire(
+            self, request: CapabilityAcquisitionRequest
+        ) -> CapabilityAcquisitionResult:
+            self.calls += 1
+            return CapabilityAcquisitionResult(
+                request_id=request.request_id,
+                gap_id=request.capability_gap.gap_id,
+                strategy_id=None,
+                outcome=CapabilityAcquisitionOutcome.FAILED,
+                reason_code=CapabilityAcquisitionReasonCode.EVIDENCE_INCONSISTENT,
+                started_at=_CREATED,
+                completed_at=_CREATED,
+                correlation_id=request.correlation_id,
+                causation_id=request.causation_id,
+            )
+
+    strategy = _MissingStrategyId(
+        strategy_id="s1",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,))
+    with pytest.raises(CapabilityAcquisitionIntegrityError):
+        service.acquire(_request(_gap()))
+
+
+def test_post_dispatch_wrong_strategy_id_raises() -> None:
+    class _WrongStrategyId(_FakeStrategy):
+        def acquire(
+            self, request: CapabilityAcquisitionRequest
+        ) -> CapabilityAcquisitionResult:
+            self.calls += 1
+            return CapabilityAcquisitionResult(
+                request_id=request.request_id,
+                gap_id=request.capability_gap.gap_id,
+                strategy_id="s2",
+                outcome=CapabilityAcquisitionOutcome.FAILED,
+                reason_code=CapabilityAcquisitionReasonCode.EVIDENCE_INCONSISTENT,
+                started_at=_CREATED,
+                completed_at=_CREATED,
+                correlation_id=request.correlation_id,
+                causation_id=request.causation_id,
+            )
+
+    strategy = _WrongStrategyId(
+        strategy_id="s1",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,))
+    with pytest.raises(CapabilityAcquisitionIntegrityError):
+        service.acquire(_request(_gap()))
+
+
+def test_post_dispatch_valid_failed_outcome_accepted() -> None:
+    class _FailedStrategy(_FakeStrategy):
+        def acquire(
+            self, request: CapabilityAcquisitionRequest
+        ) -> CapabilityAcquisitionResult:
+            self.calls += 1
+            return CapabilityAcquisitionResult(
+                request_id=request.request_id,
+                gap_id=request.capability_gap.gap_id,
+                strategy_id=self._strategy_id,
+                outcome=CapabilityAcquisitionOutcome.FAILED,
+                reason_code=CapabilityAcquisitionReasonCode.EVIDENCE_INCONSISTENT,
+                started_at=_CREATED,
+                completed_at=_CREATED,
+                correlation_id=request.correlation_id,
+                causation_id=request.causation_id,
+            )
+
+    strategy = _FailedStrategy(
+        strategy_id="s1",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,))
+    result = service.acquire(_request(_gap()))
+    assert result.outcome is CapabilityAcquisitionOutcome.FAILED
+    assert result.strategy_id == "s1"
+
+
+def test_post_dispatch_missing_correlation_id_raises() -> None:
+    class _MissingCorrelation(_FakeStrategy):
+        def acquire(
+            self, request: CapabilityAcquisitionRequest
+        ) -> CapabilityAcquisitionResult:
+            self.calls += 1
+            return CapabilityAcquisitionResult(
+                request_id=request.request_id,
+                gap_id=request.capability_gap.gap_id,
+                strategy_id=self._strategy_id,
+                outcome=CapabilityAcquisitionOutcome.SUCCEEDED,
+                reason_code=CapabilityAcquisitionReasonCode.NONE,
+                started_at=_CREATED,
+                completed_at=_CREATED,
+                evidence=CapabilityAcquisitionEvidence(
+                    domain_handoff_reference="handoff://test",
+                ),
+                correlation_id=None,
+                causation_id=request.causation_id,
+            )
+
+    strategy = _MissingCorrelation(
+        strategy_id="s1",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,))
+    with pytest.raises(CapabilityAcquisitionIntegrityError):
+        service.acquire(_request(_gap()))
+
+
+def test_post_dispatch_wrong_correlation_id_raises() -> None:
+    class _WrongCorrelation(_FakeStrategy):
+        def acquire(
+            self, request: CapabilityAcquisitionRequest
+        ) -> CapabilityAcquisitionResult:
+            self.calls += 1
+            return CapabilityAcquisitionResult(
+                request_id=request.request_id,
+                gap_id=request.capability_gap.gap_id,
+                strategy_id=self._strategy_id,
+                outcome=CapabilityAcquisitionOutcome.SUCCEEDED,
+                reason_code=CapabilityAcquisitionReasonCode.NONE,
+                started_at=_CREATED,
+                completed_at=_CREATED,
+                evidence=CapabilityAcquisitionEvidence(
+                    domain_handoff_reference="handoff://test",
+                ),
+                correlation_id="corr-wrong",
+                causation_id=request.causation_id,
+            )
+
+    strategy = _WrongCorrelation(
+        strategy_id="s1",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,))
+    with pytest.raises(CapabilityAcquisitionIntegrityError):
+        service.acquire(_request(_gap()))
+
+
+def test_post_dispatch_missing_causation_id_raises() -> None:
+    class _MissingCausation(_FakeStrategy):
+        def acquire(
+            self, request: CapabilityAcquisitionRequest
+        ) -> CapabilityAcquisitionResult:
+            self.calls += 1
+            return CapabilityAcquisitionResult(
+                request_id=request.request_id,
+                gap_id=request.capability_gap.gap_id,
+                strategy_id=self._strategy_id,
+                outcome=CapabilityAcquisitionOutcome.SUCCEEDED,
+                reason_code=CapabilityAcquisitionReasonCode.NONE,
+                started_at=_CREATED,
+                completed_at=_CREATED,
+                evidence=CapabilityAcquisitionEvidence(
+                    domain_handoff_reference="handoff://test",
+                ),
+                correlation_id=request.correlation_id,
+                causation_id=None,
+            )
+
+    strategy = _MissingCausation(
+        strategy_id="s1",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,))
+    with pytest.raises(CapabilityAcquisitionIntegrityError):
+        service.acquire(_request(_gap()))
+
+
+def test_post_dispatch_wrong_causation_id_raises() -> None:
+    class _WrongCausation(_FakeStrategy):
+        def acquire(
+            self, request: CapabilityAcquisitionRequest
+        ) -> CapabilityAcquisitionResult:
+            self.calls += 1
+            return CapabilityAcquisitionResult(
+                request_id=request.request_id,
+                gap_id=request.capability_gap.gap_id,
+                strategy_id=self._strategy_id,
+                outcome=CapabilityAcquisitionOutcome.SUCCEEDED,
+                reason_code=CapabilityAcquisitionReasonCode.NONE,
+                started_at=_CREATED,
+                completed_at=_CREATED,
+                evidence=CapabilityAcquisitionEvidence(
+                    domain_handoff_reference="handoff://test",
+                ),
+                correlation_id=request.correlation_id,
+                causation_id="cause-wrong",
+            )
+
+    strategy = _WrongCausation(
+        strategy_id="s1",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,))
+    with pytest.raises(CapabilityAcquisitionIntegrityError):
+        service.acquire(_request(_gap()))
+
+
+def test_post_dispatch_both_correlation_fields_none_valid() -> None:
+    gap = _gap()
+    need = CapabilityNeed(need_id=gap.need_id, kinds=(CapabilityKind.TOOL,))
+    request = CapabilityAcquisitionRequest(
+        request_id=derive_capability_acquisition_request_id(
+            gap_id=gap.gap_id,
+            request_nonce="nonce-none-corr",
+        ),
+        request_nonce="nonce-none-corr",
+        capability_gap=gap,
+        capability_need=need,
+        correlation_id=None,
+        causation_id=None,
+        requested_at=_CREATED,
+    )
+
+    class _NoneCorrelationStrategy(_FakeStrategy):
+        def acquire(
+            self, request: CapabilityAcquisitionRequest
+        ) -> CapabilityAcquisitionResult:
+            self.calls += 1
+            return CapabilityAcquisitionResult(
+                request_id=request.request_id,
+                gap_id=request.capability_gap.gap_id,
+                strategy_id=self._strategy_id,
+                outcome=CapabilityAcquisitionOutcome.SUCCEEDED,
+                reason_code=CapabilityAcquisitionReasonCode.NONE,
+                started_at=_CREATED,
+                completed_at=_CREATED,
+                evidence=CapabilityAcquisitionEvidence(
+                    domain_handoff_reference="handoff://test",
+                ),
+                correlation_id=None,
+                causation_id=None,
+            )
+
+    strategy = _NoneCorrelationStrategy(
+        strategy_id="s1",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,))
+    result = service.acquire(request)
+    assert result.outcome is CapabilityAcquisitionOutcome.SUCCEEDED
+    assert result.correlation_id is None
+    assert result.causation_id is None
+
+
 def test_deterministic_request_id() -> None:
     gap = _gap()
     first = _request(gap, nonce="stable")
