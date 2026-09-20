@@ -5,7 +5,7 @@
 | **Status** | **CLOSED / ENTERPRISE CERTIFIED** (subject to independent audit) |
 | **AUDITED_SHA** | `ab0c21b44bc4ee7c4faee074f31021495de475cf` |
 | **CERTIFICATION_SHA** | `92663e44e1ad4d6349ecb710a565cbb6a484d676` |
-| **EVIDENCE_SHA** | *(bound on evidence binder commit)* |
+| **EVIDENCE_SHA** | `133941393ad95bcfcf8e383a0fbf4068296296ae` |
 | **MP7C_R1_BINDER** | `e600f624bc79364195e92a8466f17854f22db0da` |
 | **START_HEAD** | `ab0c21b44bc4ee7c4faee074f31021495de475cf` |
 | **WORKTREE_STATE** | clean at certification start |
@@ -36,7 +36,7 @@ LKW Multiplayer adoption complete
 START_HEAD = ab0c21b44bc4ee7c4faee074f31021495de475cf
 AUDITED_SHA = ab0c21b44bc4ee7c4faee074f31021495de475cf
 CERTIFICATION_SHA = 92663e44e1ad4d6349ecb710a565cbb6a484d676
-EVIDENCE_SHA = (bound on evidence binder commit)
+EVIDENCE_SHA = 133941393ad95bcfcf8e383a0fbf4068296296ae
 MP7C_R1_BINDER_ANCESTRY = yes (e600f624… is ancestor of START_HEAD)
 WORKTREE_STATE = clean
 ```
