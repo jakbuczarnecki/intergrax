@@ -27,7 +27,7 @@ from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
 )
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.invocation_wiring import ToolInvocationWiringResolver
-from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.registry.read import ToolRegistryRead
 
 if TYPE_CHECKING:
     from intergrax.contracts.external_operation_cancellation import (
@@ -48,7 +48,7 @@ class ProductionRuntimeToolInvokerCompositionError(RuntimeError):
 
 def build_production_runtime_tool_invoker(
     *,
-    registry: ToolRegistry,
+    registry: ToolRegistryRead,
     executor: ToolExecutor | None = None,
     inner_execution_guard: CanonicalInnerExecutionGuardPort | None = None,
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None,

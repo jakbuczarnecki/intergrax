@@ -660,3 +660,141 @@ def test_single_source_composition_path_reuses_same_tool_profile() -> None:
     assert enablement.is_tool_enabled("harness.get_run") is True
     assert wiring.registry.has("harness.get_run")
     assert wiring.profile is profile
+
+
+# --- EBH-2D-B-R4: typed tool runtime registry boundary ---
+
+_RUNTIME_CONFIG_PATH = _REPO_ROOT / "intergrax/runtime/nexus/config.py"
+_REGISTRY_EXECUTOR_PATH = (
+    _REPO_ROOT / "intergrax/runtime/nexus/tools/registry_tool_executor.py"
+)
+_RUNTIME_READ_BOUNDARY_PATHS = (
+    _REFERENCE_HARNESS_PATH,
+    _RUNTIME_CONFIG_PATH,
+    _REGISTRY_EXECUTOR_PATH,
+    _REPO_ROOT / "intergrax/runtime/nexus/engine/runtime_context.py",
+)
+
+
+def test_reference_harness_does_not_import_concrete_tool_registry() -> None:
+    imports = _module_imports(_REFERENCE_HARNESS_PATH)
+    assert "intergrax.tools.registry.runtime" not in imports
+    forbidden = [n for n in imports if n.endswith("ToolRegistry") and "runtime" in n]
+    assert forbidden == []
+
+
+def test_runtime_config_tool_registry_uses_read_contract() -> None:
+    source = _RUNTIME_CONFIG_PATH.read_text(encoding="utf-8")
+    assert "ToolRegistryRead" in source
+    assert "tool_registry: Optional[ToolRegistryRead]" in source
+    assert "tool_registry: Optional[ToolRegistry]" not in source
+
+
+def test_registry_tool_executor_constructor_uses_read_contract() -> None:
+    source = _REGISTRY_EXECUTOR_PATH.read_text(encoding="utf-8")
+    assert "ToolRegistryRead" in source
+    tree = ast.parse(source)
+    init_params: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name == "__init__":
+            for arg in node.args.args:
+                if arg.arg == "self":
+                    continue
+                if arg.annotation is not None:
+                    init_params.append(ast.unparse(arg.annotation))
+    assert "ToolRegistryRead" in init_params
+    assert "ToolRegistry" not in init_params
+
+
+def test_runtime_read_boundary_modules_do_not_call_registry_mutation() -> None:
+    forbidden_calls = (".register(", ".unregister(")
+    for path in _RUNTIME_READ_BOUNDARY_PATHS:
+        source = path.read_text(encoding="utf-8")
+        for snippet in forbidden_calls:
+            assert snippet not in source, f"{path}: forbidden {snippet!r}"
+
+
+def test_probe_registry_structural_acceptance_by_runtime_executor() -> None:
+    from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
+    from intergrax.tools.examples.custom_echo.plugin import CUSTOM_ECHO_TOOL_ID, CustomEchoInput
+    from intergrax.tools.execution_models import ToolExecutionRequest
+    from intergrax.tools.registry.factory import build_registry_from_profile
+    from intergrax.tools.registry.plugin_register import register_tool_plugin
+    from intergrax.tools.registry.runtime import ToolRegistry
+    from intergrax.tools.examples.custom_echo import CustomEchoToolPlugin
+
+    register_tool_plugin(CustomEchoToolPlugin, override=True)
+    backing = ToolRegistry()
+    build_registry_from_profile(
+        CanonicalToolProfile(enabled_bundles=["custom_echo"]),
+        registry=backing,
+    )
+
+    class ProbeRegistry:
+        def has(self, tool_id: str) -> bool:
+            return backing.has(tool_id)
+
+        def get(self, tool_id: str):
+            return backing.get(tool_id)
+
+        def activation_metadata(self, tool_id: str):
+            return backing.activation_metadata(tool_id)
+
+    executor = RegistryToolExecutor(ProbeRegistry())
+    result = executor.execute(
+        ToolExecutionRequest(
+            run_id="run/r4-probe",
+            step_id="step/1",
+            tool_id=CUSTOM_ECHO_TOOL_ID,
+            input=CustomEchoInput(message="r4-probe"),
+        ),
+    )
+    assert result.message == "r4-probe"
+
+
+def test_probe_registry_via_runtime_config_harness_path() -> None:
+    from intergrax.agents.reference_harness import (
+        LabHarnessContext,
+        build_lab_agent_runtime_config,
+    )
+    from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+    from intergrax.tools.registry.bootstrap import register_default_tools
+    from intergrax.tools.registry.factory import build_registry_from_profile
+    from intergrax.tools.registry.runtime import ToolRegistry
+    from testing_support.builder import FakeLLMAdapter, build_runtime_request_for_tests
+
+    register_default_tools()
+    backing = ToolRegistry()
+    build_registry_from_profile(
+        CanonicalToolProfile(enabled_bundles=["harness"]),
+        registry=backing,
+    )
+
+    class ProbeRegistry:
+        def has(self, tool_id: str) -> bool:
+            return backing.has(tool_id)
+
+        def get(self, tool_id: str):
+            return backing.get(tool_id)
+
+        def activation_metadata(self, tool_id: str):
+            return backing.activation_metadata(tool_id)
+
+    probe = ProbeRegistry()
+    harness = LabHarnessContext(
+        policy_bundle=RuntimePolicyBundle(),
+        tool_registry=probe,
+    )
+    config = build_lab_agent_runtime_config(
+        request=build_runtime_request_for_tests(
+            seed="r4-probe-config",
+            tenant_id="t",
+            agent_id="research",
+            user_id="u",
+            session_id="s",
+            message="probe",
+        ),
+        llm_adapter=FakeLLMAdapter(),
+        harness=harness,
+    )
+    assert config.tool_registry is probe

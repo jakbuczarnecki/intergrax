@@ -26,6 +26,7 @@ from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
 )
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.tools.registry import ToolRegistry, ToolWiringContext, build_registry_from_profile
+from intergrax.tools.registry.read import ToolRegistryRead
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     from intergrax.runtime.nexus.config import RuntimeConfig
@@ -325,6 +326,7 @@ class RuntimeContext:
         wiring_ctx = _enrich_tool_wiring_context(wiring_ctx, config)
         config.tool_wiring_context = wiring_ctx
 
+        registry: ToolRegistryRead
         if config.tool_registry is not None:
             registry = config.tool_registry
         else:

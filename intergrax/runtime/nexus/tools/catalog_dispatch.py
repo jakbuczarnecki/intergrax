@@ -32,7 +32,7 @@ from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProto
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.invocation_wiring import ToolInvocationContext
-from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.registry.read import ToolRegistryRead
 from intergrax.tools.unified.constants import RAG_RETRIEVE_TOOL_ID, WEBSEARCH_QUERY_TOOL_ID
 
 if TYPE_CHECKING:
@@ -54,7 +54,7 @@ def catalog_tool_ids(tool_ids: Sequence[str]) -> tuple[str, ...]:
     )
 
 
-def resolve_tool_registry(invoker: object | None) -> ToolRegistry | None:
+def resolve_tool_registry(invoker: object | None) -> ToolRegistryRead | None:
     if invoker is None:
         return None
     if isinstance(invoker, ToolInvokerProtocol):
@@ -62,7 +62,7 @@ def resolve_tool_registry(invoker: object | None) -> ToolRegistry | None:
     return None
 
 
-def is_registered_catalog_tool(registry: ToolRegistry, tool_id: str) -> bool:
+def is_registered_catalog_tool(registry: ToolRegistryRead, tool_id: str) -> bool:
     try:
         registry.get(tool_id)
     except KeyError:
@@ -71,7 +71,7 @@ def is_registered_catalog_tool(registry: ToolRegistry, tool_id: str) -> bool:
 
 
 def coerce_tool_input(
-    registry: ToolRegistry,
+    registry: ToolRegistryRead,
     tool_id: str,
     raw: Mapping[str, Any] | None,
 ) -> BaseModel:

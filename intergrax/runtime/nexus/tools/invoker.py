@@ -112,7 +112,7 @@ from intergrax.tools.invocation_wiring_adapter import (
     registration_wiring_for_handler,
     registration_wiring_view_for_handler,
 )
-from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.registry.read import ToolRegistryRead
 from intergrax.tools.tool_executor import ToolExecutor
 
 
@@ -155,7 +155,7 @@ class RuntimeToolInvoker:
     def __init__(
         self,
         *,
-        registry: ToolRegistry,
+        registry: ToolRegistryRead,
         executor: ToolExecutor,
         scope_policy: Optional[ToolScopePolicy] = None,
         pre_effect_coordinator: Optional[IdempotencyPreEffectCoordinator] = None,
@@ -211,7 +211,7 @@ class RuntimeToolInvoker:
         self._execution_pool_closed = True
 
     @property
-    def registry(self) -> ToolRegistry:
+    def registry(self) -> ToolRegistryRead:
         """Read-only access to the runtime tool catalog (Phase O.5)."""
         return self._registry
 
