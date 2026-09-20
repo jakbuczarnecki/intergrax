@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from intergrax.applications.contracts.factory import CanonicalAgentFactory
 from intergrax.contracts.tier2_agent import Tier2Agent
 
 
@@ -20,16 +19,11 @@ def qualname_for_agent(agent_type: type[Tier2Agent]) -> str:
 
 def qualname_for_callable(fn: Callable[..., object]) -> str:
     """Fully-qualified callable: ``package.module.function``."""
-    module = getattr(fn, "__module__", None) or type(fn).__module__
-    qualname = getattr(fn, "__qualname__", None) or type(fn).__qualname__
+    module = getattr(fn, "__module__", None)
+    qualname = getattr(fn, "__qualname__", None)
     if not module or not qualname:
         raise ValueError(f"Cannot derive qualname for callable {fn!r}")
     return f"{module}.{qualname}"
 
 
-def qualname_for_agent_factory(fn: CanonicalAgentFactory) -> str:
-    """Fully-qualified name for a canonical Tier-3 agent factory."""
-    return qualname_for_callable(fn)
-
-
-__all__ = ["qualname_for_agent", "qualname_for_agent_factory", "qualname_for_callable"]
+__all__ = ["qualname_for_agent", "qualname_for_callable"]

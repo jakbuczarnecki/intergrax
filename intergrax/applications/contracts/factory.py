@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Callable, Protocol
 
 from intergrax.contracts.tier2_agent import Tier2Agent
 
@@ -24,7 +24,15 @@ class CanonicalAgentFactory(Protocol):
     ) -> Tier2Agent: ...
 
 
-# Public ABI name — structural :class:`CanonicalAgentFactory` (EBH-2D-C-R2).
-AgentFactory = CanonicalAgentFactory
+# Broad alias retained for dev/lab builders and legacy compatibility surfaces.
+AgentFactory = Callable[..., Tier2Agent]
 
-__all__ = ["AgentFactory", "CanonicalAgentFactory"]
+
+class SupportsAgentFactory(Protocol):
+    """Callable that builds a Tier-2 agent for a manifest binding."""
+
+    def __call__(
+        self,
+        ctx: ApplicationBuildContext,
+        binding: AgentBinding,
+    ) -> Tier2Agent: ...

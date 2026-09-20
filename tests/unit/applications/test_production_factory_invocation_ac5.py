@@ -159,7 +159,7 @@ def test_internal_typeerror_invoked_once_in_production_path() -> None:
     assert calls == 1
 
 
-def test_legacy_zero_arg_factory_rejected_on_canonical_binding_factory() -> None:
+def test_legacy_zero_arg_factory_works_in_development_registry() -> None:
     def legacy_zero_arg_factory() -> EchoAgent:
         return EchoAgent()
 
@@ -175,8 +175,8 @@ def test_legacy_zero_arg_factory_rejected_on_canonical_binding_factory() -> None
         ],
     )
     ctx = ApplicationBuildContext.for_manifest(manifest)
-    with pytest.raises(TypeError):
-        build_manifest_development_registry(manifest, ctx)
+    registry = build_manifest_development_registry(manifest, ctx)
+    assert registry.list_agent_ids() == ["echo"]
 
 
 def test_legacy_zero_arg_factory_fails_in_revision_bound_production() -> None:

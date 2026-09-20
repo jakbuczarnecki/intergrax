@@ -50,7 +50,3 @@ class ApplicationBuildContext:
             trace_db_path=trace_db_path,
             environment=environment,
         )
-
-from intergrax.applications.contracts.manifest import _rebuild_application_manifest_model
-
-_rebuild_application_manifest_model()
