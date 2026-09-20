@@ -19,7 +19,7 @@ from intergrax.contracts.functional_evidence.models import (
 )
 from intergrax.contracts.functional_evidence.persistence import FunctionalEvidenceQueryRequest
 from intergrax.contracts.runtime_policy import PolicyAction
-from intergrax.runtime.diagnostics.functional_operator_projection import (
+from intergrax.contracts.diagnostics.functional_operator_projection import (
     FunctionalOperatorOutcomeStatus,
 )
 from tests.qualification.multiplayer.mp_final2.host_operability import (
@@ -123,7 +123,14 @@ def test_e2e_authorization_deny_does_not_masquerade_as_infrastructure_problem() 
 
 
 def test_e2e_diagnostics_failure_never_weakens_authorization() -> None:
-    """Diagnostics outage / interpretation failure must not turn DENY into ALLOW/success."""
+    """
+    Diagnostics is not in the authorization authority path;
+    an interpretation failure cannot convert DENY to ALLOW.
+
+    Note: ``_BrokenAnalyzer`` is a post-factum test double proving non-authority
+    of Diagnostics interpretation — not a claim of a fully wired production
+    Diagnostics outage path.
+    """
     host = build_operability_host(seed_authority=False)
     correlation = execution_correlation_for(host)
 

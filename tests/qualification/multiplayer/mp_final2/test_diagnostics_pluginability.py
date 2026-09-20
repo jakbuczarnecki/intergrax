@@ -24,7 +24,7 @@ from intergrax.contracts.functional_evidence.persistence import (
     FunctionalEvidenceQueryPage,
     FunctionalEvidenceQueryRequest,
 )
-from intergrax.runtime.diagnostics.functional_operator_projection import (
+from intergrax.contracts.diagnostics.functional_operator_projection import (
     FunctionalOperatorOutcomeStatus,
 )
 from tests.qualification.multiplayer.mp_final2.host_operability import (

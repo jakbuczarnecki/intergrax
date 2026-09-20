@@ -98,9 +98,12 @@ from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticRead
 from intergrax.runtime.diagnostics.functional_diagnostic_analyzer import (
     FunctionalDiagnosticAnalyzer,
 )
-from intergrax.runtime.diagnostics.functional_diagnostic_identity import (
+from intergrax.contracts.diagnostics.functional_diagnostic_identity import (
     FunctionalDiagnosticCheckId,
     FunctionalDiagnosticSpecificationId,
+)
+from intergrax.contracts.diagnostics.functional_operator_projection import (
+    FunctionalDiagnosticOperatorProjection,
 )
 from intergrax.runtime.diagnostics.functional_diagnostic_specification import (
     FunctionalDiagnosticCheck,
@@ -111,7 +114,6 @@ from intergrax.runtime.diagnostics.functional_diagnostic_specification import (
     validate_functional_diagnostic_specification,
 )
 from intergrax.runtime.diagnostics.functional_operator_projection import (
-    FunctionalDiagnosticOperatorProjection,
     FunctionalOperatorProjector,
 )
 from intergrax.runtime.diagnostics.in_memory_problem_persistence import InMemoryProblemPersistence
