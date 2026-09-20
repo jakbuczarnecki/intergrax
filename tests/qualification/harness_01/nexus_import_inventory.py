@@ -199,14 +199,10 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
             boundary_status="LEGAL",
         )
 
-    if path.startswith("intergrax/applications/_shared/") or (
-        path.startswith("applications/") and "/host/" in path
-    ):
+    if path.startswith("intergrax/applications/_shared/"):
         return Harness01HigherLayerNexusImporter(
             path=path,
-            owner_layer="HOST_COMPOSITION"
-            if path.startswith("intergrax/applications/_shared/")
-            else "APPLICATION_HOST",
+            owner_layer="HOST_COMPOSITION",
             classification="HOST_EXECUTION_COMPOSITION",
             reason=(
                 "Documented host/execution composition root wiring Nexus behind "
@@ -215,6 +211,28 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
             ),
             evidence=_EVIDENCE_HOST,
             boundary_status="LEGAL",
+        )
+
+    if path.startswith("applications/") and "/host/" in path:
+        reason = (
+            "Temporary host composition debt tracked for HARNESS-01-R5-W6 — "
+            "Host Composition Convergence; must converge to neutral Execution-owned "
+            "composition boundary; not a public Nexus API."
+        )
+        if path.endswith("orchestration_topology_production_composition.py"):
+            reason = (
+                "Temporary host composition debt (direct NexusLoop coupling in host module); "
+                "tracked for HARNESS-01-R5-W6 — Host Composition Convergence; "
+                "must converge to neutral Execution-owned composition boundary; "
+                "not a public Nexus API."
+            )
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="APPLICATION_HOST",
+            classification="HOST_EXECUTION_COMPOSITION",
+            reason=reason,
+            evidence=_EVIDENCE_HOST,
+            boundary_status="DEBT",
         )
 
     if path.startswith("intergrax/runtime/wiring/"):
@@ -384,6 +402,7 @@ _PATHS: tuple[str, ...] = (
     "intergrax/applications/_shared/guardrail_wiring.py",
     "intergrax/applications/_shared/harness_host_composition.py",
     "intergrax/applications/_shared/harness_host_runtime.py",
+    "intergrax/applications/_shared/harness_host_orchestration_topology_wiring.py",
     "intergrax/applications/_shared/harness_host_task_execution_wiring.py",
     "intergrax/applications/_shared/host_task_execution_wiring.py",
     "intergrax/applications/_shared/lab_harness_context.py",

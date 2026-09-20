@@ -528,8 +528,58 @@ def test_harness_01_layer_rules_reject_contract_and_public_nexus_imports() -> No
     assert path_is_public_extension_surface("intergrax/agents/agent_contract.py")
     app_contract = "intergrax/applications/contracts/graph_spec.py"
     assert path_is_hard_nexus_violation(app_contract)
+    public_app_contract = "intergrax/applications/contracts/foo.py"
+    public_row = _rule_classify(public_app_contract)
+    assert public_row.classification == "VIOLATION"
+    assert public_row.boundary_status == "VIOLATION"
     ee = "intergrax/runtime/execution/orchestration_topology_slot_mse_enforcement.py"
     ee_row = _rule_classify(ee)
+    assert ee_row.classification == "EXECUTION_ENGINE_INTERNAL"
+    assert ee_row.boundary_status == "LEGAL"
+    ee_composition = "intergrax/runtime/execution/internal_adapter.py"
+    ee_composition_row = _rule_classify(ee_composition)
+    assert ee_composition_row.classification == "EXECUTION_ENGINE_INTERNAL"
+    assert ee_composition_row.boundary_status == "LEGAL"
+    host_synthetic = "applications/foo/host/nexus_wiring.py"
+    host_row = _rule_classify(host_synthetic)
+    assert host_row.owner_layer == "APPLICATION_HOST"
+    assert host_row.classification == "HOST_EXECUTION_COMPOSITION"
+    assert host_row.boundary_status == "DEBT"
+    assert host_row.boundary_status != "LEGAL"
+    assert "HARNESS-01-R5-W6" in host_row.reason
+
+
+def test_harness_01_application_host_nexus_importers_are_w6_debt_not_final_legal() -> None:
+    target = (
+        "applications/governed_contractor_application/host/"
+        "orchestration_topology_production_composition.py"
+    )
+    by_path = {row.path: row for row in HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS}
+    row = by_path[target]
+    assert row.owner_layer == "APPLICATION_HOST"
+    assert row.classification == "HOST_EXECUTION_COMPOSITION"
+    assert row.boundary_status == "DEBT"
+    assert "HARNESS-01-R5-W6" in row.reason
+    for path, host_row in by_path.items():
+        if host_row.owner_layer != "APPLICATION_HOST":
+            continue
+        assert host_row.boundary_status == "DEBT", path
+        assert host_row.boundary_status != "LEGAL", path
+
+
+def test_harness_01_final_legal_execution_engine_nexus_importers_in_owner_zone() -> None:
+    ee_owner_prefixes = (
+        "intergrax/runtime/execution/",
+        "intergrax/runtime/nexus/",
+    )
+    for row in HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS:
+        if row.boundary_status != "LEGAL":
+            continue
+        if row.classification != "EXECUTION_ENGINE_INTERNAL":
+            continue
+        assert row.path.startswith(ee_owner_prefixes), row.path
+    ee_production = "intergrax/runtime/execution/orchestration_topology_production_composition.py"
+    ee_row = next(r for r in HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS if r.path == ee_production)
     assert ee_row.classification == "EXECUTION_ENGINE_INTERNAL"
     assert ee_row.boundary_status == "LEGAL"
 
