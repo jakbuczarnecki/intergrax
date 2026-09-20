@@ -3,6 +3,7 @@
 import pytest
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
@@ -23,7 +24,7 @@ from intergrax.runtime.task.task import Task, TaskContext
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 
-class _HandoffSourceAgent(Agent):
+class _HandoffSourceAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="handoff_source",
@@ -45,7 +46,7 @@ class _HandoffSourceAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="delegate", step_name="delegate", step_index=0)]
 
@@ -72,7 +73,7 @@ class _HandoffSourceAgent(Agent):
         )
 
 
-class _HandoffTargetAgent(Agent):
+class _HandoffTargetAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="handoff_target",
@@ -94,7 +95,7 @@ class _HandoffTargetAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="accept", step_name="accept", step_index=0)]
 

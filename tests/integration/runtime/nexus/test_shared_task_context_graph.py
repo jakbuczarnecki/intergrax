@@ -3,6 +3,7 @@
 import pytest
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -23,7 +24,7 @@ from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 
-class _ProducerAgent(Agent):
+class _ProducerAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="producer",
@@ -45,7 +46,7 @@ class _ProducerAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="produce", step_name="produce", step_index=0)]
 
@@ -54,7 +55,7 @@ class _ProducerAgent(Agent):
         return StepOutput(step_id=step.step_id, summary="producer summary")
 
 
-class _ConsumerAgent(Agent):
+class _ConsumerAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="consumer",
@@ -76,7 +77,7 @@ class _ConsumerAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="consume", step_name="consume", step_index=0)]
 

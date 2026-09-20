@@ -5,6 +5,7 @@ import pytest
 from dataclasses import replace
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
@@ -36,7 +37,7 @@ def _verified_canonical_identity(*, tenant_id: str = "t1", user_id: str = "u1") 
     )
 
 
-class _MemoryUaepAgent(Agent):
+class _MemoryUaepAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="memory-agent",
@@ -59,7 +60,7 @@ class _MemoryUaepAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="persist", step_name="persist", step_index=0)]
 

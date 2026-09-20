@@ -1,108 +1,54 @@
 # © Artur Czarnecki. All rights reserved.
 
-from intergrax.utils import attribute_access
 import pytest
 from fastapi.testclient import TestClient
 
-from intergrax.agents.agent_contract import Agent
-from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType, HumanRequest
-from intergrax.contracts.agent_step import AgentStep, StepOutput
-from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.debug.app import create_debug_app
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.admitted_root_governance_identity import (
+    lab_admitted_root_governance_identity_for_task,
+)
+from testing_support.builder import canonical_governed_execution_scope
+from testing_support.nexus_hitl_test_agent import NexusBasicHitlTestAgent
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 pytestmark = pytest.mark.unit
 
-
-class _HitlAgent(Agent):
-    def get_contract(self) -> AgentContract:
-        return AgentContract(
-            id="hitl",
-            name="HITL Agent",
-            description="requests human approval once",
-            capabilities=["hitl.basic"],
-            max_steps=2,
-        )
-
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = attribute_access.optional(task_context, "capability", None)
-        if capability in (None, "hitl.basic"):
-            return CapabilityMatchResult(
-                matched=True,
-                agent_id="hitl",
-                matched_capabilities=["hitl.basic"],
-                score=1.0,
-            )
-        return CapabilityMatchResult(matched=False, rationale="capability not supported")
-
-    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        config = RuntimeConfig(
-            llm_adapter=FakeLLMAdapter(fixed_text="ok"),
-            enable_rag=False,
-            production_mode=False,
-            tenant_id=request.tenant_id,
-        )
-        return RuntimeContext.build(
-            config=config,
-            session_manager=build_in_memory_session_manager(),
-        )
-
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
-        _ = context
-        return [AgentStep(step_id="review", step_name="review", step_index=0)]
-
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-        return StepOutput(step_id=step.step_id, summary="pending review")
-
-    def decide_after_step(
-        self,
-        step: AgentStep,
-        output: StepOutput | None,
-        ctx: RuntimeExecutionContext,
-    ) -> AgentDecision:
-        _ = step, output
-        if ctx.request and ctx.request.metadata.get("human_approved"):
-            return AgentDecision(type=AgentDecisionType.COMPLETE, reason="approved")
-        return AgentDecision(
-            type=AgentDecisionType.REQUEST_HUMAN,
-            reason="approval required",
-            human_request=HumanRequest(
-                request_id="hr_hitl_1",
-                prompt="Approve this action?",
-                options=["approve", "reject"],
-            ),
-        )
+_HitlAgent = NexusBasicHitlTestAgent
 
 
 @pytest.fixture
 def event_store():
+    task_id = mint_task_id()
     store = InMemoryRuntimeEventStore()
     store.append(
         RuntimeEvent(
             tenant_id="t1",
-            task_id="task_events_1",
-            run_id="task_events_1",
+            task_id=task_id,
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+            execution_id=mint_execution_id(),
             event_type=RuntimeEventType.HUMAN_APPROVAL_REQUESTED,
             phase=ExecutionPhase.HUMAN_APPROVAL,
             payload={"human_request": {"urgency": "high"}},
         ),
         tenant_id="t1",
     )
+    store.fixture_task_id = task_id
     return store
 
 
@@ -127,13 +73,15 @@ def checkpoints_client(checkpoint_store):
         context=TaskContext(capability="hitl.basic"),
         options=TaskExecutionOptions(long_running=TaskLongRunningOptions(enabled=True)),
     )
-    LongRunningCoordinator.persist_checkpoint(
-        task,
-        checkpoint_store,
-        run_id=mint_run_id(),
-        attempt_id=mint_attempt_id(),
-        progress_message="awaiting human input",
-    )
+    task.state = TaskState.WAITING_FOR_HUMAN
+    with canonical_governed_execution_scope("g6-debug-checkpoints"):
+        LongRunningCoordinator.persist_checkpoint(
+            task,
+            checkpoint_store,
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+            progress_message="awaiting human input",
+        )
     app = create_debug_app(checkpoint_store=checkpoint_store)
     with TestClient(app) as client:
         yield client, task
@@ -141,9 +89,9 @@ def checkpoints_client(checkpoint_store):
 
 @pytest.mark.gate
 @pytest.mark.no_ci
-def test_debug_api_runtime_events(events_client: TestClient):
+def test_debug_api_runtime_events(events_client: TestClient, event_store):
     response = events_client.get(
-        "/debug/tasks/task_events_1/events",
+        f"/debug/tasks/{event_store.fixture_task_id}/events",
         params={"tenant": "t1"},
     )
     assert response.status_code == 200
@@ -189,7 +137,11 @@ async def test_debug_api_human_response_resume(tmp_path):
         checkpoint_store=checkpoint_store,
         runtime_event_store=event_store,
     )
-    paused = await loop.handle_task(
+    runner = UnifiedTaskRunner(
+        loop,
+        admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
+    )
+    paused = await runner.run_task(
         Task(
             tenant_id="t1",
             user_id="u1",

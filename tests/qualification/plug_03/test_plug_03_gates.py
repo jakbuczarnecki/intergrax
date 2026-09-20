@@ -317,7 +317,10 @@ def test_plug03_session_storage_canonical_session_manager_consumer(
 
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -329,7 +332,7 @@ from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 
-class _Plug03PackAgent(Agent):
+class _Plug03PackAgent(HarnessReferenceAgent):
     def __init__(self, *, include_skill: bool) -> None:
         self._include_skill = include_skill
 
@@ -352,6 +355,13 @@ class _Plug03PackAgent(Agent):
 
     def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
         return CapabilityMatchResult(matched=True, agent_id="plug03_pack_stub", score=1.0)
+
+    def get_steps(self) -> list[AgentStep]:
+        return [AgentStep(step_id="plug03", step_name="plug03", step_index=0)]
+
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        _ = ctx
+        return StepOutput(step_id=step.step_id, summary="plug03")
 
 
 class _Plug03ExternalPolicyHandler:

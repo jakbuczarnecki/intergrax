@@ -82,7 +82,9 @@ def _strict_governed_contractor_harness_kwargs(
     document_store: InMemoryDocumentStore,
     tmp_path: Path | None = None,
 ) -> dict[str, object]:
-    kv_path = (tmp_path or Path(".")) / "strict_host_kv.db"
+    if tmp_path is None:
+        raise ValueError("tmp_path is required for strict governed contractor harness")
+    kv_path = tmp_path / "strict_host_kv.db"
     platform = build_reference_production_platform_persistence(db_path=kv_path)
     return {
         "document_store": document_store,
@@ -213,6 +215,7 @@ def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_host_composition_dashboard_diagnostics_ready_with_tenant_scope(
+    tmp_path: Path,
     _stub_host_llm: None,
 ) -> None:
     document_store = InMemoryDocumentStore()
@@ -242,7 +245,10 @@ def test_host_composition_dashboard_diagnostics_ready_with_tenant_scope(
         settings=settings,
         registry_projection=build_governed_contractor_test_registry_projection(),
         tenant_id=manifest.app_id,
-        **_strict_governed_contractor_harness_kwargs(document_store=document_store),
+        **_strict_governed_contractor_harness_kwargs(
+            document_store=document_store,
+            tmp_path=tmp_path,
+        ),
     )
     app = FastAPI()
     wire_harness_product_observability_dashboard(
@@ -287,6 +293,7 @@ def test_governed_contractor_factory_mounts_product_observability_dashboard(
 
 
 def test_shared_problem_persistence_visible_after_lifecycle_reconcile(
+    tmp_path: Path,
     _stub_host_llm: None,
 ) -> None:
     document_store = InMemoryDocumentStore()
@@ -299,7 +306,10 @@ def test_shared_problem_persistence_visible_after_lifecycle_reconcile(
         settings=settings,
         registry_projection=build_governed_contractor_test_registry_projection(),
         tenant_id=manifest.app_id,
-        **_strict_governed_contractor_harness_kwargs(document_store=document_store),
+        **_strict_governed_contractor_harness_kwargs(
+            document_store=document_store,
+            tmp_path=tmp_path,
+        ),
     )
     deps = resolve_host_diagnostic_read_dependencies(runtime)
     _seed_problems_via_lifecycle(
@@ -325,6 +335,7 @@ def test_shared_problem_persistence_visible_after_lifecycle_reconcile(
 
 
 def test_durable_problem_persistence_survives_adapter_restart(
+    tmp_path: Path,
     _stub_host_llm: None,
 ) -> None:
     document_store = InMemoryDocumentStore()
@@ -349,7 +360,10 @@ def test_durable_problem_persistence_survives_adapter_restart(
         settings=GovernedContractorBackendSettings.from_env(),
         registry_projection=build_governed_contractor_test_registry_projection(),
         tenant_id=manifest.app_id,
-        **_strict_governed_contractor_harness_kwargs(document_store=document_store),
+        **_strict_governed_contractor_harness_kwargs(
+            document_store=document_store,
+            tmp_path=tmp_path,
+        ),
     )
     deps = resolve_host_diagnostic_read_dependencies(runtime)
     from intergrax.applications._shared.diagnostic_composition import (

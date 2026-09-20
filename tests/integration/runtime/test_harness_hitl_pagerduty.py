@@ -11,6 +11,7 @@ from typing import Any
 import pytest
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType, HumanRequest
@@ -37,7 +38,7 @@ class _RecordingPagerDutyAdapter:
         self.messages.append(message)
 
 
-class _HitlLongRunningAgent(Agent):
+class _HitlLongRunningAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="hitl_lr",
@@ -70,7 +71,7 @@ class _HitlLongRunningAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="review", step_name="review", step_index=0)]
 

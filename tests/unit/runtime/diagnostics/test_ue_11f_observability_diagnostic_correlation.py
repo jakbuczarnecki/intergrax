@@ -11,6 +11,7 @@ import pytest
 
 from echo.echo_agent import EchoAgent
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.runtime.nexus.uaep import UAEPBlockedError
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -154,7 +155,7 @@ class RecordingDiagnosticOrchestrator(DiagnosticOrchestrator):
         return result
 
 
-class _DeterministicTerminalFailureAgent(Agent):
+class _DeterministicTerminalFailureAgent(HarnessReferenceAgent):
     """Test-owned agent that fails inside active execution identity."""
 
     def get_contract(self) -> AgentContract:
@@ -189,7 +190,7 @@ class _DeterministicTerminalFailureAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         del context
         return [
             AgentStep(

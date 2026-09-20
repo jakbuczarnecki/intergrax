@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.authoring.llm_router import StepLLMRouter
 from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
@@ -207,7 +208,7 @@ def test_post_run_governance_bridge_invokes_service() -> None:
     assert service.calls == [("run_1", "agent_1")]
 
 
-class _UaepDenyBoundaryAgent(Agent):
+class _UaepDenyBoundaryAgent(HarnessReferenceAgent):
     def __init__(self) -> None:
         self.protected_called = False
 
@@ -232,7 +233,7 @@ class _UaepDenyBoundaryAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [
             AgentStep(step_id="s1", step_name="first", step_index=0),

@@ -4,6 +4,7 @@ from intergrax.utils import attribute_access
 import pytest
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -68,7 +69,7 @@ class _TwoStepPlanner(TaskPlanner):
         )
 
 
-class _MultiStepUaepAgent(Agent):
+class _MultiStepUaepAgent(HarnessReferenceAgent):
     step_runs = 0
 
     def get_contract(self) -> AgentContract:
@@ -103,7 +104,7 @@ class _MultiStepUaepAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [
             AgentStep(step_id="s1", step_name="s1", step_index=0),
