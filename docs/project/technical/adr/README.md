@@ -127,6 +127,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-GR-10-001](entries/2026-09-18/ADR-GR-10-001.md) | PRE_MODEL subject identity and execution governance context boundary (GR-10-R2-ADR1) | Accepted |
 | [ADR-GR-10-002](entries/2026-09-19/ADR-GR-10-002.md) | Canonical orchestration MSE authorization contract and fail-closed production composition (GR-10-R9-ADR1) | Accepted |
 | [ADR-GOVERNED-EXECUTION-003](entries/2026-09-18/ADR-GOVERNED-EXECUTION-003-ROOT-GOVERNANCE-IDENTITY-AUTHORITY.md) | Root governance identity authority boundary (OBS-DIAG-RECERT-P2C-R0A-ADR1) | Proposed |
+| [ADR-HARNESS-001](entries/2026-09-20/ADR-HARNESS-001.md) | Execution Engine public boundary & Nexus encapsulation model (HARNESS-01-ADR2) | Accepted (architecture freeze) |
 
 **Consolidation:** platform ownership, lifecycle, and invariants for GEC-0â€¦GEC-6 - [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 
