@@ -6,8 +6,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from intergrax.agents.agent_contract import Agent
-from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.routable_tier2_agent import (
+    RoutableTier2Agent,
+    require_routable_tier2_agent,
+)
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
@@ -63,7 +66,7 @@ class AgentRouter:
         *,
         run_id: str | None = None,
         node_id: str | None = None,
-    ) -> Agent:
+    ) -> Tier2Agent:
         validate_task_for_capability_routing(task)
         requested = task.agent_id or ""
         capability = task.context.capability or ""
@@ -122,7 +125,7 @@ class AgentRouter:
         task: Task,
         requested: str,
         capability: str,
-    ) -> tuple[Agent, AgentRouteSelection]:
+    ) -> tuple[Tier2Agent, AgentRouteSelection]:
         match = self._registry.find_best_match(
             task_envelope_for_agent_capability_match(task),
             production_mode=self._production_mode,
@@ -150,12 +153,13 @@ class AgentRouter:
     def _best_capability_match(
         self,
         context: TaskContext,
-        candidates: list[Agent],
-    ) -> tuple[Agent, float | None]:
+        candidates: list[RoutableTier2Agent],
+    ) -> tuple[RoutableTier2Agent, float | None]:
         envelope = task_envelope_from_task_context(context)
-        best: Optional[tuple[float, Agent]] = None
+        best: Optional[tuple[float, RoutableTier2Agent]] = None
         for agent in candidates:
-            result = agent.can_handle(envelope)
+            routable = require_routable_tier2_agent(agent)
+            result = routable.can_handle(envelope)
             if not result.matched:
                 continue
             if best is None or result.score > best[0]:

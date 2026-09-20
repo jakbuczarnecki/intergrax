@@ -134,6 +134,7 @@ def test_assert_agent_assembly_valid_raises_on_invalid_contract() -> None:
 @pytest.mark.gate
 def test_agent_registry_runs_assembly_validation_at_register() -> None:
     from intergrax.agents.agent_contract import Agent
+    from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
     from intergrax.contracts.capability import CapabilityMatchResult
     from intergrax.runtime.nexus.config import RuntimeConfig
     from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -149,6 +150,10 @@ def test_agent_registry_runs_assembly_validation_at_register() -> None:
                 description="missing capabilities",
                 capabilities=[],
             )
+
+        async def run(self, request: AgentRunRequest) -> AgentRunResult:
+            _ = request
+            raise NotImplementedError("stub")
 
         def build_context(self, request: RuntimeRequest) -> RuntimeContext:
             config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)

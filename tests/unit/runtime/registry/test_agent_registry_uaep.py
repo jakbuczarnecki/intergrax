@@ -6,6 +6,7 @@ import pytest
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -23,6 +24,10 @@ class _NonUaepAgent(Agent):
             description="stub",
             capabilities=["stub"],
         )
+
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        _ = request
+        raise NotImplementedError("stub")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)

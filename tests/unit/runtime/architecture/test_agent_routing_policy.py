@@ -3,7 +3,11 @@ from __future__ import annotations
 import pytest
 
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
+from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.runtime.registry.agent_routing_policy import evaluate_agent_routing
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.nexus.agent_router import AgentRouter
@@ -17,12 +21,15 @@ class _StubAgent:
     def get_contract(self) -> AgentContract:
         return self._contract
 
-    def can_handle(self, task_context: TaskContext) -> object:
-        from intergrax.contracts.capability import CapabilityMatchResult
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        _ = request
+        raise NotImplementedError("stub")
 
-        if task_context.capability == "demo.basic":
-            return CapabilityMatchResult(matched=True, score=1.0, reason="stub")
-        return CapabilityMatchResult(matched=False, score=0.0, reason="no match")
+    def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
+        capability = routing_capability_from_envelope(task) or ""
+        if capability == "demo.basic":
+            return CapabilityMatchResult(matched=True, score=1.0, rationale="stub")
+        return CapabilityMatchResult(matched=False, score=0.0, rationale="no match")
 
 
 def _contract(**updates: object) -> AgentContract:

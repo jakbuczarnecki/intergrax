@@ -4,6 +4,7 @@ import pytest
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.skills.core.contracts import SkillManifest
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -52,6 +53,10 @@ class _SkillAgent(Agent):
             skills=[_DEMO_SKILL],
             extra_tools=[_EXTRA_TOOL],
         )
+
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        _ = request
+        raise NotImplementedError("stub")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)

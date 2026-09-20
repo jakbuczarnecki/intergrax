@@ -4,6 +4,7 @@ import pytest
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -24,6 +25,10 @@ class _StubAgent(Agent):
             capabilities=["stub.cap"],
         )
 
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        _ = request
+        raise NotImplementedError("stub")
+
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)
         return RuntimeContext.build(
@@ -40,6 +45,10 @@ class _MismatchedIdAgent(Agent):
             description="mismatch",
             capabilities=["stub.cap"],
         )
+
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        _ = request
+        raise NotImplementedError("stub")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         raise RuntimeError("not used")

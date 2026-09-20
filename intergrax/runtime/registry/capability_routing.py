@@ -6,9 +6,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.agents.agent_contract import Agent
+from intergrax.contracts.routable_tier2_agent import (
+    AgentRoutingContractError,
+    RoutableTier2Agent,
+)
 from intergrax.contracts.task_routing import validate_task_routing_payload
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.contracts.tier2_agent import Tier2Agent
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.agent_capability_intake import task_envelope_for_agent_capability_match
 from intergrax.runtime.task.task import Task
 
@@ -18,8 +22,8 @@ class CapabilityRouteResult:
     """Outcome of capability-based agent resolution."""
 
     capability: str
-    candidates: tuple[Agent, ...]
-    selected: Agent | None
+    candidates: tuple[Tier2Agent, ...]
+    selected: RoutableTier2Agent | None
     selection_reason: str
 
 
@@ -32,11 +36,11 @@ def validate_task_for_capability_routing(task: Task) -> None:
 
 
 def resolve_agents_for_capability(
-    registry: AgentRegistry,
+    registry: AgentRegistryRead,
     capability: str,
     *,
     production_mode: bool = False,
-) -> list[Agent]:
+) -> list[Tier2Agent]:
     """Resolve registry agents by capability token (§37.6)."""
     token = capability.strip()
     if not token:
@@ -45,7 +49,7 @@ def resolve_agents_for_capability(
 
 
 def select_best_capability_match(
-    registry: AgentRegistry,
+    registry: AgentRegistryRead,
     task: Task,
     capability: str,
     *,
@@ -66,19 +70,30 @@ def select_best_capability_match(
             selection_reason="no_capability_match",
         )
 
-    best: tuple[float, Agent] | None = None
+    envelope = task_envelope_for_agent_capability_match(task)
+    best: tuple[float, RoutableTier2Agent] | None = None
+    routable_candidates: list[RoutableTier2Agent] = []
     for agent in candidates:
-        result = agent.can_handle(task_envelope_for_agent_capability_match(task))
+        if not isinstance(agent, RoutableTier2Agent):
+            continue
+        routable_candidates.append(agent)
+        result = agent.can_handle(envelope)
         if not result.matched:
             continue
         if best is None or result.score > best[0]:
             best = (result.score, agent)
 
     if best is None:
+        if not routable_candidates:
+            raise AgentRoutingContractError(
+                f"No registered agent for capability '{capability}' implements "
+                "RoutableTier2Agent (can_handle)"
+            )
+        fallback = routable_candidates[0]
         return CapabilityRouteResult(
             capability=capability,
             candidates=tuple(candidates),
-            selected=candidates[0],
+            selected=fallback,
             selection_reason="capability_first_match",
         )
     return CapabilityRouteResult(

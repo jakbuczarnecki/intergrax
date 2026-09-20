@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Union
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.agents.authoring.base import IntergraxAgent
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.runtime.nexus.agents.runtime_request_bridge import (
     acp_session_enabled,
     agent_run_result_to_runtime_answer,
@@ -43,7 +43,7 @@ class AgentEngine:
 
     def __init__(
         self,
-        agents: Union[Dict[str, Agent], AgentRegistryRead],
+        agents: Union[Dict[str, Tier2Agent], AgentRegistryRead],
         *,
         event_bus: Optional[RuntimeEventBus] = None,
         middleware: Optional[MiddlewarePipeline] = None,
@@ -122,13 +122,13 @@ class AgentEngine:
             execution.structured_data.update(structured_data)
         return execution
 
-    def _resolve_agent_contract(self, agent: Agent):
+    def _resolve_agent_contract(self, agent: Tier2Agent):
         author_contract = agent.get_contract()
         if self._registry is not None and self._registry.has(author_contract.id):
             return self._registry.get_contract(author_contract.id)
         return author_contract
 
-    def _resolve_agent(self, request: RuntimeRequest) -> Agent:
+    def _resolve_agent(self, request: RuntimeRequest) -> Tier2Agent:
         agent_id = request.agent_id
         if not agent_id:
             raise ValueError("request.agent_id must be provided.")
@@ -157,7 +157,7 @@ class AgentEngine:
 
     @staticmethod
     async def run_agent(
-        agent: Agent,
+        agent: Tier2Agent,
         request: RuntimeRequest,
         *,
         uaep_executor: Optional[UAEPExecutor] = None,
@@ -175,7 +175,7 @@ class AgentEngine:
 
     @staticmethod
     async def run_agent_with_result(
-        agent: Agent,
+        agent: Tier2Agent,
         request: RuntimeRequest,
         *,
         uaep_executor: Optional[UAEPExecutor] = None,
@@ -217,7 +217,7 @@ class AgentEngine:
 
     @staticmethod
     async def _execute_agent_impl(
-        agent: Agent,
+        agent: Tier2Agent,
         request: RuntimeRequest,
         uaep_executor: UAEPExecutor,
         *,
