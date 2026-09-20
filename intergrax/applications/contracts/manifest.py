@@ -16,8 +16,11 @@ from typing import Callable
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
-from intergrax.applications.contracts.agent_ref import qualname_for_agent, qualname_for_callable
-from intergrax.applications.contracts.factory import AgentFactory
+from intergrax.applications.contracts.agent_ref import (
+    qualname_for_agent,
+    qualname_for_agent_factory,
+)
+from intergrax.applications.contracts.factory import CanonicalAgentFactory
 from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.knowledge.contracts.validation import JsonValue
 from intergrax.applications.contracts.application_host import (
@@ -72,7 +75,9 @@ class AgentBinding(BaseModel):
         default=None,
         description="Serialized class path; auto-filled from agent_type when mounting",
     )
-    factory: SkipJsonSchema[AgentFactory | None] = Field(
+    factory: SkipJsonSchema[
+        Callable[["ApplicationBuildContext", AgentBinding], Tier2Agent] | None
+    ] = Field(
         default=None,
         description="Typed Tier-3 factory callable (preferred over factory_path)",
         exclude=True,
@@ -136,7 +141,7 @@ class AgentBinding(BaseModel):
         cls,
         agent_type: type[Tier2Agent],
         *,
-        factory: AgentFactory | None = None,
+        factory: CanonicalAgentFactory | None = None,
         builder_key: str | None = None,
         config: dict[str, JsonValue] | None = None,
         contract_id: str,
@@ -296,7 +301,9 @@ class AgentBinding(BaseModel):
         if self.agent_type is not None and self.import_path is None:
             object.__setattr__(self, "import_path", qualname_for_agent(self.agent_type))
         if self.factory is not None and self.factory_path is None:
-            object.__setattr__(self, "factory_path", qualname_for_callable(self.factory))
+            object.__setattr__(
+                self, "factory_path", qualname_for_agent_factory(self.factory)
+            )
 
         if self.agent_type is None and self.import_path is None and not self.contract_id:
             raise ValueError(
@@ -517,11 +524,13 @@ class ApplicationManifest(BaseModel):
 
 
 def _rebuild_application_manifest_model() -> None:
+    from intergrax.applications.contracts.build_context import ApplicationBuildContext
     from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 
-    ApplicationManifest.model_rebuild(
-        _types_namespace={"ApplicationEnvironmentProfile": ApplicationEnvironmentProfile},
-    )
-
-
-_rebuild_application_manifest_model()
+    _types_namespace = {
+        "ApplicationBuildContext": ApplicationBuildContext,
+        "ApplicationEnvironmentProfile": ApplicationEnvironmentProfile,
+        "AgentBinding": AgentBinding,
+    }
+    AgentBinding.model_rebuild(_types_namespace=_types_namespace)
+    ApplicationManifest.model_rebuild(_types_namespace=_types_namespace)

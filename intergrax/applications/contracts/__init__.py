@@ -3,7 +3,7 @@
 
 from intergrax.applications.contracts.agent_ref import qualname_for_agent, qualname_for_callable
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
-from intergrax.applications.contracts.factory import AgentFactory
+from intergrax.applications.contracts.factory import AgentFactory, CanonicalAgentFactory
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
@@ -16,6 +16,7 @@ from intergrax.applications.contracts.manifest import (
 __all__ = [
     "AgentBinding",
     "AgentFactory",
+    "CanonicalAgentFactory",
     "ApplicationBuildContext",
     "ApplicationEnvironmentProfile",
     "ApplicationGraphSpec",

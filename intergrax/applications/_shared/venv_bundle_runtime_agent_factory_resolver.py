@@ -35,7 +35,8 @@ from intergrax.applications._shared.runtime_agent_factory_resolver import (
     RuntimeAgentFactoryResolutionError,
     RuntimeAgentFactoryResolver,
 )
-from intergrax.applications.contracts.factory import AgentFactory, CanonicalAgentFactory
+from intergrax.applications.contracts.factory import CanonicalAgentFactory
+from intergrax.contracts.tier2_agent import Tier2Agent
 
 PRODUCTION_RUNTIME_FACTORY_TOPOLOGY_STATUS: Final = {
     MaterializationTopology.VENV_BUNDLE: "implemented",
@@ -45,7 +46,10 @@ PRODUCTION_RUNTIME_FACTORY_TOPOLOGY_STATUS: Final = {
 
 _FlatSitePackagesName = "site-packages"
 _FactoryCacheLock = threading.RLock()
-_FactoryCache: dict[tuple[str, str, str | None, str | None], AgentFactory] = {}
+_LegacySerializedFactoryCallable = Callable[..., Tier2Agent]
+_FactoryCache: dict[
+    tuple[str, str, str | None, str | None], _LegacySerializedFactoryCallable
+] = {}
 _ArtifactScopeRegistryLock = threading.RLock()
 _ArtifactScopeRegistry: dict[str, _ArtifactImportScope] = {}
 _ScopeLoadLock = threading.RLock()
