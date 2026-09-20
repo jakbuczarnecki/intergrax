@@ -6,8 +6,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.collaborative_work.enforcement_gate import (
+    MeaningfulSideEffectPolicyEvaluator,
+)
 from intergrax.collaborative_work.persistence import (
     CollaborativeWorkMaterializedRepositories,
     collaborative_work_core_repositories,
@@ -30,24 +35,30 @@ class HarnessMeaningfulSideEffectAuthorizationWiring:
     """Resolved MSE authorization plus host-owned Collaborative Work persistence (if any)."""
 
     authorization_port: MeaningfulSideEffectAuthorizationPort | None
-    owned_collaborative_work_persistence: CollaborativeWorkMaterializedRepositories | None = (
-        None
-    )
+    owned_collaborative_work_persistence: (
+        CollaborativeWorkMaterializedRepositories | None
+    ) = None
 
 
 def _build_port_from_materialized_repositories(
     bundle: CollaborativeWorkMaterializedRepositories,
     *,
     decision_requirement_policy: DecisionRequirementPolicy | None = None,
+    runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
 ) -> MeaningfulSideEffectAuthorizationPort:
     core = collaborative_work_core_repositories(bundle)
+    evaluator: MeaningfulSideEffectPolicyEvaluator = (
+        runtime_policy_evaluator
+        if runtime_policy_evaluator is not None
+        else RuntimePolicyEngine()
+    )
     return build_production_orchestration_meaningful_side_effect_authorization_boundary(
         profile_repository=core.operation_profile,
         membership_repository=core.membership,
         principal_authority_repository=core.principal_authority,
         delegation_repository=core.delegation,
         collaborative_policy_repository=core.policy,
-        runtime_policy_evaluator=RuntimePolicyEngine(),
+        runtime_policy_evaluator=evaluator,
         decision_requirement_policy=decision_requirement_policy,
         production_mode=True,
     )
@@ -66,9 +77,11 @@ def _collaborative_work_integration_profile(
 def build_harness_host_meaningful_side_effect_authorization_port(
     environment: ApplicationEnvironmentProfile,
     *,
-    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories
+    | None = None,
     collaborative_work_integration_profile: IntegrationProfile | None = None,
     decision_requirement_policy: DecisionRequirementPolicy | None = None,
+    runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
 ) -> MeaningfulSideEffectAuthorizationPort:
     """Build platform default MSE authorization for strict Tier-3 harness hosts."""
     if collaborative_work_repositories is not None:
@@ -83,6 +96,7 @@ def build_harness_host_meaningful_side_effect_authorization_port(
     return _build_port_from_materialized_repositories(
         bundle,
         decision_requirement_policy=decision_requirement_policy,
+        runtime_policy_evaluator=runtime_policy_evaluator,
     )
 
 
@@ -90,9 +104,11 @@ def resolve_harness_host_meaningful_side_effect_authorization_wiring(
     environment: ApplicationEnvironmentProfile,
     *,
     explicit: MeaningfulSideEffectAuthorizationPort | None = None,
-    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories
+    | None = None,
     collaborative_work_integration_profile: IntegrationProfile | None = None,
     decision_requirement_policy: DecisionRequirementPolicy | None = None,
+    runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
 ) -> HarnessMeaningfulSideEffectAuthorizationWiring:
     """Resolve MSE wiring: injectable override, strict default, or absent in non-strict hosts."""
     if explicit is not None:
@@ -106,6 +122,7 @@ def resolve_harness_host_meaningful_side_effect_authorization_wiring(
             authorization_port=_build_port_from_materialized_repositories(
                 collaborative_work_repositories,
                 decision_requirement_policy=decision_requirement_policy,
+                runtime_policy_evaluator=runtime_policy_evaluator,
             ),
         )
     bundle = resolve_collaborative_work_repositories(
@@ -118,6 +135,7 @@ def resolve_harness_host_meaningful_side_effect_authorization_wiring(
         authorization_port=_build_port_from_materialized_repositories(
             bundle,
             decision_requirement_policy=decision_requirement_policy,
+            runtime_policy_evaluator=runtime_policy_evaluator,
         ),
         owned_collaborative_work_persistence=bundle,
     )
@@ -127,9 +145,11 @@ def resolve_harness_host_meaningful_side_effect_authorization_port(
     environment: ApplicationEnvironmentProfile,
     *,
     explicit: MeaningfulSideEffectAuthorizationPort | None = None,
-    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories
+    | None = None,
     collaborative_work_integration_profile: IntegrationProfile | None = None,
     decision_requirement_policy: DecisionRequirementPolicy | None = None,
+    runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
 ) -> MeaningfulSideEffectAuthorizationPort | None:
     """Resolve MSE port: injectable override, strict default, or absent in non-strict hosts."""
     return resolve_harness_host_meaningful_side_effect_authorization_wiring(
@@ -138,6 +158,7 @@ def resolve_harness_host_meaningful_side_effect_authorization_port(
         collaborative_work_repositories=collaborative_work_repositories,
         collaborative_work_integration_profile=collaborative_work_integration_profile,
         decision_requirement_policy=decision_requirement_policy,
+        runtime_policy_evaluator=runtime_policy_evaluator,
     ).authorization_port
 
 

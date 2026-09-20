@@ -28,6 +28,7 @@ from tests.qualification.multiplayer.mp7c.host_composition import (
     bound_host_active_execution,
     compose_host_default_allow_scenario,
     compose_host_default_deny_scenario,
+    compose_host_default_fail_closed_no_runtime_rule_scenario,
     compose_host_materialized_default_wiring,
     empty_in_memory_repositories,
     non_strict_host_environment,
@@ -151,6 +152,20 @@ def test_host_resolved_real_platform_allow_through_consumer() -> None:
 
 def test_host_resolved_real_platform_deny_through_consumer() -> None:
     scenario = compose_host_default_deny_scenario()
+    consumer = Tier3MultiplayerConsumer(authorization=scenario.authorization_port)
+    with bound_host_active_execution(
+        task_id=scenario.task_id,
+        run_id=scenario.run_id,
+        attempt_id=scenario.attempt_id,
+        execution_id=scenario.execution_id,
+    ):
+        with pytest.raises(Tier3MultiplayerAuthorizationDeniedError):
+            consumer.request_authorized_side_effect(scenario.request)
+
+
+def test_host_default_empty_evaluator_fail_closed_not_allow() -> None:
+    """Allow-ish CW state + default empty RuntimePolicyEngine → not ALLOW."""
+    scenario = compose_host_default_fail_closed_no_runtime_rule_scenario()
     consumer = Tier3MultiplayerConsumer(authorization=scenario.authorization_port)
     with bound_host_active_execution(
         task_id=scenario.task_id,

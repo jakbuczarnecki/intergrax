@@ -103,6 +103,8 @@ def _rel(path: Path) -> str:
 def test_mp7c_qualification_doc_closed() -> None:
     text = _QUAL_DOC.read_text(encoding="utf-8-sig")
     assert "TIER-3 HOST COMPOSITION & BOUNDARY E2E QUALIFIED / CLOSED" in text
+    assert "MP-7C-C1" in text
+    assert "CLOSED / CERTIFIED" in text or "CLOSED / RECERTIFIED" in text
     assert "BLOCKING ARCHITECTURE GAPS: NONE" in text
     assert "BLOCKING FINDINGS: NONE" in text
     assert "resolve_harness_host_meaningful_side_effect_authorization_wiring" in text
@@ -110,6 +112,10 @@ def test_mp7c_qualification_doc_closed() -> None:
     assert (
         "PLATFORM OPERATES ON CONTRACTS" in text
         or "contracts, not implementations" in text.lower()
+    )
+    assert "patch(RuntimePolicyEngine)" in text
+    assert "injected runtime policy evaluator" in text.lower() or (
+        "injected" in text.lower() and "runtime policy evaluator" in text.lower()
     )
 
 
@@ -146,7 +152,8 @@ def test_mp7c_test_modules_do_not_import_wiring_into_consumer_path() -> None:
     """Consumer module must not import host wiring; composition fixture may."""
     consumer_mods = _imports_in_file(_CONSUMER)
     assert not any(
-        "harness_meaningful_side_effect_authorization_wiring" in m for m in consumer_mods
+        "harness_meaningful_side_effect_authorization_wiring" in m
+        for m in consumer_mods
     )
     host_mods = _imports_in_file(_HOST_COMPOSITION)
     assert any(
@@ -160,15 +167,59 @@ def test_host_composition_fixture_may_import_private_cw() -> None:
 
 
 def test_canonical_resolver_returns_public_port_annotation() -> None:
-    sig = inspect.signature(resolve_harness_host_meaningful_side_effect_authorization_wiring)
+    sig = inspect.signature(
+        resolve_harness_host_meaningful_side_effect_authorization_wiring
+    )
     params = sig.parameters
     assert "explicit" in params
     explicit_ann = params["explicit"].annotation
     assert "MeaningfulSideEffectAuthorizationPort" in str(explicit_ann)
+    assert "runtime_policy_evaluator" in params
+    evaluator_ann = str(params["runtime_policy_evaluator"].annotation)
+    assert "MeaningfulSideEffectPolicyEvaluator" in evaluator_ann
+    assert "RuntimePolicyEngine" not in evaluator_ann
     # Return type carries authorization_port as public Protocol (via Wiring dataclass).
     source = _WIRING.read_text(encoding="utf-8")
     assert "authorization_port: MeaningfulSideEffectAuthorizationPort | None" in source
     assert "explicit: MeaningfulSideEffectAuthorizationPort | None" in source
+    assert (
+        "runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None" in source
+    )
+
+
+def test_wiring_defaults_to_runtime_policy_engine_when_evaluator_absent() -> None:
+    source = _WIRING.read_text(encoding="utf-8")
+    assert "RuntimePolicyEngine()" in source
+    assert "runtime_policy_evaluator" in source
+    # Must remain replaceable — no concrete-only public annotation.
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.name in {
+            "resolve_harness_host_meaningful_side_effect_authorization_wiring",
+            "resolve_harness_host_meaningful_side_effect_authorization_port",
+            "build_harness_host_meaningful_side_effect_authorization_port",
+        }:
+            for arg in list(node.args.kwonlyargs):
+                if arg.arg != "runtime_policy_evaluator":
+                    continue
+                ann = ast.unparse(arg.annotation) if arg.annotation is not None else ""
+                assert "MeaningfulSideEffectPolicyEvaluator" in ann
+                assert ann.strip() != "RuntimePolicyEngine"
+
+
+def test_mp7c_allow_fixture_does_not_patch_runtime_policy_engine() -> None:
+    source = _HOST_COMPOSITION.read_text(encoding="utf-8")
+    assert "_engine_factory" not in source
+    assert "runtime_policy_evaluator=" in source
+    # Materialization observation patch may remain; semantic engine patch must not.
+    assert (
+        "harness_meaningful_side_effect_authorization_wiring.RuntimePolicyEngine"
+        not in source
+    )
+    injection_tests = (_MP7C / "test_runtime_policy_evaluator_injection.py").read_text(
+        encoding="utf-8",
+    )
+    assert "runtime_policy_evaluator" in injection_tests
 
 
 def test_wiring_exposes_protocol_not_concrete_class_in_public_surface() -> None:

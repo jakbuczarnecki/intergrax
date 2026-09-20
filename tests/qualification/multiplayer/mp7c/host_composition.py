@@ -19,8 +19,13 @@ from intergrax.applications._shared.harness_meaningful_side_effect_authorization
     HarnessMeaningfulSideEffectAuthorizationWiring,
     resolve_harness_host_meaningful_side_effect_authorization_wiring,
 )
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.collaborative_work.enforcement_gate import (
+    MeaningfulSideEffectPolicyEvaluator,
+)
 from intergrax.collaborative_work.in_memory_repository import (
     InMemoryAuthorityDelegationRepository,
     InMemoryCollaborativeOperationPolicyProfileRepository,
@@ -55,7 +60,9 @@ from intergrax.contracts.meaningful_side_effect import (
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
-from intergrax.contracts.meaningful_side_effect_policy import MeaningfulSideEffectPolicyRule
+from intergrax.contracts.meaningful_side_effect_policy import (
+    MeaningfulSideEffectPolicyRule,
+)
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.governance.decision_requirement_policy import (
@@ -93,7 +100,9 @@ def strict_host_environment() -> ApplicationEnvironmentProfile:
     base = ApplicationEnvironmentProfile()
     return base.model_copy(
         update={
-            "meta": base.meta.model_copy(update={"execution_mode": ExecutionMode.STRICT}),
+            "meta": base.meta.model_copy(
+                update={"execution_mode": ExecutionMode.STRICT}
+            ),
         },
     )
 
@@ -103,7 +112,9 @@ def non_strict_host_environment() -> ApplicationEnvironmentProfile:
     base = ApplicationEnvironmentProfile()
     return base.model_copy(
         update={
-            "meta": base.meta.model_copy(update={"execution_mode": ExecutionMode.BALANCED}),
+            "meta": base.meta.model_copy(
+                update={"execution_mode": ExecutionMode.BALANCED}
+            ),
         },
     )
 
@@ -128,41 +139,21 @@ def resolve_host_wiring(
     explicit: MeaningfulSideEffectAuthorizationPort | None = None,
     collaborative_work_repositories: CollaborativeWorkRepositories | None = None,
     collaborative_work_integration_profile: IntegrationProfile | None = None,
-    runtime_policy_rules: tuple[MeaningfulSideEffectPolicyRule, ...] | None = None,
+    runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
 ) -> HarnessMeaningfulSideEffectAuthorizationWiring:
-    """Call the canonical host resolver (optionally with host-equivalent runtime rules).
+    """Call the canonical host resolver (optionally with injected runtime policy evaluator).
 
-    Empty ``RuntimePolicyEngine()`` is the production default (fail-closed on
-    indeterminate MSE runtime policy). When ``runtime_policy_rules`` is provided,
-    the fixture substitutes an equivalent engine at the same construction site
-    the wiring uses — without replacing the authorization port itself.
+    Empty ``RuntimePolicyEngine()`` remains the production default when no evaluator
+    is injected (fail-closed on indeterminate MSE runtime policy).
     """
-    decision = PermissiveDecisionRequirementPolicy()
-    if runtime_policy_rules is None:
-        return resolve_harness_host_meaningful_side_effect_authorization_wiring(
-            environment,
-            explicit=explicit,
-            collaborative_work_repositories=collaborative_work_repositories,
-            collaborative_work_integration_profile=collaborative_work_integration_profile,
-            decision_requirement_policy=decision,
-        )
-
-    rules = runtime_policy_rules
-
-    def _engine_factory(*_args: object, **_kwargs: object) -> RuntimePolicyEngine:
-        return RuntimePolicyEngine(meaningful_side_effect_rules=rules)
-
-    with patch(
-        "intergrax.applications._shared.harness_meaningful_side_effect_authorization_wiring.RuntimePolicyEngine",
-        side_effect=_engine_factory,
-    ):
-        return resolve_harness_host_meaningful_side_effect_authorization_wiring(
-            environment,
-            explicit=explicit,
-            collaborative_work_repositories=collaborative_work_repositories,
-            collaborative_work_integration_profile=collaborative_work_integration_profile,
-            decision_requirement_policy=decision,
-        )
+    return resolve_harness_host_meaningful_side_effect_authorization_wiring(
+        environment,
+        explicit=explicit,
+        collaborative_work_repositories=collaborative_work_repositories,
+        collaborative_work_integration_profile=collaborative_work_integration_profile,
+        decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
+        runtime_policy_evaluator=runtime_policy_evaluator,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,7 +172,9 @@ class HostAuthorizationScenario:
     def authorization_port(self) -> MeaningfulSideEffectAuthorizationPort:
         port = self.wiring.authorization_port
         if port is None:
-            raise AssertionError("expected host-resolved MeaningfulSideEffectAuthorizationPort")
+            raise AssertionError(
+                "expected host-resolved MeaningfulSideEffectAuthorizationPort"
+            )
         return port
 
 
@@ -353,14 +346,16 @@ def compose_host_default_deny_scenario() -> HostAuthorizationScenario:
 
 
 def compose_host_default_allow_scenario() -> HostAuthorizationScenario:
-    """Strict host + seeded CW repos + host-equivalent runtime rules → real platform ALLOW."""
+    """Strict host + seeded CW repos + injected runtime evaluator → real platform ALLOW."""
     bundle = empty_in_memory_repositories()
     membership = _seed_allow_state(bundle)
     task_id, run_id, attempt_id, execution_id = default_gr3_identity_bundle()
     wiring = resolve_host_wiring(
         strict_host_environment(),
         collaborative_work_repositories=bundle,
-        runtime_policy_rules=_allow_runtime_rules(),
+        runtime_policy_evaluator=RuntimePolicyEngine(
+            meaningful_side_effect_rules=_allow_runtime_rules(),
+        ),
     )
     request = _build_request(
         task_id=task_id,
@@ -384,6 +379,7 @@ def compose_host_materialized_default_wiring(
     *,
     resolve_repositories: Callable[[IntegrationProfile], CollaborativeWorkRepositories],
     collaborative_work_integration_profile: IntegrationProfile | None = None,
+    runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
 ) -> HarnessMeaningfulSideEffectAuthorizationWiring:
     """Strict host without injected repos — resolver materializes via provider selection."""
     with patch(
@@ -393,7 +389,37 @@ def compose_host_materialized_default_wiring(
         return resolve_host_wiring(
             strict_host_environment(),
             collaborative_work_integration_profile=collaborative_work_integration_profile,
+            runtime_policy_evaluator=runtime_policy_evaluator,
         )
+
+
+def compose_host_default_fail_closed_no_runtime_rule_scenario() -> (
+    HostAuthorizationScenario
+):
+    """Strict host + allow-ish CW state + default empty evaluator → not ALLOW (fail closed)."""
+    bundle = empty_in_memory_repositories()
+    membership = _seed_allow_state(bundle)
+    task_id, run_id, attempt_id, execution_id = default_gr3_identity_bundle()
+    wiring = resolve_host_wiring(
+        strict_host_environment(),
+        collaborative_work_repositories=bundle,
+    )
+    request = _build_request(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        membership=membership,
+    )
+    return HostAuthorizationScenario(
+        wiring=wiring,
+        request=request,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        repositories=bundle,
+    )
 
 
 __all__ = [
@@ -402,6 +428,7 @@ __all__ = [
     "bound_host_active_execution",
     "compose_host_default_allow_scenario",
     "compose_host_default_deny_scenario",
+    "compose_host_default_fail_closed_no_runtime_rule_scenario",
     "compose_host_materialized_default_wiring",
     "empty_in_memory_repositories",
     "non_strict_host_environment",
