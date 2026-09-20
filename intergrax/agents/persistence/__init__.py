@@ -5,9 +5,6 @@ from intergrax.agents.persistence.checkpoint_store import (
     InMemoryAgentCheckpointStore,
     SQLiteAgentCheckpointStore,
 )
-from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
-    CatalogDeclarativeToolInvoker,
-)
 from intergrax.agents.persistence.checkpoint_wiring import (
     attach_checkpoint_wiring,
     inject_acp_checkpoint_metadata,
@@ -38,7 +35,6 @@ from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
 
 __all__ = [
     "AgentCheckpointStore",
-    "CatalogDeclarativeToolInvoker",
     "InMemoryAgentCheckpointStore",
     "SQLiteAgentCheckpointStore",
     "CompensationActionResult",

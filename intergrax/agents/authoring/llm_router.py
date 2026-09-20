@@ -7,13 +7,15 @@ from __future__ import annotations
 import asyncio
 import time
 import uuid
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict
 
 from intergrax.contracts.agent_run_trace import GatewayCallStatus, LlmCallRecord
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.utils import attribute_access
 from intergrax.llm.messages import (
     ChatMessage,
     copy_model_input_messages,
@@ -21,9 +23,10 @@ from intergrax.llm.messages import (
     StructuredModelInputRequiredError,
 )
 
-if TYPE_CHECKING:
-    from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-    from intergrax.runtime.nexus.config import RuntimeConfig
+
+@runtime_checkable
+class LlmPromptCompilerPort(Protocol):
+    def __call__(self, prompt: str) -> str: ...
 
 
 class LlmStepResult(BaseModel):
@@ -120,7 +123,8 @@ class StepLLMRouter:
     provider: str = "stub"
     llm_port: LlmCompletePort | None = None
     llm_adapter: LLMAdapter | None = None
-    runtime_config: RuntimeConfig | None = None
+    runtime_config: object | None = None
+    prompt_compiler: Callable[[str], str] | None = None
     require_real_llm: bool = False
     model_input_messages: tuple[ChatMessage, ...] = ()
     _pending_calls: list[LlmCallRecord] = field(default_factory=list, init=False, repr=False)
@@ -159,7 +163,7 @@ class StepLLMRouter:
             return self.llm_port
         adapter = self.llm_adapter
         if adapter is None and self.runtime_config is not None:
-            adapter = self.runtime_config.llm_adapter
+            adapter = attribute_access.optional(self.runtime_config, "llm_adapter", None)
         if adapter is not None:
             return LLMAdapterCompletePort(adapter)
         return None
@@ -168,8 +172,14 @@ class StepLLMRouter:
         model_id = self.resolve_model(model_hint)
         started = time.perf_counter()
         provider = self.provider
-        if self.runtime_config is not None and self.runtime_config.llm_adapter is not None:
-            raw_provider = self.runtime_config.llm_adapter.provider
+        config_adapter = None
+        if self.runtime_config is not None:
+            config_adapter = attribute_access.optional(self.runtime_config, "llm_adapter", None)
+        if config_adapter is not None:
+            raw_provider = config_adapter.provider
+            provider = raw_provider.value if hasattr(raw_provider, "value") else str(raw_provider)
+        elif self.llm_adapter is not None:
+            raw_provider = self.llm_adapter.provider
             provider = raw_provider.value if hasattr(raw_provider, "value") else str(raw_provider)
 
         if self.model_input_messages:
@@ -191,10 +201,8 @@ class StepLLMRouter:
                 tokens_in = sum(len((message.content or "").split()) for message in send_messages)
                 tokens_out = len(text.split())
         else:
-            if self.runtime_config is not None:
-                from intergrax.runtime.nexus.context.compile_service import compile_prompt_text
-
-                prompt = compile_prompt_text(prompt, self.runtime_config)  # type: ignore[arg-type]
+            if self.prompt_compiler is not None:
+                prompt = self.prompt_compiler(prompt)
             completion_port = self._resolve_completion_port()
             if completion_port is not None:
                 text, tokens_in, tokens_out = await completion_port.complete(

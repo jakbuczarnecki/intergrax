@@ -304,7 +304,7 @@ class UAEPExecutor:
             from intergrax.runtime.nexus.agents.acp_uaep_shim import apply_host_tool_invoker_to_runtime_context
     
             apply_host_tool_invoker_to_runtime_context(runtime_context, request.metadata)
-            from intergrax.agents.persistence.skill_host_wiring import (
+            from intergrax.runtime.nexus.agents.skill_host_runtime_bridge import (
                 apply_host_skill_wiring_to_runtime_context,
             )
 

@@ -86,7 +86,7 @@ def _domain_job_py(slug: str) -> str:
         from __future__ import annotations
 
         from intergrax.contracts.agent_step_context import AgentStepContext
-        from intergrax.runtime.nexus.agents.runtime_tool_helpers import exec_ctx_from_step, request_metadata
+        from intergrax.agents.authoring.runtime_tool_helpers import exec_ctx_from_step, request_metadata
 
         DOMAIN_STEP_ID = "{step_id}"
 

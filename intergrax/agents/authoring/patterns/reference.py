@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
-
 from intergrax.agents.authoring.patterns.decomposition import DecompositionAgent
 from intergrax.agents.authoring.patterns.plan_execute import PlanExecuteAgent
 from intergrax.agents.authoring.patterns.react import ReActAgent
@@ -19,51 +17,6 @@ from intergrax.agents.authoring.patterns.types import (
 )
 from intergrax.contracts.agent_contract_meta import AgentRiskLevel
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.memory.conversational_memory import ChatMessage
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
-
-
-class _ProbeLLMStub(LLMAdapter):
-    provider = "pattern_probe"
-    model = "pattern-probe-stub"
-
-    def __init__(self, *, fixed_text: str) -> None:
-        self._fixed_text = fixed_text
-
-    @property
-    def context_window_tokens(self) -> int:
-        return 128_000
-
-    def generate_messages(
-        self,
-        messages: Sequence[ChatMessage],
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
-    ) -> LLMAdapterResponse:
-        _ = messages, temperature, max_tokens, run_id
-        return build_adapter_response(content=self._fixed_text)
-
-
-def _probe_context(request: RuntimeRequest, *, label: str) -> RuntimeContext:
-    config = RuntimeConfig(
-        llm_adapter=_ProbeLLMStub(fixed_text=label),
-        enable_rag=False,
-        production_mode=False,
-        tenant_id=request.tenant_id,
-    )
-    return RuntimeContext.build(
-        config=config,
-        session_manager=SessionManager(storage=InMemorySessionStorage()),
-    )
 
 
 class PatternReflexProbe(ReflexAgent):
@@ -72,9 +25,6 @@ class PatternReflexProbe(ReflexAgent):
     agent_name = "Pattern Reflex Probe"
     risk_level = AgentRiskLevel.LOW
 
-    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        return _probe_context(request, label="reflex-probe")
-
 
 class PatternReActProbe(ReActAgent):
     contract_id = "pattern_react_probe"
@@ -82,9 +32,6 @@ class PatternReActProbe(ReActAgent):
     agent_name = "Pattern ReAct Probe"
     risk_level = AgentRiskLevel.LOW
     default_max_react_iterations = 3
-
-    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        return _probe_context(request, label="react-probe")
 
     async def perceive(self, step_ctx: AgentStepContext) -> Observation:
         _ = step_ctx
@@ -125,9 +72,6 @@ class PatternPlanExecuteProbe(PlanExecuteAgent):
     agent_name = "Pattern Plan Execute Probe"
     risk_level = AgentRiskLevel.LOW
 
-    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        return _probe_context(request, label="plan-probe")
-
     async def perceive(self, step_ctx: AgentStepContext) -> Observation:
         state = self.load_session_state(step_ctx)
         return Observation(summary=f"phase:{state.phase}")
@@ -165,9 +109,6 @@ class PatternDecompositionProbe(DecompositionAgent):
     agent_name = "Pattern Decomposition Probe"
     risk_level = AgentRiskLevel.LOW
 
-    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        return _probe_context(request, label="decomposition-probe")
-
     async def perceive(self, step_ctx: AgentStepContext) -> Observation:
         _ = step_ctx
         return Observation(summary="decompose")
@@ -201,9 +142,6 @@ class PatternReflectionProbe(ReflectionAgent):
     capabilities = ("harness.pattern.reflection",)
     agent_name = "Pattern Reflection Probe"
     risk_level = AgentRiskLevel.LOW
-
-    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        return _probe_context(request, label="reflection-probe")
 
     async def perceive(self, step_ctx: AgentStepContext) -> Observation:
         _ = step_ctx

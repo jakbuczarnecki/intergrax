@@ -31,3 +31,4 @@ class ACPSessionHostContext(BaseModel):
         default=None,
         exclude=True,
     )
+    runtime_session_hooks: Any = Field(default=None, exclude=True)

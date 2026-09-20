@@ -50,26 +50,8 @@ def inject_acp_skill_host_wiring_metadata(
     metadata[AcpMetadataKey.SKILL_HOST_WIRING] = wiring
 
 
-def apply_host_skill_wiring_to_runtime_context(
-    runtime_context: object,
-    request_metadata: dict[str, Any],
-) -> None:
-    from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-
-    if not isinstance(runtime_context, RuntimeContext):
-        return
-    wiring = resolve_skill_host_wiring_from_metadata(request_metadata)
-    if wiring is None:
-        return
-    runtime_context.config.skill_profile = wiring.skill_profile
-    runtime_context.config.skill_registry = wiring.skill_registry
-    if wiring.skill_pinning_store is not None:
-        runtime_context.config.skill_pinning_store = wiring.skill_pinning_store
-
-
 __all__ = [
     "HostSkillCatalogWiring",
-    "apply_host_skill_wiring_to_runtime_context",
     "attach_skill_host_wiring_metadata",
     "inject_acp_skill_host_wiring_metadata",
     "resolve_skill_host_wiring_from_metadata",
