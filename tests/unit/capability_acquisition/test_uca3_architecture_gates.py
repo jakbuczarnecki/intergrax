@@ -66,3 +66,12 @@ def test_acquisition_service_does_not_import_discovery_engine() -> None:
         for module in imports
         for prefix in _DISCOVERY_PREFIXES
     )
+
+
+def test_acquisition_service_does_not_import_implicit_permit_adapter() -> None:
+    service_path = _COORDINATION_ROOT / "acquisition_service.py"
+    imports = _module_imports(service_path)
+    assert (
+        "intergrax.capability_acquisition.permit_acquisition_authorization"
+        not in imports
+    )

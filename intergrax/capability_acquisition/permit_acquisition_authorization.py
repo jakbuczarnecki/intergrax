@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Composition-default acquisition authorization (UCA-3)."""
+"""Explicit permit-all acquisition authorization adapter (composition root)."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ from intergrax.contracts.runtime_policy import PolicyDecision
 
 
 class PermitCapabilityAcquisitionAuthorizationPort:
-    """Allow acquisition when no external governance adapter is wired."""
+    """Allow acquisition — must be injected explicitly; not a UCA core default."""
 
     def authorize(
         self,

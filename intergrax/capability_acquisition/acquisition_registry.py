@@ -19,6 +19,7 @@ from intergrax.contracts.capability_acquisition.strategy_descriptor import (
     CapabilityAcquisitionStrategyDescriptor,
 )
 
+
 def descriptor_for_strategy(
     strategy: CapabilityAcquisitionStrategy,
 ) -> CapabilityAcquisitionStrategyDescriptor:
@@ -72,10 +73,16 @@ class CapabilityAcquisitionStrategyRegistry:
         self,
         request: CapabilityAcquisitionRequest,
     ) -> tuple[CapabilityAcquisitionStrategyDescriptor, ...]:
-        return tuple(
-            descriptor_for_strategy(strategy)
-            for strategy in self.eligible_strategies(request)
-        )
+        """Descriptors for eligible strategies (invokes ``supports()`` once per strategy)."""
+        eligible = self.eligible_strategies(request)
+        return tuple(descriptor_for_strategy(strategy) for strategy in eligible)
+
+    def descriptors_for_eligible(
+        self,
+        eligible: tuple[CapabilityAcquisitionStrategy, ...],
+    ) -> tuple[CapabilityAcquisitionStrategyDescriptor, ...]:
+        """Build descriptors from a prior eligibility snapshot — no ``supports()`` calls."""
+        return tuple(descriptor_for_strategy(strategy) for strategy in eligible)
 
 
 def _assert_supports_aligned_with_declared_kinds(

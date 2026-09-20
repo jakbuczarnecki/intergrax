@@ -33,6 +33,17 @@ from intergrax.contracts.capability_catalog.federation import (
 )
 from intergrax.contracts.capability_catalog.kind import CapabilityKind
 from intergrax.contracts.capability_catalog.need import CapabilityNeed
+from intergrax.contracts.capability_acquisition.acquisition_authorization import (
+    CapabilityAcquisitionAuthorizationOutcome,
+    CapabilityAcquisitionAuthorizationResult,
+)
+from intergrax.contracts.capability_acquisition.strategy_selection import (
+    CapabilityAcquisitionStrategySelection,
+    CapabilityAcquisitionStrategySelectionOutcome,
+)
+from intergrax.contracts.policy_action import PolicyAction
+from intergrax.contracts.runtime_policy import PolicyDecision
+from pydantic import ValidationError
 
 pytestmark = pytest.mark.unit
 
@@ -90,3 +101,68 @@ def test_success_with_artifact_reference() -> None:
         evidence=CapabilityAcquisitionEvidence(artifact_reference="artifact://x"),
     )
     assert result.evidence is not None
+
+
+def test_authorization_permitted_with_deny_policy_invalid() -> None:
+    with pytest.raises(ValidationError):
+        CapabilityAcquisitionAuthorizationResult(
+            outcome=CapabilityAcquisitionAuthorizationOutcome.PERMITTED,
+            policy_decision=PolicyDecision(action=PolicyAction.DENY),
+        )
+
+
+def test_authorization_blocked_with_allow_policy_invalid() -> None:
+    with pytest.raises(ValidationError):
+        CapabilityAcquisitionAuthorizationResult(
+            outcome=CapabilityAcquisitionAuthorizationOutcome.BLOCKED,
+            policy_decision=PolicyDecision(action=PolicyAction.ALLOW),
+        )
+
+
+def test_authorization_hitl_requires_human_or_escalate() -> None:
+    CapabilityAcquisitionAuthorizationResult(
+        outcome=CapabilityAcquisitionAuthorizationOutcome.REQUIRES_HITL,
+        policy_decision=PolicyDecision(action=PolicyAction.REQUIRE_HUMAN),
+    )
+    CapabilityAcquisitionAuthorizationResult(
+        outcome=CapabilityAcquisitionAuthorizationOutcome.REQUIRES_HITL,
+        policy_decision=PolicyDecision(action=PolicyAction.ESCALATE),
+    )
+    with pytest.raises(ValidationError):
+        CapabilityAcquisitionAuthorizationResult(
+            outcome=CapabilityAcquisitionAuthorizationOutcome.REQUIRES_HITL,
+            policy_decision=PolicyDecision(action=PolicyAction.DENY),
+        )
+
+
+def test_selection_selected_requires_strategy_id() -> None:
+    with pytest.raises(ValidationError):
+        CapabilityAcquisitionStrategySelection(
+            outcome=CapabilityAcquisitionStrategySelectionOutcome.SELECTED,
+            strategy_id=None,
+            reason_code=CapabilityAcquisitionReasonCode.NONE,
+        )
+
+
+def test_selection_non_selected_forbids_strategy_id() -> None:
+    with pytest.raises(ValidationError):
+        CapabilityAcquisitionStrategySelection(
+            outcome=CapabilityAcquisitionStrategySelectionOutcome.CONFLICT,
+            strategy_id="x",
+            reason_code=CapabilityAcquisitionReasonCode.SELECTION_CONFLICT,
+        )
+    with pytest.raises(ValidationError):
+        CapabilityAcquisitionStrategySelection(
+            outcome=CapabilityAcquisitionStrategySelectionOutcome.NO_STRATEGY,
+            strategy_id="x",
+            reason_code=CapabilityAcquisitionReasonCode.NO_STRATEGY,
+        )
+
+
+def test_selection_selected_valid() -> None:
+    selection = CapabilityAcquisitionStrategySelection(
+        outcome=CapabilityAcquisitionStrategySelectionOutcome.SELECTED,
+        strategy_id="strategy-a",
+        reason_code=CapabilityAcquisitionReasonCode.NONE,
+    )
+    assert selection.strategy_id == "strategy-a"

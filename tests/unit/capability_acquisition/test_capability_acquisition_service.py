@@ -17,6 +17,9 @@ from intergrax.capability_acquisition.acquisition_service import (
 from intergrax.capability_acquisition.default_strategy_selection_policy import (
     DefaultCapabilityAcquisitionStrategySelectionPolicy,
 )
+from intergrax.capability_acquisition.permit_acquisition_authorization import (
+    PermitCapabilityAcquisitionAuthorizationPort,
+)
 from intergrax.contracts.capability_acquisition.acquisition_authorization import (
     CapabilityAcquisitionAuthorizationOutcome,
     CapabilityAcquisitionAuthorizationResult,
@@ -58,8 +61,24 @@ from intergrax.contracts.capability_catalog.federation import (
 )
 from intergrax.contracts.capability_catalog.kind import CapabilityKind
 from intergrax.contracts.capability_catalog.need import CapabilityNeed
+from intergrax.contracts.policy_action import PolicyAction
+from intergrax.contracts.runtime_policy import PolicyDecision
 
 pytestmark = pytest.mark.unit
+
+
+def _permit_auth() -> PermitCapabilityAcquisitionAuthorizationPort:
+    return PermitCapabilityAcquisitionAuthorizationPort()
+
+
+def _service(
+    strategies: tuple[object, ...],
+    **kwargs: object,
+) -> CapabilityAcquisitionService:
+    if "authorization" not in kwargs:
+        kwargs["authorization"] = _permit_auth()
+    return CapabilityAcquisitionService(strategies, **kwargs)
+
 
 _CREATED = datetime(2026, 9, 20, 12, 0, tzinfo=UTC)
 
@@ -151,7 +170,7 @@ def test_valid_gap_request_accepted() -> None:
 
 
 def test_no_strategies_returns_no_strategy() -> None:
-    service = CapabilityAcquisitionService(())
+    service = _service(())
     result = service.acquire(_request(_gap()))
     assert result.outcome is CapabilityAcquisitionOutcome.NO_STRATEGY
     assert result.reason_code is CapabilityAcquisitionReasonCode.NO_STRATEGY
@@ -162,17 +181,40 @@ def test_one_strategy_invoked_once() -> None:
         strategy_id="fake.acquire",
         kinds=frozenset({CapabilityKind.TOOL}),
     )
-    service = CapabilityAcquisitionService((strategy,))
+    service = _service((strategy,))
     result = service.acquire(_request(_gap()))
     assert result.outcome is CapabilityAcquisitionOutcome.SUCCEEDED
     assert result.strategy_id == "fake.acquire"
     assert strategy.calls == 1
 
 
+def test_service_requires_explicit_authorization() -> None:
+    strategy = _FakeStrategy(
+        strategy_id="fake.acquire",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    with pytest.raises(TypeError):
+        CapabilityAcquisitionService((strategy,))
+
+
+def test_explicit_permit_authorization_allows_acquire() -> None:
+    strategy = _FakeStrategy(
+        strategy_id="fake.acquire",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = CapabilityAcquisitionService(
+        (strategy,),
+        authorization=PermitCapabilityAcquisitionAuthorizationPort(),
+    )
+    result = service.acquire(_request(_gap()))
+    assert result.outcome is CapabilityAcquisitionOutcome.SUCCEEDED
+    assert strategy.calls == 1
+
+
 def test_multiple_eligible_default_policy_conflict() -> None:
     a = _FakeStrategy(strategy_id="a", kinds=frozenset({CapabilityKind.TOOL}))
     b = _FakeStrategy(strategy_id="b", kinds=frozenset({CapabilityKind.TOOL}))
-    service = CapabilityAcquisitionService((a, b))
+    service = _service((a, b))
     result = service.acquire(_request(_gap()))
     assert result.outcome is CapabilityAcquisitionOutcome.CONFLICT
     assert a.calls == 0
@@ -198,7 +240,7 @@ def test_custom_selection_policy_chooses_b() -> None:
 
     a = _FakeStrategy(strategy_id="a", kinds=frozenset({CapabilityKind.TOOL}))
     b = _FakeStrategy(strategy_id="b", kinds=frozenset({CapabilityKind.TOOL}))
-    service = CapabilityAcquisitionService(
+    service = _service(
         (a, b),
         selection_policy=_PickBPolicy(),
     )
@@ -223,6 +265,7 @@ def test_governance_blocked_skips_strategy() -> None:
             return CapabilityAcquisitionAuthorizationResult(
                 outcome=CapabilityAcquisitionAuthorizationOutcome.BLOCKED,
                 reason_detail="policy deny",
+                policy_decision=PolicyDecision(action=PolicyAction.DENY),
             )
 
     strategy = _FakeStrategy(
@@ -244,6 +287,7 @@ def test_governance_hitl_skips_strategy() -> None:
             del request, eligible
             return CapabilityAcquisitionAuthorizationResult(
                 outcome=CapabilityAcquisitionAuthorizationOutcome.REQUIRES_HITL,
+                policy_decision=PolicyDecision(action=PolicyAction.REQUIRE_HUMAN),
             )
 
     strategy = _FakeStrategy(
@@ -282,7 +326,7 @@ def test_result_integrity_mismatch_raises() -> None:
         strategy_id="bad",
         kinds=frozenset({CapabilityKind.TOOL}),
     )
-    service = CapabilityAcquisitionService((strategy,))
+    service = _service((strategy,))
     with pytest.raises(CapabilityAcquisitionIntegrityError):
         service.acquire(_request(_gap()))
 
@@ -293,7 +337,7 @@ def test_supports_declared_kinds_inconsistency_fails_closed() -> None:
         kinds=frozenset({CapabilityKind.SKILL}),
         supports_override=True,
     )
-    service = CapabilityAcquisitionService((strategy,))
+    service = _service((strategy,))
     result = service.acquire(_request(_gap(), kinds=(CapabilityKind.TOOL,)))
     assert result.outcome is CapabilityAcquisitionOutcome.FAILED
     assert (
@@ -339,3 +383,155 @@ def test_default_selection_policy_semantics() -> None:
         governance_context=CapabilityAcquisitionGovernanceContext(),
     )
     assert conflict.outcome is CapabilityAcquisitionStrategySelectionOutcome.CONFLICT
+
+
+class _CountingSupportsStrategy(_FakeStrategy):
+    def __init__(self, **kwargs: object) -> None:
+        super().__init__(**kwargs)
+        self.supports_calls = 0
+
+    def supports(self, request: CapabilityAcquisitionRequest) -> bool:
+        self.supports_calls += 1
+        return super().supports(request)
+
+
+def test_supports_invoked_once_per_acquire() -> None:
+    strategy = _CountingSupportsStrategy(
+        strategy_id="count.supports",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,))
+    service.acquire(_request(_gap()))
+    assert strategy.supports_calls == 1
+
+
+class _MutatingSupportsStrategy(_FakeStrategy):
+    def __init__(self, **kwargs: object) -> None:
+        super().__init__(**kwargs)
+        self._calls = 0
+
+    def supports(self, request: CapabilityAcquisitionRequest) -> bool:
+        self._calls += 1
+        return self._calls == 1
+
+
+def test_mutating_supports_single_snapshot_stays_eligible() -> None:
+    strategy = _MutatingSupportsStrategy(
+        strategy_id="mutating.supports",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,))
+    result = service.acquire(_request(_gap()))
+    assert result.outcome is CapabilityAcquisitionOutcome.SUCCEEDED
+    assert strategy.calls == 1
+
+
+def test_authorization_and_selection_share_eligibility_snapshot() -> None:
+    class _RecordingAuth:
+        def __init__(self) -> None:
+            self.candidates: tuple[CapabilityAcquisitionStrategyDescriptor, ...] = ()
+
+        def authorize(self, request, eligible):
+            del request
+            self.candidates = eligible
+            return CapabilityAcquisitionAuthorizationResult(
+                outcome=CapabilityAcquisitionAuthorizationOutcome.PERMITTED,
+                decision_id="test.permit",
+                policy_decision=PolicyDecision(action=PolicyAction.ALLOW),
+            )
+
+    class _RecordingPolicy:
+        def __init__(self) -> None:
+            self.candidates: tuple[CapabilityAcquisitionStrategyDescriptor, ...] = ()
+
+        def select(
+            self,
+            *,
+            request: CapabilityAcquisitionRequest,
+            candidates: tuple[CapabilityAcquisitionStrategyDescriptor, ...],
+            governance_context: CapabilityAcquisitionGovernanceContext,
+        ) -> CapabilityAcquisitionStrategySelection:
+            del request, governance_context
+            self.candidates = candidates
+            return CapabilityAcquisitionStrategySelection(
+                outcome=CapabilityAcquisitionStrategySelectionOutcome.SELECTED,
+                strategy_id=candidates[0].strategy_id,
+                reason_code=CapabilityAcquisitionReasonCode.NONE,
+            )
+
+    strategy = _FakeStrategy(
+        strategy_id="snap",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    auth = _RecordingAuth()
+    policy = _RecordingPolicy()
+    service = _service((strategy,), authorization=auth, selection_policy=policy)
+    service.acquire(_request(_gap()))
+    assert auth.candidates == policy.candidates
+    assert auth.candidates == (
+        CapabilityAcquisitionStrategyDescriptor(
+            strategy_id="snap",
+            supported_kinds=(CapabilityKind.TOOL,),
+        ),
+    )
+
+
+def test_invalid_custom_selection_output_skips_strategy() -> None:
+    class _InvalidSelectionPolicy:
+        def select(
+            self,
+            *,
+            request: CapabilityAcquisitionRequest,
+            candidates: tuple[CapabilityAcquisitionStrategyDescriptor, ...],
+            governance_context: CapabilityAcquisitionGovernanceContext,
+        ) -> CapabilityAcquisitionStrategySelection:
+            del request, candidates, governance_context
+            return CapabilityAcquisitionStrategySelection.model_construct(
+                outcome=CapabilityAcquisitionStrategySelectionOutcome.SELECTED,
+                strategy_id=None,
+                reason_code=CapabilityAcquisitionReasonCode.NONE,
+            )
+
+    strategy = _FakeStrategy(
+        strategy_id="fake.acquire",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,), selection_policy=_InvalidSelectionPolicy())
+    result = service.acquire(_request(_gap()))
+    assert result.outcome is CapabilityAcquisitionOutcome.FAILED
+    assert strategy.calls == 0
+
+
+def test_governance_authorization_failure_skips_strategy() -> None:
+    class _FailingAuth:
+        def authorize(self, request, eligible):
+            del request, eligible
+            raise CapabilityAcquisitionIntegrityError("governance unavailable")
+
+    strategy = _FakeStrategy(
+        strategy_id="fake.acquire",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,), authorization=_FailingAuth())
+    with pytest.raises(CapabilityAcquisitionIntegrityError):
+        service.acquire(_request(_gap()))
+    assert strategy.calls == 0
+
+
+def test_inconsistent_authorization_result_fails_closed() -> None:
+    class _InconsistentAuth:
+        def authorize(self, request, eligible):
+            del request, eligible
+            return CapabilityAcquisitionAuthorizationResult(
+                outcome=CapabilityAcquisitionAuthorizationOutcome.PERMITTED,
+                policy_decision=PolicyDecision(action=PolicyAction.DENY),
+            )
+
+    strategy = _FakeStrategy(
+        strategy_id="fake.acquire",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = _service((strategy,), authorization=_InconsistentAuth())
+    result = service.acquire(_request(_gap()))
+    assert result.outcome is CapabilityAcquisitionOutcome.FAILED
+    assert strategy.calls == 0

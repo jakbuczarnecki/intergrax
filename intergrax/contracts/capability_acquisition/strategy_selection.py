@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final, Literal, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.capability_acquisition.acquisition_reason_code import (
     CapabilityAcquisitionReasonCode,
@@ -64,6 +64,21 @@ class CapabilityAcquisitionStrategySelection(BaseModel):
         if value is None:
             return None
         return require_non_empty_text(value, label="strategy_id")
+
+    @model_validator(mode="after")
+    def _outcome_strategy_id_invariant(
+        self,
+    ) -> CapabilityAcquisitionStrategySelection:
+        if self.outcome is CapabilityAcquisitionStrategySelectionOutcome.SELECTED:
+            if self.strategy_id is None:
+                raise ValueError("SELECTED outcome requires strategy_id")
+            if self.reason_code is not CapabilityAcquisitionReasonCode.NONE:
+                raise ValueError("SELECTED outcome requires reason_code NONE")
+        elif self.strategy_id is not None:
+            raise ValueError(
+                "strategy_id is only allowed when outcome is SELECTED",
+            )
+        return self
 
 
 @runtime_checkable

@@ -31,7 +31,11 @@ class CapabilityAcquisitionStrategy(Protocol):
         ...
 
     def supports(self, request: CapabilityAcquisitionRequest) -> bool:
-        """Whether this strategy can technically handle the request."""
+        """Technical eligibility predicate for one request.
+
+        Must be side-effect free (no acquisition, governance, or lifecycle mutation).
+        The orchestrator evaluates this at most once per strategy per acquisition.
+        """
         ...
 
     def acquire(

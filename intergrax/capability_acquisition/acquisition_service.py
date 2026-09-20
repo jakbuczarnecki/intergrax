@@ -11,16 +11,15 @@ from pydantic import ValidationError
 
 from intergrax.capability_acquisition.acquisition_registry import (
     CapabilityAcquisitionStrategyRegistry,
+    descriptor_for_strategy,
 )
 from intergrax.capability_acquisition.default_strategy_selection_policy import (
     DefaultCapabilityAcquisitionStrategySelectionPolicy,
 )
-from intergrax.capability_acquisition.permit_acquisition_authorization import (
-    PermitCapabilityAcquisitionAuthorizationPort,
-)
 from intergrax.contracts.capability_acquisition.acquisition_authorization import (
     CapabilityAcquisitionAuthorizationOutcome,
     CapabilityAcquisitionAuthorizationPort,
+    CapabilityAcquisitionAuthorizationResult,
 )
 from intergrax.contracts.capability_acquisition.acquisition_evidence import (
     CapabilityAcquisitionEvidence,
@@ -45,6 +44,7 @@ from intergrax.contracts.capability_acquisition.errors import (
 )
 from intergrax.contracts.capability_acquisition.strategy_selection import (
     CapabilityAcquisitionGovernanceContext,
+    CapabilityAcquisitionStrategySelection,
     CapabilityAcquisitionStrategySelectionOutcome,
     CapabilityAcquisitionStrategySelectionPolicy,
 )
@@ -57,15 +57,13 @@ class CapabilityAcquisitionService:
         self,
         strategies: tuple[CapabilityAcquisitionStrategy, ...],
         *,
+        authorization: CapabilityAcquisitionAuthorizationPort,
         selection_policy: CapabilityAcquisitionStrategySelectionPolicy | None = None,
-        authorization: CapabilityAcquisitionAuthorizationPort | None = None,
     ) -> None:
         self._registry = CapabilityAcquisitionStrategyRegistry(strategies)
+        self._authorization = authorization
         self._selection_policy = (
             selection_policy or DefaultCapabilityAcquisitionStrategySelectionPolicy()
-        )
-        self._authorization = (
-            authorization or PermitCapabilityAcquisitionAuthorizationPort()
         )
 
     def acquire(
@@ -83,8 +81,19 @@ class CapabilityAcquisitionService:
                 reason_detail=str(exc),
             )
 
-        descriptors = self._registry.eligible_descriptors(request)
-        auth = self._authorization.authorize(request, descriptors)
+        descriptors = tuple(descriptor_for_strategy(strategy) for strategy in eligible)
+        try:
+            auth = CapabilityAcquisitionAuthorizationResult.model_validate(
+                self._authorization.authorize(request, descriptors).model_dump(),
+            )
+        except ValidationError as exc:
+            return _terminal_result(
+                request=request,
+                outcome=CapabilityAcquisitionOutcome.FAILED,
+                reason_code=CapabilityAcquisitionReasonCode.GOVERNANCE_BLOCKED,
+                started_at=started_at,
+                reason_detail=str(exc),
+            )
         if auth.outcome is CapabilityAcquisitionAuthorizationOutcome.BLOCKED:
             return _terminal_result(
                 request=request,
@@ -101,15 +110,35 @@ class CapabilityAcquisitionService:
                 started_at=started_at,
                 reason_detail=auth.reason_detail or "human approval required",
             )
+        if auth.outcome is not CapabilityAcquisitionAuthorizationOutcome.PERMITTED:
+            return _terminal_result(
+                request=request,
+                outcome=CapabilityAcquisitionOutcome.FAILED,
+                reason_code=CapabilityAcquisitionReasonCode.GOVERNANCE_BLOCKED,
+                started_at=started_at,
+                reason_detail="unrecognized acquisition authorization outcome",
+            )
 
         governance_context = CapabilityAcquisitionGovernanceContext(
             authorization_decision_id=auth.decision_id or None,
         )
-        selection = self._selection_policy.select(
-            request=request,
-            candidates=descriptors,
-            governance_context=governance_context,
-        )
+        try:
+            raw_selection = self._selection_policy.select(
+                request=request,
+                candidates=descriptors,
+                governance_context=governance_context,
+            )
+            selection = CapabilityAcquisitionStrategySelection.model_validate(
+                raw_selection.model_dump(),
+            )
+        except ValidationError as exc:
+            return _terminal_result(
+                request=request,
+                outcome=CapabilityAcquisitionOutcome.FAILED,
+                reason_code=CapabilityAcquisitionReasonCode.EVIDENCE_INCONSISTENT,
+                started_at=started_at,
+                reason_detail=str(exc),
+            )
         if (
             selection.outcome
             is CapabilityAcquisitionStrategySelectionOutcome.NO_STRATEGY
@@ -149,8 +178,29 @@ class CapabilityAcquisitionService:
                 reason_detail=selection.reason_detail,
             )
 
-        assert selection.strategy_id is not None
-        strategy = self._registry.get(selection.strategy_id)
+        if (
+            selection.outcome
+            is not CapabilityAcquisitionStrategySelectionOutcome.SELECTED
+        ):
+            return _terminal_result(
+                request=request,
+                outcome=CapabilityAcquisitionOutcome.FAILED,
+                reason_code=CapabilityAcquisitionReasonCode.EVIDENCE_INCONSISTENT,
+                started_at=started_at,
+                reason_detail="selection ended without a selected strategy",
+            )
+
+        strategy_id = selection.strategy_id
+        if strategy_id is None:
+            return _terminal_result(
+                request=request,
+                outcome=CapabilityAcquisitionOutcome.FAILED,
+                reason_code=CapabilityAcquisitionReasonCode.EVIDENCE_INCONSISTENT,
+                started_at=started_at,
+                reason_detail="SELECTED outcome missing strategy_id",
+            )
+
+        strategy = self._registry.get(strategy_id)
         if strategy is None or strategy not in eligible:
             return _terminal_result(
                 request=request,
