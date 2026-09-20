@@ -35,6 +35,7 @@ from tests.qualification.harness_01.nexus_boundary_detector import (
 from tests.qualification.harness_01.nexus_import_inventory import (
     HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS,
     HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTERS,
+    HARNESS_01_NEXUS_INTERNAL_ONLY_INVARIANT,
     HARNESS_01_PUBLIC_EXTENSION_SURFACE_EXACT,
     _rule_classify,
     path_is_hard_nexus_violation,
@@ -417,6 +418,11 @@ def test_harness_01_synthetic_application_host_invoker_bypass_would_fail_allowli
     assert hits
     rel = "applications/foo/host/bypass.py"
     assert rel not in HARNESS_01_AUTHORIZED_RUNTIME_TOOL_INVOKER_CALLSITE_FILES
+
+
+def test_harness_01_nexus_internal_only_invariant_is_documented() -> None:
+    assert "internal to Execution Runtime" in HARNESS_01_NEXUS_INTERNAL_ONLY_INVARIANT
+    assert "No public contract" in HARNESS_01_NEXUS_INTERNAL_ONLY_INVARIANT
 
 
 def test_harness_01_higher_layer_nexus_imports_are_classified() -> None:

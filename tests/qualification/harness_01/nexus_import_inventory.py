@@ -1,12 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
 
+from __future__ import annotations
+
 """Explicit higher-layer Nexus import inventory (HARNESS-01 R4).
 
 Closed-world inventory + owner-layer rules. Unknown importers are UNCLASSIFIED (FAIL).
 There is no default LEGAL / AUTHORIZED_INTERNAL_COMPOSITION fallback.
+
+Invariant (HARNESS-01 internal-only Nexus):
+    Nexus is internal to Execution Runtime.
+    No public contract or extension surface may depend on Nexus.
 """
 
-from __future__ import annotations
+HARNESS_01_NEXUS_INTERNAL_ONLY_INVARIANT: str = (
+    "Nexus is internal to Execution Runtime. "
+    "No public contract or extension surface may depend on Nexus."
+)
 
 from dataclasses import dataclass
 from typing import Literal
@@ -157,12 +166,23 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
             "Nexus types must not escape public signatures."
         )
         evidence = _EVIDENCE_EE
-        if path.endswith("orchestration_topology_slot_mse_enforcement.py"):
+        if path.endswith(
+            (
+                "orchestration_topology_slot_mse_enforcement.py",
+                "orchestration_topology_production_composition.py",
+            )
+        ):
             reason = (
                 "Execution-engine composition wrapping public OrchestrationSlotExecutor / "
                 "MeaningfulSideEffectAuthorizationPort with Nexus governed executors; "
-                "Nexus types stay out of public signatures."
+                "Nexus types stay out of public port signatures."
             )
+            if path.endswith("orchestration_topology_production_composition.py"):
+                reason = (
+                    "Strict production orchestration topology composition (GR-10-R13-R2); "
+                    "builds OrchestrationTopologySubmissionPort via EE internals; "
+                    "NexusLoop is an internal factory dependency only."
+                )
             evidence = _EVIDENCE_TOPOLOGY
         if path.endswith("agent_runtime_context_materializer.py"):
             reason = (
@@ -324,6 +344,7 @@ _PATHS: tuple[str, ...] = (
     "applications/dispute_sim_application/host/integration_wiring.py",
     "applications/governed_contractor_application/host/execution_wiring.py",
     "applications/governed_contractor_application/host/integration_wiring.py",
+    "applications/governed_contractor_application/host/orchestration_topology_production_composition.py",
     "applications/lab_application/host/integration_wiring.py",
     "applications/legal_application/host/factory.py",
     "applications/local_workspace_application/host/execution_wiring.py",
@@ -446,6 +467,7 @@ _PATHS: tuple[str, ...] = (
     "intergrax/runtime/execution/nexus_host_task_terminal.py",
     "intergrax/runtime/execution/orchestration.py",
     "intergrax/runtime/execution/orchestration_topology_slot_mse_enforcement.py",
+    "intergrax/runtime/execution/orchestration_topology_production_composition.py",
     "intergrax/runtime/execution/orchestration_topology_submission.py",
     "intergrax/runtime/execution/runtime.py",
     "intergrax/runtime/hooks/tool_hooks.py",
