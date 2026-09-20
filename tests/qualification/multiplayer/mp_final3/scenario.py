@@ -317,6 +317,18 @@ def assert_happy_path_consistency(result: CapabilityWideScenarioResult) -> None:
     assert cw_refs, "ContextView must project Collaborative Work references"
     work_item_ids = {ref.work_item_id for ref in cw_refs if ref.work_item_id}
     assert WORK_ITEM_ID in work_item_ids
+    artifact_version_refs = [
+        ref.work_artifact_version
+        for ref in cw_refs
+        if ref.work_artifact_version is not None
+    ]
+    assert artifact_version_refs, (
+        "ContextView must project WorkArtifactVersionRef when artifacts exist"
+    )
+    assert ARTIFACT_ID in {v.work_artifact_id for v in artifact_version_refs}
+    assert VERSION_2_ID in {
+        v.work_artifact_version_id for v in artifact_version_refs
+    }, "ContextView collaborative-work projection must surface current published version"
 
     observed = [a.activity_type for a in result.activities]
     required = (

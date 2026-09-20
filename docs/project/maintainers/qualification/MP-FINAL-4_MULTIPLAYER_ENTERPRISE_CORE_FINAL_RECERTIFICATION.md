@@ -16,8 +16,8 @@ START_HEAD                    = ba513e737b1e91bf381aa761179329decbb11dfe
 BRANCH                        = development
 WORKTREE_STATE                = unrelated WIP present (not staged for MP-FINAL-4)
 MP_FINAL_3_BINDER_ANCESTRY    = 76c64c6f9cadc52a69cdea82e560975afd3230e3 (ancestor of START_HEAD)
-QUALIFICATION_SHA             = (see §29 — test/docs land commit)
-EVIDENCE_SHA                  = (see §29 — same land commit unless binder split)
+QUALIFICATION_SHA             = acdfc1d2b3f99244ee2776d3f286541fe3d43c93
+EVIDENCE_SHA                  = (see §29 — docs binder commit)
 BINDER_SHA                    = (optional; not self-stamped in this file)
 ```
 
@@ -183,7 +183,8 @@ BLOCKING DOCUMENTATION FINDINGS: NONE
 
 ## 29. Commit(s)
 
-Recorded at land time via `git log -1 --format=%H` for the MP-FINAL-4 qualification commit(s).
+QUALIFICATION_SHA = acdfc1d2b3f99244ee2776d3f286541fe3d43c93 (gates + evidence artifact)
+EVIDENCE_SHA      = (docs(multiplayer): certify final enterprise core — §30 binder)
 
 ## 30. Status transition
 
