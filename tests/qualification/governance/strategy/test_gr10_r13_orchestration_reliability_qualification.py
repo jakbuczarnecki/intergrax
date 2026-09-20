@@ -53,7 +53,7 @@ def test_gr10_r13_reliability_inventory_has_no_gap_rows() -> None:
             "N/A",
             "delegated to another canonical owner",
             "QUALIFIED — delegated GR-7",
-            "QUALIFIED — intergrax/runtime/execution/orchestration_topology_production_composition.py; harness + governed contractor host factories",
+            "QUALIFIED — create_governed_contractor_process_app → HarnessHostRuntime.orchestration_topology consumes canonical strict production composition",
         }
         if row.production and row.consequential and row.coverage == "QUALIFIED":
             assert row.reliability_boundary

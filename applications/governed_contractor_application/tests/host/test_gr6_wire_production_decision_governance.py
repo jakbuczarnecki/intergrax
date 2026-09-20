@@ -591,7 +591,9 @@ def test_strict_host_composition_wires_agent_boundary_and_integration(
         ),
         task_scope=task_scope,
     )
-    composition = create_reference_production_process_composition()
+    composition = create_reference_production_process_composition(
+        provider_invocation_store=DurableTestProviderInvocationStore(),
+    )
     manifest = build_governed_contractor_manifest()
     env = manifest.environment or build_governed_contractor_environment_profile(settings)
     projection = build_test_registry_projection(

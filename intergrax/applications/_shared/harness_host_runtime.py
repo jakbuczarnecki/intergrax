@@ -112,6 +112,7 @@ from intergrax.contracts.decision_requirement_policy import DecisionRequirementP
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
+from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
 from intergrax.applications._shared.harness_registry_authority import (
     RegistryAssemblyMode,
     resolve_harness_host_registry,
@@ -132,6 +133,11 @@ from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.applications._shared.harness_host_composition import (
     HarnessHostInternalComposition,
     build_harness_host_internal_composition,
+)
+from intergrax.applications._shared.harness_host_orchestration_topology_wiring import (
+    HarnessHostOrchestrationTopologyWiring,
+    StrictOrchestrationTopologySubmissionPortBuilder,
+    build_harness_host_orchestration_topology_wiring,
 )
 from intergrax.applications._shared.harness_host_task_execution_wiring import (
     build_harness_environment_host_task_execution,
@@ -230,6 +236,7 @@ class HarnessHostRuntime:
         None
     )
     _host_diagnostic_dependencies: HostDiagnosticReadDependencies | None = None
+    orchestration_topology: HarnessHostOrchestrationTopologyWiring | None = None
 
     @property
     def host_diagnostic_dependencies(self) -> HostDiagnosticReadDependencies | None:
@@ -281,6 +288,11 @@ def build_harness_host_runtime(
     collaborative_work_integration_profile: IntegrationProfile | None = None,
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
     diagnostic_composition_overrides: DiagnosticCompositionOverrides | None = None,
+    provider_invocation_store: ProviderInvocationStore | None = None,
+    require_strict_orchestration_topology_reliability: bool = False,
+    strict_orchestration_topology_submission_port_builder: (
+        StrictOrchestrationTopologySubmissionPortBuilder | None
+    ) = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -557,6 +569,15 @@ def build_harness_host_runtime(
         ),
         skill_host_wiring=build_host_skill_catalog_wiring_from_environment(env_wiring),
     )
+    orchestration_topology_wiring: HarnessHostOrchestrationTopologyWiring | None = None
+    if require_strict_orchestration_topology_reliability:
+        orchestration_topology_wiring = build_harness_host_orchestration_topology_wiring(
+            nexus_loop,
+            provider_invocation_store=provider_invocation_store,
+            tenant_id=resolved_tenant_id,
+            meaningful_side_effect_authorization=resolved_meaningful_side_effect_authorization,
+            submission_port_builder=strict_orchestration_topology_submission_port_builder,
+        )
     host_runtime = HarnessHostRuntime(
         manifest=resolved_manifest,
         environment=effective_environment,
@@ -572,6 +593,7 @@ def build_harness_host_runtime(
         evaluation=evaluation_wiring,
         diagnostic_wiring=diagnostic_wiring,
         execution=execution,
+        orchestration_topology=orchestration_topology_wiring,
         _internal_composition=build_harness_host_internal_composition(nexus_loop),
         application_host=application_host,
         agent_checkpoint_store=resolved_agent_checkpoint_store,

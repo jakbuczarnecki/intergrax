@@ -58,7 +58,12 @@ from intergrax.applications._shared.product_observability_dashboard_wiring impor
     wire_harness_product_observability_dashboard,
 )
 from intergrax.debug.store import open_default_task_checkpoint_persistence
-from governed_contractor_application.host.execution_wiring import build_governed_contractor_host_task_execution
+from intergrax.applications._shared.harness_host_orchestration_topology_wiring import (
+    HarnessHostOrchestrationTopologyReliabilityCompositionError,
+)
+from governed_contractor_application.host.orchestration_topology_production_composition import (
+    build_governed_contractor_production_orchestration_topology_submission_port,
+)
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.host.collaborative_work_integration_profile import (
     resolve_governed_contractor_collaborative_work_integration_profile,
@@ -90,6 +95,17 @@ def create_governed_contractor_backend_app(
     manifest_for_runtime = manifest
     profile_persistence_kwargs: dict[str, object] = {}
     resolved_tenant_id = manifest.app_id
+    strict_topology_reliability = production_mode and process_composition is not None
+    provider_invocation_store = (
+        process_composition.provider_invocation_store
+        if process_composition is not None
+        else None
+    )
+    if strict_topology_reliability and provider_invocation_store is None:
+        raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+            "strict governed contractor production host requires "
+            "ProductionProcessComposition.provider_invocation_store",
+        )
     if process_composition is not None:
         if production_mode:
             env = resolve_reference_production_strict_host_environment(env)
@@ -122,11 +138,20 @@ def create_governed_contractor_backend_app(
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
         registry_projection=registry_projection,
+        collaborative_work_repositories=settings.collaborative_work_repositories,
         collaborative_work_integration_profile=collaborative_work_integration_profile,
         orchestration_decision_requirement_policy=(
-            default_governed_contractor_harness_orchestration_decision_requirement_policy()
+            settings.decision_requirement_policy
+            or default_governed_contractor_harness_orchestration_decision_requirement_policy()
         ),
         execution_continuation_state_store=execution_continuation_state_store,
+        provider_invocation_store=provider_invocation_store,
+        require_strict_orchestration_topology_reliability=strict_topology_reliability,
+        strict_orchestration_topology_submission_port_builder=(
+            build_governed_contractor_production_orchestration_topology_submission_port
+            if strict_topology_reliability
+            else None
+        ),
         **profile_persistence_kwargs,
     )
     host_execution = runtime.execution
