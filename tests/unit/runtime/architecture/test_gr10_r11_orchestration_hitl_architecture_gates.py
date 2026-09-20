@@ -159,3 +159,49 @@ def test_r11_r3_human_request_id_alone_insufficient_static() -> None:
     assert "return pending.human_request_id is not None" not in source
     assert "HumanGovernedProposalRelation" in source
 
+
+def test_r11_r4_no_wildcard_optional_correlation_matching() -> None:
+    source = _GATE.read_text(encoding="utf-8")
+    assert "optional_identity_field_matches_exactly" in source
+    assert "compare_optional_identity_field" in source
+    assert "GovernedProposalCorrelationMatch" in source
+    assert "GR-10-R11-R4" in source
+    tree = ast.parse(source, filename=str(_GATE))
+    compare_fn = None
+    for node in tree.body:
+        if (
+            isinstance(node, ast.FunctionDef)
+            and node.name == "_compare_governed_correlation_to_current_proposal"
+        ):
+            compare_fn = node
+            break
+    assert compare_fn is not None
+    for node in ast.walk(compare_fn):
+        if not isinstance(node, ast.If):
+            continue
+        test = node.test
+        if not isinstance(test, ast.Compare):
+            continue
+        left = test.left
+        if not (
+            isinstance(left, ast.Attribute)
+            and isinstance(left.value, ast.Name)
+            and left.value.id == "correlation"
+            and left.attr
+            in {
+                "resource_scope",
+                "side_effect_scope_id",
+                "side_effect_scope_digest",
+            }
+        ):
+            continue
+        if len(test.ops) == 1 and isinstance(test.ops[0], ast.IsNot):
+            if (
+                len(test.comparators) == 1
+                and isinstance(test.comparators[0], ast.Constant)
+                and test.comparators[0].value is None
+            ):
+                raise AssertionError(
+                    f"wildcard skip on correlation.{left.attr} is not None is forbidden"
+                )
+

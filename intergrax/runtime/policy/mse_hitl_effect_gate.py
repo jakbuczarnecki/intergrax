@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Canonical MSE HITL effect gate after fresh Governance authorize (GR-10-R11-R2/R3).
+"""Canonical MSE HITL effect gate after fresh Governance authorize (GR-10-R11-R2/R3/R4).
 
 Human judgment evidence and continuation grants never become Governance ALLOW.
 ``GovernedContinuationApprovalGrant`` is correlation / single-use evidence only.
@@ -21,8 +21,9 @@ Post-HITL physical effect may proceed only when:
 
 Proposal identity for post-HITL classification requires exact
 ``GovernedContinuationCorrelation`` match (execution + operation + resource +
-side-effect scope / digest). ``human_request_id`` alone never classifies the
-current effect as post-HITL (GR-10-R11-R3).
+side-effect scope / digest). Missing correlation fields never act as wildcards
+(GR-10-R11-R4). ``human_request_id`` alone never classifies the current effect as
+post-HITL (GR-10-R11-R3).
 
 Fresh ``REQUIRE_HUMAN`` is never ``PROCEED`` — matching grants cannot override it.
 """
@@ -31,6 +32,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum, auto
+from typing import TypeVar
 
 from intergrax.contracts.collaborative_work import CollaborativeWorkEnforcementRequest
 from intergrax.contracts.execution_continuation import (
@@ -111,6 +113,54 @@ _ORDINARY_ALLOW_CLASSIFICATIONS: frozenset[EffectContinuationClassification] = f
 )
 
 
+
+_TIdentityField = TypeVar("_TIdentityField")
+
+
+class OptionalIdentityFieldRelation(Enum):
+    """Symmetric exact-match result for one optional proposal identity field.
+
+    ``None`` / ``None`` is compatible. Asymmetric absence is never a wildcard match.
+    """
+
+    COMPATIBLE = auto()
+    INSUFFICIENT = auto()
+    MISMATCH = auto()
+
+
+class GovernedProposalCorrelationMatch(Enum):
+    """Outcome of comparing correlation evidence to the current consequential proposal."""
+
+    MATCHED = auto()
+    EXPLICIT_MISMATCH = auto()
+    INSUFFICIENT = auto()
+
+
+def compare_optional_identity_field(
+    left: _TIdentityField | None,
+    right: _TIdentityField | None,
+) -> OptionalIdentityFieldRelation:
+    """Compare optional proposal identity fields with fail-closed symmetric semantics."""
+    if left is None and right is None:
+        return OptionalIdentityFieldRelation.COMPATIBLE
+    if left is None or right is None:
+        return OptionalIdentityFieldRelation.INSUFFICIENT
+    if left == right:
+        return OptionalIdentityFieldRelation.COMPATIBLE
+    return OptionalIdentityFieldRelation.MISMATCH
+
+
+def optional_identity_field_matches_exactly(
+    left: _TIdentityField | None,
+    right: _TIdentityField | None,
+) -> bool:
+    """True only when optional identity fields are symmetrically exact-compatible."""
+    return (
+        compare_optional_identity_field(left, right)
+        is OptionalIdentityFieldRelation.COMPATIBLE
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class MseHitlEffectGateOutcome:
     """Typed outcome of the MSE HITL effect gate."""
@@ -182,13 +232,14 @@ def _identity_matches_side_effect(
     )
 
 
-def _governed_correlation_matches_current_proposal(
+def _compare_governed_correlation_to_current_proposal(
     correlation: GovernedContinuationCorrelation,
     *,
     side_effect: MeaningfulSideEffectRequest,
     operation_id: str,
     resource_scope: str | None,
-) -> bool:
+) -> GovernedProposalCorrelationMatch:
+    """Exact proposal identity comparison — missing fields never widen the match."""
     if not _identity_matches_side_effect(
         ExecutionContinuationIdentity(
             task_id=correlation.task_id,
@@ -198,23 +249,48 @@ def _governed_correlation_matches_current_proposal(
         ),
         side_effect,
     ):
-        return False
+        return GovernedProposalCorrelationMatch.EXPLICIT_MISMATCH
     normalized_operation = operation_id.strip()
     if not normalized_operation or correlation.operation_id != normalized_operation:
-        return False
-    if correlation.resource_scope is not None and correlation.resource_scope != resource_scope:
-        return False
-    if (
-        correlation.side_effect_scope_id is not None
-        and correlation.side_effect_scope_id != side_effect.side_effect_scope_id
+        return GovernedProposalCorrelationMatch.EXPLICIT_MISMATCH
+
+    saw_insufficient = False
+    for relation in (
+        compare_optional_identity_field(
+            correlation.side_effect_scope_id,
+            side_effect.side_effect_scope_id,
+        ),
+        compare_optional_identity_field(
+            correlation.side_effect_scope_digest,
+            side_effect.side_effect_scope_digest,
+        ),
+        compare_optional_identity_field(correlation.resource_scope, resource_scope),
     ):
-        return False
-    if (
-        correlation.side_effect_scope_digest is not None
-        and correlation.side_effect_scope_digest != side_effect.side_effect_scope_digest
-    ):
-        return False
-    return True
+        if relation is OptionalIdentityFieldRelation.MISMATCH:
+            return GovernedProposalCorrelationMatch.EXPLICIT_MISMATCH
+        if relation is OptionalIdentityFieldRelation.INSUFFICIENT:
+            saw_insufficient = True
+    if saw_insufficient:
+        return GovernedProposalCorrelationMatch.INSUFFICIENT
+    return GovernedProposalCorrelationMatch.MATCHED
+
+
+def _governed_correlation_matches_current_proposal(
+    correlation: GovernedContinuationCorrelation,
+    *,
+    side_effect: MeaningfulSideEffectRequest,
+    operation_id: str,
+    resource_scope: str | None,
+) -> bool:
+    return (
+        _compare_governed_correlation_to_current_proposal(
+            correlation,
+            side_effect=side_effect,
+            operation_id=operation_id,
+            resource_scope=resource_scope,
+        )
+        is GovernedProposalCorrelationMatch.MATCHED
+    )
 
 
 def classify_human_governed_proposal_relation(
@@ -227,19 +303,25 @@ def classify_human_governed_proposal_relation(
     """Classify whether pending is human-governed for *this* consequential proposal.
 
     Exact ``GovernedContinuationCorrelation`` match is the only positive proof of
-    post-HITL authority for the current effect. ``human_request_id`` without
-    proposal correlation is ``CORRELATION_INSUFFICIENT`` — never automatic HITL
-    for every later effect on the same execution (GR-10-R11-R3).
+    post-HITL authority for the current effect. Incomplete correlation fields are
+    ``CORRELATION_INSUFFICIENT`` (never wildcard match). Explicit proposal mismatch
+    is ``UNRELATED_HUMAN_CONTINUATION`` when human evidence is present.
+    ``human_request_id`` without proposal correlation is ``CORRELATION_INSUFFICIENT``
+    — never automatic HITL for every later effect on the same execution
+    (GR-10-R11-R3 / GR-10-R11-R4).
     """
     correlation = pending.governed_correlation
     if correlation is not None:
-        if _governed_correlation_matches_current_proposal(
+        match = _compare_governed_correlation_to_current_proposal(
             correlation,
             side_effect=side_effect,
             operation_id=operation_id,
             resource_scope=resource_scope,
-        ):
+        )
+        if match is GovernedProposalCorrelationMatch.MATCHED:
             return HumanGovernedProposalRelation.MATCHED_HITL_PROPOSAL
+        if match is GovernedProposalCorrelationMatch.INSUFFICIENT:
+            return HumanGovernedProposalRelation.CORRELATION_INSUFFICIENT
         if pending.human_request_id is not None:
             return HumanGovernedProposalRelation.UNRELATED_HUMAN_CONTINUATION
         return HumanGovernedProposalRelation.NON_HITL_CONTINUATION
@@ -615,11 +697,15 @@ __all__ = [
     "CanonicalContinuationAuthorityView",
     "EffectContinuationClassification",
     "EffectContinuationContext",
+    "GovernedProposalCorrelationMatch",
     "HumanGovernedProposalRelation",
     "MseHitlEffectGateDisposition",
     "MseHitlEffectGateOutcome",
+    "OptionalIdentityFieldRelation",
     "classify_human_governed_proposal_relation",
+    "compare_optional_identity_field",
     "evaluate_mse_hitl_effect_gate",
+    "optional_identity_field_matches_exactly",
     "resolve_canonical_continuation_authority",
     "resolve_continuation_port_for_mse_hitl_gate",
     "resolve_effect_continuation_context",

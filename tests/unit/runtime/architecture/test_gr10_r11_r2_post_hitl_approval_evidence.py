@@ -140,8 +140,9 @@ def _correlation(
     *,
     continuation_id: str = _CONTINUATION_ID,
     operation_id: str = _OPERATION,
-    side_effect_scope_id: str = _SCOPE_1,
-    side_effect_scope_digest: str = _SCOPE_DIGEST_1,
+    side_effect_scope_id: str | None = _SCOPE_1,
+    side_effect_scope_digest: str | None = _SCOPE_DIGEST_1,
+    resource_scope: str | None = _RESOURCE,
 ) -> GovernedContinuationCorrelation:
     return GovernedContinuationCorrelation(
         continuation_request_id=continuation_id,
@@ -153,7 +154,7 @@ def _correlation(
         side_effect_scope_id=side_effect_scope_id,
         side_effect_scope_digest=side_effect_scope_digest,
         operation_id=operation_id,
-        resource_scope=_RESOURCE,
+        resource_scope=resource_scope,
         policy_bundle_id=_BUNDLE_ID,
         policy_bundle_version=_BUNDLE_V1,
         policy_bundle_digest=_BUNDLE_D1,
@@ -397,14 +398,16 @@ def _enforcement_request(
     *,
     operation_id: str = _OPERATION,
     scope_id: str = _SCOPE_1,
-    scope_digest: str = _SCOPE_DIGEST_1,
+    scope_digest: str | None = _SCOPE_DIGEST_1,
+    resource_scope: str | None = _RESOURCE,
+    resource: str | None = _RESOURCE,
 ) -> CollaborativeWorkEnforcementRequest:
     return CollaborativeWorkEnforcementRequest(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
         operation_id=operation_id,
         acting_principal_id=_ACTING,
-        resource_scope=_RESOURCE,
+        resource_scope=resource_scope,
         membership=WorkspaceMembership.model_validate(membership.model_dump()),
         meaningful_side_effect_request=MeaningfulSideEffectRequest(
             action=operation_id,
@@ -417,7 +420,7 @@ def _enforcement_request(
             execution_id=_EXECUTION_ID,
             principal_id=_ACTING,
             tenant_id=_TENANT,
-            resource=_RESOURCE,
+            resource=resource,
         ),
     )
 
@@ -430,7 +433,9 @@ def _eval_gate(
     decision: PolicyDecision | None = None,
     operation_id: str = _OPERATION,
     scope_id: str = _SCOPE_1,
-    scope_digest: str = _SCOPE_DIGEST_1,
+    scope_digest: str | None = _SCOPE_DIGEST_1,
+    resource_scope: str | None = _RESOURCE,
+    resource: str | None = _RESOURCE,
 ) -> tuple[MseHitlEffectGateDisposition, Task]:
     evaluator = MutableRuntimePolicyEvaluator(decision or _decision(action=action))
     boundary, membership = _seed_boundary(evaluator, operation_id=operation_id)
@@ -442,6 +447,8 @@ def _eval_gate(
         operation_id=operation_id,
         scope_id=scope_id,
         scope_digest=scope_digest,
+        resource_scope=resource_scope,
+        resource=resource,
     )
     with bound_gr3_active_execution(
         run_id=_RUN_ID,

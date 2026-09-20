@@ -68,9 +68,23 @@ def test_gr10_r11_r3_human_continuation_producer_inventory_bounded() -> None:
                 continue
             assert row.status.startswith("QUALIFIED"), row
             assert row.governed_correlation_present is True
-            assert row.proposal_scope_recoverable is True
+            if "establish_canonical_hitl_pause" in row.path or row.path.startswith(
+                "graph_runner HITL"
+            ):
+                assert row.proposal_scope_recoverable is False
+                assert "not MSE proposal-scoped" in row.status or "generic" in row.status.lower()
+            else:
+                assert row.proposal_scope_recoverable is True
         if not row.production and "LEGACY_GAP" in row.status:
             assert "CORRELATION_INSUFFICIENT" in row.status
+
+
+def test_gr10_r11_r4_exact_correlation_gate_static() -> None:
+    source = _GATE.read_text(encoding="utf-8-sig")
+    assert "optional_identity_field_matches_exactly" in source
+    assert "compare_optional_identity_field" in source
+    assert "GR-10-R11-R4" in source
+    assert "never act as wildcards" in source or "never wildcard" in source.lower()
 
 
 def test_gr10_r11_r3_gate_rejects_human_request_id_fallback() -> None:

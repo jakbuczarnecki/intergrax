@@ -305,15 +305,17 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
         "HITL",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R11-R3: post-HITL classification is proposal-scoped via exact "
+        "GR-10-R11-R4: post-HITL MATCHED_HITL_PROPOSAL requires exact symmetric "
         "GovernedContinuationCorrelation (execution + operation + resource + side-effect "
-        "scope/digest); human_request_id alone never marks the current effect as post-HITL; "
-        "same-execution unrelated human continuation is UNRELATED_HUMAN_CONTINUATION / "
-        "CORRELATION_INSUFFICIENT → ordinary ALLOW. GR-10-R11-R2: ordinary ALLOW without grant; "
-        "post-HITL ALLOW requires RESUMED + matching GovernedContinuationApprovalGrant evidence "
-        "(never permission); fresh REQUIRE_HUMAN never PROCEED; continue_slot / "
-        "RuntimeToolInvoker reauthorize; External Work authorize_and_execute; Physical "
-        "Delegation HITL delegated; Continuation row remains PARTIAL.",
+        "scope/digest); missing correlation fields never wildcard-match concrete proposal "
+        "values (CORRELATION_INSUFFICIENT). GR-10-R11-R3: human_request_id alone never "
+        "marks the current effect as post-HITL; same-execution unrelated human continuation "
+        "is UNRELATED_HUMAN_CONTINUATION / CORRELATION_INSUFFICIENT → ordinary ALLOW. "
+        "GR-10-R11-R2: ordinary ALLOW without grant; post-HITL ALLOW requires RESUMED + "
+        "matching GovernedContinuationApprovalGrant evidence (never permission); fresh "
+        "REQUIRE_HUMAN never PROCEED; continue_slot / RuntimeToolInvoker reauthorize; "
+        "External Work authorize_and_execute; Physical Delegation HITL delegated; "
+        "Continuation row remains PARTIAL.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Continuation",
@@ -581,8 +583,8 @@ GR10_R11_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
         "internal_continuation_orchestration — not full ORCHESTRATION Continuation enterprise qualification."
     ),
     why_highest=(
-        "Highest remaining ORCHESTRATION applicable capability row after GR-10-R11-R3 HITL "
-        "proposal-scope isolation (human_request_id alone insufficient); distinct from HITL "
+        "Highest remaining ORCHESTRATION applicable capability row after GR-10-R11-R4 HITL "
+        "exact proposal correlation (fail-closed optional fields); distinct from HITL "
         "human-judgment vs permission boundary."
     ),
 )
@@ -932,9 +934,10 @@ GR10_ORCHESTRATION_HITL_INVENTORY: tuple[Gr10OrchestrationHitlInventoryRow, ...]
         True,
         True,
         "N/A — classification only (Human Review evidence elsewhere)",
-        "GovernedContinuationCorrelation exact proposal match only",
+        "GovernedContinuationCorrelation exact symmetric proposal match only",
         "CORRELATION_INSUFFICIENT / UNRELATED_HUMAN_CONTINUATION → ordinary ALLOW; "
-        "human_request_id alone never POST_HITL_* (GR-10-R11-R3)",
+        "missing scope/resource/digest never wildcard; human_request_id alone never "
+        "POST_HITL_* (GR-10-R11-R3/R4)",
         "QUALIFIED",
     ),
 )
@@ -967,16 +970,18 @@ GR10_ORCHESTRATION_HITL_HUMAN_CONTINUATION_PRODUCER_INVENTORY: tuple[
         True,
         True,
         True,
-        True,
-        "QUALIFIED",
+        False,
+        "QUALIFIED — generic internal_hitl_* correlation when caller omits governed_correlation; "
+        "not MSE proposal-scoped unless real GovernedContinuationCorrelation supplied",
     ),
     Gr10OrchestrationHitlHumanContinuationProducerRow(
         "graph_runner HITL pause → establish_canonical_hitl_pause",
         True,
         True,
         True,
-        True,
-        "QUALIFIED",
+        False,
+        "QUALIFIED — proposal-scoped only when human_request.governed_continuation present; "
+        "otherwise generic internal HITL (not MSE post-HITL authority)",
     ),
     Gr10OrchestrationHitlHumanContinuationProducerRow(
         "declarative_policy_hitl_bridge (DeclarativeHitlPendingApproval)",
