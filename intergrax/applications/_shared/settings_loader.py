@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import MISSING, fields
-from typing import ClassVar, TypeVar
+from typing import ClassVar, Self, TypeVar, cast
 
 from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 from intergrax.contracts.api_environment import ApiEnvironment
@@ -71,11 +71,12 @@ class ApplicationSettingsEnvHost:
     env_prefix: ClassVar[str] = "APP_"
 
     @classmethod
-    def from_env(cls: type[SettingsT]) -> SettingsT:
-        return load_application_settings_from_env(cls)
+    def from_env(cls) -> Self:
+        settings_cls = cast(type[IntergraxApplicationSettingsBase], cls)
+        return cast(Self, load_application_settings_from_env(settings_cls))
 
     @classmethod
-    def _load_app_env(cls, env: EnvReader) -> dict[str, JsonValue]:
+    def _load_app_env(cls, env: EnvReader) -> dict[str, object]:
         return {}
 
     @classmethod
@@ -105,7 +106,7 @@ def _field_default(cls: type[IntergraxApplicationSettingsBase], name: str) -> Js
 def _load_platform_env(
     cls: type[IntergraxApplicationSettingsBase],
     env: EnvReader,
-) -> dict[str, JsonValue]:
+) -> dict[str, object]:
     env_raw = (
         env.optional_str("BACKEND_ENV")
         or (os.environ.get("INTERGRAX_ENV") or "dev").strip().lower()
@@ -171,7 +172,7 @@ def _load_platform_env(
 
 def load_application_settings_from_env(cls: type[SettingsT]) -> SettingsT:
     env = EnvReader(getattr(cls, "env_prefix", "APP_"))
-    values: dict[str, JsonValue] = {}
+    values: dict[str, object] = {}
     values.update(_load_platform_env(cls, env))
     load_app_env = getattr(cls, "_load_app_env", None)
     if load_app_env is not None:

@@ -111,9 +111,15 @@ def _assert_configuration_contract(
 
 def test_shared_setting_specs_match_settings_base_source() -> None:
     src = (
-        _REPO_ROOT / "intergrax" / "applications" / "contracts" / "settings.py"
+        _REPO_ROOT
+        / "intergrax"
+        / "applications"
+        / "_shared"
+        / "settings_loader.py"
     ).read_text(encoding="utf-8")
-    platform_fn = src.split("def _load_platform_env", 1)[1].split("def _load_app_env", 1)[0]
+    platform_fn = src.split("def _load_platform_env", 1)[1].split(
+        "def load_application_settings_from_env", 1
+    )[0]
     loaded = _PLATFORM_ENV_CALL.findall(platform_fn)
     spec_suffixes = [spec.env_suffix for spec in application_setting_specs("lab")]
     assert spec_suffixes == list(dict.fromkeys(spec_suffixes))

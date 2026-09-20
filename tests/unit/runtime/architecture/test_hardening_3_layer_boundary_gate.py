@@ -25,6 +25,26 @@ _ALLOWLISTED_RUNTIME_IMPORTS: frozenset[str] = frozenset(
 )
 
 
+def test_hardening_3_contracts_python_sources_utf8_no_bom_and_parseable() -> None:
+    failures: list[str] = []
+    for path in sorted(_CONTRACTS_ROOT.rglob("*.py")):
+        rel = path.relative_to(_REPO_ROOT).as_posix()
+        raw = path.read_bytes()
+        if raw.startswith(b"\xef\xbb\xbf"):
+            failures.append(f"{rel}: UTF-8 BOM at file start")
+            continue
+        try:
+            text = raw.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            failures.append(f"{rel}: UTF-8 decode failed ({exc})")
+            continue
+        try:
+            ast.parse(text, filename=str(path))
+        except SyntaxError as exc:
+            failures.append(f"{rel}: ast.parse failed ({exc.msg} at line {exc.lineno})")
+    assert failures == [], "contract source encoding/parse gate:\n" + "\n".join(failures)
+
+
 def _collect_runtime_imports(path: Path) -> list[str]:
     tree = ast.parse(path.read_text(encoding="utf-8"))
     hits: list[str] = []
