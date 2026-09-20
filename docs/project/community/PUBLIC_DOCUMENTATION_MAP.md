@@ -82,7 +82,7 @@ with Try LKW as the repository’s primary product action.
 | Explore Token Optimization | [Token Optimization](../capabilities/token_optimization/README.md) |
 | Explore Virtual Workforce / Virtual Workers | [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) → [Autonomous Work](../architecture/AUTONOMOUS_WORK.md) |
 | Explore dynamic capability discovery, Agent/Skill/Tool ecosystem, or future marketplace architecture | [Capability Catalog & Discovery](../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) — frozen architecture for governed federated Agent/Skill/Tool discovery; implementation planned |
-| Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) · [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) · [Autonomous Organization](../overview/AUTONOMOUS_ORGANIZATION.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) · [Capability Catalog & Discovery](../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) - see [Strategic directions](#strategic-directions) below |
+| Explore strategic future directions | [Multiplayer AI](../capabilities/architecture/MULTIPLAYER_AI.md) (enterprise core shipped in certified scopes; MP-8/MP-9 future) · [Virtual Workforce](../overview/VIRTUAL_WORKFORCE.md) · [Autonomous Organization](../overview/AUTONOMOUS_ORGANIZATION.md) · [Platform Extensibility / Plugins](../architecture/PLATFORM_PLUGINS.md) · [Agent Marketplace](../overview/AGENT_MARKETPLACE.md) · [Capability Catalog & Discovery](../architecture/CAPABILITY_CATALOG_AND_DISCOVERY.md) - see [Strategic directions](#strategic-directions) below |
 | Check current proof status | [docs/project/proofs/PROOFS.md](../proofs/PROOFS.md) |
 | Explore Scenario Proofs (problem-first) | [Proof Library](../proofs/PROOF_LIBRARY.md) |
 | Compare Intergrax with common approaches | [Where Intergrax fits](../overview/WHY_INTERGRAX.md#where-intergrax-fits) |
@@ -177,9 +177,11 @@ Future ecosystem and platform directions - **not** current product proofs and **
 
 ### Multiplayer AI
 
-**Future collaborative-AI direction - architecture concept**
+**Enterprise core MP-1…MP-7 implemented/closed in certified scopes; MP-8 / MP-9 and full product-facing Multiplayer UX E2E remain future / not established**
 
-[Open the Multiplayer AI architecture concept](../capabilities/architecture/MULTIPLAYER_AI.md)
+Governed multi-principal collaboration primitives (identity, shared work, artifacts, decision binding, ContextView, activity) with Tier-3 consumability boundary certified. Not a complete shipped collaboration product.
+
+[Open the Multiplayer AI architecture](../capabilities/architecture/MULTIPLAYER_AI.md)
 
 ### Autonomous Work / Virtual Workforce
 
