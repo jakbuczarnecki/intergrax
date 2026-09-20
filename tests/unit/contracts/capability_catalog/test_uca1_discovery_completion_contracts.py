@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""UCA-1R — DiscoveryCompletion precedence & explicit realization selection."""
+"""UCA-1R / UCA-1R2 — DiscoveryCompletion precedence & fact consistency."""
 
 from __future__ import annotations
 
@@ -271,7 +271,7 @@ def test_complete_required_to_prove_absence_not_for_positive_candidate() -> None
     )
 
 
-# --- failure combinations with positive candidates (frozen precedence) ---
+# --- result-level blocker + positive candidate (unrepresentable) ---
 
 
 def test_conflict_plus_candidate_is_conflict_fail_closed() -> None:
@@ -293,62 +293,121 @@ def test_conflict_plus_candidate_is_conflict_fail_closed() -> None:
         CapabilityGap.from_discovery_completion(completion)
 
 
-def test_scope_unavailable_plus_positive_host_candidate_prefers_direct_reuse() -> None:
-    """Result-level scope flag with attested host candidate → positive proof wins.
-
-    Producers must not set scope_unavailable when a legally scoped candidate is
-    included; if both appear, precedence favors the attested candidate after
-    CONFLICT.
-    """
+def test_conflict_alone_is_conflict() -> None:
     completion = build_discovery_completion(
         need_id="need-1",
         discovery_correlation_id="corr-1",
         federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
-        suitable_host_allowed_keys=(_key(),),
-        scope_unavailable=True,
+        conflict=True,
         created_at=_CREATED_AT,
     )
-    assert completion.outcome is DiscoveryCompletionOutcome.DIRECT_REUSE
+    assert completion.outcome is DiscoveryCompletionOutcome.CONFLICT
 
 
-def test_scope_unavailable_plus_positive_catalog_candidate_prefers_realization() -> (
-    None
-):
-    completion = build_discovery_completion(
-        need_id="need-1",
-        discovery_correlation_id="corr-1",
-        federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
-        suitable_catalog_allowed_keys=(_key(),),
-        scope_unavailable=True,
-        created_at=_CREATED_AT,
+def test_catalog_candidate_plus_governance_blocked_is_invalid() -> None:
+    with pytest.raises(ValueError, match="result-level scope/unavailable/blocked"):
+        build_discovery_completion(
+            need_id="need-1",
+            discovery_correlation_id="corr-1",
+            federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
+            suitable_catalog_allowed_keys=(_key(),),
+            governance_blocked=True,
+            created_at=_CREATED_AT,
+        )
+
+
+def test_catalog_candidate_plus_availability_blocked_is_invalid() -> None:
+    with pytest.raises(ValueError, match="result-level scope/unavailable/blocked"):
+        build_discovery_completion(
+            need_id="need-1",
+            discovery_correlation_id="corr-1",
+            federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
+            suitable_catalog_allowed_keys=(_key(),),
+            availability_blocked=True,
+            created_at=_CREATED_AT,
+        )
+
+
+def test_catalog_candidate_plus_unavailable_is_invalid() -> None:
+    with pytest.raises(ValueError, match="result-level scope/unavailable/blocked"):
+        build_discovery_completion(
+            need_id="need-1",
+            discovery_correlation_id="corr-1",
+            federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
+            suitable_catalog_allowed_keys=(_key(),),
+            unavailable=True,
+            created_at=_CREATED_AT,
+        )
+
+
+def test_host_candidate_plus_scope_unavailable_is_invalid() -> None:
+    with pytest.raises(ValueError, match="result-level scope/unavailable/blocked"):
+        build_discovery_completion(
+            need_id="need-1",
+            discovery_correlation_id="corr-1",
+            federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
+            suitable_host_allowed_keys=(_key(),),
+            scope_unavailable=True,
+            created_at=_CREATED_AT,
+        )
+
+
+def test_catalog_candidate_plus_scope_unavailable_is_invalid() -> None:
+    with pytest.raises(ValueError, match="result-level scope/unavailable/blocked"):
+        build_discovery_completion(
+            need_id="need-1",
+            discovery_correlation_id="corr-1",
+            federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
+            suitable_catalog_allowed_keys=(_key(),),
+            scope_unavailable=True,
+            created_at=_CREATED_AT,
+        )
+
+
+def test_catalog_candidate_plus_multiple_result_blockers_is_invalid() -> None:
+    with pytest.raises(ValueError, match="result-level scope/unavailable/blocked"):
+        build_discovery_completion(
+            need_id="need-1",
+            discovery_correlation_id="corr-1",
+            federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
+            suitable_catalog_allowed_keys=(_key(),),
+            governance_blocked=True,
+            availability_blocked=True,
+            unavailable=True,
+            created_at=_CREATED_AT,
+        )
+
+
+def test_model_rejects_positive_candidate_with_result_level_blocker() -> None:
+    """Direct model construction surfaces the same inconsistency as ValidationError."""
+    from intergrax.contracts.capability_catalog.discovery_completion import (
+        DiscoveryCompletion,
     )
-    assert completion.outcome is DiscoveryCompletionOutcome.REALIZATION_REQUIRED
+
+    with pytest.raises(ValidationError, match="result-level scope/unavailable/blocked"):
+        DiscoveryCompletion(
+            need_id="need-1",
+            discovery_correlation_id="corr-1",
+            federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
+            suitable_catalog_allowed_keys=(_key(),),
+            governance_blocked=True,
+            outcome=DiscoveryCompletionOutcome.REALIZATION_REQUIRED,
+            created_at=_CREATED_AT,
+        )
 
 
-def test_unavailable_plus_positive_catalog_candidate_prefers_realization() -> None:
-    completion = build_discovery_completion(
-        need_id="need-1",
-        discovery_correlation_id="corr-1",
-        federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
-        suitable_catalog_allowed_keys=(_key(),),
-        unavailable=True,
-        created_at=_CREATED_AT,
-    )
-    assert completion.outcome is DiscoveryCompletionOutcome.REALIZATION_REQUIRED
-
-
-def test_blocked_plus_positive_catalog_candidate_prefers_realization() -> None:
-    """Blocked alternate elsewhere must not force BLOCKED when eligible set is legal."""
-    completion = build_discovery_completion(
-        need_id="need-1",
-        discovery_correlation_id="corr-1",
-        federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
-        suitable_catalog_allowed_keys=(_key(),),
-        governance_blocked=True,
-        availability_blocked=True,
-        created_at=_CREATED_AT,
-    )
-    assert completion.outcome is DiscoveryCompletionOutcome.REALIZATION_REQUIRED
+def test_derive_rejects_positive_candidate_with_result_level_blocker() -> None:
+    with pytest.raises(ValueError, match="result-level scope/unavailable/blocked"):
+        derive_discovery_completion_outcome(
+            federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
+            suitable_host_allowed_keys=(_key(),),
+            suitable_catalog_allowed_keys=(),
+            governance_blocked=False,
+            availability_blocked=False,
+            scope_unavailable=True,
+            unavailable=False,
+            conflict=False,
+        )
 
 
 def test_scope_unavailable_without_candidate_is_scope_unavailable() -> None:

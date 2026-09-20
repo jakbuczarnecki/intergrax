@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Immutable discovery completion coordination snapshot (UCA-1 / UCA-1R).
+"""Immutable discovery completion coordination snapshot (UCA-1 / UCA-1R / UCA-1R2).
 
 Projection over canonical Capability Catalog facts — not a second discovery engine
 or acquisition orchestrator.
@@ -23,6 +23,14 @@ Boolean fields ``scope_unavailable``, ``unavailable``, ``governance_blocked``,
 true only when that condition affects the legality or completeness of *this*
 coordinated discovery result / need — not merely because some unrelated
 federation source elsewhere reported the same state.
+
+Fact consistency (UCA-1R2)
+--------------------------
+Suitable+allowed candidate keys must not coexist with result-level
+``scope_unavailable`` / ``unavailable`` / ``governance_blocked`` /
+``availability_blocked``. Such combinations are unrepresentable
+(``ValidationError`` / ``ValueError``). ``conflict=True`` remains a separate
+fail-closed representation and MAY coexist with positive candidate facts.
 """
 
 from __future__ import annotations
@@ -61,6 +69,52 @@ NORMATIVE_DISCOVERY_COMPLETION_OUTCOMES: Final[
 ] = frozenset(DiscoveryCompletionOutcome)
 
 
+def _result_level_blocker_labels(
+    *,
+    scope_unavailable: bool,
+    unavailable: bool,
+    governance_blocked: bool,
+    availability_blocked: bool,
+) -> tuple[str, ...]:
+    labels: list[str] = []
+    if scope_unavailable:
+        labels.append("scope_unavailable")
+    if unavailable:
+        labels.append("unavailable")
+    if governance_blocked:
+        labels.append("governance_blocked")
+    if availability_blocked:
+        labels.append("availability_blocked")
+    return tuple(labels)
+
+
+def _reject_positive_candidate_with_result_level_blockers(
+    *,
+    suitable_host_allowed_keys: tuple[CapabilityIdentityKey, ...],
+    suitable_catalog_allowed_keys: tuple[CapabilityIdentityKey, ...],
+    governance_blocked: bool,
+    availability_blocked: bool,
+    scope_unavailable: bool,
+    unavailable: bool,
+) -> None:
+    """Make contradictory aggregate facts unrepresentable (UCA-1R2)."""
+    has_positive_candidate = bool(suitable_host_allowed_keys) or bool(
+        suitable_catalog_allowed_keys,
+    )
+    active = _result_level_blocker_labels(
+        scope_unavailable=scope_unavailable,
+        unavailable=unavailable,
+        governance_blocked=governance_blocked,
+        availability_blocked=availability_blocked,
+    )
+    if has_positive_candidate and active:
+        raise ValueError(
+            "DiscoveryCompletion cannot combine suitable allowed candidates "
+            "with result-level scope/unavailable/blocked facts; "
+            f"active_flags={active!r}",
+        )
+
+
 def derive_discovery_completion_outcome(
     *,
     federation_completeness: CapabilityCatalogFederationCompleteness,
@@ -75,10 +129,12 @@ def derive_discovery_completion_outcome(
     """Derive the coordination branch from separated source facts.
 
     Suitability, availability, governance, and federation completeness remain
-    independent inputs — this function only projects the legal next branch.
+    independent inputs — this function projects the legal next branch and
+    rejects contradictory positive-candidate + result-level-blocker inputs.
 
     Normative precedence (explicit, not accidental ``if`` order)::
 
+        0. positive candidate + result-level blocker     → ValueError (invalid)
         1. result-level conflict                         → CONFLICT
         2. suitable HOST_AVAILABLE + ALLOWED candidate   → DIRECT_REUSE
         3. suitable CATALOG_AVAILABLE + ALLOWED candidate→ REALIZATION_REQUIRED
@@ -98,11 +154,19 @@ def derive_discovery_completion_outcome(
     Result-level flags vs positive candidates
     -----------------------------------------
     Producers MUST set failure flags only when they affect *this* result.
-    When a suitable+allowed candidate is included, producers MUST NOT also set
-    a result-level failure that would deny that candidate's legality. If both
-    appear (producer inconsistency), positive candidate branches still win
-    after CONFLICT — fail-closed conflict is never ignored.
+    Suitable+allowed candidate keys and result-level
+    scope/unavailable/blocked facts are mutually exclusive; contradictory
+    combinations raise ``ValueError``. ``conflict=True`` remains a separate
+    fail-closed representation and may coexist with positive candidate facts.
     """
+    _reject_positive_candidate_with_result_level_blockers(
+        suitable_host_allowed_keys=suitable_host_allowed_keys,
+        suitable_catalog_allowed_keys=suitable_catalog_allowed_keys,
+        governance_blocked=governance_blocked,
+        availability_blocked=availability_blocked,
+        scope_unavailable=scope_unavailable,
+        unavailable=unavailable,
+    )
     # 1. Result-level conflict — highest precedence; fail closed.
     if conflict:
         return DiscoveryCompletionOutcome.CONFLICT
