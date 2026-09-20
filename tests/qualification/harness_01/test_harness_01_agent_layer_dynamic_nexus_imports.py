@@ -10,6 +10,7 @@ import pytest
 
 from tests.qualification.harness_01.nexus_boundary_detector import (
     file_has_dynamic_nexus_import,
+    file_has_lazy_nexus_module_resolution,
     file_imports_nexus_module,
 )
 
@@ -25,6 +26,10 @@ def test_harness_01_intergrax_agents_production_tree_has_zero_dynamic_nexus_impo
         source = path.read_text(encoding="utf-8")
         if file_has_dynamic_nexus_import(source):
             offenders.append(str(path.relative_to(_REPO_ROOT)).replace("\\", "/"))
+        if file_has_lazy_nexus_module_resolution(source):
+            rel = str(path.relative_to(_REPO_ROOT)).replace("\\", "/")
+            if rel not in offenders:
+                offenders.append(rel)
     assert offenders == [], (
         "intergrax/agents must not dynamically import intergrax.runtime.nexus:\n"
         + "\n".join(offenders)

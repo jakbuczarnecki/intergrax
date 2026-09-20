@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol
+from typing import TYPE_CHECKING, Protocol
 
+from intergrax.agents.authoring.shared_context_access import AcpSharedContextMetadata
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import AgentRunRequest
@@ -55,15 +56,15 @@ class RoutingEvaluationObserverPort(Protocol):
 
 
 class SharedContextLoadPort(Protocol):
-    def __call__(self, task_or_metadata: Any) -> SharedContextView | None: ...
+    def __call__(self, metadata: AcpSharedContextMetadata) -> SharedContextView | None: ...
 
 
 class SharedContextPersistPort(Protocol):
-    def __call__(self, task_or_metadata: Any, view: SharedContextView) -> None: ...
+    def __call__(self, metadata: AcpSharedContextMetadata, view: SharedContextView) -> None: ...
 
 
 class SharedContextProjectionPort(Protocol):
-    def __call__(self, task_or_metadata: Any, *, task_id: str) -> SharedContextView: ...
+    def __call__(self, metadata: AcpSharedContextMetadata, *, task_id: str) -> SharedContextView: ...
 
 
 @dataclass(frozen=True, slots=True)
