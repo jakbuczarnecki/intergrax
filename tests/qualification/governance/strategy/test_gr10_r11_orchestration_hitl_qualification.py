@@ -97,7 +97,8 @@ def test_gr10_r11_r3_gate_rejects_human_request_id_fallback() -> None:
 
 
 def test_gr10_r11_continuation_row_remains_partial() -> None:
-    assert gr10_matrix_orchestration_status("Continuation") is Gr10CoverageStatus.PARTIAL
+    # Historical R11 assertion — superseded by GR-10-R12 Continuation QUALIFIED.
+    assert gr10_matrix_orchestration_status("Continuation") is Gr10CoverageStatus.QUALIFIED
 
 
 def test_gr10_r11_next_remediation_is_continuation() -> None:

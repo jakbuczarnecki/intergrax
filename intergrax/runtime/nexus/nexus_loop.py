@@ -148,9 +148,16 @@ from intergrax.runtime.execution.execution_terminal.persistence import (
     validate_terminal_run_id_consistency,
 )
 from intergrax.contracts.execution_continuation import ExecutionContinuationPort
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
+)
 from intergrax.runtime.execution.continuation.composition import (
     wire_execution_engine_continuation_dependencies,
 )
+from intergrax.runtime.execution.continuation.durability_policy import (
+    validate_execution_continuation_for_composition,
+)
+from intergrax.runtime.execution.continuation.service import ExecutionContinuationService
 from intergrax.runtime.execution.continuation.lifecycle_driver import (
     ExecutionContinuationLifecycleDriver,
 )
@@ -168,9 +175,6 @@ from intergrax.agents.persistence.declarative_tool_executor import (
 )
 
 if TYPE_CHECKING:
-    from intergrax.contracts.execution_continuation_state_store import (
-        ExecutionContinuationStateStore,
-    )
     from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
     from intergrax.runtime.decision_flow import DecisionFlowGate
     from intergrax.contracts.agent_execution_result import AgentExecutionResult
@@ -248,7 +252,7 @@ class NexusLoop:
         continuation_lifecycle_driver: ExecutionContinuationLifecycleDriver
         | None = None,
         execution_continuation_state_store: Optional[
-            "ExecutionContinuationStateStore"
+            ExecutionContinuationStateStore
         ] = None,
         disable_execution_continuation: bool = False,
     ) -> None:
@@ -397,6 +401,9 @@ class NexusLoop:
         )
         if disable_execution_continuation:
             self._hitl_continuation: InternalOrchestrationContinuation | None = None
+            self._execution_continuation_state_store: (
+                ExecutionContinuationStateStore | None
+            ) = None
         elif (
             execution_continuation is not None
             and continuation_lifecycle_driver is not None
@@ -405,6 +412,13 @@ class NexusLoop:
                 port=execution_continuation,
                 lifecycle_driver=continuation_lifecycle_driver,
             )
+            resolved_store = execution_continuation_state_store
+            if resolved_store is None and isinstance(
+                execution_continuation,
+                ExecutionContinuationService,
+            ):
+                resolved_store = execution_continuation.store
+            self._execution_continuation_state_store = resolved_store
         elif (
             execution_continuation is not None
             or continuation_lifecycle_driver is not None
@@ -413,12 +427,31 @@ class NexusLoop:
                 "execution_continuation and continuation_lifecycle_driver must be wired together",
             )
         else:
+            validate_execution_continuation_for_composition(
+                production_mode=production_mode,
+                state_store=execution_continuation_state_store,
+                continuation_explicitly_wired=False,
+                continuation_disabled=False,
+            )
             _continuation_deps = wire_execution_engine_continuation_dependencies(
                 state_store=execution_continuation_state_store,
             )
             self._hitl_continuation = InternalOrchestrationContinuation(
                 port=_continuation_deps.continuation,
                 lifecycle_driver=_continuation_deps.lifecycle_driver,
+            )
+            self._execution_continuation_state_store = (
+                _continuation_deps.continuation_service.store
+            )
+        if not disable_execution_continuation and (
+            execution_continuation is not None
+            and continuation_lifecycle_driver is not None
+        ):
+            validate_execution_continuation_for_composition(
+                production_mode=production_mode,
+                state_store=self._execution_continuation_state_store,
+                continuation_explicitly_wired=True,
+                continuation_disabled=False,
             )
         self._hitl = NexusHitlRunner(
             publish=self._publish_runtime_event,
@@ -516,6 +549,16 @@ class NexusLoop:
     def declarative_tool_invoker(self) -> DeclarativeToolInvoker | None:
         """Host-wired catalog tool invoker shared by graph and agentic execution paths."""
         return self._declarative_tool_invoker
+
+    @property
+    def execution_continuation_state_store(self) -> ExecutionContinuationStateStore | None:
+        """Canonical continuation store shared with HostTaskExecution / Runtime binding."""
+        return self._execution_continuation_state_store
+
+    @property
+    def hitl_continuation(self) -> InternalOrchestrationContinuation | None:
+        """Execution Engine continuation capability for internal HITL orchestration."""
+        return self._hitl_continuation
 
     @property
     def graph_executor(self) -> GraphExecutor:

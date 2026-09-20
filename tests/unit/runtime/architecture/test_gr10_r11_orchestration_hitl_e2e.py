@@ -49,6 +49,13 @@ from intergrax.contracts.meaningful_side_effect import (
 )
 from intergrax.contracts.orchestration_topology import OrchestrationSlotId
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.execution.active_execution_continuation_store import (
+    bind_active_execution_continuation_state_store,
+    reset_active_execution_continuation_state_store,
+)
+from intergrax.runtime.execution.continuation.persistence import (
+    InMemoryExecutionContinuationStateStore,
+)
 from intergrax.runtime.governance.active_governed_execution_task import (
     ActiveGovernedExecutionTask,
 )
@@ -338,18 +345,23 @@ def test_scenario_d_approval_plus_require_human_again_pauses() -> None:
     lifecycle.transition(task, TaskState.PLANNED)
     lifecycle.transition(task, TaskState.RUNNING)
     counter = [0]
+    store = InMemoryExecutionContinuationStateStore()
+    cont_token = bind_active_execution_continuation_state_store(store)
 
-    with bound_gr3_active_execution(
-        run_id=_RUN_ID,
-        attempt_id=_ATTEMPT_ID,
-        execution_id=_EXECUTION_ID,
-    ):
-        result = boundary.authorize_and_execute(
-            _enforcement_request(membership),
-            lambda: counter.__setitem__(0, counter[0] + 1) or "ok",
-            task=task,
-            lifecycle=lifecycle,
-        )
+    try:
+        with bound_gr3_active_execution(
+            run_id=_RUN_ID,
+            attempt_id=_ATTEMPT_ID,
+            execution_id=_EXECUTION_ID,
+        ):
+            result = boundary.authorize_and_execute(
+                _enforcement_request(membership),
+                lambda: counter.__setitem__(0, counter[0] + 1) or "ok",
+                task=task,
+                lifecycle=lifecycle,
+            )
+    finally:
+        reset_active_execution_continuation_state_store(cont_token)
     assert isinstance(result, MeaningfulSideEffectAuthorizationResult)
     assert result.governed_continuation_request is not None
     assert counter[0] == 0

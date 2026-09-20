@@ -381,8 +381,10 @@ def test_execution_runtime_does_not_wire_implicit_default_store() -> None:
 
 def test_nexus_host_execution_explicitly_enables_continuation() -> None:
     source = _NEXUS_HOST.read_text(encoding="utf-8")
-    assert "wire_execution_continuation_state_store" in source
+    assert "nexus_loop.execution_continuation_state_store" in source
     assert "_continuation_state_store=" in source
+    # GR-10-R12: no silent per-host in-memory store; share NexusLoop SSOT.
+    assert "wire_execution_continuation_state_store()" not in source
 
 
 def test_build_host_task_execution_type_has_continuation_field() -> None:

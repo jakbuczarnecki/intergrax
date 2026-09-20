@@ -51,6 +51,9 @@ from intergrax.runtime.long_running.persistence_contract import (
 )
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.runtime.execution.continuation.persistence import (
+    wire_execution_continuation_state_store,
+)
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.contracts.attempt_lifecycle import AttemptLifecycleStore
@@ -283,6 +286,7 @@ def build_nexus_loop_from_environment(
         attempt_lifecycle=resolved_attempt_lifecycle,
         execution_terminal=resolved_execution_terminal,
         execution_lineage_persistence=resolved_execution_lineage,
+        execution_continuation_state_store=wire_execution_continuation_state_store(),
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security, env=env)

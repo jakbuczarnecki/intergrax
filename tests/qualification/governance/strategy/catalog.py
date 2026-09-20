@@ -314,15 +314,17 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
         "GR-10-R11-R2: ordinary ALLOW without grant; post-HITL ALLOW requires RESUMED + "
         "matching GovernedContinuationApprovalGrant evidence (never permission); fresh "
         "REQUIRE_HUMAN never PROCEED; continue_slot / RuntimeToolInvoker reauthorize; "
-        "External Work authorize_and_execute; Physical Delegation HITL delegated; "
-        "Continuation row remains PARTIAL.",
+        "External Work authorize_and_execute; Physical Delegation HITL delegated.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Continuation",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "ExecutionContinuationPort wired in GR-5-R4 proofs; residual Task-shaped projection in "
-        "internal_continuation_orchestration — not continuation authority.",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-10-R12: ExecutionContinuationPort is sole pause/wait/resolution/resume authority; "
+        "current-episode SSOT; Task/HumanPauseCoordinator/continuable_slots/checkpoint are "
+        "projection or eligibility only; production forbids silent in-memory downgrade; "
+        "HostTaskExecution shares NexusLoop continuation store; durable restart via "
+        "export/reconstruct contract (GR-5-R5).",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Reliability",
@@ -586,6 +588,21 @@ GR10_R11_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
         "Highest remaining ORCHESTRATION applicable capability row after GR-10-R11-R4 HITL "
         "exact proposal correlation (fail-closed optional fields); distinct from HITL "
         "human-judgment vs permission boundary."
+    ),
+)
+
+
+GR10_R12_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-R13 — ORCHESTRATION Reliability enterprise closure",
+    strategy="ORCHESTRATION",
+    capability="Reliability",
+    exact_blocker=(
+        "GR-7 on External Work compositions; not all orchestration provider/external-effect "
+        "paths adopt ProviderInvocation enterprise boundary — post-admission uncertainty remains."
+    ),
+    why_highest=(
+        "Highest remaining ORCHESTRATION applicable capability row after GR-10-R12 Continuation "
+        "enterprise qualification; distinct from continuation pause/resume authority."
     ),
 )
 
@@ -1035,6 +1052,243 @@ GR10_ORCHESTRATION_HITL_HUMAN_CONTINUATION_PRODUCER_INVENTORY: tuple[
 
 
 @dataclass(frozen=True, slots=True)
+class Gr10OrchestrationContinuationInventoryRow:
+    path: str
+    production: bool
+    creates_pause: bool
+    resolves: bool
+    resumes: bool
+    uses_canonical_port: bool
+    projection_only: bool
+    current_episode_safe: bool
+    restart_safe: bool
+    coverage: str
+
+
+GR10_ORCHESTRATION_CONTINUATION_INVENTORY: tuple[
+    Gr10OrchestrationContinuationInventoryRow,
+    ...,
+] = (
+    Gr10OrchestrationContinuationInventoryRow(
+        "ExecutionContinuationPort / ExecutionContinuationService",
+        True,
+        True,
+        True,
+        True,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — sole pause/wait/resolve/resume authority",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "ExecutionContinuationLifecycleDriver",
+        True,
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — PAUSE_REQUESTED→PAUSED→WAITING_FOR_HUMAN only",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "establish_canonical_hitl_pause",
+        True,
+        True,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — canonical-first then Task projection",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "canonical_execution_is_resumed / progress gates",
+        True,
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — current episode RESUMED only",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "HumanPauseCoordinator / Task projection",
+        True,
+        False,
+        False,
+        False,
+        True,
+        True,
+        True,
+        True,
+        "projection only — not resume authority",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "InternalOrchestrationContinuation",
+        True,
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — capability bundle; not parallel engine",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "graph_runner._handle_needs_input",
+        True,
+        True,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — NEEDS_INPUT projects wait; port owns pause",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "intake_runner long-running re-entry",
+        True,
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — Task CREATED only after canonical RESUMED",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "GovernedOrchestrationSlotContinuationExecutor.continue_slot",
+        True,
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — MSE+HITL gate requires port RESUMED",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "CanonicalOrchestrationTopologySubmissionPort.continuable_slots",
+        True,
+        False,
+        False,
+        False,
+        False,
+        True,
+        True,
+        True,
+        "projection only — eligibility; not resume authority",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "CanonicalOrchestrationTopologySubmissionPort.recover_failed_slot",
+        True,
+        False,
+        False,
+        False,
+        False,
+        False,
+        True,
+        True,
+        "QUALIFIED — refuses continuable HITL slots",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "mse_hitl_effect_gate / resolve_continuation_port_for_mse_hitl_gate",
+        True,
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — active store / injected port only",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "governed_continuation_bridge.apply_governed_continuation_pause",
+        True,
+        True,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — fail-closed without active store",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "HumanPauseCoordinator.apply_human_response → apply_resolution",
+        True,
+        False,
+        True,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — resolution only; RESUME_AUTHORIZED ≠ RESUMED",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "checkpoint / LongRunningCoordinator",
+        True,
+        False,
+        False,
+        False,
+        False,
+        True,
+        True,
+        True,
+        "projection only — terminal authority may block; never resume permission",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "NexusLoop + HostTaskExecution shared store composition",
+        True,
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — production forbids silent lab fallback; shared store",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "ExecutionContinuationStateStore (pluginable persistence)",
+        True,
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — contract ABC; custom store via composition",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "InMemoryExecutionContinuationStateStore",
+        False,
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        False,
+        "N/A — lab/test / explicit composition only",
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
 class Gr10OrchestrationMseNonToolInventoryRow:
     path: str
     production: bool
@@ -1230,14 +1484,14 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
         gr10_matrix_inference_status("HITL"),
         gr10_matrix_agentic_status("HITL"),
         gr10_matrix_orchestration_status("HITL"),
-        "Agentic MP-4R7 qualified; orchestration GR-5 slices partial.",
+        "Agentic MP-4R7 qualified; orchestration GR-10-R11 QUALIFIED.",
     ),
     Gr10CapabilityCell(
         "Continuation",
         gr10_matrix_inference_status("Continuation"),
         gr10_matrix_agentic_status("Continuation"),
         gr10_matrix_orchestration_status("Continuation"),
-        "ExecutionContinuationPort; orch Task projection transitional.",
+        "ExecutionContinuationPort sole authority; orch GR-10-R12 QUALIFIED.",
     ),
     Gr10CapabilityCell(
         "Reliability",
