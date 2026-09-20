@@ -538,18 +538,18 @@ def test_platform_capabilities_table_contract(readme_text: str) -> None:
 def test_platform_capability_claim_boundaries(readme_text: str) -> None:
     normalized = re.sub(r"[*_`]", "", readme_text).lower()
     for phrase in (
-        "implemented core — coverage / qualification ongoing",
+        "implemented core - coverage / qualification ongoing",
         "complete platform-wide governance and production qualification not established",
         "implemented core + bounded proof",
         "universal every-path production observability not claimed",
-        "partial — bounded",
+        "partial - bounded",
         "universal savings",
         "production-proven savings",
-        "architecture / roadmap stage",
-        "runtime proof not yet established",
+        "enterprise core mp-1…mp-7 implemented/closed in certified scopes",
+        "full product-facing multiplayer capability e2e including mp-8 / mp-9 not established",
         "canonical architecture frozen",
         "complete third-party install-to-runtime e2e proof not yet established",
-        "future product — not shipped today",
+        "future product - not shipped today",
     ):
         assert phrase in normalized, f"Missing platform capability boundary: {phrase}"
 

@@ -590,10 +590,10 @@ def test_readme_multiplayer_positioning(readme_text: str) -> None:
     normalized = " ".join(_normalize(readme_text).split())
     for phrase in (
         "multiplayer ai",
-        "architecture / roadmap stage",
-        "runtime proof not yet established",
+        "enterprise core mp-1…mp-7 implemented/closed in certified scopes",
+        "full product-facing multiplayer capability e2e including mp-8 / mp-9 not established",
         "governed multi-principal collaboration",
-        "not yet established",
+        "not established",
     ):
         assert phrase in normalized, f"README missing Multiplayer marker: {phrase}"
     assert "featured platform-capability proof" in normalized
