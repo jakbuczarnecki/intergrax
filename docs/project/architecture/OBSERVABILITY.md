@@ -964,7 +964,7 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 | Gap | Current status | Why not closed | Required closure task |
 | --- | -------------- | -------------- | --------------------- |
 | diagnostic composition replaceability | **PROVEN** | — | OBS-DIAG-X2 CLOSED |
-| canonical host one-resolution composition | **PROVEN** | — | OBS-DIAG-X2A CLOSED |
+| canonical host one-resolution composition | **PROVEN** | — | OBS-DIAG-X2A + X2B CLOSED |
 | global entry-path zero-bypass proof | **NOT_PROVEN** | Factory ≠ every entry path | OBS-DIAG-X3 |
 | external Kafka full spine E2E | **NOT_PROVEN** | Separate transport vs spine proofs | OBS-DIAG-X4 |
 | HITL full restart proof | **PARTIAL** | Missing real process / external HITL | OBS-DIAG-X5 |

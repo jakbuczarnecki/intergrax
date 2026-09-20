@@ -261,6 +261,10 @@ X2 qualification:
 [`OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md`](../maintainers/audits/OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md).
 X2A canonical host closure:
 [`OBS_DIAG_CANONICAL_HOST_COMPOSITION_X2A.md`](../maintainers/audits/OBS_DIAG_CANONICAL_HOST_COMPOSITION_X2A.md).
+X2B override one-resolution (custom/partial overrides):
+[`OBS_DIAG_CANONICAL_OVERRIDE_ONE_RESOLUTION_X2B.md`](../maintainers/audits/OBS_DIAG_CANONICAL_OVERRIDE_ONE_RESOLUTION_X2B.md).
+
+Host-bound helpers (`resolve_host_diagnostic_read_dependencies`, `resolve_host_diagnostic_runtime_dependencies` with stored runtime, read service, terminal trigger) **must not** re-materialize persistence after host construction. Post-build conflicting `overrides=` fail closed via `assert_host_diagnostic_composition_frozen`.
 
 | Mechanism | Contract / module | Default implementation | Custom replacement |
 | --------- | ----------------- | ---------------------- | ------------------ |

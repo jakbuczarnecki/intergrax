@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from intergrax.applications._shared.diagnostic_composition import (
+    DiagnosticCompositionError,
     DiagnosticCompositionOverrides,
     DiagnosticPersistenceComposition,
     build_default_execution_reconstruction_reader,
@@ -82,6 +83,37 @@ def _document_store_from_wiring(
     return tool_wiring_context.document_store
 
 
+_EMPTY_DIAGNOSTIC_COMPOSITION_OVERRIDES = DiagnosticCompositionOverrides()
+
+
+def _configured_host_composition_overrides(
+    runtime: HarnessHostRuntime,
+) -> DiagnosticCompositionOverrides:
+    configured = runtime.env_wiring.composition.diagnostic_composition_overrides
+    if configured is None:
+        return _EMPTY_DIAGNOSTIC_COMPOSITION_OVERRIDES
+    return configured
+
+
+def assert_host_diagnostic_composition_frozen(
+    runtime: HarnessHostRuntime,
+    *,
+    overrides: DiagnosticCompositionOverrides | None,
+) -> None:
+    """
+    Fail closed when a host-bound caller attempts post-build diagnostic reconfiguration.
+
+    Canonical harness hosts freeze ``DiagnosticCompositionOverrides`` at construction.
+    """
+    if overrides is None:
+        return
+    if overrides != _configured_host_composition_overrides(runtime):
+        raise DiagnosticCompositionError(
+            "diagnostic composition is frozen at host construction; "
+            "conflicting post-build overrides are unsupported",
+        )
+
+
 def materialize_host_diagnostic_read_dependencies(
     *,
     env_wiring: ApplicationEnvironmentWiring,
@@ -141,14 +173,13 @@ def resolve_host_diagnostic_read_dependencies(
 
     Uses host-materialized dependencies when present (canonical factory path).
     """
-    from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
+    from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime as _HarnessHostRuntime
 
-    if (
-        overrides is None
-        and isinstance(runtime, HarnessHostRuntime)
-        and runtime.host_diagnostic_dependencies is not None
-    ):
-        return runtime.host_diagnostic_dependencies
+    if isinstance(runtime, _HarnessHostRuntime):
+        stored = runtime.host_diagnostic_dependencies
+        if stored is not None:
+            assert_host_diagnostic_composition_frozen(runtime, overrides=overrides)
+            return stored
 
     resolved_overrides = (
         overrides
@@ -219,19 +250,20 @@ def resolve_host_diagnostic_read_service(
     overrides: DiagnosticCompositionOverrides | None = None,
 ) -> DiagnosticReadService:
     """Resolve shared DiagnosticReadService for product host observability surfaces."""
-    resolved_overrides = (
-        overrides
-        if overrides is not None
-        else runtime.env_wiring.composition.diagnostic_composition_overrides
-    )
+    resolved_overrides = _configured_host_composition_overrides(runtime)
+    if overrides is not None:
+        assert_host_diagnostic_composition_frozen(runtime, overrides=overrides)
+        resolved_overrides = overrides
+    dependencies = resolve_host_diagnostic_read_dependencies(runtime, overrides=overrides)
     return build_diagnostic_read_service(
-        resolve_host_diagnostic_read_dependencies(runtime, overrides=resolved_overrides),
+        dependencies,
         overrides=resolved_overrides,
     )
 
 
 __all__ = [
     "HostDiagnosticReadDependencies",
+    "assert_host_diagnostic_composition_frozen",
     "build_diagnostic_read_service",
     "build_diagnostic_scope_discovery_service",
     "materialize_host_diagnostic_read_dependencies",

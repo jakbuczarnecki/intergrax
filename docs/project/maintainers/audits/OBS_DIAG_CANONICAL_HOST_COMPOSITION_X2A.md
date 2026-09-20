@@ -37,3 +37,6 @@ build_harness_host_runtime
 
 Contract-driven composition (X2):
 [`OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md`](OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md).
+
+**Successor:** X2B closed the remaining custom/partial override one-resolution defect
+([`OBS_DIAG_CANONICAL_OVERRIDE_ONE_RESOLUTION_X2B.md`](OBS_DIAG_CANONICAL_OVERRIDE_ONE_RESOLUTION_X2B.md)).

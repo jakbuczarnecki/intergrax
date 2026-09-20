@@ -13,6 +13,7 @@ from intergrax.applications._shared.diagnostic_composition import (
 )
 from intergrax.applications._shared.diagnostic_read_wiring import (
     HostDiagnosticReadDependencies,
+    assert_host_diagnostic_composition_frozen,
     resolve_host_diagnostic_read_dependencies,
 )
 from intergrax.applications._shared.diagnostic_assembly_resolver import (
@@ -65,9 +66,10 @@ def resolve_host_diagnostic_runtime_dependencies(
     """
     if materialized_dependencies is not None:
         return materialized_dependencies
-    if overrides is None and runtime is not None:
+    if runtime is not None:
         stored = runtime.host_diagnostic_dependencies
         if stored is not None:
+            assert_host_diagnostic_composition_frozen(runtime, overrides=overrides)
             return stored
 
     resolved_overrides = _resolve_overrides(env_wiring, overrides)
@@ -249,11 +251,10 @@ def resolve_host_terminal_execution_diagnostic_trigger(
     overrides: DiagnosticCompositionOverrides | None = None,
 ) -> TerminalExecutionDiagnosticTrigger:
     """Resolve production terminal diagnostic trigger from harness host runtime wiring."""
+    if overrides is not None:
+        assert_host_diagnostic_composition_frozen(runtime, overrides=overrides)
     resolved_overrides = _resolve_overrides(runtime.env_wiring, overrides)
-    dependencies = resolve_host_diagnostic_read_dependencies(
-        runtime,
-        overrides=resolved_overrides,
-    )
+    dependencies = resolve_host_diagnostic_read_dependencies(runtime, overrides=overrides)
     return build_terminal_execution_diagnostic_trigger(
         dependencies,
         overrides=resolved_overrides,
