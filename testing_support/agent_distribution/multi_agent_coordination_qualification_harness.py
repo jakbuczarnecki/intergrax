@@ -154,9 +154,14 @@ def build_production_representative_orchestration_topology_submission_port(
     nexus_loop: NexusLoop,
 ):
     """Production-representative topology port for agent-distribution qualification proofs."""
+    from testing_support.orchestration.orchestration_consequential_effect_reliability_doubles import (
+        PassthroughOrchestrationConsequentialEffectReliability,
+    )
+
     policy = build_orchestration_topology_slot_mse_policy(
         meaningful_side_effect_authorization=None,
         production_mode=True,
+        effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     return build_production_orchestration_topology_submission_port(
         nexus_loop,

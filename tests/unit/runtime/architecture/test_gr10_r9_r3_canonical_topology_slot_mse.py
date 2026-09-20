@@ -10,6 +10,9 @@ from pathlib import Path
 
 import pytest
 
+from testing_support.orchestration.orchestration_consequential_effect_reliability_doubles import (
+    PassthroughOrchestrationConsequentialEffectReliability,
+)
 from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementRequest,
     CollaborativeWorkEnforcementResult,
@@ -210,6 +213,7 @@ async def test_r9_r3_submit_deny_blocks_inner_executor(_identity_ctx) -> None:
     policy = build_orchestration_topology_slot_mse_policy(
         meaningful_side_effect_authorization=mse,
         production_mode=True,
+        effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     port = build_production_orchestration_topology_submission_port(
         NexusLoop(AgentRegistry()),
@@ -247,6 +251,7 @@ async def test_r9_r3_submit_allow_runs_inner_once(_identity_ctx) -> None:
     policy = build_orchestration_topology_slot_mse_policy(
         meaningful_side_effect_authorization=mse,
         production_mode=True,
+        effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     port = build_production_orchestration_topology_submission_port(
         NexusLoop(AgentRegistry()),
@@ -283,6 +288,7 @@ async def test_r9_r3_submit_missing_mse_port_fail_closed(_identity_ctx) -> None:
     policy = build_orchestration_topology_slot_mse_policy(
         meaningful_side_effect_authorization=None,
         production_mode=True,
+        effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     port = build_production_orchestration_topology_submission_port(
         NexusLoop(AgentRegistry()),
@@ -356,6 +362,7 @@ async def test_r9_r3_recovery_fresh_mse_deny_after_prior_allow(_identity_ctx) ->
     policy = build_orchestration_topology_slot_mse_policy(
         meaningful_side_effect_authorization=flip_port,
         production_mode=True,
+        effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     port = build_production_orchestration_topology_submission_port(
         NexusLoop(AgentRegistry()),

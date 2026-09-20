@@ -330,9 +330,10 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
     Gr10ResidualStrategyCapabilitySemantics(
         "Reliability",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "GR-7 on External Work compositions; not all orchestration provider/external-effect paths adopt "
-        "ProviderInvocation enterprise boundary.",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-10-R13: post-admission OrchestrationConsequentialEffectReliabilityPort on canonical topology "
+        "slots (ProviderInvocation intent/outcome); RuntimeToolInvoker idempotency + external-operation "
+        "lifecycle; External Work / Physical Delegation retain GR-7 delegated boundaries.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Governance Evidence",
@@ -604,6 +605,118 @@ GR10_R12_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
     why_highest=(
         "Highest remaining ORCHESTRATION applicable capability row after GR-10-R12 Continuation "
         "enterprise qualification; distinct from continuation pause/resume authority."
+    ),
+)
+
+
+GR10_R13_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-R14 — ORCHESTRATION Governance Evidence & ORCHESTRATION Closure",
+    strategy="ORCHESTRATION",
+    capability="Governance Evidence",
+    exact_blocker=(
+        "Mandatory GR-8 typed governance evidence facts not enterprise-qualified on all production "
+        "orchestration paths."
+    ),
+    why_highest=(
+        "Highest remaining ORCHESTRATION applicable capability row after GR-10-R13 Reliability "
+        "enterprise qualification."
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Gr10OrchestrationReliabilityInventoryRow:
+    path: str
+    production: bool
+    consequential: bool
+    governance_admitted: bool
+    reliability_boundary: str
+    idempotency: str
+    reconciliation: str
+    outcome_classification: str
+    coverage: str
+
+
+GR10_ORCHESTRATION_RELIABILITY_INVENTORY: tuple[
+    Gr10OrchestrationReliabilityInventoryRow,
+    ...,
+] = (
+    Gr10OrchestrationReliabilityInventoryRow(
+        "RuntimeToolInvoker.invoke (side_effects=True)",
+        True,
+        True,
+        True,
+        "IdempotencyPreEffectCoordinator + ToolExternalOperationAttempt + dependency attempt boundary",
+        "idempotency key + ledger",
+        "external operation termination port when configured",
+        "ToolEffectCertainty + ProviderInvocationStatus N/A (tool contract)",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationReliabilityInventoryRow(
+        "RuntimeToolInvoker.invoke (side_effects=False)",
+        True,
+        False,
+        False,
+        "N/A",
+        "N/A",
+        "N/A",
+        "N/A",
+        "N/A",
+    ),
+    Gr10OrchestrationReliabilityInventoryRow(
+        "External Work / governed contractor host",
+        True,
+        True,
+        True,
+        "ProviderInvocationDispatchGate + GR-7 recovery/reconciliation",
+        "provider idempotency_key",
+        "provider_invocation reconciliation contract",
+        "ProviderInvocationStatus",
+        "QUALIFIED — delegated GR-7",
+    ),
+    Gr10OrchestrationReliabilityInventoryRow(
+        "GovernedOrchestrationSlotExecutor.execute_slot",
+        True,
+        True,
+        True,
+        "OrchestrationConsequentialEffectReliabilityPort (production composition)",
+        "operation_id idempotency_key",
+        "GR-7 reconciliation where host wires recovery",
+        "ProviderInvocationStatus via slot boundary",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationReliabilityInventoryRow(
+        "GovernedOrchestrationSlotContinuationExecutor.continue_slot",
+        True,
+        True,
+        True,
+        "OrchestrationConsequentialEffectReliabilityPort (production composition)",
+        "operation_id idempotency_key",
+        "GR-7 reconciliation where host wires recovery",
+        "ProviderInvocationStatus via slot boundary",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationReliabilityInventoryRow(
+        "Physical delegation / fan-out coordination slot",
+        True,
+        True,
+        True,
+        "DelegatedExecutionProvider + delegated invocation correlation",
+        "delegated idempotency_key",
+        "delegated execution reconciliation",
+        "DelegatedExecutionOutcome",
+        "delegated to another canonical owner",
+    ),
+    Gr10OrchestrationReliabilityInventoryRow(
+        "Orchestration event bus publish",
+        True,
+        False,
+        False,
+        "N/A",
+        "N/A",
+        "N/A",
+        "N/A",
+        "N/A",
     ),
 )
 

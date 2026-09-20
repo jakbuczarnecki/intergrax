@@ -10,6 +10,9 @@ from pathlib import Path
 
 import pytest
 
+from testing_support.orchestration.orchestration_consequential_effect_reliability_doubles import (
+    PassthroughOrchestrationConsequentialEffectReliability,
+)
 from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementRequest,
     CollaborativeWorkEnforcementResult,
@@ -241,6 +244,7 @@ def test_r9_r4_canonical_fanout_executor_skips_mse_wrap() -> None:
     policy = build_orchestration_topology_slot_mse_policy(
         meaningful_side_effect_authorization=mse,
         production_mode=True,
+        effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     inner = CanonicalFanOutSlotExecutor(
         coordination=object(),  # type: ignore[arg-type]
@@ -255,6 +259,7 @@ def test_r9_r4_alternate_delegated_implementation_skips_mse_wrap() -> None:
     policy = build_orchestration_topology_slot_mse_policy(
         meaningful_side_effect_authorization=mse,
         production_mode=True,
+        effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     inner = _DelegatedPhysicalSlotExecutor()
     prepared = prepare_orchestration_topology_slot_executor(inner, policy=policy)
@@ -267,6 +272,7 @@ def test_r9_r4_spoofed_class_name_does_not_skip_mse_wrap() -> None:
     policy = build_orchestration_topology_slot_mse_policy(
         meaningful_side_effect_authorization=mse,
         production_mode=True,
+        effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     inner = FanOutCoordinationSlotExecutor()
     prepared = prepare_orchestration_topology_slot_executor(inner, policy=policy)
@@ -279,6 +285,7 @@ async def test_r9_r4_parallel_slots_distinct_mse_scopes(_identity_ctx) -> None:
     policy = build_orchestration_topology_slot_mse_policy(
         meaningful_side_effect_authorization=mse,
         production_mode=True,
+        effect_reliability=PassthroughOrchestrationConsequentialEffectReliability(),
     )
     port = build_production_orchestration_topology_submission_port(
         NexusLoop(AgentRegistry()),

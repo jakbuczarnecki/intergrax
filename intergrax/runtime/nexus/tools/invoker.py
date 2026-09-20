@@ -1080,7 +1080,14 @@ class RuntimeToolInvoker:
                         error_message=msg,
                     ),
                 )
-                result = ToolExecutionResult.fail(RuntimeErrorCode.TIMEOUT, msg)
+                timeout_certainty = ToolEffectCertainty.UNCERTAIN
+                if boundary is not None and not boundary.may_have_started:
+                    timeout_certainty = ToolEffectCertainty.NOT_STARTED
+                result = ToolExecutionResult.fail(
+                    RuntimeErrorCode.TIMEOUT,
+                    msg,
+                    effect_certainty=timeout_certainty,
+                )
                 self._emit_boundary_event(
                     state=state,
                     agent_id=agent_id,

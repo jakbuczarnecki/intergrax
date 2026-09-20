@@ -15,6 +15,9 @@ from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectKind
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
+from intergrax.contracts.orchestration_consequential_effect_reliability import (
+    OrchestrationConsequentialEffectReliabilityPort,
+)
 from intergrax.contracts.orchestration_topology import (
     OrchestrationSlotContinuationExecutor,
     OrchestrationSlotExecutor,
@@ -31,6 +34,10 @@ from intergrax.runtime.nexus.orchestration.orchestration_graph_meaningful_side_e
 
 PayloadT = TypeVar("PayloadT")
 ResultT = TypeVar("ResultT")
+
+
+class OrchestrationTopologyReliabilityCompositionError(RuntimeError):
+    """Fail closed when production orchestration topology omits post-admission reliability."""
 
 
 class OrchestrationTopologySlotEffectAuthorityOwner(Enum):
@@ -125,6 +132,7 @@ class OrchestrationTopologySlotMsePolicy:
         [object],
         OrchestrationTopologySlotEffectAuthorityOwner | None,
     ] = default_resolve_orchestration_topology_slot_effect_authority_owner
+    effect_reliability: OrchestrationConsequentialEffectReliabilityPort | None = None
 
 
 def build_orchestration_topology_slot_mse_policy(
@@ -142,7 +150,12 @@ def build_orchestration_topology_slot_mse_policy(
         OrchestrationTopologySlotEffectAuthorityOwner | None,
     ]
     | None = None,
+    effect_reliability: OrchestrationConsequentialEffectReliabilityPort | None = None,
 ) -> OrchestrationTopologySlotMsePolicy:
+    if production_mode and effect_reliability is None:
+        raise OrchestrationTopologyReliabilityCompositionError(
+            "production orchestration topology requires OrchestrationConsequentialEffectReliabilityPort",
+        )
     return OrchestrationTopologySlotMsePolicy(
         meaningful_side_effect_authorization=meaningful_side_effect_authorization,
         production_mode=production_mode,
@@ -154,6 +167,7 @@ def build_orchestration_topology_slot_mse_policy(
             resolve_effect_authority_owner
             or default_resolve_orchestration_topology_slot_effect_authority_owner
         ),
+        effect_reliability=effect_reliability,
     )
 
 
@@ -189,6 +203,7 @@ def prepare_orchestration_topology_slot_executor(
         production_mode=policy.production_mode,
         build_enforcement_request=policy.build_enforcement_request,
         is_consequential_slot=policy.is_consequential_slot,
+        effect_reliability=policy.effect_reliability,
     )
 
 
@@ -212,11 +227,13 @@ def prepare_orchestration_topology_slot_continuation_executor(
         production_mode=policy.production_mode,
         build_enforcement_request=policy.build_enforcement_request,
         is_consequential_slot=policy.is_consequential_slot,
+        effect_reliability=policy.effect_reliability,
     )
 
 
 __all__ = [
     "OrchestrationSlotEffectAuthoritySurface",
+    "OrchestrationTopologyReliabilityCompositionError",
     "OrchestrationTopologySlotEffectAuthorityOwner",
     "OrchestrationTopologySlotMsePolicy",
     "build_orchestration_topology_slot_mse_policy",

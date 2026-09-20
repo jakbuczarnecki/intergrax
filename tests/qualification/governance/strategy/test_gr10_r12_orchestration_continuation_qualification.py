@@ -101,7 +101,6 @@ def test_gr10_r12_next_remediation_is_reliability() -> None:
 
 
 def test_gr10_r12_reliability_and_evidence_remain_partial() -> None:
-    assert gr10_matrix_orchestration_status("Reliability") is Gr10CoverageStatus.PARTIAL
     assert (
         gr10_matrix_orchestration_status("Governance Evidence")
         is Gr10CoverageStatus.PARTIAL

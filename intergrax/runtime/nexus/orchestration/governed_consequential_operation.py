@@ -34,6 +34,9 @@ from intergrax.runtime.policy.mse_hitl_effect_gate import (
     evaluate_mse_hitl_effect_gate,
     resolve_continuation_port_for_mse_hitl_gate,
 )
+from intergrax.contracts.orchestration_consequential_effect_reliability import (
+    OrchestrationConsequentialEffectReliabilityPort,
+)
 from intergrax.runtime.policy.side_effect_authorization_errors import (
     MeaningfulSideEffectAuthorizationRequiredError,
     SideEffectAuthorizationFailureReason,
@@ -70,6 +73,7 @@ class GovernedOrchestrationSlotExecutor(Generic[PayloadT, ResultT]):
     is_consequential_slot: Callable[[OrchestrationSlotId, PayloadT], bool] | None = None
     source_agent_id: str = "platform.orchestration.graph_slot"
     continuation_port: ExecutionContinuationPort | None = None
+    effect_reliability: OrchestrationConsequentialEffectReliabilityPort | None = None
 
     async def execute_slot(
         self,
@@ -107,6 +111,32 @@ class GovernedOrchestrationSlotExecutor(Generic[PayloadT, ResultT]):
             ):
                 code = "meaningful_side_effect_require_human"
             raise OrchestrationSlotExecutionError(code=code, message=str(exc)) from exc
+        return await self._execute_admitted_physical_effect(
+            slot_id=slot_id,
+            payload=payload,
+            operation_id=str(enforcement_request.operation_id),
+        )
+
+    async def _execute_admitted_physical_effect(
+        self,
+        *,
+        slot_id: OrchestrationSlotId,
+        payload: PayloadT,
+        operation_id: str,
+    ) -> ResultT:
+        if (
+            self.production_mode
+            and self.effect_reliability is not None
+        ):
+            return await self.effect_reliability.execute_admitted_effect(
+                slot_id=str(slot_id),
+                operation_id=operation_id,
+                idempotency_key=operation_id,
+                execute=lambda: self.inner.execute_slot(
+                    slot_id=slot_id,
+                    payload=payload,
+                ),
+            )
         return await self.inner.execute_slot(slot_id=slot_id, payload=payload)
 
 
@@ -124,6 +154,7 @@ class GovernedOrchestrationSlotContinuationExecutor(Generic[PayloadT, ResultT]):
     is_consequential_slot: Callable[[OrchestrationSlotId, PayloadT], bool] | None = None
     source_agent_id: str = "platform.orchestration.graph_slot"
     continuation_port: ExecutionContinuationPort | None = None
+    effect_reliability: OrchestrationConsequentialEffectReliabilityPort | None = None
 
     async def continue_slot(
         self,
@@ -161,6 +192,16 @@ class GovernedOrchestrationSlotContinuationExecutor(Generic[PayloadT, ResultT]):
             ):
                 code = "meaningful_side_effect_require_human"
             raise OrchestrationSlotExecutionError(code=code, message=str(exc)) from exc
+        if self.production_mode and self.effect_reliability is not None:
+            return await self.effect_reliability.execute_admitted_effect(
+                slot_id=str(slot_id),
+                operation_id=str(enforcement_request.operation_id),
+                idempotency_key=str(enforcement_request.operation_id),
+                execute=lambda: self.inner.continue_slot(
+                    slot_id=slot_id,
+                    payload=payload,
+                ),
+            )
         return await self.inner.continue_slot(slot_id=slot_id, payload=payload)
 
 
@@ -232,6 +273,7 @@ async def execute_governed_orchestration_consequential_effect(
     source_agent_id: str,
     source_step_id: str | None,
     effect: Callable[[], Awaitable[ResultT]],
+    effect_reliability: OrchestrationConsequentialEffectReliabilityPort | None = None,
 ) -> ResultT:
     """Authorize then run one async consequential orchestration effect (exactly once on ALLOW)."""
     authorize_orchestration_consequential_effect(
@@ -241,6 +283,13 @@ async def execute_governed_orchestration_consequential_effect(
         source_agent_id=source_agent_id,
         source_step_id=source_step_id,
     )
+    if production_mode and effect_reliability is not None:
+        return await effect_reliability.execute_admitted_effect(
+            slot_id=source_step_id or str(enforcement_request.operation_id),
+            operation_id=str(enforcement_request.operation_id),
+            idempotency_key=str(enforcement_request.operation_id),
+            execute=effect,
+        )
     return await effect()
 
 
