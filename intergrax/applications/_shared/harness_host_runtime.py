@@ -426,7 +426,7 @@ def build_harness_host_runtime(
         shadow_manager=env_wiring.shadow_manager,
         sandbox_manager=env_wiring.sandbox_manager,
         llm_adapter=llm_adapter,
-        runtime_event_bus=env_wiring.build_context.runtime_event_bus,
+        runtime_event_bus=env_wiring.composition.runtime_event_bus,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
         decision_wiring=decision_wiring,
@@ -547,7 +547,7 @@ def build_harness_host_runtime(
         effective_profile_revision_store=profile_persistence.revision_store,
         effective_profile_pinning_store=profile_persistence.pinning_store,
         effective_profile_active_store=profile_persistence.active_store,
-        skill_pinning_store=env_wiring.build_context.skill_pinning_store,
+        skill_pinning_store=env_wiring.composition.skill_pinning_store,
         _owned_collaborative_work_persistence=(
             meaningful_side_effect_wiring.owned_collaborative_work_persistence
         ),
