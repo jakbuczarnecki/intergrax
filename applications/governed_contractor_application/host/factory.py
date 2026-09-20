@@ -77,6 +77,8 @@ def create_governed_contractor_backend_app(
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
     document_store: object | None = None,
+    key_value_cache: object | None = None,
+    execution_continuation_state_store: object | None = None,
     observability_export: ObservabilityExportOperatorConfig | None = None,
 ) -> FastAPI:
     settings = settings or GovernedContractorBackendSettings.from_env()
@@ -98,6 +100,11 @@ def create_governed_contractor_backend_app(
         )
     elif document_store is not None:
         profile_persistence_kwargs = {"document_store": document_store}
+        if key_value_cache is not None:
+            profile_persistence_kwargs["key_value_cache"] = key_value_cache
+        if production_mode:
+            env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
     collaborative_work_integration_profile = None
     if document_store is not None:
         collaborative_work_integration_profile = (
@@ -119,6 +126,7 @@ def create_governed_contractor_backend_app(
         orchestration_decision_requirement_policy=(
             default_governed_contractor_harness_orchestration_decision_requirement_policy()
         ),
+        execution_continuation_state_store=execution_continuation_state_store,
         **profile_persistence_kwargs,
     )
     host_execution = runtime.execution

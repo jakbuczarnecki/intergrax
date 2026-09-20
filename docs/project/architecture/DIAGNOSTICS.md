@@ -1102,14 +1102,14 @@ Platform adoption (current discovery @ OBS-DIAG-X1):
 | HITL pause/restart/resume → terminal diagnostics | **PARTIAL P3** — durable checkpoint + runtime rebuild + diagnostics read (`test_obs_universal_spine_hitl_restart_e2e.py`); real OS process crash / external HITL service **NOT_PROVEN** |
 | Operator HTTP/dashboard read | **CORE READ CONTRACT = PROVEN**; **UNIVERSAL HOST EXPOSURE = PARTIAL** |
 | Diagnostic host composition replaceability | Engine injection **PROVEN**; standard host replaceability **PROVEN** (OBS-DIAG-X2 CLOSED) |
-| Global entry-path zero-bypass | Factory composition **PROVEN**; universal runtime entry-path **NOT_PROVEN** (OBS-DIAG-X3) |
+| Global entry-path zero-bypass | **PROVEN** (OBS-DIAG-X3 gates + representative E2E) |
 
 ### Enterprise gap baseline (X1 historical → X2 update)
 
 | Gap | Current status | Why not closed | Required closure task |
 | --- | -------------- | -------------- | --------------------- |
 | diagnostic composition replaceability | **PROVEN** (X2) | — | OBS-DIAG-X2 CLOSED |
-| global entry-path zero-bypass proof | **NOT_PROVEN** | Factory ≠ every entry path | OBS-DIAG-X3 |
+| global entry-path zero-bypass proof | **PROVEN** | X3 qualification | — |
 | external Kafka full spine E2E | **NOT_PROVEN** | Separate transport vs spine proofs | OBS-DIAG-X4 |
 | HITL full restart proof | **PARTIAL** | Missing real process / external HITL | OBS-DIAG-X5 |
 | universal product/scenario E2E adoption | **PARTIAL** | 4 initialized; not all E2E/read | OBS-DIAG-X6 |

@@ -28,6 +28,9 @@ from intergrax.applications._shared.diagnostic_read_wiring import (
     build_diagnostic_read_service,
     resolve_host_diagnostic_read_dependencies,
 )
+from intergrax.applications._shared.production_platform_persistence import (
+    build_reference_production_platform_persistence,
+)
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.plugin_bootstrap import bootstrap_application_plugins
 from intergrax.applications._shared.harness_host_composition import (
@@ -40,6 +43,12 @@ from intergrax.applications._shared.harness_host_composition import (
 )
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.runtime.execution.continuation.persistence import (
+    ExecutionContinuationDurableBacking,
+    backing_execution_continuation_state_store,
+    execution_continuation_state_store_from_durable_export,
+    export_durable_continuation_state,
+)
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
     ProblemId,
@@ -504,6 +513,14 @@ def attach_retry_violation_injector(
     )
 
 
+def _durable_continuation_store_for_diag_final() -> object:
+    backing = ExecutionContinuationDurableBacking()
+    backing_execution_continuation_state_store(backing)
+    return execution_continuation_state_store_from_durable_export(
+        export_durable_continuation_state(backing),
+    )
+
+
 def build_diag_final_product_host(
     *,
     tmp_path: Path,
@@ -514,6 +531,8 @@ def build_diag_final_product_host(
 ) -> DiagFinalHostComposition:
     health_registry = ObservabilityExporterHealthRegistry()
     exporter_id = observability_export.backend_id
+    platform = build_reference_production_platform_persistence(db_path=tmp_path / "platform_kv.db")
+    continuation_store = _durable_continuation_store_for_diag_final()
     app = create_governed_contractor_backend_app(
         registry_projection=build_governed_contractor_test_registry_projection(),
         settings=GovernedContractorBackendSettings.from_env(),
@@ -521,6 +540,8 @@ def build_diag_final_product_host(
         runtime_events_db_path=tmp_path / "runtime_events.db",
         checkpoints_db_path=tmp_path / "checkpoints.db",
         document_store=document_store,
+        key_value_cache=platform.kv_store,
+        execution_continuation_state_store=continuation_store,
         observability_export=None,
     )
     runtime = app.state.harness_runtime

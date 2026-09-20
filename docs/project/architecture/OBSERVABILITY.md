@@ -956,7 +956,7 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 | **HITL / restart** | pause / durable rebuild / resume → terminal diagnostics | **PARTIAL** — P3 `test_obs_universal_spine_hitl_restart_e2e.py`; real OS crash + external HITL **NOT_PROVEN** |
 | **Operator read** | Central diagnostic **write** path qualified; HTTP/dashboard read exposure | **PARTIAL** (CORE READ **PROVEN**; universal host exposure **PARTIAL**) |
 | **Composition pluginability** | Engine ctor injection vs host replaceability | Engine **PROVEN**; host composition **PARTIAL** (X2) |
-| **Entry-path zero-bypass** | Beyond factory composition | Factory **PROVEN**; global runtime entry-path **NOT_PROVEN** (X3) |
+| **Entry-path zero-bypass** | Beyond factory composition | **PROVEN** (OBS-DIAG-X3 static + representative E2E) |
 | **OECP / OBS-VENDOR** | Evaluation control-plane + full vendor hardening | **PLANNED** / **OPEN** |
 
 ### Enterprise gap baseline (X1 → current)
@@ -965,7 +965,7 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 | --- | -------------- | -------------- | --------------------- |
 | diagnostic composition replaceability | **PROVEN** | — | OBS-DIAG-X2 CLOSED |
 | canonical host one-resolution composition | **PROVEN** | — | OBS-DIAG-X2A + X2B CLOSED |
-| global entry-path zero-bypass proof | **NOT_PROVEN** | Factory ≠ every entry path | OBS-DIAG-X3 |
+| global entry-path zero-bypass proof | **PROVEN** | X3 gates + scenario/host E2E | — |
 | external Kafka full spine E2E | **NOT_PROVEN** | Separate transport vs spine proofs | OBS-DIAG-X4 |
 | HITL full restart proof | **PARTIAL** | Missing real process / external HITL | OBS-DIAG-X5 |
 | universal product/scenario E2E adoption | **PARTIAL** | 4 initialized; not all E2E/read | OBS-DIAG-X6 |
