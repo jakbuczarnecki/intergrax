@@ -24,8 +24,8 @@ MP-FINAL-2 — MULTIPLAYER DIAGNOSTICS & OPERABILITY E2E CERTIFIED / CLOSED
 | **WORKTREE_STATE** | Parallel unrelated WIP present at start; **not** staged into MP-FINAL-2 commits |
 | **MP_FINAL_1_R1_ANCESTRY** | `8ada8d72…` is ancestor of START_HEAD (`merge-base --is-ancestor` exit 0) |
 | **QUALIFICATION_SHA** | `886d00bf4cc277cc8005dff9fdc0b4ae3c165222` |
-| **EVIDENCE_SHA** | *(docs/evidence commit — stamped after commit)* |
-| **CURRENT_HEAD** | *(stamped after evidence commit)* |
+| **EVIDENCE_SHA** | `8a169abeda3ae84a89203f606739c40ff917f086` |
+| **CURRENT_HEAD** | `8a169abeda3ae84a89203f606739c40ff917f086` |
 
 ---
 
@@ -246,7 +246,7 @@ BLOCKING SECURITY FINDINGS: NONE
 | Role | SHA |
 | ---- | --- |
 | Qualification | `886d00bf4cc277cc8005dff9fdc0b4ae3c165222` |
-| Evidence / docs | *(stamped after this commit)* |
+| Evidence / docs | `8a169abeda3ae84a89203f606739c40ff917f086` |
 
 ---
 
