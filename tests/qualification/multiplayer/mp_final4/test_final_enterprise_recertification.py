@@ -21,6 +21,9 @@ _QUAL = _REPO_ROOT / "docs" / "project" / "maintainers" / "qualification"
 _MP_FINAL4_EVIDENCE = (
     _QUAL / "MP-FINAL-4_MULTIPLAYER_ENTERPRISE_CORE_FINAL_RECERTIFICATION.md"
 )
+_MP_FINAL4_R1_EVIDENCE = (
+    _QUAL / "MP-FINAL-4-R1_FINAL_CERTIFICATION_EVIDENCE_CHAIN_INTEGRITY_CORRECTION.md"
+)
 
 _PREDECESSOR_EVIDENCE = {
     "MP-7D": _QUAL / "MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md",
@@ -33,10 +36,40 @@ _PREDECESSOR_EVIDENCE = {
 
 _PREDECESSOR_SHAS = (
     "ab0c21b44bc4ee7c4faee074f31021495de475cf",  # MP-7D AUDITED_SHA
+    "92663e44e1ad4d6349ecb710a565cbb6a484d676",  # MP-7D CERTIFICATION_SHA
+    "133941393ad95bcfcf8e383a0fbf4068296296ae",  # MP-7D EVIDENCE_SHA
+    "dfd2c9a1f67a8ab798765ed6f44a77f266bb6b57",  # MP-7D binder/closure
+    "fd805578f4ab924b350cc6f19160ce702e88cfa7",  # MP-FINAL-1 base
+    "8ada8d72dd3d78f89048aaef177488f255fb3a64",  # MP-FINAL-1-R1 correction/evidence
+    "d1f0631cf7ebb5546e99099de2810e146bc9d9b0",  # MP-FINAL-2-C1 CORRECTION_SHA
+    "9c304e70ace27b4f477269d425e6516090d16140",  # MP-FINAL-2-C1 QUALIFICATION_SHA
+    "ea6c4ca7376021b9250a810f6c238e388b44dfc9",  # MP-FINAL-2-C1 EVIDENCE_SHA
+    "0eda5cdd4bc6d6f723a754468f5e34d14bfbb443",  # MP-FINAL-2-C1 BINDER_SHA
     "559af7bcbe5bda320dae490316bd8f4b0786d14d",  # MP-FINAL-3 QUALIFICATION_SHA
     "61c9ae04f65b2052d9ce040986182af7ee1f4ce8",  # MP-FINAL-3 EVIDENCE_SHA
-    "9c304e70ace27b4f477269d425e6516090d16140",  # MP-FINAL-2-C1 QUALIFICATION_SHA
-    "76c64c6f9cadc52a69cdea82e560975afd3230e3",  # MP-FINAL-3 binder ancestry pin
+    "76c64c6f9cadc52a69cdea82e560975afd3230e3",  # MP-FINAL-3 BINDER_SHA
+    "acdfc1d2b3f99244ee2776d3f286541fe3d43c93",  # MP-FINAL-4 QUALIFICATION_SHA
+    "7dcf7a5cd10288419cf23b476bad6e81dc3373d9",  # MP-FINAL-4 EVIDENCE_SHA
+    "d9ba436ac9a7ffa369507555e626c4dab2407393",  # MP-FINAL-4 BINDER_SHA
+)
+
+_CANONICAL_PROVENANCE_ROWS: tuple[tuple[str, str, str], ...] = (
+    ("MP-7D", "AUDITED_SHA", "ab0c21b44bc4ee7c4faee074f31021495de475cf"),
+    ("MP-7D", "CERTIFICATION_SHA", "92663e44e1ad4d6349ecb710a565cbb6a484d676"),
+    ("MP-7D", "EVIDENCE_SHA", "133941393ad95bcfcf8e383a0fbf4068296296ae"),
+    ("MP-7D", "BINDER_SHA", "dfd2c9a1f67a8ab798765ed6f44a77f266bb6b57"),
+    ("MP-FINAL-1-R1", "BASE_MP_FINAL_1_SHA", "fd805578f4ab924b350cc6f19160ce702e88cfa7"),
+    ("MP-FINAL-1-R1", "CORRECTION_SHA", "8ada8d72dd3d78f89048aaef177488f255fb3a64"),
+    ("MP-FINAL-2-C1", "CORRECTION_SHA", "d1f0631cf7ebb5546e99099de2810e146bc9d9b0"),
+    ("MP-FINAL-2-C1", "QUALIFICATION_SHA", "9c304e70ace27b4f477269d425e6516090d16140"),
+    ("MP-FINAL-2-C1", "EVIDENCE_SHA", "ea6c4ca7376021b9250a810f6c238e388b44dfc9"),
+    ("MP-FINAL-2-C1", "BINDER_SHA", "0eda5cdd4bc6d6f723a754468f5e34d14bfbb443"),
+    ("MP-FINAL-3", "QUALIFICATION_SHA", "559af7bcbe5bda320dae490316bd8f4b0786d14d"),
+    ("MP-FINAL-3", "EVIDENCE_SHA", "61c9ae04f65b2052d9ce040986182af7ee1f4ce8"),
+    ("MP-FINAL-3", "BINDER_SHA", "76c64c6f9cadc52a69cdea82e560975afd3230e3"),
+    ("MP-FINAL-4", "QUALIFICATION_SHA", "acdfc1d2b3f99244ee2776d3f286541fe3d43c93"),
+    ("MP-FINAL-4", "EVIDENCE_SHA", "7dcf7a5cd10288419cf23b476bad6e81dc3373d9"),
+    ("MP-FINAL-4", "BINDER_SHA", "d9ba436ac9a7ffa369507555e626c4dab2407393"),
 )
 
 _FORBIDDEN_CONTRACT_IMPORT_PREFIXES = (
@@ -126,6 +159,33 @@ def test_predecessor_shas_are_ancestors_and_fetchable() -> None:
     for sha in _PREDECESSOR_SHAS:
         assert _git_object_exists(sha), f"missing git object {sha}"
         assert _git_is_ancestor(sha), f"{sha} must be ancestor of HEAD"
+
+
+def test_mp_final4_evidence_canonical_provenance_chain() -> None:
+    text = _MP_FINAL4_EVIDENCE.read_text(encoding="utf-8-sig")
+    assert "Canonical final provenance chain" in text
+    assert "BINDER_SHA        = d9ba436ac9a7ffa369507555e626c4dab2407393" in text
+    for slice_name, role_label, sha in _CANONICAL_PROVENANCE_ROWS:
+        assert sha in text, f"missing SHA {sha} for {slice_name}"
+        assert role_label in text, f"missing role label {role_label} for {slice_name}"
+        row = re.search(
+            rf"\|\s*{re.escape(slice_name)}\s*\|[^\n]*{re.escape(sha)}",
+            text,
+        )
+        assert row is not None, f"{slice_name} row must bind SHA {sha} in provenance table"
+
+
+def test_mp_final4_r1_evidence_closed_and_no_mutable_head() -> None:
+    assert _MP_FINAL4_R1_EVIDENCE.is_file()
+    text = _MP_FINAL4_R1_EVIDENCE.read_text(encoding="utf-8-sig")
+    assert (
+        "MP-FINAL-4-R1 — FINAL CERTIFICATION EVIDENCE CHAIN INTEGRITY CORRECTION CLOSED / CERTIFIED"
+        in text
+    )
+    assert "MP-FINAL-4-R1 TASK PRODUCTION CHANGES = NONE" in text
+    assert "CURRENT_HEAD =" not in text
+    assert "CURRENT_HEAD_AT" not in text
+    assert "BLOCKING PROVENANCE FINDINGS: NONE" in text
 
 
 def test_contracts_layer_has_no_implementation_imports() -> None:
