@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 import pytest
 from pydantic import ValidationError
@@ -39,8 +41,13 @@ from intergrax.contracts.capability_catalog.federation import (
 from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
 from intergrax.contracts.capability_catalog.identity import CapabilitySourceKind
 from intergrax.contracts.capability_catalog.kind import CapabilityKind
+from intergrax.contracts.lifecycle_handoff.ack import (
+    DomainLifecycleHandoffAck,
+    DomainLifecycleHandoffDisposition,
+)
 from intergrax.contracts.tools.known_capability_realization import (
     KnownToolCapabilityRealizationRequest,
+    KnownToolCapabilityRealizationResult,
 )
 from intergrax.tools.catalog import (
     ToolCatalogEntry,
@@ -482,3 +489,327 @@ def test_tool_adapter_maps_replay_conflict_to_uca_conflict() -> None:
     assert (
         result.reason_code is CapabilityRealizationReasonCode.OPERATION_REPLAY_CONFLICT
     )
+
+
+class _BlockingActivationGate:
+    host_profile_id = "host-profile-1"
+
+    def __init__(self, inner: ToolHostLifecycleService) -> None:
+        self._inner = inner
+        self.activate_calls = 0
+        self.in_activate = threading.Event()
+        self.release_activate = threading.Event()
+
+    def registry_read(self):
+        return self._inner.registry_read()
+
+    def is_active(self, logical_tool_id: str) -> bool:
+        return self._inner.is_active(logical_tool_id)
+
+    def activation_metadata(self, logical_tool_id: str):
+        return self._inner.activation_metadata(logical_tool_id)
+
+    def activate(self, **kwargs):
+        self.activate_calls += 1
+        self.in_activate.set()
+        self.release_activate.wait(timeout=5)
+        return self._inner.activate(**kwargs)
+
+
+def test_concurrent_identical_request_single_side_effect_path() -> None:
+    need = _need()
+    lifecycle = ToolHostLifecycleService(host_profile_id="host-profile-1")
+    activation = _BlockingActivationGate(lifecycle)
+    resolver = _StaticResolver(_resolution())
+    provider = Me14ToolCatalogProvider()
+    materializer = Me14ToolHostActivationMaterializer(
+        lifecycle.registry,
+        catalog_source_id=provider.catalog_source_id,
+    )
+    domain = ToolKnownCapabilityRealizationService(
+        activation=activation,
+        materializer=materializer,
+        resolver=resolver,
+    )
+    request = KnownToolCapabilityRealizationRequest(
+        operation_id="op-concurrent-identical",
+        host_profile_id="host-profile-1",
+        capability_identity=need.capability_identity,
+        requested_at=_CREATED,
+    )
+    results: list[KnownToolCapabilityRealizationResult] = []
+    errors: list[BaseException] = []
+
+    def _run() -> None:
+        try:
+            results.append(domain.realize(request))
+        except BaseException as exc:
+            errors.append(exc)
+
+    threads = [threading.Thread(target=_run) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    activation.in_activate.wait(timeout=5)
+    assert activation.activate_calls == 1
+    assert resolver.calls == 1
+    activation.release_activate.set()
+    for thread in threads:
+        thread.join(timeout=5)
+    assert not errors
+    assert len(results) == 2
+    assert results[0].outcome == results[1].outcome
+    assert activation.activate_calls == 1
+    assert resolver.calls == 1
+
+
+def test_concurrent_conflicting_identity_one_binding() -> None:
+    need = _need()
+    domain, activation = _domain_with_resolver(_resolution())
+    other_key = need.capability_identity.model_copy(update={"logical_id": "other.tool"})
+    start = threading.Barrier(2)
+    outcomes: list[object] = []
+
+    def _run(request: KnownToolCapabilityRealizationRequest) -> None:
+        start.wait(timeout=5)
+        try:
+            outcomes.append(domain.realize(request))
+        except KnownToolCapabilityRealizationConflictError as exc:
+            outcomes.append(exc)
+
+    req_a = KnownToolCapabilityRealizationRequest(
+        operation_id="op-conflict-id",
+        host_profile_id="host-profile-1",
+        capability_identity=need.capability_identity,
+        requested_at=_CREATED,
+    )
+    req_b = req_a.model_copy(update={"capability_identity": other_key})
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futs = [pool.submit(_run, req) for req in (req_a, req_b)]
+        for fut in as_completed(futs):
+            fut.result()
+    conflicts = [
+        item
+        for item in outcomes
+        if isinstance(item, KnownToolCapabilityRealizationConflictError)
+    ]
+    non_conflicts = [
+        item
+        for item in outcomes
+        if isinstance(item, KnownToolCapabilityRealizationResult)
+    ]
+    assert len(conflicts) == 1
+    assert len(non_conflicts) == 1
+    assert activation.activate_calls <= 1
+    winner = non_conflicts[0]
+    if winner.outcome.name in {"REALIZED", "ALREADY_REALIZED"}:
+        assert activation.activate_calls == 1
+
+
+def test_concurrent_conflicting_host_one_binding() -> None:
+    need = _need()
+    domain, activation = _domain_with_resolver(_resolution())
+    start = threading.Barrier(2)
+    outcomes: list[object] = []
+
+    def _run(request: KnownToolCapabilityRealizationRequest) -> None:
+        start.wait(timeout=5)
+        try:
+            outcomes.append(domain.realize(request))
+        except KnownToolCapabilityRealizationConflictError as exc:
+            outcomes.append(exc)
+
+    req_a = KnownToolCapabilityRealizationRequest(
+        operation_id="op-conflict-host",
+        host_profile_id="host-profile-1",
+        capability_identity=need.capability_identity,
+        requested_at=_CREATED,
+    )
+    req_b = req_a.model_copy(update={"host_profile_id": "host-profile-2"})
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futs = [pool.submit(_run, req) for req in (req_a, req_b)]
+        for fut in as_completed(futs):
+            fut.result()
+    conflicts = [
+        item
+        for item in outcomes
+        if isinstance(item, KnownToolCapabilityRealizationConflictError)
+    ]
+    non_conflicts = [
+        item
+        for item in outcomes
+        if isinstance(item, KnownToolCapabilityRealizationResult)
+    ]
+    assert len(conflicts) == 1
+    assert len(non_conflicts) == 1
+    assert activation.activate_calls <= 1
+    winner = non_conflicts[0]
+    if winner.outcome.name in {"REALIZED", "ALREADY_REALIZED"}:
+        assert activation.activate_calls == 1
+
+
+class _FlakyResolverForRetry:
+    def __init__(self, resolution: ToolPackageResolution) -> None:
+        self._resolution = resolution
+        self.calls = 0
+
+    def resolve_for_identity(
+        self,
+        capability_identity: CapabilityIdentityKey,
+    ) -> ToolPackageResolution:
+        self.calls += 1
+        if self.calls == 1:
+            raise LookupError("first attempt failed")
+        return self._resolution
+
+
+def test_failed_attempt_then_concurrent_retries_single_in_flight() -> None:
+    need = _need()
+    resolver = _FlakyResolverForRetry(_resolution())
+    lifecycle = ToolHostLifecycleService(host_profile_id="host-profile-1")
+    activation = _BlockingActivationGate(lifecycle)
+    provider = Me14ToolCatalogProvider()
+    materializer = Me14ToolHostActivationMaterializer(
+        lifecycle.registry,
+        catalog_source_id=provider.catalog_source_id,
+    )
+    domain = ToolKnownCapabilityRealizationService(
+        activation=activation,
+        materializer=materializer,
+        resolver=resolver,
+    )
+    request = KnownToolCapabilityRealizationRequest(
+        operation_id="op-concurrent-retry",
+        host_profile_id="host-profile-1",
+        capability_identity=need.capability_identity,
+        requested_at=_CREATED,
+    )
+    failed = domain.realize(request)
+    assert failed.outcome.name == "FAILED"
+    assert activation.activate_calls == 0
+    results: list[KnownToolCapabilityRealizationResult] = []
+
+    def _retry() -> None:
+        results.append(domain.realize(request))
+
+    threads = [threading.Thread(target=_retry) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    activation.in_activate.wait(timeout=5)
+    assert activation.activate_calls == 1
+    activation.release_activate.set()
+    for thread in threads:
+        thread.join(timeout=5)
+    assert activation.activate_calls == 1
+    assert len(results) == 2
+    assert all(r.outcome.name in {"REALIZED", "ALREADY_REALIZED"} for r in results)
+
+
+def test_different_operation_ids_use_separate_operation_locks() -> None:
+    need = _need()
+    overlap = threading.Barrier(3)
+    release = threading.Event()
+    resolver_calls = 0
+    resolver_calls_lock = threading.Lock()
+
+    class _ParallelResolver:
+        def resolve_for_identity(
+            self,
+            capability_identity: CapabilityIdentityKey,
+        ) -> ToolPackageResolution:
+            nonlocal resolver_calls
+            with resolver_calls_lock:
+                resolver_calls += 1
+            overlap.wait(timeout=5)
+            release.wait(timeout=5)
+            return _resolution()
+
+    class _NoRegistryActivation:
+        host_profile_id = "host-profile-1"
+        activate_calls = 0
+
+        def registry_read(self):
+            return ToolHostLifecycleService(host_profile_id="host-profile-1").registry
+
+        def is_active(self, logical_tool_id: str) -> bool:
+            return False
+
+        def activation_metadata(self, logical_tool_id: str):
+            return None
+
+        def activate(self, **kwargs):
+            self.activate_calls += 1
+            return DomainLifecycleHandoffAck(
+                disposition=DomainLifecycleHandoffDisposition.ACCEPTED,
+                domain_reference="tool:parallel",
+                reason_detail="accepted",
+            )
+
+    noop = _NoRegistryActivation()
+    provider = Me14ToolCatalogProvider()
+    lifecycle = ToolHostLifecycleService(host_profile_id="host-profile-1")
+    materializer = Me14ToolHostActivationMaterializer(
+        lifecycle.registry,
+        catalog_source_id=provider.catalog_source_id,
+    )
+    parallel_domain = ToolKnownCapabilityRealizationService(
+        activation=noop,
+        materializer=materializer,
+        resolver=_ParallelResolver(),
+    )
+    req_a = KnownToolCapabilityRealizationRequest(
+        operation_id="op-parallel-a",
+        host_profile_id="host-profile-1",
+        capability_identity=need.capability_identity,
+        requested_at=_CREATED,
+    )
+    req_b = req_a.model_copy(update={"operation_id": "op-parallel-b"})
+
+    def _run(req: KnownToolCapabilityRealizationRequest) -> None:
+        parallel_domain.realize(req)
+
+    threads = [threading.Thread(target=_run, args=(req,)) for req in (req_a, req_b)]
+    for thread in threads:
+        thread.start()
+    overlap.wait(timeout=5)
+    assert resolver_calls == 2
+    release.set()
+    for thread in threads:
+        thread.join(timeout=5)
+    assert noop.activate_calls == 2
+
+
+class _ExceptionThenSuccessResolver:
+    def __init__(self, resolution: ToolPackageResolution) -> None:
+        self._resolution = resolution
+        self.calls = 0
+
+    def resolve_for_identity(
+        self,
+        capability_identity: CapabilityIdentityKey,
+    ) -> ToolPackageResolution:
+        self.calls += 1
+        if self.calls == 1:
+            raise RuntimeError("resolver exploded")
+        return self._resolution
+
+
+def test_exception_in_resolver_releases_guard_and_allows_retry() -> None:
+    need = _need()
+    resolver = _ExceptionThenSuccessResolver(_resolution())
+    domain, activation = _domain_with_custom_resolver(resolver)
+    request = KnownToolCapabilityRealizationRequest(
+        operation_id="op-exception-retry",
+        host_profile_id="host-profile-1",
+        capability_identity=need.capability_identity,
+        requested_at=_CREATED,
+    )
+    with pytest.raises(RuntimeError):
+        domain.realize(request)
+    assert activation.activate_calls == 0
+    second = domain.realize(request)
+    assert second.outcome.name in {"REALIZED", "ALREADY_REALIZED"}
+    assert activation.activate_calls == 1
+    other_key = need.capability_identity.model_copy(update={"logical_id": "other.tool"})
+    conflict = request.model_copy(update={"capability_identity": other_key})
+    with pytest.raises(KnownToolCapabilityRealizationConflictError):
+        domain.realize(conflict)

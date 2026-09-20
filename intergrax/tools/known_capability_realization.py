@@ -5,8 +5,10 @@
 
 from __future__ import annotations
 
+import threading
+from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Protocol
+from typing import Iterator, Protocol
 
 from intergrax.contracts.capability_catalog.evidence import (
     CapabilityDiscoveryAvailabilityEvidence,
@@ -91,8 +93,27 @@ class ToolKnownCapabilityRealizationService(KnownToolCapabilityRealizationPort):
         self._resolver = resolver
         self._bindings: dict[str, KnownToolCapabilityRealizationOperationBinding] = {}
         self._completed: dict[str, KnownToolCapabilityRealizationResult] = {}
+        self._operation_locks: dict[str, threading.Lock] = {}
+        self._operation_locks_guard = threading.Lock()
+
+    @contextmanager
+    def _synchronize_operation(self, operation_id: str) -> Iterator[None]:
+        with self._operation_locks_guard:
+            lock = self._operation_locks.get(operation_id)
+            if lock is None:
+                lock = threading.Lock()
+                self._operation_locks[operation_id] = lock
+        with lock:
+            yield
 
     def realize(
+        self,
+        request: KnownToolCapabilityRealizationRequest,
+    ) -> KnownToolCapabilityRealizationResult:
+        with self._synchronize_operation(request.operation_id):
+            return self._realize_locked(request)
+
+    def _realize_locked(
         self,
         request: KnownToolCapabilityRealizationRequest,
     ) -> KnownToolCapabilityRealizationResult:
