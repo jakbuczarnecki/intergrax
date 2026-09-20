@@ -24,6 +24,10 @@ _MP_FINAL4_EVIDENCE = (
 _MP_FINAL4_R1_EVIDENCE = (
     _QUAL / "MP-FINAL-4-R1_FINAL_CERTIFICATION_EVIDENCE_CHAIN_INTEGRITY_CORRECTION.md"
 )
+_MP_FINAL4_R1_B1_BINDER = _QUAL / "MP-FINAL-4-R1-B1_FINAL_R1_EVIDENCE_BINDER.md"
+
+_R1_QUALIFICATION_SHA = "17be264454ffaf1de1a3c9af2f0928a6e9647a43"
+_R1_EVIDENCE_SHA = "fcf7e869e1d3552b29cacb90dcb8fbcf904546c9"
 
 _PREDECESSOR_EVIDENCE = {
     "MP-7D": _QUAL / "MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md",
@@ -186,6 +190,20 @@ def test_mp_final4_r1_evidence_closed_and_no_mutable_head() -> None:
     assert "CURRENT_HEAD =" not in text
     assert "CURRENT_HEAD_AT" not in text
     assert "BLOCKING PROVENANCE FINDINGS: NONE" in text
+
+
+def test_mp_final4_r1_b1_binder_immutable_evidence_binding() -> None:
+    assert _MP_FINAL4_R1_B1_BINDER.is_file()
+    text = _MP_FINAL4_R1_B1_BINDER.read_text(encoding="utf-8-sig")
+    assert (
+        "MP-FINAL-4-R1-B1 — FINAL R1 EVIDENCE BINDER CLOSED / CERTIFIED" in text
+    )
+    assert _R1_QUALIFICATION_SHA in text
+    assert _R1_EVIDENCE_SHA in text
+    assert "This binder does not introduce new certification content." in text
+    assert "CURRENT_HEAD" not in text
+    assert "git log -1" not in text
+    assert "BINDER_SHA        =" not in text
 
 
 def test_contracts_layer_has_no_implementation_imports() -> None:
