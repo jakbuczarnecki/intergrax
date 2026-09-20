@@ -959,11 +959,11 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 | **Entry-path zero-bypass** | Beyond factory composition | Factory **PROVEN**; global runtime entry-path **NOT_PROVEN** (X3) |
 | **OECP / OBS-VENDOR** | Evaluation control-plane + full vendor hardening | **PLANNED** / **OPEN** |
 
-### Enterprise gap baseline (X1)
+### Enterprise gap baseline (X1 → current)
 
 | Gap | Current status | Why not closed | Required closure task |
 | --- | -------------- | -------------- | --------------------- |
-| diagnostic composition replaceability | **PARTIAL** | Host hard-wires several engines | OBS-DIAG-X2 |
+| diagnostic composition replaceability | **PROVEN** | — | OBS-DIAG-X2 CLOSED |
 | global entry-path zero-bypass proof | **NOT_PROVEN** | Factory ≠ every entry path | OBS-DIAG-X3 |
 | external Kafka full spine E2E | **NOT_PROVEN** | Separate transport vs spine proofs | OBS-DIAG-X4 |
 | HITL full restart proof | **PARTIAL** | Missing real process / external HITL | OBS-DIAG-X5 |

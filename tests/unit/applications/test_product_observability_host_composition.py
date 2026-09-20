@@ -264,11 +264,27 @@ def test_durable_problem_persistence_survives_adapter_restart(
         document_store=document_store,
     )
     deps = resolve_host_diagnostic_read_dependencies(runtime)
+    from intergrax.applications._shared.diagnostic_composition import (
+        DiagnosticComponentOwnership,
+        DiagnosticPersistenceComposition,
+    )
+
     service = build_diagnostic_read_service(
         HostDiagnosticReadDependencies(
-            problem_persistence=restarted,
-            runtime_event_persistence=deps.runtime_event_persistence,
-            causal_evidence_persistence=deps.causal_evidence_persistence,
+            persistence=DiagnosticPersistenceComposition(
+                problem_persistence=restarted,
+                occurrence_persistence=deps.occurrence_persistence,
+                causal_evidence_persistence=deps.causal_evidence_persistence,
+                runtime_event_persistence=deps.runtime_event_persistence,
+                problem_persistence_ownership=DiagnosticComponentOwnership.BORROWED,
+                occurrence_persistence_ownership=(
+                    deps.persistence.occurrence_persistence_ownership
+                ),
+                causal_evidence_persistence_ownership=(
+                    deps.persistence.causal_evidence_persistence_ownership
+                ),
+            ),
+            execution_lineage_reader=deps.execution_lineage_reader,
         ),
     )
     listed = service.list_problems(tenant_id=_TENANT_A)

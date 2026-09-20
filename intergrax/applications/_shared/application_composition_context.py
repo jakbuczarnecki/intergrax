@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.applications._shared.diagnostic_composition import (
+    DiagnosticCompositionOverrides,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -40,6 +43,7 @@ class ApplicationCompositionContext:
     prompt_registry: PromptRegistryProtocol | None = None
     boundary_event_buffer: BoundaryEventBuffer | None = None
     agent_registry: AgentRegistryRead | None = None
+    diagnostic_composition_overrides: DiagnosticCompositionOverrides | None = None
 
     @property
     def manifest(self) -> ApplicationManifest:
@@ -61,6 +65,7 @@ def composition_for_factory_context(
     prompt_registry: PromptRegistryProtocol | None = None,
     boundary_event_buffer: BoundaryEventBuffer | None = None,
     agent_registry: AgentRegistryRead | None = None,
+    diagnostic_composition_overrides: DiagnosticCompositionOverrides | None = None,
 ) -> ApplicationCompositionContext:
     """Test/composition helper — attach runtime fields to a public factory context."""
     return ApplicationCompositionContext(
@@ -77,6 +82,7 @@ def composition_for_factory_context(
         prompt_registry=prompt_registry,
         boundary_event_buffer=boundary_event_buffer,
         agent_registry=agent_registry,
+        diagnostic_composition_overrides=diagnostic_composition_overrides,
     )
 
 

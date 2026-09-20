@@ -2,6 +2,11 @@
 
 > **Maintainer audit evidence — not architecture SSOT.**
 > **CURRENT AUTHORITY:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) · [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md)
+>
+> **Historical freeze:** This X1 artifact records the gap state at the audited SHA below.
+> Do **not** rewrite rows as if later closures never existed. OBS-DIAG-X2 was closed later —
+> see [`OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md`](OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md).
+> Composition replaceability remains **PARTIAL** in this document’s matrices by design (X1 truth).
 
 | Field | Value |
 | ----- | ----- |
@@ -253,7 +258,7 @@ OECP — PLANNED / OPEN
 | Etap | Cel | Status |
 | ---- | --- | ------ |
 | **OBS-DIAG-X1** | Canonical SSOT reconciliation + enterprise gap baseline | **COMPLETE (this artifact)** |
-| OBS-DIAG-X2 | Diagnostic composition pluginability | PENDING |
+| OBS-DIAG-X2 | Diagnostic composition pluginability | **CLOSED** — see [`OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md`](OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md) (X1 matrices above remain historical PARTIAL) |
 | OBS-DIAG-X3 | Universal entry-point / zero-bypass qualification | PENDING |
 | OBS-DIAG-X4 | Real Kafka cross-process OBS→DIAG spine E2E | PENDING |
 | OBS-DIAG-X5 | Full HITL restart → diagnostics E2E qualification | PENDING |

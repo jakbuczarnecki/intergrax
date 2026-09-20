@@ -213,33 +213,51 @@ OPERATOR READ MODEL (DiagnosticReadService)
 
 **Mock rule:** A test may use a deterministic LLM test double when LLM is not the qualified boundary. It must **not** mock transport, persistence, worker boundary, diagnostic persistence, or vendor endpoint when the proof declares those as real qualification targets.
 
-### Composition pluginability baseline (input to X2)
+### Composition pluginability (OBS-DIAG-X2 — CLOSED)
 
-| Mechanism | Contract | Engine replaceable | Host composition replaceable | Status |
-| --------- | -------- | -----------------: | ---------------------------: | ------ |
-| ProblemPersistence | YES | YES | PARTIAL (DocumentStore wire) | **PARTIAL** |
-| ProblemOccurrencePersistence | YES | YES | PARTIAL | **PARTIAL** |
-| ExecutionReconstructionReader | YES | YES | PARTIAL (default class hard-wired) | **PARTIAL** |
-| CausalEvidencePersistence | YES | YES | PARTIAL | **PARTIAL** |
-| ProblemGroupingStrategy | YES | YES | YES (registry) | **PROVEN** |
-| DiagnosticAssessmentBuilder | module | YES (ctor) | NO public host seam | **PARTIAL** |
-| LifecycleAnomalyAnalyzer | module | YES (ctor) | NO public host seam | **PARTIAL** |
+Host composition is contract-driven via
+`intergrax.applications._shared.diagnostic_composition`:
+
+```text
+host / ApplicationCompositionContext.diagnostic_composition_overrides
+  → DiagnosticCompositionOverrides (typed)
+  → resolve_diagnostic_persistence_composition (shared write+read)
+  → resolve_diagnostic_composition
+  → build_diagnostic_orchestrator_from_composition
+  → ONE DiagnosticOrchestrator + ONE ProblemLifecycleEngine
+```
+
+| Mechanism | Contract | Host composition replaceable | Status |
+| --------- | -------- | ---------------------------: | ------ |
+| ProblemPersistence | YES | YES (`DiagnosticCompositionOverrides`) | **PROVEN** |
+| ProblemOccurrencePersistence | YES | YES | **PROVEN** |
+| ExecutionReconstructionReader | YES | YES (contract injection; default `ExecutionReconstructor`) | **PROVEN** |
+| CausalEvidencePersistence | YES | YES | **PROVEN** |
+| ProblemGroupingStrategy | YES | YES (registry + additional strategies; duplicate ID fails) | **PROVEN** |
+| DiagnosticAssessmentBuilder | module | **NOT PLUGGABLE BY DESIGN** (canonical assessment schema) | **INVARIANT** |
+| LifecycleAnomalyAnalyzer | module | **NOT PLUGGABLE BY DESIGN** (deterministic lifecycle invariants) | **INVARIANT** |
+| DiagnosticOrchestrator / ProblemLifecycleEngine | N/A | **NOT replaceable** (single authority) | **INVARIANT** |
 
 ```text
 ENGINE CONTRACT PLUGINABILITY = PROVEN
-STANDARD HOST COMPOSITION REPLACEABILITY = PARTIAL
+STANDARD HOST COMPOSITION REPLACEABILITY = PROVEN
 ```
+
+Historical X1 baseline (PARTIAL host replaceability at that SHA) remains in
+[`OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md).
+X2 qualification:
+[`OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md`](../maintainers/audits/OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md).
 
 | Mechanism | Contract / module | Default implementation | Custom replacement |
 | --------- | ----------------- | ---------------------- | ------------------ |
-| Factual reconstruction contract | `ExecutionReconstructionReader` (`intergrax.contracts.execution_reconstruction`) | Default: `ExecutionReconstructor` | External `ExecutionReconstructionReader` at composition root (single `ExecutionReconstructor` class in production) |
-| Grouping strategy | `ProblemGroupingStrategy` + `ProblemGroupingStrategyRegistry` | `DeterministicProblemGroupingStrategy` | Register additional `ProblemGroupingStrategy` |
-| Problem persistence | `ProblemPersistence` / `ProblemOccurrencePersistence` | Application-wired durable or `InMemoryProblemPersistence` | Provider implementations in integration layer |
-| Terminal diagnostic dispatch | `TerminalExecutionDiagnosticPort` | Central adapter → `DiagnosticOrchestrator` | External port implementation |
+| Factual reconstruction contract | `ExecutionReconstructionReader` | Default: `ExecutionReconstructor` | Override via `DiagnosticCompositionOverrides.execution_reconstruction_reader` |
+| Grouping strategy | `ProblemGroupingStrategy` + registry | `DeterministicProblemGroupingStrategy` | `additional_grouping_strategies` (duplicate ID → fail) |
+| Problem persistence | `ProblemPersistence` / occurrence / causal | DocumentStore wire helpers | Override ports on composition overrides |
+| Terminal diagnostic dispatch | `TerminalExecutionDiagnosticPort` | Central adapter → `DiagnosticOrchestrator` | Adapter must still delegate to central spine |
 | Reliability bridge | `ReliabilityDiagnosticOrchestrationPort` | Narrow invoke port | Alternate adapter |
 | Decision context (read) | `DecisionContextProvider` | Optional wired provider | Replace at read-service composition |
 
-**Qualification:** `uv run pytest -m obs_diag_conformance` — architecture gates (`test_obs_diag_conformance_architecture.py`), E2E spine (`test_obs_diag_conformance_e2e.py`), manifest (`test_obs_diag_conformance_qualification.py`); plus existing `test_obs_reconstruction_1_architecture.py` and diagnostic orchestrator/read suites.
+**Qualification:** `tests/unit/applications/_shared/test_obs_diag_x2_diagnostic_composition_pluginability.py` plus `uv run pytest -m obs_diag_conformance` and HARDEN 1D/4B/4D.
 
 ---
 
@@ -1065,14 +1083,14 @@ Platform adoption (current discovery @ OBS-DIAG-X1):
 | Kafka → worker → execution → diagnostics (full external spine) | **P4 NOT_PROVEN** (in-process async worker spine **P3 PROVEN** — `test_obs_universal_spine_async_e2e.py`; Kafka transport **P4 PROVEN** separately) |
 | HITL pause/restart/resume → terminal diagnostics | **PARTIAL P3** — durable checkpoint + runtime rebuild + diagnostics read (`test_obs_universal_spine_hitl_restart_e2e.py`); real OS process crash / external HITL service **NOT_PROVEN** |
 | Operator HTTP/dashboard read | **CORE READ CONTRACT = PROVEN**; **UNIVERSAL HOST EXPOSURE = PARTIAL** |
-| Diagnostic host composition replaceability | Engine injection **PROVEN**; standard host replaceability **PARTIAL** (OBS-DIAG-X2) |
+| Diagnostic host composition replaceability | Engine injection **PROVEN**; standard host replaceability **PROVEN** (OBS-DIAG-X2 CLOSED) |
 | Global entry-path zero-bypass | Factory composition **PROVEN**; universal runtime entry-path **NOT_PROVEN** (OBS-DIAG-X3) |
 
-### Enterprise gap baseline (X1)
+### Enterprise gap baseline (X1 historical → X2 update)
 
 | Gap | Current status | Why not closed | Required closure task |
 | --- | -------------- | -------------- | --------------------- |
-| diagnostic composition replaceability | **PARTIAL** | Host hard-wires several engines | OBS-DIAG-X2 |
+| diagnostic composition replaceability | **PROVEN** (X2) | — | OBS-DIAG-X2 CLOSED |
 | global entry-path zero-bypass proof | **NOT_PROVEN** | Factory ≠ every entry path | OBS-DIAG-X3 |
 | external Kafka full spine E2E | **NOT_PROVEN** | Separate transport vs spine proofs | OBS-DIAG-X4 |
 | HITL full restart proof | **PARTIAL** | Missing real process / external HITL | OBS-DIAG-X5 |
