@@ -305,13 +305,15 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
         "HITL",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R11-R2: ordinary Governance ALLOW proceeds without approval grant; "
-        "post-HITL ALLOW requires canonical human-governed ExecutionContinuationPort RESUMED "
-        "+ matching GovernedContinuationApprovalGrant evidence (never permission); "
-        "fresh REQUIRE_HUMAN never PROCEED; evaluate_mse_hitl_effect_gate classifies via "
-        "governed_correlation / human_request_id (not Task bool / global flag); "
-        "continue_slot / RuntimeToolInvoker reauthorize; External Work authorize_and_execute; "
-        "Physical Delegation HITL delegated; Continuation row remains PARTIAL.",
+        "GR-10-R11-R3: post-HITL classification is proposal-scoped via exact "
+        "GovernedContinuationCorrelation (execution + operation + resource + side-effect "
+        "scope/digest); human_request_id alone never marks the current effect as post-HITL; "
+        "same-execution unrelated human continuation is UNRELATED_HUMAN_CONTINUATION / "
+        "CORRELATION_INSUFFICIENT → ordinary ALLOW. GR-10-R11-R2: ordinary ALLOW without grant; "
+        "post-HITL ALLOW requires RESUMED + matching GovernedContinuationApprovalGrant evidence "
+        "(never permission); fresh REQUIRE_HUMAN never PROCEED; continue_slot / "
+        "RuntimeToolInvoker reauthorize; External Work authorize_and_execute; Physical "
+        "Delegation HITL delegated; Continuation row remains PARTIAL.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Continuation",
@@ -579,9 +581,9 @@ GR10_R11_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
         "internal_continuation_orchestration — not full ORCHESTRATION Continuation enterprise qualification."
     ),
     why_highest=(
-        "Highest remaining ORCHESTRATION applicable capability row after GR-10-R11-R2 HITL "
-        "ordinary/post-HITL approval-evidence separation; distinct from HITL human-judgment "
-        "vs permission boundary."
+        "Highest remaining ORCHESTRATION applicable capability row after GR-10-R11-R3 HITL "
+        "proposal-scope isolation (human_request_id alone insufficient); distinct from HITL "
+        "human-judgment vs permission boundary."
     ),
 )
 
@@ -921,7 +923,107 @@ GR10_ORCHESTRATION_HITL_INVENTORY: tuple[Gr10OrchestrationHitlInventoryRow, ...]
         True,
         "DeclarativeHitlPendingApproval / DeclarativeHitlApprovalGrant",
         "ExecutionContinuationPort via declarative HITL bridge",
-        "declarative grant scope match then fresh tool MSE authorize",
+        "declarative grant scope match then fresh tool MSE authorize; not MSE post-HITL "
+        "classification via human_request_id alone (GR-10-R11-R3)",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationHitlInventoryRow(
+        "mse_hitl_effect_gate.classify_human_governed_proposal_relation",
+        True,
+        True,
+        "N/A — classification only (Human Review evidence elsewhere)",
+        "GovernedContinuationCorrelation exact proposal match only",
+        "CORRELATION_INSUFFICIENT / UNRELATED_HUMAN_CONTINUATION → ordinary ALLOW; "
+        "human_request_id alone never POST_HITL_* (GR-10-R11-R3)",
+        "QUALIFIED",
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Gr10OrchestrationHitlHumanContinuationProducerRow:
+    path: str
+    production: bool
+    human_continuation: bool
+    governed_correlation_present: bool
+    proposal_scope_recoverable: bool
+    status: str
+
+
+GR10_ORCHESTRATION_HITL_HUMAN_CONTINUATION_PRODUCER_INVENTORY: tuple[
+    Gr10OrchestrationHitlHumanContinuationProducerRow,
+    ...,
+] = (
+    Gr10OrchestrationHitlHumanContinuationProducerRow(
+        "governed_continuation_bridge.apply_governed_continuation_pause",
+        True,
+        True,
+        True,
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationHitlHumanContinuationProducerRow(
+        "establish_canonical_hitl_pause (graph / internal HITL)",
+        True,
+        True,
+        True,
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationHitlHumanContinuationProducerRow(
+        "graph_runner HITL pause → establish_canonical_hitl_pause",
+        True,
+        True,
+        True,
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationHitlHumanContinuationProducerRow(
+        "declarative_policy_hitl_bridge (DeclarativeHitlPendingApproval)",
+        True,
+        True,
+        False,
+        False,
+        "N/A — non-MSE declarative HITL; not mse_hitl_effect_gate post-HITL authority",
+    ),
+    Gr10OrchestrationHitlHumanContinuationProducerRow(
+        "HumanPauseCoordinator (projection only)",
+        True,
+        False,
+        False,
+        False,
+        "N/A — projection; does not request_pause",
+    ),
+    Gr10OrchestrationHitlHumanContinuationProducerRow(
+        "Physical Delegation continuation grant",
+        True,
+        True,
+        True,
+        True,
+        "QUALIFIED — delegated owner; no duplicate MSE gate",
+    ),
+    Gr10OrchestrationHitlHumanContinuationProducerRow(
+        "ExecutionContinuationPort.request_pause direct (tests/scaffolds)",
+        False,
+        True,
+        False,
+        False,
+        "LEGACY_GAP bounded — CORRELATION_INSUFFICIENT; not post-HITL for current effect",
+    ),
+    Gr10OrchestrationHitlHumanContinuationProducerRow(
+        "External Work / MSE authorize_and_execute HITL",
+        True,
+        True,
+        True,
+        True,
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationHitlHumanContinuationProducerRow(
+        "RuntimeToolInvoker MSE HITL (via governed continuation bridge)",
+        True,
+        True,
+        True,
+        True,
         "QUALIFIED",
     ),
 )

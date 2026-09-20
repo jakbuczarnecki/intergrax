@@ -148,3 +148,14 @@ def test_r11_r2_no_global_grant_none_always_block() -> None:
     assert "POST_HITL_RESUMED — matching human approval evidence required" in source or (
         "matching human approval evidence required" in source
     )
+
+
+def test_r11_r3_human_request_id_alone_insufficient_static() -> None:
+    source = _GATE.read_text(encoding="utf-8")
+    assert "classify_human_governed_proposal_relation" in source
+    assert "CORRELATION_INSUFFICIENT" in source
+    assert "UNRELATED_HUMAN_CONTINUATION" in source
+    assert "MATCHED_HITL_PROPOSAL" in source
+    assert "return pending.human_request_id is not None" not in source
+    assert "HumanGovernedProposalRelation" in source
+

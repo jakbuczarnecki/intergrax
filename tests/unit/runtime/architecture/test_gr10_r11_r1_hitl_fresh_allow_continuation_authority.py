@@ -57,7 +57,10 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     mint_task_id,
 )
-from intergrax.contracts.governed_continuation_correlation import ContinuationReason
+from intergrax.contracts.governed_continuation_correlation import (
+    ContinuationReason,
+    GovernedContinuationCorrelation,
+)
 from intergrax.contracts.governed_continuation_grant import GovernedContinuationApprovalGrant
 from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
@@ -148,6 +151,27 @@ def _grant(**overrides: object) -> GovernedContinuationApprovalGrant:
     return GovernedContinuationApprovalGrant.model_validate(payload)
 
 
+def _correlation(
+    *,
+    continuation_id: str = _CONTINUATION_ID,
+) -> GovernedContinuationCorrelation:
+    return GovernedContinuationCorrelation(
+        continuation_request_id=continuation_id,
+        reason=ContinuationReason.COMPLIANCE,
+        task_id=_TASK_ID,
+        run_id=_RUN_ID,
+        attempt_id=_ATTEMPT_ID,
+        execution_id=_EXECUTION_ID,
+        side_effect_scope_id=_SCOPE_1,
+        side_effect_scope_digest=_SCOPE_DIGEST_1,
+        operation_id=_OPERATION,
+        resource_scope=_RESOURCE,
+        policy_bundle_id=_BUNDLE_ID,
+        policy_bundle_version=_BUNDLE_V1,
+        policy_bundle_digest=_BUNDLE_D1,
+    )
+
+
 def _identity() -> ExecutionContinuationIdentity:
     return ExecutionContinuationIdentity(
         task_id=_TASK_ID,
@@ -167,13 +191,20 @@ class _FakeContinuationPort:
         continuation_id: str = _CONTINUATION_ID,
         state: ExecutionContinuationLifecycleState,
         identity: ExecutionContinuationIdentity | None = None,
+        governed_correlation: GovernedContinuationCorrelation | None = ...,
     ) -> PendingExecutionContinuation:
+        correlation: GovernedContinuationCorrelation | None
+        if governed_correlation is ...:
+            correlation = _correlation(continuation_id=continuation_id)
+        else:
+            correlation = governed_correlation
         pending = PendingExecutionContinuation(
             continuation_id=continuation_id,
             identity=identity or _identity(),
             lifecycle_state=state,
             revision=5,
             reason=ContinuationReason.COMPLIANCE,
+            governed_correlation=correlation,
             pause_id="pause-r11r1",
             human_request_id="hr-r11r1",
             requested_at="2026-09-20T00:00:00+00:00",

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Canonical MSE HITL effect gate after fresh Governance authorize (GR-10-R11-R2).
+"""Canonical MSE HITL effect gate after fresh Governance authorize (GR-10-R11-R2/R3).
 
 Human judgment evidence and continuation grants never become Governance ALLOW.
 ``GovernedContinuationApprovalGrant`` is correlation / single-use evidence only.
@@ -18,6 +18,11 @@ Post-HITL physical effect may proceed only when:
   blocks execution progress), and
 * a scoped approval grant matches the current side-effect proposal (evidence), and
 * continuation identity / ``continuation_request_id`` correlate with that grant.
+
+Proposal identity for post-HITL classification requires exact
+``GovernedContinuationCorrelation`` match (execution + operation + resource +
+side-effect scope / digest). ``human_request_id`` alone never classifies the
+current effect as post-HITL (GR-10-R11-R3).
 
 Fresh ``REQUIRE_HUMAN`` is never ``PROCEED`` — matching grants cannot override it.
 """
@@ -74,13 +79,36 @@ class MseHitlEffectGateDisposition(Enum):
     REQUIRE_HITL = auto()
 
 
+class HumanGovernedProposalRelation(Enum):
+    """Proposal-scoped relation between a pending continuation and the current effect.
+
+    ``human_request_id`` alone is never ``MATCHED_HITL_PROPOSAL`` (GR-10-R11-R3).
+    """
+
+    MATCHED_HITL_PROPOSAL = auto()
+    UNRELATED_HUMAN_CONTINUATION = auto()
+    NON_HITL_CONTINUATION = auto()
+    CORRELATION_INSUFFICIENT = auto()
+
+
 class EffectContinuationClassification(Enum):
     """Typed classification of canonical continuation relative to the current effect."""
 
     NO_CANONICAL_CONTINUATION = auto()
     CANONICAL_NON_HITL_OR_NON_BLOCKING = auto()
+    UNRELATED_HUMAN_CONTINUATION = auto()
+    CORRELATION_INSUFFICIENT = auto()
     POST_HITL_RESUMED = auto()
     POST_HITL_NOT_RESUMED = auto()
+
+
+_ORDINARY_ALLOW_CLASSIFICATIONS: frozenset[EffectContinuationClassification] = frozenset(
+    {
+        EffectContinuationClassification.CANONICAL_NON_HITL_OR_NON_BLOCKING,
+        EffectContinuationClassification.UNRELATED_HUMAN_CONTINUATION,
+        EffectContinuationClassification.CORRELATION_INSUFFICIENT,
+    }
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -189,28 +217,35 @@ def _governed_correlation_matches_current_proposal(
     return True
 
 
-def _is_human_governed_continuation_for_proposal(
+def classify_human_governed_proposal_relation(
     pending: PendingExecutionContinuation,
     *,
     side_effect: MeaningfulSideEffectRequest,
     operation_id: str,
     resource_scope: str | None,
-) -> bool:
-    """True when canonical continuation is human-governed for this proposal.
+) -> HumanGovernedProposalRelation:
+    """Classify whether pending is human-governed for *this* consequential proposal.
 
-    Prefer ``governed_correlation`` (GR-5). A pending with ``human_request_id`` but
-    no correlation is still treated as HITL for this execution identity (fail-closed).
-    Continuations without correlation and without ``human_request_id`` are non-HITL.
+    Exact ``GovernedContinuationCorrelation`` match is the only positive proof of
+    post-HITL authority for the current effect. ``human_request_id`` without
+    proposal correlation is ``CORRELATION_INSUFFICIENT`` — never automatic HITL
+    for every later effect on the same execution (GR-10-R11-R3).
     """
     correlation = pending.governed_correlation
     if correlation is not None:
-        return _governed_correlation_matches_current_proposal(
+        if _governed_correlation_matches_current_proposal(
             correlation,
             side_effect=side_effect,
             operation_id=operation_id,
             resource_scope=resource_scope,
-        )
-    return pending.human_request_id is not None
+        ):
+            return HumanGovernedProposalRelation.MATCHED_HITL_PROPOSAL
+        if pending.human_request_id is not None:
+            return HumanGovernedProposalRelation.UNRELATED_HUMAN_CONTINUATION
+        return HumanGovernedProposalRelation.NON_HITL_CONTINUATION
+    if pending.human_request_id is not None:
+        return HumanGovernedProposalRelation.CORRELATION_INSUFFICIENT
+    return HumanGovernedProposalRelation.NON_HITL_CONTINUATION
 
 
 def resolve_effect_continuation_context(
@@ -245,12 +280,23 @@ def resolve_effect_continuation_context(
             classification=EffectContinuationClassification.NO_CANONICAL_CONTINUATION,
         )
 
-    if not _is_human_governed_continuation_for_proposal(
+    relation = classify_human_governed_proposal_relation(
         pending,
         side_effect=side_effect,
         operation_id=operation_id,
         resource_scope=resource_scope,
-    ):
+    )
+    if relation is HumanGovernedProposalRelation.CORRELATION_INSUFFICIENT:
+        return EffectContinuationContext(
+            classification=EffectContinuationClassification.CORRELATION_INSUFFICIENT,
+            pending=pending,
+        )
+    if relation is HumanGovernedProposalRelation.UNRELATED_HUMAN_CONTINUATION:
+        return EffectContinuationContext(
+            classification=EffectContinuationClassification.UNRELATED_HUMAN_CONTINUATION,
+            pending=pending,
+        )
+    if relation is HumanGovernedProposalRelation.NON_HITL_CONTINUATION:
         return EffectContinuationContext(
             classification=EffectContinuationClassification.CANONICAL_NON_HITL_OR_NON_BLOCKING,
             pending=pending,
@@ -509,11 +555,9 @@ def _evaluate_allow_for_effect(
             )
         return _block(authorization)
 
-    if (
-        context.classification
-        is EffectContinuationClassification.CANONICAL_NON_HITL_OR_NON_BLOCKING
-    ):
-        # Non-HITL / wrong-scope continuation: ordinary ALLOW — grant not required.
+    if context.classification in _ORDINARY_ALLOW_CLASSIFICATIONS:
+        # Non-HITL / unrelated human / correlation-insufficient: ordinary ALLOW.
+        # Legacy human_request_id without proposal correlation must not force post-HITL.
         # Unrelated stale grant must neither authorize nor block this effect.
         if stored_grant is not None and task is not None:
             if grant_belongs_to_same_proposal_scope(
@@ -571,8 +615,10 @@ __all__ = [
     "CanonicalContinuationAuthorityView",
     "EffectContinuationClassification",
     "EffectContinuationContext",
+    "HumanGovernedProposalRelation",
     "MseHitlEffectGateDisposition",
     "MseHitlEffectGateOutcome",
+    "classify_human_governed_proposal_relation",
     "evaluate_mse_hitl_effect_gate",
     "resolve_canonical_continuation_authority",
     "resolve_continuation_port_for_mse_hitl_gate",

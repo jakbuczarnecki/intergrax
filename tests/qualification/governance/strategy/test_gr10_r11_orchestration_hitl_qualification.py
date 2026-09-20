@@ -11,6 +11,7 @@ import pytest
 
 from tests.qualification.governance.strategy.catalog import (
     GR10_ORCHESTRATION_CAPABILITY_SEMANTICS,
+    GR10_ORCHESTRATION_HITL_HUMAN_CONTINUATION_PRODUCER_INVENTORY,
     GR10_ORCHESTRATION_HITL_INVENTORY,
     GR10_R11_NEXT_REMEDIATION,
     Gr10CoverageStatus,
@@ -55,6 +56,30 @@ def test_gr10_r11_hitl_inventory_has_no_gap_rows() -> None:
             "delegated to canonical owner",
             "delegated to another canonical owner",
         }
+
+
+def test_gr10_r11_r3_human_continuation_producer_inventory_bounded() -> None:
+    assert GR10_ORCHESTRATION_HITL_HUMAN_CONTINUATION_PRODUCER_INVENTORY
+    for row in GR10_ORCHESTRATION_HITL_HUMAN_CONTINUATION_PRODUCER_INVENTORY:
+        if row.production and row.human_continuation and "declarative" not in row.path.lower():
+            if row.path.startswith("HumanPauseCoordinator"):
+                continue
+            if row.status.startswith("N/A"):
+                continue
+            assert row.status.startswith("QUALIFIED"), row
+            assert row.governed_correlation_present is True
+            assert row.proposal_scope_recoverable is True
+        if not row.production and "LEGACY_GAP" in row.status:
+            assert "CORRELATION_INSUFFICIENT" in row.status
+
+
+def test_gr10_r11_r3_gate_rejects_human_request_id_fallback() -> None:
+    source = _GATE.read_text(encoding="utf-8-sig")
+    assert "classify_human_governed_proposal_relation" in source
+    assert "CORRELATION_INSUFFICIENT" in source
+    assert "return pending.human_request_id is not None" not in source
+    assert "GR-10-R11-R3" in source
+
 
 
 def test_gr10_r11_continuation_row_remains_partial() -> None:
