@@ -331,14 +331,19 @@ class RuntimeContext:
             registry = config.tool_registry
         else:
             register_default_tools()
-            registry = ToolRegistry()
+            mutable_registry = ToolRegistry()
 
             if config.tool_profile is not None:
                 build_registry_from_profile(
                     config.tool_profile,
                     ctx=wiring_ctx,
-                    registry=registry,
+                    registry=mutable_registry,
                 )
+
+            for provider in config.tool_providers:
+                provider.register_tools(mutable_registry, wiring_ctx)
+
+            registry = mutable_registry
 
         executor = RegistryToolExecutor(registry)
         pre_effect_coordinator: IdempotencyPreEffectCoordinator | None = None
@@ -373,11 +378,6 @@ class RuntimeContext:
         )
 
         config.tool_invoker = base_invoker
-
-
-        # Register tools from providers
-        for provider in config.tool_providers:
-            provider.register_tools(registry, wiring_ctx)
 
         if config.production_mode and config.agent_runtime_governance is None:
             raise ValueError(
