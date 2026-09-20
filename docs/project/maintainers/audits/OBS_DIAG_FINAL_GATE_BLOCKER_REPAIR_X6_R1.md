@@ -35,7 +35,7 @@ why: opens/data_plane delegate SDK construction to dedicated internal factory; c
 
 ```text
 FAILED_X6_SHA=6c31c4840ba45c2ed449ba169a581086f9976bae
-X6_R1_REPAIR_SHA=<set at commit>
+X6_R1_REPAIR_SHA=fb03ae9b4df475e398c40e5aa1398464928913e3
 ```
 
 ## Ready for full X6 re-run
