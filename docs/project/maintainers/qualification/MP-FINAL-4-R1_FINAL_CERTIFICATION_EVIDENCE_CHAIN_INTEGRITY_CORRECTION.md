@@ -17,9 +17,9 @@ R1_START_HEAD                 = 4e7f5a876da00887a125986b85120d01c9ca5361
 BRANCH                        = development
 WORKTREE_STATE                = unrelated WIP present (not staged for MP-FINAL-4-R1)
 MP_FINAL_4_BINDER_ANCESTRY    = d9ba436ac9a7ffa369507555e626c4dab2407393 (ancestor of R1_START_HEAD)
-R1_QUALIFICATION_SHA          = (recorded in §19 after land; ancestry anchor for gates at qualification time)
-R1_EVIDENCE_SHA               = (recorded in §19 after land; this file — no self-stamp in body)
-R1_BINDER_SHA                 = (optional; not required for this correction)
+R1_QUALIFICATION_SHA          = 17be264454ffaf1de1a3c9af2f0928a6e9647a43
+R1_EVIDENCE_SHA               = git log -1 --format=%H -- docs/project/maintainers/qualification/MP-FINAL-4-R1_FINAL_CERTIFICATION_EVIDENCE_CHAIN_INTEGRITY_CORRECTION.md
+R1_BINDER_SHA                 = (optional; not used)
 ```
 
 ## 3. Independent audit finding
@@ -134,10 +134,10 @@ Extended `tests/qualification/multiplayer/mp_final4/test_final_enterprise_recert
 
 ```text
 uv run pytest tests/qualification/multiplayer/mp_final4 tests/qualification/multiplayer/mp_final3 tests/qualification/multiplayer/mp_final2 -q
+→ 49 passed
 uv run pytest tests/qualification/multiplayer tests/qualification/mp6 -q
+→ 126 passed
 ```
-
-(Exact counts recorded in Cursor closeout after execution.)
 
 ## 17. Production changes
 
@@ -155,11 +155,9 @@ BLOCKING DOCUMENTATION FINDINGS: NONE
 
 ## 19. Commit(s)
 
-Recorded after land (no self-referential binder/evidence stamp inside this file prior to commit):
-
 ```text
-R1_QUALIFICATION_SHA = <docs/tests hardening commit>
-R1_EVIDENCE_SHA      = <this file commit if split; else same as qualification>
+R1_QUALIFICATION_SHA = 17be264454ffaf1de1a3c9af2f0928a6e9647a43
+R1_EVIDENCE_SHA      = git log -1 --format=%H -- docs/project/maintainers/qualification/MP-FINAL-4-R1_FINAL_CERTIFICATION_EVIDENCE_CHAIN_INTEGRITY_CORRECTION.md
 ```
 
 ## 20. Status transition
