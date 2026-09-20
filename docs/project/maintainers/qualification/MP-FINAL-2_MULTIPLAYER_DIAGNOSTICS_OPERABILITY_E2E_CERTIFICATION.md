@@ -1,8 +1,8 @@
 # MP-FINAL-2 — Multiplayer Diagnostics & Operability E2E Certification
 
-**Status:** CLOSED / CERTIFIED (subject to independent audit)  
-**Program:** Multiplayer AI final hardening  
-**Slice:** MP-FINAL-2 — Diagnostics / operability qualification + cross-layer E2E  
+**Status:** CLOSED / RECERTIFIED (after MP-FINAL-2-C1; subject to independent audit)
+**Program:** Multiplayer AI final hardening
+**Slice:** MP-FINAL-2 — Diagnostics / operability qualification + cross-layer E2E
 **Date:** 2026-09-20
 
 ---
@@ -10,8 +10,15 @@
 ## 1. Verdict
 
 ```text
-MP-FINAL-2 — MULTIPLAYER DIAGNOSTICS & OPERABILITY E2E CERTIFIED / CLOSED
+MP-FINAL-2 — MULTIPLAYER DIAGNOSTICS & OPERABILITY E2E CLOSED / RECERTIFIED
+(MP-FINAL-2-C1 closed the public operator-facing contract boundary)
 ```
+
+Initial MP-FINAL-2 qualification proved the functional path, but independent audit
+found the operator result type was owned by runtime implementation namespace
+(**PARTIAL PASS**). MP-FINAL-2-C1 establishes the public operator-facing contract
+boundary — see
+[`MP-FINAL-2-C1_OPERATOR_FACING_DIAGNOSTICS_CONTRACT_BOUNDARY_QUALIFICATION.md`](MP-FINAL-2-C1_OPERATOR_FACING_DIAGNOSTICS_CONTRACT_BOUNDARY_QUALIFICATION.md).
 
 ---
 
@@ -69,7 +76,7 @@ MP-FINAL-2 — MULTIPLAYER DIAGNOSTICS & OPERABILITY E2E CERTIFIED / CLOSED
 | Evidence projection | `CollaborativeFunctionalEvidenceProjectionStrategy` | CW contract + Diagnostics-neutral mapping | `DefaultCollaborativeFunctionalEvidenceProjection` | Maps Multiplayer facts → frozen kinds |
 | Observability / RuntimeEvent | Runtime event + export contracts | Observability | Existing exporters / stores | Not used as CollaborativeActivity alias |
 | Diagnostic interpretation | `FunctionalDiagnosticAnalyzer` + specification | Diagnostics | Analyzer over Evidence persistence | Consumer only |
-| Operator read (certified path) | `FunctionalOperatorProjector` → `FunctionalDiagnosticOperatorProjection` | Diagnostics | Projector | Operator-visible typed findings |
+| Operator read (certified path) | `FunctionalOperatorProjector` → `FunctionalDiagnosticOperatorProjection` | Diagnostics implementation → **contracts.diagnostics** | Projector (runtime) | Operator-visible typed findings via public contract |
 | Operator read (Problem store) | `DiagnosticReadService` | Diagnostics | In-memory / document-store persistence | Used to prove **no false infra Problem** on DENY |
 | Authorization | Collaborative enforcement + `PolicyAction` | Collaborative Work / policy | Enforcement gate | Unchanged by Diagnostics |
 
@@ -135,7 +142,7 @@ Specification IDs live in the qualification harness (composition-selected interp
 
 ## 11. Operator-facing read path
 
-- **Certified operator surface:** `FunctionalDiagnosticOperatorProjection` (public Diagnostics projection API).
+- **Certified operator surface:** `intergrax.contracts.diagnostics.FunctionalDiagnosticOperatorProjection` (public platform contract; runtime path is compatibility re-export).
 - **Problem store:** `DiagnosticReadService.list_problems` asserted empty for this Multiplayer path (no second Multiplayer Problem truth; DENY does not create infrastructure Problems).
 
 ---
@@ -152,7 +159,9 @@ Tenant isolation: identical execution ids on shared persistence, different `tena
 
 - Diagnostics does not call authorization ports.
 - DENY remains `CollaborativeWorkAuthorizationDenied` with `PolicyAction.DENY`.
-- Simulated Diagnostics interpretation outage cannot convert DENY into ALLOW/success.
+- Diagnostics is not in the authorization authority path; an interpretation
+  failure (post-factum `_BrokenAnalyzer` double) cannot convert DENY to ALLOW.
+  This is **not** a claim of a fully wired production Diagnostics outage path.
 - Collaborative Activity is not used as the technical error log for this path.
 
 ---
@@ -254,7 +263,8 @@ BLOCKING SECURITY FINDINGS: NONE
 ## 22. Status transition
 
 ```text
-MP-FINAL-2 — CLOSED / CERTIFIED
+MP-FINAL-2 — CLOSED / RECERTIFIED
+MP-FINAL-2-C1 — CLOSED / CERTIFIED
 MP-FINAL-3 — NEXT
 FULL MULTIPLAYER CAPABILITY — FINAL HARDENING IN PROGRESS
 ```
