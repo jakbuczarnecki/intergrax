@@ -2,14 +2,22 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **TIER-3 HOST COMPOSITION & BOUNDARY E2E QUALIFIED / CLOSED** · **MP-7C-C1 — CLOSED / CERTIFIED** · **MP-7C — CLOSED / RECERTIFIED** (subject to independent audit) |
+| **Status** | **TIER-3 HOST COMPOSITION & BOUNDARY E2E QUALIFIED / CLOSED** · **MP-7C-C1-R1 — CLOSED / CERTIFIED** · **MP-7C-C1 — CLOSED / RECERTIFIED** · **MP-7C — CLOSED / RECERTIFIED** (subject to independent audit) |
 | **QUALIFICATION_SHA** | `96f2a63687492b03e0b0302d4f881acc7cb7cc42` (original MP-7C) |
 | **EVIDENCE_SHA** | `214a20aed4f2ca27c672fe9be6629da306e38e61` (original); repair `b038f5e88fc171e8ff7a47dd0275bd8eee9f5ace` |
 | **C1_CORRECTION** | `ff967a61f5f1550c4b5827f496ab509f7e537148` |
 | **C1_EVIDENCE** | `b647074cde92827e616abde762946b1bfd145241` |
+| **C1_EVIDENCE_BINDER** | `56f223a3894d57250b831aa41bb9b0700def0ab6` |
+| **R1_CORRECTION** | `14e1abcced7d96b0228802ebf38b1cad056dba2b` |
+| **R1_EVIDENCE** | *(filled at evidence commit)* |
 | **Predecessor** | MP-7B — CLOSED / QUALIFIED (`ab3c71ed0368bba01971851b846aa3462d7be977`) |
 | **MP-7A** | CLOSED / CERTIFIED (`a40dd4107b3c0c3c28177522f1dd278c68fb4da4`) |
 | **Production code (C1)** | host wiring only — injectable `MeaningfulSideEffectPolicyEvaluator`; LKW production unchanged |
+| **Production code (R1)** | relocate canonical `MeaningfulSideEffectPolicyEvaluator` to `intergrax.contracts.*`; LKW production unchanged |
+
+## Historical qualification note
+
+C1 closed injection semantics, but the shared Protocol still lived in the Collaborative Work implementation module (`intergrax.collaborative_work.enforcement_gate`). That left a **PARTIAL PASS** architecture gap for contract ownership until **MP-7C-C1-R1**.
 
 ## 1. Audit identity
 
@@ -190,7 +198,8 @@ BLOCKING FINDINGS: NONE
 ## 18. Status transition
 
 ```text
-MP-7C-C1 — CLOSED / CERTIFIED
+MP-7C-C1-R1 — CLOSED / CERTIFIED
+MP-7C-C1 — CLOSED / RECERTIFIED
 MP-7C — CLOSED / RECERTIFIED
 MP-7D — NEXT (Final Reference-Consumer Boundary Enterprise Certification)
 MP-7 — IN PROGRESS
@@ -220,10 +229,12 @@ Canonical host wiring hardcoded `RuntimePolicyEngine()` inside `_build_port_from
 
 ```text
 MeaningfulSideEffectPolicyEvaluator
-(intergrax.collaborative_work.enforcement_gate)
+(historical C1 location: intergrax.collaborative_work.enforcement_gate)
 ```
 
 Same Protocol already required by `build_production_orchestration_meaningful_side_effect_authorization_boundary(...)`. No new Protocol created. `RuntimePolicyEngine` remains the composition default implementation.
+
+**Post-R1 canonical ownership:** `intergrax.contracts.meaningful_side_effect_policy` (see §21).
 
 ### Injection model
 
@@ -265,3 +276,80 @@ LKW PRODUCTION CHANGES = NONE
 ### Independent audit (C1)
 
 MP-7C-C1 musi zostać niezależnie zaudytowane na podstawie rzeczywistego kodu, publicznych kontraktów, canonical host composition, qualification tests i commitów z GitHuba. Audyt musi w szczególności potwierdzić, że runtime policy evaluator używany przez Tier-3 host composition jest zależnością wyrażoną przez platform-defined contract, a nie twardo zaszytą implementacją; że `RuntimePolicyEngine` pozostaje jedynie default implementation; że zewnętrzny conforming evaluator może zostać wstrzyknięty bez zmian consumer code i bez concrete-type branching; że explicit `MeaningfulSideEffectAuthorizationPort` nadal ma pierwszeństwo i omija zarówno default materialization, jak i evaluator wiring; że injected evaluator jest przekazywany do rzeczywistego authorization buildera zarówno dla externally supplied repositories, jak i resolver-created repositories; że realny ALLOW E2E działa bez `patch(RuntimePolicyEngine)` i przechodzi przez canonical host resolver → public authorization port → Tier-3 consumer; że default no-rule behavior pozostaje fail closed; że DENY path pozostaje rzeczywisty; że strict/non-strict, repository lifecycle, integration-profile i decision-policy semantics nie uległy regresji; że LKW production code i product semantics pozostały niezmienione; oraz że platform operates on contracts, not implementations. Sam raport Cursor AI nie jest podstawą do uznania MP-7C-C1 ani MP-7C za enterprise-certified i zamknięte.
+
+---
+
+## 21. MP-7C-C1-R1 — Meaningful Side-Effect Policy Evaluator Contract Relocation
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED / CERTIFIED** (subject to independent audit) |
+| **START_HEAD** | `56f223a3894d57250b831aa41bb9b0700def0ab6` |
+| **C1_BINDER_ANCESTRY** | `56f223a3894d57250b831aa41bb9b0700def0ab6` is ancestor of START_HEAD (identity) |
+| **CORRECTION_SHA** | `14e1abcced7d96b0228802ebf38b1cad056dba2b` |
+| **EVIDENCE_SHA** | *(filled at evidence commit)* |
+
+### Previous gap (do not hide)
+
+```text
+C1 made runtime evaluator injectable,
+but reused Protocol from enforcement_gate implementation module.
+R1 relocates canonical ownership to contracts layer.
+```
+
+Historical C1 / MP-7C statuses prior to R1 were therefore **PARTIAL PASS** for contract ownership, even though injection semantics themselves worked.
+
+### Canonical location
+
+| | Before R1 | After R1 |
+|--|-----------|----------|
+| Canonical Protocol | `intergrax.collaborative_work.enforcement_gate` | `intergrax.contracts.meaningful_side_effect_policy` |
+| Production definitions | 1 (implementation module) | 1 (contracts layer) |
+| Compatibility re-export | n/a | **none** (prefer clean canonical imports) |
+
+### Dependency direction
+
+```text
+before:
+application/runtime → collaborative_work.enforcement_gate (implementation)
+
+after:
+application/runtime/collaborative_work → intergrax.contracts.meaningful_side_effect_policy
+```
+
+### Contract signature (unchanged)
+
+```python
+def evaluate_meaningful_side_effect(
+    self,
+    request: MeaningfulSideEffectRequest,
+) -> PolicyDecision:
+    ...
+```
+
+### LKW
+
+```text
+LKW PRODUCTION CHANGES = NONE
+```
+
+### Findings
+
+```text
+BLOCKING ARCHITECTURE GAPS: NONE
+BLOCKING FINDINGS: NONE
+```
+
+### Status transition
+
+```text
+MP-7C-C1-R1 — CLOSED / CERTIFIED
+MP-7C-C1 — CLOSED / RECERTIFIED
+MP-7C — CLOSED / RECERTIFIED
+MP-7D — NEXT
+MP-7 — IN PROGRESS
+```
+
+### Independent audit (R1)
+
+MP-7C-C1-R1 musi zostać niezależnie zaudytowane na podstawie rzeczywistego kodu, canonical contract definition, production import graph, qualification tests i commitów z GitHuba. Audyt musi w szczególności potwierdzić, że `MeaningfulSideEffectPolicyEvaluator` ma dokładnie jedną canonical production definition w neutralnym `intergrax.contracts.*`; że kontrakt nie zależy od `intergrax.collaborative_work.*`, runtime ani application-host implementation; że `CollaborativeWorkEnforcementGate`, runtime governance composition oraz shared application-host wiring importują evaluator wyłącznie z neutralnego contract layer; że ewentualny compatibility re-export nie tworzy drugiego contract ownership ani nie jest używany przez nowe production code; że `RuntimePolicyEngine` i custom implementations conformują structuralnie do tego samego contractu; że MP-7C-C1 injection semantics, whole-port override precedence, lifecycle ownership i default `RuntimePolicyEngine()` pozostają niezmienione; że realny ALLOW E2E działa przez canonical host resolver bez semantic monkeypatcha; że DENY i default fail-closed pozostają poprawne; że nie powstały circular dependencies ani nowe cross-layer imports; że LKW production code pozostaje niezmieniony; oraz że platform operates on contracts, not implementations. Sam raport Cursor AI nie jest podstawą do uznania MP-7C-C1-R1, MP-7C-C1 ani MP-7C za enterprise-certified i zamknięte.
