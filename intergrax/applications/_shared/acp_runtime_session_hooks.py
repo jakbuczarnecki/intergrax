@@ -5,11 +5,9 @@
 from __future__ import annotations
 
 from intergrax.agents.authoring.acp_runtime_session_ports import AcpRuntimeSessionHooks
-from intergrax.agents.authoring.shared_context_access import AcpSharedContextMetadata
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
 from intergrax.contracts.agent_run import AgentRunRequest
-from intergrax.contracts.shared_context import SharedContextView
 from intergrax.runtime.kernel.step_kernel import StepKernelContext
 
 
@@ -21,24 +19,9 @@ def build_nexus_acp_runtime_session_hooks() -> AcpRuntimeSessionHooks:
         attach_acp_catalog_exec_ctx,
         close_acp_catalog_exec_ctx,
     )
-    from intergrax.runtime.nexus.agents.shared_context_bridge import (
-        load_view as nexus_load_view,
-        persist_view as nexus_persist_view,
-        view_from_task_metadata as nexus_view_from_task_metadata,
+    from intergrax.runtime.nexus.agents.nexus_shared_context_access import (
+        nexus_shared_context_access_for_run,
     )
-
-    def _load_shared_context(metadata: AcpSharedContextMetadata) -> SharedContextView | None:
-        return nexus_load_view(metadata)
-
-    def _persist_shared_context(metadata: AcpSharedContextMetadata, view: SharedContextView):
-        return nexus_persist_view(metadata, view)
-
-    def _view_shared_context_for_task(
-        metadata: AcpSharedContextMetadata,
-        *,
-        task_id: str,
-    ) -> SharedContextView:
-        return nexus_view_from_task_metadata(metadata, task_id=task_id)
 
     def _apply_kernel_wiring(
         *,
@@ -90,7 +73,5 @@ def build_nexus_acp_runtime_session_hooks() -> AcpRuntimeSessionHooks:
         attach_acp_catalog_exec_ctx=attach_acp_catalog_exec_ctx,
         close_acp_catalog_exec_ctx=close_acp_catalog_exec_ctx,
         on_llm_routing_evaluated=record_acp_routing_rule_evaluation,
-        load_shared_context_view=_load_shared_context,
-        persist_shared_context_view=_persist_shared_context,
-        view_shared_context_for_task=_view_shared_context_for_task,
+        resolve_shared_context_access=nexus_shared_context_access_for_run,
     )

@@ -16,11 +16,7 @@ from intergrax.agents.authoring.acp_session_host import (
 )
 from intergrax.agents.authoring.budget_enforcing_llm_router import wrap_budget_enforcing_router
 from intergrax.agents.authoring.llm_router import StepLLMRouter
-from intergrax.agents.authoring.shared_context_access import (
-    load_view,
-    persist_view,
-    view_from_task_metadata,
-)
+from intergrax.agents.authoring.shared_context_access import neutral_shared_context_access_for_run
 from intergrax.agents.authoring.step_loop import AgentRuntime
 from intergrax.runtime.wiring.reliability_runtime_bridge import resolve_reliability_wiring_options
 from intergrax.agents.authoring.artifact_refs import artifact_refs_from_payloads
@@ -453,10 +449,11 @@ async def _run_acp_session_bound(
             ),
             on_evaluated=_on_routing_evaluated,
         )
-    load_shared = session_hooks.load_shared_context_view or load_view
-    view_for_task = session_hooks.view_shared_context_for_task or view_from_task_metadata
-    shared_context = load_shared(request.metadata) or view_for_task(
-        request.metadata,
+    resolve_shared_access = (
+        session_hooks.resolve_shared_context_access or neutral_shared_context_access_for_run
+    )
+    shared_context_access = resolve_shared_access(request)
+    shared_context = shared_context_access.load() or shared_context_access.project(
         task_id=task_id,
     )
 
@@ -602,8 +599,7 @@ async def _run_acp_session_bound(
         terminal_reason = TerminalReason.MAX_STEPS_EXCEEDED
 
     if step_ctx.shared_context is not None:
-        persist_fn = session_hooks.persist_shared_context_view or persist_view
-        persist_fn(request.metadata, step_ctx.shared_context)
+        shared_context_access.persist(step_ctx.shared_context)
     if ACP_USAGE_KEY in step_ctx.metadata:
         request.metadata[ACP_USAGE_KEY] = step_ctx.metadata[ACP_USAGE_KEY]
 

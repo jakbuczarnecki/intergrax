@@ -7,12 +7,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Protocol
 
-from intergrax.agents.authoring.shared_context_access import AcpSharedContextMetadata
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import AgentRunRequest
 from intergrax.contracts.agent_step_context import AgentStepContext
-from intergrax.contracts.shared_context import SharedContextView
+from intergrax.contracts.shared_context_access import SharedContextAccessPort
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
 from intergrax.runtime.kernel.step_kernel import StepKernelContext
@@ -55,16 +54,8 @@ class RoutingEvaluationObserverPort(Protocol):
     ) -> None: ...
 
 
-class SharedContextLoadPort(Protocol):
-    def __call__(self, metadata: AcpSharedContextMetadata) -> SharedContextView | None: ...
-
-
-class SharedContextPersistPort(Protocol):
-    def __call__(self, metadata: AcpSharedContextMetadata, view: SharedContextView) -> None: ...
-
-
-class SharedContextProjectionPort(Protocol):
-    def __call__(self, metadata: AcpSharedContextMetadata, *, task_id: str) -> SharedContextView: ...
+class SharedContextAccessForRunPort(Protocol):
+    def __call__(self, request: AgentRunRequest) -> SharedContextAccessPort: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -75,6 +66,4 @@ class AcpRuntimeSessionHooks:
     attach_acp_catalog_exec_ctx: AttachCatalogExecutionContextPort | None = None
     close_acp_catalog_exec_ctx: CloseCatalogExecutionContextPort | None = None
     on_llm_routing_evaluated: RoutingEvaluationObserverPort | None = None
-    load_shared_context_view: SharedContextLoadPort | None = None
-    persist_shared_context_view: SharedContextPersistPort | None = None
-    view_shared_context_for_task: SharedContextProjectionPort | None = None
+    resolve_shared_context_access: SharedContextAccessForRunPort | None = None
