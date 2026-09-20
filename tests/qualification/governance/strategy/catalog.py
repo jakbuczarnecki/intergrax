@@ -320,11 +320,12 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
         "Continuation",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R12: ExecutionContinuationPort is sole pause/wait/resolution/resume authority; "
+        "GR-10-R12-R1: ExecutionContinuationPort is sole pause/wait/resolution/resume authority; "
         "current-episode SSOT; Task/HumanPauseCoordinator/continuable_slots/checkpoint are "
-        "projection or eligibility only; production forbids silent in-memory downgrade; "
+        "projection or eligibility only; production requires store.is_durable=True "
+        "(explicit non-durable rejected); strict factory never invents in-memory; "
         "HostTaskExecution shares NexusLoop continuation store; durable restart via "
-        "export/reconstruct contract (GR-5-R5).",
+        "export/reconstruct contract (GR-5-R5); named vendor adapter N/A.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Reliability",
@@ -1259,7 +1260,19 @@ GR10_ORCHESTRATION_CONTINUATION_INVENTORY: tuple[
         False,
         True,
         True,
-        "QUALIFIED — production forbids silent lab fallback; shared store",
+        "QUALIFIED — production requires durable store; shared canonical store",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "validate_execution_continuation_for_composition (is_durable)",
+        True,
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — production requires store.is_durable; no type whitelist",
     ),
     Gr10OrchestrationContinuationInventoryRow(
         "ExecutionContinuationStateStore (pluginable persistence)",
@@ -1271,7 +1284,19 @@ GR10_ORCHESTRATION_CONTINUATION_INVENTORY: tuple[
         False,
         True,
         True,
-        "QUALIFIED — contract ABC; custom store via composition",
+        "QUALIFIED — contract ABC; custom durable provider via composition",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "ReconstructedDurableExecutionContinuationStateStore / export",
+        True,
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        True,
+        "QUALIFIED — reference restart durability; named vendor adapter N/A",
     ),
     Gr10OrchestrationContinuationInventoryRow(
         "InMemoryExecutionContinuationStateStore",
@@ -1283,7 +1308,19 @@ GR10_ORCHESTRATION_CONTINUATION_INVENTORY: tuple[
         False,
         True,
         False,
-        "N/A — lab/test / explicit composition only",
+        "N/A — lab/test only; production rejects even when explicit",
+    ),
+    Gr10OrchestrationContinuationInventoryRow(
+        "BackingExecutionContinuationStateStore (live reconnect)",
+        False,
+        False,
+        False,
+        False,
+        True,
+        False,
+        True,
+        False,
+        "N/A — reconnect only; is_durable=False; not production",
     ),
 )
 
@@ -1491,7 +1528,7 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
         gr10_matrix_inference_status("Continuation"),
         gr10_matrix_agentic_status("Continuation"),
         gr10_matrix_orchestration_status("Continuation"),
-        "ExecutionContinuationPort sole authority; orch GR-10-R12 QUALIFIED.",
+        "ExecutionContinuationPort sole authority; orch GR-10-R12-R1 durable production QUALIFIED.",
     ),
     Gr10CapabilityCell(
         "Reliability",

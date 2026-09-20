@@ -192,10 +192,9 @@ def test_queue_worker_environment_profile_sets_independent_kv_providers() -> Non
 
 
 def test_production_strict_nexus_with_custom_terminal_and_durable_attempt_kv() -> None:
-    base = ApplicationEnvironmentProfile.lab_defaults(profile_id="p0c8c.production")
+    base = ApplicationEnvironmentProfile.product_defaults(profile_id="p0c8c.production")
     env = base.model_copy(
         update={
-            "meta": base.meta.model_copy(update={"execution_mode": ExecutionMode.STRICT}),
             "reliability_profile": ReliabilityProfile(
                 attempt_lifecycle_persistence_provider=AttemptLifecyclePersistenceProvider.KV,
                 execution_terminal_persistence_provider=ExecutionTerminalPersistenceProvider.KV,
@@ -203,6 +202,15 @@ def test_production_strict_nexus_with_custom_terminal_and_durable_attempt_kv() -
         },
     )
     custom = ExecutionTerminalService(InMemoryExecutionTerminalStore())
+    from intergrax.runtime.execution.continuation.persistence import (
+        ExecutionContinuationDurableBacking,
+        export_durable_continuation_state,
+        execution_continuation_state_store_from_durable_export,
+    )
+
+    continuation_store = execution_continuation_state_store_from_durable_export(
+        export_durable_continuation_state(ExecutionContinuationDurableBacking()),
+    )
     loop = build_nexus_loop_from_environment(
         AgentRegistry(),
         env=env,
@@ -210,9 +218,12 @@ def test_production_strict_nexus_with_custom_terminal_and_durable_attempt_kv() -
         document_store=InMemoryDocumentStore(),
         execution_terminal=custom,
         run_budget=RunBudget(),
+        execution_continuation_state_store=continuation_store,
     )
     assert loop.execution_terminal is custom
     assert isinstance(loop._attempt_lifecycle.store, KvAttemptLifecycleStore)  # noqa: SLF001
+    assert loop.execution_continuation_state_store is continuation_store
+    assert continuation_store.is_durable is True
 
 
 def test_missing_attempt_capability_fails_closed() -> None:

@@ -36,8 +36,9 @@ def wire_execution_continuation_port(
 ) -> ExecutionContinuationPort:
     """Dedicated continuation composition; ``state_store=None`` uses lab in-memory default.
 
-    Production hosts must pass an explicit store (see
-    ``validate_execution_continuation_for_composition``); silent None is lab/test only.
+    Production hosts must pass an explicit **durable** store
+    (``store.is_durable is True``; see ``validate_execution_continuation_for_composition``).
+    Silent ``None`` / in-memory is lab/test only.
     """
     store = wire_execution_continuation_state_store(state_store=state_store)
     service = ExecutionContinuationService(store)

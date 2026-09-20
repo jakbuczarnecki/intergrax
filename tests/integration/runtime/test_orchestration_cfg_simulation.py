@@ -371,7 +371,20 @@ async def test_cfg20_strict_multi_agent_pipeline() -> None:
     assert env.execution_mode is ExecutionMode.STRICT
     assert env.decision_profile.verification.semantic_enabled is True
     assert env.decision_profile.flow.verify_graph_final is True
-    loop = build_nexus_loop_from_environment(_simulation_registry(), env=env)
+    from intergrax.runtime.execution.continuation.persistence import (
+        ExecutionContinuationDurableBacking,
+        export_durable_continuation_state,
+        execution_continuation_state_store_from_durable_export,
+    )
+
+    continuation_store = execution_continuation_state_store_from_durable_export(
+        export_durable_continuation_state(ExecutionContinuationDurableBacking()),
+    )
+    loop = build_nexus_loop_from_environment(
+        _simulation_registry(),
+        env=env,
+        execution_continuation_state_store=continuation_store,
+    )
     result = await loop.handle_task(
         Task(
             tenant_id="org-sim",

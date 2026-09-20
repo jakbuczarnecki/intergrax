@@ -9,6 +9,9 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.execution_continuation import (
     ExecutionContinuationError,
     ExecutionContinuationErrorCode,
@@ -21,6 +24,9 @@ from intergrax.contracts.execution_continuation import (
     ExecutionHumanVerdict,
     ExecutionPauseRequest,
     advance_continuation_lifecycle,
+)
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
 )
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -42,9 +48,11 @@ from intergrax.runtime.execution.continuation.durability_policy import (
 from intergrax.runtime.execution.continuation.persistence import (
     ExecutionContinuationDurableBacking,
     InMemoryExecutionContinuationStateStore,
+    ReconstructedDurableExecutionContinuationStateStore,
     backing_execution_continuation_state_store,
     export_durable_continuation_state,
     execution_continuation_state_store_from_durable_export,
+    restore_durable_continuation_backing,
 )
 from intergrax.runtime.human.governed_continuation_bridge import (
     apply_governed_continuation_pause,
@@ -60,6 +68,13 @@ from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
 from testing_support.builder import canonical_run_id_for_tests, canonical_task_id_for_tests
+from testing_support.nexus_host_task_execution import (
+    build_certified_internal_test_host_task_execution,
+)
+from intergrax.runtime.execution.attempt_lifecycle import (
+    wire_attempt_lifecycle_store,
+)
+from tests.unit.runtime.background_execution.reentry_admission_doubles import InMemoryKVStore
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -147,8 +162,25 @@ def test_gr10_r12_production_nexus_rejects_silent_lab_store() -> None:
     assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
 
 
-def test_gr10_r12_production_nexus_accepts_explicit_store() -> None:
+def test_gr10_r12_production_nexus_rejects_explicit_non_durable_store() -> None:
     store = InMemoryExecutionContinuationStateStore()
+    with pytest.raises(ExecutionContinuationError) as exc:
+        NexusLoop(
+            AgentRegistry(),
+            production_mode=True,
+            max_run_retries=0,
+            retry_policy=RetryPolicy(max_retries=0),
+            execution_continuation_state_store=store,
+        )
+    assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
+    assert "not durable" in str(exc.value).lower() or "is_durable" in str(exc.value)
+
+
+def test_gr10_r12_production_nexus_accepts_durable_store() -> None:
+    store = execution_continuation_state_store_from_durable_export(
+        export_durable_continuation_state(ExecutionContinuationDurableBacking()),
+    )
+    assert store.is_durable is True
     loop = NexusLoop(
         AgentRegistry(),
         production_mode=True,
@@ -306,13 +338,37 @@ def test_gr10_r12_validate_composition_helper() -> None:
         continuation_explicitly_wired=False,
         continuation_disabled=False,
     )
-    with pytest.raises(ExecutionContinuationError):
+    with pytest.raises(ExecutionContinuationError) as missing:
         validate_execution_continuation_for_composition(
             production_mode=True,
             state_store=None,
             continuation_explicitly_wired=False,
             continuation_disabled=False,
         )
+    assert missing.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
+    with pytest.raises(ExecutionContinuationError) as non_durable:
+        validate_execution_continuation_for_composition(
+            production_mode=True,
+            state_store=InMemoryExecutionContinuationStateStore(),
+            continuation_explicitly_wired=True,
+            continuation_disabled=False,
+        )
+    assert non_durable.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
+    durable = execution_continuation_state_store_from_durable_export(
+        export_durable_continuation_state(ExecutionContinuationDurableBacking()),
+    )
+    validate_execution_continuation_for_composition(
+        production_mode=True,
+        state_store=durable,
+        continuation_explicitly_wired=True,
+        continuation_disabled=False,
+    )
+    validate_execution_continuation_for_composition(
+        production_mode=True,
+        state_store=None,
+        continuation_explicitly_wired=False,
+        continuation_disabled=True,
+    )
 
 
 def test_gr10_r12_establish_pause_uses_port_not_task_authority() -> None:
@@ -336,3 +392,221 @@ def test_gr10_r12_establish_pause_uses_port_not_task_authority() -> None:
     assert task.runtime.governance.paused is True
     task.runtime.governance.paused = False
     assert canonical_execution_is_resumed(cap, identity=identity) is False
+
+def _empty_durable_store() -> ReconstructedDurableExecutionContinuationStateStore:
+    return execution_continuation_state_store_from_durable_export(
+        export_durable_continuation_state(ExecutionContinuationDurableBacking()),
+    )
+
+
+def _strict_env() -> ApplicationEnvironmentProfile:
+    return ApplicationEnvironmentProfile.product_defaults(profile_id="gr10.r12.r1.strict")
+
+
+class _PluginDurableContinuationStore(ReconstructedDurableExecutionContinuationStateStore):
+    """External-provider-shaped durable store (contract capability only)."""
+
+
+class _PluginNonDurableContinuationStore(InMemoryExecutionContinuationStateStore):
+    """Custom store rejected in production via is_durable=False."""
+
+
+def test_gr10_r12_r1_production_rejects_backing_non_durable() -> None:
+    store = backing_execution_continuation_state_store(ExecutionContinuationDurableBacking())
+    assert store.is_durable is False
+    with pytest.raises(ExecutionContinuationError) as exc:
+        NexusLoop(
+            AgentRegistry(),
+            production_mode=True,
+            max_run_retries=0,
+            retry_policy=RetryPolicy(max_retries=0),
+            execution_continuation_state_store=store,
+        )
+    assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
+
+
+def test_gr10_r12_r1_custom_durable_provider_accepted() -> None:
+    store = _PluginDurableContinuationStore(
+        restore_durable_continuation_backing(
+            export_durable_continuation_state(ExecutionContinuationDurableBacking()),
+        ),
+    )
+    assert store.is_durable is True
+    loop = NexusLoop(
+        AgentRegistry(),
+        production_mode=True,
+        max_run_retries=0,
+        retry_policy=RetryPolicy(max_retries=0),
+        execution_continuation_state_store=store,
+    )
+    assert loop.execution_continuation_state_store is store
+
+
+def test_gr10_r12_r1_custom_non_durable_provider_rejected() -> None:
+    store = _PluginNonDurableContinuationStore()
+    with pytest.raises(ExecutionContinuationError) as exc:
+        NexusLoop(
+            AgentRegistry(),
+            production_mode=True,
+            max_run_retries=0,
+            retry_policy=RetryPolicy(max_retries=0),
+            execution_continuation_state_store=store,
+        )
+    assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
+
+
+def test_gr10_r12_r1_strict_factory_fails_without_durable_store() -> None:
+    attempt_store = wire_attempt_lifecycle_store(kv_store=InMemoryKVStore())
+    with pytest.raises(ExecutionContinuationError) as exc:
+        build_nexus_loop_from_environment(
+            AgentRegistry(),
+            env=_strict_env(),
+            attempt_lifecycle_store=attempt_store,
+        )
+    assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
+
+
+def test_gr10_r12_r1_strict_factory_accepts_durable_store() -> None:
+    store = _empty_durable_store()
+    attempt_store = wire_attempt_lifecycle_store(kv_store=InMemoryKVStore())
+    loop = build_nexus_loop_from_environment(
+        AgentRegistry(),
+        env=_strict_env(),
+        execution_continuation_state_store=store,
+        attempt_lifecycle_store=attempt_store,
+    )
+    assert loop.execution_continuation_state_store is store
+
+
+def test_gr10_r12_r1_lab_factory_allows_implicit_in_memory() -> None:
+    env = ApplicationEnvironmentProfile.lab_defaults(profile_id="gr10.r12.r1.lab")
+    assert env.execution_mode is not ExecutionMode.STRICT
+    loop = build_nexus_loop_from_environment(AgentRegistry(), env=env)
+    assert loop.execution_continuation_state_store is not None
+    assert loop.execution_continuation_state_store.is_durable is False
+
+
+def test_gr10_r12_r1_host_shares_nexus_store_identity() -> None:
+    store = _empty_durable_store()
+    loop = NexusLoop(
+        AgentRegistry(),
+        production_mode=True,
+        max_run_retries=0,
+        retry_policy=RetryPolicy(max_retries=0),
+        execution_continuation_state_store=store,
+    )
+    host = build_certified_internal_test_host_task_execution(loop)
+    assert loop.execution_continuation_state_store is store
+    assert host._continuation_state_store is store  # noqa: SLF001
+
+
+def test_gr10_r12_r1_explicit_port_uses_service_store_durability() -> None:
+    store = _empty_durable_store()
+    deps = wire_execution_engine_continuation_dependencies(state_store=store)
+    loop = NexusLoop(
+        AgentRegistry(),
+        production_mode=True,
+        max_run_retries=0,
+        retry_policy=RetryPolicy(max_retries=0),
+        execution_continuation=deps.continuation,
+        continuation_lifecycle_driver=deps.lifecycle_driver,
+    )
+    assert loop.execution_continuation_state_store is store
+
+
+def test_gr10_r12_r1_custom_port_without_store_fail_closed() -> None:
+    class _OpaquePort:
+        def request_pause(self, request):  # noqa: ANN001
+            raise NotImplementedError
+
+        def apply_resolution(self, command):  # noqa: ANN001
+            raise NotImplementedError
+
+        def resume(self, command):  # noqa: ANN001
+            raise NotImplementedError
+
+        def get_pending(self, lookup):  # noqa: ANN001
+            raise NotImplementedError
+
+        def transition(self, command):  # noqa: ANN001
+            raise NotImplementedError
+
+    deps = wire_execution_engine_continuation_dependencies(state_store=_empty_durable_store())
+    with pytest.raises(ExecutionContinuationError) as exc:
+        NexusLoop(
+            AgentRegistry(),
+            production_mode=True,
+            max_run_retries=0,
+            retry_policy=RetryPolicy(max_retries=0),
+            execution_continuation=_OpaquePort(),  # type: ignore[arg-type]
+            continuation_lifecycle_driver=deps.lifecycle_driver,
+        )
+    assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
+
+
+def test_gr10_r12_r1_restart_pause_resolve_resume() -> None:
+    backing = ExecutionContinuationDurableBacking()
+    live = backing_execution_continuation_state_store(backing)
+    deps_a = wire_execution_engine_continuation_dependencies(state_store=live)
+    identity = _identity()
+    pending = _pause_to_waiting(
+        deps_a.continuation,
+        deps_a.lifecycle_driver,
+        continuation_id="c-r1-restart",
+        identity=identity,
+    )
+    assert pending.lifecycle_state is ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN
+    export = export_durable_continuation_state(backing)
+    del deps_a, live, backing
+    restored = execution_continuation_state_store_from_durable_export(export)
+    assert restored.is_durable is True
+    deps_b = wire_execution_engine_continuation_dependencies(state_store=restored)
+    loaded = deps_b.continuation.get_pending(ExecutionContinuationLookup(identity=identity))
+    authorized = _approve(deps_b.continuation, loaded)
+    resumed = deps_b.continuation.resume(
+        ExecutionContinuationResumeCommand(
+            continuation_id=authorized.continuation_id,
+            identity=identity,
+            expected_revision=authorized.revision,
+        ),
+    )
+    assert resumed.lifecycle_state is ExecutionContinuationLifecycleState.RESUMED
+
+
+def test_gr10_r12_r1_static_factory_no_implicit_wire() -> None:
+    factory = (_REPO / "intergrax/applications/_shared/nexus_factory.py").read_text(
+        encoding="utf-8",
+    )
+    assert "wire_execution_continuation_state_store" not in factory
+    policy = (
+        _REPO / "intergrax/runtime/execution/continuation/durability_policy.py"
+    ).read_text(encoding="utf-8")
+    assert "is_durable" in policy
+    assert "isinstance" not in policy
+    assert "InMemoryExecutionContinuationStateStore" not in policy
+
+
+def test_gr10_r12_r1_plugin_durable_pause_resume() -> None:
+    store: ExecutionContinuationStateStore = _PluginDurableContinuationStore(
+        restore_durable_continuation_backing(
+            export_durable_continuation_state(ExecutionContinuationDurableBacking()),
+        ),
+    )
+    deps = wire_execution_engine_continuation_dependencies(state_store=store)
+    identity = _identity()
+    pending = _pause_to_waiting(
+        deps.continuation,
+        deps.lifecycle_driver,
+        continuation_id="c-plugin",
+        identity=identity,
+    )
+    authorized = _approve(deps.continuation, pending)
+    resumed = deps.continuation.resume(
+        ExecutionContinuationResumeCommand(
+            continuation_id=authorized.continuation_id,
+            identity=identity,
+            expected_revision=authorized.revision,
+        ),
+    )
+    assert resumed.lifecycle_state is ExecutionContinuationLifecycleState.RESUMED
+

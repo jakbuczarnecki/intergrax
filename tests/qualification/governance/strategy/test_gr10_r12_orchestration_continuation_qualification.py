@@ -78,9 +78,12 @@ def test_gr10_r12_continuation_inventory_has_no_gap_rows() -> None:
             "QUALIFIED — fail-closed without active store",
             "QUALIFIED — resolution only; RESUME_AUTHORIZED ≠ RESUMED",
             "projection only — terminal authority may block; never resume permission",
-            "QUALIFIED — production forbids silent lab fallback; shared store",
-            "QUALIFIED — contract ABC; custom store via composition",
-            "N/A — lab/test / explicit composition only",
+            "QUALIFIED — production requires durable store; shared canonical store",
+            "QUALIFIED — production requires store.is_durable; no type whitelist",
+            "QUALIFIED — contract ABC; custom durable provider via composition",
+            "QUALIFIED — reference restart durability; named vendor adapter N/A",
+            "N/A — lab/test only; production rejects even when explicit",
+            "N/A — reconnect only; is_durable=False; not production",
         }
         if row.production and row.coverage.startswith("QUALIFIED"):
             if not row.projection_only and "refuses" not in row.coverage:
@@ -106,8 +109,19 @@ def test_gr10_r12_production_forbids_silent_continuation_downgrade() -> None:
     source = _DURABILITY.read_text(encoding="utf-8-sig")
     assert "validate_execution_continuation_for_composition" in source
     assert "silent in-memory" in source
+    assert "is_durable" in source
+    assert "isinstance" not in source
     loop = _NEXUS_LOOP.read_text(encoding="utf-8-sig")
     assert "validate_execution_continuation_for_composition" in loop
+    factory = (
+        _REPO_ROOT
+        / "intergrax"
+        / "applications"
+        / "_shared"
+        / "nexus_factory.py"
+    ).read_text(encoding="utf-8-sig")
+    assert "wire_execution_continuation_state_store()" not in factory
+    assert "execution_continuation_state_store=execution_continuation_state_store" in factory
 
 
 def test_gr10_r12_host_shares_nexus_continuation_store() -> None:

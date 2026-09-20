@@ -9,6 +9,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution_continuation_state_store import (
+        ExecutionContinuationStateStore,
+    )
     from intergrax.harness.application_host import ApplicationHost
 
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
@@ -262,6 +265,7 @@ def build_harness_host_runtime(
     orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None,
     collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
     collaborative_work_integration_profile: IntegrationProfile | None = None,
+    execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -433,6 +437,7 @@ def build_harness_host_runtime(
         run_budget=cost_wiring.run_budget,
         key_value_cache=key_value_cache,
         document_store=document_store,
+        execution_continuation_state_store=execution_continuation_state_store,
     )
     assert_security_assembly_valid(
         security_wiring, effective_environment, nexus=nexus_loop
