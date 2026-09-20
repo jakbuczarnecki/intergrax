@@ -108,7 +108,7 @@ def test_mp7b_status_markers_in_ssot_docs() -> None:
     required = (
         "MP-7B",
         "TIER-3 MULTIPLAYER CONSUMER BOUNDARY QUALIFIED",
-        "MP-7 — IN PROGRESS",
+        "ENTERPRISE BOUNDARY CERTIFIED",
     )
     for name, path in _STATUS_DOCS.items():
         text = path.read_text(encoding="utf-8-sig")

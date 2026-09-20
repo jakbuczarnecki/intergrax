@@ -255,7 +255,7 @@ def test_mp7c_status_markers_in_ssot_docs() -> None:
     required = (
         "MP-7C",
         "TIER-3 HOST COMPOSITION",
-        "MP-7 — IN PROGRESS",
+        "ENTERPRISE BOUNDARY CERTIFIED",
         "MP-7B",
     )
     for name, path in _STATUS_DOCS.items():
