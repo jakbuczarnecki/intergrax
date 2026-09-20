@@ -305,11 +305,12 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
         "HITL",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R11-R1: orchestration MSE HITL gate — human judgment evidence ≠ Governance ALLOW; "
-        "GovernedContinuationApprovalGrant is evidence only; fresh REQUIRE_HUMAN never PROCEED; "
-        "post-HITL effect requires ExecutionContinuationPort RESUMED + fresh ALLOW; "
-        "continue_slot / RuntimeToolInvoker reauthorize via evaluate_mse_hitl_effect_gate; "
-        "External Work retains authorize_and_execute (GR-5 grant reauth); "
+        "GR-10-R11-R2: ordinary Governance ALLOW proceeds without approval grant; "
+        "post-HITL ALLOW requires canonical human-governed ExecutionContinuationPort RESUMED "
+        "+ matching GovernedContinuationApprovalGrant evidence (never permission); "
+        "fresh REQUIRE_HUMAN never PROCEED; evaluate_mse_hitl_effect_gate classifies via "
+        "governed_correlation / human_request_id (not Task bool / global flag); "
+        "continue_slot / RuntimeToolInvoker reauthorize; External Work authorize_and_execute; "
         "Physical Delegation HITL delegated; Continuation row remains PARTIAL.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
@@ -578,8 +579,9 @@ GR10_R11_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
         "internal_continuation_orchestration — not full ORCHESTRATION Continuation enterprise qualification."
     ),
     why_highest=(
-        "Highest remaining ORCHESTRATION applicable capability row after GR-10-R11 HITL qualification; "
-        "distinct from HITL human-judgment vs permission boundary."
+        "Highest remaining ORCHESTRATION applicable capability row after GR-10-R11-R2 HITL "
+        "ordinary/post-HITL approval-evidence separation; distinct from HITL human-judgment "
+        "vs permission boundary."
     ),
 )
 
@@ -837,8 +839,8 @@ GR10_ORCHESTRATION_HITL_INVENTORY: tuple[Gr10OrchestrationHitlInventoryRow, ...]
         True,
         True,
         "Human Review evidence; grant on task.runtime.governance (correlation only)",
-        "ExecutionContinuationPort (canonical RESUMED required post-HITL)",
-        "evaluate_mse_hitl_effect_gate after fresh boundary.authorize (ALLOW + RESUMED)",
+        "ExecutionContinuationPort (canonical RESUMED + human-governed correlation post-HITL)",
+        "evaluate_mse_hitl_effect_gate: ordinary ALLOW no grant; post-HITL ALLOW + RESUMED + scoped grant",
         "QUALIFIED",
     ),
     Gr10OrchestrationHitlInventoryRow(
@@ -865,7 +867,7 @@ GR10_ORCHESTRATION_HITL_INVENTORY: tuple[Gr10OrchestrationHitlInventoryRow, ...]
         True,
         "Human Review (continuation request on REQUIRE_HUMAN/ESCALATE)",
         "host register_governed_continuation_slots + ExecutionContinuationPort on pause paths",
-        "evaluate_mse_hitl_effect_gate (effect 0 until fresh ALLOW + canonical authority)",
+        "evaluate_mse_hitl_effect_gate: ordinary ALLOW without grant; post-HITL requires grant+RESUMED",
         "QUALIFIED",
     ),
     Gr10OrchestrationHitlInventoryRow(
@@ -874,7 +876,7 @@ GR10_ORCHESTRATION_HITL_INVENTORY: tuple[Gr10OrchestrationHitlInventoryRow, ...]
         True,
         "Human Review grant evidence (correlation only; never permission)",
         "ExecutionContinuationPort RESUMED (continuable_slots is eligibility only)",
-        "fresh authorize + evaluate_mse_hitl_effect_gate (ALLOW + RESUMED + scoped grant)",
+        "fresh authorize + evaluate_mse_hitl_effect_gate (ALLOW + RESUMED + scoped grant; missing grant blocks)",
         "QUALIFIED",
     ),
     Gr10OrchestrationHitlInventoryRow(
@@ -1359,6 +1361,26 @@ GR10_SCENARIO_CATALOG: tuple[Gr10ScenarioEvidence, ...] = (
                 "tests/unit/runtime/architecture/"
                 "test_gr10_r11_orchestration_hitl_e2e.py",
                 "test_scenario_c_approval_plus_deny_zero_effect",
+            ),
+            _nid(
+                "tests/unit/runtime/architecture/"
+                "test_gr10_r11_r2_post_hitl_approval_evidence.py",
+                "test_scenario_a_ordinary_allow_no_continuation_no_grant_proceeds",
+            ),
+            _nid(
+                "tests/unit/runtime/architecture/"
+                "test_gr10_r11_r2_post_hitl_approval_evidence.py",
+                "test_scenario_c_post_hitl_resumed_missing_grant_blocks",
+            ),
+            _nid(
+                "tests/unit/runtime/nexus/tools/"
+                "test_gr10_r11_r2_runtime_tool_invoker_post_hitl.py",
+                "test_invoker_ordinary_allow_without_grant_provider_once",
+            ),
+            _nid(
+                "tests/unit/runtime/nexus/tools/"
+                "test_gr10_r11_r2_runtime_tool_invoker_post_hitl.py",
+                "test_invoker_post_hitl_resumed_missing_grant_zero_provider_calls",
             ),
         ),
         Gr10CoverageStatus.QUALIFIED,

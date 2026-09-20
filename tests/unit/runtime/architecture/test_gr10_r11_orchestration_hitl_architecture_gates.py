@@ -123,3 +123,28 @@ def test_gate_no_concrete_continuation_implementation_import() -> None:
                 continue
             assert "continuation.service" not in mod
             assert "continuation.persistence" not in mod
+
+
+def test_r11_r2_gate_has_typed_post_hitl_classification() -> None:
+    source = _GATE.read_text(encoding="utf-8")
+    assert "EffectContinuationClassification" in source
+    assert "resolve_effect_continuation_context" in source
+    assert "POST_HITL_RESUMED" in source
+    assert "NO_CANONICAL_CONTINUATION" in source
+    assert "CANONICAL_NON_HITL_OR_NON_BLOCKING" in source
+    assert "was_hitl" not in source
+    assert '"human" in' not in source
+
+
+def test_r11_r2_no_global_grant_none_always_block() -> None:
+    """Ordinary ALLOW must not be blocked solely because grant is None."""
+    source = _GATE.read_text(encoding="utf-8")
+    assert "POST_HITL_RESUMED" in source
+    assert "NO_CANONICAL_CONTINUATION" in source
+    assert "CANONICAL_NON_HITL_OR_NON_BLOCKING" in source
+    # Ordinary path proceeds via _proceed; post-HITL missing grant returns _block.
+    assert "stored_grant is None" in source
+    assert "_proceed(authorization)" in source
+    assert "POST_HITL_RESUMED — matching human approval evidence required" in source or (
+        "matching human approval evidence required" in source
+    )

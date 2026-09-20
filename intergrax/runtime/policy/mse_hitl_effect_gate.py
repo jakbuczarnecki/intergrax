@@ -1,17 +1,21 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Canonical MSE HITL effect gate after fresh Governance authorize (GR-10-R11-R1).
+"""Canonical MSE HITL effect gate after fresh Governance authorize (GR-10-R11-R2).
 
 Human judgment evidence and continuation grants never become Governance ALLOW.
 ``GovernedContinuationApprovalGrant`` is correlation / single-use evidence only.
 Canonical pause / wait / resume authority remains ``ExecutionContinuationPort``.
 
+Ordinary fresh ``ALLOW`` (no canonical HITL continuation for the current proposal)
+proceeds without an approval grant.
+
 Post-HITL physical effect may proceed only when:
 
 * fresh Governance returns ``ALLOW``, and
-* canonical continuation exists in ``RESUMED`` (GR-5: only ``RESUMED`` clears the
-  progress gate; ``RESUME_AUTHORIZED`` still blocks execution progress), and
+* canonical human-governed continuation for the current proposal is ``RESUMED``
+  (GR-5: only ``RESUMED`` clears the progress gate; ``RESUME_AUTHORIZED`` still
+  blocks execution progress), and
 * a scoped approval grant matches the current side-effect proposal (evidence), and
 * continuation identity / ``continuation_request_id`` correlate with that grant.
 
@@ -34,6 +38,9 @@ from intergrax.contracts.execution_continuation import (
     PendingExecutionContinuation,
 )
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
+from intergrax.contracts.governed_continuation_correlation import (
+    GovernedContinuationCorrelation,
+)
 from intergrax.contracts.governed_continuation_grant import GovernedContinuationApprovalGrant
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.contracts.meaningful_side_effect_authorization import (
@@ -67,6 +74,15 @@ class MseHitlEffectGateDisposition(Enum):
     REQUIRE_HITL = auto()
 
 
+class EffectContinuationClassification(Enum):
+    """Typed classification of canonical continuation relative to the current effect."""
+
+    NO_CANONICAL_CONTINUATION = auto()
+    CANONICAL_NON_HITL_OR_NON_BLOCKING = auto()
+    POST_HITL_RESUMED = auto()
+    POST_HITL_NOT_RESUMED = auto()
+
+
 @dataclass(frozen=True, slots=True)
 class MseHitlEffectGateOutcome:
     """Typed outcome of the MSE HITL effect gate."""
@@ -86,6 +102,14 @@ class CanonicalContinuationAuthorityView:
     continuation_id: str
     lifecycle_state: ExecutionContinuationLifecycleState
     identity: ExecutionContinuationIdentity
+
+
+@dataclass(frozen=True, slots=True)
+class EffectContinuationContext:
+    """Typed continuation context for one consequential effect proposal."""
+
+    classification: EffectContinuationClassification
+    pending: PendingExecutionContinuation | None = None
 
 
 def _identity_from_side_effect(
@@ -116,6 +140,131 @@ def _load_pending(
         if exc.code is ExecutionContinuationErrorCode.NOT_FOUND:
             return None
         raise
+
+
+def _identity_matches_side_effect(
+    identity: ExecutionContinuationIdentity,
+    side_effect: MeaningfulSideEffectRequest,
+) -> bool:
+    return (
+        identity.task_id == side_effect.task_id
+        and identity.run_id == side_effect.run_id
+        and identity.attempt_id == side_effect.attempt_id
+        and identity.execution_id == side_effect.execution_id
+    )
+
+
+def _governed_correlation_matches_current_proposal(
+    correlation: GovernedContinuationCorrelation,
+    *,
+    side_effect: MeaningfulSideEffectRequest,
+    operation_id: str,
+    resource_scope: str | None,
+) -> bool:
+    if not _identity_matches_side_effect(
+        ExecutionContinuationIdentity(
+            task_id=correlation.task_id,
+            run_id=correlation.run_id,
+            attempt_id=correlation.attempt_id,
+            execution_id=correlation.execution_id,
+        ),
+        side_effect,
+    ):
+        return False
+    normalized_operation = operation_id.strip()
+    if not normalized_operation or correlation.operation_id != normalized_operation:
+        return False
+    if correlation.resource_scope is not None and correlation.resource_scope != resource_scope:
+        return False
+    if (
+        correlation.side_effect_scope_id is not None
+        and correlation.side_effect_scope_id != side_effect.side_effect_scope_id
+    ):
+        return False
+    if (
+        correlation.side_effect_scope_digest is not None
+        and correlation.side_effect_scope_digest != side_effect.side_effect_scope_digest
+    ):
+        return False
+    return True
+
+
+def _is_human_governed_continuation_for_proposal(
+    pending: PendingExecutionContinuation,
+    *,
+    side_effect: MeaningfulSideEffectRequest,
+    operation_id: str,
+    resource_scope: str | None,
+) -> bool:
+    """True when canonical continuation is human-governed for this proposal.
+
+    Prefer ``governed_correlation`` (GR-5). A pending with ``human_request_id`` but
+    no correlation is still treated as HITL for this execution identity (fail-closed).
+    Continuations without correlation and without ``human_request_id`` are non-HITL.
+    """
+    correlation = pending.governed_correlation
+    if correlation is not None:
+        return _governed_correlation_matches_current_proposal(
+            correlation,
+            side_effect=side_effect,
+            operation_id=operation_id,
+            resource_scope=resource_scope,
+        )
+    return pending.human_request_id is not None
+
+
+def resolve_effect_continuation_context(
+    port: ExecutionContinuationPort,
+    *,
+    side_effect: MeaningfulSideEffectRequest,
+    operation_id: str,
+    resource_scope: str | None = None,
+    grant: GovernedContinuationApprovalGrant | None = None,
+) -> EffectContinuationContext:
+    """Classify canonical continuation state for the current consequential proposal."""
+    identity = _identity_from_side_effect(side_effect)
+    if grant is not None:
+        pending = _load_pending(
+            port,
+            continuation_id=grant.continuation_request_id,
+            identity=identity,
+        )
+        if pending is None or pending.continuation_id != grant.continuation_request_id:
+            return EffectContinuationContext(
+                classification=EffectContinuationClassification.NO_CANONICAL_CONTINUATION,
+            )
+    else:
+        pending = _load_pending(port, identity=identity)
+        if pending is None:
+            return EffectContinuationContext(
+                classification=EffectContinuationClassification.NO_CANONICAL_CONTINUATION,
+            )
+
+    if not _identity_matches_side_effect(pending.identity, side_effect):
+        return EffectContinuationContext(
+            classification=EffectContinuationClassification.NO_CANONICAL_CONTINUATION,
+        )
+
+    if not _is_human_governed_continuation_for_proposal(
+        pending,
+        side_effect=side_effect,
+        operation_id=operation_id,
+        resource_scope=resource_scope,
+    ):
+        return EffectContinuationContext(
+            classification=EffectContinuationClassification.CANONICAL_NON_HITL_OR_NON_BLOCKING,
+            pending=pending,
+        )
+
+    if pending.lifecycle_state in _POST_HITL_EFFECT_LIFECYCLE:
+        return EffectContinuationContext(
+            classification=EffectContinuationClassification.POST_HITL_RESUMED,
+            pending=pending,
+        )
+    return EffectContinuationContext(
+        classification=EffectContinuationClassification.POST_HITL_NOT_RESUMED,
+        pending=pending,
+    )
 
 
 def _effective_attested_policy_bundle(
@@ -195,30 +344,28 @@ def resolve_canonical_continuation_authority(
     *,
     side_effect: MeaningfulSideEffectRequest,
     grant: GovernedContinuationApprovalGrant | None,
+    operation_id: str = "",
+    resource_scope: str | None = None,
 ) -> CanonicalContinuationAuthorityView | None:
-    identity = _identity_from_side_effect(side_effect)
-    if grant is not None:
-        pending = _load_pending(
-            port,
-            continuation_id=grant.continuation_request_id,
-            identity=identity,
-        )
-        if pending is None or pending.continuation_id != grant.continuation_request_id:
-            return None
-    else:
-        pending = _load_pending(port, identity=identity)
-        if pending is None:
-            return None
-
-    if pending.identity.task_id != identity.task_id:
+    """Return RESUMED human-governed authority for the current proposal, or None."""
+    if not operation_id and grant is not None:
+        operation_id = grant.operation_id
+    if resource_scope is None and grant is not None:
+        resource_scope = grant.resource_scope
+    # Classification is always proposal/identity based — never grant-keyed.
+    context = resolve_effect_continuation_context(
+        port,
+        side_effect=side_effect,
+        operation_id=operation_id,
+        resource_scope=resource_scope,
+        grant=None,
+    )
+    if context.classification is not EffectContinuationClassification.POST_HITL_RESUMED:
         return None
-    if pending.identity.run_id != identity.run_id:
+    pending = context.pending
+    if pending is None:
         return None
-    if pending.identity.attempt_id != identity.attempt_id:
-        return None
-    if pending.identity.execution_id != identity.execution_id:
-        return None
-    if pending.lifecycle_state not in _POST_HITL_EFFECT_LIFECYCLE:
+    if grant is not None and pending.continuation_id != grant.continuation_request_id:
         return None
     return CanonicalContinuationAuthorityView(
         continuation_id=pending.continuation_id,
@@ -292,6 +439,24 @@ def evaluate_mse_hitl_effect_gate(
     )
 
 
+def _proceed(
+    authorization: MeaningfulSideEffectAuthorizationResult,
+) -> MseHitlEffectGateOutcome:
+    return MseHitlEffectGateOutcome(
+        disposition=MseHitlEffectGateDisposition.PROCEED,
+        authorization=authorization,
+    )
+
+
+def _block(
+    authorization: MeaningfulSideEffectAuthorizationResult,
+) -> MseHitlEffectGateOutcome:
+    return MseHitlEffectGateOutcome(
+        disposition=MseHitlEffectGateDisposition.BLOCK,
+        authorization=authorization,
+    )
+
+
 def _evaluate_allow_for_effect(
     authorization: MeaningfulSideEffectAuthorizationResult,
     *,
@@ -302,38 +467,77 @@ def _evaluate_allow_for_effect(
     stored_grant: GovernedContinuationApprovalGrant | None,
     continuation_port: ExecutionContinuationPort | None,
 ) -> MseHitlEffectGateOutcome:
-    if stored_grant is None:
-        if continuation_port is not None and side_effect is not None:
-            pending = _load_pending(
-                continuation_port,
-                identity=_identity_from_side_effect(side_effect),
-            )
-            if (
-                pending is not None
-                and pending.lifecycle_state
-                is not ExecutionContinuationLifecycleState.RESUMED
-            ):
-                return MseHitlEffectGateOutcome(
-                    disposition=MseHitlEffectGateDisposition.BLOCK,
-                    authorization=authorization,
+    # Ordinary ALLOW: no port / no side-effect identity → no post-HITL classification.
+    if continuation_port is None or side_effect is None:
+        if stored_grant is None:
+            return _proceed(authorization)
+        return _block(authorization)
+
+    # Classification is always by identity + proposal scope — never by grant presence.
+    context = resolve_effect_continuation_context(
+        continuation_port,
+        side_effect=side_effect,
+        operation_id=operation_id,
+        resource_scope=resource_scope,
+        grant=None,
+    )
+
+    if context.classification is EffectContinuationClassification.NO_CANONICAL_CONTINUATION:
+        if stored_grant is None:
+            if task is not None:
+                GovernedContinuationGrantCoordinator.clear_obsolete_grant_for_proposal(
+                    task,
+                    side_effect=side_effect,
+                    operation_id=operation_id,
+                    resource_scope=resource_scope,
                 )
-        if task is not None and side_effect is not None:
+            return _proceed(authorization)
+        # Unrelated stale grant must not block ordinary ALLOW for a different proposal.
+        if not grant_belongs_to_same_proposal_scope(
+            stored_grant,
+            side_effect=side_effect,
+            operation_id=operation_id,
+            resource_scope=resource_scope,
+        ):
+            return _proceed(authorization)
+        if task is not None:
             GovernedContinuationGrantCoordinator.clear_obsolete_grant_for_proposal(
                 task,
                 side_effect=side_effect,
                 operation_id=operation_id,
                 resource_scope=resource_scope,
             )
-        return MseHitlEffectGateOutcome(
-            disposition=MseHitlEffectGateDisposition.PROCEED,
-            authorization=authorization,
-        )
+        return _block(authorization)
 
-    if side_effect is None or continuation_port is None or task is None:
-        return MseHitlEffectGateOutcome(
-            disposition=MseHitlEffectGateDisposition.BLOCK,
-            authorization=authorization,
-        )
+    if (
+        context.classification
+        is EffectContinuationClassification.CANONICAL_NON_HITL_OR_NON_BLOCKING
+    ):
+        # Non-HITL / wrong-scope continuation: ordinary ALLOW — grant not required.
+        # Unrelated stale grant must neither authorize nor block this effect.
+        if stored_grant is not None and task is not None:
+            if grant_belongs_to_same_proposal_scope(
+                stored_grant,
+                side_effect=side_effect,
+                operation_id=operation_id,
+                resource_scope=resource_scope,
+            ):
+                # Same-proposal grant without human-governed continuation for this effect.
+                GovernedContinuationGrantCoordinator.clear_obsolete_grant_for_proposal(
+                    task,
+                    side_effect=side_effect,
+                    operation_id=operation_id,
+                    resource_scope=resource_scope,
+                )
+                return _block(authorization)
+        return _proceed(authorization)
+
+    if context.classification is EffectContinuationClassification.POST_HITL_NOT_RESUMED:
+        return _block(authorization)
+
+    # POST_HITL_RESUMED — matching human approval evidence required.
+    if stored_grant is None or task is None:
+        return _block(authorization)
 
     if not _grant_matches_post_hitl_allow_proposal(
         stored_grant,
@@ -348,42 +552,29 @@ def _evaluate_allow_for_effect(
             operation_id=operation_id,
             resource_scope=resource_scope,
         )
-        return MseHitlEffectGateOutcome(
-            disposition=MseHitlEffectGateDisposition.BLOCK,
-            authorization=authorization,
-        )
+        return _block(authorization)
 
-    authority = resolve_canonical_continuation_authority(
-        continuation_port,
-        side_effect=side_effect,
-        grant=stored_grant,
-    )
-    if authority is None:
-        return MseHitlEffectGateOutcome(
-            disposition=MseHitlEffectGateDisposition.BLOCK,
-            authorization=authorization,
-        )
+    pending = context.pending
+    if pending is None or pending.continuation_id != stored_grant.continuation_request_id:
+        return _block(authorization)
 
     consumed = GovernedContinuationGrantCoordinator.consume_matching_grant(
         task,
         expected_grant_id=stored_grant.grant_id,
     )
     if consumed is None:
-        return MseHitlEffectGateOutcome(
-            disposition=MseHitlEffectGateDisposition.BLOCK,
-            authorization=authorization,
-        )
-    return MseHitlEffectGateOutcome(
-        disposition=MseHitlEffectGateDisposition.PROCEED,
-        authorization=authorization,
-    )
+        return _block(authorization)
+    return _proceed(authorization)
 
 
 __all__ = [
     "CanonicalContinuationAuthorityView",
+    "EffectContinuationClassification",
+    "EffectContinuationContext",
     "MseHitlEffectGateDisposition",
     "MseHitlEffectGateOutcome",
     "evaluate_mse_hitl_effect_gate",
     "resolve_canonical_continuation_authority",
     "resolve_continuation_port_for_mse_hitl_gate",
+    "resolve_effect_continuation_context",
 ]
