@@ -25,6 +25,7 @@
 
 ## Successor
 
+- **OBS-DIAG-X3A** closed worker/classification anti-drift gaps — [`OBS_DIAG_UNIVERSAL_SURFACE_ANTIDRIFT_X3A.md`](OBS_DIAG_UNIVERSAL_SURFACE_ANTIDRIFT_X3A.md)
 - OBS-DIAG-X4 — external Kafka async + cross-process HITL (pending)
 
 ## Primary gates

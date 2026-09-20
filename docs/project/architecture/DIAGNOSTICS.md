@@ -1102,7 +1102,8 @@ Platform adoption (current discovery @ OBS-DIAG-X1):
 | HITL pause/restart/resume → terminal diagnostics | **PARTIAL P3** — durable checkpoint + runtime rebuild + diagnostics read (`test_obs_universal_spine_hitl_restart_e2e.py`); real OS process crash / external HITL service **NOT_PROVEN** |
 | Operator HTTP/dashboard read | **CORE READ CONTRACT = PROVEN**; **UNIVERSAL HOST EXPOSURE = PARTIAL** |
 | Diagnostic host composition replaceability | Engine injection **PROVEN**; standard host replaceability **PROVEN** (OBS-DIAG-X2 CLOSED) |
-| Global entry-path zero-bypass | **PROVEN** (OBS-DIAG-X3 gates + representative E2E) |
+| Global entry-path zero-bypass | **PROVEN** (OBS-DIAG-X3/X3A gates + representative E2E) |
+| Universal surface anti-drift (workers + PRODUCT/LAB) | **PROVEN** (OBS-DIAG-X3A — [`OBS_DIAG_UNIVERSAL_SURFACE_ANTIDRIFT_X3A.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_SURFACE_ANTIDRIFT_X3A.md)) |
 
 ### Enterprise gap baseline (X1 historical → X2 update)
 

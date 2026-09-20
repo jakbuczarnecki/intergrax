@@ -191,17 +191,11 @@ def _iter_scenario_application_python(repo_root: Path) -> list[Path]:
 
 
 def _iter_worker_entry_python(repo_root: Path) -> list[Path]:
-    paths: list[Path] = []
-    worker_root = repo_root / "applications" / "local_workspace_application" / "host"
-    for name in (
-        "background_worker_factory.py",
-        "background_worker_main.py",
-        "background_worker_constructor.py",
-    ):
-        path = worker_root / name
-        if path.is_file():
-            paths.append(path)
-    return paths
+    from intergrax.applications._shared.execution_surface_discovery import (
+        iter_worker_execution_surface_python_paths,
+    )
+
+    return list(iter_worker_execution_surface_python_paths(repo_root))
 
 
 def collect_obs_diag_x3_production_layer_violations(
