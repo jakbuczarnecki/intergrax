@@ -75,8 +75,8 @@ class ToolCapabilityRealizationProvider:
         except KnownToolCapabilityRealizationConflictError as exc:
             return _failure(
                 request=request,
-                outcome=CapabilityRealizationOutcome.FAILED,
-                reason_code=CapabilityRealizationReasonCode.EVIDENCE_INCONSISTENT,
+                outcome=CapabilityRealizationOutcome.CONFLICT,
+                reason_code=CapabilityRealizationReasonCode.OPERATION_REPLAY_CONFLICT,
                 started_at=started_at,
                 reason_detail=str(exc),
             )

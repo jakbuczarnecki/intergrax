@@ -21,6 +21,7 @@ class CapabilityRealizationReasonCode(StrEnum):
     DOMAIN_HANDOFF_REJECTED = "domain_handoff_rejected"
     DOMAIN_HANDOFF_DEFERRED = "domain_handoff_deferred"
     EVIDENCE_INCONSISTENT = "evidence_inconsistent"
+    OPERATION_REPLAY_CONFLICT = "operation_replay_conflict"
     INVALID_REQUEST = "invalid_request"
     DOMAIN_REALIZATION_FAILED = "domain_realization_failed"
     HUMAN_APPROVAL_REQUIRED = "human_approval_required"

@@ -24,6 +24,10 @@ _FORBIDDEN_PREFIXES = (
     "intergrax.agent_distribution.admin_service",
 )
 
+_TOOLS_REALIZATION_PATH = (
+    _REPO_ROOT / "intergrax" / "tools" / "known_capability_realization.py"
+)
+
 
 def _module_imports(path: Path) -> set[str]:
     tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -48,6 +52,15 @@ def test_coordination_contracts_avoid_forbidden_dependencies() -> None:
                 assert not module.startswith(forbidden), (
                     f"{path.relative_to(_REPO_ROOT)} imports forbidden {module}"
                 )
+
+
+def test_realization_does_not_depend_on_execution_implementation() -> None:
+    imports = _module_imports(_TOOLS_REALIZATION_PATH)
+    for module in imports:
+        for forbidden in _FORBIDDEN_PREFIXES:
+            assert not module.startswith(forbidden), (
+                f"known_capability_realization imports forbidden {module}"
+            )
 
 
 def test_service_does_not_import_discovery_engine() -> None:

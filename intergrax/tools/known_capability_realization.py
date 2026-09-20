@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Protocol
 
 from intergrax.contracts.capability_catalog.evidence import (
@@ -35,6 +36,37 @@ from intergrax.tools.known_capability_resolution import (
 )
 
 
+@dataclass(frozen=True, slots=True)
+class KnownToolCapabilityRealizationOperationBinding:
+    """Immutable operation semantics for Tool realization idempotency."""
+
+    host_profile_id: str
+    capability_identity: CapabilityIdentityKey
+
+    @classmethod
+    def from_request(
+        cls,
+        request: KnownToolCapabilityRealizationRequest,
+    ) -> KnownToolCapabilityRealizationOperationBinding:
+        return cls(
+            host_profile_id=request.host_profile_id,
+            capability_identity=request.capability_identity,
+        )
+
+    def assert_matches_request(
+        self,
+        request: KnownToolCapabilityRealizationRequest,
+    ) -> None:
+        if self.host_profile_id != request.host_profile_id:
+            raise KnownToolCapabilityRealizationConflictError(
+                "operation_id replay host_profile_id conflict",
+            )
+        if self.capability_identity.sort_key != request.capability_identity.sort_key:
+            raise KnownToolCapabilityRealizationConflictError(
+                "operation_id replay capability_identity conflict",
+            )
+
+
 class ToolPackageResolutionForIdentityPort(Protocol):
     """Domain-owned exact resolution for a known capability identity — not semantic search."""
 
@@ -57,6 +89,7 @@ class ToolKnownCapabilityRealizationService(KnownToolCapabilityRealizationPort):
         self._activation = activation
         self._materializer = materializer
         self._resolver = resolver
+        self._bindings: dict[str, KnownToolCapabilityRealizationOperationBinding] = {}
         self._completed: dict[str, KnownToolCapabilityRealizationResult] = {}
 
     def realize(
@@ -65,18 +98,16 @@ class ToolKnownCapabilityRealizationService(KnownToolCapabilityRealizationPort):
     ) -> KnownToolCapabilityRealizationResult:
         prior = self._completed.get(request.operation_id)
         if prior is not None:
-            if prior.host_profile_id != request.host_profile_id:
-                raise KnownToolCapabilityRealizationConflictError(
-                    "operation_id replay host_profile_id conflict",
-                )
-            if (
-                prior.capability_identity.sort_key
-                != request.capability_identity.sort_key
-            ):
-                raise KnownToolCapabilityRealizationConflictError(
-                    "operation_id replay capability_identity conflict",
-                )
+            self._binding_for(request.operation_id).assert_matches_request(request)
             return prior
+
+        binding = self._bindings.get(request.operation_id)
+        if binding is not None:
+            binding.assert_matches_request(request)
+        else:
+            self._bindings[request.operation_id] = (
+                KnownToolCapabilityRealizationOperationBinding.from_request(request)
+            )
 
         if request.host_profile_id != self._activation.host_profile_id:
             return self._reject(
@@ -160,6 +191,17 @@ class ToolKnownCapabilityRealizationService(KnownToolCapabilityRealizationPort):
         )
         self._completed[request.operation_id] = result
         return result
+
+    def _binding_for(
+        self,
+        operation_id: str,
+    ) -> KnownToolCapabilityRealizationOperationBinding:
+        binding = self._bindings.get(operation_id)
+        if binding is None:
+            raise KnownToolCapabilityRealizationConflictError(
+                "operation_id completed without binding",
+            )
+        return binding
 
     def _reject(
         self,

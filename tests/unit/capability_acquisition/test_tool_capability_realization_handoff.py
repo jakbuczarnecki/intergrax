@@ -19,6 +19,9 @@ from intergrax.capability_acquisition.service import CapabilityRealizationServic
 from intergrax.contracts.capability_acquisition.outcome import (
     CapabilityRealizationOutcome,
 )
+from intergrax.contracts.capability_acquisition.reason_code import (
+    CapabilityRealizationReasonCode,
+)
 from intergrax.contracts.capability_acquisition.request import (
     CapabilityRealizationRequest,
     derive_capability_realization_request_id,
@@ -45,6 +48,7 @@ from intergrax.tools.catalog import (
     ToolPackageResolution,
 )
 from intergrax.tools.host_lifecycle import ToolHostLifecycleService
+from intergrax.tools.errors import KnownToolCapabilityRealizationConflictError
 from intergrax.tools.known_capability_realization import (
     ToolKnownCapabilityRealizationService,
 )
@@ -221,7 +225,7 @@ class _CountingActivation:
 
 def _domain_with_resolver(
     resolution: ToolPackageResolution,
-) -> ToolKnownCapabilityRealizationService:
+) -> tuple[ToolKnownCapabilityRealizationService, _CountingActivation]:
     provider = Me14ToolCatalogProvider()
     lifecycle = ToolHostLifecycleService(host_profile_id="host-profile-1")
     materializer = Me14ToolHostActivationMaterializer(
@@ -230,11 +234,12 @@ def _domain_with_resolver(
     )
     activation = _CountingActivation(lifecycle)
     resolver = _StaticResolver(resolution)
-    return ToolKnownCapabilityRealizationService(
+    domain = ToolKnownCapabilityRealizationService(
         activation=activation,
         materializer=materializer,
         resolver=resolver,
     )
+    return domain, activation
 
 
 def test_resolver_source_mismatch_fails_before_activation() -> None:
@@ -247,8 +252,7 @@ def test_resolver_source_mismatch_fails_before_activation() -> None:
         entry=bad_entry,
         package_candidate=resolution.package_candidate,
     )
-    domain = _domain_with_resolver(bad)
-    activation = domain._activation  # type: ignore[attr-defined]
+    domain, activation = _domain_with_resolver(bad)
     result = domain.realize(
         KnownToolCapabilityRealizationRequest(
             operation_id="op-mismatch-source",
@@ -268,8 +272,7 @@ def test_resolver_logical_id_mismatch_fails_before_activation() -> None:
         update={"logical_tool_id": "other.logical"},
     )
     bad = ToolPackageResolution(entry=resolution.entry, package_candidate=bad_candidate)
-    domain = _domain_with_resolver(bad)
-    activation = domain._activation  # type: ignore[attr-defined]
+    domain, activation = _domain_with_resolver(bad)
     result = domain.realize(
         KnownToolCapabilityRealizationRequest(
             operation_id="op-mismatch-logical",
@@ -290,8 +293,7 @@ def test_resolution_internal_entry_candidate_mismatch_fails() -> None:
         entry=bad_entry,
         package_candidate=resolution.package_candidate,
     )
-    domain = _domain_with_resolver(bad)
-    activation = domain._activation  # type: ignore[attr-defined]
+    domain, activation = _domain_with_resolver(bad)
     result = domain.realize(
         KnownToolCapabilityRealizationRequest(
             operation_id="op-internal",
@@ -311,8 +313,7 @@ def test_resolution_package_reference_mismatch_fails() -> None:
         update={"package_reference": "pkg://other"},
     )
     bad = ToolPackageResolution(entry=resolution.entry, package_candidate=bad_candidate)
-    domain = _domain_with_resolver(bad)
-    activation = domain._activation  # type: ignore[attr-defined]
+    domain, activation = _domain_with_resolver(bad)
     result = domain.realize(
         KnownToolCapabilityRealizationRequest(
             operation_id="op-pkg-ref",
@@ -327,7 +328,7 @@ def test_resolution_package_reference_mismatch_fails() -> None:
 
 def test_replay_same_operation_id_different_identity_conflicts() -> None:
     need = _need()
-    domain = _domain_with_resolver(_resolution())
+    domain, _activation = _domain_with_resolver(_resolution())
     base = KnownToolCapabilityRealizationRequest(
         operation_id="op-replay-conflict",
         host_profile_id="host-profile-1",
@@ -337,15 +338,13 @@ def test_replay_same_operation_id_different_identity_conflicts() -> None:
     domain.realize(base)
     other_key = need.capability_identity.model_copy(update={"logical_id": "other.tool"})
     conflict = base.model_copy(update={"capability_identity": other_key})
-    from intergrax.tools.errors import KnownToolCapabilityRealizationConflictError
-
     with pytest.raises(KnownToolCapabilityRealizationConflictError):
         domain.realize(conflict)
 
 
 def test_replay_same_operation_id_different_host_conflicts() -> None:
     need = _need()
-    domain = _domain_with_resolver(_resolution())
+    domain, _activation = _domain_with_resolver(_resolution())
     base = KnownToolCapabilityRealizationRequest(
         operation_id="op-replay-host",
         host_profile_id="host-profile-1",
@@ -354,16 +353,13 @@ def test_replay_same_operation_id_different_host_conflicts() -> None:
     )
     domain.realize(base)
     conflict = base.model_copy(update={"host_profile_id": "host-profile-2"})
-    from intergrax.tools.errors import KnownToolCapabilityRealizationConflictError
-
     with pytest.raises(KnownToolCapabilityRealizationConflictError):
         domain.realize(conflict)
 
 
 def test_idempotent_replay_calls_activation_once() -> None:
     need = _need()
-    domain = _domain_with_resolver(_resolution())
-    activation = domain._activation  # type: ignore[attr-defined]
+    domain, activation = _domain_with_resolver(_resolution())
     request = KnownToolCapabilityRealizationRequest(
         operation_id="op-idem",
         host_profile_id="host-profile-1",
@@ -374,3 +370,115 @@ def test_idempotent_replay_calls_activation_once() -> None:
     second = domain.realize(request)
     assert first.outcome == second.outcome
     assert activation.activate_calls == 1
+
+
+class _FailingResolver:
+    def resolve_for_identity(
+        self,
+        capability_identity: CapabilityIdentityKey,
+    ) -> ToolPackageResolution:
+        raise LookupError("resolver failed")
+
+
+class _FlakyResolver:
+    def __init__(self, resolution: ToolPackageResolution) -> None:
+        self._resolution = resolution
+        self.calls = 0
+
+    def resolve_for_identity(
+        self,
+        capability_identity: CapabilityIdentityKey,
+    ) -> ToolPackageResolution:
+        self.calls += 1
+        if self.calls == 1:
+            raise LookupError("resolver failed")
+        return self._resolution
+
+
+def _domain_with_custom_resolver(
+    resolver: object,
+) -> tuple[ToolKnownCapabilityRealizationService, _CountingActivation]:
+    provider = Me14ToolCatalogProvider()
+    lifecycle = ToolHostLifecycleService(host_profile_id="host-profile-1")
+    materializer = Me14ToolHostActivationMaterializer(
+        lifecycle.registry,
+        catalog_source_id=provider.catalog_source_id,
+    )
+    activation = _CountingActivation(lifecycle)
+    domain = ToolKnownCapabilityRealizationService(
+        activation=activation,
+        materializer=materializer,
+        resolver=resolver,
+    )
+    return domain, activation
+
+
+def test_failed_first_attempt_then_conflicting_identity_conflicts() -> None:
+    need = _need()
+    domain, activation = _domain_with_custom_resolver(_FailingResolver())
+    base = KnownToolCapabilityRealizationRequest(
+        operation_id="op-1",
+        host_profile_id="host-profile-1",
+        capability_identity=need.capability_identity,
+        requested_at=_CREATED,
+    )
+    failed = domain.realize(base)
+    assert failed.outcome.name == "FAILED"
+    assert activation.activate_calls == 0
+    other_key = need.capability_identity.model_copy(update={"logical_id": "other.tool"})
+    conflict = base.model_copy(update={"capability_identity": other_key})
+    with pytest.raises(KnownToolCapabilityRealizationConflictError):
+        domain.realize(conflict)
+
+
+def test_failed_first_attempt_same_request_retry_allowed() -> None:
+    need = _need()
+    flaky = _FlakyResolver(_resolution())
+    domain, activation = _domain_with_custom_resolver(flaky)
+    request = KnownToolCapabilityRealizationRequest(
+        operation_id="op-retry",
+        host_profile_id="host-profile-1",
+        capability_identity=need.capability_identity,
+        requested_at=_CREATED,
+    )
+    first = domain.realize(request)
+    assert first.outcome.name == "FAILED"
+    second = domain.realize(request)
+    assert second.outcome.name in {"REALIZED", "ALREADY_REALIZED"}
+    assert activation.activate_calls == 1
+    assert flaky.calls == 2
+
+
+def test_different_host_after_failure_conflicts() -> None:
+    need = _need()
+    domain, activation = _domain_with_custom_resolver(_FailingResolver())
+    base = KnownToolCapabilityRealizationRequest(
+        operation_id="op-host-fail",
+        host_profile_id="host-profile-1",
+        capability_identity=need.capability_identity,
+        requested_at=_CREATED,
+    )
+    failed = domain.realize(base)
+    assert failed.outcome.name == "FAILED"
+    assert activation.activate_calls == 0
+    conflict = base.model_copy(update={"host_profile_id": "host-profile-2"})
+    with pytest.raises(KnownToolCapabilityRealizationConflictError):
+        domain.realize(conflict)
+
+
+class _ConflictHandoff:
+    def realize(
+        self,
+        request: KnownToolCapabilityRealizationRequest,
+    ) -> None:
+        raise KnownToolCapabilityRealizationConflictError("operation replay conflict")
+
+
+def test_tool_adapter_maps_replay_conflict_to_uca_conflict() -> None:
+    need = _need()
+    provider = ToolCapabilityRealizationProvider(_ConflictHandoff())
+    result = provider.realize(_request(need))
+    assert result.outcome is CapabilityRealizationOutcome.CONFLICT
+    assert (
+        result.reason_code is CapabilityRealizationReasonCode.OPERATION_REPLAY_CONFLICT
+    )
