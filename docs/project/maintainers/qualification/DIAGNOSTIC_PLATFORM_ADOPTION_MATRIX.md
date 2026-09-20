@@ -1,10 +1,13 @@
 # Diagnostic Platform Adoption Matrix - DIAG-PLATFORM-A
 
-> **Qualification record — not current architecture SSOT.** Architecture authority: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) · [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md). This matrix is evidence of adoption qualification at the baseline SHA below.
+> **HISTORICAL QUALIFICATION SNAPSHOT**
+> **CURRENT AUTHORITY:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) · [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md)
+> **Current gap baseline:** [`OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md`](../audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md)
+> **Current initialized scenario count** (`discover_initialized_scenario_slugs`) = **4** — rows below that say “1 initialized scenario” are historical evidence at the baseline SHA, not current SSOT.
 
-**Program:** DIAG-PLATFORM-QUALIFICATION  
+**Program:** DIAG-PLATFORM-QUALIFICATION
 **Branch baseline:** `development` @ `74410b039ab11740abf22003c62e3c0ea9bda829`
-**Engine qualification:** [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](DIAGNOSTIC_HARDENING_CLOSEOUT.md) (HARDEN complete)  
+**Engine qualification:** [`DIAGNOSTIC_HARDENING_CLOSEOUT.md`](DIAGNOSTIC_HARDENING_CLOSEOUT.md) (HARDEN complete)
 **Architecture:** [`docs/project/architecture/DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md)
 
 **Execution authority (R1):** Execution System (`execute_root_task` / `ExecutionRuntime`) owns root execution authority. Nexus participates in orchestration/planning/execution coordination. Central diagnostics consumes canonical `RuntimeEvent` evidence emitted by governed execution.

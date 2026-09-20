@@ -30,5 +30,5 @@
   <text x="1020" y="365" text-anchor="middle" font-size="12" fill="#3d4f66">parallel consumer</text>
   <text x="1020" y="385" text-anchor="middle" font-size="12" fill="#3d4f66">of RuntimeEvents</text>
   <line x1="850" y1="328" x2="900" y2="350" stroke="#6c757d" stroke-width="2" stroke-dasharray="4 3"/>
-  <text x="600" y="660" text-anchor="middle" font-size="14" fill="#3d4f66">NATIVE adoption: 4 PRODUCT hosts + 1 initialized scenario + LKW worker</text>
+  <text x="600" y="660" text-anchor="middle" font-size="14" fill="#3d4f66">NATIVE adoption: 4 PRODUCT hosts + 4 initialized scenarios + LKW worker (read exposure PARTIAL)</text>
 </svg>

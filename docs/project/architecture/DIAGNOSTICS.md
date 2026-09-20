@@ -2,7 +2,7 @@
 
 **Intergrax Central Diagnostics** is the **one** canonical deterministic diagnostic engine for the platform. It interprets persisted platform facts - primarily `RuntimeEvent` execution evidence - into tenant-scoped `Problem` state, bounded operator read models, and optional investigation inputs. It does **not** mint execution identity, own observability export, own shared factual reconstruction, or treat vendor telemetry or AI conclusions as truth.
 
-**Last reconciled against `development` @ `a669e15e413a1ff9556ba33318560636286d823f`.** **SSOT:** diagnostic interpretation — this document; evidence / reconstruction — [`OBSERVABILITY.md`](OBSERVABILITY.md). Qualification records are evidence at historical SHAs, not architecture override.
+**Last reconciled against `development` @ `19307f1e4c3bfdcdc9ea675f4909383ab1d70878` (audited code SHA — OBS-DIAG-X1).** **SSOT:** diagnostic interpretation — this document; evidence / reconstruction — [`OBSERVABILITY.md`](OBSERVABILITY.md). Gap baseline: [`OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md). Qualification records are evidence at historical SHAs, not architecture override. Documentation commit SHA may differ after docs-only commits.
 
 **Platform operational spine:** see [`OBSERVABILITY.md` — Platform Operational Spine](OBSERVABILITY.md#platform-operational-spine). Diagnostics is the **interpretation plane** after shared reconstruction — not a second evidence or execution authority.
 
@@ -27,7 +27,7 @@
   <source media="(prefers-color-scheme: dark)" srcset="assets/diagnostics-flagship-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/diagnostics-flagship-light.svg">
   <img
-    alt="Applications, scenarios, and workers through Nexus execution, RuntimeEvent spine, central diagnostics, Problem Store, and derived observability."
+    alt="Applications, scenarios, and workers through Execution Runtime, RuntimeEvent spine, central diagnostics, Problem Store, and derived observability export."
     src="assets/diagnostics-flagship-light.svg"
   >
 </picture>
@@ -36,15 +36,29 @@
 **Primary mental model:**
 
 ```text
-Applications · Scenarios · Workers
-        ↓ shared runtime (HarnessHostRuntime / ScenarioRuntimeBaseline)
-RuntimeEvent = canonical execution evidence
-        ↓ terminal trigger
-Central Diagnostics (intergrax.runtime.diagnostics)
-        ↓
-Problem Store + DiagnosticReadService
-Observability export = derived (parallel consumer - not authority)
+Application / Scenario / Worker / API
+              ↓
+        Execution Runtime
+              ↓
+          RuntimeEvent
+              ↓
+      Evidence Persistence
+              ↓
+     Factual Reconstruction
+              ↓
+      Central Diagnostics
+              ↓
+      Problem Persistence
+              ↓
+      DiagnosticReadService
+              ↓
+    Operator / Investigation
+
+Parallel:
+Evidence → Export Boundary → Vendor
 ```
+
+Vendor telemetry is **not** on the canonical truth path. Nexus is an orchestration participant — **not** root execution authority.
 
 Deep backbone map: [`diagnostics-platform-backbone.md`](assets/fullsize/diagnostics-platform-backbone.md) · adoption paths: [`diagnostics-platform-adoption.md`](assets/fullsize/diagnostics-platform-adoption.md).
 
@@ -175,6 +189,46 @@ OPERATOR READ MODEL (DiagnosticReadService)
 | Evidence Plane | persisted canonical facts, `ExecutionReconstructionReader` / default `ExecutionReconstructor` |
 | Diagnostics | interpretation, `Problem` lifecycle, operator diagnostic views |
 | Operators | read-only composed views via `DiagnosticReadService` |
+
+### Single-owner matrix (OBS-DIAG-X1)
+
+| Concern | Single semantic owner | Competing owner found? |
+| ------- | --------------------- | ---------------------- |
+| execution lifecycle / identity / tree | Execution | **NO** |
+| RuntimeEvent evidence + evidence persistence | Observability / Evidence Plane | **NO** |
+| factual reconstruction | Shared Evidence Plane | **NO** |
+| diagnostic interpretation + Problem grouping/lifecycle | Central Diagnostics | **NO** |
+| Problem persistence contract | Diagnostics | **NO** |
+| vendor telemetry | Derived integration adapter | **NO** |
+| operator dashboards | Projection / read layer | **NO** |
+
+### Proof-level taxonomy
+
+| Level | Meaning |
+| ----- | ------- |
+| **P1** | Unit / contract |
+| **P2** | Composition |
+| **P3** | In-process end-to-end through real platform spine |
+| **P4** | External / provider / process-boundary proof |
+
+**Mock rule:** A test may use a deterministic LLM test double when LLM is not the qualified boundary. It must **not** mock transport, persistence, worker boundary, diagnostic persistence, or vendor endpoint when the proof declares those as real qualification targets.
+
+### Composition pluginability baseline (input to X2)
+
+| Mechanism | Contract | Engine replaceable | Host composition replaceable | Status |
+| --------- | -------- | -----------------: | ---------------------------: | ------ |
+| ProblemPersistence | YES | YES | PARTIAL (DocumentStore wire) | **PARTIAL** |
+| ProblemOccurrencePersistence | YES | YES | PARTIAL | **PARTIAL** |
+| ExecutionReconstructionReader | YES | YES | PARTIAL (default class hard-wired) | **PARTIAL** |
+| CausalEvidencePersistence | YES | YES | PARTIAL | **PARTIAL** |
+| ProblemGroupingStrategy | YES | YES | YES (registry) | **PROVEN** |
+| DiagnosticAssessmentBuilder | module | YES (ctor) | NO public host seam | **PARTIAL** |
+| LifecycleAnomalyAnalyzer | module | YES (ctor) | NO public host seam | **PARTIAL** |
+
+```text
+ENGINE CONTRACT PLUGINABILITY = PROVEN
+STANDARD HOST COMPOSITION REPLACEABILITY = PARTIAL
+```
 
 | Mechanism | Contract / module | Default implementation | Custom replacement |
 | --------- | ----------------- | ---------------------- | ------------------ |
@@ -993,9 +1047,14 @@ Engine HARDEN: M1–M24 PROVEN=22 NOT_APPLICABLE=2
 **Platform adoption qualification** - DIAG-PLATFORM **complete** (see [`DIAGNOSTIC_PLATFORM_QUALIFICATION_CLOSEOUT.md`](../maintainers/qualification/DIAGNOSTIC_PLATFORM_QUALIFICATION_CLOSEOUT.md)).
 
 ```text
-Platform adoption: NATIVE production surfaces = 4 PRODUCT hosts + 1 initialized scenario
-BYPASS = 0 · design-only scenarios = NOT_APPLICABLE until initialized
-true P3 flows = 4 · true P4 platform E2E = 2 (Mongo + OTLP application paths) · P4 persistence-only ≠ full spine
+Platform adoption (current discovery @ OBS-DIAG-X1):
+  PRODUCT write-path NATIVE = 4 hosts (+ LKW worker NATIVE write)
+  Initialized scenario surfaces = 4 (discover_initialized_scenario_slugs)
+  Factory composition PRODUCT BYPASS = 0
+  Universal runtime entry-path zero-bypass = NOT_PROVEN
+  CORE READ CONTRACT = PROVEN · UNIVERSAL HOST EXPOSURE = PARTIAL
+  true P3 flows include async spine · true P4 platform slices = Mongo + OTLP (+ DG-005 process topology)
+  P4 persistence-only ≠ full Kafka spine
 ```
 
 **Explicit remaining limitations (documentation SSOT):**
@@ -1003,9 +1062,34 @@ true P3 flows = 4 · true P4 platform E2E = 2 (Mongo + OTLP application paths) �
 | Limitation | Status |
 | ---------- | ------ |
 | **DG-005** process-isolated diagnostics over persisted execution evidence (`ExecutionReconstructionReader`; no writer `RuntimeEventBus` sharing); qualification harness is **provider-neutral** (SQLite `sqlite-file` is the current qualified backend) | **PROVEN** — `test_obs_dg005_distributed_topology_qualification.py` |
-| Kafka → worker → execution → diagnostics (full external spine) | **P4 NOT PROVEN** (in-process async worker spine **P3 PROVEN** — `test_obs_universal_spine_async_e2e.py`) |
-| HITL pause/restart/resume → terminal diagnostics | **PARTIAL P3** — durable checkpoint round-trip + GR-5 continuation spine (`test_obs_universal_spine_hitl_restart_e2e.py`); long-running Nexus resume integration **PRE_EXISTING** at HEAD (`handle_task` / `run_id`) |
-| Operator HTTP/dashboard read | Central **write** path qualified; **read** exposure varies by PRODUCT host |
+| Kafka → worker → execution → diagnostics (full external spine) | **P4 NOT_PROVEN** (in-process async worker spine **P3 PROVEN** — `test_obs_universal_spine_async_e2e.py`; Kafka transport **P4 PROVEN** separately) |
+| HITL pause/restart/resume → terminal diagnostics | **PARTIAL P3** — durable checkpoint + runtime rebuild + diagnostics read (`test_obs_universal_spine_hitl_restart_e2e.py`); real OS process crash / external HITL service **NOT_PROVEN** |
+| Operator HTTP/dashboard read | **CORE READ CONTRACT = PROVEN**; **UNIVERSAL HOST EXPOSURE = PARTIAL** |
+| Diagnostic host composition replaceability | Engine injection **PROVEN**; standard host replaceability **PARTIAL** (OBS-DIAG-X2) |
+| Global entry-path zero-bypass | Factory composition **PROVEN**; universal runtime entry-path **NOT_PROVEN** (OBS-DIAG-X3) |
+
+### Enterprise gap baseline (X1)
+
+| Gap | Current status | Why not closed | Required closure task |
+| --- | -------------- | -------------- | --------------------- |
+| diagnostic composition replaceability | **PARTIAL** | Host hard-wires several engines | OBS-DIAG-X2 |
+| global entry-path zero-bypass proof | **NOT_PROVEN** | Factory ≠ every entry path | OBS-DIAG-X3 |
+| external Kafka full spine E2E | **NOT_PROVEN** | Separate transport vs spine proofs | OBS-DIAG-X4 |
+| HITL full restart proof | **PARTIAL** | Missing real process / external HITL | OBS-DIAG-X5 |
+| universal product/scenario E2E adoption | **PARTIAL** | 4 initialized; not all E2E/read | OBS-DIAG-X6 |
+| provider matrix | **OPEN** | Adapters ≠ live proofs | OBS-DIAG-X7 |
+| operator read universal exposure | **PARTIAL** | Host HTTP uneven | OBS-DIAG-X8 |
+| vendor hardening | **OPEN** / **PARTIAL** | OTLP slice only | OBS-DIAG-X9 |
+| OECP | **PLANNED** | Architecture only | OBS-ECP phases |
+
+Full matrices: [`OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md).
+
+| Axis | Level |
+| ---- | ----- |
+| Architecture (A) | **A4** |
+| Implementation (I) | **I4 core** |
+| Production (P) | **P2 / P3 mixed** |
+| Evidence (E) | **E3** |
 
 Execution System owns root execution authority. Nexus = orchestration participant, not execution authority.
 
