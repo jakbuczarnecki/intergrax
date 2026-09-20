@@ -205,12 +205,12 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
             owner_layer="HOST_COMPOSITION",
             classification="HOST_EXECUTION_COMPOSITION",
             reason=(
-                "Documented host/execution composition root wiring Nexus behind "
-                "ApplicationEnvironmentProfile / build_nexus_loop_from_environment; "
-                "not a public Nexus ABI for plugins."
+                "Temporary host/shared composition debt tracked for HARNESS-01-R5-W6 — "
+                "Host Composition Convergence; must converge to neutral Execution-owned "
+                "composition boundary; not a public Nexus API."
             ),
             evidence=_EVIDENCE_HOST,
-            boundary_status="LEGAL",
+            boundary_status="DEBT",
         )
 
     if path.startswith("applications/") and "/host/" in path:
@@ -241,11 +241,11 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
             owner_layer="PLATFORM_RUNTIME",
             classification="PLATFORM_RUNTIME_INTERNAL",
             reason=(
-                "Platform runtime wiring bridges composing Execution Engine internals; "
-                "not a public Nexus entry."
+                "Non-EE runtime Nexus coupling tracked for HARNESS-01-R5-W5 — "
+                "Runtime Non-EE Boundary Convergence; not a final legal Nexus owner-zone."
             ),
             evidence=_EVIDENCE_EE,
-            boundary_status="LEGAL",
+            boundary_status="DEBT",
         )
 
     if path.startswith("intergrax/runtime/task/") or path.startswith(
@@ -256,11 +256,11 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
             owner_layer="PLATFORM_RUNTIME",
             classification="PLATFORM_RUNTIME_INTERNAL",
             reason=(
-                "Task/UAEP governance runtime path consumes Nexus orchestration internals "
-                "inside the platform execution stack."
+                "Non-EE runtime Nexus coupling tracked for HARNESS-01-R5-W5 — "
+                "Runtime Non-EE Boundary Convergence; not a final legal Nexus owner-zone."
             ),
             evidence=_EVIDENCE_EE,
-            boundary_status="LEGAL",
+            boundary_status="DEBT",
         )
 
     if path.startswith("intergrax/agents/"):
@@ -293,12 +293,11 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
             owner_layer="PLATFORM_RUNTIME",
             classification="PLATFORM_RUNTIME_INTERNAL",
             reason=(
-                "Platform runtime module consuming Nexus internals within Execution stack; "
-                "not exposed as public Nexus API. Owner is not the entire runtime/* tree — "
-                "classified per runtime subsystem path under R4 owner rules."
+                "Non-EE runtime Nexus coupling tracked for HARNESS-01-R5-W5 — "
+                "Runtime Non-EE Boundary Convergence; not a final legal Nexus owner-zone."
             ),
             evidence=_EVIDENCE_EE,
-            boundary_status="LEGAL",
+            boundary_status="DEBT",
         )
 
     if path.startswith("intergrax/tools/") or path.startswith("intergrax/websearch/"):
@@ -306,9 +305,12 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
             path=path,
             owner_layer="TOOLING",
             classification="TOOLING_INTERNAL",
-            reason="Platform tool/websearch provider consuming Nexus context helpers internally.",
+            reason=(
+                "Tools/WebSearch Nexus coupling tracked for HARNESS-01-R5-W3 — "
+                "Tools & WebSearch Nexus Dependency Inversion; not a final legal owner-zone."
+            ),
             evidence=_EVIDENCE_CLASSIFIED,
-            boundary_status="LEGAL",
+            boundary_status="DEBT",
         )
 
     if path.startswith("intergrax/integrations/"):

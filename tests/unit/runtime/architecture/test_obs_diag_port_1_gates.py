@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import ast
-from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
@@ -23,7 +22,6 @@ from tests.integration.runtime.test_terminal_diagnostic_production_e2e import _F
 from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
     TerminalDiagnosticDispatchResult,
     TerminalDiagnosticDispatchStatus,
-    TerminalExecutionDiagnosticPort,
     TerminalExecutionDiagnosticRequest,
 )
 from intergrax.contracts.execution_identity import mint_run_id

@@ -78,8 +78,16 @@ class ApplicationSettingsEnvHost:
     def _load_app_env(cls, env: EnvReader) -> dict[str, JsonValue]:
         return {}
 
+    @classmethod
+    def _field_default(cls, name: str) -> JsonValue:
+        """Resolve a dataclass field default for the concrete host settings class."""
+        return resolve_field_default(cls, name)  # type: ignore[arg-type]
 
-def _field_default(cls: type[IntergraxApplicationSettingsBase], name: str) -> JsonValue:
+
+def resolve_field_default(
+    cls: type[IntergraxApplicationSettingsBase],
+    name: str,
+) -> JsonValue:
     for field in fields(cls):
         if field.name != name:
             continue
@@ -88,6 +96,10 @@ def _field_default(cls: type[IntergraxApplicationSettingsBase], name: str) -> Js
         if field.default_factory is not MISSING:  # type: ignore[attr-defined]
             return field.default_factory()  # type: ignore[misc]
     raise KeyError(name)
+
+
+def _field_default(cls: type[IntergraxApplicationSettingsBase], name: str) -> JsonValue:
+    return resolve_field_default(cls, name)
 
 
 def _load_platform_env(

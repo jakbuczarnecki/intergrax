@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 import ast
-import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,13 +30,21 @@ VENDOR_MODULES = frozenset(
     }
 )
 
-INTEGRATION_ALLOWED_SUFFIXES = (
-    "/opens.py",
-    "/schema.py",
-    "/rag_store.py",
-    "/index_administration.py",
-    "/web_client.py",
-    "/client.py",
+# Vendor SDK imports are allowed only in named provider-internal boundary modules
+# under ``integrations/providers/**`` (not arbitrary filenames in the provider tree).
+INTEGRATION_PROVIDER_VENDOR_BOUNDARY_NAMES = frozenset(
+    {
+        "opens.py",
+        "schema.py",
+        "rag_store.py",
+        "index_administration.py",
+        "web_client.py",
+        "client.py",
+        "client_factory.py",
+    }
+)
+
+INTEGRATION_PROVIDER_VENDOR_BOUNDARY_SUFFIXES = (
     "/_shared/p3/factories.py",
     "/_shared/p3/clients.py",
 )
@@ -55,7 +62,9 @@ def _is_allowed(path: Path, *, scope: str) -> bool:
     if scope == "integrations":
         if "/integrations/providers/" not in posix:
             return True
-        return any(posix.endswith(suffix) for suffix in INTEGRATION_ALLOWED_SUFFIXES)
+        if path.name in INTEGRATION_PROVIDER_VENDOR_BOUNDARY_NAMES:
+            return True
+        return any(posix.endswith(suffix) for suffix in INTEGRATION_PROVIDER_VENDOR_BOUNDARY_SUFFIXES)
     if scope == "rag":
         if "/rag/" not in posix:
             return True

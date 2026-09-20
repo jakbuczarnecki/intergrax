@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import ClassVar
 
 import pytest
@@ -61,3 +61,32 @@ def test_loader_is_explicit_env_owner() -> None:
 
     settings = load_application_settings_from_env(_HostSettings)
     assert settings.backend_host == "127.0.0.1"
+
+
+@dataclass(frozen=True, kw_only=True)
+class _FieldDefaultProbe(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
+    plain: str = "plain-default"
+    from_factory: frozenset[str] = field(default_factory=lambda: frozenset({"factory"}))
+    required_only: int
+
+
+def test_field_default_returns_plain_dataclass_default() -> None:
+    assert _FieldDefaultProbe._field_default("plain") == "plain-default"
+
+
+def test_field_default_invokes_default_factory() -> None:
+    first = _FieldDefaultProbe._field_default("from_factory")
+    second = _FieldDefaultProbe._field_default("from_factory")
+    assert first == frozenset({"factory"})
+    assert second == frozenset({"factory"})
+    assert first is not second
+
+
+def test_field_default_unknown_field_raises_key_error() -> None:
+    with pytest.raises(KeyError):
+        _FieldDefaultProbe._field_default("not_a_field")
+
+
+def test_field_default_required_field_without_default_raises_key_error() -> None:
+    with pytest.raises(KeyError):
+        _FieldDefaultProbe._field_default("required_only")
