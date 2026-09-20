@@ -4,12 +4,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from intergrax.contracts.routable_tier2_agent import (
     AgentRoutingContractError,
     RoutableTier2Agent,
 )
+from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.contracts.task_routing import validate_task_routing_payload
 from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
@@ -48,20 +50,13 @@ def resolve_agents_for_capability(
     return registry.find_by_capability(token, production_mode=production_mode)
 
 
-def select_best_capability_match(
-    registry: AgentRegistryRead,
-    task: Task,
-    capability: str,
+def select_best_routable_agent(
     *,
-    production_mode: bool = False,
+    capability: str,
+    envelope: TaskEnvelope,
+    candidates: Sequence[Tier2Agent],
 ) -> CapabilityRouteResult:
-    """Pick highest-scoring agent among capability matches."""
-    validate_task_for_capability_routing(task)
-    candidates = resolve_agents_for_capability(
-        registry,
-        capability,
-        production_mode=production_mode,
-    )
+    """Pick highest-scoring RoutableTier2Agent among pre-resolved capability matches."""
     if not candidates:
         return CapabilityRouteResult(
             capability=capability,
@@ -70,10 +65,10 @@ def select_best_capability_match(
             selection_reason="no_capability_match",
         )
 
-    envelope = task_envelope_for_agent_capability_match(task)
+    candidate_tuple = tuple(candidates)
     best: tuple[float, RoutableTier2Agent] | None = None
     routable_candidates: list[RoutableTier2Agent] = []
-    for agent in candidates:
+    for agent in candidate_tuple:
         if not isinstance(agent, RoutableTier2Agent):
             continue
         routable_candidates.append(agent)
@@ -92,13 +87,35 @@ def select_best_capability_match(
         fallback = routable_candidates[0]
         return CapabilityRouteResult(
             capability=capability,
-            candidates=tuple(candidates),
+            candidates=candidate_tuple,
             selected=fallback,
             selection_reason="capability_first_match",
         )
     return CapabilityRouteResult(
         capability=capability,
-        candidates=tuple(candidates),
+        candidates=candidate_tuple,
         selected=best[1],
         selection_reason="capability_best_score",
+    )
+
+
+def select_best_capability_match(
+    registry: AgentRegistryRead,
+    task: Task,
+    capability: str,
+    *,
+    production_mode: bool = False,
+) -> CapabilityRouteResult:
+    """Pick highest-scoring agent among capability matches."""
+    validate_task_for_capability_routing(task)
+    candidates = resolve_agents_for_capability(
+        registry,
+        capability,
+        production_mode=production_mode,
+    )
+    envelope = task_envelope_for_agent_capability_match(task)
+    return select_best_routable_agent(
+        capability=capability,
+        envelope=envelope,
+        candidates=candidates,
     )

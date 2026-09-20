@@ -10,8 +10,10 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.agent_handoff import AgentHandoff
+from intergrax.contracts.routable_tier2_agent import AgentRoutingContractError
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
+from intergrax.runtime.registry.capability_routing import select_best_routable_agent
 from intergrax.runtime.task.agent_capability_intake import task_envelope_from_task_context
 from intergrax.runtime.task.task import Task, TaskContext
 
@@ -75,14 +77,27 @@ class HandoffCoordinator:
             return handoff.to_agent_id
 
         if handoff.to_capability:
-            matches = self._registry.find_by_capability(handoff.to_capability)
+            capability = handoff.to_capability
+            matches = self._registry.find_by_capability(capability)
             if not matches:
                 raise HandoffValidationError(
-                    f"no agent registered for capability: {handoff.to_capability}"
+                    f"no agent registered for capability: {capability}"
                 )
-            context = TaskContext(capability=handoff.to_capability)
-            best = self._best_capability_match(context, matches)
-            return best.get_contract().id
+            context = TaskContext(capability=capability)
+            envelope = task_envelope_from_task_context(context)
+            try:
+                route = select_best_routable_agent(
+                    capability=capability,
+                    envelope=envelope,
+                    candidates=matches,
+                )
+            except AgentRoutingContractError as exc:
+                raise HandoffValidationError(str(exc)) from exc
+            if route.selected is None:
+                raise HandoffValidationError(
+                    f"no routable agent for capability: {capability}"
+                )
+            return route.selected.get_contract().id
 
         raise HandoffValidationError("handoff requires to_agent_id or to_capability")
 
@@ -113,17 +128,3 @@ class HandoffCoordinator:
         )
         graph.nodes.append(node)
         return node
-
-    @staticmethod
-    def _best_capability_match(context: TaskContext, candidates: list) -> object:
-        best = None
-        best_score = -1.0
-        envelope = task_envelope_from_task_context(context)
-        for agent in candidates:
-            result = agent.can_handle(envelope)
-            if not result.matched:
-                continue
-            if result.score > best_score:
-                best_score = result.score
-                best = agent
-        return best or candidates[0]

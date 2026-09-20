@@ -6,10 +6,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from intergrax.contracts.routable_tier2_agent import (
-    RoutableTier2Agent,
-    require_routable_tier2_agent,
-)
 from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
@@ -27,11 +23,8 @@ from intergrax.runtime.registry.capability_routing import (
     select_best_capability_match,
     validate_task_for_capability_routing,
 )
-from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.agent_capability_intake import (
-    task_envelope_for_agent_capability_match,
-    task_envelope_from_task_context,
-)
+from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.agent_capability_intake import task_envelope_for_agent_capability_match
 
 
 @dataclass(frozen=True)
@@ -149,24 +142,6 @@ class AgentRouter:
             selection_reason="fallback_first_routable",
             fallback_used=True,
         )
-
-    def _best_capability_match(
-        self,
-        context: TaskContext,
-        candidates: list[RoutableTier2Agent],
-    ) -> tuple[RoutableTier2Agent, float | None]:
-        envelope = task_envelope_from_task_context(context)
-        best: Optional[tuple[float, RoutableTier2Agent]] = None
-        for agent in candidates:
-            routable = require_routable_tier2_agent(agent)
-            result = routable.can_handle(envelope)
-            if not result.matched:
-                continue
-            if best is None or result.score > best[0]:
-                best = (result.score, agent)
-        if best is not None:
-            return best[1], best[0]
-        return candidates[0], None
 
     def _emit_agent_selected(
         self,
