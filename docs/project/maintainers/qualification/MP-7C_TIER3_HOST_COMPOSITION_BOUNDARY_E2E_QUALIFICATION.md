@@ -6,7 +6,7 @@
 | **QUALIFICATION_SHA** | `96f2a63687492b03e0b0302d4f881acc7cb7cc42` (original MP-7C) |
 | **EVIDENCE_SHA** | `214a20aed4f2ca27c672fe9be6629da306e38e61` (original); repair `b038f5e88fc171e8ff7a47dd0275bd8eee9f5ace` |
 | **C1_CORRECTION** | `ff967a61f5f1550c4b5827f496ab509f7e537148` |
-| **C1_EVIDENCE** | _(filled after evidence commit)_ |
+| **C1_EVIDENCE** | `b647074cde92827e616abde762946b1bfd145241` |
 | **Predecessor** | MP-7B — CLOSED / QUALIFIED (`ab3c71ed0368bba01971851b846aa3462d7be977`) |
 | **MP-7A** | CLOSED / CERTIFIED (`a40dd4107b3c0c3c28177522f1dd278c68fb4da4`) |
 | **Production code (C1)** | host wiring only — injectable `MeaningfulSideEffectPolicyEvaluator`; LKW production unchanged |
@@ -210,7 +210,7 @@ MP-7C musi zostać niezależnie zaudytowane na podstawie rzeczywistego qualifica
 | **START_HEAD** | `b909c7315c4e936c96e8a40876321e6158145034` |
 | **MP7C_REPAIR_ANCESTRY** | `b038f5e88fc171e8ff7a47dd0275bd8eee9f5ace` is ancestor of START_HEAD |
 | **CORRECTION_SHA** | `ff967a61f5f1550c4b5827f496ab509f7e537148` |
-| **EVIDENCE_SHA** | _(filled after evidence commit)_ |
+| **EVIDENCE_SHA** | `b647074cde92827e616abde762946b1bfd145241` |
 
 ### Root cause
 
