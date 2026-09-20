@@ -46,6 +46,21 @@ def _assert_typed_agent(root: Path, slug: str, *, base_class: str) -> int:
         if token in content:
             print(f"check_scaffold_acp_pattern: FAIL — UAEP boilerplate found: {token}", file=sys.stderr)
             return 1
+    nexus_forbidden = (
+        "intergrax.runtime.nexus",
+        "def build_context",
+        "RuntimeConfig",
+        "RuntimeContext",
+        "RuntimeRequest",
+        "SessionManager",
+    )
+    for token in nexus_forbidden:
+        if token in content:
+            print(
+                f"check_scaffold_acp_pattern: FAIL — Nexus/authoring leak: {token}",
+                file=sys.stderr,
+            )
+            return 1
     if base_class not in content:
         print(f"check_scaffold_acp_pattern: FAIL — missing {base_class}", file=sys.stderr)
         return 1

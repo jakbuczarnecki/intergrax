@@ -57,9 +57,9 @@ def _agent_example_diag(slug: str) -> str:
         from __future__ import annotations
 
         from dataclasses import dataclass
-        from typing import Any, Dict
 
-        from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+        from intergrax.contracts.tracing.diagnostics import DiagnosticPayload
+        from intergrax.contracts.tracing.values import TraceObject
         from intergrax.runtime.observability.extension_sdk import agent_diagnostic_schema_id
 
 
@@ -75,7 +75,7 @@ def _agent_example_diag(slug: str) -> str:
             def schema_id(cls) -> str:
                 return agent_diagnostic_schema_id("{slug}", "custom_check")
 
-            def to_dict(self) -> Dict[str, Any]:
+            def to_dict(self) -> TraceObject:
                 return {{
                     "check_name": self.check_name,
                     "passed": self.passed,

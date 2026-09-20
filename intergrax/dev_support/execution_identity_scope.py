@@ -48,6 +48,39 @@ def canonical_execution_identity_scope(run_id: str):
         reset_active_execution_identity(token)
 
 
+@contextmanager
+def canonical_agent_run_smoke_scope(
+    run_id: str,
+    *,
+    tenant_id: str,
+    principal_id: str,
+    workspace_id: str = "scaffold",
+):
+    """
+    Bind execution + PRE_MODEL governance identity for offline ``Agent.run`` smoke tests.
+
+    Projects must match ``AgentRunRequest.identity`` tenant/user (principal) fields.
+    """
+    from intergrax.runtime.governance.active_execution_governance_identity import (
+        ActiveExecutionGovernanceIdentity,
+        bind_active_execution_governance_identity,
+        reset_active_execution_governance_identity,
+    )
+
+    with canonical_execution_identity_scope(run_id) as canonical_run_id:
+        gov_token = bind_active_execution_governance_identity(
+            ActiveExecutionGovernanceIdentity(
+                tenant_id=tenant_id,
+                workspace_id=workspace_id,
+                principal_id=principal_id,
+            )
+        )
+        try:
+            yield canonical_run_id
+        finally:
+            reset_active_execution_governance_identity(gov_token)
+
+
 def refresh_active_execution_id_for_tests(
     execution_id: ExecutionId | None = None,
 ) -> ExecutionId:

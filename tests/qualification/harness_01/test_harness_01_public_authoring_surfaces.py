@@ -140,3 +140,81 @@ def test_harness_01_reference_tool_invocation_pattern_public_abi_executable() ->
     assert result.pattern_id == "reference_enterprise_single_pass"
     assert result.stop_reason == "empty_tool_calls"
     _ = ToolCallPlan
+
+
+def test_harness_01_new_agent_scaffold_generates_nexus_free_authoring_package(
+    tmp_path: Path,
+) -> None:
+    """Public golden path: new-agent output must AST-scan Nexus-free and run smoke."""
+    import importlib
+    import os
+    import subprocess
+    import sys
+
+    from intergrax.scaffold.new_agent import create_agent
+    from tests.qualification.harness_01.public_authoring_nexus_detector import (
+        scan_generated_agent_package,
+    )
+
+    slug = "w1c1_nexus_free"
+    root = tmp_path / "repo"
+    root.mkdir()
+    (root / "agents").mkdir()
+    target = create_agent(
+        name=slug,
+        capabilities=[f"{slug}.basic"],
+        root=root,
+        pattern="reflex",
+    )
+    assert target.is_dir()
+
+    hits = scan_generated_agent_package(target)
+    assert hits == [], "generated new-agent package must not import Nexus:\n" + "\n".join(
+        f"{h.relative_path} [{h.kind}] {h.detail}" for h in hits
+    )
+
+    agent_py = (target / f"{slug}_agent.py").read_text(encoding="utf-8")
+    assert "def build_context" not in agent_py
+    assert "RuntimeConfig" not in agent_py
+    assert "SessionManager" not in agent_py
+    assert "RuntimeContext" not in agent_py
+    assert "RuntimeRequest" not in agent_py
+
+    agents_root = root / "agents"
+    sys.path.insert(0, str(root))
+    sys.path.insert(0, str(agents_root))
+    try:
+        module = importlib.import_module(f"{slug}.{slug}_agent")
+        class_name = "".join(part.capitalize() for part in slug.split("_")) + "Agent"
+        assert getattr(module, class_name) is not None
+    finally:
+        sys.path.pop(0)
+        sys.path.pop(0)
+        for mod in list(sys.modules):
+            if mod == slug or mod.startswith(f"{slug}."):
+                del sys.modules[mod]
+
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join([str(agents_root), str(root), env.get("PYTHONPATH", "")])
+    completed = subprocess.run(
+        ["uv", "run", "pytest", str(target / "tests"), "-q"],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+        env=env,
+        check=False,
+    )
+    assert completed.returncode == 0, (
+        "generated agent tests failed:\n"
+        f"stdout:\n{completed.stdout}\nstderr:\n{completed.stderr}"
+    )
+
+
+def test_harness_01_new_agent_scaffold_inventory_includes_generator() -> None:
+    from tests.qualification.harness_01.public_authoring_nexus_detector import (
+        PUBLIC_EXTENSION_SCAFFOLD_RELATIVE_PATHS,
+        iter_public_authoring_relative_paths,
+    )
+
+    assert "intergrax/scaffold/new_agent.py" in PUBLIC_EXTENSION_SCAFFOLD_RELATIVE_PATHS
+    assert "intergrax/scaffold/new_agent.py" in iter_public_authoring_relative_paths(_REPO_ROOT)

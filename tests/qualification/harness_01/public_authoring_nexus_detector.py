@@ -31,14 +31,15 @@ PUBLIC_AUTHORING_EXAMPLE_PREFIXES: tuple[str, ...] = (
     "examples/platform_plugins/",
 )
 
-# Extension scaffolds (tool/skill/integration/context). Agent/application host
-# generators remain Wave 2 / Wave 6 debt and are intentionally excluded here.
+# Extension scaffolds (tool/skill/integration/context) plus public new-agent golden path.
+# Application host generators remain Wave 6 debt and are intentionally excluded here.
 PUBLIC_EXTENSION_SCAFFOLD_RELATIVE_PATHS: tuple[str, ...] = (
     "intergrax/scaffold/new_tool_bundle.py",
     "intergrax/scaffold/new_skill.py",
     "intergrax/scaffold/new_integration.py",
     "intergrax/scaffold/new_context_bundle.py",
     "intergrax/scaffold/integration_templates.py",
+    "intergrax/scaffold/new_agent.py",
 )
 
 
@@ -139,4 +140,86 @@ def scan_all_public_authoring_surfaces(repo_root: Path) -> list[PublicAuthoringN
     hits: list[PublicAuthoringNexusHit] = []
     for rel in iter_public_authoring_relative_paths(repo_root):
         hits.extend(scan_public_authoring_path(repo_root, rel))
+    return hits
+
+
+def scan_generated_agent_package(agent_dir: Path) -> list[PublicAuthoringNexusHit]:
+    """AST/markdown scan of a scaffolded agent tree (``.py`` / ``.md`` / notebook cells)."""
+    hits: list[PublicAuthoringNexusHit] = []
+    if not agent_dir.is_dir():
+        return hits
+    for path in sorted(agent_dir.rglob("*")):
+        if not path.is_file():
+            continue
+        rel = path.relative_to(agent_dir).as_posix()
+        suffix = path.suffix.lower()
+        text = path.read_text(encoding="utf-8-sig")
+        if suffix == ".py":
+            if python_source_imports_nexus(text):
+                hits.append(
+                    PublicAuthoringNexusHit(
+                        relative_path=rel,
+                        kind="python_import",
+                        detail="AST import of intergrax.runtime.nexus",
+                    )
+                )
+            continue
+        if suffix in {".md", ".markdown", ".rst"}:
+            for snippet in markdown_fenced_python_imports_nexus(text):
+                hits.append(
+                    PublicAuthoringNexusHit(
+                        relative_path=rel,
+                        kind="markdown_fenced_python_import",
+                        detail=snippet[:200],
+                    )
+                )
+            continue
+        if suffix == ".ipynb":
+            hits.extend(_scan_notebook_nexus_hits(rel, text))
+    return hits
+
+
+def _scan_notebook_nexus_hits(relative_path: str, notebook_text: str) -> list[PublicAuthoringNexusHit]:
+    """Scan notebook code-cell sources for Nexus imports (no OCR)."""
+    import json
+
+    hits: list[PublicAuthoringNexusHit] = []
+    try:
+        notebook = json.loads(notebook_text)
+    except json.JSONDecodeError:
+        return hits
+    cells = notebook.get("cells")
+    if not isinstance(cells, list):
+        return hits
+    for index, cell in enumerate(cells):
+        if not isinstance(cell, dict) or cell.get("cell_type") != "code":
+            continue
+        raw_source = cell.get("source", "")
+        if isinstance(raw_source, list):
+            source = "".join(str(part) for part in raw_source)
+        else:
+            source = str(raw_source)
+        try:
+            if python_source_imports_nexus(source):
+                hits.append(
+                    PublicAuthoringNexusHit(
+                        relative_path=relative_path,
+                        kind="notebook_code_cell_import",
+                        detail=f"cell[{index}] AST import of intergrax.runtime.nexus",
+                    )
+                )
+        except SyntaxError:
+            for line in source.splitlines():
+                stripped = line.strip()
+                if stripped.startswith("from intergrax.runtime.nexus") or stripped.startswith(
+                    "import intergrax.runtime.nexus"
+                ):
+                    hits.append(
+                        PublicAuthoringNexusHit(
+                            relative_path=relative_path,
+                            kind="notebook_code_cell_import",
+                            detail=f"cell[{index}] {stripped[:200]}",
+                        )
+                    )
+                    break
     return hits

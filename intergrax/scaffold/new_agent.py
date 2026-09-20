@@ -60,10 +60,6 @@ def _class_name(slug: str) -> str:
     return "".join(part.capitalize() for part in slug.split("_")) + "Agent"
 
 
-def _pascal_name(slug: str) -> str:
-    return "".join(part.capitalize() for part in slug.split("_"))
-
-
 def _write(path: Path, content: str, *, force: bool) -> None:
     if path.exists() and not force:
         raise FileExistsError(f"File already exists: {path}")
@@ -160,13 +156,17 @@ def _acp_agent_py(
     pattern: str,
     reference: bool = False,
 ) -> str:
-    if reference:
-        return _acp_reference_agent_py(
-            slug, class_name, primary_capability, pattern=pattern
-        )
     base_class = SCAFFOLD_PATTERNS[pattern]
     pattern_import = _PATTERN_IMPORTS[pattern]
     hooks = _acp_agent_hooks(slug, class_name, primary_capability, pattern=pattern)
+    if reference:
+        class_doc = (
+            "Harness reference agent — ACP hooks only; host/runtime owns LLM and execution wiring."
+        )
+        agent_description = f"Scaffolded {pattern} reference agent"
+    else:
+        class_doc = "Typed cognitive-pattern agent — implement hooks below (ACP §32.0)."
+        agent_description = f"Scaffolded {pattern} agent"
     return dedent(
         f'''\
         # © Artur Czarnecki. All rights reserved.
@@ -174,7 +174,6 @@ def _acp_agent_py(
         from __future__ import annotations
 
         from {slug}.capabilities import CAPABILITIES
-        from {slug}.contract import build_agent_contract
         {pattern_import}
         from intergrax.agents.authoring.patterns.types import (
             AgentEvaluation,
@@ -184,151 +183,21 @@ def _acp_agent_py(
         )
         from intergrax.contracts.agent_contract_meta import AgentRiskLevel
         from intergrax.contracts.agent_step_context import AgentStepContext
-        from intergrax.runtime.nexus.config import RuntimeConfig
-        from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-        from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-        from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-        from intergrax.runtime.nexus.session.session_manager import SessionManager
-        from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
-        from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-        from intergrax.memory.conversational_memory import ChatMessage
-        from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-        from typing import Optional, Sequence
 
         # LLM / catalog (Tier-3 host): intergrax/llm_adapters/USAGE.md — LLMProfile, ModelCatalog,
-        # optional LLMRoutingProfile on ApplicationEnvironmentProfile; agents use stub LLM below only in tests.
-
-
-        class _{_pascal_name(slug)}StubLLM(LLMAdapter):
-            provider = "{slug}"
-            model = "{slug}-stub"
-
-            @property
-            def context_window_tokens(self) -> int:
-                return 128_000
-
-            def generate_messages(
-                self,
-                messages: Sequence[ChatMessage],
-                *,
-                temperature: Optional[float] = None,
-                max_tokens: Optional[int] = None,
-                run_id: Optional[str] = None,
-            ) -> LLMAdapterResponse:
-                for msg in reversed(messages):
-                    if msg.content:
-                        return build_adapter_response(content=msg.content[:200])
-                return build_adapter_response(content="{slug}: (empty)")
+        # optional LLMRoutingProfile on ApplicationEnvironmentProfile.
+        # Offline smoke tests use Agent.run(AgentRunRequest) without constructing execution runtime.
 
 
         class {class_name}({base_class}):
-            """Typed cognitive-pattern agent — implement hooks below (ACP §32.0)."""
+            """{class_doc}"""
 
             contract_id = "{slug}"
             capabilities = tuple(CAPABILITIES)
             agent_name = "{class_name}"
-            agent_description = "Scaffolded {pattern} agent"
+            agent_description = "{agent_description}"
             risk_level = AgentRiskLevel.LOW
             max_steps = 10
-
-            def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-                from intergrax.agents.defaults import harness_production_mode
-
-                config = RuntimeConfig(
-                    llm_adapter=_{_pascal_name(slug)}StubLLM(),
-                    enable_rag=False,
-                    production_mode=harness_production_mode(),
-                    tenant_id=request.tenant_id,
-                )
-                session_manager = SessionManager(storage=InMemorySessionStorage())
-                return RuntimeContext.build(config=config, session_manager=session_manager)
-{hooks}
-        '''
-    )
-
-
-def _acp_reference_agent_py(
-    slug: str,
-    class_name: str,
-    primary_capability: str,
-    *,
-    pattern: str,
-) -> str:
-    base_class = SCAFFOLD_PATTERNS[pattern]
-    pattern_import = _PATTERN_IMPORTS[pattern]
-    hooks = _acp_agent_hooks(slug, class_name, primary_capability, pattern=pattern)
-    return dedent(
-        f'''\
-        # © Artur Czarnecki. All rights reserved.
-
-        from __future__ import annotations
-
-        from {slug}.capabilities import CAPABILITIES
-        from {slug}.contract import build_agent_contract
-        {pattern_import}
-        from intergrax.agents.authoring.patterns.types import (
-            AgentEvaluation,
-            CognitiveEvaluation,
-            Observation,
-            ReasoningResult,
-        )
-        from intergrax.agents.reference_harness import (
-            LabHarnessContext,
-            build_lab_agent_runtime_context,
-            default_reference_harness,
-        )
-        from intergrax.contracts.agent_contract_meta import AgentRiskLevel
-        from intergrax.contracts.agent_step_context import AgentStepContext
-        from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
-        from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-        from intergrax.memory.conversational_memory import ChatMessage
-        from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-        from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-        from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-        from typing import Optional, Sequence
-
-
-        class _{_pascal_name(slug)}StubLLM(LLMAdapter):
-            provider = "{slug}"
-            model = "{slug}-stub"
-
-            @property
-            def context_window_tokens(self) -> int:
-                return 128_000
-
-            def generate_messages(
-                self,
-                messages: Sequence[ChatMessage],
-                *,
-                temperature: Optional[float] = None,
-                max_tokens: Optional[int] = None,
-                run_id: Optional[str] = None,
-            ) -> LLMAdapterResponse:
-                for msg in reversed(messages):
-                    if msg.content:
-                        return build_adapter_response(content=msg.content[:200])
-                return build_adapter_response(content="{slug}: (empty)")
-
-
-        class {class_name}({base_class}):
-            """Harness reference agent — inject ``LabHarnessContext`` from Tier-3 host builders."""
-
-            contract_id = "{slug}"
-            capabilities = tuple(CAPABILITIES)
-            agent_name = "{class_name}"
-            agent_description = "Scaffolded {pattern} reference agent"
-            risk_level = AgentRiskLevel.LOW
-            max_steps = 10
-
-            def __init__(self, harness: LabHarnessContext | None = None) -> None:
-                self._harness = harness or default_reference_harness()
-
-            def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-                return build_lab_agent_runtime_context(
-                    request=request,
-                    llm_adapter=_{_pascal_name(slug)}StubLLM(),
-                    harness=self._harness,
-                )
 {hooks}
         '''
     )
@@ -383,7 +252,7 @@ def _acp_test_agent_py(slug: str, class_name: str, primary_capability: str) -> s
         from {slug}.contract import build_agent_contract
         from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
         from intergrax.contracts.agent_run_enums import AgentRunStatus
-        from intergrax.dev_support.execution_identity_scope import canonical_execution_identity_scope
+        from intergrax.dev_support.execution_identity_scope import canonical_agent_run_smoke_scope
 
 
         @pytest.mark.asyncio
@@ -393,7 +262,11 @@ def _acp_test_agent_py(slug: str, class_name: str, primary_capability: str) -> s
             agent = {class_name}()
             contract = build_agent_contract()
             assert contract.cognitive_pattern is not None
-            with canonical_execution_identity_scope("scaffold-smoke"):
+            with canonical_agent_run_smoke_scope(
+                "scaffold-smoke",
+                tenant_id="t1",
+                principal_id="u1",
+            ):
                 result = await agent.run(
                     AgentRunRequest(
                         input="scaffold smoke",
@@ -402,7 +275,7 @@ def _acp_test_agent_py(slug: str, class_name: str, primary_capability: str) -> s
                     )
                 )
             assert result.status == AgentRunStatus.SUCCEEDED
-            assert "{primary_capability}" in str(result.output)
+            assert "{slug}" in str(result.output)
         '''
     )
 
@@ -507,7 +380,8 @@ def _readme(
         uv run pytest agents/{slug}/tests -q
         ```
 
-        Stub LLM in ``{slug}_agent.py`` keeps tests offline — no Tier-3 host required.
+        ``Agent.run(AgentRunRequest(...))`` keeps tests offline — no Tier-3 host and no
+        execution-runtime construction in agent code.
 
         ## Unit-test authoring (isolated)
 
