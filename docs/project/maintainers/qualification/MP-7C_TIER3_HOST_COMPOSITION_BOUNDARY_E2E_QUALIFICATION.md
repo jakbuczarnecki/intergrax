@@ -9,7 +9,7 @@
 | **C1_EVIDENCE** | `b647074cde92827e616abde762946b1bfd145241` |
 | **C1_EVIDENCE_BINDER** | `56f223a3894d57250b831aa41bb9b0700def0ab6` |
 | **R1_CORRECTION** | `14e1abcced7d96b0228802ebf38b1cad056dba2b` |
-| **R1_EVIDENCE** | *(filled at evidence commit)* |
+| **R1_EVIDENCE** | `143af1d0a5a54b2ba62f3dfc0e0076810cf831bd` |
 | **Predecessor** | MP-7B — CLOSED / QUALIFIED (`ab3c71ed0368bba01971851b846aa3462d7be977`) |
 | **MP-7A** | CLOSED / CERTIFIED (`a40dd4107b3c0c3c28177522f1dd278c68fb4da4`) |
 | **Production code (C1)** | host wiring only — injectable `MeaningfulSideEffectPolicyEvaluator`; LKW production unchanged |
@@ -287,7 +287,7 @@ MP-7C-C1 musi zostać niezależnie zaudytowane na podstawie rzeczywistego kodu, 
 | **START_HEAD** | `56f223a3894d57250b831aa41bb9b0700def0ab6` |
 | **C1_BINDER_ANCESTRY** | `56f223a3894d57250b831aa41bb9b0700def0ab6` is ancestor of START_HEAD (identity) |
 | **CORRECTION_SHA** | `14e1abcced7d96b0228802ebf38b1cad056dba2b` |
-| **EVIDENCE_SHA** | *(filled at evidence commit)* |
+| **EVIDENCE_SHA** | `143af1d0a5a54b2ba62f3dfc0e0076810cf831bd` |
 
 ### Previous gap (do not hide)
 
