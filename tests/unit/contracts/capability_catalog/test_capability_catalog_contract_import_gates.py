@@ -18,10 +18,15 @@ _FORBIDDEN_IMPLEMENTATION_PREFIXES = (
     "intergrax.capability_catalog",
     "intergrax.marketplace",
     "intergrax.agent_distribution",
+    "intergrax.autonomous_work",
     "intergrax.tools",
     "intergrax.skills",
     "intergrax.nexus",
     "intergrax.runtime",
+    "intergrax.codecraft",
+    "intergrax.runtime.codecraft",
+    "intergrax.runtime.sandbox",
+    "intergrax.runtime.execution",
     "applications",
 )
 

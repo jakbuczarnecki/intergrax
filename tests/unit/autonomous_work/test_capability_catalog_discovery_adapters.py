@@ -220,6 +220,33 @@ def test_tool_multiple_required_operations_partial_tools_no_match() -> None:
     assert outcome.candidates == ()
 
 
+def test_catalog_available_allowed_is_realization_required_not_no_match() -> None:
+    """UCA-1: CATALOG_AVAILABLE + ALLOWED must not collapse to semantic NO_MATCH."""
+    tool_registry = _tool_registry(_OPERATION)
+    snapshot = catalog_snapshot_from_registries(
+        tool_registry=tool_registry,
+        skill_registry=SkillRegistry(),
+    )
+    dependencies = catalog_discovery_dependencies(
+        snapshot=snapshot,
+        availability_evidence=CapabilityDiscoveryAvailabilityEvidence(),
+    )
+    adapter = CapabilityCatalogToolDiscoveryAdapter(dependencies)
+    outcome = adapter.discover(_request())
+
+    assert outcome.disposition is CapabilityDiscoveryDisposition.REALIZATION_REQUIRED
+    assert outcome.disposition is not CapabilityDiscoveryDisposition.NO_MATCH
+    assert outcome.candidates
+    assert all(
+        candidate.candidate_kind is WorkerCapabilityCandidateKind.TOOL
+        for candidate in outcome.candidates
+    )
+    assert all(
+        candidate.risk_class is WorkerAutonomyLevel.A0_KNOWN_CAPABILITY
+        for candidate in outcome.candidates
+    )
+
+
 def test_partial_tool_cannot_reach_aw_a0_use_existing() -> None:
     logs_op = "tool.search.logs"
     incident_op = "tool.fetch.incident"

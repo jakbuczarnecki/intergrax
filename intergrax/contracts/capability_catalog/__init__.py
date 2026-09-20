@@ -76,6 +76,28 @@ from intergrax.contracts.capability_catalog.need import (
     SCHEMA_CAPABILITY_NEED_V1,
     CapabilityNeed,
 )
+from intergrax.contracts.capability_catalog.federation import (
+    NORMATIVE_FEDERATION_COMPLETENESS,
+    CapabilityCatalogFederationCompleteness,
+)
+from intergrax.contracts.capability_catalog.discovery_completion import (
+    SCHEMA_DISCOVERY_COMPLETION_V1,
+    DiscoveryCompletion,
+    DiscoveryCompletionOutcome,
+    NORMATIVE_DISCOVERY_COMPLETION_OUTCOMES,
+    build_discovery_completion,
+    derive_discovery_completion_outcome,
+)
+from intergrax.contracts.capability_catalog.capability_gap import (
+    SCHEMA_CAPABILITY_GAP_V1,
+    CapabilityGap,
+    derive_capability_gap_id,
+)
+from intergrax.contracts.capability_catalog.capability_realization_need import (
+    SCHEMA_CAPABILITY_REALIZATION_NEED_V1,
+    CapabilityRealizationNeed,
+    derive_capability_realization_need_id,
+)
 from intergrax.contracts.capability_catalog.scope import (
     SCHEMA_CAPABILITY_DISCOVERY_SCOPE_V1,
     CapabilityDiscoveryScope,
@@ -164,6 +186,20 @@ __all__ = [
     "CapabilityDiscoveryQuery",
     "CapabilityNeed",
     "SCHEMA_CAPABILITY_NEED_V1",
+    "CapabilityCatalogFederationCompleteness",
+    "NORMATIVE_FEDERATION_COMPLETENESS",
+    "DiscoveryCompletion",
+    "DiscoveryCompletionOutcome",
+    "NORMATIVE_DISCOVERY_COMPLETION_OUTCOMES",
+    "SCHEMA_DISCOVERY_COMPLETION_V1",
+    "build_discovery_completion",
+    "derive_discovery_completion_outcome",
+    "CapabilityGap",
+    "SCHEMA_CAPABILITY_GAP_V1",
+    "derive_capability_gap_id",
+    "CapabilityRealizationNeed",
+    "SCHEMA_CAPABILITY_REALIZATION_NEED_V1",
+    "derive_capability_realization_need_id",
     "CapabilityDiscoveryScope",
     "CapabilityDiscoveryScopeMode",
     "CapabilityIdentityKey",

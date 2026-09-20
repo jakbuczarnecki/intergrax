@@ -5,19 +5,23 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
 from typing import Final, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from intergrax.capability_catalog.entry import CapabilityCatalogEntry
+from intergrax.contracts.capability_catalog.federation import (
+    CapabilityCatalogFederationCompleteness,
+)
 
 SCHEMA_CAPABILITY_CATALOG_SNAPSHOT_V1: Final = "capability_catalog_snapshot.v1"
 
-
-class CapabilityCatalogFederationCompleteness(StrEnum):
-    COMPLETE = "complete"
-    PARTIAL = "partial"
+# Re-export canonical vocabulary for existing runtime import paths.
+__all__ = [
+    "CapabilityCatalogFederationCompleteness",
+    "CapabilityCatalogSnapshot",
+    "SCHEMA_CAPABILITY_CATALOG_SNAPSHOT_V1",
+]
 
 
 class CapabilityCatalogSnapshot(BaseModel):

@@ -100,6 +100,7 @@ class CapabilityDiscoveryDisposition(StrEnum):
     """Per discovery layer or aggregate discovery outcome."""
 
     MATCH_FOUND = "MATCH_FOUND"
+    REALIZATION_REQUIRED = "REALIZATION_REQUIRED"
     NO_MATCH = "NO_MATCH"
     UNAVAILABLE = "UNAVAILABLE"
     NOT_CONFIGURED = "NOT_CONFIGURED"
