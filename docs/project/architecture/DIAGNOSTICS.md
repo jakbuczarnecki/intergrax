@@ -1093,13 +1093,28 @@ Platform adoption (current discovery @ OBS-DIAG-X1):
   P4 persistence-only ≠ full Kafka spine
 ```
 
+### OBS-DIAG-X5 provider support matrix (reconciled)
+
+Full audit: [`OBS_DIAG_EXTERNAL_PROVIDER_VENDOR_QUALIFICATION_X5.md`](../maintainers/audits/OBS_DIAG_EXTERNAL_PROVIDER_VENDOR_QUALIFICATION_X5.md).
+
+| Provider | Domain | Support status | Qualification level | Failure/recovery proof |
+| -------- | ------ | -------------- | ------------------- | ---------------------- |
+| `sqlite-file` | persistence | SUPPORTED + QUALIFIED | P4 durable restart | `test_x5_sqlite_file_persistence_qualification.py` |
+| `kafka` | transport | SUPPORTED + QUALIFIED | P4 spine + X5 outage | `test_x5_kafka_transport_failure_recovery.py` |
+| `mongodb` | persistence | SUPPORTED + NOT QUALIFIED | P4 when `INTERGRAX_MONGODB_URI` set (D1-R1) | env-gated; not default spine |
+| `otel` | telemetry export | SUPPORTED + QUALIFIED | P2/P3 fail-open | HARDEN-3C + `test_export_policy.py` |
+| `opentelemetry_collector` | telemetry transport | ADAPTER ONLY | P1 adapter | no live collector proof in X5 |
+| Other `observability_backend/*` manifests | telemetry | ADAPTER ONLY | P1 | catalog only unless live proof added |
+| Other `message_bus/*` manifests | transport | ADAPTER ONLY / NOT QUALIFIED | P1–P2 unit | not OBS spine defaults |
+
 **Explicit remaining limitations (documentation SSOT):**
 
 | Limitation | Status |
 | ---------- | ------ |
 | **DG-005** process-isolated diagnostics over persisted execution evidence (`ExecutionReconstructionReader`; no writer `RuntimeEventBus` sharing); qualification harness is **provider-neutral** (SQLite `sqlite-file` is the current qualified backend) | **PROVEN** — `test_obs_dg005_distributed_topology_qualification.py` |
 | Kafka → worker → execution → diagnostics (full external spine) | **P4 PROVEN** — OBS-DIAG-X4 `test_obs_universal_spine_cross_process_x4_e2e.py` (in-process async worker spine **P3 PROVEN** — `test_obs_universal_spine_async_e2e.py`) |
-| HITL pause/restart/resume → terminal diagnostics | **P3 PROVEN** in-process durable rebuild (`test_obs_universal_spine_hitl_restart_e2e.py`); **P4 PROVEN** OS process pause/resume (OBS-DIAG-X4); **P4 PROVEN** cross-process resume diagnostic anomaly → durable Problem + fresh read (OBS-DIAG-X4A — [`OBS_DIAG_HITL_FAILURE_DIAGNOSTIC_CLOSURE_X4A.md`](../maintainers/audits/OBS_DIAG_HITL_FAILURE_DIAGNOSTIC_CLOSURE_X4A.md)); external HITL service **NOT_PROVEN** (X5) |
+| HITL pause/restart/resume → terminal diagnostics | **P3 PROVEN** in-process durable rebuild (`test_obs_universal_spine_hitl_restart_e2e.py`); **P4 PROVEN** OS process pause/resume (OBS-DIAG-X4); **P4 PROVEN** cross-process resume diagnostic anomaly → durable Problem + fresh read (OBS-DIAG-X4A — [`OBS_DIAG_HITL_FAILURE_DIAGNOSTIC_CLOSURE_X4A.md`](../maintainers/audits/OBS_DIAG_HITL_FAILURE_DIAGNOSTIC_CLOSURE_X4A.md)); external HITL service **NOT_PROVEN** (post-X5) |
+| External provider qualification (X5) | Persistence / Kafka transport / OTLP export isolation | **RECONCILED** — [`OBS_DIAG_EXTERNAL_PROVIDER_VENDOR_QUALIFICATION_X5.md`](../maintainers/audits/OBS_DIAG_EXTERNAL_PROVIDER_VENDOR_QUALIFICATION_X5.md) |
 | Operator HTTP/dashboard read | **CORE READ CONTRACT = PROVEN**; **UNIVERSAL HOST EXPOSURE = PARTIAL** |
 | Diagnostic host composition replaceability | Engine injection **PROVEN**; standard host replaceability **PROVEN** (OBS-DIAG-X2 CLOSED) |
 | Global entry-path zero-bypass | **PROVEN** (OBS-DIAG-X3/X3A gates + representative E2E) |
@@ -1112,9 +1127,9 @@ Platform adoption (current discovery @ OBS-DIAG-X1):
 | diagnostic composition replaceability | **PROVEN** (X2) | — | OBS-DIAG-X2 CLOSED |
 | global entry-path zero-bypass proof | **PROVEN** | X3 qualification | — |
 | external Kafka full spine E2E | **PROVEN** (X4) | — | OBS-DIAG-X4 CLOSED |
-| HITL full restart proof | **PROVEN (P4 OS process + X4A durable Problem on resume anomaly)** | External HITL vendor | OBS-DIAG-X5 |
+| HITL full restart proof | **PROVEN (P4 OS process + X4A durable Problem on resume anomaly)** | External HITL vendor | OBS-DIAG-X5+ |
 | universal product/scenario E2E adoption | **PARTIAL** | 4 initialized; not all E2E/read | OBS-DIAG-X6 |
-| provider matrix | **OPEN** | Adapters ≠ live proofs | OBS-DIAG-X7 |
+| provider matrix (persistence / transport / telemetry) | **RECONCILED** | OBS-DIAG-X5 live proofs + honest downgrade | OBS-DIAG-X5 CLOSED |
 | operator read universal exposure | **PARTIAL** | Host HTTP uneven | OBS-DIAG-X8 |
 | vendor hardening | **OPEN** / **PARTIAL** | OTLP slice only | OBS-DIAG-X9 |
 | OECP | **PLANNED** | Architecture only | OBS-ECP phases |
