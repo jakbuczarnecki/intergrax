@@ -339,3 +339,103 @@ def test_catalog_evaluators_remain_registry_owned() -> None:
     skills = CanonicalSkillProfile(enabled=["explicit.skill"])
     assert is_skill_enabled(skills, "explicit.skill") is True
     assert skills.is_skill_enabled("explicit.skill") is True
+
+
+# --- EBH-2D-B-R2: typed tool enablement boundary ---
+
+_RESEARCH_AGENT_PATH = _REPO_ROOT / "agents/research/research_agent.py"
+_TOOL_ENABLEMENT_CONTRACT_PATH = _REPO_ROOT / "intergrax/agents/tool_enablement.py"
+_TIER2_TOOL_ENABLEMENT_CONSUMERS = (
+    _RESEARCH_AGENT_PATH,
+    _REPO_ROOT / "agents/boundary_demo/boundary_demo_agent.py",
+)
+
+
+def _imports_under(path: Path, *, prefix: str) -> list[str]:
+    hits: list[str] = []
+    for name in _module_imports(path):
+        if name == prefix or name.startswith(prefix + "."):
+            hits.append(name)
+    return hits
+
+
+def test_research_agent_does_not_import_tools_registry() -> None:
+    assert _imports_under(_RESEARCH_AGENT_PATH, prefix="intergrax.tools.registry") == []
+    assert _imports_under(_RESEARCH_AGENT_PATH, prefix="intergrax.tools.contracts.tool_profile") == []
+
+
+def test_tool_enablement_consumers_do_not_import_tools_registry() -> None:
+    for path in _TIER2_TOOL_ENABLEMENT_CONSUMERS:
+        assert path.is_file(), path
+        assert _imports_under(path, prefix="intergrax.tools.registry") == [], path
+
+
+def test_research_agent_has_no_tool_profile_isinstance_switch() -> None:
+    source = _RESEARCH_AGENT_PATH.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name) or node.func.id != "isinstance":
+            continue
+        if len(node.args) < 2:
+            continue
+        type_arg = node.args[1]
+        names: set[str] = set()
+        if isinstance(type_arg, ast.Name):
+            names.add(type_arg.id)
+        elif isinstance(type_arg, ast.Tuple):
+            for elt in type_arg.elts:
+                if isinstance(elt, ast.Name):
+                    names.add(elt.id)
+        assert "ToolProfile" not in names, "ResearchAgent must not isinstance-switch on ToolProfile"
+
+
+def test_tool_enablement_contract_stays_pure() -> None:
+    forbidden = (
+        "intergrax.tools",
+        "intergrax.runtime",
+    )
+    imports = _module_imports(_TOOL_ENABLEMENT_CONTRACT_PATH)
+    for name in imports:
+        for prefix in forbidden:
+            assert not (name == prefix or name.startswith(prefix + ".")), name
+        assert ".registry." not in name, name
+
+
+def test_custom_tool_enablement_injected_into_research_agent() -> None:
+    from research.research_agent import ResearchAgent
+
+    class ProbeEnablement:
+        def is_tool_enabled(self, tool_id: str) -> bool:
+            return tool_id == "probe.tool"
+
+    agent = ResearchAgent(tool_profile=ProbeEnablement())
+    assert agent._tool_enables("probe.tool") is True
+    assert agent._tool_enables("other.tool") is False
+    assert ResearchAgent()._tool_enables("probe.tool") is False
+
+
+def test_catalog_tool_enablement_view_bundle_semantics() -> None:
+    from intergrax.tools.registry.bootstrap import register_default_tools
+    from intergrax.tools.registry.enablement import CatalogToolEnablementView
+
+    register_default_tools()
+    view = CatalogToolEnablementView(
+        CanonicalToolProfile(enabled_bundles=["harness"]),
+    )
+    assert view.is_tool_enabled("harness.get_run") is True
+    assert view.is_tool_enabled("missing.tool") is False
+
+
+def test_catalog_tool_enablement_view_exact_id_and_register_all() -> None:
+    from intergrax.tools.registry.enablement import CatalogToolEnablementView
+
+    exact = CatalogToolEnablementView(CanonicalToolProfile(enabled=["echo.ping"]))
+    assert exact.is_tool_enabled("echo.ping") is True
+    assert exact.is_tool_enabled("echo.other") is False
+
+    all_catalog = CatalogToolEnablementView(
+        CanonicalToolProfile(register_all_catalog_bundles=True),
+    )
+    assert all_catalog.is_tool_enabled("any.tool.id") is True
