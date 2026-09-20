@@ -13,7 +13,7 @@
 | branch | `development` |
 | START_HEAD | `57d7401d5597de93d04ceb1c5c6ba4e379e3f1b4` |
 | origin/development | `57d7401d5597de93d04ceb1c5c6ba4e379e3f1b4` |
-| X5A closure commit | *(recorded after commit — see section Q)* |
+| X5A closure commit | `5ffb5e1bf01654f2a81ac9393aa8ba60450bb66f` |
 
 ## C. X5 findings closure
 
@@ -86,7 +86,7 @@ tests/unit/runtime/observability/test_harden_3c_export_failure_semantics.py
 
 ```text
 X5 original commit: 2282a2aea9893325735a02e5dd773da4ff97632d
-X5A closure commit: <see git log after merge>
+X5A closure commit: 5ffb5e1bf01654f2a81ac9393aa8ba60450bb66f
 ```
 
 ## K. Ready for X6?
