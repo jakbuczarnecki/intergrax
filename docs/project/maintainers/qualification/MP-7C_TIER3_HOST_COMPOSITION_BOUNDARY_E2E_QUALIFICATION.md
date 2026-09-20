@@ -2,12 +2,14 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **TIER-3 HOST COMPOSITION & BOUNDARY E2E QUALIFIED / CLOSED** (subject to independent audit) |
-| **QUALIFICATION_SHA** | `96f2a63687492b03e0b0302d4f881acc7cb7cc42` |
-| **EVIDENCE_SHA** | `214a20aed4f2ca27c672fe9be6629da306e38e61` |
+| **Status** | **TIER-3 HOST COMPOSITION & BOUNDARY E2E QUALIFIED / CLOSED** · **MP-7C-C1 — CLOSED / CERTIFIED** · **MP-7C — CLOSED / RECERTIFIED** (subject to independent audit) |
+| **QUALIFICATION_SHA** | `96f2a63687492b03e0b0302d4f881acc7cb7cc42` (original MP-7C) |
+| **EVIDENCE_SHA** | `214a20aed4f2ca27c672fe9be6629da306e38e61` (original); repair `b038f5e88fc171e8ff7a47dd0275bd8eee9f5ace` |
+| **C1_CORRECTION** | `ff967a61f5f1550c4b5827f496ab509f7e537148` |
+| **C1_EVIDENCE** | _(filled after evidence commit)_ |
 | **Predecessor** | MP-7B — CLOSED / QUALIFIED (`ab3c71ed0368bba01971851b846aa3462d7be977`) |
 | **MP-7A** | CLOSED / CERTIFIED (`a40dd4107b3c0c3c28177522f1dd278c68fb4da4`) |
-| **Production code** | **NONE** (canonical host wiring unchanged; LKW production unchanged) |
+| **Production code (C1)** | host wiring only — injectable `MeaningfulSideEffectPolicyEvaluator`; LKW production unchanged |
 
 ## 1. Audit identity
 
@@ -103,9 +105,18 @@ Non-strict `None` means **host mode does not enable this strict boundary** — n
 
 ## 10. ALLOW proof
 
-Host-resolved default port + seeded authoritative CW state (membership, principal authority, workspace/resource policy, operation profile) + process-local active task registry + host-equivalent runtime MSE rules at the wiring `RuntimePolicyEngine` construction site → consumer **ALLOW**.
+```text
+strict host
+→ injected runtime policy evaluator (RuntimePolicyEngine with ALLOW rule) through MeaningfulSideEffectPolicyEvaluator contract
+→ canonical host resolver
+→ real MeaningfulSideEffectAuthorizationPort
+→ Tier3MultiplayerConsumer
+→ ALLOW
+```
 
-Note: production default constructs empty `RuntimePolicyEngine()` (fail-closed indeterminate). Qualification supplies host-equivalent rules at the same construction site without replacing the authorization port or leaking providers to the consumer.
+**MP-7C ALLOW qualification previously used `patch(RuntimePolicyEngine)` because canonical host resolver hardcoded the implementation.**
+
+**After MP-7C-C1:** ALLOW now uses injected runtime policy evaluator through platform contract. No semantic implementation monkeypatch remains.
 
 ## 11. DENY proof
 
@@ -115,6 +126,7 @@ Host-resolved default port + empty authoritative CW state + caller-supplied embe
 
 - Missing `decision_requirement_policy` on strict injected-repo path → `OrchestrationDecisionBoundCompositionError` (raise, not `None`).
 - Provider materialization failure → raise, not `authorization_port=None`.
+- Default empty `RuntimePolicyEngine()` + otherwise allow-ish CW state + no matching runtime rule → **not ALLOW** (fail closed).
 
 ## 13. Implementation containment
 
@@ -166,7 +178,7 @@ UNRELATED HOST RUNTIME REGRESSION
 NOT MP-7C BOUNDARY FAILURE
 ```
 
-Reason: failures occur inside `build_harness_host_runtime` / `ApplicationBuildContext.runtime_event_bus` before asserting Collaborative Work profile neutrality. They do **not** touch `resolve_harness_host_meaningful_side_effect_authorization_wiring`, `build_harness_host_meaningful_side_effect_authorization_port`, or `MeaningfulSideEffectAuthorizationPort` injection semantics. Direct resolve/build wiring proofs in the same file remain green (11 passed of 15). Out of scope for MP-7C (do not fix `runtime_event_bus` here).
+Reason: failures occur inside `build_harness_host_runtime` / `ApplicationBuildContext.runtime_event_bus` before asserting Collaborative Work profile neutrality. They do **not** touch `resolve_harness_host_meaningful_side_effect_authorization_wiring`, `build_harness_host_meaningful_side_effect_authorization_port`, or `MeaningfulSideEffectAuthorizationPort` injection semantics. Direct resolve/build wiring proofs in the same file remain green. Out of scope for MP-7C / MP-7C-C1 (do not fix `runtime_event_bus` here).
 
 ## 17. Architecture gaps / findings
 
@@ -178,7 +190,8 @@ BLOCKING FINDINGS: NONE
 ## 18. Status transition
 
 ```text
-MP-7C — CLOSED / QUALIFIED
+MP-7C-C1 — CLOSED / CERTIFIED
+MP-7C — CLOSED / RECERTIFIED
 MP-7D — NEXT (Final Reference-Consumer Boundary Enterprise Certification)
 MP-7 — IN PROGRESS
 ```
@@ -186,3 +199,69 @@ MP-7 — IN PROGRESS
 ## 19. Independent audit requirement
 
 MP-7C musi zostać niezależnie zaudytowane na podstawie rzeczywistego qualification code, publicznych kontraktów, canonical host composition, lifecycle ownership, testów, evidence oraz commitów z GitHuba. Audyt musi w szczególności potwierdzić, że rzeczywisty Tier-3 host composition resolver materializuje Multiplayer authorization jako `MeaningfulSideEffectAuthorizationPort`, a consumer pozostaje całkowicie niezależny od `intergrax.collaborative_work.*`, repositories i provider implementations; że strict default path używa rzeczywistej platform implementation; że ten sam consumer działa z zewnętrzną conforming implementation bez zmian kodu; że explicit override ma pierwszeństwo przed default implementation i nie powoduje niepotrzebnej materializacji Collaborative Work persistence; że externally supplied repository bundle zachowuje caller-owned lifecycle, podczas gdy resolver-created bundle jest jawnie host-owned; że nie istnieje duplicate materialization ani provider leakage; że ALLOW i DENY przechodzą przez rzeczywistą host-resolved composition path; że strict/non-strict semantics pozostają jawne i nie tworzą fail-open authority; że żaden problem `runtime_event_bus` spoza Multiplayer boundary nie został użyty do maskowania rzeczywistego defektu composition; że LKW production code, ManagedWorkspace, Hybrid Ask, Conversation Context, persistence, endpoints i UI pozostały niezmienione; że nie wprowadzono WorkItem, Assignment, WorkArtifact, Decision, ContextView ani Activity product adoption; oraz że platform operates on contracts, not implementations. Sam raport Cursor AI nie jest podstawą do uznania MP-7C za enterprise-qualified i zamknięte.
+
+---
+
+## 20. MP-7C-C1 — Host Runtime Policy Evaluator Contract Injection
+
+| Field | Value |
+|-------|-------|
+| **Status** | **CLOSED / CERTIFIED** (subject to independent audit) |
+| **START_HEAD** | `b909c7315c4e936c96e8a40876321e6158145034` |
+| **MP7C_REPAIR_ANCESTRY** | `b038f5e88fc171e8ff7a47dd0275bd8eee9f5ace` is ancestor of START_HEAD |
+| **CORRECTION_SHA** | `ff967a61f5f1550c4b5827f496ab509f7e537148` |
+| **EVIDENCE_SHA** | _(filled after evidence commit)_ |
+
+### Root cause
+
+Canonical host wiring hardcoded `RuntimePolicyEngine()` inside `_build_port_from_materialized_repositories` with no injectable platform contract parameter. ALLOW qualification therefore required `patch(RuntimePolicyEngine)`.
+
+### Contract reused
+
+```text
+MeaningfulSideEffectPolicyEvaluator
+(intergrax.collaborative_work.enforcement_gate)
+```
+
+Same Protocol already required by `build_production_orchestration_meaningful_side_effect_authorization_boundary(...)`. No new Protocol created. `RuntimePolicyEngine` remains the composition default implementation.
+
+### Injection model
+
+```text
+resolve_harness_host_meaningful_side_effect_authorization_wiring(
+    ...,
+    runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
+)
+```
+
+Propagated through `build_*` / `resolve_*` / `_build_port_from_materialized_repositories`.
+
+Precedence:
+
+| Whole authorization override | Runtime evaluator injection | Result |
+| ---------------------------- | --------------------------- | ------ |
+| yes | any | whole override (evaluator not constructed/used) |
+| no | provided | injected evaluator |
+| no | none | `RuntimePolicyEngine()` |
+
+### ALLOW after C1
+
+```text
+ALLOW uses injected runtime policy evaluator through platform contract.
+No semantic implementation monkeypatch remains.
+RuntimePolicyEngine semantic monkeypatch in MP-7C = 0
+```
+
+### Fail-closed default
+
+Strict host + allow-ish CW state + default empty evaluator → consumer DENY (not ALLOW).
+
+### LKW
+
+```text
+LKW PRODUCTION CHANGES = NONE
+```
+
+### Independent audit (C1)
+
+MP-7C-C1 musi zostać niezależnie zaudytowane na podstawie rzeczywistego kodu, publicznych kontraktów, canonical host composition, qualification tests i commitów z GitHuba. Audyt musi w szczególności potwierdzić, że runtime policy evaluator używany przez Tier-3 host composition jest zależnością wyrażoną przez platform-defined contract, a nie twardo zaszytą implementacją; że `RuntimePolicyEngine` pozostaje jedynie default implementation; że zewnętrzny conforming evaluator może zostać wstrzyknięty bez zmian consumer code i bez concrete-type branching; że explicit `MeaningfulSideEffectAuthorizationPort` nadal ma pierwszeństwo i omija zarówno default materialization, jak i evaluator wiring; że injected evaluator jest przekazywany do rzeczywistego authorization buildera zarówno dla externally supplied repositories, jak i resolver-created repositories; że realny ALLOW E2E działa bez `patch(RuntimePolicyEngine)` i przechodzi przez canonical host resolver → public authorization port → Tier-3 consumer; że default no-rule behavior pozostaje fail closed; że DENY path pozostaje rzeczywisty; że strict/non-strict, repository lifecycle, integration-profile i decision-policy semantics nie uległy regresji; że LKW production code i product semantics pozostały niezmienione; oraz że platform operates on contracts, not implementations. Sam raport Cursor AI nie jest podstawą do uznania MP-7C-C1 ani MP-7C za enterprise-certified i zamknięte.

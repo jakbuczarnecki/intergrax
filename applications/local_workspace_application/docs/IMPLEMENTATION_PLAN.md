@@ -47,7 +47,8 @@ MP-7 (Multiplayer reference consumer) — PARALLEL PLATFORM TRACK
 MP-7A — CLOSED / CERTIFIED (ADR-MP-008 Accepted; architecture gate only)
 MP-7B — TIER-3 MULTIPLAYER CONSUMER BOUNDARY QUALIFIED / CLOSED
 (boundary proof only — not LKW Principal/workspace product adoption)
-MP-7C — TIER-3 HOST COMPOSITION & BOUNDARY E2E QUALIFIED / CLOSED
+MP-7C — CLOSED / RECERTIFIED (TIER-3 HOST COMPOSITION & BOUNDARY E2E)
+MP-7C-C1 — CLOSED / CERTIFIED (host runtime policy evaluator contract injection)
 (host composition boundary E2E — not LKW product integration)
 MP-7 — IN PROGRESS
 LKW remains Tier-3 reference consumer only (**MP-INV-30**).
