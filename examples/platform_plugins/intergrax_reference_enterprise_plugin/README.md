@@ -11,7 +11,11 @@ intergrax-reference-enterprise-plugin
         +-- intergrax.tool_invocation_patterns -> ReferenceEnterpriseSinglePassPattern
 ```
 
-There is **no** universal `PlatformPlugin.execute()`, no shared runtime dispatcher, and no package-global DI container. Each domain owns its contract, discovery, and materialization path.
+There is **no** universal `PlatformPlugin.execute()`, no shared runtime dispatcher, and no package-global DI container.
+
+**Public extension invariant:** this package must not import `intergrax.runtime.nexus.*`. Nexus is an internal Execution Engine implementation detail.
+
+**Public extension invariant:** this package must not import `intergrax.runtime.nexus.*`. Nexus is an internal Execution Engine implementation detail. Each domain owns its contract, discovery, and materialization path.
 
 ## Install
 
@@ -43,11 +47,11 @@ from intergrax.tools.invocation_pattern.registry import load_tool_invocation_pat
 pattern = load_tool_invocation_pattern("reference_enterprise_single_pass")
 ```
 
-Set `RuntimeConfig.tool_invocation_pattern_id` (or host override) so Nexus resolves the public pattern internally.
+Have the host enable `tool_invocation_pattern_id="reference_enterprise_single_pass"` (or equivalent profile field). The Execution Engine resolves the public pattern internally.
 
 ## Qualification
 
-`installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified`. Hosts enable subsets via domain profiles (`ToolProfile`, `SkillProfile`, `ContextProfile`, `ToolInvocationMode`).
+`installed` ≠ `discovered` ≠ `enabled` ≠ `production-qualified`. Hosts enable subsets via domain profiles (`ToolProfile`, `SkillProfile`, `ContextProfile`, shipped tool-invocation mode tokens).
 
 Offline proof: `tests/unit/platform_plugins/test_reference_enterprise_plugin.py`
 

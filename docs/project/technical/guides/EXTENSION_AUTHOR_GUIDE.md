@@ -16,6 +16,8 @@ Intergrax exposes four **core plugin catalogs** plus opt-in RAG component entry 
 | RAG retriever | `intergrax.rag.retrievers` | `BaseRetriever` | RAG bootstrap registry | **Done** |
 | RAG reranker | `intergrax.rag.rerankers` | `BaseReranker` | RAG bootstrap registry | **Done** |
 
+**Public extension invariant:** Public extensions must not import `intergrax.runtime.nexus.*`. Nexus is an internal Execution Engine implementation detail. Use domain contracts only (`intergrax.tools.invocation_pattern`, Tools/Skills/Context/RAG/…).
+
 **Architecture:** Integration → Tool → Skill → Agent; **Context Engineering** assembles LLM windows from all sources - see [`architecture/CONTEXT_ENGINEERING.md`](../../architecture/CONTEXT_ENGINEERING.md) · [plan CE-EXT](../../maintainers/plans/CONTEXT_ENGINEERING.md). **Invariants:** [`SYSTEM_INVARIANTS.md`](SYSTEM_INVARIANTS.md) - Tier-0/Tier-2 boundaries (`SYS-INV-*`).
 
 **Platform design (advanced):** [`architecture/PLATFORM_PLUGINS.md`](../../architecture/PLATFORM_PLUGINS.md) - taxonomy, trust model, §20.3 matrix. You do not need PLUGIN program history to pick a surface below.
@@ -180,7 +182,7 @@ All canonical setuptools entry-point surfaces (architecture §20.1). One row per
 | Vendor Knowledge | External knowledge source contributions | `VendorKnowledgeProviderContribution` | `intergrax.vendor_knowledge.providers` | Host builder composition - **not Tier-0 catalog registration** | `KnowledgeSourceBinding` + tenant scope | [`VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md`](VENDOR_KNOWLEDGE_PLUGIN_AUTHOR_GUIDE.md) · [`intergrax_reference_vendor_knowledge_plugin`](../../../../examples/platform_plugins/intergrax_reference_vendor_knowledge_plugin/) |
 | Security defense | Runtime inspection at `HookPoint`s | `SecurityDefensePlugin` | `intergrax.security_defenses` | `register_security_defense_plugin()` + profile ids - advanced host composition | `ApplicationSecurityProfile` | [`SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md`](SECURITY_DEFENSE_PLUGIN_AUTHOR_GUIDE.md) · [`UNIFIED_EXECUTION_RUNTIME.md`](../../architecture/UNIFIED_EXECUTION_RUNTIME.md) |
 | Policy rule handler | Custom policy evaluation handlers | `PolicyRuleHandler` | `intergrax.policy_rules` | `PolicyRuleRegistry.register()` + explicit `load_policy_rule_plugin_report()` | `PolicyRulesProfile` / YAML bundle | [`POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md`](POLICY_RULE_PLUGIN_AUTHOR_GUIDE.md) · [`AGENT_CREATION_GUIDE.md` Appendix H](AGENT_CREATION_GUIDE.md#appendix-h--governance-policy--observability-control-plane) |
-| Tool invocation pattern | Custom tool batch orchestration mode | `ToolInvocationPattern` | `intergrax.tool_invocation_patterns` | `RuntimeConfig.tool_invocation_pattern` instance override | `ToolInvocationMode` | [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) · [`TOOLS.md`](../../architecture/TOOLS.md) |
+| Tool invocation pattern | Custom tool batch orchestration mode | `ToolInvocationPattern` (`intergrax.tools.invocation_pattern`) | `intergrax.tool_invocation_patterns` | External-EP-first; host instance override is **internal / migration pending** (Wave 3/6) | Host profile pattern id / shipped mode tokens | [`TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md`](TOOL_INVOCATION_PATTERN_AUTHOR_GUIDE.md) · [`TOOLS.md`](../../architecture/TOOLS.md) |
 
 ---
 
@@ -737,7 +739,7 @@ A **Skill** packages reusable capability requirements for agents:
 - `prompt_instruction_ids` (Prompt Registry refs)
 - optional `policy_fragment_id` and `requires_skills` dependencies
 
-Skills are **not** invoked by the LLM. At agent bind time, `SkillResolver` expands manifests into `allowed_tools` and metadata. Tools execute at runtime via `ToolRuntime` / `RuntimeToolInvoker`.
+Skills are **not** invoked by the LLM. At agent bind time, `SkillResolver` expands manifests into `allowed_tools` and metadata. Tools execute at runtime via the Tools domain invoke path (`ToolInvocationInvokerPort` / host tool wiring).
 
 | Use Skill when… | Do not use Skill when… |
 |-----------------|------------------------|
@@ -1344,7 +1346,7 @@ External path: EP → shared discovery → catalog → profile → registry. Hos
 
 **Invoke-stage note:** the Plugin8 proof establishes discovery, registration, and qualification. The invoke-stage fixture may fail on execution identity / trace bridge dependencies - classify as execution test debt, not discovery failure.
 
-Both delivery modes converge on the same domain contract and runtime (`ToolPlugin` → catalog → `ToolWiringContext` → `RuntimeToolInvoker`). Choose **external package** when distributing a reusable installable plugin; choose **host-embedded** when the code lives in your application tree.
+Both delivery modes converge on the same domain contract and runtime (`ToolPlugin` → catalog → `ToolWiringContext` → Tools invoke path). Choose **external package** when distributing a reusable installable plugin; choose **host-embedded** when the code lives in your application tree.
 
 ### 16.1 External package quickstart (Tools)
 
@@ -1359,7 +1361,7 @@ Working reference: [`examples/platform_plugins/intergrax_reference_tool_plugin/`
 7. **Enable discovery** - host calls `bootstrap_catalogs(discover_entry_points=True)` or sets `INTERGRAX_DISCOVER_PLUGINS=true` where the application wiring supports it.
 8. **Configure host / DI** - build `ToolWiringContext` (integrations, managers, `extras`) before `build_registry_from_profile`.
 9. **Qualification** - collect PLUGIN-6 compatibility evidence (`check_platform_compatibility` with explicit host platform version) and PLUGIN-7 production gates (`evaluate_package_production_admission`, `require_production_qualification`) before production activation.
-10. **Run** - enable bundle/tool ids on `ToolProfile`; invoke tools via `RuntimeToolInvoker`.
+10. **Run** - enable bundle/tool ids on `ToolProfile`; invoke tools via the host Tools wiring / public invoke ports.
 
 ### 16.2 Local application extension quickstart (Tools)
 
