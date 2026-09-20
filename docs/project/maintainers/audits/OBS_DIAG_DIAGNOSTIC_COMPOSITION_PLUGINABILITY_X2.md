@@ -61,6 +61,12 @@ Injection surface: `ApplicationCompositionContext.diagnostic_composition_overrid
 | AST: no vendor imports / getattr / concrete branching / service locator | same |
 | HARDEN 1D / 4B / 4D + OBS-DIAG port isolation | regression matrix |
 
+## Canonical host ownership (X2A)
+
+X2 proved contract-driven composition at the shared resolver layer. **X2A** closes
+canonical host factory ownership (one materialized bundle on `HarnessHostRuntime`):
+[`OBS_DIAG_CANONICAL_HOST_COMPOSITION_X2A.md`](OBS_DIAG_CANONICAL_HOST_COMPOSITION_X2A.md).
+
 ## Explicit non-goals (remain for later Xn)
 
 - Real Mongo/Kafka/Postgres/OTLP provider qualification (X7 / X4 / X9)

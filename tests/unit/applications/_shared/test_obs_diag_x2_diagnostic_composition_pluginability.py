@@ -82,6 +82,7 @@ _COMPOSITION_MODULES = (
     _REPO_ROOT / "intergrax/applications/_shared/diagnostic_composition.py",
     _REPO_ROOT / "intergrax/applications/_shared/diagnostic_runtime_wiring.py",
     _REPO_ROOT / "intergrax/applications/_shared/diagnostic_read_wiring.py",
+    _REPO_ROOT / "intergrax/applications/_shared/harness_host_runtime.py",
 )
 _FORBIDDEN_VENDOR_ROOTS = frozenset(
     {

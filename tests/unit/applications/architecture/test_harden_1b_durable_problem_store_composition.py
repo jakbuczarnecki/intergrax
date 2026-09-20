@@ -18,10 +18,10 @@ from intergrax.applications._shared.diagnostic_runtime_wiring import (
 )
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.harness_registry_authority import RegistryAssemblyMode
-from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
-    ObservabilityProfile,
+    DiagnosticPosture,
+    DiagnosticProfile,
 )
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations._shared.conformance import assert_conditional_document_store
@@ -49,12 +49,7 @@ def _echo_registry() -> AgentRegistry:
 
 def _product_manifest() -> ApplicationManifest:
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="harden.1b.product")
-    env.application_profile = ApplicationProfile.PRODUCT
-    env.observability_profile = ObservabilityProfile(
-        trace_sqlite_enabled=True,
-        otel_enabled=False,
-        metrics_plugins_enabled=True,
-    )
+    env.diagnostic_profile = DiagnosticProfile(posture=DiagnosticPosture.REQUIRED)
     return ApplicationManifest.lab(
         app_id="harden_1b_product",
         name="HARDEN-1B Product Host",
@@ -112,12 +107,14 @@ def test_harden_1b_write_and_read_share_platform_conditional_document_store(
     runtime_deps = resolve_host_diagnostic_runtime_dependencies(
         env_wiring=runtime.env_wiring,
         observability=runtime.observability,
+        runtime=runtime,
     )
     assert runtime_deps is not None
     assert isinstance(runtime_deps.problem_persistence, DocumentStoreProblemPersistence)
 
     read_deps = resolve_host_diagnostic_read_dependencies(runtime)
     assert isinstance(read_deps.problem_persistence, DocumentStoreProblemPersistence)
+    assert runtime_deps.problem_persistence is read_deps.problem_persistence
 
     record = runtime_deps.problem_persistence.create(sample_problem(tenant_id=_TENANT))
     read_service = build_diagnostic_read_service(read_deps)

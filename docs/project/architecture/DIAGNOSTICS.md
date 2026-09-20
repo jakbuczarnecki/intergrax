@@ -243,10 +243,24 @@ ENGINE CONTRACT PLUGINABILITY = PROVEN
 STANDARD HOST COMPOSITION REPLACEABILITY = PROVEN
 ```
 
+### Canonical host composition ownership (OBS-DIAG-X2A — CLOSED)
+
+`build_harness_host_runtime` materializes diagnostic persistence **once** via
+`materialize_host_diagnostic_read_dependencies`, stores it on
+`HarnessHostRuntime.host_diagnostic_dependencies`, and shares that bundle across
+terminal write wiring, diagnostic read, and scope discovery. Host shutdown closes
+host-created persistence via `close_host_owned_diagnostic_persistence`; borrowed
+override providers are never closed.
+
+Factory injection: `diagnostic_composition_overrides` on `build_harness_host_runtime`
+(or `ApplicationCompositionContext.diagnostic_composition_overrides`).
+
 Historical X1 baseline (PARTIAL host replaceability at that SHA) remains in
 [`OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md).
 X2 qualification:
 [`OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md`](../maintainers/audits/OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md).
+X2A canonical host closure:
+[`OBS_DIAG_CANONICAL_HOST_COMPOSITION_X2A.md`](../maintainers/audits/OBS_DIAG_CANONICAL_HOST_COMPOSITION_X2A.md).
 
 | Mechanism | Contract / module | Default implementation | Custom replacement |
 | --------- | ----------------- | ---------------------- | ------------------ |

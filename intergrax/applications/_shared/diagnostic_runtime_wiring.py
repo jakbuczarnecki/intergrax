@@ -54,6 +54,8 @@ def resolve_host_diagnostic_runtime_dependencies(
     env_wiring: ApplicationEnvironmentWiring,
     observability: NexusObservabilityStores,
     overrides: DiagnosticCompositionOverrides | None = None,
+    runtime: HarnessHostRuntime | None = None,
+    materialized_dependencies: HostDiagnosticReadDependencies | None = None,
 ) -> HostDiagnosticReadDependencies | None:
     """
     Resolve shared diagnostic persistence for runtime write orchestration.
@@ -61,6 +63,13 @@ def resolve_host_diagnostic_runtime_dependencies(
     Returns ``None`` when the host lacks required platform document-store capabilities
     and no durable overrides were supplied.
     """
+    if materialized_dependencies is not None:
+        return materialized_dependencies
+    if overrides is None and runtime is not None:
+        stored = runtime.host_diagnostic_dependencies
+        if stored is not None:
+            return stored
+
     resolved_overrides = _resolve_overrides(env_wiring, overrides)
     wiring_context = env_wiring.composition.tool_wiring_context
     document_store = None
@@ -108,6 +117,7 @@ def try_build_terminal_execution_diagnostic_trigger(
     env_wiring: ApplicationEnvironmentWiring,
     observability: NexusObservabilityStores,
     overrides: DiagnosticCompositionOverrides | None = None,
+    materialized_dependencies: HostDiagnosticReadDependencies | None = None,
 ) -> TerminalExecutionDiagnosticTrigger | None:
     """Best-effort runtime trigger when required platform storage is available."""
     resolved_overrides = _resolve_overrides(env_wiring, overrides)
@@ -115,6 +125,7 @@ def try_build_terminal_execution_diagnostic_trigger(
         env_wiring=env_wiring,
         observability=observability,
         overrides=resolved_overrides,
+        materialized_dependencies=materialized_dependencies,
     )
     if dependencies is None:
         return None
@@ -146,6 +157,7 @@ def try_build_terminal_execution_diagnostic_port(
     observability: NexusObservabilityStores,
     event_bus: RuntimeEventBus | None = None,
     overrides: DiagnosticCompositionOverrides | None = None,
+    materialized_dependencies: HostDiagnosticReadDependencies | None = None,
 ) -> TerminalExecutionDiagnosticPort | None:
     """Best-effort neutral port when required platform storage is available."""
     resolved_overrides = _resolve_overrides(env_wiring, overrides)
@@ -153,6 +165,7 @@ def try_build_terminal_execution_diagnostic_port(
         env_wiring=env_wiring,
         observability=observability,
         overrides=resolved_overrides,
+        materialized_dependencies=materialized_dependencies,
     )
     if dependencies is None:
         return None
@@ -194,6 +207,7 @@ def wire_terminal_execution_diagnostics(
     nexus_loop: NexusLoop,
     scenario_runtime_mode: object | None = None,
     overrides: DiagnosticCompositionOverrides | None = None,
+    materialized_dependencies: HostDiagnosticReadDependencies | None = None,
 ) -> DiagnosticWiring:
     """
     Policy-aware terminal diagnostic composition over the canonical orchestrator spine.
@@ -215,6 +229,7 @@ def wire_terminal_execution_diagnostics(
         observability=observability,
         event_bus=nexus_loop.event_bus,
         overrides=resolved_overrides,
+        materialized_dependencies=materialized_dependencies,
     )
     attached = terminal_diagnostic_port is not None
     assert_diagnostic_assembly_valid(
@@ -235,11 +250,12 @@ def resolve_host_terminal_execution_diagnostic_trigger(
 ) -> TerminalExecutionDiagnosticTrigger:
     """Resolve production terminal diagnostic trigger from harness host runtime wiring."""
     resolved_overrides = _resolve_overrides(runtime.env_wiring, overrides)
+    dependencies = resolve_host_diagnostic_read_dependencies(
+        runtime,
+        overrides=resolved_overrides,
+    )
     return build_terminal_execution_diagnostic_trigger(
-        resolve_host_diagnostic_read_dependencies(
-            runtime,
-            overrides=resolved_overrides,
-        ),
+        dependencies,
         overrides=resolved_overrides,
     )
 

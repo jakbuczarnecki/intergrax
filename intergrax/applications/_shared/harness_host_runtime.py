@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Callable
 
@@ -47,6 +47,14 @@ from intergrax.applications._shared.skill_host_execution_wiring import (
     build_host_skill_catalog_wiring_from_environment,
 )
 from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticWiring
+from intergrax.applications._shared.diagnostic_composition import (
+    DiagnosticCompositionOverrides,
+    close_host_owned_diagnostic_persistence,
+)
+from intergrax.applications._shared.diagnostic_read_wiring import (
+    HostDiagnosticReadDependencies,
+    materialize_host_diagnostic_read_dependencies,
+)
 from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
     wire_application_environment,
@@ -221,6 +229,12 @@ class HarnessHostRuntime:
     _owned_collaborative_work_persistence: CollaborativeWorkMaterializedRepositories | None = (
         None
     )
+    _host_diagnostic_dependencies: HostDiagnosticReadDependencies | None = None
+
+    @property
+    def host_diagnostic_dependencies(self) -> HostDiagnosticReadDependencies | None:
+        """Host-materialized diagnostic persistence shared by write/read paths."""
+        return self._host_diagnostic_dependencies
 
     def close(self) -> None:
         """Stop event bus delivery and release bounded sink workers (W5-B2)."""
@@ -266,6 +280,7 @@ def build_harness_host_runtime(
     collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
     collaborative_work_integration_profile: IntegrationProfile | None = None,
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+    diagnostic_composition_overrides: DiagnosticCompositionOverrides | None = None,
 ) -> HarnessHostRuntime:
     """
     Single H-APP path: environment → platform composition → canonical execution.
@@ -323,6 +338,14 @@ def build_harness_host_runtime(
         application_tool_registry=application_tool_registry,
         application_skill_registry=application_skill_registry,
     )
+    if diagnostic_composition_overrides is not None:
+        env_wiring = replace(
+            env_wiring,
+            composition=replace(
+                env_wiring.composition,
+                diagnostic_composition_overrides=diagnostic_composition_overrides,
+            ),
+        )
     assembly_mode = resolve_registry_assembly_mode(
         effective_environment,
         explicit=registry_assembly_mode,
@@ -361,6 +384,13 @@ def build_harness_host_runtime(
     else:
         assert_observability_assembly_valid(observability_wiring, effective_environment)
         observability = observability_wiring.stores
+    host_diagnostic_dependencies = materialize_host_diagnostic_read_dependencies(
+        env_wiring=env_wiring,
+        observability=observability,
+        environment=effective_environment,
+        overrides=env_wiring.composition.diagnostic_composition_overrides,
+        require_durable=False,
+    )
     reliability_wiring = wire_application_reliability(
         effective_environment,
         idempotency_db_path=idempotency_db_path,
@@ -495,6 +525,7 @@ def build_harness_host_runtime(
         env_wiring=env_wiring,
         observability=observability,
         nexus_loop=nexus_loop,
+        materialized_dependencies=host_diagnostic_dependencies,
     )
     control_plane_governance = build_harness_control_plane_governance(
         effective_environment,
@@ -556,6 +587,7 @@ def build_harness_host_runtime(
         _owned_collaborative_work_persistence=(
             meaningful_side_effect_wiring.owned_collaborative_work_persistence
         ),
+        _host_diagnostic_dependencies=host_diagnostic_dependencies,
     )
     return host_runtime
 
@@ -574,6 +606,9 @@ def close_harness_host_runtime(runtime: HarnessHostRuntime) -> None:
         runtime.env_wiring.event_delivery,
         event_bus=bus,
     )
+    host_diagnostic_dependencies = runtime.host_diagnostic_dependencies
+    if host_diagnostic_dependencies is not None:
+        close_host_owned_diagnostic_persistence(host_diagnostic_dependencies.persistence)
     owned_persistence = runtime._owned_collaborative_work_persistence
     if owned_persistence is not None:
         owned_persistence.close()

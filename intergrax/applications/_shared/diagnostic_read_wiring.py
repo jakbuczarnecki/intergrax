@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from intergrax.applications._shared.diagnostic_composition import (
     DiagnosticCompositionOverrides,
@@ -12,10 +13,14 @@ from intergrax.applications._shared.diagnostic_composition import (
     build_default_execution_reconstruction_reader,
     resolve_diagnostic_persistence_composition,
 )
-from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
-from intergrax.applications._shared.harness_host_composition import (
-    resolve_harness_host_runtime_event_persistence,
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
 )
+from intergrax.applications._shared.environment_wiring import ApplicationEnvironmentWiring
+from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
+
+if TYPE_CHECKING:
+    from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.contracts.execution_lineage import ExecutionLineageReader
 from intergrax.contracts.execution_reconstruction import ExecutionReconstructionReader
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
@@ -77,36 +82,35 @@ def _document_store_from_wiring(
     return tool_wiring_context.document_store
 
 
-def resolve_host_diagnostic_read_dependencies(
-    runtime: HarnessHostRuntime,
+def materialize_host_diagnostic_read_dependencies(
     *,
+    env_wiring: ApplicationEnvironmentWiring,
+    observability: NexusObservabilityStores,
+    environment: ApplicationEnvironmentProfile,
     overrides: DiagnosticCompositionOverrides | None = None,
-) -> HostDiagnosticReadDependencies:
+    require_durable: bool = False,
+) -> HostDiagnosticReadDependencies | None:
     """
-    Resolve canonical diagnostic persistence from harness host runtime wiring.
+    Resolve canonical host diagnostic persistence once for write/read/scope discovery.
 
-    Uses the same document_store, runtime event store, and causal evidence adapters
-    as platform queue-worker and diagnostic lifecycle composition — no dashboard-local stores.
+    Returns ``None`` when durable persistence is unavailable and ``require_durable`` is false.
     """
     resolved_overrides = (
         overrides
         if overrides is not None
-        else runtime.env_wiring.composition.diagnostic_composition_overrides
+        else env_wiring.composition.diagnostic_composition_overrides
     )
-    wiring_context = runtime.env_wiring.composition.tool_wiring_context
-    runtime_events = resolve_harness_host_runtime_event_persistence(runtime)
+    wiring_context = env_wiring.composition.tool_wiring_context
+    runtime_events = observability.runtime_event_store
 
     persistence = resolve_diagnostic_persistence_composition(
         document_store=_document_store_from_wiring(wiring_context),
         runtime_event_persistence=runtime_events,
         overrides=resolved_overrides,
-        require_durable=True,
+        require_durable=require_durable,
     )
     if persistence is None:
-        raise ValueError(
-            "diagnostics-enabled product host requires platform document_store for shared "
-            "ProblemPersistence and CausalEvidencePersistence",
-        )
+        return None
 
     document_store = _document_store_from_wiring(wiring_context)
     execution_lineage_reader = None
@@ -118,13 +122,52 @@ def resolve_host_diagnostic_read_dependencies(
         store = assert_conditional_document_store(document_store)
         execution_lineage_reader = resolve_execution_lineage_persistence(
             document_store=store,
-            provider=runtime.environment.reliability_profile.execution_lineage_persistence_provider,
+            provider=environment.reliability_profile.execution_lineage_persistence_provider,
         )
 
     return HostDiagnosticReadDependencies(
         persistence=persistence,
         execution_lineage_reader=execution_lineage_reader,
     )
+
+
+def resolve_host_diagnostic_read_dependencies(
+    runtime: HarnessHostRuntime,
+    *,
+    overrides: DiagnosticCompositionOverrides | None = None,
+) -> HostDiagnosticReadDependencies:
+    """
+    Resolve canonical diagnostic persistence from harness host runtime wiring.
+
+    Uses host-materialized dependencies when present (canonical factory path).
+    """
+    from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
+
+    if (
+        overrides is None
+        and isinstance(runtime, HarnessHostRuntime)
+        and runtime.host_diagnostic_dependencies is not None
+    ):
+        return runtime.host_diagnostic_dependencies
+
+    resolved_overrides = (
+        overrides
+        if overrides is not None
+        else runtime.env_wiring.composition.diagnostic_composition_overrides
+    )
+    dependencies = materialize_host_diagnostic_read_dependencies(
+        env_wiring=runtime.env_wiring,
+        observability=runtime.observability,
+        environment=runtime.environment,
+        overrides=resolved_overrides,
+        require_durable=True,
+    )
+    if dependencies is None:
+        raise ValueError(
+            "diagnostics-enabled product host requires platform document_store for shared "
+            "ProblemPersistence and CausalEvidencePersistence",
+        )
+    return dependencies
 
 
 def build_diagnostic_read_service(
@@ -191,6 +234,7 @@ __all__ = [
     "HostDiagnosticReadDependencies",
     "build_diagnostic_read_service",
     "build_diagnostic_scope_discovery_service",
+    "materialize_host_diagnostic_read_dependencies",
     "resolve_host_diagnostic_read_dependencies",
     "resolve_host_diagnostic_read_service",
 ]
