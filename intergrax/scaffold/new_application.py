@@ -166,11 +166,15 @@ def _settings_py(names: ScaffoldApplicationNames) -> str:
         from dataclasses import dataclass
         from typing import ClassVar
 
-        from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
+        from intergrax.applications._shared.settings_loader import (
+            ApplicationSettingsEnvHost,
+            EnvReader,
+        )
+        from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 
 
         @dataclass(frozen=True, kw_only=True)
-        class {pascal}ApplicationSettings(IntergraxApplicationSettingsBase):
+        class {pascal}ApplicationSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
             """Environment for {names.pkg} (scaffolded lab profile)."""
 
             env_prefix: ClassVar[str] = "{env_prefix_value}"

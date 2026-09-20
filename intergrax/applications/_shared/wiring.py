@@ -81,7 +81,9 @@ def resolve_builder(
     if binding.builder_key is not None and binding.builder_key in builders:
         return builders[binding.builder_key]  # type: ignore[index]
 
-    agent_type = binding.resolved_agent_type()
+    from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
+
+    agent_type = resolve_agent_type_from_binding(binding)
     if agent_type in builders:
         return builders[agent_type]  # type: ignore[index]
 
@@ -98,7 +100,9 @@ def _validate_factory_result(
             f"Factory {factory!r} must return Agent, got {type(result)!r}"
         )
     if binding.agent_type is not None or binding.import_path is not None:
-        expected = binding.resolved_agent_type()
+        from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
+
+        expected = resolve_agent_type_from_binding(binding)
         if not isinstance(result, expected):
             raise AgentImportError(
                 f"Factory for {binding.display_name()} returned {type(result)!r}, "
@@ -192,7 +196,9 @@ def build_agent_from_binding(
             loaded, ctx, binding, composition=composition
         )
 
-    agent_cls = binding.resolved_agent_type()
+    from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
+
+    agent_cls = resolve_agent_type_from_binding(binding)
     try:
         agent = agent_cls()
     except TypeError as exc:
@@ -580,6 +586,6 @@ def load_agent_from_binding(
 
 def load_agent_class(import_path: str) -> type[Agent]:
     """Resolve serialized class path (prefer :meth:`AgentBinding.mount` in application code)."""
-    from intergrax.applications.contracts.agent_ref import resolve_agent_type
+    from intergrax.applications._shared.agent_resolution import resolve_agent_type
 
     return resolve_agent_type(agent_type=None, import_path=import_path)

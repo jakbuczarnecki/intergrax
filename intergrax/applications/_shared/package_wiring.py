@@ -59,7 +59,11 @@ def collect_application_dependencies(
             contract_ref = binding.contract_id
             version_constraint = "*"
         else:
-            contract = binding.resolved_agent_type()().get_contract()
+            from intergrax.applications._shared.agent_resolution import (
+                resolve_agent_type_from_binding,
+            )
+
+            contract = resolve_agent_type_from_binding(binding)().get_contract()
             contract_ref = contract.id
             version_constraint = f"={contract.version}"
         dependencies.append(

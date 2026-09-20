@@ -11,13 +11,15 @@ String ``import_path`` / ``factory_path`` remain for scaffold-generated manifest
 from __future__ import annotations
 
 import re
-from typing import Any, Callable
+from typing import Callable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
 from intergrax.applications.contracts.agent_ref import qualname_for_agent, qualname_for_callable
+from intergrax.applications.contracts.factory import AgentFactory
 from intergrax.contracts.tier2_agent import Tier2Agent
+from intergrax.knowledge.contracts.validation import JsonValue
 from intergrax.applications.contracts.application_host import (
     ApplicationFeatures,
     ApplicationProfile,
@@ -70,7 +72,7 @@ class AgentBinding(BaseModel):
         default=None,
         description="Serialized class path; auto-filled from agent_type when mounting",
     )
-    factory: SkipJsonSchema[Callable[..., Any] | None] = Field(
+    factory: SkipJsonSchema[AgentFactory | None] = Field(
         default=None,
         description="Typed Tier-3 factory callable (preferred over factory_path)",
         exclude=True,
@@ -83,7 +85,7 @@ class AgentBinding(BaseModel):
         default=None,
         description="Fallback key into builders map (prefer type-keyed builders)",
     )
-    config: dict[str, Any] = Field(
+    config: dict[str, JsonValue] = Field(
         default_factory=dict,
         description="Lightweight binding options consumed by factories (not secrets)",
     )
@@ -134,9 +136,9 @@ class AgentBinding(BaseModel):
         cls,
         agent_type: type[Tier2Agent],
         *,
-        factory: Callable[..., Any] | None = None,
+        factory: AgentFactory | None = None,
         builder_key: str | None = None,
-        config: dict[str, Any] | None = None,
+        config: dict[str, JsonValue] | None = None,
         contract_id: str,
         capabilities: list[str] | None = None,
         enabled: bool = True,
@@ -217,7 +219,7 @@ class AgentBinding(BaseModel):
         import_path: str,
         factory_path: str | None = None,
         builder_key: str | None = None,
-        config: dict[str, Any] | None = None,
+        config: dict[str, JsonValue] | None = None,
         contract_id: str | None = None,
         capabilities: list[str] | None = None,
         enabled: bool = True,
@@ -234,11 +236,6 @@ class AgentBinding(BaseModel):
             enabled=enabled,
             default=default,
         )
-
-    def resolved_agent_type(self) -> type[Tier2Agent]:
-        from intergrax.applications.contracts.agent_ref import resolve_agent_type
-
-        return resolve_agent_type(agent_type=self.agent_type, import_path=self.import_path)
 
     def display_name(self) -> str:
         if self.agent_type is not None:
@@ -449,22 +446,33 @@ class ApplicationManifest(BaseModel):
         env_prefix: str = "LAB_",
         description: str = "",
         default_port: int = 8090,
+        default_host: str = "127.0.0.1",
+        version: str = "0.1.0",
+        default_capability: str | None = None,
         integration_profile: IntegrationProfile | None = None,
-        **kwargs: Any,
+        features: ApplicationFeatures | None = None,
+        environment: ApplicationEnvironmentProfile | None = None,
+        ownership: ApplicationOperationalOwnership | None = None,
+        application_owned_tools: list[ApplicationOwnedToolDeclaration] | None = None,
     ) -> ApplicationManifest:
         """Convenience constructor matching ``lab_application`` conventions."""
         return cls(
             app_id=app_id,
             name=name,
             description=description,
+            version=version,
             profile=ApplicationProfile.LAB,
             route_prefix=route_prefix,
             env_prefix=env_prefix,
+            default_host=default_host,
             default_port=default_port,
+            default_capability=default_capability,
             agents=agents,
             integration_profile=integration_profile or IntegrationProfile.lab(),
-            features=ApplicationFeatures.lab_defaults(),
-            **kwargs,
+            features=features or ApplicationFeatures.lab_defaults(),
+            environment=environment,
+            ownership=ownership,
+            application_owned_tools=application_owned_tools or [],
         )
 
     @classmethod
@@ -478,22 +486,33 @@ class ApplicationManifest(BaseModel):
         env_prefix: str,
         description: str = "",
         default_port: int = 8000,
+        default_host: str = "127.0.0.1",
+        version: str = "0.1.0",
+        default_capability: str | None = None,
         integration_profile: IntegrationProfile | None = None,
-        **kwargs: Any,
+        features: ApplicationFeatures | None = None,
+        environment: ApplicationEnvironmentProfile | None = None,
+        ownership: ApplicationOperationalOwnership | None = None,
+        application_owned_tools: list[ApplicationOwnedToolDeclaration] | None = None,
     ) -> ApplicationManifest:
         """Convenience constructor for product-style Tier-3 hosts."""
         return cls(
             app_id=app_id,
             name=name,
             description=description,
+            version=version,
             profile=ApplicationProfile.PRODUCT,
             route_prefix=route_prefix,
             env_prefix=env_prefix,
+            default_host=default_host,
             default_port=default_port,
+            default_capability=default_capability,
             agents=agents,
             integration_profile=integration_profile or IntegrationProfile(),
-            features=ApplicationFeatures.product_defaults(),
-            **kwargs,
+            features=features or ApplicationFeatures.product_defaults(),
+            environment=environment,
+            ownership=ownership,
+            application_owned_tools=application_owned_tools or [],
         )
 
 

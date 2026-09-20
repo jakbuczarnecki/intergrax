@@ -4,7 +4,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Protocol
+
+from intergrax.skills.contracts.registered_skill import RegisteredSkill
+from intergrax.skills.contracts.skill_runtime_binding_metadata import (
+    SkillRuntimeBindingMetadata,
+)
 
 
 class SkillRegistryRead(Protocol):
@@ -12,9 +17,9 @@ class SkillRegistryRead(Protocol):
 
     def has(self, skill_id: str) -> bool: ...
 
-    def get(self, skill_id: str) -> Any: ...
+    def get(self, skill_id: str) -> RegisteredSkill: ...
 
-    def binding_metadata(self, skill_id: str) -> Any | None: ...
+    def binding_metadata(self, skill_id: str) -> SkillRuntimeBindingMetadata | None: ...
 
 
 __all__ = ["SkillRegistryRead"]

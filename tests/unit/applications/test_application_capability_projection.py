@@ -96,13 +96,15 @@ def test_resolve_binding_contract_id_does_not_instantiate_agent(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     called: list[bool] = []
-    original = AgentBinding.resolved_agent_type
 
-    def _track_resolved_agent_type(self: AgentBinding) -> type[object]:
+    def _track_resolve(_binding: AgentBinding) -> type[object]:
         called.append(True)
-        return original(self)
+        raise AssertionError("resolve_binding_contract_id must not resolve agent types")
 
-    monkeypatch.setattr(AgentBinding, "resolved_agent_type", _track_resolved_agent_type)
+    monkeypatch.setattr(
+        "intergrax.applications._shared.agent_resolution.resolve_agent_type_from_binding",
+        _track_resolve,
+    )
 
     binding = AgentBinding(import_path="echo.echo_agent.EchoAgent", contract_id="agent.foo")
     assert resolve_binding_contract_id(binding) == "agent.foo"

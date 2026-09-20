@@ -7,7 +7,11 @@ import os
 from dataclasses import dataclass, field
 from typing import ClassVar, FrozenSet, Literal, Mapping, Optional
 
-from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
+from intergrax.applications._shared.settings_loader import (
+    ApplicationSettingsEnvHost,
+    EnvReader,
+)
+from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.contracts.execution_evidence.attestation import HostAttestor
@@ -52,7 +56,7 @@ def _parse_api_key_map(raw: Optional[str]) -> Mapping[str, ApiKeyIdentity]:
 
 
 @dataclass(frozen=True, kw_only=True)
-class GovernedContractorBackendSettings(IntergraxApplicationSettingsBase):
+class GovernedContractorBackendSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
     """Environment for governed_contractor_application (scaffolded product profile)."""
 
     env_prefix: ClassVar[str] = "GOVERNED_CONTRACTOR_"

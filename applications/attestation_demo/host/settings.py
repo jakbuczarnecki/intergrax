@@ -7,11 +7,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar
 
-from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
+from intergrax.applications._shared.settings_loader import (
+    ApplicationSettingsEnvHost,
+    EnvReader,
+)
+from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 
 
 @dataclass(frozen=True, kw_only=True)
-class AttestationDemoSettings(IntergraxApplicationSettingsBase):
+class AttestationDemoSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
     """Environment-backed settings for the attestation demo host."""
 
     env_prefix: ClassVar[str] = "ATTESTATION_DEMO_"

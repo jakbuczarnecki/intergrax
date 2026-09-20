@@ -103,7 +103,11 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
         from dataclasses import dataclass, field
         from typing import ClassVar, FrozenSet, Literal, Mapping, Optional
 
-        from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
+        from intergrax.applications._shared.settings_loader import (
+            ApplicationSettingsEnvHost,
+            EnvReader,
+        )
+        from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
         from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
         from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
         from intergrax.fastapi_core.config import ApiEnvironment
@@ -141,7 +145,7 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
 
 
         @dataclass(frozen=True, kw_only=True)
-        class {pascal}BackendSettings(IntergraxApplicationSettingsBase):
+        class {pascal}BackendSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
             """Environment for {pkg} (scaffolded product profile)."""
 
             env_prefix: ClassVar[str] = "{env_prefix_value}"

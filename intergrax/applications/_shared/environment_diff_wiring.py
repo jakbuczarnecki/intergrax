@@ -103,7 +103,9 @@ def _binding_key(binding: AgentBinding) -> str:
         return binding.contract_id.strip()
     if binding.import_path:
         return binding.import_path.rsplit(".", 1)[-1]
-    return binding.resolved_agent_type().__name__
+    from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
+
+    return resolve_agent_type_from_binding(binding).__name__
 
 
 def diff_roster(

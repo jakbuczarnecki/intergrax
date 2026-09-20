@@ -31,4 +31,8 @@ AgentFactory = Callable[..., Tier2Agent]
 class SupportsAgentFactory(Protocol):
     """Callable that builds a Tier-2 agent for a manifest binding."""
 
-    def __call__(self, ctx: object, binding: object) -> Tier2Agent: ...
+    def __call__(
+        self,
+        ctx: ApplicationBuildContext,
+        binding: AgentBinding,
+    ) -> Tier2Agent: ...

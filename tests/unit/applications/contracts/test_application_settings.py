@@ -7,13 +7,18 @@ from typing import ClassVar
 
 import pytest
 
-from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
+from intergrax.applications._shared.settings_loader import (
+    ApplicationSettingsEnvHost,
+    EnvReader,
+    load_application_settings_from_env,
+)
+from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 
 pytestmark = pytest.mark.unit
 
 
 @dataclass(frozen=True, kw_only=True)
-class CustomSettings(IntergraxApplicationSettingsBase):
+class CustomSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
     env_prefix: ClassVar[str] = "CUSTOM_"
     crm_api_url: str = ""
 
@@ -41,5 +46,18 @@ def test_custom_settings_does_not_require_from_env_override() -> None:
     assert "from_env" not in CustomSettings.__dict__
     assert (
         CustomSettings.from_env.__func__
-        is IntergraxApplicationSettingsBase.from_env.__func__
+        is ApplicationSettingsEnvHost.from_env.__func__
     )
+
+
+def test_contract_settings_module_has_no_from_env() -> None:
+    assert not hasattr(IntergraxApplicationSettingsBase, "from_env")
+
+
+def test_loader_is_explicit_env_owner() -> None:
+    @dataclass(frozen=True, kw_only=True)
+    class _HostSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
+        pass
+
+    settings = load_application_settings_from_env(_HostSettings)
+    assert settings.backend_host == "127.0.0.1"
