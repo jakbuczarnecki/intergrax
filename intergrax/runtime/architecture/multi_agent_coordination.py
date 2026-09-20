@@ -9,13 +9,7 @@ from enum import Enum
 from pydantic import BaseModel, Field
 
 
-class CoordinationPattern(str, Enum):
-    HIERARCHICAL = "hierarchical"
-    ORCHESTRATOR_WORKER = "orchestrator_worker"
-    SUPERVISOR_WORKER = "supervisor_worker"
-    PEER_TO_PEER = "peer_to_peer"
-    SWARM = "swarm"
-    EVALUATOR_LOOP = "evaluator_loop"
+from intergrax.contracts.coordination_pattern import CoordinationPattern
 
 
 class PlanningDimensionLevel(str, Enum):

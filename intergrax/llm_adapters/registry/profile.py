@@ -1,213 +1,129 @@
 # © Artur Czarnecki. All rights reserved.
-# Integrax framework – proprietary and confidential.
 
-"""Declarative Tier-3 LLM provider selection (mirrors IntegrationProfile pattern)."""
+"""LLMProfile runtime materialization — re-exports public contract."""
 
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Any, Mapping, Optional, Union
+from typing import TYPE_CHECKING, Any, Mapping, Optional
 
-if TYPE_CHECKING:
-    from intergrax.integrations.contracts.secrets_store import SecretsStore
-
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
 from intergrax.llm_adapters.registry.secrets import (
     load_api_key_from_secrets_store,
     merge_secrets_into_options,
 )
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
-
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-
-_RAW_CREDENTIAL_OPTIONS_ERROR = (
-    "raw credentials are not allowed in LLMProfile.options; "
-    "pass credentials via create_adapter(secrets=...) or SecretsStore"
-)
-
-_FORBIDDEN_CREDENTIAL_OPTION_KEYS = frozenset({"api_key"})
+if TYPE_CHECKING:
+    from intergrax.integrations.contracts.secrets_store import SecretsStore
 
 
-class LLMProfile(BaseModel):
-    """
-    Typed LLM provider + model + constructor options for Tier-3 applications.
+def _create_adapter(
+    self: LLMProfile,
+    *,
+    secrets: Optional[Mapping[str, str]] = None,
+    **overrides: Any,
+) -> LLMAdapter:
+    from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 
-    Example::
+    kwargs = merge_secrets_into_options(
+        self.provider,
+        {**self.options, **overrides},
+        secrets,
+    )
+    if self.model:
+        kwargs.setdefault("model", self.model)
+    return LLMAdapterRegistry.create(self.provider, **kwargs)
 
-        profile = LLMProfile(
-            provider=LLMProvider.GROQ,
-            model="llama-3.3-70b-versatile",
-            options={"max_retries": 2},
-        )
-        llm = profile.create_adapter()
-    """
 
-    model_config = ConfigDict(extra="forbid", use_enum_values=False)
+def _create_adapter_with_failover(
+    self: LLMProfile,
+    *,
+    secrets: Optional[Mapping[str, str]] = None,
+    policy_route_hint: str | None = None,
+    **overrides: Any,
+) -> LLMAdapter:
+    from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
+    from intergrax.llm_adapters.registry.model_router import ModelRouter
 
-    provider: Union[LLMProvider, str]
-    model: Optional[str] = None
-    options: dict[str, Any] = Field(default_factory=dict)
-    fallback_profiles: tuple[LLMProfile, ...] = Field(default_factory=tuple)
-    routing_policy_hint: str | None = None
-
-    @field_validator("options")
-    @classmethod
-    def _reject_raw_credentials_in_options(cls, value: dict[str, Any]) -> dict[str, Any]:
-        forbidden = _FORBIDDEN_CREDENTIAL_OPTION_KEYS.intersection(value)
-        if forbidden:
-            raise ValueError(_RAW_CREDENTIAL_OPTIONS_ERROR)
-        return value
-
-    @field_validator("fallback_profiles", mode="before")
-    @classmethod
-    def _coerce_fallback_profiles(cls, value: object) -> tuple[LLMProfile, ...]:
-        if value is None:
-            return ()
-        if isinstance(value, LLMProfile):
-            return (value,)
-        if isinstance(value, list):
-            return tuple(LLMProfile.model_validate(item) if isinstance(item, dict) else item for item in value)
-        if isinstance(value, tuple):
-            return value
-        raise ValueError("fallback_profiles must be a sequence of LLMProfile")
-
-    @field_validator("provider", mode="before")
-    @classmethod
-    def _coerce_provider(cls, value: str | LLMProvider) -> LLMProvider | str:
-        if isinstance(value, LLMProvider):
-            return value
-        if isinstance(value, str) and value.strip():
-            key = value.strip().lower()
-            try:
-                return LLMProvider(key)
-            except ValueError:
-                from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
-
-                registered = LLMAdapterRegistry.registered_providers()
-                if key not in registered:
-                    raise ValueError(
-                        f"unknown LLM provider slug {key!r}; register via LLMAdapterRegistry.register()"
-                    ) from None
-                return key
-        raise ValueError("provider must be a non-empty LLMProvider or registered string slug")
-
-    @classmethod
-    def _provider_slug(cls, provider: LLMProvider | str) -> str:
-        if isinstance(provider, LLMProvider):
-            return provider.value
-        return str(provider).strip().lower()
-
-    def create_adapter(
+    hint = policy_route_hint or self.routing_policy_hint
+    router = ModelRouter.from_profiles(
         self,
-        *,
-        secrets: Optional[Mapping[str, str]] = None,
-        **overrides: Any,
-    ) -> LLMAdapter:
-        from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
+        fallbacks=self.fallback_profiles,
+        policy_route_hint=hint,
+    )
+    ordered_profiles = router.ordered_profiles()
+    adapters = [
+        profile.create_adapter(secrets=secrets, **overrides)
+        for profile in ordered_profiles
+    ]
+    if len(adapters) == 1:
+        return adapters[0]
+    return FailoverLLMAdapter(
+        adapters,
+        profile_ids=router.ordered_profile_ids(),
+    )
 
-        kwargs = merge_secrets_into_options(
+
+def _validate_runtime(
+    self: LLMProfile,
+    *,
+    secrets: Optional[Mapping[str, str]] = None,
+) -> list[str]:
+    from intergrax.llm_adapters.registry.context_window import resolve_context_window_tokens
+
+    warnings: list[str] = []
+    model_id = (self.model or "").strip()
+    if not model_id:
+        warnings.append("LLMProfile.model is unset")
+    else:
+        tokens = resolve_context_window_tokens(
             self.provider,
-            {**self.options, **overrides},
-            secrets,
+            model_id,
+            profile_options=self.options,
         )
-        if self.model:
-            kwargs.setdefault("model", self.model)
-        return LLMAdapterRegistry.create(self.provider, **kwargs)
-
-    def create_adapter_with_failover(
-        self,
-        *,
-        secrets: Optional[Mapping[str, str]] = None,
-        policy_route_hint: str | None = None,
-        **overrides: Any,
-    ) -> LLMAdapter:
-        """Create adapter with optional profile-chain failover (M-LLM-X.4.3)."""
-        from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
-        from intergrax.llm_adapters.registry.model_router import ModelRouter
-
-        hint = policy_route_hint or self.routing_policy_hint
-        router = ModelRouter.from_profiles(
-            self,
-            fallbacks=self.fallback_profiles,
-            policy_route_hint=hint,
-        )
-        ordered_profiles = router.ordered_profiles()
-        adapters = [
-            profile.create_adapter(secrets=secrets, **overrides)
-            for profile in ordered_profiles
-        ]
-        if len(adapters) == 1:
-            return adapters[0]
-        return FailoverLLMAdapter(
-            adapters,
-            profile_ids=router.ordered_profile_ids(),
-        )
-
-    def validate_runtime(self, *, secrets: Optional[Mapping[str, str]] = None) -> list[str]:
-        """
-        Lightweight startup checks: catalog hit, context window, optional API key.
-
-        Returns a list of warning messages (empty when all checks pass).
-        """
-        from intergrax.llm_adapters.registry.context_window import resolve_context_window_tokens
-
-        warnings: list[str] = []
-        model_id = (self.model or "").strip()
-        if not model_id:
-            warnings.append("LLMProfile.model is unset")
-        else:
-            tokens = resolve_context_window_tokens(
-                self.provider,
-                model_id,
-                profile_options=self.options,
+        if tokens <= 0:
+            warnings.append(
+                f"context_window_tokens resolved to {tokens} for model={model_id!r}"
             )
-            if tokens <= 0:
-                warnings.append(f"context_window_tokens resolved to {tokens} for model={model_id!r}")
 
-        merged = merge_secrets_into_options(
-            self.provider,
-            dict(self.options),
-            secrets,
-        )
-        if not merged.get("api_key"):
-            slug = self._provider_slug(self.provider)
-            if slug not in {"ollama", "vllm", "llama_cpp"}:
-                warnings.append(f"no api_key in profile options or secrets for provider={slug}")
-        return warnings
+    merged = merge_secrets_into_options(
+        self.provider,
+        dict(self.options),
+        secrets,
+    )
+    if not merged.get("api_key"):
+        slug = LLMProfile._provider_slug(self.provider)
+        if slug not in {"ollama", "vllm", "llama_cpp"}:
+            warnings.append(
+                f"no api_key in profile options or secrets for provider={slug}"
+            )
+    return warnings
 
-    def create_adapter_from_secrets_store(
-        self,
-        store: "SecretsStore",
-        *,
-        secret_path: str | None = None,
-        **overrides: Any,
-    ) -> LLMAdapter:
-        """Resolve API key from Vault/secrets integration, then create adapter."""
-        key = load_api_key_from_secrets_store(store, self.provider, path=secret_path)
-        return self.create_adapter(secrets={"api_key": key}, **overrides)
 
-    @classmethod
-    def lab(cls) -> LLMProfile:
-        """Laboratory default — local Ollama."""
-        return cls(provider=LLMProvider.OLLAMA, model="llama3.1:latest")
+def _create_adapter_from_secrets_store(
+    self: LLMProfile,
+    store: "SecretsStore",
+    *,
+    secret_path: str | None = None,
+    **overrides: Any,
+) -> LLMAdapter:
+    key = load_api_key_from_secrets_store(store, self.provider, path=secret_path)
+    return self.create_adapter(secrets={"api_key": key}, **overrides)
 
-    @classmethod
-    def from_mapping(cls, data: Mapping[str, Any]) -> LLMProfile:
-        return cls.model_validate(dict(data))
+
+setattr(LLMProfile, "create_adapter", _create_adapter)
+setattr(LLMProfile, "create_adapter_with_failover", _create_adapter_with_failover)
+setattr(LLMProfile, "validate_runtime", _validate_runtime)
+setattr(LLMProfile, "create_adapter_from_secrets_store", _create_adapter_from_secrets_store)
 
 
 def llm_profile_from_env(*, prefix: str = "INTERGRAX_LLM") -> LLMProfile | None:
-    """
-    Build profile from environment variables when explicitly configured:
-
-    - ``{PREFIX}_PROVIDER`` (required, e.g. ``groq``)
-    - ``{PREFIX}_MODEL`` (optional)
-
-    Returns ``None`` when ``{PREFIX}_PROVIDER`` is absent or blank.
-    """
     provider_raw = os.getenv(f"{prefix}_PROVIDER")
     if provider_raw is None or not provider_raw.strip():
         return None
     model = os.getenv(f"{prefix}_MODEL")
     return LLMProfile(provider=provider_raw.strip(), model=model or None)
+
+
+__all__ = ["LLMProfile", "llm_profile_from_env"]

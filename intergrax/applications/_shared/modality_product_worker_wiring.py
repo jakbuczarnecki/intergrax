@@ -11,7 +11,11 @@ from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.model_inference.execution.profile import ModalityExecutionMode, ModalityExecutionProfile
 from intergrax.model_inference.registry.vision_provider import VisionProvider
-from intergrax.runtime.modality.modality_profile import ModalityPlane, ModalityProfile
+from intergrax.contracts.modality_profile import (
+    ModalityPlane,
+    ModalityProfile,
+    production_plane_c_modality_profile as canonical_production_plane_c_modality_profile,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,12 +28,7 @@ class ModalityProductWorkerWiring:
 
 def production_plane_c_modality_profile() -> ModalityProfile:
     """Product preset for deterministic Plane C vision tools."""
-    return ModalityProfile(
-        profile_id="product.plane_c",
-        allowed_planes={ModalityPlane.DEDICATED_INFERENCE, ModalityPlane.MEDIA_INGEST},
-        allowed_tool_ids=("vision.detect", "vision.ocr_regions", "ml.predict"),
-        require_deterministic_cv=True,
-    )
+    return canonical_production_plane_c_modality_profile()
 
 
 def resolve_modality_product_worker_wiring(

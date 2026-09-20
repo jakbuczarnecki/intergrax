@@ -10,7 +10,7 @@ from typing import Any, Literal, Self
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from intergrax.core.plugins.selection_ref import PlatformPluginSelectionRef
+from intergrax.contracts.platform_plugin_selection import PlatformPluginSelectionRef
 
 from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
 from intergrax.applications.contracts.application_recovery_contract import (
@@ -23,7 +23,6 @@ from intergrax.applications.contracts.capability_alias import (
     CapabilityGovernanceProfile,
 )
 from intergrax.applications.contracts.intent_route import IntentRoute
-from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.contracts.agent_budget import BudgetReactionProfile
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.sandbox_profile import SandboxProfile
@@ -39,16 +38,16 @@ from intergrax.contracts.resilience_policy import (
     ResiliencePolicy,
     default_resilience_policy,
 )
-from intergrax.llm_adapters.registry.profile import LLMProfile
-from intergrax.runtime.adaptive.contracts import UtilityWeights
-from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
-from intergrax.runtime.capacity.contracts import ScalingPolicy
-from intergrax.runtime.events.event_taxonomy import EventCategory
-from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
+from intergrax.contracts.utility_weights import UtilityWeights
+from intergrax.contracts.adaptive_loop_kind import AdaptiveLoopKind
+from intergrax.contracts.scaling_policy import ScalingPolicy
+from intergrax.contracts.event_taxonomy import EventCategory
+from intergrax.contracts.runtime_event_type import RuntimeEventType
 from intergrax.contracts.context_budget import ContextBudgetPolicy
-from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
-from intergrax.runtime.policy.compliance_profiles import ComplianceDomainClass
-from intergrax.runtime.policy.rules.evaluation import PolicyEnforcementMode
+from intergrax.contracts.context_optimization_policy import ContextOptimizationPolicy
+from intergrax.contracts.compliance_domain_class import ComplianceDomainClass
+from intergrax.contracts.policy_enforcement_mode import PolicyEnforcementMode
 
 
 class IdentityProfile(BaseModel):

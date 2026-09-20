@@ -15,10 +15,10 @@ from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.contracts.context_budget import ContextBudgetPolicy
 from intergrax.contracts.intent_route import IntentRoute
 from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
-from intergrax.llm_adapters.registry.profile import LLMProfile
-from intergrax.runtime.adaptive.contracts import UtilityWeights
-from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
-from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
+from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
+from intergrax.contracts.utility_weights import UtilityWeights
+from intergrax.contracts.adaptive_loop_kind import AdaptiveLoopKind
+from intergrax.contracts.context_optimization_policy import ContextOptimizationPolicy
 
 ContextEnginePreset = Literal[
     "default",
