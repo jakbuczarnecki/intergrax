@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 from boundary_demo.capabilities import CAPABILITIES, CAPABILITY
-from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent  # ACP-MIG-3 fleet marker
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 from intergrax.agents.reference_harness import (
@@ -36,7 +36,7 @@ RECORDS_PUT_TOOL_ID = "records.put"
 _REFLEX_PATTERN = ReflexAgent  # retain ReflexAgent symbol for fleet inventory scan
 
 
-class BoundaryDemoAgent(Agent):
+class BoundaryDemoAgent(HarnessReferenceAgent):
     """Single-step UAEP agent for Execution Boundary Export partner sandbox."""
 
     AGENT_ID = "boundary_demo_agent"
@@ -92,7 +92,6 @@ class BoundaryDemoAgent(Agent):
             enable_rag=False,
             enable_websearch=False,
         )
-        config.tool_profile = self._tool_profile
         if self._execution_boundary_export is not None:
             config.execution_boundary_export = self._execution_boundary_export
         if self._boundary_event_buffer is not None:

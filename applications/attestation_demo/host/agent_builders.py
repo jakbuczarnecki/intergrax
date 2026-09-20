@@ -8,6 +8,7 @@ from boundary_demo.boundary_demo_agent import BoundaryDemoAgent
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.reference_harness import LabHarnessContext, default_reference_harness
 from intergrax.agents.tool_enablement import ToolEnablementProfile
+from intergrax.applications._shared.tool_enablement_binding import resolve_tool_enablement
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.factory import AgentFactory
 from intergrax.applications.contracts.manifest import AgentBinding
@@ -33,9 +34,11 @@ def build_attestation_demo_agent_builders(
                 ctx.environment.execution_boundary_export_profile,
             )
         environment = ctx.environment
-        resolved_profile = tool_profile
-        if resolved_profile is None and environment is not None:
-            resolved_profile = environment.tool_profile
+        env_profile = environment.tool_profile if environment is not None else None
+        resolved_profile = resolve_tool_enablement(
+            tool_profile,
+            environment_tool_profile=env_profile,
+        )
         return BoundaryDemoAgent(
             harness,
             tool_profile=resolved_profile,

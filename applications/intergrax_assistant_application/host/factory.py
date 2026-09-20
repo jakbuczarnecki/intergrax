@@ -73,6 +73,7 @@ def create_intergrax_assistant_application(
                 composition.factory_context,
                 policy_bundle=composition.policy_bundle,
                 tool_wiring_context=composition.tool_wiring_context,
+                tool_registry=composition.tool_registry,
             ),
         ),
     )

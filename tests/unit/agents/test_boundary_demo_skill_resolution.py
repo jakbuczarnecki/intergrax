@@ -60,10 +60,13 @@ def _build_registered_boundary_demo() -> tuple[AgentRegistry, BoundaryDemoAgent]
         trace_db_path=base_harness.trace_db_path,
         modality_profile=base_harness.modality_profile,
         tool_wiring_context=tool_wiring.wiring_context,
+        tool_registry=tool_wiring.registry,
     )
+    from intergrax.tools.registry.enablement import catalog_tool_enablement
+
     agent = BoundaryDemoAgent(
         harness=harness,
-        tool_profile=tool_wiring.profile,
+        tool_profile=catalog_tool_enablement(tool_wiring.profile),
     )
     register_default_skills()
     skill_registry = build_registry_from_profile(

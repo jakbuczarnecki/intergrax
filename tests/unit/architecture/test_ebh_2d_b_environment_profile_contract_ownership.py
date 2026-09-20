@@ -439,3 +439,224 @@ def test_catalog_tool_enablement_view_exact_id_and_register_all() -> None:
         CanonicalToolProfile(register_all_catalog_bundles=True),
     )
     assert all_catalog.is_tool_enabled("any.tool.id") is True
+
+
+# --- EBH-2D-B-R3: enablement / runtime materialization coherence ---
+
+_BINDING_PATH = _REPO_ROOT / "intergrax/applications/_shared/tool_enablement_binding.py"
+_REFERENCE_HARNESS_PATH = _REPO_ROOT / "intergrax/agents/reference_harness.py"
+_BOUNDARY_DEMO_PATH = _REPO_ROOT / "agents/boundary_demo/boundary_demo_agent.py"
+
+
+def test_research_agent_does_not_assign_tool_profile_onto_runtime_config() -> None:
+    source = _RESEARCH_AGENT_PATH.read_text(encoding="utf-8")
+    assert "config.tool_profile" not in source
+    assert "runtime_context.config.tool_profile" not in source
+
+
+def test_boundary_demo_does_not_assign_enablement_onto_runtime_tool_profile() -> None:
+    source = _BOUNDARY_DEMO_PATH.read_text(encoding="utf-8")
+    assert "config.tool_profile = self._tool_profile" not in source
+
+
+def test_no_reverse_extraction_of_catalog_enablement_private_profile() -> None:
+    forbidden_snippets = (
+        "._profile",
+        'getattr(',
+        "hasattr(",
+    )
+    for path in (_RESEARCH_AGENT_PATH, _BOUNDARY_DEMO_PATH, _BINDING_PATH):
+        source = path.read_text(encoding="utf-8")
+        for snippet in forbidden_snippets:
+            assert snippet not in source, f"{path}: forbidden {snippet!r}"
+
+
+def test_no_duplicate_tool_profile_dto_aliases() -> None:
+    hits: list[str] = []
+    for path in (_REPO_ROOT / "intergrax").rglob("*.py"):
+        text = path.read_text(encoding="utf-8", errors="ignore")
+        for name in ("RuntimeToolProfile", "AgentToolProfile", "ResolvedToolProfile"):
+            if name in text:
+                hits.append(f"{path.relative_to(_REPO_ROOT)}:{name}")
+    assert hits == []
+
+
+def test_lab_harness_carries_prebuilt_tool_registry_into_runtime_config() -> None:
+    from intergrax.agents.reference_harness import (
+        LabHarnessContext,
+        build_lab_agent_runtime_config,
+    )
+    from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+    from intergrax.tools.registry.runtime import ToolRegistry
+    from testing_support.builder import FakeLLMAdapter, build_runtime_request_for_tests
+
+    registry = ToolRegistry()
+    harness = LabHarnessContext(
+        policy_bundle=RuntimePolicyBundle(),
+        tool_registry=registry,
+    )
+    config = build_lab_agent_runtime_config(
+        request=build_runtime_request_for_tests(
+            seed="r3-harness-registry",
+            tenant_id="t",
+            agent_id="research",
+            user_id="u",
+            session_id="s",
+            message="probe",
+        ),
+        llm_adapter=FakeLLMAdapter(),
+        harness=harness,
+    )
+    assert config.tool_registry is registry
+
+
+def test_composition_enablement_and_registry_share_canonical_tool_profile() -> None:
+    from intergrax.applications._shared.tool_enablement_binding import resolve_tool_enablement
+    from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
+    from intergrax.tools.registry.bootstrap import register_default_tools
+    from research.research_agent import ResearchAgent
+    from intergrax.agents.reference_harness import LabHarnessContext
+    from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+    from testing_support.builder import build_runtime_request_for_tests
+
+    register_default_tools()
+    profile = CanonicalToolProfile(enabled_bundles=["harness"])
+    wiring = build_application_tool_wiring(profile)
+    enablement = resolve_tool_enablement(None, environment_tool_profile=profile)
+    assert enablement is not None
+    assert enablement.is_tool_enabled("harness.get_run") is True
+
+    agent = ResearchAgent(
+        LabHarnessContext(
+            policy_bundle=RuntimePolicyBundle(),
+            tool_wiring_context=wiring.wiring_context,
+            tool_registry=wiring.registry,
+        ),
+        tool_profile=enablement,
+    )
+    assert agent._tool_enables("harness.get_run") is True
+    ctx = agent.build_context(
+        build_runtime_request_for_tests(
+            seed="r3-coherence-bundle",
+            tenant_id="t",
+            agent_id="research",
+            user_id="u",
+            session_id="s",
+            message="probe",
+        )
+    )
+    assert ctx.config.tool_registry is wiring.registry
+    assert wiring.registry.has("harness.get_run")
+
+
+def test_composition_disabled_tool_not_enabled_and_not_registered() -> None:
+    from intergrax.applications._shared.tool_enablement_binding import resolve_tool_enablement
+    from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
+    from intergrax.tools.registry.bootstrap import register_default_tools
+    from research.research_agent import ResearchAgent
+    from intergrax.agents.reference_harness import LabHarnessContext
+    from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+    from testing_support.builder import build_runtime_request_for_tests
+
+    register_default_tools()
+    profile = CanonicalToolProfile(enabled=["harness.get_run"])
+    wiring = build_application_tool_wiring(profile)
+    enablement = resolve_tool_enablement(None, environment_tool_profile=profile)
+    assert enablement is not None
+    assert enablement.is_tool_enabled("harness.compare_runs") is False
+    assert wiring.registry.has("harness.get_run")
+    assert not wiring.registry.has("harness.compare_runs")
+
+    agent = ResearchAgent(
+        LabHarnessContext(
+            policy_bundle=RuntimePolicyBundle(),
+            tool_registry=wiring.registry,
+        ),
+        tool_profile=enablement,
+    )
+    assert agent._tool_enables("harness.compare_runs") is False
+    ctx = agent.build_context(
+        build_runtime_request_for_tests(
+            seed="r3-coherence-disabled",
+            tenant_id="t",
+            agent_id="research",
+            user_id="u",
+            session_id="s",
+            message="probe",
+        )
+    )
+    assert ctx.config.tool_registry is wiring.registry
+    assert not ctx.config.tool_registry.has("harness.compare_runs")
+
+
+def test_composition_register_all_parity() -> None:
+    from intergrax.applications._shared.tool_enablement_binding import resolve_tool_enablement
+    from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
+    from intergrax.tools.registry.bootstrap import register_default_tools
+
+    register_default_tools()
+    profile = CanonicalToolProfile(register_all_catalog_bundles=True)
+    wiring = build_application_tool_wiring(profile)
+    enablement = resolve_tool_enablement(None, environment_tool_profile=profile)
+    assert enablement is not None
+    assert enablement.is_tool_enabled("harness.get_run") is True
+    assert wiring.registry.has("harness.get_run")
+
+
+def test_custom_enablement_does_not_become_registry_authority() -> None:
+    from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
+    from intergrax.tools.registry.bootstrap import register_default_tools
+    from research.research_agent import ResearchAgent
+    from intergrax.agents.reference_harness import LabHarnessContext
+    from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+    from testing_support.builder import build_runtime_request_for_tests
+
+    register_default_tools()
+    profile = CanonicalToolProfile(enabled=["harness.get_run"])
+    wiring = build_application_tool_wiring(profile)
+
+    class CustomEnablement:
+        def is_tool_enabled(self, tool_id: str) -> bool:
+            return tool_id == "custom.only"
+
+    agent = ResearchAgent(
+        LabHarnessContext(
+            policy_bundle=RuntimePolicyBundle(),
+            tool_registry=wiring.registry,
+        ),
+        tool_profile=CustomEnablement(),
+    )
+    assert agent._tool_enables("custom.only") is True
+    assert agent._tool_enables("harness.get_run") is False
+    ctx = agent.build_context(
+        build_runtime_request_for_tests(
+            seed="r3-custom-enablement",
+            tenant_id="t",
+            agent_id="research",
+            user_id="u",
+            session_id="s",
+            message="probe",
+        )
+    )
+    assert ctx.config.tool_registry is wiring.registry
+    assert wiring.registry.has("harness.get_run")
+    assert not wiring.registry.has("custom.only")
+
+
+def test_single_source_composition_path_reuses_same_tool_profile() -> None:
+    from intergrax.applications._shared.tool_enablement_binding import resolve_tool_enablement
+    from intergrax.applications._shared.tool_wiring import build_application_tool_wiring
+    from intergrax.tools.registry.enablement import CatalogToolEnablementView
+    from intergrax.tools.registry.bootstrap import register_default_tools
+
+    register_default_tools()
+    profile = CanonicalToolProfile(enabled_bundles=["harness"])
+    wiring = build_application_tool_wiring(profile)
+    enablement = resolve_tool_enablement(
+        profile,
+        environment_tool_profile=profile,
+    )
+    assert isinstance(enablement, CatalogToolEnablementView)
+    assert enablement.is_tool_enabled("harness.get_run") is True
+    assert wiring.registry.has("harness.get_run")
+    assert wiring.profile is profile

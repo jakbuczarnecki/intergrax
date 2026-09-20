@@ -32,6 +32,7 @@ def build_attestation_demo_registry(
             env_wiring.build_context,
             policy_bundle=composition.policy_bundle,
             tool_wiring_context=composition.tool_wiring_context,
+            tool_registry=composition.tool_registry,
         ),
         boundary_event_buffer=composition.boundary_event_buffer,
     )

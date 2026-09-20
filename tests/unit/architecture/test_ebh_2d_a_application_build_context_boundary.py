@@ -510,13 +510,10 @@ def test_attestation_configured_factory_receives_prepared_buffer() -> None:
     )
     ctx = ApplicationBuildContext.for_manifest(manifest)
     binding = manifest.enabled_agents()[0]
-    try:
-        factory(ctx, binding)
-    except TypeError as exc:
-        assert "Can't instantiate abstract class" in str(exc)
-        assert "run" in str(exc)
-    else:
-        pytest.fail("expected known abstract Agent.run instantiation error")
+    agent = factory(ctx, binding)
+    assert isinstance(agent, BoundaryDemoAgent)
+    assert getattr(agent, "_harness", None) is harness
+    assert getattr(agent, "_boundary_event_buffer", None) is buffer
 
 
 def test_assistant_configured_factory_receives_prepared_harness() -> None:
@@ -553,6 +550,7 @@ def test_external_plugin_structural_harness_port() -> None:
             self.trace_db_path = None
             self.modality_profile = None
             self.tool_wiring_context = None
+            self.tool_registry = None
 
     # Structural: ResearchAgent accepts any LabHarnessContext-shaped object through host
     # binding of the real LabHarnessContext type; pluginability of ToolEnablementProfile:

@@ -40,6 +40,7 @@ def build_research_registry(
         lab_harness=lab_harness_context_from_build_context(
             env_wiring.build_context,
             tool_wiring_context=composition.tool_wiring_context,
+            tool_registry=composition.tool_registry,
         ),
     )
     return build_manifest_development_registry(

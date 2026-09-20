@@ -34,6 +34,7 @@ from intergrax.runtime.wiring.agent_runtime_governance_factory import (
     default_lab_capability_grants,
 )
 from intergrax.runtime.wiring.policy_runtime_bridge import apply_policy_bundle_to_runtime_config
+from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
@@ -46,6 +47,7 @@ class LabHarnessContext:
     trace_db_path: Path | None = None
     modality_profile: ModalityProfile | None = None
     tool_wiring_context: ToolWiringContext | None = None
+    tool_registry: ToolRegistry | None = None
 
 
 def default_reference_harness() -> LabHarnessContext:
@@ -119,6 +121,7 @@ def build_lab_agent_runtime_config(
         trace_db_path=trace_path,
         modality_profile=harness.modality_profile,
         tool_wiring_context=harness.tool_wiring_context,
+        tool_registry=harness.tool_registry,
     )
     config = apply_policy_bundle_to_runtime_config(config, harness.policy_bundle)
     if harness.strict_harness:
@@ -167,6 +170,7 @@ def lab_harness_context_from_modality_tooling(
     strict_harness: bool = False,
     trace_db_path: Path | None = None,
     tool_wiring_context: ToolWiringContext | None = None,
+    tool_registry: ToolRegistry | None = None,
 ) -> LabHarnessContext:
     """Build context for lab builders without importing Tier-3 ``ApplicationBuildContext``."""
     modality_profile = None
@@ -184,4 +188,5 @@ def lab_harness_context_from_modality_tooling(
         trace_db_path=trace_db_path,
         modality_profile=modality_profile,
         tool_wiring_context=tool_wiring_context,
+        tool_registry=tool_registry,
     )

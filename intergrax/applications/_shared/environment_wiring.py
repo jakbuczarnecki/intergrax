@@ -488,9 +488,9 @@ def wire_application_environment(
     assert_strict_policy_bootstrap_acceptable(env, policy_bundle)
     prompt_registry = resolve_prompt_registry(env.prompt_profile)
 
+    # Canonical prebuilt registry from ApplicationToolWiring — single materialization
+    # authority for composition + agent harness (RuntimeContext prefers prebuilt).
     tool_registry = tool_wiring.registry
-    if not tool_wiring.profile.enabled and not tool_wiring.profile.enabled_bundles:
-        tool_registry = None
 
     skill_pinning_store = InMemorySkillExecutionPinningStore()
 

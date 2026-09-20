@@ -13,6 +13,7 @@ from intergrax.agents.reference_harness import (
 from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 __all__ = [
@@ -26,6 +27,7 @@ def lab_harness_context_from_build_context(
     *,
     policy_bundle: RuntimePolicyBundle | None = None,
     tool_wiring_context: ToolWiringContext | None = None,
+    tool_registry: ToolRegistry | None = None,
     trace_db_path: Path | None = None,
 ) -> LabHarnessContext:
     """Build harness context from public factory context plus explicit host deps."""
@@ -38,4 +40,5 @@ def lab_harness_context_from_build_context(
         strict_harness=ctx.strict_harness,
         trace_db_path=resolved_trace,
         tool_wiring_context=tool_wiring_context,
+        tool_registry=tool_registry,
     )
