@@ -11,7 +11,7 @@ from intergrax.agents.authoring.patterns.types import AgentEvaluation, Cognitive
 from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.contracts.agent_run import AgentRunError
 from intergrax.contracts.agent_run_enums import AgentRunErrorCode, TerminalReason
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.contracts.tracing import DiagnosticPayload
 
 
 class DiagnosticReflexAgent(ReflexAgent):

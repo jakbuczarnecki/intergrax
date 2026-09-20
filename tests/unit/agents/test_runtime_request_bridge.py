@@ -2,10 +2,10 @@
 
 import pytest
 
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.agents.authoring.base import IntergraxAgent
 from intergrax.agents.authoring.step_outcome import StepOutcome
-from intergrax.agents.runtime_request_bridge import (
+from intergrax.runtime.nexus.agents.runtime_request_bridge import (
     acp_session_enabled,
     runtime_request_to_agent_run,
 )

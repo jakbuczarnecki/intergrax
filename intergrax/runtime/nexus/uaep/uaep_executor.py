@@ -14,9 +14,9 @@ from intergrax.agents.agent_contract import Agent
 from intergrax.runtime.execution.agent_runtime_context_materializer import (
     AgentRuntimeContextMaterializer,
 )
-from intergrax.agents.runtime_request_bridge import agent_run_result_from_runtime_answer
+from intergrax.runtime.nexus.agents.runtime_request_bridge import agent_run_result_from_runtime_answer
 from intergrax.agents.authoring.uaep_kernel_step_execution import UaepExecutorStepOutcome
-from intergrax.agents.authoring.uaep_step_bridge import (
+from intergrax.runtime.nexus.agents.uaep_step_bridge import (
     build_kernel_session,
     execute_uaep_step_via_kernel,
     trace_summary_from_kernel,
@@ -301,7 +301,7 @@ class UAEPExecutor:
             authority=self._sandbox_isolation_authority,
         )
         try:
-            from intergrax.agents.authoring.acp_uaep_shim import apply_host_tool_invoker_to_runtime_context
+            from intergrax.runtime.nexus.agents.acp_uaep_shim import apply_host_tool_invoker_to_runtime_context
     
             apply_host_tool_invoker_to_runtime_context(runtime_context, request.metadata)
             from intergrax.agents.persistence.skill_host_wiring import (

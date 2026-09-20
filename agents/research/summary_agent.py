@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from intergrax.agents.authoring.acp_stub_reflex import (
+from intergrax.runtime.nexus.agents.acp_stub_reflex import (
     evaluate_complete,
     perceive_run_input,
     reason_passthrough,

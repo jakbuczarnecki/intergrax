@@ -18,8 +18,8 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task_memory import InMemoryTaskMemoryStore
-from intergrax.agents.uaep import UAEPExecutor
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.uaep import UAEPExecutor
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 

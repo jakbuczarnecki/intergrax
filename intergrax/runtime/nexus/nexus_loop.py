@@ -6,7 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Optional
 
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
@@ -109,7 +109,7 @@ from intergrax.runtime.task.task_trace import (
     PersistingTaskTraceEmitter,
     TaskTraceEmitter,
 )
-from intergrax.agents.uaep import UAEPExecutor
+from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.adaptive.signal_collector import SignalCollector

@@ -2,7 +2,7 @@
 
 import pytest
 
-from intergrax.agents.runtime_answer_mapping import (
+from intergrax.runtime.nexus.agents.runtime_answer_mapping import (
     extract_cost_from_runtime_answer,
     extract_duration_seconds_from_runtime_answer,
     runtime_answer_to_agent_result,

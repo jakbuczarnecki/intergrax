@@ -11,7 +11,7 @@ import pytest
 
 from echo.echo_agent import EchoAgent
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.uaep import UAEPBlockedError
+from intergrax.runtime.nexus.uaep import UAEPBlockedError
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult

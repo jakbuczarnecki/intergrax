@@ -11,8 +11,8 @@ from intergrax.utils.lazy_export import export_from_import_path
 __all__ = ["Agent", "AgentEngine", "UAEPExecutor", "supports_uaep", "UAEPAgent"]
 
 _LAZY: dict[str, tuple[str, str]] = {
-    "AgentEngine": ("intergrax.agents.agent_engine", "AgentEngine"),
-    "UAEPExecutor": ("intergrax.agents.uaep", "UAEPExecutor"),
+    "AgentEngine": ("intergrax.runtime.nexus.agents.agent_engine", "AgentEngine"),
+    "UAEPExecutor": ("intergrax.runtime.nexus.uaep", "UAEPExecutor"),
     "UAEPAgent": ("intergrax.agents.uaep_protocol", "UAEPAgent"),
     "supports_uaep": ("intergrax.agents.uaep_protocol", "supports_uaep"),
 }

@@ -8,7 +8,7 @@ import pytest
 
 from attestation_demo.host.tool_wiring import wire_attestation_demo_tools
 from boundary_demo.boundary_demo_agent import RECORDS_PUT_TOOL_ID, BoundaryDemoAgent
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.agents.reference_harness import LabHarnessContext
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile

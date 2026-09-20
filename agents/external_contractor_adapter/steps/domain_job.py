@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from intergrax.agents.authoring.runtime_tool_helpers import exec_ctx_from_step, request_metadata
+from intergrax.runtime.nexus.agents.runtime_tool_helpers import exec_ctx_from_step, request_metadata
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
 from intergrax.runtime.governance.active_governed_execution_task import (

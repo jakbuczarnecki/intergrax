@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
     AgentExecutionStatus,

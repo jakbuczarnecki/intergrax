@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 
 pytestmark = pytest.mark.gate

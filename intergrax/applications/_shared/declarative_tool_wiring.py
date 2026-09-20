@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.agents.persistence.catalog_declarative_invoker import (
+from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
     CatalogDeclarativeToolInvoker,
 )
 from intergrax.applications._shared.agent_runtime_governance_wiring import (

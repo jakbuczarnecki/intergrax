@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.capability import CapabilityMatchResult

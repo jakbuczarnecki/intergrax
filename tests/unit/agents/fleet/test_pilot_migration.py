@@ -5,7 +5,7 @@ import pytest
 from echo.echo_agent import EchoAgent
 from research.research_agent import ResearchAgent
 from signoff_probe.signoff_probe_agent import SignoffProbeAgent
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.agents import supports_uaep
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
 from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity

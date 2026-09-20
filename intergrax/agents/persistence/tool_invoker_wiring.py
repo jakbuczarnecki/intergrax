@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from intergrax.agents.persistence.catalog_declarative_invoker import (
+from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
     CatalogDeclarativeToolInvoker,
     resolve_declarative_tool_invoker,
 )

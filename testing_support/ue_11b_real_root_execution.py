@@ -11,7 +11,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.agents.authoring.patterns.react import ReActAgent
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.authoring.patterns.types import (
@@ -20,7 +20,7 @@ from intergrax.agents.authoring.patterns.types import (
     Observation,
     ReasoningResult,
 )
-from intergrax.agents.authoring.runtime_tool_helpers import (
+from intergrax.runtime.nexus.agents.runtime_tool_helpers import (
     exec_ctx_from_step,
     invoke_catalog_tool,
 )

@@ -4,7 +4,7 @@
 
 import pytest
 
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from testing_support.builder import build_runtime_request_for_tests
 
 

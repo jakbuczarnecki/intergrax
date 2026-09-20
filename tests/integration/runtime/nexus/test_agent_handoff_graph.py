@@ -3,8 +3,8 @@
 import pytest
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.agent_engine import AgentEngine
-from intergrax.agents.uaep import UAEPExecutor
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_handoff import AgentHandoff

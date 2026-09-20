@@ -9,9 +9,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from intergrax.agents.authoring.acp_uaep_shim import build_step_context_from_uaep
+from intergrax.runtime.nexus.agents.acp_uaep_shim import build_step_context_from_uaep
 from intergrax.agents.authoring.context_assembly_bridge import build_acp_assembly_request
-from intergrax.agents.authoring.uaep_step_bridge import build_uaep_step_context
+from intergrax.runtime.nexus.agents.uaep_step_bridge import build_uaep_step_context
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_step import AgentStep
 from intergrax.contracts.agent_step_context import AgentStepContext

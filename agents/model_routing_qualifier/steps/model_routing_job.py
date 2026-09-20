@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from intergrax.knowledge.contracts.validation import JsonObject
-from intergrax.agents.authoring.runtime_tool_helpers import (
+from intergrax.runtime.nexus.agents.runtime_tool_helpers import (
     exec_ctx_from_step,
     request_metadata,
 )

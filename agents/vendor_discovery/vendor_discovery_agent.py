@@ -6,7 +6,7 @@ from vendor_discovery.capabilities import CAPABILITIES
 from vendor_discovery.contract import build_agent_contract
 from vendor_discovery.steps.domain import build_stub_vendor_discovery_output
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
-from intergrax.agents.authoring.acp_stub_reflex import (
+from intergrax.runtime.nexus.agents.acp_stub_reflex import (
     evaluate_complete,
     perceive_run_input,
     reason_passthrough,

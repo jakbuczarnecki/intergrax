@@ -12,7 +12,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from intergrax.agents.authoring.diagnostic_serialization import merge_diagnostic_payloads
 from intergrax.contracts.agent_run import AgentRunError
 from intergrax.contracts.agent_run_enums import StepNextAction, TerminalReason
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.contracts.tracing import DiagnosticPayload
 
 StateDelta = dict[str, Any]
 

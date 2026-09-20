@@ -8,17 +8,17 @@ from typing import Any, Dict, Optional, Union
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.authoring.base import IntergraxAgent
-from intergrax.agents.runtime_request_bridge import (
+from intergrax.runtime.nexus.agents.runtime_request_bridge import (
     acp_session_enabled,
     agent_run_result_to_runtime_answer,
     runtime_request_to_agent_run,
 )
-from intergrax.agents.uaep import UAEPBlockedError, UAEPExecutor
+from intergrax.runtime.nexus.uaep import UAEPBlockedError, UAEPExecutor
 from intergrax.agents.uaep_protocol import supports_uaep
 from intergrax.contracts.agent_run import AgentRunResult
 from intergrax.contracts.validation import ValidationResult
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
-from intergrax.agents.runtime_answer_mapping import runtime_answer_to_agent_result
+from intergrax.runtime.nexus.agents.runtime_answer_mapping import runtime_answer_to_agent_result
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest

@@ -8,7 +8,7 @@ from local_search.contract import build_agent_contract
 from local_search.diagnostics import search_diagnostic_from_output
 from local_search.steps.search_job import run_search_job
 from intergrax.agents.authoring.patterns.diagnostic_reflex import DiagnosticReflexAgent
-from intergrax.agents.authoring.acp_stub_reflex import (
+from intergrax.runtime.nexus.agents.acp_stub_reflex import (
     build_agent_runtime_context,
     evaluate_complete,
     perceive_run_input,

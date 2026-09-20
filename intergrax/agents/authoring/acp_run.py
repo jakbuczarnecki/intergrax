@@ -16,12 +16,12 @@ from intergrax.agents.authoring.acp_session_host import (
 )
 from intergrax.agents.authoring.budget_enforcing_llm_router import wrap_budget_enforcing_router
 from intergrax.agents.authoring.llm_router import StepLLMRouter
-from intergrax.agents.authoring.shared_context_bridge import load_view, persist_view, view_from_task_metadata
+from intergrax.runtime.nexus.agents.shared_context_bridge import load_view, persist_view, view_from_task_metadata
 from intergrax.agents.authoring.step_loop import AgentRuntime
 from intergrax.runtime.wiring.reliability_runtime_bridge import resolve_reliability_wiring_options
 from intergrax.agents.authoring.artifact_refs import artifact_refs_from_payloads
 from intergrax.agents.compliance_summary import build_compliance_summary
-from intergrax.agents.persistence.catalog_declarative_invoker import (
+from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
     CatalogDeclarativeToolInvoker,
 )
 from intergrax.agents.persistence.session_persistence import (
@@ -439,7 +439,7 @@ async def _run_acp_session_bound(
     )
     if host is not None and host.runtime_profile is not None and host.runtime_profile.llm_routing_profile is not None:
         from intergrax.agents.authoring.dynamic_llm_router import wrap_dynamic_llm_router
-        from intergrax.agents.authoring.acp_routing_trace_bridge import (
+        from intergrax.runtime.nexus.agents.acp_routing_trace_bridge import (
             record_acp_routing_rule_evaluation,
         )
         from intergrax.runtime.wiring.llm_routing_context_bridge import (
@@ -521,7 +521,7 @@ async def _run_acp_session_bound(
     last_outcome = None
     last_record = None
 
-    from intergrax.agents.authoring.acp_uaep_shim import (
+    from intergrax.runtime.nexus.agents.acp_uaep_shim import (
         attach_acp_catalog_exec_ctx,
         close_acp_catalog_exec_ctx,
     )

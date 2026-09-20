@@ -12,8 +12,6 @@ from intergrax.agents.authoring.decisions import complete
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-
 if TYPE_CHECKING:
     from intergrax.agents.authoring.base import IntergraxAgent
 

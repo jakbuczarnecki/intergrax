@@ -5,7 +5,7 @@ from intergrax.agents.persistence.checkpoint_store import (
     InMemoryAgentCheckpointStore,
     SQLiteAgentCheckpointStore,
 )
-from intergrax.agents.persistence.catalog_declarative_invoker import (
+from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
     CatalogDeclarativeToolInvoker,
 )
 from intergrax.agents.persistence.checkpoint_wiring import (

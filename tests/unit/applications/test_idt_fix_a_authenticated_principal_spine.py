@@ -9,7 +9,7 @@ from fastapi import Depends, FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from legal_application.serving.fastapi_router import DefaultLegalAgentService, LegalAgentServingConfig
-from intergrax.agents.runtime_request_bridge import runtime_request_to_agent_run
+from intergrax.runtime.nexus.agents.runtime_request_bridge import runtime_request_to_agent_run
 from intergrax.applications._shared.harness_auth import (
     HarnessAuthState,
     resolve_harness_authenticated_principal,

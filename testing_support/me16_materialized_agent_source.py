@@ -11,7 +11,7 @@ def render_me16_materialized_agent_module(*, function_name: str) -> str:
     return (
         textwrap.dedent(
             f'''
-            from intergrax.agents.authoring.runtime_tool_helpers import invoke_catalog_tool
+            from intergrax.runtime.nexus.agents.runtime_tool_helpers import invoke_catalog_tool
             from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
             from intergrax.agents.reference_harness import (
                 build_lab_agent_runtime_context,

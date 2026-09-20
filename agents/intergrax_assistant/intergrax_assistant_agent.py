@@ -5,7 +5,7 @@ from __future__ import annotations
 
 from intergrax_assistant.capabilities import CAPABILITIES
 from intergrax_assistant.contract import build_agent_contract
-from intergrax.agents.authoring.acp_stub_reflex import (
+from intergrax.runtime.nexus.agents.acp_stub_reflex import (
     build_agent_runtime_context,
     evaluate_complete,
     perceive_run_input,

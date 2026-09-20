@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from intergrax.agents.uaep import UAEPExecutor
+from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_step import AgentStep, StepExecutionResult, StepOutput
 from intergrax.contracts.decision_revision import decision_revision_policy
 from intergrax.contracts.execution_identity import (

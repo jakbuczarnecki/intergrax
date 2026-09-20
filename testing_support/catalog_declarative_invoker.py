@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.agents.persistence.catalog_declarative_invoker import CatalogDeclarativeToolInvoker
+from intergrax.runtime.nexus.agents.catalog_declarative_invoker import CatalogDeclarativeToolInvoker
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.tools.registry import ToolRegistry

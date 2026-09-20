@@ -32,7 +32,7 @@ def apply_host_tool_invoker_to_runtime_context(
     request_metadata: dict[str, Any],
 ) -> None:
     """Overlay Tier-3 host catalog wiring onto agent stub ``RuntimeContext``."""
-    from intergrax.agents.persistence.catalog_declarative_invoker import (
+    from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
         CatalogDeclarativeToolInvoker,
     )
     from intergrax.agents.persistence.tool_invoker_wiring import (
@@ -96,7 +96,7 @@ def attach_acp_catalog_exec_ctx(
     if isinstance(step_ctx.metadata.get("uaep_exec_ctx"), RuntimeExecutionContext):
         return
 
-    from intergrax.agents.authoring.acp_stub_reflex import build_agent_runtime_context
+    from intergrax.runtime.nexus.agents.acp_stub_reflex import build_agent_runtime_context
     from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     from intergrax.runtime.nexus.tools.uaep_tool_gateway import BoundToolGateway

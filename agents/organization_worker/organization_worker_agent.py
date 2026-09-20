@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Optional, Sequence
 
-from intergrax.agents.authoring.acp_stub_reflex import perceive_run_input, reason_passthrough
+from intergrax.runtime.nexus.agents.acp_stub_reflex import perceive_run_input, reason_passthrough
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.authoring.patterns.types import AgentEvaluation, CognitiveEvaluation
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
