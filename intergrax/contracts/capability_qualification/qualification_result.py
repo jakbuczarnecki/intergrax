@@ -20,6 +20,9 @@ from intergrax.contracts.capability_qualification.qualification_outcome import (
 from intergrax.contracts.capability_qualification.qualification_reason_code import (
     CapabilityQualificationReasonCode,
 )
+from intergrax.contracts.capability_qualification.qualification_integrity import (
+    validate_qualification_evidence_identity,
+)
 from intergrax.contracts.capability_qualification.qualification_success_evidence import (
     validate_qualification_success_evidence,
 )
@@ -76,7 +79,18 @@ class CapabilityQualificationResult(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def _validate_success_evidence(self) -> CapabilityQualificationResult:
+    def _validate_evidence_chain(self) -> CapabilityQualificationResult:
+        if self.evidence is not None:
+            if self.provider_id is None:
+                raise ValueError("evidence requires provider_id on result")
+            validate_qualification_evidence_identity(
+                provider_id=self.provider_id,
+                qualification_request_id=self.qualification_request_id,
+                acquisition_request_id=self.acquisition_request_id,
+                strategy_id=self.strategy_id,
+                gap_id=self.gap_id,
+                evidence=self.evidence,
+            )
         if self.outcome is CapabilityQualificationOutcome.QUALIFIED:
             validate_qualification_success_evidence(self.evidence)
             if self.provider_id is None:

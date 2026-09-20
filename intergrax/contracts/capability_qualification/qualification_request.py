@@ -106,6 +106,10 @@ class CapabilityQualificationRequest(BaseModel):
             raise ValueError("strategy_id must match acquisition_result")
         if result.strategy_id is None:
             raise ValueError("SUCCEEDED acquisition_result requires strategy_id")
+        if self.correlation_id != result.correlation_id:
+            raise ValueError("correlation_id must match acquisition_result")
+        if self.causation_id != result.causation_id:
+            raise ValueError("causation_id must match acquisition_result")
         return self
 
 

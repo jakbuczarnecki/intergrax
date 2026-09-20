@@ -130,13 +130,17 @@ def _evidence(
     request: CapabilityQualificationRequest,
     provider_id: str,
 ) -> CapabilityQualificationEvidence:
+    acq_evidence = request.acquisition_result.evidence
     return CapabilityQualificationEvidence(
         provider_id=provider_id,
         qualification_request_id=request.qualification_request_id,
         acquisition_request_id=request.acquisition_request_id,
         acquisition_strategy_id=request.strategy_id,
         gap_id=request.gap_id,
-        artifact_reference="artifact://qualified",
+        artifact_reference=acq_evidence.artifact_reference if acq_evidence else None,
+        domain_handoff_reference=(
+            acq_evidence.domain_handoff_reference if acq_evidence else None
+        ),
     )
 
 
@@ -275,14 +279,22 @@ def test_custom_lifecycle_policy() -> None:
     )
 
 
-def test_result_integrity_mismatch_raises() -> None:
-    class _BadProvider(_FakeProvider):
+def test_subject_mismatch_raises_integrity_error() -> None:
+    class _WrongSubjectProvider(_FakeProvider):
         def qualify(
             self, request: CapabilityQualificationRequest
         ) -> CapabilityQualificationResult:
             self.calls += 1
+            bad_evidence = CapabilityQualificationEvidence(
+                provider_id=self._provider_id,
+                qualification_request_id=request.qualification_request_id,
+                acquisition_request_id=request.acquisition_request_id,
+                acquisition_strategy_id=request.strategy_id,
+                gap_id=request.gap_id,
+                artifact_reference="artifact://not-acquired",
+            )
             return CapabilityQualificationResult(
-                qualification_request_id="wrong",
+                qualification_request_id=request.qualification_request_id,
                 acquisition_request_id=request.acquisition_request_id,
                 gap_id=request.gap_id,
                 strategy_id=request.strategy_id,
@@ -291,7 +303,39 @@ def test_result_integrity_mismatch_raises() -> None:
                 reason_code=CapabilityQualificationReasonCode.NONE,
                 started_at=_CREATED,
                 completed_at=_CREATED,
-                evidence=_evidence(request, self.provider_id),
+                evidence=bad_evidence,
+                correlation_id=request.correlation_id,
+                causation_id=request.causation_id,
+            )
+
+    service = CapabilityQualificationService(
+        (_WrongSubjectProvider(provider_id="bad"),)
+    )
+    with pytest.raises(CapabilityQualificationIntegrityError):
+        service.qualify(_request())
+
+
+def test_result_integrity_mismatch_raises() -> None:
+    class _BadProvider(_FakeProvider):
+        def qualify(
+            self, request: CapabilityQualificationRequest
+        ) -> CapabilityQualificationResult:
+            self.calls += 1
+            wrong_qreq_id = "capability-qualification-request:wrong:wrong"
+            evidence = _evidence(request, self.provider_id).model_copy(
+                update={"qualification_request_id": wrong_qreq_id},
+            )
+            return CapabilityQualificationResult(
+                qualification_request_id=wrong_qreq_id,
+                acquisition_request_id=request.acquisition_request_id,
+                gap_id=request.gap_id,
+                strategy_id=request.strategy_id,
+                provider_id=self._provider_id,
+                outcome=CapabilityQualificationOutcome.QUALIFIED,
+                reason_code=CapabilityQualificationReasonCode.NONE,
+                started_at=_CREATED,
+                completed_at=_CREATED,
+                evidence=evidence,
                 correlation_id=request.correlation_id,
                 causation_id=request.causation_id,
             )

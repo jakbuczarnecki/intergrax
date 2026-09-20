@@ -49,6 +49,9 @@ from intergrax.contracts.capability_qualification.qualification_outcome import (
 from intergrax.contracts.capability_qualification.qualification_reason_code import (
     CapabilityQualificationReasonCode,
 )
+from intergrax.contracts.capability_qualification.qualification_integrity import (
+    validate_qualification_subject_binding,
+)
 from intergrax.contracts.capability_qualification.qualification_request import (
     CapabilityQualificationRequest,
 )
@@ -249,6 +252,19 @@ def _assert_result_matches_request(
         raise CapabilityQualificationIntegrityError("result correlation_id mismatch")
     if result.causation_id != request.causation_id:
         raise CapabilityQualificationIntegrityError("result causation_id mismatch")
+    if result.evidence is not None:
+        acquisition_evidence = request.acquisition_result.evidence
+        if acquisition_evidence is None:
+            raise CapabilityQualificationIntegrityError(
+                "qualification evidence requires acquisition evidence subject",
+            )
+        try:
+            validate_qualification_subject_binding(
+                acquisition_evidence,
+                result.evidence,
+            )
+        except ValueError as exc:
+            raise CapabilityQualificationIntegrityError(str(exc)) from exc
 
 
 def _terminal_result(
