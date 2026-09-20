@@ -1,10 +1,28 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Immutable discovery completion coordination snapshot (UCA-1).
+"""Immutable discovery completion coordination snapshot (UCA-1 / UCA-1R).
 
 Projection over canonical Capability Catalog facts — not a second discovery engine
 or acquisition orchestrator.
+
+DiscoveryCompletion may expose candidate identities.
+It MUST NOT choose a candidate for realization.
+Selection is an explicit consumer/domain decision.
+
+Hard completeness invariant
+---------------------------
+COMPLETE is required for proving absence (MISSING_CAPABILITY / CapabilityGap).
+COMPLETE is NOT inherently required for using a positively proven,
+suitable and allowed candidate (DIRECT_REUSE / REALIZATION_REQUIRED).
+
+Result-level failure flags
+--------------------------
+Boolean fields ``scope_unavailable``, ``unavailable``, ``governance_blocked``,
+``availability_blocked``, and ``conflict`` are **result-level** facts: each is
+true only when that condition affects the legality or completeness of *this*
+coordinated discovery result / need — not merely because some unrelated
+federation source elsewhere reported the same state.
 """
 
 from __future__ import annotations
@@ -38,9 +56,9 @@ class DiscoveryCompletionOutcome(StrEnum):
     INCOMPLETE = "incomplete"
 
 
-NORMATIVE_DISCOVERY_COMPLETION_OUTCOMES: Final[frozenset[DiscoveryCompletionOutcome]] = (
-    frozenset(DiscoveryCompletionOutcome)
-)
+NORMATIVE_DISCOVERY_COMPLETION_OUTCOMES: Final[
+    frozenset[DiscoveryCompletionOutcome]
+] = frozenset(DiscoveryCompletionOutcome)
 
 
 def derive_discovery_completion_outcome(
@@ -58,24 +76,53 @@ def derive_discovery_completion_outcome(
 
     Suitability, availability, governance, and federation completeness remain
     independent inputs — this function only projects the legal next branch.
+
+    Normative precedence (explicit, not accidental ``if`` order)::
+
+        1. result-level conflict                         → CONFLICT
+        2. suitable HOST_AVAILABLE + ALLOWED candidate   → DIRECT_REUSE
+        3. suitable CATALOG_AVAILABLE + ALLOWED candidate→ REALIZATION_REQUIRED
+        4. federation PARTIAL (no suitable candidate)    → INCOMPLETE
+        5. result-level scope_unavailable                → SCOPE_UNAVAILABLE
+        6. result-level unavailable                      → UNAVAILABLE
+        7. result-level blocked (gov / availability)     → BLOCKED
+        8. COMPLETE + no suitable + no result failure    → MISSING_CAPABILITY
+
+    Positive-proof vs absence-proof
+    -------------------------------
+    A positively attested suitable+allowed host/catalog candidate may yield
+    DIRECT_REUSE / REALIZATION_REQUIRED even when federation is PARTIAL:
+    PARTIAL means the full universe is unknown, not that a known candidate is
+    invalid. COMPLETE remains required to prove absence (Gap / MISSING).
+
+    Result-level flags vs positive candidates
+    -----------------------------------------
+    Producers MUST set failure flags only when they affect *this* result.
+    When a suitable+allowed candidate is included, producers MUST NOT also set
+    a result-level failure that would deny that candidate's legality. If both
+    appear (producer inconsistency), positive candidate branches still win
+    after CONFLICT — fail-closed conflict is never ignored.
     """
+    # 1. Result-level conflict — highest precedence; fail closed.
     if conflict:
         return DiscoveryCompletionOutcome.CONFLICT
+    # 2. Positive host proof — COMPLETE not required merely to reuse.
     if suitable_host_allowed_keys:
         return DiscoveryCompletionOutcome.DIRECT_REUSE
+    # 3. Positive catalog proof — COMPLETE not required merely to realize.
     if suitable_catalog_allowed_keys:
         return DiscoveryCompletionOutcome.REALIZATION_REQUIRED
-    if (
-        federation_completeness
-        is CapabilityCatalogFederationCompleteness.PARTIAL
-    ):
+    # 4. Incomplete federation without positive proof — cannot prove absence.
+    if federation_completeness is CapabilityCatalogFederationCompleteness.PARTIAL:
         return DiscoveryCompletionOutcome.INCOMPLETE
+    # 5–7. Result-level failures without suitable candidates.
     if scope_unavailable:
         return DiscoveryCompletionOutcome.SCOPE_UNAVAILABLE
     if unavailable:
         return DiscoveryCompletionOutcome.UNAVAILABLE
     if governance_blocked or availability_blocked:
         return DiscoveryCompletionOutcome.BLOCKED
+    # 8. COMPLETE + no suitable + no result-level blocker → semantic gap path.
     return DiscoveryCompletionOutcome.MISSING_CAPABILITY
 
 
@@ -96,7 +143,13 @@ def _dedupe_identity_keys(
 
 
 class DiscoveryCompletion(BaseModel):
-    """Evidence-backed coordination snapshot — not a discovery source of truth."""
+    """Evidence-backed coordination snapshot — not a discovery source of truth.
+
+    Candidate key tuples expose eligible identities only. This contract never
+    selects among them for realization (see CapabilityRealizationNeed).
+
+    Failure / completeness flags are result-level (see module docstring).
+    """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
@@ -159,6 +212,24 @@ class DiscoveryCompletion(BaseModel):
                 f"outcome {self.outcome.value!r} is inconsistent with source facts; "
                 f"expected {expected.value!r}",
             )
+        # Structural impossibilities relative to derived outcome (hardening).
+        if (
+            self.outcome is DiscoveryCompletionOutcome.DIRECT_REUSE
+            and not self.suitable_host_allowed_keys
+        ):
+            raise ValueError("DIRECT_REUSE requires suitable_host_allowed_keys")
+        if (
+            self.outcome is DiscoveryCompletionOutcome.REALIZATION_REQUIRED
+            and not self.suitable_catalog_allowed_keys
+        ):
+            raise ValueError(
+                "REALIZATION_REQUIRED requires suitable_catalog_allowed_keys",
+            )
+        if (
+            self.outcome is DiscoveryCompletionOutcome.MISSING_CAPABILITY
+            and self.conflict
+        ):
+            raise ValueError("MISSING_CAPABILITY is incompatible with conflict=True")
         return self
 
 

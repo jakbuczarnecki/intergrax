@@ -1,7 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Capability realization need — known capability not yet HOST_AVAILABLE (UCA-1)."""
+"""Capability realization need — known capability not yet HOST_AVAILABLE (UCA-1R).
+
+DiscoveryCompletion may expose candidate identities.
+It MUST NOT choose a candidate for realization.
+Selection is an explicit consumer/domain decision — callers MUST pass
+``capability_identity``; this contract never picks ``catalog_keys[0]`` or any
+other implicit selector.
+"""
 
 from __future__ import annotations
 
@@ -47,7 +54,9 @@ def derive_capability_realization_need_id(
 class CapabilityRealizationNeed(BaseModel):
     """Need to bring a known, suitable, governance-allowed capability to usable state.
 
-    Does not guarantee installation, activation, authorization, or execution.
+    Value contract only — no strategy, provider, marketplace, installer, or
+    lifecycle handler. Does not guarantee installation, activation,
+    authorization, or execution.
     """
 
     model_config = ConfigDict(extra="forbid", frozen=True)
@@ -98,9 +107,13 @@ class CapabilityRealizationNeed(BaseModel):
         cls,
         completion: DiscoveryCompletion,
         *,
-        capability_identity: CapabilityIdentityKey | None = None,
+        capability_identity: CapabilityIdentityKey,
     ) -> CapabilityRealizationNeed:
-        """Fail-closed construction from REALIZATION_REQUIRED completion."""
+        """Fail-closed construction from REALIZATION_REQUIRED completion.
+
+        ``capability_identity`` is mandatory. Discovery exposes candidates;
+        the caller selects — this factory never chooses among them.
+        """
         if completion.outcome is not DiscoveryCompletionOutcome.REALIZATION_REQUIRED:
             raise ValueError(
                 "CapabilityRealizationNeed requires "
@@ -113,16 +126,13 @@ class CapabilityRealizationNeed(BaseModel):
                 "CapabilityRealizationNeed requires at least one "
                 "CATALOG_AVAILABLE allowed suitable identity",
             )
-        selected = capability_identity or catalog_keys[0]
         catalog_sort_keys = {key.sort_key for key in catalog_keys}
-        if selected.sort_key not in catalog_sort_keys:
+        if capability_identity.sort_key not in catalog_sort_keys:
             raise ValueError(
                 "capability_identity must be one of suitable_catalog_allowed_keys",
             )
-        host_sort_keys = {
-            key.sort_key for key in completion.suitable_host_allowed_keys
-        }
-        if selected.sort_key in host_sort_keys:
+        host_sort_keys = {key.sort_key for key in completion.suitable_host_allowed_keys}
+        if capability_identity.sort_key in host_sort_keys:
             raise ValueError(
                 "CapabilityRealizationNeed forbids HOST_AVAILABLE identity",
             )
@@ -130,11 +140,11 @@ class CapabilityRealizationNeed(BaseModel):
             realization_need_id=derive_capability_realization_need_id(
                 need_id=completion.need_id,
                 discovery_correlation_id=completion.discovery_correlation_id,
-                capability_identity=selected,
+                capability_identity=capability_identity,
             ),
             need_id=completion.need_id,
             discovery_correlation_id=completion.discovery_correlation_id,
-            capability_identity=selected,
+            capability_identity=capability_identity,
             created_at=completion.created_at,
         )
 
