@@ -10,9 +10,6 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.collaborative_work.enforcement_gate import (
-    MeaningfulSideEffectPolicyEvaluator,
-)
 from intergrax.collaborative_work.persistence import (
     CollaborativeWorkMaterializedRepositories,
     collaborative_work_core_repositories,
@@ -23,6 +20,9 @@ from intergrax.collaborative_work.persistence_provider import (
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
+)
+from intergrax.contracts.meaningful_side_effect_policy import (
+    MeaningfulSideEffectPolicyEvaluator,
 )
 from intergrax.runtime.governance.orchestration_decision_bound_effect_composition import (
     build_production_orchestration_meaningful_side_effect_authorization_boundary,

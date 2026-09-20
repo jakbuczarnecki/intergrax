@@ -17,6 +17,9 @@ from intergrax.collaborative_work.repository import (
 )
 from intergrax.contracts.canonical_inner_governance import CanonicalInnerExecutionGuardPort
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
+from intergrax.contracts.meaningful_side_effect_policy import (
+    MeaningfulSideEffectPolicyEvaluator,
+)
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
@@ -24,7 +27,6 @@ from intergrax.runtime.governance.governance_evidence_recorder import Governance
 from intergrax.runtime.governance.orchestration_meaningful_side_effect_composition import (
     build_orchestration_meaningful_side_effect_authorization_boundary,
 )
-from intergrax.collaborative_work.enforcement_gate import MeaningfulSideEffectPolicyEvaluator
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,
 )

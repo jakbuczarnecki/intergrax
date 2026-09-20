@@ -8,10 +8,7 @@ from collections.abc import Callable
 from datetime import datetime
 
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
-from intergrax.collaborative_work.enforcement_gate import (
-    CollaborativeWorkEnforcementGate,
-    MeaningfulSideEffectPolicyEvaluator,
-)
+from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
 from intergrax.collaborative_work.policy_source import CollaborativePolicyEvaluator
 from intergrax.collaborative_work.repository import (
     AuthorityDelegationRepository,
@@ -22,6 +19,9 @@ from intergrax.collaborative_work.repository import (
 )
 from intergrax.contracts.canonical_inner_governance import CanonicalInnerExecutionGuardPort
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
+from intergrax.contracts.meaningful_side_effect_policy import (
+    MeaningfulSideEffectPolicyEvaluator,
+)
 from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
 from intergrax.runtime.governance.meaningful_side_effect_authorization_composition import (
     build_default_canonical_inner_execution_guard,

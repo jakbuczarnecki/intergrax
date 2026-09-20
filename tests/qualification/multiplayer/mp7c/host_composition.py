@@ -23,9 +23,6 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.applications.contracts.execution_mode import ExecutionMode
-from intergrax.collaborative_work.enforcement_gate import (
-    MeaningfulSideEffectPolicyEvaluator,
-)
 from intergrax.collaborative_work.in_memory_repository import (
     InMemoryAuthorityDelegationRepository,
     InMemoryCollaborativeOperationPolicyProfileRepository,
@@ -61,6 +58,7 @@ from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
 from intergrax.contracts.meaningful_side_effect_policy import (
+    MeaningfulSideEffectPolicyEvaluator,
     MeaningfulSideEffectPolicyRule,
 )
 from intergrax.contracts.runtime_policy import PolicyAction

@@ -5,8 +5,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Protocol, runtime_checkable
 
-from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
+from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 
 
 def _normalize_required_id(value: str, *, field_name: str) -> str:
@@ -43,3 +45,15 @@ class MeaningfulSideEffectPolicyRule:
         object.__setattr__(self, "action", _normalize_optional_action(self.action))
         if not isinstance(self.decision, PolicyAction):
             raise TypeError("decision must be PolicyAction")
+
+
+@runtime_checkable
+class MeaningfulSideEffectPolicyEvaluator(Protocol):
+    """Canonical runtime meaningful-side-effect evaluation surface (platform contract)."""
+
+    def evaluate_meaningful_side_effect(
+        self,
+        request: MeaningfulSideEffectRequest,
+    ) -> PolicyDecision:
+        """Evaluate a proposed external side effect — fail closed by default."""
+        ...

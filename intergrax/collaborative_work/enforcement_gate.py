@@ -10,7 +10,7 @@ applicability.
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import Any
 
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
 from intergrax.collaborative_work.policy_composition import compose_policy_decisions
@@ -29,6 +29,9 @@ from intergrax.contracts.collaborative_work import (
     PolicyLayerApplicability,
 )
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
+from intergrax.contracts.meaningful_side_effect_policy import (
+    MeaningfulSideEffectPolicyEvaluator,
+)
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 
 _POLICY_RULE_PROFILE_MISSING = "collaborative_work.operation_profile.missing"
@@ -36,17 +39,6 @@ _POLICY_RULE_PROFILE_INACTIVE = "collaborative_work.operation_profile.inactive"
 _POLICY_RULE_RESOURCE_REQUIRED_MISSING = "collaborative_work.enforcement.resource_required_missing"
 _POLICY_RULE_RUNTIME_REQUEST_MISSING = "collaborative_work.enforcement.runtime_request_missing"
 _POLICY_RULE_RUNTIME_IDENTITY_MISMATCH = "collaborative_work.enforcement.runtime_identity_mismatch"
-
-
-@runtime_checkable
-class MeaningfulSideEffectPolicyEvaluator(Protocol):
-    """Runtime meaningful-side-effect evaluation surface reused by the gate."""
-
-    def evaluate_meaningful_side_effect(
-        self,
-        request: MeaningfulSideEffectRequest,
-    ) -> PolicyDecision:
-        """Evaluate a proposed external side effect — fail closed by default."""
 
 
 def _classification_deny(reason: str, policy_rule_id: str) -> PolicyDecision:

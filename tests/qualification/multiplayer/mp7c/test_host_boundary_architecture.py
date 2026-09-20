@@ -36,6 +36,26 @@ _WIRING = (
     / "_shared"
     / "harness_meaningful_side_effect_authorization_wiring.py"
 )
+_CONTRACT_MODULE = (
+    _REPO_ROOT / "intergrax" / "contracts" / "meaningful_side_effect_policy.py"
+)
+_ENFORCEMENT_GATE = (
+    _REPO_ROOT / "intergrax" / "collaborative_work" / "enforcement_gate.py"
+)
+_ORCH_MSE = (
+    _REPO_ROOT
+    / "intergrax"
+    / "runtime"
+    / "governance"
+    / "orchestration_meaningful_side_effect_composition.py"
+)
+_ORCH_DECISION_BOUND = (
+    _REPO_ROOT
+    / "intergrax"
+    / "runtime"
+    / "governance"
+    / "orchestration_decision_bound_effect_composition.py"
+)
 _CONSUMER = _MP7B / "consumer.py"
 _HOST_COMPOSITION = _MP7C / "host_composition.py"
 
@@ -104,6 +124,7 @@ def test_mp7c_qualification_doc_closed() -> None:
     text = _QUAL_DOC.read_text(encoding="utf-8-sig")
     assert "TIER-3 HOST COMPOSITION & BOUNDARY E2E QUALIFIED / CLOSED" in text
     assert "MP-7C-C1" in text
+    assert "MP-7C-C1-R1" in text
     assert "CLOSED / CERTIFIED" in text or "CLOSED / RECERTIFIED" in text
     assert "BLOCKING ARCHITECTURE GAPS: NONE" in text
     assert "BLOCKING FINDINGS: NONE" in text
@@ -117,6 +138,117 @@ def test_mp7c_qualification_doc_closed() -> None:
     assert "injected runtime policy evaluator" in text.lower() or (
         "injected" in text.lower() and "runtime policy evaluator" in text.lower()
     )
+    assert "enforcement_gate implementation module" in text.lower() or (
+        "canonical ownership" in text.lower() and "contracts" in text.lower()
+    )
+
+
+def test_mp7c_c1_r1_canonical_evaluator_lives_in_contracts() -> None:
+    from intergrax.contracts.meaningful_side_effect_policy import (
+        MeaningfulSideEffectPolicyEvaluator,
+    )
+
+    assert MeaningfulSideEffectPolicyEvaluator.__module__ == (
+        "intergrax.contracts.meaningful_side_effect_policy"
+    )
+    source = _CONTRACT_MODULE.read_text(encoding="utf-8")
+    assert "class MeaningfulSideEffectPolicyEvaluator" in source
+    assert "intergrax.collaborative_work" not in source
+
+
+def test_mp7c_c1_r1_one_production_canonical_definition() -> None:
+    """Canonical production Protocol: exactly one definition under intergrax/ source."""
+    definitions: list[str] = []
+    intergrax_root = _REPO_ROOT / "intergrax"
+    for path in intergrax_root.rglob("*.py"):
+        if "__pycache__" in path.parts:
+            continue
+        text = path.read_text(encoding="utf-8")
+        if "class MeaningfulSideEffectPolicyEvaluator" in text:
+            definitions.append(_rel(path))
+    assert definitions == [
+        "intergrax/contracts/meaningful_side_effect_policy.py",
+    ]
+    # Vendored docker runtime-context trees are not canonical ownership.
+    for app in ("local_workspace_application", "lab_application"):
+        vendored = (
+            _REPO_ROOT
+            / "applications"
+            / app
+            / "docker"
+            / "runtime-context"
+            / "intergrax"
+            / "collaborative_work"
+            / "enforcement_gate.py"
+        )
+        if vendored.is_file():
+            # Stale vendored copies may still name the class; they are not platform SSOT.
+            assert vendored.is_relative_to(_REPO_ROOT / "applications" / app / "docker")
+
+
+def test_mp7c_c1_r1_host_and_runtime_do_not_import_evaluator_from_enforcement_gate() -> None:
+    for path in (_WIRING, _ORCH_MSE, _ORCH_DECISION_BOUND):
+        mods = _imports_in_file(path)
+        assert (
+            "MeaningfulSideEffectPolicyEvaluator"
+            not in _imported_names_from(
+                path, "intergrax.collaborative_work.enforcement_gate"
+            )
+        )
+        assert "intergrax.contracts.meaningful_side_effect_policy" in mods
+        assert (
+            "MeaningfulSideEffectPolicyEvaluator"
+            in _imported_names_from(
+                path, "intergrax.contracts.meaningful_side_effect_policy"
+            )
+        )
+
+
+def test_mp7c_c1_r1_enforcement_gate_imports_neutral_contract() -> None:
+    mods = _imports_in_file(_ENFORCEMENT_GATE)
+    assert "intergrax.contracts.meaningful_side_effect_policy" in mods
+    assert (
+        "MeaningfulSideEffectPolicyEvaluator"
+        in _imported_names_from(
+            _ENFORCEMENT_GATE, "intergrax.contracts.meaningful_side_effect_policy"
+        )
+    )
+    source = _ENFORCEMENT_GATE.read_text(encoding="utf-8")
+    assert "class MeaningfulSideEffectPolicyEvaluator" not in source
+
+
+def test_mp7c_c1_r1_runtime_and_custom_evaluator_structural_conformance() -> None:
+    from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
+    from intergrax.contracts.meaningful_side_effect_policy import (
+        MeaningfulSideEffectPolicyEvaluator,
+    )
+    from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+    from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+
+    class _CustomEvaluator:
+        def evaluate_meaningful_side_effect(
+            self,
+            request: MeaningfulSideEffectRequest,
+        ) -> PolicyDecision:
+            del request
+            return PolicyDecision(
+                action=PolicyAction.DENY,
+                reason="mp7c-c1-r1-custom",
+                policy_rule_id="mp7c.c1.r1.custom",
+            )
+
+    assert isinstance(RuntimePolicyEngine(), MeaningfulSideEffectPolicyEvaluator)
+    assert isinstance(_CustomEvaluator(), MeaningfulSideEffectPolicyEvaluator)
+
+
+def _imported_names_from(path: Path, module: str) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module == module:
+            for alias in node.names:
+                names.add(alias.name)
+    return names
 
 
 def test_mp7c_status_markers_in_ssot_docs() -> None:
