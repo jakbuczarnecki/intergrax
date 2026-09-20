@@ -9,12 +9,16 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Final, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.contracts.capability_acquisition.success_evidence import (
+    validate_availability_proves_host_available,
+)
 from intergrax.contracts.capability_catalog.evidence import (
     CapabilityDiscoveryAvailabilityEvidence,
 )
 from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
+from intergrax.contracts.capability_catalog.kind import CapabilityKind
 
 SCHEMA_KNOWN_TOOL_CAPABILITY_REALIZATION_REQUEST_V1: Final = (
     "known_tool_capability_realization_request.v1"
@@ -64,6 +68,14 @@ class KnownToolCapabilityRealizationRequest(BaseModel):
             raise ValueError("requested_at must be timezone-aware UTC")
         return value
 
+    @model_validator(mode="after")
+    def _validate_tool_identity(self) -> KnownToolCapabilityRealizationRequest:
+        if self.capability_identity.kind is not CapabilityKind.TOOL:
+            raise ValueError(
+                "known tool realization requires capability_identity.kind TOOL",
+            )
+        return self
+
 
 class KnownToolCapabilityRealizationResult(BaseModel):
     """Tool-owned realization result with availability evidence slice."""
@@ -80,6 +92,26 @@ class KnownToolCapabilityRealizationResult(BaseModel):
     domain_reference: str | None = None
     availability_evidence: CapabilityDiscoveryAvailabilityEvidence | None = None
     reason_detail: str = ""
+
+    @model_validator(mode="after")
+    def _validate_success_evidence(self) -> KnownToolCapabilityRealizationResult:
+        if self.capability_identity.kind is not CapabilityKind.TOOL:
+            raise ValueError(
+                "known tool realization result requires capability_identity.kind TOOL",
+            )
+        if self.outcome in (
+            KnownToolCapabilityRealizationOutcome.REALIZED,
+            KnownToolCapabilityRealizationOutcome.ALREADY_REALIZED,
+        ):
+            if self.availability_evidence is None:
+                raise ValueError(
+                    "REALIZED outcomes require availability evidence",
+                )
+            validate_availability_proves_host_available(
+                identity=self.capability_identity,
+                availability=self.availability_evidence,
+            )
+        return self
 
 
 class KnownToolCapabilityRealizationPort(Protocol):

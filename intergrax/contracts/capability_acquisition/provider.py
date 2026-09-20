@@ -34,8 +34,19 @@ class CapabilityRealizationProvider(Protocol):
         """Whether this provider accepts the request (identity + kind)."""
         ...
 
-    def realize(self, request: CapabilityRealizationRequest) -> CapabilityRealizationResult:
-        """Perform domain-owned realization handoff for one request."""
+    def realize(
+        self, request: CapabilityRealizationRequest
+    ) -> CapabilityRealizationResult:
+        """Perform domain-owned realization handoff for one request.
+
+        Idempotency: for the same ``request_id`` and immutable request semantics,
+        the provider MUST NOT duplicate domain side effects (delegate to an
+        idempotent domain lifecycle boundary when needed).
+
+        Replay integrity: the same ``request_id`` with conflicting immutable
+        request fields MUST be rejected with an integrity or conflict failure —
+        not by returning a prior result for a different request.
+        """
         ...
 
 

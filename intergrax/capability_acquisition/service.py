@@ -7,7 +7,11 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from intergrax.capability_acquisition.registry import CapabilityRealizationProviderRegistry
+from pydantic import ValidationError
+
+from intergrax.capability_acquisition.registry import (
+    CapabilityRealizationProviderRegistry,
+)
 from intergrax.contracts.capability_acquisition.errors import (
     CapabilityRealizationIntegrityError,
 )
@@ -40,7 +44,9 @@ class CapabilityRealizationService:
     ) -> None:
         self._registry = CapabilityRealizationProviderRegistry(providers)
 
-    def realize(self, request: CapabilityRealizationRequest) -> CapabilityRealizationResult:
+    def realize(
+        self, request: CapabilityRealizationRequest
+    ) -> CapabilityRealizationResult:
         started_at = datetime.now(tz=UTC)
         eligible = self._registry.eligible_providers(request)
         if not eligible:
@@ -65,6 +71,15 @@ class CapabilityRealizationService:
         provider = eligible[0]
         try:
             result = provider.realize(request)
+        except ValidationError as exc:
+            return _terminal_result(
+                request=request,
+                outcome=CapabilityRealizationOutcome.FAILED,
+                reason_code=CapabilityRealizationReasonCode.EVIDENCE_INCONSISTENT,
+                started_at=started_at,
+                provider_id=provider.provider_id,
+                reason_detail=str(exc),
+            )
         except CapabilityRealizationIntegrityError as exc:
             return _terminal_result(
                 request=request,
@@ -75,7 +90,9 @@ class CapabilityRealizationService:
                 reason_detail=str(exc),
             )
 
-        _assert_result_matches_request(request, result, provider_id=provider.provider_id)
+        _assert_result_matches_request(
+            request, result, provider_id=provider.provider_id
+        )
         return result
 
 
@@ -89,7 +106,10 @@ def _assert_result_matches_request(
         raise CapabilityRealizationIntegrityError("result request_id mismatch")
     if result.realization_need_id != request.realization_need.realization_need_id:
         raise CapabilityRealizationIntegrityError("result realization_need_id mismatch")
-    if result.capability_identity.sort_key != request.realization_need.capability_identity.sort_key:
+    if (
+        result.capability_identity.sort_key
+        != request.realization_need.capability_identity.sort_key
+    ):
         raise CapabilityRealizationIntegrityError("result capability_identity mismatch")
     if result.provider_id is not None and result.provider_id != provider_id:
         raise CapabilityRealizationIntegrityError("result provider_id mismatch")

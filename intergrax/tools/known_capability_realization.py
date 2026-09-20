@@ -25,7 +25,14 @@ from intergrax.tools.dynamic_acquisition import (
     ToolHostActivationMaterializer,
     ToolHostActivationPort,
 )
+from intergrax.tools.errors import (
+    DynamicToolAcquisitionResolutionError,
+    KnownToolCapabilityRealizationConflictError,
+)
 from intergrax.tools.identity import ToolPackageIdentity
+from intergrax.tools.known_capability_resolution import (
+    assert_exact_tool_package_resolution_for_identity,
+)
 
 
 class ToolPackageResolutionForIdentityPort(Protocol):
@@ -58,6 +65,17 @@ class ToolKnownCapabilityRealizationService(KnownToolCapabilityRealizationPort):
     ) -> KnownToolCapabilityRealizationResult:
         prior = self._completed.get(request.operation_id)
         if prior is not None:
+            if prior.host_profile_id != request.host_profile_id:
+                raise KnownToolCapabilityRealizationConflictError(
+                    "operation_id replay host_profile_id conflict",
+                )
+            if (
+                prior.capability_identity.sort_key
+                != request.capability_identity.sort_key
+            ):
+                raise KnownToolCapabilityRealizationConflictError(
+                    "operation_id replay capability_identity conflict",
+                )
             return prior
 
         if request.host_profile_id != self._activation.host_profile_id:
@@ -68,12 +86,26 @@ class ToolKnownCapabilityRealizationService(KnownToolCapabilityRealizationPort):
             )
 
         try:
-            resolution = self._resolver.resolve_for_identity(request.capability_identity)
+            resolution = self._resolver.resolve_for_identity(
+                request.capability_identity
+            )
         except (LookupError, ValueError) as exc:
             return self._reject(
                 request,
                 outcome=KnownToolCapabilityRealizationOutcome.FAILED,
                 reason_detail=f"resolution failed: {exc}",
+            )
+
+        try:
+            assert_exact_tool_package_resolution_for_identity(
+                capability_identity=request.capability_identity,
+                resolution=resolution,
+            )
+        except DynamicToolAcquisitionResolutionError as exc:
+            return self._reject(
+                request,
+                outcome=KnownToolCapabilityRealizationOutcome.FAILED,
+                reason_detail=str(exc),
             )
 
         if resolution.package_candidate.package_digest is None:

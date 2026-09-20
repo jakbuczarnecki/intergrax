@@ -22,9 +22,14 @@ class DynamicToolAcquisitionActivationError(ToolDomainError):
     """Resolved package could not be activated for host profile."""
 
 
+class KnownToolCapabilityRealizationConflictError(ToolDomainError):
+    """Idempotent known-tool realization replay conflict for the same operation id."""
+
+
 __all__ = [
     "DynamicToolAcquisitionActivationError",
     "DynamicToolAcquisitionConflictError",
     "DynamicToolAcquisitionResolutionError",
+    "KnownToolCapabilityRealizationConflictError",
     "ToolDomainError",
 ]

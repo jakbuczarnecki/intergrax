@@ -128,3 +128,69 @@ def test_succeeded_result_accepts_canonical_evidence() -> None:
         evidence=evidence,
     )
     assert result.outcome is CapabilityRealizationOutcome.SUCCEEDED
+
+
+def _succeeded_result_fields(need: CapabilityRealizationNeed, request_id: str) -> dict:
+    return dict(
+        request_id=request_id,
+        realization_need_id=need.realization_need_id,
+        provider_id="provider.test",
+        outcome=CapabilityRealizationOutcome.SUCCEEDED,
+        reason_code=CapabilityRealizationReasonCode.NONE,
+        capability_identity=need.capability_identity,
+        started_at=_CREATED,
+        completed_at=_CREATED,
+    )
+
+
+def test_succeeded_rejects_evidence_for_different_identity() -> None:
+    need = _realization_need()
+    request_id = derive_capability_realization_request_id(
+        realization_need_id=need.realization_need_id,
+        request_nonce="nonce-1",
+    )
+    other = _tool_key("tools.other")
+    evidence = CapabilityRealizationEvidence.from_availability_evidence(
+        CapabilityDiscoveryAvailabilityEvidence(host_available_keys=(other,)),
+    )
+    with pytest.raises(ValidationError):
+        CapabilityRealizationResult(
+            **_succeeded_result_fields(need, request_id),
+            evidence=evidence,
+        )
+
+
+def test_succeeded_rejects_missing_identity_in_host_available() -> None:
+    need = _realization_need()
+    request_id = derive_capability_realization_request_id(
+        realization_need_id=need.realization_need_id,
+        request_nonce="nonce-1",
+    )
+    evidence = CapabilityRealizationEvidence.from_availability_evidence(
+        CapabilityDiscoveryAvailabilityEvidence(host_available_keys=()),
+    )
+    with pytest.raises(ValidationError):
+        CapabilityRealizationResult(
+            **_succeeded_result_fields(need, request_id),
+            evidence=evidence,
+        )
+
+
+def test_succeeded_rejects_blocked_same_identity() -> None:
+    need = _realization_need()
+    identity = need.capability_identity
+    with pytest.raises(ValidationError):
+        CapabilityDiscoveryAvailabilityEvidence(
+            host_available_keys=(identity,),
+            blocked_keys=(identity,),
+        )
+
+
+def test_succeeded_rejects_unavailable_same_identity() -> None:
+    need = _realization_need()
+    identity = need.capability_identity
+    with pytest.raises(ValidationError):
+        CapabilityDiscoveryAvailabilityEvidence(
+            host_available_keys=(identity,),
+            unavailable_keys=(identity,),
+        )

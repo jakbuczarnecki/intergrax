@@ -13,6 +13,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator, model_valida
 from intergrax.contracts.capability_acquisition.evidence import (
     CapabilityRealizationEvidence,
 )
+from intergrax.contracts.capability_acquisition.success_evidence import (
+    validate_realization_success_evidence,
+)
 from intergrax.contracts.capability_acquisition.outcome import (
     CapabilityRealizationOutcome,
 )
@@ -45,7 +48,9 @@ class CapabilityRealizationResult(BaseModel):
     evidence: CapabilityRealizationEvidence | None = None
     reason_detail: str = ""
 
-    @field_validator("request_id", "realization_need_id", "provider_id", "reason_detail")
+    @field_validator(
+        "request_id", "realization_need_id", "provider_id", "reason_detail"
+    )
     @classmethod
     def _validate_text_fields(cls, value: str | None) -> str | None:
         if value is None:
@@ -64,10 +69,10 @@ class CapabilityRealizationResult(BaseModel):
     @model_validator(mode="after")
     def _validate_success_evidence(self) -> CapabilityRealizationResult:
         if self.outcome is CapabilityRealizationOutcome.SUCCEEDED:
-            if self.evidence is None or self.evidence.availability_evidence is None:
-                raise ValueError(
-                    "SUCCEEDED requires availability evidence for canonical projection",
-                )
+            validate_realization_success_evidence(
+                identity=self.capability_identity,
+                evidence=self.evidence,
+            )
             if self.provider_id is None:
                 raise ValueError("SUCCEEDED requires provider_id")
         return self

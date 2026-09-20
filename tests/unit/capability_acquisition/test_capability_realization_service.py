@@ -9,7 +9,9 @@ from datetime import UTC, datetime
 import pytest
 
 from intergrax.capability_acquisition.service import CapabilityRealizationService
-from intergrax.capability_acquisition.registry import CapabilityRealizationProviderRegistry
+from intergrax.capability_acquisition.registry import (
+    CapabilityRealizationProviderRegistry,
+)
 from intergrax.contracts.capability_acquisition.outcome import (
     CapabilityRealizationOutcome,
 )
@@ -113,7 +115,9 @@ class _FakeProvider:
             return self._supports_override
         return request.capability_kind in self._kinds
 
-    def realize(self, request: CapabilityRealizationRequest) -> CapabilityRealizationResult:
+    def realize(
+        self, request: CapabilityRealizationRequest
+    ) -> CapabilityRealizationResult:
         self.calls += 1
         need = request.realization_need
         evidence = CapabilityRealizationEvidence.from_availability_evidence(
@@ -217,3 +221,42 @@ def test_repeated_realize_same_request_no_duplicate_provider_side_effects() -> N
     service.realize(request)
     service.realize(request)
     assert provider.calls == 2
+
+
+def test_provider_mismatched_success_evidence_returns_failed() -> None:
+    need = _need()
+
+    class _BadEvidenceProvider(_FakeProvider):
+        def realize(
+            self, request: CapabilityRealizationRequest
+        ) -> CapabilityRealizationResult:
+            self.calls += 1
+            other = CapabilityIdentityKey(
+                kind=CapabilityKind.TOOL,
+                source_id="official.catalog",
+                source_kind=CapabilitySourceKind.OFFICIAL,
+                logical_id="other.tool",
+            )
+            evidence = CapabilityRealizationEvidence.from_availability_evidence(
+                CapabilityDiscoveryAvailabilityEvidence(host_available_keys=(other,)),
+            )
+            return CapabilityRealizationResult(
+                request_id=request.request_id,
+                realization_need_id=request.realization_need.realization_need_id,
+                provider_id=self._provider_id,
+                outcome=CapabilityRealizationOutcome.SUCCEEDED,
+                reason_code=CapabilityRealizationReasonCode.NONE,
+                capability_identity=request.realization_need.capability_identity,
+                started_at=_CREATED,
+                completed_at=_CREATED,
+                evidence=evidence,
+            )
+
+    provider = _BadEvidenceProvider(
+        provider_id="bad.evidence",
+        kinds=frozenset({CapabilityKind.TOOL}),
+    )
+    service = CapabilityRealizationService((provider,))
+    result = service.realize(_request(need))
+    assert result.outcome is CapabilityRealizationOutcome.FAILED
+    assert result.reason_code is CapabilityRealizationReasonCode.EVIDENCE_INCONSISTENT

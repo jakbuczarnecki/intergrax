@@ -28,6 +28,7 @@ from intergrax.contracts.tools.known_capability_realization import (
     KnownToolCapabilityRealizationPort,
     KnownToolCapabilityRealizationRequest,
 )
+from intergrax.tools.errors import KnownToolCapabilityRealizationConflictError
 
 TOOL_CAPABILITY_REALIZATION_PROVIDER_ID = "tool.known_capability_realization.v1"
 
@@ -49,7 +50,9 @@ class ToolCapabilityRealizationProvider:
     def supports(self, request: CapabilityRealizationRequest) -> bool:
         return request.capability_kind is CapabilityKind.TOOL
 
-    def realize(self, request: CapabilityRealizationRequest) -> CapabilityRealizationResult:
+    def realize(
+        self, request: CapabilityRealizationRequest
+    ) -> CapabilityRealizationResult:
         started_at = datetime.now(tz=UTC)
         host_profile_id = request.host_profile_id
         if host_profile_id is None:
@@ -67,7 +70,16 @@ class ToolCapabilityRealizationProvider:
             capability_identity=request.realization_need.capability_identity,
             requested_at=request.requested_at,
         )
-        domain_result = self._handoff.realize(domain_request)
+        try:
+            domain_result = self._handoff.realize(domain_request)
+        except KnownToolCapabilityRealizationConflictError as exc:
+            return _failure(
+                request=request,
+                outcome=CapabilityRealizationOutcome.FAILED,
+                reason_code=CapabilityRealizationReasonCode.EVIDENCE_INCONSISTENT,
+                started_at=started_at,
+                reason_detail=str(exc),
+            )
         completed_at = datetime.now(tz=UTC)
         mapped = _map_domain_outcome(domain_result.outcome)
         reason_code = _map_domain_reason(domain_result.outcome)
