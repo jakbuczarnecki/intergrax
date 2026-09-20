@@ -16,7 +16,7 @@ from intergrax.applications.contracts.environment_health_score import (
 )
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.operational_ownership import ApplicationOperationalOwnership
-from intergrax.runtime.registry.semver_compat import SemVer
+from intergrax.contracts.semver import SemVer
 
 
 class ApplicationRegistrySource(StrEnum):

@@ -4,34 +4,37 @@
 """Strongly-typed agent class references for Tier-3 bindings."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import importlib
 from typing import Any, Callable, TypeVar
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.applications.contracts.errors import AgentImportError
+from intergrax.contracts.tier2_agent import Tier2Agent
 
-AgentT = TypeVar("AgentT", bound=Agent)
+AgentT = TypeVar("AgentT", bound=Tier2Agent)
 
 
-def qualname_for_agent(agent_type: type[Agent]) -> str:
+def qualname_for_agent(agent_type: type[Tier2Agent]) -> str:
     """Fully-qualified class name: ``package.module.ClassName``."""
-    if not isinstance(agent_type, type) or not issubclass(agent_type, Agent):
-        raise TypeError(f"Expected Agent subclass, got {agent_type!r}")
+    if not isinstance(agent_type, type) or not issubclass(agent_type, Tier2Agent):
+        raise TypeError(f"Expected Tier2Agent subclass, got {agent_type!r}")
     return f"{agent_type.__module__}.{agent_type.__qualname__}"
 
 
 def qualname_for_callable(fn: Callable[..., Any]) -> str:
     """Fully-qualified callable: ``package.module.function``."""
-    module = attribute_access.optional(fn, "__module__", None)
-    qualname = attribute_access.optional(fn, "__qualname__", None)
+    module = getattr(fn, "__module__", None)
+    qualname = getattr(fn, "__qualname__", None)
     if not module or not qualname:
         raise ValueError(f"Cannot derive qualname for callable {fn!r}")
     return f"{module}.{qualname}"
 
 
-def resolve_agent_type(*, agent_type: type[Agent] | None, import_path: str | None) -> type[Agent]:
+def resolve_agent_type(
+    *,
+    agent_type: type[Tier2Agent] | None,
+    import_path: str | None,
+) -> type[Tier2Agent]:
     """Resolve Tier-2 agent class from typed or serialized binding fields."""
     if agent_type is not None:
         if import_path is not None and qualname_for_agent(agent_type) != import_path:
@@ -55,12 +58,12 @@ def resolve_agent_type(*, agent_type: type[Agent] | None, import_path: str | Non
         ) from exc
 
     try:
-        resolved = attribute_access.optional(module, class_name)
+        resolved = getattr(module, class_name)
     except AttributeError as exc:
         raise AgentImportError(
             f"Module {module_path!r} has no attribute {class_name!r}"
         ) from exc
 
-    if not isinstance(resolved, type) or not issubclass(resolved, Agent):
-        raise AgentImportError(f"{import_path!r} is not an Agent subclass")
+    if not isinstance(resolved, type) or not issubclass(resolved, Tier2Agent):
+        raise AgentImportError(f"{import_path!r} is not a Tier2Agent subclass")
     return resolved

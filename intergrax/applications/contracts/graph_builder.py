@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.agents.agent_contract import Agent
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.applications.contracts.graph_spec import (
     ApplicationGraphSpec,
     GraphEdge,
@@ -22,14 +22,14 @@ class AgentGraph:
         self._default_agent_id: str | None = None
         self._retry_on_error: int | None = None
 
-    def add(self, agent_type: type[Agent], *, agent_id: str | None = None) -> AgentGraph:
+    def add(self, agent_type: type[Tier2Agent], *, agent_id: str | None = None) -> AgentGraph:
         resolved_id = agent_id or agent_type.__name__
         raw_contract = agent_type.__dict__.get("contract_id")
         contract_id = raw_contract if isinstance(raw_contract, str) else None
         self._nodes.append(GraphNode(agent_id=resolved_id, contract_id=contract_id))
         return self
 
-    def default(self, agent_type: type[Agent], *, agent_id: str | None = None) -> AgentGraph:
+    def default(self, agent_type: type[Tier2Agent], *, agent_id: str | None = None) -> AgentGraph:
         resolved_id = agent_id or agent_type.__name__
         self._default_agent_id = resolved_id
         if not any(node.agent_id == resolved_id for node in self._nodes):

@@ -18,10 +18,8 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     PolicyRulesProfile,
 )
-from intergrax.applications.contracts.execution_mode import (
-    ExecutionMode,
-    runtime_policies_for_execution_mode,
-)
+from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.runtime.policy.execution_mode_defaults import runtime_policies_for_execution_mode
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.core.plugins.discovery import EP_POLICY_RULES, EntryPointSpec

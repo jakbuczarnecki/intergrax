@@ -1,18 +1,25 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Tier-3 application platform plugin bootstrap/admission evidence (APP-ADOPTION-1)."""
+"""Tier-3 application platform plugin bootstrap/admission evidence DTO (APP-ADOPTION-1)."""
 
 from __future__ import annotations
 
 from collections.abc import Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
+from typing import Protocol, runtime_checkable
 
-from intergrax.core.plugins.admission import DomainPluginLoadReport
-from intergrax.core.plugins.discovery import EP_MEMORY_STORES
-from intergrax.rag.bootstrap.entry_point_load import RagPluginLoadEvidence
-from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
+
+@runtime_checkable
+class DomainPluginLoadReportView(Protocol):
+    """Immutable per-domain plugin load/admission evidence (structural contract)."""
+
+    group: str
+    registered_count: int
+
+    def to_audit_dict(self) -> dict[str, object]: ...
+
 
 PLATFORM_PLUGIN_DOMAIN_MEMORY = "memory"
 PLATFORM_PLUGIN_DOMAIN_CONTEXT = "context"
@@ -34,68 +41,39 @@ class ApplicationPlatformPluginEvidence:
     Not a global installed-plugin inventory and not production qualification.
     """
 
-    _domain_reports: Mapping[str, DomainPluginLoadReport]
+    _domain_reports: Mapping[str, DomainPluginLoadReportView]
 
     @classmethod
     def from_domain_reports(
         cls,
-        reports: Mapping[str, DomainPluginLoadReport],
+        reports: Mapping[str, DomainPluginLoadReportView],
     ) -> ApplicationPlatformPluginEvidence:
         return cls(_domain_reports=MappingProxyType(dict(reports)))
 
     @property
-    def domain_reports(self) -> Mapping[str, DomainPluginLoadReport]:
+    def domain_reports(self) -> Mapping[str, DomainPluginLoadReportView]:
         return self._domain_reports
 
-    def report_for(self, domain: str) -> DomainPluginLoadReport | None:
+    def report_for(self, domain: str) -> DomainPluginLoadReportView | None:
         """Return domain evidence when that domain participated in bootstrap."""
         return self._domain_reports.get(domain)
 
-    def memory_report(self) -> DomainPluginLoadReport:
+    def memory_report(self) -> DomainPluginLoadReportView:
         """Memory domain always participates in Tier-3 environment wiring."""
         return self._domain_reports[PLATFORM_PLUGIN_DOMAIN_MEMORY]
 
 
-def build_application_platform_plugin_evidence(
-    *,
-    memory_report: DomainPluginLoadReport,
-    context_report: DomainPluginLoadReport,
-    security_report: DomainPluginLoadReport,
-    tools_report: DomainPluginLoadReport,
-    skills_report: DomainPluginLoadReport,
-    policy_bundle: RuntimePolicyBundle,
-    integrations_report: DomainPluginLoadReport,
-    rag_plugin_load_evidence: RagPluginLoadEvidence | None = None,
-) -> ApplicationPlatformPluginEvidence:
-    """Compose application evidence from the same domain wiring invocations."""
-    reports: dict[str, DomainPluginLoadReport] = {
-        PLATFORM_PLUGIN_DOMAIN_MEMORY: memory_report,
-        PLATFORM_PLUGIN_DOMAIN_CONTEXT: context_report,
-        PLATFORM_PLUGIN_DOMAIN_SECURITY: security_report,
-        PLATFORM_PLUGIN_DOMAIN_TOOLS: tools_report,
-        PLATFORM_PLUGIN_DOMAIN_SKILLS: skills_report,
-        PLATFORM_PLUGIN_DOMAIN_INTEGRATIONS: integrations_report,
-    }
-    if rag_plugin_load_evidence is not None:
-        reports[PLATFORM_PLUGIN_DOMAIN_RAG_CHUNKERS] = (
-            rag_plugin_load_evidence.chunker_report
-        )
-        reports[PLATFORM_PLUGIN_DOMAIN_RAG_RETRIEVERS] = (
-            rag_plugin_load_evidence.retriever_report
-        )
-        reports[PLATFORM_PLUGIN_DOMAIN_RAG_RERANKERS] = (
-            rag_plugin_load_evidence.reranker_report
-        )
-    declarative_runtime = policy_bundle.declarative_policy_runtime
-    if declarative_runtime is not None:
-        reports[PLATFORM_PLUGIN_DOMAIN_POLICY] = declarative_runtime.load_report
-    return ApplicationPlatformPluginEvidence.from_domain_reports(reports)
-
-
-def empty_memory_platform_plugin_evidence() -> ApplicationPlatformPluginEvidence:
-    """Deterministic baseline when only Memory domain participates."""
-    return ApplicationPlatformPluginEvidence.from_domain_reports(
-        {
-            PLATFORM_PLUGIN_DOMAIN_MEMORY: DomainPluginLoadReport.empty(EP_MEMORY_STORES),
-        },
-    )
+__all__ = [
+    "PLATFORM_PLUGIN_DOMAIN_CONTEXT",
+    "PLATFORM_PLUGIN_DOMAIN_INTEGRATIONS",
+    "PLATFORM_PLUGIN_DOMAIN_MEMORY",
+    "PLATFORM_PLUGIN_DOMAIN_POLICY",
+    "PLATFORM_PLUGIN_DOMAIN_RAG_CHUNKERS",
+    "PLATFORM_PLUGIN_DOMAIN_RAG_RERANKERS",
+    "PLATFORM_PLUGIN_DOMAIN_RAG_RETRIEVERS",
+    "PLATFORM_PLUGIN_DOMAIN_SECURITY",
+    "PLATFORM_PLUGIN_DOMAIN_SKILLS",
+    "PLATFORM_PLUGIN_DOMAIN_TOOLS",
+    "ApplicationPlatformPluginEvidence",
+    "DomainPluginLoadReportView",
+]

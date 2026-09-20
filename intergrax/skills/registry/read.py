@@ -1,24 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Read-only Skill registry surface for host lifecycle and composition."""
+"""Compatibility re-export — canonical: skills.contracts.skill_registry_read."""
 
 from __future__ import annotations
 
-from typing import Protocol
-
-from intergrax.skills.registry.provenance import SkillRuntimeBindingMetadata
-from intergrax.skills.registry.runtime import RegisteredSkill, SkillRegistry
-
-
-class SkillRegistryRead(Protocol):
-    """Host-scoped skill registry read — not marketplace authority."""
-
-    def has(self, skill_id: str) -> bool: ...
-
-    def get(self, skill_id: str) -> RegisteredSkill: ...
-
-    def binding_metadata(self, skill_id: str) -> SkillRuntimeBindingMetadata | None: ...
+from intergrax.skills.contracts.skill_registry_read import SkillRegistryRead
+from intergrax.skills.registry.runtime import SkillRegistry
 
 
 def as_skill_registry_read(registry: SkillRegistry) -> SkillRegistryRead:

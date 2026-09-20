@@ -67,7 +67,7 @@ from intergrax.applications._shared.memory_vector_wiring import (
 )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.execution_mode import runtime_policies_for_execution_mode
+from intergrax.runtime.policy.execution_mode_defaults import runtime_policies_for_execution_mode
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext

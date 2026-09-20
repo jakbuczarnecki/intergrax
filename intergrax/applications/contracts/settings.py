@@ -9,7 +9,7 @@ import os
 from dataclasses import MISSING, dataclass, fields
 from typing import ClassVar
 
-from intergrax.fastapi_core.config import ApiEnvironment
+from intergrax.contracts.api_environment import ApiEnvironment
 
 
 class EnvReader:

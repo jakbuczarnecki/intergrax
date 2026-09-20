@@ -16,8 +16,8 @@ from typing import Any, Callable
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.applications.contracts.agent_ref import qualname_for_agent, qualname_for_callable
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.applications.contracts.application_host import (
     ApplicationFeatures,
     ApplicationProfile,
@@ -28,7 +28,7 @@ from intergrax.applications.contracts.operational_ownership import (
 from intergrax.contracts.agent_budget import AgentBudgetSlice
 from intergrax.contracts.memory_scope import MemoryScope
 from intergrax.applications.contracts.application_owned_tools import ApplicationOwnedToolDeclaration
-from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 
 _APP_ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 _ENV_PREFIX_RE = re.compile(r"^[A-Z][A-Z0-9_]*_$")
@@ -61,7 +61,7 @@ class AgentBinding(BaseModel):
 
     model_config = ConfigDict(extra="forbid", arbitrary_types_allowed=True)
 
-    agent_type: SkipJsonSchema[type[Agent] | None] = Field(
+    agent_type: SkipJsonSchema[type[Tier2Agent] | None] = Field(
         default=None,
         description="Tier-2 agent class (preferred — checked at authoring time)",
         exclude=True,
@@ -132,7 +132,7 @@ class AgentBinding(BaseModel):
     @classmethod
     def mount(
         cls,
-        agent_type: type[Agent],
+        agent_type: type[Tier2Agent],
         *,
         factory: Callable[..., Any] | None = None,
         builder_key: str | None = None,
@@ -235,7 +235,7 @@ class AgentBinding(BaseModel):
             default=default,
         )
 
-    def resolved_agent_type(self) -> type[Agent]:
+    def resolved_agent_type(self) -> type[Tier2Agent]:
         from intergrax.applications.contracts.agent_ref import resolve_agent_type
 
         return resolve_agent_type(agent_type=self.agent_type, import_path=self.import_path)
