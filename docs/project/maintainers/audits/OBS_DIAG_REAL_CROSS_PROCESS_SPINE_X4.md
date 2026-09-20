@@ -24,6 +24,11 @@
 - **Process A:** pause + durable checkpoint + continuation export JSON.
 - **Process B:** new host runtime, restore continuation backing, resume with checkpoint; `process_pid` differs (enforced in tests).
 - **Platform fix:** `resolve_root_task_identity` restores checkpoint root `execution_id` when resuming without explicit override (governed HITL approval alignment).
+- **X4A closure (successor):** [`OBS_DIAG_HITL_FAILURE_DIAGNOSTIC_CLOSURE_X4A.md`](OBS_DIAG_HITL_FAILURE_DIAGNOSTIC_CLOSURE_X4A.md) — cross-process approved resume + post-terminal violation → durable Problem visible via fresh read; human `REJECT` remains governed FAILED without false Problem.
+
+## X4A note (honest gap history)
+
+X4 did not originally assert durable Problem on HITL resume failure paths; X4A adds `test_hitl_cross_process_resume_injected_violation_creates_durable_problem` and renames human rejection test to reflect semantics (no diagnostic Problem expected).
 
 ## Harness location
 

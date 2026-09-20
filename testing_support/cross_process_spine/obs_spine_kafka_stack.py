@@ -16,7 +16,6 @@ from intergrax.distributed.providers.sqlite_kv_store import SqliteDistributedKVS
 from intergrax.queueing.worker.execution import execute_logical_task
 from intergrax.queueing.worker.registry import TaskExecutionRegistry
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
-from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
 from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
@@ -27,6 +26,7 @@ from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempote
 from pydantic import BaseModel
 from intergrax.tools.execution_models import ToolExecutionResult
 from testing_support.cross_process_spine.durable_document_store import SqliteFileDocumentStore
+from testing_support.cross_process_spine.runtime_terminal_read import terminal_event_type_for_run
 from testing_support.obs_universal_spine.diagnostic_execution_stack import (
     build_diagnostic_nexus_loop,
     build_obs_spine_unified_task_runner,
@@ -169,22 +169,6 @@ def fresh_diagnostic_read_from_durable_backing(
         reconstruction.has_runtime_events,
         reconstruction.is_runtime_history_complete,
     )
-
-
-def terminal_event_type_for_run(
-    *,
-    runtime_store: SQLiteRuntimeEventStore,
-    tenant_id: str,
-    run_id: str,
-) -> RuntimeEventType | None:
-    terminal = {
-        RuntimeEventType.TASK_COMPLETED,
-        RuntimeEventType.TASK_FAILED,
-    }
-    for event in runtime_store.list_for_run(run_id, tenant_id=tenant_id):
-        if event.event_type in terminal:
-            return event.event_type
-    return None
 
 
 def mint_cross_process_execution_identity(

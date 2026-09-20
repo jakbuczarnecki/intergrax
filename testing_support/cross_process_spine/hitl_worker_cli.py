@@ -23,6 +23,7 @@ from intergrax.runtime.observability.reconstruction import ExecutionReconstructo
 from intergrax.runtime.task.task import TaskState
 from testing_support.cross_process_spine.durable_document_store import SqliteFileDocumentStore
 from testing_support.cross_process_spine.models import HitlProcessResult, HitlSpineScenarioConfig
+from testing_support.cross_process_spine.runtime_terminal_read import terminal_event_type_for_run
 from testing_support.obs_universal_spine.hitl_restart_harness import (
     ObsSpineHitlAgent,
     _pause_task,
@@ -149,6 +150,11 @@ async def _run_resume(config: HitlSpineScenarioConfig) -> HitlProcessResult:
         run_id,
     )
     problems = query_all_problems_for_tenant(runtime.read_deps.problem_persistence, config.tenant_id)
+    terminal_event = terminal_event_type_for_run(
+        runtime_store=runtime.runtime_event_store,
+        tenant_id=config.tenant_id,
+        run_id=str(run_id),
+    )
     return HitlProcessResult(
         process_pid=os.getpid(),
         parent_pid=os.getppid(),
@@ -159,6 +165,7 @@ async def _run_resume(config: HitlSpineScenarioConfig) -> HitlProcessResult:
         attempt_id=str(latest.runtime.attempt_id),
         execution_id=str(latest.runtime.execution_tree.entries[0].execution_id),
         terminal_state=resumed.state.value,
+        terminal_event_type=terminal_event.value if terminal_event is not None else None,
         problem_count=len(problems),
         problem_ids=tuple(problem.problem_id for problem in problems),
         reconstruction_has_events=reconstruction.has_runtime_events,

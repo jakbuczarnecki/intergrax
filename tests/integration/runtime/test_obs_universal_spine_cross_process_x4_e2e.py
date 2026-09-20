@@ -142,13 +142,40 @@ def test_hitl_cross_process_resume_success(x4_harness: CrossProcessSpineHarness)
     assert resume.terminal_state == TaskState.COMPLETED.value
 
 
-def test_hitl_cross_process_resume_failure_problem(x4_harness: CrossProcessSpineHarness) -> None:
-    _, resume, fresh = x4_harness.run_hitl_cross_process_proof(
+def test_hitl_cross_process_human_rejection_terminal_behavior(x4_harness: CrossProcessSpineHarness) -> None:
+    pause, resume, fresh = x4_harness.run_hitl_cross_process_proof(
         human_approved=False,
         human_rejected=True,
     )
+    assert pause.task_id == resume.task_id
+    assert pause.run_id == resume.run_id
+    assert pause.execution_id == resume.execution_id
     assert resume.terminal_state == TaskState.FAILED.value
+    assert resume.terminal_event_type == RuntimeEventType.TASK_FAILED.value
+    assert resume.problem_count == 0
+    assert fresh.problem_count == 0
     assert fresh.reconstruction_has_events
+
+
+def test_hitl_cross_process_resume_injected_violation_creates_durable_problem(
+    x4_harness: CrossProcessSpineHarness,
+) -> None:
+    pause, resume, fresh = x4_harness.run_hitl_cross_process_proof(
+        human_approved=True,
+        inject_violation_on_resume=True,
+    )
+    assert pause.process_pid != resume.process_pid
+    assert pause.task_id == resume.task_id
+    assert pause.run_id == resume.run_id
+    assert pause.attempt_id == resume.attempt_id
+    assert pause.execution_id == resume.execution_id
+    assert resume.terminal_state == TaskState.COMPLETED.value
+    assert resume.terminal_event_type == RuntimeEventType.TASK_COMPLETED.value
+    assert resume.problem_count >= 1
+    assert fresh.problem_count >= 1
+    assert resume.problem_ids == fresh.problem_ids
+    assert fresh.reconstruction_has_events
+    assert fresh.reconstruction_complete
 
 
 def test_hitl_cross_process_fresh_read_and_reconstruction(x4_harness: CrossProcessSpineHarness) -> None:

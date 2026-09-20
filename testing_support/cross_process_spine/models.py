@@ -80,6 +80,7 @@ class HitlProcessResult(BaseModel):
     attempt_id: str
     execution_id: str
     terminal_state: str | None = None
+    terminal_event_type: str | None = None
     pause_state: str | None = None
     resume_token: str | None = None
     problem_count: int = 0
