@@ -26,8 +26,8 @@ MP-FINAL-2 — CLOSED / RECERTIFIED
 | **MP_FINAL_2_QUALIFICATION_ANCESTRY** | `886d00bf4cc277cc8005dff9fdc0b4ae3c165222` is ancestor of START_HEAD |
 | **CORRECTION_SHA** | `d1f0631cf7ebb5546e99099de2810e146bc9d9b0` |
 | **QUALIFICATION_SHA** | `9c304e70ace27b4f477269d425e6516090d16140` |
-| **EVIDENCE_SHA** | *(bound by binder commit)* |
-| **BINDER_SHA** | optional; binder does not self-pin |
+| **EVIDENCE_SHA** | `ea6c4ca7376021b9250a810f6c238e388b44dfc9` |
+| **BINDER_SHA** | binder does not self-pin |
 
 Do **not** treat a mutable `CURRENT_HEAD` as certification identity.
 
@@ -290,7 +290,7 @@ BLOCKING SECURITY FINDINGS: NONE
 | ---- | --- |
 | Correction | `d1f0631cf7ebb5546e99099de2810e146bc9d9b0` |
 | Qualification | `9c304e70ace27b4f477269d425e6516090d16140` |
-| Evidence | *(bound by binder)* |
+| Evidence | `ea6c4ca7376021b9250a810f6c238e388b44dfc9` |
 
 ---
 
