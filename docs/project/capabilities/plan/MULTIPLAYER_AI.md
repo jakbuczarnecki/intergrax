@@ -10,7 +10,7 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3, MP-5, MP-6) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-FINAL-2 — Multiplayer Diagnostics & Operability E2E** — **MP-FINAL-1 — CLOSED / RECERTIFIED** (R1 composition-flow + provenance correction). **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED** (Tier-3 consumability boundary). **MP-5 / MP-6 — ENTERPRISE CERTIFIED / CLOSED**. **MP-8 / MP-9 — PLANNED / NOT STARTED**.
+**Current active task:** **MP-FINAL-3 — Capability-Wide Backend E2E** (NEXT) — **MP-FINAL-2 — CLOSED / CERTIFIED** — **MP-FINAL-1 — CLOSED / RECERTIFIED** (R1 composition-flow + provenance correction). **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED** (Tier-3 consumability boundary). **MP-5 / MP-6 — ENTERPRISE CERTIFIED / CLOSED**. **MP-8 / MP-9 — PLANNED / NOT STARTED**.
 **Previous:** **MP-7D — CLOSED / ENTERPRISE CERTIFIED** · **MP-7C / MP-7B / MP-7A** closed per architecture hub.
 
 ---
@@ -438,8 +438,8 @@ Delivery roadmap only. Maturity SSOT remains the architecture hub.
 | Etap | Status | Opis |
 | ---- | ------ | ---- |
 | **MP-FINAL-1** — SSOT Reconciliation & Visual Architecture Baseline | **CLOSED / RECERTIFIED** | Docs + Mermaid visual architecture reconciled; R1 corrected composition flow + evidence provenance |
-| **MP-FINAL-2** — Multiplayer Diagnostics & Operability E2E | **CURRENT** (not started) | Multiplayer → Evidence/Observability → Diagnostics → operator-visible problem |
-| **MP-FINAL-3** — Capability-Wide Backend E2E | **LATER** | Cross-primitive backend scenario (Principal → Activity) |
+| **MP-FINAL-2** — Multiplayer Diagnostics & Operability E2E | **CLOSED / CERTIFIED** | Multiplayer → Evidence → Functional Diagnostics → operator projection (certified scenarios) |
+| **MP-FINAL-3** — Capability-Wide Backend E2E | **NEXT** | Cross-primitive backend scenario (Principal → Activity) |
 | **MP-FINAL-4** — Final Enterprise Core Recertification | **LATER** | Cross-cutting recertification after hardening |
 | **MP-8** | **PLANNED / NOT STARTED** | AgentDirectory / external agents |
 | **MP-9** | **PLANNED / NOT STARTED** | Advanced UX / notifications / realtime |

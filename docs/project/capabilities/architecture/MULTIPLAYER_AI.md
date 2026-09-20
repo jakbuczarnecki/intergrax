@@ -55,7 +55,7 @@ Multiplayer AI is **not** Slack chat, group conversation, shared memory, executi
 | Full product-facing Multiplayer capability E2E (including MP-8 / MP-9) | **not established** |
 | Platform/core enterprise proof for MP-1…MP-7 certified scopes | **established** (see qualification evidence + ADRs) |
 | Capability-wide cross-primitive backend E2E (single end-to-end scenario spanning Principal→Activity) | **deferred** — MP-FINAL-3 |
-| Multiplayer diagnostics / operability E2E | **deferred** — MP-FINAL-2 |
+| Multiplayer diagnostics / operability E2E | **established for certified scenario(s)** — MP-FINAL-2 CLOSED / CERTIFIED |
 | LKW Multiplayer adoption complete | **false** — MP-7 certifies Tier-3 consumability boundary only |
 
 > [!NOTE]
@@ -291,7 +291,22 @@ flowchart LR
 
 - Evidence / Observability are **reused** factual planes; Multiplayer holds references and publishes Collaborative Activity separately.
 - Diagnostics **consumes/interprets** evidence — it is **not** Multiplayer authority and must not be treated as a second diagnostic authority owned by Multiplayer.
-- Full Multiplayer diagnostics / operability E2E (Multiplayer → Evidence/Observability → Diagnostics → operator-visible problem) remains deferred to **MP-FINAL-2**.
+- **MP-FINAL-2 — CLOSED / CERTIFIED.** Multiplayer diagnostics/operability E2E established **for certified scenario(s)** (decision-binding create technical failure → Functional Evidence → Functional Diagnostics → operator projection). Not a claim that all possible production diagnostics are universally proven.
+- Evidence: [`MP-FINAL-2_MULTIPLAYER_DIAGNOSTICS_OPERABILITY_E2E_CERTIFICATION.md`](../../maintainers/qualification/MP-FINAL-2_MULTIPLAYER_DIAGNOSTICS_OPERABILITY_E2E_CERTIFICATION.md).
+
+### Diagram 9 — MP-FINAL-2 operability flow (certified)
+
+```mermaid
+flowchart LR
+  OP["Multiplayer operation / failure"] --> FE["Evidence Plane<br/>FunctionalEvidencePersistence"]
+  FE --> FDA["Diagnostics interpretation<br/>FunctionalDiagnosticAnalyzer"]
+  FDA --> OPV["Operator projection<br/>FunctionalOperatorProjector"]
+  OPV --> OPS["Operator"]
+  OP -. "≠ technical log" .-> ACT["CollaborativeActivity"]
+  FDA -. "≠ authority" .-> AUTH["Authorization / policy"]
+```
+
+**Invariants preserved:** Diagnostics ≠ authority; CollaborativeActivity ≠ technical RuntimeEvent / diagnostic Problem; Multiplayer does not own a second diagnostic engine or problem store.
 
 ## Product / Visual UX Boundary
 
@@ -311,7 +326,7 @@ flowchart LR
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-FINAL-2 — Multiplayer Diagnostics & Operability E2E** (next). **MP-FINAL-1 — CLOSED / RECERTIFIED** (R1 composition-flow + provenance correction). **MP-7D — CLOSED / ENTERPRISE CERTIFIED** ([`MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md)). **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED**. **MP-6 — ENTERPRISE CERTIFIED / CLOSED** (**MP-6H — CLOSED / CERTIFIED** — [`MP-6_FINAL_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-6_FINAL_ENTERPRISE_CERTIFICATION.md)). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md)).
+**Current active task:** **MP-FINAL-3 — Capability-Wide Backend E2E** (NEXT). **MP-FINAL-2 — CLOSED / CERTIFIED**. **MP-FINAL-1 — CLOSED / RECERTIFIED** (R1 composition-flow + provenance correction). **MP-7D — CLOSED / ENTERPRISE CERTIFIED** ([`MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md)). **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED**. **MP-6 — ENTERPRISE CERTIFIED / CLOSED** (**MP-6H — CLOSED / CERTIFIED** — [`MP-6_FINAL_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-6_FINAL_ENTERPRISE_CERTIFICATION.md)). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md)).
 **Previous:** **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED** (subject to independent audit). **MP-4D7** — Documentation regression gates — **CLOSED** (SSOT: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) § MP-4D7)
 
 ## Cursor read scope (token budget)
