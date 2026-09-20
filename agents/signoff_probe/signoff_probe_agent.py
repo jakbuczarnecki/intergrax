@@ -15,8 +15,10 @@ from intergrax.agents.authoring.patterns.types import (
 )
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
-    build_lab_agent_runtime_context,
     default_reference_harness,
+)
+from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+    build_lab_agent_runtime_context,
 )
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext

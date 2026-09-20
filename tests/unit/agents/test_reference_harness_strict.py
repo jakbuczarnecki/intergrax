@@ -10,6 +10,8 @@ import pytest
 
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
+)
+from intergrax.runtime.nexus.agents.reference_harness_runtime import (
     build_lab_agent_runtime_config,
     build_lab_agent_runtime_context,
     lab_harness_context_from_modality_tooling,

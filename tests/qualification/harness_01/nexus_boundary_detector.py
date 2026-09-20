@@ -36,6 +36,43 @@ def nexus_imported_symbols(tree: ast.Module) -> NexusImportedSymbols:
     )
 
 
+def _nexus_module_string(value: str) -> bool:
+    return value == "intergrax.runtime.nexus" or value.startswith("intergrax.runtime.nexus.")
+
+
+def _collect_nexus_module_string_bindings(tree: ast.Module) -> set[str]:
+    bindings: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                if _nexus_module_string(node.value.value):
+                    for target in node.targets:
+                        if isinstance(target, ast.Name):
+                            bindings.add(target.id)
+        if (
+            isinstance(node, ast.AnnAssign)
+            and node.value is not None
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+            and _nexus_module_string(node.value.value)
+            and isinstance(node.target, ast.Name)
+        ):
+            bindings.add(node.target.id)
+    return bindings
+
+
+def _expr_is_nexus_module_reference(
+    node: ast.expr,
+    *,
+    nexus_string_bindings: set[str],
+) -> bool:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return _nexus_module_string(node.value)
+    if isinstance(node, ast.Name) and node.id in nexus_string_bindings:
+        return True
+    return False
+
+
 def file_imports_nexus_module(source: str) -> bool:
     try:
         tree = ast.parse(source)
@@ -43,6 +80,32 @@ def file_imports_nexus_module(source: str) -> bool:
         return False
     symbols = nexus_imported_symbols(tree)
     return bool(symbols.type_names or symbols.module_aliases)
+
+
+def file_has_dynamic_nexus_import(source: str) -> bool:
+    """Detect ``importlib.import_module`` / ``__import__`` targeting Nexus modules."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return False
+    nexus_string_bindings = _collect_nexus_module_string_bindings(tree)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        is_import_module = (
+            isinstance(func, ast.Attribute)
+            and func.attr == "import_module"
+            and isinstance(func.value, ast.Name)
+            and func.value.id == "importlib"
+        )
+        is_dunder_import = isinstance(func, ast.Name) and func.id == "__import__"
+        if not is_import_module and not is_dunder_import:
+            continue
+        for arg in node.args[:1]:
+            if _expr_is_nexus_module_reference(arg, nexus_string_bindings=nexus_string_bindings):
+                return True
+    return False
 
 
 def _is_nexus_type_reference(

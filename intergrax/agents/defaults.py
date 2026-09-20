@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
-    build_lab_agent_runtime_context,
     default_reference_harness,
 )
 
@@ -18,7 +17,6 @@ def harness_production_mode() -> bool:
 
 __all__ = [
     "LabHarnessContext",
-    "build_lab_agent_runtime_context",
     "default_reference_harness",
     "harness_production_mode",
 ]

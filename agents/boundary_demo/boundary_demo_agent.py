@@ -12,8 +12,10 @@ from intergrax.agents.authoring.patterns.reflex import ReflexAgent  # ACP-MIG-3 
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
-    build_lab_agent_runtime_config,
     default_reference_harness,
+)
+from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+    build_lab_agent_runtime_config,
 )
 from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel

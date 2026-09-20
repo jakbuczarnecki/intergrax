@@ -365,6 +365,8 @@ _PATHS: tuple[str, ...] = (
     "intergrax/applications/_shared/harness_host_runtime.py",
     "intergrax/applications/_shared/harness_host_task_execution_wiring.py",
     "intergrax/applications/_shared/host_task_execution_wiring.py",
+    "intergrax/applications/_shared/lab_harness_context.py",
+    "intergrax/applications/_shared/lab_runtime_config.py",
     "intergrax/applications/_shared/integration_runtime_bridge.py",
     "intergrax/applications/_shared/llm_routing_runtime_bridge.py",
     "intergrax/applications/_shared/memory_runtime_bridge.py",

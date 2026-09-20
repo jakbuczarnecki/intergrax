@@ -367,12 +367,11 @@ async def _run_acp_session_bound(
         trace_step_count_fn=lambda: len(kernel_ctx.run_trace.steps),
     )
 
-    router_runtime_config = None
     resolved_llm_adapter = None
     if host is not None and host.runtime_profile is not None:
         apply_kernel = session_hooks.apply_runtime_profile_kernel_wiring
         if apply_kernel is not None:
-            router_runtime_config = apply_kernel(
+            resolved_llm_adapter = apply_kernel(
                 host=host,
                 kernel_ctx_holder=kernel_ctx_holder,
                 merged=merged,
@@ -393,15 +392,9 @@ async def _run_acp_session_bound(
                 routing_context=acp_routing_context,
             )
 
-    if router_runtime_config is not None and resolved_llm_adapter is None:
-        config_adapter = router_runtime_config.llm_adapter
-        if config_adapter is not None:
-            resolved_llm_adapter = config_adapter
-
     base_llm_router = StepLLMRouter(
         allowed_models=tuple(merged.allowed_llm_models),
         default_model=merged.default_llm_model,
-        runtime_config=router_runtime_config,
         llm_adapter=resolved_llm_adapter,
         require_real_llm=(
             host.runtime_profile.execution_mode.value == "strict"

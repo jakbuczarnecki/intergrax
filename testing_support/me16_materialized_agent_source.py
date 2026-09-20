@@ -13,9 +13,9 @@ def render_me16_materialized_agent_module(*, function_name: str) -> str:
             f'''
             from intergrax.runtime.nexus.agents.runtime_tool_helpers import invoke_catalog_tool
             from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
-            from intergrax.agents.reference_harness import (
+            from intergrax.agents.reference_harness import default_reference_harness
+            from intergrax.runtime.nexus.agents.reference_harness_runtime import (
                 build_lab_agent_runtime_context,
-                default_reference_harness,
             )
             from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
             from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState

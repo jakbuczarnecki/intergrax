@@ -482,8 +482,8 @@ def test_no_duplicate_tool_profile_dto_aliases() -> None:
 
 
 def test_lab_harness_carries_prebuilt_tool_registry_into_runtime_config() -> None:
-    from intergrax.agents.reference_harness import (
-        LabHarnessContext,
+    from intergrax.agents.reference_harness import LabHarnessContext
+    from intergrax.runtime.nexus.agents.reference_harness_runtime import (
         build_lab_agent_runtime_config,
     )
     from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
@@ -753,8 +753,8 @@ def test_probe_registry_structural_acceptance_by_runtime_executor() -> None:
 
 
 def test_probe_registry_via_runtime_config_harness_path() -> None:
-    from intergrax.agents.reference_harness import (
-        LabHarnessContext,
+    from intergrax.agents.reference_harness import LabHarnessContext
+    from intergrax.runtime.nexus.agents.reference_harness_runtime import (
         build_lab_agent_runtime_config,
     )
     from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle

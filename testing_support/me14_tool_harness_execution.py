@@ -7,8 +7,10 @@ from __future__ import annotations
 from pathlib import Path
 
 from intergrax.agents.reference_harness import (
-    build_lab_agent_runtime_context,
     default_reference_harness,
+)
+from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+    build_lab_agent_runtime_context,
 )
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.runtime.nexus.agents.runtime_tool_helpers import invoke_catalog_tool

@@ -26,9 +26,11 @@ from intergrax.runtime.nexus.agents.runtime_tool_helpers import (
 )
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
+    default_reference_harness,
+)
+from intergrax.runtime.nexus.agents.reference_harness_runtime import (
     build_lab_agent_runtime_config,
     build_lab_agent_runtime_context,
-    default_reference_harness,
 )
 from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import (

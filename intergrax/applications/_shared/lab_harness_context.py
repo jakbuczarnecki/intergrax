@@ -6,12 +6,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from intergrax.agents.reference_harness import (
-    LabHarnessContext,
-    lab_harness_context_from_modality_tooling,
-)
+from intergrax.agents.reference_harness import LabHarnessContext
 from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+    lab_harness_context_from_modality_tooling,
+)
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.tools.registry.read import ToolRegistryRead
 from intergrax.tools.registry.wiring import ToolWiringContext

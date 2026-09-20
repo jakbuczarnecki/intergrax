@@ -4,7 +4,8 @@
 
 from __future__ import annotations
 
-from intergrax.agents.authoring.acp_runtime_session_hooks import AcpRuntimeSessionHooks
+from intergrax.agents.authoring.acp_runtime_session_ports import AcpRuntimeSessionHooks
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
 from intergrax.contracts.agent_run import AgentRunRequest
 from intergrax.runtime.kernel.step_kernel import StepKernelContext
@@ -30,7 +31,7 @@ def build_nexus_acp_runtime_session_hooks() -> AcpRuntimeSessionHooks:
         kernel_ctx_holder: list[StepKernelContext],
         merged: EffectiveAgentRunEnvironment,
         request: AgentRunRequest,
-    ) -> object | None:
+    ) -> LLMAdapter | None:
         if host is None or host.runtime_profile is None:
             return None
         from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
@@ -67,7 +68,7 @@ def build_nexus_acp_runtime_session_hooks() -> AcpRuntimeSessionHooks:
             host.runtime_profile,
         )
         apply_boundary_export_to_kernel(kernel_ctx_holder[0], router_runtime_config)
-        return router_runtime_config
+        return router_runtime_config.llm_adapter
 
     return AcpRuntimeSessionHooks(
         apply_runtime_profile_kernel_wiring=_apply_kernel_wiring,
