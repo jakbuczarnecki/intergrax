@@ -684,7 +684,7 @@ GR10_ORCHESTRATION_RELIABILITY_INVENTORY: tuple[
         "operation_id idempotency_key",
         "GR-7 reconciliation via shared ProviderInvocationStore",
         "ProviderInvocationStatus (adapter typed failure vs post-dispatch UNKNOWN)",
-        "QUALIFIED — create_governed_contractor_process_app → HarnessHostRuntime.orchestration_topology consumes canonical strict production composition",
+        "QUALIFIED — create_governed_contractor_backend_app → HarnessHostRuntime.orchestration_topology.submission_port → canonical MSE → canonical Reliability",
     ),
     Gr10OrchestrationReliabilityInventoryRow(
         "GovernedOrchestrationSlotExecutor.execute_slot",

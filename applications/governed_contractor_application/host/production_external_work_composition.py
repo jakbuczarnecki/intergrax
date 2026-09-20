@@ -63,6 +63,20 @@ class GovernedExternalWorkProductionRuntime:
     policy_evaluator: RuntimePolicyBundleEvaluator
 
 
+def resolve_production_runtime_policy_bundle_evaluator(
+    settings: GovernedContractorBackendSettings,
+) -> RuntimePolicyBundleEvaluator | None:
+    """Bundle-backed runtime policy for harness orchestration MSE when configured."""
+    bundle = settings.runtime_policy_bundle
+    if bundle is None:
+        return None
+    if not isinstance(bundle, ImmutableRuntimePolicyBundle):
+        raise TypeError(
+            "settings.runtime_policy_bundle must be ImmutableRuntimePolicyBundle",
+        )
+    return RuntimePolicyBundleEvaluator(bundle)
+
+
 def resolve_production_runtime_policy_bundle(
     settings: GovernedContractorBackendSettings,
 ) -> ImmutableRuntimePolicyBundle:
@@ -226,6 +240,7 @@ def wire_governed_contractor_production_external_work_settings(
         meaningful_side_effect_authorization_boundary=boundary,
         runtime_policy_bundle=bundle,
         decision_requirement_policy=decision_policy,
+        active_execution_task_scope=task_scope,
     )
 
 
@@ -235,5 +250,6 @@ __all__ = [
     "resolve_production_collaborative_work_repositories",
     "resolve_production_decision_requirement_policy",
     "resolve_production_runtime_policy_bundle",
+    "resolve_production_runtime_policy_bundle_evaluator",
     "wire_governed_contractor_production_external_work_settings",
 ]

@@ -13,6 +13,7 @@ from intergrax.applications._shared.settings_loader import (
 )
 from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
+from intergrax.contracts.active_execution_task_scope import ActiveExecutionTaskScopePort
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.contracts.execution_evidence.attestation import HostAttestor
 from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
@@ -81,6 +82,7 @@ class GovernedContractorBackendSettings(ApplicationSettingsEnvHost, IntergraxApp
     decision_requirement_policy: DecisionRequirementPolicy | None = None
     runtime_policy_bundle: ImmutableRuntimePolicyBundle | None = None
     collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None
+    active_execution_task_scope: ActiveExecutionTaskScopePort | None = None
     host_attestor: HostAttestor | None = None
     attestation_required: bool = False
 

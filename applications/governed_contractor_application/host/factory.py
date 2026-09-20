@@ -64,6 +64,9 @@ from intergrax.applications._shared.harness_host_orchestration_topology_wiring i
 from governed_contractor_application.host.orchestration_topology_production_composition import (
     build_governed_contractor_production_orchestration_topology_submission_port,
 )
+from governed_contractor_application.host.production_external_work_composition import (
+    resolve_production_runtime_policy_bundle_evaluator,
+)
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.host.collaborative_work_integration_profile import (
     resolve_governed_contractor_collaborative_work_integration_profile,
@@ -144,6 +147,10 @@ def create_governed_contractor_backend_app(
             settings.decision_requirement_policy
             or default_governed_contractor_harness_orchestration_decision_requirement_policy()
         ),
+        runtime_policy_evaluator=resolve_production_runtime_policy_bundle_evaluator(
+            settings,
+        ),
+        active_execution_task_scope=settings.active_execution_task_scope,
         execution_continuation_state_store=execution_continuation_state_store,
         provider_invocation_store=provider_invocation_store,
         require_strict_orchestration_topology_reliability=strict_topology_reliability,

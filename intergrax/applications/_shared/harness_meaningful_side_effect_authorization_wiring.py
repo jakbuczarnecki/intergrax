@@ -17,12 +17,16 @@ from intergrax.collaborative_work.persistence import (
 from intergrax.collaborative_work.persistence_provider import (
     resolve_collaborative_work_repositories,
 )
+from intergrax.contracts.active_execution_task_scope import ActiveExecutionTaskScopePort
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
 from intergrax.contracts.meaningful_side_effect_policy import (
     MeaningfulSideEffectPolicyEvaluator,
+)
+from intergrax.runtime.governance.meaningful_side_effect_authorization_composition import (
+    build_canonical_inner_execution_guard,
 )
 from intergrax.runtime.governance.orchestration_decision_bound_effect_composition import (
     build_production_orchestration_meaningful_side_effect_authorization_boundary,
@@ -45,12 +49,18 @@ def _build_port_from_materialized_repositories(
     *,
     decision_requirement_policy: DecisionRequirementPolicy | None = None,
     runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
+    active_execution_task_scope: ActiveExecutionTaskScopePort | None = None,
 ) -> MeaningfulSideEffectAuthorizationPort:
     core = collaborative_work_core_repositories(bundle)
     evaluator: MeaningfulSideEffectPolicyEvaluator = (
         runtime_policy_evaluator
         if runtime_policy_evaluator is not None
         else RuntimePolicyEngine()
+    )
+    inner_guard = (
+        build_canonical_inner_execution_guard(task_scope=active_execution_task_scope)
+        if active_execution_task_scope is not None
+        else None
     )
     return build_production_orchestration_meaningful_side_effect_authorization_boundary(
         profile_repository=core.operation_profile,
@@ -60,6 +70,7 @@ def _build_port_from_materialized_repositories(
         collaborative_policy_repository=core.policy,
         runtime_policy_evaluator=evaluator,
         decision_requirement_policy=decision_requirement_policy,
+        inner_execution_guard=inner_guard,
         production_mode=True,
     )
 
@@ -82,6 +93,7 @@ def build_harness_host_meaningful_side_effect_authorization_port(
     collaborative_work_integration_profile: IntegrationProfile | None = None,
     decision_requirement_policy: DecisionRequirementPolicy | None = None,
     runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
+    active_execution_task_scope: ActiveExecutionTaskScopePort | None = None,
 ) -> MeaningfulSideEffectAuthorizationPort:
     """Build platform default MSE authorization for strict Tier-3 harness hosts."""
     if collaborative_work_repositories is not None:
@@ -97,6 +109,7 @@ def build_harness_host_meaningful_side_effect_authorization_port(
         bundle,
         decision_requirement_policy=decision_requirement_policy,
         runtime_policy_evaluator=runtime_policy_evaluator,
+        active_execution_task_scope=active_execution_task_scope,
     )
 
 
@@ -109,6 +122,7 @@ def resolve_harness_host_meaningful_side_effect_authorization_wiring(
     collaborative_work_integration_profile: IntegrationProfile | None = None,
     decision_requirement_policy: DecisionRequirementPolicy | None = None,
     runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
+    active_execution_task_scope: ActiveExecutionTaskScopePort | None = None,
 ) -> HarnessMeaningfulSideEffectAuthorizationWiring:
     """Resolve MSE wiring: injectable override, strict default, or absent in non-strict hosts."""
     if explicit is not None:
@@ -123,6 +137,7 @@ def resolve_harness_host_meaningful_side_effect_authorization_wiring(
                 collaborative_work_repositories,
                 decision_requirement_policy=decision_requirement_policy,
                 runtime_policy_evaluator=runtime_policy_evaluator,
+                active_execution_task_scope=active_execution_task_scope,
             ),
         )
     bundle = resolve_collaborative_work_repositories(
@@ -136,6 +151,7 @@ def resolve_harness_host_meaningful_side_effect_authorization_wiring(
             bundle,
             decision_requirement_policy=decision_requirement_policy,
             runtime_policy_evaluator=runtime_policy_evaluator,
+            active_execution_task_scope=active_execution_task_scope,
         ),
         owned_collaborative_work_persistence=bundle,
     )
@@ -150,6 +166,7 @@ def resolve_harness_host_meaningful_side_effect_authorization_port(
     collaborative_work_integration_profile: IntegrationProfile | None = None,
     decision_requirement_policy: DecisionRequirementPolicy | None = None,
     runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
+    active_execution_task_scope: ActiveExecutionTaskScopePort | None = None,
 ) -> MeaningfulSideEffectAuthorizationPort | None:
     """Resolve MSE port: injectable override, strict default, or absent in non-strict hosts."""
     return resolve_harness_host_meaningful_side_effect_authorization_wiring(
@@ -159,6 +176,7 @@ def resolve_harness_host_meaningful_side_effect_authorization_port(
         collaborative_work_integration_profile=collaborative_work_integration_profile,
         decision_requirement_policy=decision_requirement_policy,
         runtime_policy_evaluator=runtime_policy_evaluator,
+        active_execution_task_scope=active_execution_task_scope,
     ).authorization_port
 
 

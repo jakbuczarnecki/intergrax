@@ -115,7 +115,7 @@ _GOVERNED_COMPOSITION = (
     / "host"
     / "orchestration_topology_production_composition.py"
 )
-_SLOT_IDEMPOTENCY_KEY = "slot:slot-a"
+_SLOT_IDEMPOTENCY_KEY = "orchestration.graph_slot:slot:slot-a"
 
 
 @pytest.fixture

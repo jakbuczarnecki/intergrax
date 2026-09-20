@@ -28,6 +28,7 @@ from intergrax.runtime.nexus.orchestration.governed_consequential_operation impo
     GovernedOrchestrationSlotExecutor,
 )
 from intergrax.runtime.nexus.orchestration.orchestration_graph_meaningful_side_effect import (
+    ORCHESTRATION_GRAPH_SLOT_ACTION_PREFIX,
     build_orchestration_graph_slot_enforcement_request,
     build_orchestration_graph_slot_meaningful_side_effect_request,
 )
@@ -98,11 +99,14 @@ def default_topology_slot_enforcement_request(
     payload: object,
 ) -> CollaborativeWorkEnforcementRequest:
     """Pure projection for custom topology slots without host-specific metadata."""
-    operation_id = f"slot:{slot_id}"
+    slot_operation_token = f"slot:{slot_id}"
+    canonical_operation_id = (
+        f"{ORCHESTRATION_GRAPH_SLOT_ACTION_PREFIX}:{slot_operation_token}"
+    )
     resource_scope = f"orchestration/topology/slot/{slot_id}"
     side_effect = build_orchestration_graph_slot_meaningful_side_effect_request(
         slot_id=slot_id,
-        operation_id=operation_id,
+        operation_id=slot_operation_token,
         resource_scope=resource_scope,
         side_effect_scope_id=f"{resource_scope}:effect",
         kinds=(MeaningfulSideEffectKind.MUTATION,),
@@ -110,7 +114,7 @@ def default_topology_slot_enforcement_request(
     return build_orchestration_graph_slot_enforcement_request(
         slot_id=slot_id,
         side_effect=side_effect,
-        operation_id=operation_id,
+        operation_id=canonical_operation_id,
         resource_scope=resource_scope,
     )
 

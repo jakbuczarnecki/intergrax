@@ -35,11 +35,6 @@ from intergrax.applications._shared.production_platform_persistence import (
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
 )
-from intergrax.contracts.collaborative_work import (
-    CollaborativeWorkEnforcementRequest,
-    CollaborativeWorkEnforcementResult,
-    PolicyCompositionResult,
-)
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
@@ -48,9 +43,6 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     mint_task_id,
     reset_active_execution_identity,
-)
-from intergrax.contracts.meaningful_side_effect_authorization import (
-    MeaningfulSideEffectAuthorizationResult,
 )
 from intergrax.contracts.orchestration_topology import (
     OrchestrationSchedulingPolicy,
@@ -64,7 +56,7 @@ from intergrax.contracts.provider_invocation import (
     ProviderInvocationOutcome,
     ProviderInvocationStatus,
 )
-from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.execution.active_execution_budget import (
     bind_root_execution_budget,
     peek_active_execution_budget,
@@ -134,8 +126,10 @@ _FACTORY = (
     / "factory.py"
 )
 _T0 = datetime(2026, 1, 1, tzinfo=timezone.utc)
-_SLOT_IDEMPOTENCY_KEY = "slot:slot-a"
+_SLOT_IDEMPOTENCY_KEY = "orchestration.graph_slot:slot:slot-a"
+_TOPOLOGY_CANONICAL_OPERATION_ID = _SLOT_IDEMPOTENCY_KEY
 _TENANT_MANIFEST = "governed_contractor"
+_PRODUCTION_HOST_TASK_ID = mint_task_id()
 
 
 @dataclass
@@ -256,9 +250,13 @@ def _topology_collaborative_work_repositories(
     for operation_id in (
         ACTION_CREATE_EXTERNAL_WORK,
         ACTION_ACCEPT_QUOTE,
-        "slot:slot-a",
+        "orchestration.graph_slot:slot:slot-a",
     ):
-        scope = topology_scope if operation_id == "slot:slot-a" else external_scope
+        scope = (
+            topology_scope
+            if operation_id == "orchestration.graph_slot:slot:slot-a"
+            else external_scope
+        )
         repositories.operation_profile.create(
             CreateCollaborativeOperationPolicyProfileCommand(
                 tenant_id=tenant_id,
@@ -330,8 +328,12 @@ def _default_settings() -> GovernedContractorBackendSettings:
     )
     return wire_governed_contractor_production_external_work_settings(
         base,
-        task_scope=StaticActiveTaskScope(mint_task_id()),
+        task_scope=StaticActiveTaskScope(_PRODUCTION_HOST_TASK_ID),
     )
+
+
+def production_host_task_id() -> str:
+    return _PRODUCTION_HOST_TASK_ID
 
 
 def _continuation_store():
@@ -340,9 +342,22 @@ def _continuation_store():
     )
 
 
+def _settings_topology_runtime_deny() -> GovernedContractorBackendSettings:
+    from applications.governed_contractor_application.tests.host.test_gr6_wire_production_decision_governance import (
+        _test_policy_bundle,
+    )
+
+    return replace(
+        _default_settings(),
+        runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
+    )
+
+
 def _strict_host_app(
     store: DurableTestProviderInvocationStore | ReconstructableDurableProviderInvocationStore,
     tmp_path: Path,
+    *,
+    settings: GovernedContractorBackendSettings | None = None,
 ):
     platform_persistence = build_reference_production_platform_persistence(
         db_path=tmp_path / "platform-kv.db",
@@ -353,15 +368,17 @@ def _strict_host_app(
         ),
         provider_invocation_store=store,
     )
-    settings = _default_settings()
+    resolved_settings = settings or _default_settings()
     manifest = build_governed_contractor_manifest()
-    env = manifest.environment or build_governed_contractor_environment_profile(settings)
+    env = manifest.environment or build_governed_contractor_environment_profile(
+        resolved_settings,
+    )
     projection = build_test_registry_projection(
         manifest,
         env,
         builders=GOVERNED_CONTRACTOR_AGENT_BUILDERS,
         revision_id="rev-r13r3-strict-host",
-        settings=settings,
+        settings=resolved_settings,
     )
     _seed_active_registry_projection(
         composition,
@@ -373,7 +390,7 @@ def _strict_host_app(
     return create_governed_contractor_backend_app(
         registry_projection=projection,
         process_composition=composition,
-        settings=settings,
+        settings=resolved_settings,
         document_store=platform.document_store,
         key_value_cache=platform.kv_store,
         trace_db_path=tmp_path / "trace.db",
@@ -400,39 +417,6 @@ def _identity_ctx():
     yield
     reset_active_execution_governance_identity(governance_token)
     reset_active_execution_identity(identity_token)
-
-
-class _RecordingMsePort:
-    def __init__(self, *, action: PolicyAction) -> None:
-        self.action = action
-        self.calls = 0
-
-    def authorize(
-        self,
-        request: CollaborativeWorkEnforcementRequest,
-        *,
-        source_agent_id: str,
-        source_step_id: str | None = None,
-    ) -> MeaningfulSideEffectAuthorizationResult:
-        self.calls += 1
-        permitted = self.action is PolicyAction.ALLOW
-        decision = PolicyDecision(action=self.action, reason="test", policy_rule_id="test.rule")
-        enforcement_result = CollaborativeWorkEnforcementResult(
-            operation_id=request.operation_id,
-            authority_scope=request.resource_scope,
-            composition=PolicyCompositionResult(
-                decision=decision,
-                collaborative_authority=decision,
-            ),
-        )
-        return MeaningfulSideEffectAuthorizationResult(
-            permitted=permitted,
-            decision=decision,
-            enforcement_result=enforcement_result,
-            requires_governed_continuation=self.action
-            in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE),
-            governed_continuation_request=None,
-        )
 
 
 @dataclass
@@ -466,27 +450,10 @@ def _topology() -> OrchestrationTopology[_MutatingWork]:
     )
 
 
-def _runtime_topology_port_with_mse(
-    runtime: object,
-    *,
-    mse: _RecordingMsePort | None = None,
-):
-    from intergrax.applications._shared.harness_host_composition import (
-        resolve_harness_host_nexus_loop,
-    )
-
-    wiring = resolve_harness_host_orchestration_topology_wiring(runtime)
-    from governed_contractor_application.host.orchestration_topology_production_composition import (
-        build_governed_contractor_production_orchestration_topology_submission_port,
-    )
-
-    return build_governed_contractor_production_orchestration_topology_submission_port(
-        resolve_harness_host_nexus_loop(runtime),
-        provider_invocation_store=wiring.provider_invocation_store,
-        tenant_id=runtime.tenant_id,
-        clock=lambda: _T0,
-        meaningful_side_effect_authorization=mse,
-    )
+def _resolved_topology_port(runtime: object):
+    port = resolve_harness_host_orchestration_topology_submission_port(runtime)
+    assert port is runtime.orchestration_topology.submission_port
+    return port
 
 
 async def _run_submission(delegate: object, root_execution_id: str) -> object:
@@ -623,15 +590,12 @@ async def test_real_host_success_e2e_via_runtime_port(_identity_ctx, tmp_path: P
     )
 
     assert isinstance(port, CanonicalOrchestrationTopologySubmissionPort)
-    exec_port = _runtime_topology_port_with_mse(
-        runtime,
-        mse=_RecordingMsePort(action=PolicyAction.ALLOW),
-    )
+    exec_port = _resolved_topology_port(runtime)
     inner = _MutatingSlotExecutor()
     host_task = build_orchestration_topology_host_task(
         tenant_id=runtime.tenant_id,
         user_id="principal-1",
-        task_id=mint_task_id(),
+        task_id=production_host_task_id(),
     )
 
     class _Delegate:
@@ -668,11 +632,7 @@ async def test_real_host_unknown_e2e_via_runtime_port(_identity_ctx, tmp_path: P
     store = DurableTestProviderInvocationStore()
     app = _strict_host_app(store, tmp_path)
     runtime = app.state.harness_runtime
-    port = resolve_harness_host_orchestration_topology_submission_port(runtime)
-    exec_port = _runtime_topology_port_with_mse(
-        runtime,
-        mse=_RecordingMsePort(action=PolicyAction.ALLOW),
-    )
+    exec_port = _resolved_topology_port(runtime)
 
     class _FailingExecutor:
         def __init__(self) -> None:
@@ -692,7 +652,7 @@ async def test_real_host_unknown_e2e_via_runtime_port(_identity_ctx, tmp_path: P
     host_task = build_orchestration_topology_host_task(
         tenant_id=runtime.tenant_id,
         user_id="principal-1",
-        task_id=mint_task_id(),
+        task_id=production_host_task_id(),
     )
 
     class _Delegate:
@@ -732,10 +692,7 @@ async def test_real_host_definitive_failure_e2e_via_runtime_port(
     store = DurableTestProviderInvocationStore()
     app = _strict_host_app(store, tmp_path)
     runtime = app.state.harness_runtime
-    exec_port = _runtime_topology_port_with_mse(
-        runtime,
-        mse=_RecordingMsePort(action=PolicyAction.ALLOW),
-    )
+    exec_port = _resolved_topology_port(runtime)
 
     class _DefinitiveFailureExecutor:
         async def execute_slot(
@@ -750,7 +707,7 @@ async def test_real_host_definitive_failure_e2e_via_runtime_port(
     host_task = build_orchestration_topology_host_task(
         tenant_id=runtime.tenant_id,
         user_id="principal-1",
-        task_id=mint_task_id(),
+        task_id=production_host_task_id(),
     )
 
     class _Delegate:
@@ -785,15 +742,12 @@ async def test_restart_visibility_via_shared_backing_and_rebuilt_host(
     store_a = ReconstructableDurableProviderInvocationStore(backing)
     app_a = _strict_host_app(store_a, tmp_path / "host-a")
     runtime_a = app_a.state.harness_runtime
-    port_a = _runtime_topology_port_with_mse(
-        runtime_a,
-        mse=_RecordingMsePort(action=PolicyAction.ALLOW),
-    )
+    port_a = _resolved_topology_port(runtime_a)
     inner = _MutatingSlotExecutor()
     host_task = build_orchestration_topology_host_task(
         tenant_id=runtime_a.tenant_id,
         user_id="principal-1",
-        task_id=mint_task_id(),
+        task_id=production_host_task_id(),
     )
     identity_token = bind_active_execution_identity(
         run_id=mint_run_id(),
@@ -803,7 +757,7 @@ async def test_restart_visibility_via_shared_backing_and_rebuilt_host(
     governance_token = bind_active_execution_governance_identity(
         ActiveExecutionGovernanceIdentity(
             tenant_id=runtime_a.tenant_id,
-            workspace_id="ws",
+            workspace_id="workspace-1",
             principal_id="principal-1",
         ),
     )
