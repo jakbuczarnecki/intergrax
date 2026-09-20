@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -41,6 +43,9 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
 )
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+if TYPE_CHECKING:
+    from intergrax.runtime.long_running.models import TaskCheckpoint
 
 pytestmark = pytest.mark.unit
 
@@ -197,7 +202,6 @@ async def test_nexus_preserves_boundary_execution_id(
     loop = NexusLoop(registry)
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
-    execution_id = mint_execution_id()
     captured: dict[str, RunId | AttemptId | ExecutionId] = {}
 
     async def _fake_impl(task: Task) -> TaskResult:
@@ -520,6 +524,8 @@ def test_resolve_root_task_identity_restores_checkpoint_identity() -> None:
 
     assert identity.run_id == run_id
     assert identity.attempt_id == attempt_id
+    assert checkpoint.runtime is not None
+    assert identity.execution_id == checkpoint.runtime.execution_tree.entries[0].execution_id
 
 
 def test_resolve_root_task_identity_allows_matching_explicit_checkpoint_identity() -> (

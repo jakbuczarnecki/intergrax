@@ -188,10 +188,13 @@ def resolve_root_task_identity(
                 "explicit execution_id conflicts with resume checkpoint identity: "
                 f"{execution_id!r} != {checkpoint_root_execution_id!r}"
             )
+        restored_execution_id = (
+            execution_id if execution_id is not None else checkpoint_root_execution_id
+        )
         return mint_root_execution_identity(
             run_id=checkpoint_run_id,
             attempt_id=checkpoint_attempt_id,
-            execution_id=execution_id,
+            execution_id=restored_execution_id,
         )
     return mint_root_execution_identity(
         run_id=run_id,

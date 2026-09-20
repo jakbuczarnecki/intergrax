@@ -29,7 +29,10 @@ from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.tools.execution_models import ToolExecutionResult
-from testing_support.obs_universal_spine.diagnostic_execution_stack import build_diagnostic_nexus_loop
+from testing_support.obs_universal_spine.diagnostic_execution_stack import (
+    build_diagnostic_nexus_loop,
+    build_obs_spine_unified_task_runner,
+)
 
 pytestmark = [
     pytest.mark.integration,
@@ -119,7 +122,7 @@ def _worker_invoke(
 
 def test_async_worker_success_no_false_problem() -> None:
     loop, runtime_store, read_deps = build_diagnostic_nexus_loop(inject_violation=False)
-    runner = UnifiedTaskRunner(loop)
+    runner = build_obs_spine_unified_task_runner(loop)
     registry = TaskExecutionRegistry()
     completed_task_ids = _register_echo_handler(runner, registry)
     causal_store = InMemoryCausalEvidencePersistence()
@@ -160,7 +163,7 @@ def test_async_worker_success_no_false_problem() -> None:
 
 def test_async_worker_failure_creates_problem_and_read_model() -> None:
     loop, runtime_store, read_deps = build_diagnostic_nexus_loop(inject_violation=True)
-    runner = UnifiedTaskRunner(loop)
+    runner = build_obs_spine_unified_task_runner(loop)
     registry = TaskExecutionRegistry()
     completed_task_ids = _register_echo_handler(runner, registry)
     causal_store = InMemoryCausalEvidencePersistence()
@@ -193,7 +196,7 @@ def test_async_worker_failure_creates_problem_and_read_model() -> None:
 
 def test_async_duplicate_delivery_idempotent_single_execution() -> None:
     loop, runtime_store, read_deps = build_diagnostic_nexus_loop(inject_violation=False)
-    runner = UnifiedTaskRunner(loop)
+    runner = build_obs_spine_unified_task_runner(loop)
     registry = TaskExecutionRegistry()
     run_count = 0
     completed_task_ids: list[str] = []
@@ -266,7 +269,7 @@ def test_async_duplicate_delivery_idempotent_single_execution() -> None:
 
 def test_async_tenant_isolation_for_diagnostic_state() -> None:
     loop, _, read_deps = build_diagnostic_nexus_loop(inject_violation=True)
-    runner = UnifiedTaskRunner(loop)
+    runner = build_obs_spine_unified_task_runner(loop)
     registry = TaskExecutionRegistry()
     _register_echo_handler(runner, registry)
     causal_store = InMemoryCausalEvidencePersistence()
@@ -299,7 +302,7 @@ def test_async_tenant_isolation_for_diagnostic_state() -> None:
 
 
 def test_async_worker_natural_failure_creates_problem_and_terminal_event() -> None:
-    from intergrax.agents.agent_contract import Agent
+    from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
     from intergrax.contracts.agent_contract_meta import AgentContract
     from intergrax.contracts.agent_step import AgentStep, StepOutput
     from intergrax.contracts.capability import CapabilityMatchResult
@@ -309,7 +312,7 @@ def test_async_worker_natural_failure_creates_problem_and_terminal_event() -> No
     from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
     from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
-    class _FailingAgent(Agent):
+    class _FailingAgent(HarnessReferenceAgent):
         def get_contract(self) -> AgentContract:
             return AgentContract(
                 id="failing",
@@ -339,8 +342,7 @@ def test_async_worker_natural_failure_creates_problem_and_terminal_event() -> No
                 session_manager=build_in_memory_session_manager(),
             )
 
-        def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
-            _ = context
+        def get_steps(self) -> list[AgentStep]:
             return [AgentStep(step_id="fail", step_name="fail", step_index=0)]
 
         async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
@@ -350,7 +352,7 @@ def test_async_worker_natural_failure_creates_problem_and_terminal_event() -> No
         inject_violation=False,
         primary_agent=_FailingAgent(),
     )
-    runner = UnifiedTaskRunner(loop)
+    runner = build_obs_spine_unified_task_runner(loop)
     registry = TaskExecutionRegistry()
     completed_task_ids: list[str] = []
 
@@ -470,7 +472,7 @@ def test_async_worker_shared_harness_host_composition_root(tmp_path) -> None:
     )
     assert read_deps is not None
 
-    runner = UnifiedTaskRunner(nexus_loop)
+    runner = build_obs_spine_unified_task_runner(nexus_loop)
     registry = TaskExecutionRegistry()
     completed_task_ids = _register_echo_handler(runner, registry)
     causal_store = InMemoryCausalEvidencePersistence()
@@ -510,7 +512,7 @@ def test_async_worker_shared_harness_host_composition_root(tmp_path) -> None:
 
 def test_async_worker_identity_correlation_matrix() -> None:
     loop, runtime_store, _read_deps = build_diagnostic_nexus_loop(inject_violation=False)
-    runner = UnifiedTaskRunner(loop)
+    runner = build_obs_spine_unified_task_runner(loop)
     registry = TaskExecutionRegistry()
     completed_task_ids = _register_echo_handler(runner, registry)
     causal_store = InMemoryCausalEvidencePersistence()

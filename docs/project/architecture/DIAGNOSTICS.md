@@ -1098,8 +1098,8 @@ Platform adoption (current discovery @ OBS-DIAG-X1):
 | Limitation | Status |
 | ---------- | ------ |
 | **DG-005** process-isolated diagnostics over persisted execution evidence (`ExecutionReconstructionReader`; no writer `RuntimeEventBus` sharing); qualification harness is **provider-neutral** (SQLite `sqlite-file` is the current qualified backend) | **PROVEN** — `test_obs_dg005_distributed_topology_qualification.py` |
-| Kafka → worker → execution → diagnostics (full external spine) | **P4 NOT_PROVEN** (in-process async worker spine **P3 PROVEN** — `test_obs_universal_spine_async_e2e.py`; Kafka transport **P4 PROVEN** separately) |
-| HITL pause/restart/resume → terminal diagnostics | **PARTIAL P3** — durable checkpoint + runtime rebuild + diagnostics read (`test_obs_universal_spine_hitl_restart_e2e.py`); real OS process crash / external HITL service **NOT_PROVEN** |
+| Kafka → worker → execution → diagnostics (full external spine) | **P4 PROVEN** — OBS-DIAG-X4 `test_obs_universal_spine_cross_process_x4_e2e.py` (in-process async worker spine **P3 PROVEN** — `test_obs_universal_spine_async_e2e.py`) |
+| HITL pause/restart/resume → terminal diagnostics | **P3 PROVEN** in-process durable rebuild (`test_obs_universal_spine_hitl_restart_e2e.py`); **P4 PROVEN** OS process pause/resume (OBS-DIAG-X4); external HITL service **NOT_PROVEN** (X5) |
 | Operator HTTP/dashboard read | **CORE READ CONTRACT = PROVEN**; **UNIVERSAL HOST EXPOSURE = PARTIAL** |
 | Diagnostic host composition replaceability | Engine injection **PROVEN**; standard host replaceability **PROVEN** (OBS-DIAG-X2 CLOSED) |
 | Global entry-path zero-bypass | **PROVEN** (OBS-DIAG-X3/X3A gates + representative E2E) |
@@ -1111,8 +1111,8 @@ Platform adoption (current discovery @ OBS-DIAG-X1):
 | --- | -------------- | -------------- | --------------------- |
 | diagnostic composition replaceability | **PROVEN** (X2) | — | OBS-DIAG-X2 CLOSED |
 | global entry-path zero-bypass proof | **PROVEN** | X3 qualification | — |
-| external Kafka full spine E2E | **NOT_PROVEN** | Separate transport vs spine proofs | OBS-DIAG-X4 |
-| HITL full restart proof | **PARTIAL** | Missing real process / external HITL | OBS-DIAG-X5 |
+| external Kafka full spine E2E | **PROVEN** (X4) | — | OBS-DIAG-X4 CLOSED |
+| HITL full restart proof | **PROVEN (P4 OS process)** | External HITL vendor | OBS-DIAG-X5 |
 | universal product/scenario E2E adoption | **PARTIAL** | 4 initialized; not all E2E/read | OBS-DIAG-X6 |
 | provider matrix | **OPEN** | Adapters ≠ live proofs | OBS-DIAG-X7 |
 | operator read universal exposure | **PARTIAL** | Host HTTP uneven | OBS-DIAG-X8 |

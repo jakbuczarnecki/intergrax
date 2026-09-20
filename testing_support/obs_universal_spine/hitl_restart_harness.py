@@ -4,10 +4,11 @@
 
 from __future__ import annotations
 
+from datetime import UTC, datetime
 from dataclasses import dataclass
 from pathlib import Path
 
-from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.applications._shared.diagnostic_read_wiring import (
     HostDiagnosticReadDependencies,
     build_diagnostic_read_service,
@@ -34,8 +35,12 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
 from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
+from intergrax.contracts.human_approver import local_development_approver_evidence
+from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.task.task_contract import (
+    HumanApprovalResolution,
     TaskExecutionOptions,
     TaskHumanInput,
     TaskLongRunningOptions,
@@ -45,12 +50,13 @@ from intergrax.utils import attribute_access
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 from testing_support.obs_universal_spine.diagnostic_execution_stack import (
     build_diagnostic_nexus_loop,
+    build_obs_spine_unified_task_runner,
 )
 
 _HITL_CAPABILITY = "hitl.obs_spine"
 
 
-class ObsSpineHitlAgent(Agent):
+class ObsSpineHitlAgent(HarnessReferenceAgent):
     """Requests human approval once, then completes when metadata approves."""
 
     step_run_count = 0
@@ -87,8 +93,7 @@ class ObsSpineHitlAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
-        _ = context
+    def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="review", step_name="review", step_index=0)]
 
     async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
@@ -161,9 +166,16 @@ def build_hitl_restart_runtime(
     runtime_events_db: Path,
     inject_violation: bool = False,
     continuation_backing: ExecutionContinuationDurableBacking | None = None,
+    execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+    document_store: object | None = None,
+    problem_persistence: object | None = None,
+    occurrence_persistence: object | None = None,
 ) -> HitlRestartRuntimeBundle:
     backing = continuation_backing or ExecutionContinuationDurableBacking()
-    continuation_store = backing_execution_continuation_state_store(backing)
+    continuation_store = (
+        execution_continuation_state_store
+        or backing_execution_continuation_state_store(backing)
+    )
     runtime_store = SQLiteRuntimeEventStore(db_path=runtime_events_db)
     checkpoint_store = SQLiteTaskCheckpointStore(db_path=checkpoint_db)
     loop, _, read_deps = build_diagnostic_nexus_loop(
@@ -172,10 +184,13 @@ def build_hitl_restart_runtime(
         checkpoint_store=checkpoint_store,
         primary_agent=ObsSpineHitlAgent(),
         execution_continuation_state_store=continuation_store,
+        document_store=document_store,
+        problem_persistence=problem_persistence,
+        occurrence_persistence=occurrence_persistence,
     )
     return HitlRestartRuntimeBundle(
         nexus_loop=loop,
-        runner=UnifiedTaskRunner(loop),
+        runner=build_obs_spine_unified_task_runner(loop),
         checkpoint_store=checkpoint_store,
         runtime_event_store=runtime_store,
         read_deps=read_deps,
@@ -185,9 +200,9 @@ def build_hitl_restart_runtime(
     )
 
 
-def _pause_task() -> Task:
+def _pause_task(*, tenant_id: str = "tenant-obs-spine-hitl") -> Task:
     return Task(
-        tenant_id="tenant-obs-spine-hitl",
+        tenant_id=tenant_id,
         user_id="operator",
         message="obs spine hitl pause",
         context=TaskContext(capability=_HITL_CAPABILITY),
@@ -203,15 +218,25 @@ def _resume_task(
     resume_token: str,
     human_approved: bool,
     human_rejected: bool = False,
+    tenant_id: str = "tenant-obs-spine-hitl",
 ) -> Task:
     metadata: dict[str, object] = {"resume_token": resume_token}
     if human_approved:
         metadata["human_approved"] = True
     if human_rejected:
         metadata["human_rejected"] = True
+    approver = local_development_approver_evidence(
+        actor_id="obs-spine-operator",
+        tenant_id=tenant_id,
+    )
+    verdict = None
+    if human_approved:
+        verdict = HumanResponseVerdict.APPROVE
+    elif human_rejected:
+        verdict = HumanResponseVerdict.REJECT
     return Task(
         task_id=task_id,
-        tenant_id="tenant-obs-spine-hitl",
+        tenant_id=tenant_id,
         user_id="operator",
         message="obs spine hitl resume",
         context=TaskContext(capability=_HITL_CAPABILITY),
@@ -220,8 +245,49 @@ def _resume_task(
                 enabled=True,
                 resume_token=resume_token,
             ),
+            human=TaskHumanInput(
+                verdict=verdict,
+                approver=approver,
+            ),
         ),
         metadata=metadata,
+    )
+
+
+def _prepare_hitl_resume_task(
+    resume: Task,
+    *,
+    loaded: TaskCheckpoint,
+    run_id: RunId,
+    human_approved: bool,
+    human_rejected: bool,
+) -> None:
+    approver = local_development_approver_evidence(
+        actor_id="obs-spine-operator",
+        tenant_id=resume.tenant_id,
+    )
+    resume.options.human.approver = approver
+    if not human_approved and not human_rejected:
+        return
+    verdict = HumanResponseVerdict.APPROVE if human_approved else HumanResponseVerdict.REJECT
+    pause_record = resume.runtime.governance.pause_record
+    pause_id = pause_record.pause_id if pause_record is not None else "hr_obs_spine_pause"
+    human_request_id = (
+        pause_record.human_request_id if pause_record is not None else "hr_obs_spine"
+    )
+    execution_id = None
+    if loaded.runtime is not None and loaded.runtime.execution_tree.entries:
+        execution_id = loaded.runtime.execution_tree.entries[0].execution_id
+    resume.runtime.governance.hitl_resolution = HumanApprovalResolution(
+        task_id=resume.task_id,
+        pause_id=pause_id,
+        human_request_id=human_request_id,
+        verdict=verdict,
+        approver=approver,
+        resolved_at=datetime.now(UTC).isoformat(),
+        run_id=str(run_id),
+        attempt_id=loaded.runtime.attempt_id if loaded.runtime is not None else None,
+        execution_id=execution_id,
     )
 
 
@@ -270,13 +336,21 @@ async def run_hitl_pause_resume_after_runtime_rebuild(
         runtime_events_db=runtime_events_db,
         continuation_backing=continuation_backing,
     )
+    resume_task = _resume_task(
+        task_id=paused.task_id,
+        resume_token=paused.summary.resume_token,
+        human_approved=human_approved,
+        human_rejected=human_rejected,
+    )
+    _prepare_hitl_resume_task(
+        resume_task,
+        loaded=loaded,
+        run_id=run_id,
+        human_approved=human_approved,
+        human_rejected=human_rejected,
+    )
     resumed = await runtime_b.runner.run_task(
-        _resume_task(
-            task_id=paused.task_id,
-            resume_token=paused.summary.resume_token,
-            human_approved=human_approved,
-            human_rejected=human_rejected,
-        ),
+        resume_task,
         run_id=run_id,
         attempt_id=loaded.runtime.attempt_id,
         resume_checkpoint=loaded,
@@ -304,11 +378,20 @@ async def run_hitl_pause_resume_after_runtime_rebuild(
     read_service = build_diagnostic_read_service(runtime_b.read_deps)
     _ = read_service.list_problems(tenant_id=tenant_id)
 
+    all_run_events = runtime_b.runtime_event_store.list_for_run(run_id, tenant_id=tenant_id)
     terminal_events = [
         event
-        for event in runtime_b.runtime_event_store.list_for_run(run_id, tenant_id=tenant_id)
+        for event in all_run_events
         if event.event_type in {RuntimeEventType.TASK_COMPLETED, RuntimeEventType.TASK_FAILED}
+        and event.task_id == resumed.task_id
     ]
-    assert len(terminal_events) == 1
+    assert terminal_events, (
+        f"expected terminal runtime event for task {resumed.task_id!r} run {run_id!r}, "
+        f"got state={resumed.state!r}"
+    )
+    if human_approved and not human_rejected:
+        assert terminal_events[-1].event_type is RuntimeEventType.TASK_COMPLETED
+    if human_rejected:
+        assert terminal_events[-1].event_type is RuntimeEventType.TASK_FAILED
 
     return before, after, resumed.state, runtime_b
