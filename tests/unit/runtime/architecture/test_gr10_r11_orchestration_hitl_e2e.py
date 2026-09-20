@@ -591,7 +591,8 @@ def test_freshness_initial_and_post_human_evaluations() -> None:
     assert len(evaluator.calls) == 2
 
 
-def test_grant_match_require_human_proceeds_once() -> None:
+def test_grant_match_require_human_never_proceeds() -> None:
+    """R11-R1 Scenario D — matching grant cannot override fresh REQUIRE_HUMAN."""
     evaluator = MutableRuntimePolicyEvaluator(_decision())
     boundary, membership = _seed_boundary(evaluator)
     task = Task(tenant_id="t1", user_id="u1", message="x", task_id=_TASK_ID)
@@ -608,7 +609,7 @@ def test_grant_match_require_human_proceeds_once() -> None:
             enforcement_request=request,
             task=task,
         )
-    assert gate.disposition is MseHitlEffectGateDisposition.PROCEED
+    assert gate.disposition is MseHitlEffectGateDisposition.REQUIRE_HITL
     assert task.runtime.governance.governed_continuation_grant is None
 
 

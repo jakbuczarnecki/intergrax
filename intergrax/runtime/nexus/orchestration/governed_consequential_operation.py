@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 from intergrax.contracts.collaborative_work import CollaborativeWorkEnforcementRequest
+from intergrax.contracts.execution_continuation import ExecutionContinuationPort
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
@@ -31,6 +32,7 @@ from intergrax.runtime.governance.active_governed_execution_task import (
 from intergrax.runtime.policy.mse_hitl_effect_gate import (
     MseHitlEffectGateDisposition,
     evaluate_mse_hitl_effect_gate,
+    resolve_continuation_port_for_mse_hitl_gate,
 )
 from intergrax.runtime.policy.side_effect_authorization_errors import (
     MeaningfulSideEffectAuthorizationRequiredError,
@@ -67,6 +69,7 @@ class GovernedOrchestrationSlotExecutor(Generic[PayloadT, ResultT]):
     ]
     is_consequential_slot: Callable[[OrchestrationSlotId, PayloadT], bool] | None = None
     source_agent_id: str = "platform.orchestration.graph_slot"
+    continuation_port: ExecutionContinuationPort | None = None
 
     async def execute_slot(
         self,
@@ -87,6 +90,7 @@ class GovernedOrchestrationSlotExecutor(Generic[PayloadT, ResultT]):
                 production_mode=self.production_mode,
                 source_agent_id=self.source_agent_id,
                 source_step_id=str(slot_id),
+                continuation_port=self.continuation_port,
             )
         except (
             OrchestrationConsequentialEffectBlockedError,
@@ -119,6 +123,7 @@ class GovernedOrchestrationSlotContinuationExecutor(Generic[PayloadT, ResultT]):
     ]
     is_consequential_slot: Callable[[OrchestrationSlotId, PayloadT], bool] | None = None
     source_agent_id: str = "platform.orchestration.graph_slot"
+    continuation_port: ExecutionContinuationPort | None = None
 
     async def continue_slot(
         self,
@@ -139,6 +144,7 @@ class GovernedOrchestrationSlotContinuationExecutor(Generic[PayloadT, ResultT]):
                 production_mode=self.production_mode,
                 source_agent_id=self.source_agent_id,
                 source_step_id=str(slot_id),
+                continuation_port=self.continuation_port,
             )
         except (
             OrchestrationConsequentialEffectBlockedError,
@@ -165,6 +171,7 @@ def authorize_orchestration_consequential_effect(
     production_mode: bool,
     source_agent_id: str,
     source_step_id: str | None,
+    continuation_port: ExecutionContinuationPort | None = None,
 ) -> MeaningfulSideEffectAuthorizationResult:
     """Fail-closed MSE + HITL gate before a non-tool orchestration physical effect."""
     if boundary is None:
@@ -205,6 +212,7 @@ def authorize_orchestration_consequential_effect(
         authorization,
         enforcement_request=enforcement_request,
         task=peek_governed_execution_task(),
+        continuation_port=resolve_continuation_port_for_mse_hitl_gate(continuation_port),
     )
     if gate.disposition is MseHitlEffectGateDisposition.PROCEED:
         return gate.authorization

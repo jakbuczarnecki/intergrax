@@ -70,7 +70,8 @@ def test_gr10_r11_mse_hitl_gate_module_exists() -> None:
     source = _GATE.read_text(encoding="utf-8-sig")
     assert "def evaluate_mse_hitl_effect_gate" in source
     assert "MseHitlEffectGateDisposition" in source
-    assert "matches_current_requirement" in source
+    assert "resolve_canonical_continuation_authority" in source
+    assert "ExecutionContinuationPort" in source
     tree = ast.parse(source, filename=str(_GATE))
     assert tree is not None
 

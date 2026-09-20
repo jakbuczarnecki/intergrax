@@ -305,10 +305,12 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
         "HITL",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R11: orchestration MSE HITL gate — human judgment evidence ≠ Governance ALLOW; "
-        "REQUIRE_HUMAN/ESCALATE surface GovernedContinuationRequest; continue_slot / RuntimeToolInvoker "
-        "reauthorize via evaluate_mse_hitl_effect_gate (grant match or fresh ALLOW); External Work retains "
-        "authorize_and_execute; Physical Delegation HITL delegated; Continuation row remains PARTIAL.",
+        "GR-10-R11-R1: orchestration MSE HITL gate — human judgment evidence ≠ Governance ALLOW; "
+        "GovernedContinuationApprovalGrant is evidence only; fresh REQUIRE_HUMAN never PROCEED; "
+        "post-HITL effect requires ExecutionContinuationPort RESUMED + fresh ALLOW; "
+        "continue_slot / RuntimeToolInvoker reauthorize via evaluate_mse_hitl_effect_gate; "
+        "External Work retains authorize_and_execute (GR-5 grant reauth); "
+        "Physical Delegation HITL delegated; Continuation row remains PARTIAL.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Continuation",
@@ -827,16 +829,16 @@ GR10_ORCHESTRATION_HITL_INVENTORY: tuple[Gr10OrchestrationHitlInventoryRow, ...]
         True,
         "Human Review / GovernedContinuationGrantCoordinator (evidence + grant only)",
         "ExecutionContinuationPort via apply_governed_continuation_pause",
-        "fresh authorize_and_execute (grant match or ALLOW)",
+        "fresh authorize_and_execute (GR-5: grant match on REQUIRE_HUMAN or ALLOW) — External Work path",
         "QUALIFIED",
     ),
     Gr10OrchestrationHitlInventoryRow(
         "RuntimeToolInvoker.invoke (side_effects=True)",
         True,
         True,
-        "Human Review evidence; grant on task.runtime.governance",
-        "ExecutionContinuationPort (pause) + GovernedContinuationApprovalGrant",
-        "evaluate_mse_hitl_effect_gate after fresh boundary.authorize",
+        "Human Review evidence; grant on task.runtime.governance (correlation only)",
+        "ExecutionContinuationPort (canonical RESUMED required post-HITL)",
+        "evaluate_mse_hitl_effect_gate after fresh boundary.authorize (ALLOW + RESUMED)",
         "QUALIFIED",
     ),
     Gr10OrchestrationHitlInventoryRow(
@@ -863,16 +865,16 @@ GR10_ORCHESTRATION_HITL_INVENTORY: tuple[Gr10OrchestrationHitlInventoryRow, ...]
         True,
         "Human Review (continuation request on REQUIRE_HUMAN/ESCALATE)",
         "host register_governed_continuation_slots + ExecutionContinuationPort on pause paths",
-        "evaluate_mse_hitl_effect_gate (effect 0 until PROCEED)",
+        "evaluate_mse_hitl_effect_gate (effect 0 until fresh ALLOW + canonical authority)",
         "QUALIFIED",
     ),
     Gr10OrchestrationHitlInventoryRow(
         "GovernedOrchestrationSlotContinuationExecutor.continue_slot",
         True,
         True,
-        "Human Review grant evidence (REQUIRE_HUMAN path)",
-        "topology continuable_slots + matching GovernedContinuationApprovalGrant",
-        "fresh authorize + evaluate_mse_hitl_effect_gate",
+        "Human Review grant evidence (correlation only; never permission)",
+        "ExecutionContinuationPort RESUMED (continuable_slots is eligibility only)",
+        "fresh authorize + evaluate_mse_hitl_effect_gate (ALLOW + RESUMED + scoped grant)",
         "QUALIFIED",
     ),
     Gr10OrchestrationHitlInventoryRow(

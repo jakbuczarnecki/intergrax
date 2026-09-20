@@ -701,6 +701,7 @@ class RuntimeToolInvoker:
         from intergrax.runtime.policy.mse_hitl_effect_gate import (
             MseHitlEffectGateDisposition,
             evaluate_mse_hitl_effect_gate,
+            resolve_continuation_port_for_mse_hitl_gate,
         )
 
         capability = contract.category.strip() or contract.tool_id
@@ -708,6 +709,7 @@ class RuntimeToolInvoker:
             authorization,
             enforcement_request=enforcement_request,
             task=peek_governed_execution_task(),
+            continuation_port=resolve_continuation_port_for_mse_hitl_gate(),
         )
         decision = gate.authorization.decision
         if gate.disposition is MseHitlEffectGateDisposition.PROCEED:
