@@ -16,8 +16,8 @@ BRANCH          = development
 WORKTREE_STATE  = clean at start
 MP_FINAL_2_C1_BINDER_ANCESTRY = 0eda5cdd4bc6d6f723a754468f5e34d14bfbb443 (ancestor of START_HEAD)
 QUALIFICATION_SHA = 559af7bcbe5bda320dae490316bd8f4b0786d14d
-EVIDENCE_SHA      = <filled by binder after evidence commit>
-BINDER_SHA        = <optional; not self-stamped in this file>
+EVIDENCE_SHA      = 61c9ae04f65b2052d9ce040986182af7ee1f4ce8
+BINDER_SHA        = <not self-stamped; see git history for binder commit if present>
 ```
 
 ## 3. Scope
@@ -222,8 +222,8 @@ Filled after git commits (immutable SHAs only):
 
 ```text
 QUALIFICATION_SHA = 559af7bcbe5bda320dae490316bd8f4b0786d14d
-EVIDENCE_SHA      = <filled by binder after evidence commit>
-BINDER_SHA        = (optional; not written into this file by binder)
+EVIDENCE_SHA      = 61c9ae04f65b2052d9ce040986182af7ee1f4ce8
+BINDER_SHA        = (optional; not written into this file)
 ```
 
 ## 27. Status transition
