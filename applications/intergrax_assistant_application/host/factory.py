@@ -14,6 +14,7 @@ from intergrax.applications._shared.workspace_cleanup_wiring import (
     build_factory_lifespans,
 )
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
 from intergrax.applications._shared.harness_host_auxiliary_wiring import (
     HostTaskExecutionExecutor,
     wire_harness_host_long_running_scheduler,
@@ -68,8 +69,11 @@ def create_intergrax_assistant_application(
         use_in_memory_trace=db_path is None,
         compose_builders=lambda composition: build_intergrax_assistant_agent_builders(
             tool_profile=composition.tool_profile,
-            tool_wiring_context=composition.tool_wiring_context,
-            policy_bundle=composition.policy_bundle,
+            lab_harness=lab_harness_context_from_build_context(
+                composition.factory_context,
+                policy_bundle=composition.policy_bundle,
+                tool_wiring_context=composition.tool_wiring_context,
+            ),
         ),
     )
     host_execution = runtime.execution

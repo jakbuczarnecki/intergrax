@@ -53,10 +53,17 @@ def _enforce_policy_harness() -> LabHarnessContext:
 
 def _build_registered_boundary_demo() -> tuple[AgentRegistry, BoundaryDemoAgent]:
     tool_wiring = wire_attestation_demo_tools(document_store=InMemoryDocumentStore())
-    agent = BoundaryDemoAgent(
-        harness=_enforce_policy_harness(),
-        tool_profile=tool_wiring.profile,
+    base_harness = _enforce_policy_harness()
+    harness = LabHarnessContext(
+        policy_bundle=base_harness.policy_bundle,
+        strict_harness=base_harness.strict_harness,
+        trace_db_path=base_harness.trace_db_path,
+        modality_profile=base_harness.modality_profile,
         tool_wiring_context=tool_wiring.wiring_context,
+    )
+    agent = BoundaryDemoAgent(
+        harness=harness,
+        tool_profile=tool_wiring.profile,
     )
     register_default_skills()
     skill_registry = build_registry_from_profile(

@@ -11,6 +11,7 @@ from fastapi import FastAPI
 
 from intergrax.applications._shared.attestation_runtime_bridge import build_boundary_event_buffer
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,
     build_factory_lifespans,
@@ -71,8 +72,11 @@ def create_attestation_demo_application(
         checkpoints_db_path=checkpoints_db_path,
         compose_builders=lambda composition: build_attestation_demo_agent_builders(
             tool_profile=composition.tool_profile,
-            tool_wiring_context=composition.tool_wiring_context,
-            policy_bundle=composition.policy_bundle,
+            lab_harness=lab_harness_context_from_build_context(
+                composition.factory_context,
+                policy_bundle=composition.policy_bundle,
+                tool_wiring_context=composition.tool_wiring_context,
+            ),
             boundary_event_buffer=composition.boundary_event_buffer or resolved_buffer,
         ),
         document_store=resolved_document_store,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
+from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
 from intergrax.applications._shared.wiring import build_manifest_development_registry
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -27,8 +28,11 @@ def build_intergrax_assistant_registry(
     composition = env_wiring.composition
     builders = build_intergrax_assistant_agent_builders(
         tool_profile=composition.tool_profile,
-        tool_wiring_context=composition.tool_wiring_context,
-        policy_bundle=composition.policy_bundle,
+        lab_harness=lab_harness_context_from_build_context(
+            env_wiring.build_context,
+            policy_bundle=composition.policy_bundle,
+            tool_wiring_context=composition.tool_wiring_context,
+        ),
     )
     return build_manifest_development_registry(
         manifest,

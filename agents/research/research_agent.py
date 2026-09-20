@@ -22,7 +22,7 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
-from intergrax.agents.tool_enablement import ToolEnablementProfile, ToolWiringContextLike
+from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 
@@ -40,12 +40,10 @@ class ResearchAgent(ReflexAgent):
         harness: LabHarnessContext | None = None,
         *,
         tool_profile: ToolEnablementProfile | None = None,
-        tool_wiring_context: ToolWiringContextLike | None = None,
         enable_websearch: bool = False,
     ) -> None:
         self._harness = harness or default_reference_harness()
         self._tool_profile = tool_profile
-        self._tool_wiring_context = tool_wiring_context
         self._enable_websearch = enable_websearch
 
     def get_contract(self) -> AgentContract:
@@ -92,7 +90,6 @@ class ResearchAgent(ReflexAgent):
             enable_websearch=has_web,
         )
         runtime_context.config.tool_profile = self._tool_profile
-        runtime_context.config.tool_wiring_context = self._tool_wiring_context
         return runtime_context
 
     async def perceive(self, step_ctx: AgentStepContext) -> Observation:

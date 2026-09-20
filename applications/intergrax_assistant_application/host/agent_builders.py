@@ -3,26 +3,21 @@
 from __future__ import annotations
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.tool_enablement import ToolEnablementProfile, ToolWiringContextLike
-from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
+from intergrax.agents.reference_harness import LabHarnessContext, default_reference_harness
+from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.factory import AgentFactory
 from intergrax.applications.contracts.manifest import AgentBinding
-from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
-from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax_assistant.intergrax_assistant_agent import IntergraxAssistantAgent
 
 
 def build_intergrax_assistant_agent_builders(
     *,
     tool_profile: ToolEnablementProfile | None = None,
-    tool_wiring_context: ToolWiringContext | ToolWiringContextLike | None = None,
-    policy_bundle: RuntimePolicyBundle | None = None,
+    lab_harness: LabHarnessContext | None = None,
 ) -> dict[type[Agent], AgentFactory]:
-    """Compose assistant builder map with host-bound harness / tool dependencies."""
-    resolved_wiring = (
-        tool_wiring_context if isinstance(tool_wiring_context, ToolWiringContext) else None
-    )
+    """Compose assistant builder map with host-prepared lab harness dependency."""
+    harness = lab_harness if lab_harness is not None else default_reference_harness()
 
     def _build_concierge_agent(
         _ctx: ApplicationBuildContext, _binding: AgentBinding
@@ -32,11 +27,7 @@ def build_intergrax_assistant_agent_builders(
     def _build_echo_agent(ctx: ApplicationBuildContext, _binding: AgentBinding) -> Agent:
         from echo.echo_agent import EchoAgent
 
-        harness = lab_harness_context_from_build_context(
-            ctx,
-            policy_bundle=policy_bundle,
-            tool_wiring_context=resolved_wiring,
-        )
+        _ = ctx
         return EchoAgent(harness)
 
     def _build_legal_agent(_ctx: ApplicationBuildContext, _binding: AgentBinding) -> Agent:
@@ -47,11 +38,6 @@ def build_intergrax_assistant_agent_builders(
     def _build_research_agent(ctx: ApplicationBuildContext, _binding: AgentBinding) -> Agent:
         from research.research_agent import ResearchAgent
 
-        harness = lab_harness_context_from_build_context(
-            ctx,
-            policy_bundle=policy_bundle,
-            tool_wiring_context=resolved_wiring,
-        )
         environment = ctx.environment
         resolved_profile = tool_profile
         if resolved_profile is None and environment is not None:
@@ -59,18 +45,13 @@ def build_intergrax_assistant_agent_builders(
         return ResearchAgent(
             harness,
             tool_profile=resolved_profile,
-            tool_wiring_context=tool_wiring_context,
             enable_websearch=True,
         )
 
     def _build_summary_agent(ctx: ApplicationBuildContext, _binding: AgentBinding) -> Agent:
         from research.summary_agent import SummaryAgent
 
-        harness = lab_harness_context_from_build_context(
-            ctx,
-            policy_bundle=policy_bundle,
-            tool_wiring_context=resolved_wiring,
-        )
+        _ = ctx
         return SummaryAgent(harness)
 
     from echo.echo_agent import EchoAgent

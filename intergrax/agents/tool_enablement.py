@@ -12,9 +12,3 @@ class ToolEnablementProfile(Protocol):
 
     def is_tool_enabled(self, tool_id: str) -> bool:
         """Return whether ``tool_id`` is enabled on the host tool profile."""
-
-
-class ToolWiringContextLike(Protocol):
-    """Opaque Tier-3 tool wiring context passed through ``RuntimeConfig``."""
-
-    pass

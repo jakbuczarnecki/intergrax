@@ -28,6 +28,7 @@ from intergrax.applications._shared.task_defaults import make_lab_harness_task_e
 from intergrax.applications._shared.acp_checkpoint_task_enricher import make_acp_checkpoint_task_enricher
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
+from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
 from lab_application.manifest import build_lab_manifest
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.identity_wiring import wire_application_identity
@@ -106,8 +107,11 @@ def create_lab_application(
         checkpoints_db_path=integrations.checkpoints_db_path,
         compose_builders=lambda composition: build_lab_agent_builders(
             tool_profile=composition.tool_profile,
-            tool_wiring_context=composition.tool_wiring_context,
-            policy_bundle=composition.policy_bundle,
+            lab_harness=lab_harness_context_from_build_context(
+                composition.factory_context,
+                policy_bundle=composition.policy_bundle,
+                tool_wiring_context=composition.tool_wiring_context,
+            ),
         ),
         checkpoint_store=integrations.checkpoint_store,
         agent_checkpoint_store=integrations.agent_checkpoint_store,

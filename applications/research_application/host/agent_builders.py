@@ -5,7 +5,8 @@
 from __future__ import annotations
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.tool_enablement import ToolEnablementProfile, ToolWiringContextLike
+from intergrax.agents.reference_harness import LabHarnessContext
+from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.factory import AgentFactory
 from intergrax.applications.contracts.manifest import AgentBinding
@@ -17,9 +18,9 @@ from research_application.host.settings import ResearchBackendSettings
 def build_research_agent_builders(
     *,
     tool_profile: ToolEnablementProfile | None = None,
-    tool_wiring_context: ToolWiringContextLike | None = None,
+    lab_harness: LabHarnessContext | None = None,
 ) -> dict[type[Agent], AgentFactory]:
-    """Compose research builder map with host-bound tool dependencies."""
+    """Compose research builder map with host-bound harness / tool-profile deps."""
 
     def build_research_agent_from_context(
         ctx: ApplicationBuildContext,
@@ -37,8 +38,8 @@ def build_research_agent_builders(
         if resolved_profile is None and environment is not None:
             resolved_profile = environment.tool_profile
         return ResearchAgent(
+            lab_harness,
             tool_profile=resolved_profile,
-            tool_wiring_context=tool_wiring_context,
             enable_websearch=enable_websearch,
         )
 

@@ -129,7 +129,9 @@ from platform_proofs.scenarios.ai_incident_investigation.fixtures.incidents impo
 )
 from platform_proofs.scenarios.ai_incident_investigation.integration.agent_factory import (
     IncidentInvestigatorProductionSettings,
-    build_default_production_settings,
+    IncidentInvestigatorRuntimeBootstrap,
+    bind_incident_investigator_factory,
+    bootstrap_incident_investigator_runtime,
 )
 from platform_proofs.scenarios.ai_incident_investigation.integration.package_identity import (
     INCIDENT_INVESTIGATOR_APPLICATION_BINDING_ID,
@@ -379,6 +381,7 @@ class IncidentInvestigatorAgentPlatformProofStack:
     environment: ApplicationEnvironmentProfile
     agent_manager_query: AgentManagerQueryService
     production_settings: IncidentInvestigatorProductionSettings
+    runtime_bootstrap: IncidentInvestigatorRuntimeBootstrap
     fixture: IncidentFixture
 
     @property
@@ -395,9 +398,11 @@ class IncidentInvestigatorAgentPlatformProofStack:
         fixture: IncidentFixture | None = None,
     ) -> IncidentInvestigatorAgentPlatformProofStack:
         resolved_fixture = fixture or build_resolved_fixture()
-        production_settings = build_default_production_settings(
+        runtime_bootstrap = bootstrap_incident_investigator_runtime(
             resolved_fixture.to_operational_data(),
         )
+        bind_incident_investigator_factory(runtime_bootstrap.factory)
+        production_settings = runtime_bootstrap.settings
         environment = _incident_proof_environment()
         catalog_entry = AgentCatalogEntry(
             catalog_entry_id=INCIDENT_INVESTIGATOR_CATALOG_ENTRY_ID,
@@ -464,6 +469,7 @@ class IncidentInvestigatorAgentPlatformProofStack:
             environment=environment,
             agent_manager_query=agent_manager_query,
             production_settings=production_settings,
+            runtime_bootstrap=runtime_bootstrap,
             fixture=resolved_fixture,
         )
 
@@ -648,7 +654,7 @@ class IncidentInvestigatorAgentPlatformProofStack:
     def attach_production_scenario_runtime(self) -> ScenarioRuntimeBundle:
         projection = self.resolve_serving_projection()
         registry = projection.agent_registry
-        composition = self.production_settings.composition
+        composition = self.runtime_bootstrap.composition
         platform = build_scenario_runtime_from_environment(
             environment=self.environment,
             registry=registry,
@@ -660,16 +666,12 @@ class IncidentInvestigatorAgentPlatformProofStack:
             settings=self.production_settings,
             runtime_mode=ScenarioRuntimeMode.PRODUCTION_ATTACHED,
             require_runtime_event_persistence=True,
-            application_tool_registry=self.production_settings.composition.tool_registry,
+            application_tool_registry=composition.tool_registry,
         )
         composition.attach_platform(platform)
         composition.tool_registry = composition.platform.env_wiring.tool_wiring.registry
         investigator = registry.get(INVESTIGATOR_AGENT_ID)
-        evidence_store = self.production_settings.evidence_store
-        if evidence_store is None:
-            raise RuntimeError(
-                "incident_investigator_evidence_store_missing_from_factory_projection"
-            )
+        evidence_store = self.runtime_bootstrap.evidence_store
         return ScenarioRuntimeBundle(
             operational_data=self.production_settings.operational_data,
             registry=composition.tool_registry,

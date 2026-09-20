@@ -15,7 +15,7 @@ from intergrax.agents.reference_harness import (
     build_lab_agent_runtime_config,
     default_reference_harness,
 )
-from intergrax.agents.tool_enablement import ToolEnablementProfile, ToolWiringContextLike
+from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
@@ -47,13 +47,11 @@ class BoundaryDemoAgent(Agent):
         harness: LabHarnessContext | None = None,
         *,
         tool_profile: ToolEnablementProfile | None = None,
-        tool_wiring_context: ToolWiringContextLike | None = None,
         execution_boundary_export: ExecutionBoundaryExportRuntimeSettings | None = None,
         boundary_event_buffer: BoundaryEventBuffer | None = None,
     ) -> None:
         self._harness = harness or default_reference_harness()
         self._tool_profile = tool_profile
-        self._tool_wiring_context = tool_wiring_context
         self._execution_boundary_export = execution_boundary_export
         self._boundary_event_buffer = boundary_event_buffer
 
@@ -95,7 +93,6 @@ class BoundaryDemoAgent(Agent):
             enable_websearch=False,
         )
         config.tool_profile = self._tool_profile
-        config.tool_wiring_context = self._tool_wiring_context
         if self._execution_boundary_export is not None:
             config.execution_boundary_export = self._execution_boundary_export
         if self._boundary_event_buffer is not None:
