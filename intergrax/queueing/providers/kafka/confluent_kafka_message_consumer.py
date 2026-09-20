@@ -77,3 +77,6 @@ class ConfluentKafkaMessageConsumer(MessageConsumer):
             return
         self._consumer.commit(message=self._last_message, asynchronous=False)
         self._last_message = None
+
+    def close(self) -> None:
+        self._consumer.close()

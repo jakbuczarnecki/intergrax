@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""OBS-DIAG-X5 — Kafka transport provider failure and recovery (broker outage semantics)."""
+"""OBS-DIAG-X5 / X5A — Kafka transport failure, recovery, and public consumer lifecycle."""
 
 from __future__ import annotations
 
@@ -28,6 +28,7 @@ pytestmark = [
     pytest.mark.integration,
     pytest.mark.external_proof,
     pytest.mark.obs_diag_x5,
+    pytest.mark.obs_diag_x5a,
 ]
 
 _BOOTSTRAP = os.environ.get(
@@ -53,7 +54,7 @@ def test_kafka_producer_fails_closed_when_broker_unreachable() -> None:
 
 
 @pytest.mark.skipif(not _kafka_available(), reason="real Kafka broker unavailable")
-def test_kafka_producer_recovery_after_broker_outage_simulation() -> None:
+def test_kafka_producer_recovery_after_unreachable_endpoint_then_fresh_provider() -> None:
     dead = ConfluentKafkaMessageProducer(bootstrap_servers="127.0.0.1:1")
     with pytest.raises(RuntimeError, match="failed to deliver"):
         dead.publish(topic="intergrax-x5-dead", payload=b"dead")
@@ -92,7 +93,7 @@ def test_kafka_consumer_restart_redelivers_without_commit() -> None:
         topic=topic,
     )
     assert first.poll(timeout_seconds=5.0) == payload
-    first._consumer.close()
+    first.close()
     time.sleep(2.0)
 
     second = ConfluentKafkaMessageConsumer(

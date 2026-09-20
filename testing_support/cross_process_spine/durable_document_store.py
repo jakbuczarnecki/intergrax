@@ -174,6 +174,10 @@ class SqliteFileDocumentStore:
             return DocumentQueryPageV1(documents=page, next_cursor=next_cursor)
 
     def close(self) -> None:
+        """Release adapter lifecycle; durable file-backed state is retained."""
+
+    def truncate_storage(self) -> None:
+        """Test-harness cleanup — removes all rows; not part of durable close semantics."""
         with self._lock:
             with self._connect() as conn:
                 conn.execute("DELETE FROM diagnostic_documents")

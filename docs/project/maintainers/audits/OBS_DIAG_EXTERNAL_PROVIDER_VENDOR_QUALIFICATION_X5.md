@@ -165,13 +165,17 @@ Docs: `OBSERVABILITY.md`, `DIAGNOSTICS.md`, this audit.
 
 External HITL vendor service qualification remains **NOT_PROVEN** (out of persistence/transport/telemetry matrix). Per-vendor telemetry backends beyond OTLP semantic proofs remain **ADAPTER ONLY** until live endpoint qualification is executed.
 
-## U. Commit
+## U. Commit / provenance (corrected in X5A)
 
-`d2e58034a48db6bb6a5d2356ff07128b037dbfc3`
+| Field | SHA / note |
+| ----- | ---------- |
+| X5 original evidence commit | `2282a2aea9893325735a02e5dd773da4ff97632d` |
+| Erroneous final SHA recorded in initial X5 audit | `d2e58034a48db6bb6a5d2356ff07128b037dbfc3` (did not match X5 commit — corrected by OBS-DIAG-X5A) |
+| X5A integrity closure | see [`OBS_DIAG_PROVIDER_EVIDENCE_INTEGRITY_X5A.md`](OBS_DIAG_PROVIDER_EVIDENCE_INTEGRITY_X5A.md) |
 
 ## V. Ready for X6?
 
-`YES` — provider claims reconciled; exact-SHA backbone gate (X6) is the next closure step.
+`YES` after X5A — provider claims reconciled with lifecycle and anti-drift gates; exact-SHA backbone gate (X6) is the next closure step.
 
 ---
 

@@ -26,6 +26,11 @@ class MessageConsumer(ABC):
     """
 
     @abstractmethod
+    def close(self) -> None:
+        """Release broker consumer resources (offset commit policy unchanged)."""
+        raise NotImplementedError
+
+    @abstractmethod
     def poll(self, *, timeout_seconds: float) -> Optional[bytes]:
         """
         Poll broker for a single message.

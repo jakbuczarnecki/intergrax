@@ -386,6 +386,7 @@ markers = [
   "obs_coverage_p1: OBS-COVERAGE-1 mandatory P1 evidence qualification (deterministic; no nested pytest).",
   "obs_coverage_p4: OBS-DIAG-X4 real cross-process Kafka and HITL spine qualification (external broker; subprocess boundaries).",
   "obs_diag_x5: OBS-DIAG-X5 external provider failure/recovery and vendor-boundary qualification.",
+  "obs_diag_x5a: OBS-DIAG-X5A provider evidence integrity, anti-drift, and lifecycle closure.",
   "obs_trace_1: OBS-TRACE-1 TraceEvent correlation qualification (Plane B; deterministic).",
   "obs_diag_conformance: OBS-DIAG-CONFORMANCE evidence → reconstruction → diagnostics qualification.",
   "ci_smoke: Lightweight representative subset for PR/merge CI (<~30s).",

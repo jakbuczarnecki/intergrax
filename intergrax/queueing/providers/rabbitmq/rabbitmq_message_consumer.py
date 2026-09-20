@@ -75,3 +75,9 @@ class RabbitMQMessageConsumer(MessageConsumer):
             return None
 
         return body
+
+    def close(self) -> None:
+        if self._channel.is_open:
+            self._channel.close()
+        if self._connection.is_open:
+            self._connection.close()
