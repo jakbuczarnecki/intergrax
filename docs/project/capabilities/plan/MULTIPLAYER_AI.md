@@ -10,8 +10,8 @@ Use, modification, or distribution without written permission is prohibited.
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3, MP-5, MP-6) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-FINAL-3 — Capability-Wide Backend E2E** (NEXT) — **MP-FINAL-2 — CLOSED / RECERTIFIED** (**MP-FINAL-2-C1 — CLOSED / CERTIFIED**) — **MP-FINAL-1 — CLOSED / RECERTIFIED** (R1 composition-flow + provenance correction). **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED** (Tier-3 consumability boundary). **MP-5 / MP-6 — ENTERPRISE CERTIFIED / CLOSED**. **MP-8 / MP-9 — PLANNED / NOT STARTED**.
-**Previous:** **MP-7D — CLOSED / ENTERPRISE CERTIFIED** · **MP-7C / MP-7B / MP-7A** closed per architecture hub.
+**Current active task:** **MP-FINAL-4 — Final Enterprise Core Recertification** (NEXT) — **MP-FINAL-3 — CLOSED / CERTIFIED** — **MP-FINAL-2 — CLOSED / RECERTIFIED** (**MP-FINAL-2-C1 — CLOSED / CERTIFIED**) — **MP-FINAL-1 — CLOSED / RECERTIFIED** (R1 composition-flow + provenance correction). **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED** (Tier-3 consumability boundary). **MP-5 / MP-6 — ENTERPRISE CERTIFIED / CLOSED**. **MP-8 / MP-9 — PLANNED / NOT STARTED**.
+**Previous:** **MP-FINAL-3 — CLOSED / CERTIFIED** · **MP-7D — CLOSED / ENTERPRISE CERTIFIED** · **MP-7C / MP-7B / MP-7A** closed per architecture hub.
 
 ---
 
@@ -415,7 +415,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | **ENTERPRISE BOUNDARY CERTIFIED / CLOSED** — **MP-7A CLOSED / CERTIFIED**; **MP-7B — TIER-3 MULTIPLAYER CONSUMER BOUNDARY QUALIFIED / CLOSED**; **MP-7C-C1-R1 — CLOSED / CERTIFIED**; **MP-7C-C1 — CLOSED / RECERTIFIED**; **MP-7C — CLOSED / RECERTIFIED**; **MP-7D — CLOSED / ENTERPRISE CERTIFIED**; Multiplayer Tier-3 consumability boundary certified (not LKW product adoption) |
+| **Status** | **ENTERPRISE BOUNDARY CERTIFIED / CLOSED** — **MP-7A CLOSED / CERTIFIED**; **MP-7B — TIER-3 MULTIPLAYER CONSUMER BOUNDARY QUALIFIED / CLOSED**; **MP-7C-C1-R1 — CLOSED / CERTIFIED**; **MP-7C-C1 — CLOSED / RECERTIFIED**; **MP-7C — CLOSED / RECERTIFIED** (TIER-3 HOST COMPOSITION & BOUNDARY E2E); **MP-7D — CLOSED / ENTERPRISE CERTIFIED**; Multiplayer Tier-3 consumability boundary certified (not LKW product adoption) |
 | **Purpose** | Qualify Tier-3 consumability of Multiplayer via public contracts (LKW as reference host); product primitive adoption remains later slices. |
 | **Likely owning plans** | Tier-3 LKW application implementation plan (consumer); platform primitives in Tier-0/Tier-1 domain plans |
 | **Dependencies** | MP-1…MP-6 platform primitives accepted for the adopted subset |
@@ -440,8 +440,8 @@ Delivery roadmap only. Maturity SSOT remains the architecture hub.
 | **MP-FINAL-1** — SSOT Reconciliation & Visual Architecture Baseline | **CLOSED / RECERTIFIED** | Docs + Mermaid visual architecture reconciled; R1 corrected composition flow + evidence provenance |
 | **MP-FINAL-2** — Multiplayer Diagnostics & Operability E2E | **CLOSED / RECERTIFIED** | Multiplayer → Evidence → Functional Diagnostics → public operator contract (certified scenarios); C1 closed operator-facing contract boundary |
 | **MP-FINAL-2-C1** — Operator-Facing Diagnostics Contract Boundary | **CLOSED / CERTIFIED** | Operator result DTOs owned by `intergrax.contracts.diagnostics`; analyzer/projector remain runtime implementations |
-| **MP-FINAL-3** — Capability-Wide Backend E2E | **NEXT** | Cross-primitive backend scenario (Principal → Activity) |
-| **MP-FINAL-4** — Final Enterprise Core Recertification | **LATER** | Cross-cutting recertification after hardening |
+| **MP-FINAL-3** — Capability-Wide Backend E2E | **CLOSED / CERTIFIED** | Cross-primitive backend scenario (Principal → Activity); evidence [`MP-FINAL-3_CAPABILITY_WIDE_BACKEND_E2E_CERTIFICATION.md`](../../maintainers/qualification/MP-FINAL-3_CAPABILITY_WIDE_BACKEND_E2E_CERTIFICATION.md) |
+| **MP-FINAL-4** — Final Enterprise Core Recertification | **NEXT** | Cross-cutting recertification after hardening |
 | **MP-8** | **PLANNED / NOT STARTED** | AgentDirectory / external agents |
 | **MP-9** | **PLANNED / NOT STARTED** | Advanced UX / notifications / realtime |
 

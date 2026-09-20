@@ -54,7 +54,7 @@ Multiplayer AI is **not** Slack chat, group conversation, shared memory, executi
 | ----- | ------ |
 | Full product-facing Multiplayer capability E2E (including MP-8 / MP-9) | **not established** |
 | Platform/core enterprise proof for MP-1…MP-7 certified scopes | **established** (see qualification evidence + ADRs) |
-| Capability-wide cross-primitive backend E2E (single end-to-end scenario spanning Principal→Activity) | **deferred** — MP-FINAL-3 |
+| Capability-wide cross-primitive backend E2E (single end-to-end scenario spanning Principal→Activity) | **established for certified scenario** — MP-FINAL-3 CLOSED / CERTIFIED |
 | Multiplayer diagnostics / operability E2E | **established for certified scenario(s)** — MP-FINAL-2 CLOSED / RECERTIFIED (C1 operator contract boundary) |
 | LKW Multiplayer adoption complete | **false** — MP-7 certifies Tier-3 consumability boundary only |
 
@@ -309,6 +309,33 @@ flowchart LR
 
 **Invariants preserved:** Diagnostics ≠ authority; CollaborativeActivity ≠ technical RuntimeEvent / diagnostic Problem; Multiplayer does not own a second diagnostic engine or problem store; operator consumes `intergrax.contracts.diagnostics` (not accidental runtime DTO ownership).
 
+### Diagram 10 — Capability-Wide Backend E2E (certified)
+
+```mermaid
+flowchart TD
+  P["Principal / Membership / Authority<br/>owner: Collaborative Work<br/>contract: collaborative_work"]
+  WI["WorkItem<br/>owner: Collaborative Work<br/>contract: WorkItem"]
+  ASG["Assignment<br/>owner: Collaborative Work<br/>contract: Assignment"]
+  ART["WorkArtifact + Version<br/>owner: Collaborative Work<br/>contract: WorkArtifact / ArtifactContentRef"]
+  BIND["CollaborativeDecisionBinding<br/>Multiplayer owns binding / projection"]
+  DEC["DecisionProposalRef<br/>owner: Decision / Governance<br/>canonical Decision truth"]
+  CV["ContextView<br/>Multiplayer owns eligibility / projection<br/>contract: context_view*"]
+  ACT["Collaborative Activity<br/>owner: Collaborative Work<br/>contract: collaborative_activity*"]
+
+  P --> WI --> ASG --> ART --> BIND
+  DEC -. "public DecisionProposalRef seam" .-> BIND
+  BIND --> CV --> ACT
+  WI -. "CW reference catalog" .-> CV
+  ART -. "CW reference catalog" .-> CV
+  WI -. "source-integrated publication" .-> ACT
+  ASG -. "source-integrated publication" .-> ACT
+  ART -. "source-integrated publication" .-> ACT
+  BIND -. "source-integrated publication" .-> ACT
+  CV -. "source-integrated publication" .-> ACT
+```
+
+**Certified wording:** Capability-wide backend E2E established for certified cross-primitive scenario. Evidence: [`MP-FINAL-3_CAPABILITY_WIDE_BACKEND_E2E_CERTIFICATION.md`](../../maintainers/qualification/MP-FINAL-3_CAPABILITY_WIDE_BACKEND_E2E_CERTIFICATION.md). Not a claim that every Multiplayer workflow is proven. No LKW product adoption; no mega-orchestrator; provider implementations are not ABI.
+
 ## Product / Visual UX Boundary
 
 - **MP-9 = PLANNED / NOT STARTED.**
@@ -327,7 +354,7 @@ flowchart LR
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-FINAL-3 — Capability-Wide Backend E2E** (NEXT). **MP-FINAL-2 — CLOSED / RECERTIFIED** (**MP-FINAL-2-C1 — CLOSED / CERTIFIED**). **MP-FINAL-1 — CLOSED / RECERTIFIED** (R1 composition-flow + provenance correction). **MP-7D — CLOSED / ENTERPRISE CERTIFIED** ([`MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md)). **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED**. **MP-6 — ENTERPRISE CERTIFIED / CLOSED** (**MP-6H — CLOSED / CERTIFIED** — [`MP-6_FINAL_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-6_FINAL_ENTERPRISE_CERTIFICATION.md)). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md)).
+**Current active task:** **MP-FINAL-4 — Final Enterprise Core Recertification** (NEXT). **MP-FINAL-3 — CLOSED / CERTIFIED**. **MP-FINAL-2 — CLOSED / RECERTIFIED** (**MP-FINAL-2-C1 — CLOSED / CERTIFIED**). **MP-FINAL-1 — CLOSED / RECERTIFIED** (R1 composition-flow + provenance correction). **MP-7D — CLOSED / ENTERPRISE CERTIFIED** ([`MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md)). **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED**. **MP-6 — ENTERPRISE CERTIFIED / CLOSED** (**MP-6H — CLOSED / CERTIFIED** — [`MP-6_FINAL_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-6_FINAL_ENTERPRISE_CERTIFICATION.md)). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md)).
 **Previous:** **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED** (subject to independent audit). **MP-4D7** — Documentation regression gates — **CLOSED** (SSOT: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) § MP-4D7)
 
 ## Cursor read scope (token budget)
