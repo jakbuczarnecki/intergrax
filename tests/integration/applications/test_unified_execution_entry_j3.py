@@ -47,6 +47,7 @@ def _echo_celery_stack(*, wait_for_result: bool = True):
         task_always_eager=True,
         kv_store=DispatcherTestKVStore(),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
+        production_mode=False,
     )
     queue = CeleryTaskQueue(app)
     store = DummyRunStore()
@@ -247,6 +248,7 @@ def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
         task_always_eager=True,
         kv_store=DispatcherTestKVStore(),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
+        production_mode=False,
     )
     queue = CeleryTaskQueue(app)
     store = DummyRunStore()

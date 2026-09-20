@@ -50,6 +50,7 @@ def wire_optional_queue_execution(
     causal_evidence_persistence: CausalEvidencePersistence | None = None,
     orchestration_triggers: frozenset[str] = frozenset(),
     pipeline_capability_suffix: str = ".pipeline",
+    production_mode: bool,
 ) -> QueueWorkerWiring:
     """
     Return inline host-task adapter or Celery queue adapter.
@@ -94,6 +95,7 @@ def wire_optional_queue_execution(
         orchestration_triggers=orchestration_triggers,
         pipeline_capability_suffix=pipeline_capability_suffix,
         task_enricher=task_enricher,
+        production_mode=production_mode,
     )
     queue = CeleryTaskQueue(worker_app)
     adapter = QueuedHostTaskExecutionAdapter(

@@ -251,6 +251,7 @@ def _run_worker_delivery(
         agent_registry,
         run_budget=_RUN_BUDGET,
         run_budget_persistence=KvRunBudgetPersistence(kv),
+        production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
     )
     task = Task(

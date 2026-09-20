@@ -84,6 +84,9 @@ def test_gr10_r12_continuation_inventory_has_no_gap_rows() -> None:
             "QUALIFIED — reference restart durability; named vendor adapter N/A",
             "N/A — lab/test only; production rejects even when explicit",
             "N/A — reconnect only; is_durable=False; not production",
+            "QUALIFIED — explicit production_mode; durable store enforced in production",
+            "QUALIFIED — mode propagated; host_execution path reuses qualified host",
+            "QUALIFIED — no second NexusLoop; host continuation authority reused",
         }
         if row.production and row.coverage.startswith("QUALIFIED"):
             if not row.projection_only and "refuses" not in row.coverage:

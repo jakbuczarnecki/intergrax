@@ -63,6 +63,7 @@ def build_nexus_task_execution_registry(
     orchestration_triggers: frozenset[str] = frozenset(),
     pipeline_capability_suffix: str = ".pipeline",
     task_enricher=None,
+    production_mode: bool,
 ) -> TaskExecutionRegistry:
     """Register ``nexus.task.v2`` on a worker TaskExecutionRegistry."""
     durable_deps = None
@@ -94,6 +95,7 @@ def build_nexus_task_execution_registry(
             pipeline_capability_suffix=pipeline_capability_suffix,
             task_enricher=task_enricher,
             admit_root_governance_identity=admit_root_governance_identity,
+            production_mode=production_mode,
         )
     else:
         raise ValueError(
@@ -130,6 +132,7 @@ def create_nexus_celery_worker_app(
     orchestration_triggers: frozenset[str] = frozenset(),
     pipeline_capability_suffix: str = ".pipeline",
     task_enricher=None,
+    production_mode: bool,
 ) -> Celery:
     """Production/lab composition root: Celery + ``nexus.task.v2`` handler."""
     if retry_policy is not None and lock_ttl_seconds is not None:
@@ -155,6 +158,7 @@ def create_nexus_celery_worker_app(
         orchestration_triggers=orchestration_triggers,
         pipeline_capability_suffix=pipeline_capability_suffix,
         task_enricher=task_enricher,
+        production_mode=production_mode,
     )
 
     app = Celery(app_name, broker=broker_url, backend=backend_url)

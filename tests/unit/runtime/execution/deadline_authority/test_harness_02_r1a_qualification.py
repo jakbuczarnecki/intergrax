@@ -347,6 +347,7 @@ def test_q19_from_registry_requires_deadline_resolver_with_durable_budget() -> N
             MagicMock(),
             run_budget_persistence=MagicMock(),
             deadline_authority_resolver=None,
+            production_mode=False,
             admit_root_governance_identity=_admit,
         )
 

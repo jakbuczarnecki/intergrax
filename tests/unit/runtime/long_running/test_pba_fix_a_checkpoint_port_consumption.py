@@ -270,6 +270,7 @@ def test_a5_worker_runtime_accepts_fake_port() -> None:
     runtime = NexusWorkerRuntime.from_registry(
         AgentRegistry(),
         checkpoint_store=fake,
+        production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
     )
     assert runtime.host_execution is not None
@@ -296,6 +297,7 @@ def test_a6_worker_bootstrap_contract_accepts_fake_port() -> None:
         AgentRegistry(),
         checkpoint_store=fake,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        production_mode=False,
     )
     assert registry is not None
     from intergrax.runtime.observability.memory_causal_evidence_persistence import (
@@ -313,6 +315,7 @@ def test_a6_worker_bootstrap_contract_accepts_fake_port() -> None:
         task_always_eager=True,
         kv_store=DispatcherTestKVStore(),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
+        production_mode=False,
     )
     assert app is not None
 
