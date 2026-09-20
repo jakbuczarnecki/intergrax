@@ -15,7 +15,7 @@
 | **BRANCH** | `development` |
 | **MP7_FINAL_BINDER_ANCESTRY** | `dfd2c9a1f67a8ab798765ed6f44a77f266bb6b57` **is ancestor** of START_HEAD (`merge-base --is-ancestor` exit 0) |
 | **WORKTREE_STATE** | Dirty with unrelated parallel GR10 / contracts work — preserved; no reset/stash/worktree |
-| **FINAL_HEAD** | *(filled at commit time)* |
+| **FINAL_HEAD** | `f4b01ce495d1f9e336b235ef57d690323f2975c2` |
 
 ---
 
@@ -231,7 +231,12 @@ BLOCKING DOCUMENTATION FINDINGS: NONE
 
 ## 17. Commit
 
-*(filled at commit time)*
+| Commit | SHA |
+| ------ | --- |
+| docs SSOT + visual | `23e817446b92c998b3197d22be29716fdde1f36b` |
+| documentation gates | `1b59f76cefaf8831ec41d0ebcf26f99e866659c7` |
+| evidence | `4a552356d9f4bcffdf07b4643a1fcd5acda1edbb` |
+| evidence SHA fill | `f4b01ce495d1f9e336b235ef57d690323f2975c2` |
 
 ---
 
