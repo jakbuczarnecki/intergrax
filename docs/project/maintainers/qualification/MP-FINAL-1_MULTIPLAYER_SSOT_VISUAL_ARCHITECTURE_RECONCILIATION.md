@@ -1,8 +1,8 @@
 # MP-FINAL-1 — Multiplayer SSOT & Visual Architecture Reconciliation
 
-**Status:** CLOSED (subject to independent audit)  
-**Program:** Multiplayer AI final hardening  
-**Slice:** MP-FINAL-1 — Documentation SSOT reconciliation + visual architecture baseline  
+**Status:** CLOSED / RECERTIFIED (subject to independent audit; provenance repaired by MP-FINAL-1-R1)
+**Program:** Multiplayer AI final hardening
+**Slice:** MP-FINAL-1 — Documentation SSOT reconciliation + visual architecture baseline
 **Date:** 2026-09-20
 
 ---
@@ -15,7 +15,12 @@
 | **BRANCH** | `development` |
 | **MP7_FINAL_BINDER_ANCESTRY** | `dfd2c9a1f67a8ab798765ed6f44a77f266bb6b57` **is ancestor** of START_HEAD (`merge-base --is-ancestor` exit 0) |
 | **WORKTREE_STATE** | Dirty with unrelated parallel GR10 / contracts work — preserved; no reset/stash/worktree |
-| **FINAL_HEAD** | `f4b01ce495d1f9e336b235ef57d690323f2975c2` |
+| **DOCS_SHA** | `23e817446b92c998b3197d22be29716fdde1f36b` |
+| **GATES_SHA** | `1b59f76cefaf8831ec41d0ebcf26f99e866659c7` |
+| **EVIDENCE_SHA** | `4a552356d9f4bcffdf07b4643a1fcd5acda1edbb` |
+| **EVIDENCE_SHA_FILL** | `fd805578f4ab924b350cc6f19160ce702e88cfa7` |
+
+> **Provenance repair (MP-FINAL-1-R1):** earlier drafts recorded a self-referential / orphan `FINAL_HEAD` that is **not** an ancestor of `development`. Active evidence now uses only the real commit table below. Details: `MP-FINAL-1-R1_VISUAL_COMPOSITION_FLOW_EVIDENCE_PROVENANCE_CORRECTION.md`.
 
 ---
 
@@ -112,13 +117,13 @@ Exact stronger wording preserved in SSOT tables (e.g. MP-1 FINAL INDEPENDENT REV
 
 All in `MULTIPLAYER_AI.md` § Visual architecture (MP-FINAL-1):
 
-1. Capability ownership map  
-2. Layer / dependency architecture  
-3. Authority / mutation path (`MeaningfulSideEffectAuthorizationPort`, fail-closed DENY)  
-4. Shared work lifecycle relation (WorkItem ≠ 1:1 Task)  
-5. ContextView composition (eligibility/projection; not source truth)  
-6. Collaborative Activity (`CollaborativeActivityPublicationPort`; source cannot bypass store)  
-7. Tier-3 consumption / MP-7 (replaceable auth port + policy evaluator)  
+1. Capability ownership map
+2. Layer / dependency architecture
+3. Authority / mutation path (`MeaningfulSideEffectAuthorizationPort`, fail-closed DENY)
+4. Shared work lifecycle relation (WorkItem ≠ 1:1 Task)
+5. ContextView composition (eligibility/projection; not source truth)
+6. Collaborative Activity (`CollaborativeActivityPublicationPort`; source cannot bypass store)
+7. Tier-3 consumption / MP-7 (replaceable auth port + policy evaluator)
 8. Capability maturity (MP-1…MP-7 core vs MP-8…MP-9 future)
 
 Legend: solid = owned flow; dashed = reused/reference; contract nodes = replaceable seams; providers ≠ ABI.
@@ -140,7 +145,7 @@ Legend: solid = owned flow; dashed = reused/reference; contract nodes = replacea
 
 ## 9. Deferred MP-8 / MP-9
 
-- **MP-8 — PLANNED / NOT STARTED** (§ External Agent Boundary; Principal kind ≠ AgentDirectory)  
+- **MP-8 — PLANNED / NOT STARTED** (§ External Agent Boundary; Principal kind ≠ AgentDirectory)
 - **MP-9 — PLANNED / NOT STARTED** (§ Product / Visual UX Boundary; docs diagrams ≠ product UI)
 
 ---
@@ -215,8 +220,10 @@ git diff --check <scoped files> → green
 ## 15. Production changes
 
 ```text
-NONE
+MP-FINAL-1 TASK PRODUCTION CHANGES = NONE
 ```
+
+(Repository ancestry after evidence-fill may include unrelated parallel commits; that is not MP-FINAL-1 task scope.)
 
 ---
 
@@ -231,12 +238,14 @@ BLOCKING DOCUMENTATION FINDINGS: NONE
 
 ## 17. Commit
 
-| Commit | SHA |
-| ------ | --- |
-| docs SSOT + visual | `23e817446b92c998b3197d22be29716fdde1f36b` |
-| documentation gates | `1b59f76cefaf8831ec41d0ebcf26f99e866659c7` |
-| evidence | `4a552356d9f4bcffdf07b4643a1fcd5acda1edbb` |
-| evidence SHA fill | `f4b01ce495d1f9e336b235ef57d690323f2975c2` |
+| Role | SHA | Exists | Scope |
+| ---- | --- | ------ | ----- |
+| docs SSOT + visual | `23e817446b92c998b3197d22be29716fdde1f36b` | yes | MP-FINAL-1 task docs |
+| documentation gates | `1b59f76cefaf8831ec41d0ebcf26f99e866659c7` | yes | MP-FINAL-1 task tests |
+| evidence | `4a552356d9f4bcffdf07b4643a1fcd5acda1edbb` | yes | MP-FINAL-1 task evidence |
+| evidence SHA fill | `fd805578f4ab924b350cc6f19160ce702e88cfa7` | yes | MP-FINAL-1 task provenance fill |
+
+> Do **not** use self-referential `FINAL_HEAD`. Any orphan sibling of `fd805578…` that is not on `development` ancestry is **not** an active evidence pointer (see MP-FINAL-1-R1).
 
 ---
 

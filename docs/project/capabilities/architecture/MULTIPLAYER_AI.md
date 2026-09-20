@@ -170,11 +170,15 @@ flowchart TB
   DOM["Runtime / domain implementation<br/>(Collaborative Work)"]
   REPO["Repository / provider adapters<br/>(production-qualified — not ABI)"]
 
-  CONS --> PUB --> COMP2 --> DOM --> REPO
-  DOM -.->|must not import upward| PUB
+  CONS --> PUB
+  COMP2 --> PUB
+  DOM --> PUB
+  COMP2 --> DOM --> REPO
 ```
 
-Contract layer does **not** import implementation. Composition injects ports; providers are adapters.
+**Allowed:** Tier-3 consumer and composition/implementation **depend on** contracts. Composition wires implementation; providers are adapters.
+
+**FORBIDDEN (not drawn as a runtime edge):** contracts importing implementation / any upward leak of ABI into the public contract layer.
 
 ### Diagram 3 — Authority / mutation path
 
@@ -246,14 +250,27 @@ Collaborative Activity ≠ Observability / RuntimeEvent technical log. Observabi
 
 ```mermaid
 flowchart TB
-  T3B["Tier-3 host"]
-  MSE2["MeaningfulSideEffectAuthorizationPort<br/>(replaceable)"]
+  CFG["Host configuration"]
+  OVERRIDE["Explicit MeaningfulSideEffectAuthorizationPort<br/>(optional whole-port override)"]
+  EVAL["MeaningfulSideEffectPolicyEvaluator<br/>(injected or default)"]
+  DEF["RuntimePolicyEngine<br/>(default implementation — not public ABI)"]
   HOST["Host composition"]
-  POL2["Policy evaluator<br/>(injected / default — replaceable)"]
-  CWEN["CW enforcement"]
+  PORT["MeaningfulSideEffectAuthorizationPort<br/>(public replaceable contract)"]
+  T3["Tier-3 consumer"]
+  REQ["CollaborativeWorkEnforcementRequest"]
+  CW["Collaborative Work enforcement"]
 
-  T3B --> MSE2 --> HOST --> POL2 --> CWEN
+  CFG --> HOST
+  OVERRIDE -.->|highest precedence| HOST
+  DEF -.->|default only if no evaluator given| EVAL
+  EVAL --> HOST
+  HOST --> PORT
+  PORT --> T3
+  T3 --> REQ
+  REQ --> CW
 ```
+
+Host composition **creates / selects / returns** `MeaningfulSideEffectAuthorizationPort`. Tier-3 consumer **consumes** that port only — it does not construct the evaluator or select `RuntimePolicyEngine`. Explicit whole-port override bypasses default evaluator/repository composition. `RuntimePolicyEngine` is the **default implementation** of `MeaningfulSideEffectPolicyEvaluator`, not a platform contract.
 
 MP-7 certifies **Multiplayer Tier-3 consumability boundary** — not LKW Multiplayer adoption complete.
 
@@ -294,7 +311,7 @@ flowchart LR
 **Feature plan (1:1):** [`../plan/MULTIPLAYER_AI.md`](../plan/MULTIPLAYER_AI.md)
 **Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1 ownership frozen - ADR-MP-001; MP-2 Shared Work - ADR-MP-003 **COMPLETE**; MP-3 WorkArtifact - ADR-MP-004 **Accepted**; decomposition **APPROVED / CLOSED**)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-FINAL-1 — docs/visual SSOT reconciliation (this slice)** — next after close: **MP-FINAL-2** (diagnostics/operability). **MP-7D — CLOSED / ENTERPRISE CERTIFIED** ([`MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md)). **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED**. **MP-6 — ENTERPRISE CERTIFIED / CLOSED** (**MP-6H — CLOSED / CERTIFIED** — [`MP-6_FINAL_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-6_FINAL_ENTERPRISE_CERTIFICATION.md)). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md)).
+**Current active task:** **MP-FINAL-2 — Multiplayer Diagnostics & Operability E2E** (next). **MP-FINAL-1 — CLOSED / RECERTIFIED** (R1 composition-flow + provenance correction). **MP-7D — CLOSED / ENTERPRISE CERTIFIED** ([`MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md)). **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED**. **MP-6 — ENTERPRISE CERTIFIED / CLOSED** (**MP-6H — CLOSED / CERTIFIED** — [`MP-6_FINAL_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-6_FINAL_ENTERPRISE_CERTIFICATION.md)). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md)).
 **Previous:** **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED** (subject to independent audit). **MP-4D7** — Documentation regression gates — **CLOSED** (SSOT: [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) § MP-4D7)
 
 ## Cursor read scope (token budget)
