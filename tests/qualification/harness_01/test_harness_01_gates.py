@@ -35,6 +35,10 @@ from tests.qualification.harness_01.nexus_boundary_detector import (
 from tests.qualification.harness_01.nexus_import_inventory import (
     HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS,
     HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTERS,
+    HARNESS_01_PUBLIC_EXTENSION_SURFACE_EXACT,
+    _rule_classify,
+    path_is_hard_nexus_violation,
+    path_is_public_extension_surface,
 )
 from tests.qualification.harness_01.production_scope import (
     iter_application_host_py_files,
@@ -431,11 +435,19 @@ def test_harness_01_higher_layer_nexus_imports_are_classified() -> None:
     violations = sorted(
         path
         for path, row in by_path.items()
-        if row.classification == "BOUNDARY_VIOLATION" or row.boundary_status == "VIOLATION"
+        if row.classification == "VIOLATION" or row.boundary_status == "VIOLATION"
     )
     assert violations == [], (
-        "BOUNDARY_VIOLATION importers must be removed before inventory allowlisting:\n"
+        "VIOLATION importers must be removed before inventory allowlisting:\n"
         + "\n".join(violations)
+    )
+    unknown = sorted(
+        path
+        for path, row in by_path.items()
+        if row.classification == "UNCLASSIFIED" or row.boundary_status == "UNCLASSIFIED"
+    )
+    assert unknown == [], (
+        "UNCLASSIFIED importers fail closed (no default LEGAL):\n" + "\n".join(unknown)
     )
     incomplete = sorted(
         path
@@ -446,6 +458,81 @@ def test_harness_01_higher_layer_nexus_imports_are_classified() -> None:
         "Nexus importer inventory rows require reason/owner_layer/evidence:\n"
         + "\n".join(incomplete)
     )
+    for path, row in by_path.items():
+        if path_is_hard_nexus_violation(path):
+            assert row.boundary_status == "VIOLATION", path
+
+
+def test_harness_01_contracts_do_not_import_nexus() -> None:
+    root = _REPO_ROOT / "intergrax" / "contracts"
+    hits: list[str] = []
+    for path in root.rglob("*.py"):
+        rel = relative_posix(path)
+        source = path.read_text(encoding="utf-8-sig")
+        if file_imports_nexus_module(source):
+            hits.append(rel)
+    assert hits == [], "intergrax/contracts must not import Nexus:\n" + "\n".join(hits)
+
+
+def test_harness_01_contracts_do_not_import_runtime() -> None:
+    root = _REPO_ROOT / "intergrax" / "contracts"
+    hits: list[str] = []
+    for path in root.rglob("*.py"):
+        rel = relative_posix(path)
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=rel)
+        except SyntaxError:
+            continue
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.module and node.module.startswith(
+                "intergrax.runtime"
+            ):
+                hits.append(f"{rel}:{node.lineno}:{node.module}")
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name.startswith("intergrax.runtime"):
+                        hits.append(f"{rel}:{node.lineno}:{alias.name}")
+    nexus_hits = [h for h in hits if ".nexus" in h]
+    assert nexus_hits == [], "contracts → Nexus runtime imports:\n" + "\n".join(nexus_hits)
+
+
+def test_harness_01_public_extension_surfaces_do_not_import_nexus() -> None:
+    hits: list[str] = []
+    for rel in sorted(HARNESS_01_PUBLIC_EXTENSION_SURFACE_EXACT):
+        path = _REPO_ROOT / rel
+        if not path.is_file():
+            continue
+        if file_imports_nexus_module(path.read_text(encoding="utf-8-sig")):
+            hits.append(rel)
+    app_contracts = _REPO_ROOT / "intergrax" / "applications" / "contracts"
+    if app_contracts.is_dir():
+        for path in app_contracts.rglob("*.py"):
+            rel = relative_posix(path)
+            if file_imports_nexus_module(path.read_text(encoding="utf-8-sig")):
+                hits.append(rel)
+    assert hits == [], "public extension surfaces must not import Nexus:\n" + "\n".join(hits)
+
+
+def test_harness_01_layer_rules_reject_contract_and_public_nexus_imports() -> None:
+    synthetic_contract = "intergrax/contracts/foo_nexus_leak.py"
+    row = _rule_classify(synthetic_contract)
+    assert row.classification == "VIOLATION"
+    assert row.boundary_status == "VIOLATION"
+    assert path_is_hard_nexus_violation(synthetic_contract)
+    assert path_is_public_extension_surface("intergrax/agents/agent_contract.py")
+    app_contract = "intergrax/applications/contracts/graph_spec.py"
+    assert path_is_hard_nexus_violation(app_contract)
+    ee = "intergrax/runtime/execution/orchestration_topology_slot_mse_enforcement.py"
+    ee_row = _rule_classify(ee)
+    assert ee_row.classification == "EXECUTION_ENGINE_INTERNAL"
+    assert ee_row.boundary_status == "LEGAL"
+
+
+def test_harness_01_unknown_importer_is_unclassified_not_legal() -> None:
+    row = _rule_classify("intergrax/totally_new_surface/nexus_consumer.py")
+    assert row.classification == "UNCLASSIFIED"
+    assert row.boundary_status == "UNCLASSIFIED"
+    assert row.boundary_status != "LEGAL"
 
 
 def test_harness_01_nexus_private_boundary_synthetic_access_cases() -> None:

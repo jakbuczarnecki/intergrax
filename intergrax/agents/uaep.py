@@ -11,7 +11,9 @@ from typing import Any, List, Optional
 from uuid import uuid4
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.agent_runtime_context_materializer import AgentRuntimeContextMaterializer
+from intergrax.runtime.execution.agent_runtime_context_materializer import (
+    AgentRuntimeContextMaterializer,
+)
 from intergrax.agents.runtime_request_bridge import agent_run_result_from_runtime_answer
 from intergrax.agents.authoring.uaep_kernel_step_execution import UaepExecutorStepOutcome
 from intergrax.agents.authoring.uaep_step_bridge import (

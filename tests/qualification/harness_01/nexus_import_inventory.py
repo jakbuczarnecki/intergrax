@@ -1,6 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Explicit higher-layer Nexus import inventory (HARNESS-01 R3)."""
+"""Explicit higher-layer Nexus import inventory (HARNESS-01 R4).
+
+Closed-world inventory + owner-layer rules. Unknown importers are UNCLASSIFIED (FAIL).
+There is no default LEGAL / AUTHORIZED_INTERNAL_COMPOSITION fallback.
+"""
 
 from __future__ import annotations
 
@@ -8,11 +12,34 @@ from dataclasses import dataclass
 from typing import Literal
 
 
-Harness01NexusImporterClassification = Literal[
-    "AUTHORIZED_INTERNAL_COMPOSITION",
-    "MIGRATION_DEBT",
-    "BOUNDARY_VIOLATION",
+Harness01OwnerLayer = Literal[
+    "PUBLIC_CONTRACT",
+    "APPLICATION_CONTRACT",
+    "APPLICATION_HOST",
+    "HOST_COMPOSITION",
+    "AGENT_PUBLIC",
+    "AGENT_INTERNAL",
+    "PLUGIN_SURFACE",
+    "INTEGRATION",
+    "EXECUTION_ENGINE",
+    "PLATFORM_RUNTIME",
+    "TOOLING",
+    "UNKNOWN",
 ]
+
+Harness01NexusImporterClassification = Literal[
+    "EXECUTION_ENGINE_INTERNAL",
+    "HOST_EXECUTION_COMPOSITION",
+    "PLATFORM_RUNTIME_INTERNAL",
+    "AGENT_EXECUTION_BRIDGE",
+    "TOOLING_INTERNAL",
+    "INTEGRATION_PROVIDER",
+    "MIGRATION_DEBT",
+    "VIOLATION",
+    "UNCLASSIFIED",
+]
+
+Harness01BoundaryStatus = Literal["LEGAL", "DEBT", "VIOLATION", "UNCLASSIFIED"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,80 +47,277 @@ class Harness01HigherLayerNexusImporter:
     """Closed-world classification row for a higher-layer Nexus importer."""
 
     path: str
+    owner_layer: Harness01OwnerLayer
     classification: Harness01NexusImporterClassification
     reason: str
-    owner_layer: str
     evidence: str
-    boundary_status: Literal["LEGAL", "DEBT", "VIOLATION"]
+    boundary_status: Harness01BoundaryStatus
 
 
-def _owner_layer(path: str) -> str:
-    if path.startswith("applications/"):
-        return "applications/*/host (composition root)"
-    if path.startswith("intergrax/agents/"):
-        return "intergrax/agents (Tier-2 execution bridge)"
-    if path.startswith("intergrax/applications/"):
-        return "intergrax/applications (host composition)"
-    if path.startswith("intergrax/runtime/execution/"):
-        return "intergrax/runtime/execution (execution-engine composition)"
-    if path.startswith("intergrax/runtime/"):
-        return "intergrax/runtime (platform composition)"
-    if path.startswith("intergrax/contracts/"):
-        return "intergrax/contracts (mapping bridge)"
-    if path.startswith("intergrax/"):
-        return "intergrax (platform internal)"
-    return "unknown"
+# Paths that are unconditional Nexus hard-violations (layer rule; inventory cannot override).
+HARNESS_01_NEXUS_HARD_VIOLATION_PREFIXES: tuple[str, ...] = (
+    "intergrax/contracts/",
+)
+
+HARNESS_01_NEXUS_HARD_VIOLATION_EXACT: frozenset[str] = frozenset(
+    {
+        "intergrax/agents/agent_contract.py",
+        "intergrax/agents/uaep_protocol.py",
+    }
+)
+
+HARNESS_01_PUBLIC_EXTENSION_SURFACE_PREFIXES: tuple[str, ...] = (
+    "intergrax/applications/contracts/",
+)
+
+HARNESS_01_PUBLIC_EXTENSION_SURFACE_EXACT: frozenset[str] = frozenset(
+    {
+        "intergrax/agents/agent_contract.py",
+        "intergrax/agents/uaep_protocol.py",
+        "intergrax/agents/authoring/base.py",
+    }
+)
 
 
-def _r2_composition(path: str) -> Harness01HigherLayerNexusImporter:
-    return Harness01HigherLayerNexusImporter(
-        path=path,
-        classification="AUTHORIZED_INTERNAL_COMPOSITION",
-        reason=(
-            "HARNESS-01-R2 closed-world inventory: internal composition/bridge consumer; "
-            "not a public Nexus ABI. Re-audited in R3 as still importing Nexus."
-        ),
-        owner_layer=_owner_layer(path),
-        evidence=(
-            "tests/qualification/harness_01/test_harness_01_gates.py::"
-            "test_harness_01_higher_layer_nexus_imports_are_classified"
-        ),
-        boundary_status="LEGAL",
-    )
+def path_is_hard_nexus_violation(path: str) -> bool:
+    """Independent layer rule — cannot be overridden by an inventory LEGAL row."""
+    if path in HARNESS_01_NEXUS_HARD_VIOLATION_EXACT:
+        return True
+    if any(path.startswith(prefix) for prefix in HARNESS_01_NEXUS_HARD_VIOLATION_PREFIXES):
+        return True
+    if any(path.startswith(prefix) for prefix in HARNESS_01_PUBLIC_EXTENSION_SURFACE_PREFIXES):
+        return True
+    if "/contracts/" in path and (
+        path.startswith("applications/") or path.startswith("intergrax/applications/")
+    ):
+        return True
+    return False
 
 
-_R3_AUDITED: dict[str, Harness01HigherLayerNexusImporter] = {
-    "intergrax/agents/agent_runtime_context_materializer.py": Harness01HigherLayerNexusImporter(
-        path="intergrax/agents/agent_runtime_context_materializer.py",
-        classification="AUTHORIZED_INTERNAL_COMPOSITION",
-        reason=(
-            "EBH-2B internal UAEP execution hook for Nexus RuntimeContext materialization; "
-            "explicitly excluded from public Agent/UAEP contract surfaces "
-            "(agent_contract.py / uaep_protocol.py remain runtime-pure)."
-        ),
-        owner_layer="intergrax/agents (Tier-2 execution bridge)",
-        evidence="tests/unit/architecture/test_ebh_2b_agent_nexus_contract_separation.py",
-        boundary_status="LEGAL",
-    ),
-    "intergrax/runtime/execution/orchestration_topology_slot_mse_enforcement.py": (
-        Harness01HigherLayerNexusImporter(
-            path="intergrax/runtime/execution/orchestration_topology_slot_mse_enforcement.py",
-            classification="AUTHORIZED_INTERNAL_COMPOSITION",
+def path_is_public_extension_surface(path: str) -> bool:
+    if path in HARNESS_01_PUBLIC_EXTENSION_SURFACE_EXACT:
+        return True
+    if any(path.startswith(prefix) for prefix in HARNESS_01_PUBLIC_EXTENSION_SURFACE_PREFIXES):
+        return True
+    if "/contracts/" in path and (
+        path.startswith("applications/") or path.startswith("intergrax/applications/")
+    ):
+        return True
+    return False
+
+
+_EVIDENCE_CLASSIFIED = (
+    "tests/qualification/harness_01/test_harness_01_gates.py::"
+    "test_harness_01_higher_layer_nexus_imports_are_classified"
+)
+_EVIDENCE_LAYER = (
+    "tests/qualification/harness_01/test_harness_01_gates.py::"
+    "test_harness_01_layer_rules_reject_contract_and_public_nexus_imports"
+)
+_EVIDENCE_EE = (
+    "docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md"
+    " (Nexus private/internal to Execution Engine)"
+)
+_EVIDENCE_HOST = (
+    "docs/project/architecture/UNIFIED_EXECUTION_ARCHITECTURE.md"
+    " (RuntimeConfig → build_nexus_loop_from_environment host composition)"
+)
+_EVIDENCE_TOPOLOGY = (
+    "tests/unit/runtime/architecture/"
+    "test_gr10_r9_r4_topology_mse_composition_mandatory.py"
+)
+_EVIDENCE_MATERIALIZER = (
+    "tests/unit/architecture/test_ebh_2b_agent_nexus_contract_separation.py"
+)
+
+
+def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
+    if path_is_hard_nexus_violation(path):
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="PUBLIC_CONTRACT"
+            if path.startswith("intergrax/contracts/")
+            else (
+                "AGENT_PUBLIC"
+                if path.startswith("intergrax/agents/")
+                else "APPLICATION_CONTRACT"
+            ),
+            classification="VIOLATION",
             reason=(
+                "Layer rule: public/domain/application contracts and public agent surfaces "
+                "must not import intergrax.runtime.nexus.*"
+            ),
+            evidence=_EVIDENCE_LAYER,
+            boundary_status="VIOLATION",
+        )
+
+    if path.startswith("intergrax/runtime/execution/"):
+        reason = (
+            "Execution Engine implementation may consume Nexus internals; "
+            "Nexus types must not escape public signatures."
+        )
+        evidence = _EVIDENCE_EE
+        if path.endswith("orchestration_topology_slot_mse_enforcement.py"):
+            reason = (
                 "Execution-engine composition wrapping public OrchestrationSlotExecutor / "
                 "MeaningfulSideEffectAuthorizationPort with Nexus governed executors; "
                 "Nexus types stay out of public signatures."
-            ),
-            owner_layer="intergrax/runtime/execution (execution-engine composition)",
-            evidence=(
-                "tests/unit/runtime/architecture/"
-                "test_gr10_r9_r4_topology_mse_composition_mandatory.py"
-            ),
+            )
+            evidence = _EVIDENCE_TOPOLOGY
+        if path.endswith("agent_runtime_context_materializer.py"):
+            reason = (
+                "Execution-engine internal UAEP materializer protocol; "
+                "public Agent/UAEPAgent surfaces remain Nexus-free."
+            )
+            evidence = _EVIDENCE_MATERIALIZER
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="EXECUTION_ENGINE",
+            classification="EXECUTION_ENGINE_INTERNAL",
+            reason=reason,
+            evidence=evidence,
             boundary_status="LEGAL",
         )
-    ),
-}
 
+    if path.startswith("intergrax/applications/_shared/") or (
+        path.startswith("applications/") and "/host/" in path
+    ):
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="HOST_COMPOSITION"
+            if path.startswith("intergrax/applications/_shared/")
+            else "APPLICATION_HOST",
+            classification="HOST_EXECUTION_COMPOSITION",
+            reason=(
+                "Documented host/execution composition root wiring Nexus behind "
+                "ApplicationEnvironmentProfile / build_nexus_loop_from_environment; "
+                "not a public Nexus ABI for plugins."
+            ),
+            evidence=_EVIDENCE_HOST,
+            boundary_status="LEGAL",
+        )
+
+    if path.startswith("intergrax/runtime/wiring/"):
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="PLATFORM_RUNTIME",
+            classification="PLATFORM_RUNTIME_INTERNAL",
+            reason=(
+                "Platform runtime wiring bridges composing Execution Engine internals; "
+                "not a public Nexus entry."
+            ),
+            evidence=_EVIDENCE_EE,
+            boundary_status="LEGAL",
+        )
+
+    if path.startswith("intergrax/runtime/task/") or path.startswith(
+        "intergrax/runtime/agent_governance/"
+    ):
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="PLATFORM_RUNTIME",
+            classification="PLATFORM_RUNTIME_INTERNAL",
+            reason=(
+                "Task/UAEP governance runtime path consumes Nexus orchestration internals "
+                "inside the platform execution stack."
+            ),
+            evidence=_EVIDENCE_EE,
+            boundary_status="LEGAL",
+        )
+
+    if path.startswith("intergrax/agents/"):
+        classification: Harness01NexusImporterClassification = "AGENT_EXECUTION_BRIDGE"
+        status: Harness01BoundaryStatus = "DEBT"
+        reason = (
+            "Tier-2 agent/UAEP/authoring bridge still couples to Nexus implementation types; "
+            "public Agent/UAEPAgent and authoring base surfaces are gated Nexus-free. "
+            "Further ownership inversion tracked as migration debt."
+        )
+        if path.endswith("runtime_answer_mapping.py"):
+            classification = "AGENT_EXECUTION_BRIDGE"
+            status = "LEGAL"
+            reason = (
+                "Canonical Nexus RuntimeAnswer → AgentExecutionResult adapter "
+                "(moved out of intergrax.contracts)."
+            )
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="AGENT_INTERNAL",
+            classification=classification,
+            reason=reason,
+            evidence=_EVIDENCE_MATERIALIZER,
+            boundary_status=status,
+        )
+
+    if path.startswith("intergrax/runtime/"):
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="PLATFORM_RUNTIME",
+            classification="PLATFORM_RUNTIME_INTERNAL",
+            reason=(
+                "Platform runtime module consuming Nexus internals within Execution stack; "
+                "not exposed as public Nexus API. Owner is not the entire runtime/* tree — "
+                "classified per runtime subsystem path under R4 owner rules."
+            ),
+            evidence=_EVIDENCE_EE,
+            boundary_status="LEGAL",
+        )
+
+    if path.startswith("intergrax/tools/") or path.startswith("intergrax/websearch/"):
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="TOOLING",
+            classification="TOOLING_INTERNAL",
+            reason="Platform tool/websearch provider consuming Nexus context helpers internally.",
+            evidence=_EVIDENCE_CLASSIFIED,
+            boundary_status="LEGAL",
+        )
+
+    if path.startswith("intergrax/integrations/"):
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="INTEGRATION",
+            classification="INTEGRATION_PROVIDER",
+            reason="Integration provider wiring into runtime persistence/session helpers.",
+            evidence=_EVIDENCE_CLASSIFIED,
+            boundary_status="DEBT",
+        )
+
+    if path.startswith("intergrax/llm_adapters/") or path.startswith("intergrax/rag/"):
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="PLATFORM_RUNTIME",
+            classification="PLATFORM_RUNTIME_INTERNAL",
+            reason="Adapter/RAG runtime sync against Nexus session/config surfaces.",
+            evidence=_EVIDENCE_CLASSIFIED,
+            boundary_status="DEBT",
+        )
+
+    if path.startswith("intergrax/eval/") or path.startswith("intergrax/debug/") or path.startswith(
+        "intergrax/lab/"
+    ) or path.startswith("intergrax/cli/") or path.startswith("intergrax/experiments/") or path.startswith(
+        "intergrax/fastapi_core/"
+    ):
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="TOOLING",
+            classification="TOOLING_INTERNAL",
+            reason="Lab/eval/debug/CLI tooling consuming Nexus for harness execution.",
+            evidence=_EVIDENCE_CLASSIFIED,
+            boundary_status="DEBT",
+        )
+
+    return Harness01HigherLayerNexusImporter(
+        path=path,
+        owner_layer="UNKNOWN",
+        classification="UNCLASSIFIED",
+        reason="No owner-layer rule matched — fail-closed until explicitly classified.",
+        evidence=_EVIDENCE_CLASSIFIED,
+        boundary_status="UNCLASSIFIED",
+    )
+
+
+# Explicit closed-world path set (must match AST discovery; never auto-generated in test).
 _PATHS: tuple[str, ...] = (
     "applications/attestation_demo/host/integration_wiring.py",
     "applications/dispute_sim_application/host/factory.py",
@@ -109,12 +333,10 @@ _PATHS: tuple[str, ...] = (
     "applications/poc_template_application/host/integration_wiring.py",
     "applications/research_application/host/integration_wiring.py",
     "intergrax/agents/agent_engine.py",
-    "intergrax/agents/agent_runtime_context_materializer.py",
     "intergrax/agents/authoring/acp_routing_trace_bridge.py",
     "intergrax/agents/authoring/acp_run.py",
     "intergrax/agents/authoring/acp_stub_reflex.py",
     "intergrax/agents/authoring/acp_uaep_shim.py",
-    "intergrax/agents/authoring/base.py",
     "intergrax/agents/authoring/diagnostic_serialization.py",
     "intergrax/agents/authoring/llm_router.py",
     "intergrax/agents/authoring/patterns/base.py",
@@ -130,6 +352,7 @@ _PATHS: tuple[str, ...] = (
     "intergrax/agents/persistence/catalog_declarative_invoker.py",
     "intergrax/agents/persistence/skill_host_wiring.py",
     "intergrax/agents/reference_harness.py",
+    "intergrax/agents/runtime_answer_mapping.py",
     "intergrax/agents/runtime_request_bridge.py",
     "intergrax/agents/uaep.py",
     "intergrax/applications/_shared/adaptive_runtime_bridge.py",
@@ -188,13 +411,7 @@ _PATHS: tuple[str, ...] = (
     "intergrax/applications/_shared/security_wiring.py",
     "intergrax/applications/_shared/session_tool_wiring.py",
     "intergrax/applications/_shared/tool_engine_wiring.py",
-    "intergrax/applications/contracts/environment_profile/sub_profiles.py",
-    "intergrax/applications/contracts/graph_spec.py",
     "intergrax/cli/mvp_evolution.py",
-    "intergrax/context/contracts.py",
-    "intergrax/contracts/host_profile_slices.py",
-    "intergrax/contracts/runtime_cost.py",
-    "intergrax/contracts/runtime_mapping.py",
     "intergrax/debug/app.py",
     "intergrax/debug/formatters.py",
     "intergrax/debug/models.py",
@@ -228,6 +445,7 @@ _PATHS: tuple[str, ...] = (
     "intergrax/runtime/events/trace_bridge.py",
     "intergrax/runtime/events/unified_run_journal.py",
     "intergrax/runtime/execution/active_execution_budget.py",
+    "intergrax/runtime/execution/agent_runtime_context_materializer.py",
     "intergrax/runtime/execution/agentic.py",
     "intergrax/runtime/execution/authority/registry.py",
     "intergrax/runtime/execution/budget/ledger.py",
@@ -291,11 +509,11 @@ _PATHS: tuple[str, ...] = (
     "intergrax/tools/providers/harness/service.py",
     "intergrax/tools/providers/rag/service.py",
     "intergrax/tools/registry/runtime_bindings.py",
-    "intergrax/websearch/service/websearch_context_generator.py"
+    "intergrax/websearch/service/websearch_context_generator.py",
 )
 
 HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS: tuple[Harness01HigherLayerNexusImporter, ...] = tuple(
-    _R3_AUDITED[path] if path in _R3_AUDITED else _r2_composition(path) for path in _PATHS
+    _rule_classify(path) for path in _PATHS
 )
 
 HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTERS: frozenset[str] = frozenset(
@@ -304,6 +522,10 @@ HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTERS: frozenset[str] = frozenset(
 
 assert HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTERS == frozenset(_PATHS)
 assert not any(
-    row.classification == "BOUNDARY_VIOLATION"
+    row.classification == "UNCLASSIFIED" or row.boundary_status == "UNCLASSIFIED"
     for row in HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS
-)
+), "inventory contains UNCLASSIFIED rows — extend owner-layer rules"
+assert not any(
+    row.classification == "VIOLATION" or row.boundary_status == "VIOLATION"
+    for row in HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS
+), "inventory contains VIOLATION rows — remove illegal Nexus imports before allowlisting"

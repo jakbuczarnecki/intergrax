@@ -12,13 +12,13 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from intergrax.contracts.agent_budget import BudgetReactionProfile
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
+from intergrax.contracts.context_budget import ContextBudgetPolicy
 from intergrax.contracts.intent_route import IntentRoute
 from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.runtime.adaptive.contracts import UtilityWeights
 from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
 from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
-from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 
 ContextEnginePreset = Literal[
     "default",

@@ -8,7 +8,7 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Generic, TypeVar
+from typing import Generic, Protocol, TypeVar, runtime_checkable
 
 from intergrax.contracts.collaborative_work import CollaborativeWorkEnforcementRequest
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectKind
@@ -40,11 +40,24 @@ class OrchestrationTopologySlotEffectAuthorityOwner(Enum):
     PHYSICAL_DELEGATION = auto()
 
 
+@runtime_checkable
+class OrchestrationSlotEffectAuthoritySurface(Protocol):
+    """Typed optional surface for slot effect-authority declaration (no attribute probing)."""
+
+    @property
+    def orchestration_slot_effect_authority_owner(
+        self,
+    ) -> OrchestrationTopologySlotEffectAuthorityOwner:
+        ...
+
+
 def default_resolve_orchestration_topology_slot_effect_authority_owner(
     executor: object,
 ) -> OrchestrationTopologySlotEffectAuthorityOwner | None:
-    """Resolve declared slot effect authority from executor contract surface (not implementation type)."""
-    owner = getattr(executor, "orchestration_slot_effect_authority_owner", None)
+    """Resolve declared slot effect authority from typed contract surface."""
+    if not isinstance(executor, OrchestrationSlotEffectAuthoritySurface):
+        return None
+    owner = executor.orchestration_slot_effect_authority_owner
     if isinstance(owner, OrchestrationTopologySlotEffectAuthorityOwner):
         return owner
     return None
@@ -203,6 +216,7 @@ def prepare_orchestration_topology_slot_continuation_executor(
 
 
 __all__ = [
+    "OrchestrationSlotEffectAuthoritySurface",
     "OrchestrationTopologySlotEffectAuthorityOwner",
     "OrchestrationTopologySlotMsePolicy",
     "build_orchestration_topology_slot_mse_policy",

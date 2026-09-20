@@ -1,17 +1,49 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
+"""Nexus RuntimeAnswer → public AgentExecutionResult adapter (Execution Engine internal)."""
+
 from __future__ import annotations
 
 from typing import Optional
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
-from intergrax.contracts.runtime_cost import (
-    extract_cost_from_runtime_answer,
-    extract_duration_seconds_from_runtime_answer,
-)
+from intergrax.contracts.runtime_cost import tokens_to_cost_units
 from intergrax.runtime.interrupts.handler import GovernanceResolution
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer
+
+
+def extract_cost_from_runtime_answer(answer: RuntimeAnswer) -> Optional[float]:
+    """Derive cost from explicit stats or LLM usage report on a RuntimeAnswer."""
+    stats = answer.stats
+    explicit = stats.extra.get("cost") if stats else None
+    if explicit is not None:
+        try:
+            return float(explicit)
+        except (TypeError, ValueError):
+            pass
+
+    report = answer.llm_usage_report
+    if report is not None:
+        return tokens_to_cost_units(report.total.total_tokens)
+
+    if stats and stats.total_tokens is not None:
+        return tokens_to_cost_units(stats.total_tokens)
+
+    return None
+
+
+def extract_duration_seconds_from_runtime_answer(answer: RuntimeAnswer) -> Optional[float]:
+    """Derive wall-clock duration in seconds from runtime stats."""
+    stats = answer.stats
+    if stats and stats.duration_ms is not None:
+        return stats.duration_ms / 1000.0
+
+    report = answer.llm_usage_report
+    if report is not None and report.total.duration_ms:
+        return report.total.duration_ms / 1000.0
+
+    return None
 
 
 def runtime_answer_to_agent_result(

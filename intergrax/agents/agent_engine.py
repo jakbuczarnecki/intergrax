@@ -18,7 +18,7 @@ from intergrax.agents.uaep_protocol import supports_uaep
 from intergrax.contracts.agent_run import AgentRunResult
 from intergrax.contracts.validation import ValidationResult
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
-from intergrax.contracts.runtime_mapping import runtime_answer_to_agent_result
+from intergrax.agents.runtime_answer_mapping import runtime_answer_to_agent_result
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest

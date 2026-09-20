@@ -45,8 +45,8 @@ from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
 from intergrax.runtime.capacity.contracts import ScalingPolicy
 from intergrax.runtime.events.event_taxonomy import EventCategory
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.contracts.context_budget import ContextBudgetPolicy
 from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
-from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.policy.compliance_profiles import ComplianceDomainClass
 from intergrax.runtime.policy.rules.evaluation import PolicyEnforcementMode
 
