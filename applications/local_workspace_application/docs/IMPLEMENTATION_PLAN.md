@@ -1,4 +1,4 @@
-# Local Workspace Application - Implementation Plan
+﻿# Local Workspace Application - Implementation Plan
 
 **Status:** Product-first MVP roadmap (2026-07-31)  
 **Governing product rule:** [`PRODUCT_FIRST_MVP.md`](../../../docs/project/maintainers/plans/PRODUCT_FIRST_MVP.md)
@@ -51,11 +51,13 @@ MP-7C — CLOSED / RECERTIFIED (TIER-3 HOST COMPOSITION & BOUNDARY E2E)
 MP-7C-C1 — CLOSED / RECERTIFIED (host runtime policy evaluator contract injection)
 MP-7C-C1-R1 — CLOSED / CERTIFIED (evaluator Protocol relocated to intergrax.contracts.*)
 (host composition boundary E2E — not LKW product integration)
-MP-7 — IN PROGRESS
+MP-7D — CLOSED / ENTERPRISE CERTIFIED (final Tier-3 consumability boundary)
+MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED
 LKW remains Tier-3 reference consumer only (**MP-INV-30**).
 Does not block or replace LKW-PLUGIN-CAPABILITY-CONFIGURATION-1 unless operator re-prioritizes.
-Detail: docs/project/maintainers/qualification/MP-7C_TIER3_HOST_COMPOSITION_BOUNDARY_E2E_QUALIFICATION.md
-(and MP-7B: docs/project/maintainers/qualification/MP-7B_TIER3_MULTIPLAYER_CONSUMER_BOUNDARY_QUALIFICATION.md;
+Detail: docs/project/maintainers/qualification/MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md
+(and MP-7C: docs/project/maintainers/qualification/MP-7C_TIER3_HOST_COMPOSITION_BOUNDARY_E2E_QUALIFICATION.md;
+MP-7B: docs/project/maintainers/qualification/MP-7B_TIER3_MULTIPLAYER_CONSUMER_BOUNDARY_QUALIFICATION.md;
 MP-7A gate: docs/project/maintainers/qualification/MP-7A_LKW_MULTIPLAYER_ADOPTION_ARCHITECTURE_GATE.md)
 
 FINAL LKW 1.0 TARGET
