@@ -331,9 +331,10 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
         "Reliability",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R13: post-admission OrchestrationConsequentialEffectReliabilityPort on canonical topology "
-        "slots (ProviderInvocation intent/outcome); RuntimeToolInvoker idempotency + external-operation "
-        "lifecycle; External Work / Physical Delegation retain GR-7 delegated boundaries.",
+        "GR-10-R13-R1: post-admission OrchestrationConsequentialEffectReliabilityPort fail-safe "
+        "ProviderInvocationStatus (typed definitive failure vs post-dispatch UNKNOWN); canonical "
+        "tenant/slot invocation identity; intent-without-outcome blocks blind replay; GR-7 "
+        "reconciliation/repeat eligibility delegated; RuntimeToolInvoker + External Work unchanged owners.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Governance Evidence",
@@ -682,7 +683,7 @@ GR10_ORCHESTRATION_RELIABILITY_INVENTORY: tuple[
         "OrchestrationConsequentialEffectReliabilityPort (production composition)",
         "operation_id idempotency_key",
         "GR-7 reconciliation where host wires recovery",
-        "ProviderInvocationStatus via slot boundary",
+        "ProviderInvocationStatus (adapter typed failure vs post-dispatch UNKNOWN)",
         "QUALIFIED",
     ),
     Gr10OrchestrationReliabilityInventoryRow(
@@ -693,7 +694,7 @@ GR10_ORCHESTRATION_RELIABILITY_INVENTORY: tuple[
         "OrchestrationConsequentialEffectReliabilityPort (production composition)",
         "operation_id idempotency_key",
         "GR-7 reconciliation where host wires recovery",
-        "ProviderInvocationStatus via slot boundary",
+        "ProviderInvocationStatus (adapter typed failure vs post-dispatch UNKNOWN)",
         "QUALIFIED",
     ),
     Gr10OrchestrationReliabilityInventoryRow(

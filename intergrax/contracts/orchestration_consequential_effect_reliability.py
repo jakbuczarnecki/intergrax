@@ -21,7 +21,12 @@ class OrchestrationConsequentialEffectReliabilityOutcome(StrEnum):
 
 
 class OrchestrationConsequentialEffectReliabilityPort(Protocol):
-    """Canonical boundary between Governance ALLOW and provider/slot physical effect."""
+    """Canonical boundary between Governance ALLOW and provider/slot physical effect.
+
+    Post-``DISPATCH_ATTEMPTED``, untyped callback failures are uncertain (UNKNOWN) unless the
+    adapter raises a typed definitive-failure signal; orchestration does not map exception types
+    to provider certainty.
+    """
 
     async def execute_admitted_effect(
         self,

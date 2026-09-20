@@ -23,6 +23,7 @@ from intergrax.runtime.execution.orchestration_topology_slot_mse_enforcement imp
 from intergrax.runtime.governance.orchestration_consequential_effect_reliability_boundary import (
     OrchestrationConsequentialEffectUncertaintyError,
     ProviderInvocationOrchestrationConsequentialEffectReliabilityBoundary,
+    orchestration_slot_invocation_id,
 )
 from intergrax.runtime.governance.orchestration_consequential_effect_reliability_composition import (
     OrchestrationConsequentialEffectReliabilityCompositionError,
@@ -90,7 +91,13 @@ async def test_scenario_c_timeout_unknown_persisted() -> None:
         reset_active_execution_identity(token)
 
     assert calls == 1
-    outcome = store.get_outcome("orch-slot:op-1")
+    invocation_id = orchestration_slot_invocation_id(
+        tenant_id="platform",
+        provider_id="platform.orchestration.topology_slot",
+        slot_id="slot-a",
+        idempotency_key="op-1",
+    )
+    outcome = store.get_outcome(invocation_id)
     assert outcome is not None
     assert outcome.status is ProviderInvocationStatus.UNKNOWN
 

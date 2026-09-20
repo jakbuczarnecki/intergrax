@@ -16,6 +16,7 @@ from intergrax.contracts.orchestration_consequential_effect_reliability import (
 )
 from intergrax.contracts.provider_invocation import (
     ProviderInvocation,
+    ProviderInvocationOutcome,
     ProviderInvocationStatus,
 )
 from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
@@ -40,6 +41,29 @@ class OrchestrationConsequentialEffectUncertaintyError(RuntimeError):
     """Physical effect may have occurred; outcome is UNKNOWN — no blind retry implied."""
 
 
+class OrchestrationConsequentialEffectDefinitiveFailureError(RuntimeError):
+    """Typed adapter/slot contract proves the physical effect did not occur."""
+
+
+def orchestration_slot_invocation_id(
+    *,
+    tenant_id: str,
+    provider_id: str,
+    slot_id: str,
+    idempotency_key: str,
+) -> str:
+    """Canonical invocation identity — tenant- and slot-scoped (no cross-tenant collision)."""
+    digest = stable_payload_hash(
+        {
+            "tenant_id": tenant_id,
+            "provider_id": provider_id,
+            "slot_id": slot_id,
+            "idempotency_key": idempotency_key,
+        },
+    )
+    return f"orch-slot:{digest}"
+
+
 @dataclass(frozen=True, slots=True)
 class ProviderInvocationOrchestrationConsequentialEffectReliabilityBoundary(
     OrchestrationConsequentialEffectReliabilityPort,
@@ -62,12 +86,18 @@ class ProviderInvocationOrchestrationConsequentialEffectReliabilityBoundary(
         started_at = self.clock()
         request_digest = stable_payload_hash(
             {
+                "tenant_id": self.tenant_id,
                 "slot_id": slot_id,
                 "operation_id": operation_id,
                 "idempotency_key": idempotency_key,
             },
         )
-        invocation_id = f"orch-slot:{idempotency_key}"
+        invocation_id = orchestration_slot_invocation_id(
+            tenant_id=self.tenant_id,
+            provider_id=self.provider_id,
+            slot_id=slot_id,
+            idempotency_key=idempotency_key,
+        )
         return ProviderInvocation(
             invocation_id=invocation_id,
             provider_id=self.provider_id,
@@ -93,6 +123,15 @@ class ProviderInvocationOrchestrationConsequentialEffectReliabilityBoundary(
             operation_id=operation_id,
             idempotency_key=idempotency_key,
         )
+        prior_invocation = self.store.get_invocation(invocation.invocation_id)
+        prior_outcome = self.store.get_outcome(invocation.invocation_id)
+        if prior_outcome is not None:
+            self._raise_for_persisted_outcome(prior_outcome)
+        if prior_invocation is not None:
+            raise OrchestrationConsequentialEffectUncertaintyError(
+                "durable invocation intent without persisted outcome — effect may have occurred",
+            )
+
         recorded_at = self.clock()
         persist_provider_invocation_intent(self.store, invocation)
         emit_intent_persisted(
@@ -119,19 +158,38 @@ class ProviderInvocationOrchestrationConsequentialEffectReliabilityBoundary(
         detail = ""
         try:
             result = await execute()
+        except OrchestrationConsequentialEffectDefinitiveFailureError as exc:
+            status = ProviderInvocationStatus.FAILED
+            detail = str(exc)
+            self._persist_outcome(invocation, status, detail, operation_id)
+            raise
         except TimeoutError as exc:
             status = ProviderInvocationStatus.UNKNOWN
             detail = str(exc)
             self._persist_outcome(invocation, status, detail, operation_id)
             raise OrchestrationConsequentialEffectUncertaintyError(detail) from exc
         except Exception as exc:
-            status = ProviderInvocationStatus.FAILED
+            status = ProviderInvocationStatus.UNKNOWN
             detail = str(exc)
             self._persist_outcome(invocation, status, detail, operation_id)
-            raise
+            raise OrchestrationConsequentialEffectUncertaintyError(detail) from exc
 
         self._persist_outcome(invocation, status, detail, operation_id)
         return result
+
+    @staticmethod
+    def _raise_for_persisted_outcome(outcome: ProviderInvocationOutcome) -> None:
+        if outcome.status is ProviderInvocationStatus.SUCCEEDED:
+            raise OrchestrationConsequentialEffectUncertaintyError(
+                "orchestration slot effect already recorded as succeeded",
+            )
+        if outcome.status is ProviderInvocationStatus.FAILED:
+            raise OrchestrationConsequentialEffectDefinitiveFailureError(
+                "orchestration slot effect already recorded as not executed",
+            )
+        raise OrchestrationConsequentialEffectUncertaintyError(
+            "orchestration slot effect outcome remains unknown",
+        )
 
     def _persist_outcome(
         self,
@@ -161,6 +219,8 @@ class ProviderInvocationOrchestrationConsequentialEffectReliabilityBoundary(
 
 
 __all__ = [
+    "OrchestrationConsequentialEffectDefinitiveFailureError",
     "OrchestrationConsequentialEffectUncertaintyError",
     "ProviderInvocationOrchestrationConsequentialEffectReliabilityBoundary",
+    "orchestration_slot_invocation_id",
 ]
