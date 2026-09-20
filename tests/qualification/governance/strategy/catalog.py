@@ -676,6 +676,17 @@ GR10_ORCHESTRATION_RELIABILITY_INVENTORY: tuple[
         "QUALIFIED — delegated GR-7",
     ),
     Gr10OrchestrationReliabilityInventoryRow(
+        "Canonical production topology composition (host → durable store → Reliability)",
+        True,
+        True,
+        True,
+        "build_orchestration_reliability_composition + build_strict_production_orchestration_topology_slot_mse_policy",
+        "operation_id idempotency_key",
+        "GR-7 reconciliation via shared ProviderInvocationStore",
+        "ProviderInvocationStatus (adapter typed failure vs post-dispatch UNKNOWN)",
+        "QUALIFIED — intergrax/runtime/execution/orchestration_topology_production_composition.py; harness + governed contractor host factories",
+    ),
+    Gr10OrchestrationReliabilityInventoryRow(
         "GovernedOrchestrationSlotExecutor.execute_slot",
         True,
         True,
