@@ -10,7 +10,9 @@ from enum import StrEnum
 
 from intergrax.runtime.diagnostics.functional_diagnostic_identity import FunctionalDiagnosticCheckId
 from intergrax.runtime.diagnostics.functional_diagnostic_analysis import FunctionalDiagnosticCheckStatus
-from intergrax.runtime.diagnostics.functional_operator_projection import FunctionalOperatorOutcomeStatus
+from intergrax.contracts.diagnostics.functional_operator_projection import (
+    FunctionalOperatorOutcomeStatus,
+)
 
 
 class QualificationExecutionOutcome(StrEnum):

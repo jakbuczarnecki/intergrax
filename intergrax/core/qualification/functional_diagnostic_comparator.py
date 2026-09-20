@@ -5,6 +5,9 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.diagnostics.functional_operator_projection import (
+    FunctionalOperatorOutcomeStatus,
+)
 from intergrax.core.qualification.functional_diagnostic_expectation import (
     QualificationCaseComparison,
     QualificationCaseExpectation,
@@ -19,7 +22,6 @@ from intergrax.runtime.diagnostics.functional_diagnostic_analysis import (
     FunctionalDiagnosticAnalysis,
     FunctionalDiagnosticCheckStatus,
 )
-from intergrax.runtime.diagnostics.functional_operator_projection import FunctionalOperatorOutcomeStatus
 
 
 def compare_qualification_case(
