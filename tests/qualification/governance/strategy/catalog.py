@@ -50,7 +50,7 @@ GR10_A2_ARCHITECTURE_DECISION: Gr10AgenticExecutionArchitectureDecision = (
     Gr10AgenticExecutionArchitectureDecision.UAEP_CANONICAL_ACP_EXPLICIT
 )
 GR10_A2_CHECKPOINT_SESSION_COUPLING: Gr10CheckpointSessionCouplingStatus = (
-    Gr10CheckpointSessionCouplingStatus.RETAINED_AS_CONTRACT
+    Gr10CheckpointSessionCouplingStatus.DEPRECATED_MIGRATION_TARGET
 )
 GR10_A2_ADR_REFERENCE = "ADR-GR-10-004"
 
@@ -234,8 +234,8 @@ GR10_AGENTIC_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySemantics
         "Inner Governance",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "GR-10-A3: checkpoint-wired production AGENT tasks default to P-UAEP (UAEPExecutor + "
-        "production RuntimeToolInvoker). P-ACP-SESSION is explicit opt-in only — not canonical.",
+        "GR-10-A3-R1: P-UAEP resume authority is RuntimeCheckpoint via TaskCheckpointPersistence; "
+        "AgentCheckpointStore is explicit ACP session only. Ordinary AGENT tasks use P-UAEP.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Policy evaluation",
@@ -1077,6 +1077,8 @@ GR10_A1_R1_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
 
 
 GR10_A3_NEXT_REMEDIATION: Gr10R7NextRemediation = GR10_R15_R1_NEXT_REMEDIATION
+
+GR10_A3_R1_NEXT_REMEDIATION: Gr10R7NextRemediation = GR10_R15_R1_NEXT_REMEDIATION
 
 
 GR10_A1_NEXT_REMEDIATION: Gr10R7NextRemediation = GR10_R15_R1_NEXT_REMEDIATION

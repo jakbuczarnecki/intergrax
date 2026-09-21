@@ -53,7 +53,7 @@ def test_build_harness_host_runtime_exposes_agent_checkpoint_store() -> None:
     assert runtime.agent_checkpoint_store is not None
 
 
-def test_build_reliability_task_enricher_injects_checkpoint_store() -> None:
+def test_build_reliability_task_enricher_omits_agent_checkpoint_without_acp_session() -> None:
     settings = LabApplicationSettings.from_env()
     manifest = build_lab_manifest(settings)
     env = manifest.environment
@@ -72,7 +72,7 @@ def test_build_reliability_task_enricher_injects_checkpoint_store() -> None:
         metadata={},
     )
     enriched = enricher(task)
-    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is runtime.agent_checkpoint_store
+    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
     assert enriched.metadata.get(AcpMetadataKey.SESSION_ENABLED) is None
 
 

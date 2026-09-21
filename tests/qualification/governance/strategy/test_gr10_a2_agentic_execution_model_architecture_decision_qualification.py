@@ -51,7 +51,7 @@ def test_gr10_a2_ssot_decision_uaep_canonical_acp_explicit() -> None:
 def test_gr10_a2_checkpoint_session_coupling_decoupled_retains_explicit_contract() -> None:
     assert (
         GR10_A2_CHECKPOINT_SESSION_COUPLING
-        is Gr10CheckpointSessionCouplingStatus.RETAINED_AS_CONTRACT
+        is Gr10CheckpointSessionCouplingStatus.DEPRECATED_MIGRATION_TARGET
     )
 
 
@@ -81,7 +81,7 @@ def test_gr10_a2_next_remediation_after_a3_is_final_recertification() -> None:
 
 def test_gr10_a2_enricher_does_not_set_session_enabled() -> None:
     source = _ENRICHER.read_text(encoding="utf-8-sig")
-    assert "SESSION_ENABLED" not in source
+    assert "metadata[AcpMetadataKey.SESSION_ENABLED] = True" not in source
     adr = _ADR.read_text(encoding="utf-8-sig")
     assert "make_acp_checkpoint_task_enricher" in adr
     assert "DEPRECATED_MIGRATION_TARGET" in adr or "deprecated" in adr.lower()

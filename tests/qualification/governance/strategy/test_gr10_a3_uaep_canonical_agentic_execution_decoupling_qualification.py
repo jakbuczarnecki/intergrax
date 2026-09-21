@@ -77,7 +77,10 @@ def test_gr10_a3_execution_path_matrix(
             metadata=metadata,
         )
         metadata = dict(enricher(task).metadata)
-        assert metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is store
+        if session_enabled:
+            assert metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is store
+        else:
+            assert metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
     assert _agent_engine_branch(metadata) == expected
 
 
@@ -93,8 +96,23 @@ def test_gr10_a3_checkpoint_enricher_wires_store_without_session_flag() -> None:
         metadata={},
     )
     enriched = enricher(task)
-    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is store
+    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
     assert enriched.metadata.get(AcpMetadataKey.SESSION_ENABLED) is None
+
+
+def test_gr10_a3_checkpoint_enricher_wires_store_when_session_explicit() -> None:
+    store = InMemoryAgentCheckpointStore()
+    enricher = make_acp_checkpoint_task_enricher(store)
+    task = Task(
+        task_id=mint_task_id(),
+        tenant_id="tenant-a",
+        user_id="user-1",
+        agent_id="echo",
+        message="hello",
+        metadata={AcpMetadataKey.SESSION_ENABLED: True},
+    )
+    enriched = enricher(task)
+    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is store
 
 
 def test_gr10_a3_reliability_enricher_checkpoint_decoupled() -> None:
@@ -110,7 +128,7 @@ def test_gr10_a3_reliability_enricher_checkpoint_decoupled() -> None:
         metadata={},
     )
     enriched = enricher(task)
-    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is store
+    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
     assert enriched.metadata.get(AcpMetadataKey.SESSION_ENABLED) is None
 
 
@@ -125,6 +143,9 @@ def test_gr10_a3_catalog_acp_path_explicit_non_canonical() -> None:
 
 
 def test_gr10_a3_ssot_checkpoint_coupling_decoupled() -> None:
-    assert GR10_A2_CHECKPOINT_SESSION_COUPLING is Gr10CheckpointSessionCouplingStatus.RETAINED_AS_CONTRACT
+    assert GR10_A2_CHECKPOINT_SESSION_COUPLING is (
+        Gr10CheckpointSessionCouplingStatus.DEPRECATED_MIGRATION_TARGET
+    )
     source = _ENRICHER.read_text(encoding="utf-8-sig")
-    assert "SESSION_ENABLED" not in source
+    assert "metadata[AcpMetadataKey.SESSION_ENABLED] = True" not in source
+    assert "SESSION_ENABLED] = True" not in source

@@ -27,9 +27,6 @@ from intergrax.agents.persistence.idempotency_store_wiring import (
     make_acp_idempotency_store_task_enricher,
 )
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.applications._shared.acp_checkpoint_task_enricher import (
-    make_acp_checkpoint_task_enricher,
-)
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
@@ -63,15 +60,19 @@ def build_reliability_task_enricher(
     idempotency_store: IdempotencyStore | None = None,
     extra: TaskEnricher | None = None,
 ) -> TaskEnricher:
-    """Apply REL-ADV + optional ACP persistence wiring on every task before Nexus execution."""
-    acp_enricher = make_acp_checkpoint_task_enricher(agent_checkpoint_store)
+    """Apply REL-ADV + optional ACP session persistence wiring on every task before Nexus execution.
+
+    ``agent_checkpoint_store`` is retained for host composition API compatibility; canonical
+    P-UAEP resume uses ``TaskCheckpointPersistence`` / ``RuntimeCheckpoint``, not task metadata
+    ``AgentCheckpointStore``. Explicit ``acp.session.v1`` tasks receive the store via
+    ``inject_acp_checkpoint_metadata`` at execution time (or a session-gated enricher).
+    """
+    _ = agent_checkpoint_store
     compensation_enricher = make_acp_compensation_queue_task_enricher(compensation_queue_store)
     idempotency_enricher = make_acp_idempotency_store_task_enricher(idempotency_store)
 
     def enricher(task: Task) -> Task:
         enriched = apply_reliability_task_defaults(task, env)
-        if acp_enricher is not None:
-            enriched = acp_enricher(enriched)
         if compensation_enricher is not None:
             enriched = compensation_enricher(enriched)
         if idempotency_enricher is not None:

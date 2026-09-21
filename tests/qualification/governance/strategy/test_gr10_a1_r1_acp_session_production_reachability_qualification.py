@@ -57,7 +57,7 @@ def test_gr10_a1_r1_harness_reliability_enricher_checkpoint_without_implicit_acp
         metadata={},
     )
     enriched = enricher(task)
-    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is store
+    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
     assert enriched.metadata.get(AcpMetadataKey.SESSION_ENABLED) is None
 
     graph_spec = env.graph_spec
