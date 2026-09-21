@@ -139,3 +139,11 @@ def test_ebh_2e_r2_r1_r1_runtime_canonical_materialization_owner_exists() -> Non
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
     }
     assert "materialize_canonical_tool_definitions_for_llm_dispatch" in defined
+
+
+def test_ebh_2e_r2_r1_r1_materializer_has_no_cast_escape_hatch() -> None:
+    path = _REPO_ROOT / "intergrax/runtime/nexus/tools/canonical_tool_dispatch.py"
+    tree = _module_ast(path)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            assert node.func.id != "cast", "materializer must not use typing.cast"
