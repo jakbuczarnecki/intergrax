@@ -7,7 +7,12 @@ from __future__ import annotations
 from collections.abc import Callable
 from fastapi import FastAPI
 
+from intergrax.applications._shared.control_plane_composition import (
+    product_consequential_task_control_enabled,
+    require_control_plane_mutation_boundary,
+)
 from intergrax.applications._shared.harness_control_plane_governance_wiring import (
+    build_harness_control_plane_governance,
     resolve_harness_task_control_mutation_boundary,
 )
 from intergrax.applications._shared.async_task_index_resolver import resolve_async_task_index
@@ -28,6 +33,7 @@ from intergrax.agents.persistence.idempotency_store_wiring import (
 )
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
+from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
@@ -108,6 +114,22 @@ def wire_harness_task_control(
     if resolved_boundary is None and runtime is not None and runtime.control_plane_governance is not None:
         resolved_boundary = resolve_harness_task_control_mutation_boundary(
             runtime.control_plane_governance,
+        )
+    if (
+        resolved_boundary is None
+        and enabled
+        and env.application_profile is ApplicationProfile.PRODUCT
+    ):
+        resolved_boundary = resolve_harness_task_control_mutation_boundary(
+            build_harness_control_plane_governance(env),
+        )
+    if product_consequential_task_control_enabled(env, task_control_routes_enabled=enabled):
+        resolved_boundary = require_control_plane_mutation_boundary(
+            resolved_boundary,
+            blocker_code="TASK_CONTROL_BLOCKED_BY_MISSING_BOUNDARY",
+            message=(
+                "task control routes require ControlPlaneMutationAuthorizationBoundary"
+            ),
         )
     if enabled:
         async_index = resolve_async_task_index(env)

@@ -6,6 +6,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.applications._shared.control_plane_composition import (
+    product_consequential_task_control_enabled,
+    require_control_plane_mutation_boundary,
+)
 from intergrax.applications._shared.harness_control_plane_policy_wiring import (
     build_harness_control_plane_mutation_boundary,
 )
@@ -26,6 +30,26 @@ class HarnessControlPlaneGovernance:
 
     mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None
     approval_coordinator: ControlPlaneMutationApprovalCoordinator | None = None
+
+    def require_mutation_boundary_for_consequential_routes(
+        self,
+        *,
+        env: ApplicationEnvironmentProfile,
+        task_control_routes_enabled: bool,
+    ) -> ControlPlaneMutationAuthorizationBoundary | None:
+        """Enforce route-enabled ⇒ boundary when product task-control routes are live."""
+        if not product_consequential_task_control_enabled(
+            env,
+            task_control_routes_enabled=task_control_routes_enabled,
+        ):
+            return self.mutation_authorization_boundary
+        return require_control_plane_mutation_boundary(
+            self.mutation_authorization_boundary,
+            blocker_code="TASK_CONTROL_BLOCKED_BY_MISSING_BOUNDARY",
+            message=(
+                "task control routes require ControlPlaneMutationAuthorizationBoundary"
+            ),
+        )
 
 
 def _wrap_mutation_boundary(
@@ -69,7 +93,7 @@ def build_harness_control_plane_governance(
 def resolve_harness_task_control_mutation_boundary(
     governance: HarnessControlPlaneGovernance,
 ) -> ControlPlaneMutationAuthorizationBoundary | None:
-    """Return the shared host mutation boundary for governed task-control cancel."""
+    """Return the shared host mutation boundary for governed task-control surfaces."""
     return governance.mutation_authorization_boundary
 
 

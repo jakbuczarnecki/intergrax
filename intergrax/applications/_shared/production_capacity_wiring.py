@@ -10,6 +10,10 @@ from intergrax.applications._shared.production_capacity_governance_wiring import
     ProductionCapacityGovernance,
     build_production_capacity_governance,
 )
+from intergrax.applications._shared.control_plane_composition import (
+    product_consequential_capacity_mutations_enabled,
+    require_control_plane_mutation_boundary,
+)
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.capacity.control_plane_governance import EcpGovernanceBlockedError
@@ -40,7 +44,16 @@ def resolve_production_capacity_wiring(
         return ProductionCapacityWiring(enabled=False, adapters=None, probe_passed=False)
 
     resolved_governance = governance or build_production_capacity_governance(env)
-    if resolved_governance.mutation_authorization_boundary is None:
+    if product_consequential_capacity_mutations_enabled(env):
+        require_control_plane_mutation_boundary(
+            resolved_governance.mutation_authorization_boundary,
+            blocker_code="ECP_BLOCKED_MISSING_BOUNDARY",
+            message=(
+                "production capacity wiring requires "
+                "ControlPlaneMutationAuthorizationBoundary"
+            ),
+        )
+    elif resolved_governance.mutation_authorization_boundary is None:
         return ProductionCapacityWiring(enabled=True, adapters=None, probe_passed=False)
     adapters = build_production_capacity_adapters(
         mutation_boundary=resolved_governance.mutation_authorization_boundary,

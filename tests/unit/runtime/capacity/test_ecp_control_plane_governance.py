@@ -8,7 +8,9 @@ from dataclasses import dataclass, field, fields
 
 import pytest
 
+from intergrax.applications._shared.control_plane_composition import ControlPlaneCompositionError
 from intergrax.applications._shared.production_capacity_governance_wiring import (
+    ProductionCapacityGovernance,
     build_production_capacity_governance,
 )
 from intergrax.applications._shared.production_capacity_wiring import resolve_production_capacity_wiring
@@ -409,10 +411,16 @@ def test_ecp_cpm13_provider_side_effect_only_after_allow() -> None:
 
 def test_ecp_cpm14_production_missing_policy_fails_closed() -> None:
     env = ApplicationEnvironmentProfile.product_defaults()
-    wiring = resolve_production_capacity_wiring(env)
-    assert wiring.enabled is True
-    assert wiring.adapters is None
-    assert wiring.probe_passed is False
+    governance = build_production_capacity_governance(env)
+    governance = ProductionCapacityGovernance(
+        principal=governance.principal,
+        mutation_authorization_boundary=None,
+        tenant_resolver=governance.tenant_resolver,
+        tenant_id=governance.tenant_id,
+    )
+    with pytest.raises(ControlPlaneCompositionError) as exc_info:
+        resolve_production_capacity_wiring(env, governance=governance)
+    assert exc_info.value.blocker_code == "ECP_BLOCKED_MISSING_BOUNDARY"
 
 
 def test_ecp_cpm15_production_supplied_deny_policy_zero_provider_effect() -> None:
@@ -435,13 +443,20 @@ def test_ecp_cpm15_production_supplied_deny_policy_zero_provider_effect() -> Non
 
 
 def test_ecp_cpm16_no_permissive_local_production_evaluator() -> None:
+    from intergrax.runtime.governance.control_plane_mutation_policy import (
+        BundleBackedControlPlaneMutationEvaluator,
+    )
+
     env = ApplicationEnvironmentProfile.product_defaults()
     governance = build_production_capacity_governance(env)
-    assert governance.mutation_authorization_boundary is None
+    assert governance.mutation_authorization_boundary is not None
+    assert isinstance(
+        governance.mutation_authorization_boundary.evaluator,
+        BundleBackedControlPlaneMutationEvaluator,
+    )
     wiring = resolve_production_capacity_wiring(env, governance=governance)
     assert wiring.enabled is True
-    assert wiring.adapters is None
-    assert wiring.probe_passed is False
+    assert wiring.adapters is not None
 
 
 def test_ecp_cpm17_production_adapters_block_raw_exact_target_mutation() -> None:
@@ -478,11 +493,10 @@ def test_ecp_cpm17_production_adapters_block_raw_exact_target_mutation() -> None
 def test_ecp_cpm18_maintenance_path_cannot_manufacture_allow_policy() -> None:
     env = ApplicationEnvironmentProfile.product_defaults()
     governance = build_production_capacity_governance(env)
-    assert governance.mutation_authorization_boundary is None
+    assert governance.mutation_authorization_boundary is not None
     wiring = resolve_production_capacity_wiring(env, governance=governance)
     assert wiring.enabled is True
-    assert wiring.adapters is None
-    assert wiring.probe_passed is False
+    assert wiring.adapters is not None
 
 
 def _scheduler_service_principal(tenant_id: str = _TENANT) -> RequestIdentity:
@@ -1569,8 +1583,8 @@ def test_ecp_cpm52_missing_governance_fail_closed_after_composition_refactor() -
     governance = build_production_capacity_governance(env)
     production_wiring = resolve_production_capacity_wiring(env, governance=governance)
     assert production_wiring.enabled is True
-    assert production_wiring.adapters is None
-    assert production_wiring.probe_passed is False
+    assert production_wiring.adapters is not None
+    assert governance.mutation_authorization_boundary is not None
 
 
 def test_ecp_cpm53_live_kubernetes_backend_only_behind_governed_write_path(
