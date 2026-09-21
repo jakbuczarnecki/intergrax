@@ -85,7 +85,9 @@ from tests.unit.autonomous_work.uca6c_bound_execution_fixtures import (
 
 pytestmark = pytest.mark.unit
 
-_HANDLER_PATH = Path("intergrax/runtime/codecraft/qualified_capability_execution_handler.py")
+_HANDLER_PATH = Path(
+    "intergrax/runtime/codecraft/qualified_capability_execution_handler.py"
+)
 _TASK_ID = TaskId("task_" + "e" * 32)
 
 
@@ -164,7 +166,9 @@ def test_stale_artifact_at_execution_unavailable() -> None:
     assert isinstance(registry, EphemeralToolRegistryStore)
     registry.dispose(_CRAFT_ID)
     execution_port = WiringCodeCraftBoundCapabilityExecution(ctx)
-    handler = CodeCraftQualifiedCapabilityExecutionHandler(execution_port=execution_port)
+    handler = CodeCraftQualifiedCapabilityExecutionHandler(
+        execution_port=execution_port
+    )
     dispatch, _, _ = build_qualified_capability_execution_dispatch_service(
         handler_registry=QualifiedCapabilityExecutionBindingHandlerRegistry((handler,)),
         runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
@@ -199,7 +203,9 @@ def test_stale_artifact_at_execution_unavailable() -> None:
             collaborative_authority_scopes=scopes,
         ),
     )
-    assert result.disposition is WorkerQualifiedCapabilityExecutionDisposition.UNAVAILABLE
+    assert (
+        result.disposition is WorkerQualifiedCapabilityExecutionDisposition.UNAVAILABLE
+    )
     assert execution_port.runtime_execution_calls == 0
 
 
@@ -335,8 +341,16 @@ def test_production_wiring_port_requires_active_execution_id(tmp_path: Path) -> 
             "effective_environment_profile": codecraft_sandbox_execution_profile(),
         },
     )
-    port = WiringCodeCraftBoundCapabilityExecution(ctx)
+    from tests.unit.autonomous_work.uca6c_r5_tool_runtime_fixtures import (
+        build_r5_catalog_tool_binding,
+    )
+
     run_id = mint_run_id()
+    tool_binding, _, _ = build_r5_catalog_tool_binding(
+        ctx,
+        run_seed=str(run_id),
+    )
+    port = WiringCodeCraftBoundCapabilityExecution(ctx, tool_invocation=tool_binding)
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
     token = bind_active_execution_identity(

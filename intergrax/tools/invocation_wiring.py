@@ -14,8 +14,13 @@ from intergrax.runtime.architecture.cost_budget import BudgetEnvelope
 from intergrax.runtime.architecture.cost_quota import ResourceQuota
 from intergrax.runtime.sandbox.contracts import SandboxExecCapable
 from intergrax.runtime.workspace.execution_port import WorkspaceExecutionPort
-from intergrax.tools.invocation_wiring_requirements import ToolInvocationWiringRequirements
-from intergrax.tools.registry.runtime_bindings import RunTraceReaderBinding, TaskMemoryViewBinding
+from intergrax.tools.invocation_wiring_requirements import (
+    ToolInvocationWiringRequirements,
+)
+from intergrax.tools.registry.runtime_bindings import (
+    RunTraceReaderBinding,
+    TaskMemoryViewBinding,
+)
 
 
 class ToolWiringResolutionError(Exception):
@@ -68,8 +73,7 @@ class ToolInvocationWiringResolver(Protocol):
         tool_id: str,
         invocation_context: ToolInvocationContext,
         registration_wiring: ToolRegistrationWiringView,
-    ) -> ToolInvocationWiring:
-        ...
+    ) -> ToolInvocationWiring: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -190,6 +194,23 @@ def validate_invocation_wiring(
             "wiring_requirement_missing",
             "sandbox_session required for this tool invocation",
         )
+
+
+@dataclass(frozen=True, slots=True)
+class FixedSandboxSessionWiringResolver:
+    """Per-invocation sandbox overlay for catalog tools requiring isolation."""
+
+    sandbox_session: SandboxExecCapable
+
+    def resolve(
+        self,
+        *,
+        tool_id: str,
+        invocation_context: ToolInvocationContext,
+        registration_wiring: ToolRegistrationWiringView,
+    ) -> ToolInvocationWiring:
+        _ = tool_id, invocation_context, registration_wiring
+        return ToolInvocationWiring(sandbox_session=self.sandbox_session)
 
 
 # TOOL-ENG-RX-C1 compatibility aliases (internal/tests); not canonical ABI names.

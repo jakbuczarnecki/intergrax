@@ -14,6 +14,9 @@ from intergrax.runtime.codecraft.qualified_capability_execution_handler import (
 from intergrax.runtime.codecraft.wiring_bound_capability_execution import (
     WiringCodeCraftBoundCapabilityExecution,
 )
+from intergrax.runtime.nexus.tools.catalog_tool_invocation_port import (
+    CatalogToolInvocationPort,
+)
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
@@ -21,9 +24,13 @@ def build_codecraft_qualified_capability_execution_handler(
     wiring_context: ToolWiringContext,
     *,
     execution_port: CodeCraftBoundCapabilityExecutionPort | None = None,
+    tool_invocation: CatalogToolInvocationPort | None = None,
     side_effect_recorder: list[str] | None = None,
 ) -> CodeCraftQualifiedCapabilityExecutionHandler:
-    port = execution_port or WiringCodeCraftBoundCapabilityExecution(wiring_context)
+    port = execution_port or WiringCodeCraftBoundCapabilityExecution(
+        wiring_context,
+        tool_invocation=tool_invocation,
+    )
     return CodeCraftQualifiedCapabilityExecutionHandler(
         execution_port=port,
         side_effect_recorder=side_effect_recorder,
