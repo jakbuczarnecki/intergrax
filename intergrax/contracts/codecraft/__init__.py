@@ -5,6 +5,12 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.codecraft.bound_capability_execution import (
+    CodeCraftBoundCapabilityExecutionOutcome,
+    CodeCraftBoundCapabilityExecutionPort,
+    CodeCraftBoundCapabilityExecutionRequest,
+    CodeCraftBoundCapabilityExecutionResult,
+)
 from intergrax.contracts.codecraft.gap_synthesis import (
     SCHEMA_CODECRAFT_GAP_SYNTHESIS_REQUEST_V1,
     SCHEMA_CODECRAFT_GAP_SYNTHESIS_RESULT_V1,
@@ -15,6 +21,10 @@ from intergrax.contracts.codecraft.gap_synthesis import (
 )
 
 __all__ = [
+    "CodeCraftBoundCapabilityExecutionOutcome",
+    "CodeCraftBoundCapabilityExecutionPort",
+    "CodeCraftBoundCapabilityExecutionRequest",
+    "CodeCraftBoundCapabilityExecutionResult",
     "CodeCraftGapSynthesisOutcome",
     "CodeCraftGapSynthesisPort",
     "CodeCraftGapSynthesisRequest",

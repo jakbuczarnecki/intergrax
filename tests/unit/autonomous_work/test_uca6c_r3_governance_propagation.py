@@ -30,11 +30,11 @@ from intergrax.runtime.execution.qualified_capability_execution_composition impo
 from intergrax.runtime.execution.qualified_capability_execution_handlers import (
     QualifiedCapabilityExecutionBindingHandlerRegistry,
 )
+from tests.unit.autonomous_work.uca6c_bound_execution_fixtures import (
+    recording_codecraft_execution_handler,
+)
 from intergrax.runtime.execution.worker_qualified_capability_execution_adapter import (
     WorkerQualifiedCapabilityExecutionEngineAdapter,
-)
-from intergrax.runtime.codecraft.qualified_capability_execution_handler import (
-    CodeCraftQualifiedCapabilityExecutionHandler,
 )
 from intergrax.runtime.governance.runtime_execution_policy_admission import (
     AllowingRuntimeExecutionPolicyAdmission,
@@ -218,10 +218,9 @@ def test_tenant_workspace_principal_preserved_in_launch() -> None:
 
 def test_upstream_deny_does_not_invoke_runtime_delegate() -> None:
     ctx = _wiring()
+    handler, _ = recording_codecraft_execution_handler(side_effect_recorder=[])
     dispatch, delegate, _ = build_qualified_capability_execution_dispatch_service(
-        handler_registry=QualifiedCapabilityExecutionBindingHandlerRegistry(
-            (CodeCraftQualifiedCapabilityExecutionHandler(side_effect_recorder=[]),),
-        ),
+        handler_registry=QualifiedCapabilityExecutionBindingHandlerRegistry((handler,)),
         runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
     )
     adapter = WorkerQualifiedCapabilityExecutionEngineAdapter(dispatch=dispatch)
@@ -306,14 +305,9 @@ def test_forged_tenant_on_dispatch_request_rejected_at_construction() -> None:
 def test_upstream_allow_runtime_deny_no_delegate() -> None:
     ctx = _wiring()
     side_effects: list[str] = []
+    handler, _ = recording_codecraft_execution_handler(side_effect_recorder=side_effects)
     dispatch, delegate, _ = build_qualified_capability_execution_dispatch_service(
-        handler_registry=QualifiedCapabilityExecutionBindingHandlerRegistry(
-            (
-                CodeCraftQualifiedCapabilityExecutionHandler(
-                    side_effect_recorder=side_effects,
-                ),
-            ),
-        ),
+        handler_registry=QualifiedCapabilityExecutionBindingHandlerRegistry((handler,)),
         runtime_policy_admission=DenyingRuntimeExecutionPolicyAdmission(),
     )
     coordinator = WorkerQualifiedCapabilityResumeCoordinator(
@@ -332,14 +326,11 @@ def test_upstream_allow_runtime_deny_no_delegate() -> None:
 def test_upstream_allow_runtime_allow_reaches_execution_runtime() -> None:
     ctx = _wiring()
     side_effects: list[str] = []
+    handler, execution_port = recording_codecraft_execution_handler(
+        side_effect_recorder=side_effects,
+    )
     dispatch, delegate, _ = build_qualified_capability_execution_dispatch_service(
-        handler_registry=QualifiedCapabilityExecutionBindingHandlerRegistry(
-            (
-                CodeCraftQualifiedCapabilityExecutionHandler(
-                    side_effect_recorder=side_effects,
-                ),
-            ),
-        ),
+        handler_registry=QualifiedCapabilityExecutionBindingHandlerRegistry((handler,)),
         runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
     )
     coordinator = WorkerQualifiedCapabilityResumeCoordinator(
@@ -352,4 +343,5 @@ def test_upstream_allow_runtime_allow_reaches_execution_runtime() -> None:
     result = coordinator.resume(_resume_request(_qualification()))
     assert result.outcome is WorkerQualifiedCapabilityResumeOutcome.EXECUTION_DISPATCHED
     assert delegate.execute_calls == 1
+    assert execution_port.runtime_execution_calls == 1
     assert len(side_effects) == 1

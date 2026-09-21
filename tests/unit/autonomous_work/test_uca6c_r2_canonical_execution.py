@@ -36,8 +36,8 @@ from intergrax.contracts.execution_identity import TaskId
 from intergrax.runtime.codecraft.qualified_capability_binding_provider import (
     CodeCraftQualifiedCapabilityBindingProvider,
 )
-from intergrax.runtime.codecraft.qualified_capability_execution_handler import (
-    CodeCraftQualifiedCapabilityExecutionHandler,
+from tests.unit.autonomous_work.uca6c_bound_execution_fixtures import (
+    recording_codecraft_execution_handler,
 )
 from intergrax.runtime.execution.qualified_capability_execution_composition import (
     build_qualified_capability_execution_dispatch_service,
@@ -87,7 +87,7 @@ def test_codecraft_qualified_handler_does_not_import_mint_execution_id() -> None
 
 def test_execution_request_id_differs_from_execution_id() -> None:
     ctx = _wiring()
-    coordinator, _, _ = _production_stack(ctx)
+    coordinator, _, _, _ = _production_stack(ctx)
     result = coordinator.resume(_resume_request(_qualification()))
     assert result.outcome is WorkerQualifiedCapabilityResumeOutcome.EXECUTION_DISPATCHED
     execution = result.execution_result
@@ -100,14 +100,9 @@ def test_execution_request_id_differs_from_execution_id() -> None:
 def test_ee_admission_denied_rejected_no_delegate_side_effect() -> None:
     ctx = _wiring()
     side_effects: list[str] = []
+    handler, _ = recording_codecraft_execution_handler(side_effect_recorder=side_effects)
     dispatch, delegate, _ = build_qualified_capability_execution_dispatch_service(
-        handler_registry=QualifiedCapabilityExecutionBindingHandlerRegistry(
-            (
-                CodeCraftQualifiedCapabilityExecutionHandler(
-                    side_effect_recorder=side_effects,
-                ),
-            ),
-        ),
+        handler_registry=QualifiedCapabilityExecutionBindingHandlerRegistry((handler,)),
         runtime_policy_admission=DenyingRuntimeExecutionPolicyAdmission(),
     )
     adapter = WorkerQualifiedCapabilityExecutionEngineAdapter(dispatch=dispatch)
@@ -168,7 +163,7 @@ def test_ee_admission_denied_rejected_no_delegate_side_effect() -> None:
 
 def test_canonical_runtime_delegate_invoked_once_per_execution_request() -> None:
     ctx = _wiring()
-    coordinator, dispatch, _ = _production_stack(ctx)
+    coordinator, dispatch, _, _ = _production_stack(ctx)
     request = _resume_request(_qualification())
     coordinator.resume(request)
     coordinator.resume(request)

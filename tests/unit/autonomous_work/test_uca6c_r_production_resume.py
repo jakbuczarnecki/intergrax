@@ -74,8 +74,9 @@ from intergrax.runtime.codecraft.ownership import CodeCraftSessionOwnership
 from intergrax.runtime.codecraft.qualified_capability_binding_provider import (
     CodeCraftQualifiedCapabilityBindingProvider,
 )
-from intergrax.runtime.codecraft.qualified_capability_execution_handler import (
-    CodeCraftQualifiedCapabilityExecutionHandler,
+from tests.unit.autonomous_work.uca6c_bound_execution_fixtures import (
+    RecordingCodeCraftBoundCapabilityExecution,
+    recording_codecraft_execution_handler,
 )
 from intergrax.runtime.codecraft.session_manager import CodeCraftSessionManager
 from intergrax.runtime.execution.qualified_capability_execution_composition import (
@@ -254,12 +255,14 @@ def _production_stack(
     WorkerQualifiedCapabilityResumeCoordinator,
     QualifiedCapabilityExecutionDispatchService,
     CodeCraftQualifiedCapabilityBindingProvider,
+    RecordingCodeCraftBoundCapabilityExecution,
 ]:
     binding_provider = CodeCraftQualifiedCapabilityBindingProvider(ctx)
     binding_service = QualifiedCapabilityBindingService((binding_provider,))
-    handler_registry = QualifiedCapabilityExecutionBindingHandlerRegistry(
-        (CodeCraftQualifiedCapabilityExecutionHandler(side_effect_recorder=[]),),
+    handler, execution_port = recording_codecraft_execution_handler(
+        side_effect_recorder=[],
     )
+    handler_registry = QualifiedCapabilityExecutionBindingHandlerRegistry((handler,))
     dispatch, _, _ = build_qualified_capability_execution_dispatch_service(
         handler_registry=handler_registry,
         runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
@@ -270,7 +273,7 @@ def _production_stack(
         execution=execution,
         authority_admission=_authority_admission(),
     )
-    return coordinator, dispatch, binding_provider
+    return coordinator, dispatch, binding_provider, execution_port
 
 
 def test_codecraft_production_binding_resolves_artifact() -> None:
@@ -360,14 +363,11 @@ def test_cross_tenant_codecraft_binding_blocked() -> None:
 def test_production_ee_adapter_dispatches_once_per_request_id() -> None:
     ctx = _wiring()
     side_effects: list[str] = []
+    handler, execution_port = recording_codecraft_execution_handler(
+        side_effect_recorder=side_effects,
+    )
     dispatch, _, _ = build_qualified_capability_execution_dispatch_service(
-        handler_registry=QualifiedCapabilityExecutionBindingHandlerRegistry(
-            (
-                CodeCraftQualifiedCapabilityExecutionHandler(
-                    side_effect_recorder=side_effects
-                ),
-            ),
-        ),
+        handler_registry=QualifiedCapabilityExecutionBindingHandlerRegistry((handler,)),
         runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
     )
     adapter = WorkerQualifiedCapabilityExecutionEngineAdapter(dispatch=dispatch)
@@ -419,21 +419,23 @@ def test_production_ee_adapter_dispatches_once_per_request_id() -> None:
     adapter.execute(request)
     adapter.execute(request)
     assert dispatch.dispatch_side_effects == 1
+    assert execution_port.runtime_execution_calls == 1
     assert len(side_effects) == 1
 
 
 def test_same_resume_exactly_once_e2e() -> None:
     ctx = _wiring()
-    coordinator, dispatch, _ = _production_stack(ctx)
+    coordinator, dispatch, _, execution_port = _production_stack(ctx)
     request = _resume_request(_qualification())
     coordinator.resume(request)
     coordinator.resume(request)
     assert dispatch.dispatch_side_effects == 1
+    assert execution_port.runtime_execution_calls == 1
 
 
 def test_concurrent_same_resume_single_dispatch() -> None:
     ctx = _wiring()
-    coordinator, dispatch, _ = _production_stack(ctx)
+    coordinator, dispatch, _, execution_port = _production_stack(ctx)
     request = _resume_request(_qualification())
 
     def _run() -> WorkerQualifiedCapabilityResumeOutcome:
@@ -446,6 +448,7 @@ def test_concurrent_same_resume_single_dispatch() -> None:
         for item in outcomes
     )
     assert dispatch.dispatch_side_effects == 1
+    assert execution_port.runtime_execution_calls == 1
 
 
 @dataclass

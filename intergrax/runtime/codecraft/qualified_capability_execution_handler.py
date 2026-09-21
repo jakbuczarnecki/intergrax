@@ -5,6 +5,12 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.codecraft.bound_capability_execution import (
+    CodeCraftBoundCapabilityExecutionOutcome,
+    CodeCraftBoundCapabilityExecutionPort,
+    CodeCraftBoundCapabilityExecutionRequest,
+    CodeCraftBoundCapabilityExecutionResult,
+)
 from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
     QualifiedCapabilityExecutionDispatchDisposition,
     QualifiedCapabilityExecutionDispatchRequest,
@@ -29,7 +35,13 @@ class CodeCraftQualifiedCapabilityExecutionHandler(
 ):
     """Resolve CodeCraft execution targets inside canonical ExecutionRuntime."""
 
-    def __init__(self, *, side_effect_recorder: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        execution_port: CodeCraftBoundCapabilityExecutionPort,
+        side_effect_recorder: list[str] | None = None,
+    ) -> None:
+        self._execution_port = execution_port
         self._side_effects = side_effect_recorder
 
     @property
@@ -52,12 +64,49 @@ class CodeCraftQualifiedCapabilityExecutionHandler(
                 disposition=QualifiedCapabilityExecutionDispatchDisposition.FAILED,
                 reason_detail="invalid_codecraft_execution_target",
             )
-        if self._side_effects is not None:
+
+        _ = (run_id, attempt_id)
+        port_result = self._execution_port.execute(
+            CodeCraftBoundCapabilityExecutionRequest(
+                craft_id=craft_id,
+                tenant_id=request.tenant_id,
+                task_id=request.task_id,
+                run_id=None,
+                execution_id=execution_id,
+            ),
+        )
+        if (
+            port_result.outcome is CodeCraftBoundCapabilityExecutionOutcome.SUCCEEDED
+            and self._side_effects is not None
+        ):
             self._side_effects.append(craft_id)
-        _ = (run_id, attempt_id, execution_id)
+        return _map_port_result(port_result)
+
+
+def _map_port_result(
+    port_result: CodeCraftBoundCapabilityExecutionResult,
+) -> QualifiedCapabilityExecutionDelegateResult:
+    outcome = port_result.outcome
+    detail = port_result.reason_detail
+    if outcome is CodeCraftBoundCapabilityExecutionOutcome.SUCCEEDED:
         return QualifiedCapabilityExecutionDelegateResult(
             disposition=QualifiedCapabilityExecutionDispatchDisposition.DISPATCHED,
+            reason_detail=detail,
         )
+    if outcome is CodeCraftBoundCapabilityExecutionOutcome.REJECTED:
+        return QualifiedCapabilityExecutionDelegateResult(
+            disposition=QualifiedCapabilityExecutionDispatchDisposition.REJECTED,
+            reason_detail=detail or "codecraft_execution_rejected",
+        )
+    if outcome is CodeCraftBoundCapabilityExecutionOutcome.UNAVAILABLE:
+        return QualifiedCapabilityExecutionDelegateResult(
+            disposition=QualifiedCapabilityExecutionDispatchDisposition.UNAVAILABLE,
+            reason_detail=detail or "codecraft_execution_unavailable",
+        )
+    return QualifiedCapabilityExecutionDelegateResult(
+        disposition=QualifiedCapabilityExecutionDispatchDisposition.FAILED,
+        reason_detail=detail or "codecraft_execution_failed",
+    )
 
 
 __all__ = ["CodeCraftQualifiedCapabilityExecutionHandler"]
