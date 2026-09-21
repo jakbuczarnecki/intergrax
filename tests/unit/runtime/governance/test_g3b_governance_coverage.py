@@ -372,3 +372,13 @@ async def test_uaep_agent_decision_deny_blocks_subsequent_protected_step() -> No
     ]
     assert len(decision_events) == 1
     assert decision_events[0].payload["policy_action"] == PolicyAction.DENY.value
+
+
+def test_gr10_a4_nexus_agents_init_does_not_eagerly_import_agent_engine() -> None:
+    """Package init must load bridges only; AgentEngine imports UAEP and would cycle."""
+    import intergrax.runtime.nexus.agents as agents_pkg
+
+    assert "AgentEngine" not in agents_pkg.__dict__
+    from intergrax.runtime.nexus.agents.agent_engine import AgentEngine  # noqa: F401
+
+    assert AgentEngine is not None
