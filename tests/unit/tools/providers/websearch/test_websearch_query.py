@@ -23,6 +23,7 @@ from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExe
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.websearch.schemas.search_hit import SearchHit
 from intergrax.websearch.schemas.web_search_result import WebSearchResult
+from intergrax.dev_support.execution_identity_scope import canonical_execution_identity_scope
 from testing_support.builder import build_runtime_state_for_tests
 
 pytestmark = pytest.mark.unit
@@ -196,7 +197,8 @@ def test_websearch_query_via_runtime_invoker() -> None:
         input=WebsearchQueryInput(query="agent runtime", limit=5),
     )
 
-    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    with canonical_execution_identity_scope("ws_run"):
+        result = invoker.invoke(state=state, agent_id="agent", request=request)
 
     assert result.success is True
     assert result.output is not None

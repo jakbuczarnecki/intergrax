@@ -260,12 +260,14 @@ def test_import_order_stability_no_runtime_method_augmentation() -> None:
     script = r"""
 import importlib
 
+# Contract profiles first — loading ``intergrax.integrations`` package ``__init__``
+# before tool/skill contracts can trigger a registry/wiring import cycle in isolation.
+tool = importlib.import_module("intergrax.tools.contracts.tool_profile").ToolProfile
+skill = importlib.import_module("intergrax.skills.contracts.skill_profile").SkillProfile
+llm = importlib.import_module("intergrax.llm_adapters.contracts.llm_profile").LLMProfile
 integration = importlib.import_module(
     "intergrax.integrations.contracts.integration_profile",
 ).IntegrationProfile
-llm = importlib.import_module("intergrax.llm_adapters.contracts.llm_profile").LLMProfile
-tool = importlib.import_module("intergrax.tools.contracts.tool_profile").ToolProfile
-skill = importlib.import_module("intergrax.skills.contracts.skill_profile").SkillProfile
 
 runtime_methods = {
     "resolve",
