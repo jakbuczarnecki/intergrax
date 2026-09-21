@@ -20,6 +20,9 @@ from typing import Any, Protocol
 import httpx
 
 from intergrax.llm_adapters.providers.openai_compat_providers import VllmChatAdapter
+from intergrax.runtime.nexus.tools.canonical_tool_dispatch import (
+    materialize_canonical_tool_definitions_for_llm_dispatch,
+)
 from intergrax.llm_adapters.providers.vllm_diagnostics import (
     VLLM_PINNED_VERSION,
     VllmDiagnosticsError,
@@ -490,9 +493,12 @@ def _execute_warmup(
         read_timeout=config.read_timeout_seconds,
     )
     if payload.tools_schema:
+        canonical_tool_definitions = materialize_canonical_tool_definitions_for_llm_dispatch(
+            list(payload.tools_schema)
+        )
         _ = adapter.generate_with_tools(
             payload.messages,
-            list(payload.tools_schema),
+            canonical_tool_definitions,
             max_tokens=32,
             run_id="token-10c-warmup",
         )
@@ -532,9 +538,12 @@ def _execute_case(
     )
     started = monotonic()
     if payload.tools_schema:
+        canonical_tool_definitions = materialize_canonical_tool_definitions_for_llm_dispatch(
+            list(payload.tools_schema)
+        )
         response = adapter.generate_with_tools(
             payload.messages,
-            list(payload.tools_schema),
+            canonical_tool_definitions,
             max_tokens=64,
             run_id=f"token-10c-{case_id.value.lower()}",
         )

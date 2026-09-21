@@ -148,7 +148,7 @@ def assert_strict_tool_argument_conformance_supported(
     tools: Sequence[CanonicalFunctionToolDefinition],
 ) -> None:
     """Fail closed when strict tools are dispatched to an adapter without capability."""
-    definitions = coerce_canonical_tool_definitions(tools)
+    definitions = tuple(tools)
     if not tool_definitions_require_strict_argument_conformance(definitions):
         return
     if adapter.supports_strict_tool_argument_conformance():

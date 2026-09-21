@@ -20,6 +20,9 @@ from intergrax.tools.providers.workspace.service import (
 )
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.nexus.tools.canonical_tool_dispatch import (
+    materialize_canonical_tool_definitions_for_llm_dispatch,
+)
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from tool_selection_qualifier.tool_functional_evidence import emit_tool_selection_functional_evidence
 from tool_selection_qualifier.tool_selection import (
@@ -224,13 +227,16 @@ async def _decide_tool_with_llm(
     tools_schema = _build_openai_tools(tool_ids, description_overrides=description_overrides)
     if not tools_schema:
         return None
+    canonical_tool_definitions = materialize_canonical_tool_definitions_for_llm_dispatch(
+        tools_schema
+    )
     messages = [
         ChatMessage(role="system", content=system_prompt),
         ChatMessage(role="user", content=task_message),
     ]
     response = adapter.generate_with_tools(
         messages,
-        tools_schema,
+        canonical_tool_definitions,
         temperature=0.0,
         run_id=run_id,
     )

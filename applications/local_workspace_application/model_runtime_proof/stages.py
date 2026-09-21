@@ -10,6 +10,9 @@ from typing import Any, Literal
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.nexus.tools.canonical_tool_dispatch import (
+    materialize_canonical_tool_definitions_for_llm_dispatch,
+)
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import new_run_id
 
@@ -264,10 +267,13 @@ async def run_tool_call_and_execution(
     tool_choice, mode = _resolve_tool_choice(
         adapter, force_tool_choice=force_tool_choice
     )
+    canonical_tool_definitions = materialize_canonical_tool_definitions_for_llm_dispatch(
+        WORKSPACE_SEARCH_TOOL_SCHEMA
+    )
     try:
         response = adapter.generate_with_tools(
             [ChatMessage(role="user", content=prompt)],
-            WORKSPACE_SEARCH_TOOL_SCHEMA,
+            canonical_tool_definitions,
             tool_choice=tool_choice,
         )
     except Exception as exc:
