@@ -138,12 +138,12 @@ class _TwoToolRoundPlanner:
                 response=LLMAdapterResponse(
                     content="",
                     tool_calls=(
-                        LLMToolCall.from_openai_shape(
+                        LLMToolCall.from_native_parts(
                             call_id="tc-a",
                             name="probe.read",
                             arguments={"value": 1},
                         ),
-                        LLMToolCall.from_openai_shape(
+                        LLMToolCall.from_native_parts(
                             call_id="tc-b",
                             name="probe.read",
                             arguments={"value": 2},
@@ -151,12 +151,12 @@ class _TwoToolRoundPlanner:
                     ),
                 ),
                 materialized_tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="tc-a",
                         name="probe.read",
                         arguments={"value": 1},
                     ),
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="tc-b",
                         name="probe.read",
                         arguments={"value": 2},
@@ -213,7 +213,7 @@ class _ThreeHopPlanner:
                 response=LLMAdapterResponse(
                     content="",
                     tool_calls=(
-                        LLMToolCall.from_openai_shape(
+                        LLMToolCall.from_native_parts(
                             call_id=call_id,
                             name="probe.read",
                             arguments={"value": self._round},
@@ -221,7 +221,7 @@ class _ThreeHopPlanner:
                     ),
                 ),
                 materialized_tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id=call_id,
                         name="probe.read",
                         arguments={"value": self._round},
@@ -510,7 +510,7 @@ def test_append_native_tool_messages_remains_legacy_helper_only() -> None:
         messages,
         assistant_content="call",
         tool_calls=[
-            LLMToolCall.from_openai_shape(call_id="tc-legacy", name="probe.read", arguments={})
+            LLMToolCall.from_native_parts(call_id="tc-legacy", name="probe.read", arguments={})
         ],
         outcomes=[outcome],
     )

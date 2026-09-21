@@ -37,7 +37,10 @@ from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
 )
-from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
+from intergrax.llm_adapters._shared.openai_tool_choice_projection import (
+    project_openai_compatible_tool_choice,
+)
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters._shared.strict_tool_enforcement import (
     enforce_strict_tool_call_conformance,
@@ -397,7 +400,9 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
         if tools:
             payload["tools"] = tools
         if tool_choice is not None:
-            payload["tool_choice"] = tool_choice
+            projected = project_openai_compatible_tool_choice(tool_choice)
+            if projected is not None:
+                payload["tool_choice"] = projected
         if response_format is not None:
             payload["response_format"] = response_format
         return payload

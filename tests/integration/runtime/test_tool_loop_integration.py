@@ -327,7 +327,7 @@ class _TwoRoundLLM(FakeLLMAdapter):
             response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="tc-1",
                         name="alpha.tool",
                         arguments={"value": 7},
@@ -425,7 +425,7 @@ class _AlwaysToolLLM(FakeLLMAdapter):
             response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id=f"tc-{self._round}",
                         name="alpha.tool",
                         arguments={"value": self._round},
@@ -442,7 +442,7 @@ class _AlwaysToolLLM(FakeLLMAdapter):
             content="",
             tool_calls=(
                 _action_context_call(*prior_basis, purpose="continue investigation"),
-                LLMToolCall.from_openai_shape(
+                LLMToolCall.from_native_parts(
                     call_id=f"tc-{self._round}",
                     name="alpha.tool",
                     arguments={"value": self._round},
@@ -475,7 +475,7 @@ class _FailAfterOneRoundLLM(FakeLLMAdapter):
             response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="tc-1",
                         name="alpha.tool",
                         arguments={"value": 1},
@@ -693,7 +693,7 @@ class _LongOutputTwoRoundLLM(FakeLLMAdapter):
             response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="tc-long",
                         name="long.tool",
                         arguments={},
@@ -730,7 +730,7 @@ class _FailThenRecoverLLM(FakeLLMAdapter):
             response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="tc-fail",
                         name="fail.tool",
                         arguments={},
@@ -892,7 +892,7 @@ class _CustomIterativePlanner:
             response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="custom-tc-1",
                         name="alpha.tool",
                         arguments={"value": 11},
@@ -1055,7 +1055,7 @@ class _MultiCallRoundPlanner:
                 for index in range(self._round + 1)
             ]
             tool_calls = tuple(
-                LLMToolCall.from_openai_shape(
+                LLMToolCall.from_native_parts(
                     call_id=f"tc-{index}",
                     name="alpha.tool",
                     arguments={"value": index},
@@ -1211,7 +1211,7 @@ class _RepeatCallPlanner:
         self._round += 1
         if self._round <= self._max_rounds:
             prior_basis = _prior_evidence_references(list(messages))
-            business_call = LLMToolCall.from_openai_shape(
+            business_call = LLMToolCall.from_native_parts(
                 call_id=f"tc-{self._round}",
                 name="alpha.tool",
                 arguments={"value": self._value},
@@ -1306,7 +1306,7 @@ class _AlternatingInputPlanner:
         if self._round <= len(self.sequence):
             value = self.sequence[self._round - 1]
             prior_basis = _prior_evidence_references(list(messages))
-            business_call = LLMToolCall.from_openai_shape(
+            business_call = LLMToolCall.from_native_parts(
                 call_id=f"tc-{self._round}",
                 name="alpha.tool",
                 arguments={"value": value},
@@ -1408,12 +1408,12 @@ class _MixedOutcomeRoundPlanner:
             response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="tc-ok",
                         name="alpha.tool",
                         arguments={"value": 5},
                     ),
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="tc-fail",
                         name="alpha.tool",
                         arguments={"value": 0},
@@ -1546,7 +1546,7 @@ class _InvestigationPolicyThreeRoundLLM(FakeLLMAdapter):
             response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="tc-probe-a",
                         name="probe.a",
                         arguments={"query": "status"},
@@ -1569,7 +1569,7 @@ class _InvestigationPolicyThreeRoundLLM(FakeLLMAdapter):
                 content="",
                 tool_calls=(
                     _action_context_call(*prior_basis, purpose="confirm subgroup from first probe"),
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="tc-probe-b",
                         name="probe.b",
                         arguments={"confirm": True},
@@ -1706,7 +1706,7 @@ class _MultiHopInvestigationLLM(FakeLLMAdapter):
             response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="evidence-a",
                         name="probe.a",
                         arguments={"label": "a"},
@@ -1730,7 +1730,7 @@ class _MultiHopInvestigationLLM(FakeLLMAdapter):
                 content="",
                 tool_calls=(
                     _action_context_call(*prior_basis, purpose="inspect suspected subgroup"),
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="evidence-b",
                         name="probe.b",
                         arguments={"label": "b"},
@@ -1752,7 +1752,7 @@ class _MultiHopInvestigationLLM(FakeLLMAdapter):
                 content="",
                 tool_calls=(
                     _action_context_call(*prior_basis, purpose="verify normalized effect"),
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="evidence-c",
                         name="probe.c",
                         arguments={"label": "c"},
@@ -1832,7 +1832,7 @@ async def test_bounded_react_multi_hop_investigation_proof() -> None:
 
 
 def _probe_business_call() -> LLMToolCall:
-    return LLMToolCall.from_openai_shape(
+    return LLMToolCall.from_native_parts(
         call_id="evidence-b",
         name="probe.b",
         arguments={"label": "b"},
@@ -1855,7 +1855,7 @@ class _InvalidProofFollowUpLLM(FakeLLMAdapter):
             response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="evidence-a",
                         name="probe.a",
                         arguments={"label": "a"},
@@ -1962,7 +1962,7 @@ class _OrphanBasisFollowUpLLM(FakeLLMAdapter):
             response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="evidence-a",
                         name="probe.a",
                         arguments={"label": "a"},
@@ -1978,7 +1978,7 @@ class _OrphanBasisFollowUpLLM(FakeLLMAdapter):
             content="",
             tool_calls=(
                 _action_context_call("evidence.orphan.fake", purpose="inspect orphan basis"),
-                LLMToolCall.from_openai_shape(
+                LLMToolCall.from_native_parts(
                     call_id="evidence-b",
                     name="probe.b",
                     arguments={"label": "b"},
@@ -2049,12 +2049,12 @@ class _MisalignedCustomPlanner:
     ):
         _ = messages, allowed_tool_ids, run_id, tool_choice, kwargs
         self._round += 1
-        llm_call = LLMToolCall.from_openai_shape(
+        llm_call = LLMToolCall.from_native_parts(
             call_id="tc-1",
             name="probe.a",
             arguments={"label": "a"},
         )
-        llm_call_b = LLMToolCall.from_openai_shape(
+        llm_call_b = LLMToolCall.from_native_parts(
             call_id="tc-2",
             name="probe.b",
             arguments={"label": "b"},

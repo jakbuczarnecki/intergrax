@@ -26,7 +26,10 @@ from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
 )
-from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
+from intergrax.llm_adapters.contracts.native_tool_choice import (
+    NativeForcedFunctionChoice,
+    NativeToolChoice,
+)
 from intergrax.llm_adapters.contracts.tool_call import (
     LLMToolCall,
     finalize_accepted_tool_call_identities,
@@ -249,10 +252,13 @@ class NativeOllamaAdapter(BaseLLMAdapter):
     ) -> None:
         if tool_choice is None:
             return
+        if isinstance(tool_choice, NativeForcedFunctionChoice):
+            return
         if isinstance(tool_choice, str) and tool_choice in {"auto", "required"}:
             return
         raise ValueError(
-            "Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'"
+            "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', "
+            "or a forced function choice"
         )
 
     def _generation_options(

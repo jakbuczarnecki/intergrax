@@ -26,7 +26,13 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
 )
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
-from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
+from intergrax.llm_adapters.contracts.native_tool_choice import (
+    NativeForcedFunctionChoice,
+    NativeToolChoice,
+)
+from intergrax.llm_adapters.providers._ollama_tool_choice_projection import (
+    project_ollama_native_tool_choice,
+)
 from intergrax.llm_adapters._shared.strict_tool_enforcement import (
     enforce_strict_tool_call_conformance,
     resolve_canonical_tool_definitions,
@@ -251,10 +257,13 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
     ) -> None:
         if tool_choice is None:
             return
+        if isinstance(tool_choice, NativeForcedFunctionChoice):
+            return
         if isinstance(tool_choice, str) and tool_choice in {"auto", "required"}:
             return
         raise ValueError(
-            "Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'"
+            "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', "
+            "or a forced function choice"
         )
 
     @staticmethod
@@ -505,8 +514,9 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
                 max_tokens=max_tokens,
             )
             bind_kwargs: Dict[str, Any] = {}
-            if tool_choice is not None:
-                bind_kwargs["tool_choice"] = tool_choice
+            projected_choice = project_ollama_native_tool_choice(tool_choice)
+            if projected_choice is not None:
+                bind_kwargs["tool_choice"] = projected_choice
             bound_chat = self.chat.bind_tools(provider_tools, **bind_kwargs)
             result = self._execute(lambda: bound_chat.invoke(lc_msgs, **kwargs))
 

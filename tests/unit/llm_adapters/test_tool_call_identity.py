@@ -7,16 +7,16 @@ from unittest.mock import patch
 import pytest
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
 from intergrax.llm_adapters.contracts.tool_call import (
     LLMToolCall,
     ToolCallIdentityError,
     finalize_accepted_tool_call_identities,
     merge_streaming_tool_calls,
-    tool_calls_from_langchain_message,
-    tool_calls_from_openai_dicts,
     validate_tool_call_identities,
 )
 from intergrax.llm_adapters.providers._langchain_compat import (
+    tool_calls_from_langchain_message,
     tool_calls_from_langchain_message as parse_langchain_tool_calls,
 )
 from intergrax.runtime.nexus.tools.native_tool_plan_alignment import (
@@ -36,7 +36,7 @@ class _ProbeIn(BaseModel):
 
 
 def test_valid_provider_id_preserved() -> None:
-    call = LLMToolCall.from_openai_shape(
+    call = LLMToolCall.from_native_parts(
         call_id="provider-call-123",
         name="probe.a",
         arguments={"x": 1},
@@ -49,7 +49,7 @@ def test_valid_provider_id_preserved() -> None:
 
 @pytest.mark.parametrize("blank_id", ["", "   "])
 def test_blank_id_becomes_non_empty(blank_id: str) -> None:
-    call = LLMToolCall.from_openai_shape(
+    call = LLMToolCall.from_native_parts(
         call_id=blank_id,
         name="probe.a",
         arguments={},
@@ -61,12 +61,12 @@ def test_blank_id_becomes_non_empty(blank_id: str) -> None:
 
 def test_duplicate_explicit_provider_ids_fail() -> None:
     calls = (
-        LLMToolCall.from_openai_shape(
+        LLMToolCall.from_native_parts(
             call_id="provider-call-1",
             name="a",
             arguments={},
         ),
-        LLMToolCall.from_openai_shape(
+        LLMToolCall.from_native_parts(
             call_id="provider-call-1",
             name="b",
             arguments={},
@@ -109,8 +109,8 @@ def test_mixed_valid_blank_provider_ids_preserved_and_unique() -> None:
 
 def test_mint_collision_with_seen_provider_id_retries() -> None:
     calls = (
-        LLMToolCall.from_openai_shape(call_id="toolcall-collision", name="a", arguments={}),
-        LLMToolCall.from_openai_shape(call_id="", name="b", arguments={}),
+        LLMToolCall.from_native_parts(call_id="toolcall-collision", name="a", arguments={}),
+        LLMToolCall.from_native_parts(call_id="", name="b", arguments={}),
     )
     with patch(
         "intergrax.llm_adapters.contracts.tool_call.mint_tool_call_id",
@@ -123,8 +123,8 @@ def test_mint_collision_with_seen_provider_id_retries() -> None:
 
 def test_two_blank_calls_receive_distinct_ids() -> None:
     calls = (
-        LLMToolCall.from_openai_shape(call_id="", name="a", arguments={}),
-        LLMToolCall.from_openai_shape(call_id="", name="b", arguments={}),
+        LLMToolCall.from_native_parts(call_id="", name="a", arguments={}),
+        LLMToolCall.from_native_parts(call_id="", name="b", arguments={}),
     )
     normalized = finalize_accepted_tool_call_identities(calls)
     assert len({call.id for call in normalized}) == 2
@@ -135,7 +135,7 @@ def test_generated_ids_exclude_argument_content() -> None:
     secret = "super-secret-prompt-leak"
     (normalized,) = finalize_accepted_tool_call_identities(
         (
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id="",
                 name="probe.a",
                 arguments={"payload": secret},
@@ -206,12 +206,12 @@ def test_openai_dicts_multiple_empty_ids_distinct() -> None:
 def test_streaming_merge_with_provider_id_preserves_id() -> None:
     merged = merge_streaming_tool_calls(
         (
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id="stream-1",
                 name="lookup",
                 arguments='{"q":',
             ),
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id="stream-1",
                 name="lookup",
                 arguments='"x"}',
@@ -226,8 +226,8 @@ def test_streaming_merge_with_provider_id_preserves_id() -> None:
 def test_streaming_merge_without_id_mints_once_for_logical_call() -> None:
     merged = merge_streaming_tool_calls(
         (
-            LLMToolCall.from_openai_shape(call_id="", name="lookup", arguments='{"q":'),
-            LLMToolCall.from_openai_shape(call_id="", name="lookup", arguments='"x"}'),
+            LLMToolCall.from_native_parts(call_id="", name="lookup", arguments='{"q":'),
+            LLMToolCall.from_native_parts(call_id="", name="lookup", arguments='"x"}'),
         )
     )
     assert len(merged) == 1
@@ -238,8 +238,8 @@ def test_streaming_merge_without_id_mints_once_for_logical_call() -> None:
 def test_streaming_merge_multiple_empty_ids_distinct() -> None:
     merged = merge_streaming_tool_calls(
         (
-            LLMToolCall.from_openai_shape(call_id="", name="a", arguments="{}"),
-            LLMToolCall.from_openai_shape(call_id="", name="b", arguments="{}"),
+            LLMToolCall.from_native_parts(call_id="", name="a", arguments="{}"),
+            LLMToolCall.from_native_parts(call_id="", name="b", arguments="{}"),
         )
     )
     assert len(merged) == 2
@@ -280,7 +280,7 @@ def test_validate_native_tool_plan_alignment_rejects_blank_id() -> None:
 
 def test_normalized_id_flows_to_tool_message() -> None:
     provider_id = "provider-stable-id"
-    call = LLMToolCall.from_openai_shape(
+    call = LLMToolCall.from_native_parts(
         call_id=provider_id,
         name="probe.a",
         arguments={"label": "ok"},

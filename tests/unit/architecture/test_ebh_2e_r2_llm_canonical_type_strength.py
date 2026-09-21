@@ -14,7 +14,6 @@ import pytest
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
-from intergrax.llm_adapters.contracts.native_tool_choice import NativeForcedFunctionChoice
 from intergrax.llm_adapters.contracts.serialized_value import JsonValue
 from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
@@ -28,21 +27,6 @@ _CONTRACTS_ROOT = _REPO_ROOT / "intergrax/llm_adapters/contracts"
 # (relative path under contracts/, qualified symbol fragment, reason)
 _ANY_OBJECT_ALLOWLIST: frozenset[tuple[str, str, str]] = frozenset(
     {
-        (
-            "tool_call.py",
-            "tool_calls_from_openai_message",
-            "opaque provider SDK message interop at conversion boundary",
-        ),
-        (
-            "tool_call.py",
-            "tool_calls_from_langchain_message",
-            "opaque provider SDK message interop at conversion boundary",
-        ),
-        (
-            "tool_call.py",
-            "tool_calls_from_openai_dicts",
-            "opaque provider wire item interop at conversion boundary",
-        ),
         (
             "llm_profile.py",
             "_coerce_and_validate_options",
@@ -284,12 +268,3 @@ def test_ebh_2e_r2_contracts_do_not_import_providers() -> None:
                     offenders.append(f"{path.name}: from {node.module}")
     assert not offenders, "\n".join(offenders)
 
-
-def test_ebh_2e_r2_native_tool_choice_projects_for_external_provider() -> None:
-    from intergrax.llm_adapters.contracts.native_tool_choice import (
-        project_native_tool_choice_for_provider,
-    )
-
-    choice = NativeForcedFunctionChoice(function_name="demo.tool")
-    projected = project_native_tool_choice_for_provider(choice, provider="external_r2_proof")
-    assert projected == {"type": "function", "name": "demo.tool"}

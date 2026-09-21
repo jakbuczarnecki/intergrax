@@ -336,7 +336,7 @@ class _TwoRoundPlanner:
             response = LLMAdapterResponse(
                 content="",
                 tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="tc-1",
                         name="probe.read",
                         arguments={"value": 1},
@@ -354,7 +354,7 @@ class _TwoRoundPlanner:
             )
             return _native_round_from_response(response, tool_plan, messages)
         prior_basis = collect_available_evidence_ids(messages)
-        business_call = LLMToolCall.from_openai_shape(
+        business_call = LLMToolCall.from_native_parts(
             call_id="tc-2",
             name="probe.read",
             arguments={"value": 2},

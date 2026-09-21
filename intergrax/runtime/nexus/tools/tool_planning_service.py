@@ -13,10 +13,7 @@ from typing import Dict, List, Optional, Sequence, Union
 from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.contracts.native_tool_choice import (
-    NativeToolChoice,
-    project_native_tool_choice_for_provider,
-)
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
     assert_strict_tool_argument_conformance_supported,
@@ -390,11 +387,6 @@ class ToolPlanningService:
         effective_tool_choice: NativeToolChoice = (
             tool_choice if tool_choice is not None else "auto"
         )
-        projected_tool_choice = project_native_tool_choice_for_provider(
-            effective_tool_choice,
-            provider=self.llm._provider_slug(),
-        )
-
         _sync_routing_before_tool_planner_llm(
             self._routing_runtime_config,
             run_id=run_id,
@@ -408,7 +400,7 @@ class ToolPlanningService:
             provider_tools,
             temperature=self.cfg.temperature,
             max_tokens=self.cfg.max_answer_tokens,
-            tool_choice=projected_tool_choice,
+            tool_choice=effective_tool_choice,
             run_id=run_id,
         )
 

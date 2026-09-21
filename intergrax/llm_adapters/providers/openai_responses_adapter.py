@@ -29,16 +29,16 @@ from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
-from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
+from intergrax.llm_adapters._shared.openai_tool_choice_projection import (
+    project_openai_compatible_tool_choice,
+)
 from intergrax.llm_adapters.providers._openai_schema import (
     prepare_openai_strict_generation_schema,
     project_atomic_planner_round_parameters_for_openai_strict,
     project_json_schema_for_openai_strict_tool_parameters,
 )
-from intergrax.llm_adapters.contracts.native_tool_choice import (
-    NativeToolChoice,
-    project_native_tool_choice_for_provider,
-)
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
     StrictToolArgumentConformanceError,
@@ -281,10 +281,7 @@ def _map_tool_choice_to_provider(
     tool_choice: NativeToolChoice,
     name_mapping: _OpenAIToolNameMapping,
 ) -> Union[str, Dict[str, Any]]:
-    projected = project_native_tool_choice_for_provider(
-        tool_choice,
-        provider="openai",
-    )
+    projected = project_openai_compatible_tool_choice(tool_choice)
     if projected is None:
         return "auto"
     if isinstance(projected, str):

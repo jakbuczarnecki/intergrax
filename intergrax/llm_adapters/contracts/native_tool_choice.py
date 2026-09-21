@@ -25,19 +25,3 @@ def native_tool_choice_function_name(choice: NativeToolChoice | None) -> str | N
     if isinstance(choice, NativeForcedFunctionChoice):
         return choice.function_name
     return None
-
-
-def project_native_tool_choice_for_provider(
-    choice: NativeToolChoice | None,
-    *,
-    provider: str,
-) -> str | dict[str, str] | None:
-    """Translate canonical Nexus tool-choice intent to provider wire format."""
-    if choice is None:
-        return None
-    if isinstance(choice, NativeForcedFunctionChoice):
-        provider_slug = provider.strip().lower()
-        if provider_slug in {"ollama", "native_ollama"}:
-            return "required"
-        return {"type": "function", "name": choice.function_name}
-    return choice
