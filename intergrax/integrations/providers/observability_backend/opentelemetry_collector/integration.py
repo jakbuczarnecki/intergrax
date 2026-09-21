@@ -15,7 +15,7 @@ from intergrax.integrations.providers.observability_backend._catalog_client impo
     ObservabilityCatalogClient,
     require_observability_catalog_client,
 )
-from intergrax.integrations.contracts.observability_backend import MetricQueryResult, ObservabilityBackend, TraceQueryResult
+from intergrax.integrations.contracts.observability_backend import MetricQueryResult, TraceQueryResult
 from intergrax.runtime.integrations.observability import (
     ObservabilityVendorIntegrationConfig,
     ObservabilityVendorIntegrationContract,
@@ -50,7 +50,7 @@ class OpenTelemetryCollectorObservabilityTransport(Protocol):
         """Deliver a policy-sanitized vendor payload to Opentelemetry Collector."""
 
 
-class OpenTelemetryCollectorObservabilityIntegration(ObservabilityVendorIntegrationContract):
+class OpenTelemetryCollectorObservabilityIntegration(ObservabilityVendorIntegrationContract[OpenTelemetryCollectorObservabilityIntegrationConfig]):
     """
     Single public Opentelemetry Collector observability entrypoint.
 
@@ -157,4 +157,3 @@ class OpenTelemetryCollectorObservabilityIntegration(ObservabilityVendorIntegrat
         await self._transport.send_observability_payload(payload)
 
 
-ObservabilityBackend.register(OpenTelemetryCollectorObservabilityIntegration)

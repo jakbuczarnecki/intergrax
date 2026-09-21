@@ -14,7 +14,7 @@ from intergrax.integrations.providers.observability_backend._catalog_client impo
     ObservabilityCatalogClient,
     require_observability_catalog_client,
 )
-from intergrax.integrations.contracts.observability_backend import MetricQueryResult, ObservabilityBackend, TraceQueryResult
+from intergrax.integrations.contracts.observability_backend import MetricQueryResult, TraceQueryResult
 from intergrax.runtime.integrations.observability import (
     ObservabilityVendorIntegrationConfig,
     ObservabilityVendorIntegrationContract,
@@ -63,7 +63,7 @@ class BraintrustEvalCatalogClient(ObservabilityCatalogClient, Protocol):
         ...
 
 
-class BraintrustObservabilityIntegration(ObservabilityVendorIntegrationContract):
+class BraintrustObservabilityIntegration(ObservabilityVendorIntegrationContract[BraintrustObservabilityIntegrationConfig]):
     """
     Single public Braintrust observability entrypoint.
 
@@ -173,4 +173,3 @@ class BraintrustObservabilityIntegration(ObservabilityVendorIntegrationContract)
         await self._transport.send_observability_payload(payload)
 
 
-ObservabilityBackend.register(BraintrustObservabilityIntegration)

@@ -14,13 +14,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
 from intergrax.integrations.providers.observability_backend._http_contract import (
     ObservabilityHttpClient,
     ObservabilityHttpClientFactory,
 )
 from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
+    ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID,
+    ELASTICSEARCH_SUPPORTED_SIGNALS,
     ElasticsearchObservabilityIntegration,
+    ElasticsearchObservabilityIntegrationConfig,
+    ElasticsearchObservabilityTransport,
 )
 from intergrax.integrations.providers.observability_backend.elasticsearch.client import ElasticsearchRestClient
 from intergrax.integrations.providers.observability_backend.elasticsearch.config import (
@@ -91,16 +96,6 @@ def create_elasticsearch_observability_backend(
         http_client_factory=http_client_factory,
         **config_overrides,
     ).observability_backend
-
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
-    ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID,
-    ELASTICSEARCH_SUPPORTED_SIGNALS,
-    ElasticsearchObservabilityIntegration,
-    ElasticsearchObservabilityIntegrationConfig,
-    ElasticsearchObservabilityTransport,
-)
 
 
 def create_elasticsearch_observability_transport(

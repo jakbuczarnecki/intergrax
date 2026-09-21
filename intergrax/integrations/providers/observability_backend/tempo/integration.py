@@ -10,12 +10,11 @@ from typing import Protocol, runtime_checkable
 
 from pydantic import PrivateAttr
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend._catalog_client import (
     ObservabilityCatalogClient,
     require_observability_catalog_client,
 )
-from intergrax.integrations.contracts.observability_backend import MetricQueryResult, ObservabilityBackend, TraceQueryResult
+from intergrax.integrations.contracts.observability_backend import MetricQueryResult, TraceQueryResult
 from intergrax.runtime.integrations.observability import (
     ObservabilityVendorIntegrationConfig,
     ObservabilityVendorIntegrationContract,
@@ -48,7 +47,7 @@ class TempoObservabilityTransport(Protocol):
         """Deliver a policy-sanitized vendor payload to Tempo."""
 
 
-class TempoObservabilityIntegration(ObservabilityVendorIntegrationContract):
+class TempoObservabilityIntegration(ObservabilityVendorIntegrationContract[TempoObservabilityIntegrationConfig]):
     """
     Single public Tempo observability entrypoint.
 
@@ -140,4 +139,3 @@ class TempoObservabilityIntegration(ObservabilityVendorIntegrationContract):
         await self._transport.send_observability_payload(payload)
 
 
-ObservabilityBackend.register(TempoObservabilityIntegration)

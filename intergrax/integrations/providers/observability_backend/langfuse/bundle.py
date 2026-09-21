@@ -3,6 +3,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
+from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+
 from intergrax.integrations._shared.p3.factories import create_langfuse_observability_backend as _legacy_create_langfuse_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.langfuse.integration import (
@@ -44,9 +48,20 @@ def create_langfuse_observability_integration(
     )
 
 
-def create_langfuse_observability_backend(**kwargs: object) -> LangfuseObservabilityIntegration:
+def create_langfuse_observability_backend(
+    *,
+    observability_backend: ObservabilityBackend | None = None,
+    client: object | None = None,
+    client_factory: Callable[[], object] | None = None,
+    **config_overrides: object,
+) -> LangfuseObservabilityIntegration:
     """Compatibility shim — constructs LangfuseObservabilityIntegration from legacy runtime."""
-    runtime = _legacy_create_langfuse_observability_backend(**kwargs)
+    runtime = _legacy_create_langfuse_observability_backend(
+        observability_backend=observability_backend,
+        client=client,
+        client_factory=client_factory,
+        **config_overrides,
+    )
     if isinstance(runtime, LangfuseObservabilityIntegration):
         return runtime
     return LangfuseObservabilityIntegration.from_client(runtime)

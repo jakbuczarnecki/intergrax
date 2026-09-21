@@ -3,6 +3,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
+from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+
 from intergrax.integrations._shared.p6.factories import create_opentelemetry_collector_observability_backend as _legacy_create_opentelemetry_collector_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.opentelemetry_collector.integration import (
@@ -44,9 +48,20 @@ def create_opentelemetry_collector_observability_integration(
     )
 
 
-def create_opentelemetry_collector_observability_backend(**kwargs: object) -> OpenTelemetryCollectorObservabilityIntegration:
+def create_opentelemetry_collector_observability_backend(
+    *,
+    observability_backend: ObservabilityBackend | None = None,
+    client: object | None = None,
+    client_factory: Callable[[], object] | None = None,
+    **config_overrides: object,
+) -> OpenTelemetryCollectorObservabilityIntegration:
     """Compatibility shim — constructs OpenTelemetryCollectorObservabilityIntegration from legacy runtime."""
-    runtime = _legacy_create_opentelemetry_collector_observability_backend(**kwargs)
+    runtime = _legacy_create_opentelemetry_collector_observability_backend(
+        observability_backend=observability_backend,
+        client=client,
+        client_factory=client_factory,
+        **config_overrides,
+    )
     if isinstance(runtime, OpenTelemetryCollectorObservabilityIntegration):
         return runtime
     return OpenTelemetryCollectorObservabilityIntegration.from_client(runtime)

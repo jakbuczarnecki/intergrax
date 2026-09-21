@@ -15,7 +15,7 @@ from intergrax.integrations.providers.observability_backend._catalog_client impo
     ObservabilityCatalogClient,
     require_observability_catalog_client,
 )
-from intergrax.integrations.contracts.observability_backend import MetricQueryResult, ObservabilityBackend, TraceQueryResult
+from intergrax.integrations.contracts.observability_backend import MetricQueryResult, TraceQueryResult
 from intergrax.runtime.integrations.observability import (
     ObservabilityVendorIntegrationConfig,
     ObservabilityVendorIntegrationContract,
@@ -57,7 +57,7 @@ class PrometheusHealthCatalogClient(ObservabilityCatalogClient, Protocol):
         ...
 
 
-class PrometheusObservabilityIntegration(ObservabilityVendorIntegrationContract):
+class PrometheusObservabilityIntegration(ObservabilityVendorIntegrationContract[PrometheusObservabilityIntegrationConfig]):
     """
     Single public Prometheus observability entrypoint.
 
@@ -163,4 +163,3 @@ class PrometheusObservabilityIntegration(ObservabilityVendorIntegrationContract)
         await self._transport.send_observability_payload(payload)
 
 
-ObservabilityBackend.register(PrometheusObservabilityIntegration)

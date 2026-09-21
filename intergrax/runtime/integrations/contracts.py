@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import StrEnum
-from typing import Any, Literal, Mapping
+from typing import Any, Generic, Mapping, Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -154,7 +154,10 @@ def derive_platform_integration_id(provider_id: str, integration_kind: str) -> s
     return f"{provider_id}:{integration_kind}"
 
 
-class PlatformIntegrationContract(BaseModel):
+ConfigT = TypeVar("ConfigT", bound=PlatformIntegrationConfig)
+
+
+class PlatformIntegrationContract(BaseModel, Generic[ConfigT]):
     """
     Generic platform integration contract.
 
@@ -165,14 +168,14 @@ class PlatformIntegrationContract(BaseModel):
 
     model_config = ConfigDict(extra="forbid")
 
-    schema_id: Literal["platform_integration_contract.v1"] = PLATFORM_INTEGRATION_CONTRACT_SCHEMA
+    schema_id: str = PLATFORM_INTEGRATION_CONTRACT_SCHEMA
     integration_id: str
     provider_id: str
     integration_kind: str
     display_name: str | None = None
     version: str | None = None
     capabilities: tuple[PlatformIntegrationCapability, ...] = Field(default_factory=tuple)
-    config: PlatformIntegrationConfig = Field(default_factory=PlatformIntegrationConfig)
+    config: ConfigT = Field(default_factory=PlatformIntegrationConfig)
     security_posture: PlatformIntegrationSecurityPosture = Field(
         default_factory=PlatformIntegrationSecurityPosture
     )
@@ -188,7 +191,7 @@ class PlatformIntegrationContract(BaseModel):
         display_name: str | None = None,
         version: str | None = None,
         config: PlatformIntegrationConfig | None = None,
-    ) -> PlatformIntegrationContract:
+    ) -> Self:
         kind_value = (
             integration_kind.value
             if isinstance(integration_kind, PlatformIntegrationKind)

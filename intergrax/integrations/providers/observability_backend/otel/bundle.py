@@ -3,6 +3,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
+from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+
 from intergrax.integrations._shared.p2.factories import create_otel_observability_backend as _legacy_create_otel_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.otel.integration import (
@@ -44,9 +48,20 @@ def create_otel_observability_integration(
     )
 
 
-def create_otel_observability_backend(**kwargs: object) -> OtelObservabilityIntegration:
+def create_otel_observability_backend(
+    *,
+    observability_backend: ObservabilityBackend | None = None,
+    exporter: object | None = None,
+    exporter_factory: Callable[[], object] | None = None,
+    **config_overrides: object,
+) -> OtelObservabilityIntegration:
     """Compatibility shim — constructs OtelObservabilityIntegration from legacy runtime."""
-    runtime = _legacy_create_otel_observability_backend(**kwargs)
+    runtime = _legacy_create_otel_observability_backend(
+        observability_backend=observability_backend,
+        exporter=exporter,
+        exporter_factory=exporter_factory,
+        **config_overrides,
+    )
     if isinstance(runtime, OtelObservabilityIntegration):
         return runtime
     return OtelObservabilityIntegration.from_client(runtime)
