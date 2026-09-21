@@ -14,9 +14,9 @@ from tests.qualification.governance.strategy.catalog import (
     GR10_AGENTIC_GEP_SEMANTICS,
     GR10_AGENTIC_LEGAL_PRODUCTION_PATHS,
     GR10_A1_NEXT_REMEDIATION,
+    GR10_A1_R1_NEXT_REMEDIATION,
     GR10_FINAL_CAPABILITY_MATRIX,
     GR10_GEP_COVERAGE_INVENTORY,
-    GR10_R15_R1_NEXT_REMEDIATION,
     Gr10Applicability,
     Gr10CoverageStatus,
     gr10_agentic_gep_semantics,
@@ -61,13 +61,21 @@ def test_gr10_a1_agentic_no_applicable_gep_partial() -> None:
     assert partial == []
 
 
-def test_gr10_a1_agentic_capability_partial_only_governance_evidence() -> None:
-    partial = [
+def test_gr10_a1_agentic_capability_partial_excludes_only_root_and_decision_bound() -> None:
+    partial = {
         row.capability
         for row in GR10_AGENTIC_CAPABILITY_SEMANTICS
         if row.coverage is Gr10CoverageStatus.PARTIAL
-    ]
-    assert partial == ["Governance Evidence"]
+    }
+    assert partial == {
+        "Inner Governance",
+        "Policy evaluation",
+        "MSE",
+        "HITL",
+        "Continuation",
+        "Reliability",
+        "Governance Evidence",
+    }
 
 
 def test_gr10_a1_legal_production_paths_no_vague_other_delegates() -> None:
@@ -75,14 +83,15 @@ def test_gr10_a1_legal_production_paths_no_vague_other_delegates() -> None:
     assert len(qualified) == 1
     assert qualified[0].path_id == "P-UAEP"
     assert "TaskBoundAgenticDelegate" in qualified[0].legal_entry
-    legacy = [row for row in GR10_AGENTIC_LEGAL_PRODUCTION_PATHS if row.status == "LEGACY_NO_PRODUCTION_USER"]
-    assert legacy and legacy[0].path_id == "P-ACP-SESSION"
+    acp = next(row for row in GR10_AGENTIC_LEGAL_PRODUCTION_PATHS if row.path_id == "P-ACP-SESSION")
+    assert acp.status == "WIRED_NOT_QUALIFIED"
+    assert "LEGACY_NO_PRODUCTION_USER" not in acp.status
 
 
-def test_gr10_a1_next_remediation_points_to_agentic_closure() -> None:
+def test_gr10_a1_next_remediation_points_to_acp_governance_closure() -> None:
     assert GR10_A1_NEXT_REMEDIATION.strategy == "AGENTIC"
-    assert GR10_A1_NEXT_REMEDIATION is GR10_R15_R1_NEXT_REMEDIATION
-    assert "Recertification" in GR10_A1_NEXT_REMEDIATION.task_name or "Closure" in GR10_A1_NEXT_REMEDIATION.task_name
+    assert "ACP" in GR10_A1_NEXT_REMEDIATION.task_name
+    assert GR10_A1_NEXT_REMEDIATION is GR10_A1_R1_NEXT_REMEDIATION
 
 
 def test_gr10_a1_host_task_single_agentic_delegate_ast() -> None:
