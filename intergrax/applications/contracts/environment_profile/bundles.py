@@ -18,18 +18,18 @@ from intergrax.contracts.persistence_topology import (
 )
 from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec
-from intergrax.codecraft.profile import CodeCraftProfile
+from intergrax.contracts.codecraft_profile import CodeCraftProfile
 from intergrax.contracts.delegated_invocation_correlation import (
     DelegatedInvocationCorrelationDurabilityMode,
 )
 from intergrax.contracts.observability_export import ConfigurationError, ExporterKind
 from intergrax.contracts.reasoning_profile import ReasoningProfile
-from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.llm_adapters.registry.profile import LLMProfile
-from intergrax.llm_adapters.routing import LLMRoutingProfile
-from intergrax.runtime.modality.modality_profile import ModalityProfile
-from intergrax.skills.registry.profile import SkillProfile
-from intergrax.tools.registry.profile import ToolProfile
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
+from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
+from intergrax.llm_adapters.contracts.routing_profile import LLMRoutingProfile
+from intergrax.contracts.modality_profile import ModalityProfile
+from intergrax.skills.contracts.skill_profile import SkillProfile
+from intergrax.tools.contracts.tool_profile import ToolProfile
 
 from intergrax.applications.contracts.environment_profile.domain_policy import DomainPolicyFragments
 from intergrax.applications.contracts.environment_profile.governance_permission_preset import (

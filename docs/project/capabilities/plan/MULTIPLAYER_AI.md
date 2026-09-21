@@ -1,4 +1,4 @@
-<!--
+﻿<!--
 © Artur Czarnecki. All rights reserved.
 Intergrax framework – proprietary and confidential.
 Use, modification, or distribution without written permission is prohibited.
@@ -6,12 +6,12 @@ Use, modification, or distribution without written permission is prohibited.
 
 # Multiplayer AI - Multi-layer Feature Plan
 
-**Status:** **MP-1 — CLOSED** — **MP-2 — APPROVED / CLOSED** — **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — **MP-3A…MP-3H — APPROVED / CLOSED** — **MP-4 implementation — FORMALLY CLOSED** (MP-4R0…MP-4R8 **CLOSED**; ADR-MP-009) — **MP-4 documentation certification — CLOSED** (MP-4D1–D8) — **MP-5A — APPROVED / CLOSED** — **MP-5B — APPROVED / CLOSED** — **MP-5C — APPROVED / CLOSED** — **MP-5 ownership — FROZEN**
+**Status:** Delivery roadmap for Multiplayer AI. **Canonical maturity SSOT:** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)#current-enterprise-maturity-boundary — **ENTERPRISE CORE** MP-1…MP-7 closed in certified scopes; **MP-5 — ENTERPRISE CERTIFIED / CLOSED**; **MP-6 — ENTERPRISE CERTIFIED / CLOSED**; **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED**; **MP-4 documentation certification — CLOSED** (MP-4D1–D8); **MP-8 / MP-9 — PLANNED / NOT STARTED**.
 **Feature architecture (1:1):** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)
-**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
+**Primary anchor domain:** [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) (MP-1…MP-3, MP-5, MP-6) · [`DECISION_APPROVAL_GOVERNANCE`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md) (MP-4R)
 **Related domains:** `UNIFIED_EXECUTION_RUNTIME`, `ORCHESTRATION`, `UNIFIED_CONTEXT_LIFECYCLE`, `CONTEXT_ENGINEERING`, `MEMORY`, `RAG`, `RELIABILITY_FAILURE_AND_HITL`, `NEXUS_EXECUTION_FLOW`, `GOVERNED_EXECUTION`, `OBSERVABILITY`, `PROOF_RECEIPTS`, `INTEGRATIONS`, `AGENT_CONTRACTS_AND_ASSEMBLY`, `APPLICATION_HOSTING`
-**Current active task:** **MP-7 — LKW reference-product adoption — NEXT**. **MP-6 — ENTERPRISE CERTIFIED / CLOSED** (**MP-6H — CLOSED / CERTIFIED** — [`MP-6_FINAL_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-6_FINAL_ENTERPRISE_CERTIFICATION.md); **MP-6A…MP-6G — CLOSED / RECERTIFIED or CERTIFIED**; **MP-6 ownership — FROZEN**, ADR-MP-007). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** at `d0aee066` — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md), [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)). **MP-5G — ENTERPRISE E2E / ISOLATION QUALIFICATION CERTIFIED / CLOSED** (`tests/unit/collaborative_work/test_mp5g_context_view_e2e_qualification.py`, `mp5g_e2e_harness.py`). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (**MP-5F-B1…B4 — CLOSED**; **MP-5F-B5 — CLOSED** — `intergrax/collaborative_work/context_view_source_adapters.py`, `context_view_source_wiring.py`). MP-5E **`ContextViewComposer`** / **`DefaultContextViewComposer`** — **APPROVED / CLOSED** (`intergrax/contracts/context_view_composition.py`).
-**Previous:** **MP-5C — APPROVED / CLOSED** — principal visibility policy (`intergrax/contracts/context_view_visibility_policy.py`)
+**Current active task:** **MP-FINAL-4 — FINAL RECERTIFICATION PASSED / CLOSED** — **MP-FINAL-4-R1 — CLOSED / CERTIFIED** (evidence-chain integrity) — **MULTIPLAYER ENTERPRISE CORE — FINAL CERTIFIED / CLOSED** — **MP-FINAL-3 — CLOSED / CERTIFIED** — **MP-FINAL-2 — CLOSED / RECERTIFIED** (**MP-FINAL-2-C1 — CLOSED / CERTIFIED**) — **MP-FINAL-1 — CLOSED / RECERTIFIED** (R1 composition-flow + provenance correction). **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED** (Tier-3 consumability boundary). **MP-5 / MP-6 — ENTERPRISE CERTIFIED / CLOSED**. **MP-8 / MP-9 — PLANNED / NOT STARTED**.
+**Previous:** **MP-FINAL-3 — CLOSED / CERTIFIED** · **MP-7D — CLOSED / ENTERPRISE CERTIFIED** · **MP-7C / MP-7B / MP-7A** closed per architecture hub.
 
 ---
 
@@ -88,14 +88,17 @@ architecture hub:
 
 ```text
 MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
-→ MP-3 (work artifacts) → MP-4R (canonical Decision / Governance / Execution integration) — **implementation CLOSED**
-→ MP-4D (enterprise documentation & proof closure — active)
-→ MP-5 (context view) → MP-6 (activity & evidence)
-→ MP-7 (LKW adoption) → MP-8 (agent directory & external agents)
-→ MP-9 (advanced UX / notifications / optional realtime)
+→ MP-3 (work artifacts) → MP-4R (canonical Decision / Governance / Execution integration) — CLOSED
+→ MP-5 (context view) → MP-6 (activity & evidence) → MP-7 (Tier-3 consumability boundary) — ENTERPRISE CORE CLOSED
+→ MP-FINAL-1 (docs/visual) → MP-FINAL-2 (diagnostics) → MP-FINAL-3 (capability-wide backend E2E)
+→ MP-FINAL-4 (final core recertification)
+→ MP-8 (agent directory & external agents) — PLANNED / NOT STARTED
+→ MP-9 (advanced UX / notifications / optional realtime) — PLANNED / NOT STARTED
 ```
 
-**Historical (superseded):** pre-rebase **MP-4** (decisions + public Nexus HITL bridge) — replaced by **MP-4R** and ADR-MP-009.
+**Canonical maturity:** [`../architecture/MULTIPLAYER_AI.md`](../architecture/MULTIPLAYER_AI.md)#current-enterprise-maturity-boundary (this plan is delivery roadmap, not a second maturity SSOT).
+
+**Historical (superseded):** pre-rebase **MP-4** (decisions + public Nexus HITL bridge) — replaced by **MP-4R** and ADR-MP-009. **Historical (at time of slice notes):** roadmap rows that listed **MP-4D** as active or **MP-5F — NEXT** while later slices were open.
 
 ---
 
@@ -104,7 +107,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | Field | Value |
 |-------|-------|
 | **Priority** | P0 |
-| **Status** | READY_FOR_REVIEW |
+| **Status** | **ACCEPTED / CLOSED** — architecture baseline accepted as dependency of MP-1+; maturity SSOT lives in architecture hub |
 | **Purpose** | Establish canonical Multiplayer AI architecture, MP-0…MP-9 roadmap, capability classification, anti-substitution rules, and provisional domain ownership map. |
 | **Owning domain plan** | Feature plan + feature architecture hub only - **no domain plan edits in MP-0** |
 | **Dependencies** | None |
@@ -158,7 +161,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **User-visible outcome** | Addressable shared work units assignable to principals and agents |
 | **Acceptance criteria** | WorkItems are durable and independently addressable; WorkItemState is not TaskState; multiple tasks/runs may relate to one WorkItem; stale authoritative mutations fail explicitly; Nexus does not own WorkItem lifecycle |
 | **Expected proof/evidence** | Contract tests; lifecycle tests; assignment authorization tests; concurrency/conflict tests; idempotency tests; provenance linkage to real four-part `ExecutionProvenanceRef` |
-| **Next implementation row** | **MP-5F — NEXT** (MP-5E **APPROVED / CLOSED**) |
+| **Next implementation row** | *(none — MP-2 closed)*. **Historical (superseded):** **MP-5F — NEXT** |
 
 ---
 
@@ -181,7 +184,7 @@ MP-0 (docs) → MP-1 (identity & authority) → MP-2 (shared work)
 | **User-visible outcome** | Versioned collaborative artifacts with lineage |
 | **Acceptance criteria** | A WorkArtifactVersion is the authoritative collaborative output; versions remain addressable after executions end; publication preserves principal/work/execution lineage; current-version updates detect stale writes; atomic initial creation and subsequent publication via dedicated port (no dangling `current_version_id`, no orphan initial version) |
 | **Expected proof/evidence** | Contract tests; authorization/isolation tests; version/concurrency tests; idempotent initial create tests; idempotent publication tests; cross-process publication proof (MP-3E); provenance/evidence integration proof (MP-3G) |
-| **Next implementation row** | **MP-5F — NEXT** (**MP-5E — APPROVED / CLOSED**) |
+| **Next implementation row** | *(none — MP-3 closed)*. **Historical (superseded):** **MP-5F — NEXT** |
 
 ### MP-3 architectural implementation slices
 
@@ -260,7 +263,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 
 ## MP-5 - Principal-scoped ContextView
 
-**MP-5 ownership — FROZEN** — [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) · [ADR-MP-006](../../technical/adr/entries/2026-09-17/ADR-MP-006.md) **Accepted**.
+**MP-5 ownership — FROZEN** — [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) · [ADR-MP-006](../../technical/adr/entries/2026-09-17/ADR-MP-006.md) **Accepted**. **MP-5E — APPROVED / CLOSED** (`ContextViewComposer` / `DefaultContextViewComposer`, `intergrax/contracts/context_view_composition.py`). **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** (`context_view_source_adapters.py`). **MP-5 — ENTERPRISE CERTIFIED / CLOSED**.
 
 | Slice | Purpose | Status |
 |-------|---------|--------|
@@ -268,8 +271,8 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | MP-5B | Core typed Principal-scoped ContextView contracts | **APPROVED / CLOSED** |
 | MP-5C | Principal-scope visibility policy | **APPROVED / CLOSED** |
 | MP-5D | Source composition ports | **APPROVED / CLOSED** |
-| MP-5E | Default composition implementation | **CLOSED** |
-| MP-5F | Source adapters / integration | **CLOSED** |
+| MP-5E | Default composition implementation | **MP-5E — APPROVED / CLOSED** |
+| MP-5F | Source adapters / integration | **MP-5F — ENTERPRISE SOURCE INTEGRATION CERTIFIED / CLOSED** |
 | MP-5G | E2E / isolation qualification | **CLOSED** |
 | MP-5H | Final MP-5 enterprise certification | **CLOSED / FINAL CERTIFICATION PASSED** |
 | MP-5 | Principal-scoped ContextView capability | **ENTERPRISE CERTIFIED / CLOSED** |
@@ -280,8 +283,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | **APPROVED / CLOSED** |
-| **Purpose** | Freeze semantic owner, public contract boundary, anti-substitution, and MP-5 decomposition before runtime. |
+| **Status** | **MP-5A — APPROVED / CLOSED** |
 | **Owning domain** | [`COLLABORATIVE_WORK`](../../architecture/COLLABORATIVE_WORK.md) |
 | **Dependencies** | MP-1 **CLOSED** |
 | **REUSED EXISTING CAPABILITY** | MP-1 authority; UCL; CE; Memory; RAG/Knowledge; Token Optimization |
@@ -289,9 +291,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | **Explicit out of scope** | Runtime resolver, adapters, storage, providers, Nexus contract surface |
 | **Architecture/ADR gate** | **ADR-MP-006 Accepted** |
 | **Acceptance criteria** | Single owner; `ContextView ≠ storage`; dependency direction frozen; threat model documented |
-| **Next step** | **MP-5F — NEXT** |
-
-### MP-5B — Core ContextView contracts
+| **Next step** | *(none — MP-5A closed; MP-5 ENTERPRISE CERTIFIED / CLOSED)*. **Historical (superseded):** **MP-5F — NEXT** |
 
 | Field | Value |
 |-------|-------|
@@ -329,7 +329,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | **NEW CAPABILITY REQUIRED** | `intergrax/contracts/context_view_source_ports.py` |
 | **Explicit out of scope** | Default composer (MP-5E); source adapters (MP-5F); retrieval; storage |
 | **Expected proof/evidence** | `test_context_view_source_ports.py`; architecture gates; docs regression |
-| **Next step** | **MP-5F — NEXT** |
+| **Next step** | *(none — MP-5D closed; MP-5 ENTERPRISE CERTIFIED / CLOSED)*. **Historical (superseded):** **MP-5F — NEXT** |
 
 ---
 
@@ -356,7 +356,7 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 |-------|-------|
 | **Status** | **MP-6A — CLOSED / RECERTIFIED** |
 | **Proof** | ADR-MP-007; `test_mp6a_collaborative_activity_architecture_gates.py`; `test_mp6a_documentation_regression_gates.py`; `test_mp6a_c1_identity_extensibility_ordering_gates.py`; `test_mp6a_c1_r1_append_ownership_gates.py` |
-| **Next step** | **MP-7 — NEXT** (MP-6 — **ENTERPRISE CERTIFIED / CLOSED**) |
+| **Next step** | **MP-8 FUTURE** (AgentDirectory / external-agent interoperability); **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED**; MP-6 — **ENTERPRISE CERTIFIED / CLOSED** |
 
 ### MP-6A-C1 — identity / extensibility / timeline semantics
 
@@ -415,19 +415,36 @@ Decomposition **APPROVED / CLOSED** — canonical rows in [`COLLABORATIVE_WORK.m
 | Field | Value |
 |-------|-------|
 | **Priority** | P2 |
-| **Status** | PLANNED / NOT STARTED |
-| **Purpose** | Adopt platform Multiplayer primitives in LKW as first reference consumer. |
-| **Likely owning plans** | Tier-3 LKW application implementation plan (consumer); platform primitives in Tier-0/Tier-1 domain plans - **`OWNERSHIP_TO_CONFIRM_BEFORE_IMPLEMENTATION`** |
+| **Status** | **ENTERPRISE BOUNDARY CERTIFIED / CLOSED** — **MP-7A CLOSED / CERTIFIED**; **MP-7B — TIER-3 MULTIPLAYER CONSUMER BOUNDARY QUALIFIED / CLOSED**; **MP-7C-C1-R1 — CLOSED / CERTIFIED**; **MP-7C-C1 — CLOSED / RECERTIFIED**; **MP-7C — CLOSED / RECERTIFIED** (TIER-3 HOST COMPOSITION & BOUNDARY E2E); **MP-7D — CLOSED / ENTERPRISE CERTIFIED**; Multiplayer Tier-3 consumability boundary certified (not LKW product adoption) |
+| **Purpose** | Qualify Tier-3 consumability of Multiplayer via public contracts (LKW as reference host); product primitive adoption remains later slices. |
+| **Likely owning plans** | Tier-3 LKW application implementation plan (consumer); platform primitives in Tier-0/Tier-1 domain plans |
 | **Dependencies** | MP-1…MP-6 platform primitives accepted for the adopted subset |
 | **Exact scope** | LKW consumer integration for an explicitly selected subset of platform Multiplayer primitives |
 | **REUSED EXISTING CAPABILITY** | Prior LKW conversation, Ask, channel capabilities until explicitly integrated |
 | **NEW CAPABILITY REQUIRED** | LKW integration rows per adopted primitive (consumer-side only) |
 | **Explicit out of scope** | Transferring platform primitive ownership to LKW |
-| **Architecture/ADR gate** | Platform ownership and non-migration of current LKW Workspace are accepted; ADR-MP-008 completed |
+| **Architecture/ADR gate** | **Done (MP-7A)** — ADR-MP-008 **Accepted**; LKW remains Tier-3 **reference consumer** (**MP-INV-30**); product workspace Option B (`collaborative_workspace_ref`) |
 | **Pre-implementation domain-sync gate** | Bounded ownership check → LKW plan sync; no substitution of LKW-local rows for missing primitives |
 | **User-visible outcome** | LKW demonstrates end-to-end Multiplayer on platform contracts |
 | **Acceptance criteria** | LKW consumes the selected platform contracts without redefining them; current LKW Workspace is not moved by this phase; ownership and authority boundaries remain enforceable end to end |
 | **Expected proof/evidence** | Integration proof; consumer contract tests; isolation/authorization tests; provenance/evidence proof; regression proof for existing LKW behavior |
+
+---
+
+## MP-FINAL — Final hardening (after enterprise core MP-1…MP-7)
+
+Delivery roadmap only. Maturity SSOT remains the architecture hub.
+
+| Etap | Status | Opis |
+| ---- | ------ | ---- |
+| **MP-FINAL-1** — SSOT Reconciliation & Visual Architecture Baseline | **CLOSED / RECERTIFIED** | Docs + Mermaid visual architecture reconciled; R1 corrected composition flow + evidence provenance |
+| **MP-FINAL-2** — Multiplayer Diagnostics & Operability E2E | **CLOSED / RECERTIFIED** | Multiplayer → Evidence → Functional Diagnostics → public operator contract (certified scenarios); C1 closed operator-facing contract boundary |
+| **MP-FINAL-2-C1** — Operator-Facing Diagnostics Contract Boundary | **CLOSED / CERTIFIED** | Operator result DTOs owned by `intergrax.contracts.diagnostics`; analyzer/projector remain runtime implementations |
+| **MP-FINAL-3** — Capability-Wide Backend E2E | **CLOSED / CERTIFIED** | Cross-primitive backend scenario (Principal → Activity); evidence [`MP-FINAL-3_CAPABILITY_WIDE_BACKEND_E2E_CERTIFICATION.md`](../../maintainers/qualification/MP-FINAL-3_CAPABILITY_WIDE_BACKEND_E2E_CERTIFICATION.md) |
+| **MP-FINAL-4** — Final Enterprise Core Recertification | **CLOSED / FINAL RECERTIFICATION PASSED** | Evidence [`MP-FINAL-4_MULTIPLAYER_ENTERPRISE_CORE_FINAL_RECERTIFICATION.md`](../../maintainers/qualification/MP-FINAL-4_MULTIPLAYER_ENTERPRISE_CORE_FINAL_RECERTIFICATION.md) |
+| **MP-FINAL-4-R1** — Final certification evidence-chain integrity | **CLOSED / CERTIFIED** | [`MP-FINAL-4-R1_FINAL_CERTIFICATION_EVIDENCE_CHAIN_INTEGRITY_CORRECTION.md`](../../maintainers/qualification/MP-FINAL-4-R1_FINAL_CERTIFICATION_EVIDENCE_CHAIN_INTEGRITY_CORRECTION.md) |
+| **MP-8** | **PLANNED / NOT STARTED** | AgentDirectory / external agents |
+| **MP-9** | **PLANNED / NOT STARTED** | Advanced UX / notifications / realtime |
 
 ---
 

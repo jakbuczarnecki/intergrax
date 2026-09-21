@@ -10,6 +10,7 @@ from dataclasses import dataclass
 import pytest
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -142,7 +143,7 @@ def _parse_consume_amount(message: str) -> int:
     return int(message[len(prefix) :])
 
 
-class _BudgetRedeliveryWorkloadAgent(Agent):
+class _BudgetRedeliveryWorkloadAgent(HarnessReferenceAgent):
     """Deterministic workload that consumes governed budget inside worker execution."""
 
     __slots__ = ("_observations",)
@@ -182,7 +183,7 @@ class _BudgetRedeliveryWorkloadAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         del context
         return [
             AgentStep(
@@ -251,6 +252,7 @@ def _run_worker_delivery(
         agent_registry,
         run_budget=_RUN_BUDGET,
         run_budget_persistence=KvRunBudgetPersistence(kv),
+        production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
     )
     task = Task(

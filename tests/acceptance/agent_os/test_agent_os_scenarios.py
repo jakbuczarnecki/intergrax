@@ -12,6 +12,7 @@ from intergrax.utils import attribute_access
 import pytest
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType, HumanRequest
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
@@ -47,7 +48,7 @@ from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 pytestmark = [pytest.mark.integration, pytest.mark.agent_os, pytest.mark.gate]
 
 
-class _HitlAcceptanceAgent(Agent):
+class _HitlAcceptanceAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="hitl_acceptance",
@@ -80,7 +81,7 @@ class _HitlAcceptanceAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="review", step_name="review", step_index=0)]
 
@@ -104,7 +105,7 @@ class _HitlAcceptanceAgent(Agent):
         )
 
 
-class _MidStepAcceptanceAgent(Agent):
+class _MidStepAcceptanceAgent(HarnessReferenceAgent):
     """UAEP agent that pauses mid-step (phase 1 done, phase 2 after HITL resume)."""
 
     phase1_runs: int = 0
@@ -141,7 +142,7 @@ class _MidStepAcceptanceAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="process", step_name="process", step_index=0)]
 
@@ -175,7 +176,7 @@ class _MidStepAcceptanceAgent(Agent):
         return AgentDecision(type=AgentDecisionType.CONTINUE, reason="continue")
 
 
-class _RetryPrimaryAgent(Agent):
+class _RetryPrimaryAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="retry_primary",
@@ -208,7 +209,7 @@ class _RetryPrimaryAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="run", step_name="run", step_index=0)]
 
@@ -226,7 +227,7 @@ class _RetryPrimaryAgent(Agent):
         return AgentDecision(type=AgentDecisionType.COMPLETE, reason="done")
 
 
-class _RetryAlternateAgent(Agent):
+class _RetryAlternateAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="retry_alternate",
@@ -259,7 +260,7 @@ class _RetryAlternateAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="run", step_name="run", step_index=0)]
 
@@ -277,7 +278,7 @@ class _RetryAlternateAgent(Agent):
         return AgentDecision(type=AgentDecisionType.COMPLETE, reason="done")
 
 
-class _MemoryProducerAgent(Agent):
+class _MemoryProducerAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="memory_a",
@@ -299,7 +300,7 @@ class _MemoryProducerAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="write", step_name="write", step_index=0)]
 
@@ -317,7 +318,7 @@ class _MemoryProducerAgent(Agent):
         return AgentDecision(type=AgentDecisionType.COMPLETE, reason="done")
 
 
-class _MemoryConsumerAgent(Agent):
+class _MemoryConsumerAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="memory_b",
@@ -339,7 +340,7 @@ class _MemoryConsumerAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="read", step_name="read", step_index=0)]
 
@@ -361,7 +362,7 @@ class _MemoryConsumerAgent(Agent):
         return AgentDecision(type=AgentDecisionType.COMPLETE, reason="done")
 
 
-class _SandboxAcceptanceAgent(Agent):
+class _SandboxAcceptanceAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="sandbox_acceptance",
@@ -395,7 +396,7 @@ class _SandboxAcceptanceAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="sandbox", step_name="sandbox", step_index=0)]
 
@@ -424,7 +425,7 @@ class _SandboxAcceptanceAgent(Agent):
         return AgentDecision(type=AgentDecisionType.COMPLETE, reason="done")
 
 
-class _ShadowAcceptanceAgent(Agent):
+class _ShadowAcceptanceAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="shadow_acceptance",
@@ -457,7 +458,7 @@ class _ShadowAcceptanceAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="shadow", step_name="shadow", step_index=0)]
 

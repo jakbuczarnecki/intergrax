@@ -17,6 +17,7 @@ from intergrax.applications._shared.harness_host_composition import (
 )
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.applications.contracts.manifest import AgentBinding
+from intergrax.applications._shared.acp_runtime_session_hooks import build_nexus_acp_runtime_session_hooks
 from intergrax.applications._shared.runtime_boundary_adapters import (
     agent_binding_to_run_binding,
     application_profile_to_runtime_profile,
@@ -30,13 +31,16 @@ def build_acp_session_host_context(
     declarative_tool_invoker: Any = None,
     decision_flow_gate: Any = None,
     execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
+    runtime_session_hooks: Any = None,
 ) -> ACPSessionHostContext:
+    hooks = runtime_session_hooks or build_nexus_acp_runtime_session_hooks()
     return ACPSessionHostContext(
         runtime_profile=application_profile_to_runtime_profile(app_profile),
         binding=agent_binding_to_run_binding(binding),
         declarative_tool_invoker=declarative_tool_invoker,
         decision_flow_gate=decision_flow_gate,
         execution_budget_ledger_factory=execution_budget_ledger_factory,
+        runtime_session_hooks=hooks,
     )
 
 

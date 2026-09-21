@@ -18,6 +18,7 @@ from intergrax.runtime.vendor_knowledge.errors import (
 )
 from intergrax.runtime.vendor_knowledge.models import KnowledgeSourceRef
 from intergrax.utils.attribute_access import optional
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 
 class IntegrationProfileVendorResolver:
@@ -55,7 +56,7 @@ class IntegrationProfileVendorResolver:
             )
 
         try:
-            integration = self._profile.resolve(source.integration_kind)
+            integration = resolve_from_profile(self._profile, source.integration_kind)
         except VendorKnowledgeError:
             raise
         except (IntegrationConfigurationError, UnknownIntegrationError):

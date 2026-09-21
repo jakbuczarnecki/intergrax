@@ -12,9 +12,7 @@ from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.contracts.agent_run_enums import AgentRunErrorCode, AgentRunStatus, TerminalReason
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-
-
+from intergrax.contracts.tier2_agent import Tier2Agent
 class HarnessReferenceAgent(Agent):
     """
     Tier-2 reference agent base — explicitly implements :class:`UAEPAgent`.
@@ -42,7 +40,7 @@ class HarnessReferenceAgent(Agent):
         ...
 
 
-def assert_uaep_reference_agent(agent: Agent) -> None:
+def assert_uaep_reference_agent(agent: Tier2Agent) -> None:
     """Validate reference agent implements UAEP before registry insert."""
     if not isinstance(agent, UAEPAgent):
         raise TypeError(

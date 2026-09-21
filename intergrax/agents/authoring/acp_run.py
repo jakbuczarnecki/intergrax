@@ -16,14 +16,12 @@ from intergrax.agents.authoring.acp_session_host import (
 )
 from intergrax.agents.authoring.budget_enforcing_llm_router import wrap_budget_enforcing_router
 from intergrax.agents.authoring.llm_router import StepLLMRouter
-from intergrax.agents.authoring.shared_context_bridge import load_view, persist_view, view_from_task_metadata
+from intergrax.agents.authoring.shared_context_access import neutral_shared_context_access_for_run
 from intergrax.agents.authoring.step_loop import AgentRuntime
 from intergrax.runtime.wiring.reliability_runtime_bridge import resolve_reliability_wiring_options
 from intergrax.agents.authoring.artifact_refs import artifact_refs_from_payloads
 from intergrax.agents.compliance_summary import build_compliance_summary
-from intergrax.agents.persistence.catalog_declarative_invoker import (
-    CatalogDeclarativeToolInvoker,
-)
+from intergrax.agents.persistence.declarative_run_binding import DeclarativeToolInvokerWithRunBinding
 from intergrax.agents.persistence.session_persistence import (
     make_checkpoint_hook,
     resolve_session_persistence,
@@ -73,6 +71,7 @@ from intergrax.runtime.execution.identity_authority import (
     RootTaskIdentity,
     default_execution_identity_authority,
 )
+from intergrax.agents.authoring.acp_runtime_session_hooks import resolve_acp_runtime_session_hooks
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 
 
@@ -282,6 +281,7 @@ async def _run_acp_session_bound(
     started: float,
 ) -> AgentRunResult:
     await agent.on_run_start(merged)
+    session_hooks = resolve_acp_runtime_session_hooks(host)
 
     persistence, resume = resolve_session_persistence(
         request,
@@ -309,7 +309,7 @@ async def _run_acp_session_bound(
         )
     if declarative_invoker is None:
         declarative_invoker = resolve_declarative_tool_invoker_from_metadata(request.metadata)
-    if isinstance(declarative_invoker, CatalogDeclarativeToolInvoker):
+    if isinstance(declarative_invoker, DeclarativeToolInvokerWithRunBinding):
         declarative_invoker.bind_run(
             run_id=run_id,
             task_id=task_id,
@@ -363,49 +363,35 @@ async def _run_acp_session_bound(
         trace_step_count_fn=lambda: len(kernel_ctx.run_trace.steps),
     )
 
-    router_runtime_config = None
+    resolved_llm_adapter = None
     if host is not None and host.runtime_profile is not None:
-        from intergrax.runtime.wiring.context_runtime_bridge import (
-            apply_context_profile_to_runtime_config,
-        )
-        from intergrax.runtime.wiring.llm_resolver import resolve_llm_adapter
-        from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
-        from intergrax.runtime.nexus.config import RuntimeConfig
+        apply_kernel = session_hooks.apply_runtime_profile_kernel_wiring
+        if apply_kernel is not None:
+            resolved_llm_adapter = apply_kernel(
+                host=host,
+                kernel_ctx_holder=kernel_ctx_holder,
+                merged=merged,
+                request=request,
+            )
+        else:
+            from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
+            from intergrax.runtime.wiring.llm_resolver import resolve_llm_adapter
 
-        acp_routing_context = build_routing_context_from_runtime(
-            tenant_id=merged.tenant_id,
-            agent_id=merged.agent_id,
-            metadata=request.metadata,
-            budget_limits=merged.resolved_budget_limits,
-        )
-        router_runtime_config = RuntimeConfig(
-            llm_adapter=resolve_llm_adapter(
+            acp_routing_context = build_routing_context_from_runtime(
+                tenant_id=merged.tenant_id,
+                agent_id=merged.agent_id,
+                metadata=request.metadata,
+                budget_limits=merged.resolved_budget_limits,
+            )
+            resolved_llm_adapter = resolve_llm_adapter(
                 host.runtime_profile,
                 routing_context=acp_routing_context,
-            ),
-            production_mode=host.runtime_profile.execution_mode.value == "strict",
-            llm_routing_context=acp_routing_context,
-        )
-        apply_context_profile_to_runtime_config(
-            router_runtime_config,
-            host.runtime_profile.context_profile,
-        )
-        from intergrax.runtime.wiring.attestation_runtime_bridge import (
-            apply_attestation_profile_to_runtime_config,
-        )
-        from intergrax.runtime.attestation.kernel_wiring import apply_boundary_export_to_kernel
-
-        apply_attestation_profile_to_runtime_config(
-            router_runtime_config,
-            host.runtime_profile,
-        )
-        apply_boundary_export_to_kernel(kernel_ctx_holder[0], router_runtime_config)
+            )
 
     base_llm_router = StepLLMRouter(
         allowed_models=tuple(merged.allowed_llm_models),
         default_model=merged.default_llm_model,
-        runtime_config=router_runtime_config,
-        llm_adapter=router_runtime_config.llm_adapter if router_runtime_config is not None else None,
+        llm_adapter=resolved_llm_adapter,
         require_real_llm=(
             host.runtime_profile.execution_mode.value == "strict"
             if host is not None and host.runtime_profile is not None
@@ -439,16 +425,16 @@ async def _run_acp_session_bound(
     )
     if host is not None and host.runtime_profile is not None and host.runtime_profile.llm_routing_profile is not None:
         from intergrax.agents.authoring.dynamic_llm_router import wrap_dynamic_llm_router
-        from intergrax.agents.authoring.acp_routing_trace_bridge import (
-            record_acp_routing_rule_evaluation,
-        )
         from intergrax.runtime.wiring.llm_routing_context_bridge import (
             make_acp_routing_context_provider,
         )
         from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
 
+        routing_trace = session_hooks.on_llm_routing_evaluated
+
         def _on_routing_evaluated(evaluation: RoutingEvaluation) -> None:
-            record_acp_routing_rule_evaluation(kernel_ctx_holder[0], evaluation)
+            if routing_trace is not None:
+                routing_trace(kernel_ctx_holder[0], evaluation)
 
         llm_router = wrap_dynamic_llm_router(
             llm_router,
@@ -463,8 +449,11 @@ async def _run_acp_session_bound(
             ),
             on_evaluated=_on_routing_evaluated,
         )
-    shared_context = load_view(request.metadata) or view_from_task_metadata(
-        request.metadata,
+    resolve_shared_access = (
+        session_hooks.resolve_shared_context_access or neutral_shared_context_access_for_run
+    )
+    shared_context_access = resolve_shared_access(request)
+    shared_context = shared_context_access.load() or shared_context_access.project(
         task_id=task_id,
     )
 
@@ -521,22 +510,21 @@ async def _run_acp_session_bound(
     last_outcome = None
     last_record = None
 
-    from intergrax.agents.authoring.acp_uaep_shim import (
-        attach_acp_catalog_exec_ctx,
-        close_acp_catalog_exec_ctx,
-    )
+    attach_exec_ctx = session_hooks.attach_acp_catalog_exec_ctx
+    close_exec_ctx = session_hooks.close_acp_catalog_exec_ctx
     from intergrax.runtime.workspace.exec_ctx_isolation import isolation_structured_data_from_exec_ctx
 
     last_isolation_structured: dict[str, Any] = {}
 
     for _ in range(max_iterations):
         loop_step_ctx = step_ctx
-        attach_acp_catalog_exec_ctx(
-            loop_step_ctx,
-            kernel_ctx=kernel_ctx,
-            request=request,
-            contract=contract,
-        )
+        if attach_exec_ctx is not None:
+            attach_exec_ctx(
+                loop_step_ctx,
+                kernel_ctx=kernel_ctx,
+                request=request,
+                contract=contract,
+            )
         try:
             outcome, record = await AgentRuntime.advance_step(agent, loop_step_ctx, kernel_ctx)
             last_outcome = outcome
@@ -581,7 +569,8 @@ async def _run_acp_session_bound(
                 last_isolation_structured = isolation_structured_data_from_exec_ctx(
                     exec_ctx_for_isolation,
                 )
-            close_acp_catalog_exec_ctx(loop_step_ctx)
+            if close_exec_ctx is not None:
+                close_exec_ctx(loop_step_ctx)
 
     if last_outcome is None or last_record is None:
         return _failed_result(
@@ -610,7 +599,7 @@ async def _run_acp_session_bound(
         terminal_reason = TerminalReason.MAX_STEPS_EXCEEDED
 
     if step_ctx.shared_context is not None:
-        persist_view(request.metadata, step_ctx.shared_context)
+        shared_context_access.persist(step_ctx.shared_context)
     if ACP_USAGE_KEY in step_ctx.metadata:
         request.metadata[ACP_USAGE_KEY] = step_ctx.metadata[ACP_USAGE_KEY]
 

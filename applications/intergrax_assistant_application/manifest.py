@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.presets import lab_stack
 from intergrax_assistant.intergrax_assistant_agent import IntergraxAssistantAgent
 from intergrax_assistant_application.host.environment_profile import (
     build_intergrax_assistant_environment_profile,
@@ -79,7 +80,7 @@ def build_intergrax_assistant_manifest(
         route_prefix=settings.route_prefix,
         env_prefix="INTERGRAX_ASSISTANT_",
         default_port=settings.backend_port,
-        integration_profile=IntegrationProfile.lab_stack(),
+        integration_profile=lab_stack(),
         environment=environment,
         agents=agents,
         description=(

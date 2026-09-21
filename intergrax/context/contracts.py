@@ -22,9 +22,6 @@ if TYPE_CHECKING:
     from intergrax.context.budget.contracts import ResolvedModelContextBudget
     from intergrax.context.planning import ContextPlan
     from intergrax.context.source_inputs import ContextProviderSourceInputs
-    from intergrax.runtime.nexus.context.assembly_runtime_deps import (
-        ContextAssemblyRuntimeDependencies,
-    )
 
 CONTEXT_CONTRACTS_SCHEMA = "context_contracts.v1"
 ASSEMBLED_CONTEXT_SCHEMA = "assembled_context.v1"
@@ -541,7 +538,8 @@ class ContextProviderContext:
     engine_id: str = "default"
     plugin_ids: tuple[str, ...] = ()
     sources: ContextProviderSourceInputs = field(default_factory=_default_provider_source_inputs)
-    runtime: ContextAssemblyRuntimeDependencies | None = None
+    # Assembly runtime deps are Execution/Nexus-owned; keep CE contract Nexus-import free.
+    runtime: Any | None = None
     handles: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:

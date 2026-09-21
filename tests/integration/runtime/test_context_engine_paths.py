@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.applications._shared.context_wiring import resolve_context_manager_from_environment
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.context.bootstrap import reset_context_catalog_bootstrap_for_tests

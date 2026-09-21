@@ -17,7 +17,7 @@ from intergrax.runtime.execution.active_execution_budget import (
 )
 from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.agents.persistence.catalog_declarative_invoker import (
+from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
     CatalogDeclarativeToolInvoker,
 )
 from testing_support.catalog_declarative_invoker import (

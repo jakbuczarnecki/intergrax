@@ -95,7 +95,7 @@ _FORBIDDEN_HOST_ADAPTER_IMPORT_PREFIXES = (
     "boto3",
     "sqlalchemy",
     "intergrax.integrations.providers",
-    "intergrax.agents.uaep",
+    "intergrax.runtime.nexus.uaep",
 )
 
 _TRANSPORT_IMPORT_MARKERS = ("fastapi", "fastmcp", "starlette", "uvicorn", "mcp.")

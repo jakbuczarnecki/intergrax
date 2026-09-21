@@ -8,6 +8,7 @@ import pytest
 from pydantic import BaseModel
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -109,7 +110,7 @@ def _build_runtime_context(request: RuntimeRequest, executor: _CountingExecutor)
     return context
 
 
-class _PolicyHitlToolAgent(Agent):
+class _PolicyHitlToolAgent(HarnessReferenceAgent):
     def __init__(self, executor: _CountingExecutor) -> None:
         self._executor = executor
 
@@ -137,7 +138,7 @@ class _PolicyHitlToolAgent(Agent):
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         return _build_runtime_context(request, self._executor)
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="invoke_tool", step_name="invoke", step_index=0)]
 

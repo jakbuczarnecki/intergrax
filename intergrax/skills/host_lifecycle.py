@@ -14,7 +14,7 @@ from intergrax.contracts.lifecycle_handoff.ack import (
 from intergrax.skills.catalog import SkillPackageResolution
 from intergrax.skills.dynamic_acquisition import SkillHostBindingMaterializer, SkillHostBindingPort
 from intergrax.skills.identity import SkillPackageIdentity
-from intergrax.skills.registry.profile import SkillProfile
+from intergrax.skills.registry.profile import SkillProfile, is_skill_enabled
 from intergrax.skills.registry.provenance import SkillRuntimeBindingMetadata
 from intergrax.skills.registry.read import SkillRegistryRead
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -35,7 +35,7 @@ class SkillHostLifecycleService(SkillHostBindingPort):
     def is_bound(self, logical_skill_id: str) -> bool:
         if not self.registry.has(logical_skill_id):
             return False
-        return self.skill_profile.is_skill_enabled(logical_skill_id)
+        return is_skill_enabled(self.skill_profile, logical_skill_id)
 
     def binding_metadata(self, logical_skill_id: str) -> SkillRuntimeBindingMetadata | None:
         return self.registry.binding_metadata(logical_skill_id)

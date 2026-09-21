@@ -10,7 +10,7 @@ from typing import Protocol, runtime_checkable
 from pydantic import BaseModel
 
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
-from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.registry.read import ToolRegistryRead
 
 
 @runtime_checkable
@@ -18,7 +18,7 @@ class ToolInvokerProtocol(Protocol):
     """Catalog tool invoker surface used by pipeline steps and ToolRuntime."""
 
     @property
-    def registry(self) -> ToolRegistry:
+    def registry(self) -> ToolRegistryRead:
         ...
 
     def invoke(

@@ -10,7 +10,9 @@ from datetime import datetime, timezone
 
 from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
 from intergrax.contracts.capability_catalog.query import CapabilityDiscoveryQuery
-from intergrax.contracts.capability_catalog.release_identity import CapabilityReleaseIdentity
+from intergrax.contracts.capability_catalog.release_identity import (
+    CapabilityReleaseIdentity,
+)
 from intergrax.contracts.marketplace.diagnostics import (
     MarketplaceDiagnosticEvent,
     MarketplaceDiagnosticEventKind,
@@ -28,14 +30,25 @@ from intergrax.contracts.marketplace.handoff_traceability import (
 )
 from intergrax.contracts.marketplace.query_context import MarketplaceQueryContext
 from intergrax.marketplace.diagnostics import emit_marketplace_diagnostic
-from intergrax.marketplace.diagnostics.session import MarketplacePipelineObservationSession
+from intergrax.marketplace.diagnostics.session import (
+    MarketplacePipelineObservationSession,
+)
 from intergrax.marketplace.discovery import MarketplaceDiscoveryService
-from intergrax.marketplace.handoff_traceability.delivery import CapabilityHandoffDeliveryService
-from intergrax.marketplace.handoff_traceability.errors import MarketplaceHandoffSelectionError
-from intergrax.marketplace.observed_pipeline import run_marketplace_intelligence_pipeline
+from intergrax.marketplace.handoff_traceability.delivery import (
+    CapabilityHandoffDeliveryService,
+)
+from intergrax.marketplace.handoff_traceability.errors import (
+    MarketplaceHandoffSelectionError,
+)
+from intergrax.marketplace.observed_pipeline import (
+    MarketplaceIntelligencePipelineResult,
+    run_marketplace_intelligence_pipeline,
+)
 from intergrax.marketplace.service import MarketplaceCatalogService
 from intergrax.capability_catalog.governance import CapabilityGovernanceEvaluator
-from intergrax.contracts.capability_catalog.governance import CapabilityGovernanceContext
+from intergrax.contracts.capability_catalog.governance import (
+    CapabilityGovernanceContext,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,6 +97,43 @@ class MarketplaceDiscoveryHandoffOrchestrator:
             query_text=query_text,
             observation=observation,
         )
+        return self.deliver_explicit_selection_from_pipeline(
+            pipeline=pipeline,
+            marketplace_query_context=query_context,
+            selected_identity_key=selected_identity_key,
+            consumer_target=consumer_target,
+            selector_id=selector_id,
+            discovery_correlation_id=discovery_correlation_id,
+            selection_id=selection_id,
+            handoff_id=handoff_id,
+            query_correlation_id=query_correlation_id,
+            recorded_at=recorded_at,
+            observation=observation,
+        )
+
+    def deliver_explicit_selection_from_pipeline(
+        self,
+        *,
+        pipeline: MarketplaceIntelligencePipelineResult,
+        marketplace_query_context: MarketplaceQueryContext,
+        selected_identity_key: CapabilityIdentityKey,
+        consumer_target: CapabilityHandoffConsumerTarget,
+        selector_id: str,
+        discovery_correlation_id: str,
+        selection_id: str,
+        handoff_id: str,
+        query_correlation_id: str | None = None,
+        recorded_at: datetime | None = None,
+        observation: MarketplacePipelineObservationSession | None = None,
+    ):
+        query_context = marketplace_query_context
+        if observation is None:
+            observation = MarketplacePipelineObservationSession.for_discovery(
+                discovery_correlation_id,
+                query_correlation_id=query_correlation_id,
+                observer=self.diagnostic_observer,
+                failure_policy=self.observer_failure_policy,
+            )
         listing_views = pipeline.listing_views
         governed = pipeline.governed.allowed
         selected_governed = None
@@ -125,7 +175,9 @@ class MarketplaceDiscoveryHandoffOrchestrator:
                 "consumer_target must align with selected capability kind",
             )
         ranking_evidence = selected_governed.ranking_evidence
-        governance_evidence = selected_governed.evidence[0] if selected_governed.evidence else None
+        governance_evidence = (
+            selected_governed.evidence[0] if selected_governed.evidence else None
+        )
         trace = CapabilityDiscoveryTraceFacts(
             discovery_correlation_id=discovery_correlation_id,
             query_correlation_id=query_correlation_id,
@@ -144,7 +196,9 @@ class MarketplaceDiscoveryHandoffOrchestrator:
             selector_id=selector_id,
             listing_id=listing_id,
             governance_evidence_ref=(
-                governance_evidence.evaluator_id if governance_evidence is not None else None
+                governance_evidence.evaluator_id
+                if governance_evidence is not None
+                else None
             ),
             ranking_evidence_ref=ranking_evidence.ranker_id,
         )

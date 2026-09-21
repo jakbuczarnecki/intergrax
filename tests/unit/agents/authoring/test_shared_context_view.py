@@ -2,7 +2,7 @@
 
 import pytest
 
-from intergrax.agents.authoring.shared_context_bridge import persist_view, view_from_task_metadata
+from intergrax.runtime.nexus.agents.shared_context_bridge import persist_view, view_from_task_metadata
 from intergrax.contracts.shared_context import SharedArtifactRef, SharedContextConflictError
 
 

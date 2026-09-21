@@ -28,8 +28,6 @@ from intergrax.contracts.agent_decision import AgentDecision
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-
 PATTERN_VERSION: str = "acp.v1"
 
 
@@ -136,7 +134,7 @@ class CognitiveAgent(IntergraxAgent, ABC):
         step: AgentStep,
         ctx: RuntimeExecutionContext,
     ) -> StepOutput:
-        from intergrax.agents.authoring.acp_uaep_shim import execute_cognitive_step_via_acp
+        from intergrax.agents.authoring.cognitive_step_runtime import execute_cognitive_step_via_acp
 
         return await execute_cognitive_step_via_acp(self, step, ctx)
 
@@ -147,7 +145,7 @@ class CognitiveAgent(IntergraxAgent, ABC):
         ctx: RuntimeExecutionContext,
     ) -> AgentDecision:
         _ = step, output
-        from intergrax.agents.authoring.acp_uaep_shim import decide_after_cognitive_step
+        from intergrax.agents.authoring.cognitive_step_runtime import decide_after_cognitive_step
 
         return decide_after_cognitive_step(ctx, default_reason=f"{self.cognitive_pattern.value} step finished")
 

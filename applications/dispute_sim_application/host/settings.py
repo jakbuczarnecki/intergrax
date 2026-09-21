@@ -7,7 +7,11 @@ import os
 from dataclasses import dataclass, field
 from typing import ClassVar, FrozenSet, Literal, Mapping, Optional
 
-from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
+from intergrax.applications._shared.settings_loader import (
+    ApplicationSettingsEnvHost,
+    EnvReader,
+)
+from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.fastapi_core.config import ApiEnvironment
@@ -45,7 +49,7 @@ def _parse_api_key_map(raw: Optional[str]) -> Mapping[str, ApiKeyIdentity]:
 
 
 @dataclass(frozen=True, kw_only=True)
-class DisputeSimBackendSettings(IntergraxApplicationSettingsBase):
+class DisputeSimBackendSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
     """Environment for dispute_sim_application (scaffolded product profile)."""
 
     env_prefix: ClassVar[str] = "DISPUTE_SIM_"

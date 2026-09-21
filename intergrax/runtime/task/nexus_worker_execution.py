@@ -37,6 +37,7 @@ from intergrax.runtime.long_running.persistence_contract import (
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.execution.budget.persistence import (
     RunBudgetPersistence,
@@ -119,9 +120,11 @@ class NexusWorkerRuntime:
         task_enricher: TaskEnricher | None = None,
         execution_continuation_state_store: ExecutionContinuationStateStore
         | None = None,
+        production_mode: bool,
         admit_root_governance_identity: Callable[
             [Task], AdmittedRootGovernanceIdentity
         ],
+        retry_policy: RetryPolicy | None = None,
     ) -> NexusWorkerRuntime:
         resolved_factory = execution_budget_ledger_factory
         if resolved_factory is None and run_budget_persistence is not None:
@@ -136,6 +139,9 @@ class NexusWorkerRuntime:
             execution_budget_ledger_factory=resolved_factory,
             execution_terminal=execution_terminal,
             execution_continuation_state_store=execution_continuation_state_store,
+            production_mode=production_mode,
+            max_run_retries=0,
+            retry_policy=retry_policy or RetryPolicy(max_retries=0),
         )
         from intergrax.runtime.governance.execution_admission_composition import (
             build_reference_allowing_root_execution_authority_admission,

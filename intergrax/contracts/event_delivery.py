@@ -12,7 +12,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Literal, Protocol, runtime_checkable
+from typing import Generic, Literal, Protocol, TypeVar, runtime_checkable
+
+TBuffered = TypeVar("TBuffered")
 
 OBSERVABILITY_EXPORT_PAYLOAD_SCHEMA: Literal["observability_export_payload.v1"] = (
     "observability_export_payload.v1"
@@ -255,6 +257,65 @@ class EventSinkPort(Protocol):
     ) -> EventDeliveryResult: ...
 
     def close(self) -> None: ...
+
+
+class EventDeliveryBufferCapacityExhausted(Exception):
+    """Bounded event-delivery buffer cannot accept another entry."""
+
+
+@dataclass(frozen=True, slots=True)
+class EventDeliveryBufferEntry(Generic[TBuffered]):
+    """Next entry taken from a process-local event delivery buffer."""
+
+    kind: Literal["item", "shutdown"]
+    item: TBuffered | None = None
+
+
+class EventDeliveryBufferPort(Protocol[TBuffered]):
+    """Physical bounded storage / enqueue mechanics for process-local event delivery.
+
+    Owns only capacity and enqueue/dequeue mechanics. Does **not** own QoS policy,
+    admission accounting, health transitions, or shutdown linearization — those remain
+    with ``EventDeliveryPolicy`` / ``BoundedEventSink``.
+    """
+
+    @property
+    def capacity(self) -> int: ...
+
+    @property
+    def pending_depth(self) -> int: ...
+
+    def enqueue_item_nowait(self, item: TBuffered) -> None:
+        """Enqueue one work item without waiting.
+
+        Raises:
+            EventDeliveryBufferCapacityExhausted: when the buffer is at capacity.
+        """
+        ...
+
+    def enqueue_item(self, item: TBuffered, *, timeout: float) -> None:
+        """Enqueue one work item, waiting up to ``timeout`` seconds.
+
+        Raises:
+            EventDeliveryBufferCapacityExhausted: when capacity is not freed in time.
+        """
+        ...
+
+    def enqueue_shutdown_nowait(self) -> None:
+        """Enqueue the shutdown marker without waiting.
+
+        Raises:
+            EventDeliveryBufferCapacityExhausted: when the buffer is at capacity.
+        """
+        ...
+
+    def take_next(self) -> EventDeliveryBufferEntry[TBuffered]:
+        """Block until the next work item or shutdown marker is available."""
+        ...
+
+    def acknowledge_processed(self) -> None:
+        """Acknowledge that the last taken entry finished processing."""
+        ...
 
 
 @runtime_checkable

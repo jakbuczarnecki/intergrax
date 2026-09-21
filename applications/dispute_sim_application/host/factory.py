@@ -30,6 +30,7 @@ from intergrax.applications._shared.host_queue_execution_wiring import (
     resolve_host_queue_execution_dependencies,
 )
 from intergrax.applications._shared.queue_worker_wiring import wire_optional_queue_execution
+from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     wire_harness_task_control,
@@ -123,6 +124,7 @@ def create_dispute_sim_backend_app(
             causal_evidence_persistence=queue_dependencies.causal_evidence_persistence,
             orchestration_triggers=orchestration_triggers,
             pipeline_capability_suffix=pipeline_capability_suffix,
+            production_mode=env.execution_mode is ExecutionMode.STRICT,
         )
         run_service._execution_adapter = queue_wiring.execution_adapter
 

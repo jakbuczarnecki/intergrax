@@ -20,7 +20,9 @@ from intergrax.contracts.marketplace.listing import (
     MarketplaceCapabilityListing,
     MarketplaceCapabilityListingView,
 )
-from intergrax.contracts.marketplace.listing_projection import MarketplaceListingProjection
+from intergrax.contracts.marketplace.listing_projection import (
+    MarketplaceListingProjection,
+)
 from intergrax.contracts.marketplace.listing_record import MarketplaceListingRecord
 from intergrax.contracts.marketplace.metadata_source import MarketplaceMetadataSource
 from intergrax.contracts.marketplace.query_context import (
@@ -95,10 +97,19 @@ from intergrax.contracts.marketplace.acquisition import (
     SCHEMA_MACHINE_CAPABILITY_ACQUISITION_RESPONSE_V1,
     SCHEMA_MACHINE_CAPABILITY_ACQUISITION_SELECTION_V1,
 )
+from intergrax.contracts.marketplace.gap_acquisition import (
+    MarketplaceGapAcquisitionOutcome,
+    MarketplaceGapAcquisitionPort,
+    MarketplaceGapAcquisitionRequest,
+    MarketplaceGapAcquisitionResult,
+    SCHEMA_MARKETPLACE_GAP_ACQUISITION_REQUEST_V1,
+    SCHEMA_MARKETPLACE_GAP_ACQUISITION_RESULT_V1,
+)
 from intergrax.contracts.marketplace.handoff_traceability import (
     CapabilityDiscoveryTraceFacts,
     CapabilityHandoffConsumer,
     CapabilityHandoffConsumerError,
+    CapabilityHandoffConsumerFailureDisposition,
     CapabilityHandoffConsumerTarget,
     CapabilityHandoffDeliveryAdmission,
     CapabilityHandoffDeliveryAdmissionError,
@@ -161,6 +172,12 @@ __all__ = [
     "MachineCapabilityAcquisitionSelection",
     "MachineCapabilityRecommendation",
     "MachineCatalogFederationCompleteness",
+    "MarketplaceGapAcquisitionOutcome",
+    "MarketplaceGapAcquisitionPort",
+    "MarketplaceGapAcquisitionRequest",
+    "MarketplaceGapAcquisitionResult",
+    "SCHEMA_MARKETPLACE_GAP_ACQUISITION_REQUEST_V1",
+    "SCHEMA_MARKETPLACE_GAP_ACQUISITION_RESULT_V1",
     "SCHEMA_MACHINE_CAPABILITY_RECOMMENDATION_V1",
     "SCHEMA_MACHINE_CAPABILITY_ACQUISITION_HANDOFF_REQUEST_V1",
     "SCHEMA_MACHINE_CAPABILITY_ACQUISITION_HANDOFF_RESPONSE_V1",
@@ -170,6 +187,7 @@ __all__ = [
     "CapabilityDiscoveryTraceFacts",
     "CapabilityHandoffConsumer",
     "CapabilityHandoffConsumerError",
+    "CapabilityHandoffConsumerFailureDisposition",
     "CapabilityHandoffConsumerTarget",
     "CapabilityHandoffDeliveryAdmission",
     "CapabilityHandoffDeliveryAdmissionError",

@@ -11,8 +11,10 @@ from intergrax.agents.authoring.patterns.types import (
 )
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
-    build_lab_agent_runtime_context,
     default_reference_harness,
+)
+from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+    build_lab_agent_runtime_context,
 )
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
@@ -22,7 +24,7 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
-from intergrax.agents.tool_enablement import ToolEnablementProfile, ToolWiringContextLike
+from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 
@@ -40,13 +42,17 @@ class ResearchAgent(ReflexAgent):
         harness: LabHarnessContext | None = None,
         *,
         tool_profile: ToolEnablementProfile | None = None,
-        tool_wiring_context: ToolWiringContextLike | None = None,
         enable_websearch: bool = False,
     ) -> None:
         self._harness = harness or default_reference_harness()
         self._tool_profile = tool_profile
-        self._tool_wiring_context = tool_wiring_context
         self._enable_websearch = enable_websearch
+
+    def _tool_enables(self, tool_id: str) -> bool:
+        profile = self._tool_profile
+        if profile is None:
+            return False
+        return profile.is_tool_enabled(tool_id)
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -83,17 +89,14 @@ class ResearchAgent(ReflexAgent):
         has_web = bool(
             self._enable_websearch
             and self._tool_profile
-            and self._tool_profile.is_tool_enabled("websearch.query")
+            and self._tool_enables("websearch.query")
         )
-        runtime_context = build_lab_agent_runtime_context(
+        return build_lab_agent_runtime_context(
             request=request,
             llm_adapter=PrefixStubLLMAdapter(prefix="research"),
             harness=self._harness,
             enable_websearch=has_web,
         )
-        runtime_context.config.tool_profile = self._tool_profile
-        runtime_context.config.tool_wiring_context = self._tool_wiring_context
-        return runtime_context
 
     async def perceive(self, step_ctx: AgentStepContext) -> Observation:
         query = self.read_run_input(step_ctx)

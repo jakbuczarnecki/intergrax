@@ -2,14 +2,16 @@
 
 import pytest
 
+from intergrax.runtime.nexus.agents.runtime_answer_mapping import (
+    extract_cost_from_runtime_answer,
+    extract_duration_seconds_from_runtime_answer,
+    runtime_answer_to_agent_result,
+)
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.contracts.runtime_cost import (
     aggregate_execution_metrics,
-    extract_cost_from_runtime_answer,
-    extract_duration_seconds_from_runtime_answer,
     tokens_to_cost_units,
 )
-from intergrax.contracts.runtime_mapping import runtime_answer_to_agent_result
 from intergrax.llm_adapters.contracts.llm_adapter import LLMRunStats
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageReport
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeStats

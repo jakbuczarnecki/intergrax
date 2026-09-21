@@ -88,6 +88,9 @@ from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution_continuation_state_store import (
+        ExecutionContinuationStateStore,
+    )
     from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
     from intergrax.contracts.execution_terminal import ExecutionTerminalStore
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
@@ -137,6 +140,7 @@ def build_nexus_loop_from_environment(
     execution_terminal: ExecutionTerminalService | None = None,
     execution_terminal_store: ExecutionTerminalStore | None = None,
     execution_lineage_persistence: ExecutionLineagePersistence | None = None,
+    execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     validate_strict_host_execution_capacity(env)
@@ -283,6 +287,10 @@ def build_nexus_loop_from_environment(
         attempt_lifecycle=resolved_attempt_lifecycle,
         execution_terminal=resolved_execution_terminal,
         execution_lineage_persistence=resolved_execution_lineage,
+        # Strict/production: host must inject a durable store (is_durable=True).
+        # Lab/non-strict: None → NexusLoop lab in-memory default. Never invent
+        # an implicit InMemory store inside this factory for production.
+        execution_continuation_state_store=execution_continuation_state_store,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security, env=env)

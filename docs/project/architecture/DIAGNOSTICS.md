@@ -2,7 +2,7 @@
 
 **Intergrax Central Diagnostics** is the **one** canonical deterministic diagnostic engine for the platform. It interprets persisted platform facts - primarily `RuntimeEvent` execution evidence - into tenant-scoped `Problem` state, bounded operator read models, and optional investigation inputs. It does **not** mint execution identity, own observability export, own shared factual reconstruction, or treat vendor telemetry or AI conclusions as truth.
 
-**Last reconciled against `development` @ `a669e15e413a1ff9556ba33318560636286d823f`.** **SSOT:** diagnostic interpretation — this document; evidence / reconstruction — [`OBSERVABILITY.md`](OBSERVABILITY.md). Qualification records are evidence at historical SHAs, not architecture override.
+**Last reconciled against `development` @ `19307f1e4c3bfdcdc9ea675f4909383ab1d70878` (audited code SHA — OBS-DIAG-X1).** **SSOT:** diagnostic interpretation — this document; evidence / reconstruction — [`OBSERVABILITY.md`](OBSERVABILITY.md). Gap baseline: [`OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md). Qualification records are evidence at historical SHAs, not architecture override. Documentation commit SHA may differ after docs-only commits.
 
 **Platform operational spine:** see [`OBSERVABILITY.md` — Platform Operational Spine](OBSERVABILITY.md#platform-operational-spine). Diagnostics is the **interpretation plane** after shared reconstruction — not a second evidence or execution authority.
 
@@ -27,7 +27,7 @@
   <source media="(prefers-color-scheme: dark)" srcset="assets/diagnostics-flagship-dark.svg">
   <source media="(prefers-color-scheme: light)" srcset="assets/diagnostics-flagship-light.svg">
   <img
-    alt="Applications, scenarios, and workers through Nexus execution, RuntimeEvent spine, central diagnostics, Problem Store, and derived observability."
+    alt="Applications, scenarios, and workers through Execution Runtime, RuntimeEvent spine, central diagnostics, Problem Store, and derived observability export."
     src="assets/diagnostics-flagship-light.svg"
   >
 </picture>
@@ -36,15 +36,29 @@
 **Primary mental model:**
 
 ```text
-Applications · Scenarios · Workers
-        ↓ shared runtime (HarnessHostRuntime / ScenarioRuntimeBaseline)
-RuntimeEvent = canonical execution evidence
-        ↓ terminal trigger
-Central Diagnostics (intergrax.runtime.diagnostics)
-        ↓
-Problem Store + DiagnosticReadService
-Observability export = derived (parallel consumer - not authority)
+Application / Scenario / Worker / API
+              ↓
+        Execution Runtime
+              ↓
+          RuntimeEvent
+              ↓
+      Evidence Persistence
+              ↓
+     Factual Reconstruction
+              ↓
+      Central Diagnostics
+              ↓
+      Problem Persistence
+              ↓
+      DiagnosticReadService
+              ↓
+    Operator / Investigation
+
+Parallel:
+Evidence → Export Boundary → Vendor
 ```
+
+Vendor telemetry is **not** on the canonical truth path. Nexus is an orchestration participant — **not** root execution authority.
 
 Deep backbone map: [`diagnostics-platform-backbone.md`](assets/fullsize/diagnostics-platform-backbone.md) · adoption paths: [`diagnostics-platform-adoption.md`](assets/fullsize/diagnostics-platform-adoption.md).
 
@@ -176,16 +190,92 @@ OPERATOR READ MODEL (DiagnosticReadService)
 | Diagnostics | interpretation, `Problem` lifecycle, operator diagnostic views |
 | Operators | read-only composed views via `DiagnosticReadService` |
 
+### Single-owner matrix (OBS-DIAG-X1)
+
+| Concern | Single semantic owner | Competing owner found? |
+| ------- | --------------------- | ---------------------- |
+| execution lifecycle / identity / tree | Execution | **NO** |
+| RuntimeEvent evidence + evidence persistence | Observability / Evidence Plane | **NO** |
+| factual reconstruction | Shared Evidence Plane | **NO** |
+| diagnostic interpretation + Problem grouping/lifecycle | Central Diagnostics | **NO** |
+| Problem persistence contract | Diagnostics | **NO** |
+| vendor telemetry | Derived integration adapter | **NO** |
+| operator dashboards | Projection / read layer | **NO** |
+
+### Proof-level taxonomy
+
+| Level | Meaning |
+| ----- | ------- |
+| **P1** | Unit / contract |
+| **P2** | Composition |
+| **P3** | In-process end-to-end through real platform spine |
+| **P4** | External / provider / process-boundary proof |
+
+**Mock rule:** A test may use a deterministic LLM test double when LLM is not the qualified boundary. It must **not** mock transport, persistence, worker boundary, diagnostic persistence, or vendor endpoint when the proof declares those as real qualification targets.
+
+### Composition pluginability (OBS-DIAG-X2 — CLOSED)
+
+Host composition is contract-driven via
+`intergrax.applications._shared.diagnostic_composition`:
+
+```text
+host / ApplicationCompositionContext.diagnostic_composition_overrides
+  → DiagnosticCompositionOverrides (typed)
+  → resolve_diagnostic_persistence_composition (shared write+read)
+  → resolve_diagnostic_composition
+  → build_diagnostic_orchestrator_from_composition
+  → ONE DiagnosticOrchestrator + ONE ProblemLifecycleEngine
+```
+
+| Mechanism | Contract | Host composition replaceable | Status |
+| --------- | -------- | ---------------------------: | ------ |
+| ProblemPersistence | YES | YES (`DiagnosticCompositionOverrides`) | **PROVEN** |
+| ProblemOccurrencePersistence | YES | YES | **PROVEN** |
+| ExecutionReconstructionReader | YES | YES (contract injection; default `ExecutionReconstructor`) | **PROVEN** |
+| CausalEvidencePersistence | YES | YES | **PROVEN** |
+| ProblemGroupingStrategy | YES | YES (registry + additional strategies; duplicate ID fails) | **PROVEN** |
+| DiagnosticAssessmentBuilder | module | **NOT PLUGGABLE BY DESIGN** (canonical assessment schema) | **INVARIANT** |
+| LifecycleAnomalyAnalyzer | module | **NOT PLUGGABLE BY DESIGN** (deterministic lifecycle invariants) | **INVARIANT** |
+| DiagnosticOrchestrator / ProblemLifecycleEngine | N/A | **NOT replaceable** (single authority) | **INVARIANT** |
+
+```text
+ENGINE CONTRACT PLUGINABILITY = PROVEN
+STANDARD HOST COMPOSITION REPLACEABILITY = PROVEN
+```
+
+### Canonical host composition ownership (OBS-DIAG-X2A — CLOSED)
+
+`build_harness_host_runtime` materializes diagnostic persistence **once** via
+`materialize_host_diagnostic_read_dependencies`, stores it on
+`HarnessHostRuntime.host_diagnostic_dependencies`, and shares that bundle across
+terminal write wiring, diagnostic read, and scope discovery. Host shutdown closes
+host-created persistence via `close_host_owned_diagnostic_persistence`; borrowed
+override providers are never closed.
+
+Factory injection: `diagnostic_composition_overrides` on `build_harness_host_runtime`
+(or `ApplicationCompositionContext.diagnostic_composition_overrides`).
+
+Historical X1 baseline (PARTIAL host replaceability at that SHA) remains in
+[`OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md).
+X2 qualification:
+[`OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md`](../maintainers/audits/OBS_DIAG_DIAGNOSTIC_COMPOSITION_PLUGINABILITY_X2.md).
+X2A canonical host closure:
+[`OBS_DIAG_CANONICAL_HOST_COMPOSITION_X2A.md`](../maintainers/audits/OBS_DIAG_CANONICAL_HOST_COMPOSITION_X2A.md).
+X2B override one-resolution (custom/partial overrides):
+[`OBS_DIAG_CANONICAL_OVERRIDE_ONE_RESOLUTION_X2B.md`](../maintainers/audits/OBS_DIAG_CANONICAL_OVERRIDE_ONE_RESOLUTION_X2B.md).
+
+Host-bound helpers (`resolve_host_diagnostic_read_dependencies`, `resolve_host_diagnostic_runtime_dependencies` with stored runtime, read service, terminal trigger) **must not** re-materialize persistence after host construction. Post-build conflicting `overrides=` fail closed via `assert_host_diagnostic_composition_frozen`.
+
 | Mechanism | Contract / module | Default implementation | Custom replacement |
 | --------- | ----------------- | ---------------------- | ------------------ |
-| Factual reconstruction contract | `ExecutionReconstructionReader` (`intergrax.contracts.execution_reconstruction`) | Default: `ExecutionReconstructor` | External `ExecutionReconstructionReader` at composition root (single `ExecutionReconstructor` class in production) |
-| Grouping strategy | `ProblemGroupingStrategy` + `ProblemGroupingStrategyRegistry` | `DeterministicProblemGroupingStrategy` | Register additional `ProblemGroupingStrategy` |
-| Problem persistence | `ProblemPersistence` / `ProblemOccurrencePersistence` | Application-wired durable or `InMemoryProblemPersistence` | Provider implementations in integration layer |
-| Terminal diagnostic dispatch | `TerminalExecutionDiagnosticPort` | Central adapter → `DiagnosticOrchestrator` | External port implementation |
+| Factual reconstruction contract | `ExecutionReconstructionReader` | Default: `ExecutionReconstructor` | Override via `DiagnosticCompositionOverrides.execution_reconstruction_reader` |
+| Grouping strategy | `ProblemGroupingStrategy` + registry | `DeterministicProblemGroupingStrategy` | `additional_grouping_strategies` (duplicate ID → fail) |
+| Problem persistence | `ProblemPersistence` / occurrence / causal | DocumentStore wire helpers | Override ports on composition overrides |
+| Terminal diagnostic dispatch | `TerminalExecutionDiagnosticPort` | Central adapter → `DiagnosticOrchestrator` | Adapter must still delegate to central spine |
 | Reliability bridge | `ReliabilityDiagnosticOrchestrationPort` | Narrow invoke port | Alternate adapter |
 | Decision context (read) | `DecisionContextProvider` | Optional wired provider | Replace at read-service composition |
 
-**Qualification:** `uv run pytest -m obs_diag_conformance` — architecture gates (`test_obs_diag_conformance_architecture.py`), E2E spine (`test_obs_diag_conformance_e2e.py`), manifest (`test_obs_diag_conformance_qualification.py`); plus existing `test_obs_reconstruction_1_architecture.py` and diagnostic orchestrator/read suites.
+**Qualification:** `tests/unit/applications/_shared/test_obs_diag_x2_diagnostic_composition_pluginability.py` plus `uv run pytest -m obs_diag_conformance` and HARDEN 1D/4B/4D.
 
 ---
 
@@ -993,19 +1083,66 @@ Engine HARDEN: M1–M24 PROVEN=22 NOT_APPLICABLE=2
 **Platform adoption qualification** - DIAG-PLATFORM **complete** (see [`DIAGNOSTIC_PLATFORM_QUALIFICATION_CLOSEOUT.md`](../maintainers/qualification/DIAGNOSTIC_PLATFORM_QUALIFICATION_CLOSEOUT.md)).
 
 ```text
-Platform adoption: NATIVE production surfaces = 4 PRODUCT hosts + 1 initialized scenario
-BYPASS = 0 · design-only scenarios = NOT_APPLICABLE until initialized
-true P3 flows = 4 · true P4 platform E2E = 2 (Mongo + OTLP application paths) · P4 persistence-only ≠ full spine
+Platform adoption (current discovery @ OBS-DIAG-X1):
+  PRODUCT write-path NATIVE = 4 hosts (+ LKW worker NATIVE write)
+  Initialized scenario surfaces = 4 (discover_initialized_scenario_slugs)
+  Factory composition PRODUCT BYPASS = 0
+  Universal runtime entry-path zero-bypass = NOT_PROVEN
+  CORE READ CONTRACT = PROVEN · UNIVERSAL HOST EXPOSURE = PARTIAL
+  true P3 flows include async spine · true P4 platform slices = Mongo + OTLP (+ DG-005 process topology)
+  P4 persistence-only ≠ full Kafka spine
 ```
+
+### OBS-DIAG-X5 / X5A provider support matrix (reconciled)
+
+Audits: [`OBS_DIAG_EXTERNAL_PROVIDER_VENDOR_QUALIFICATION_X5.md`](../maintainers/audits/OBS_DIAG_EXTERNAL_PROVIDER_VENDOR_QUALIFICATION_X5.md) (X5 initial evidence), [`OBS_DIAG_PROVIDER_EVIDENCE_INTEGRITY_X5A.md`](../maintainers/audits/OBS_DIAG_PROVIDER_EVIDENCE_INTEGRITY_X5A.md) (lifecycle + anti-drift closure).
+
+Discovery SSOT: `discover_obs_diag_provider_surfaces()` over `intergrax/integrations/providers/{document_store,message_bus,observability_backend}/*/manifest.py`. Internal/platform rows: explicit registry (`sqlite-file`, `in-process-async`, `observability_export_semantics`).
+
+| Provider | Class | Domain | Support status | Failure/recovery proof |
+| -------- | ----- | ------ | -------------- | ---------------------- |
+| `sqlite-file` | PLATFORM_INTERNAL | persistence | SUPPORTED + QUALIFIED | `close()` then fresh adapter read — `test_x5_sqlite_file_persistence_qualification.py` |
+| `kafka` | EXTERNAL_VENDOR | transport | SUPPORTED + QUALIFIED | unreachable endpoint + fresh provider; public `MessageConsumer.close()` redelivery |
+| `mongodb` | EXTERNAL_VENDOR | persistence | SUPPORTED + NOT QUALIFIED | D1-R1 when `INTERGRAX_MONGODB_URI` set |
+| `observability_export_semantics` | PLATFORM_EXPORT_SEMANTICS | telemetry | SUPPORTED + QUALIFIED | HARDEN-3C + `test_export_policy.py` (not live OTLP endpoint) |
+| `otel` (+ other `observability_backend/*`) | EXTERNAL_VENDOR | telemetry | ADAPTER ONLY | catalog manifest; no X5A live collector qualification |
+| Other `message_bus/*` / `document_store/*` manifests | EXTERNAL_VENDOR | transport / persistence | ADAPTER ONLY | anti-drift gate — `test_obs_diag_x5a_provider_evidence_integrity.py` |
 
 **Explicit remaining limitations (documentation SSOT):**
 
 | Limitation | Status |
 | ---------- | ------ |
 | **DG-005** process-isolated diagnostics over persisted execution evidence (`ExecutionReconstructionReader`; no writer `RuntimeEventBus` sharing); qualification harness is **provider-neutral** (SQLite `sqlite-file` is the current qualified backend) | **PROVEN** — `test_obs_dg005_distributed_topology_qualification.py` |
-| Kafka → worker → execution → diagnostics (full external spine) | **P4 NOT PROVEN** (in-process async worker spine **P3 PROVEN** — `test_obs_universal_spine_async_e2e.py`) |
-| HITL pause/restart/resume → terminal diagnostics | **PARTIAL P3** — durable checkpoint round-trip + GR-5 continuation spine (`test_obs_universal_spine_hitl_restart_e2e.py`); long-running Nexus resume integration **PRE_EXISTING** at HEAD (`handle_task` / `run_id`) |
-| Operator HTTP/dashboard read | Central **write** path qualified; **read** exposure varies by PRODUCT host |
+| Kafka → worker → execution → diagnostics (full external spine) | **P4 PROVEN** — OBS-DIAG-X4 `test_obs_universal_spine_cross_process_x4_e2e.py` (in-process async worker spine **P3 PROVEN** — `test_obs_universal_spine_async_e2e.py`) |
+| HITL pause/restart/resume → terminal diagnostics | **P3 PROVEN** in-process durable rebuild (`test_obs_universal_spine_hitl_restart_e2e.py`); **P4 PROVEN** OS process pause/resume (OBS-DIAG-X4); **P4 PROVEN** cross-process resume diagnostic anomaly → durable Problem + fresh read (OBS-DIAG-X4A — [`OBS_DIAG_HITL_FAILURE_DIAGNOSTIC_CLOSURE_X4A.md`](../maintainers/audits/OBS_DIAG_HITL_FAILURE_DIAGNOSTIC_CLOSURE_X4A.md)); external HITL service **NOT_PROVEN** (post-X5) |
+| External provider qualification (X5 / X5A) | Persistence / Kafka transport / platform export semantics vs catalog telemetry | **RECONCILED** — X5 + [`OBS_DIAG_PROVIDER_EVIDENCE_INTEGRITY_X5A.md`](../maintainers/audits/OBS_DIAG_PROVIDER_EVIDENCE_INTEGRITY_X5A.md) |
+| Operator HTTP/dashboard read | **CORE READ CONTRACT = PROVEN**; **UNIVERSAL HOST EXPOSURE = PARTIAL** |
+| Diagnostic host composition replaceability | Engine injection **PROVEN**; standard host replaceability **PROVEN** (OBS-DIAG-X2 CLOSED) |
+| Global entry-path zero-bypass | **PROVEN** (OBS-DIAG-X3/X3A gates + representative E2E) |
+| Universal surface anti-drift (workers + PRODUCT/LAB) | **PROVEN** (OBS-DIAG-X3A — [`OBS_DIAG_UNIVERSAL_SURFACE_ANTIDRIFT_X3A.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_SURFACE_ANTIDRIFT_X3A.md)) |
+
+### Enterprise gap baseline (X1 historical → X2 update)
+
+| Gap | Current status | Why not closed | Required closure task |
+| --- | -------------- | -------------- | --------------------- |
+| diagnostic composition replaceability | **PROVEN** (X2) | — | OBS-DIAG-X2 CLOSED |
+| global entry-path zero-bypass proof | **PROVEN** | X3 qualification | — |
+| external Kafka full spine E2E | **PROVEN** (X4) | — | OBS-DIAG-X4 CLOSED |
+| HITL full restart proof | **PROVEN (P4 OS process + X4A durable Problem on resume anomaly)** | External HITL vendor | OBS-DIAG-X5+ |
+| universal product/scenario E2E adoption | **PARTIAL** | 4 initialized; not all E2E/read | OBS-DIAG-X6 |
+| provider matrix (persistence / transport / telemetry) | **RECONCILED** | X5A manifest anti-drift + lifecycle integrity | OBS-DIAG-X5A CLOSED |
+| operator read universal exposure | **PARTIAL** | Host HTTP uneven | OBS-DIAG-X8 |
+| vendor hardening | **OPEN** / **PARTIAL** | OTLP slice only | OBS-DIAG-X9 |
+| OECP | **PLANNED** | Architecture only | OBS-ECP phases |
+
+Full matrices: [`OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md).
+
+| Axis | Level |
+| ---- | ----- |
+| Architecture (A) | **A4** |
+| Implementation (I) | **I4 core** |
+| Production (P) | **P2 / P3 mixed** |
+| Evidence (E) | **E3** |
 
 Execution System owns root execution authority. Nexus = orchestration participant, not execution authority.
 

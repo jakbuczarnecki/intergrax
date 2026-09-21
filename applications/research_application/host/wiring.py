@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from intergrax.applications._shared.environment_wiring import wire_application_environment
+from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
 from intergrax.applications._shared.wiring import build_manifest_development_registry
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from research_application.host.agent_builders import RESEARCH_AGENT_BUILDERS
+from research_application.host.agent_builders import build_research_agent_builders
 from research_application.host.environment_profile import build_research_environment_profile
 from research_application.host.settings import ResearchBackendSettings
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
@@ -33,10 +34,20 @@ def build_research_registry(
         settings=settings,
         websearch_executor=settings.websearch_executor,
     )
+    composition = env_wiring.composition
+    builders = build_research_agent_builders(
+        tool_profile=composition.tool_profile,
+        lab_harness=lab_harness_context_from_build_context(
+            env_wiring.build_context,
+            tool_wiring_context=composition.tool_wiring_context,
+            tool_registry=composition.tool_registry,
+        ),
+    )
     return build_manifest_development_registry(
         manifest,
         env_wiring.build_context,
-        builders=RESEARCH_AGENT_BUILDERS,
+        builders=builders,
+        composition=composition,
     )
 
 

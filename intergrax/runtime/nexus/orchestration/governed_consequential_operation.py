@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from typing import Generic, TypeVar
 
 from intergrax.contracts.collaborative_work import CollaborativeWorkEnforcementRequest
+from intergrax.contracts.execution_continuation import ExecutionContinuationPort
+from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
     MeaningfulSideEffectAuthorizationResult,
@@ -24,7 +26,17 @@ from intergrax.contracts.orchestration_topology import (
     OrchestrationSlotOutcome,
     OrchestrationSlotStatus,
 )
-from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.runtime.governance.active_governed_execution_task import (
+    peek_governed_execution_task,
+)
+from intergrax.runtime.policy.mse_hitl_effect_gate import (
+    MseHitlEffectGateDisposition,
+    evaluate_mse_hitl_effect_gate,
+    resolve_continuation_port_for_mse_hitl_gate,
+)
+from intergrax.contracts.orchestration_consequential_effect_reliability import (
+    OrchestrationConsequentialEffectReliabilityPort,
+)
 from intergrax.runtime.policy.side_effect_authorization_errors import (
     MeaningfulSideEffectAuthorizationRequiredError,
     SideEffectAuthorizationFailureReason,
@@ -36,6 +48,15 @@ ResultT = TypeVar("ResultT")
 
 class OrchestrationConsequentialEffectBlockedError(RuntimeError):
     """Raised when MSE denies or blocks a non-tool orchestration consequential effect."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        governed_continuation_request: GovernedContinuationRequest | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.governed_continuation_request = governed_continuation_request
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +72,8 @@ class GovernedOrchestrationSlotExecutor(Generic[PayloadT, ResultT]):
     ]
     is_consequential_slot: Callable[[OrchestrationSlotId, PayloadT], bool] | None = None
     source_agent_id: str = "platform.orchestration.graph_slot"
+    continuation_port: ExecutionContinuationPort | None = None
+    effect_reliability: OrchestrationConsequentialEffectReliabilityPort | None = None
 
     async def execute_slot(
         self,
@@ -71,6 +94,7 @@ class GovernedOrchestrationSlotExecutor(Generic[PayloadT, ResultT]):
                 production_mode=self.production_mode,
                 source_agent_id=self.source_agent_id,
                 source_step_id=str(slot_id),
+                continuation_port=self.continuation_port,
             )
         except (
             OrchestrationConsequentialEffectBlockedError,
@@ -81,13 +105,44 @@ class GovernedOrchestrationSlotExecutor(Generic[PayloadT, ResultT]):
                 if isinstance(exc, MeaningfulSideEffectAuthorizationRequiredError)
                 else "meaningful_side_effect_blocked"
             )
+            if (
+                isinstance(exc, OrchestrationConsequentialEffectBlockedError)
+                and exc.governed_continuation_request is not None
+            ):
+                code = "meaningful_side_effect_require_human"
             raise OrchestrationSlotExecutionError(code=code, message=str(exc)) from exc
+        return await self._execute_admitted_physical_effect(
+            slot_id=slot_id,
+            payload=payload,
+            operation_id=str(enforcement_request.operation_id),
+        )
+
+    async def _execute_admitted_physical_effect(
+        self,
+        *,
+        slot_id: OrchestrationSlotId,
+        payload: PayloadT,
+        operation_id: str,
+    ) -> ResultT:
+        if (
+            self.production_mode
+            and self.effect_reliability is not None
+        ):
+            return await self.effect_reliability.execute_admitted_effect(
+                slot_id=str(slot_id),
+                operation_id=operation_id,
+                idempotency_key=operation_id,
+                execute=lambda: self.inner.execute_slot(
+                    slot_id=slot_id,
+                    payload=payload,
+                ),
+            )
         return await self.inner.execute_slot(slot_id=slot_id, payload=payload)
 
 
 @dataclass(frozen=True, slots=True)
 class GovernedOrchestrationSlotContinuationExecutor(Generic[PayloadT, ResultT]):
-    """Wrap slot continuation with fresh canonical MSE before physical effect."""
+    """Wrap slot continuation with fresh canonical MSE + HITL gate before physical effect."""
 
     inner: OrchestrationSlotContinuationExecutor[PayloadT, ResultT]
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None
@@ -98,6 +153,8 @@ class GovernedOrchestrationSlotContinuationExecutor(Generic[PayloadT, ResultT]):
     ]
     is_consequential_slot: Callable[[OrchestrationSlotId, PayloadT], bool] | None = None
     source_agent_id: str = "platform.orchestration.graph_slot"
+    continuation_port: ExecutionContinuationPort | None = None
+    effect_reliability: OrchestrationConsequentialEffectReliabilityPort | None = None
 
     async def continue_slot(
         self,
@@ -118,6 +175,7 @@ class GovernedOrchestrationSlotContinuationExecutor(Generic[PayloadT, ResultT]):
                 production_mode=self.production_mode,
                 source_agent_id=self.source_agent_id,
                 source_step_id=str(slot_id),
+                continuation_port=self.continuation_port,
             )
         except (
             OrchestrationConsequentialEffectBlockedError,
@@ -128,7 +186,22 @@ class GovernedOrchestrationSlotContinuationExecutor(Generic[PayloadT, ResultT]):
                 if isinstance(exc, MeaningfulSideEffectAuthorizationRequiredError)
                 else "meaningful_side_effect_blocked"
             )
+            if (
+                isinstance(exc, OrchestrationConsequentialEffectBlockedError)
+                and exc.governed_continuation_request is not None
+            ):
+                code = "meaningful_side_effect_require_human"
             raise OrchestrationSlotExecutionError(code=code, message=str(exc)) from exc
+        if self.production_mode and self.effect_reliability is not None:
+            return await self.effect_reliability.execute_admitted_effect(
+                slot_id=str(slot_id),
+                operation_id=str(enforcement_request.operation_id),
+                idempotency_key=str(enforcement_request.operation_id),
+                execute=lambda: self.inner.continue_slot(
+                    slot_id=slot_id,
+                    payload=payload,
+                ),
+            )
         return await self.inner.continue_slot(slot_id=slot_id, payload=payload)
 
 
@@ -139,8 +212,9 @@ def authorize_orchestration_consequential_effect(
     production_mode: bool,
     source_agent_id: str,
     source_step_id: str | None,
+    continuation_port: ExecutionContinuationPort | None = None,
 ) -> MeaningfulSideEffectAuthorizationResult:
-    """Fail-closed MSE gate before a non-tool orchestration physical effect."""
+    """Fail-closed MSE + HITL gate before a non-tool orchestration physical effect."""
     if boundary is None:
         if production_mode:
             raise MeaningfulSideEffectAuthorizationRequiredError(
@@ -175,17 +249,20 @@ def authorize_orchestration_consequential_effect(
             reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
         ) from None
 
-    decision = authorization.decision
-    if decision.action in (
-        PolicyAction.REQUIRE_HUMAN,
-        PolicyAction.ESCALATE,
-        PolicyAction.DENY,
-        PolicyAction.MODIFY,
-    ) or not authorization.permitted:
-        raise OrchestrationConsequentialEffectBlockedError(
-            f"orchestration consequential effect blocked: {decision.action.value}",
-        )
-    return authorization
+    gate = evaluate_mse_hitl_effect_gate(
+        authorization,
+        enforcement_request=enforcement_request,
+        task=peek_governed_execution_task(),
+        continuation_port=resolve_continuation_port_for_mse_hitl_gate(continuation_port),
+    )
+    if gate.disposition is MseHitlEffectGateDisposition.PROCEED:
+        return gate.authorization
+
+    decision = gate.authorization.decision
+    raise OrchestrationConsequentialEffectBlockedError(
+        f"orchestration consequential effect blocked: {decision.action.value}",
+        governed_continuation_request=gate.governed_continuation_request,
+    )
 
 
 async def execute_governed_orchestration_consequential_effect(
@@ -196,6 +273,7 @@ async def execute_governed_orchestration_consequential_effect(
     source_agent_id: str,
     source_step_id: str | None,
     effect: Callable[[], Awaitable[ResultT]],
+    effect_reliability: OrchestrationConsequentialEffectReliabilityPort | None = None,
 ) -> ResultT:
     """Authorize then run one async consequential orchestration effect (exactly once on ALLOW)."""
     authorize_orchestration_consequential_effect(
@@ -205,6 +283,13 @@ async def execute_governed_orchestration_consequential_effect(
         source_agent_id=source_agent_id,
         source_step_id=source_step_id,
     )
+    if production_mode and effect_reliability is not None:
+        return await effect_reliability.execute_admitted_effect(
+            slot_id=source_step_id or str(enforcement_request.operation_id),
+            operation_id=str(enforcement_request.operation_id),
+            idempotency_key=str(enforcement_request.operation_id),
+            execute=effect,
+        )
     return await effect()
 
 
@@ -217,6 +302,11 @@ def orchestration_slot_outcome_from_blocked_effect(
     code = "meaningful_side_effect_blocked"
     if isinstance(exc, MeaningfulSideEffectAuthorizationRequiredError):
         code = "meaningful_side_effect_not_configured"
+    elif (
+        isinstance(exc, OrchestrationConsequentialEffectBlockedError)
+        and exc.governed_continuation_request is not None
+    ):
+        code = "meaningful_side_effect_require_human"
     return OrchestrationSlotOutcome(
         slot_id=slot_id,
         status=OrchestrationSlotStatus.FAILURE,

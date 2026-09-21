@@ -13,6 +13,7 @@ from intergrax.applications.contracts.environment_profile import IdentityProfile
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.identity_provider import IdentityProviderBackend
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 
 def resolve_identity_provider_backend(
@@ -26,7 +27,7 @@ def resolve_identity_provider_backend(
         slug = integration_profile.slug_for_category(IntegrationCategory.IDENTITY_PROVIDER)
         if slug is None:
             return None
-        backend = integration_profile.resolve(IntegrationCategory.IDENTITY_PROVIDER)
+        backend = resolve_from_profile(integration_profile, IntegrationCategory.IDENTITY_PROVIDER)
     if isinstance(backend, IdentityProviderBackend):
         return backend
     return None

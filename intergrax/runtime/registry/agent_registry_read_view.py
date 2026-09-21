@@ -7,8 +7,10 @@ from __future__ import annotations
 
 from typing import List, Optional
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.routable_tier2_agent import RoutableTier2Agent
+from intergrax.contracts.task_envelope import TaskEnvelope
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
@@ -21,7 +23,7 @@ class AgentRegistryReadView:
     def __init__(self, delegate: AgentRegistry) -> None:
         self._delegate = delegate
 
-    def get(self, agent_id: str) -> Agent:
+    def get(self, agent_id: str) -> Tier2Agent:
         return self._delegate.get(agent_id)
 
     def get_contract(self, agent_id: str) -> AgentContract:
@@ -47,7 +49,7 @@ class AgentRegistryReadView:
         capability: str,
         *,
         production_mode: bool = False,
-    ) -> List[Agent]:
+    ) -> List[Tier2Agent]:
         return self._delegate.find_by_capability(
             capability,
             production_mode=production_mode,
@@ -55,10 +57,10 @@ class AgentRegistryReadView:
 
     def find_best_match(
         self,
-        task_context: object,
+        task_context: TaskEnvelope,
         *,
         production_mode: bool = False,
-    ) -> Optional[Agent]:
+    ) -> Optional[RoutableTier2Agent]:
         return self._delegate.find_best_match(
             task_context,
             production_mode=production_mode,

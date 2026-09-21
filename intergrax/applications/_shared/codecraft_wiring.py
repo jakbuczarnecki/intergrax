@@ -11,7 +11,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications._shared.codegen_llm_resolver import resolve_codegen_llm_adapter
 from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.tools.providers.codecraft.service import CODECRAFT_TOOL_IDS
-from intergrax.tools.registry.profile import ToolProfile
+from intergrax.tools.registry.profile import ToolProfile, is_tool_enabled
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 
@@ -33,7 +33,7 @@ def tool_profile_with_codecraft(env: ApplicationEnvironmentProfile) -> ToolProfi
     cc = env.codecraft_profile
     if cc is None or not cc.generation_allowed():
         return profile
-    if all(profile.is_tool_enabled(tool_id) for tool_id in CODECRAFT_TOOL_IDS):
+    if all(is_tool_enabled(profile, tool_id) for tool_id in CODECRAFT_TOOL_IDS):
         return profile
     if profile.enabled_bundles and not profile.enabled:
         bundles = list(profile.enabled_bundles)

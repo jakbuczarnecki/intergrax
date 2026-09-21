@@ -7,15 +7,17 @@ from __future__ import annotations
 
 from typing import List, Optional, Protocol, runtime_checkable
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.routable_tier2_agent import RoutableTier2Agent
+from intergrax.contracts.task_envelope import TaskEnvelope
+from intergrax.contracts.tier2_agent import Tier2Agent
 
 
 @runtime_checkable
 class AgentRegistryRead(Protocol):
     """Runtime read surface for agents materialized from an active RuntimeRevision."""
 
-    def get(self, agent_id: str) -> Agent:
+    def get(self, agent_id: str) -> Tier2Agent:
         """Return the registered agent for ``agent_id``."""
 
     def get_contract(self, agent_id: str) -> AgentContract:
@@ -41,15 +43,15 @@ class AgentRegistryRead(Protocol):
         capability: str,
         *,
         production_mode: bool = False,
-    ) -> List[Agent]:
+    ) -> List[Tier2Agent]:
         """Return routable agents exposing ``capability``."""
 
     def find_best_match(
         self,
-        task_context: object,
+        task_context: TaskEnvelope,
         *,
         production_mode: bool = False,
-    ) -> Optional[Agent]:
+    ) -> Optional[RoutableTier2Agent]:
         """Return the highest-scoring routable agent for ``task_context``."""
 
 

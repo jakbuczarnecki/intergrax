@@ -3,7 +3,7 @@
 import pytest
 
 from intergrax.agents.authoring.uaep_kernel_step_execution import UaepKernelStepExecution
-from intergrax.agents.authoring.uaep_step_bridge import (
+from intergrax.runtime.nexus.agents.uaep_step_bridge import (
     agent_decision_to_step_outcome,
     build_kernel_session,
     execute_uaep_step_via_kernel,

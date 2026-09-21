@@ -130,8 +130,14 @@ class RuntimeToolGateway:
             from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
                 DeclarativePolicyHitlPauseRequired,
             )
+            from intergrax.runtime.nexus.tools.mse_governed_continuation_hitl_bridge import (
+                GovernedContinuationHitlPauseRequired,
+            )
 
-            if isinstance(exc, DeclarativePolicyHitlPauseRequired):
+            if isinstance(
+                exc,
+                (DeclarativePolicyHitlPauseRequired, GovernedContinuationHitlPauseRequired),
+            ):
                 raise
             return ToolResponse(
                 request_id=request.request_id,

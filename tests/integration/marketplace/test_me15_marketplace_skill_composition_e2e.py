@@ -43,6 +43,7 @@ from intergrax.skills.dynamic_acquisition import (
 from intergrax.skills.errors import DynamicSkillAcquisitionResolutionError
 from intergrax.skills.host_lifecycle import SkillHostLifecycleService
 from intergrax.skills.identity import SkillDiscoveryCandidateIdentity, SkillPackageCandidate
+from intergrax.skills.registry.profile import is_skill_enabled
 from testing_support.canonical_me15_reference_skill import (
     ME15_DIGEST_V1,
     ME15_DIGEST_V2,
@@ -356,7 +357,7 @@ def test_me15_skill_absent_before_lifecycle_and_bound_after_handoff() -> None:
     assert not stack.lifecycle.is_bound(ME15_SKILL_LOGICAL_ID)
     stack.run_marketplace_skill_e2e(handoff_id="handoff-before-after")
     assert stack.lifecycle.is_bound(ME15_SKILL_LOGICAL_ID)
-    assert stack.lifecycle.skill_profile.is_skill_enabled(ME15_SKILL_LOGICAL_ID)
+    assert is_skill_enabled(stack.lifecycle.skill_profile, ME15_SKILL_LOGICAL_ID)
 
 
 def test_me15_custom_skill_provider_plugs_in_without_core_changes() -> None:

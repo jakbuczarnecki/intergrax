@@ -74,10 +74,15 @@ class SpeechProfile(BaseModel):
             return IntegrationSpeechAdapter(self.backend, provider_slug=slug)
 
         if self.binding is not None:
-            backend = IntegrationProfile(
-                speech_provider=self.binding,
-                options=self._profile_options(secrets=secrets, overrides=overrides),
-            ).resolve(IntegrationCategory.SPEECH_PROVIDER)
+            from intergrax.integrations.registry.factory import resolve_from_profile
+
+            backend = resolve_from_profile(
+                IntegrationProfile(
+                    speech_provider=self.binding,
+                    options=self._profile_options(secrets=secrets, overrides=overrides),
+                ),
+                IntegrationCategory.SPEECH_PROVIDER,
+            )
             return IntegrationSpeechAdapter(backend, provider_slug=slug)
 
         kwargs = merge_secrets_into_options(slug, {**self.options, **overrides}, secrets)

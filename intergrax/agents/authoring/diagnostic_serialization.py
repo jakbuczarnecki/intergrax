@@ -8,7 +8,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from intergrax.contracts.agent_run_trace import AgentRunTrace
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.contracts.tracing import DiagnosticPayload
 
 
 def serialize_diagnostic_payload(

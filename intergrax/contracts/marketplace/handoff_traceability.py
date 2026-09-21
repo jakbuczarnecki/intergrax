@@ -9,14 +9,25 @@ from datetime import datetime
 from enum import StrEnum
 from typing import Final, Literal, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    ValidationInfo,
+    field_validator,
+    model_validator,
+)
 
 from intergrax.contracts.capability_catalog._validation import require_non_empty_text
 from intergrax.contracts.capability_catalog.kind import CapabilityKind
-from intergrax.contracts.capability_catalog.release_identity import CapabilityReleaseIdentity
+from intergrax.contracts.capability_catalog.release_identity import (
+    CapabilityReleaseIdentity,
+)
 from intergrax.contracts.marketplace.query_context import MarketplaceQueryContext
 
-SCHEMA_CAPABILITY_DISCOVERY_TRACE_FACTS_V1: Final = "capability_discovery_trace_facts.v1"
+SCHEMA_CAPABILITY_DISCOVERY_TRACE_FACTS_V1: Final = (
+    "capability_discovery_trace_facts.v1"
+)
 SCHEMA_CAPABILITY_MARKETPLACE_EXPLICIT_SELECTION_V1: Final = (
     "capability_marketplace_explicit_selection.v1"
 )
@@ -112,7 +123,12 @@ class CapabilityHandoffEnvelope(BaseModel):
     explicit_selection: CapabilityMarketplaceExplicitSelection
     recorded_at: datetime
 
-    @field_validator("handoff_id", "discovery_correlation_id", "selection_id", "downstream_consumer_id")
+    @field_validator(
+        "handoff_id",
+        "discovery_correlation_id",
+        "selection_id",
+        "downstream_consumer_id",
+    )
     @classmethod
     def _validate_handoff_ids(cls, value: str, info: ValidationInfo) -> str:
         return require_non_empty_text(value, label=str(info.field_name))
@@ -126,11 +142,17 @@ class CapabilityHandoffEnvelope(BaseModel):
 
     @model_validator(mode="after")
     def _correlations_align(self) -> CapabilityHandoffEnvelope:
-        if self.discovery_correlation_id != self.discovery_trace.discovery_correlation_id:
+        if (
+            self.discovery_correlation_id
+            != self.discovery_trace.discovery_correlation_id
+        ):
             raise ValueError("discovery_correlation_id must match discovery_trace")
         if self.selection_id != self.explicit_selection.selection_id:
             raise ValueError("selection_id must match explicit_selection")
-        if self.discovery_correlation_id != self.explicit_selection.discovery_correlation_id:
+        if (
+            self.discovery_correlation_id
+            != self.explicit_selection.discovery_correlation_id
+        ):
             raise ValueError("discovery_correlation_id must match explicit_selection")
         if self.selected_release != self.explicit_selection.selected_release:
             raise ValueError("selected_release must match explicit_selection")
@@ -180,11 +202,15 @@ class CapabilityHandoffDeliveryAdmissionError(Exception):
     """Delivery idempotency authority failed — delivery must not proceed."""
 
 
-class CapabilityHandoffDeliveryLifecycleTransitionError(CapabilityHandoffDeliveryAdmissionError):
+class CapabilityHandoffDeliveryLifecycleTransitionError(
+    CapabilityHandoffDeliveryAdmissionError
+):
     """Lifecycle transition failed after a bounded delivery step — must not be ignored."""
 
 
-class CapabilityHandoffDeliveryOutcomeUncertainError(CapabilityHandoffDeliveryAdmissionError):
+class CapabilityHandoffDeliveryOutcomeUncertainError(
+    CapabilityHandoffDeliveryAdmissionError
+):
     """Consumer may have succeeded but delivered state could not be committed."""
 
 
@@ -211,23 +237,30 @@ class CapabilityHandoffConsumer(Protocol):
     @property
     def consumer_id(self) -> str:
         """Stable consumer identifier recorded on the envelope."""
+        ...
 
     def consume(self, envelope: CapabilityHandoffEnvelope) -> None:
-        """Accept handoff envelope; raise ``CapabilityHandoffConsumerError`` on failure."""
+        """Accept handoff envelope; raise ``CapabilityHandoffConsumerError`` with typed disposition."""
+        ...
 
 
 @runtime_checkable
 class CapabilityHandoffDeliveryAdmission(Protocol):
     """Mandatory delivery lifecycle authority — independent of trace persistence."""
 
-    def reserve(self, envelope: CapabilityHandoffEnvelope) -> CapabilityHandoffDeliveryAdmissionResult:
+    def reserve(
+        self, envelope: CapabilityHandoffEnvelope
+    ) -> CapabilityHandoffDeliveryAdmissionResult:
         """Atomically reserve a delivery attempt; raise ``CapabilityHandoffIdentityConflictError`` on clash."""
+        ...
 
     def mark_delivered(self, handoff_id: str) -> None:
         """Commit successful delivery after downstream consumer succeeds."""
+        ...
 
     def mark_delivery_failed(self, handoff_id: str) -> None:
         """Release an in-progress reservation so an identical envelope may retry."""
+        ...
 
 
 @runtime_checkable
@@ -236,16 +269,42 @@ class CapabilityHandoffTraceEvidenceConsumer(Protocol):
 
     def record_handoff(self, envelope: CapabilityHandoffEnvelope) -> bool:
         """Return True when a new canonical fact was recorded; False when deduped."""
+        ...
+
+
+class CapabilityHandoffConsumerFailureDisposition(StrEnum):
+    """Public consumer failure semantics — not inferred from exception message text."""
+
+    BLOCKED = "blocked"
+    UNAVAILABLE = "unavailable"
+    REQUIRES_HITL = "requires_hitl"
+    FAILED = "failed"
 
 
 class CapabilityHandoffConsumerError(Exception):
     """Typed failure from a handoff consumer — must not be swallowed."""
+
+    disposition: CapabilityHandoffConsumerFailureDisposition
+    detail: str
+
+    def __init__(
+        self,
+        detail: str,
+        *,
+        disposition: CapabilityHandoffConsumerFailureDisposition = (
+            CapabilityHandoffConsumerFailureDisposition.FAILED
+        ),
+    ) -> None:
+        super().__init__(detail)
+        self.detail = detail
+        self.disposition = disposition
 
 
 __all__ = [
     "CapabilityDiscoveryTraceFacts",
     "CapabilityHandoffConsumer",
     "CapabilityHandoffConsumerError",
+    "CapabilityHandoffConsumerFailureDisposition",
     "CapabilityHandoffConsumerTarget",
     "CapabilityHandoffDeliveryAdmission",
     "CapabilityHandoffDeliveryAdmissionError",

@@ -13,6 +13,7 @@ from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.speech_adapters.registry.profile import SPEECH_PROFILE_EXTRA_KEY
 from intergrax.tools.providers.speech.backends import SPEECH_BACKEND_EXTRA_KEY
 from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 
 def wire_integration_tool_context(
@@ -120,6 +121,6 @@ def _resolve_optional(profile: IntegrationProfile, category: IntegrationCategory
     if slug is None:
         return None
     try:
-        return profile.resolve(category)
+        return resolve_from_profile(profile, category)
     except Exception:
         return None

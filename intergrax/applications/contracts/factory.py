@@ -5,30 +5,28 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Protocol
+from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
 
-from intergrax.agents.agent_contract import Agent
+from intergrax.contracts.tier2_agent import Tier2Agent
 
 if TYPE_CHECKING:
     from intergrax.applications.contracts.build_context import ApplicationBuildContext
     from intergrax.applications.contracts.manifest import AgentBinding
 
+TSettings = TypeVar("TSettings")
 
-class CanonicalAgentFactory(Protocol):
-    """Strict production factory contract: ``(ctx, binding) -> Agent``."""
+
+class CanonicalAgentFactory(Protocol, Generic[TSettings]):
+    """Strict production factory contract: ``(ctx, binding) -> Tier2Agent``."""
 
     def __call__(
         self,
-        ctx: ApplicationBuildContext,
+        ctx: ApplicationBuildContext[TSettings],
         binding: AgentBinding,
-    ) -> Agent: ...
+    ) -> Tier2Agent: ...
 
 
-# Broad alias retained for dev/lab builders and legacy compatibility surfaces.
-AgentFactory = Callable[..., Agent]
+# Public ABI name — structural :class:`CanonicalAgentFactory` (EBH-2D-C-R2).
+AgentFactory = CanonicalAgentFactory
 
-
-class SupportsAgentFactory(Protocol):
-    """Callable that builds a Tier-2 agent for a manifest binding."""
-
-    def __call__(self, ctx: object, binding: object) -> Agent: ...
+__all__ = ["AgentFactory", "CanonicalAgentFactory"]

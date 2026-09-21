@@ -66,7 +66,8 @@ from intergrax.tools.core.provider import ToolProvider
 from intergrax.skills.execution_binding import SkillExecutionPinningStore
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.runtime import SkillRegistry
-from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
+from intergrax.tools.registry import ToolProfile, ToolWiringContext, build_registry_from_profile
+from intergrax.tools.registry.read import ToolRegistryRead
 from intergrax.runtime.nexus.tools.tool_chain_spec import ToolChainSpec
 from intergrax.runtime.nexus.tools.tool_engine_hook import ToolEngineHook
 from intergrax.runtime.nexus.tools.tool_invocation_pattern import ToolInvocationPattern
@@ -274,7 +275,7 @@ class RuntimeConfig:
 
     skill_pinning_store: Optional[SkillExecutionPinningStore] = None
 
-    tool_registry: Optional[ToolRegistry] = None
+    tool_registry: Optional[ToolRegistryRead] = None
 
     tool_wiring_context: Optional[ToolWiringContext] = None
 

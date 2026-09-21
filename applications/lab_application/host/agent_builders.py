@@ -5,11 +5,12 @@
 from __future__ import annotations
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.applications._shared.application_composition_context import (
-    optional_factory_composition,
-)
-from intergrax.applications._shared.lab_harness_context import lab_harness_context_from_build_context
+from intergrax.agents.reference_harness import LabHarnessContext, default_reference_harness
+from intergrax.agents.tool_enablement import ToolEnablementProfile
+from intergrax.applications._shared.tool_enablement_binding import resolve_tool_enablement
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.factory import AgentFactory
+from intergrax.applications.contracts.manifest import AgentBinding
 from echo.echo_agent import EchoAgent
 from lab.mock_agents import (
     ComposerMockAgent,
@@ -23,47 +24,49 @@ from problem_radar.problem_radar_agent import ProblemRadarAgent
 from signoff_probe.signoff_probe_agent import SignoffProbeAgent
 
 
-def _harness_agent_factory(agent_cls: type[Agent]) -> AgentFactory:
-    def _build(ctx, _binding) -> Agent:
-        harness = lab_harness_context_from_build_context(ctx)
-        return agent_cls(harness)
+def build_lab_agent_builders(
+    *,
+    tool_profile: ToolEnablementProfile | None = None,
+    lab_harness: LabHarnessContext | None = None,
+) -> dict[type[Agent], AgentFactory]:
+    """Compose lab builder map with host-prepared lab harness dependency."""
+    harness = lab_harness if lab_harness is not None else default_reference_harness()
 
-    return _build
+    def _harness_agent_factory(agent_cls: type[Agent]) -> AgentFactory:
+        def _build(ctx: ApplicationBuildContext, _binding: AgentBinding) -> Agent:
+            _ = ctx
+            return agent_cls(harness)
+
+        return _build
+
+    def _build_research_agent(ctx: ApplicationBuildContext, _binding: AgentBinding) -> Agent:
+        environment = ctx.environment
+        env_profile = environment.tool_profile if environment is not None else None
+        resolved_profile = resolve_tool_enablement(
+            tool_profile,
+            environment_tool_profile=env_profile,
+        )
+        return ResearchAgent(
+            harness,
+            tool_profile=resolved_profile,
+            enable_websearch=True,
+        )
+
+    def _build_summary_agent(ctx: ApplicationBuildContext, _binding: AgentBinding) -> Agent:
+        _ = ctx
+        return SummaryAgent(harness)
+
+    return {
+        EchoAgent: _harness_agent_factory(EchoAgent),
+        ResearchMockAgent: _harness_agent_factory(ResearchMockAgent),
+        DocumentMockAgent: _harness_agent_factory(DocumentMockAgent),
+        ValidatorMockAgent: _harness_agent_factory(ValidatorMockAgent),
+        ComposerMockAgent: _harness_agent_factory(ComposerMockAgent),
+        SignoffProbeAgent: _harness_agent_factory(SignoffProbeAgent),
+        ProblemRadarAgent: _harness_agent_factory(ProblemRadarAgent),
+        ResearchAgent: _build_research_agent,
+        SummaryAgent: _build_summary_agent,
+    }
 
 
-def _build_research_agent(ctx, _binding) -> Agent:
-    harness = lab_harness_context_from_build_context(ctx)
-    composition = optional_factory_composition()
-    environment = ctx.environment
-    tool_profile = (
-        composition.tool_profile
-        if composition is not None and composition.tool_profile is not None
-        else (environment.tool_profile if environment is not None else None)
-    )
-    tool_wiring_context = (
-        composition.tool_wiring_context if composition is not None else None
-    )
-    return ResearchAgent(
-        harness,
-        tool_profile=tool_profile,
-        tool_wiring_context=tool_wiring_context,
-        enable_websearch=True,
-    )
-
-
-def _build_summary_agent(ctx, _binding) -> Agent:
-    harness = lab_harness_context_from_build_context(ctx)
-    return SummaryAgent(harness)
-
-
-LAB_AGENT_BUILDERS: dict[type[Agent], AgentFactory] = {
-    EchoAgent: _harness_agent_factory(EchoAgent),
-    ResearchMockAgent: _harness_agent_factory(ResearchMockAgent),
-    DocumentMockAgent: _harness_agent_factory(DocumentMockAgent),
-    ValidatorMockAgent: _harness_agent_factory(ValidatorMockAgent),
-    ComposerMockAgent: _harness_agent_factory(ComposerMockAgent),
-    SignoffProbeAgent: _harness_agent_factory(SignoffProbeAgent),
-    ProblemRadarAgent: _harness_agent_factory(ProblemRadarAgent),
-    ResearchAgent: _build_research_agent,
-    SummaryAgent: _build_summary_agent,
-}
+LAB_AGENT_BUILDERS: dict[type[Agent], AgentFactory] = build_lab_agent_builders()

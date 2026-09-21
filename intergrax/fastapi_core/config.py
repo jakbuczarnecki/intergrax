@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum
 from typing import FrozenSet, Optional
+
+from intergrax.contracts.api_environment import ApiEnvironment
 
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.auth.provider import AuthProvider
@@ -15,12 +16,6 @@ from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.rate_limit.policy import RateLimitPolicy
 from intergrax.fastapi_core.runs.service import RunService
 from intergrax.fastapi_core.runs.store_base import RunStore
-
-
-class ApiEnvironment(str, Enum):
-    DEV = "dev"
-    STAGE = "stage"
-    PROD = "prod"
 
 
 @dataclass(frozen=True)

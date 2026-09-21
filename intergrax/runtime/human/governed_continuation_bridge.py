@@ -33,6 +33,7 @@ from intergrax.runtime.execution.continuation.composition import (
     wire_execution_engine_continuation_dependencies,
 )
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
+    InternalHitlContinuationCapabilityError,
     InternalOrchestrationContinuation,
     establish_canonical_hitl_pause,
     require_internal_hitl_continuation,
@@ -156,6 +157,12 @@ def _resolve_hitl_continuation_for_bridge(
     if hitl_continuation is not None:
         return require_internal_hitl_continuation(hitl_continuation)
     active_store = peek_active_execution_continuation_state_store()
+    if active_store is None:
+        raise InternalHitlContinuationCapabilityError(
+            "canonical execution continuation required for governed HITL pause; "
+            "inject InternalOrchestrationContinuation or bind active "
+            "ExecutionContinuationStateStore (no silent in-memory downgrade)",
+        )
     deps = wire_execution_engine_continuation_dependencies(state_store=active_store)
     return InternalOrchestrationContinuation(
         port=deps.continuation,

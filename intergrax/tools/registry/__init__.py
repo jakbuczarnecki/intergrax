@@ -20,7 +20,8 @@ from intergrax.tools.registry.catalog import (
     unregister_tool_bundle,
 )
 from intergrax.tools.registry.factory import build_registry_from_profile, enabled_tool_ids_for_profile
-from intergrax.tools.registry.profile import ToolProfile, default_lab_tool_profile
+from intergrax.tools.registry.profile import ToolProfile, default_lab_tool_profile, is_tool_enabled
+from intergrax.tools.registry.read import ToolRegistryRead
 from intergrax.tools.registry.runtime import RegisteredTool, ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
@@ -31,6 +32,7 @@ __all__ = [
     "ToolBundleStatus",
     "ToolProfile",
     "ToolRegistry",
+    "ToolRegistryRead",
     "ToolWiringContext",
     "UnknownToolBundleError",
     "build_registry_from_profile",
@@ -39,6 +41,7 @@ __all__ = [
     "default_lab_tool_profile",
     "enabled_tool_ids_for_profile",
     "get_bundle",
+    "is_tool_enabled",
     "iter_bundles",
     "list_bundle_ids",
     "list_catalog_tool_ids",

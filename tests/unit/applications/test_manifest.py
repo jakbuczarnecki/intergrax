@@ -66,9 +66,11 @@ def test_application_manifest_lab_factory() -> None:
 
 def test_application_manifest_forbids_extra_fields() -> None:
     with pytest.raises(ValidationError):
-        ApplicationManifest.lab(
+        ApplicationManifest(
             app_id="x",
             name="X",
+            route_prefix="/v1/x",
+            env_prefix="X_",
             agents=[AgentBinding.mount(EchoAgent, contract_id="echo")],
             unknown_field=True,
         )

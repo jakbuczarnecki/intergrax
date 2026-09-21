@@ -5,12 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar
 
-from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
+from intergrax.applications._shared.settings_loader import (
+    ApplicationSettingsEnvHost,
+    EnvReader,
+)
+from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 
 
 @dataclass(frozen=True, kw_only=True)
-class ResearchBackendSettings(IntergraxApplicationSettingsBase):
+class ResearchBackendSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
     """Environment for research_application (scaffolded lab profile)."""
 
     env_prefix: ClassVar[str] = "RESEARCH_"

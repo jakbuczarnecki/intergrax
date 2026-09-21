@@ -5,7 +5,10 @@ from __future__ import annotations
 import pytest
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -31,7 +34,7 @@ from testing_support.builder import FakeLLMAdapter, build_in_memory_session_mana
 pytestmark = pytest.mark.unit
 
 
-class _PackAgent(Agent):
+class _PackAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         manifests = CustomPackSkillPlugin.skill_manifests()
         return AgentContract(
@@ -51,6 +54,13 @@ class _PackAgent(Agent):
 
     def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
         return CapabilityMatchResult(matched=True, agent_id="pack_stub", score=1.0)
+
+    def get_steps(self) -> list[AgentStep]:
+        return [AgentStep(step_id="pack", step_name="pack", step_index=0)]
+
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        _ = ctx
+        return StepOutput(step_id=step.step_id, summary="pack")
 
 
 @pytest.fixture(autouse=True)

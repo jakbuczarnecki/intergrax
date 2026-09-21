@@ -107,6 +107,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-MP-004](entries/2026-09-07/ADR-MP-004.md) | WorkArtifact collaborative ownership and version authority | Accepted (architecture only) |
 | [ADR-MP-005](entries/2026-09-08/ADR-MP-005.md) | Decision / Approval / Governance collaborative ownership (MP-4A era) | **Partially Superseded by ADR-MP-009** (historical MP-4A gate) |
 | [ADR-MP-009](entries/2026-09-15/ADR-MP-009.md) | MP-4 core rebase on canonical Decision / Execution / Governance / Evidence / Diagnostics | Accepted (MP-4R0 supersession gate) |
+| [ADR-MP-008](entries/2026-09-19/ADR-MP-008.md) | Workspace platformization / LKW Multiplayer adoption (MP-7A) | Accepted (architecture gate; MP-7B+ not started) |
 | [ADR-AGENT-004](entries/2026-08-12/ADR-AGENT-004.md) | Agent distribution, installation and enablement architecture (AGENT-PLATFORM-1) | Accepted (architecture only) |
 | [ADR-AGENT-005](entries/2026-08-17/ADR-AGENT-005.md) | Reference production process composition and AP-9/AP-10 store ownership (AGENT-CONSOLIDATION-3-ARCH) | Accepted (architecture only) |
 | [ADR-AGENT-006](entries/2026-09-01/ADR-AGENT-006.md) | Canonical runtime materialization authority - `RuntimeMaterializationRecord` (AC-3) | Accepted (architecture only) |
@@ -126,6 +127,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-GR-10-001](entries/2026-09-18/ADR-GR-10-001.md) | PRE_MODEL subject identity and execution governance context boundary (GR-10-R2-ADR1) | Accepted |
 | [ADR-GR-10-002](entries/2026-09-19/ADR-GR-10-002.md) | Canonical orchestration MSE authorization contract and fail-closed production composition (GR-10-R9-ADR1) | Accepted |
 | [ADR-GOVERNED-EXECUTION-003](entries/2026-09-18/ADR-GOVERNED-EXECUTION-003-ROOT-GOVERNANCE-IDENTITY-AUTHORITY.md) | Root governance identity authority boundary (OBS-DIAG-RECERT-P2C-R0A-ADR1) | Proposed |
+| [ADR-HARNESS-001](entries/2026-09-20/ADR-HARNESS-001.md) | Execution Engine public boundary & Nexus encapsulation model (HARNESS-01-ADR2) | Accepted (architecture freeze) |
 
 **Consolidation:** platform ownership, lifecycle, and invariants for GEC-0â€¦GEC-6 - [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 

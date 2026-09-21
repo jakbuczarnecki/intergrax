@@ -43,6 +43,7 @@ from intergrax.contracts.autonomous_work.capability_acquisition import (
     derive_worker_capability_candidate_id,
 )
 from intergrax.contracts.autonomous_work.references import ProblemReference
+from intergrax.contracts.capability_catalog.availability import AvailabilityDisposition
 from intergrax.contracts.capability_catalog.evidence import (
     CapabilityDiscoveryAvailabilityEvidence,
 )
@@ -244,6 +245,23 @@ def _project_skill_candidate(
     )
 
 
+def _select_catalog_realization_candidates(
+    allowed: tuple[GovernedCapabilityCandidate, ...],
+) -> tuple[GovernedCapabilityCandidate, ...]:
+    """Allowed suitable candidates that are catalog-known but not host-executable."""
+    catalog_only = tuple(
+        candidate
+        for candidate in allowed
+        if candidate.availability is AvailabilityDisposition.CATALOG_AVAILABLE
+    )
+    return tuple(
+        sorted(
+            catalog_only,
+            key=lambda candidate: candidate.ranked.identity.sort_key,
+        )
+    )
+
+
 def _map_governed_layer_disposition(
     *,
     operation_relevant_count: int,
@@ -254,8 +272,8 @@ def _map_governed_layer_disposition(
         return CapabilityDiscoveryDisposition.NO_MATCH
     if executable:
         return CapabilityDiscoveryDisposition.MATCH_FOUND
-    if governed_result.allowed:
-        return CapabilityDiscoveryDisposition.NO_MATCH
+    if _select_catalog_realization_candidates(governed_result.allowed):
+        return CapabilityDiscoveryDisposition.REALIZATION_REQUIRED
     if governed_result.blocked:
         return CapabilityDiscoveryDisposition.POLICY_BLOCKED
     return CapabilityDiscoveryDisposition.NO_MATCH
@@ -356,26 +374,43 @@ def _run_tool_discovery_layer(
         governed_result=governed_result,
         executable=executable,
     )
-    if disposition is not CapabilityDiscoveryDisposition.MATCH_FOUND:
-        return WorkerCapabilityDiscoveryLayerOutcome(disposition=disposition)
     coverage_by_identity = {
         item[0].identity.sort_key: (item[1], item[2]) for item in operation_relevant
     }
-    projected: list[WorkerCapabilityCandidate] = []
-    for governed in executable:
-        operations, coverage = coverage_by_identity[governed.identity.sort_key]
-        projected.append(
-            _project_tool_candidate(
-                governed,
-                request=request,
-                operations=operations,
-                coverage=coverage,
-            ),
+    if disposition is CapabilityDiscoveryDisposition.MATCH_FOUND:
+        projected: list[WorkerCapabilityCandidate] = []
+        for governed in executable:
+            operations, coverage = coverage_by_identity[governed.identity.sort_key]
+            projected.append(
+                _project_tool_candidate(
+                    governed,
+                    request=request,
+                    operations=operations,
+                    coverage=coverage,
+                ),
+            )
+        return WorkerCapabilityDiscoveryLayerOutcome(
+            disposition=CapabilityDiscoveryDisposition.MATCH_FOUND,
+            candidates=tuple(sorted(projected, key=_candidate_sort_key)),
         )
-    return WorkerCapabilityDiscoveryLayerOutcome(
-        disposition=CapabilityDiscoveryDisposition.MATCH_FOUND,
-        candidates=tuple(sorted(projected, key=_candidate_sort_key)),
-    )
+    if disposition is CapabilityDiscoveryDisposition.REALIZATION_REQUIRED:
+        catalog_candidates = _select_catalog_realization_candidates(governed_result.allowed)
+        projected = []
+        for governed in catalog_candidates:
+            operations, coverage = coverage_by_identity[governed.identity.sort_key]
+            projected.append(
+                _project_tool_candidate(
+                    governed,
+                    request=request,
+                    operations=operations,
+                    coverage=coverage,
+                ),
+            )
+        return WorkerCapabilityDiscoveryLayerOutcome(
+            disposition=CapabilityDiscoveryDisposition.REALIZATION_REQUIRED,
+            candidates=tuple(sorted(projected, key=_candidate_sort_key)),
+        )
+    return WorkerCapabilityDiscoveryLayerOutcome(disposition=disposition)
 
 
 def _skill_supports_required_operations(
@@ -457,26 +492,43 @@ def _run_skill_discovery_layer(
         governed_result=governed_result,
         executable=executable,
     )
-    if disposition is not CapabilityDiscoveryDisposition.MATCH_FOUND:
-        return WorkerCapabilityDiscoveryLayerOutcome(disposition=disposition)
     coverage_by_identity = {
         item[0].identity.sort_key: (item[1], item[2]) for item in operation_relevant
     }
-    projected: list[WorkerCapabilityCandidate] = []
-    for governed in executable:
-        operations, coverage = coverage_by_identity[governed.identity.sort_key]
-        projected.append(
-            _project_skill_candidate(
-                governed,
-                request=request,
-                operations=operations,
-                coverage=coverage,
-            ),
+    if disposition is CapabilityDiscoveryDisposition.MATCH_FOUND:
+        projected: list[WorkerCapabilityCandidate] = []
+        for governed in executable:
+            operations, coverage = coverage_by_identity[governed.identity.sort_key]
+            projected.append(
+                _project_skill_candidate(
+                    governed,
+                    request=request,
+                    operations=operations,
+                    coverage=coverage,
+                ),
+            )
+        return WorkerCapabilityDiscoveryLayerOutcome(
+            disposition=CapabilityDiscoveryDisposition.MATCH_FOUND,
+            candidates=tuple(sorted(projected, key=_candidate_sort_key)),
         )
-    return WorkerCapabilityDiscoveryLayerOutcome(
-        disposition=CapabilityDiscoveryDisposition.MATCH_FOUND,
-        candidates=tuple(sorted(projected, key=_candidate_sort_key)),
-    )
+    if disposition is CapabilityDiscoveryDisposition.REALIZATION_REQUIRED:
+        catalog_candidates = _select_catalog_realization_candidates(governed_result.allowed)
+        projected = []
+        for governed in catalog_candidates:
+            operations, coverage = coverage_by_identity[governed.identity.sort_key]
+            projected.append(
+                _project_skill_candidate(
+                    governed,
+                    request=request,
+                    operations=operations,
+                    coverage=coverage,
+                ),
+            )
+        return WorkerCapabilityDiscoveryLayerOutcome(
+            disposition=CapabilityDiscoveryDisposition.REALIZATION_REQUIRED,
+            candidates=tuple(sorted(projected, key=_candidate_sort_key)),
+        )
+    return WorkerCapabilityDiscoveryLayerOutcome(disposition=disposition)
 
 
 class CapabilityCatalogToolDiscoveryAdapter:

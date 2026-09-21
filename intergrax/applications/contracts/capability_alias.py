@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
+from intergrax.contracts.task_metadata_keys import TaskMetadataKey
 
 CAPABILITY_ALIAS_REDIRECT_KEY = TaskMetadataKey.CAPABILITY_ALIAS_REDIRECT
 

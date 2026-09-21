@@ -39,6 +39,9 @@ from intergrax.runtime.governance.orchestration_decision_bound_effect_compositio
     resolve_orchestration_decision_requirement_policy,
 )
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+from testing_support.orchestration_governance_evidence_wiring import (
+    default_test_orchestration_evidence_persistence,
+)
 from tests.unit.runtime.governance.gr3_test_support import (
     bound_gr3_active_execution,
     default_gr3_identity_bundle,
@@ -131,6 +134,7 @@ def test_build_production_boundary_missing_policy_composition_error() -> None:
             decision_requirement_policy=None,
             inner_execution_guard=default_gr3_inner_guard(default_gr3_identity_bundle()[0]),
             production_mode=True,
+            governance_evidence_persistence=default_test_orchestration_evidence_persistence(),
         )
 
 
@@ -141,6 +145,7 @@ def test_custom_protocol_policy_injected_without_concrete_dependency() -> None:
         decision_requirement_policy=custom,
         inner_execution_guard=default_gr3_inner_guard(default_gr3_identity_bundle()[0]),
         production_mode=True,
+        governance_evidence_persistence=default_test_orchestration_evidence_persistence(),
     )
     assert boundary._decision_requirement_policy is custom
 
@@ -172,6 +177,7 @@ def test_undetermined_policy_zero_effect() -> None:
         decision_requirement_policy=_UndeterminedPolicy(),
         inner_execution_guard=default_gr3_inner_guard(task_id),
         production_mode=True,
+        governance_evidence_persistence=default_test_orchestration_evidence_persistence(),
     )
     side_effect = MeaningfulSideEffectRequest(
         action=_OPERATION,
@@ -274,6 +280,7 @@ def test_explicit_required_policy_blocks_missing_material() -> None:
         decision_requirement_policy=policy,
         inner_execution_guard=default_gr3_inner_guard(task_id),
         production_mode=True,
+        governance_evidence_persistence=default_test_orchestration_evidence_persistence(),
     )
     side_effect = MeaningfulSideEffectRequest(
         action=_OPERATION,

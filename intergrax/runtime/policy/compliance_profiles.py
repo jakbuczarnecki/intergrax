@@ -13,10 +13,7 @@ from intergrax.contracts.task_envelope import TaskRiskTier
 from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy
 
 
-class ComplianceDomainClass(str, Enum):
-    REGULATED = "regulated"
-    HEALTHCARE = "healthcare"
-    FINANCIAL = "financial"
+from intergrax.contracts.compliance_domain_class import ComplianceDomainClass
 
 
 class ComplianceProfileTemplate(BaseModel):

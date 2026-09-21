@@ -9,11 +9,7 @@ from enum import Enum
 from pydantic import BaseModel, Field, field_validator
 
 
-class AdaptiveLoopKind(str, Enum):
-    ROUTING_TUNING = "routing_tuning"
-    EXECUTION_STRATEGY_TUNING = "execution_strategy_tuning"
-    POLICY_LEARNING = "policy_learning"
-    EVALUATION_FEEDBACK = "evaluation_feedback"
+from intergrax.contracts.adaptive_loop_kind import AdaptiveLoopKind
 
 
 class AdaptiveAuthorityLevel(str, Enum):

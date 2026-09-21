@@ -119,6 +119,7 @@ def test_composition_rejects_production_retry_with_in_memory_store() -> None:
             AgentRegistry(),
             production_mode=True,
             retry_policy=RetryPolicy(max_retries=1),
+            disable_execution_continuation=True,
         )
 
 
@@ -129,6 +130,7 @@ def test_composition_allows_production_without_retry_capability() -> None:
         production_mode=True,
         retry_policy=RetryPolicy(max_retries=0),
         max_run_retries=0,
+        disable_execution_continuation=True,
     )
     assert loop._attempt_lifecycle.store.is_durable is False  # noqa: SLF001
 
@@ -152,6 +154,7 @@ def test_composition_allows_production_retry_with_kv_store() -> None:
         production_mode=True,
         retry_policy=RetryPolicy(max_retries=1),
         attempt_lifecycle=AttemptLifecycleService(store),
+        disable_execution_continuation=True,
     )
     assert loop._attempt_lifecycle.store.is_durable is True  # noqa: SLF001
 
@@ -164,6 +167,7 @@ def test_composition_allows_production_retry_with_document_store() -> None:
         production_mode=True,
         max_run_retries=1,
         attempt_lifecycle=AttemptLifecycleService(store),
+        disable_execution_continuation=True,
     )
     assert loop._attempt_lifecycle.store.is_durable is True  # noqa: SLF001
 

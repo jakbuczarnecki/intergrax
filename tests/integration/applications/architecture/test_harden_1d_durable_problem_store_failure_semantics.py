@@ -7,15 +7,20 @@ from __future__ import annotations
 import pytest
 
 from echo.echo_agent import EchoAgent
-from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
-    wrap_terminal_execution_diagnostic_trigger,
+from intergrax.applications._shared.application_composition_context import (
+    composition_for_factory_context,
 )
 from intergrax.applications._shared.diagnostic_runtime_wiring import (
     build_terminal_execution_diagnostic_trigger,
     resolve_host_diagnostic_runtime_dependencies,
 )
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.contracts.admitted_root_governance_identity import (
     AdmittedRootGovernanceIdentity,
+)
+from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
+    wrap_terminal_execution_diagnostic_trigger,
 )
 from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.runtime.diagnostics.diagnostic_subsystem_failure_evidence import (
@@ -33,6 +38,7 @@ from intergrax.runtime.observability.persistence_conformance import sample_runti
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.tools.registry.wiring import ToolWiringContext
 from testing_support.delegating_failing_conditional_document_store import (
     ControlledDocumentStoreWriteFailure,
     DelegatingFailingConditionalDocumentStore,
@@ -64,18 +70,27 @@ def _unified_task_runner(loop: NexusLoop) -> UnifiedTaskRunner:
 
 
 class _FakeEnvWiring:
+    """Minimal duck-typed env wiring exposing the composition contract surface."""
+
     def __init__(self, document_store: object) -> None:
-        self.build_context = _FakeBuildContext(document_store)
-
-
-class _FakeBuildContext:
-    def __init__(self, document_store: object) -> None:
-        self.tool_wiring_context = _FakeToolWiringContext(document_store)
-
-
-class _FakeToolWiringContext:
-    def __init__(self, document_store: object) -> None:
-        self.document_store = document_store
+        self.composition = composition_for_factory_context(
+            ApplicationBuildContext.for_manifest(
+                ApplicationManifest.lab(
+                    app_id="harden_1d",
+                    name="HARDEN-1D",
+                    route_prefix="/v1/harden_1d",
+                    env_prefix="HARDEN_1D_",
+                    agents=[
+                        AgentBinding.mount(
+                            EchoAgent,
+                            contract_id="echo",
+                            capabilities=["echo.basic"],
+                        )
+                    ],
+                ),
+            ),
+            tool_wiring_context=ToolWiringContext(document_store=document_store),
+        )
 
 
 def _inject_violation_after_completed(

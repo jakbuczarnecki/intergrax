@@ -8,7 +8,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.codecraft.codegen_adapter import CodeGenerationAdapter, TemplateCodeGenerationAdapter
 from intergrax.codecraft.llm_codegen_adapter import LLMCodeGenerationAdapter
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter
 
 
 def resolve_codegen_llm_adapter(
@@ -31,7 +31,7 @@ def resolve_codegen_llm_adapter(
     separate: LLMProfile | None = cc.codegen_llm_profile
     if separate is not None:
         return LLMCodeGenerationAdapter(
-            separate.create_adapter(),
+            create_adapter(separate),
             profile_ref=cc.codegen_llm_profile_ref,
         )
     if cc.codegen_llm_profile_ref:

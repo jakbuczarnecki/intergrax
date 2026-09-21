@@ -76,6 +76,7 @@ from intergrax.skills.dynamic_acquisition import (
 from intergrax.skills.execution_binding import resolve_skill_composition_from_profile
 from intergrax.skills.host_lifecycle import SkillHostLifecycleService
 from intergrax.skills.identity import SkillDiscoveryCandidateIdentity, SkillPackageCandidate
+from intergrax.skills.registry.profile import is_skill_enabled
 from testing_support.canonical_me15_reference_skill import (
     ME15_DIGEST_V1,
     ME15_DIGEST_V2,
@@ -384,7 +385,7 @@ class MarketplaceSkillCompositionProofStack:
         enabled = tuple(
             skill_id
             for skill_id in self.lifecycle.registry.skill_ids()
-            if self.lifecycle.skill_profile.is_skill_enabled(skill_id)
+            if is_skill_enabled(self.lifecycle.skill_profile, skill_id)
         )
         return MarketplaceSkillE2EProofEvidence(
             discovery_correlation_id=discovery_correlation_id,

@@ -29,11 +29,12 @@ def test_from_registry_rejects_missing_governance_admission() -> None:
         signature.parameters["admit_root_governance_identity"].default
         is inspect.Parameter.empty
     )
+    assert signature.parameters["production_mode"].default is inspect.Parameter.empty
 
 
 def test_build_nexus_task_execution_registry_requires_trusted_admission() -> None:
     with pytest.raises(ValueError, match="host_execution or"):
-        build_nexus_task_execution_registry(AgentRegistry())
+        build_nexus_task_execution_registry(AgentRegistry(), production_mode=False)
 
 
 def test_explicit_admission_binds_governance_identity_on_execute() -> None:
@@ -48,6 +49,7 @@ def test_explicit_admission_binds_governance_identity_on_execute() -> None:
     registry.register(EchoAgent())
     runtime = NexusWorkerRuntime.from_registry(
         registry,
+        production_mode=False,
         admit_root_governance_identity=_admit,
     )
     assert runtime.host_execution is not None
@@ -58,6 +60,7 @@ def test_admission_rejects_task_without_principal() -> None:
     registry.register(EchoAgent())
     runtime = NexusWorkerRuntime.from_registry(
         registry,
+        production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
     )
     task = Task(

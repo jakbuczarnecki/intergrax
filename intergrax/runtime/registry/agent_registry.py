@@ -5,13 +5,15 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.agents.harness_reference_agent import assert_uaep_reference_agent
+from intergrax.contracts.routable_tier2_agent import RoutableTier2Agent
+from intergrax.contracts.task_envelope import TaskEnvelope
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.agents.uaep_protocol import UAEPAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.runtime.registry.agent_assembly_resolver import assert_agent_assembly_valid
 from intergrax.runtime.registry.agent_routing_policy import evaluate_agent_routing
-from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.runtime.registry.capability_routing import select_best_matched_routable_agent
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.skills.integration.contract_resolution import resolve_contract_tools
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -36,13 +38,13 @@ class AgentRegistry:
     """
 
     def __init__(self) -> None:
-        self._agents: Dict[str, Agent] = {}
+        self._agents: Dict[str, Tier2Agent] = {}
         self._contracts: Dict[str, AgentContract] = {}
         self._resolved_skill_packs: Dict[str, ResolvedSkillPack] = {}
 
     def register(
         self,
-        agent: Agent,
+        agent: Tier2Agent,
         *,
         contract: Optional[AgentContract] = None,
         skill_registry: Optional[SkillRegistry] = None,
@@ -71,7 +73,7 @@ class AgentRegistry:
         if resolved_pack is not None:
             self._resolved_skill_packs[meta.id] = resolved_pack
 
-    def get(self, agent_id: str) -> Agent:
+    def get(self, agent_id: str) -> Tier2Agent:
         try:
             return self._agents[agent_id]
         except KeyError as exc:
@@ -112,8 +114,8 @@ class AgentRegistry:
         capability: str,
         *,
         production_mode: bool = False,
-    ) -> List[Agent]:
-        matched: List[Agent] = []
+    ) -> List[Tier2Agent]:
+        matched: List[Tier2Agent] = []
         for agent_id, contract in self._contracts.items():
             if capability not in contract.capabilities:
                 continue
@@ -124,18 +126,17 @@ class AgentRegistry:
 
     def find_best_match(
         self,
-        task_context: object,
+        task_context: TaskEnvelope,
         *,
         production_mode: bool = False,
-    ) -> Optional[Agent]:
-        best: Optional[tuple[float, Agent]] = None
+    ) -> Optional[RoutableTier2Agent]:
+        eligible: list[Tier2Agent] = []
         for agent_id, agent in self._agents.items():
             if not self.is_routable(agent_id, production_mode=production_mode):
                 continue
-            result = agent.can_handle(task_context)
-            if not result.matched:
-                continue
-            if best is None or result.score > best[0]:
-                best = (result.score, agent)
-        return best[1] if best else None
+            eligible.append(agent)
+        return select_best_matched_routable_agent(
+            envelope=task_context,
+            candidates=eligible,
+        )
 

@@ -1,6 +1,5 @@
 # © Artur Czarnecki. All rights reserved.
 
-from intergrax.utils import attribute_access
 import pytest
 
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
@@ -9,19 +8,20 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult, Age
 from intergrax.runtime.nexus.handoff.coordinator import HandoffCoordinator
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.contracts.capability import CapabilityMatchResult
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from intergrax.contracts.task_envelope import TaskEnvelope
 
 
-class _StubAgent(Agent):
+class _StubAgent:
     def __init__(self, *, agent_id: str, capability: str) -> None:
         self._agent_id = agent_id
         self._capability = capability
+
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        _ = request
+        raise NotImplementedError("stub")
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -31,27 +31,13 @@ class _StubAgent(Agent):
             capabilities=[self._capability],
         )
 
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = attribute_access.optional(task_context, "capability", None)
-        if capability == self._capability:
-            return CapabilityMatchResult(
-                matched=True,
-                agent_id=self._agent_id,
-                matched_capabilities=[self._capability],
-                score=1.0,
-            )
-        return CapabilityMatchResult(matched=False)
-
-    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        config = RuntimeConfig(
-            llm_adapter=FakeLLMAdapter(fixed_text="ok"),
-            enable_rag=False,
-            production_mode=False,
-            tenant_id=request.tenant_id,
-        )
-        return RuntimeContext.build(
-            config=config,
-            session_manager=build_in_memory_session_manager(),
+    def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
+        _ = task
+        return CapabilityMatchResult(
+            matched=True,
+            agent_id=self._agent_id,
+            matched_capabilities=[self._capability],
+            score=1.0,
         )
 
 

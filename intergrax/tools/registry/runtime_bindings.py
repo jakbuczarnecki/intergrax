@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional, Protocol, runtime_checkable
 from intergrax.contracts.memory_write_policy import MemoryWritePolicy
 from intergrax.knowledge.contracts.validation import JsonObject
 from intergrax.runtime.human.models import HumanDecisionRecord
-from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunSummary
+from intergrax.contracts.persisted_run_trace import PersistedRun, RunSummary
 from intergrax.runtime.task_memory.models import TaskMemoryRecord
 
 

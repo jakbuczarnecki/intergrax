@@ -36,6 +36,43 @@ def nexus_imported_symbols(tree: ast.Module) -> NexusImportedSymbols:
     )
 
 
+def _nexus_module_string(value: str) -> bool:
+    return value == "intergrax.runtime.nexus" or value.startswith("intergrax.runtime.nexus.")
+
+
+def _collect_nexus_module_string_bindings(tree: ast.Module) -> set[str]:
+    bindings: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            if isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                if _nexus_module_string(node.value.value):
+                    for target in node.targets:
+                        if isinstance(target, ast.Name):
+                            bindings.add(target.id)
+        if (
+            isinstance(node, ast.AnnAssign)
+            and node.value is not None
+            and isinstance(node.value, ast.Constant)
+            and isinstance(node.value.value, str)
+            and _nexus_module_string(node.value.value)
+            and isinstance(node.target, ast.Name)
+        ):
+            bindings.add(node.target.id)
+    return bindings
+
+
+def _expr_is_nexus_module_reference(
+    node: ast.expr,
+    *,
+    nexus_string_bindings: set[str],
+) -> bool:
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        return _nexus_module_string(node.value)
+    if isinstance(node, ast.Name) and node.id in nexus_string_bindings:
+        return True
+    return False
+
+
 def file_imports_nexus_module(source: str) -> bool:
     try:
         tree = ast.parse(source)
@@ -43,6 +80,103 @@ def file_imports_nexus_module(source: str) -> bool:
         return False
     symbols = nexus_imported_symbols(tree)
     return bool(symbols.type_names or symbols.module_aliases)
+
+
+def _lazy_dict_maps_nexus_module(node: ast.Dict) -> bool:
+    for value in node.values:
+        if not isinstance(value, ast.Tuple) or not value.elts:
+            continue
+        first = value.elts[0]
+        if isinstance(first, ast.Constant) and isinstance(first.value, str):
+            if _nexus_module_string(first.value):
+                return True
+    return False
+
+
+def _collect_lazy_nexus_export_map_names(tree: ast.Module) -> set[str]:
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and isinstance(node.value, ast.Dict):
+            if not _lazy_dict_maps_nexus_module(node.value):
+                continue
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    names.add(target.id)
+    return names
+
+
+def _function_resolves_lazy_exports(func: ast.FunctionDef, lazy_map_names: set[str]) -> bool:
+    for node in ast.walk(func):
+        if not isinstance(node, ast.Call):
+            continue
+        if isinstance(node.func, ast.Name) and node.func.id == "export_from_import_path":
+            return True
+        if (
+            isinstance(node.func, ast.Attribute)
+            and node.func.attr == "import_module"
+            and isinstance(node.func.value, ast.Name)
+            and node.func.value.id == "importlib"
+        ):
+            return True
+        if isinstance(node.func, ast.Attribute) and node.func.attr == "get":
+            receiver = node.func.value
+            if isinstance(receiver, ast.Name) and receiver.id in lazy_map_names:
+                return True
+    return False
+
+
+def file_has_lazy_nexus_module_resolution(source: str) -> bool:
+    """Detect lazy export maps that resolve ``intergrax.runtime.nexus.*`` modules."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return False
+    nexus_string_bindings = _collect_nexus_module_string_bindings(tree)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            if node.func.id != "export_from_import_path":
+                continue
+            if not node.args:
+                continue
+            if _expr_is_nexus_module_reference(
+                node.args[0],
+                nexus_string_bindings=nexus_string_bindings,
+            ):
+                return True
+    lazy_map_names = _collect_lazy_nexus_export_map_names(tree)
+    if not lazy_map_names:
+        return False
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == "__getattr__":
+            if _function_resolves_lazy_exports(node, lazy_map_names):
+                return True
+    return False
+
+
+def file_has_dynamic_nexus_import(source: str) -> bool:
+    """Detect ``importlib.import_module`` / ``__import__`` targeting Nexus modules."""
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return False
+    nexus_string_bindings = _collect_nexus_module_string_bindings(tree)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        is_import_module = (
+            isinstance(func, ast.Attribute)
+            and func.attr == "import_module"
+            and isinstance(func.value, ast.Name)
+            and func.value.id == "importlib"
+        )
+        is_dunder_import = isinstance(func, ast.Name) and func.id == "__import__"
+        if not is_import_module and not is_dunder_import:
+            continue
+        for arg in node.args[:1]:
+            if _expr_is_nexus_module_reference(arg, nexus_string_bindings=nexus_string_bindings):
+                return True
+    return False
 
 
 def _is_nexus_type_reference(

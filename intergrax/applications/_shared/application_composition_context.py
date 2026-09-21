@@ -4,11 +4,11 @@
 
 from __future__ import annotations
 
-from contextlib import contextmanager
-from contextvars import ContextVar
 from dataclasses import dataclass
-from typing import Iterator
 
+from intergrax.applications._shared.diagnostic_composition import (
+    DiagnosticCompositionOverrides,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -24,15 +24,6 @@ from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
-
-_FACTORY_COMPOSITION: ContextVar[ApplicationCompositionContext | None] = ContextVar(
-    "intergrax_application_factory_composition",
-    default=None,
-)
-
-
-class ApplicationFactoryCompositionRequired(RuntimeError):
-    """Factory helper invoked without an active composition scope."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,6 +43,7 @@ class ApplicationCompositionContext:
     prompt_registry: PromptRegistryProtocol | None = None
     boundary_event_buffer: BoundaryEventBuffer | None = None
     agent_registry: AgentRegistryRead | None = None
+    diagnostic_composition_overrides: DiagnosticCompositionOverrides | None = None
 
     @property
     def manifest(self) -> ApplicationManifest:
@@ -73,6 +65,7 @@ def composition_for_factory_context(
     prompt_registry: PromptRegistryProtocol | None = None,
     boundary_event_buffer: BoundaryEventBuffer | None = None,
     agent_registry: AgentRegistryRead | None = None,
+    diagnostic_composition_overrides: DiagnosticCompositionOverrides | None = None,
 ) -> ApplicationCompositionContext:
     """Test/composition helper — attach runtime fields to a public factory context."""
     return ApplicationCompositionContext(
@@ -89,6 +82,7 @@ def composition_for_factory_context(
         prompt_registry=prompt_registry,
         boundary_event_buffer=boundary_event_buffer,
         agent_registry=agent_registry,
+        diagnostic_composition_overrides=diagnostic_composition_overrides,
     )
 
 
@@ -99,36 +93,8 @@ def project_application_build_context(
     return composition.factory_context
 
 
-def optional_factory_composition() -> ApplicationCompositionContext | None:
-    return _FACTORY_COMPOSITION.get()
-
-
-def require_factory_composition() -> ApplicationCompositionContext:
-    composition = _FACTORY_COMPOSITION.get()
-    if composition is None:
-        raise ApplicationFactoryCompositionRequired(
-            "application factory composition scope is not active"
-        )
-    return composition
-
-
-@contextmanager
-def factory_composition_scope(
-    composition: ApplicationCompositionContext | None,
-) -> Iterator[None]:
-    token = _FACTORY_COMPOSITION.set(composition)
-    try:
-        yield
-    finally:
-        _FACTORY_COMPOSITION.reset(token)
-
-
 __all__ = [
     "ApplicationCompositionContext",
-    "ApplicationFactoryCompositionRequired",
-    "factory_composition_scope",
-    "optional_factory_composition",
     "composition_for_factory_context",
     "project_application_build_context",
-    "require_factory_composition",
 ]

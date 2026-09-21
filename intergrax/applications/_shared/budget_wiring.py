@@ -22,11 +22,11 @@ DEFAULT_PRODUCT_AGENT_TOKEN_LIMIT = 16_000
 
 def product_budget_reaction() -> BudgetReactionProfile:
     """Default STRICT product host reaction policy — HITL on agent exceed, trace notify."""
-    return BudgetReactionProfile(
-        on_agent_limit_exceeded=BudgetExceededReaction.HITL,
-        on_environment_limit_exceeded=BudgetExceededReaction.ABORT,
-        notify_channels=[BudgetNotifyChannel.TRACE_ONLY, BudgetNotifyChannel.IN_APP],
+    from intergrax.applications.contracts.environment_profile.presets import (
+        product_budget_reaction as _product_budget_reaction,
     )
+
+    return _product_budget_reaction()
 
 
 def product_agent_budget_slice(

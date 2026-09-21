@@ -69,11 +69,14 @@ def test_public_front_structure() -> None:
         == "# Multiplayer AI — Multi-layer Feature Architecture"
     )
     assert "## Why it matters" in front
-    assert "## Current reality / maturity boundary" in front
+    assert "## Current Enterprise Maturity Boundary" in front
     assert "## At a glance" in front
     assert "## Core mental model" in front
     assert "Principal" in front
     assert "Decision ≠ HITL" in front or "Decision / Approval" in front
+    assert "## Visual architecture (MP-FINAL-1)" in front
+    assert "ENTERPRISE CORE IMPLEMENTED" in front
+    assert "CAPABILITY EXPANSION PLANNED" in front
 
 
 def test_public_front_excludes_maintainer_headlines() -> None:

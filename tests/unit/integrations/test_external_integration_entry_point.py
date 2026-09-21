@@ -10,6 +10,7 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.bootstrap import reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 pytestmark = [pytest.mark.unit, pytest.mark.usefixtures("catalog_fixture_installed")]
 
@@ -28,5 +29,5 @@ def _clean() -> None:
 def test_fixture_integration_resolves_via_entry_point() -> None:
     bootstrap_catalogs(register_shipped=False, discover_entry_points=True)
     profile = IntegrationProfile(key_value_cache="fixture_ep_kv")
-    cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
+    cache = resolve_from_profile(profile, IntegrationCategory.KEY_VALUE_CACHE)
     assert_key_value_cache(cache)

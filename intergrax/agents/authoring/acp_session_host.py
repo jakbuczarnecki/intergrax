@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field, SkipValidation
 
 from typing import Any
 
+from intergrax.agents.authoring.acp_runtime_session_ports import AcpRuntimeSessionHooks
 from intergrax.contracts.agent_run_binding import AgentRunBinding
 from intergrax.contracts.runtime_environment import RuntimeEnvironmentProfile
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
@@ -28,6 +29,10 @@ class ACPSessionHostContext(BaseModel):
     notification_adapter: Any = Field(default=None, exclude=True)
     budget_reaction_hook: Any = Field(default=None, exclude=True)
     execution_budget_ledger_factory: SkipValidation[ExecutionBudgetLedgerFactory | None] = Field(
+        default=None,
+        exclude=True,
+    )
+    runtime_session_hooks: SkipValidation[AcpRuntimeSessionHooks | None] = Field(
         default=None,
         exclude=True,
     )

@@ -373,10 +373,11 @@ def generate_usage_md(slug: str, category: str) -> str:
         + "```python\n"
         + "from intergrax.integrations.contracts.base import IntegrationCategory\n"
         + "from intergrax.integrations.registry.bootstrap import register_default_integrations\n"
+        + "from intergrax.integrations.registry.factory import resolve_from_profile\n"
         + "from intergrax.integrations.registry.profile import IntegrationProfile\n\n"
         + "register_default_integrations()\n"
         + f'profile = IntegrationProfile({category}="{slug}")\n'
-        + f"backend = profile.resolve(IntegrationCategory.{category.upper()})\n"
+        + f"backend = resolve_from_profile(profile, IntegrationCategory.{category.upper()})\n"
         + "```\n\n"
         + "## Catalog registration\n\n"
         + "```python\n"

@@ -8,6 +8,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec, GraphEdge, GraphNode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.presets import lab_stack
 
 pytestmark = [pytest.mark.gate, pytest.mark.no_ci]
 
@@ -30,7 +31,7 @@ def test_manifest_json_roundtrip() -> None:
         route_prefix="/v1/rt",
         environment=ApplicationEnvironmentProfile.lab_defaults(profile_id="rt"),
         agents=[AgentBinding.mount(EchoAgent, contract_id="echo", capabilities=["echo.basic"])],
-        integration_profile=IntegrationProfile.lab_stack(),
+        integration_profile=lab_stack(),
     )
     restored = ApplicationManifest.model_validate_json(manifest.model_dump_json())
     assert restored.app_id == "rt"

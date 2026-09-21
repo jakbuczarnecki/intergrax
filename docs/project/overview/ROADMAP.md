@@ -163,9 +163,9 @@ Product need drives platform work. **Token Optimization** remains a **Featured p
 
 See the [Token Optimization guide](../capabilities/token_optimization/README.md) for its bounded proof and limitations.
 
-**Multiplayer AI** is a separate **strategic platform capability** at **architecture / roadmap stage**. A canonical architecture and implementation roadmap exists; runtime proof is **not yet established**. The capability is intended to support governed multi-principal collaboration - shared work, durable artifacts, decisions, delegated authority, principal-scoped context, and provenance - among humans, agents, services, and eventually external agents. Future promotion into public proof follows accepted implementation and evidence, not architecture alone.
+**Multiplayer AI** is a **strategic platform capability** with an **implemented enterprise core** (MP-1…MP-7 closed in their certified scopes — including platform/core slice proof and Tier-3 consumability boundary). **MP-8** (external-agent interoperability) and **MP-9** (advanced product-facing collaboration UX) remain **PLANNED / NOT STARTED**. Full product-facing Multiplayer capability E2E including MP-8 / MP-9 is **not established**. Canonical maturity: [Multiplayer AI architecture — Current Enterprise Maturity Boundary](../capabilities/architecture/MULTIPLAYER_AI.md#current-enterprise-maturity-boundary).
 
-See the [Multiplayer AI architecture](../capabilities/architecture/MULTIPLAYER_AI.md) for the strategic direction and current boundaries.
+See the [Multiplayer AI architecture](../capabilities/architecture/MULTIPLAYER_AI.md) for ownership, contracts, visual architecture, and current boundaries.
 
 **Platform Extensibility / Plugins** is another **strategic platform capability**. Extension mechanisms already exist across multiple domains; the canonical cross-cutting architecture is **frozen**. Multiple extension-platform implementation slices exist and the core program is **closed**; residual Protocol v2 and breadth work remain **planned**. Public proof promotion requires accepted executable third-party E2E evidence - a complete install-to-runtime path without modifying Intergrax core is **not yet established**.
 

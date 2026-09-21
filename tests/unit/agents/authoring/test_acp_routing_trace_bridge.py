@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.agents.authoring.acp_routing_trace_bridge import record_acp_routing_rule_evaluation
+from intergrax.runtime.nexus.agents.acp_routing_trace_bridge import record_acp_routing_rule_evaluation
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile

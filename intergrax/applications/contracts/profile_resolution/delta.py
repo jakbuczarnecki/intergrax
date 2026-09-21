@@ -11,8 +11,8 @@ from intergrax.applications.contracts.profile_resolution.layer import ProfileLay
 from pydantic import BaseModel, ConfigDict, model_validator
 
 from intergrax.applications.contracts.execution_mode import ExecutionMode
-from intergrax.llm_adapters.registry.profile import LLMProfile
-from intergrax.tools.registry.profile import ToolProfile
+from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
+from intergrax.tools.contracts.tool_profile import ToolProfile
 
 from intergrax.applications.contracts.environment_profile.sub_profiles import CostProfile
 

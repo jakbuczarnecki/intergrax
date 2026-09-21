@@ -428,8 +428,14 @@ async def run_tools_context(state: RuntimeState) -> None:
         from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
             DeclarativePolicyHitlPauseRequired,
         )
+        from intergrax.runtime.nexus.tools.mse_governed_continuation_hitl_bridge import (
+            GovernedContinuationHitlPauseRequired,
+        )
 
-        if isinstance(exc, DeclarativePolicyHitlPauseRequired):
+        if isinstance(
+            exc,
+            (DeclarativePolicyHitlPauseRequired, GovernedContinuationHitlPauseRequired),
+        ):
             raise
         pending_failure = exc
         error_type = type(exc).__name__

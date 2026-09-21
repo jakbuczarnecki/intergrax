@@ -6,8 +6,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable, List, Optional, Union
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.hooks.governance_hooks import hook_context_for_task, run_hook_pair
 from intergrax.runtime.hooks.hook_point import HookPoint
@@ -19,7 +19,7 @@ from intergrax.contracts.resilience_policy import FailureClass, FailureResponse,
 from intergrax.runtime.nexus.retry.retry_types import RetryDecision, RetryRecord
 from intergrax.runtime.resilience.policy_resolver import resolve_failure_action
 
-ExecuteFn = Callable[[Agent], Awaitable[AgentExecutionResult]]
+ExecuteFn = Callable[[Tier2Agent], Awaitable[AgentExecutionResult]]
 RetryNotifyFn = Union[
     Callable[[RetryRecord], None],
     Callable[[RetryRecord], Awaitable[None]],
@@ -82,10 +82,10 @@ class RetryEngine:
     async def execute_with_retry(
         self,
         task: Task,
-        initial_agent: Agent,
+        initial_agent: Tier2Agent,
         execute_fn: ExecuteFn,
         *,
-        validate_fn: Callable[[AgentExecutionResult, Agent], ValidationResult],
+        validate_fn: Callable[[AgentExecutionResult, Tier2Agent], ValidationResult],
         on_retry: RetryNotifyFn | None = None,
     ) -> tuple[AgentExecutionResult, List[RetryRecord], ValidationResult]:
         agent = initial_agent

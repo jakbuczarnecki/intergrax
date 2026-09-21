@@ -153,7 +153,7 @@ def test_integration_discovered_but_unselected_keeps_default_binding() -> None:
     assert profile.key_value_cache is not None
     assert profile.key_value_cache.resolved_slug() == "custom_memory_kv"
     assert profile.key_value_cache.resolved_slug() != "fixture_ep_kv"
-    cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
+    cache = resolve_from_profile(profile, IntegrationCategory.KEY_VALUE_CACHE)
     cache.set("tenant-a", "selected", b"custom_memory_kv")
     assert cache.get("tenant-a", "selected") == b"custom_memory_kv"
 
@@ -161,7 +161,7 @@ def test_integration_discovered_but_unselected_keeps_default_binding() -> None:
 def test_integration_explicit_slug_activates_fixture_provider() -> None:
     bootstrap_catalogs(register_shipped=False, discover_entry_points=True)
     profile = IntegrationProfile(key_value_cache="fixture_ep_kv")
-    cache = profile.resolve(IntegrationCategory.KEY_VALUE_CACHE)
+    cache = resolve_from_profile(profile, IntegrationCategory.KEY_VALUE_CACHE)
     cache.set("tenant-a", "proof-key", b"custom")
     assert cache.get("tenant-a", "proof-key") == b"custom"
 
@@ -317,7 +317,10 @@ def test_plug03_session_storage_canonical_session_manager_consumer(
 
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_step import AgentStep, StepOutput
+from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -329,7 +332,7 @@ from intergrax.runtime.policy.rules.schema import PolicyRuleAction
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
 
-class _Plug03PackAgent(Agent):
+class _Plug03PackAgent(HarnessReferenceAgent):
     def __init__(self, *, include_skill: bool) -> None:
         self._include_skill = include_skill
 
@@ -352,6 +355,13 @@ class _Plug03PackAgent(Agent):
 
     def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
         return CapabilityMatchResult(matched=True, agent_id="plug03_pack_stub", score=1.0)
+
+    def get_steps(self) -> list[AgentStep]:
+        return [AgentStep(step_id="plug03", step_name="plug03", step_index=0)]
+
+    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        _ = ctx
+        return StepOutput(step_id=step.step_id, summary="plug03")
 
 
 class _Plug03ExternalPolicyHandler:
@@ -528,6 +538,7 @@ async def test_plug03_without_custom_skill_tool_not_allowed() -> None:
 
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.security.defense_plugin import SecurityFailMode, SecurityInspectionResult
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 
 class _Plug03SentinelDefense:

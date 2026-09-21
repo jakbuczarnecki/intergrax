@@ -14,7 +14,7 @@ import warnings
 from typing import Any
 
 from intergrax.agents.authoring.step_outcome import StepOutcome, StateDelta
-from intergrax.agents.authoring.uaep_step_bridge import agent_decision_to_step_outcome
+from intergrax.agents.authoring.uaep_decision_mapping import agent_decision_to_step_outcome
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType, PlanDelta
 from intergrax.contracts.agent_handoff import AgentHandoff
 from intergrax.contracts.agent_run import AgentRunError

@@ -3,8 +3,10 @@
 import pytest
 
 from intergrax.agents.reference_harness import (
-    build_lab_agent_runtime_config_from_merged,
     default_reference_harness,
+)
+from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+    build_lab_agent_runtime_config_from_merged,
 )
 from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response

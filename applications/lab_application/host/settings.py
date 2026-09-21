@@ -5,12 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import ClassVar
 
-from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
+from intergrax.applications._shared.settings_loader import (
+    ApplicationSettingsEnvHost,
+    EnvReader,
+)
+from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 from intergrax.fastapi_core.config import ApiEnvironment
 
 
 @dataclass(frozen=True, kw_only=True)
-class LabApplicationSettings(IntergraxApplicationSettingsBase):
+class LabApplicationSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
     """Environment for the universal lab application (Tier-3)."""
 
     env_prefix: ClassVar[str] = "LAB_"

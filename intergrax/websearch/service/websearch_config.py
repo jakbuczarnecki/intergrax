@@ -6,9 +6,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Optional
+from typing import Optional
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.websearch.contracts.routing_snapshot_sync import WebSearchLlmRoutingSnapshotSync
 
 
 class WebSearchStrategyType(str, Enum):
@@ -51,7 +52,7 @@ class WebSearchConfig:
 
     run_id: Optional[str] = None
 
-    # Set by Tier-3 bridge when live routing snapshot refresh is enabled (M-LLM-X.13.5).
-    routing_runtime_config: Any = None
+    # Injected at composition when live routing snapshot refresh is enabled (M-LLM-X.13.5).
+    routing_snapshot_sync: WebSearchLlmRoutingSnapshotSync | None = None
 
     llm: WebSearchLLMConfig = field(default_factory=WebSearchLLMConfig)

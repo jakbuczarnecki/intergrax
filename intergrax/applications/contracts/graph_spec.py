@@ -8,9 +8,7 @@ from enum import Enum
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from intergrax.runtime.nexus.execution.evaluator_loop_graph_binding import (
-    EvaluatorLoopGraphBinding,
-)
+from intergrax.contracts.evaluator_loop import EvaluatorLoopGraphBinding
 
 
 class GraphEdgeKind(str, Enum):
@@ -84,9 +82,9 @@ class ApplicationGraphSpec(BaseModel):
             contract_id = binding.contract_id
             if contract_id:
                 known.add(contract_id.strip())
-            if binding.agent_type is not None or binding.import_path is not None:
-                known.add(binding.resolved_agent_type().__name__)
-            if binding.import_path:
+            if binding.agent_type is not None:
+                known.add(binding.agent_type.__name__)
+            elif binding.import_path:
                 known.add(binding.import_path.rsplit(".", 1)[-1])
 
         for node in self.nodes:

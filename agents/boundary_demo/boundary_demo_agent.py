@@ -7,15 +7,17 @@ from __future__ import annotations
 from typing import Any
 
 from boundary_demo.capabilities import CAPABILITIES, CAPABILITY
-from intergrax.agents.agent_contract import Agent
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent  # ACP-MIG-3 fleet marker
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
-    build_lab_agent_runtime_config,
     default_reference_harness,
 )
-from intergrax.agents.tool_enablement import ToolEnablementProfile, ToolWiringContextLike
+from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+    build_lab_agent_runtime_config,
+)
+from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
@@ -36,7 +38,7 @@ RECORDS_PUT_TOOL_ID = "records.put"
 _REFLEX_PATTERN = ReflexAgent  # retain ReflexAgent symbol for fleet inventory scan
 
 
-class BoundaryDemoAgent(Agent):
+class BoundaryDemoAgent(HarnessReferenceAgent):
     """Single-step UAEP agent for Execution Boundary Export partner sandbox."""
 
     AGENT_ID = "boundary_demo_agent"
@@ -47,13 +49,11 @@ class BoundaryDemoAgent(Agent):
         harness: LabHarnessContext | None = None,
         *,
         tool_profile: ToolEnablementProfile | None = None,
-        tool_wiring_context: ToolWiringContextLike | None = None,
         execution_boundary_export: ExecutionBoundaryExportRuntimeSettings | None = None,
         boundary_event_buffer: BoundaryEventBuffer | None = None,
     ) -> None:
         self._harness = harness or default_reference_harness()
         self._tool_profile = tool_profile
-        self._tool_wiring_context = tool_wiring_context
         self._execution_boundary_export = execution_boundary_export
         self._boundary_event_buffer = boundary_event_buffer
 
@@ -94,8 +94,6 @@ class BoundaryDemoAgent(Agent):
             enable_rag=False,
             enable_websearch=False,
         )
-        config.tool_profile = self._tool_profile
-        config.tool_wiring_context = self._tool_wiring_context
         if self._execution_boundary_export is not None:
             config.execution_boundary_export = self._execution_boundary_export
         if self._boundary_event_buffer is not None:

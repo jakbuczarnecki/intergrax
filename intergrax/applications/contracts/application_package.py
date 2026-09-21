@@ -9,7 +9,7 @@ from enum import StrEnum
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.applications.contracts.manifest import ApplicationManifest
-from intergrax.runtime.registry.semver_compat import SemVer
+from intergrax.contracts.semver import SemVer
 
 
 class ApplicationDependencyKind(StrEnum):

@@ -9,14 +9,14 @@ from datetime import UTC, datetime
 
 from external_contractor_adapter.side_effect_actions import ACTION_ACCEPT_QUOTE
 from intergrax.collaborative_work.authority import CollaborativeWorkAuthorityResolver
-from intergrax.collaborative_work.enforcement_gate import (
-    CollaborativeWorkEnforcementGate,
-    MeaningfulSideEffectPolicyEvaluator,
-)
+from intergrax.collaborative_work.enforcement_gate import CollaborativeWorkEnforcementGate
 from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
 from intergrax.collaborative_work.policy_source import CollaborativePolicyEvaluator
 from intergrax.contracts.active_execution_task_scope import ActiveExecutionTaskScopePort
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
+from intergrax.contracts.meaningful_side_effect_policy import (
+    MeaningfulSideEffectPolicyEvaluator,
+)
 from intergrax.runtime.governance.decision_requirement_policy import (
     decision_governed_side_effect_requirement_policy,
 )

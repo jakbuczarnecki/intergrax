@@ -6,7 +6,7 @@ from problem_radar.capabilities import CAPABILITIES
 from problem_radar.contract import build_agent_contract
 from problem_radar.steps.domain import build_stub_problem_radar_output
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
-from intergrax.agents.authoring.acp_stub_reflex import (
+from intergrax.runtime.nexus.agents.acp_stub_reflex import (
     evaluate_complete,
     perceive_run_input,
     reason_passthrough,
@@ -14,8 +14,10 @@ from intergrax.agents.authoring.acp_stub_reflex import (
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
-    build_lab_agent_runtime_context,
     default_reference_harness,
+)
+from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+    build_lab_agent_runtime_context,
 )
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext

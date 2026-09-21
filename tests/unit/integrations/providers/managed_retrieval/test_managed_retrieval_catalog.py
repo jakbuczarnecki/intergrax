@@ -29,6 +29,7 @@ from intergrax.runtime.integrations.contracts import (
 )
 from intergrax.tools.providers.openai_vector_store.service import resolve_managed_retrieval
 from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 pytestmark = pytest.mark.unit
 
@@ -175,7 +176,7 @@ def test_canonical_catalog_resolves_openai_managed_retrieval(monkeypatch: pytest
     entry = get_entry("openai")
     assert IntegrationCategory.MANAGED_RETRIEVAL in entry.categories
     profile = IntegrationProfile(managed_retrieval=OPENAI_MANAGED_RETRIEVAL)
-    backend = profile.resolve(IntegrationCategory.MANAGED_RETRIEVAL)
+    backend = resolve_from_profile(profile, IntegrationCategory.MANAGED_RETRIEVAL)
     assert isinstance(backend, ManagedRetrievalBackend)
 
 
@@ -208,7 +209,7 @@ def test_resolve_managed_retrieval_uses_typed_binding() -> None:
 def test_external_plugin_registers_managed_retrieval() -> None:
     _register_vendor_b_plugin()
     profile = IntegrationProfile(managed_retrieval=VendorBPlugin)
-    backend = profile.resolve(IntegrationCategory.MANAGED_RETRIEVAL)
+    backend = resolve_from_profile(profile, IntegrationCategory.MANAGED_RETRIEVAL)
     assert isinstance(backend, ManagedRetrievalBackend)
     assert backend.query(
         ManagedRetrievalQueryRequest(

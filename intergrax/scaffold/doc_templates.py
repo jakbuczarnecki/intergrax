@@ -33,7 +33,7 @@ def render_agent_architecture_doc(
     if pattern is not None:
         runtime_line = (
             f"- Typed **{pattern}** cognitive pattern (`CognitiveAgent` / `on_next_step`)\n"
-            "- Stub LLM adapter in `{slug}_agent.py` for offline smoke tests"
+            "- Offline smoke via `Agent.run(AgentRunRequest)` — no execution-runtime wiring in agent code"
         )
         purpose = (
             f"Tier-2 typed **{pattern}** agent scaffold for `{slug}`. "
@@ -52,7 +52,7 @@ def render_agent_architecture_doc(
     elif reference:
         runtime_line = (
             "- `HarnessReferenceAgent` + `on_next_step` (ACP reference probe)\n"
-            "- Optional `LabHarnessContext` injected by Tier-3 host builders"
+            "- Offline smoke via `Agent.run(AgentRunRequest)` — host owns LLM/execution wiring"
         )
         purpose = f"Tier-2 harness reference agent scaffold for `{slug}`."
         layout_rows = (
@@ -67,7 +67,7 @@ def render_agent_architecture_doc(
     else:
         runtime_line = (
             "- Typed **reflex** cognitive pattern (`CognitiveAgent` / `on_next_step`)\n"
-            "- Stub LLM adapter in `{slug}_agent.py` for offline smoke tests"
+            "- Offline smoke via `Agent.run(AgentRunRequest)` — no execution-runtime wiring in agent code"
         )
         purpose = (
             f"Tier-2 typed agent scaffold for `{slug}`. "

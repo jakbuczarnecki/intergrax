@@ -355,6 +355,7 @@ def test_nexus_worker_preserves_bootstrap_identity_end_to_end() -> None:
     agent_registry.register(EchoAgent())
     runtime = NexusWorkerRuntime.from_registry(
         agent_registry,
+        production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
     )
     fixed = BackgroundExecutionIdentity(

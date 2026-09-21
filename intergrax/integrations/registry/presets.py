@@ -30,7 +30,7 @@ from intergrax.integrations.registry.catalog_manifests import (
     VAULT,
 )
 from intergrax.integrations.core.manifest import IntegrationManifest
-from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 
 
 def lab_stack(*, enable_otel: bool = True) -> IntegrationProfile:

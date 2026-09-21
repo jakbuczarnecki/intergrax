@@ -405,9 +405,9 @@ class _LifecycleVenvBundleMaterializer:
                     from intergrax.contracts.agent_run_enums import CognitivePattern
                     from intergrax.contracts.agent_step_context import AgentStepContext
                     from intergrax.contracts.capability import CapabilityMatchResult
-                    from intergrax.agents.reference_harness import (
+                    from intergrax.agents.reference_harness import default_reference_harness
+                    from intergrax.runtime.nexus.agents.reference_harness_runtime import (
                         build_lab_agent_runtime_context,
-                        default_reference_harness,
                     )
                     from testing_support.builder import MeteringFakeLLMAdapter
                     from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext

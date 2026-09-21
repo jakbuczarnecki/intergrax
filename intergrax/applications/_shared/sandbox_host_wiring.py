@@ -9,6 +9,7 @@ from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.sandbox.contracts import SandboxExecCapable
 from intergrax.runtime.sandbox.hosted_session import HostedSandboxSession
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 
 def resolve_hosted_sandbox_session(
@@ -23,7 +24,7 @@ def resolve_hosted_sandbox_session(
         slug = integration_profile.slug_for_category(IntegrationCategory.SANDBOX_HOST)
         if slug is None:
             return None
-        backend = integration_profile.resolve(IntegrationCategory.SANDBOX_HOST)
+        backend = resolve_from_profile(integration_profile, IntegrationCategory.SANDBOX_HOST)
     if not isinstance(backend, SandboxHostBackend):
         return None
     return HostedSandboxSession.open(

@@ -117,6 +117,26 @@ def _matches_source(
     return True
 
 
+def resolve_availability_disposition(
+    *,
+    identity_key: CapabilityIdentityKey,
+    scope_mode: CapabilityDiscoveryScopeMode,
+    blocked_keys: frozenset[tuple[str, str, str, str]],
+    unavailable_keys: frozenset[tuple[str, str, str, str]],
+    host_available_keys: frozenset[tuple[str, str, str, str]],
+    scope_visible_keys: frozenset[tuple[str, str, str, str]] | None,
+) -> AvailabilityDisposition:
+    """Canonical availability projection from evidence key sets (Stage 3)."""
+    return _resolve_availability_disposition(
+        identity_key=identity_key,
+        scope_mode=scope_mode,
+        blocked_keys=blocked_keys,
+        unavailable_keys=unavailable_keys,
+        host_available_keys=host_available_keys,
+        scope_visible_keys=scope_visible_keys,
+    )
+
+
 def _resolve_availability_disposition(
     *,
     identity_key: CapabilityIdentityKey,

@@ -14,11 +14,7 @@ if TYPE_CHECKING:
     from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 
 
-class PolicyEnforcementMode(StrEnum):
-    """Declarative policy enforcement posture for a host bundle."""
-
-    AUDIT_ONLY = "audit_only"
-    ENFORCE = "enforce"
+from intergrax.contracts.policy_enforcement_mode import PolicyEnforcementMode
 
 
 @dataclass(frozen=True, slots=True)

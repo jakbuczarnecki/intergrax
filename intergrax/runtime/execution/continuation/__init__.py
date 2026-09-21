@@ -6,6 +6,9 @@ from intergrax.runtime.execution.continuation.composition import (
     wire_execution_continuation_port,
     wire_execution_engine_continuation_dependencies,
 )
+from intergrax.runtime.execution.continuation.durability_policy import (
+    validate_execution_continuation_for_composition,
+)
 from intergrax.runtime.execution.continuation.lifecycle_driver import (
     ExecutionContinuationLifecycleDriver,
 )
@@ -33,6 +36,7 @@ __all__ = [
     "backing_execution_continuation_state_store",
     "execute_canonical_work_when_unblocked",
     "reconnect_execution_engine_continuation_dependencies",
+    "validate_execution_continuation_for_composition",
     "wire_execution_continuation_port",
     "wire_execution_continuation_state_store",
     "wire_execution_engine_continuation_dependencies",

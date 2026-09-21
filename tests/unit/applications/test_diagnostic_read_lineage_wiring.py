@@ -6,14 +6,20 @@ from dataclasses import dataclass
 
 import pytest
 
+from intergrax.applications._shared.application_composition_context import (
+    ApplicationCompositionContext,
+    composition_for_factory_context,
+)
 from intergrax.applications._shared.diagnostic_read_wiring import (
     build_diagnostic_read_service,
     resolve_host_diagnostic_read_dependencies,
 )
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ReliabilityProfile,
 )
+from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.contracts.execution_lineage import (
     ExecutionLineageConfigurationError,
     ExecutionLineagePersistenceProvider,
@@ -24,26 +30,14 @@ from intergrax.runtime.execution.lineage.document_store_persistence import (
     DocumentStoreExecutionLineagePersistence,
 )
 from intergrax.runtime.execution.lineage.wiring import resolve_execution_lineage_persistence
-from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
-    wire_causal_evidence_persistence,
-)
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 pytestmark = pytest.mark.unit
 
 
 @dataclass
-class _ToolWiringContext:
-    document_store: object | None
-
-
-@dataclass
-class _BuildContext:
-    tool_wiring_context: _ToolWiringContext
-
-
-@dataclass
 class _EnvWiring:
-    build_context: _BuildContext
+    composition: ApplicationCompositionContext
 
 
 @dataclass
@@ -66,7 +60,18 @@ def _runtime(*, provider: ExecutionLineagePersistenceProvider | None) -> _Runtim
     document_store = InMemoryDocumentStore()
     return _RuntimeStub(
         environment=environment,
-        env_wiring=_EnvWiring(_BuildContext(_ToolWiringContext(document_store))),
+        env_wiring=_EnvWiring(
+            composition_for_factory_context(
+                ApplicationBuildContext.for_manifest(
+                    ApplicationManifest.lab(
+                        app_id="diag_lineage_read",
+                        name="Diag Lineage Read",
+                        agents=[],
+                    ),
+                ),
+                tool_wiring_context=ToolWiringContext(document_store=document_store),
+            )
+        ),
         observability=_Observability(InMemoryRuntimeEventStore()),
     )
 

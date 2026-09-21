@@ -94,10 +94,13 @@ def test_capability_grants_do_not_instantiate_agent_types(
         builders={FactoryOnlyAgent: build_factory_only_agent},
     )
 
-    def _forbid_ctor(_self: type[object]) -> type[object]:
-        raise AssertionError("governance materialization must not call AgentType()")
+    def _forbid_resolve(_binding: AgentBinding) -> type[object]:
+        raise AssertionError("governance materialization must not resolve agent types")
 
-    monkeypatch.setattr(AgentBinding, "resolved_agent_type", _forbid_ctor)
+    monkeypatch.setattr(
+        "intergrax.applications._shared.agent_resolution.resolve_agent_type_from_binding",
+        _forbid_resolve,
+    )
 
     grants = capability_grants_from_application_manifest(
         manifest,

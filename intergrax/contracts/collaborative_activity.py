@@ -1,4 +1,4 @@
-﻿# © Artur Czarnecki. All rights reserved.
+# © Artur Czarnecki. All rights reserved.
 
 """Collaborative Activity & Provenance public contracts (Multiplayer MP-6A).
 

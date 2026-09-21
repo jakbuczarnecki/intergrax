@@ -8,7 +8,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from intergrax.runtime.task.task_metadata_keys import TaskMetadataKey
+from intergrax.contracts.task_metadata_keys import TaskMetadataKey
 
 ENV_SNAPSHOT_RUNTIME_KEY = TaskMetadataKey.ENVIRONMENT_SNAPSHOT
 

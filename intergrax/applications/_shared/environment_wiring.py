@@ -116,9 +116,11 @@ from intergrax.applications._shared.security_assembly_resolver import (
     SecurityAssemblyError,
 )
 from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.applications._shared.platform_plugin_evidence_builder import (
+    build_application_platform_plugin_evidence,
+)
 from intergrax.applications.contracts.platform_plugin_evidence import (
     ApplicationPlatformPluginEvidence,
-    build_application_platform_plugin_evidence,
 )
 from intergrax.core.catalog_bootstrap import bootstrap_catalogs
 from intergrax.core.plugin_env import discover_plugins_enabled
@@ -488,9 +490,9 @@ def wire_application_environment(
     assert_strict_policy_bootstrap_acceptable(env, policy_bundle)
     prompt_registry = resolve_prompt_registry(env.prompt_profile)
 
+    # Canonical prebuilt registry from ApplicationToolWiring — single materialization
+    # authority for composition + agent harness (RuntimeContext prefers prebuilt).
     tool_registry = tool_wiring.registry
-    if not tool_wiring.profile.enabled and not tool_wiring.profile.enabled_bundles:
-        tool_registry = None
 
     skill_pinning_store = InMemorySkillExecutionPinningStore()
 

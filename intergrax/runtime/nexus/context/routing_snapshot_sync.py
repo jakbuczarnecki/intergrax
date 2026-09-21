@@ -62,7 +62,11 @@ def wire_secondary_llm_routing_surfaces(config: RuntimeConfig) -> None:
         tool_planner.attach_routing_runtime_config(config)
     websearch_config = config.websearch_config
     if websearch_config is not None:
-        websearch_config.routing_runtime_config = config
+        from intergrax.runtime.nexus.context.websearch_routing_adapter import (
+            websearch_routing_sync_from_runtime_config,
+        )
+
+        websearch_config.routing_snapshot_sync = websearch_routing_sync_from_runtime_config(config)
 
 
 def sync_routing_for_graph_task(

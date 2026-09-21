@@ -73,17 +73,11 @@ def harness_platform_skill_profile() -> SkillProfile:
 
 def lab_skill_profile() -> SkillProfile:
     """Lab harness preset: harness + domain + universal packs."""
-    return SkillProfile(
-        enabled_bundles=[
-            "harness",
-            "legal",
-            "research",
-            "rag",
-            "workspace",
-            "memory",
-            "knowledge",
-        ]
+    from intergrax.applications.contracts.environment_profile.presets import (
+        lab_skill_profile as _lab_skill_profile,
     )
+
+    return _lab_skill_profile()
 
 
 def research_skill_profile() -> SkillProfile:

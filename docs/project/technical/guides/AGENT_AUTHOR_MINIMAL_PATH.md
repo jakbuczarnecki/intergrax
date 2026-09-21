@@ -8,6 +8,8 @@
 
 ## Purpose
 
+Public agent extensions must not import `intergrax.runtime.nexus.*` as an authoring ABI. Nexus is an internal Execution Engine implementation detail (ADR-HARNESS-001; Agent/UAEP neutralization lands in HARNESS-01-R5-W2).
+
 This guide defines the minimal safe path for implementing a Tier-2 agent in Intergrax.  
 It is intended for human developers, Cursor, Codex and other coding agents.  
 It does not replace [`docs/project/architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md`](../../architecture/AGENT_CONTRACTS_AND_ASSEMBLY.md).
@@ -49,7 +51,7 @@ A minimal Tier-2 agent in this repository typically includes:
 |----------|------|
 | Agent implementation class/module | Domain logic; step handler (`on_next_step` or cognitive pattern base) |
 | `AgentContract` (or equivalent contract builder) | Identity, capabilities, skills, risk, lifecycle, pattern metadata |
-| Capability declaration | Tokens Nexus uses for routing |
+| Capability declaration | Tokens the Execution Engine uses for routing |
 | Optional prompt references | Via Prompt Registry or approved prompt mechanism - not inline production strings |
 | Optional skill/tool declarations | On contract and/or skill resolver |
 | Tests or smoke scenario | When the agent family already has a test pattern in `agents/<name>/tests` |
@@ -71,7 +73,7 @@ Do not invent file names beyond what the repository and [`AGENT_CONTRACTS_AND_AS
 ```text
 1. Tier-3 application receives a task.
 2. Application routes the task into UnifiedTaskRunner.run_task().
-3. Nexus/Graph runtime selects the agent.
+3. Execution Engine / graph runtime selects the agent.
 4. AgentEngine runs the agent under policy, budget, context and observability controls.
 5. The agent receives runtime-provided step context.
 6. The agent decides the next domain action.

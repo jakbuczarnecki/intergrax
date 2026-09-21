@@ -194,12 +194,14 @@ MP-1 freezes semantic contracts only (see ADR-MP-002):
 | **Delegation** | delegator + delegate principals; scoped authority; optional resource/time bounds; never amplifies delegator base authority |
 | **Effective authority** | base principal authority ∩ membership ∩ delegation ∩ workspace policy ∩ resource policy ∩ runtime/tool policy |
 
-Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core. LKW/application adoption (MP-7) remains out of scope until its bounded gate opens.
+Persistence, APIs, repositories, and enforcement implementation are delivered for MP-1 core.
+
+**Current Multiplayer core status:** MP-1…MP-7 closed in their certified scopes (capability SSOT: [`MULTIPLAYER_AI` Current Enterprise Maturity Boundary](../capabilities/architecture/MULTIPLAYER_AI.md#current-enterprise-maturity-boundary)).
 
 **MP-2 status:** **APPROVED / CLOSED** — ADR-MP-003 **Accepted; implementation COMPLETE**; COLLAB-WORK-2A…2G **APPROVED / CLOSED**.
 **MP-3 — ENTERPRISE CERTIFIED / CLOSED** — ADR-MP-004 **Accepted**; **architecture decomposition — APPROVED / CLOSED**; slices **MP-3A…MP-3H — APPROVED / CLOSED** (MP-3H final cross-slice certification).
-**Current active task:** *(none — MP-3 closed)*.
-**Next task:** **MP-7 — LKW reference-product adoption — NEXT** ([`MULTIPLAYER_AI.md`](../capabilities/plan/MULTIPLAYER_AI.md)). **MP-6 — ENTERPRISE CERTIFIED / CLOSED** (**MP-6H — CLOSED / CERTIFIED** — [`MP-6_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/MP-6_FINAL_ENTERPRISE_CERTIFICATION.md)). **MP-5 — ENTERPRISE CERTIFIED / CLOSED** (**MP-5H-D1 — CLOSED / CERTIFIED**; historical **MP-5H — CLOSED / FINAL CERTIFICATION PASSED** at `d0aee066` — [`MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md`](../maintainers/qualification/MP-5H-D1_POST_B4_DELTA_ENTERPRISE_RECERTIFICATION.md), [`MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md`](../maintainers/qualification/MP-5H_FINAL_ENTERPRISE_CERTIFICATION.md)).
+**MP-5 — ENTERPRISE CERTIFIED / CLOSED** · **MP-6 — ENTERPRISE CERTIFIED / CLOSED** · **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED** (Multiplayer Tier-3 consumability boundary certified — not LKW Multiplayer adoption complete).
+**Next Multiplayer capability phase:** **MP-8 — PLANNED / NOT STARTED** (AgentDirectory / external agents). Final hardening before MP-8: MP-FINAL-2…MP-FINAL-4 per capability plan.
 
 ### MP-2 final closure summary (COLLAB-WORK-2G)
 

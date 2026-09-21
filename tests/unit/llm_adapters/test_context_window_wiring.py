@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter
 from intergrax.llm_adapters.registry.model_catalog import reset_model_catalog_cache
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
@@ -31,7 +31,7 @@ def test_llm_profile_context_window_override_propagates_to_claude() -> None:
         options={"context_window_tokens": 512_000},
     )
     with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "k"}, clear=False):
-        adapter = profile.create_adapter(client=MagicMock())
+        adapter = create_adapter(profile, client=MagicMock())
     assert adapter.context_window_tokens == 512_000
 
 

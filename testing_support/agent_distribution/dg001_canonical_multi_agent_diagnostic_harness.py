@@ -8,8 +8,10 @@ from dataclasses import dataclass, replace
 
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.reference_harness import (
-    build_lab_agent_runtime_context,
     default_reference_harness,
+)
+from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+    build_lab_agent_runtime_context,
 )
 from intergrax.agents.authoring.patterns.types import (
     AgentEvaluation,

@@ -10,7 +10,7 @@ from typing import Any
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.registry.model_router import ModelRouter, ModelRoutingDecision
-from intergrax.llm_adapters.registry.profile import LLMProfile, llm_profile_from_env
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter, create_adapter_with_failover, llm_profile_from_env
 from intergrax.llm_adapters.registry.registration_contract import LLMProviderNotConfiguredError
 from intergrax.llm_adapters.routing import LLMRoutingEvaluator, RoutingContext, RoutingEvaluation
 from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
@@ -111,8 +111,8 @@ def create_adapter_for_routing_evaluation(
         if ahi_hint:
             hint = ahi_hint
     if profile.fallback_profiles or hint or profile.routing_policy_hint:
-        return profile.create_adapter_with_failover(policy_route_hint=hint)
-    return profile.create_adapter()
+        return create_adapter_with_failover(profile, policy_route_hint=hint)
+    return create_adapter(profile)
 
 
 def resolve_runtime_llm_profile(
@@ -180,8 +180,8 @@ def _create_base_llm_adapter(
     hint: str | None,
 ) -> LLMAdapter:
     if profile.fallback_profiles or hint or profile.routing_policy_hint:
-        return profile.create_adapter_with_failover(policy_route_hint=hint)
-    return profile.create_adapter()
+        return create_adapter_with_failover(profile, policy_route_hint=hint)
+    return create_adapter(profile)
 
 
 def _resolve_llm_adapter_impl(

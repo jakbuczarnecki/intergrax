@@ -6,30 +6,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import StrEnum
 
-from intergrax.contracts.execution_identity import AttemptId, EventId, RunId, TaskId
-from intergrax.runtime.diagnostics.functional_diagnostic_identity import (
+from intergrax.contracts.diagnostics.functional_diagnostic_check_status import (
+    FunctionalDiagnosticCheckStatus,
+)
+from intergrax.contracts.diagnostics.functional_diagnostic_identity import (
     FunctionalDiagnosticCheckId,
     FunctionalDiagnosticSpecificationId,
 )
-
-
-class FunctionalDiagnosticCheckStatus(StrEnum):
-    """
-    Deterministic check outcome — not probabilistic confidence.
-
-    PROVEN_PASS / PROVEN_FAIL require direct supporting evidence.
-    INSUFFICIENT_EVIDENCE means absence of facts cannot be upgraded to FAIL.
-    NOT_EVALUATED means the check was not reached in this analysis cycle.
-    BLOCKED_BY_UPSTREAM means a dependency prevented evaluation.
-    """
-
-    PROVEN_PASS = "proven_pass"
-    PROVEN_FAIL = "proven_fail"
-    INSUFFICIENT_EVIDENCE = "insufficient_evidence"
-    NOT_EVALUATED = "not_evaluated"
-    BLOCKED_BY_UPSTREAM = "blocked_by_upstream"
+from intergrax.contracts.execution_identity import AttemptId, EventId, RunId, TaskId
 
 
 _CONTRADICTION_LIMITATION = (

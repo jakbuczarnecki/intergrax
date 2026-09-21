@@ -10,10 +10,12 @@ import time
 
 import pytest
 
+from intergrax.applications._shared.business_outcome_webhook_verifier import (
+    BusinessOutcomeWebhookVerifier,
+)
 from intergrax.applications.contracts.business_outcome_webhook import (
     BusinessOutcomeWebhookConfig,
     BusinessOutcomeWebhookPayload,
-    BusinessOutcomeWebhookVerifier,
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]

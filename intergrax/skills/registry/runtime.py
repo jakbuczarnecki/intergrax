@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Dict, List
 
+from intergrax.skills.contracts.registered_skill import RegisteredSkill
+from intergrax.skills.contracts.skill_runtime_binding_metadata import (
+    SkillRuntimeBindingMetadata,
+)
 from intergrax.skills.core.contracts import SkillManifest
-from intergrax.skills.registry.provenance import SkillRuntimeBindingMetadata
-
-
-@dataclass(frozen=True, slots=True)
-class RegisteredSkill:
-    manifest: SkillManifest
-    binding: SkillRuntimeBindingMetadata | None = None
 
 
 class SkillRegistry:

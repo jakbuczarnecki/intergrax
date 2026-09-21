@@ -58,7 +58,15 @@ from intergrax.applications._shared.product_observability_dashboard_wiring impor
     wire_harness_product_observability_dashboard,
 )
 from intergrax.debug.store import open_default_task_checkpoint_persistence
-from governed_contractor_application.host.execution_wiring import build_governed_contractor_host_task_execution
+from intergrax.applications._shared.harness_host_orchestration_topology_wiring import (
+    HarnessHostOrchestrationTopologyReliabilityCompositionError,
+)
+from governed_contractor_application.host.orchestration_topology_production_composition import (
+    build_governed_contractor_production_orchestration_topology_submission_port,
+)
+from governed_contractor_application.host.production_external_work_composition import (
+    resolve_production_runtime_policy_bundle_evaluator,
+)
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.host.collaborative_work_integration_profile import (
     resolve_governed_contractor_collaborative_work_integration_profile,
@@ -77,6 +85,8 @@ def create_governed_contractor_backend_app(
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
     document_store: object | None = None,
+    key_value_cache: object | None = None,
+    execution_continuation_state_store: object | None = None,
     observability_export: ObservabilityExportOperatorConfig | None = None,
 ) -> FastAPI:
     settings = settings or GovernedContractorBackendSettings.from_env()
@@ -88,6 +98,17 @@ def create_governed_contractor_backend_app(
     manifest_for_runtime = manifest
     profile_persistence_kwargs: dict[str, object] = {}
     resolved_tenant_id = manifest.app_id
+    strict_topology_reliability = production_mode and process_composition is not None
+    provider_invocation_store = (
+        process_composition.provider_invocation_store
+        if process_composition is not None
+        else None
+    )
+    if strict_topology_reliability and provider_invocation_store is None:
+        raise HarnessHostOrchestrationTopologyReliabilityCompositionError(
+            "strict governed contractor production host requires "
+            "ProductionProcessComposition.provider_invocation_store",
+        )
     if process_composition is not None:
         if production_mode:
             env = resolve_reference_production_strict_host_environment(env)
@@ -98,6 +119,11 @@ def create_governed_contractor_backend_app(
         )
     elif document_store is not None:
         profile_persistence_kwargs = {"document_store": document_store}
+        if key_value_cache is not None:
+            profile_persistence_kwargs["key_value_cache"] = key_value_cache
+        if production_mode:
+            env = resolve_reference_production_strict_host_environment(env)
+            manifest_for_runtime = manifest.model_copy(update={"environment": env})
     collaborative_work_integration_profile = None
     if document_store is not None:
         collaborative_work_integration_profile = (
@@ -115,9 +141,23 @@ def create_governed_contractor_backend_app(
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
         registry_projection=registry_projection,
+        collaborative_work_repositories=settings.collaborative_work_repositories,
         collaborative_work_integration_profile=collaborative_work_integration_profile,
         orchestration_decision_requirement_policy=(
-            default_governed_contractor_harness_orchestration_decision_requirement_policy()
+            settings.decision_requirement_policy
+            or default_governed_contractor_harness_orchestration_decision_requirement_policy()
+        ),
+        runtime_policy_evaluator=resolve_production_runtime_policy_bundle_evaluator(
+            settings,
+        ),
+        active_execution_task_scope=settings.active_execution_task_scope,
+        execution_continuation_state_store=execution_continuation_state_store,
+        provider_invocation_store=provider_invocation_store,
+        require_strict_orchestration_topology_reliability=strict_topology_reliability,
+        strict_orchestration_topology_submission_port_builder=(
+            build_governed_contractor_production_orchestration_topology_submission_port
+            if strict_topology_reliability
+            else None
         ),
         **profile_persistence_kwargs,
     )

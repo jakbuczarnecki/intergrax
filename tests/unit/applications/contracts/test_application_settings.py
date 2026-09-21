@@ -2,18 +2,23 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import ClassVar
 
 import pytest
 
-from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
+from intergrax.applications._shared.settings_loader import (
+    ApplicationSettingsEnvHost,
+    EnvReader,
+    load_application_settings_from_env,
+)
+from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 
 pytestmark = pytest.mark.unit
 
 
 @dataclass(frozen=True, kw_only=True)
-class CustomSettings(IntergraxApplicationSettingsBase):
+class CustomSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
     env_prefix: ClassVar[str] = "CUSTOM_"
     crm_api_url: str = ""
 
@@ -41,5 +46,47 @@ def test_custom_settings_does_not_require_from_env_override() -> None:
     assert "from_env" not in CustomSettings.__dict__
     assert (
         CustomSettings.from_env.__func__
-        is IntergraxApplicationSettingsBase.from_env.__func__
+        is ApplicationSettingsEnvHost.from_env.__func__
     )
+
+
+def test_contract_settings_module_has_no_from_env() -> None:
+    assert not hasattr(IntergraxApplicationSettingsBase, "from_env")
+
+
+def test_loader_is_explicit_env_owner() -> None:
+    @dataclass(frozen=True, kw_only=True)
+    class _HostSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
+        pass
+
+    settings = load_application_settings_from_env(_HostSettings)
+    assert settings.backend_host == "127.0.0.1"
+
+
+@dataclass(frozen=True, kw_only=True)
+class _FieldDefaultProbe(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
+    plain: str = "plain-default"
+    from_factory: frozenset[str] = field(default_factory=lambda: frozenset({"factory"}))
+    required_only: int
+
+
+def test_field_default_returns_plain_dataclass_default() -> None:
+    assert _FieldDefaultProbe._field_default("plain") == "plain-default"
+
+
+def test_field_default_invokes_default_factory() -> None:
+    first = _FieldDefaultProbe._field_default("from_factory")
+    second = _FieldDefaultProbe._field_default("from_factory")
+    assert first == frozenset({"factory"})
+    assert second == frozenset({"factory"})
+    assert first is not second
+
+
+def test_field_default_unknown_field_raises_key_error() -> None:
+    with pytest.raises(KeyError):
+        _FieldDefaultProbe._field_default("not_a_field")
+
+
+def test_field_default_required_field_without_default_raises_key_error() -> None:
+    with pytest.raises(KeyError):
+        _FieldDefaultProbe._field_default("required_only")

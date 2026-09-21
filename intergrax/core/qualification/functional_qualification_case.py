@@ -12,7 +12,9 @@ from intergrax.core.qualification.functional_diagnostic_expectation import (
     QualificationFunctionalOutcome,
 )
 from intergrax.core.qualification.functional_qualification_attempts import QualificationAttemptRecord
-from intergrax.runtime.diagnostics.functional_operator_projection import FunctionalOperatorOutcomeStatus
+from intergrax.contracts.diagnostics.functional_operator_projection import (
+    FunctionalOperatorOutcomeStatus,
+)
 
 
 @dataclass(frozen=True, slots=True)

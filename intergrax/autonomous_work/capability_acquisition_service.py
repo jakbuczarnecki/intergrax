@@ -396,6 +396,10 @@ def _handle_layer_outcome(
         return None
     if outcome.disposition is CapabilityDiscoveryDisposition.NO_MATCH:
         return None
+    if outcome.disposition is CapabilityDiscoveryDisposition.REALIZATION_REQUIRED:
+        # Known catalog capability requiring domain realization — not A0 reuse and
+        # not semantic absence. Acquisition orchestration remains out of UCA-1.
+        return None
     if outcome.disposition is CapabilityDiscoveryDisposition.MATCH_FOUND:
         return list(outcome.candidates)
     return None

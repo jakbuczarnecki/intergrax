@@ -1,6 +1,9 @@
 # Diagnostic Platform Qualification - Closeout
 
-> **Qualification record at historical SHAs — not architecture SSOT.** Current spine semantics: [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) · [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md).
+> **HISTORICAL QUALIFICATION SNAPSHOT** — not architecture SSOT.
+> **CURRENT AUTHORITY:** [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) · [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md)
+> **Current gap baseline:** [`OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md`](../audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md)
+> Counts such as “1 initialized scenario” below are historical at the closeout SHA; current discovery = **4** initialized scenarios.
 
 **Program:** DIAG-PLATFORM-QUALIFICATION (A–F) + R1 execution-authority re-audit
 **Result:** **PASS**

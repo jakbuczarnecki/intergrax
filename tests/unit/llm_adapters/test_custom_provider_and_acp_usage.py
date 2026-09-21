@@ -7,7 +7,7 @@ import pytest
 from intergrax.contracts.acp_state import AcpInvocationUsageView, AcpTokenUsage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
-from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter
 from intergrax.llm_adapters.routing.context_bridge import tokens_used_from_usage
 
 
@@ -60,7 +60,7 @@ def test_llm_profile_accepts_custom_registered_provider_slug(_restore_registry_s
         override=True,
     )
     profile = LLMProfile(provider="custom_gateway", model="custom-model")
-    adapter = profile.create_adapter()
+    adapter = create_adapter(profile)
     assert isinstance(adapter, LLMAdapter)
     assert adapter.provider == "custom_gateway"
 

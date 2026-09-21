@@ -112,7 +112,7 @@ from intergrax.tools.invocation_wiring_adapter import (
     registration_wiring_for_handler,
     registration_wiring_view_for_handler,
 )
-from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.registry.read import ToolRegistryRead
 from intergrax.tools.tool_executor import ToolExecutor
 
 
@@ -155,7 +155,7 @@ class RuntimeToolInvoker:
     def __init__(
         self,
         *,
-        registry: ToolRegistry,
+        registry: ToolRegistryRead,
         executor: ToolExecutor,
         scope_policy: Optional[ToolScopePolicy] = None,
         pre_effect_coordinator: Optional[IdempotencyPreEffectCoordinator] = None,
@@ -211,7 +211,7 @@ class RuntimeToolInvoker:
         self._execution_pool_closed = True
 
     @property
-    def registry(self) -> ToolRegistry:
+    def registry(self) -> ToolRegistryRead:
         """Read-only access to the runtime tool catalog (Phase O.5)."""
         return self._registry
 
@@ -651,7 +651,6 @@ class RuntimeToolInvoker:
                 )
             return
 
-        from intergrax.contracts.runtime_policy import PolicyAction
         from intergrax.runtime.agent_governance.errors import (
             ToolGovernanceApprovalRequiredError,
             ToolGovernanceDeniedError,
@@ -696,9 +695,26 @@ class RuntimeToolInvoker:
                 tool_id=contract.tool_id,
                 reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
             ) from None
-        decision = authorization.decision
+        from intergrax.runtime.governance.active_governed_execution_task import (
+            peek_governed_execution_task,
+        )
+        from intergrax.runtime.policy.mse_hitl_effect_gate import (
+            MseHitlEffectGateDisposition,
+            evaluate_mse_hitl_effect_gate,
+            resolve_continuation_port_for_mse_hitl_gate,
+        )
+
         capability = contract.category.strip() or contract.tool_id
-        if decision.action in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE):
+        gate = evaluate_mse_hitl_effect_gate(
+            authorization,
+            enforcement_request=enforcement_request,
+            task=peek_governed_execution_task(),
+            continuation_port=resolve_continuation_port_for_mse_hitl_gate(),
+        )
+        decision = gate.authorization.decision
+        if gate.disposition is MseHitlEffectGateDisposition.PROCEED:
+            return
+        if gate.disposition is MseHitlEffectGateDisposition.REQUIRE_HITL:
             state.trace_event(
                 component=TraceComponent.TOOLS,
                 step="meaningful_side_effect_authorization_human_required",
@@ -719,39 +735,28 @@ class RuntimeToolInvoker:
                 approval_id=decision.policy_rule_id or "meaningful_side_effect.require_human",
                 reason=decision.reason,
                 policy_results=(),
+                governed_continuation_request=gate.governed_continuation_request,
             )
-        if (
-            not authorization.permitted
-            or decision.action is PolicyAction.DENY
-            or decision.action is PolicyAction.MODIFY
-        ):
-            state.trace_event(
-                component=TraceComponent.TOOLS,
-                step="meaningful_side_effect_authorization_denied",
-                message="Meaningful side-effect authorization denied tool invocation.",
-                level=TraceLevel.ERROR,
-                payload=ToolInvocationErrorDiagV1(
-                    tool_id=request.tool_id,
-                    step_id=str(request.step_id),
-                    error_code=RuntimeErrorCode.PERMISSION_ERROR,
-                    error_message=decision.reason,
-                ),
-            )
-            raise ToolGovernanceDeniedError(
-                run_id=state.run_id,
-                agent_id=agent_id,
+        state.trace_event(
+            component=TraceComponent.TOOLS,
+            step="meaningful_side_effect_authorization_denied",
+            message="Meaningful side-effect authorization denied tool invocation.",
+            level=TraceLevel.ERROR,
+            payload=ToolInvocationErrorDiagV1(
                 tool_id=request.tool_id,
-                capability=capability,
-                reason=decision.reason,
-                policy_results=(),
-            )
-        if decision.action is not PolicyAction.ALLOW:
-            raise MeaningfulSideEffectAuthorizationRequiredError(
-                run_id=state.run_id,
-                agent_id=agent_id,
-                tool_id=contract.tool_id,
-                reason=SideEffectAuthorizationFailureReason.NOT_CONFIGURED,
-            )
+                step_id=str(request.step_id),
+                error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                error_message=decision.reason,
+            ),
+        )
+        raise ToolGovernanceDeniedError(
+            run_id=state.run_id,
+            agent_id=agent_id,
+            tool_id=request.tool_id,
+            capability=capability,
+            reason=decision.reason,
+            policy_results=(),
+        )
 
     def _require_agent_runtime_governance(
         self,
@@ -1075,7 +1080,14 @@ class RuntimeToolInvoker:
                         error_message=msg,
                     ),
                 )
-                result = ToolExecutionResult.fail(RuntimeErrorCode.TIMEOUT, msg)
+                timeout_certainty = ToolEffectCertainty.UNCERTAIN
+                if boundary is not None and not boundary.may_have_started:
+                    timeout_certainty = ToolEffectCertainty.NOT_STARTED
+                result = ToolExecutionResult.fail(
+                    RuntimeErrorCode.TIMEOUT,
+                    msg,
+                    effect_certainty=timeout_certainty,
+                )
                 self._emit_boundary_event(
                     state=state,
                     agent_id=agent_id,

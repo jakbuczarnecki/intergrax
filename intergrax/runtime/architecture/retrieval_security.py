@@ -5,8 +5,20 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import Mapping, Protocol
 
 from pydantic import BaseModel, Field
+
+
+class RetrievalPoisoningInputChunk(Protocol):
+    """Minimal chunk shape for retrieval poisoning defense (vendor-neutral)."""
+
+    id: str
+    text: str
+    score: float
+
+    @property
+    def metadata(self) -> Mapping[str, object]: ...
 
 
 class RetrievalTrustLevel(str, Enum):

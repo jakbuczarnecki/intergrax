@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from intergrax.agents.authoring.acp_stub_reflex import (
+from intergrax.runtime.nexus.agents.acp_stub_reflex import (
     build_agent_runtime_context,
     evaluate_complete,
     perceive_run_input,
@@ -14,7 +14,7 @@ from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.registry.profile import llm_profile_from_env
+from intergrax.llm_adapters.registry.profile import create_adapter, llm_profile_from_env
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
@@ -55,7 +55,7 @@ class ToolSelectionQualifierAgent(DiagnosticReflexAgent):
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         adapter = self._llm_adapter
         if adapter is None:
-            adapter = llm_profile_from_env().create_adapter()
+            adapter = create_adapter(llm_profile_from_env())
         return build_agent_runtime_context(request, adapter)
 
     async def perceive(self, step_ctx: AgentStepContext):

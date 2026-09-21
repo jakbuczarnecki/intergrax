@@ -10,6 +10,8 @@ from intergrax.core.catalog_bootstrap import bootstrap_catalogs
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.integrations.registry import presets
+from intergrax.integrations.registry.factory import resolve_from_profile
+from intergrax.integrations.registry.presets import lab_stack, legal_stack
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -31,10 +33,10 @@ def _bootstrap() -> None:
 )
 def test_preset_resolves_relational(factory) -> None:
     profile = factory()
-    store = profile.resolve(IntegrationCategory.RELATIONAL_STORE)
+    store = resolve_from_profile(profile, IntegrationCategory.RELATIONAL_STORE)
     assert store is not None
 
 
 def test_profile_class_methods() -> None:
-    assert IntegrationProfile.lab_stack() is not None
-    assert IntegrationProfile.legal_stack() is not None
+    assert lab_stack() is not None
+    assert legal_stack() is not None

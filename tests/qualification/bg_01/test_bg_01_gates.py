@@ -96,7 +96,7 @@ _FORBIDDEN_BG_IMPORT_PREFIXES = (
     "celery",
     "redis",
     "kafka",
-    "intergrax.agents.uaep",
+    "intergrax.runtime.nexus.uaep",
     "intergrax.integrations.providers",
 )
 _VENDOR_IMPORT_MARKERS = (

@@ -8,10 +8,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import ClassVar, FrozenSet, Literal, Mapping, Optional
 
-from intergrax.applications.contracts.settings import (
+from intergrax.applications._shared.settings_loader import (
+    ApplicationSettingsEnvHost,
     EnvReader,
-    IntergraxApplicationSettingsBase,
 )
+from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.fastapi_core.config import ApiEnvironment
@@ -96,7 +97,7 @@ def _parse_tenant_ids(raw: str) -> tuple[str, ...]:
 
 
 @dataclass(frozen=True, kw_only=True)
-class LocalWorkspaceBackendSettings(IntergraxApplicationSettingsBase):
+class LocalWorkspaceBackendSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
     """Environment for local_workspace_application (scaffolded product profile)."""
 
     env_prefix: ClassVar[str] = "LOCAL_WORKSPACE_"

@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework — proprietary and confidential.
 
-"""Diagnostic domain contracts (persistence ports and read models)."""
+"""Diagnostic domain contracts (persistence ports, read models, operator projection)."""
 
 from __future__ import annotations
 
@@ -11,6 +11,24 @@ from intergrax.contracts.diagnostics.diagnostic_read_model import (
 )
 from intergrax.contracts.diagnostics.diagnostic_repository import (
     DiagnosticProblemRepository,
+)
+from intergrax.contracts.diagnostics.functional_diagnostic_check_status import (
+    FunctionalDiagnosticCheckStatus,
+)
+from intergrax.contracts.diagnostics.functional_diagnostic_identity import (
+    FunctionalDiagnosticCheckId,
+    FunctionalDiagnosticSpecificationId,
+    validate_functional_diagnostic_check_id,
+    validate_functional_diagnostic_specification_id,
+    validate_functional_diagnostic_specification_version,
+)
+from intergrax.contracts.diagnostics.functional_operator_projection import (
+    FunctionalCheckPassResult,
+    FunctionalDiagnosticOperatorFinding,
+    FunctionalDiagnosticOperatorLimitation,
+    FunctionalDiagnosticOperatorProjection,
+    FunctionalDiagnosticSummary,
+    FunctionalOperatorOutcomeStatus,
 )
 from intergrax.contracts.diagnostics.problem_identity import (
     ProblemId,
@@ -34,6 +52,15 @@ from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
 
 __all__ = [
     "DiagnosticProblemRepository",
+    "FunctionalCheckPassResult",
+    "FunctionalDiagnosticCheckId",
+    "FunctionalDiagnosticCheckStatus",
+    "FunctionalDiagnosticOperatorFinding",
+    "FunctionalDiagnosticOperatorLimitation",
+    "FunctionalDiagnosticOperatorProjection",
+    "FunctionalDiagnosticSpecificationId",
+    "FunctionalDiagnosticSummary",
+    "FunctionalOperatorOutcomeStatus",
     "PersistedProblem",
     "ProblemGroupingSubjectRef",
     "ProblemId",
@@ -49,4 +76,7 @@ __all__ = [
     "TerminalDiagnosticDispatchStatus",
     "TerminalExecutionDiagnosticPort",
     "TerminalExecutionDiagnosticRequest",
+    "validate_functional_diagnostic_check_id",
+    "validate_functional_diagnostic_specification_id",
+    "validate_functional_diagnostic_specification_version",
 ]

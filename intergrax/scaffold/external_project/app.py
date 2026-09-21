@@ -8,6 +8,7 @@ import importlib
 
 from intergrax.harness import AgentGraph, HarnessApplication
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.presets import lab_stack
 
 
 def create_app():
@@ -15,7 +16,7 @@ def create_app():
     return (
         HarnessApplication("demo", route_prefix="/v1/demo")
         .agents(EchoAgent, contract_id="echo")
-        .integrations(IntegrationProfile.lab_stack())
+        .integrations(lab_stack())
         .graph(AgentGraph().default(EchoAgent))
         .mode("balanced")
         .build_fastapi()

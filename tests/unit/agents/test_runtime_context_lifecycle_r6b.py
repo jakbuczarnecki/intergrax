@@ -9,11 +9,11 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.agent_engine import AgentEngine
-from intergrax.agents.authoring.acp_uaep_shim import close_acp_catalog_exec_ctx
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.acp_uaep_shim import close_acp_catalog_exec_ctx
 from intergrax.agents.authoring.base import IntergraxAgent
 from intergrax.agents.authoring.step_outcome import StepOutcome
-from intergrax.agents.uaep import UAEPExecutor
+from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
@@ -313,7 +313,7 @@ def test_runtime_context_closes_owned_tool_invoker() -> None:
 
 @pytest.mark.unit
 def test_host_managed_tool_invoker_survives_runtime_context_close() -> None:
-    from intergrax.agents.authoring.acp_uaep_shim import apply_host_tool_invoker_to_runtime_context
+    from intergrax.runtime.nexus.agents.acp_uaep_shim import apply_host_tool_invoker_to_runtime_context
     from testing_support.catalog_declarative_invoker import (
         build_catalog_declarative_invoker_from_registry,
     )

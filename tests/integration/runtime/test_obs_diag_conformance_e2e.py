@@ -12,7 +12,6 @@ import pytest
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id, mint_run_id, mint_task_id
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     STRATEGY_ID,
-    DeterministicProblemGroupingStrategy,
 )
 from intergrax.runtime.diagnostics.diagnostic_orchestration_models import (
     DiagnosticExecutionScope,

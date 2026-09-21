@@ -8,7 +8,7 @@ from dataclasses import asdict
 
 import pytest
 
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_identity import (
     mint_attempt_id,

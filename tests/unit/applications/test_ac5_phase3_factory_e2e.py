@@ -44,6 +44,8 @@ from intergrax.applications.contracts.build_context import ApplicationBuildConte
 from intergrax.applications.contracts.errors import AgentImportError
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
+from intergrax.contracts.agent_run_enums import AgentRunStatus
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
@@ -94,6 +96,10 @@ class _OtherAgent(Agent):
             description="stub",
             capabilities=["other"],
         )
+
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        _ = request
+        return AgentRunResult(status=AgentRunStatus.SUCCEEDED, output="ok")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         config = RuntimeConfig(llm_adapter=FakeLLMAdapter(), production_mode=False)
@@ -374,7 +380,7 @@ def test_invalid_factory_result_fails_before_registry_projection() -> None:
     revision = _revision(package_digests=(_DIGEST_A,))
     resolver = _resolver((_DIGEST_A, _REF_IMMUTABLE, _bad_factory))
 
-    with pytest.raises(AgentImportError, match="must return Agent"):
+    with pytest.raises(AgentImportError, match="must return Tier2Agent"):
         _project(_bundle(roster=roster, revision=revision, factory_resolver=resolver))
 
 

@@ -4,7 +4,8 @@ from intergrax.utils import attribute_access
 import pytest
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.uaep import UAEPExecutor
+from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
+from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
@@ -30,7 +31,7 @@ from testing_support.builder import FakeLLMAdapter, build_in_memory_session_mana
 pytestmark = pytest.mark.gate
 
 
-class _ShadowWriteAgent(Agent):
+class _ShadowWriteAgent(HarnessReferenceAgent):
     def get_contract(self) -> AgentContract:
         return AgentContract(
             id="shadow_writer",
@@ -63,7 +64,7 @@ class _ShadowWriteAgent(Agent):
             session_manager=build_in_memory_session_manager(),
         )
 
-    def get_steps(self, context: RuntimeContext) -> list[AgentStep]:
+    def get_steps(self) -> list[AgentStep]:
         _ = context
         return [AgentStep(step_id="write", step_name="write", step_index=0)]
 

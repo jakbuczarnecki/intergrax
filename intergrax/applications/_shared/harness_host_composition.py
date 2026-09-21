@@ -99,6 +99,17 @@ def resolve_harness_host_nexus_loop(runtime: HarnessHostRuntime) -> NexusLoop:
     return _require_internal_composition(runtime)._orchestration_backend
 
 
+def resolve_harness_host_orchestration_topology_submission_port(
+    runtime: HarnessHostRuntime,
+) -> object:
+    """Resolve strict production topology submission port wired on the host runtime."""
+    from intergrax.applications._shared.harness_host_orchestration_topology_wiring import (
+        resolve_harness_host_orchestration_topology_wiring,
+    )
+
+    return resolve_harness_host_orchestration_topology_wiring(runtime).submission_port
+
+
 def resolve_harness_host_middleware_pipeline(runtime: HarnessHostRuntime) -> MiddlewarePipeline:
     """Resolve middleware pipeline for platform assembly verification."""
     return _require_internal_composition(runtime).middleware_pipeline
@@ -165,5 +176,6 @@ __all__ = [
     "resolve_harness_host_lifecycle_hook_coordinator",
     "resolve_harness_host_middleware_pipeline",
     "resolve_harness_host_nexus_loop",
+    "resolve_harness_host_orchestration_topology_submission_port",
     "resolve_harness_host_runtime_event_persistence",
 ]

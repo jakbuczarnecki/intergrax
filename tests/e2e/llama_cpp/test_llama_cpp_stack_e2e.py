@@ -21,7 +21,7 @@ from langchain_core.documents import Document
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
-from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
 from intergrax.rag.embedding.engine.embedding_engine import EmbeddingEngine
 from intergrax.rag.embedding.pipeline.embedding_pipeline import EmbeddingPipeline
@@ -73,7 +73,7 @@ def test_llama_cpp_profile_create_adapter() -> None:
     require_llama_cpp_reachable(base_url=_chat_base_url(), hard_fail=_VERIFY_MODE)
     model = os.getenv("INTERGRAX_LLM_MODEL", "").strip() or "default"
     profile = LLMProfile(provider=LLMProvider.LLAMA_CPP, model=model)
-    adapter = profile.create_adapter()
+    adapter = create_adapter(profile)
     response = adapter.generate_messages(
         [ChatMessage(role="user", content="Say hello in one word.")],
         max_tokens=16,

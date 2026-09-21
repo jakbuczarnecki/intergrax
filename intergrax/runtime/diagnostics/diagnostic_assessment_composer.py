@@ -7,6 +7,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.contracts.diagnostics.functional_operator_projection import (
+    FunctionalDiagnosticOperatorProjection,
+)
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.runtime.diagnostics.diagnostic_assessment import (
     DiagnosticAssessment,
@@ -16,7 +19,6 @@ from intergrax.runtime.diagnostics.functional_diagnostic_analysis import (
     FunctionalDiagnosticAnalysis,
 )
 from intergrax.runtime.diagnostics.functional_operator_projection import (
-    FunctionalDiagnosticOperatorProjection,
     FunctionalOperatorProjector,
 )
 

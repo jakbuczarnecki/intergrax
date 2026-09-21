@@ -10,54 +10,13 @@ from intergrax.agents.authoring.patterns.types import (
     Observation,
     ReasoningResult,
 )
-from intergrax.agents.reference_harness import (
-    LabHarnessContext,
-    build_lab_agent_runtime_context,
-    default_reference_harness,
-)
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
-from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.memory.conversational_memory import ChatMessage
-from intergrax.contracts.task_envelope import (
-    TaskEnvelope,
-    routing_capability_from_envelope,
-)
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.skills.providers.harness.manifests import HARNESS_TOOL_SMOKE
-from typing import Optional, Sequence
-
-
-class _EchoLLMAdapter(LLMAdapter):
-    provider = "echo"
-    model = "echo-stub"
-
-    @property
-    def context_window_tokens(self) -> int:
-        return 128_000
-
-    def generate_messages(
-        self,
-        messages: Sequence[ChatMessage],
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
-    ) -> LLMAdapterResponse:
-        _ = temperature, max_tokens, run_id
-        for msg in reversed(messages):
-            content = msg.content or ""
-            if content:
-                return build_adapter_response(content=f"echo: {content}")
-        return build_adapter_response(content="echo: (empty)")
 
 
 class EchoAgent(ReflexAgent):
@@ -71,9 +30,6 @@ class EchoAgent(ReflexAgent):
     risk_level = AgentRiskLevel.LOW
     max_steps = 5
     cognitive_pattern = CognitivePattern.REFLEX
-
-    def __init__(self, harness: LabHarnessContext | None = None) -> None:
-        self._harness = harness or default_reference_harness()
 
     def get_contract(self) -> AgentContract:
         return AgentContract(
@@ -99,8 +55,8 @@ class EchoAgent(ReflexAgent):
             pattern_version=self.pattern_version,
         )
 
-    def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
-        capability = task_context.capability
+    def can_handle(self, task_context: TaskEnvelope) -> CapabilityMatchResult:
+        capability = routing_capability_from_envelope(task_context)
         if capability in (None, "echo.basic"):
             return CapabilityMatchResult(
                 matched=True,
@@ -110,25 +66,6 @@ class EchoAgent(ReflexAgent):
                 rationale="default harness agent",
             )
         return CapabilityMatchResult(matched=False, rationale="capability not supported")
-
-    def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        from intergrax.agents.defaults import harness_production_mode
-        from intergrax.runtime.nexus.config import RuntimeConfig
-
-        config = RuntimeConfig(
-            llm_adapter=_EchoLLMAdapter(),
-            enable_rag=False,
-            production_mode=harness_production_mode(),
-            tenant_id=request.tenant_id,
-        )
-        session_manager = SessionManager(storage=InMemorySessionStorage())
-        return build_lab_agent_runtime_context(
-            request=request,
-            llm_adapter=_EchoLLMAdapter(),
-            harness=self._harness,
-            pipeline=None,
-            runtime_context=RuntimeContext.build(config=config, session_manager=session_manager),
-        )
 
     async def perceive(self, step_ctx: AgentStepContext) -> Observation:
         message = self.read_run_input(step_ctx)

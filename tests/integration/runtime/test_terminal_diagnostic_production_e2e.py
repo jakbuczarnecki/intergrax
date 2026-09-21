@@ -11,15 +11,20 @@ from dataclasses import replace
 import pytest
 
 from echo.echo_agent import EchoAgent
+from intergrax.applications._shared.application_composition_context import (
+    composition_for_factory_context,
+)
 from intergrax.applications._shared.diagnostic_read_wiring import (
     HostDiagnosticReadDependencies,
     build_diagnostic_read_service,
-    resolve_host_diagnostic_read_dependencies,
 )
 from intergrax.applications._shared.diagnostic_runtime_wiring import (
     build_terminal_execution_diagnostic_trigger,
     resolve_host_diagnostic_runtime_dependencies,
 )
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
     CentralTerminalExecutionDiagnosticPort,
     wrap_terminal_execution_diagnostic_trigger,
@@ -30,14 +35,6 @@ from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import 
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.product_observability_dashboard_wiring import (
     _build_diagnostic_operations_pane,
-)
-from intergrax.applications._shared.harness_host_composition import (
-    bootstrap_harness_host_application_plugins,
-    bootstrap_harness_host_platform,
-    resolve_harness_host_event_bus,
-    resolve_harness_host_lifecycle_hook_coordinator,
-    resolve_harness_host_middleware_pipeline,
-    resolve_harness_host_runtime_event_persistence,
 )
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
@@ -77,6 +74,9 @@ from governed_contractor_application.manifest import build_governed_contractor_m
 from governed_contractor_application.tests.governed_contractor_ac3_projection import (
     build_governed_contractor_test_registry_projection,
 )
+from testing_support.admitted_root_governance_identity import (
+    lab_admitted_root_governance_identity_for_task,
+)
 from tests.unit.applications.test_product_observability_dashboard_wiring import (
     _product_env,
 )
@@ -92,6 +92,13 @@ _TENANT_B = "tenant-terminal-diag-b"
 _TASK_NAME = "terminal_diag.echo.v1"
 
 
+def _unified_task_runner(loop: NexusLoop) -> UnifiedTaskRunner:
+    return UnifiedTaskRunner(
+        loop,
+        admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
+    )
+
+
 def _run_coro_sync(coro: object) -> object:
     try:
         asyncio.get_running_loop()
@@ -103,18 +110,27 @@ def _run_coro_sync(coro: object) -> object:
 
 
 class _FakeEnvWiring:
+    """Minimal duck-typed env wiring exposing the composition contract surface."""
+
     def __init__(self, document_store: object) -> None:
-        self.build_context = _FakeBuildContext(document_store)
-
-
-class _FakeBuildContext:
-    def __init__(self, document_store: object) -> None:
-        self.tool_wiring_context = _FakeToolWiringContext(document_store)
-
-
-class _FakeToolWiringContext:
-    def __init__(self, document_store: object) -> None:
-        self.document_store = document_store
+        self.composition = composition_for_factory_context(
+            ApplicationBuildContext.for_manifest(
+                ApplicationManifest.lab(
+                    app_id="terminal_diag_e2e",
+                    name="Terminal Diag E2E",
+                    route_prefix="/v1/terminal_diag_e2e",
+                    env_prefix="TERMINAL_DIAG_E2E_",
+                    agents=[
+                        AgentBinding.mount(
+                            EchoAgent,
+                            contract_id="echo",
+                            capabilities=["echo.basic"],
+                        )
+                    ],
+                ),
+            ),
+            tool_wiring_context=ToolWiringContext(document_store=document_store),
+        )
 
 
 class _HarnessRuntimeStub:
@@ -214,7 +230,7 @@ async def test_real_nexus_execution_triggers_diagnostics_without_manual_orchestr
         return result
 
     monkeypatch.setattr(trigger._orchestrator, "run", _capture_run)  # noqa: SLF001
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
 
     result = await runner.run_task(
         Task(
@@ -235,7 +251,7 @@ async def test_real_nexus_execution_triggers_diagnostics_without_manual_orchestr
 @pytest.mark.asyncio
 async def test_clean_execution_does_not_create_problem() -> None:
     loop, _, persistence_deps = _build_diagnostic_nexus_loop(inject_violation=False)
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
 
     result = await runner.run_task(
         Task(
@@ -270,7 +286,7 @@ async def test_evidence_recording_failure_does_not_change_business_outcome(
         "intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge.record_diagnostic_subsystem_failure",
         _raise_evidence,
     )
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
     run_id = mint_run_id()
 
     result = await runner.run_task(
@@ -309,7 +325,7 @@ async def test_diagnostic_failure_does_not_change_business_outcome(
         raise RuntimeError("diagnostic persistence failed")
 
     monkeypatch.setattr(trigger, "trigger_for_terminal_execution", _raise)
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
     run_id = mint_run_id()
 
     result = await runner.run_task(
@@ -359,7 +375,7 @@ def test_background_execution_inherits_terminal_diagnostic_trigger(
         return result
 
     monkeypatch.setattr(trigger._orchestrator, "run", _capture_run)  # noqa: SLF001
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
     registry = TaskExecutionRegistry()
     causal_store = InMemoryCausalEvidencePersistence()
 
@@ -432,7 +448,7 @@ def test_background_execution_records_diagnostic_failure_evidence(
         raise RuntimeError("background diagnostic failed")
 
     monkeypatch.setattr(trigger, "trigger_for_terminal_execution", _raise)
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
     registry = TaskExecutionRegistry()
     causal_store = InMemoryCausalEvidencePersistence()
     execution_identity = BackgroundExecutionIdentity(
@@ -504,7 +520,7 @@ def test_background_execution_records_diagnostic_failure_evidence(
 @pytest.mark.asyncio
 async def test_separate_terminal_executions_reconcile_same_problem() -> None:
     loop, _, read_deps = _build_diagnostic_nexus_loop(inject_violation=True)
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
     read_service = build_diagnostic_read_service(read_deps)
 
     await runner.run_task(
@@ -549,7 +565,7 @@ async def test_different_terminal_signatures_create_distinct_problems() -> None:
         violating_event_type=RuntimeEventType.RETRY_SCHEDULED,
         problem_persistence=shared_persistence,
     )
-    runner_retry = UnifiedTaskRunner(loop_retry)
+    runner_retry = _unified_task_runner(loop_retry)
 
     await runner_retry.run_task(
         Task(
@@ -566,7 +582,7 @@ async def test_different_terminal_signatures_create_distinct_problems() -> None:
         violating_event_type=RuntimeEventType.TASK_FAILED,
         problem_persistence=shared_persistence,
     )
-    runner_failed = UnifiedTaskRunner(loop_failed)
+    runner_failed = _unified_task_runner(loop_failed)
 
     await runner_failed.run_task(
         Task(
@@ -588,7 +604,7 @@ async def test_replay_terminal_trigger_does_not_duplicate_failure_evidence() -> 
     loop, runtime_store, _ = _build_diagnostic_nexus_loop(inject_violation=False)
     trigger = _production_terminal_trigger_from_loop(loop)
     assert trigger is not None
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
     task = Task(
         tenant_id=_TENANT_A,
         user_id="user-1",
@@ -630,7 +646,7 @@ async def test_replay_terminal_trigger_does_not_duplicate_failure_evidence() -> 
 @pytest.mark.asyncio
 async def test_replay_terminal_trigger_does_not_duplicate_occurrence() -> None:
     loop, _, persistence_deps = _build_diagnostic_nexus_loop(inject_violation=True)
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
     task = Task(
         tenant_id=_TENANT_A,
         user_id="user-1",
@@ -681,7 +697,7 @@ async def test_tenant_isolation_for_terminal_diagnostics(
         return original_run(request)
 
     monkeypatch.setattr(trigger._orchestrator, "run", _capture_run)  # noqa: SLF001
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
 
     await runner.run_task(
         Task(
@@ -774,7 +790,7 @@ def test_dashboard_sees_problem_on_shared_persistence_after_runtime_trigger(
     env = _product_env()
     tenant_id = env.profile_id
     read_service = build_diagnostic_read_service(read_deps)
-    runner = UnifiedTaskRunner(loop)
+    runner = _unified_task_runner(loop)
     _run_coro_sync(
         runner.run_task(
             Task(

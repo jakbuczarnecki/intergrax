@@ -8,7 +8,7 @@ import pytest
 
 from attestation_demo.host.tool_wiring import wire_attestation_demo_tools
 from boundary_demo.boundary_demo_agent import RECORDS_PUT_TOOL_ID, BoundaryDemoAgent
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.agents.reference_harness import LabHarnessContext
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
@@ -53,10 +53,20 @@ def _enforce_policy_harness() -> LabHarnessContext:
 
 def _build_registered_boundary_demo() -> tuple[AgentRegistry, BoundaryDemoAgent]:
     tool_wiring = wire_attestation_demo_tools(document_store=InMemoryDocumentStore())
-    agent = BoundaryDemoAgent(
-        harness=_enforce_policy_harness(),
-        tool_profile=tool_wiring.profile,
+    base_harness = _enforce_policy_harness()
+    harness = LabHarnessContext(
+        policy_bundle=base_harness.policy_bundle,
+        strict_harness=base_harness.strict_harness,
+        trace_db_path=base_harness.trace_db_path,
+        modality_profile=base_harness.modality_profile,
         tool_wiring_context=tool_wiring.wiring_context,
+        tool_registry=tool_wiring.registry,
+    )
+    from intergrax.tools.registry.enablement import catalog_tool_enablement
+
+    agent = BoundaryDemoAgent(
+        harness=harness,
+        tool_profile=catalog_tool_enablement(tool_wiring.profile),
     )
     register_default_skills()
     skill_registry = build_registry_from_profile(

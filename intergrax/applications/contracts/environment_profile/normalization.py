@@ -52,6 +52,8 @@ FLAT_PROFILE_KEYS: frozenset[str] = frozenset(
         "skill_profile",
         "modality_profile",
         "llm_profile",
+        "llm_routing_profile",
+        "llm_routing_evaluating_secondary",
         "prompt_profile",
         "context_profile",
         "memory_profile",
@@ -140,6 +142,7 @@ def lift_flat_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
         ("tool_profile", "tools"),
         ("skill_profile", "skills"),
         ("llm_profile", "llm"),
+        ("llm_routing_profile", "llm_routing"),
         ("modality_profile", "modality"),
         ("prompt_profile", "prompt"),
         ("context_profile", "context"),
@@ -147,6 +150,10 @@ def lift_flat_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
     ):
         if flat_key in data:
             capabilities[nested_key] = data[flat_key]
+    if "llm_routing_evaluating_secondary" in data:
+        capabilities["llm_routing_evaluating_secondary"] = data[
+            "llm_routing_evaluating_secondary"
+        ]
 
     tool_selection = _as_dict(capabilities.get("tool_selection"))
     if "tool_selection_mode" in data:
@@ -262,6 +269,10 @@ def flatten_profile_dict(data: dict[str, Any]) -> dict[str, Any]:
             "tool_profile": capabilities.get("tools"),
             "skill_profile": capabilities.get("skills"),
             "llm_profile": capabilities.get("llm"),
+            "llm_routing_profile": capabilities.get("llm_routing"),
+            "llm_routing_evaluating_secondary": capabilities.get(
+                "llm_routing_evaluating_secondary",
+            ),
             "modality_profile": capabilities.get("modality"),
             "prompt_profile": capabilities.get("prompt"),
             "context_profile": capabilities.get("context"),

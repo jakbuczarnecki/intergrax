@@ -190,7 +190,7 @@ async def test_rb2b2_uer03_acp_resume_still_mints_execution_identity() -> None:
             execution_id=mint_execution_id(),
         )
         with (
-            patch("intergrax.agents.authoring.acp_uaep_shim.attach_acp_catalog_exec_ctx"),
+            patch("intergrax.runtime.nexus.agents.acp_uaep_shim.attach_acp_catalog_exec_ctx"),
             patch(_LLM_PATCH, return_value=FakeLLMAdapter()),
         ):
             await run_acp_session(_OneStepAgent(), request)
@@ -208,7 +208,7 @@ async def test_rb2b2_uer04_unexpected_agent_exception_escapes_acp_session() -> N
             ACP_HOST_CONTEXT_KEY: make_acp_host_context(_strict_profile()),
         },
     )
-    with patch("intergrax.agents.authoring.acp_uaep_shim.attach_acp_catalog_exec_ctx"), patch(
+    with patch("intergrax.runtime.nexus.agents.acp_uaep_shim.attach_acp_catalog_exec_ctx"), patch(
         _LLM_PATCH,
         return_value=FakeLLMAdapter(),
     ):
@@ -244,7 +244,7 @@ async def test_rb2b2_uer01_acp_session_uses_fresh_policy_engine_instance() -> No
         },
     )
     with patch("intergrax.agents.authoring.acp_run.PolicyEngine", _RecordingPolicyEngine), patch(
-        "intergrax.agents.authoring.acp_uaep_shim.attach_acp_catalog_exec_ctx",
+        "intergrax.runtime.nexus.agents.acp_uaep_shim.attach_acp_catalog_exec_ctx",
     ), patch(
         _LLM_PATCH,
         return_value=FakeLLMAdapter(),

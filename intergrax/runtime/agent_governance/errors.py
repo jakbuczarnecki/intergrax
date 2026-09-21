@@ -10,6 +10,7 @@ from intergrax.contracts.agent_runtime_governance import (
     PolicyEvaluationResult,
     ToolAuthorizationDecisionState,
 )
+from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 
 
 @dataclass(frozen=True)
@@ -33,7 +34,11 @@ class ToolGovernanceDeniedError(RuntimeError):
 
 @dataclass(frozen=True)
 class ToolGovernanceApprovalRequiredError(RuntimeError):
-    """Typed boundary signal: governance requires human approval before tool execution."""
+    """Typed boundary signal: governance requires human approval before tool execution.
+
+    When raised from MSE ``REQUIRE_HUMAN`` / ``ESCALATE``, ``governed_continuation_request``
+    carries canonical Governance-derived continuation evidence (not a permission signal).
+    """
 
     run_id: str
     agent_id: str
@@ -42,6 +47,7 @@ class ToolGovernanceApprovalRequiredError(RuntimeError):
     approval_id: str
     reason: str
     policy_results: tuple[PolicyEvaluationResult, ...]
+    governed_continuation_request: GovernedContinuationRequest | None = None
 
     def __str__(self) -> str:
         return (

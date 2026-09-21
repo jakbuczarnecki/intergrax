@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter
 from intergrax.runtime.nexus.config import RuntimeConfig
 
 
@@ -26,7 +26,7 @@ def resolve_decision_verifier_llm_adapter(
     verification = env.decision_profile.verification
     separate: LLMProfile | None = verification.verifier_llm_profile
     if separate is not None:
-        adapter = separate.create_adapter()
+        adapter = create_adapter(separate)
     else:
         adapter = producer_adapter
     if runtime_config is not None:

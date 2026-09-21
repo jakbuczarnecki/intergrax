@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.nexus.context.context_budget import (
+from intergrax.contracts.context_budget import (
     ContextBudgetPolicy,
     estimate_tokens,
     trim_message_to_budget_tokenizer_aware,

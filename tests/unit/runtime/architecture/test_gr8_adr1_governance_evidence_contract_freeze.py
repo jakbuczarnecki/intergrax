@@ -131,7 +131,30 @@ def test_gr8_adr1_adr_documents_non_authority_and_failure_semantics() -> None:
     adr = ADR_PATH.read_text(encoding="utf-8")
     assert "MUST NOT return `PolicyDecision`" in adr or "MUST NOT** return `PolicyDecision`" in adr
     assert "Persistence failure" in adr
-    assert "ALLOW/DENY/REQUIRE_HUMAN unchanged" in adr or "ALLOW remains ALLOW" in adr
+    assert (
+        "ALLOW/DENY/REQUIRE_HUMAN unchanged" in adr
+        or "ALLOW/DENY/REQUIRE_HUMAN/ESCALATE unchanged" in adr
+        or "ALLOW remains ALLOW" in adr
+    )
+    assert "ESCALATE" in adr
+    assert "additive-compatible" in adr.lower() or "additive compatible" in adr.lower()
+
+
+def test_gr8_adr1_build_helper_accepts_escalate_matches_adr() -> None:
+    adr = ADR_PATH.read_text(encoding="utf-8")
+    assert "governed_execution_governance_decision_fact.v1" in adr
+    fact = build_governance_fact_from_policy_decision(
+        evaluation_point=GovernedExecutionEvaluationPoint.ROOT_EXECUTION_ADMISSION,
+        tenant_id="t",
+        workspace_id="w",
+        principal_id="p",
+        decision=PolicyDecision(action=PolicyAction.ESCALATE, reason="escalate"),
+        request_digest="sha256:" + "cc" * 32,
+        idempotency_key="adr-escalate",
+        action="root",
+    )
+    assert fact.schema_version == SCHEMA_GOVERNED_EXECUTION_GOVERNANCE_DECISION_FACT_V1
+    assert fact.decision is PolicyAction.ESCALATE
 
 
 def test_gr8_adr1_root_admission_request_backward_compatible_optional_ids() -> None:

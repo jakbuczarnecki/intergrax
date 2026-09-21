@@ -3,7 +3,7 @@
 import pytest
 
 from echo.echo_agent import EchoAgent
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.agents import supports_uaep
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
 from intergrax.llm.messages import (

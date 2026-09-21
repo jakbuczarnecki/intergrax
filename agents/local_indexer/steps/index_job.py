@@ -6,7 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from intergrax.agents.authoring.runtime_tool_helpers import (
+from intergrax.runtime.nexus.agents.runtime_tool_helpers import (
     allowlist_roots,
     exec_ctx_from_step,
     invoke_catalog_tool,

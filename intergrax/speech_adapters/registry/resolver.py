@@ -10,6 +10,7 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.speech_provider import SpeechProviderBackend
 from intergrax.integrations.core.binding import IntegrationBinding
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.registry.factory import resolve_from_profile
 
 
 def resolve_speech_provider_backend(
@@ -27,4 +28,4 @@ def resolve_speech_provider_backend(
             if slug is not None:
                 profile_options[slug] = dict(options)
     profile = IntegrationProfile(speech_provider=binding, options=profile_options)
-    return profile.resolve(IntegrationCategory.SPEECH_PROVIDER)
+    return resolve_from_profile(profile, IntegrationCategory.SPEECH_PROVIDER)

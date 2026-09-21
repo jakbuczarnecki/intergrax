@@ -72,7 +72,9 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
-from intergrax.scaffold.application_names import ScaffoldApplicationNames
+from testing_support.orchestration.orchestration_consequential_effect_reliability_doubles import (
+    DurableTestProviderInvocationStore,
+)
 from intergrax.scaffold.new_application_product import factory_py
 from local_workspace_application.host.factory import create_local_workspace_backend_app
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
@@ -395,6 +397,7 @@ def test_taskcpm_h1b_governed_contractor_factory_wires_runtime_boundary(
         agent_platform_runtime=build_production_agent_platform_runtime(
             platform_persistence=platform_persistence,
         ),
+        provider_invocation_store=DurableTestProviderInvocationStore(),
     )
     trace_db_path = tmp_path / "trace.db"
     app = create_governed_contractor_backend_app(

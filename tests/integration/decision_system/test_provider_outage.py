@@ -8,7 +8,7 @@ import pytest
 
 from intergrax.contracts.concurrent_execution_work import ConcurrentExecutionWorkPolicy
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter
 
 from testing_support.decision_e2e.composition import (
     build_qualification_composition,
@@ -39,7 +39,7 @@ def _outage_environment(base: QualificationEnvironment) -> QualificationEnvironm
         model=base.producer_profile.model,
         options={"base_url": "http://127.0.0.1:19"},
     )
-    outage_adapter = outage_profile.create_adapter()
+    outage_adapter = create_adapter(outage_profile)
     return QualificationEnvironment(
         producer_profile=outage_profile,
         producer_adapter=outage_adapter,

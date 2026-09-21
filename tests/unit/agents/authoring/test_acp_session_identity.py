@@ -138,7 +138,7 @@ async def test_acp_mints_identity_once_when_absent() -> None:
             return_value=_minted_identity(minted_root),
         ) as mint_root,
         patch("intergrax.agents.authoring.acp_run.mint_task_id", return_value=minted_task) as mint_task,
-        patch("intergrax.agents.authoring.acp_uaep_shim.attach_acp_catalog_exec_ctx"),
+        patch("intergrax.runtime.nexus.agents.acp_uaep_shim.attach_acp_catalog_exec_ctx"),
     ):
         result = await run_acp_session(agent, _request())
     assert mint_root.call_count == 1
@@ -165,7 +165,7 @@ async def test_acp_preserves_supplied_canonical_identity() -> None:
             ),
         ) as mint_root,
         patch("intergrax.agents.authoring.acp_run.mint_task_id") as mint_task,
-        patch("intergrax.agents.authoring.acp_uaep_shim.attach_acp_catalog_exec_ctx"),
+        patch("intergrax.runtime.nexus.agents.acp_uaep_shim.attach_acp_catalog_exec_ctx"),
     ):
         result = await run_acp_session(
             agent,
@@ -312,7 +312,7 @@ async def test_acp_binds_and_resets_active_execution_identity() -> None:
                 ),
             ),
         ),
-        patch("intergrax.agents.authoring.acp_uaep_shim.attach_acp_catalog_exec_ctx"),
+        patch("intergrax.runtime.nexus.agents.acp_uaep_shim.attach_acp_catalog_exec_ctx"),
     ):
         result = await run_acp_session(
             agent,

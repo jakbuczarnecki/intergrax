@@ -12,7 +12,7 @@ from intergrax.applications.contracts.capability_dependency.dependency import (
     CapabilityDependencyAvailabilityStatus,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.skills.registry.runtime import SkillRegistry
+from intergrax.skills.contracts.skill_registry_read import SkillRegistryRead
 
 
 @dataclass(frozen=True, slots=True)
@@ -20,7 +20,7 @@ class CapabilityDependencyValidationContext:
     """Immutable inputs for declaration and availability evaluation."""
 
     environment_profile: ApplicationEnvironmentProfile
-    skill_registry: SkillRegistry | None = None
+    skill_registry: SkillRegistryRead | None = None
 
 
 class CapabilityDependencyProvider(Protocol):

@@ -38,7 +38,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def test_lkw_resolve_request_scope_uses_runtime_request_tenant_id() -> None:
-    from intergrax.agents.authoring.runtime_tool_helpers import resolve_request_scope
+    from intergrax.runtime.nexus.agents.runtime_tool_helpers import resolve_request_scope
 
     seed = "lkw-resolve-request-scope"
     request = build_runtime_request_for_tests(

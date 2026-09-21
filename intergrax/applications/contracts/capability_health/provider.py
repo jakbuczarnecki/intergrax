@@ -16,7 +16,7 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.profile_resolution.revision_id import (
     EffectiveProfileRevisionId,
 )
-from intergrax.skills.registry.runtime import SkillRegistry
+from intergrax.skills.contracts.skill_registry_read import SkillRegistryRead
 
 
 @dataclass(frozen=True, slots=True)
@@ -30,7 +30,7 @@ class CapabilityHealthProjectionContext:
     scope_tenant_id: str | None = None
     effective_profile_revision_id: EffectiveProfileRevisionId | None = None
     effective_profile_fingerprint: str | None = None
-    skill_registry: SkillRegistry | None = None
+    skill_registry: SkillRegistryRead | None = None
 
 
 class CapabilityHealthProvider(Protocol):

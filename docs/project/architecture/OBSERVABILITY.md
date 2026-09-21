@@ -18,7 +18,7 @@ Without the Harness Observability Spine (HOS):
 Observability addresses this through canonical identity **recording** on `RuntimeEvent`, HOS, strict persistence, the Unified Run Journal, deterministic execution positions, as-of projection, canonical knowledge revision ordering, and policy-safe export. **Central diagnostics** ([`DIAGNOSTICS.md`](DIAGNOSTICS.md)) consumes persisted evidence for interpretation — Observability does not embed diagnostic semantics.
 
 > [!NOTE]
-> **Maturity boundary (reconciled 2026-09-16 @ `a669e15e`):** Core execution evidence (TRACE-1A–1C, ASOF-1/2, BITEMP-1/3), **OBS-ASOF-REBASE**, and **OBS-BITEMP-REBASE** are **implemented and closed** on the qualified harness path. **Five-ID canonical contract:** `RuntimeEvent` requires typed `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, and `EventId` (**implemented**). Emit-path coverage for every production writer remains separately tracked under **OBS-COVERAGE-1** — not “partial contract.” **Canonical revision ordering provider (TRACE-BITEMP-2)** is **implemented** (SQLite canonical provider; alternate providers remain **TRACE-BITEMP-5**). **E/K/V/S temporal composition** is **implemented** via `HistoricalReconstructionService` (**OBS-BITEMP-REBASE** closed). **Conditional read surfaces:** typed public **TRACE-ASOF-4** / **TRACE-BITEMP-4** query APIs (delegating to the same canonical path) remain optional productization layers — not missing core semantics. **Remaining limitations (explicit):** **DG-005** cross-topology `RuntimeEvent` persistence/reconstruction **NOT PROVEN**; Kafka → worker → execution → diagnostics full external spine **NOT YET PROVEN**; pause/restart/resume → terminal diagnostics dedicated E2E **NOT YET PROVEN**; **OECP** code phases and full **OBS-VENDOR** production hardening remain **open**. OTLP / vendor backends are **derived export only** — never execution truth. Observability records identity minted by Execution Runtime; it does **not** own Execution identity.
+> **Maturity boundary (reconciled OBS-DIAG-X1 @ `19307f1e4c3bfdcdc9ea675f4909383ab1d70878`):** Core execution evidence (TRACE-1A–1C, ASOF-1/2, BITEMP-1/3), **OBS-ASOF-REBASE**, and **OBS-BITEMP-REBASE** are **implemented and closed** on the qualified harness path. **Five-ID canonical contract:** `RuntimeEvent` requires typed `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, and `EventId` (**PROVEN**). Emit-path coverage for production writers is tracked under **OBS-COVERAGE-1** (P1 **PROVEN**). **Canonical revision ordering provider (TRACE-BITEMP-2)** is **implemented** (SQLite canonical provider; alternate providers remain **TRACE-BITEMP-5**). **E/K/V/S temporal composition** is **implemented** via `HistoricalReconstructionService` (**OBS-BITEMP-REBASE** closed). **Conditional read surfaces:** typed public **TRACE-ASOF-4** / **TRACE-BITEMP-4** query APIs remain optional productization layers. **Remaining limitations (explicit):** Kafka → worker → execution → diagnostics as **one** external P4 spine **NOT_PROVEN** (Kafka transport and in-process async spine are separate proofs); HITL pause/restart/resume → terminal diagnostics **PARTIAL** (P3 durable rebuild proven; real OS process crash / external HITL service **NOT_PROVEN**); universal PRODUCT/scenario E2E and operator HTTP read exposure **PARTIAL**; **OECP** **PLANNED/OPEN**; full **OBS-VENDOR** hardening **OPEN** (OTLP collector slice only). **DG-005** process-isolated topology over shared durable evidence is **PROVEN** (scoped — not multi-region/HA). OTLP / vendor backends are **derived export only** — never execution truth. Observability records identity minted by Execution Runtime; it does **not** own Execution identity. Full gap baseline: [`OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md).
 
 **Documentation authority (SSOT hierarchy):**
 
@@ -30,7 +30,7 @@ Observability addresses this through canonical identity **recording** on `Runtim
 | 4 | Qualification records under `docs/project/maintainers/qualification/` |
 | 5 | Historical snapshots (explicit banner; do not override 1–3) |
 
-**Last reconciled against `development` @ `a669e15e413a1ff9556ba33318560636286d823f`.** Qualification records may cite earlier certified SHAs; architecture semantics here track current `development` unless a record is marked historical.
+**Last reconciled against `development` @ `19307f1e4c3bfdcdc9ea675f4909383ab1d70878` (audited code SHA — OBS-DIAG-X1).** Documentation commit SHA may differ after docs-only commits; do not treat the docs commit as a new code qualification. Qualification records may cite earlier certified SHAs; architecture semantics here track current `development` unless a record is marked historical.
 
 ## Platform Operational Spine
 
@@ -67,7 +67,7 @@ Operators → read derived diagnostic state (HTTP/dashboard exposure is host-spe
 OTLP / Datadog / external vendor → derived export only
 ```
 
-**Adoption truth (qualified surfaces):** all currently qualified **production-capable** application surfaces use the shared spine (**PRODUCT BYPASS = 0**). **Initialized scenario surfaces = 4** (`ai_incident_investigation`, `enterprise_payment_uncertainty_recovery`, `indirect_prompt_injection`, `verified_product_identification`); design-only scenario packages are **NOT_APPLICABLE** until `IMPLEMENTATION_INITIALIZED`. **OBS-UNIVERSAL-SPINE-E2E:** async worker ingress → `execute_logical_task` → `UnifiedTaskRunner` → terminal diagnostics is **P3 PROVEN** (`tests/integration/runtime/test_obs_universal_spine_async_e2e.py`). **LAB / DEBUG** paths may use explicit non-production exceptions — not the canonical authoring path.
+**Adoption truth (qualified surfaces):** all currently qualified **production-capable** application surfaces use the shared spine at **factory composition** (**PRODUCT factory BYPASS = 0** — not a claim that every runtime entry path is globally proven). **OBS-DIAG-X3A:** worker/background and harness CLI surfaces are discovered via typed execution-surface contracts (`BootstrapSurfaceKind.WORKER_BACKGROUND`, harness `build_harness_host_runtime` entries); qualification registry integrity and manifest/profile classification parity are enforced before coverage comparison (see [`OBS_DIAG_UNIVERSAL_SURFACE_ANTIDRIFT_X3A.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_SURFACE_ANTIDRIFT_X3A.md)). **Initialized scenario surfaces = 4** via `discover_initialized_scenario_slugs` (`ai_incident_investigation` EXECUTABLE, `indirect_prompt_injection` EXECUTABLE, `enterprise_payment_uncertainty_recovery` IMPLEMENTATION_INITIALIZED, `verified_product_identification` IMPLEMENTATION_INITIALIZED); design-only packages are **NOT_APPLICABLE** until `IMPLEMENTATION_INITIALIZED`. **OBS-UNIVERSAL-SPINE-E2E:** async worker ingress → `execute_logical_task` → `UnifiedTaskRunner` → terminal diagnostics is **P3 PROVEN** (`tests/integration/runtime/test_obs_universal_spine_async_e2e.py`). Kafka transport may be **P4 PROVEN** separately; a single Kafka→worker→execution→diagnostics P4 spine remains **NOT_PROVEN**. **LAB / DEBUG** paths may use explicit non-production exceptions — not the canonical authoring path.
 
 **Meta-architecture (frozen):** [`UNIFIED_EXECUTION_ARCHITECTURE.md`](UNIFIED_EXECUTION_ARCHITECTURE.md) - semantic authority for execution identity and lifecycle. [`UNIFIED_EXECUTION_RUNTIME.md`](UNIFIED_EXECUTION_RUNTIME.md) · [`NEXUS_EXECUTION_FLOW.md`](NEXUS_EXECUTION_FLOW.md) · [`ORCHESTRATION.md`](ORCHESTRATION.md) are synchronized domain authorities. **Central diagnostics** canonical entry point: [`DIAGNOSTICS.md`](DIAGNOSTICS.md). This document owns HOS, persistence, journal, and export; DIAG slice detail below links to that entry point.
 
@@ -924,21 +924,65 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 | **TRACE-ASOF-4** | Optional typed public execution-as-of query API delegating to canonical E path |
 | **TRACE-BITEMP-4** | Optional typed public temporal/audit query API delegating to canonical E/K/V/S composition |
 
+### Proof-level taxonomy
+
+| Level | Meaning |
+| ----- | ------- |
+| **P1** | Unit / contract |
+| **P2** | Composition |
+| **P3** | In-process end-to-end through real platform spine |
+| **P4** | External / provider / process-boundary proof |
+
+**Mock rule:** A test may use a deterministic LLM test double when LLM is not the qualified boundary. It must **not** mock transport, persistence, worker boundary, diagnostic persistence, or vendor endpoint when the proof declares those as real qualification targets.
+
+### Single-owner matrix
+
+| Concern | Single semantic owner | Competing owner found? |
+| ------- | --------------------- | ---------------------- |
+| execution lifecycle / identity / tree | Execution | **NO** |
+| RuntimeEvent evidence + evidence persistence | Observability / Evidence Plane | **NO** |
+| factual reconstruction | Shared Evidence Plane | **NO** |
+| diagnostic interpretation + Problem grouping/lifecycle | Central Diagnostics | **NO** |
+| Problem persistence contract | Diagnostics | **NO** |
+| vendor telemetry | Derived integration adapter | **NO** |
+| operator dashboards | Projection / read layer | **NO** |
+
 ### Remaining limitations (not masked)
 
-| ID | Limitation |
-| -- | ---------- |
-| **DG-005** | Process-isolated writer / reader / diagnostics over shared durable `EvidencePersistencePort` — **PROVEN** (`test_obs_dg005_distributed_topology_qualification.py`; see [DG-005 distributed topology](#dg-005-distributed-topology-qualification)) |
-| **Async spine** | Kafka → worker → execution → diagnostics full single P4 external spine **NOT YET PROVEN** |
-| **HITL / restart** | pause/restart/resume → terminal diagnostics dedicated E2E **NOT YET PROVEN** |
-| **Operator read** | Central diagnostic **write** path qualified; HTTP/dashboard read exposure **varies by PRODUCT host** |
-| **OECP / OBS-VENDOR** | Evaluation control-plane code phases and full vendor production hardening **open** |
+| ID | Limitation | Status |
+| -- | ---------- | ------ |
+| **DG-005** | Process-isolated writer / reader / diagnostics over shared durable `EvidencePersistencePort` (SQLite `sqlite-file` currently qualified; not multi-region/HA) | **PROVEN** — `test_obs_dg005_distributed_topology_qualification.py` |
+| **Async spine** | Kafka → worker → execution → diagnostics as **one** P4 external spine | **PROVEN** — OBS-DIAG-X4 `test_obs_universal_spine_cross_process_x4_e2e.py` (real broker + worker subprocess; in-process async remains **P3**) |
+| **HITL / restart** | pause / durable rebuild / resume → terminal diagnostics | **P3** in-process rebuild (`test_obs_universal_spine_hitl_restart_e2e.py`); **P4** real OS process pause/resume (OBS-DIAG-X4); **P4** resume diagnostic anomaly → durable Problem + fresh read (OBS-DIAG-X4A); external HITL vendor **NOT_PROVEN** (post-X5) |
+| **External providers (X5 / X5A)** | Platform export semantics vs catalog OTLP/collector adapters | **RECONCILED** — X5 + [`OBS_DIAG_PROVIDER_EVIDENCE_INTEGRITY_X5A.md`](../maintainers/audits/OBS_DIAG_PROVIDER_EVIDENCE_INTEGRITY_X5A.md) |
+| **Operator read** | Central diagnostic **write** path qualified; HTTP/dashboard read exposure | **PARTIAL** (CORE READ **PROVEN**; universal host exposure **PARTIAL**) |
+| **Composition pluginability** | Engine ctor injection vs host replaceability | Engine **PROVEN**; host composition **PARTIAL** (X2) |
+| **Entry-path zero-bypass** | Beyond factory composition | **PROVEN** (OBS-DIAG-X3/X3A static + representative E2E) |
+| **Surface anti-drift** | New/reclassified production surfaces vs qualification inventory | **PROVEN** (OBS-DIAG-X3A — generic worker discovery + manifest classification gate) |
+| **OECP / OBS-VENDOR** | Evaluation control-plane + full vendor hardening | **PLANNED** / **OPEN** |
+
+### Enterprise gap baseline (X1 → current)
+
+| Gap | Current status | Why not closed | Required closure task |
+| --- | -------------- | -------------- | --------------------- |
+| diagnostic composition replaceability | **PROVEN** | — | OBS-DIAG-X2 CLOSED |
+| canonical host one-resolution composition | **PROVEN** | — | OBS-DIAG-X2A + X2B CLOSED |
+| global entry-path zero-bypass proof | **PROVEN** | X3 gates + scenario/host E2E | — |
+| external Kafka full spine E2E | **PROVEN** | OBS-DIAG-X4 cross-process E2E | — |
+| HITL full restart proof | **PROVEN (P4 OS process + X4A resume Problem)** | External HITL **vendor** service | OBS-DIAG-X5+ |
+| universal product/scenario E2E adoption | **PARTIAL** | 4 initialized; not all E2E/read | OBS-DIAG-X6 |
+| provider matrix (persistence / transport / telemetry) | **RECONCILED** | OBS-DIAG-X5A — export semantics qualified; catalog telemetry ADAPTER ONLY unless live proof | OBS-DIAG-X5A CLOSED |
+| operator read universal exposure | **PARTIAL** | Host HTTP uneven | OBS-DIAG-X8 |
+| vendor hardening | **OPEN** / **PARTIAL** | OTLP slice only | OBS-DIAG-X9 |
+| OECP | **PLANNED** | Architecture only | OBS-ECP phases |
+
+Full matrices: [`OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md).
 
 | Axis | Level | Rationale |
 | ---- | ----- | --------- |
 | **Architecture (A)** | **A4** | Frozen spine, E/K/V/S model, ownership boundaries coherent |
-| **Implementation (I)** | **I4** | Core evidence, reconstruction, delivery boundary shipped; OECP code not shipped |
-| **Production (P)** | **P2** | SQLite defaults; DG-005 process-isolated topology qualified; multi-region / partition claims **not** certified |
+| **Implementation (I)** | **I4 core** | Core evidence, reconstruction, delivery boundary shipped; OECP / full host replaceability not I4 |
+| **Production (P)** | **P2 / P3 mixed** | SQLite defaults; DG-005 process-isolated topology qualified; host read / external spines uneven; multi-region **not** certified |
 | **Evidence (E)** | **E3** | Strong unit/gate proof; not universal E4 for every platform path |
 
 ### DG-005 distributed topology qualification
@@ -974,6 +1018,7 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 | Execution lineage | `ExecutionLineageReader` | Platform lineage stores | Custom reader |
 | Historical E/K/V/S composition | `HistoricalReconstructionService` | Default composition root | N/A (composition, not second reconstructor) |
 | Event delivery | `EventSinkPort` | `BoundedEventSink` stack | Custom `EventSinkPort` |
+| Delivery physical buffer | `EventDeliveryBufferPort` | `QueueBackedEventDeliveryBuffer` | Custom conforming buffer (storage/enqueue mechanics only) |
 | Delivery admission capacity | `EventDeliveryAdmissionPolicyPort` | `EnterpriseDefaultEventDeliveryAdmissionPolicy` | Custom admission / reserve strategy |
 | Event delivery reaction | `EventSinkDeliveryReactionPort` | `EnterpriseDefaultEventSinkDeliveryReaction` | Custom reaction (non-CRITICAL) |
 | Export transport | `EventExportSinkPort` | OTLP / recording sinks | Vendor adapter |
@@ -996,6 +1041,7 @@ Foundational `ExecutionId` contract and required `RuntimeEvent.execution_id` are
 | Exporter / `EventExportSinkPort` | no | yes |
 | Grouping strategy | no | yes |
 | Delivery reaction (within PI-8 floor) | no | yes |
+| Delivery physical buffer (`EventDeliveryBufferPort`) | no | yes (mechanics only; QoS stays on policy/sink) |
 | Reconstruction implementation | no | yes via `ExecutionReconstructionReader` |
 
 Custom implementations **must** honor platform contracts — pluginability is not arbitrary semantics.
@@ -1010,17 +1056,17 @@ Delivery/export is **not** durable execution evidence. Canonical facts remain on
 | `IMPORTANT` | `ADMISSION` | bounded wait → `DEFERRED` | n/a |
 | `CRITICAL` | `COMPLETION` (platform floor) | `REJECTED` when no slot; reserved capacity protects admission from lower-priority fill | producer waits until downstream completes or completion timeout → `REJECTED` |
 
-**Capacity:** one FIFO `BoundedEventSink` worker drains a single bounded queue (`max_capacity`). Total process-local retained delivery backlog is **≤ `max_capacity`**. `EventDeliveryPolicy.critical_reserved_capacity` plus `EventDeliveryAdmissionPolicyPort` cap how many slots `BEST_EFFORT` / `IMPORTANT` may occupy; **CRITICAL may use the reserved slots** so lower priorities cannot consume the entire buffer. Enterprise application wiring derives a default reserve when the profile omits an explicit value.
+**Capacity:** one FIFO `BoundedEventSink` worker drains a single bounded delivery buffer (`EventDeliveryPolicy.max_capacity`). Total process-local retained delivery backlog is **≤ `max_capacity`**. Physical storage/enqueue mechanics are owned by an injectable `EventDeliveryBufferPort` (default: `QueueBackedEventDeliveryBuffer`); QoS policy, admission accounting, shutdown linearization, and health remain owned by `EventDeliveryPolicy` / `BoundedEventSink`. `EventDeliveryPolicy.critical_reserved_capacity` plus `EventDeliveryAdmissionPolicyPort` cap how many slots `BEST_EFFORT` / `IMPORTANT` may occupy; **CRITICAL may use the reserved slots** so lower priorities cannot consume the entire buffer. Enterprise application wiring derives a default reserve when the profile omits an explicit value.
 
 **Non-critical admission (R1):** `BEST_EFFORT` and `IMPORTANT` share one non-critical quota authority inside `BoundedEventSink`. Non-critical admission is coordinated atomically across concurrent `BEST_EFFORT` and `IMPORTANT` publishers — lower-priority concurrent publishers cannot oversubscribe the configured non-critical quota. `IMPORTANT` waits within one bounded admission deadline (monotonic) for both quota availability and physical queue space; `BEST_EFFORT` never waits. Quota is released when a non-critical item leaves the delivery buffer (dequeue), not after downstream completion. Custom `EventDeliveryAdmissionPolicyPort` implementations remain supported; invalid `max_non_critical_buffered_events` results are rejected at sink construction.
 
-**Admission vs shutdown (R2):** Under the quota coordination lock, each publisher must pass lifecycle checks (`stop`, worker liveness) **before** non-critical quota reservation or CRITICAL physical enqueue reservation. The admission linearization point is a successful reservation under that lock; shutdown linearization is `_stop.set()` under the same lock in `close()`. Publishers that lose the race are rejected (`REJECTED` / `DROPPED` per priority) and never enqueue. Publishers that win before shutdown may finish `queue` insertion as pre-shutdown work; `close()` waits (bounded by `drain_shutdown_timeout_seconds`) for in-flight reservations to complete physical enqueue before enqueueing the shutdown sentinel, so no user item is ordered after the sentinel. The shutdown sentinel is never permitted to overtake a pre-shutdown admitted physical enqueue. Terminal worker failure uses the same lifecycle gate — no new admission after the worker is dead.
+**Admission vs shutdown (R2):** Under the quota coordination lock, each publisher must pass lifecycle checks (`stop`, worker liveness) **before** non-critical quota reservation or CRITICAL physical enqueue reservation. The admission linearization point is a successful reservation under that lock; shutdown linearization is `_stop.set()` under the same lock in `close()`. Publishers that lose the race are rejected (`REJECTED` / `DROPPED` per priority) and never enqueue. Publishers that win before shutdown may finish physical buffer insertion as pre-shutdown work; `close()` waits (bounded by `drain_shutdown_timeout_seconds`) for in-flight reservations to complete physical enqueue before enqueueing the shutdown marker, so no user item is ordered after the marker. The shutdown marker is never permitted to overtake a pre-shutdown admitted physical enqueue. Terminal worker failure uses the same lifecycle gate — no new admission after the worker is dead.
 
-**Pending enqueue shutdown (R3):** If pre-shutdown admitted physical enqueues do not complete before the shutdown deadline, `close()` fails closed: the sink is marked **unhealthy**, `EventDeliveryBoundaryError` is raised to the caller, the shutdown sentinel is **not** inserted, and downstream `close()` is not invoked as part of a successful shutdown path. Delivery shutdown failure remains a non-canonical transport failure — canonical execution evidence is unchanged.
+**Pending enqueue shutdown (R3):** If pre-shutdown admitted physical enqueues do not complete before the shutdown deadline, `close()` fails closed: the sink is marked **unhealthy**, `EventDeliveryBoundaryError` is raised to the caller, the shutdown marker is **not** inserted, and downstream `close()` is not invoked as part of a successful shutdown path. Delivery shutdown failure remains a non-canonical transport failure — canonical execution evidence is unchanged.
 
 **Scheduling / ordering:** **global FIFO** per sink instance (single consumer). Priority affects **admission and disposition**, not preemptive reordering of already-queued events. **Queued** CRITICAL traffic may therefore wait behind earlier lower-priority items (**queue head-of-line**). A **slow in-flight** `downstream.publish` still blocks the sole worker (**downstream HOL**) — not removed by admission reserve alone.
 
-**Shutdown:** `close()` sets stop under the admission coordination lock, wakes quota waiters, drains in-flight physical enqueue reservations within `drain_shutdown_timeout_seconds` (or fails closed on timeout per R3), enqueues a sentinel only after that drain succeeds, joins the worker, then closes downstream — fail-closed semantics unchanged for callers.
+**Shutdown:** `close()` sets stop under the admission coordination lock, wakes quota waiters, drains in-flight physical enqueue reservations within `drain_shutdown_timeout_seconds` (or fails closed on timeout per R3), enqueues a shutdown marker only after that drain succeeds, joins the worker, then closes downstream — fail-closed semantics unchanged for callers.
 
 Qualification: `tests/unit/runtime/observability/test_obs_delivery_qos_scale.py`.
 
@@ -2563,7 +2609,7 @@ Replay semantics are attempt-scoped: reconstruction and as-of projections respec
 
 **TRACE-1A–TRACE-1C (Done / Closed)** delivered the strict journal on the harness path. Frozen five-ID `RuntimeEvent` and `RuntimeExecutionRef` are **CURRENT**. Remaining gaps are **adoption / implementation debt**, not contract rollback:
 
-- emit-path writer certification — **OBS-COVERAGE-1 Done** (P1 paths **PROVEN**; DG-005 cross-topology **NOT PROVEN** — see [Platform Evidence Coverage Matrix](#platform-evidence-coverage-matrix-obs-coverage-1))
+- emit-path writer certification — **OBS-COVERAGE-1 Done** (P1 paths **PROVEN**; DG-005 cross-topology subsequently **PROVEN** under process-isolated qualification — see [DG-005 distributed topology](#dg-005-distributed-topology-qualification); multi-region/HA still **NOT_PROVEN**)
 - Unified Run Journal / export envelopes — Execution Tree fields (**ADOPTION / PROJECTION GAP**)
 - DIAG operator read models — execution-aware correlation on all surfaces (**ADOPTION / PROJECTION GAP**)
 - background worker bootstrap mints `AttemptId` on redelivery (UEA conflict — **implementation debt**)
@@ -2597,7 +2643,7 @@ Temporary recognition of legacy shapes is acceptable only during a bounded imple
 
 ## Platform Evidence Coverage Matrix (OBS-COVERAGE-1)
 
-**Status:** **Done** (2026-09-15) · **R1:** certification proof integrity (2026-09-15) · **Verdict:** **PASS WITH P2 LIMITATIONS** when mandatory P1 qualification passes (DG-005 cross-process RuntimeEvent topology **NOT PROVEN**)
+**Status:** **Done** (2026-09-15) · **R1:** certification proof integrity (2026-09-15) · **Verdict:** **PASS WITH P2 LIMITATIONS** when mandatory P1 qualification passes. **Post-OBS-COVERAGE update (OBS-DIAG-X1):** DG-005 process-isolated RuntimeEvent topology is **PROVEN** (scoped); do not re-open OBS-COVERAGE-1 as blocked on DG-005.
 
 **Mandatory P1 qualification (canonical acceptance gate):**
 
@@ -2633,9 +2679,9 @@ Manifest `PROVEN` labels in `COVERAGE_PATH_PROOFS` are **metadata only**; execut
 | P8 functional evidence | execution-scoped | `PipelineEvidenceScope` | `test_obs_functional_evidence_contract_boundary` | **PROVEN** |
 | P9 terminal ordering | ordering | persist terminal RE before DIAG dispatch | `test_obs_coverage_1_certification`, `test_obs_diag_port_1_gates` | **PROVEN** |
 | P10 failure facts | execution-scoped | canonical failure request IDs | `test_execution_failure_evidence_r2` | **PROVEN** |
-| P11 checkpoint / resume | execution-scoped | UEA resume semantics | partial lineage proofs | **PARTIAL** |
-| P12 HITL interrupt | execution-scoped | same execution unless UEA forks | human-response tests | **PARTIAL** |
-| DG-005 cross-topology | transport-scoped | shared RE store host↔worker | qualification ledger only | **NOT PROVEN** |
+| P11 checkpoint / resume | execution-scoped | UEA resume semantics | partial lineage proofs + HITL spine P3 | **PARTIAL** |
+| P12 HITL interrupt | execution-scoped | same execution unless UEA forks | `test_obs_universal_spine_hitl_restart_e2e.py` (P3); external HITL / OS crash | **PARTIAL** |
+| DG-005 cross-topology | transport-/process-scoped | shared RE store host↔worker processes | `test_obs_dg005_distributed_topology_qualification.py` | **PROVEN** (scoped; not multi-region/HA) |
 | Host bootstrap failure | non-execution | typed subject, no `ExecutionId` | DG-001B architecture | **PROVEN** |
 
 ### Identity authority (writers)

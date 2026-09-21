@@ -15,7 +15,6 @@ from external_contractor_adapter.side_effect_actions import (
 from governed_contractor_application.host.collaborative_work_boundary import (
     build_external_work_authorization_boundary,
 )
-from intergrax.collaborative_work.enforcement_gate import MeaningfulSideEffectPolicyEvaluator
 from intergrax.collaborative_work.in_memory_repository import (
     InMemoryAuthorityDelegationRepository,
     InMemoryCollaborativeOperationPolicyProfileRepository,
@@ -42,6 +41,9 @@ from intergrax.contracts.collaborative_work import (
     WorkspaceMembershipRole,
 )
 from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
+from intergrax.contracts.meaningful_side_effect_policy import (
+    MeaningfulSideEffectPolicyEvaluator,
+)
 from intergrax.contracts.runtime_policy import PolicyAction
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationBoundary,

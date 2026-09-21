@@ -11,6 +11,7 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationSecurityProfile,
 )
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.registry.factory import resolve_from_profile
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
 from intergrax.runtime.security.encryption_transform import (
@@ -69,7 +70,7 @@ def resolve_restricted_payload_encryptor(
     from intergrax.integrations._shared.conformance import assert_secrets_store
 
     try:
-        store = profile.resolve(IntegrationCategory.SECRETS_STORE)
+        store = resolve_from_profile(profile, IntegrationCategory.SECRETS_STORE)
     except Exception as exc:
         raise RestrictedPayloadEncryptorResolutionError(
             "failed to resolve configured secrets_store integration for encryption",

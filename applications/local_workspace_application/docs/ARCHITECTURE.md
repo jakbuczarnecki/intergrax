@@ -1,4 +1,4 @@
-# Local Knowledge Workspace (LKW) � architecture
+﻿# Local Knowledge Workspace (LKW) � architecture
 
 **Status:** Architecture baseline v2 (2026-06-07) � implementation-plan source of truth  
 **Tier:** Tier-3 application (`local_workspace_application`)  
@@ -432,6 +432,23 @@ task delivery and worker execution
 ```
 
 Platform task state and product-domain operation state remain separate. Queue/task status must not automatically replace LKW Ingestion Operation state.
+
+#### Multiplayer AI adoption (MP-7) - reference consumer boundary
+
+**Status:** **MP-7A - CLOSED / CERTIFIED** ([MP-7A_LKW_MULTIPLAYER_ADOPTION_ARCHITECTURE_GATE.md](../../../docs/project/maintainers/qualification/MP-7A_LKW_MULTIPLAYER_ADOPTION_ARCHITECTURE_GATE.md)); [ADR-MP-008](../../../docs/project/technical/adr/entries/2026-09-19/ADR-MP-008.md) **Accepted**. **MP-7B — TIER-3 MULTIPLAYER CONSUMER BOUNDARY QUALIFIED / CLOSED** ([MP-7B_TIER3_MULTIPLAYER_CONSUMER_BOUNDARY_QUALIFICATION.md](../../../docs/project/maintainers/qualification/MP-7B_TIER3_MULTIPLAYER_CONSUMER_BOUNDARY_QUALIFICATION.md)). **MP-7C-C1-R1 — CLOSED / CERTIFIED** · **MP-7C-C1 — CLOSED / RECERTIFIED** · **MP-7C — CLOSED / RECERTIFIED** (TIER-3 HOST COMPOSITION & BOUNDARY E2E) ([MP-7C_TIER3_HOST_COMPOSITION_BOUNDARY_E2E_QUALIFICATION.md](../../../docs/project/maintainers/qualification/MP-7C_TIER3_HOST_COMPOSITION_BOUNDARY_E2E_QUALIFICATION.md)). **MP-7D — CLOSED / ENTERPRISE CERTIFIED** ([MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md](../../../docs/project/maintainers/qualification/MP-7D_FINAL_REFERENCE_CONSUMER_BOUNDARY_ENTERPRISE_CERTIFICATION.md)). **MP-7 — ENTERPRISE BOUNDARY CERTIFIED / CLOSED**. LKW product Principal/workspace binding **not** started.
+
+LKW is a Tier-3 **reference consumer** of platform Multiplayer primitives (**MP-INV-30**). LKW does **not** own Principal, Membership, Delegation, WorkItem, Assignment, WorkArtifact, Decision binding, ContextView, or Collaborative Activity authority.
+
+| Concept | LKW role |
+|---------|----------|
+| **Product workspace** (ManagedWorkspace) | LKW-owned knowledge scope, sources, Ask, Conversation Context |
+| **Collaborative workspace scope** | Platform-owned; LKW holds typed **collaborative_workspace_ref** (ADR-MP-008 **Option B**) when product adoption is scheduled |
+| **Nexus Task** | Execution transport - not WorkItem (**MP-INV-07**) |
+| **Conversation Context** | LKW-owned - not MP-5 ContextView |
+| **Channel/thread/message ids** | Adapter mappings only |
+
+**MP-7B** qualifies enterprise **consumability boundary** (public contracts + DI; no private CW leakage) — not Principal binding / `collaborative_workspace_ref` persistence. Future product adoption remains composition-root-only (`intergrax/contracts/collaborative_*`; no `intergrax.collaborative_work` repository imports in LKW domain). MP-7 is a **parallel platform track** and does not override current direct LKW tasks (LKW-PLUGIN-CAPABILITY-CONFIGURATION-1, ...).
+
 
 #### Token Optimization � platform contract, LKW product proof
 

@@ -174,12 +174,22 @@ async def test_backpressure_remains_bounded_with_slow_export() -> None:
         def close(self) -> None:
             return
 
-    bridge = RuntimeEventExportSink(OtlpEventExportSink(transport=SlowTransport()))
-    bounded = BoundedEventSink(bridge, EventDeliveryPolicy(max_capacity=4))
-    assert bounded._queue.maxsize == 4  # noqa: SLF001
-    bus = RuntimeEventBus(event_sink=bounded)
+    policy = EventDeliveryPolicy(max_capacity=4)
+    metrics = InternalDeliveryMetrics(exporter_kind=ExporterKind.DISTRIBUTED_OTLP.value)
+    bridge = RuntimeEventExportSink(
+        OtlpEventExportSink(transport=SlowTransport()),
+        delivery_metrics=metrics,
+    )
+    bounded = BoundedEventSink(bridge, policy)
+    bus = RuntimeEventBus(event_sink=bounded, delivery_metrics=metrics)
+    max_pending_depth = 0
     for index in range(20):
         await bus.publish(_event(f".bp.{index}"))
+        max_pending_depth = max(max_pending_depth, bounded.pending_depth)
+    assert max_pending_depth <= policy.max_capacity
+    snap = metrics.snapshot()
+    assert snap.events_accepted + snap.events_deferred + snap.events_rejected > 0
+    assert snap.events_accepted <= 20
     await asyncio.sleep(0.3)
     bus.close()
 

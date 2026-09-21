@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from intergrax.agents.authoring.runtime_tool_helpers import (
+from intergrax.runtime.nexus.agents.runtime_tool_helpers import (
     exec_ctx_from_step,
     invoke_catalog_tool,
     request_metadata,

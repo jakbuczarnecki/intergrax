@@ -6,8 +6,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
-from intergrax.agents.agent_contract import Agent
-from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
@@ -24,11 +23,8 @@ from intergrax.runtime.registry.capability_routing import (
     select_best_capability_match,
     validate_task_for_capability_routing,
 )
-from intergrax.runtime.task.task import Task, TaskContext
-from intergrax.runtime.task.agent_capability_intake import (
-    task_envelope_for_agent_capability_match,
-    task_envelope_from_task_context,
-)
+from intergrax.runtime.task.task import Task
+from intergrax.runtime.task.agent_capability_intake import task_envelope_for_agent_capability_match
 
 
 @dataclass(frozen=True)
@@ -63,7 +59,7 @@ class AgentRouter:
         *,
         run_id: str | None = None,
         node_id: str | None = None,
-    ) -> Agent:
+    ) -> Tier2Agent:
         validate_task_for_capability_routing(task)
         requested = task.agent_id or ""
         capability = task.context.capability or ""
@@ -94,9 +90,8 @@ class AgentRouter:
             if route.selected is not None:
                 agent = route.selected
                 score: float | None = None
-                match = agent.can_handle(task_envelope_for_agent_capability_match(task))
-                if match.matched:
-                    score = match.score
+                if route.selected_match is not None and route.selected_match.matched:
+                    score = route.selected_match.score
                 selection = AgentRouteSelection(
                     requested_agent_id=requested,
                     selected_agent_id=agent.get_contract().id,
@@ -122,7 +117,7 @@ class AgentRouter:
         task: Task,
         requested: str,
         capability: str,
-    ) -> tuple[Agent, AgentRouteSelection]:
+    ) -> tuple[Tier2Agent, AgentRouteSelection]:
         match = self._registry.find_best_match(
             task_envelope_for_agent_capability_match(task),
             production_mode=self._production_mode,
@@ -146,23 +141,6 @@ class AgentRouter:
             selection_reason="fallback_first_routable",
             fallback_used=True,
         )
-
-    def _best_capability_match(
-        self,
-        context: TaskContext,
-        candidates: list[Agent],
-    ) -> tuple[Agent, float | None]:
-        envelope = task_envelope_from_task_context(context)
-        best: Optional[tuple[float, Agent]] = None
-        for agent in candidates:
-            result = agent.can_handle(envelope)
-            if not result.matched:
-                continue
-            if best is None or result.score > best[0]:
-                best = (result.score, agent)
-        if best is not None:
-            return best[1], best[0]
-        return candidates[0], None
 
     def _emit_agent_selected(
         self,

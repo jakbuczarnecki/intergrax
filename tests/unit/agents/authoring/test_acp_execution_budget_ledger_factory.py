@@ -166,7 +166,7 @@ async def test_acp_session_uses_injected_execution_budget_ledger_factory() -> No
             _ACP_MINT_PATCH,
             return_value=_minted_identity(root),
         ),
-        patch("intergrax.agents.authoring.acp_uaep_shim.attach_acp_catalog_exec_ctx"),
+        patch("intergrax.runtime.nexus.agents.acp_uaep_shim.attach_acp_catalog_exec_ctx"),
         patch(
             "intergrax.runtime.wiring.llm_resolver.resolve_llm_adapter",
             return_value=FakeLLMAdapter(),

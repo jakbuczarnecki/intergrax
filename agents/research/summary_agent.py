@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from intergrax.agents.authoring.acp_stub_reflex import (
+from intergrax.runtime.nexus.agents.acp_stub_reflex import (
     evaluate_complete,
     perceive_run_input,
     reason_passthrough,
@@ -11,8 +11,10 @@ from intergrax.agents.authoring.acp_stub_reflex import (
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.reference_harness import (
     LabHarnessContext,
-    build_lab_agent_runtime_context,
     default_reference_harness,
+)
+from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+    build_lab_agent_runtime_context,
 )
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState

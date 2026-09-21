@@ -39,6 +39,7 @@ from intergrax.tools.providers.codecraft.contracts import (
 )
 from intergrax.tools.registry.bootstrap import register_default_tools
 from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.tools.registry.profile import is_tool_enabled
 from testing_support.codecraft_execution_environment import codecraft_sandbox_execution_profile
 
 pytestmark = pytest.mark.unit
@@ -162,7 +163,7 @@ def test_wire_application_codecraft_enables_tools() -> None:
     wiring = wire_application_codecraft(env)
     assert "codecraft_governance" in wiring.domain_fragments
     updated = tool_profile_with_codecraft(env)
-    assert updated.is_tool_enabled("codecraft.start")
+    assert is_tool_enabled(updated, "codecraft.start")
 
 
 def test_adaptive_trigger_catalog_miss() -> None:

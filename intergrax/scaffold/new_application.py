@@ -45,6 +45,7 @@ from intergrax.scaffold.application_pyproject import (
     render_application_pyproject,
 )
 from intergrax.scaffold.package_emit import write_scaffold_package_json
+from intergrax.integrations.registry.presets import lab_stack
 
 _PROFILES = ("lab", "product")
 
@@ -98,7 +99,7 @@ def _manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
                 name="{names.display} Lab Application",
                 route_prefix="{route_prefix}",
                 env_prefix="{env_prefix_value}",
-                integration_profile=IntegrationProfile.lab_stack(),
+                integration_profile=lab_stack(),
                 environment=environment,
                 agents=[
         {mounts_block}
@@ -134,7 +135,10 @@ def _agent_builders_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgen
         # __AGENT_IMPORTS__
 
         def _zero_arg_factory(agent_cls: type[Agent]) -> AgentFactory:
-            def _build(_ctx: ApplicationBuildContext, _binding: AgentBinding) -> Agent:
+            def _build(
+                _ctx: ApplicationBuildContext[None],
+                _binding: AgentBinding,
+            ) -> Agent:
                 return agent_cls()
 
             return _build
@@ -165,11 +169,15 @@ def _settings_py(names: ScaffoldApplicationNames) -> str:
         from dataclasses import dataclass
         from typing import ClassVar
 
-        from intergrax.applications.contracts.settings import EnvReader, IntergraxApplicationSettingsBase
+        from intergrax.applications._shared.settings_loader import (
+            ApplicationSettingsEnvHost,
+            EnvReader,
+        )
+        from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 
 
         @dataclass(frozen=True, kw_only=True)
-        class {pascal}ApplicationSettings(IntergraxApplicationSettingsBase):
+        class {pascal}ApplicationSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
             """Environment for {names.pkg} (scaffolded lab profile)."""
 
             env_prefix: ClassVar[str] = "{env_prefix_value}"

@@ -68,7 +68,7 @@ class RunDetailResponse(BaseModel):
         error = None
         if meta.error is not None:
             error = RunErrorResponse(
-                error_type=meta.error.error_type.value,
+                error_type=meta.error.error_type,
                 message=meta.error.message,
             )
         return cls(

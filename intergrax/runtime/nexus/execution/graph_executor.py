@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Awaitable, Callable, Dict, Generic, List, Optional, TypeVar
 
 from intergrax.agents.agent_contract import Agent
-from intergrax.agents.agent_engine import AgentEngine
+from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.agents.persistence.checkpoint_wiring import inject_acp_checkpoint_metadata
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.agents.persistence.compensation_queue_wiring import (

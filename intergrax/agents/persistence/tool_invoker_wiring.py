@@ -6,10 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from intergrax.agents.persistence.catalog_declarative_invoker import (
-    CatalogDeclarativeToolInvoker,
-    resolve_declarative_tool_invoker,
-)
+from intergrax.agents.persistence.declarative_run_binding import DeclarativeToolInvokerWithRunBinding
 from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.contracts.agent_run import AgentRunRequest
@@ -28,9 +25,12 @@ def attach_declarative_tool_invoker(
 def resolve_declarative_tool_invoker_from_metadata(
     metadata: dict[str, Any],
 ) -> DeclarativeToolInvoker | None:
-    return resolve_declarative_tool_invoker(
-        metadata.get(AcpMetadataKey.DECLARATIVE_TOOL_INVOKER),
-    )
+    candidate = metadata.get(AcpMetadataKey.DECLARATIVE_TOOL_INVOKER)
+    if candidate is None:
+        return None
+    if isinstance(candidate, DeclarativeToolInvoker):
+        return candidate
+    raise TypeError("declarative tool invoker metadata must implement DeclarativeToolInvoker")
 
 
 def inject_acp_tool_invoker_metadata(
@@ -45,7 +45,7 @@ def inject_acp_tool_invoker_metadata(
     """Mutate task/runtime metadata with the host catalog tool invoker when wired."""
     if invoker is None:
         return
-    if isinstance(invoker, CatalogDeclarativeToolInvoker):
+    if isinstance(invoker, DeclarativeToolInvokerWithRunBinding):
         invoker.bind_run(
             run_id=run_id,
             task_id=task_id,

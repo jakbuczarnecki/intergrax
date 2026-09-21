@@ -22,6 +22,7 @@ from intergrax.tools.registry.bootstrap import register_default_tools, reset_def
 from intergrax.tools.registry.catalog import ToolBundleEntry, clear_tool_catalog, register_tool_bundle
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
+from intergrax.tools.registry.profile import is_tool_enabled
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -69,9 +70,9 @@ def test_harness_tools_false_excludes_harness_optional_capabilities(
 ) -> None:
     profile = lab_reference_tool_profile(harness_tools=False)
 
-    assert profile.is_tool_enabled("rag.retrieve") is True
-    assert profile.is_tool_enabled(SANDBOX_EXEC_TOOL_ID) is False
-    assert profile.is_tool_enabled(SPEECH_SYNTHESIZE_TOOL_ID) is False
+    assert is_tool_enabled(profile, "rag.retrieve") is True
+    assert is_tool_enabled(profile, SANDBOX_EXEC_TOOL_ID) is False
+    assert is_tool_enabled(profile, SPEECH_SYNTHESIZE_TOOL_ID) is False
     assert SANDBOX_BUNDLE_ID not in profile.enabled_bundles
     assert SPEECH_BUNDLE_ID not in profile.enabled_bundles
 
@@ -81,8 +82,8 @@ def test_harness_tools_true_includes_harness_optional_capabilities(
 ) -> None:
     profile = lab_reference_tool_profile(harness_tools=True)
 
-    assert profile.is_tool_enabled(SANDBOX_EXEC_TOOL_ID) is True
-    assert profile.is_tool_enabled(SPEECH_SYNTHESIZE_TOOL_ID) is True
+    assert is_tool_enabled(profile, SANDBOX_EXEC_TOOL_ID) is True
+    assert is_tool_enabled(profile, SPEECH_SYNTHESIZE_TOOL_ID) is True
     assert SANDBOX_BUNDLE_ID in profile.enabled_bundles
     assert SPEECH_BUNDLE_ID in profile.enabled_bundles
 
@@ -110,7 +111,7 @@ def test_unrelated_catalog_plugin_is_not_auto_granted(
 ) -> None:
     profile = lab_reference_tool_profile(harness_tools=True)
 
-    assert profile.is_tool_enabled(_UNRELATED_PLUGIN_TOOL_ID) is False
+    assert is_tool_enabled(profile, _UNRELATED_PLUGIN_TOOL_ID) is False
     assert _UNRELATED_PLUGIN_BUNDLE_ID not in profile.enabled_bundles
 
 
@@ -134,8 +135,8 @@ def test_harness_lab_capability_bundle_preserves_bundle_semantics(
 
     assert base.tools.register_all_catalog_bundles is False
     assert full.tools.register_all_catalog_bundles is False
-    assert base.tools.is_tool_enabled(SANDBOX_EXEC_TOOL_ID) is False
-    assert full.tools.is_tool_enabled(SANDBOX_EXEC_TOOL_ID) is True
-    assert base.tools.is_tool_enabled("harness.get_run") is True
+    assert is_tool_enabled(base.tools, SANDBOX_EXEC_TOOL_ID) is False
+    assert is_tool_enabled(full.tools, SANDBOX_EXEC_TOOL_ID) is True
+    assert is_tool_enabled(base.tools, "harness.get_run") is True
     assert RAG_BUNDLE_ID in base.tools.enabled_bundles
     assert HARNESS_BUNDLE_ID in base.tools.enabled_bundles

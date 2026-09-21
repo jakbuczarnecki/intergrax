@@ -227,7 +227,7 @@ Execution E1
 
 ## 7. Nexus
 
-**Canonical positioning:** Nexus is a **private/internal orchestration implementation** behind Execution-owned contracts. Cross-domain consumers **MUST** depend on Execution-owned ports and the public execution boundary — **not** on Nexus-specific types (`NexusLoop`, `GraphExecutor`, etc.) as integration surfaces.
+**Canonical positioning:** Nexus is a **private/internal orchestration implementation** behind Execution-owned contracts. Owner-zone freeze and public boundary: [`ADR-HARNESS-001`](../technical/adr/entries/2026-09-20/ADR-HARNESS-001.md) (HARNESS-01-ADR2) — EE internal zones are only `intergrax/runtime/execution/**` and `intergrax/runtime/nexus/**`; no public Nexus entry. Cross-domain consumers **MUST** depend on Execution-owned ports and the public execution boundary — **not** on Nexus-specific types (`NexusLoop`, `GraphExecutor`, etc.) as integration surfaces.
 
 ```text
 External consumer

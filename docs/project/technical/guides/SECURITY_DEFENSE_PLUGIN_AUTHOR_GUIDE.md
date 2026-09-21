@@ -229,7 +229,7 @@ ApplicationSecurityProfile.defense_plugin_ids / defense_bundle_ids
   → resolve_security_wiring_options() / security_runtime_bridge
   → resolve_security_defense_plugins(ids, bundle_ids)
   → PluginSecurityDefenseMiddleware per plugin
-  → MiddlewarePipeline on NexusLoop (sorted by priority)
+  → MiddlewarePipeline on the Execution Engine host path (sorted by priority)
   → before(hook_point, HookContext) on each matching HookPoint
   → SecurityInspectionResult.allowed → HookResult ALLOW | BLOCK | MODIFY
 ```

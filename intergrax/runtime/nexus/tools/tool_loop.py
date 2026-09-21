@@ -28,6 +28,7 @@ from intergrax.runtime.nexus.budget.budget_ticks import (
 )
 from intergrax.runtime.nexus.config_types import ToolInvocationMode
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState, ToolCallTrace
+from intergrax.runtime.agent_governance.errors import ToolGovernanceApprovalRequiredError
 from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyHitlRequiredError,
 )
@@ -40,6 +41,9 @@ from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
     raise_hitl_pause_from_tool_invocation,
     resolve_grant_scope_candidate,
     unique_candidate_from_resolution,
+)
+from intergrax.runtime.nexus.tools.mse_governed_continuation_hitl_bridge import (
+    raise_mse_governed_continuation_hitl_pause,
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.nexus.tools.tool_invocation_aggregate import ToolInvocationAggregate
@@ -146,6 +150,15 @@ def _finish_canonical_tool_invocation(
             request=request,
             agent_id=state.request.agent_id,
         )
+    except ToolGovernanceApprovalRequiredError as exc:
+        if exc.governed_continuation_request is not None:
+            raise_mse_governed_continuation_hitl_pause(
+                exc,
+                state=state,
+                request=request,
+                agent_id=state.request.agent_id,
+            )
+        raise
     trace = _trace_from_result(call, result)
     run_post_tool_verify(state=state, invoker=invoker, trace=trace)
     if invoke_lock is not None:

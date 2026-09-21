@@ -8,11 +8,11 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.orchestration_enums import MultiAgentOrder
 from intergrax.contracts.delegation import DelegationSpec
+from intergrax.contracts.routable_tier2_agent import RoutableTier2Agent
 from intergrax.contracts.task_envelope import task_envelope_for_capability_routing
-from intergrax.runtime.task.task import TaskContext
+from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task
@@ -163,14 +163,16 @@ class TaskPlanner:
             validation_criteria=["non_empty_summary", "capability:research.pipeline"],
         )
 
-    def _sort_agents(self, agents: list[Agent], *, capability: str) -> list[Agent]:
+    def _sort_agents(self, agents: list[Tier2Agent], *, capability: str) -> list[Tier2Agent]:
         if self._multi_agent_order is MultiAgentOrder.STABLE_ALPHA:
             return sorted(agents, key=lambda agent: agent.get_contract().id)
         if self._multi_agent_order is MultiAgentOrder.PRIORITY:
             context = task_envelope_for_capability_routing(capability=capability) if capability else task_envelope_for_capability_routing()
+            routable = [agent for agent in agents if isinstance(agent, RoutableTier2Agent)]
+            pool = routable if routable else agents
             return sorted(
-                agents,
-                key=lambda agent: agent.can_handle(context).score,
+                pool,
+                key=lambda agent: agent.can_handle(context).score if isinstance(agent, RoutableTier2Agent) else 0.0,
                 reverse=True,
             )
         return list(agents)

@@ -67,6 +67,13 @@ from intergrax.runtime.policy.meaningful_side_effect_authorization import (
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
+from intergrax.runtime.execution.active_execution_continuation_store import (
+    bind_active_execution_continuation_state_store,
+    reset_active_execution_continuation_state_store,
+)
+from intergrax.runtime.execution.continuation.persistence import (
+    InMemoryExecutionContinuationStateStore,
+)
 from tests.unit.runtime.governance.gr3_test_support import (
     bound_gr3_active_execution,
     default_gr3_identity_bundle,
@@ -74,6 +81,18 @@ from tests.unit.runtime.governance.gr3_test_support import (
 )
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+@pytest.fixture(autouse=True)
+def _bind_canonical_continuation_store():
+    """GR-10-R12: pause composition requires explicit active continuation store."""
+    store = InMemoryExecutionContinuationStateStore()
+    token = bind_active_execution_continuation_state_store(store)
+    try:
+        yield store
+    finally:
+        reset_active_execution_continuation_state_store(token)
+
 
 _TENANT = "tenant-a"
 _WORKSPACE = "workspace-a"

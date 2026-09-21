@@ -11,26 +11,31 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from intergrax.runtime.execution.deadline_scope import (
-    bind_active_execution_deadline_scope,
-    reset_active_execution_deadline_scope,
-)
+from intergrax.contracts.attempt_lifecycle import AttemptTransitionReason
+from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_deadline.admission import (
     ExecutionProtectedWorkAdmissionPort,
     ExecutionProtectedWorkAdmissionResult,
 )
 from intergrax.contracts.execution_deadline.projection import ExecutionDeadlineProjection
-from intergrax.runtime.execution.deadline_provider_guard import (
-    ExecutionProtectedWorkDeniedError,
-    resolve_active_provider_timeout_seconds,
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    RunId,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    require_active_execution_identity,
 )
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_run_id
 from intergrax.contracts.execution_retry import (
     ExecutionFailureClassification,
     ExecutionFailureKind,
     ExecutionRetryEligibilityRequest,
 )
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.runtime.execution.attempt_lifecycle import (
+    AttemptLifecycleService,
+    InMemoryAttemptLifecycleStore,
+)
 from intergrax.runtime.execution.deadline_authority import (
     ExecutionDeadlineAuthorityResolver,
     InMemoryExecutionDeadlinePersistence,
@@ -44,12 +49,22 @@ from intergrax.runtime.execution.deadline_authority.persistence import (
 from intergrax.runtime.execution.deadline_authority.projection import (
     project_deadline_at_utc,
 )
+from intergrax.runtime.execution.deadline_provider_guard import (
+    ExecutionProtectedWorkDeniedError,
+    resolve_active_provider_timeout_seconds,
+)
+from intergrax.runtime.execution.deadline_scope import (
+    bind_active_execution_deadline_scope,
+    peek_active_execution_deadline_projection,
+    reset_active_execution_deadline_scope,
+)
 from intergrax.runtime.execution.protected_work_admission import (
     CanonicalHardProtectedWorkAdmission,
     ComposedProtectedWorkAdmission,
     StaticCancellationView,
 )
 from intergrax.runtime.execution.retry.policy import evaluate_execution_retry_eligibility
+from intergrax.runtime.execution.runtime import ExecutionRuntime, RootExecutionContext
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
@@ -127,12 +142,17 @@ class _CreateCountingPersistence(InMemoryExecutionDeadlinePersistence):
     def __init__(self) -> None:
         super().__init__()
         self.cas_create_calls = 0
+        self.load_calls = 0
+
+    def load(self, *, tenant_id: str, run_id: RunId) -> bytes | None:
+        self.load_calls += 1
+        return super().load(tenant_id=tenant_id, run_id=run_id)
 
     def compare_and_create(
         self,
         *,
         tenant_id: str,
-        run_id: object,
+        run_id: RunId,
         expected: bytes | None,
         encoded_snapshot: bytes,
     ) -> bool:
@@ -140,7 +160,7 @@ class _CreateCountingPersistence(InMemoryExecutionDeadlinePersistence):
             self.cas_create_calls += 1
         return super().compare_and_create(
             tenant_id=tenant_id,
-            run_id=run_id,  # type: ignore[arg-type]
+            run_id=run_id,
             expected=expected,
             encoded_snapshot=encoded_snapshot,
         )
@@ -180,38 +200,110 @@ def test_q01_root_creates_authority_once_cas() -> None:
     assert persistence.load(tenant_id="t1", run_id=run_id) is not None
 
 
-def test_q03_new_attempt_same_run_preserves_deadline() -> None:
+@pytest.mark.asyncio
+async def test_q03_new_attempt_same_run_preserves_deadline() -> None:
+    """Q03: different attempt_id, same run_id → same durable deadline authority.
+
+    Path:
+      A1 → AttemptLifecycleService.record_initial_attempt
+        → RootExecutionContext(attempt_id=A1)
+        → ExecutionRuntime.execute
+        → ExecutionDeadlineAuthorityResolver.resolve_for_root
+      A2 → AttemptLifecycleService.transition_to_next_attempt
+        → RootExecutionContext(attempt_id=A2)
+        → ExecutionRuntime.execute
+        → ExecutionDeadlineAuthorityResolver.resolve_for_root
+    """
     persistence = _CreateCountingPersistence()
     tenant_id = "T"
     run_id = mint_run_id()
-    attempt_a1 = mint_attempt_id()
-    attempt_a2 = mint_attempt_id()
-    assert attempt_a1 != attempt_a2
     utc = _FakeUtcClock(datetime(2026, 1, 15, 9, 0, tzinfo=timezone.utc))
     monotonic = _FakeMonotonicClock(50.0)
-    resolver_attempt1 = _resolver(persistence, utc=utc, monotonic=monotonic)
-    deadline1 = resolver_attempt1.resolve_for_root(
+    resolver = _resolver(persistence, utc=utc, monotonic=monotonic)
+    lifecycle = AttemptLifecycleService(InMemoryAttemptLifecycleStore())
+
+    attempt_a1 = mint_attempt_id()
+    lifecycle.record_initial_attempt(
         tenant_id=tenant_id,
         run_id=run_id,
-        run_budget=RunBudget(max_wall_time_seconds=30.0),
-        existing_run_materialized=False,
+        attempt_id=attempt_a1,
     )
+
+    observed_attempt_ids: list[AttemptId] = []
+    observed_run_ids: list[RunId] = []
+    observed_deadline_at_utc: list[datetime | None] = []
+
+    class _ProbeDelegate:
+        async def execute(self, request: object) -> str:
+            del request
+            active_run_id, active_attempt_id = require_active_execution_identity()
+            observed_run_ids.append(active_run_id)
+            observed_attempt_ids.append(active_attempt_id)
+            projection = peek_active_execution_deadline_projection()
+            assert projection is not None
+            observed_deadline_at_utc.append(projection.deadline_at_utc)
+            return "ok"
+
+    await ExecutionRuntime(
+        _ProbeDelegate(),
+        run_budget=RunBudget(max_wall_time_seconds=30.0),
+        deadline_authority_resolver=resolver,
+    ).execute(
+        object(),
+        RootExecutionContext(
+            run_id=run_id,
+            attempt_id=attempt_a1,
+            execution_id=mint_execution_id(),
+            authority=ParentExecutionAuthority.unrestricted_root(),
+            tenant_id=tenant_id,
+        ),
+    )
+    raw_after_a1 = persistence.load(tenant_id=tenant_id, run_id=run_id)
+    assert raw_after_a1 is not None
+    snapshot_a1 = decode_execution_deadline_authority_snapshot(raw_after_a1)
+
     utc.advance(12.0)
     monotonic.advance(12.0)
-    resolver_attempt2 = _resolver(persistence, utc=utc, monotonic=monotonic)
-    deadline2 = resolver_attempt2.resolve_for_root(
+
+    transition = lifecycle.transition_to_next_attempt(
         tenant_id=tenant_id,
         run_id=run_id,
+        expected_attempt_id=attempt_a1,
+        reason=AttemptTransitionReason.RETRY,
+    )
+    attempt_a2 = transition.active_attempt_id
+    assert attempt_a1 != attempt_a2
+
+    await ExecutionRuntime(
+        _ProbeDelegate(),
         run_budget=RunBudget(max_wall_time_seconds=999.0),
-        existing_run_materialized=True,
+        deadline_authority_resolver=resolver,
+    ).execute(
+        object(),
+        RootExecutionContext(
+            run_id=run_id,
+            attempt_id=attempt_a2,
+            execution_id=mint_execution_id(),
+            authority=ParentExecutionAuthority.unrestricted_root(),
+            tenant_id=tenant_id,
+        ),
     )
-    assert deadline2.snapshot.deadline_at_utc == deadline1.snapshot.deadline_at_utc
-    assert deadline2.snapshot.run_id == deadline1.snapshot.run_id
+    raw_after_a2 = persistence.load(tenant_id=tenant_id, run_id=run_id)
+    assert raw_after_a2 is not None
+    snapshot_a2 = decode_execution_deadline_authority_snapshot(raw_after_a2)
+
+    assert observed_attempt_ids == [attempt_a1, attempt_a2]
+    assert observed_run_ids == [run_id, run_id]
+    assert snapshot_a1.run_id == run_id
+    assert snapshot_a2.run_id == run_id
+    assert snapshot_a1.deadline_at_utc == snapshot_a2.deadline_at_utc
     assert (
-        deadline2.snapshot.authority_created_at_utc
-        == deadline1.snapshot.authority_created_at_utc
+        snapshot_a1.authority_created_at_utc == snapshot_a2.authority_created_at_utc
     )
+    assert observed_deadline_at_utc[0] == snapshot_a1.deadline_at_utc
+    assert observed_deadline_at_utc[1] == snapshot_a1.deadline_at_utc
     assert persistence.cas_create_calls == 1
+    assert persistence.load_calls >= 2
 
 
 def test_q02_resume_preserves_deadline() -> None:

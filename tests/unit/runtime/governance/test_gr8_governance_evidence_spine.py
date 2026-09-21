@@ -47,6 +47,7 @@ from intergrax.runtime.governance.governance_evidence_persistence import (
 from intergrax.runtime.governance.runtime_execution_policy_admission import (
     AllowingRuntimeExecutionPolicyAdmission,
     DenyingRuntimeExecutionPolicyAdmission,
+    EscalateRuntimeExecutionPolicyAdmission,
     RequireHumanRuntimeExecutionPolicyAdmission,
 )
 
@@ -99,6 +100,32 @@ def test_root_deny_emits_fact_without_trusted_authority() -> None:
     assert result.trusted_parent_execution_authority is None
     assert len(store.facts) == 1
     assert store.facts[0].decision is PolicyAction.DENY
+
+
+def test_escalate_root_emits_fact_without_trusted_authority() -> None:
+    store = build_in_memory_governance_evidence_persistence()
+    recorder = build_governance_evidence_recorder(persistence=store)
+    service = build_root_execution_authority_admission(
+        runtime_policy_admission=EscalateRuntimeExecutionPolicyAdmission(),
+        governance_evidence_recorder=recorder,
+    )
+    result = service.authorize(_admission_request())
+    assert result.disposition is RootExecutionAuthorityAdmissionDisposition.ESCALATE
+    assert result.trusted_parent_execution_authority is None
+    assert len(store.facts) == 1
+    assert store.facts[0].decision is PolicyAction.ESCALATE
+
+
+def test_persistence_failure_does_not_flip_escalate_to_allow() -> None:
+    store = build_in_memory_governance_evidence_persistence()
+    store.fail_on_persist = True
+    recorder = build_governance_evidence_recorder(persistence=store)
+    service = build_root_execution_authority_admission(
+        runtime_policy_admission=EscalateRuntimeExecutionPolicyAdmission(),
+        governance_evidence_recorder=recorder,
+    )
+    result = service.authorize(_admission_request())
+    assert result.disposition is RootExecutionAuthorityAdmissionDisposition.ESCALATE
 
 
 def test_require_human_root_emits_fact() -> None:
@@ -361,15 +388,29 @@ def test_governance_persistence_port_has_no_policy_decision_return() -> None:
     assert "PolicyDecision" not in str(hints)
 
 
-def test_build_fact_rejects_non_terminal_actions() -> None:
+def test_build_fact_rejects_modify_action() -> None:
     with pytest.raises(ValueError, match="governance_evidence_requires"):
         build_governance_fact_from_policy_decision(
             evaluation_point=GovernedExecutionEvaluationPoint.MEANINGFUL_SIDE_EFFECT,
             tenant_id="tenant_a",
             workspace_id="ws",
             principal_id="p",
-            decision=PolicyDecision(action=PolicyAction.ESCALATE, reason="x"),
-            request_digest="sha256:aa",
+            decision=PolicyDecision(action=PolicyAction.MODIFY, reason="x"),
+            request_digest="sha256:" + "aa" * 32,
             idempotency_key="k1",
             action="act",
         )
+
+
+def test_build_fact_accepts_escalate_action() -> None:
+    fact = build_governance_fact_from_policy_decision(
+        evaluation_point=GovernedExecutionEvaluationPoint.MEANINGFUL_SIDE_EFFECT,
+        tenant_id="tenant_a",
+        workspace_id="ws",
+        principal_id="p",
+        decision=PolicyDecision(action=PolicyAction.ESCALATE, reason="escalate"),
+        request_digest="sha256:" + "bb" * 32,
+        idempotency_key="k-escalate",
+        action="act",
+    )
+    assert fact.decision is PolicyAction.ESCALATE

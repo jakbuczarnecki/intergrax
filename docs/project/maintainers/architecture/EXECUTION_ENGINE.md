@@ -7,6 +7,11 @@
 **Related qualification:** [`EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md`](../qualification/EE_FINAL_CROSS_SESSION_ENTERPRISE_EXECUTION_ENGINE_CERTIFICATION.md) · post-freeze reconciliation [`EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md`](../qualification/EXECUTION_ENGINE_AND_DECISION_DOCUMENTATION_RECONCILIATION.md)
 **Last architecture reconciliation:** 2026-09-14 (EE-POST-FREEZE-FINAL-R1)
 
+
+### HARNESS-01-ADR2 — Nexus encapsulation
+
+Public Execution Engine boundary and Nexus privacy are frozen by [`ADR-HARNESS-001`](../../technical/adr/entries/2026-09-20/ADR-HARNESS-001.md). Nexus is private to EE (`runtime/execution/**` + `runtime/nexus/**` only). Hosts use `HostTaskExecutionPort`; agents/tools/providers use domain contracts. HARNESS-01-R5 resumes under this ADR; HARNESS-01 is not closed until owner-zone metrics pass.
+
 **This document does not own detailed execution semantics.** Normative cross-domain semantics remain in [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) (`META_ARCHITECTURE`). Domain lifecycle, topology, recovery, evidence, and qualification proofs remain with their listed canonical owners below.
 
 A documentation consolidation commit **does not reopen** frozen production semantics. Any change that contradicts frozen architecture or freeze records requires a separate architecture decision.

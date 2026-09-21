@@ -4,8 +4,16 @@
 
 from __future__ import annotations
 
+from intergrax.applications._shared.diagnostic_composition import (
+    DiagnosticCompositionOverrides,
+    DiagnosticPersistenceComposition,
+    build_diagnostic_orchestrator_from_composition,
+    resolve_diagnostic_composition,
+    resolve_diagnostic_persistence_composition,
+)
 from intergrax.applications._shared.diagnostic_read_wiring import (
     HostDiagnosticReadDependencies,
+    assert_host_diagnostic_composition_frozen,
     resolve_host_diagnostic_read_dependencies,
 )
 from intergrax.applications._shared.diagnostic_assembly_resolver import (
@@ -13,31 +21,9 @@ from intergrax.applications._shared.diagnostic_assembly_resolver import (
     assert_diagnostic_assembly_valid,
     resolve_central_diagnostics_required,
 )
-from intergrax.applications._shared.diagnostic_cursor_secret import (
-    resolve_problem_list_cursor_secret,
-)
 from intergrax.applications._shared.environment_wiring import ApplicationEnvironmentWiring
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
-from intergrax.integrations._shared.conformance import assert_conditional_document_store
-from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
-    DeterministicProblemGroupingStrategy,
-)
-from intergrax.runtime.diagnostics.diagnostic_assessment import DiagnosticAssessmentBuilder
 from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
-from intergrax.runtime.diagnostics.diagnostic_problem_grouping_feature_projector import (
-    DiagnosticProblemGroupingFeatureProjector,
-)
-from intergrax.runtime.diagnostics.document_store_problem_occurrence_persistence import (
-    wire_problem_occurrence_persistence,
-)
-from intergrax.runtime.diagnostics.document_store_problem_persistence import wire_problem_persistence
-from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
-from intergrax.runtime.diagnostics.lifecycle_analysis import LifecycleAnomalyAnalyzer
-from intergrax.runtime.diagnostics.problem_grouping import (
-    ProblemGroupingEngine,
-    ProblemGroupingStrategyRegistry,
-)
-from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngine
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
@@ -51,104 +37,118 @@ from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import 
     TerminalExecutionDiagnosticTrigger,
 )
 from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
-from intergrax.runtime.observability.causal_evidence_persistence import CausalEvidencePersistence
-from intergrax.runtime.observability.document_store_causal_evidence_persistence import (
-    wire_causal_evidence_persistence,
-)
+
+
+def _resolve_overrides(
+    env_wiring: ApplicationEnvironmentWiring,
+    overrides: DiagnosticCompositionOverrides | None,
+) -> DiagnosticCompositionOverrides | None:
+    if overrides is not None:
+        return overrides
+    return env_wiring.composition.diagnostic_composition_overrides
 
 
 def resolve_host_diagnostic_runtime_dependencies(
     *,
     env_wiring: ApplicationEnvironmentWiring,
     observability: NexusObservabilityStores,
+    overrides: DiagnosticCompositionOverrides | None = None,
+    runtime: HarnessHostRuntime | None = None,
+    materialized_dependencies: HostDiagnosticReadDependencies | None = None,
 ) -> HostDiagnosticReadDependencies | None:
     """
     Resolve shared diagnostic persistence for runtime write orchestration.
 
-    Returns ``None`` when the host lacks required platform document-store capabilities.
+    Returns ``None`` when the host lacks required platform document-store capabilities
+    and no durable overrides were supplied.
     """
+    if materialized_dependencies is not None:
+        return materialized_dependencies
+    if runtime is not None:
+        stored = runtime.host_diagnostic_dependencies
+        if stored is not None:
+            assert_host_diagnostic_composition_frozen(runtime, overrides=overrides)
+            return stored
+
+    resolved_overrides = _resolve_overrides(env_wiring, overrides)
     wiring_context = env_wiring.composition.tool_wiring_context
-    if wiring_context is None or wiring_context.document_store is None:
-        return None
-    document_store = assert_conditional_document_store(wiring_context.document_store)
+    document_store = None
+    if wiring_context is not None:
+        document_store = wiring_context.document_store
 
-    runtime_events = observability.runtime_event_store
-    if runtime_events is None:
-        return None
-
-    return HostDiagnosticReadDependencies(
-        problem_persistence=wire_problem_persistence(
-            document_store=document_store,
-            list_cursor_secret=resolve_problem_list_cursor_secret(),
-        ),
-        occurrence_persistence=wire_problem_occurrence_persistence(
-            document_store=document_store,
-            occurrence_cursor_secret=resolve_problem_list_cursor_secret(),
-        ),
-        runtime_event_persistence=runtime_events,
-        causal_evidence_persistence=wire_causal_evidence_persistence(
-            document_store=document_store,
-        ),
+    persistence = resolve_diagnostic_persistence_composition(
+        document_store=document_store,
+        runtime_event_persistence=observability.runtime_event_store,
+        overrides=resolved_overrides,
+        require_durable=False,
     )
+    if persistence is None:
+        return None
+    return HostDiagnosticReadDependencies(persistence=persistence)
 
 
 def build_diagnostic_orchestrator(
     dependencies: HostDiagnosticReadDependencies,
+    *,
+    overrides: DiagnosticCompositionOverrides | None = None,
 ) -> DiagnosticOrchestrator:
     """Construct canonical ``DiagnosticOrchestrator`` over shared platform persistence."""
-    registry = ProblemGroupingStrategyRegistry()
-    registry.register(DeterministicProblemGroupingStrategy())
-    return DiagnosticOrchestrator(
-        execution_reconstructor=ExecutionReconstructor(
-            runtime_events=dependencies.runtime_event_persistence,
-            causal_evidence=dependencies.causal_evidence_persistence,
-        ),
-        lifecycle_analyzer=LifecycleAnomalyAnalyzer(),
-        assessment_builder=DiagnosticAssessmentBuilder(),
-        grouping_engine=ProblemGroupingEngine(
-            registry,
-            feature_projector=DiagnosticProblemGroupingFeatureProjector(),
-        ),
-        problem_lifecycle_engine=ProblemLifecycleEngine(
-            dependencies.problem_persistence,
-            dependencies.occurrence_persistence,
-        ),
+    composition = resolve_diagnostic_composition(
+        dependencies.persistence,
+        overrides=overrides,
+        execution_lineage_reader=dependencies.execution_lineage_reader,
     )
+    return build_diagnostic_orchestrator_from_composition(composition)
 
 
 def build_terminal_execution_diagnostic_trigger(
     dependencies: HostDiagnosticReadDependencies,
+    *,
+    overrides: DiagnosticCompositionOverrides | None = None,
 ) -> TerminalExecutionDiagnosticTrigger:
     """Construct production terminal diagnostic trigger over shared orchestrator."""
-    return TerminalExecutionDiagnosticTrigger(build_diagnostic_orchestrator(dependencies))
+    return TerminalExecutionDiagnosticTrigger(
+        build_diagnostic_orchestrator(dependencies, overrides=overrides),
+    )
 
 
 def try_build_terminal_execution_diagnostic_trigger(
     *,
     env_wiring: ApplicationEnvironmentWiring,
     observability: NexusObservabilityStores,
+    overrides: DiagnosticCompositionOverrides | None = None,
+    materialized_dependencies: HostDiagnosticReadDependencies | None = None,
 ) -> TerminalExecutionDiagnosticTrigger | None:
     """Best-effort runtime trigger when required platform storage is available."""
+    resolved_overrides = _resolve_overrides(env_wiring, overrides)
     dependencies = resolve_host_diagnostic_runtime_dependencies(
         env_wiring=env_wiring,
         observability=observability,
+        overrides=resolved_overrides,
+        materialized_dependencies=materialized_dependencies,
     )
     if dependencies is None:
         return None
-    return build_terminal_execution_diagnostic_trigger(dependencies)
+    return build_terminal_execution_diagnostic_trigger(
+        dependencies,
+        overrides=resolved_overrides,
+    )
 
 
 def build_terminal_execution_diagnostic_port(
     dependencies: HostDiagnosticReadDependencies,
     *,
     event_bus: RuntimeEventBus | None = None,
+    overrides: DiagnosticCompositionOverrides | None = None,
 ) -> TerminalExecutionDiagnosticPort:
     """Construct production terminal diagnostic port over shared orchestrator."""
     return wrap_terminal_execution_diagnostic_trigger(
-        build_terminal_execution_diagnostic_trigger(dependencies),
+        build_terminal_execution_diagnostic_trigger(
+            dependencies,
+            overrides=overrides,
+        ),
         event_bus=event_bus,
     )
 
@@ -158,24 +158,45 @@ def try_build_terminal_execution_diagnostic_port(
     env_wiring: ApplicationEnvironmentWiring,
     observability: NexusObservabilityStores,
     event_bus: RuntimeEventBus | None = None,
+    overrides: DiagnosticCompositionOverrides | None = None,
+    materialized_dependencies: HostDiagnosticReadDependencies | None = None,
 ) -> TerminalExecutionDiagnosticPort | None:
     """Best-effort neutral port when required platform storage is available."""
+    resolved_overrides = _resolve_overrides(env_wiring, overrides)
     dependencies = resolve_host_diagnostic_runtime_dependencies(
         env_wiring=env_wiring,
         observability=observability,
+        overrides=resolved_overrides,
+        materialized_dependencies=materialized_dependencies,
     )
     if dependencies is None:
         return None
-    return build_terminal_execution_diagnostic_port(dependencies, event_bus=event_bus)
+    return build_terminal_execution_diagnostic_port(
+        dependencies,
+        event_bus=event_bus,
+        overrides=resolved_overrides,
+    )
 
 
 def _diagnostic_prerequisite_gaps(
     *,
     env_wiring: ApplicationEnvironmentWiring,
     observability: NexusObservabilityStores,
+    overrides: DiagnosticCompositionOverrides | None = None,
 ) -> tuple[bool, bool]:
+    resolved_overrides = _resolve_overrides(env_wiring, overrides)
     wiring_context = env_wiring.composition.tool_wiring_context
-    missing_document_store = wiring_context is None or wiring_context.document_store is None
+    has_document_store = (
+        wiring_context is not None and wiring_context.document_store is not None
+    )
+    has_persistence_override = False
+    if resolved_overrides is not None:
+        has_persistence_override = (
+            resolved_overrides.problem_persistence is not None
+            and resolved_overrides.occurrence_persistence is not None
+            and resolved_overrides.causal_evidence_persistence is not None
+        )
+    missing_document_store = not has_document_store and not has_persistence_override
     missing_runtime_events = observability.runtime_event_store is None
     return missing_document_store, missing_runtime_events
 
@@ -187,12 +208,15 @@ def wire_terminal_execution_diagnostics(
     observability: NexusObservabilityStores,
     nexus_loop: NexusLoop,
     scenario_runtime_mode: object | None = None,
+    overrides: DiagnosticCompositionOverrides | None = None,
+    materialized_dependencies: HostDiagnosticReadDependencies | None = None,
 ) -> DiagnosticWiring:
     """
     Policy-aware terminal diagnostic composition over the canonical orchestrator spine.
 
     When diagnostics are required, missing prerequisites fail closed.
     """
+    resolved_overrides = _resolve_overrides(env_wiring, overrides)
     required = resolve_central_diagnostics_required(
         env,
         scenario_runtime_mode=scenario_runtime_mode,  # type: ignore[arg-type]
@@ -200,11 +224,14 @@ def wire_terminal_execution_diagnostics(
     missing_document_store, missing_runtime_events = _diagnostic_prerequisite_gaps(
         env_wiring=env_wiring,
         observability=observability,
+        overrides=resolved_overrides,
     )
     terminal_diagnostic_port = try_build_terminal_execution_diagnostic_port(
         env_wiring=env_wiring,
         observability=observability,
         event_bus=nexus_loop.event_bus,
+        overrides=resolved_overrides,
+        materialized_dependencies=materialized_dependencies,
     )
     attached = terminal_diagnostic_port is not None
     assert_diagnostic_assembly_valid(
@@ -220,14 +247,23 @@ def wire_terminal_execution_diagnostics(
 
 def resolve_host_terminal_execution_diagnostic_trigger(
     runtime: HarnessHostRuntime,
+    *,
+    overrides: DiagnosticCompositionOverrides | None = None,
 ) -> TerminalExecutionDiagnosticTrigger:
     """Resolve production terminal diagnostic trigger from harness host runtime wiring."""
+    if overrides is not None:
+        assert_host_diagnostic_composition_frozen(runtime, overrides=overrides)
+    resolved_overrides = _resolve_overrides(runtime.env_wiring, overrides)
+    dependencies = resolve_host_diagnostic_read_dependencies(runtime, overrides=overrides)
     return build_terminal_execution_diagnostic_trigger(
-        resolve_host_diagnostic_read_dependencies(runtime),
+        dependencies,
+        overrides=resolved_overrides,
     )
 
 
 __all__ = [
+    "DiagnosticCompositionOverrides",
+    "DiagnosticPersistenceComposition",
     "build_diagnostic_orchestrator",
     "build_terminal_execution_diagnostic_port",
     "build_terminal_execution_diagnostic_trigger",

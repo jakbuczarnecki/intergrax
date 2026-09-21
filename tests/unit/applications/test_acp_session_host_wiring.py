@@ -10,7 +10,7 @@ import pytest
 from pydantic import BaseModel
 
 from echo.echo_agent import EchoAgent
-from intergrax.agents.persistence.catalog_declarative_invoker import (
+from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
     CatalogDeclarativeToolInvoker,
 )
 from intergrax.applications._shared.acp_session_host_wiring import (
