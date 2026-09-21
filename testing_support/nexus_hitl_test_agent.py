@@ -91,7 +91,9 @@ class NexusBasicHitlTestAgent(HarnessReferenceAgent):
                 matched_capabilities=[self._capability],
                 score=1.0,
             )
-        return CapabilityMatchResult(matched=False, rationale="capability not supported")
+        return CapabilityMatchResult(
+            matched=False, rationale="capability not supported"
+        )
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         config = RuntimeConfig(
@@ -108,7 +110,9 @@ class NexusBasicHitlTestAgent(HarnessReferenceAgent):
     def get_steps(self) -> list[AgentStep]:
         return [AgentStep(step_id="review", step_name="review", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         if self._track_step_runs:
             NexusBasicHitlTestAgent.step_run_count += 1
         return StepOutput(step_id=step.step_id, summary=self._step_summary)
@@ -120,7 +124,9 @@ class NexusBasicHitlTestAgent(HarnessReferenceAgent):
         ctx: RuntimeExecutionContext,
     ) -> AgentDecision:
         _ = step
-        if output is not None and _human_approved(ctx, extended=self._extended_human_approval):
+        if output is not None and _human_approved(
+            ctx, extended=self._extended_human_approval
+        ):
             return AgentDecision(type=AgentDecisionType.COMPLETE, reason="approved")
         if _human_approved(ctx, extended=self._extended_human_approval):
             return AgentDecision(type=AgentDecisionType.COMPLETE, reason="approved")
@@ -140,7 +146,7 @@ def prepare_nexus_hitl_resume_task(
     *,
     loaded: TaskCheckpoint,
     run_id: RunId,
-    human_approved: bool = True,
+    human_approved: bool = False,
     human_rejected: bool = False,
     approver: HumanApproverEvidence | None = None,
 ) -> None:
@@ -150,11 +156,16 @@ def prepare_nexus_hitl_resume_task(
         actor_id=resume.user_id or "operator",
     )
     resume.options.human.approver = resolved_approver
-    if not human_approved and not human_rejected:
+    if human_approved:
+        verdict = HumanResponseVerdict.APPROVE
+        resume.options.human.verdict = verdict.value
+        resume.options.human.response_text = "approve"
+    elif human_rejected:
+        verdict = HumanResponseVerdict.REJECT
+        resume.options.human.verdict = verdict.value
+        resume.options.human.response_text = "reject"
+    else:
         return
-    verdict = (
-        HumanResponseVerdict.APPROVE if human_approved else HumanResponseVerdict.REJECT
-    )
     pause_record = resume.runtime.governance.pause_record
     pause_id = pause_record.pause_id if pause_record is not None else "hr_hitl_pause"
     human_request_id = (

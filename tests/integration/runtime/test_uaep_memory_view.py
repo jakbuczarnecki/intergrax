@@ -4,7 +4,6 @@ import pytest
 
 from dataclasses import replace
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
@@ -28,7 +27,9 @@ from testing_support.builder import (
 )
 
 
-def _verified_canonical_identity(*, tenant_id: str = "t1", user_id: str = "u1") -> RequestIdentity:
+def _verified_canonical_identity(
+    *, tenant_id: str = "t1", user_id: str = "u1"
+) -> RequestIdentity:
     return RequestIdentity(
         tenant_id=tenant_id,
         user_id=user_id,
@@ -61,10 +62,11 @@ class _MemoryUaepAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="persist", step_name="persist", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _ = step
         assert ctx.memory_view is not None
         await ctx.memory_view.write(
@@ -113,7 +115,10 @@ async def test_uaep_executor_wires_memory_view():
     assert validation.valid
     assert "Acme Q1" in answer.answer
     memory_events = [
-        event for event in bus.history if event.event_type in {
+        event
+        for event in bus.history
+        if event.event_type
+        in {
             RuntimeEventType.MEMORY_READ,
             RuntimeEventType.MEMORY_WRITE,
         }
@@ -135,10 +140,11 @@ async def test_uaep_executor_wires_memory_view():
 async def test_uaep_executor_without_store_leaves_memory_view_none():
     bus = RuntimeEventBus()
     executor = UAEPExecutor(event_bus=bus)
-    agent = _MemoryUaepAgent()
 
     class _NoMemoryAgent(_MemoryUaepAgent):
-        async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+        async def run_step(
+            self, step: AgentStep, ctx: RuntimeExecutionContext
+        ) -> StepOutput:
             assert ctx.memory_view is None
             return StepOutput(step_id=step.step_id, summary="no memory")
 
@@ -155,6 +161,8 @@ async def test_uaep_executor_without_store_leaves_memory_view_none():
     )
 
     with canonical_execution_identity_scope(str(request.run_id)):
-        answer, validation, _governance = await executor.execute(_NoMemoryAgent(), request)
+        answer, validation, _governance = await executor.execute(
+            _NoMemoryAgent(), request
+        )
     assert validation.valid
     assert answer.answer == "no memory"

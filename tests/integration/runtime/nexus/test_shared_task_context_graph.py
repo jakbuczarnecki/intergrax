@@ -2,7 +2,6 @@
 
 import pytest
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
@@ -11,9 +10,14 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_manager import ContextManager
-from intergrax.runtime.nexus.context.shared_task_context import load_shared_task_context_from_metadata
+from intergrax.runtime.nexus.context.shared_task_context import (
+    load_shared_task_context_from_metadata,
+)
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode
+from intergrax.runtime.nexus.execution.execution_graph import (
+    ExecutionGraph,
+    ExecutionNode,
+)
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -22,6 +26,10 @@ from intergrax.runtime.task_memory import InMemoryTaskMemoryStore
 from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.graph_execution_context import bound_graph_execution_context
+from intergrax.runtime.nexus.context.shared_context_bridge import (
+    hydrate_shared_context_memory,
+)
 
 
 class _ProducerAgent(HarnessReferenceAgent):
@@ -47,10 +55,11 @@ class _ProducerAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="produce", step_name="produce", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _ = step
         return StepOutput(step_id=step.step_id, summary="producer summary")
 
@@ -78,10 +87,11 @@ class _ConsumerAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="consume", step_name="consume", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _ = step
         shared = load_shared_task_context_from_metadata(ctx.metadata)
         assert shared is not None
@@ -139,10 +149,13 @@ async def test_graph_executor_populates_shared_task_context():
     memory = InMemoryTaskMemoryStore()
     engine = AgentEngine(
         registry,
-        uaep_executor=UAEPExecutor(event_bus=RuntimeEventBus(), task_memory_store=memory),
+        uaep_executor=UAEPExecutor(
+            event_bus=RuntimeEventBus(), task_memory_store=memory
+        ),
     )
     executor = GraphExecutor(registry, engine=engine, context_manager=ContextManager())
-    executions, retries, _, _ = await executor.execute(graph, task)
+    with bound_graph_execution_context():
+        executions, retries, _, _ = await executor.execute(graph, task)
 
     assert retries == []
     assert len(executions) == 2
@@ -150,6 +163,12 @@ async def test_graph_executor_populates_shared_task_context():
 
     shared = load_shared_task_context_from_metadata(task.metadata)
     assert shared is not None
+    hydrate_shared_context_memory(
+        memory,
+        tenant_id="t1",
+        task_id=task.task_id,
+        shared=shared,
+    )
     assert shared.structured_outputs["n1"]["summary"] == "producer summary"
     assert shared.structured_outputs["n2"]["agent_id"] == "consumer"
     assert shared.version >= 2

@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field, PrivateAttr, field_validator, model_validator
@@ -24,12 +24,18 @@ from intergrax.contracts.decision_authoritative_exposure import (
 )
 from intergrax.contracts.partial_result_contract import PartialResultContract
 from intergrax.contracts.task_envelope import TaskEnvelope
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+
 from intergrax.runtime.task.task_contract import (
     TaskExecutionOptions,
     TaskResultSummary,
     TaskRuntimeState,
 )
-from intergrax.runtime.task.task_state import TaskState, task_state_requires_authoritative_exposure
+from intergrax.runtime.task.task_state import (
+    TaskState,
+    task_state_requires_authoritative_exposure,
+)
 
 
 class TaskContext(BaseModel):
@@ -49,6 +55,7 @@ class Task(BaseModel):
     @classmethod
     def _validate_task_id_field(cls, value: object) -> TaskId:
         return validate_task_id(value)
+
     tenant_id: str
     user_id: str
     session_id: Optional[str] = None
@@ -73,7 +80,9 @@ class Task(BaseModel):
 
         if self.metadata.get("_hydrate_legacy") is False:
             return self
-        if self.metadata.get("_hydrate_legacy") is True or metadata_needs_hydration(self):
+        if self.metadata.get("_hydrate_legacy") is True or metadata_needs_hydration(
+            self
+        ):
             hydrate_task_from_metadata(self)
         return self
 
@@ -146,16 +155,20 @@ class Task(BaseModel):
         metadata = task_to_request_metadata(self)
         metadata.setdefault("task_id", self.task_id)
         metadata.setdefault("run_id", run_id)
-        from intergrax.runtime.task.task_contract import VERDICT_APPROVE, VERDICT_REJECT
+        from intergrax.runtime.task.task_contract import (
+            VERDICT_APPROVE,
+            VERDICT_ESCALATE,
+            VERDICT_REJECT,
+        )
         from intergrax.runtime.human.pause import HumanPauseCoordinator
 
-        if self.options.human.verdict == VERDICT_APPROVE or HumanPauseCoordinator.is_resumed(
-            self
+        human_verdict = self.options.human.verdict
+        resumed = HumanPauseCoordinator.is_resumed(self)
+        if human_verdict == VERDICT_APPROVE or (
+            resumed and human_verdict not in (VERDICT_REJECT, VERDICT_ESCALATE)
         ):
             metadata["human_approved"] = True
-        elif self.options.human.verdict == VERDICT_REJECT or HumanPauseCoordinator.is_rejected(
-            self
-        ):
+        elif human_verdict == VERDICT_REJECT or HumanPauseCoordinator.is_rejected(self):
             metadata["human_rejected"] = True
 
         governance = self.runtime.governance
@@ -187,10 +200,7 @@ class TaskResult(BaseModel):
     summary: TaskResultSummary = Field(default_factory=TaskResultSummary)
     partial: PartialResultContract | None = None
     authoritative_decision_exposure: (
-        ExposureAccepted[object]
-        | ExposureResolution
-        | ExposureUnevaluated
-        | None
+        ExposureAccepted[object] | ExposureResolution | ExposureUnevaluated | None
     ) = None
     metadata: Dict[str, Any] = Field(default_factory=dict)
 

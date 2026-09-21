@@ -3,7 +3,8 @@
 from intergrax.utils import attribute_access
 import pytest
 
-from intergrax.agents.agent_contract import Agent
+from testing_support.nexus_lab_task_execution import run_lab_nexus_task
+
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
@@ -14,10 +15,17 @@ from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode, ExecutionNodeStatus
+from intergrax.runtime.nexus.execution.execution_graph import (
+    ExecutionGraph,
+    ExecutionNode,
+    ExecutionNodeStatus,
+)
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
-from intergrax.runtime.nexus.planning.task_planner import NexusPlan, PlanStep, TaskPlanner
+from intergrax.runtime.nexus.planning.task_planner import (
+    NexusPlan,
+    PlanStep,
+    TaskPlanner,
+)
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from testing_support.builder import (
     build_runtime_request_for_tests,
@@ -105,13 +113,14 @@ class _MultiStepUaepAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [
             AgentStep(step_id="s1", step_name="s1", step_index=0),
             AgentStep(step_id="s2", step_name="s2", step_index=1),
         ]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _MultiStepUaepAgent.step_runs += 1
         return StepOutput(step_id=step.step_id, summary=f"done:{step.step_id}")
 
@@ -163,7 +172,10 @@ async def test_graph_executor_cancels_before_second_node():
 
     executor = _CancellingGraphExecutor(registry)
 
-    executions, _, graph, cancelled = await executor.execute(graph, task)
+    from testing_support.graph_execution_context import bound_graph_execution_context
+
+    with bound_graph_execution_context():
+        executions, _, graph, cancelled = await executor.execute(graph, task)
 
     assert cancelled is True
     assert len(executions) == 1
@@ -191,19 +203,21 @@ async def test_nexus_loop_graph_cancellation():
         planner=_TwoStepPlanner(),
         graph_executor=_CancellingGraphExecutor(registry),
     )
-    result = await loop.handle_task(
+    result = await run_lab_nexus_task(
+        loop,
         Task(
             tenant_id="t1",
             user_id="u1",
             message="cancel via nexus",
             context=TaskContext(capability="graph.cancel"),
-        )
+        ),
     )
 
     assert result.state == TaskState.CANCELLED
     assert UaepPipelineStubAgent.run_count == 1
     assert any(
-        event.event_type == RuntimeEventType.CANCELLED for event in loop.event_bus.history
+        event.event_type == RuntimeEventType.CANCELLED
+        for event in loop.event_bus.history
     )
 
 

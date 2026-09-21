@@ -12,7 +12,13 @@ from intergrax.contracts.execution_deadline.admission import (
     ExecutionProtectedWorkAdmissionResult,
 )
 from intergrax.contracts.execution_deadline.clock import MonotonicClockPort
-from intergrax.contracts.execution_deadline.projection import ExecutionDeadlineProjection
+from intergrax.contracts.execution_deadline.projection import (
+    ExecutionDeadlineProjection,
+)
+from intergrax.runtime.cancellation.coordinator import (
+    CANCELLATION_REASON_KEY,
+    CancellationCoordinator,
+)
 from intergrax.runtime.execution.live_deadline_evaluator import execution_is_expired_now
 
 
@@ -45,7 +51,10 @@ class ComposedProtectedWorkAdmission:
             return decision
         for contributor in self.contributors:
             contributor_decision = contributor.assert_can_start_protected_work()
-            if contributor_decision is not ExecutionProtectedWorkAdmissionResult.AVAILABLE:
+            if (
+                contributor_decision
+                is not ExecutionProtectedWorkAdmissionResult.AVAILABLE
+            ):
                 return contributor_decision
         return ExecutionProtectedWorkAdmissionResult.AVAILABLE
 
@@ -144,12 +153,8 @@ class TaskMetadataCancellationView:
         return dict(raw)
 
     def is_cancelled(self) -> bool:
-        from intergrax.runtime.cancellation.coordinator import CancellationCoordinator
-
         return CancellationCoordinator.is_requested(self._live_metadata())
 
     def cancellation_reason(self) -> str | None:
-        from intergrax.runtime.cancellation.coordinator import CANCELLATION_REASON_KEY
-
         reason = self._live_metadata().get(CANCELLATION_REASON_KEY)
         return reason if isinstance(reason, str) and reason else None

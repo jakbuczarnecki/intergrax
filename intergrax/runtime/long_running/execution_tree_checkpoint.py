@@ -6,9 +6,11 @@
 from __future__ import annotations
 
 from enum import Enum
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field, field_validator
 
+from intergrax.contracts.agent_execution_result import AgentExecutionStatus
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -19,6 +21,9 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
+
+if TYPE_CHECKING:
+    from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 
 
 class ExecutionCheckpointStatus(str, Enum):
@@ -112,13 +117,17 @@ class ExecutionTreeSnapshot(BaseModel):
             )
         self.validate_tree()
 
-    def entry_by_execution_id(self, execution_id: ExecutionId) -> ExecutionCheckpointEntry | None:
+    def entry_by_execution_id(
+        self, execution_id: ExecutionId
+    ) -> ExecutionCheckpointEntry | None:
         for entry in self.entries:
             if entry.execution_id == execution_id:
                 return entry
         return None
 
-    def entry_by_graph_node_id(self, graph_node_id: str) -> ExecutionCheckpointEntry | None:
+    def entry_by_graph_node_id(
+        self, graph_node_id: str
+    ) -> ExecutionCheckpointEntry | None:
         for entry in self.entries:
             if entry.graph_node_id == graph_node_id:
                 return entry
@@ -141,7 +150,9 @@ class ExecutionTreeSnapshot(BaseModel):
         for entry in self.entries:
             if entry.parent_execution_id is None:
                 continue
-            children.setdefault(entry.parent_execution_id, []).append(entry.execution_id)
+            children.setdefault(entry.parent_execution_id, []).append(
+                entry.execution_id
+            )
 
         def visit(execution_id: ExecutionId, stack: set[ExecutionId]) -> None:
             if execution_id in stack:
@@ -151,7 +162,11 @@ class ExecutionTreeSnapshot(BaseModel):
                 visit(child_id, stack)
             stack.remove(execution_id)
 
-        root = next(entry.execution_id for entry in self.entries if entry.parent_execution_id is None)
+        root = next(
+            entry.execution_id
+            for entry in self.entries
+            if entry.parent_execution_id is None
+        )
         visit(root, set())
 
 
@@ -226,6 +241,21 @@ class ExecutionTreeRecorder:
         self._snapshot.entries[index] = entry.model_copy(
             update={
                 "status": ExecutionCheckpointStatus.COMPLETED,
+                "prior_output": prior_output,
+            }
+        )
+
+    def record_interrupted(
+        self,
+        execution_id: ExecutionId,
+        *,
+        prior_output: ExecutionPriorOutput | None = None,
+    ) -> None:
+        entry = self._require_entry(execution_id)
+        index = self._snapshot.entries.index(entry)
+        self._snapshot.entries[index] = entry.model_copy(
+            update={
+                "status": ExecutionCheckpointStatus.INTERRUPTED,
                 "prior_output": prior_output,
             }
         )
@@ -336,7 +366,9 @@ def build_execution_tree_resume_plan(
     new_root_execution_id: ExecutionId,
 ) -> ExecutionTreeResumePlan:
     checkpoint_tree.validate_for_task(task_id=task_id, run_id=run_id)
-    historical_entries = [entry.model_copy(deep=True) for entry in checkpoint_tree.entries]
+    historical_entries = [
+        entry.model_copy(deep=True) for entry in checkpoint_tree.entries
+    ]
     for entry in historical_entries:
         if entry.status is ExecutionCheckpointStatus.RUNNING:
             entry.status = ExecutionCheckpointStatus.INTERRUPTED
@@ -363,6 +395,7 @@ def build_execution_tree_resume_plan(
         if (
             entry.status is ExecutionCheckpointStatus.COMPLETED
             and entry.prior_output is not None
+            and entry.prior_output.status != AgentExecutionStatus.NEEDS_INPUT.value
         ):
             skip_nodes.add(entry.graph_node_id)
             adopted_entry = entry
@@ -371,6 +404,12 @@ def build_execution_tree_resume_plan(
                     update={"parent_execution_id": new_root_execution_id}
                 )
             active_recorder.adopt_historical_entry(adopted_entry)
+        elif (
+            entry.status is ExecutionCheckpointStatus.COMPLETED
+            and entry.prior_output is not None
+            and entry.prior_output.status == AgentExecutionStatus.NEEDS_INPUT.value
+        ):
+            resume_nodes.add(entry.graph_node_id)
         elif entry.status in (
             ExecutionCheckpointStatus.INTERRUPTED,
             ExecutionCheckpointStatus.RUNNING,

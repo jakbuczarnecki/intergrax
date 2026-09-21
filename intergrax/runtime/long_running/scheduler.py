@@ -12,9 +12,10 @@ from datetime import datetime, timezone
 from typing import Optional, Protocol, runtime_checkable
 from uuid import uuid4
 
-from intergrax.contracts.agent_decision import AgentDecisionType
 from intergrax.runtime.cancellation.resume_admission import is_checkpoint_resumable
-from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
+from intergrax.runtime.execution.execution_terminal.service import (
+    ExecutionTerminalService,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
@@ -53,7 +54,9 @@ TIMEOUT_LEDGER_PREFIX = "timeout:"
 class TaskResumeExecutor(Protocol):
     """Resume paused tasks through the unified execution entry (§41)."""
 
-    async def resume_task(self, task: Task, *, checkpoint: TaskCheckpoint) -> TaskResult: ...
+    async def resume_task(
+        self, task: Task, *, checkpoint: TaskCheckpoint
+    ) -> TaskResult: ...
 
 
 class LongRunningScheduler:
@@ -131,7 +134,9 @@ class LongRunningScheduler:
         resume_metadata: Optional[dict] = None,
     ) -> ScheduledResume:
         if self._schedule_store is None:
-            raise RuntimeError("schedule_store is not configured on LongRunningScheduler")
+            raise RuntimeError(
+                "schedule_store is not configured on LongRunningScheduler"
+            )
         entry = ScheduledResume(
             task_id=task_id,
             tenant_id=tenant_id,
@@ -238,7 +243,9 @@ class LongRunningScheduler:
         return processed
 
     def _can_resume_checkpoint(self, checkpoint: TaskCheckpoint) -> bool:
-        if not is_checkpoint_resumable(checkpoint, execution_terminal=self._execution_terminal):
+        if not is_checkpoint_resumable(
+            checkpoint, execution_terminal=self._execution_terminal
+        ):
             logger.info(
                 "Skipping scheduler resume for task %s: checkpoint is not resumable",
                 checkpoint.task_id,
@@ -288,7 +295,9 @@ class HostTaskResumeExecutor:
         self._host_execution = host_execution
         self._task_enricher = task_enricher
 
-    async def resume_task(self, task: Task, *, checkpoint: TaskCheckpoint) -> TaskResult:
+    async def resume_task(
+        self, task: Task, *, checkpoint: TaskCheckpoint
+    ) -> TaskResult:
         if self._task_enricher is not None:
             task = self._task_enricher(task)
         run_id, attempt_id = execution_identity_from_checkpoint(checkpoint)
@@ -306,8 +315,16 @@ class UnifiedTaskResumeExecutor:
     def __init__(self, task_runner) -> None:
         self._task_runner = task_runner
 
-    async def resume_task(self, task: Task, *, checkpoint: TaskCheckpoint) -> TaskResult:
-        return await self._task_runner.run_task(task, resume_checkpoint=checkpoint)
+    async def resume_task(
+        self, task: Task, *, checkpoint: TaskCheckpoint
+    ) -> TaskResult:
+        run_id, attempt_id = execution_identity_from_checkpoint(checkpoint)
+        return await self._task_runner.run_task(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            resume_checkpoint=checkpoint,
+        )
 
 
 def _ensure_utc(value: datetime) -> datetime:

@@ -9,7 +9,6 @@ from dataclasses import dataclass
 
 import pytest
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
@@ -46,6 +45,9 @@ from intergrax.runtime.execution.budget.consumption import consume_llm_call
 from intergrax.runtime.execution.budget.persistence import (
     KvRunBudgetPersistence,
     create_durable_run_budget_ledger_factory,
+)
+from intergrax.runtime.execution.durable_execution_wiring import (
+    wire_durable_execution_runtime_dependencies,
 )
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.nexus.config import RuntimeConfig
@@ -184,7 +186,6 @@ class _BudgetRedeliveryWorkloadAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        del context
         return [
             AgentStep(
                 step_id=f"{_AGENT_ID}_step",
@@ -194,7 +195,9 @@ class _BudgetRedeliveryWorkloadAgent(HarnessReferenceAgent):
             )
         ]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         del step
         run_id, attempt_id = require_active_execution_identity()
         execution_id = require_active_execution_id()
@@ -248,10 +251,12 @@ def _run_worker_delivery(
 ) -> None:
     agent_registry = AgentRegistry()
     agent_registry.register(_BudgetRedeliveryWorkloadAgent(observations=observations))
+    durable = wire_durable_execution_runtime_dependencies(kv_store=kv)
     runtime = NexusWorkerRuntime.from_registry(
         agent_registry,
         run_budget=_RUN_BUDGET,
-        run_budget_persistence=KvRunBudgetPersistence(kv),
+        run_budget_persistence=durable.run_budget_persistence,
+        deadline_authority_resolver=durable.deadline_authority_resolver,
         production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
     )

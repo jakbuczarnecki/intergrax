@@ -3,7 +3,6 @@
 from intergrax.utils import attribute_access
 import pytest
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
@@ -91,10 +90,13 @@ class _SandboxToolAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
-        return [AgentStep(step_id="sandbox_write", step_name="sandbox_write", step_index=0)]
+        return [
+            AgentStep(step_id="sandbox_write", step_name="sandbox_write", step_index=0)
+        ]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         message = (ctx.request.message if ctx.request else "") or ""
         response = await ctx.invoke_tool(
             ToolRequest(
@@ -176,7 +178,9 @@ async def test_nexus_loop_exposes_sandbox_session_metadata(tmp_path):
             ParentExecutionAuthority.unrestricted_root(),
         )
         try:
-            result = await loop.handle_task(task, run_id=run_id)
+            from testing_support.nexus_lab_task_execution import run_lab_nexus_task
+
+            result = await run_lab_nexus_task(loop, task, run_id=run_id)
         finally:
             reset_active_execution_authority(authority_token)
 

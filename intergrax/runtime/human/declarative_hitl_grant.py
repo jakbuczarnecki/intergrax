@@ -13,6 +13,9 @@ from intergrax.contracts.declarative_hitl import (
     DeclarativeHitlPendingApproval,
 )
 from intergrax.runtime.human.models import HumanResponseVerdict
+from intergrax.runtime.long_running.checkpoint_builder import (
+    reconcile_runtime_checkpoint_governance_pause_entries,
+)
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.task.task import Task
 
@@ -25,12 +28,16 @@ class DeclarativeHitlGrantCoordinator:
     """Human/orchestration-side pending and grant state management."""
 
     @staticmethod
-    def _validate_resolution_for_pending(task: Task, pending: DeclarativeHitlPendingApproval) -> None:
+    def _validate_resolution_for_pending(
+        task: Task, pending: DeclarativeHitlPendingApproval
+    ) -> None:
         resolution = task.runtime.governance.hitl_resolution
         if resolution is None:
             raise DeclarativeHitlGrantError("canonical approval resolution required")
         if resolution.verdict is not HumanResponseVerdict.APPROVE:
-            raise DeclarativeHitlGrantError("approval resolution verdict is not approve")
+            raise DeclarativeHitlGrantError(
+                "approval resolution verdict is not approve"
+            )
         if resolution.task_id != pending.task_id:
             raise DeclarativeHitlGrantError("resolution task_id mismatch")
         if resolution.pause_id != pending.pause_id:
@@ -61,6 +68,8 @@ class DeclarativeHitlGrantCoordinator:
         )
         task.runtime.governance.declarative_hitl_grant = grant
         task.runtime.governance.declarative_hitl_pending = None
+        reconcile_runtime_checkpoint_governance_pause_entries(task)
+        task.sync_metadata()
         return grant
 
     @staticmethod
@@ -69,7 +78,9 @@ class DeclarativeHitlGrantCoordinator:
         task.runtime.governance.declarative_hitl_grant = None
 
     @staticmethod
-    def transfer_persisted_grant_for_resume(task: Task, request: RuntimeRequest) -> RuntimeRequest:
+    def transfer_persisted_grant_for_resume(
+        task: Task, request: RuntimeRequest
+    ) -> RuntimeRequest:
         """Consume persisted grant at orchestration resume boundary."""
         grant = task.runtime.governance.declarative_hitl_grant
         if grant is None:

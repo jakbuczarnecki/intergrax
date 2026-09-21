@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.authoring.llm_router import StepLLMRouter
 from intergrax.runtime.nexus.uaep import UAEPExecutor
@@ -21,12 +20,20 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
-from intergrax.contracts.runtime_policy_context import PreModelPhase, PreModelPolicyContext
+from intergrax.contracts.runtime_policy_context import (
+    PreModelPhase,
+    PreModelPolicyContext,
+)
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.governance.post_run_governance_bridge import invoke_post_run_governance
-from intergrax.runtime.interrupts.handler import ExecutionInterruptHandler, GovernanceResolution
+from intergrax.runtime.governance.post_run_governance_bridge import (
+    invoke_post_run_governance,
+)
+from intergrax.runtime.interrupts.handler import (
+    ExecutionInterruptHandler,
+    GovernanceResolution,
+)
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -234,13 +241,14 @@ class _UaepDenyBoundaryAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [
             AgentStep(step_id="s1", step_name="first", step_index=0),
             AgentStep(step_id="s2", step_name="second", step_index=1),
         ]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _ = ctx
         if step.step_id == "s2":
             self.protected_called = True
@@ -285,7 +293,9 @@ async def test_nexus_finish_task_post_run_uses_active_run_id_not_task_id() -> No
         open_runtime_event_metric_scope_for_tests,
     )
 
-    metric_scope = open_runtime_event_metric_scope_for_tests(task_id=task_id, run_id=run_id)
+    metric_scope = open_runtime_event_metric_scope_for_tests(
+        task_id=task_id, run_id=run_id
+    )
     try:
         await loop._finish_task(  # noqa: SLF001
             task,

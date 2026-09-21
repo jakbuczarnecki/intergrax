@@ -32,10 +32,12 @@ from intergrax.runtime.cancellation.coordinator import (
     CancellationCoordinator,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.human.request_contract import human_request_event_payload
+from intergrax.runtime.human.request_contract import (
+    HumanTimeoutCoordinator,
+    human_request_event_payload,
+)
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
     InternalOrchestrationContinuation,
-    canonical_execution_is_resumed,
     establish_canonical_hitl_pause,
     execution_continuation_identity_for_task,
     require_internal_hitl_continuation,
@@ -425,43 +427,16 @@ class NexusGraphRunner:
             )
 
         if executions and executions[-1].status == AgentExecutionStatus.NEEDS_INPUT:
-            run_id, attempt_id = self.graph_executor.execution_identity.require()
-            execution_id = require_active_execution_id()
-            runtime_checkpoint = task.runtime.orchestration.runtime_checkpoint
-            if runtime_checkpoint is not None:
-                execution_id = next(
-                    entry.execution_id
-                    for entry in runtime_checkpoint.execution_tree.entries
-                    if entry.parent_execution_id is None
-                )
-            continuation_identity = execution_continuation_identity_for_task(
+            return await self._handle_needs_input(
                 task,
-                run_id=run_id,
-                attempt_id=attempt_id,
-                execution_id=execution_id,
+                plan=plan,
+                graph=graph,
+                executions=executions,
+                retry_records=retry_records,
+                lifecycle=lifecycle,
+                trace_emitter=trace_emitter,
+                runtime_event_metric_scope=runtime_event_metric_scope,
             )
-            if canonical_execution_is_resumed(
-                self.hitl_continuation,
-                identity=continuation_identity,
-            ):
-                last = executions[-1]
-                executions[-1] = last.model_copy(
-                    update={
-                        "status": AgentExecutionStatus.COMPLETED,
-                        "summary": last.summary or "approved",
-                    },
-                )
-            else:
-                return await self._handle_needs_input(
-                    task,
-                    plan=plan,
-                    graph=graph,
-                    executions=executions,
-                    retry_records=retry_records,
-                    lifecycle=lifecycle,
-                    trace_emitter=trace_emitter,
-                    runtime_event_metric_scope=runtime_event_metric_scope,
-                )
 
         failed_nodes = [
             n.node_id for n in graph.nodes if n.status == ExecutionNodeStatus.FAILED
@@ -709,6 +684,7 @@ class NexusGraphRunner:
         human_request = paused.human_request
         if human_request is None:
             raise RuntimeError("human_request required for graph HITL pause")
+        HumanTimeoutCoordinator.attach_to_task(task, human_request)
         pause_record = task.runtime.governance.pause_record
         if (
             pause_record is not None
@@ -734,6 +710,18 @@ class NexusGraphRunner:
             human_prompt=human_request.prompt,
             execution_interrupt=paused.execution_interrupt,
         )
+        if paused.declarative_hitl_pending is not None:
+            pending = paused.declarative_hitl_pending
+            pause_record = task.runtime.governance.pause_record
+            if pause_record is not None:
+                pending = pending.model_copy(
+                    update={
+                        "human_request_id": pause_record.human_request_id,
+                        "pause_id": pause_record.pause_id,
+                    },
+                )
+            task.runtime.governance.declarative_hitl_pending = pending
+            task.sync_metadata()
         lifecycle.transition(task, TaskState.WAITING_FOR_HUMAN)
         await self.maybe_checkpoint(
             task,
