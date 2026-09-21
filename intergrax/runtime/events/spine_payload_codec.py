@@ -694,6 +694,9 @@ def prepare_canonical_production_write_event(event: RuntimeEvent) -> RuntimeEven
     """
     if event.payload.get("payload_schema_id") is not None:
         return event
+    event_kind = event.event_kind
+    if event_kind and event_kind != event.event_type.value:
+        return event
     policy = get_runtime_event_payload_policy(event.event_type)
     if policy.write_mode == PayloadWriteMode.EXTENSION_EVENT_KIND:
         return event
