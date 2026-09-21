@@ -31,6 +31,7 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.dev_support.execution_identity_scope import canonical_agent_run_smoke_scope
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from testing_support.builder import FakeLLMAdapter
 
@@ -118,55 +119,60 @@ async def test_acceptance_05d_acp_declarative_mutating_resume() -> None:
     invoker = CallableDeclarativeToolInvoker(_invoke)
     agent = _DeclarativeMutatingResumeProbe()
     store = InMemoryAgentCheckpointStore()
-    run_id = "acceptance-acp-decl-mutating-1"
+    run_seed = "acceptance-acp-decl-mutating-1"
 
-    base = AgentRunRequest(
-        input="declarative-mutating-resume",
-        identity=RequestIdentity(tenant_id="t-agent-os", user_id="u-acp"),
-        metadata={"run_id": run_id, "user_id": "u-acp"},
-        execution_options=AgentExecutionOptions(
-            side_effect_mode=SideEffectMode.DECLARATIVE,
-            checkpoint_every_step=True,
-        ),
-    )
-    base = wire_acp_run_request_with_tool_invoker(base, invoker)
-
-    await agent.run(
-        wire_acp_run_request(
-            base.model_copy(
-                update={
-                    "execution_options": AgentExecutionOptions(
-                        max_steps=1,
-                        side_effect_mode=SideEffectMode.DECLARATIVE,
-                        checkpoint_every_step=True,
-                    ),
-                },
+    with canonical_agent_run_smoke_scope(
+        run_seed,
+        tenant_id="t-agent-os",
+        principal_id="u-acp",
+    ) as run_id:
+        base = AgentRunRequest(
+            input="declarative-mutating-resume",
+            identity=RequestIdentity(tenant_id="t-agent-os", user_id="u-acp"),
+            metadata={"run_id": str(run_id), "user_id": "u-acp"},
+            execution_options=AgentExecutionOptions(
+                side_effect_mode=SideEffectMode.DECLARATIVE,
+                checkpoint_every_step=True,
             ),
-            store,
-        ),
-    )
-    checkpoint = store.get_latest(run_id, "t-agent-os")
-    assert checkpoint is not None
-    assert invoke_count == 1
-    assert any(
-        record.status.value == "committed" and record.idempotency_key == IDEMPOTENCY_KEY
-        for record in checkpoint.side_effect_ledger
-    )
+        )
+        base = wire_acp_run_request_with_tool_invoker(base, invoker)
 
-    result = await agent.run(
-        wire_acp_run_request(
-            base.model_copy(
-                update={
-                    "execution_options": AgentExecutionOptions(
-                        max_steps=10,
-                        side_effect_mode=SideEffectMode.DECLARATIVE,
-                        checkpoint_every_step=True,
-                    ),
-                },
+        await agent.run(
+            wire_acp_run_request(
+                base.model_copy(
+                    update={
+                        "execution_options": AgentExecutionOptions(
+                            max_steps=1,
+                            side_effect_mode=SideEffectMode.DECLARATIVE,
+                            checkpoint_every_step=True,
+                        ),
+                    },
+                ),
+                store,
             ),
-            store,
-            resume=True,
-        ),
-    )
-    assert result.status == AgentRunStatus.SUCCEEDED
+        )
+        checkpoint = store.get_latest(run_id, "t-agent-os")
+        assert checkpoint is not None
+        assert invoke_count == 1
+        assert any(
+            record.status.value == "committed" and record.idempotency_key == IDEMPOTENCY_KEY
+            for record in checkpoint.side_effect_ledger
+        )
+
+        result = await agent.run(
+            wire_acp_run_request(
+                base.model_copy(
+                    update={
+                        "execution_options": AgentExecutionOptions(
+                            max_steps=10,
+                            side_effect_mode=SideEffectMode.DECLARATIVE,
+                            checkpoint_every_step=True,
+                        ),
+                    },
+                ),
+                store,
+                resume=True,
+            ),
+        )
+        assert result.status == AgentRunStatus.SUCCEEDED
     assert invoke_count == 1

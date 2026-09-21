@@ -133,7 +133,12 @@ def _score_runtime(row: dict[str, Any] | None, agent_py: Path) -> AgentReadiness
         return _dimension(
             AgentReadinessDimension.RUNTIME,
             100.0,
-            evidence=["ACP-MIG", "cognitive_pattern_base", "check_agent_fleet_migration"],
+            evidence=[
+                "ACP-MIG",
+                "cognitive_pattern_base",
+                "check_agent_fleet_migration",
+                *_HARNESS_CATALOG_DECLARATIVE_INVOKER_EVIDENCE,
+            ],
         )
     blockers: list[str] = []
     if not migrated:
@@ -192,15 +197,17 @@ _MUTATING_CHECKPOINT_EVIDENCE = [
     "ACP-CLOSE-PROD-2",
     "test_acceptance_05c_acp_checkpoint_resume",
     "test_acceptance_05d_acp_declarative_mutating_resume",
-    "test_acceptance_05e_nexus_harness_catalog_declarative_mutating_resume",
 ]
 
 _MUTATING_IDEMPOTENCY_EVIDENCE = [
     "SideEffectLedger",
     "ACP-CLOSE-PROD-2",
-    "ACP-CLOSE-PROD-4",
     "test_acceptance_05d_acp_declarative_mutating_resume",
-    "test_acceptance_05e_nexus_harness_catalog_declarative_mutating_resume",
+]
+
+_HARNESS_CATALOG_DECLARATIVE_INVOKER_EVIDENCE = [
+    "ACP-CLOSE-PROD-4",
+    "test_acceptance_05e_harness_catalog_declarative_invoker_wiring",
 ]
 
 

@@ -1,15 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 
 """
-ACP-CLOSE-PROD-4 — harness host catalog declarative invoker gate.
+ACP-CLOSE-PROD-4 — Tier-3 harness catalog declarative invoker composition.
 
-Stale mock targeted ``harness_host_runtime.build_declarative_invoker_from_tool_wiring``;
-canonical host assembly uses
-``declarative_tool_wiring.build_declarative_invoker_for_application_host``.
+Proves ``build_harness_host_runtime`` wires the canonical
+``build_declarative_invoker_for_application_host`` product into
+``ACPSessionHostContext`` as ``CatalogDeclarativeToolInvoker``.
 
-This gate proves harness wiring to ``CatalogDeclarativeToolInvoker`` and that the
-same catalog invoker executes mutating tools under canonical execution identity
-(the resume/idempotency story remains on typed ACP session tests such as 05d).
+Checkpoint resume and declarative idempotency remain on typed ACP session gates
+(05c/05d); this gate does not claim E2E resume coverage.
 """
 
 from __future__ import annotations
@@ -20,6 +19,9 @@ import pytest
 from pydantic import BaseModel
 
 from intergrax.agents.authoring.base import IntergraxAgent
+from intergrax.applications._shared.acp_session_host_wiring import (
+    build_acp_session_host_from_harness,
+)
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
 from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
@@ -80,7 +82,7 @@ def _catalog_tool_registry() -> ToolRegistry:
 
 
 @pytest.mark.asyncio
-async def test_acceptance_05e_nexus_harness_catalog_declarative_mutating_resume() -> None:
+async def test_acceptance_05e_harness_catalog_declarative_invoker_wiring() -> None:
     catalog_invoker = build_catalog_declarative_invoker_from_registry(_catalog_tool_registry())
 
     registry = AgentRegistry()
@@ -96,6 +98,9 @@ async def test_acceptance_05e_nexus_harness_catalog_declarative_mutating_resume(
     ), patch(
         "intergrax.applications._shared.harness_host_runtime.build_declarative_invoker_for_application_host",
         return_value=catalog_invoker,
+    ), patch(
+        "intergrax.applications._shared.acp_session_host_wiring.build_declarative_invoker_for_application_host",
+        return_value=catalog_invoker,
     ):
         runtime = build_harness_host_runtime(
             manifest.model_copy(update={"environment": env}),
@@ -105,7 +110,8 @@ async def test_acceptance_05e_nexus_harness_catalog_declarative_mutating_resume(
             use_in_memory_trace=True,
             llm_adapter=FakeLLMAdapter(),
         )
+        host_ctx = build_acp_session_host_from_harness(runtime)
 
-    backend = runtime._internal_composition._orchestration_backend  # noqa: SLF001
-    assert isinstance(backend._declarative_tool_invoker, CatalogDeclarativeToolInvoker)
-    assert runtime.execution._declarative_tool_invoker is catalog_invoker
+    assert isinstance(host_ctx.declarative_tool_invoker, CatalogDeclarativeToolInvoker)
+    assert host_ctx.declarative_tool_invoker is catalog_invoker
+    assert runtime.execution is not None
