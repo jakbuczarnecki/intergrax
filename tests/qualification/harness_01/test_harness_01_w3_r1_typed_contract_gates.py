@@ -80,14 +80,53 @@ def _expand_annotation(node: ast.AST, aliases: dict[str, ast.AST], *, depth: int
     return node
 
 
+def _collect_function_annotations(
+    func: ast.FunctionDef,
+    label_prefix: str,
+    aliases: dict[str, ast.AST],
+    collected: list[tuple[str, ast.AST]],
+) -> None:
+    if func.returns is not None:
+        collected.append(
+            (f"{label_prefix}.__returns__", _expand_annotation(func.returns, aliases))
+        )
+    all_args = (
+        *func.args.posonlyargs,
+        *func.args.args,
+        *func.args.kwonlyargs,
+    )
+    for arg in all_args:
+        if arg.annotation is not None:
+            collected.append(
+                (f"{label_prefix}.{arg.arg}", _expand_annotation(arg.annotation, aliases))
+            )
+    if func.args.vararg is not None and func.args.vararg.annotation is not None:
+        collected.append(
+            (
+                f"{label_prefix}.*{func.args.vararg.arg}",
+                _expand_annotation(func.args.vararg.annotation, aliases),
+            )
+        )
+    if func.args.kwarg is not None and func.args.kwarg.annotation is not None:
+        collected.append(
+            (
+                f"{label_prefix}.**{func.args.kwarg.arg}",
+                _expand_annotation(func.args.kwarg.annotation, aliases),
+            )
+        )
+
+
 def _collect_public_annotations(path: Path) -> list[tuple[str, ast.AST]]:
     tree = ast.parse(path.read_text(encoding="utf-8"))
     aliases = _resolve_type_aliases(tree)
     collected: list[tuple[str, ast.AST]] = []
+    for alias_name, rhs in aliases.items():
+        collected.append((f"alias:{alias_name}", _expand_annotation(rhs, aliases)))
     for node in tree.body:
         if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.annotation is not None:
             collected.append((node.target.id, _expand_annotation(node.annotation, aliases)))
-    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            _collect_function_annotations(node, node.name, aliases, collected)
         if not isinstance(node, ast.ClassDef):
             continue
         for item in node.body:
@@ -98,14 +137,13 @@ def _collect_public_annotations(path: Path) -> list[tuple[str, ast.AST]]:
                         _expand_annotation(item.annotation, aliases),
                     )
                 )
-            if isinstance(item, ast.FunctionDef) and item.name in {"source_ref", "metadata"}:
-                if item.returns is not None:
-                    collected.append(
-                        (
-                            f"{node.name}.{item.name}.__returns__",
-                            _expand_annotation(item.returns, aliases),
-                        )
-                    )
+            if isinstance(item, ast.FunctionDef):
+                _collect_function_annotations(
+                    item,
+                    f"{node.name}.{item.name}",
+                    aliases,
+                    collected,
+                )
     return collected
 
 
@@ -141,6 +179,82 @@ def test_harness_01_w3_r1_negative_synthetic_dict_any_fails_gate() -> None:
     node = tree.body[0]
     assert isinstance(node, ast.AnnAssign) and node.annotation is not None
     assert _annotation_uses_forbidden(node.annotation)
+
+
+def test_harness_01_w3_r1_negative_synthetic_nested_mapping_object_fails_gate() -> None:
+    tree = ast.parse("payload: Mapping[str, list[object]]\n")
+    node = tree.body[0]
+    assert isinstance(node, ast.AnnAssign) and node.annotation is not None
+    assert _annotation_uses_forbidden(node.annotation)
+
+
+def test_harness_01_w3_r1_negative_synthetic_alias_mapping_object_fails_gate() -> None:
+    source = "RawPayload = Mapping[str, object]\n"
+    tree = ast.parse(source)
+    aliases = _resolve_type_aliases(tree)
+    assert "RawPayload" in aliases
+    assert _annotation_uses_forbidden(_expand_annotation(aliases["RawPayload"], aliases))
+
+
+def test_harness_01_w3_r1_negative_synthetic_recursive_alias_fails_gate() -> None:
+    source = "AliasB = Mapping[str, object]\nAliasA = AliasB\n"
+    tree = ast.parse(source)
+    aliases = _resolve_type_aliases(tree)
+    assert _annotation_uses_forbidden(_expand_annotation(aliases["AliasA"], aliases))
+
+
+def test_harness_01_w3_r1_negative_synthetic_function_arg_alias_fails_gate() -> None:
+    source = "RawPayload = Mapping[str, object]\ndef decode(raw: RawPayload) -> None: ...\n"
+    tree = ast.parse(source)
+    offenders = [
+        label
+        for label, annotation in _collect_public_annotations_from_tree(tree)
+        if _annotation_uses_forbidden(annotation)
+    ]
+    assert "decode.raw" in offenders
+
+
+def test_harness_01_w3_r1_negative_synthetic_function_return_alias_fails_gate() -> None:
+    source = "RawPayload = Mapping[str, object]\ndef decode() -> RawPayload: ...\n"
+    tree = ast.parse(source)
+    offenders = [
+        label
+        for label, annotation in _collect_public_annotations_from_tree(tree)
+        if _annotation_uses_forbidden(annotation)
+    ]
+    assert "decode.__returns__" in offenders
+
+
+def _collect_public_annotations_from_tree(tree: ast.Module) -> list[tuple[str, ast.AST]]:
+    aliases = _resolve_type_aliases(tree)
+    collected: list[tuple[str, ast.AST]] = []
+    for alias_name, rhs in aliases.items():
+        collected.append((f"alias:{alias_name}", _expand_annotation(rhs, aliases)))
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            _collect_function_annotations(node, node.name, aliases, collected)
+    return collected
+
+
+def test_harness_01_w3_r1_decoder_boundaries_use_structured_json_object() -> None:
+    path = _REPO_ROOT / "intergrax" / "contracts" / "persisted_run_trace.py"
+    decode_labels = {
+        label
+        for label, _ in _collect_public_annotations(path)
+        if label.startswith("decode_persisted_")
+    }
+    assert decode_labels >= {
+        "decode_persisted_run_stats.raw",
+        "decode_persisted_run_error.raw",
+        "decode_persisted_trace_event.raw",
+    }
+    offenders = [
+        label
+        for label, annotation in _collect_public_annotations(path)
+        if label.endswith(".raw") and label.startswith("decode_persisted_")
+        and _annotation_uses_forbidden(annotation)
+    ]
+    assert offenders == []
 
 
 def test_harness_01_w3_r1_positive_typed_persisted_models_pass_gate() -> None:

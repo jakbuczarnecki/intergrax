@@ -114,7 +114,7 @@ def run_stats_to_storage_dict(stats: RunStats) -> dict[str, StructuredJsonObject
     }
 
 
-def decode_persisted_run_stats(raw: Mapping[str, object]) -> RunStats:
+def decode_persisted_run_stats(raw: StructuredJsonObject) -> RunStats:
     duration_raw = raw.get("duration_ms", 0)
     if not isinstance(duration_raw, int) or isinstance(duration_raw, bool):
         raise ValueError("duration_ms must be a non-bool int")
@@ -134,7 +134,7 @@ def run_error_to_storage_dict(error: RunError) -> dict[str, str]:
     }
 
 
-def decode_persisted_run_error(raw: Mapping[str, object]) -> RunError:
+def decode_persisted_run_error(raw: StructuredJsonObject) -> RunError:
     error_type_raw = raw.get("error_type", "")
     if isinstance(error_type_raw, PersistedRunErrorCode):
         code = error_type_raw
@@ -172,7 +172,7 @@ def persisted_trace_event_to_wire(event: PersistedTraceEvent) -> StructuredJsonO
     return wire
 
 
-def decode_persisted_trace_event(raw: Mapping[str, object]) -> PersistedTraceEvent:
+def decode_persisted_trace_event(raw: StructuredJsonObject) -> PersistedTraceEvent:
     event_id = raw.get("event_id")
     run_id = raw.get("run_id")
     seq = raw.get("seq")
