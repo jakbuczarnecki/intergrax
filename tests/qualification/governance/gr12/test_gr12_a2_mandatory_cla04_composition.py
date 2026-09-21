@@ -33,9 +33,6 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
 from intergrax.runtime.governance.control_plane_mutation_approval import (
     ApprovalConsumingControlPlaneMutationEvaluator,
 )
-from intergrax.runtime.governance.control_plane_mutation_policy import (
-    BundleBackedControlPlaneMutationEvaluator,
-)
 from tests.qualification.governance.gr12.catalog import (
     GR12_CONTROL_PLANE_SURFACES,
     Gr12CoverageStatus,
@@ -101,14 +98,13 @@ def test_gr12_a2_external_evaluator_injected_without_domain_changes() -> None:
     assert evaluator.inner is external.evaluator
 
 
-def test_gr12_a2_ecp_product_composition_builds_bundle_boundary() -> None:
+def test_gr12_a2_ecp_product_without_authority_fails_at_wiring() -> None:
     env = ApplicationEnvironmentProfile.product_defaults()
     governance = build_production_capacity_governance(env)
-    assert governance.mutation_authorization_boundary is not None
-    assert isinstance(
-        governance.mutation_authorization_boundary.evaluator,
-        BundleBackedControlPlaneMutationEvaluator,
-    )
+    assert governance.mutation_authorization_boundary is None
+    with pytest.raises(ControlPlaneCompositionError) as exc_info:
+        resolve_production_capacity_wiring(env, governance=governance)
+    assert exc_info.value.blocker_code == "ECP_BLOCKED_MISSING_BOUNDARY"
 
 
 def test_gr12_a2_ecp_enabled_without_boundary_fails_at_wiring() -> None:

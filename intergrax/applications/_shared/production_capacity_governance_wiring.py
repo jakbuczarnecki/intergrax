@@ -6,13 +6,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.applications._shared.control_plane_composition import (
-    product_consequential_capacity_mutations_enabled,
-    require_control_plane_mutation_boundary,
-)
-from intergrax.applications._shared.production_capacity_control_plane_policy_wiring import (
-    build_production_capacity_mutation_boundary,
-)
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
@@ -52,21 +45,9 @@ def build_production_capacity_governance(
         principal_type=PrincipalType.SERVICE,
         auth_subject=service_id,
     )
-    resolved_boundary = mutation_authorization_boundary
-    if resolved_boundary is None and product_consequential_capacity_mutations_enabled(env):
-        resolved_boundary = build_production_capacity_mutation_boundary(env)
-    if product_consequential_capacity_mutations_enabled(env):
-        resolved_boundary = require_control_plane_mutation_boundary(
-            resolved_boundary,
-            blocker_code="ECP_BLOCKED_MISSING_BOUNDARY",
-            message=(
-                "production capacity mutations require "
-                "ControlPlaneMutationAuthorizationBoundary"
-            ),
-        )
     return ProductionCapacityGovernance(
         principal=principal,
-        mutation_authorization_boundary=resolved_boundary,
+        mutation_authorization_boundary=mutation_authorization_boundary,
         tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=resolved_tenant),
         tenant_id=resolved_tenant,
     )

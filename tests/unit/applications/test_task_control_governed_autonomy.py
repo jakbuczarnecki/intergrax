@@ -580,31 +580,12 @@ def test_taskcpm_a18_unrelated_mutation_does_not_match_autonomy_rule() -> None:
     assert result.decision.action is PolicyAction.DENY
 
 
-@pytest.mark.asyncio
-async def test_taskcpm_a19_product_host_uses_canonical_bundle_authority(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    from testing_support.builder import MeteringFakeLLMAdapter
-
-    adapter = MeteringFakeLLMAdapter()
-
-    def _resolve(env: object, agent_override: object | None = None, **_: object) -> object:
-        del env
-        return agent_override or adapter
-
-    monkeypatch.setattr(
-        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
-        _resolve,
+def test_taskcpm_a19_product_host_uses_canonical_bundle_authority() -> None:
+    """Canonical harness bundle must authorize task-bound autonomy without active execution scope."""
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id=_TENANT)
+    boundary = resolve_harness_task_control_mutation_boundary(
+        build_harness_control_plane_governance(env),
     )
-    settings = GovernedContractorBackendSettings.from_env()
-    manifest = build_governed_contractor_manifest()
-    env = manifest.environment or build_governed_contractor_environment_profile(settings)
-    runtime = build_harness_host_runtime(
-        manifest,
-        env,
-        registry_projection=build_governed_contractor_test_registry_projection(),
-    )
-    boundary = resolve_harness_task_control_mutation_boundary(runtime.control_plane_governance)
     assert boundary is not None
     request = build_set_task_autonomy_mutation_request(
         principal=_principal(),
@@ -618,6 +599,8 @@ async def test_taskcpm_a19_product_host_uses_canonical_bundle_authority(
     result = boundary.authorize(request)
     assert result.permitted is True
     assert result.decision.policy_rule_id == "harness.task_control.set_task_autonomy"
+    assert result.evidence.task_id is not None
+    assert result.evidence.run_id is not None
 
 
 @pytest.mark.asyncio

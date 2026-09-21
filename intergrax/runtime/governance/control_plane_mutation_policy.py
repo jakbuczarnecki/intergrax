@@ -9,42 +9,26 @@ from dataclasses import dataclass
 from intergrax.contracts.control_plane_mutation import (
     ControlPlaneMutationPolicyEvaluator,
     ControlPlaneMutationRequest,
-)
-from intergrax.contracts.meaningful_side_effect import (
-    MeaningfulSideEffectKind,
-    MeaningfulSideEffectRequest,
-    resolve_meaningful_side_effect_execution_identity,
+    control_plane_mutation_request_digest,
 )
 from intergrax.contracts.runtime_policy import PolicyDecision
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
     RuntimePolicyBundleEvaluator,
+    RuntimePolicyBundleMatchInput,
 )
 
 
-def control_plane_mutation_to_meaningful_side_effect_request(
+def control_plane_mutation_bundle_match_input(
     request: ControlPlaneMutationRequest,
-) -> MeaningfulSideEffectRequest:
-    """Map one control-plane mutation to PG-FIX-D ``match_action`` evaluation input."""
+) -> RuntimePolicyBundleMatchInput:
+    """Map one control-plane mutation to neutral bundle ``match_action`` evaluation."""
     principal = request.principal
     principal_id = principal.user_id or principal.auth_subject
     if not principal_id:
         raise ValueError("control_plane_mutation_requires_principal_identity")
-    if request.task_id is None or request.run_id is None:
-        raise ValueError("control_plane_mutation_requires_task_and_run_identity")
-    task_id, run_id, attempt_id, execution_id = (
-        resolve_meaningful_side_effect_execution_identity(
-            task_id=request.task_id,
-            run_id=request.run_id,
-        )
-    )
-    return MeaningfulSideEffectRequest(
+    return RuntimePolicyBundleMatchInput(
         action=request.mutation_type,
-        kinds=(MeaningfulSideEffectKind.MUTATION,),
-        side_effect_scope_id=request.resource_scope,
-        task_id=task_id,
-        run_id=run_id,
-        attempt_id=attempt_id,
-        execution_id=execution_id,
+        request_digest=control_plane_mutation_request_digest(request),
         principal_id=principal_id,
         tenant_id=principal.tenant_id,
         resource=f"{request.resource_type}:{request.resource_id}",
@@ -57,6 +41,9 @@ def control_plane_mutation_to_meaningful_side_effect_request(
             "principal_type": principal.principal_type.value,
             "resource_type": request.resource_type,
             "resource_id": request.resource_id,
+            "resource_scope": request.resource_scope,
+            "task_id": str(request.task_id) if request.task_id is not None else None,
+            "run_id": str(request.run_id) if request.run_id is not None else None,
         },
     )
 
@@ -68,8 +55,8 @@ class BundleBackedControlPlaneMutationEvaluator:
     bundle_evaluator: RuntimePolicyBundleEvaluator
 
     def evaluate(self, request: ControlPlaneMutationRequest) -> PolicyDecision:
-        side_effect = control_plane_mutation_to_meaningful_side_effect_request(request)
-        return self.bundle_evaluator.evaluate(side_effect).decision
+        match_input = control_plane_mutation_bundle_match_input(request)
+        return self.bundle_evaluator.evaluate_match(match_input).decision
 
 
 def bundle_backed_control_plane_mutation_evaluator(
@@ -82,5 +69,5 @@ def bundle_backed_control_plane_mutation_evaluator(
 __all__ = [
     "BundleBackedControlPlaneMutationEvaluator",
     "bundle_backed_control_plane_mutation_evaluator",
-    "control_plane_mutation_to_meaningful_side_effect_request",
+    "control_plane_mutation_bundle_match_input",
 ]

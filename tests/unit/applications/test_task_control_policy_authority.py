@@ -414,11 +414,10 @@ def test_taskcpm_p9_approval_consuming_evaluator_preserves_scoped_approval() -> 
     assert governance.approval_coordinator is not None
 
 
-def test_taskcpm_p10_product_host_uses_canonical_bundle_policy_authority(
-    _stub_host_llm: None,
-) -> None:
-    runtime = _product_runtime()
-    boundary = resolve_harness_task_control_mutation_boundary(runtime.control_plane_governance)
+def test_taskcpm_p10_product_host_uses_canonical_bundle_policy_authority() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id=_TENANT)
+    governance = build_harness_control_plane_governance(env)
+    boundary = resolve_harness_task_control_mutation_boundary(governance)
     assert boundary is not None
     evaluator = boundary.evaluator
     assert isinstance(evaluator, ApprovalConsumingControlPlaneMutationEvaluator)

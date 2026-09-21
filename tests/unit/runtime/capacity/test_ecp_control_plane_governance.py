@@ -442,21 +442,95 @@ def test_ecp_cpm15_production_supplied_deny_policy_zero_provider_effect() -> Non
     assert wiring.adapters.celery_observation.get_worker_count() == 2
 
 
-def test_ecp_cpm16_no_permissive_local_production_evaluator() -> None:
-    from intergrax.runtime.governance.control_plane_mutation_policy import (
-        BundleBackedControlPlaneMutationEvaluator,
-    )
-
+def test_ecp_cpm16_product_without_authority_fails_at_wiring() -> None:
     env = ApplicationEnvironmentProfile.product_defaults()
     governance = build_production_capacity_governance(env)
-    assert governance.mutation_authorization_boundary is not None
-    assert isinstance(
-        governance.mutation_authorization_boundary.evaluator,
-        BundleBackedControlPlaneMutationEvaluator,
+    assert governance.mutation_authorization_boundary is None
+    with pytest.raises(ControlPlaneCompositionError) as exc_info:
+        resolve_production_capacity_wiring(env, governance=governance)
+    assert exc_info.value.blocker_code == "ECP_BLOCKED_MISSING_BOUNDARY"
+
+
+def _bundle_backed_boundary(*, effect: str) -> ControlPlaneMutationAuthorizationBoundary:
+    from datetime import datetime, timezone
+
+    from intergrax.contracts.runtime_policy_bundle import (
+        PolicyBundleRule,
+        build_immutable_runtime_policy_bundle,
     )
-    wiring = resolve_production_capacity_wiring(env, governance=governance)
-    assert wiring.enabled is True
-    assert wiring.adapters is not None
+    from intergrax.runtime.governance.control_plane_mutation_policy import (
+        bundle_backed_control_plane_mutation_evaluator,
+    )
+    from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
+        RuntimePolicyBundleEvaluator,
+    )
+
+    bundle = build_immutable_runtime_policy_bundle(
+        bundle_id="ecp-r1-fixture",
+        version="1.0.0",
+        rules=(
+            PolicyBundleRule(
+                rule_id="ecp.fixture.scale_k8s",
+                match_action=MUTATION_TYPE_SCALE_K8S_DEPLOYMENT,
+                effect=effect,
+            ),
+        ),
+        issued_at=datetime(2026, 8, 24, 0, 0, 0, tzinfo=timezone.utc),
+    )
+    return ControlPlaneMutationAuthorizationBoundary(
+        evaluator=bundle_backed_control_plane_mutation_evaluator(
+            RuntimePolicyBundleEvaluator(bundle),
+        ),
+    )
+
+
+def test_ecp_r1_standalone_k8s_allow_without_execution_identity() -> None:
+    kubernetes = _RecordingK8s()
+    boundary = _bundle_backed_boundary(effect="allow")
+    provisioner = ScalingProvisioner(
+        kubernetes=kubernetes,
+        celery=CeleryProductionAdapter(worker_count=2),
+        execution_mode=ProvisionerExecutionMode.GOVERNED_ONLY,
+    )
+    executor = GovernedCapacityMutationExecutor(
+        provisioner=provisioner,
+        mutation_boundary=boundary,
+        tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
+    )
+    executor.scale_k8s_deployment(
+        principal=_service_principal(),
+        tenant_id=_TENANT,
+        mutation_id="mut-r1-allow",
+        deployment=_DEPLOYMENT,
+        delta=2,
+    )
+    assert kubernetes.replicas == 4
+    assert kubernetes.scale_calls == [4]
+
+
+def test_ecp_r1_standalone_k8s_deny_without_execution_identity() -> None:
+    kubernetes = _RecordingK8s()
+    boundary = _bundle_backed_boundary(effect="deny")
+    provisioner = ScalingProvisioner(
+        kubernetes=kubernetes,
+        celery=CeleryProductionAdapter(worker_count=2),
+        execution_mode=ProvisionerExecutionMode.GOVERNED_ONLY,
+    )
+    executor = GovernedCapacityMutationExecutor(
+        provisioner=provisioner,
+        mutation_boundary=boundary,
+        tenant_resolver=StaticEcpResourceTenantResolver(tenant_id=_TENANT),
+    )
+    with pytest.raises(EcpGovernanceBlockedError):
+        executor.scale_k8s_deployment(
+            principal=_service_principal(),
+            tenant_id=_TENANT,
+            mutation_id="mut-r1-deny",
+            deployment=_DEPLOYMENT,
+            delta=2,
+        )
+    assert kubernetes.replicas == 2
+    assert kubernetes.scale_calls == []
 
 
 def test_ecp_cpm17_production_adapters_block_raw_exact_target_mutation() -> None:
@@ -493,10 +567,9 @@ def test_ecp_cpm17_production_adapters_block_raw_exact_target_mutation() -> None
 def test_ecp_cpm18_maintenance_path_cannot_manufacture_allow_policy() -> None:
     env = ApplicationEnvironmentProfile.product_defaults()
     governance = build_production_capacity_governance(env)
-    assert governance.mutation_authorization_boundary is not None
-    wiring = resolve_production_capacity_wiring(env, governance=governance)
-    assert wiring.enabled is True
-    assert wiring.adapters is not None
+    assert governance.mutation_authorization_boundary is None
+    with pytest.raises(ControlPlaneCompositionError):
+        resolve_production_capacity_wiring(env, governance=governance)
 
 
 def _scheduler_service_principal(tenant_id: str = _TENANT) -> RequestIdentity:
@@ -1581,10 +1654,10 @@ def test_ecp_cpm51_production_scheduler_celery_through_governed_executor() -> No
 def test_ecp_cpm52_missing_governance_fail_closed_after_composition_refactor() -> None:
     env = ApplicationEnvironmentProfile.product_defaults()
     governance = build_production_capacity_governance(env)
-    production_wiring = resolve_production_capacity_wiring(env, governance=governance)
-    assert production_wiring.enabled is True
-    assert production_wiring.adapters is not None
-    assert governance.mutation_authorization_boundary is not None
+    assert governance.mutation_authorization_boundary is None
+    with pytest.raises(ControlPlaneCompositionError) as exc_info:
+        resolve_production_capacity_wiring(env, governance=governance)
+    assert exc_info.value.blocker_code == "ECP_BLOCKED_MISSING_BOUNDARY"
 
 
 def test_ecp_cpm53_live_kubernetes_backend_only_behind_governed_write_path(
