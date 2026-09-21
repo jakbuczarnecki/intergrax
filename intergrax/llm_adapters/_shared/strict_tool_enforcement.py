@@ -29,7 +29,7 @@ def _tool_name(definition: CanonicalFunctionToolDefinition) -> str:
 
 
 def resolve_canonical_tool_definitions(
-    tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]],
+    tools: Sequence[CanonicalFunctionToolDefinition],
 ) -> tuple[CanonicalFunctionToolDefinition, ...]:
     """Normalize request tools and reject duplicate canonical names before dispatch."""
     definitions = coerce_canonical_tool_definitions(tools)
@@ -54,7 +54,7 @@ def wire_schemas_from_definitions(
 
 def enforce_strict_tool_call_conformance(
     tool_calls: Sequence[LLMToolCall],
-    tool_definitions: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]],
+    tool_definitions: Sequence[CanonicalFunctionToolDefinition],
 ) -> None:
     """Reject invalid provider tool calls before they cross the adapter boundary."""
     if not tool_calls:

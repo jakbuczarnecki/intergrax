@@ -22,7 +22,9 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
+from intergrax.llm_adapters.contracts.structured_result import TStructured
 
 if TYPE_CHECKING:
     from intergrax.contracts.dependency_concurrency_admission import (
@@ -481,11 +483,11 @@ class BaseLLMAdapter(ABC):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> LLMAdapterResponse:
         raise NotImplementedError("Tools are not supported by this adapter.")
@@ -493,11 +495,11 @@ class BaseLLMAdapter(ABC):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> Iterable[LLMStreamEvent]:
         raise NotImplementedError("Tools streaming is not supported by this adapter.")
@@ -506,12 +508,12 @@ class BaseLLMAdapter(ABC):
     def generate_structured(
         self,
         messages: Sequence[ChatMessage],
-        output_model: type,
+        output_model: type[TStructured],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> LLMStructuredResult[Any]:
+    ) -> LLMStructuredResult[TStructured]:
         raise NotImplementedError("Structured output is not supported by this adapter.")
 
     # ---- Token counting (base impl; moved from the removed LLMAdapter) ----

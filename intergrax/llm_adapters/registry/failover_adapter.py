@@ -22,6 +22,7 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
 )
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 
 T = TypeVar("T")
 
@@ -84,7 +85,7 @@ class FailoverLLMAdapter(BaseLLMAdapter):
 
     def _eligible_adapter_chain(
         self,
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]] | None = None,
+        tools: Sequence[CanonicalFunctionToolDefinition] | None = None,
     ) -> tuple[tuple[LLMAdapter, ...], tuple[str, ...]]:
         """Return adapters eligible for dispatch; filter strict-ineligible children."""
         if tools is None:
@@ -162,11 +163,11 @@ class FailoverLLMAdapter(BaseLLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
-        tool_choice: str | dict[str, Any] | None = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: str | None = None,
     ) -> LLMAdapterResponse:
         adapters, profile_ids = self._eligible_adapter_chain(tools)
@@ -202,11 +203,11 @@ class FailoverLLMAdapter(BaseLLMAdapter):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
-        tool_choice: str | dict[str, Any] | None = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         adapters, _profile_ids = self._eligible_adapter_chain(tools)

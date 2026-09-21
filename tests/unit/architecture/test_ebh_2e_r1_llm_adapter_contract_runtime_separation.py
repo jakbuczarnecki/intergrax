@@ -6,9 +6,9 @@ from __future__ import annotations
 
 import ast
 import importlib
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 import pytest
 
@@ -21,7 +21,9 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
+from intergrax.llm_adapters.contracts.structured_result import TStructured
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.llm_adapters.registry.registration_contract import LLMAdapterFactory
 
@@ -190,11 +192,11 @@ class _ExternalStructuralAdapter:
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[str | dict[str, Any]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> LLMAdapterResponse:
         raise NotImplementedError
@@ -202,11 +204,11 @@ class _ExternalStructuralAdapter:
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[str | dict[str, Any]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> Iterable[LLMStreamEvent]:
         raise NotImplementedError
@@ -217,12 +219,12 @@ class _ExternalStructuralAdapter:
     def generate_structured(
         self,
         messages: Sequence[ChatMessage],
-        output_model: type,
+        output_model: type[TStructured],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> LLMStructuredResult[Any]:
+    ) -> LLMStructuredResult[TStructured]:
         raise NotImplementedError
 
     def supports_vision(self) -> bool:

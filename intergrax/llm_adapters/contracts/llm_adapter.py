@@ -10,14 +10,18 @@ before outbound I/O (HARNESS-02 ``H02-llm-provider-boundary``; see ``BaseLLMAdap
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, Optional, Protocol, Union, runtime_checkable
+from collections.abc import Iterable, Sequence
+from typing import Optional, Protocol, runtime_checkable
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.structured_result import (
+    LLMStructuredResult,
+    TStructured,
+)
 from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
 
 
@@ -70,11 +74,11 @@ class LLMAdapter(Protocol):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> LLMAdapterResponse:
         ...
@@ -82,11 +86,11 @@ class LLMAdapter(Protocol):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> Iterable[LLMStreamEvent]:
         ...
@@ -97,12 +101,12 @@ class LLMAdapter(Protocol):
     def generate_structured(
         self,
         messages: Sequence[ChatMessage],
-        output_model: type,
+        output_model: type[TStructured],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> LLMStructuredResult[Any]:
+    ) -> LLMStructuredResult[TStructured]:
         ...
 
     def supports_vision(self) -> bool:

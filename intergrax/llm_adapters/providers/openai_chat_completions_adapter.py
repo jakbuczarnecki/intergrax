@@ -31,13 +31,14 @@ from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
 )
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters._shared.strict_tool_enforcement import (
     enforce_strict_tool_call_conformance,
     resolve_canonical_tool_definitions,
@@ -195,11 +196,11 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> LLMAdapterResponse:
         tool_definitions = resolve_canonical_tool_definitions(tools)
@@ -249,11 +250,11 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> Iterable[LLMStreamEvent]:
         tool_definitions = resolve_canonical_tool_definitions(tools)
@@ -334,12 +335,12 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
     def generate_structured(
         self,
         messages: Sequence[ChatMessage],
-        output_model: type,
+        output_model: type[TStructured],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> LLMStructuredResult[Any]:
+    ) -> LLMStructuredResult[TStructured]:
         system_text, convo = split_system_messages(messages)
         schema = prepare_openai_strict_generation_schema(output_model)
         payload = self._build_chat_params(
@@ -377,7 +378,7 @@ class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
         max_tokens: Optional[int],
         stream: bool,
         tools: Optional[List[Dict[str, Any]]] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         response_format: Optional[Dict[str, Any]] = None,
     ) -> dict:
         temp = temperature if temperature is not None else self.defaults.get("temperature")

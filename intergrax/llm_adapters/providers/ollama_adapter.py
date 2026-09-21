@@ -19,13 +19,14 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
 )
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters._shared.strict_tool_enforcement import (
     enforce_strict_tool_call_conformance,
     resolve_canonical_tool_definitions,
@@ -246,7 +247,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
 
     @staticmethod
     def _validate_ollama_tool_choice(
-        tool_choice: Optional[Union[str, Dict[str, Any]]],
+        tool_choice: NativeToolChoice | None,
     ) -> None:
         if tool_choice is None:
             return
@@ -469,11 +470,11 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> LLMAdapterResponse:
         if not self.supports_tools():
@@ -555,7 +556,7 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
 
 
     @staticmethod
-    def _coerce_parsed_structured_output(output_model: type, parsed: Any) -> Any:
+    def _coerce_parsed_structured_output(output_model: type[TStructured], parsed: Any) -> Any:
         if isinstance(parsed, output_model):
             return parsed
         if hasattr(output_model, "model_validate"):
@@ -575,12 +576,12 @@ class LangChainOllamaAdapter(BaseLLMAdapter):
     def generate_structured(
         self,
         messages: Sequence[ChatMessage],
-        output_model: type,
+        output_model: type[TStructured],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> LLMStructuredResult[Any]:
+    ) -> LLMStructuredResult[TStructured]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
         success = False

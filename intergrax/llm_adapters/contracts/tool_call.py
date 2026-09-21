@@ -7,7 +7,9 @@ from intergrax.utils import attribute_access
 
 import json
 from dataclasses import dataclass, replace
-from typing import Any, Iterable, Sequence
+from typing import Iterable, Sequence
+
+from intergrax.llm_adapters.contracts.serialized_value import JsonObject
 from uuid import uuid4
 
 
@@ -82,7 +84,7 @@ class LLMToolCall:
         *,
         call_id: str,
         name: str,
-        arguments: str | dict[str, Any] | None,
+        arguments: str | JsonObject | None,
     ) -> LLMToolCall:
         if isinstance(arguments, str):
             args_json = arguments or "{}"
@@ -95,7 +97,7 @@ class LLMToolCall:
         )
 
 
-def tool_calls_from_openai_message(message: Any) -> tuple[LLMToolCall, ...]:
+def tool_calls_from_openai_message(message: object) -> tuple[LLMToolCall, ...]:
     """Extract typed tool calls from an OpenAI-style chat completion message."""
     raw = attribute_access.optional(message, "tool_calls", None) or []
     out: list[LLMToolCall] = []
@@ -153,16 +155,34 @@ def merge_streaming_tool_calls(chunks: Sequence[LLMToolCall]) -> tuple[LLMToolCa
     return finalize_accepted_tool_call_identities(merged)
 
 
-def tool_calls_from_langchain_message(message: Any) -> tuple[LLMToolCall, ...]:
-    """Compatibility shim for the provider-local LangChain tool-call parser."""
-    from intergrax.llm_adapters.providers._langchain_compat import (
-        tool_calls_from_langchain_message as _parse_langchain_tool_calls,
-    )
+def tool_calls_from_langchain_message(message: object) -> tuple[LLMToolCall, ...]:
+    """Extract typed tool calls from a LangChain AIMessage or compatible object."""
+    raw = attribute_access.optional(message, "tool_calls", None) or []
+    out: list[LLMToolCall] = []
+    for tool_call in raw:
+        if isinstance(tool_call, dict):
+            name = tool_call.get("name")
+            args = tool_call.get("args")
+            call_id = tool_call.get("id")
+        else:
+            name = attribute_access.optional(tool_call, "name", None)
+            args = attribute_access.optional(tool_call, "args", None)
+            call_id = attribute_access.optional(tool_call, "id", None)
+        if not name or not str(name).strip():
+            continue
+        if args is not None and not isinstance(args, (dict, str)):
+            raise ValueError("langchain tool call args must be a dictionary or JSON string")
+        out.append(
+            LLMToolCall.from_openai_shape(
+                call_id=str(call_id or ""),
+                name=str(name),
+                arguments=args if isinstance(args, (dict, str)) else {},
+            )
+        )
+    return finalize_accepted_tool_call_identities(out)
 
-    return _parse_langchain_tool_calls(message)
 
-
-def tool_calls_from_openai_dicts(items: Iterable[Any]) -> tuple[LLMToolCall, ...]:
+def tool_calls_from_openai_dicts(items: Iterable[object]) -> tuple[LLMToolCall, ...]:
     """Convert accumulated OpenAI-style tool call dicts to typed calls."""
     out: list[LLMToolCall] = []
     for tc in items:

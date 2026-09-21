@@ -12,6 +12,7 @@ import pytest
 from pydantic import BaseModel, ConfigDict
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeForcedFunctionChoice
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
@@ -558,7 +559,9 @@ def test_named_tool_choice_maps_canonical_name_to_provider_alias() -> None:
     adapter.generate_with_tools(
         [ChatMessage(role="user", content="x")],
         _PLATFORM_PROOF_SQL_TOOL,
-        tool_choice={"type": "function", "name": "platform_proof.sql.query"},
+        tool_choice=NativeForcedFunctionChoice(
+            function_name="platform_proof.sql.query"
+        ),
         run_id="r1",
     )
 

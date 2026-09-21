@@ -20,6 +20,13 @@ class NativeForcedFunctionChoice:
 NativeToolChoice = Union[NativeToolChoiceLiteral, NativeForcedFunctionChoice]
 
 
+def native_tool_choice_function_name(choice: NativeToolChoice | None) -> str | None:
+    """Return the forced function name when tool choice pins a single tool."""
+    if isinstance(choice, NativeForcedFunctionChoice):
+        return choice.function_name
+    return None
+
+
 def project_native_tool_choice_for_provider(
     choice: NativeToolChoice | None,
     *,

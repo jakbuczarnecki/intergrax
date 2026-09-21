@@ -42,6 +42,7 @@ from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExte
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
@@ -115,7 +116,7 @@ class AnthropicClaudeCodec:
         defaults: Dict,
         model_id: str,
         tools: Optional[List[Dict[str, Any]]] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
     ) -> dict:
         temp = temperature if temperature is not None else defaults.get("temperature")
         out_tokens = max_tokens if max_tokens is not None else defaults.get("max_tokens", 1024)
@@ -696,7 +697,7 @@ class BedrockChatAdapter(BaseLLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> LLMAdapterResponse:
         if not self.supports_tools():
@@ -800,7 +801,7 @@ class BedrockChatAdapter(BaseLLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> Iterable[LLMStreamEvent]:
         if not self.supports_tools():

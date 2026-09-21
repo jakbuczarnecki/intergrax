@@ -31,10 +31,11 @@ from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 
 
 class ClaudeChatAdapter(BaseLLMAdapter):
@@ -260,7 +261,7 @@ class ClaudeChatAdapter(BaseLLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
@@ -318,7 +319,7 @@ class ClaudeChatAdapter(BaseLLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
@@ -402,12 +403,12 @@ class ClaudeChatAdapter(BaseLLMAdapter):
     def generate_structured(
         self,
         messages: Sequence[ChatMessage],
-        output_model: type,
+        output_model: type[TStructured],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> LLMStructuredResult[Any]:
+    ) -> LLMStructuredResult[TStructured]:
         schema = self._model_json_schema(output_model)
         schema_msg = ChatMessage(
             role="user",

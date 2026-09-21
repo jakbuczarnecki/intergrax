@@ -15,8 +15,9 @@ from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
 )
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.routing.contracts import RoutingContext, RoutingEvaluation
 from intergrax.llm_adapters.routing.evaluator import (
     AllowlistViolationError,
@@ -183,11 +184,11 @@ class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
-        tool_choice: str | dict[str, Any] | None = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: str | None = None,
     ) -> LLMAdapterResponse:
         self._refresh_inner_adapter()
@@ -203,12 +204,12 @@ class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
     def generate_structured(
         self,
         messages: Sequence[ChatMessage],
-        output_model: type,
+        output_model: type[TStructured],
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
         run_id: str | None = None,
-    ) -> LLMStructuredResult[Any]:
+    ) -> LLMStructuredResult[TStructured]:
         self._refresh_inner_adapter()
         return self._inner.generate_structured(
             messages,

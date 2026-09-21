@@ -231,7 +231,7 @@ def _definitions_by_canonical_name(
 
 def validate_tool_calls_against_canonical_definitions(
     tool_calls: Sequence[LLMToolCall],
-    tool_definitions: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]],
+    tool_definitions: Sequence[CanonicalFunctionToolDefinition],
 ) -> None:
     """Validate emitted tool calls against canonical bindings (fail-closed)."""
     definitions = coerce_canonical_tool_definitions(tool_definitions)
