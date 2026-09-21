@@ -23,8 +23,11 @@ class ApplicationBuildContext:
     (composition layer — not public ABI).
 
     ``settings`` is application-specific (e.g. ``LabApplicationSettings``,
-    ``LegalBackendSettings``). Factories read env-backed settings here — not
-    from global process env directly.
+    ``LegalBackendSettings``), injected by the host after env/filesystem load.
+    EBH-2D-D outcome **A**: intentional per-app polymorphism at the factory
+    boundary (not a runtime service bag; composition services stay in
+    ``ApplicationCompositionContext``). Strong typing via
+    ``ApplicationBuildContext[TSettings]`` is deferred (architecture wave).
     """
 
     manifest: ApplicationManifest
