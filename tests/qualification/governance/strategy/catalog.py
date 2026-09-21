@@ -23,6 +23,15 @@ class Gr10Applicability(StrEnum):
     NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
+class Gr10EvidenceCertificationRequirement(StrEnum):
+    """GR-10-R15-R1: GR-8 fact adoption vs certification phase (not policy/GEP applicability)."""
+
+    NOT_APPLICABLE = "NOT_APPLICABLE"
+    REQUIRED_IN_GR10 = "REQUIRED_IN_GR10"
+    DEFERRED_TO_GR13 = "DEFERRED_TO_GR13"
+    REQUIRED_IN_GR13 = "REQUIRED_IN_GR13"
+
+
 @dataclass(frozen=True, slots=True)
 class Gr10InferenceCapabilitySemantics:
     capability: str
@@ -340,9 +349,10 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
         "Governance Evidence",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R14-R1: strict orchestration MSE + root admission emit canonical GovernanceDecisionEvidenceFact "
-        "via pluginable GovernanceEvidencePersistencePort; ESCALATE V1 additive per ADR-GR-8-001 amendment; "
-        "post-HITL ALLOW correlates human_review_evidence_ref without authority; evidence non-authoritative.",
+        "GR-10-R14-R1 + GR-10-R15-R1: mandatory orchestration GR-8 paths (root, MSE, inner-guard DENY, "
+        "decision-bound, post-HITL) QUALIFIED via GovernanceEvidencePersistencePort; per-GEP fact adoption "
+        "for PRE_MODEL/TOOL*/PRE_OUTPUT/POST_RUN explicitly DEFERRED_TO_GR13 (ADR-GR-10-003); evidence "
+        "non-authoritative.",
     ),
 )
 
@@ -376,6 +386,9 @@ class Gr10OrchestrationGepSemantics:
     canonical_owner: str
     production_path: str
     gr8_evidence_applicability: Gr10Applicability
+    gr10_evidence_requirement: Gr10EvidenceCertificationRequirement
+    gr13_evidence_requirement: Gr10EvidenceCertificationRequirement
+    gr8_evidence_coverage: Gr10CoverageStatus
     reason: str
 
 
@@ -395,6 +408,9 @@ GR10_ORCHESTRATION_GEP_SEMANTICS: tuple[Gr10OrchestrationGepSemantics, ...] = (
         "RuntimeExecutionPolicyAdmissionPort + DefaultRootExecutionLauncher",
         "HostTaskExecution orchestration capability → GR-2 root launcher",
         Gr10Applicability.APPLICABLE,
+        Gr10EvidenceCertificationRequirement.REQUIRED_IN_GR10,
+        Gr10EvidenceCertificationRequirement.NOT_APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
         "GR-10-R7 ORCH-ROOT; root ALLOW/DENY facts via GR-10-R14.",
     ),
     Gr10OrchestrationGepSemantics(
@@ -403,8 +419,11 @@ GR10_ORCHESTRATION_GEP_SEMANTICS: tuple[Gr10OrchestrationGepSemantics, ...] = (
         Gr10CoverageStatus.QUALIFIED,
         "RuntimePolicyEngine.evaluate_pre_llm / PlanningRunner",
         "NEXUS_PLANNING PRE_MODEL with active governance identity",
-        Gr10Applicability.NOT_APPLICABLE,
-        "PRE_MODEL policy decisions on orchestration planning; GR-8 per-GEP adoption deferred GR-13.",
+        Gr10Applicability.APPLICABLE,
+        Gr10EvidenceCertificationRequirement.DEFERRED_TO_GR13,
+        Gr10EvidenceCertificationRequirement.REQUIRED_IN_GR13,
+        Gr10CoverageStatus.GAP,
+        "PRE_MODEL policy enforcement QUALIFIED; GR-8 fact spine per-GEP proof owned by GR-13 (ADR-GR-10-003).",
     ),
     Gr10OrchestrationGepSemantics(
         "AGENT_DECISION",
@@ -413,6 +432,9 @@ GR10_ORCHESTRATION_GEP_SEMANTICS: tuple[Gr10OrchestrationGepSemantics, ...] = (
         "RuntimePolicyEngine.evaluate_decision (UAEP delegate only)",
         "Embedded UAEP resolve_decision; graph topology routing is not AGENT_DECISION GEP",
         Gr10Applicability.NOT_APPLICABLE,
+        Gr10EvidenceCertificationRequirement.NOT_APPLICABLE,
+        Gr10EvidenceCertificationRequirement.NOT_APPLICABLE,
+        Gr10CoverageStatus.NOT_APPLICABLE,
         "GR-10-R8: orchestration graph routing internal; permission GEP is Policy evaluation row.",
     ),
     Gr10OrchestrationGepSemantics(
@@ -422,6 +444,9 @@ GR10_ORCHESTRATION_GEP_SEMANTICS: tuple[Gr10OrchestrationGepSemantics, ...] = (
         "Execution lifecycle (CancellationCoordinator) — not INTERRUPT GEP",
         "Graph/task cancellation via CancellationCoordinator; no evaluate_interrupt on topology spine",
         Gr10Applicability.NOT_APPLICABLE,
+        Gr10EvidenceCertificationRequirement.NOT_APPLICABLE,
+        Gr10EvidenceCertificationRequirement.NOT_APPLICABLE,
+        Gr10CoverageStatus.NOT_APPLICABLE,
         "Blocking ExecutionInterrupt.evaluate_interrupt is AGENTIC UAEP scope; orchestration pause/resume "
         "is HITL + Continuation (GR-10-R11/R12), not a distinct orchestration INTERRUPT evaluation point.",
     ),
@@ -431,8 +456,11 @@ GR10_ORCHESTRATION_GEP_SEMANTICS: tuple[Gr10OrchestrationGepSemantics, ...] = (
         Gr10CoverageStatus.QUALIFIED,
         "ToolAccessPolicy + scope policy",
         "tool_runtime.execute_plan / catalog tool exposure (GR-10-R8)",
-        Gr10Applicability.NOT_APPLICABLE,
-        "Access gate qualified; GR-8 tool-plan facts not mandatory on orchestration spine (GR-13).",
+        Gr10Applicability.APPLICABLE,
+        Gr10EvidenceCertificationRequirement.DEFERRED_TO_GR13,
+        Gr10EvidenceCertificationRequirement.REQUIRED_IN_GR13,
+        Gr10CoverageStatus.GAP,
+        "ToolAccessPolicy access decision QUALIFIED; GR-8 tool-plan facts deferred to GR-13 proof matrix.",
     ),
     Gr10OrchestrationGepSemantics(
         "TOOL_INVOCATION_AUTHORIZATION",
@@ -441,7 +469,10 @@ GR10_ORCHESTRATION_GEP_SEMANTICS: tuple[Gr10OrchestrationGepSemantics, ...] = (
         "CanonicalInnerExecutionGuardPort",
         "RuntimeToolInvoker inner guard before authorization (GR-10-R8)",
         Gr10Applicability.APPLICABLE,
-        "Inner guard DENY facts qualified GR-10-R14.",
+        Gr10EvidenceCertificationRequirement.REQUIRED_IN_GR10,
+        Gr10EvidenceCertificationRequirement.NOT_APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "Inner guard DENY facts qualified GR-10-R14; ALLOW path policy authority unchanged (no evidence asymmetry).",
     ),
     Gr10OrchestrationGepSemantics(
         "TOOL_INVOCATION_POLICY",
@@ -449,8 +480,11 @@ GR10_ORCHESTRATION_GEP_SEMANTICS: tuple[Gr10OrchestrationGepSemantics, ...] = (
         Gr10CoverageStatus.QUALIFIED,
         "DeclarativePolicyEnforcer.evaluate_tool_invocation",
         "RuntimeToolInvoker before handler; strict hosts wire policy_bundle (assert_strict_policy_bootstrap)",
-        Gr10Applicability.NOT_APPLICABLE,
-        "Distinct from TOOL_INVOCATION_AUTHORIZATION (inner guard); declarative REQUIRE_HITL bridges HITL.",
+        Gr10Applicability.APPLICABLE,
+        Gr10EvidenceCertificationRequirement.DEFERRED_TO_GR13,
+        Gr10EvidenceCertificationRequirement.REQUIRED_IN_GR13,
+        Gr10CoverageStatus.GAP,
+        "Declarative policy decision QUALIFIED; GR-8 fact spine deferred to GR-13 (distinct from inner guard).",
     ),
     Gr10OrchestrationGepSemantics(
         "MEANINGFUL_SIDE_EFFECT",
@@ -459,6 +493,9 @@ GR10_ORCHESTRATION_GEP_SEMANTICS: tuple[Gr10OrchestrationGepSemantics, ...] = (
         "MeaningfulSideEffectAuthorizationPort + topology slot policy",
         "RuntimeToolInvoker + OrchestrationTopologySlotMsePolicy (GR-10-R9)",
         Gr10Applicability.APPLICABLE,
+        Gr10EvidenceCertificationRequirement.REQUIRED_IN_GR10,
+        Gr10EvidenceCertificationRequirement.NOT_APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
         "MSE + root admission GR-8 facts qualified GR-10-R14-R1.",
     ),
     Gr10OrchestrationGepSemantics(
@@ -467,8 +504,11 @@ GR10_ORCHESTRATION_GEP_SEMANTICS: tuple[Gr10OrchestrationGepSemantics, ...] = (
         Gr10CoverageStatus.QUALIFIED,
         "PolicyEngine.evaluate_pre_output",
         "NexusLoop._finish_task → apply_pre_output_policy before terminal result",
-        Gr10Applicability.NOT_APPLICABLE,
-        "Policy ALLOW/DENY at terminal boundary; GR-8 PRE_OUTPUT fact spine not enterprise-mandatory GR-13.",
+        Gr10Applicability.APPLICABLE,
+        Gr10EvidenceCertificationRequirement.DEFERRED_TO_GR13,
+        Gr10EvidenceCertificationRequirement.REQUIRED_IN_GR13,
+        Gr10CoverageStatus.GAP,
+        "PRE_OUTPUT policy enforcement QUALIFIED; GR-8 fact emission proof matrix GR-13.",
     ),
     Gr10OrchestrationGepSemantics(
         "POST_RUN",
@@ -476,9 +516,39 @@ GR10_ORCHESTRATION_GEP_SEMANTICS: tuple[Gr10OrchestrationGepSemantics, ...] = (
         Gr10CoverageStatus.QUALIFIED,
         "PostRunGovernanceService via invoke_post_run_governance",
         "NexusLoop._finish_task + UAEPExecutor; production_mode requires GovernanceService",
-        Gr10Applicability.NOT_APPLICABLE,
-        "Post-run GovernanceService evaluation wired; GR-8 POST_RUN fact spine optional extension GR-13.",
+        Gr10Applicability.APPLICABLE,
+        Gr10EvidenceCertificationRequirement.DEFERRED_TO_GR13,
+        Gr10EvidenceCertificationRequirement.REQUIRED_IN_GR13,
+        Gr10CoverageStatus.GAP,
+        "POST_RUN governance evaluation QUALIFIED; GR-8 fact spine deferred to GR-13.",
     ),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Gr13OrchestrationGovernanceEvidenceDeferredRow:
+    """GR-10-R15-R1 — explicit GR-13 obligations (must not be marked NOT_APPLICABLE in GR-10 SSOT)."""
+
+    gep: str
+    deferred_proof: str
+    current_gr8_coverage: Gr10CoverageStatus
+    owner: str
+    reason: str
+
+
+GR13_ORCHESTRATION_GOVERNANCE_EVIDENCE_DEFERRED: tuple[
+    Gr13OrchestrationGovernanceEvidenceDeferredRow,
+    ...,
+] = tuple(
+    Gr13OrchestrationGovernanceEvidenceDeferredRow(
+        row.gep,
+        f"Canonical GovernanceDecisionEvidenceFact persistence for {row.gep} on orchestration production spine",
+        row.gr8_evidence_coverage,
+        "GR-13 Full Governance Proof Matrix",
+        row.reason,
+    )
+    for row in GR10_ORCHESTRATION_GEP_SEMANTICS
+    if row.gr10_evidence_requirement is Gr10EvidenceCertificationRequirement.DEFERRED_TO_GR13
 )
 
 
@@ -555,7 +625,7 @@ GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
         True,
         Gr10CoverageStatus.QUALIFIED,
         "GR-10-R9-R2: tool + graph/non-tool orchestration consequential seams closed via canonical "
-        "MeaningfulSideEffectAuthorizationPort (ADR-GR-10-002).",
+        "MeaningfulSideEffectAuthorizationPort (ADR-GR-10-003).",
     ),
     Gr10GepCoverageRow(
         "PRE_OUTPUT",
@@ -626,7 +696,7 @@ GR10_R9_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
     exact_blocker=(
         "Nexus-local MeaningfulSideEffectAuthorizationPort returns object; production orchestration "
         "composition synthesizes membership/authority and default ALLOW via InMemory repositories "
-        "(ADR-GR-10-002 rejected design)."
+        "(ADR-GR-10-003 rejected design)."
     ),
     why_highest=(
         "P0 authority architecture blocker before ORCHESTRATION MSE can re-qualify or GR-10-R10 "
@@ -753,13 +823,19 @@ GR10_R14_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
 )
 
 
-GR10_R15_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+GR10_R15_R1_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
     task_name="GR-10 AGENTIC Residual + GR-10 Closure",
     strategy="AGENTIC",
     capability="Governance Evidence",
     exact_blocker="Remaining AGENTIC strategy governance evidence and closure residuals.",
-    why_highest="ORCHESTRATION strategy enterprise qualification closed under GR-10-R15.",
+    why_highest=(
+        "ORCHESTRATION strategy enterprise qualification closed under GR-10-R15-R1 "
+        "(GR-10 vs GR-13 evidence scope reconciled)."
+    ),
 )
+
+
+GR10_R15_NEXT_REMEDIATION: Gr10R7NextRemediation = GR10_R15_R1_NEXT_REMEDIATION
 
 
 @dataclass(frozen=True, slots=True)
@@ -834,19 +910,19 @@ GR10_ORCHESTRATION_GOVERNANCE_EVIDENCE_INVENTORY: tuple[
     ),
     Gr10OrchestrationGovernanceEvidenceInventoryRow(
         "PRE_OUTPUT evaluation point",
-        "N/A",
-        "N/A",
-        "N/A",
-        "No production orchestration PolicyDecision → GR-8 fact emission (GEP enum reserved)",
-        "NOT_APPLICABLE",
+        "ALLOW / DENY / REQUIRE_HUMAN / ESCALATE (policy)",
+        "GovernanceDecisionEvidenceFact (GR-13 proof target)",
+        "GovernanceEvidencePersistencePort",
+        "PolicyEngine.evaluate_pre_output wired; GR-8 fact emission deferred GR-13 (ADR-GR-10-003)",
+        "DEFERRED_TO_GR13",
     ),
     Gr10OrchestrationGovernanceEvidenceInventoryRow(
         "POST_RUN evaluation point",
-        "N/A",
-        "N/A",
-        "N/A",
-        "POST_RUN hooks optional; no canonical GR-8 fact spine on orchestration POST_RUN",
-        "NOT_APPLICABLE",
+        "Post-run governance evaluation outcomes",
+        "GovernanceDecisionEvidenceFact (GR-13 proof target)",
+        "GovernanceEvidencePersistencePort",
+        "invoke_post_run_governance wired; GR-8 fact spine deferred GR-13",
+        "DEFERRED_TO_GR13",
     ),
 )
 

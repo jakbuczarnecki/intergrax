@@ -72,15 +72,16 @@ def test_gr10_r15_orchestration_capability_matrix_all_qualified() -> None:
 
 
 def test_gr10_r15_orchestration_gep_evidence_inventory_no_conflict() -> None:
-    """GEP policy paths may be QUALIFIED while GR-8 fact spine remains N/A until GR-13."""
+    """Deferred GEP rows use DEFERRED_TO_GR13 in inventory — not NOT_APPLICABLE (GR-10-R15-R1)."""
     evidence_by_path = {row.path: row for row in GR10_ORCHESTRATION_GOVERNANCE_EVIDENCE_INVENTORY}
-    for sem in GR10_ORCHESTRATION_GEP_SEMANTICS:
-        if sem.gr8_evidence_applicability is Gr10Applicability.APPLICABLE:
-            continue
-        label = f"{sem.gep} evaluation point"
-        if label not in evidence_by_path:
-            continue
-        assert evidence_by_path[label].status == "NOT_APPLICABLE", sem.gep
+    deferred_gep_to_path = {
+        "PRE_OUTPUT": "PRE_OUTPUT evaluation point",
+        "POST_RUN": "POST_RUN evaluation point",
+    }
+    for gep, path in deferred_gep_to_path.items():
+        sem = gr10_orchestration_gep_semantics(gep)
+        assert sem.gr8_evidence_applicability is Gr10Applicability.APPLICABLE, gep
+        assert evidence_by_path[path].status == "DEFERRED_TO_GR13", gep
 
 
 def test_gr10_r15_four_residuals_final_status() -> None:

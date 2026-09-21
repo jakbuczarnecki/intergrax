@@ -197,7 +197,7 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-10-R9 | ORCHESTRATION MSE production coverage | **PARTIAL — REMEDIATION REQUIRED** — tool invoker pre-effect slice qualified; authority architecture blocked until **GR-10-R9-R1** |
 | GR-11 | Plugin & Enterprise Extensibility Certification | **OPEN** |
 | GR-12 | Control-Plane Governance | **GAP** / **OPEN** |
-| GR-13 | Full Governance Proof Matrix | **OPEN** |
+| GR-13 | Full Governance Proof Matrix | **OPEN** — includes `GR13_ORCHESTRATION_GOVERNANCE_EVIDENCE_DEFERRED` per [ADR-GR-10-003](../../technical/adr/entries/2026-09-21/ADR-GR-10-003-gr10-gr13-governance-evidence-certification-scope.md) (GR-10-R15-R1) |
 | GR-14 | Real Application Integration — LKW | **OPEN** |
 | GR-15 | Governance UX / Application Contract | **OPEN** |
 | GR-16 | Enterprise Qualification & Claims | **OPEN** |

@@ -320,6 +320,8 @@ flowchart TD
 
 **Scope honesty:** GR-8 closure applies to **evidence infrastructure** (immutable fact contract, pluginable persistence port, default durable adapter, root admission + meaningful-side-effect emission). **Evaluation-point adoption coverage** across all GEP rows in §G3B is **not** GR-8 — residual wiring and strategy qualification are owned by **GR-10** and **GR-13**.
 
+**GR-10 vs GR-13 certification (ADR-GR-10-003):** GR-10 strategy qualification may mark the **Governance Evidence** capability **QUALIFIED** when mandatory orchestration paths in `GR10_ORCHESTRATION_GOVERNANCE_EVIDENCE_INVENTORY` are **QUALIFIED** (root admission, MSE, inner-guard DENY spine, decision-bound / post-HITL correlation). Per-GEP GR-8 fact adoption for applicable policy GEPs (e.g. PRE_MODEL, TOOL_PLAN_OR_ACCESS, TOOL_INVOCATION_POLICY, PRE_OUTPUT, POST_RUN) is typed **`DEFERRED_TO_GR13`** — not `NOT_APPLICABLE`. GR-13 owns the full per-GEP proof matrix. SSOT: `GR10_ORCHESTRATION_GEP_SEMANTICS` + `GR13_ORCHESTRATION_GOVERNANCE_EVIDENCE_DEFERRED` in `tests/qualification/governance/strategy/catalog.py`.
+
 ```text
 Governance evaluation → PolicyDecision (authority)
   → GovernanceDecisionEvidenceFact (immutable)
