@@ -52,6 +52,9 @@ class WorkerCapabilityRecoveryProvenance:
     acquisition_request_id: str | None = None
     acquisition_strategy_id: str | None = None
     qualification_request_id: str | None = None
+    qualified_subject_reference: str | None = None
+    binding_operation_id: str | None = None
+    execution_request_id: str | None = None
     evidence_refs: tuple[ProblemReference, ...] = ()
 
     def __post_init__(self) -> None:
@@ -86,6 +89,9 @@ class WorkerCapabilityRecoveryProvenance:
             ("acquisition_request_id", self.acquisition_request_id),
             ("acquisition_strategy_id", self.acquisition_strategy_id),
             ("qualification_request_id", self.qualification_request_id),
+            ("qualified_subject_reference", self.qualified_subject_reference),
+            ("binding_operation_id", self.binding_operation_id),
+            ("execution_request_id", self.execution_request_id),
         ):
             if value is not None:
                 object.__setattr__(
