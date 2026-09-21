@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Protocol, runtime_checkable
+from typing import Mapping, Protocol, runtime_checkable
 
 from pydantic import PrivateAttr
 
@@ -21,7 +21,6 @@ from intergrax.runtime.integrations.observability import (
     ObservabilityVendorPayload,
     ObservabilityVendorSignal,
 )
-from intergrax.utils import attribute_access
 
 
 BRAINTRUST_OBSERVABILITY_PROVIDER_ID = "braintrust"
@@ -46,6 +45,22 @@ class BraintrustObservabilityTransport(Protocol):
 
     async def send_observability_payload(self, payload: ObservabilityVendorPayload) -> None:
         """Deliver a policy-sanitized vendor payload to Braintrust."""
+
+
+@runtime_checkable
+class BraintrustEvalCatalogClient(ObservabilityCatalogClient, Protocol):
+    """Catalog client with Braintrust eval logging."""
+
+    def log_eval(
+        self,
+        *,
+        name: str,
+        score: float,
+        metadata: Mapping[str, object] | None = None,
+        project: str | None = None,
+    ) -> str:
+        """Log one eval score to Braintrust."""
+        ...
 
 
 class BraintrustObservabilityIntegration(ObservabilityVendorIntegrationContract):
@@ -116,16 +131,15 @@ class BraintrustObservabilityIntegration(ObservabilityVendorIntegrationContract)
         *,
         name: str,
         score: float,
-        metadata: Mapping[str, Any] | None = None,
+        metadata: Mapping[str, object] | None = None,
         project: str | None = None,
     ) -> str:
         client = self._require_client()
-        log_eval = attribute_access.optional(client, "log_eval", None)
-        if not callable(log_eval):
+        if not isinstance(client, BraintrustEvalCatalogClient):
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} catalog client does not support log_eval",
             )
-        return str(log_eval(name=name, score=score, metadata=metadata, project=project))
+        return client.log_eval(name=name, score=score, metadata=metadata, project=project)
 
     def _require_client(self) -> ObservabilityCatalogClient:
         return require_observability_catalog_client(self, self._client)

@@ -23,8 +23,6 @@ from intergrax.runtime.integrations.observability import (
     ObservabilityVendorSignal,
 )
 
-from intergrax.utils import attribute_access
-
 PROMETHEUS_OBSERVABILITY_PROVIDER_ID = "prometheus"
 
 _PROMETHEUS_SUPPORTED_SIGNALS: tuple[ObservabilityVendorSignal, ...] = (
@@ -48,6 +46,15 @@ class PrometheusObservabilityTransport(Protocol):
 
     async def send_observability_payload(self, payload: ObservabilityVendorPayload) -> None:
         """Deliver a policy-sanitized vendor payload to Prometheus."""
+
+
+@runtime_checkable
+class PrometheusHealthCatalogClient(ObservabilityCatalogClient, Protocol):
+    """Catalog client with Prometheus readiness probing."""
+
+    def health(self) -> bool | HealthStatus:
+        """Return readiness or an explicit health status."""
+        ...
 
 
 class PrometheusObservabilityIntegration(ObservabilityVendorIntegrationContract):
@@ -115,15 +122,14 @@ class PrometheusObservabilityIntegration(ObservabilityVendorIntegrationContract)
 
     def health(self) -> HealthStatus:
         client = self._require_client()
-        health_fn = attribute_access.optional(client, "health", None)
-        if callable(health_fn):
-            result = health_fn()
-            if isinstance(result, HealthStatus):
-                return result
-            return HealthStatus(slug="prometheus", healthy=bool(result), detail="prometheus ready probe")
-        raise IntegrationConfigurationError(
-            f"{type(self).__name__} catalog client does not support health",
-        )
+        if not isinstance(client, PrometheusHealthCatalogClient):
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} catalog client does not support health",
+            )
+        result = client.health()
+        if isinstance(result, HealthStatus):
+            return result
+        return HealthStatus(slug="prometheus", healthy=bool(result), detail="prometheus ready probe")
 
     def _require_client(self) -> ObservabilityCatalogClient:
         return require_observability_catalog_client(self, self._client)

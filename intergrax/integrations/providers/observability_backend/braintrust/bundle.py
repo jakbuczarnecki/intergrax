@@ -4,10 +4,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+from intergrax.integrations.providers.observability_backend._http_contract import (
+    ObservabilityHttpClient,
+    ObservabilityHttpClientFactory,
+)
 from intergrax.integrations.providers.observability_backend.braintrust.client import BraintrustRestClient
 from intergrax.integrations.providers.observability_backend.braintrust.config import BraintrustIntegrationConfig
 from intergrax.integrations.providers.observability_backend.braintrust.integration import (
@@ -46,8 +50,8 @@ def create_braintrust_integration(
     *,
     observability_backend: Optional[ObservabilityBackend] = None,
     client: Optional[BraintrustRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[BraintrustIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[BraintrustIntegrationConfig] | None = None,
     **config_overrides: object,
 ) -> BraintrustIntegrationBundle:
     config = resolve_braintrust_config(**config_overrides)
@@ -73,8 +77,8 @@ def create_braintrust_observability_backend(
     *,
     observability_backend: Optional[ObservabilityBackend] = None,
     client: Optional[BraintrustRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[BraintrustIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[BraintrustIntegrationConfig] | None = None,
     **config_overrides: object,
 ) -> BraintrustObservabilityIntegration:
     """Catalog factory for ``"braintrust"`` / ``OBSERVABILITY_BACKEND``."""

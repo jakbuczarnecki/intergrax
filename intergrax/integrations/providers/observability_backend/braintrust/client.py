@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Mapping, Optional
+from typing import Mapping, Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.observability_backend import (
@@ -16,13 +16,14 @@ from intergrax.integrations.contracts.observability_backend import (
     TraceQueryResult,
     TraceRecord,
 )
+from intergrax.integrations.providers.observability_backend._http_contract import ObservabilityHttpClient
 from intergrax.integrations.providers.observability_backend.braintrust.config import BraintrustIntegrationConfig
 
 
 class BraintrustRestClient:
     """Braintrust project logs and experiment metrics client."""
 
-    def __init__(self, config: BraintrustIntegrationConfig, *, http_client: Any) -> None:
+    def __init__(self, config: BraintrustIntegrationConfig, *, http_client: ObservabilityHttpClient) -> None:
         if not config.api_key:
             raise IntegrationConfigurationError("Braintrust api_key is required (INTERGRAX_BRAINTRUST_API_KEY)")
         self._config = config
@@ -84,7 +85,7 @@ class BraintrustRestClient:
         *,
         name: str,
         score: float,
-        metadata: Optional[Mapping[str, Any]] = None,
+        metadata: Optional[Mapping[str, object]] = None,
         project: Optional[str] = None,
     ) -> str:
         project_id = project or self._config.project

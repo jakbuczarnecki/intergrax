@@ -5,13 +5,18 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Optional, Sequence
+from typing import Optional, Sequence
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.observability_backend import (
     MetricPoint,
     MetricQueryResult,
     MetricSeries,
+    TraceQueryResult,
+)
+from intergrax.integrations.providers.observability_backend._http_contract import (
+    ObservabilityHttpClient,
+    ProviderJsonMapping,
 )
 from intergrax.integrations.providers.observability_backend.prometheus.config import PrometheusIntegrationConfig
 
@@ -33,7 +38,7 @@ def _metric_labels(raw: object) -> dict[str, str]:
     return {str(key): str(value) for key, value in raw.items()}
 
 
-def _parse_query_data(data: Mapping[str, Any]) -> MetricQueryResult:
+def _parse_query_data(data: ProviderJsonMapping) -> MetricQueryResult:
     result_type = str(data.get("resultType") or "unknown")
     raw_result = data.get("result")
 
@@ -73,7 +78,7 @@ class PrometheusRestClient:
         self,
         config: PrometheusIntegrationConfig,
         *,
-        http_client: Any,
+        http_client: ObservabilityHttpClient,
     ) -> None:
         if not config.base_url:
             raise IntegrationConfigurationError(
@@ -123,9 +128,15 @@ class PrometheusRestClient:
             raise IntegrationConfigurationError("Unexpected Prometheus query data")
         return _parse_query_data(data)
 
+    def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult:
+        _ = limit, name
+        raise IntegrationConfigurationError(
+            "Prometheus REST client does not support trace queries",
+        )
+
     def health(self) -> bool:
         try:
             response = self._http_client.get("/-/ready")
-            return int(response.status_code) < 400  # type: ignore[attr-defined]
+            return response.status_code < 400
         except Exception:  # noqa: BLE001 — health probe surface
             return False

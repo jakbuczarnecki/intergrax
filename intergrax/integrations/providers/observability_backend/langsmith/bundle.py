@@ -4,10 +4,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+from intergrax.integrations.providers.observability_backend._http_contract import (
+    ObservabilityHttpClient,
+    ObservabilityHttpClientFactory,
+)
 from intergrax.integrations.providers.observability_backend.langsmith.client import LangSmithRestClient
 from intergrax.integrations.providers.observability_backend.langsmith.config import LangSmithIntegrationConfig
 from intergrax.integrations.providers.observability_backend.langsmith.integration import (
@@ -46,8 +50,8 @@ def create_langsmith_integration(
     *,
     observability_backend: Optional[ObservabilityBackend] = None,
     client: Optional[LangSmithRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[LangSmithIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[LangSmithIntegrationConfig] | None = None,
     **config_overrides: object,
 ) -> LangsmithIntegrationBundle:
     config = resolve_langsmith_config(**config_overrides)
@@ -73,8 +77,8 @@ def create_langsmith_observability_backend(
     *,
     observability_backend: Optional[ObservabilityBackend] = None,
     client: Optional[LangSmithRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[LangSmithIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[LangSmithIntegrationConfig] | None = None,
     **config_overrides: object,
 ) -> LangsmithObservabilityIntegration:
     """Catalog factory for ``"langsmith"`` / ``OBSERVABILITY_BACKEND``."""

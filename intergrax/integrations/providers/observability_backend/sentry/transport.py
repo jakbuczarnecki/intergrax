@@ -6,11 +6,10 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any
 
+from intergrax.contracts.application_observability_attributes import ObservabilityAttributeValue
 from intergrax.integrations.providers.observability_backend.sentry.client import SentryCaptureClient
 from intergrax.runtime.integrations.observability import ObservabilityVendorPayload
-from intergrax.runtime.observability.export_attributes import ObservabilityAttributeValue
 
 _SEVERITY_TO_LEVEL: dict[str, str] = {
     "critical": "fatal",
@@ -30,7 +29,7 @@ def _set_tag(tags: dict[str, str], key: str, value: str) -> None:
         tags[key] = value
 
 
-def _attribute_value_to_extra(value: ObservabilityAttributeValue) -> Any:
+def _attribute_value_to_extra(value: ObservabilityAttributeValue) -> ObservabilityAttributeValue:
     if isinstance(value, list):
         return list(value)
     return value

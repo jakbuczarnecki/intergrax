@@ -12,9 +12,13 @@ HTTP clients are opened only in ``opens.py``. Tier-3 code MUST use
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+from intergrax.integrations.providers.observability_backend._http_contract import (
+    ObservabilityHttpClient,
+    ObservabilityHttpClientFactory,
+)
 from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
     ElasticsearchObservabilityIntegration,
 )
@@ -48,8 +52,8 @@ def create_elasticsearch_integration(
     *,
     observability_backend: Optional[ObservabilityBackend] = None,
     client: Optional[ElasticsearchRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[ElasticsearchIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[ElasticsearchIntegrationConfig] | None = None,
     **config_overrides: object,
 ) -> ElasticsearchIntegrationBundle:
     config = resolve_elasticsearch_config(**config_overrides)
@@ -75,8 +79,8 @@ def create_elasticsearch_observability_backend(
     *,
     observability_backend: Optional[ObservabilityBackend] = None,
     client: Optional[ElasticsearchRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[ElasticsearchIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[ElasticsearchIntegrationConfig] | None = None,
     **config_overrides: object,
 ) -> ElasticsearchObservabilityIntegration:
     """Catalog factory for ``"elasticsearch"`` / ``OBSERVABILITY_BACKEND``."""
@@ -102,8 +106,8 @@ from intergrax.integrations.providers.observability_backend.elasticsearch.integr
 def create_elasticsearch_observability_transport(
     *,
     client: Optional[ElasticsearchRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[ElasticsearchIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[ElasticsearchIntegrationConfig] | None = None,
     index: Optional[str] = None,
     retry_policy: ElasticsearchRetryPolicy | None = None,
     failed_delivery_sink: ElasticsearchFailedDeliverySink | None = None,

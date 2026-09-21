@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional
+from typing import Mapping, Optional, cast
 from urllib.parse import quote
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
@@ -15,9 +15,15 @@ from intergrax.integrations.contracts.observability_backend import (
     MetricPoint,
     MetricQueryResult,
     MetricSeries,
+    TraceQueryResult,
+)
+from intergrax.integrations.providers.observability_backend._http_contract import (
+    ElasticsearchSearchBody,
+    ObservabilityHttpClient,
+    ProviderJsonMapping,
+    ProviderJsonObject,
 )
 from intergrax.integrations.providers.observability_backend.elasticsearch.config import ElasticsearchIntegrationConfig
-
 from intergrax.utils import attribute_access
 
 _ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID = "elasticsearch"
@@ -142,7 +148,7 @@ def classify_elasticsearch_delivery_error(
     return ElasticsearchDeliveryError(detail)
 
 
-def _parse_instant(payload: Mapping[str, Any], *, eval_time: Optional[float]) -> MetricQueryResult:
+def _parse_instant(payload: ProviderJsonMapping, *, eval_time: Optional[float]) -> MetricQueryResult:
     aggregations = payload.get("aggregations")
     if not isinstance(aggregations, dict):
         raise IntegrationConfigurationError("Unexpected Elasticsearch instant search response")
@@ -156,7 +162,7 @@ def _parse_instant(payload: Mapping[str, Any], *, eval_time: Optional[float]) ->
     )
 
 
-def _parse_range(payload: Mapping[str, Any]) -> MetricQueryResult:
+def _parse_range(payload: ProviderJsonMapping) -> MetricQueryResult:
     aggregations = payload.get("aggregations")
     if not isinstance(aggregations, dict):
         raise IntegrationConfigurationError("Unexpected Elasticsearch range search response")
@@ -188,7 +194,7 @@ class ElasticsearchRestClient:
         self,
         config: ElasticsearchIntegrationConfig,
         *,
-        http_client: Any,
+        http_client: ObservabilityHttpClient,
     ) -> None:
         if not config.base_url:
             raise IntegrationConfigurationError(
@@ -202,19 +208,22 @@ class ElasticsearchRestClient:
         return self._config
 
     def query_instant(self, promql: str, *, eval_time: Optional[float] = None) -> MetricQueryResult:
-        filters: list[dict[str, Any]] = []
+        filters: list[ProviderJsonObject] = []
         if eval_time is not None:
             epoch_ms = int(eval_time * 1000)
             filters.append(
-                {
-                    "range": {
-                        self._config.timestamp_field: {
-                            "gte": epoch_ms,
-                            "lte": epoch_ms,
-                            "format": "epoch_millis",
+                cast(
+                    ProviderJsonObject,
+                    {
+                        "range": {
+                            self._config.timestamp_field: {
+                                "gte": epoch_ms,
+                                "lte": epoch_ms,
+                                "format": "epoch_millis",
+                            }
                         }
-                    }
-                }
+                    },
+                )
             )
         body = self._search_body(promql, filters=filters, aggs={"count": {"value_count": {"field": "_id"}}})
         payload = self._search(body)
@@ -228,16 +237,19 @@ class ElasticsearchRestClient:
         end: float,
         step: str = "15s",
     ) -> MetricQueryResult:
-        filters = [
-            {
-                "range": {
-                    self._config.timestamp_field: {
-                        "gte": int(start * 1000),
-                        "lte": int(end * 1000),
-                        "format": "epoch_millis",
+        filters: list[ProviderJsonObject] = [
+            cast(
+                ProviderJsonObject,
+                {
+                    "range": {
+                        self._config.timestamp_field: {
+                            "gte": int(start * 1000),
+                            "lte": int(end * 1000),
+                            "format": "epoch_millis",
+                        }
                     }
-                }
-            }
+                },
+            )
         ]
         body = self._search_body(
             promql,
@@ -259,14 +271,20 @@ class ElasticsearchRestClient:
         payload = self._search(body)
         return _parse_range(payload)
 
+    def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult:
+        _ = limit, name
+        raise IntegrationConfigurationError(
+            "Elasticsearch REST client does not support trace queries",
+        )
+
     def _search_body(
         self,
         query: str,
         *,
-        filters: list[dict[str, Any]],
-        aggs: dict[str, Any],
-    ) -> dict[str, Any]:
-        bool_query: dict[str, Any] = {
+        filters: list[ProviderJsonObject],
+        aggs: ProviderJsonObject,
+    ) -> ElasticsearchSearchBody:
+        bool_query: ProviderJsonObject = {
             "must": [{"query_string": {"query": query or "*"}}],
         }
         if filters:
@@ -285,7 +303,7 @@ class ElasticsearchRestClient:
         self,
         *,
         index: str,
-        document: Mapping[str, Any],
+        document: Mapping[str, object],
         doc_id: Optional[str] = None,
     ) -> str:
         target_index = index or self._config.index
@@ -312,11 +330,11 @@ class ElasticsearchRestClient:
                 index=target_index,
             ) from exc
 
-    def _search(self, body: dict[str, Any]) -> dict[str, Any]:
+    def _search(self, body: ElasticsearchSearchBody) -> ProviderJsonObject:
         index = quote(self._config.index, safe="*,.-")
         response = self._http_client.post(f"/{index}/_search", json=body)
         response.raise_for_status()
         payload = response.json()
         if not isinstance(payload, dict):
             raise IntegrationConfigurationError("Unexpected Elasticsearch search response")
-        return payload
+        return cast(ProviderJsonObject, payload)
