@@ -9,7 +9,10 @@ import inspect
 import pytest
 
 from intergrax.contracts.agent_contract_meta import AgentContract
+from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
+from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
@@ -48,10 +51,11 @@ class _StubAgent:
     def get_contract(self) -> AgentContract:
         return self._contract
 
-    def can_handle(self, task_context: TaskContext) -> object:
-        from intergrax.contracts.capability import CapabilityMatchResult
+    async def run(self, request: AgentRunRequest) -> AgentRunResult:
+        return AgentRunResult(output="ok")
 
-        if task_context.capability == "demo.basic":
+    def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
+        if routing_capability_from_envelope(task) == "demo.basic":
             return CapabilityMatchResult(matched=True, score=0.9, reason="stub")
         return CapabilityMatchResult(matched=False, score=0.0, reason="no match")
 

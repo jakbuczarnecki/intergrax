@@ -171,3 +171,40 @@ def validate_payload_envelope(payload: dict[str, Any]) -> RuntimeEventPayload | 
 def assert_runtime_event_payload(event: RuntimeEvent) -> None:
     """Validate typed envelope on a ``RuntimeEvent`` when ``payload_schema_id`` is set."""
     validate_payload_envelope(event.payload)
+
+
+def _uses_spine_event_kind(event: RuntimeEvent) -> bool:
+    kind = event.event_kind
+    if not kind:
+        return True
+    return kind == event.event_type.value
+
+
+def assert_canonical_production_runtime_event_payload(event: RuntimeEvent) -> None:
+    """
+    Enforce typed payload on canonical production write boundaries.
+
+    Spine event types with a preferred schema must carry a matching envelope.
+    Custom ``event_kind`` values require a registered typed envelope (fail-closed).
+    """
+    preferred = EVENT_TYPE_PREFERRED_SCHEMA.get(event.event_type)
+    if preferred is not None and _uses_spine_event_kind(event):
+        schema_id = event.payload.get("payload_schema_id")
+        if schema_id is None:
+            raise RuntimeEventPayloadError(
+                f"canonical production event {event.event_type.value} requires typed payload envelope"
+            )
+        if schema_id != preferred:
+            raise RuntimeEventPayloadError(
+                f"payload_schema_id mismatch for {event.event_type.value}: "
+                f"expected {preferred!r}, got {schema_id!r}"
+            )
+        validate_payload_envelope(event.payload)
+        return
+    if not _uses_spine_event_kind(event):
+        schema_id = event.payload.get("payload_schema_id")
+        if schema_id is None:
+            raise RuntimeEventPayloadError(
+                f"extension event_kind {event.event_kind!r} requires registered typed payload envelope"
+            )
+        validate_payload_envelope(event.payload)

@@ -80,9 +80,25 @@ class ApplicationObservabilityAttributes(BaseModel):
         return exported
 
 
+def coerce_observability_attribute_mapping(
+    source: Mapping[str, object],
+) -> dict[str, ObservabilityAttributeValue]:
+    """Drop vendor fields that are not safe scalar/list observability attribute values."""
+    exported: dict[str, ObservabilityAttributeValue] = {}
+    for key, value in source.items():
+        if not isinstance(key, str) or not key:
+            continue
+        safe = _coerce_safe_attribute_value(value)
+        if safe is _UNSAFE:
+            continue
+        exported[key] = cast(ObservabilityAttributeValue, safe)
+    return exported
+
+
 __all__ = [
     "APPLICATION_OBSERVABILITY_ATTRIBUTES_SCHEMA",
     "ApplicationObservabilityAttributes",
     "ObservabilityAttributeValue",
+    "coerce_observability_attribute_mapping",
     "observability_attribute_key",
 ]

@@ -23,6 +23,8 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.execution_position import PositionedRuntimeEvent
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
+from intergrax.runtime.events.payload_registry import runtime_event_with_payload
+from intergrax.runtime.events.payloads.canonical import GraphNodePayloadV1
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.observability.causal_evidence import (
     CausalRelationKind,
@@ -51,7 +53,7 @@ def sample_runtime_event(
 ) -> RuntimeEvent:
     resolved_task_id = task_id or mint_task_id()
     resolved_run_id = run_id or mint_run_id()
-    return RuntimeEvent(
+    event = RuntimeEvent(
         event_id=event_id or mint_event_id(),
         tenant_id=tenant_id,
         task_id=resolved_task_id,
@@ -63,6 +65,10 @@ def sample_runtime_event(
         severity=EventSeverity.INFO,
         timestamp=datetime(2026, 6, 8, 12, 0, 0, tzinfo=timezone.utc),
         correlation_id=resolved_task_id,
+    )
+    return runtime_event_with_payload(
+        event,
+        GraphNodePayloadV1(node_id="conformance-node", status="started"),
     )
 
 
