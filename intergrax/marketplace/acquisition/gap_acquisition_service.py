@@ -33,6 +33,7 @@ from intergrax.contracts.marketplace.gap_acquisition import (
 )
 from intergrax.contracts.marketplace.handoff_traceability import (
     CapabilityHandoffConsumerError,
+    CapabilityHandoffConsumerFailureDisposition,
     CapabilityHandoffDeliveryDisposition,
     consumer_target_for_kind,
 )
@@ -71,6 +72,20 @@ def _selection_id(operation_id: str) -> str:
 
 def _domain_handoff_reference(handoff_id: str) -> str:
     return f"handoff://{handoff_id}"
+
+
+def _marketplace_outcome_for_consumer_failure(
+    disposition: CapabilityHandoffConsumerFailureDisposition,
+) -> MarketplaceGapAcquisitionOutcome:
+    if disposition is CapabilityHandoffConsumerFailureDisposition.BLOCKED:
+        return MarketplaceGapAcquisitionOutcome.BLOCKED
+    if disposition is CapabilityHandoffConsumerFailureDisposition.UNAVAILABLE:
+        return MarketplaceGapAcquisitionOutcome.UNAVAILABLE
+    if disposition is CapabilityHandoffConsumerFailureDisposition.REQUIRES_HITL:
+        return MarketplaceGapAcquisitionOutcome.REQUIRES_HITL
+    if disposition is CapabilityHandoffConsumerFailureDisposition.FAILED:
+        return MarketplaceGapAcquisitionOutcome.FAILED
+    return MarketplaceGapAcquisitionOutcome.FAILED
 
 
 def _top_recommendation(
@@ -194,22 +209,13 @@ class MarketplaceGapAcquisitionService(MarketplaceGapAcquisitionPort):
                 reason_detail=str(exc),
             )
         except CapabilityHandoffConsumerError as exc:
-            detail = str(exc)
-            lowered = detail.lower()
-            if "hitl" in lowered or "human" in lowered or "approval" in lowered:
-                outcome = MarketplaceGapAcquisitionOutcome.REQUIRES_HITL
-            elif "unavailable" in lowered:
-                outcome = MarketplaceGapAcquisitionOutcome.UNAVAILABLE
-            elif "block" in lowered or "reject" in lowered:
-                outcome = MarketplaceGapAcquisitionOutcome.BLOCKED
-            else:
-                outcome = MarketplaceGapAcquisitionOutcome.FAILED
+            outcome = _marketplace_outcome_for_consumer_failure(exc.disposition)
             return MarketplaceGapAcquisitionResult(
                 operation_id=request.operation_id,
                 gap_id=request.gap_id,
                 outcome=outcome,
                 marketplace_listing_correlation_id=listing_correlation_id,
-                reason_detail=detail,
+                reason_detail=str(exc),
             )
 
         if delivery.disposition not in (

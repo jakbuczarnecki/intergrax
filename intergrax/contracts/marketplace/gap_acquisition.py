@@ -8,7 +8,7 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Final, Literal, Protocol, runtime_checkable
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.capability_catalog._validation import require_non_empty_text
 from intergrax.contracts.capability_catalog.need import CapabilityNeed
@@ -92,6 +92,18 @@ class MarketplaceGapAcquisitionResult(BaseModel):
     @classmethod
     def _validate_required_ids(cls, value: str, info) -> str:
         return require_non_empty_text(value, label=str(info.field_name))
+
+    @model_validator(mode="after")
+    def _succeeded_requires_acquisition_subject(
+        self,
+    ) -> MarketplaceGapAcquisitionResult:
+        if self.outcome is not MarketplaceGapAcquisitionOutcome.SUCCEEDED:
+            return self
+        if not self.domain_handoff_reference and not self.artifact_reference:
+            raise ValueError(
+                "SUCCEEDED requires domain_handoff_reference or artifact_reference",
+            )
+        return self
 
 
 @runtime_checkable
