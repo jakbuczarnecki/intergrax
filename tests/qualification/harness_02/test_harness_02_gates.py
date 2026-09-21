@@ -7,6 +7,7 @@ from __future__ import annotations
 import ast
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -43,6 +44,8 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _INVOKER = _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "tools" / "invoker.py"
+_BASE_LLM_ADAPTER = _REPO_ROOT / "intergrax" / "llm_adapters" / "base" / "base_llm_adapter.py"
+_LLM_ADAPTER_CONTRACT = _REPO_ROOT / "intergrax" / "llm_adapters" / "contracts" / "llm_adapter.py"
 _INTERGRAX = _REPO_ROOT / "intergrax"
 
 
@@ -238,11 +241,208 @@ def test_harness_02_tool_invoker_cancellation_before_first_attempt() -> None:
     assert "_cooperative_cancellation_requested" in test_src
 
 
-def test_harness_02_llm_path_uses_contract_deadline_guard() -> None:
-    adapter = _REPO_ROOT / "intergrax" / "llm_adapters" / "contracts" / "llm_adapter.py"
-    text = adapter.read_text(encoding="utf-8")
-    assert "assert_protected_provider_call_allowed" in text
-    assert "peek_active_execution_global_deadline" not in text
+def _llm_provider_guard_call_lines(func: ast.FunctionDef) -> list[int]:
+    lines: list[int] = []
+    for node in ast.walk(func):
+        if not isinstance(node, ast.Call):
+            continue
+        if isinstance(node.func, ast.Name) and node.func.id == "assert_protected_provider_call_allowed":
+            lines.append(node.lineno)
+    return lines
+
+
+def _llm_provider_io_dispatch_lines(func: ast.FunctionDef) -> list[int]:
+    lines: list[int] = []
+    for node in ast.walk(func):
+        if not isinstance(node, ast.Call):
+            continue
+        if isinstance(node.func, ast.Name) and node.func.id == "execute_with_resilience":
+            lines.append(node.lineno)
+    return lines
+
+
+def _llm_execute_methods_guard_precedes_provider_io(source_path: Path) -> bool:
+    source = source_path.read_text(encoding="utf-8")
+    tree = ast.parse(source, filename=str(source_path))
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name != "BaseLLMAdapter":
+            continue
+        for item in node.body:
+            if not isinstance(item, ast.FunctionDef) or item.name not in {"_execute", "_execute_streaming"}:
+                continue
+            guard_lines = _llm_provider_guard_call_lines(item)
+            io_lines = _llm_provider_io_dispatch_lines(item)
+            if not guard_lines or not io_lines:
+                return False
+            if min(guard_lines) >= min(io_lines):
+                return False
+    return True
+
+
+def test_harness_02_llm_framework_guard_precedes_provider_io() -> None:
+    assert _BASE_LLM_ADAPTER.is_file()
+    assert _llm_execute_methods_guard_precedes_provider_io(_BASE_LLM_ADAPTER)
+    contract_text = _LLM_ADAPTER_CONTRACT.read_text(encoding="utf-8")
+    assert "peek_active_execution_global_deadline" not in contract_text
+
+
+def test_harness_02_llm_docstring_only_guard_string_is_not_evidence() -> None:
+    """Docstring mention of the guard must not satisfy AST execution-path evidence."""
+    docstring_only = '''
+"""Runs assert_protected_provider_call_allowed in documentation only."""
+
+class BaseLLMAdapter:
+    def _execute(self, fn):
+        return execute_with_resilience(fn)
+'''
+    tree = ast.parse(docstring_only)
+    class_node = next(n for n in tree.body if isinstance(n, ast.ClassDef))
+    execute_method = next(
+        n for n in class_node.body if isinstance(n, ast.FunctionDef) and n.name == "_execute"
+    )
+    assert _llm_provider_guard_call_lines(execute_method) == []
+    assert _llm_provider_io_dispatch_lines(execute_method)
+    assert not _llm_execute_methods_guard_precedes_provider_io_from_tree(tree)
+
+
+def _llm_execute_methods_guard_precedes_provider_io_from_tree(tree: ast.Module) -> bool:
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name != "BaseLLMAdapter":
+            continue
+        for item in node.body:
+            if not isinstance(item, ast.FunctionDef) or item.name not in {"_execute", "_execute_streaming"}:
+                continue
+            guard_lines = _llm_provider_guard_call_lines(item)
+            io_lines = _llm_provider_io_dispatch_lines(item)
+            if not guard_lines or not io_lines:
+                return False
+            if min(guard_lines) >= min(io_lines):
+                return False
+    return True
+
+
+def test_harness_02_llm_provider_guard_blocks_physical_io_when_denied() -> None:
+    from intergrax.contracts.execution_deadline.projection import ExecutionDeadlineProjection
+    from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+    from intergrax.runtime.execution.deadline_provider_guard import (
+        ExecutionProtectedWorkDeniedError,
+    )
+    from intergrax.runtime.execution.deadline_scope import (
+        bind_active_execution_deadline_scope,
+        reset_active_execution_deadline_scope,
+    )
+    from intergrax.runtime.execution.protected_work_admission import (
+        CanonicalHardProtectedWorkAdmission,
+        StaticCancellationView,
+    )
+    from tests.unit.runtime.execution.deadline_authority.test_harness_02_r1_qualification import (
+        _FakeMonotonicClock,
+    )
+
+    monotonic = _FakeMonotonicClock(1.0)
+    projection = ExecutionDeadlineProjection(
+        deadline_at_utc=datetime(2020, 1, 1, tzinfo=timezone.utc),
+        remaining_seconds=0.0,
+        is_expired=True,
+        global_deadline_monotonic=1.0,
+    )
+    tokens = bind_active_execution_deadline_scope(
+        projection=projection,
+        admission=CanonicalHardProtectedWorkAdmission(
+            projection=projection,
+            cancellation_view=StaticCancellationView(cancelled=False),
+            monotonic_clock=monotonic,
+        ),
+        monotonic_clock=monotonic,
+    )
+    physical_calls = 0
+
+    class _ProbeAdapter(BaseLLMAdapter):
+        def __init__(self) -> None:
+            super().__init__()
+            self.provider = "openai"
+
+        @property
+        def context_window_tokens(self) -> int:
+            return 8192
+
+        def generate_messages(self, messages):  # type: ignore[no-untyped-def]
+            del messages
+            return self._execute(lambda: "ok")
+
+    adapter = _ProbeAdapter()
+
+    def _physical() -> str:
+        nonlocal physical_calls
+        physical_calls += 1
+        return "ok"
+
+    try:
+        with pytest.raises(ExecutionProtectedWorkDeniedError):
+            adapter._execute(_physical)
+        assert physical_calls == 0
+    finally:
+        reset_active_execution_deadline_scope(*tokens)
+
+
+def test_harness_02_llm_provider_guard_allows_single_physical_io_when_admitted() -> None:
+    from intergrax.contracts.execution_deadline.projection import ExecutionDeadlineProjection
+    from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+    from intergrax.runtime.execution.deadline_scope import (
+        bind_active_execution_deadline_scope,
+        reset_active_execution_deadline_scope,
+    )
+    from intergrax.runtime.execution.protected_work_admission import (
+        CanonicalHardProtectedWorkAdmission,
+        StaticCancellationView,
+    )
+    from tests.unit.runtime.execution.deadline_authority.test_harness_02_r1_qualification import (
+        _FakeMonotonicClock,
+    )
+
+    monotonic = _FakeMonotonicClock(100.0)
+    projection = ExecutionDeadlineProjection(
+        deadline_at_utc=datetime(2026, 1, 1, 0, 0, 30, tzinfo=timezone.utc),
+        remaining_seconds=30.0,
+        is_expired=False,
+        global_deadline_monotonic=130.0,
+    )
+    tokens = bind_active_execution_deadline_scope(
+        projection=projection,
+        admission=CanonicalHardProtectedWorkAdmission(
+            projection=projection,
+            cancellation_view=StaticCancellationView(cancelled=False),
+            monotonic_clock=monotonic,
+        ),
+        monotonic_clock=monotonic,
+    )
+    physical_calls = 0
+
+    class _ProbeAdapter(BaseLLMAdapter):
+        def __init__(self) -> None:
+            super().__init__()
+            self.provider = "openai"
+
+        @property
+        def context_window_tokens(self) -> int:
+            return 8192
+
+        def generate_messages(self, messages):  # type: ignore[no-untyped-def]
+            del messages
+            return self._execute(lambda: "ok")
+
+    adapter = _ProbeAdapter()
+
+    def _physical() -> str:
+        nonlocal physical_calls
+        physical_calls += 1
+        return "ok"
+
+    try:
+        assert adapter._execute(_physical) == "ok"
+        assert physical_calls == 1
+    finally:
+        reset_active_execution_deadline_scope(*tokens)
 
 
 def test_harness_02_findings_have_no_unresolved_blockers() -> None:
