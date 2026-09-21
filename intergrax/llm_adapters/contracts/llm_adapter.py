@@ -2,7 +2,11 @@
 # Integrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-"""Canonical LLM execution contract (EBH-2E-R1)."""
+"""Canonical LLM execution contract (EBH-2E-R1).
+
+Physical provider access on framework adapters runs ``assert_protected_provider_call_allowed``
+before outbound I/O (HARNESS-02 ``H02-llm-provider-boundary``; see ``BaseLLMAdapter._execute``).
+"""
 
 from __future__ import annotations
 
