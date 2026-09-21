@@ -8,10 +8,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from intergrax.capability_catalog.governance import CapabilityGovernanceEvaluator
 from intergrax.capability_catalog.recommended_capability import CapabilityRecommendation
-from intergrax.capability_catalog.snapshot import CapabilityCatalogFederationCompleteness
-from intergrax.contracts.capability_catalog.governance import CapabilityGovernanceContext
+from intergrax.capability_catalog.snapshot import (
+    CapabilityCatalogFederationCompleteness,
+)
+from intergrax.contracts.capability_catalog.governance import (
+    CapabilityGovernanceContext,
+)
 from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
-from intergrax.contracts.capability_catalog.release_identity import CapabilityReleaseIdentity
+from intergrax.contracts.capability_catalog.release_identity import (
+    CapabilityReleaseIdentity,
+)
 from intergrax.contracts.marketplace.acquisition import (
     MachineCapabilityAcquisitionHandoffRequest,
     MachineCapabilityAcquisitionHandoffResponse,
@@ -26,7 +32,9 @@ from intergrax.contracts.marketplace.diagnostics import (
     MarketplaceDiagnosticObserver,
     MarketplaceObserverFailurePolicy,
 )
-from intergrax.contracts.marketplace.handoff_traceability import consumer_target_for_kind
+from intergrax.contracts.marketplace.handoff_traceability import (
+    consumer_target_for_kind,
+)
 from intergrax.marketplace.acquisition.errors import (
     MachineCapabilityAcquisitionPolicyError,
     MachineCapabilityAcquisitionSelectionError,
@@ -38,13 +46,20 @@ from intergrax.marketplace.acquisition.query_normalization import (
     discovery_query_for_machine_acquisition,
     effective_query_text,
 )
-from intergrax.marketplace.diagnostics.session import MarketplacePipelineObservationSession
+from intergrax.marketplace.diagnostics.session import (
+    MarketplacePipelineObservationSession,
+)
 from intergrax.marketplace.discovery import MarketplaceDiscoveryService
-from intergrax.marketplace.handoff_traceability.errors import MarketplaceHandoffSelectionError
+from intergrax.marketplace.handoff_traceability.errors import (
+    MarketplaceHandoffSelectionError,
+)
 from intergrax.marketplace.handoff_traceability.orchestrator import (
     MarketplaceDiscoveryHandoffOrchestrator,
 )
-from intergrax.marketplace.observed_pipeline import run_marketplace_intelligence_pipeline
+from intergrax.marketplace.observed_pipeline import (
+    MarketplaceIntelligencePipelineResult,
+    run_marketplace_intelligence_pipeline,
+)
 from intergrax.marketplace.recommendation import MarketplaceRecommendationService
 from intergrax.marketplace.service import MarketplaceCatalogService
 
@@ -124,7 +139,11 @@ class MachineCapabilityAcquisitionService:
         self,
         request: MachineCapabilityAcquisitionRequest,
     ) -> MachineCapabilityAcquisitionResponse:
-        return self._acquire(request, operation_discovery_correlation_id=None)
+        response, _pipeline, _observation = self._acquire_with_pipeline(
+            request,
+            operation_discovery_correlation_id=None,
+        )
+        return response
 
     def _acquire(
         self,
@@ -132,14 +151,32 @@ class MachineCapabilityAcquisitionService:
         *,
         operation_discovery_correlation_id: str | None,
     ) -> MachineCapabilityAcquisitionResponse:
+        response, _pipeline, _observation = self._acquire_with_pipeline(
+            request,
+            operation_discovery_correlation_id=operation_discovery_correlation_id,
+        )
+        return response
+
+    def _acquire_with_pipeline(
+        self,
+        request: MachineCapabilityAcquisitionRequest,
+        *,
+        operation_discovery_correlation_id: str | None,
+    ) -> tuple[
+        MachineCapabilityAcquisitionResponse,
+        MarketplaceIntelligencePipelineResult,
+        MarketplacePipelineObservationSession,
+    ]:
         discovery_query = discovery_query_for_machine_acquisition(
             request.need,
             request.discovery_query,
         )
         query_text = effective_query_text(request.need, request.query_text)
-        discovery_correlation_id, query_correlation_id = resolve_acquisition_discovery_correlation(
-            request,
-            operation_discovery_correlation_id=operation_discovery_correlation_id,
+        discovery_correlation_id, query_correlation_id = (
+            resolve_acquisition_discovery_correlation(
+                request,
+                operation_discovery_correlation_id=operation_discovery_correlation_id,
+            )
         )
         observation = MarketplacePipelineObservationSession.for_discovery(
             discovery_correlation_id,
@@ -162,15 +199,19 @@ class MachineCapabilityAcquisitionService:
         )
         recommendations = _apply_acquisition_policy(
             self.acquisition_policy,
-            tuple(_to_machine_recommendation(item) for item in pipeline.recommendations),
+            tuple(
+                _to_machine_recommendation(item) for item in pipeline.recommendations
+            ),
         )
         outcome = _outcome_for_pipeline(
             visible_count=len(pipeline.listing_views),
             governed_count=len(pipeline.governed.allowed),
             recommendation_count=len(recommendations),
         )
-        completeness = _federation_completeness(pipeline.catalog_federation_completeness)
-        return MachineCapabilityAcquisitionResponse(
+        completeness = _federation_completeness(
+            pipeline.catalog_federation_completeness
+        )
+        response = MachineCapabilityAcquisitionResponse(
             request_id=request.request_id,
             discovery_correlation_id=discovery_correlation_id,
             outcome=outcome,
@@ -178,6 +219,7 @@ class MachineCapabilityAcquisitionService:
             observation=request.observation or observation.correlation,
             catalog_federation_completeness=completeness,
         )
+        return response, pipeline, observation
 
     def select_and_handoff(
         self,
@@ -185,20 +227,28 @@ class MachineCapabilityAcquisitionService:
     ) -> MachineCapabilityAcquisitionHandoffResponse:
         acquisition = handoff_request.acquisition_request
         selection = handoff_request.selection
-        acquire_response = self._acquire(
+        acquire_response, pipeline, observation = self._acquire_with_pipeline(
             acquisition,
             operation_discovery_correlation_id=selection.discovery_correlation_id,
         )
-        if selection.discovery_correlation_id != acquire_response.discovery_correlation_id:
+        if (
+            selection.discovery_correlation_id
+            != acquire_response.discovery_correlation_id
+        ):
             raise MachineCapabilityAcquisitionSelectionError(
                 "selection discovery_correlation_id must match acquisition response",
             )
-        if acquire_response.outcome is not MachineCapabilityAcquisitionOutcome.RECOMMENDATIONS_AVAILABLE:
+        if (
+            acquire_response.outcome
+            is not MachineCapabilityAcquisitionOutcome.RECOMMENDATIONS_AVAILABLE
+        ):
             raise MachineCapabilityAcquisitionSelectionError(
                 "cannot handoff without governed recommendations from acquisition",
             )
-        recommended_releases = {item.release for item in acquire_response.recommendations}
-        if selection.selected_release not in recommended_releases:
+        recommended_keys = {
+            item.release.release_sort_key for item in acquire_response.recommendations
+        }
+        if selection.selected_release.release_sort_key not in recommended_keys:
             raise MachineCapabilityAcquisitionSelectionError(
                 "selected release is not in governed recommendation set",
             )
@@ -211,24 +261,23 @@ class MachineCapabilityAcquisitionService:
                 selection.selected_release.discovery.kind,
             )
         try:
-            delivery = self.handoff_orchestrator.execute_explicit_selection_handoff(
-                discovery_query=discovery_query_for_machine_acquisition(
-                    acquisition.need,
-                    acquisition.discovery_query,
-                ),
-                marketplace_query_context=acquisition.marketplace_query_context,
-                selected_identity_key=identity_key,
-                consumer_target=consumer_target,
-                selector_id=selection.selector_id,
-                discovery_correlation_id=selection.discovery_correlation_id,
-                selection_id=selection.selection_id,
-                handoff_id=handoff_request.handoff_id,
-                query_correlation_id=(
-                    acquisition.observation.query_correlation_id
-                    if acquisition.observation is not None
-                    else None
-                ),
-                query_text=effective_query_text(acquisition.need, acquisition.query_text),
+            delivery = (
+                self.handoff_orchestrator.deliver_explicit_selection_from_pipeline(
+                    pipeline=pipeline,
+                    marketplace_query_context=acquisition.marketplace_query_context,
+                    selected_identity_key=identity_key,
+                    consumer_target=consumer_target,
+                    selector_id=selection.selector_id,
+                    discovery_correlation_id=selection.discovery_correlation_id,
+                    selection_id=selection.selection_id,
+                    handoff_id=handoff_request.handoff_id,
+                    query_correlation_id=(
+                        acquisition.observation.query_correlation_id
+                        if acquisition.observation is not None
+                        else None
+                    ),
+                    observation=observation,
+                )
             )
         except MarketplaceHandoffSelectionError as exc:
             raise MachineCapabilityAcquisitionSelectionError(str(exc)) from exc
