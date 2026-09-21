@@ -135,7 +135,9 @@ _TASK_STATE_TO_EVENT: dict[TaskState, RuntimeEventType] = {
     TaskState.CLASSIFIED: RuntimeEventType.TASK_CLASSIFIED,
     TaskState.PLANNED: RuntimeEventType.PLAN_CREATED,
     TaskState.WAITING_FOR_RESOURCES: RuntimeEventType.PAUSE_REQUESTED,
-    TaskState.WAITING_FOR_HUMAN: RuntimeEventType.HUMAN_APPROVAL_REQUESTED,
+    # Canonical HUMAN_APPROVAL_REQUESTED (human.v1) is emitted by HITL producers with
+    # full HumanRequest identity; task_lifecycle traces only record state transition.
+    TaskState.WAITING_FOR_HUMAN: RuntimeEventType.PAUSED,
     TaskState.RUNNING: RuntimeEventType.STEP_STARTED,
     TaskState.VALIDATING: RuntimeEventType.VALIDATION_STARTED,
     TaskState.COMPLETED: RuntimeEventType.TASK_COMPLETED,
@@ -393,6 +395,9 @@ def _attach_typed_bridge_payload(
             "capability": str(trace.tags.get("capability") or ""),
             "source": "task_lifecycle",
         }
+        if task_state == TaskState.WAITING_FOR_HUMAN.value:
+            lifecycle_raw["lifecycle_state"] = task_state
+            lifecycle_raw["progress_message"] = trace.message
         lifecycle_raw.update(
             {
                 key: extra_payload[key]

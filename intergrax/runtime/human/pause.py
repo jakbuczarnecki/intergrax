@@ -338,9 +338,19 @@ class HumanPauseCoordinator:
             if str(governed.attempt_id) != resolved_attempt:
                 raise HumanApprovalResolutionError("governed continuation attempt_id mismatch")
             if str(governed.execution_id) != resolved_execution:
-                raise HumanApprovalResolutionError(
-                    "governed continuation execution_id mismatch",
+                active_identity = peek_active_execution_identity()
+                active_execution = peek_active_execution_id()
+                resume_root_rotated = (
+                    active_identity is not None
+                    and active_execution is not None
+                    and str(active_execution) == resolved_execution
+                    and str(governed.run_id) == str(active_identity[0])
+                    and str(governed.task_id) == task.task_id
                 )
+                if not resume_root_rotated:
+                    raise HumanApprovalResolutionError(
+                        "governed continuation execution_id mismatch",
+                    )
 
         return active_pause_id, active_request_id, resolved_attempt, resolved_execution
 

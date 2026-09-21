@@ -430,6 +430,42 @@ def test_trace_bridge_preserves_full_active_identity() -> None:
     assert event.execution_id == execution_id
 
 
+def test_trace_bridge_waiting_for_human_emits_paused_not_hitl_domain_event() -> None:
+    task_id, run_id, attempt_id, execution_id = _trace_identity()
+    task = Task(
+        task_id=task_id,
+        tenant_id="tenant",
+        user_id="user",
+        agent_id="agent",
+        message="q",
+    )
+    trace = TraceEvent(
+        event_id="e-wfh",
+        run_id=run_id,
+        seq=2,
+        ts_utc="2026-06-01T00:00:00Z",
+        level=TraceLevel.INFO,
+        component=TraceComponent.PLANNER,
+        step="task_lifecycle",
+        message="task state -> waiting_for_human",
+        tags={
+            "task_id": task_id,
+            "task_state": TaskState.WAITING_FOR_HUMAN.value,
+            "capability": "cap.test",
+        },
+    )
+    event = trace_event_to_runtime_event(
+        trace,
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    assert event.event_type == RuntimeEventType.PAUSED
+    assert event.phase == ExecutionPhase.HUMAN_APPROVAL
+    assert event.payload.get("payload_schema_id") == "pause_lifecycle.v1"
+
+
 def test_trace_bridge_rejects_explicit_execution_id_conflicting_with_active() -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()
