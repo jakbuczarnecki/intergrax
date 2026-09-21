@@ -36,11 +36,11 @@ _GR10_A1_R1_PRODUCTION_HOSTS_WITH_CHECKPOINT_ENRICHER = (
 
 def test_gr10_a1_r1_catalog_acp_path_not_legacy() -> None:
     acp = next(row for row in GR10_AGENTIC_LEGAL_PRODUCTION_PATHS if row.path_id == "P-ACP-SESSION")
-    assert acp.status == "ARCHITECTURAL_MIGRATION_REQUIRED"
+    assert acp.status == "EXPLICIT_NON_CANONICAL"
     assert "TaskBoundAgenticDelegate" in acp.legal_entry or "AgentEngine" in acp.legal_entry
 
 
-def test_gr10_a1_r1_harness_reliability_enricher_agent_task_reaches_acp_branch_metadata() -> None:
+def test_gr10_a1_r1_harness_reliability_enricher_checkpoint_without_implicit_acp_session() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults()
     store = InMemoryAgentCheckpointStore()
     enricher = build_reliability_task_enricher(
@@ -57,7 +57,8 @@ def test_gr10_a1_r1_harness_reliability_enricher_agent_task_reaches_acp_branch_m
         metadata={},
     )
     enriched = enricher(task)
-    assert enriched.metadata.get(AcpMetadataKey.SESSION_ENABLED) is True
+    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is store
+    assert enriched.metadata.get(AcpMetadataKey.SESSION_ENABLED) is None
 
     graph_spec = env.graph_spec
     triggers = orchestration_capabilities_from_triggers(
@@ -72,7 +73,7 @@ def test_gr10_a1_r1_harness_reliability_enricher_agent_task_reaches_acp_branch_m
     assert capabilities == frozenset({ExecutionCapability.AGENT})
 
     runtime_request = enriched.to_runtime_request(run_id=mint_run_id())
-    assert acp_session_enabled(runtime_request) is True
+    assert acp_session_enabled(runtime_request) is False
 
 
 def test_gr10_a1_r1_production_legal_agent_is_intergrax_agent_with_uaep() -> None:

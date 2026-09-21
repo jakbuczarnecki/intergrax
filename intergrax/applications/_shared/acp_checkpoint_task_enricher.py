@@ -11,7 +11,6 @@ from intergrax.agents.persistence.checkpoint_wiring import (
     should_resume_acp_checkpoint,
 )
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
-from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.runtime.task.task import Task
 
 
@@ -35,7 +34,6 @@ def make_acp_checkpoint_task_enricher(
             tenant_id=task.tenant_id,
         )
         wired = attach_checkpoint_wiring(metadata, store, resume=resume)
-        wired[AcpMetadataKey.SESSION_ENABLED] = True
         return task.model_copy(update={"metadata": wired})
 
     return enricher

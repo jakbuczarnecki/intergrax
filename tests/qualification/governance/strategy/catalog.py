@@ -50,7 +50,7 @@ GR10_A2_ARCHITECTURE_DECISION: Gr10AgenticExecutionArchitectureDecision = (
     Gr10AgenticExecutionArchitectureDecision.UAEP_CANONICAL_ACP_EXPLICIT
 )
 GR10_A2_CHECKPOINT_SESSION_COUPLING: Gr10CheckpointSessionCouplingStatus = (
-    Gr10CheckpointSessionCouplingStatus.DEPRECATED_MIGRATION_TARGET
+    Gr10CheckpointSessionCouplingStatus.RETAINED_AS_CONTRACT
 )
 GR10_A2_ADR_REFERENCE = "ADR-GR-10-004"
 
@@ -233,26 +233,23 @@ GR10_AGENTIC_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySemantics
     Gr10ResidualStrategyCapabilitySemantics(
         "Inner Governance",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "GR-10-A2 (ADR-GR-10-004): P-UAEP is the sole canonical AGENTIC governance spine. "
-        "P-ACP-SESSION remains runtime-reachable via explicit acp.session.v1 until GR-10-A3 "
-        "decouples checkpoint enricher side effects; not a second canonical execution model.",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-10-A3: checkpoint-wired production AGENT tasks default to P-UAEP (UAEPExecutor + "
+        "production RuntimeToolInvoker). P-ACP-SESSION is explicit opt-in only — not canonical.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Policy evaluation",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "GR-10-R3 closed on UAEP StepKernel policy spine. P-ACP-SESSION uses run_acp_session / "
-        "PolicyEngine inside AgentRuntime — not parity-proven with UAEP POST_RUN / terminal "
-        "PRE_OUTPUT on checkpoint-wired harness hosts that preempt UAEP when session flag is set.",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-10-R3 UAEP StepKernel policy spine; GR-10-A3 removed checkpoint→session preemption "
+        "on harness hosts. Explicit acp.session.v1 authoring path is non-canonical.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "MSE",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "MP-4R7 / strict declarative invoker qualified on P-UAEP-only hosts (e.g. governed "
-        "contractor without checkpoint session flag). P-ACP-SESSION tool/MSE ownership via ACP "
-        "metadata wiring — not recertified as equivalent to production RuntimeToolInvoker spine.",
+        Gr10CoverageStatus.QUALIFIED,
+        "MP-4R7 / strict declarative invoker on P-UAEP production hosts including "
+        "checkpoint-wired harness composition after GR-10-A3 decoupling.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Decision-bound effect",
@@ -264,24 +261,23 @@ GR10_AGENTIC_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySemantics
     Gr10ResidualStrategyCapabilitySemantics(
         "HITL",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "MP-4R7 continuation proofs apply to P-UAEP host composition. P-ACP-SESSION HITL/continuation "
-        "semantics inside run_acp_session not GR-10 recertified on checkpoint-wired AGENT tasks.",
+        Gr10CoverageStatus.QUALIFIED,
+        "MP-4R7 continuation/HITL proofs on P-UAEP host composition; checkpoint store no longer "
+        "forces ACP session on ordinary AGENT tasks (GR-10-A3).",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Continuation",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "ExecutionContinuationPort qualified on governed contractor P-UAEP path. ACP session branch "
-        "does not inherit that proof when AgentEngine bypasses UAEPExecutor.",
+        Gr10CoverageStatus.QUALIFIED,
+        "ExecutionContinuationPort qualified on governed contractor and checkpoint-wired harness "
+        "P-UAEP paths after GR-10-A3.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Reliability",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "GR-7 ProviderInvocation qualified on governed contractor without acp.session.v1 enricher. "
-        "Checkpoint-wired harness hosts may route IntergraxAgent through ACP before UAEP — "
-        "reliability boundary not unified across both legal AGENTIC paths.",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-7 ProviderInvocation on canonical P-UAEP AGENTIC spine; checkpoint persistence is "
+        "independent of acp.session.v1 (GR-10-A3).",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Governance Evidence",
@@ -320,14 +316,13 @@ GR10_AGENTIC_LEGAL_PRODUCTION_PATHS: tuple[Gr10AgenticProductionPathRow, ...] = 
         "P-ACP-SESSION",
         "HostTaskExecution → TaskBoundAgenticDelegate → AgentEngine → acp.session.v1 → "
         "IntergraxAgent.run (run_acp_session)",
-        "Checkpoint-wired Tier-3 harness hosts (build_reliability_task_enricher + "
-        "agent_checkpoint_store); LKW orchestration-only via build_lkw_http_run_task_enricher",
-        "run_acp_session / AgentRuntime / StepKernel (authoring session loop — not canonical AGENTIC)",
-        "ARCHITECTURAL_MIGRATION_REQUIRED",
-        "GR-10-A1-R1: reachability proven when agent_checkpoint_store is active. GR-10-A2: "
-        "checkpoint≠execution mode — SESSION_ENABLED via enricher is DEPRECATED_MIGRATION_TARGET; "
-        "ACP session requires explicit opt-in contract after GR-10-A3. LKW direct capabilities omit "
-        "acp.session.v1 (UAEP preserved).",
+        "Explicit acp.session.v1 opt-in (authoring/session); LKW orchestration via "
+        "build_lkw_http_run_task_enricher when orchestration requires session loop",
+        "run_acp_session / AgentRuntime / StepKernel (explicit non-canonical AGENTIC session — "
+        "not production canonical spine)",
+        "EXPLICIT_NON_CANONICAL",
+        "GR-10-A3: checkpoint store no longer sets SESSION_ENABLED. Reachable only when caller/host "
+        "sets AcpMetadataKey.SESSION_ENABLED. Production checkpoint-wired AGENT tasks use P-UAEP.",
     ),
 )
 
@@ -1081,23 +1076,10 @@ GR10_A1_R1_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
 )
 
 
-GR10_A3_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
-    task_name="GR-10-A3 Implement UAEP-canonical AGENTIC execution decoupling",
-    strategy="AGENTIC",
-    capability="Inner Governance",
-    exact_blocker=(
-        "ADR-GR-10-004: decouple make_acp_checkpoint_task_enricher from SESSION_ENABLED; wire "
-        "checkpoint persistence into UAEPExecutor path; retain explicit acp.session.v1 opt-in for "
-        "authoring/session runs outside canonical production AGENTIC governance."
-    ),
-    why_highest=(
-        "Runtime still couples checkpoint store to ACP session branch — GR-10 AGENTIC matrix "
-        "PARTIAL rows clear only after GR-10-A3."
-    ),
-)
+GR10_A3_NEXT_REMEDIATION: Gr10R7NextRemediation = GR10_R15_R1_NEXT_REMEDIATION
 
 
-GR10_A1_NEXT_REMEDIATION: Gr10R7NextRemediation = GR10_A3_NEXT_REMEDIATION
+GR10_A1_NEXT_REMEDIATION: Gr10R7NextRemediation = GR10_R15_R1_NEXT_REMEDIATION
 
 
 GR10_R15_NEXT_REMEDIATION: Gr10R7NextRemediation = GR10_R15_R1_NEXT_REMEDIATION
@@ -2222,21 +2204,21 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
         gr10_matrix_inference_status("Inner Governance"),
         gr10_matrix_agentic_status("Inner Governance"),
         gr10_matrix_orchestration_status("Inner Governance"),
-        "GR-10-A2: AGENTIC Inner Governance PARTIAL — UAEP canonical; P-ACP migration required.",
+        "GR-10-A3: AGENTIC Inner Governance QUALIFIED on P-UAEP; explicit ACP session non-canonical.",
     ),
     Gr10CapabilityCell(
         "Policy evaluation",
         gr10_matrix_inference_status("Policy evaluation"),
         gr10_matrix_agentic_status("Policy evaluation"),
         gr10_matrix_orchestration_status("Policy evaluation"),
-        "GR-10-A1-R1: AGENTIC Policy evaluation PARTIAL — UAEP closed; ACP session branch open.",
+        "GR-10-A3: AGENTIC Policy evaluation QUALIFIED on UAEP spine.",
     ),
     Gr10CapabilityCell(
         "MSE",
         gr10_matrix_inference_status("MSE"),
         gr10_matrix_agentic_status("MSE"),
         gr10_matrix_orchestration_status("MSE"),
-        "INFERENCE N/A; ORCH qualified; AGENTIC MSE PARTIAL (P-ACP-SESSION gap).",
+        "INFERENCE N/A; ORCH qualified; AGENTIC MSE QUALIFIED after GR-10-A3.",
     ),
     Gr10CapabilityCell(
         "Decision-bound effect",
@@ -2250,21 +2232,21 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
         gr10_matrix_inference_status("HITL"),
         gr10_matrix_agentic_status("HITL"),
         gr10_matrix_orchestration_status("HITL"),
-        "Agentic PARTIAL (ACP path); orchestration GR-10-R11 QUALIFIED.",
+        "GR-10-A3: AGENTIC HITL QUALIFIED on P-UAEP; orchestration GR-10-R11 QUALIFIED.",
     ),
     Gr10CapabilityCell(
         "Continuation",
         gr10_matrix_inference_status("Continuation"),
         gr10_matrix_agentic_status("Continuation"),
         gr10_matrix_orchestration_status("Continuation"),
-        "Agentic PARTIAL (ACP path); orch GR-10-R12-R1 durable production QUALIFIED.",
+        "GR-10-A3: AGENTIC Continuation QUALIFIED; orch GR-10-R12-R1 durable production QUALIFIED.",
     ),
     Gr10CapabilityCell(
         "Reliability",
         gr10_matrix_inference_status("Reliability"),
         gr10_matrix_agentic_status("Reliability"),
         gr10_matrix_orchestration_status("Reliability"),
-        "INFERENCE N/A; AGENTIC PARTIAL until ACP/UAEP reliability unified.",
+        "INFERENCE N/A; AGENTIC Reliability QUALIFIED on unified P-UAEP spine (GR-10-A3).",
     ),
     Gr10CapabilityCell(
         "Governance Evidence",

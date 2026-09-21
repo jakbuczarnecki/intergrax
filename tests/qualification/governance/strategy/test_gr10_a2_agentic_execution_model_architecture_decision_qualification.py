@@ -14,6 +14,7 @@ from tests.qualification.governance.strategy.catalog import (
     GR10_A2_CHECKPOINT_SESSION_COUPLING,
     GR10_A3_NEXT_REMEDIATION,
     GR10_AGENTIC_LEGAL_PRODUCTION_PATHS,
+    GR10_R15_R1_NEXT_REMEDIATION,
     Gr10AgenticExecutionArchitectureDecision,
     Gr10CheckpointSessionCouplingStatus,
 )
@@ -47,10 +48,10 @@ def test_gr10_a2_ssot_decision_uaep_canonical_acp_explicit() -> None:
     )
 
 
-def test_gr10_a2_checkpoint_session_coupling_is_migration_target() -> None:
+def test_gr10_a2_checkpoint_session_coupling_decoupled_retains_explicit_contract() -> None:
     assert (
         GR10_A2_CHECKPOINT_SESSION_COUPLING
-        is Gr10CheckpointSessionCouplingStatus.DEPRECATED_MIGRATION_TARGET
+        is Gr10CheckpointSessionCouplingStatus.RETAINED_AS_CONTRACT
     )
 
 
@@ -67,21 +68,20 @@ def test_gr10_a2_p_uaep_sole_qualified_canonical_path() -> None:
     assert qualified[0].path_id == "P-UAEP"
 
 
-def test_gr10_a2_p_acp_session_migration_required_not_second_canonical() -> None:
+def test_gr10_a2_p_acp_session_explicit_non_canonical_not_second_spine() -> None:
     acp = next(row for row in GR10_AGENTIC_LEGAL_PRODUCTION_PATHS if row.path_id == "P-ACP-SESSION")
-    assert acp.status == "ARCHITECTURAL_MIGRATION_REQUIRED"
-    assert "not canonical" in acp.canonical_governance_owner.lower()
+    assert acp.status == "EXPLICIT_NON_CANONICAL"
+    assert "non-canonical" in acp.canonical_governance_owner.lower()
 
 
-def test_gr10_a2_next_remediation_is_a3_implementation() -> None:
-    assert "GR-10-A3" in GR10_A3_NEXT_REMEDIATION.task_name
-    assert "SESSION_ENABLED" in GR10_A3_NEXT_REMEDIATION.exact_blocker
+def test_gr10_a2_next_remediation_after_a3_is_final_recertification() -> None:
+    assert GR10_A3_NEXT_REMEDIATION is GR10_R15_R1_NEXT_REMEDIATION
+    assert "GR-10" in GR10_A3_NEXT_REMEDIATION.task_name
 
 
-def test_gr10_a2_enricher_coupling_documented_pending_a3_runtime() -> None:
-    """Runtime unchanged in A2; SSOT + ADR forbid treating enricher as execution-mode owner."""
+def test_gr10_a2_enricher_does_not_set_session_enabled() -> None:
     source = _ENRICHER.read_text(encoding="utf-8-sig")
-    assert "SESSION_ENABLED" in source
+    assert "SESSION_ENABLED" not in source
     adr = _ADR.read_text(encoding="utf-8-sig")
     assert "make_acp_checkpoint_task_enricher" in adr
     assert "DEPRECATED_MIGRATION_TARGET" in adr or "deprecated" in adr.lower()
