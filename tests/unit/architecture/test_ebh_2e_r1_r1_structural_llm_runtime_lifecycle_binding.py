@@ -21,9 +21,7 @@ from intergrax.llm_adapters._shared.provider_dependency_boundary import (
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.contracts.runtime_lifecycle_binding import (
-    LLMRuntimeLifecycleBinding,
-)
+from intergrax.llm_adapters.base.lifecycle_binding import LLMRuntimeLifecycleBinding
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
@@ -41,9 +39,7 @@ from intergrax.runtime.resilience.local_dependency_concurrency_admission import 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
-_CANONICAL_LIFECYCLE_PATH = (
-    _REPO_ROOT / "intergrax/llm_adapters/contracts/runtime_lifecycle_binding.py"
-)
+_CANONICAL_LIFECYCLE_PATH = _REPO_ROOT / "intergrax/llm_adapters/base/lifecycle_binding.py"
 _LIFECYCLE_COMPOSITION_PATHS = (
     _REPO_ROOT / "intergrax/llm_adapters/_shared/provider_dependency_boundary.py",
     _REPO_ROOT / "intergrax/runtime/external_operations/provider_cancellation.py",
@@ -213,17 +209,14 @@ def _lifecycle_composition_base_checks(path: Path) -> list[str]:
 
 
 def test_ebh_2e_r1_r1_single_canonical_lifecycle_protocol() -> None:
-    scan_roots = (
-        _REPO_ROOT / "intergrax/llm_adapters/contracts",
-        _REPO_ROOT / "intergrax/llm_adapters/base",
-    )
+    scan_roots = (_REPO_ROOT / "intergrax/llm_adapters/base",)
     defs = _protocol_class_defs(scan_roots)
     assert defs == [_CANONICAL_LIFECYCLE_PATH]
-    mod = importlib.import_module(
+    canonical = importlib.import_module("intergrax.llm_adapters.base.lifecycle_binding")
+    compat = importlib.import_module(
         "intergrax.llm_adapters.contracts.runtime_lifecycle_binding"
     )
-    reexport = importlib.import_module("intergrax.llm_adapters.base.lifecycle_binding")
-    assert mod.LLMRuntimeLifecycleBinding is reexport.LLMRuntimeLifecycleBinding
+    assert compat.LLMRuntimeLifecycleBinding is canonical.LLMRuntimeLifecycleBinding
 
 
 def test_ebh_2e_r1_r1_lifecycle_protocol_is_runtime_checkable() -> None:
