@@ -34,7 +34,11 @@ from intergrax.contracts.marketplace.gap_acquisition import (
 from intergrax.contracts.marketplace.handoff_traceability import (
     CapabilityHandoffConsumerError,
     CapabilityHandoffConsumerFailureDisposition,
+    CapabilityHandoffDeliveryAdmissionError,
     CapabilityHandoffDeliveryDisposition,
+    CapabilityHandoffDeliveryLifecycleTransitionError,
+    CapabilityHandoffDeliveryOutcomeUncertainError,
+    CapabilityHandoffIdentityConflictError,
     consumer_target_for_kind,
 )
 from intergrax.marketplace.acquisition.query_normalization import (
@@ -72,6 +76,22 @@ def _selection_id(operation_id: str) -> str:
 
 def _domain_handoff_reference(handoff_id: str) -> str:
     return f"handoff://{handoff_id}"
+
+
+def _marketplace_result_for_delivery_failure(
+    *,
+    request: MarketplaceGapAcquisitionRequest,
+    listing_correlation_id: str,
+    exc: BaseException,
+    outcome: MarketplaceGapAcquisitionOutcome,
+) -> MarketplaceGapAcquisitionResult:
+    return MarketplaceGapAcquisitionResult(
+        operation_id=request.operation_id,
+        gap_id=request.gap_id,
+        outcome=outcome,
+        marketplace_listing_correlation_id=listing_correlation_id,
+        reason_detail=str(exc),
+    )
 
 
 def _marketplace_outcome_for_consumer_failure(
@@ -216,6 +236,34 @@ class MarketplaceGapAcquisitionService(MarketplaceGapAcquisitionPort):
                 outcome=outcome,
                 marketplace_listing_correlation_id=listing_correlation_id,
                 reason_detail=str(exc),
+            )
+        except CapabilityHandoffDeliveryOutcomeUncertainError as exc:
+            return _marketplace_result_for_delivery_failure(
+                request=request,
+                listing_correlation_id=listing_correlation_id,
+                exc=exc,
+                outcome=MarketplaceGapAcquisitionOutcome.FAILED,
+            )
+        except CapabilityHandoffDeliveryLifecycleTransitionError as exc:
+            return _marketplace_result_for_delivery_failure(
+                request=request,
+                listing_correlation_id=listing_correlation_id,
+                exc=exc,
+                outcome=MarketplaceGapAcquisitionOutcome.FAILED,
+            )
+        except CapabilityHandoffIdentityConflictError as exc:
+            return _marketplace_result_for_delivery_failure(
+                request=request,
+                listing_correlation_id=listing_correlation_id,
+                exc=exc,
+                outcome=MarketplaceGapAcquisitionOutcome.FAILED,
+            )
+        except CapabilityHandoffDeliveryAdmissionError as exc:
+            return _marketplace_result_for_delivery_failure(
+                request=request,
+                listing_correlation_id=listing_correlation_id,
+                exc=exc,
+                outcome=MarketplaceGapAcquisitionOutcome.UNAVAILABLE,
             )
 
         if delivery.disposition not in (
