@@ -233,22 +233,26 @@ class RuntimeToolInvoker:
         )
 
         transferred_boundary = self._release_dependency_attempt_boundary_ownership()
-        replacement = build_production_runtime_tool_invoker(
-            registry=self._registry,
-            executor=self._executor,
-            scope_policy=self._scope_policy,
-            idempotency_store=idempotency_store,
-            production_mode=production_mode,
-            meaningful_side_effect_authorization=self._meaningful_side_effect_authorization,
-            agent_runtime_governance=self._agent_runtime_governance,
-            inner_execution_guard=self._inner_execution_guard,
-            sandbox_availability=self._sandbox_availability,
-            dependency_attempt_boundary=transferred_boundary,
-            external_operation_store=self._external_operation_store,
-            external_operation_owner=self._external_operation_owner,
-            external_operation_cancellation_port=self._external_operation_cancellation_port,
-            invocation_wiring_resolver=self._invocation_wiring_resolver,
-        )
+        try:
+            replacement = build_production_runtime_tool_invoker(
+                registry=self._registry,
+                executor=self._executor,
+                scope_policy=self._scope_policy,
+                idempotency_store=idempotency_store,
+                production_mode=production_mode,
+                meaningful_side_effect_authorization=self._meaningful_side_effect_authorization,
+                agent_runtime_governance=self._agent_runtime_governance,
+                inner_execution_guard=self._inner_execution_guard,
+                sandbox_availability=self._sandbox_availability,
+                dependency_attempt_boundary=transferred_boundary,
+                external_operation_store=self._external_operation_store,
+                external_operation_owner=self._external_operation_owner,
+                external_operation_cancellation_port=self._external_operation_cancellation_port,
+                invocation_wiring_resolver=self._invocation_wiring_resolver,
+            )
+        except Exception:
+            self._dependency_attempt_boundary = transferred_boundary
+            raise
         self.close()
         return replacement
 
