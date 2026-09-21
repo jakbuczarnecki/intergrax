@@ -227,6 +227,35 @@ def test_adapter_preserves_tenant_isolation_on_reads() -> None:
     )
 
 
+def test_validating_port_does_not_close_borrowed_evidence_port() -> None:
+    closed: list[str] = []
+
+    class _ClosingStore(InMemoryRuntimeEventStore):
+        def close(self) -> None:
+            closed.append("store")
+
+    inner = _ClosingStore()
+    adapter = RuntimeEventPersistenceEvidenceAdapter(inner)
+    wrapped = ValidatingEvidencePersistencePort(adapter)
+    assert not hasattr(wrapped, "close")
+    event = sample_runtime_event()
+    wrapped.append(event, tenant_id=event.tenant_id)
+    assert closed == []
+
+
+def test_runtime_event_persistence_adapter_closes_owned_store() -> None:
+    closed: list[str] = []
+
+    class _ClosingStore(InMemoryRuntimeEventStore):
+        def close(self) -> None:
+            closed.append("store")
+
+    inner = _ClosingStore()
+    adapter = RuntimeEventPersistenceEvidenceAdapter(inner)
+    adapter.close()
+    assert closed == ["store"]
+
+
 def test_adapter_preserves_execution_reconstruction() -> None:
     inner = InMemoryRuntimeEventStore()
     adapter = RuntimeEventPersistenceEvidenceAdapter(inner)

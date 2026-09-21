@@ -70,3 +70,23 @@ def test_event_bus_commits_accepted_canonical_representation() -> None:
     source = bus_path.read_text(encoding="utf-8")
     assert "committed = self._commit_durable_evidence" in source
     assert "positioned.event" in source
+
+
+def test_validating_evidence_port_has_no_reflection_lifecycle() -> None:
+    path = (
+        _REPO_ROOT
+        / "intergrax"
+        / "runtime"
+        / "events"
+        / "validating_evidence_persistence_port.py"
+    )
+    source = path.read_text(encoding="utf-8")
+    assert "getattr(" not in source
+    assert "hasattr(" not in source
+    assert "def close" not in source
+
+
+def test_evidence_persistence_port_protocol_has_no_lifecycle() -> None:
+    path = _REPO_ROOT / "intergrax" / "contracts" / "execution_evidence" / "persistence_port.py"
+    source = path.read_text(encoding="utf-8")
+    assert "def close" not in source

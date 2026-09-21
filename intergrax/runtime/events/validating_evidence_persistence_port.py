@@ -113,8 +113,3 @@ class ValidatingEvidencePersistencePort(CanonicalRuntimeEventWriteValidatedPort)
             tenant_id=tenant_id,
             limit=limit,
         )
-
-    def close(self) -> None:
-        close = getattr(self._inner, "close", None)
-        if close is not None:
-            close()
