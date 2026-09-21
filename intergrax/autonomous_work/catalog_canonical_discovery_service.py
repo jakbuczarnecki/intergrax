@@ -9,33 +9,22 @@ from datetime import datetime
 
 from intergrax.autonomous_work.capability_catalog_discovery_adapters import (
     CapabilityCatalogDiscoveryDependencies,
-    CapabilityCatalogSkillDiscoveryAdapter,
-    CapabilityCatalogToolDiscoveryAdapter,
     SkillRegistryManifestLookup,
     identity_key_from_entry_identity,
-    map_worker_capability_need_to_discovery_query,
+    _run_skill_discovery_layer,
+    _run_tool_discovery_layer,
 )
 from intergrax.autonomous_work.worker_capability_recovery_ports import (
     CanonicalCapabilityDiscoveryPort,
     CanonicalCapabilityDiscoveryRequest,
 )
-from intergrax.capability_catalog.discovery import discover_capability_candidates
-from intergrax.capability_catalog.errors import CapabilityCatalogIdentityConflict
-from intergrax.capability_catalog.governance import govern_capability_candidates
 from intergrax.capability_catalog.governed_candidate import GovernedCapabilityCandidate
-from intergrax.capability_catalog.ranking import (
-    CapabilityRanker,
-    StableIdentityRanker,
-    rank_capability_candidates,
-)
 from intergrax.capability_catalog.work_stage_effective import (
     select_effective_executable_candidates,
 )
 from intergrax.contracts.autonomous_work.capability_acquisition import (
-    CapabilityDiscoveryDisposition,
     WorkerCapabilityDiscoveryRequest,
 )
-from intergrax.contracts.capability_catalog.availability import AvailabilityDisposition
 from intergrax.contracts.capability_catalog.discovery_completion import (
     DiscoveryCompletion,
     build_discovery_completion,
@@ -44,8 +33,7 @@ from intergrax.contracts.capability_catalog.federation import (
     CapabilityCatalogFederationCompleteness,
 )
 from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
-from intergrax.contracts.capability_catalog.kind import CapabilityKind
-from intergrax.contracts.capability_catalog.ranking import CapabilityRankingContext
+from intergrax.contracts.capability_catalog.availability import AvailabilityDisposition
 from intergrax.skills.registry.runtime import SkillRegistry
 
 
@@ -74,6 +62,10 @@ def aggregate_layer_outcomes_to_discovery_completion(
     governed_executable: tuple[GovernedCapabilityCandidate, ...],
 ) -> DiscoveryCompletion:
     """Map AW catalog layer dispositions to canonical DiscoveryCompletion facts."""
+    from intergrax.contracts.autonomous_work.capability_acquisition import (
+        CapabilityDiscoveryDisposition,
+    )
+
     conflict = False
     unavailable = False
     governance_blocked = False
@@ -123,11 +115,7 @@ class CatalogCanonicalCapabilityDiscoveryService(CanonicalCapabilityDiscoveryPor
         skill_registry: SkillRegistry,
     ) -> None:
         self._dependencies = dependencies
-        self._tool = CapabilityCatalogToolDiscoveryAdapter(dependencies)
-        self._skill = CapabilityCatalogSkillDiscoveryAdapter(
-            dependencies,
-            manifest_lookup=SkillRegistryManifestLookup(skill_registry),
-        )
+        self._manifest_lookup = SkillRegistryManifestLookup(skill_registry)
 
     def complete_discovery(
         self,
@@ -138,47 +126,15 @@ class CatalogCanonicalCapabilityDiscoveryService(CanonicalCapabilityDiscoveryPor
             profile_ref=request.worker_need.capability_profile_ref,
             worker_instance_id=request.worker_need.worker_instance_id,
         )
-        tool_outcome = self._tool.discover(worker_discovery)
-        skill_outcome = self._skill.discover(worker_discovery)
-        layer_outcomes = (tool_outcome, skill_outcome)
-
-        ranker: CapabilityRanker = self._dependencies.ranker or StableIdentityRanker()
-        merged_allowed: list[GovernedCapabilityCandidate] = []
-        for kind in (CapabilityKind.TOOL, CapabilityKind.SKILL):
-            query = map_worker_capability_need_to_discovery_query(
-                request.worker_need,
-                kind=kind,
-                scope=self._dependencies.scope,
-            )
-            try:
-                discovered = discover_capability_candidates(
-                    self._dependencies.snapshot,
-                    query,
-                    availability_evidence=self._dependencies.availability_evidence,
-                )
-            except CapabilityCatalogIdentityConflict:
-                return build_discovery_completion(
-                    need_id=request.capability_need.need_id
-                    or need_id_fallback(request),
-                    discovery_correlation_id=request.discovery_correlation_id,
-                    federation_completeness=self._dependencies.snapshot.federation_completeness,
-                    created_at=request.requested_at,
-                    conflict=True,
-                )
-            except Exception:
-                continue
-            ranked = rank_capability_candidates(
-                discovered,
-                ranker,
-                context=CapabilityRankingContext(),
-            )
-            governed = govern_capability_candidates(
-                ranked,
-                evaluators=self._dependencies.governance_evaluators,
-                context=self._dependencies.governance_context,
-            )
-            merged_allowed.extend(governed.allowed)
-
+        tool_layer = _run_tool_discovery_layer(worker_discovery, self._dependencies)
+        skill_layer = _run_skill_discovery_layer(
+            worker_discovery,
+            self._dependencies,
+            self._manifest_lookup,
+        )
+        layer_outcomes = (tool_layer.outcome, skill_layer.outcome)
+        merged_allowed = list(tool_layer.governed_allowed)
+        merged_allowed.extend(skill_layer.governed_allowed)
         governed_allowed = tuple(merged_allowed)
         governed_executable = select_effective_executable_candidates(governed_allowed)
         need_id = request.capability_need.need_id or need_id_fallback(request)

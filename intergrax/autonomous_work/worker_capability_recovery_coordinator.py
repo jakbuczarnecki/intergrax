@@ -7,6 +7,10 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from intergrax.autonomous_work.capability_acquisition_ports import (
+    AllowAllAuthorityCompatibilityPort,
+    WorkerCapabilityAuthorityCompatibilityPort,
+)
 from intergrax.autonomous_work.worker_capability_need_projection import (
     DefaultWorkerCapabilityNeedProjection,
     WorkerCapabilityNeedProjection,
@@ -30,6 +34,8 @@ from intergrax.contracts.autonomous_work.capability_acquisition import (
     WorkerCapabilityCandidate,
     WorkerCapabilityCandidateKind,
     WorkerCapabilityDiscoveryResult,
+    WorkerCapabilityAuthorityCompatibility,
+    autonomy_level_allowed,
     derive_worker_capability_acquisition_decision_id,
     derive_worker_capability_candidate_id,
     derive_worker_capability_need_id,
@@ -114,12 +120,17 @@ class WorkerCapabilityRecoveryCoordinator:
         acquisition: CapabilityAcquisitionCoordinatorPort,
         qualification: CapabilityQualificationCoordinatorPort | None = None,
         need_projection: WorkerCapabilityNeedProjection | None = None,
+        authority_compatibility: WorkerCapabilityAuthorityCompatibilityPort
+        | None = None,
     ) -> None:
         self._discovery = discovery
         self._acquisition = acquisition
         self._qualification = qualification
         self._need_projection = (
             need_projection or DefaultWorkerCapabilityNeedProjection()
+        )
+        self._authority_compatibility = (
+            authority_compatibility or AllowAllAuthorityCompatibilityPort()
         )
 
     def coordinate_recovery(
@@ -264,8 +275,8 @@ class WorkerCapabilityRecoveryCoordinator:
             gap_id=gap.gap_id,
             strategy_id=strategy_id,
             acquisition_result=acquisition_result,
-            correlation_id=correlation_id,
-            causation_id=acquisition_result.request_id,
+            correlation_id=acquisition_result.correlation_id,
+            causation_id=acquisition_result.causation_id,
             requested_at=timestamp,
         )
         qualification_result = self._qualification.qualify(qual_request)
@@ -343,6 +354,49 @@ class WorkerCapabilityRecoveryCoordinator:
                 discovered_at=timestamp,
                 evidence_refs=request.need.evidence_refs,
             )
+            if candidate.candidate_kind not in policy.allowed_candidate_kinds:
+                return _simple_result(
+                    request=request,
+                    disposition=CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY,
+                    reason_code=CapabilityAcquisitionReasonCode.POLICY_BLOCKED,
+                    decided_at=timestamp,
+                )
+            if not autonomy_level_allowed(
+                WorkerAutonomyLevel.A0_KNOWN_CAPABILITY,
+                policy.allowed_autonomy_levels,
+            ):
+                return _simple_result(
+                    request=request,
+                    disposition=CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY,
+                    reason_code=CapabilityAcquisitionReasonCode.POLICY_BLOCKED,
+                    decided_at=timestamp,
+                )
+            compatibility = self._authority_compatibility.assess(
+                worker_instance_id=request.need.worker_instance_id,
+                candidate=candidate,
+            )
+            if compatibility is WorkerCapabilityAuthorityCompatibility.UNAVAILABLE:
+                return _simple_result(
+                    request=request,
+                    disposition=CapabilityAcquisitionDisposition.UNAVAILABLE,
+                    reason_code=CapabilityAcquisitionReasonCode.DISCOVERY_UNAVAILABLE,
+                    decided_at=timestamp,
+                )
+            if (
+                compatibility
+                is WorkerCapabilityAuthorityCompatibility.AUTHORITY_CHANGE_REQUIRED
+            ):
+                return WorkerCapabilityAcquisitionResult(
+                    disposition=CapabilityAcquisitionDisposition.AUTHORITY_CHANGE_REQUIRED,
+                    decision=_build_decision(
+                        request=request,
+                        disposition=CapabilityAcquisitionDisposition.AUTHORITY_CHANGE_REQUIRED,
+                        reason_code=CapabilityAcquisitionReasonCode.A4_AUTHORITY_CHANGE_REQUIRED,
+                        selected_candidate=None,
+                        autonomy_level=WorkerAutonomyLevel.A4_AUTHORITY_CHANGE,
+                        decided_at=timestamp,
+                    ),
+                )
             return _decision_result(
                 request=request,
                 disposition=CapabilityAcquisitionDisposition.USE_EXISTING,

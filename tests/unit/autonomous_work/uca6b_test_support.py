@@ -103,6 +103,7 @@ def build_test_coordinator(
     tool_registry: ToolRegistry,
     skill_registry: SkillRegistry,
     acquisition: RecordingAcquisitionBundle | None = None,
+    authority_compatibility=None,
 ) -> WorkerCapabilityRecoveryCoordinator:
     bundle = acquisition or build_recording_acquisition()
     snapshot = catalog_snapshot_from_registries(
@@ -130,7 +131,10 @@ def build_test_coordinator(
         dependencies=dependencies,
         skill_registry=skill_registry,
     )
-    return WorkerCapabilityRecoveryCoordinator(
-        discovery=discovery,
-        acquisition=bundle.service,
-    )
+    coordinator_kwargs = {
+        "discovery": discovery,
+        "acquisition": bundle.service,
+    }
+    if authority_compatibility is not None:
+        coordinator_kwargs["authority_compatibility"] = authority_compatibility
+    return WorkerCapabilityRecoveryCoordinator(**coordinator_kwargs)

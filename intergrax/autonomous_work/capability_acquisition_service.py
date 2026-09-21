@@ -161,6 +161,20 @@ class WorkerCapabilityAcquisitionDecisionService:
                 decided_at=timestamp,
             )
 
+        if request.recovery_decision.strategy is RecoveryStrategy.ACQUIRE_CAPABILITY:
+            if self._canonical_recovery is None:
+                return _simple_result(
+                    request=request,
+                    disposition=CapabilityAcquisitionDisposition.UNAVAILABLE,
+                    reason_code=CapabilityAcquisitionReasonCode.CANONICAL_UCA_NOT_CONFIGURED,
+                    decided_at=timestamp,
+                )
+            return self._canonical_recovery.coordinate_acquisition_decision(
+                request,
+                policy=policy,
+                decided_at=timestamp,
+            )
+
         discovery_request = WorkerCapabilityDiscoveryRequest(
             need=request.need,
             profile_ref=policy.profile_ref,
@@ -195,30 +209,6 @@ class WorkerCapabilityAcquisitionDecisionService:
                 )
                 if selected is not None:
                     return selected
-
-        if request.recovery_decision.strategy is RecoveryStrategy.ACQUIRE_CAPABILITY:
-            if request.need.need_kind in {
-                CapabilityNeedKind.EXTERNAL_INTEGRATION,
-                CapabilityNeedKind.SCHEMA_ADAPTATION,
-                CapabilityNeedKind.PROTOCOL_ADAPTATION,
-            }:
-                return self._classify_generated_candidate(
-                    request=request,
-                    policy=policy,
-                    decided_at=timestamp,
-                )
-            if self._canonical_recovery is None:
-                return _simple_result(
-                    request=request,
-                    disposition=CapabilityAcquisitionDisposition.UNAVAILABLE,
-                    reason_code=CapabilityAcquisitionReasonCode.CANONICAL_UCA_NOT_CONFIGURED,
-                    decided_at=timestamp,
-                )
-            return self._canonical_recovery.coordinate_acquisition_decision(
-                request,
-                policy=policy,
-                decided_at=timestamp,
-            )
 
         return self._classify_generated_candidate(
             request=request,

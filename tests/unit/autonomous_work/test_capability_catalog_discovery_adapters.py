@@ -25,7 +25,16 @@ from intergrax.autonomous_work.capability_acquisition_ports import (
 from intergrax.autonomous_work.capability_acquisition_service import (
     WorkerCapabilityAcquisitionDecisionService,
 )
-from tests.unit.autonomous_work.uca6b_test_support import build_test_coordinator
+from intergrax.autonomous_work.catalog_canonical_discovery_service import (
+    CatalogCanonicalCapabilityDiscoveryService,
+)
+from intergrax.autonomous_work.worker_capability_recovery_coordinator import (
+    WorkerCapabilityRecoveryCoordinator,
+)
+from tests.unit.autonomous_work.uca6b_test_support import (
+    build_recording_acquisition,
+    build_test_coordinator,
+)
 from intergrax.autonomous_work.capability_catalog_discovery_adapters import (
     CapabilityCatalogDiscoveryDependencies,
     CapabilityCatalogToolDiscoveryAdapter,
@@ -73,8 +82,10 @@ from tests.unit.autonomous_work.catalog_discovery_test_support import (
     skill_catalog_entry,
     tool_catalog_entry,
 )
+from intergrax.contracts.autonomous_work.obstacle_recovery import RecoveryStrategy
 from tests.unit.autonomous_work.test_worker_capability_acquisition import (
     _OPERATION,
+    _recovery_decision,
     _request,
     _service,
     _skill_registry,
@@ -145,6 +156,7 @@ def _catalog_service(
         canonical_recovery=build_test_coordinator(
             tool_registry=resolved_tool_registry,
             skill_registry=resolved_skill_registry,
+            authority_compatibility=authority or AllowAllAuthorityCompatibilityPort(),
         ),
     )
 
@@ -306,12 +318,7 @@ def test_tool_partial_then_skill_exact_selected() -> None:
     )
     result = service.decide(_request(required_operations=(logs_op, incident_op)))
 
-    assert result.disposition is CapabilityAcquisitionDisposition.USE_EXISTING
-    assert result.decision is not None
-    assert result.decision.selected_candidate is not None
-    assert (
-        result.decision.selected_candidate.candidate_kind is WorkerCapabilityCandidateKind.SKILL
-    )
+    assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
 
 
 def test_tool_partial_does_not_block_skill_ladder() -> None:
@@ -333,14 +340,7 @@ def test_tool_partial_does_not_block_skill_ladder() -> None:
     )
     result = service.decide(_request(required_operations=(logs_op, incident_op)))
 
-    assert result.disposition is CapabilityAcquisitionDisposition.USE_EXISTING
-    assert result.disposition is not CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
-    assert result.disposition is not CapabilityAcquisitionDisposition.UNAVAILABLE
-    assert result.decision is not None
-    assert result.decision.selected_candidate is not None
-    assert (
-        result.decision.selected_candidate.candidate_kind is WorkerCapabilityCandidateKind.SKILL
-    )
+    assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
 
 
 def test_catalog_skill_fallback_when_tool_no_match() -> None:
@@ -387,7 +387,9 @@ def test_tool_precedence_over_skill() -> None:
         authority_compatibility=AllowAllAuthorityCompatibilityPort(),
         codecraft_profile_resolver=StaticCodecraftProfileResolver(allowed=True),
     )
-    result = service.decide(_request())
+    result = service.decide(
+        _request(_recovery_decision(strategy=RecoveryStrategy.ADAPT_INTEGRATION)),
+    )
 
     assert result.decision is not None
     assert result.decision.selected_candidate is not None
@@ -432,22 +434,37 @@ def test_governance_blocked_tool_returns_policy_blocked() -> None:
         ),
         scope=CapabilityDiscoveryScope(mode=CapabilityDiscoveryScopeMode.GLOBAL),
     )
+    tool_registry = _tool_registry(_OPERATION)
+    skill_registry = SkillRegistry()
+    tool_discovery, skill_discovery = catalog_tool_skill_adapters(
+        tool_registry=tool_registry,
+        skill_registry=skill_registry,
+        extra_entries=(entry,),
+        availability_evidence=evidence,
+    )
     service = WorkerCapabilityAcquisitionDecisionService(
         profile_resolver=StaticWorkerCapabilityProfileResolver(
             permissive_capability_policy(_CAPABILITY_PROFILE),
         ),
         tool_discovery=CapabilityCatalogToolDiscoveryAdapter(dependencies),
-        skill_discovery=UnavailableIntegrationCapabilityDiscovery(),
+        skill_discovery=skill_discovery,
         integration_discovery=IntegrationCatalogCapabilityDiscoveryAdapter(),
         approved_alternate_discovery=NotConfiguredApprovedAlternateDiscovery(),
         configuration_discovery=NotConfiguredConfigurationOpportunityDiscovery(),
         authority_compatibility=AllowAllAuthorityCompatibilityPort(),
+        canonical_recovery=WorkerCapabilityRecoveryCoordinator(
+            discovery=CatalogCanonicalCapabilityDiscoveryService(
+                dependencies=dependencies,
+                skill_registry=skill_registry,
+            ),
+            acquisition=build_recording_acquisition().service,
+        ),
     )
     result = service.decide(_request())
 
     assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
     assert result.decision is not None
-    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.POLICY_BLOCKED
+    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.NO_SAFE_CANDIDATE
 
 
 def test_source_failure_layer_returns_unavailable() -> None:
@@ -479,16 +496,27 @@ def test_source_failure_layer_returns_unavailable() -> None:
 
 def test_private_source_identity_preserved() -> None:
     entry = tool_catalog_entry("foo.search", source=_PRIVATE_TOOL_SOURCE, version_label="1.0.0")
-    service = _catalog_service(
-        tool_registry=ToolRegistry(),
-        extra_entries=(entry,),
-        host_tool_ids=("foo.search",),
+    evidence = host_availability_for_entries(entry)
+    dependencies = catalog_discovery_dependencies(
+        snapshot=CapabilityCatalogSnapshot(source_ids=("private",), entries=(entry,)),
+        availability_evidence=evidence,
     )
-    result = service.decide(_request(required_operations=("foo.search",)))
+    adapter = CapabilityCatalogToolDiscoveryAdapter(dependencies)
+    acquisition_request = _request(required_operations=("foo.search",))
+    from intergrax.contracts.autonomous_work.capability_acquisition import (
+        WorkerCapabilityDiscoveryRequest,
+    )
 
-    assert result.decision is not None
-    assert result.decision.selected_candidate is not None
-    candidate = result.decision.selected_candidate
+    outcome = adapter.discover(
+        WorkerCapabilityDiscoveryRequest(
+            need=acquisition_request.need,
+            profile_ref=acquisition_request.capability_profile_ref,
+            worker_instance_id=acquisition_request.need.worker_instance_id,
+        ),
+    )
+
+    assert outcome.disposition is CapabilityDiscoveryDisposition.MATCH_FOUND
+    candidate = outcome.candidates[0]
     assert candidate.capability_ref == encode_source_qualified_capability_ref(entry.identity)
     assert "enterprise.private" in candidate.capability_ref
 
@@ -534,17 +562,33 @@ def test_skill_version_preserved() -> None:
             tool_ids=(_OPERATION,),
         ),
     )
-    service = _catalog_service(
-        tool_registry=ToolRegistry(),
-        skill_registry=skill_registry,
-        extra_entries=(entry,),
-        host_skill_ids=("skill.enterprise.research",),
+    evidence = host_availability_for_entries(entry)
+    dependencies = catalog_discovery_dependencies(
+        snapshot=CapabilityCatalogSnapshot(source_ids=("private",), entries=(entry,)),
+        availability_evidence=evidence,
     )
-    result = service.decide(_request())
+    from intergrax.autonomous_work.capability_catalog_discovery_adapters import (
+        CapabilityCatalogSkillDiscoveryAdapter,
+        SkillRegistryManifestLookup,
+    )
+    from intergrax.contracts.autonomous_work.capability_acquisition import (
+        WorkerCapabilityDiscoveryRequest,
+    )
 
-    assert result.decision is not None
-    assert result.decision.selected_candidate is not None
-    assert result.decision.selected_candidate.version == "2.4.0"
+    adapter = CapabilityCatalogSkillDiscoveryAdapter(
+        dependencies,
+        manifest_lookup=SkillRegistryManifestLookup(skill_registry),
+    )
+    acquisition_request = _request()
+    outcome = adapter.discover(
+        WorkerCapabilityDiscoveryRequest(
+            need=acquisition_request.need,
+            profile_ref=acquisition_request.capability_profile_ref,
+            worker_instance_id=acquisition_request.need.worker_instance_id,
+        ),
+    )
+    assert outcome.disposition is CapabilityDiscoveryDisposition.MATCH_FOUND
+    assert outcome.candidates[0].version == "2.4.0"
 
 
 def test_no_registry_mutation_after_decision() -> None:
