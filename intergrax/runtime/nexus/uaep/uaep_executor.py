@@ -514,6 +514,8 @@ class UAEPExecutor:
                         checkpoint=runtime_ckpt,
                         approval=uaep_resume_approval,
                     ):
+                        assert runtime_ckpt is not None
+                        assert runtime_ckpt.last_step_output is not None
                         last_output = StepOutput.model_validate(
                             runtime_ckpt.last_step_output.model_dump()
                         )
@@ -527,16 +529,17 @@ class UAEPExecutor:
                         approval=uaep_resume_approval,
                     ):
                         assert runtime_ckpt is not None
-                        exec_ctx.metadata[UAEP_STEP_CURSOR_KEY] = dict(
+                        cursor_values = (
                             runtime_ckpt.uaep_step_cursor.values
+                            if runtime_ckpt.uaep_step_cursor
+                            else {}
                         )
+                        exec_ctx.metadata[UAEP_STEP_CURSOR_KEY] = dict(cursor_values)
                         step_outcome = await self._execute_step_with_resume(
                             agent,
                             step,
                             exec_ctx,
-                            runtime_ckpt.uaep_step_cursor.values
-                            if runtime_ckpt.uaep_step_cursor
-                            else {},
+                            cursor_values,
                         )
                     else:
                         step_outcome = await self.execute_step(agent, step, exec_ctx)
@@ -673,7 +676,7 @@ class UAEPExecutor:
                         step_id=step.step_id,
                         phase=ExecutionPhase.INTERRUPT_HANDLING,
                         runtime_state={
-                            "interrupt_type": resolution.interrupt.type.value
+                            "interrupt_type": resolution.interrupt.interrupt_type.value
                         },
                     )
                     await run_hook_pair(
@@ -880,6 +883,7 @@ class UAEPExecutor:
         if gate is None:
             return None
 
+        assert step_result.output is not None
         execution = AgentExecutionResult(
             agent_id=contract.id,
             run_id=run_id,

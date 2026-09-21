@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-from typing import Protocol
+from typing import Protocol, cast
 
 from intergrax.contracts.admitted_root_governance_identity import (
     AdmittedRootGovernanceIdentity,
@@ -98,7 +98,11 @@ from intergrax.runtime.long_running.checkpoint_builder import (
 from intergrax.runtime.long_running.resume_planner import (
     execution_identity_from_checkpoint,
 )
-from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
+from intergrax.runtime.execution.strategy_router import (
+    AgenticRouterDelegate,
+    OrchestrationRouterDelegate,
+    StrategyExecutionRouter,
+)
 from intergrax.runtime.execution.task_adapter import (
     TaskExecutionInput,
     execution_request_from_task,
@@ -252,16 +256,22 @@ def build_host_task_strategy_router(
         TaskResult,
         TaskResult,
     ](
-        agent_executor=TaskBoundAgenticDelegate(
-            task,
-            agent_engine=agent_engine,
-            agent_router=agent_router,
-            declarative_tool_invoker=declarative_tool_invoker,
-            skill_host_wiring=skill_host_wiring,
+        agent_executor=cast(
+            AgenticRouterDelegate,
+            TaskBoundAgenticDelegate(
+                task,
+                agent_engine=agent_engine,
+                agent_router=agent_router,
+                declarative_tool_invoker=declarative_tool_invoker,
+                skill_host_wiring=skill_host_wiring,
+            ),
         ),
-        orchestration_executor=TaskBoundOrchestrationDelegate(
-            task,
-            orchestration_executor,
+        orchestration_executor=cast(
+            OrchestrationRouterDelegate,
+            TaskBoundOrchestrationDelegate(
+                task,
+                orchestration_executor,
+            ),
         ),
     )
 
@@ -589,7 +599,7 @@ class HostTaskExecution:
                 RootExecutionLaunchRequest(
                     admitted_governance_identity=admitted_identity,
                     root_execution_operation=root_execution_operation_from_request(
-                        request
+                        cast(ExecutionRequest[object, object], request)
                     ),
                     collaborative_authority_scopes=host_upstream_collaborative_scopes(
                         task

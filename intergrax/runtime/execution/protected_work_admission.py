@@ -150,7 +150,9 @@ class TaskMetadataCancellationView:
             raw = source
         if raw is None:
             return {}
-        return dict(raw)
+        if not isinstance(raw, dict):
+            return {}
+        return {str(key): value for key, value in raw.items()}
 
     def is_cancelled(self) -> bool:
         return CancellationCoordinator.is_requested(self._live_metadata())

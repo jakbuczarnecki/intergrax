@@ -14,6 +14,7 @@ from intergrax.contracts.agent_decision import (
 )
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -82,8 +83,8 @@ class NexusBasicHitlTestAgent(HarnessReferenceAgent):
             max_steps=2,
         )
 
-    def can_handle(self, task_context: object) -> CapabilityMatchResult:
-        capability = attribute_access.optional(task_context, "capability", None)
+    def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
+        capability = attribute_access.optional(task, "capability", None)
         if capability in (None, self._capability):
             return CapabilityMatchResult(
                 matched=True,

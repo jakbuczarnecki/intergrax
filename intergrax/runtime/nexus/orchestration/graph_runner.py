@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Awaitable, Callable, List, Optional
+from typing import TYPE_CHECKING, Awaitable, Callable, List, Optional, cast
 
 from intergrax.contracts.runtime_event_metric import RuntimeEventMetricScope
 
@@ -466,6 +466,7 @@ class NexusGraphRunner:
                     DecisionFlowScope.GRAPH_FINAL
                 )
             ):
+                from intergrax.runtime.decision_flow import DecisionFlowResult
                 from intergrax.runtime.decision_flow_host import (
                     agent_execution_decision_context,
                     agent_execution_identity_seed,
@@ -504,7 +505,7 @@ class NexusGraphRunner:
                     if type(session) is NexusDecisionExposureRunSession:
                         append_graph_decision_flow_exposure_candidate(
                             session,
-                            flow_result=flow_result,
+                            flow_result=cast(DecisionFlowResult[object], flow_result),
                             identity_seed=identity_seed,
                         )
                 if flow_result.host_action is DecisionFlowHostAction.PENDING_HUMAN:

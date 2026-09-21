@@ -7,7 +7,12 @@ from __future__ import annotations
 from typing import Optional, Protocol
 
 from intergrax.contracts.agent_run import PrincipalType, RequestIdentity
-from intergrax.contracts.execution_identity import AttemptId, RunId, mint_run_id
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    RunId,
+    mint_run_id,
+    validate_task_id,
+)
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
@@ -108,7 +113,7 @@ async def resume_lab_nexus_hitl(
         user_id=user_id,
         message=message,
         context=TaskContext(capability=capability),
-        task_id=paused.task_id,
+        task_id=validate_task_id(paused.task_id),
         options=TaskExecutionOptions(
             long_running=TaskLongRunningOptions(
                 enabled=True, resume_token=resume_token
