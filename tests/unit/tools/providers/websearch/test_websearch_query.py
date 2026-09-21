@@ -116,6 +116,61 @@ def test_websearch_query_not_configured() -> None:
     assert out.reason == "websearch_not_configured"
 
 
+class _RecordingWebSearchExecutor:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def search_sync(
+        self,
+        query: str,
+        top_k: int | None = None,
+        locale: str | None = None,
+        region: str | None = None,
+        language: str | None = None,
+        safe_search: bool | None = None,
+        top_n_fetch: int | None = None,
+    ) -> list[WebSearchResult]:
+        self.calls.append(
+            {
+                "query": query,
+                "top_k": top_k,
+                "locale": locale,
+                "region": region,
+                "language": language,
+                "safe_search": safe_search,
+                "top_n_fetch": top_n_fetch,
+            }
+        )
+        return []
+
+
+def test_websearch_query_executor_parameter_passthrough() -> None:
+    executor = _RecordingWebSearchExecutor()
+    ctx = ToolWiringContext(websearch_executor=executor)
+    perform_websearch_query(
+        ctx,
+        WebsearchQueryInput(
+            query="q",
+            limit=4,
+            locale="en-US",
+            region="US",
+            language="en",
+            safe_search=True,
+        ),
+    )
+    assert executor.calls == [
+        {
+            "query": "q",
+            "top_k": 4,
+            "locale": "en-US",
+            "region": "US",
+            "language": "en",
+            "safe_search": True,
+            "top_n_fetch": None,
+        }
+    ]
+
+
 def test_websearch_tool_registered_in_catalog() -> None:
     register_default_tools()
     assert "websearch.query" in list_catalog_tool_ids()

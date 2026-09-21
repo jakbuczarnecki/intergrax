@@ -38,6 +38,7 @@ from intergrax.applications._shared.prompt_wiring import resolve_prompt_registry
 from intergrax.applications._shared.capability_graph_assembly_resolver import (
     assert_capability_graph_assembly_valid,
 )
+from intergrax.tools.providers.websearch.executor_contract import WebSearchQueryExecutor
 from intergrax.applications._shared.capability_graph_wiring import (
     EnvironmentCapabilityGraphView,
     resolve_environment_capability_graph,
@@ -243,7 +244,7 @@ def wire_application_environment(
     strict_harness: bool = False,
     trace_db_path: Path | None = None,
     sandbox_session: Any | None = None,
-    websearch_executor: Any | None = None,
+    websearch_executor: WebSearchQueryExecutor | None = None,
     conformance_check: bool = True,
     application_tool_registry: ToolRegistry | None = None,
     application_skill_registry: Any | None = None,

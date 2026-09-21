@@ -8,7 +8,7 @@ from intergrax.applications._shared.tool_wiring import ApplicationToolWiring, bu
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
-from research_application.host.host_runtime_composition import ResearchWebSearchExecutor
+from intergrax.tools.providers.websearch.executor_contract import WebSearchQueryExecutor
 from research_application.host.settings import ResearchBackendSettings
 
 _RESEARCH_SKILL_TOOL_IDS: tuple[str, ...] = RESEARCH_LITERATURE_SCAN.tool_ids
@@ -17,7 +17,7 @@ _RESEARCH_SKILL_TOOL_IDS: tuple[str, ...] = RESEARCH_LITERATURE_SCAN.tool_ids
 def wire_research_tools(
     *,
     settings: ResearchBackendSettings,
-    websearch_executor: ResearchWebSearchExecutor | None = None,
+    websearch_executor: WebSearchQueryExecutor | None = None,
     integration_profile: IntegrationProfile | None = None,
 ) -> ApplicationToolWiring:
     """Research host — settings-driven tools plus ids required by ``research.literature_scan``."""

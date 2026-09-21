@@ -3,6 +3,7 @@
 
 """Websearch tool bundle — register via ``intergrax.tools.registry.shipped_plugins``."""
 
-from intergrax.tools.providers.websearch.service import WEBSEARCH_TOOL_ID
+# Avoid eager imports here: ``service`` depends on ``ToolWiringContext`` while registry
+# wiring references ``executor_contract`` in the same package.
 
-__all__ = ["WEBSEARCH_TOOL_ID"]
+__all__: tuple[str, ...] = ()

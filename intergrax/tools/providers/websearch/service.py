@@ -8,6 +8,7 @@ from intergrax.utils import attribute_access
 
 from typing import Any, List, Sequence
 
+from intergrax.tools.providers.websearch.executor_contract import WebSearchQueryExecutor
 from intergrax.tools.providers.websearch.contracts import (
     WebsearchQueryInput,
     WebsearchQueryOutput,
@@ -32,7 +33,10 @@ def perform_websearch_query(ctx: ToolWiringContext, params: WebsearchQueryInput)
     return WebsearchQueryOutput(used=False, reason="websearch_not_configured")
 
 
-def _search_via_executor(executor: Any, params: WebsearchQueryInput) -> WebsearchQueryOutput:
+def _search_via_executor(
+    executor: WebSearchQueryExecutor,
+    params: WebsearchQueryInput,
+) -> WebsearchQueryOutput:
     raw = executor.search_sync(
         query=params.query,
         top_k=params.limit,

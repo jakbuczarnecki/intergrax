@@ -30,6 +30,7 @@ from intergrax.integrations.contracts.observability_backend import Observability
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
 from intergrax.integrations.contracts.search_provider import SearchProvider
+from intergrax.tools.providers.websearch.executor_contract import WebSearchQueryExecutor
 from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.integrations.contracts.security_scanner import SecurityScannerBackend
 from intergrax.integrations.contracts.speech_provider import SpeechProviderBackend
@@ -103,7 +104,7 @@ class ToolWiringContext:
     rag_graph_store: Any | None = None
     toc_vectorstore_manager: Any | None = None
     security_profile: Any | None = None
-    websearch_executor: Any | None = None
+    websearch_executor: WebSearchQueryExecutor | None = None
     sandbox_session: Any | None = None
     sandbox_isolation_authority: ProfileSandboxIsolationSource | None = None
     security_scanner: SecurityScannerBackend | None = None
@@ -137,7 +138,7 @@ class ToolWiringContext:
         reranker_manager: Any | None = None,
         rag_profile: Any | None = None,
         retrieval_service: Any | None = None,
-        websearch_executor: Any | None = None,
+        websearch_executor: WebSearchQueryExecutor | None = None,
         extras: Optional[Mapping[str, Any]] = None,
     ) -> ToolWiringContext:
         """
