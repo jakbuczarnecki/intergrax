@@ -148,10 +148,7 @@ def _validate_domain_identity(
             started_at=started_at,
             reason_detail="codecraft port returned mismatched gap_id",
         )
-    if (
-        request.correlation_id is not None
-        and domain_result.correlation_id != request.correlation_id
-    ):
+    if domain_result.correlation_id != request.correlation_id:
         return _terminal(
             request=request,
             outcome=CapabilityAcquisitionOutcome.FAILED,
@@ -159,10 +156,7 @@ def _validate_domain_identity(
             started_at=started_at,
             reason_detail="codecraft port returned mismatched correlation_id",
         )
-    if (
-        request.causation_id is not None
-        and domain_result.causation_id != request.causation_id
-    ):
+    if domain_result.causation_id != request.causation_id:
         return _terminal(
             request=request,
             outcome=CapabilityAcquisitionOutcome.FAILED,

@@ -311,6 +311,110 @@ def test_wrong_gap_id_fails_integrity() -> None:
     assert result.reason_code is CapabilityAcquisitionReasonCode.EVIDENCE_INCONSISTENT
 
 
+@pytest.mark.parametrize(
+    ("request_corr", "result_corr", "should_pass"),
+    [
+        (None, None, True),
+        ("A", "A", True),
+        (None, "A", False),
+        ("A", None, False),
+        ("A", "B", False),
+    ],
+)
+def test_correlation_exact_binding_matrix(
+    request_corr: str | None,
+    result_corr: str | None,
+    should_pass: bool,
+) -> None:
+    gap = _gap()
+    need = CapabilityNeed(
+        need_id=gap.need_id,
+        kinds=(CapabilityKind.TOOL,),
+        intent_summary="synthesize ephemeral tool",
+    )
+    req = CapabilityAcquisitionRequest(
+        request_id=derive_capability_acquisition_request_id(
+            gap_id=gap.gap_id,
+            request_nonce="corr-matrix",
+        ),
+        request_nonce="corr-matrix",
+        capability_gap=gap,
+        capability_need=need,
+        correlation_id=request_corr,
+        causation_id="cause-fixed",
+        requested_at=_CREATED,
+    )
+    port = _RecordingSynthesisPort(
+        CodeCraftGapSynthesisResult(
+            operation_id=req.request_id,
+            gap_id=gap.gap_id,
+            outcome=CodeCraftGapSynthesisOutcome.SUCCEEDED,
+            artifact_reference="codecraft:artifact:x",
+            correlation_id=result_corr,
+            causation_id="cause-fixed",
+        ),
+    )
+    result = CodeCraftGapCapabilityAcquisitionStrategy(port).acquire(req)
+    if should_pass:
+        assert result.outcome is CapabilityAcquisitionOutcome.SUCCEEDED
+    else:
+        assert (
+            result.reason_code is CapabilityAcquisitionReasonCode.EVIDENCE_INCONSISTENT
+        )
+
+
+@pytest.mark.parametrize(
+    ("request_cause", "result_cause", "should_pass"),
+    [
+        (None, None, True),
+        ("A", "A", True),
+        (None, "A", False),
+        ("A", None, False),
+        ("A", "B", False),
+    ],
+)
+def test_causation_exact_binding_matrix(
+    request_cause: str | None,
+    result_cause: str | None,
+    should_pass: bool,
+) -> None:
+    gap = _gap()
+    need = CapabilityNeed(
+        need_id=gap.need_id,
+        kinds=(CapabilityKind.TOOL,),
+        intent_summary="synthesize ephemeral tool",
+    )
+    req = CapabilityAcquisitionRequest(
+        request_id=derive_capability_acquisition_request_id(
+            gap_id=gap.gap_id,
+            request_nonce="cause-matrix",
+        ),
+        request_nonce="cause-matrix",
+        capability_gap=gap,
+        capability_need=need,
+        correlation_id="corr-fixed",
+        causation_id=request_cause,
+        requested_at=_CREATED,
+    )
+    port = _RecordingSynthesisPort(
+        CodeCraftGapSynthesisResult(
+            operation_id=req.request_id,
+            gap_id=gap.gap_id,
+            outcome=CodeCraftGapSynthesisOutcome.SUCCEEDED,
+            artifact_reference="codecraft:artifact:x",
+            correlation_id="corr-fixed",
+            causation_id=result_cause,
+        ),
+    )
+    result = CodeCraftGapCapabilityAcquisitionStrategy(port).acquire(req)
+    if should_pass:
+        assert result.outcome is CapabilityAcquisitionOutcome.SUCCEEDED
+    else:
+        assert (
+            result.reason_code is CapabilityAcquisitionReasonCode.EVIDENCE_INCONSISTENT
+        )
+
+
 def test_correlation_mismatch_fails_integrity() -> None:
     gap = _gap()
     req = _request(gap)
