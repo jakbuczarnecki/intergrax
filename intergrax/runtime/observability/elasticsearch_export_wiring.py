@@ -60,12 +60,6 @@ def build_elasticsearch_observability_integration(
     )
 
     elasticsearch = _require_enabled_elasticsearch_config(config)
-    config_overrides: dict[str, object] = {
-        "base_url": elasticsearch.base_url,
-        "index": elasticsearch.index,
-    }
-    if elasticsearch.timeout_seconds is not None:
-        config_overrides["timeout_seconds"] = elasticsearch.timeout_seconds
 
     retry_policy = ElasticsearchRetryPolicy(
         enabled=elasticsearch.retry_enabled,
@@ -88,7 +82,9 @@ def build_elasticsearch_observability_integration(
         http_client_factory=http_client_factory,
         retry_policy=retry_policy,
         failed_delivery_sink=failed_delivery_sink,
-        **config_overrides,
+        index=elasticsearch.index,
+        base_url=elasticsearch.base_url,
+        timeout_seconds=elasticsearch.timeout_seconds,
     )
     return create_elasticsearch_observability_integration(
         transport=active_transport,

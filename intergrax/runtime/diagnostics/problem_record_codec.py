@@ -479,6 +479,8 @@ def _encode_finding(
             "execution_id": finding.execution_id,
             "execution_failure_kind": finding.execution_failure_kind.value,
         }
+    if type(finding) is not DeterministicFindingSignature:
+        raise TypeError(f"unsupported finding signature type: {type(finding).__name__}")
     encoded = {
         "source": "lifecycle",
         "kind": finding.kind.value,

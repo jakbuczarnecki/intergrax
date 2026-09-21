@@ -36,6 +36,7 @@ class FunctionalEvidenceAppendFaultInjector(Protocol):
 
     def should_fault_after(self, boundary: FunctionalEvidenceAppendFaultBoundary) -> bool:
         """Return True once to simulate a crash immediately after the named boundary."""
+        ...
 
 
 @dataclass(frozen=True, slots=True)

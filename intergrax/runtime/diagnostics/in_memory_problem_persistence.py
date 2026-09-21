@@ -7,12 +7,12 @@ from __future__ import annotations
 
 from threading import Lock
 
-from intergrax.runtime.diagnostics.diagnostic_subject import diagnostic_subject_index_token
-from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingSubjectRef
+from intergrax.contracts.diagnostics.problem_record import PersistedProblem
+from intergrax.contracts.diagnostics.reconciliation_key import ProblemReconciliationKey
+from intergrax.contracts.diagnostics.subject_ref import ProblemGroupingSubjectRef
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
     ProblemId,
-    ProblemReconciliationKey,
     ProblemStatus,
 )
 from intergrax.runtime.diagnostics.problem_persistence import (
@@ -34,11 +34,11 @@ class InMemoryProblemPersistence(ProblemPersistence):
     def __init__(self, *, list_cursor_secret: bytes = _TEST_LIST_CURSOR_SECRET) -> None:
         self._records: dict[tuple[str, ProblemId], Problem] = {}
         self._by_reconciliation_key: dict[tuple[str, str], ProblemId] = {}
-        self._by_subject_ref: dict[tuple[str, str, str, str], ProblemId] = {}
+        self._by_subject_ref: dict[tuple[str, str], ProblemId] = {}
         self._lock = Lock()
         self._list_cursor_codec = ProblemListQueryCursorCodec(secret=list_cursor_secret)
 
-    def get(self, *, tenant_id: str, problem_id: ProblemId) -> Problem | None:
+    def get(self, *, tenant_id: str, problem_id: ProblemId) -> PersistedProblem | None:
         with self._lock:
             return self._records.get((tenant_id, problem_id))
 
@@ -92,7 +92,7 @@ class InMemoryProblemPersistence(ProblemPersistence):
         *,
         tenant_id: str,
         reconciliation_key: ProblemReconciliationKey,
-    ) -> Problem | None:
+    ) -> PersistedProblem | None:
         index_key = _reconciliation_index_key(tenant_id, reconciliation_key)
         with self._lock:
             problem_id = self._by_reconciliation_key.get(index_key)
@@ -105,7 +105,7 @@ class InMemoryProblemPersistence(ProblemPersistence):
         *,
         tenant_id: str,
         subject_ref: ProblemGroupingSubjectRef,
-    ) -> Problem | None:
+    ) -> PersistedProblem | None:
         index_key = _subject_index_key(tenant_id, subject_ref)
         with self._lock:
             problem_id = self._by_subject_ref.get(index_key)
@@ -115,10 +115,10 @@ class InMemoryProblemPersistence(ProblemPersistence):
 
     def create(
         self,
-        record: Problem,
+        record: PersistedProblem,
         *,
         indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
-    ) -> Problem:
+    ) -> PersistedProblem:
         with self._lock:
             storage_key = (record.tenant_id, record.problem_id)
             existing = self._records.get(storage_key)
@@ -150,6 +150,8 @@ class InMemoryProblemPersistence(ProblemPersistence):
                         "subject_ref already bound to another Problem",
                     )
 
+            if type(record) is not Problem:
+                raise TypeError("InMemoryProblemPersistence requires runtime Problem records")
             self._records[storage_key] = record
             self._by_reconciliation_key[reconciliation_index] = record.problem_id
             for subject_ref in indexed_subject_refs:
@@ -160,11 +162,11 @@ class InMemoryProblemPersistence(ProblemPersistence):
 
     def update(
         self,
-        record: Problem,
+        record: PersistedProblem,
         *,
         expected_version: int,
         indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
-    ) -> Problem:
+    ) -> PersistedProblem:
         with self._lock:
             storage_key = (record.tenant_id, record.problem_id)
             existing = self._records.get(storage_key)
@@ -196,6 +198,8 @@ class InMemoryProblemPersistence(ProblemPersistence):
                         "subject_ref already bound to another Problem",
                     )
 
+            if type(record) is not Problem:
+                raise TypeError("InMemoryProblemPersistence requires runtime Problem records")
             self._records[storage_key] = record
             self._by_reconciliation_key[reconciliation_index] = record.problem_id
             for subject_ref in indexed_subject_refs:
@@ -220,4 +224,4 @@ def _subject_index_key(
         raise ProblemPersistenceIntegrityError(
             "subject_ref tenant_id does not match lookup tenant scope",
         )
-    return (tenant_id, diagnostic_subject_index_token(subject_ref.subject))
+    return (tenant_id, subject_ref.index_token)

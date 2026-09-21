@@ -73,16 +73,10 @@ def export_run_metrics(persisted: PersistedRun, *, agent_id: Optional[str] = Non
     )
 
 
-def _extract_modality_metrics_from_trace(events: List[SerializedTraceEvent]) -> ModalityMetricsPayload:
+def _extract_modality_metrics_from_trace(
+    events: list[PersistedTraceEvent | SerializedTraceEvent],
+) -> ModalityMetricsPayload:
     return aggregate_modality_metrics_from_trace_events(events)
-
-
-def _trace_event_payload(event: SerializedTraceEvent | Dict[str, Any]) -> Dict[str, Any]:
-    if isinstance(event, dict):
-        raw = event.get("payload")
-    else:
-        raw = event.payload
-    return raw if isinstance(raw, dict) else {}
 
 
 def persist_run_metrics(

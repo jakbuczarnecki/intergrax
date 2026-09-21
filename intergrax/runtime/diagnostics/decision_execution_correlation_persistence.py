@@ -34,6 +34,7 @@ class DecisionExecutionCorrelationPersistence(Protocol):
         limit: int = MAX_CORRELATION_QUERY_RESULTS,
     ) -> tuple[DecisionExecutionCorrelationRecord, ...]:
         """Bounded lookup for related decisions at execution scope."""
+        ...
 
 
 class InMemoryDecisionExecutionCorrelationPersistence:

@@ -33,8 +33,8 @@ from intergrax.runtime.diagnostics.lifecycle_analysis import (
     LifecycleAnalysisIntegrityError,
     LifecycleAnomalyAnalyzer,
 )
+from intergrax.contracts.diagnostics.problem_record import PersistedProblem
 from intergrax.runtime.diagnostics.problem_lifecycle import (
-    Problem,
     ProblemId,
     ProblemOccurrence,
     ProblemStatus,
@@ -376,7 +376,7 @@ class DiagnosticReadService:
             raise DiagnosticReadIntegrityError(str(exc)) from exc
 
 
-def _summary_from_problem(problem: Problem) -> DiagnosticProblemSummary:
+def _summary_from_problem(problem: PersistedProblem) -> DiagnosticProblemSummary:
     return DiagnosticProblemSummary(
         problem_id=problem.problem_id,
         tenant_id=problem.tenant_id,
@@ -392,8 +392,8 @@ def _summary_from_problem(problem: Problem) -> DiagnosticProblemSummary:
 
 
 def _order_occurrences_newest_first(
-    occurrences: tuple[ProblemOccurrence, ...],
-) -> tuple[ProblemOccurrence, ...]:
+    occurrences: tuple[DiagnosticProblemOccurrenceView, ...],
+) -> tuple[DiagnosticProblemOccurrenceView, ...]:
     return tuple(
         sorted(
             occurrences,
@@ -409,7 +409,7 @@ def _reconstruct_occurrence_view(
     occurrence: ProblemOccurrence,
     *,
     tenant_id: str,
-    problem: Problem,
+    problem: PersistedProblem,
     reconstructor: ExecutionReconstructionReader,
     lifecycle_analyzer: LifecycleAnomalyAnalyzer,
     assessment_builder: DiagnosticAssessmentBuilder,
@@ -584,7 +584,7 @@ def _is_execution_evidence_unavailable(reconstruction: ExecutionReconstruction) 
 
 
 def _validate_problem_list_tenant_scope(
-    records: tuple[Problem, ...],
+    records: tuple[PersistedProblem, ...],
     tenant_id: str,
 ) -> None:
     for problem in records:

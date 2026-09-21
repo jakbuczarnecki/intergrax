@@ -26,10 +26,16 @@ from intergrax.applications._shared.diagnostic_read_wiring import (
 from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port import (
     wrap_terminal_execution_diagnostic_trigger,
 )
+from intergrax.applications._shared.application_composition_context import (
+    composition_for_factory_context,
+)
 from intergrax.applications._shared.diagnostic_runtime_wiring import (
     build_terminal_execution_diagnostic_trigger,
     resolve_host_diagnostic_runtime_dependencies,
 )
+from intergrax.applications.contracts.build_context import ApplicationBuildContext
+from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
@@ -91,18 +97,27 @@ from testing_support.agent_platform_admin_harness import admin_test_principal
 
 
 class _FakeEnvWiring:
+    """Minimal duck-typed env wiring exposing the composition contract surface."""
+
     def __init__(self, document_store: InMemoryDocumentStore) -> None:
-        self.build_context = _FakeBuildContext(document_store)
-
-
-class _FakeBuildContext:
-    def __init__(self, document_store: InMemoryDocumentStore) -> None:
-        self.tool_wiring_context = _FakeToolWiringContext(document_store)
-
-
-class _FakeToolWiringContext:
-    def __init__(self, document_store: InMemoryDocumentStore) -> None:
-        self.document_store = document_store
+        self.composition = composition_for_factory_context(
+            ApplicationBuildContext.for_manifest(
+                ApplicationManifest.lab(
+                    app_id="dg001_canonical_multi_agent",
+                    name="DG-001 Canonical Multi-Agent",
+                    route_prefix="/v1/dg001",
+                    env_prefix="DG001_",
+                    agents=[
+                        AgentBinding.mount(
+                            ReflexAgent,
+                            contract_id="dg001.root",
+                            capabilities=["dg001.multi_agent.coordination"],
+                        )
+                    ],
+                ),
+            ),
+            tool_wiring_context=ToolWiringContext(document_store=document_store),
+        )
 
 
 @dataclass(frozen=True, slots=True)

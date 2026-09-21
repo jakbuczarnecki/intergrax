@@ -7,6 +7,8 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+from intergrax.contracts.diagnostics.problem_record import PersistedProblem
+from intergrax.contracts.diagnostics.reconciliation_key import ProblemReconciliationKey
 from intergrax.contracts.execution_identity import RunId, TaskId, mint_run_id, mint_task_id
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     STRATEGY_ID,
@@ -51,13 +53,13 @@ def query_all_problems_for_tenant(
     tenant_id: str,
     *,
     page_limit: int = 500,
-) -> tuple[Problem, ...]:
+) -> tuple[PersistedProblem, ...]:
     """
     Conformance helper — paginated tenant materialization.
 
     Full-tenant Problem listing is not part of the production persistence contract.
     """
-    problems: list[Problem] = []
+    problems: list[PersistedProblem] = []
     cursor: str | None = None
     while True:
         page = persistence.query_problems(
@@ -131,7 +133,7 @@ def sample_problem(
     problem_id: ProblemId | None = None,
     tenant_id: str = "tenant-conformance",
     subject_refs: tuple[ProblemGroupingSubjectRef, ...] | None = None,
-    reconciliation_key: DeterministicProblemReconciliationKey | None = None,
+    reconciliation_key: ProblemReconciliationKey | None = None,
     observed_at: datetime = _OBSERVED_AT,
     record_version: int = 1,
     status: ProblemStatus = ProblemStatus.OPEN,

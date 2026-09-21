@@ -10,6 +10,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Mapping
 
+from intergrax.runtime.observability.export_boundary import ObservabilityExporter
 from intergrax.runtime.observability.export_health import ObservabilityExporterHealthRegistry
 from intergrax.runtime.observability.export_policy import ObservabilityExportPolicy
 from intergrax.runtime.observability.export_wiring import make_observability_export_runtime_plugin
@@ -225,6 +226,10 @@ def build_observability_export_runtime_plugin(
         config,
         registry=registry,
     )
+    if not isinstance(integration, ObservabilityExporter):
+        raise TypeError(
+            "observability export backend must implement ObservabilityExporter",
+        )
     policy = ObservabilityExportPolicy(enabled=True, export_content=False)
     return make_observability_export_runtime_plugin(
         exporter=integration,

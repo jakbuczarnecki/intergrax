@@ -60,7 +60,10 @@ from intergrax.tools.registry.sandbox_isolation_wiring import (
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
-from intergrax.runtime.events.payloads.canonical import ContextAssemblyPayloadV1
+from intergrax.runtime.events.payloads.canonical import (
+    ContextAssemblyPayloadV1,
+    ContextAssemblyPayloadV2,
+)
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.governance_hooks import (
     hook_context_for_task,
@@ -1320,7 +1323,7 @@ class UAEPExecutor:
     ) -> None:
         if self._event_bus is None:
             return
-        typed = ContextAssemblyPayloadV1(
+        typed = ContextAssemblyPayloadV2(
             node_id=node_id,
             context_original_chars=context_original_chars,
             context_final_chars=context_final_chars,

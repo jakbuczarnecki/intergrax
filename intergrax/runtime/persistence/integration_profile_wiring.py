@@ -86,15 +86,20 @@ def open_runtime_event_store_from_profile(
         from intergrax.integrations.providers.document_store.cassandra.integration import (
             CassandraDocumentStoreIntegration,
         )
+        from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
         from intergrax.integrations.providers.document_store.cassandra.runtime_events import (
             runtime_event_persistence_from_document_store,
         )
 
         resolved = resolve_from_profile(profile, IntegrationCategory.DOCUMENT_STORE)
         if isinstance(resolved, CassandraDocumentStoreIntegration):
-            return _validating(
-                runtime_event_persistence_from_document_store(resolved.as_document_store()),
-            )
+            store = resolved.as_document_store()
+            if not isinstance(store, ConditionalDocumentStore):
+                raise TypeError(
+                    "Cassandra document store must implement ConditionalDocumentStore "
+                    "for runtime event persistence wiring",
+                )
+            return _validating(runtime_event_persistence_from_document_store(store))
 
     obs_slug = profile.slug_for_category(IntegrationCategory.OBSERVABILITY_BACKEND)
     if obs_slug == "elasticsearch":

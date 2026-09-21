@@ -19,6 +19,7 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import RuntimeEventPayload, runtime_event_with_payload
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+from intergrax.contracts.tracing.values import TraceObject, normalize_trace_tags
 from intergrax.runtime.nexus.tracing.trace_models import (
     DEFAULT_REDACTED_TEXT,
     DiagnosticPayload,
@@ -132,13 +133,15 @@ class ObservabilityEmitter:
 
         safe_message = DEFAULT_REDACTED_TEXT if self.production_mode else message
         scope = current_trace_scope()
-        merged_tags = {
-            "tenant_id": self.tenant_id,
-            "task_id": self.task_id,
-            "agent_id": self.agent_id,
-        }
+        merged_tags: TraceObject = normalize_trace_tags(
+            {
+                "tenant_id": self.tenant_id,
+                "task_id": self.task_id,
+                "agent_id": self.agent_id,
+            }
+        )
         if tags:
-            merged_tags.update(tags)
+            merged_tags = normalize_trace_tags({**merged_tags, **tags})
         merged_tags["task_id"] = self.task_id
         if scope is not None:
             if scope.step_id:

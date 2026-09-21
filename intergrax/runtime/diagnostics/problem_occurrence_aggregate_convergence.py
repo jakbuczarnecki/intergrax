@@ -5,11 +5,13 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.diagnostics.problem_record import PersistedProblem
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
     ProblemLifecycleProvenance,
     ProblemOccurrence,
     ProblemStatus,
+    coerce_runtime_problem_provenance,
 )
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemOccurrenceAggregateHealth,
@@ -17,14 +19,26 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
 
 
 def apply_occurrence_delta_to_problem(
-    existing: Problem,
+    existing: PersistedProblem,
     *,
     newly_accepted: tuple[ProblemOccurrence, ...],
     provenance: ProblemLifecycleProvenance,
 ) -> Problem:
     """Apply bounded aggregate deltas for occurrences accepted in this invocation."""
     if not newly_accepted:
-        return existing
+        if type(existing) is Problem:
+            return existing
+        return Problem(
+            problem_id=existing.problem_id,
+            tenant_id=existing.tenant_id,
+            status=existing.status,
+            first_seen_at=existing.first_seen_at,
+            last_seen_at=existing.last_seen_at,
+            occurrence_count=existing.occurrence_count,
+            provenance=coerce_runtime_problem_provenance(existing.provenance),
+            record_version=existing.record_version,
+            occurrence_aggregate_health=existing.occurrence_aggregate_health,
+        )
 
     observed_times = [occurrence.observed_at for occurrence in newly_accepted]
     next_status = existing.status

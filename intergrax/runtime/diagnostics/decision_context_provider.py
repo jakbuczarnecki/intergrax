@@ -54,6 +54,7 @@ class DecisionContextProvider(Protocol):
         | None = None,
     ) -> DecisionContextView:
         """Attach related decision context for one occurrence subject."""
+        ...
 
 
 @dataclass(slots=True)

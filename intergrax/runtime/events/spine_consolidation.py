@@ -13,6 +13,7 @@ from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
+    validate_event_id,
     validate_run_id,
     validate_task_id,
 )
@@ -204,7 +205,9 @@ def build_platform_signal_event(
         phase=phase or entry.phase,
         severity=severity,
         correlation_id=correlation_id or task_id,
-        parent_event_id=parent_event_id,
+        parent_event_id=(
+            validate_event_id(parent_event_id) if parent_event_id is not None else None
+        ),
         payload=body,
     )
 

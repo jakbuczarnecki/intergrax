@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TypeVar
+from typing import Generic, TypeVar
 
 from intergrax.contracts.diagnostic_analyzer import DiagnosticAnalyzer
 from intergrax.contracts.diagnostic_evidence_contributor import (
@@ -18,6 +18,7 @@ from intergrax.contracts.diagnostic_taxonomy_contributor import (
 )
 
 _T = TypeVar("_T")
+_ExtensionT = TypeVar("_ExtensionT")
 
 
 class DiagnosticExtensionConfigurationError(Exception):
@@ -25,14 +26,14 @@ class DiagnosticExtensionConfigurationError(Exception):
 
 
 @dataclass(frozen=True, slots=True)
-class _OrderedExtension:
+class _OrderedExtension(Generic[_ExtensionT]):
     priority: int
     namespace: str
     stable_id: str
-    extension: object
+    extension: _ExtensionT
 
 
-def _extension_sort_key(item: _OrderedExtension) -> tuple[int, str, str]:
+def _extension_sort_key(item: _OrderedExtension[object]) -> tuple[int, str, str]:
     return (item.priority, item.namespace, item.stable_id)
 
 
@@ -123,10 +124,10 @@ def _order_taxonomy(
 
 
 def _dedupe_and_sort(
-    items: list[_OrderedExtension],
+    items: list[_OrderedExtension[_ExtensionT]],
     *,
     label: str,
-) -> list[_OrderedExtension]:
+) -> list[_OrderedExtension[_ExtensionT]]:
     seen: set[str] = set()
     for item in items:
         if item.stable_id in seen:
@@ -134,7 +135,7 @@ def _dedupe_and_sort(
                 f"duplicate {label} stable_id: {item.stable_id!r}",
             )
         seen.add(item.stable_id)
-    return sorted(items, key=_extension_sort_key)
+    return sorted(items, key=lambda item: (item.priority, item.namespace, item.stable_id))
 
 
 def _build_taxonomy_catalog(

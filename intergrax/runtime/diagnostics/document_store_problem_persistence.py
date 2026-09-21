@@ -18,15 +18,24 @@ from intergrax.integrations.contracts.document_store import (
 from intergrax.integrations.contracts.document_store_query_cursor_provider import (
     DocumentStoreQueryCursorProvider,
 )
-from intergrax.runtime.diagnostics.diagnostic_subject import diagnostic_subject_index_token
-from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingSubjectRef
+from intergrax.contracts.diagnostics.problem_record import PersistedProblem
+from intergrax.contracts.diagnostics.reconciliation_key import ProblemReconciliationKey
+from intergrax.contracts.diagnostics.subject_ref import ProblemGroupingSubjectRef
+from intergrax.runtime.diagnostics.problem_grouping import (
+    ProblemGroupingSubjectRef as RuntimeProblemGroupingSubjectRef,
+)
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
     ProblemId,
-    ProblemReconciliationKey,
     ProblemStatus,
     reconciliation_keys_equal,
 )
+
+
+def _as_runtime_problem(record: PersistedProblem) -> Problem:
+    if type(record) is not Problem:
+        raise TypeError("document store Problem persistence requires runtime Problem records")
+    return record
 from intergrax.runtime.diagnostics.problem_persistence import (
     ProblemListPage,
     ProblemPersistence,
@@ -87,10 +96,12 @@ def _reconciliation_row_key(reconciliation_key: ProblemReconciliationKey) -> str
 
 
 def _subject_row_key(subject_ref: ProblemGroupingSubjectRef) -> str:
-    return f"{_SUBJECT_ROW_PREFIX}{diagnostic_subject_index_token(subject_ref.subject)}"
+    return f"{_SUBJECT_ROW_PREFIX}{subject_ref.index_token}"
 
 
 def _legacy_execution_subject_row_key(subject_ref: ProblemGroupingSubjectRef) -> str | None:
+    if not isinstance(subject_ref, RuntimeProblemGroupingSubjectRef):
+        return None
     execution = subject_ref.execution()
     if execution is None:
         return None
@@ -475,7 +486,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         *,
         tenant_id: str,
         subject_ref: ProblemGroupingSubjectRef,
-    ) -> Problem | None:
+    ) -> PersistedProblem | None:
         if subject_ref.tenant_id != tenant_id:
             raise ProblemPersistenceIntegrityError(
                 "subject_ref tenant_id does not match lookup tenant scope",
@@ -507,15 +518,16 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
 
     def create(
         self,
-        record: Problem,
+        record: PersistedProblem,
         *,
         indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
-    ) -> Problem:
-        partition_key = _document_partition(record.tenant_id)
+    ) -> PersistedProblem:
+        runtime_record = _as_runtime_problem(record)
+        partition_key = _document_partition(runtime_record.tenant_id)
         claims = _IndexClaims(self._document_store)
         try:
             self._claim_indexes_for_create(
-                record=record,
+                record=runtime_record,
                 indexed_subject_refs=indexed_subject_refs,
                 partition_key=partition_key,
                 claims=claims,
@@ -527,10 +539,10 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             claims.rollback_all(partition_key=partition_key)
             raise
 
-        canonical_document = self._canonical_document(record)
+        canonical_document = self._canonical_document(runtime_record)
         try:
             if self._document_store.put_if_absent(canonical_document):
-                return record
+                return runtime_record
         except Exception:
             existing_record = self._document_store.get(
                 partition_key,
@@ -540,10 +552,10 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
                 claims.rollback_all(partition_key=partition_key)
                 raise
             stored = decode_problem_record(dict(existing_record.data))
-            if stored == record:
+            if stored == runtime_record:
                 return self._resolve_existing_record_and_repair_indexes(
                     existing_record,
-                    record,
+                    runtime_record,
                     partition_key=partition_key,
                     indexed_subject_refs=indexed_subject_refs,
                 )
@@ -555,7 +567,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             raise ProblemPersistenceConflictError("conflicting Problem for problem_id")
 
         return self._resolve_canonical_create_race(
-            record=record,
+            record=runtime_record,
             canonical_document=canonical_document,
             partition_key=partition_key,
             claims=claims,
@@ -564,20 +576,21 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
 
     def update(
         self,
-        record: Problem,
+        record: PersistedProblem,
         *,
         expected_version: int,
         indexed_subject_refs: tuple[ProblemGroupingSubjectRef, ...] = (),
-    ) -> Problem:
-        partition_key = _document_partition(record.tenant_id)
-        row_key = _record_row_key(record.problem_id)
+    ) -> PersistedProblem:
+        runtime_record = _as_runtime_problem(record)
+        partition_key = _document_partition(runtime_record.tenant_id)
+        row_key = _record_row_key(runtime_record.problem_id)
         existing_record = self._document_store.get(partition_key, row_key)
         if existing_record is None:
             raise ProblemPersistenceConflictError("Problem does not exist")
 
         existing = decode_problem_record(dict(existing_record.data))
-        self._verify_canonical_tenant(existing, tenant_id=record.tenant_id)
-        if existing.problem_id != record.problem_id:
+        self._verify_canonical_tenant(existing, tenant_id=runtime_record.tenant_id)
+        if existing.problem_id != runtime_record.problem_id:
             raise ProblemPersistenceIntegrityError(
                 "canonical Problem id does not match update target",
             )
@@ -587,7 +600,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             )
 
         self._verify_reconciliation_index_for_update(
-            record=record,
+            record=runtime_record,
             partition_key=partition_key,
         )
 
@@ -595,14 +608,14 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
         list_index_plan: _ListIndexUpdatePlan | None = None
         try:
             self._claim_new_subject_indexes_for_update(
-                record=record,
+                record=runtime_record,
                 new_subject_refs=indexed_subject_refs,
                 partition_key=partition_key,
                 claims=claims,
             )
             list_index_plan = self._prepare_list_index_update(
                 existing=existing,
-                record=record,
+                record=runtime_record,
                 partition_key=partition_key,
                 claims=claims,
             )
@@ -613,7 +626,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             claims.rollback_all(partition_key=partition_key)
             raise
 
-        replacement = self._canonical_document(record)
+        replacement = self._canonical_document(runtime_record)
         try:
             if self._document_store.replace_if_match(
                 expected=existing_record,
@@ -621,10 +634,10 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             ):
                 if list_index_plan is not None:
                     self._finalize_list_index_update(list_index_plan)
-                return record
+                return runtime_record
         except Exception as exc:
             return self._resolve_uncertain_update_cas(
-                record=record,
+                record=runtime_record,
                 existing=existing,
                 claims=claims,
                 partition_key=partition_key,
@@ -633,7 +646,7 @@ class DocumentStoreProblemPersistence(ProblemPersistence):
             )
 
         return self._resolve_update_cas_race(
-            record=record,
+            record=runtime_record,
             existing=existing,
             claims=claims,
             partition_key=partition_key,

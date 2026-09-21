@@ -60,6 +60,7 @@ class ObservabilityBackend(Protocol):
 
     def query_instant(self, promql: str, *, eval_time: Optional[float] = None) -> MetricQueryResult:
         """Run an instant PromQL query (Prometheus ``/api/v1/query``)."""
+        ...
 
     def query_range(
         self,
@@ -70,6 +71,7 @@ class ObservabilityBackend(Protocol):
         step: str = "15s",
     ) -> MetricQueryResult:
         """Run a range PromQL query (Prometheus ``/api/v1/query_range``)."""
+        ...
 
     def query_traces(
         self,
@@ -78,3 +80,4 @@ class ObservabilityBackend(Protocol):
         name: Optional[str] = None,
     ) -> TraceQueryResult:
         """Query recent traces/spans from the backend (Langfuse, OTEL, etc.)."""
+        ...

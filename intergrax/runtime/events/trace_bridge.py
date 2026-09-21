@@ -30,10 +30,10 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.payload_registry import merge_payload_envelope
+from intergrax.runtime.events.spine_payload_codec import legacy_spine_payload_to_typed
 from intergrax.runtime.events.payloads import (
     GraphNodePayloadV1,
     LlmCallPayloadV1,
-    TaskLifecyclePayloadV1,
     ToolPayloadV1,
     TraceBridgePayloadV1,
     ValidationPayloadV1,
@@ -85,6 +85,16 @@ def trace_bridge_subject_from_tags(
         task_id=str(validate_task_id(task_id)),
         agent_id=agent_id.strip(),
     )
+
+
+def _trace_tag_agent_id(trace: TraceEvent, subject: TraceBridgeSubject) -> str | None:
+    raw = trace.tags.get("agent_id")
+    if type(raw) is str and raw.strip():
+        return raw
+    if isinstance(subject, TraceBridgeSubjectView) and subject.agent_id:
+        return subject.agent_id
+    return None
+
 
 _CORE_LLM_CALL_SCHEMA = CoreLLMCallRecordedDiagV1.schema_id()
 _CORE_LLM_RETURNED_SCHEMA = "intergrax.diag.engine.core_llm.adapter_returned"
@@ -196,21 +206,17 @@ def runtime_event_from_task_state(
         correlation_id=correlation_id or task.task_id,
     )
     capability = task.context.capability or ""
-    lifecycle = TaskLifecyclePayloadV1(
-        task_state=task.state.value,
-        message=message,
-        capability=capability,
-        source="task_lifecycle",
-    )
+    lifecycle_raw = {
+        "task_state": task.state.value,
+        "message": message,
+        "capability": capability,
+        "source": "task_lifecycle",
+    }
+    lifecycle, promote_fields = legacy_spine_payload_to_typed(event_type, lifecycle_raw)
     return runtime_event_with_payload(
         base,
         lifecycle,
-        promote_fields={
-            "task_state": task.state.value,
-            "message": message,
-            "capability": capability,
-            "source": "task_lifecycle",
-        },
+        promote_fields=promote_fields,
     )
 
 
@@ -381,21 +387,40 @@ def _attach_typed_bridge_payload(
         return merge_payload_envelope(base, typed, promote_fields=promote or None)
     if trace.step == "task_lifecycle":
         task_state = str(trace.tags.get("task_state") or extra_payload.get("task_state") or "")
-        typed = TaskLifecyclePayloadV1(
-            task_state=task_state,
-            message=trace.message,
-            capability=str(trace.tags.get("capability") or ""),
-            source="task_lifecycle",
+        lifecycle_raw = {
+            "task_state": task_state,
+            "message": trace.message,
+            "capability": str(trace.tags.get("capability") or ""),
+            "source": "task_lifecycle",
+        }
+        lifecycle_raw.update(
+            {
+                key: extra_payload[key]
+                for key in (
+                    "plan_id",
+                    "step_count",
+                    "failure_kind",
+                    "error_type",
+                    "error_message",
+                    "raw_hash",
+                    "decision_record",
+                    "lifecycle_state",
+                    "checkpoint_id",
+                    "resume_token",
+                    "progress_message",
+                    "reason",
+                )
+                if key in extra_payload
+            }
+        )
+        typed_lifecycle, lifecycle_promote = legacy_spine_payload_to_typed(
+            event_type,
+            lifecycle_raw,
         )
         return merge_payload_envelope(
             base,
-            typed,
-            promote_fields={
-                "task_state": task_state,
-                "message": trace.message,
-                "capability": trace.tags.get("capability"),
-                "source": "task_lifecycle",
-            },
+            typed_lifecycle,
+            promote_fields=lifecycle_promote,
         )
     from intergrax.contracts.application_observability_attributes import (
         coerce_observability_attribute_mapping,
@@ -534,7 +559,7 @@ def trace_event_to_runtime_event(
         run_id=resolved_run_id,
         attempt_id=resolved_attempt_id,
         execution_id=resolved_execution_id,
-        agent_id=trace.tags.get("agent_id") or subject.agent_id or None,
+        agent_id=_trace_tag_agent_id(trace, subject),
         node_id=str(node_id) if node_id else None,
         step_id=str(step_id) if step_id else None,
         event_type=event_type,

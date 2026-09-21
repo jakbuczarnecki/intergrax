@@ -27,6 +27,10 @@ from intergrax.contracts.diagnostics.problem_identity import (
     ProblemOccurrenceAggregateHealth,
     ProblemStatus,
 )
+from intergrax.contracts.diagnostics.problem_record import (
+    PersistedProblem,
+    ProblemLifecycleProvenance as PersistedProblemLifecycleProvenance,
+)
 from intergrax.contracts.diagnostics.problem_persistence import (
     ProblemPersistence,
     ProblemPersistenceConflictError,
@@ -114,9 +118,9 @@ class Problem:
 class ProblemLifecycleResult:
     """Typed reconciliation outcome for one validated grouping invocation."""
 
-    created: tuple[Problem, ...]
-    updated: tuple[Problem, ...]
-    unchanged: tuple[Problem, ...]
+    created: tuple[PersistedProblem, ...]
+    updated: tuple[PersistedProblem, ...]
+    unchanged: tuple[PersistedProblem, ...]
 
 
 @runtime_checkable
@@ -210,9 +214,9 @@ class ProblemLifecycleEngine:
         _validate_observed_at(observed_at)
         _validate_grouping_result_tenant(grouping_result)
 
-        created: list[Problem] = []
-        updated: list[Problem] = []
-        unchanged: list[Problem] = []
+        created: list[PersistedProblem] = []
+        updated: list[PersistedProblem] = []
+        unchanged: list[PersistedProblem] = []
 
         batch_subject_owner: dict[ProblemGroupingSubjectRef, ProblemId] = {}
 
@@ -294,7 +298,7 @@ class ProblemLifecycleEngine:
         tenant_id: str,
         problem_id: ProblemId,
         resolved_at: datetime,
-    ) -> Problem:
+    ) -> PersistedProblem:
         _validate_observed_at(resolved_at)
         validated_problem_id = validate_problem_id(problem_id)
         existing = self._persistence.get(
@@ -347,7 +351,7 @@ class ProblemLifecycleEngine:
         *,
         tenant_id: str,
         problem_id: ProblemId,
-    ) -> Problem:
+    ) -> PersistedProblem:
         from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
             reconcile_problem_occurrence_aggregate,
         )
@@ -365,7 +369,7 @@ class ProblemLifecycleEngine:
             problem_persistence=self._persistence,
         )
 
-    def _mark_reconciliation_required_best_effort(self, existing: Problem) -> None:
+    def _mark_reconciliation_required_best_effort(self, existing: PersistedProblem) -> None:
         from intergrax.runtime.diagnostics.problem_occurrence_aggregate_reconciliation import (
             mark_problem_reconciliation_required,
         )
@@ -389,7 +393,7 @@ class ProblemLifecycleEngine:
         reconciliation_key: ProblemReconciliationKey,
         observed_at: datetime,
         original_exc: ProblemPersistenceConflictError,
-    ) -> tuple[Problem, bool]:
+    ) -> tuple[PersistedProblem, bool]:
         lookup_exc: BaseException = original_exc
         attempt = 0
         pending_spins = 0
@@ -440,7 +444,7 @@ class ProblemLifecycleEngine:
         *,
         record: Problem,
         initial_occurrences: tuple[ProblemOccurrence, ...],
-    ) -> Problem:
+    ) -> PersistedProblem:
         accepted = self._append_occurrences(
             tenant_id=record.tenant_id,
             problem_id=record.problem_id,
@@ -462,7 +466,7 @@ class ProblemLifecycleEngine:
         candidate: ProblemGroupingCandidate,
         reconciliation_key: ProblemReconciliationKey,
         observed_at: datetime,
-    ) -> tuple[Problem, bool]:
+    ) -> tuple[PersistedProblem, bool]:
         existing = self._persistence.get(
             tenant_id=tenant_id,
             problem_id=problem_id,
@@ -520,11 +524,11 @@ class ProblemLifecycleEngine:
     def _prepare_candidate_update(
         self,
         *,
-        existing: Problem,
+        existing: PersistedProblem,
         candidate: ProblemGroupingCandidate,
         reconciliation_key: ProblemReconciliationKey,
         observed_at: datetime,
-    ) -> tuple[Problem, bool, tuple[ProblemGroupingSubjectRef, ...]]:
+    ) -> tuple[Problem | PersistedProblem, bool, tuple[ProblemGroupingSubjectRef, ...]]:
         from intergrax.runtime.diagnostics.problem_occurrence_aggregate_convergence import (
             apply_occurrence_delta_to_problem,
         )
@@ -772,7 +776,20 @@ class ProblemLifecycleEngine:
         return mint_problem_id()
 
 
-def _build_resolved_problem(existing: Problem) -> Problem:
+def coerce_runtime_problem_provenance(
+    provenance: PersistedProblemLifecycleProvenance,
+) -> ProblemLifecycleProvenance:
+    if type(provenance) is ProblemLifecycleProvenance:
+        return provenance
+    return ProblemLifecycleProvenance(
+        strategy_id=ProblemGroupingStrategyId(provenance.strategy_id),
+        strategy_version=ProblemGroupingStrategyVersion(provenance.strategy_version),
+        method=ProblemGroupingMethod(provenance.method),
+        reconciliation_key=provenance.reconciliation_key,
+    )
+
+
+def _build_resolved_problem(existing: PersistedProblem) -> Problem:
     return Problem(
         problem_id=existing.problem_id,
         tenant_id=existing.tenant_id,
@@ -780,7 +797,7 @@ def _build_resolved_problem(existing: Problem) -> Problem:
         first_seen_at=existing.first_seen_at,
         last_seen_at=existing.last_seen_at,
         occurrence_count=existing.occurrence_count,
-        provenance=existing.provenance,
+        provenance=coerce_runtime_problem_provenance(existing.provenance),
         record_version=existing.record_version + 1,
         occurrence_aggregate_health=existing.occurrence_aggregate_health,
     )
@@ -794,7 +811,7 @@ def _validate_observed_at(observed_at: datetime) -> None:
 
 
 def _validate_persisted_problem_identity(
-    existing: Problem,
+    existing: PersistedProblem,
     *,
     tenant_id: str,
     problem_id: ProblemId,
@@ -888,28 +905,6 @@ def _candidate_occurrences(
         )
         for member in candidate.members
     )
-
-
-def _append_occurrences_if_absent(
-    occurrence_persistence: ProblemOccurrencePersistence,
-    *,
-    tenant_id: str,
-    problem_id: ProblemId,
-    occurrences: tuple[ProblemOccurrence, ...],
-) -> tuple[ProblemOccurrence, ...]:
-    accepted: list[ProblemOccurrence] = []
-    for occurrence in occurrences:
-        result = occurrence_persistence.append_if_absent(
-            tenant_id=tenant_id,
-            problem_id=problem_id,
-            occurrence=occurrence,
-        )
-        if result in (
-            ProblemOccurrenceAppendResult.CREATED,
-            ProblemOccurrenceAppendResult.ALREADY_EXISTS,
-        ):
-            accepted.append(occurrence)
-    return tuple(accepted)
 
 
 def _append_occurrences_if_absent(

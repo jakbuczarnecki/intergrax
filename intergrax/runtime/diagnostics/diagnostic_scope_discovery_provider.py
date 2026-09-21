@@ -58,10 +58,12 @@ class DiagnosticScopeDiscoveryProvider(Protocol):
     @property
     def provider_id(self) -> str:
         """Stable provider identity."""
+        ...
 
     @property
     def supported_reference_kind(self) -> DiagnosticScopeReferenceKind:
         """Reference discriminator handled by this provider."""
+        ...
 
     def discover(
         self,
@@ -71,6 +73,7 @@ class DiagnosticScopeDiscoveryProvider(Protocol):
         candidate_limit: int,
     ) -> DiagnosticScopeProviderResult:
         """Resolve execution scope candidates for one tenant-scoped reference."""
+        ...
 
 
 def validate_scope_provider_result(

@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from datetime import datetime, timedelta, timezone
 
 from intergrax.contracts.execution_identity import (
@@ -77,24 +78,33 @@ def sample_functional_evidence(
         operation_id=operation_name,
         recorded_at=recorded_at or _BASE_TIME,
     )
+    base_kwargs = {
+        "evidence_id": evidence_id or mint_event_id(),
+        "kind": kind,
+        "scope": resolved_scope,
+        "provenance": provenance,
+    }
     if kind is PipelineEvidenceKind.ARTIFACT_LINEAGE:
-        payload = {
-            "artifact_lineage": PipelineArtifactLineageFact(
+        return PlatformFunctionalEvidence(
+            **base_kwargs,
+            artifact_lineage=PipelineArtifactLineageFact(
                 source_artifact_ref=ObservabilityArtifactReference(artifact_ref="doc:source"),
                 derived_artifact_ref=ObservabilityArtifactReference(artifact_ref="chunk:derived"),
                 lineage_operation="chunk",
             ),
-        }
-    elif kind is PipelineEvidenceKind.OPERATION_OUTCOME:
-        payload = {
-            "operation_outcome": PipelineOperationOutcomeFact(
+        )
+    if kind is PipelineEvidenceKind.OPERATION_OUTCOME:
+        return PlatformFunctionalEvidence(
+            **base_kwargs,
+            operation_outcome=PipelineOperationOutcomeFact(
                 operation_name=operation_name,
                 status=PipelineOperationStatus.SUCCEEDED,
             ),
-        }
-    elif kind is PipelineEvidenceKind.CANDIDATE_RANK:
-        payload = {
-            "candidate": PipelineCandidateFact(
+        )
+    if kind is PipelineEvidenceKind.CANDIDATE_RANK:
+        return PlatformFunctionalEvidence(
+            **base_kwargs,
+            candidate=PipelineCandidateFact(
                 query_id="query-1",
                 candidate_artifact_ref=ObservabilityArtifactReference(artifact_ref="candidate:1"),
                 score=TypedPipelineScore(
@@ -104,37 +114,32 @@ def sample_functional_evidence(
                 rank=1,
                 selected=True,
             ),
-        }
-    elif kind is PipelineEvidenceKind.SELECTION:
-        payload = {
-            "selection": PipelineSelectionFact(
+        )
+    if kind is PipelineEvidenceKind.SELECTION:
+        return PlatformFunctionalEvidence(
+            **base_kwargs,
+            selection=PipelineSelectionFact(
                 query_id="query-1",
                 selected_artifact_ref=ObservabilityArtifactReference(artifact_ref="selected:1"),
                 candidate_count=3,
                 selection_reason="top_score",
             ),
-        }
-    elif kind is PipelineEvidenceKind.OUTPUT_RELATION:
-        payload = {
-            "output_relation": PipelineOutputRelationFact(
+        )
+    if kind is PipelineEvidenceKind.OUTPUT_RELATION:
+        return PlatformFunctionalEvidence(
+            **base_kwargs,
+            output_relation=PipelineOutputRelationFact(
                 selected_artifact_ref=ObservabilityArtifactReference(artifact_ref="selected:1"),
                 output_artifact_ref=ObservabilityArtifactReference(artifact_ref="output:1"),
                 relation_kind="derived_from",
             ),
-        }
-    else:
-        payload = {
-            "validation_link": PipelineValidationLinkFact(
-                validation_id=mint_event_id(),
-                output_artifact_ref=ObservabilityArtifactReference(artifact_ref="output:1"),
-            ),
-        }
+        )
     return PlatformFunctionalEvidence(
-        evidence_id=evidence_id or mint_event_id(),
-        kind=kind,
-        scope=resolved_scope,
-        provenance=provenance,
-        **payload,
+        **base_kwargs,
+        validation_link=PipelineValidationLinkFact(
+            validation_id=mint_event_id(),
+            output_artifact_ref=ObservabilityArtifactReference(artifact_ref="output:1"),
+        ),
     )
 
 
@@ -333,7 +338,7 @@ def assert_functional_evidence_corrupt_index_fails_closed(
     store: FunctionalEvidencePersistence,
     *,
     label: str,
-    corrupt_index: object,
+    corrupt_index: Callable[..., None],
 ) -> None:
     scope = sample_functional_evidence_scope(tenant_id=f"{label}-corrupt")
     evidence = sample_functional_evidence(scope=scope)
