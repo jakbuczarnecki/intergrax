@@ -5,12 +5,16 @@
 
 from __future__ import annotations
 
-import math
 import re
 from collections.abc import Iterator, Mapping, Sequence
-from enum import Enum
 from typing import Any
 
+from intergrax.contracts.structured_json_value import (
+    JsonObject,
+    JsonPrimitive,
+    JsonValue,
+    validate_structured_json_value,
+)
 from intergrax.core.security import (
     CREDENTIAL_IN_URL,
     SECRET_QUERY_PARAMETER,
@@ -19,10 +23,6 @@ from intergrax.core.security import (
     is_secret_like_key,
     validate_secret_safe_url,
 )
-
-type JsonPrimitive = str | int | float | bool | None
-type JsonValue = JsonPrimitive | list[JsonValue] | dict[str, JsonValue]
-type JsonObject = dict[str, JsonValue]
 
 KNOWLEDGE_SECRET_POLICY = SecretSafeValidationPolicy(
     forbidden_key_names=frozenset(
@@ -102,57 +102,42 @@ def validate_safe_url(url: str, *, field_name: str) -> str:
         raise ValueError(str(exc)) from exc
 
 
-def _validate_finite_float(value: float, *, field_name: str, path: str) -> float:
-    if not math.isfinite(value):
-        label = path.rstrip(".") if path else field_name
-        raise ValueError(f"{field_name} must not contain non-finite float at '{label}'")
-    return value
-
-
-def validate_json_value(value: object, *, field_name: str, path: str = "") -> JsonValue:
-    if isinstance(value, Enum):
-        raise ValueError(f"{field_name} must contain JSON-compatible values at '{path.rstrip('.')}'")
-
-    if value is None or isinstance(value, bool):
-        return value
-    if isinstance(value, str):
-        if is_url_like(value):
-            label = path.rstrip(".") if path else field_name
-            validate_safe_url(value, field_name=f"{field_name} value '{label}'")
-        return value
-    if isinstance(value, int) and not isinstance(value, bool):
-        return value
-    if isinstance(value, float):
-        return _validate_finite_float(value, field_name=field_name, path=path)
-    if isinstance(value, Mapping):
-        result: dict[str, JsonValue] = {}
-        for raw_key, child in value.items():
-            if not isinstance(raw_key, str):
-                child_path = path or field_name
-                raise ValueError(f"{field_name} keys must be strings at '{child_path}'")
-            key = raw_key
+def _enforce_knowledge_metadata_policies(
+    value: JsonValue,
+    *,
+    field_name: str,
+    path: str = "",
+) -> JsonValue:
+    if isinstance(value, dict):
+        for key, child in value.items():
             if is_secret_like_key(key, policy=KNOWLEDGE_SECRET_POLICY):
                 raise ValueError(
                     f"{field_name} must not contain secret-bearing key '{path + key}'"
                 )
-            result[key] = validate_json_value(
+            _enforce_knowledge_metadata_policies(
                 child,
                 field_name=field_name,
                 path=f"{path}{key}.",
             )
-        return result
+        return value
     if isinstance(value, list):
-        return [
-            validate_json_value(
+        for index, child in enumerate(value):
+            _enforce_knowledge_metadata_policies(
                 child,
                 field_name=field_name,
                 path=f"{path}[{index}].",
             )
-            for index, child in enumerate(value)
-        ]
+        return value
+    if isinstance(value, str) and is_url_like(value):
+        label = path.rstrip(".") if path else field_name
+        validate_safe_url(value, field_name=f"{field_name} value '{label}'")
+    return value
 
-    child_path = path.rstrip(".") if path else field_name
-    raise ValueError(f"{field_name} must contain JSON-compatible values at '{child_path}'")
+
+def validate_json_value(value: object, *, field_name: str, path: str = "") -> JsonValue:
+    """Validate JSON structure, then apply Knowledge secret and URL safety policies."""
+    structured = validate_structured_json_value(value, field_name=field_name, path=path)
+    return _enforce_knowledge_metadata_policies(structured, field_name=field_name, path=path)
 
 
 def assert_safe_mapping(value: Mapping[str, Any], *, field_name: str) -> dict[str, JsonValue]:

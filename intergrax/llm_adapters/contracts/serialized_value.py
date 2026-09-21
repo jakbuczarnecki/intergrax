@@ -5,6 +5,6 @@
 
 from __future__ import annotations
 
-from intergrax.knowledge.contracts.validation import JsonObject, JsonValue
+from intergrax.contracts.structured_json_value import JsonObject, JsonValue
 
 __all__ = ["JsonObject", "JsonValue"]

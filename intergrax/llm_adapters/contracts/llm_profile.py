@@ -11,7 +11,7 @@ from typing import Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from intergrax.knowledge.contracts.validation import validate_json_value
+from intergrax.contracts.structured_json_value import validate_json_value_structure
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.serialized_value import JsonValue
 
@@ -28,7 +28,10 @@ def _validate_options_map(value: dict[str, object]) -> dict[str, JsonValue]:
     for key, raw in value.items():
         if not isinstance(key, str) or not key:
             raise ValueError("LLMProfile.options keys must be non-empty strings")
-        validated[key] = validate_json_value(raw, field_name="LLMProfile.options")
+        validated[key] = validate_json_value_structure(
+            raw,
+            field_name="LLMProfile.options",
+        )
     return validated
 
 

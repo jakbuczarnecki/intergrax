@@ -6,7 +6,10 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 
-from intergrax.knowledge.contracts.validation import JsonValue, validate_json_value
+from intergrax.contracts.structured_json_value import (
+    JsonValue,
+    validate_json_value_structure,
+)
 from intergrax.llm_adapters._shared.strict_tool_enforcement import (
     resolve_canonical_tool_definitions,
 )
@@ -26,7 +29,7 @@ def _validate_raw_wire_tool_schema(
             f"got {type(tool).__name__}"
         )
     try:
-        validated = validate_json_value(tool, field_name=f"tools[{index}]")
+        validated = validate_json_value_structure(tool, field_name=f"tools[{index}]")
     except ValueError as exc:
         raise ValueError(str(exc)) from exc
     if not isinstance(validated, dict):
