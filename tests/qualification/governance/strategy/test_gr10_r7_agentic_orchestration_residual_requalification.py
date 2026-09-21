@@ -82,21 +82,11 @@ def test_gr10_r7_agentic_partial_rows_have_precise_reasons() -> None:
         for row in GR10_AGENTIC_CAPABILITY_SEMANTICS
         if row.coverage is Gr10CoverageStatus.PARTIAL
     ]
-    assert {row.capability for row in partial} == {
-        "Inner Governance",
-        "Policy evaluation",
-        "MSE",
-        "Governance Evidence",
-    }
+    assert {row.capability for row in partial} == {"Governance Evidence"}
     for row in partial:
         assert len(row.reason) > 40
         lowered = row.reason.lower()
-        assert (
-            "not all" in lowered
-            or "residual" in lowered
-            or "optional" in lowered
-            or "not enterprise-adopted for all" in lowered
-        )
+        assert "deferred_to_gr13" in lowered or "deferred to gr-13" in lowered
 
 
 def test_gr10_r7_orchestration_partial_inventory() -> None:

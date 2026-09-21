@@ -93,7 +93,7 @@ def test_gr10_r15_four_residuals_final_status() -> None:
 
 def test_gr10_r15_next_remediation_agentic_closure() -> None:
     assert GR10_R15_NEXT_REMEDIATION.strategy == "AGENTIC"
-    assert "GR-10" in GR10_R15_NEXT_REMEDIATION.task_name
+    assert "Recertification" in GR10_R15_NEXT_REMEDIATION.task_name or "Closure" in GR10_R15_NEXT_REMEDIATION.task_name
     assert GR10_R14_NEXT_REMEDIATION.task_name.startswith("GR-10-R15")
 
 
