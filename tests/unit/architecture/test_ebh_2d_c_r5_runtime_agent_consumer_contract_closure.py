@@ -148,8 +148,6 @@ def test_capability_routing_owns_can_handle_scoring_loop() -> None:
     assert ".can_handle(" in routing_source
     for path in sorted(_NEXUS_ROOT.rglob("*.py")):
         rel = path.relative_to(_REPO_ROOT).as_posix()
-        if rel.endswith("agent_router.py"):
-            continue
         if _source_calls_can_handle(path):
             assert rel.endswith("planning/task_planner.py"), rel
 

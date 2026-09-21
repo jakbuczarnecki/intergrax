@@ -13,7 +13,7 @@ from intergrax.agents.uaep_protocol import UAEPAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.runtime.registry.agent_assembly_resolver import assert_agent_assembly_valid
 from intergrax.runtime.registry.agent_routing_policy import evaluate_agent_routing
-from intergrax.contracts.capability import CapabilityMatchResult
+from intergrax.runtime.registry.capability_routing import select_best_matched_routable_agent
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.skills.integration.contract_resolution import resolve_contract_tools
 from intergrax.skills.registry.runtime import SkillRegistry
@@ -130,16 +130,13 @@ class AgentRegistry:
         *,
         production_mode: bool = False,
     ) -> Optional[RoutableTier2Agent]:
-        best: Optional[tuple[float, RoutableTier2Agent]] = None
+        eligible: list[Tier2Agent] = []
         for agent_id, agent in self._agents.items():
             if not self.is_routable(agent_id, production_mode=production_mode):
                 continue
-            if not isinstance(agent, RoutableTier2Agent):
-                continue
-            result = agent.can_handle(task_context)
-            if not result.matched:
-                continue
-            if best is None or result.score > best[0]:
-                best = (result.score, agent)
-        return best[1] if best else None
+            eligible.append(agent)
+        return select_best_matched_routable_agent(
+            envelope=task_context,
+            candidates=eligible,
+        )
 

@@ -7,6 +7,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.routable_tier2_agent import (
     AgentRoutingContractError,
     RoutableTier2Agent,
@@ -20,6 +21,14 @@ from intergrax.runtime.task.task import Task
 
 
 @dataclass(frozen=True, slots=True)
+class RoutableAgentMatchEvidence:
+    """Single can_handle evaluation for one routable candidate."""
+
+    agent: RoutableTier2Agent
+    match: CapabilityMatchResult
+
+
+@dataclass(frozen=True, slots=True)
 class CapabilityRouteResult:
     """Outcome of capability-based agent resolution."""
 
@@ -27,6 +36,44 @@ class CapabilityRouteResult:
     candidates: tuple[Tier2Agent, ...]
     selected: RoutableTier2Agent | None
     selection_reason: str
+    selected_match: CapabilityMatchResult | None = None
+
+
+def evaluate_routable_candidates(
+    envelope: TaskEnvelope,
+    candidates: Sequence[Tier2Agent],
+) -> tuple[RoutableAgentMatchEvidence, ...]:
+    """Canonical can_handle scoring — at most one call per routable candidate."""
+    evidence: list[RoutableAgentMatchEvidence] = []
+    for agent in candidates:
+        if not isinstance(agent, RoutableTier2Agent):
+            continue
+        evidence.append(
+            RoutableAgentMatchEvidence(agent=agent, match=agent.can_handle(envelope))
+        )
+    return tuple(evidence)
+
+
+def _best_matched_evidence(
+    evidence: Sequence[RoutableAgentMatchEvidence],
+) -> RoutableAgentMatchEvidence | None:
+    best: RoutableAgentMatchEvidence | None = None
+    for item in evidence:
+        if not item.match.matched:
+            continue
+        if best is None or item.match.score > best.match.score:
+            best = item
+    return best
+
+
+def select_best_matched_routable_agent(
+    *,
+    envelope: TaskEnvelope,
+    candidates: Sequence[Tier2Agent],
+) -> RoutableTier2Agent | None:
+    """Highest-scoring matched routable agent; no fallback when nothing matched."""
+    best = _best_matched_evidence(evaluate_routable_candidates(envelope, candidates))
+    return best.agent if best is not None else None
 
 
 def validate_task_for_capability_routing(task: Task) -> None:
@@ -66,17 +113,9 @@ def select_best_routable_agent(
         )
 
     candidate_tuple = tuple(candidates)
-    best: tuple[float, RoutableTier2Agent] | None = None
-    routable_candidates: list[RoutableTier2Agent] = []
-    for agent in candidate_tuple:
-        if not isinstance(agent, RoutableTier2Agent):
-            continue
-        routable_candidates.append(agent)
-        result = agent.can_handle(envelope)
-        if not result.matched:
-            continue
-        if best is None or result.score > best[0]:
-            best = (result.score, agent)
+    scored = evaluate_routable_candidates(envelope, candidate_tuple)
+    routable_candidates = [item.agent for item in scored]
+    best = _best_matched_evidence(scored)
 
     if best is None:
         if not routable_candidates:
@@ -84,18 +123,24 @@ def select_best_routable_agent(
                 f"No registered agent for capability '{capability}' implements "
                 "RoutableTier2Agent (can_handle)"
             )
-        fallback = routable_candidates[0]
+        fallback_evidence = scored[0]
         return CapabilityRouteResult(
             capability=capability,
             candidates=candidate_tuple,
-            selected=fallback,
+            selected=fallback_evidence.agent,
             selection_reason="capability_first_match",
+            selected_match=(
+                fallback_evidence.match
+                if fallback_evidence.match.matched
+                else None
+            ),
         )
     return CapabilityRouteResult(
         capability=capability,
         candidates=candidate_tuple,
-        selected=best[1],
+        selected=best.agent,
         selection_reason="capability_best_score",
+        selected_match=best.match,
     )
 
 

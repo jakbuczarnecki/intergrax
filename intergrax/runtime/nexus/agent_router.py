@@ -90,9 +90,8 @@ class AgentRouter:
             if route.selected is not None:
                 agent = route.selected
                 score: float | None = None
-                match = agent.can_handle(task_envelope_for_agent_capability_match(task))
-                if match.matched:
-                    score = match.score
+                if route.selected_match is not None and route.selected_match.matched:
+                    score = route.selected_match.score
                 selection = AgentRouteSelection(
                     requested_agent_id=requested,
                     selected_agent_id=agent.get_contract().id,
