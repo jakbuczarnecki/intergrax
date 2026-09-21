@@ -9,7 +9,9 @@ from contextvars import Token
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
-from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
+from intergrax.contracts.admitted_root_governance_identity import (
+    AdmittedRootGovernanceIdentity,
+)
 from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_capacity_admission import (
     ExecutionCapacityAdmissionPort,
@@ -70,7 +72,9 @@ from intergrax.runtime.execution.active_execution_budget import (
     reset_active_execution_budget,
 )
 from intergrax.runtime.execution.budget.persistence import RunBudgetPersistence
-from intergrax.runtime.execution.deadline_authority import ExecutionDeadlineAuthorityResolver
+from intergrax.runtime.execution.deadline_authority import (
+    ExecutionDeadlineAuthorityResolver,
+)
 from intergrax.runtime.execution.protected_work_admission import (
     CanonicalHardProtectedWorkAdmission,
     ComposedProtectedWorkAdmission,
@@ -183,18 +187,15 @@ def resolve_root_task_identity(
                 "explicit attempt_id conflicts with resume checkpoint identity: "
                 f"{attempt_id!r} != {checkpoint_attempt_id!r}"
             )
-        if execution_id is not None and execution_id != checkpoint_root_execution_id:
+        if execution_id is not None and execution_id == checkpoint_root_execution_id:
             raise ValueError(
-                "explicit execution_id conflicts with resume checkpoint identity: "
-                f"{execution_id!r} != {checkpoint_root_execution_id!r}"
+                "explicit execution_id must not reuse resume checkpoint root "
+                f"execution_id: {execution_id!r}"
             )
-        restored_execution_id = (
-            execution_id if execution_id is not None else checkpoint_root_execution_id
-        )
         return mint_root_execution_identity(
             run_id=checkpoint_run_id,
             attempt_id=checkpoint_attempt_id,
-            execution_id=restored_execution_id,
+            execution_id=execution_id,
         )
     return mint_root_execution_identity(
         run_id=run_id,
@@ -315,7 +316,9 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         self._continuation_state_store = continuation_state_store
         self._deadline_authority_resolver = deadline_authority_resolver
         self._run_budget_persistence = run_budget_persistence
-        self._protected_work_admission_contributors = protected_work_admission_contributors
+        self._protected_work_admission_contributors = (
+            protected_work_admission_contributors
+        )
         self._root_cancellation_view = root_cancellation_view
         if run_budget_persistence is not None and deadline_authority_resolver is None:
             raise ExecutionDeadlinePersistenceError(
@@ -460,7 +463,9 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
             ledger=ledger,
             run_budget=self._run_budget,
             deadline_projection=(
-                deadline_resolution.projection if deadline_resolution is not None else None
+                deadline_resolution.projection
+                if deadline_resolution is not None
+                else None
             ),
         )
         deadline_scope_tokens: tuple[Token, Token] | None = None

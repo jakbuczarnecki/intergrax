@@ -514,7 +514,7 @@ def test_resolve_root_task_identity_mints_new_ids_without_checkpoint() -> None:
     assert identity_a.attempt_id != identity_b.attempt_id
 
 
-def test_resolve_root_task_identity_restores_checkpoint_identity() -> None:
+def test_resolve_root_task_identity_mints_new_root_on_checkpoint_resume() -> None:
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     task_id = mint_task_id()
@@ -525,7 +525,8 @@ def test_resolve_root_task_identity_restores_checkpoint_identity() -> None:
     assert identity.run_id == run_id
     assert identity.attempt_id == attempt_id
     assert checkpoint.runtime is not None
-    assert identity.execution_id == checkpoint.runtime.execution_tree.entries[0].execution_id
+    checkpoint_root = checkpoint.runtime.execution_tree.entries[0].execution_id
+    assert identity.execution_id != checkpoint_root
 
 
 def test_resolve_root_task_identity_allows_matching_explicit_checkpoint_identity() -> (
