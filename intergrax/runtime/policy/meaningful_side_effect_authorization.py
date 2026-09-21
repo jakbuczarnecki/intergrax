@@ -32,6 +32,7 @@ from intergrax.contracts.governed_continuation import GovernedContinuationReques
 from intergrax.contracts.governed_execution_governance_evidence import (
     GovernedExecutionEvaluationPoint,
     build_governance_fact_from_policy_decision,
+    is_canonical_governance_evidence_policy_action,
 )
 from intergrax.contracts.meaningful_side_effect import MeaningfulSideEffectRequest
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
@@ -44,10 +45,6 @@ from intergrax.runtime.human.governed_continuation_bridge import (
     apply_governed_continuation_pause,
     compose_governed_continuation_from_enforcement,
 )
-from intergrax.runtime.human.governed_continuation_grant import (
-    GovernedContinuationGrantCoordinator,
-    matches_current_requirement,
-)
 from intergrax.runtime.decision_governance_material import (
     assert_decision_governance_material_bound,
 )
@@ -55,6 +52,7 @@ from intergrax.runtime.governance.active_governed_execution_task import (
     peek_governed_execution_task,
 )
 from intergrax.runtime.human.governed_continuation_grant import (
+    GovernedContinuationGrantCoordinator,
     grant_belongs_to_same_proposal_scope,
     matches_current_requirement,
 )
@@ -65,16 +63,6 @@ from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle, TaskState
 
 T = TypeVar("T")
-
-_MSE_EVIDENCE_FACT_ACTIONS = frozenset(
-    {
-        PolicyAction.ALLOW,
-        PolicyAction.DENY,
-        PolicyAction.REQUIRE_HUMAN,
-        PolicyAction.ESCALATE,
-    },
-)
-
 
 def _resolve_human_review_evidence_ref_for_allow(
     request: CollaborativeWorkEnforcementRequest,
@@ -100,15 +88,10 @@ def _resolve_human_review_evidence_ref_for_allow(
         resource_scope=enforcement_scope,
     ):
         return None
-    if not matches_current_requirement(
-        stored_grant,
-        current_side_effect=side_effect,
-        current_operation_id=operation_id,
-        current_resource_scope=enforcement_scope,
-        current_decision=decision,
-    ):
+    human_request_id = (stored_grant.human_request_id or "").strip()
+    if not human_request_id:
         return None
-    return stored_grant.human_request_id
+    return human_request_id
 
 
 class MeaningfulSideEffectAuthorizationBoundary:
@@ -139,7 +122,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
         recorder = self._governance_evidence_recorder
         if recorder is None or recorder.persistence is None:
             return
-        if decision.action not in _MSE_EVIDENCE_FACT_ACTIONS:
+        if not is_canonical_governance_evidence_policy_action(decision.action):
             return
         side_effect = request.meaningful_side_effect_request
         tenant_id = request.tenant_id

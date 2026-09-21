@@ -23,6 +23,7 @@ from intergrax.contracts.evaluated_policy_decision import request_digest_for_pay
 from intergrax.contracts.governed_execution_governance_evidence import (
     GovernedExecutionEvaluationPoint,
     build_governance_fact_from_policy_decision,
+    is_canonical_governance_evidence_policy_action,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
@@ -88,11 +89,7 @@ class RootExecutionAuthorityAdmissionService:
         recorder = self._governance_evidence_recorder
         if recorder is None or recorder.persistence is None:
             return
-        if decision.action not in (
-            PolicyAction.ALLOW,
-            PolicyAction.DENY,
-            PolicyAction.REQUIRE_HUMAN,
-        ):
+        if not is_canonical_governance_evidence_policy_action(decision.action):
             return
         digest = request_digest_for_payload(
             {

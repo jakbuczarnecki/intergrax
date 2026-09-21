@@ -47,6 +47,7 @@ from intergrax.runtime.governance.governance_evidence_persistence import (
 from intergrax.runtime.governance.runtime_execution_policy_admission import (
     AllowingRuntimeExecutionPolicyAdmission,
     DenyingRuntimeExecutionPolicyAdmission,
+    EscalateRuntimeExecutionPolicyAdmission,
     RequireHumanRuntimeExecutionPolicyAdmission,
 )
 
@@ -99,6 +100,32 @@ def test_root_deny_emits_fact_without_trusted_authority() -> None:
     assert result.trusted_parent_execution_authority is None
     assert len(store.facts) == 1
     assert store.facts[0].decision is PolicyAction.DENY
+
+
+def test_escalate_root_emits_fact_without_trusted_authority() -> None:
+    store = build_in_memory_governance_evidence_persistence()
+    recorder = build_governance_evidence_recorder(persistence=store)
+    service = build_root_execution_authority_admission(
+        runtime_policy_admission=EscalateRuntimeExecutionPolicyAdmission(),
+        governance_evidence_recorder=recorder,
+    )
+    result = service.authorize(_admission_request())
+    assert result.disposition is RootExecutionAuthorityAdmissionDisposition.ESCALATE
+    assert result.trusted_parent_execution_authority is None
+    assert len(store.facts) == 1
+    assert store.facts[0].decision is PolicyAction.ESCALATE
+
+
+def test_persistence_failure_does_not_flip_escalate_to_allow() -> None:
+    store = build_in_memory_governance_evidence_persistence()
+    store.fail_on_persist = True
+    recorder = build_governance_evidence_recorder(persistence=store)
+    service = build_root_execution_authority_admission(
+        runtime_policy_admission=EscalateRuntimeExecutionPolicyAdmission(),
+        governance_evidence_recorder=recorder,
+    )
+    result = service.authorize(_admission_request())
+    assert result.disposition is RootExecutionAuthorityAdmissionDisposition.ESCALATE
 
 
 def test_require_human_root_emits_fact() -> None:

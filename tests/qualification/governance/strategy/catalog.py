@@ -340,8 +340,9 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
         "Governance Evidence",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.QUALIFIED,
-        "GR-10-R14: strict orchestration MSE + root admission emit canonical GovernanceDecisionEvidenceFact "
-        "via pluginable GovernanceEvidencePersistencePort; ESCALATE recorded; evidence non-authoritative.",
+        "GR-10-R14-R1: strict orchestration MSE + root admission emit canonical GovernanceDecisionEvidenceFact "
+        "via pluginable GovernanceEvidencePersistencePort; ESCALATE V1 additive per ADR-GR-8-001 amendment; "
+        "post-HITL ALLOW correlates human_review_evidence_ref without authority; evidence non-authoritative.",
     ),
 )
 
@@ -630,6 +631,95 @@ GR10_R14_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
     capability="Governance Evidence",
     exact_blocker="Remaining AGENTIC strategy governance evidence and closure residuals.",
     why_highest="ORCHESTRATION strategy enterprise qualification closed under GR-10-R14.",
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Gr10OrchestrationGovernanceEvidenceInventoryRow:
+    path: str
+    governance_decision: str
+    evidence_contract: str
+    persistence: str
+    correlation: str
+    status: str
+
+
+GR10_ORCHESTRATION_GOVERNANCE_EVIDENCE_INVENTORY: tuple[
+    Gr10OrchestrationGovernanceEvidenceInventoryRow,
+    ...,
+] = (
+    Gr10OrchestrationGovernanceEvidenceInventoryRow(
+        "Root execution admission",
+        "ALLOW / DENY / REQUIRE_HUMAN / ESCALATE",
+        "GovernanceDecisionEvidenceFact via build_governance_fact_from_policy_decision",
+        "GovernanceEvidencePersistencePort (strict production required)",
+        "task/run/attempt/execution on canonical host paths",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationGovernanceEvidenceInventoryRow(
+        "Meaningful side effect authorization (production orchestration)",
+        "ALLOW / DENY / REQUIRE_HUMAN / ESCALATE",
+        "GovernanceDecisionEvidenceFact",
+        "shared orchestration governance evidence recorder",
+        "execution + decision_material_ref; post-HITL ALLOW human_review_evidence_ref",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationGovernanceEvidenceInventoryRow(
+        "Canonical inner guard DENY",
+        "DENY",
+        "GovernanceDecisionEvidenceFact",
+        "pluginable port",
+        "MSE request digest",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationGovernanceEvidenceInventoryRow(
+        "Decision-requirement DENY",
+        "DENY",
+        "GovernanceDecisionEvidenceFact",
+        "pluginable port",
+        "MSE request digest",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationGovernanceEvidenceInventoryRow(
+        "Decision-bound ALLOW",
+        "ALLOW",
+        "GovernanceDecisionEvidenceFact",
+        "pluginable port",
+        "decision_material_ref when bound",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationGovernanceEvidenceInventoryRow(
+        "Post-HITL fresh ALLOW",
+        "ALLOW",
+        "GovernanceDecisionEvidenceFact",
+        "pluginable port",
+        "human_review_evidence_ref from matching grant (correlation only)",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationGovernanceEvidenceInventoryRow(
+        "Stale / cross-run / cross-resource / cross-digest grant",
+        "per fresh Governance",
+        "GovernanceDecisionEvidenceFact",
+        "pluginable port",
+        "human_review_evidence_ref omitted when grant scope mismatches",
+        "QUALIFIED",
+    ),
+    Gr10OrchestrationGovernanceEvidenceInventoryRow(
+        "PRE_OUTPUT evaluation point",
+        "N/A",
+        "N/A",
+        "N/A",
+        "No production orchestration PolicyDecision → GR-8 fact emission (GEP enum reserved)",
+        "NOT_APPLICABLE",
+    ),
+    Gr10OrchestrationGovernanceEvidenceInventoryRow(
+        "POST_RUN evaluation point",
+        "N/A",
+        "N/A",
+        "N/A",
+        "POST_RUN hooks optional; no canonical GR-8 fact spine on orchestration POST_RUN",
+        "NOT_APPLICABLE",
+    ),
 )
 
 

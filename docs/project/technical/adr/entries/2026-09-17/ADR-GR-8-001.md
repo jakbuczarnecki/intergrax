@@ -67,9 +67,26 @@ Outcome fields: `persisted`, `evidence_id`, `error_code` — acknowledgment only
 
 ## Failure semantics
 
-Persistence failure does not modify an already-made Governance decision (ALLOW/DENY/REQUIRE_HUMAN unchanged).
+Persistence failure does not modify an already-made Governance decision (ALLOW/DENY/REQUIRE_HUMAN/ESCALATE unchanged).
 
 This ADR does **not** freeze global ordering “evidence before every side effect” unless another SSOT defines it.
+
+
+## GR-8-001-AMENDMENT-ESCALATE (2026-09-21) — V1 additive PolicyAction.ESCALATE
+
+**Classification:** additive-compatible evolution of governed_execution_governance_decision_fact.v1 (no new schema version).
+
+**Rationale:** GovernanceDecisionEvidenceFact.decision is typed as PolicyAction without enumerating a closed subset in the V1 schema shape. Recording ESCALATE does not add/remove required fields, alter persistence port semantics, or grant authority. MODIFY remains excluded from automatic canonical fact projection unless a future ADR defines semantics.
+
+**Canonical fact decisions (V1):** ALLOW, DENY, REQUIRE_HUMAN, ESCALATE.
+
+**Non-authority:** Evidence including ESCALATE MUST NOT authorize execution, resume, or convert ESCALATE to ALLOW/REQUIRE_HUMAN.
+
+**Persistence failure:** When Governance already decided ESCALATE, persistence failure leaves ESCALATE unchanged (same non-authoritative rule as ALLOW/DENY/REQUIRE_HUMAN).
+
+**Emission:** Root execution admission and meaningful side effect (MSE) orchestration paths MAY emit ESCALATE facts when policy evaluation returns ESCALATE.
+
+**Human review correlation:** human_review_evidence_ref on fresh ALLOW remains correlation-only (grant provenance), never permission.
 
 ## Schema / versioning
 

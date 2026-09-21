@@ -30,6 +30,21 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 
+CANONICAL_GOVERNANCE_EVIDENCE_POLICY_ACTIONS: Final[frozenset[PolicyAction]] = frozenset(
+    {
+        PolicyAction.ALLOW,
+        PolicyAction.DENY,
+        PolicyAction.REQUIRE_HUMAN,
+        PolicyAction.ESCALATE,
+    },
+)
+
+
+def is_canonical_governance_evidence_policy_action(action: PolicyAction) -> bool:
+    """Whether ``action`` may be projected into ``GovernanceDecisionEvidenceFact.decision`` (V1)."""
+    return action in CANONICAL_GOVERNANCE_EVIDENCE_POLICY_ACTIONS
+
+
 SCHEMA_GOVERNED_EXECUTION_GOVERNANCE_DECISION_FACT_V1: Final = (
     "governed_execution_governance_decision_fact.v1"
 )
@@ -221,12 +236,7 @@ def build_governance_fact_from_policy_decision(
     recorded_at: datetime | None = None,
 ) -> GovernanceDecisionEvidenceFact:
     """Project a canonical ``PolicyDecision`` into a typed Governance evidence fact."""
-    if decision.action not in (
-        PolicyAction.ALLOW,
-        PolicyAction.DENY,
-        PolicyAction.REQUIRE_HUMAN,
-        PolicyAction.ESCALATE,
-    ):
+    if not is_canonical_governance_evidence_policy_action(decision.action):
         raise ValueError(
             "governance_evidence_requires_allow_deny_require_human_or_escalate",
         )
@@ -260,6 +270,7 @@ def build_governance_fact_from_policy_decision(
 
 
 __all__ = [
+    "CANONICAL_GOVERNANCE_EVIDENCE_POLICY_ACTIONS",
     "GovernanceDecisionEvidenceFact",
     "GovernanceEvidencePersistenceOutcome",
     "GovernanceEvidencePersistencePort",
@@ -268,4 +279,5 @@ __all__ = [
     "build_governance_fact_from_policy_decision",
     "deterministic_runtime_event_id_for_governance_fact",
     "governance_evidence_id_from_idempotency",
+    "is_canonical_governance_evidence_policy_action",
 ]
