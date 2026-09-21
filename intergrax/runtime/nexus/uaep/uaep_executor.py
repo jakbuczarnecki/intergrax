@@ -61,8 +61,8 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
 from intergrax.runtime.events.payloads.canonical import (
-    ContextAssemblyPayloadV1,
     ContextAssemblyPayloadV2,
+    DecisionPayloadV1,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.governance_hooks import (
@@ -714,17 +714,32 @@ class UAEPExecutor:
                     rationale=decision.reason,
                     policy_action=resolution.policy_decision.action.value,
                 )
-                await self._emit(
-                    exec_ctx,
-                    RuntimeEventType.DECISION_EMITTED,
-                    ExecutionPhase.STEP_EXECUTION,
-                    {
-                        "step_id": step.step_id,
-                        "decision": decision.type.value,
-                        "policy_action": resolution.policy_decision.action.value,
-                        "decision_record": decision_record.model_dump(mode="json"),
-                    },
+                decision_typed = DecisionPayloadV1(
+                    decision_type=decision.type.value,
+                    reason=decision.reason,
                 )
+                if self._event_bus is not None:
+                    decision_event = runtime_event_with_payload(
+                        RuntimeEvent(
+                            task_id=exec_ctx.task_id,
+                            run_id=exec_ctx.run_id,
+                            attempt_id=exec_ctx.attempt_id,
+                            execution_id=exec_ctx.execution_id,
+                            node_id=exec_ctx.node_id,
+                            agent_id=exec_ctx.agent_id,
+                            tenant_id=_tenant_id_from_ctx(exec_ctx),
+                            event_type=RuntimeEventType.DECISION_EMITTED,
+                            phase=ExecutionPhase.STEP_EXECUTION,
+                            correlation_id=exec_ctx.correlation_id or exec_ctx.task_id,
+                        ),
+                        decision_typed,
+                        promote_fields={
+                            "step_id": step.step_id,
+                            "policy_action": resolution.policy_decision.action.value,
+                            "decision_record": decision_record.model_dump(mode="json"),
+                        },
+                    )
+                    await self._event_bus.publish(decision_event)
                 await self._emit_governance(exec_ctx, resolution)
 
                 if (
