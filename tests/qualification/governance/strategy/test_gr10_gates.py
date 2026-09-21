@@ -24,8 +24,10 @@ from tests.qualification.governance.strategy.gr10_inference_current_doc_ssot imp
 from tests.qualification.governance.strategy.catalog import (
     GR10_AGENTIC_CAPABILITY_SEMANTICS,
     GR10_FINAL_CAPABILITY_MATRIX,
+    GR10_GEP_COVERAGE_INVENTORY,
     GR10_INFERENCE_CAPABILITY_SEMANTICS,
     GR10_ORCHESTRATION_CAPABILITY_SEMANTICS,
+    GR10_ORCHESTRATION_GEP_SEMANTICS,
     GR10_PRODUCTION_INVENTORY,
     GR10_SCENARIO_CATALOG,
     Gr10Applicability,
@@ -193,6 +195,15 @@ def test_gr10_orchestration_inventory_and_matrix_semantics_are_consistent() -> N
     assert {row.capability for row in GR10_ORCHESTRATION_CAPABILITY_SEMANTICS} == matrix_by_cap.keys()
     for row in GR10_ORCHESTRATION_CAPABILITY_SEMANTICS:
         assert matrix_by_cap[row.capability] is gr10_matrix_orchestration_status(row.capability)
+
+
+def test_gr10_orchestration_gep_semantics_and_coverage_inventory_aligned() -> None:
+    inventory_by_gep = {row.gep: row for row in GR10_GEP_COVERAGE_INVENTORY}
+    assert {row.gep for row in GR10_ORCHESTRATION_GEP_SEMANTICS} == inventory_by_gep.keys()
+    for sem in GR10_ORCHESTRATION_GEP_SEMANTICS:
+        inv = inventory_by_gep[sem.gep]
+        assert inv.orchestration_applicable is (sem.applicability is Gr10Applicability.APPLICABLE)
+        assert inv.orchestration_coverage is sem.coverage
 
 
 def test_gr10_inference_inventory_and_matrix_semantics_are_consistent() -> None:

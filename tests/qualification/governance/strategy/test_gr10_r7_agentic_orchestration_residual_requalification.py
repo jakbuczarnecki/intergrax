@@ -105,9 +105,7 @@ def test_gr10_r7_orchestration_partial_inventory() -> None:
         for row in GR10_ORCHESTRATION_CAPABILITY_SEMANTICS
         if row.coverage is Gr10CoverageStatus.PARTIAL
     }
-    assert partial_caps == {
-        "Governance Evidence",
-    }
+    assert partial_caps == set()
 
 
 def test_gr10_r7_gep_inventory_covers_required_geps() -> None:

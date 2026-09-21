@@ -366,6 +366,122 @@ class Gr10GepCoverageRow:
     orchestration_gap: str
 
 
+@dataclass(frozen=True, slots=True)
+class Gr10OrchestrationGepSemantics:
+    """GR-10-R15 — ORCHESTRATION evaluation-point applicability vs coverage (architecture-first SSOT)."""
+
+    gep: str
+    applicability: Gr10Applicability
+    coverage: Gr10CoverageStatus
+    canonical_owner: str
+    production_path: str
+    gr8_evidence_applicability: Gr10Applicability
+    reason: str
+
+
+def gr10_orchestration_gep_semantics(gep: str) -> Gr10OrchestrationGepSemantics:
+    for row in GR10_ORCHESTRATION_GEP_SEMANTICS:
+        if row.gep == gep:
+            return row
+    raise KeyError(f"unknown ORCHESTRATION GEP semantics: {gep!r}")
+
+
+# Precedence: architecture / ADR → this tuple → GR10_GEP_COVERAGE_INVENTORY orchestration columns.
+GR10_ORCHESTRATION_GEP_SEMANTICS: tuple[Gr10OrchestrationGepSemantics, ...] = (
+    Gr10OrchestrationGepSemantics(
+        "ROOT_EXECUTION_ADMISSION",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "RuntimeExecutionPolicyAdmissionPort + DefaultRootExecutionLauncher",
+        "HostTaskExecution orchestration capability → GR-2 root launcher",
+        Gr10Applicability.APPLICABLE,
+        "GR-10-R7 ORCH-ROOT; root ALLOW/DENY facts via GR-10-R14.",
+    ),
+    Gr10OrchestrationGepSemantics(
+        "PRE_MODEL",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "RuntimePolicyEngine.evaluate_pre_llm / PlanningRunner",
+        "NEXUS_PLANNING PRE_MODEL with active governance identity",
+        Gr10Applicability.NOT_APPLICABLE,
+        "PRE_MODEL policy decisions on orchestration planning; GR-8 per-GEP adoption deferred GR-13.",
+    ),
+    Gr10OrchestrationGepSemantics(
+        "AGENT_DECISION",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "RuntimePolicyEngine.evaluate_decision (UAEP delegate only)",
+        "Embedded UAEP resolve_decision; graph topology routing is not AGENT_DECISION GEP",
+        Gr10Applicability.NOT_APPLICABLE,
+        "GR-10-R8: orchestration graph routing internal; permission GEP is Policy evaluation row.",
+    ),
+    Gr10OrchestrationGepSemantics(
+        "INTERRUPT",
+        Gr10Applicability.NOT_APPLICABLE,
+        Gr10CoverageStatus.NOT_APPLICABLE,
+        "Execution lifecycle (CancellationCoordinator) — not INTERRUPT GEP",
+        "Graph/task cancellation via CancellationCoordinator; no evaluate_interrupt on topology spine",
+        Gr10Applicability.NOT_APPLICABLE,
+        "Blocking ExecutionInterrupt.evaluate_interrupt is AGENTIC UAEP scope; orchestration pause/resume "
+        "is HITL + Continuation (GR-10-R11/R12), not a distinct orchestration INTERRUPT evaluation point.",
+    ),
+    Gr10OrchestrationGepSemantics(
+        "TOOL_PLAN_OR_ACCESS",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "ToolAccessPolicy + scope policy",
+        "tool_runtime.execute_plan / catalog tool exposure (GR-10-R8)",
+        Gr10Applicability.NOT_APPLICABLE,
+        "Access gate qualified; GR-8 tool-plan facts not mandatory on orchestration spine (GR-13).",
+    ),
+    Gr10OrchestrationGepSemantics(
+        "TOOL_INVOCATION_AUTHORIZATION",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "CanonicalInnerExecutionGuardPort",
+        "RuntimeToolInvoker inner guard before authorization (GR-10-R8)",
+        Gr10Applicability.APPLICABLE,
+        "Inner guard DENY facts qualified GR-10-R14.",
+    ),
+    Gr10OrchestrationGepSemantics(
+        "TOOL_INVOCATION_POLICY",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "DeclarativePolicyEnforcer.evaluate_tool_invocation",
+        "RuntimeToolInvoker before handler; strict hosts wire policy_bundle (assert_strict_policy_bootstrap)",
+        Gr10Applicability.NOT_APPLICABLE,
+        "Distinct from TOOL_INVOCATION_AUTHORIZATION (inner guard); declarative REQUIRE_HITL bridges HITL.",
+    ),
+    Gr10OrchestrationGepSemantics(
+        "MEANINGFUL_SIDE_EFFECT",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "MeaningfulSideEffectAuthorizationPort + topology slot policy",
+        "RuntimeToolInvoker + OrchestrationTopologySlotMsePolicy (GR-10-R9)",
+        Gr10Applicability.APPLICABLE,
+        "MSE + root admission GR-8 facts qualified GR-10-R14-R1.",
+    ),
+    Gr10OrchestrationGepSemantics(
+        "PRE_OUTPUT",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "PolicyEngine.evaluate_pre_output",
+        "NexusLoop._finish_task → apply_pre_output_policy before terminal result",
+        Gr10Applicability.NOT_APPLICABLE,
+        "Policy ALLOW/DENY at terminal boundary; GR-8 PRE_OUTPUT fact spine not enterprise-mandatory GR-13.",
+    ),
+    Gr10OrchestrationGepSemantics(
+        "POST_RUN",
+        Gr10Applicability.APPLICABLE,
+        Gr10CoverageStatus.QUALIFIED,
+        "PostRunGovernanceService via invoke_post_run_governance",
+        "NexusLoop._finish_task + UAEPExecutor; production_mode requires GovernanceService",
+        Gr10Applicability.NOT_APPLICABLE,
+        "Post-run GovernanceService evaluation wired; GR-8 POST_RUN fact spine optional extension GR-13.",
+    ),
+)
+
+
 GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
     Gr10GepCoverageRow(
         "ROOT_EXECUTION_ADMISSION",
@@ -400,9 +516,9 @@ GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
         True,
         Gr10CoverageStatus.PARTIAL,
         "Not all agent interrupt paths emit enterprise inner guard + evidence.",
-        True,
-        Gr10CoverageStatus.PARTIAL,
-        "Orchestration interrupt bridges partial.",
+        False,
+        Gr10CoverageStatus.NOT_APPLICABLE,
+        gr10_orchestration_gep_semantics("INTERRUPT").reason,
     ),
     Gr10GepCoverageRow(
         "TOOL_PLAN_OR_ACCESS",
@@ -428,8 +544,8 @@ GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
         Gr10CoverageStatus.PARTIAL,
         "Policy engine on tool paths partial per host composition.",
         True,
-        Gr10CoverageStatus.PARTIAL,
-        "Declarative enforcer coverage incomplete vs enterprise matrix.",
+        Gr10CoverageStatus.QUALIFIED,
+        gr10_orchestration_gep_semantics("TOOL_INVOCATION_POLICY").reason,
     ),
     Gr10GepCoverageRow(
         "MEANINGFUL_SIDE_EFFECT",
@@ -447,8 +563,8 @@ GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
         Gr10CoverageStatus.PARTIAL,
         "Optional wiring on some agent outputs.",
         True,
-        Gr10CoverageStatus.PARTIAL,
-        "Orchestration output gates partial.",
+        Gr10CoverageStatus.QUALIFIED,
+        gr10_orchestration_gep_semantics("PRE_OUTPUT").reason,
     ),
     Gr10GepCoverageRow(
         "POST_RUN",
@@ -456,8 +572,8 @@ GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
         Gr10CoverageStatus.PARTIAL,
         "invoke_post_run_governance optional when service None.",
         True,
-        Gr10CoverageStatus.PARTIAL,
-        "Nexus finish_task POST_RUN wired; qualification harness drift; optional service.",
+        Gr10CoverageStatus.QUALIFIED,
+        gr10_orchestration_gep_semantics("POST_RUN").reason,
     ),
 )
 
@@ -626,11 +742,23 @@ GR10_R13_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
 
 
 GR10_R14_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-R15 — ORCHESTRATION GEP SSOT Reconciliation",
+    strategy="ORCHESTRATION",
+    capability="Policy evaluation (per-GEP)",
+    exact_blocker=(
+        "GR10_GEP_COVERAGE_INVENTORY orchestration INTERRUPT/TOOL_INVOCATION_POLICY/PRE_OUTPUT/POST_RUN "
+        "PARTIAL rows contradicted architecture paths and GR-10-R14 evidence inventory."
+    ),
+    why_highest="Governance Evidence capability QUALIFIED; per-GEP coverage SSOT drift blocked ORCHESTRATION closure.",
+)
+
+
+GR10_R15_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
     task_name="GR-10 AGENTIC Residual + GR-10 Closure",
     strategy="AGENTIC",
     capability="Governance Evidence",
     exact_blocker="Remaining AGENTIC strategy governance evidence and closure residuals.",
-    why_highest="ORCHESTRATION strategy enterprise qualification closed under GR-10-R14.",
+    why_highest="ORCHESTRATION strategy enterprise qualification closed under GR-10-R15.",
 )
 
 
@@ -1801,7 +1929,7 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
         gr10_matrix_inference_status("Governance Evidence"),
         gr10_matrix_agentic_status("Governance Evidence"),
         gr10_matrix_orchestration_status("Governance Evidence"),
-        "GR-8 per-GEP adoption partial for AGENTIC/ORCH (INFERENCE PRE_MODEL qualified R6).",
+        "GR-8 per-GEP adoption partial for AGENTIC (INFERENCE PRE_MODEL R6; ORCHESTRATION spine R14/R15).",
     ),
 )
 
