@@ -20,7 +20,11 @@ from intergrax.applications._shared.harness_control_plane_governance_wiring impo
 from intergrax.applications._shared.harness_control_plane_policy_wiring import (
     build_harness_host_control_plane_policy_bundle,
 )
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from pathlib import Path
+
+from tests.unit.applications.task_control_product_host_test_support import (
+    build_task_control_product_harness_host_runtime,
+)
 from tests.unit.applications.harness_canonical_task_routes_test_support import (
     mount_canonical_harness_task_routes_for_tests,
 )
@@ -41,14 +45,6 @@ from intergrax.applications._shared.task_control_governance import (
 from intergrax.applications._shared.task_control_wiring import wire_harness_task_control
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from governed_contractor_application.tests.governed_contractor_ac3_projection import (
-    build_governed_contractor_test_registry_projection,
-)
-from governed_contractor_application.manifest import build_governed_contractor_manifest
-from governed_contractor_application.host.environment_profile import (
-    build_governed_contractor_environment_profile,
-)
-from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.autonomy_level import AutonomyLevel
@@ -72,6 +68,29 @@ from intergrax.runtime.task.task import Task, TaskContext, TaskState
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+@pytest.fixture
+def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
+    from testing_support.builder import MeteringFakeLLMAdapter
+
+    adapter = MeteringFakeLLMAdapter()
+
+    def _resolve(
+        env: object,
+        agent_override: object | None = None,
+        **_: object,
+    ) -> object:
+        del env
+        if agent_override is not None:
+            return agent_override
+        return adapter
+
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
+        _resolve,
+    )
+
 
 _TENANT = "tenant-task-control"
 _OTHER_TENANT = "tenant-other"
@@ -580,18 +599,23 @@ def test_taskcpm_a18_unrelated_mutation_does_not_match_autonomy_rule() -> None:
     assert result.decision.action is PolicyAction.DENY
 
 
-def test_taskcpm_a19_product_host_uses_canonical_bundle_authority() -> None:
-    """Canonical harness bundle must authorize task-bound autonomy without active execution scope."""
-    env = ApplicationEnvironmentProfile.product_defaults(profile_id=_TENANT)
+def test_taskcpm_a19_product_host_uses_canonical_bundle_authority(
+    tmp_path: Path,
+    _stub_host_llm: None,
+) -> None:
+    """PRODUCT host composition must expose canonical bundle authority for task-bound autonomy."""
+    runtime = build_task_control_product_harness_host_runtime(tmp_path)
     boundary = resolve_harness_task_control_mutation_boundary(
-        build_harness_control_plane_governance(env),
+        runtime.control_plane_governance,
     )
     assert boundary is not None
+    task_id = mint_task_id()
+    run_id = mint_run_id()
     request = build_set_task_autonomy_mutation_request(
         principal=_principal(),
         tenant_id=_TENANT,
-        task_id=mint_task_id(),
-        run_id=mint_run_id(),
+        task_id=task_id,
+        run_id=run_id,
         mutation_id=_MUTATION_ID,
         current_autonomy_level=AutonomyLevel.ASK,
         target_autonomy_level=AutonomyLevel.MANUAL,
@@ -599,8 +623,11 @@ def test_taskcpm_a19_product_host_uses_canonical_bundle_authority() -> None:
     result = boundary.authorize(request)
     assert result.permitted is True
     assert result.decision.policy_rule_id == "harness.task_control.set_task_autonomy"
-    assert result.evidence.task_id is not None
-    assert result.evidence.run_id is not None
+    assert result.evidence.mutation_id == _MUTATION_ID
+    assert result.evidence.task_id == task_id
+    assert result.evidence.run_id == run_id
+    assert result.decision.decision_id
+    assert result.decision.policy_rule_id
 
 
 @pytest.mark.asyncio

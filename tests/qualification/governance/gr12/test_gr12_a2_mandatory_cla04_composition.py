@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 from fastapi import FastAPI
@@ -24,6 +26,16 @@ from intergrax.applications._shared.production_capacity_wiring import (
     resolve_production_capacity_wiring,
 )
 from intergrax.applications._shared.task_control_wiring import wire_harness_task_control
+from intergrax.applications._shared.task_control_governance import (
+    build_cancel_task_execution_mutation_request,
+)
+from intergrax.contracts.agent_run import RequestIdentity
+from intergrax.contracts.agent_run_enums import PrincipalType
+from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from intergrax.runtime.task.task import TaskState
+from tests.unit.applications.task_control_product_host_test_support import (
+    build_task_control_product_harness_host_runtime,
+)
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRequest
 from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
@@ -130,3 +142,85 @@ def test_gr12_a2_non_product_task_control_may_wire_without_composition_boundary(
         host_execution=object(),
         env=env,
     )
+
+
+@pytest.fixture
+def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
+    from testing_support.builder import MeteringFakeLLMAdapter
+
+    adapter = MeteringFakeLLMAdapter()
+
+    def _resolve(
+        env: object,
+        agent_override: object | None = None,
+        **_: object,
+    ) -> object:
+        del env
+        return agent_override or adapter
+
+    monkeypatch.setattr(
+        "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
+        _resolve,
+    )
+    monkeypatch.setenv(
+        "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET",
+        "gr12-a2-r2-test-diagnostic-cursor-secret",
+    )
+
+
+def test_gr12_a2_r2_product_host_composition_exposes_cla04_boundary(
+    tmp_path: Path,
+    _stub_host_llm: None,
+) -> None:
+    runtime = build_task_control_product_harness_host_runtime(tmp_path)
+    assert runtime.control_plane_governance is not None
+    boundary = resolve_harness_task_control_mutation_boundary(
+        runtime.control_plane_governance,
+    )
+    assert boundary is not None
+    principal = RequestIdentity(
+        tenant_id="tenant-a2-r2",
+        user_id="operator-1",
+        principal_type=PrincipalType.USER,
+        auth_subject="operator-1",
+    )
+    mutation_id = "mut-gr12-a2-r2-cancel"
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    request = build_cancel_task_execution_mutation_request(
+        principal=principal,
+        tenant_id="tenant-a2-r2",
+        task_id=task_id,
+        run_id=run_id,
+        mutation_id=mutation_id,
+        current_state=TaskState.RUNNING,
+    )
+    result = boundary.authorize(request)
+    assert result.permitted is True
+    assert result.evidence.mutation_id == mutation_id
+    assert result.evidence.task_id == task_id
+    assert result.evidence.run_id == run_id
+    assert result.decision.policy_rule_id == "harness.task_control.cancel_task_execution"
+
+
+def test_gr12_a2_r2_task_control_wiring_consumes_host_boundary_without_rebuild(
+    tmp_path: Path,
+    _stub_host_llm: None,
+) -> None:
+    runtime = build_task_control_product_harness_host_runtime(tmp_path)
+    host_boundary = resolve_harness_task_control_mutation_boundary(
+        runtime.control_plane_governance,
+    )
+    assert host_boundary is not None
+    app = FastAPI()
+    with patch(
+        "intergrax.applications._shared.task_control_wiring.build_harness_control_plane_governance",
+    ) as rebuild_governance:
+        wire_harness_task_control(
+            app,
+            enabled=True,
+            host_execution=runtime.execution,
+            env=runtime.environment,
+            runtime=runtime,
+        )
+        rebuild_governance.assert_not_called()

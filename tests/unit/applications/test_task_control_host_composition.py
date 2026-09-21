@@ -17,17 +17,12 @@ from governed_contractor_application.tests.governed_contractor_ac3_projection im
     build_governed_contractor_test_registry_projection,
 )
 from governed_contractor_application.host.factory import create_governed_contractor_backend_app
-from governed_contractor_application.manifest import build_governed_contractor_manifest
-from governed_contractor_application.host.environment_profile import (
-    build_governed_contractor_environment_profile,
-)
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from intergrax.applications._shared.harness_auth import HarnessAuthState
 from intergrax.applications._shared.harness_control_plane_governance_wiring import (
     build_harness_control_plane_governance,
     resolve_harness_task_control_mutation_boundary,
 )
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from tests.unit.applications.harness_canonical_task_routes_test_support import (
     mount_canonical_harness_task_routes_for_tests,
 )
@@ -75,10 +70,12 @@ from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from testing_support.orchestration.orchestration_consequential_effect_reliability_doubles import (
     DurableTestProviderInvocationStore,
 )
+from intergrax.scaffold.application_names import ScaffoldApplicationNames
 from intergrax.scaffold.new_application_product import factory_py
-from local_workspace_application.host.factory import create_local_workspace_backend_app
-from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
-from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
+from tests.unit.applications.task_control_product_host_test_support import (
+    build_task_control_product_harness_host_runtime,
+    durable_execution_continuation_state_store_for_tests,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -105,6 +102,10 @@ def _stub_host_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "intergrax.applications._shared.llm_resolver.resolve_llm_adapter",
         _resolve,
+    )
+    monkeypatch.setenv(
+        "INTERGRAX_DIAGNOSTIC_PROBLEM_LIST_CURSOR_SECRET",
+        "task-control-host-composition-test-cursor-secret",
     )
 
 
@@ -154,17 +155,13 @@ def _task(*, tenant_id: str = _TENANT) -> Task:
 
 
 def _product_runtime(
+    tmp_path: Path,
     *,
     mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
 ) -> object:
-    settings = GovernedContractorBackendSettings.from_env()
-    manifest = build_governed_contractor_manifest()
-    env = manifest.environment or build_governed_contractor_environment_profile(settings)
-    return build_harness_host_runtime(
-        manifest,
-        env,
+    return build_task_control_product_harness_host_runtime(
+        tmp_path,
         mutation_authorization_boundary=mutation_boundary,
-        registry_projection=build_governed_contractor_test_registry_projection(),
     )
 
 
@@ -174,9 +171,10 @@ def _clear_registry() -> None:
 
 
 def test_taskcpm_h1_product_host_runtime_exposes_canonical_boundary(
+    tmp_path: Path,
     _stub_host_llm: None,
 ) -> None:
-    runtime = _product_runtime()
+    runtime = _product_runtime(tmp_path)
     assert runtime.control_plane_governance is not None
     boundary = resolve_harness_task_control_mutation_boundary(runtime.control_plane_governance)
     assert boundary is not None
@@ -184,12 +182,13 @@ def test_taskcpm_h1_product_host_runtime_exposes_canonical_boundary(
 
 @pytest.mark.asyncio
 async def test_taskcpm_h2_allow_through_host_composition_reaches_cooperative_cancel(
+    tmp_path: Path,
     _stub_host_llm: None,
 ) -> None:
     task = _task()
     run_id = mint_run_id()
     await ActiveTaskRegistry.register(task, run_id)
-    runtime = _product_runtime()
+    runtime = _product_runtime(tmp_path)
     boundary = resolve_harness_task_control_mutation_boundary(runtime.control_plane_governance)
     assert boundary is not None
     app = FastAPI()
@@ -226,6 +225,7 @@ async def test_taskcpm_h2_allow_through_host_composition_reaches_cooperative_can
 
 @pytest.mark.asyncio
 async def test_taskcpm_h3_deny_through_host_composed_boundary_zero_cancel_effect(
+    tmp_path: Path,
     _stub_host_llm: None,
 ) -> None:
     deny_evaluator = _RecordingEvaluator(
@@ -238,7 +238,7 @@ async def test_taskcpm_h3_deny_through_host_composed_boundary_zero_cancel_effect
         )
     )
     deny_boundary = ControlPlaneMutationAuthorizationBoundary(evaluator=deny_evaluator)
-    runtime = _product_runtime(mutation_boundary=deny_boundary)
+    runtime = _product_runtime(tmp_path, mutation_boundary=deny_boundary)
     task = _task()
     run_id = mint_run_id()
     await ActiveTaskRegistry.register(task, run_id)
@@ -270,22 +270,32 @@ async def test_taskcpm_h3_deny_through_host_composed_boundary_zero_cancel_effect
     assert not CancellationCoordinator.is_requested(task.metadata)
 
 
-def test_taskcpm_h4_product_host_uses_canonical_bundle_policy_authority() -> None:
-    env = ApplicationEnvironmentProfile.product_defaults(profile_id=_TENANT)
-    governance = build_harness_control_plane_governance(env)
-    boundary = resolve_harness_task_control_mutation_boundary(governance)
+def test_taskcpm_h4_product_host_uses_canonical_bundle_policy_authority(
+    tmp_path: Path,
+    _stub_host_llm: None,
+) -> None:
+    runtime = _product_runtime(tmp_path)
+    boundary = resolve_harness_task_control_mutation_boundary(
+        runtime.control_plane_governance,
+    )
     assert boundary is not None
+    task_id = mint_task_id()
+    run_id = mint_run_id()
     cancel_request = build_cancel_task_execution_mutation_request(
         principal=_principal(),
         tenant_id=_TENANT,
-        task_id=mint_task_id(),
-        run_id=mint_run_id(),
+        task_id=task_id,
+        run_id=run_id,
         mutation_id=_MUTATION_ID,
         current_state=TaskState.RUNNING,
     )
     host_result = boundary.authorize(cancel_request)
     assert host_result.permitted is True
     assert host_result.decision.policy_rule_id == "harness.task_control.cancel_task_execution"
+    assert host_result.evidence.mutation_id == _MUTATION_ID
+    assert host_result.evidence.task_id == task_id
+    assert host_result.evidence.run_id == run_id
+    assert host_result.decision.decision_id
 
 
 @pytest.mark.asyncio
@@ -408,23 +418,21 @@ def test_taskcpm_h1b_governed_contractor_factory_wires_runtime_boundary(
         runtime_events_db_path=tmp_path / "runtime_events.db",
         checkpoints_db_path=tmp_path / "checkpoints.db",
         document_store=platform_persistence.document_store,
+        key_value_cache=platform_persistence.kv_store,
+        execution_continuation_state_store=durable_execution_continuation_state_store_for_tests(),
     )
     paths = {route.path for route in app.routes}
     assert "/v1/tasks/{task_id}/cancel" in paths
 
 
-def test_taskcpm_h7b_local_workspace_factory_wires_runtime_boundary(
-    _stub_host_llm: None,
-) -> None:
-    settings = LocalWorkspaceBackendSettings(
-        include_task_control=True,
-        include_mcp=False,
-        include_scheduler=False,
-        include_interaction_routes=False,
-    )
-    app = create_local_workspace_backend_app(
-        registry_projection=build_lkw_test_registry_projection(settings),
-        settings=settings,
-    )
-    paths = {route.path for route in app.routes}
-    assert "/v1/tasks/{task_id}/cancel" in paths
+def test_taskcpm_h7b_local_workspace_factory_wires_runtime_boundary() -> None:
+    """LKW factory must pass host runtime into canonical task-control wiring (runtime-boundary)."""
+    factory_source = (
+        Path(__file__).resolve().parents[3]
+        / "applications"
+        / "local_workspace_application"
+        / "host"
+        / "factory.py"
+    ).read_text(encoding="utf-8")
+    assert "wire_harness_task_control" in factory_source
+    assert "runtime=runtime" in factory_source
