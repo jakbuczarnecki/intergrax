@@ -78,6 +78,17 @@ def qualified_capability_subject_from_result(
     evidence = result.evidence
     if evidence is None:
         return None
+    populated = sum(
+        1
+        for value in (
+            evidence.artifact_reference,
+            evidence.domain_handoff_reference,
+            evidence.evidence_ref,
+        )
+        if value
+    )
+    if populated != 1:
+        return None
     if evidence.artifact_reference:
         kind = QualifiedCapabilitySubjectKind.ARTIFACT_REFERENCE
         ref = evidence.artifact_reference

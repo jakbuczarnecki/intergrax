@@ -20,6 +20,7 @@ from intergrax.contracts.autonomous_work.worker_qualified_capability_resume impo
     WorkerQualifiedCapabilityResumeOutcome,
     WorkerQualifiedCapabilityResumeRequest,
     WorkerQualifiedCapabilityResumeResult,
+    derive_qualified_capability_execution_request_id,
 )
 from intergrax.contracts.capability_qualification.qualification_outcome import (
     CapabilityQualificationOutcome,
@@ -32,16 +33,6 @@ from intergrax.contracts.capability_qualification.qualified_capability_binding i
 from intergrax.contracts.capability_qualification.qualified_subject import (
     qualified_capability_subject_from_result,
 )
-
-
-def derive_qualified_capability_execution_request_id(
-    *,
-    resume_operation_id: str,
-    binding_operation_id: str,
-) -> str:
-    return (
-        f"qualified-capability-execution:{resume_operation_id}:{binding_operation_id}"
-    )
 
 
 class WorkerQualifiedCapabilityResumeCoordinator:
@@ -101,6 +92,8 @@ class WorkerQualifiedCapabilityResumeCoordinator:
             qualification_result=qualification,
             worker_need_id=request.worker_need_id,
             worker_instance_id=str(request.worker_instance_id),
+            tenant_id=request.tenant_id,
+            task_id=request.task_id,
             correlation_id=qualification.correlation_id,
             causation_id=qualification.causation_id,
             requested_at=timestamp,
@@ -158,6 +151,7 @@ class WorkerQualifiedCapabilityResumeCoordinator:
         execution_request = WorkerQualifiedCapabilityExecutionRequest(
             resume_operation_id=resume_id,
             binding_operation_id=binding_operation_id,
+            execution_request_id=execution_request_id,
             execution_target=binding_result.execution_target,
             worker_instance_id=request.worker_instance_id,
             worker_need_id=request.worker_need_id,
@@ -171,15 +165,26 @@ class WorkerQualifiedCapabilityResumeCoordinator:
             attempt_id=request.attempt_id,
         )
         execution_result = self._execution.execute(execution_request)
-        provenance = _provenance_after_execution(
-            provenance,
-            execution_request_id=execution_request_id,
-        )
 
         if (
             execution_result.disposition
             is WorkerQualifiedCapabilityExecutionDisposition.DISPATCHED
         ):
+            if execution_result.execution_request_id != execution_request_id:
+                return WorkerQualifiedCapabilityResumeResult(
+                    outcome=WorkerQualifiedCapabilityResumeOutcome.EXECUTION_FAILED,
+                    resume_operation_id=resume_id,
+                    provenance=provenance,
+                    binding_result=binding_result,
+                    execution_result=execution_result,
+                    decided_at=timestamp,
+                )
+            verified_id = execution_result.execution_request_id
+            assert verified_id is not None
+            provenance = _provenance_after_execution(
+                provenance,
+                execution_request_id=verified_id,
+            )
             return WorkerQualifiedCapabilityResumeResult(
                 outcome=WorkerQualifiedCapabilityResumeOutcome.EXECUTION_DISPATCHED,
                 resume_operation_id=resume_id,

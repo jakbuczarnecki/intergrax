@@ -10,6 +10,9 @@ from datetime import UTC, datetime
 from intergrax.capability_qualification.qualified_capability_binding_registry import (
     QualifiedCapabilityBindingProviderRegistry,
 )
+from intergrax.contracts.capability_qualification.errors import (
+    CapabilityQualificationConfigurationError,
+)
 from intergrax.contracts.capability_qualification.qualified_capability_binding import (
     QualifiedCapabilityBindingOutcome,
     QualifiedCapabilityBindingProvider,
@@ -35,7 +38,7 @@ class QualifiedCapabilityBindingService:
         started_at = datetime.now(tz=UTC)
         try:
             provider = self._registry.resolve(request)
-        except Exception as exc:
+        except CapabilityQualificationConfigurationError as exc:
             return _terminal(
                 request=request,
                 outcome=QualifiedCapabilityBindingOutcome.FAILED,

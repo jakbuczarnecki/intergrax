@@ -81,6 +81,22 @@ def derive_worker_capability_resume_operation_id(
     return f"worker-capability-resume:{decision_id}:{qual_id}"
 
 
+def derive_qualified_capability_execution_request_id(
+    *,
+    resume_operation_id: str,
+    binding_operation_id: str,
+) -> str:
+    resume_id = require_non_empty_text(
+        resume_operation_id,
+        label="resume_operation_id",
+    )
+    binding_id = require_non_empty_text(
+        binding_operation_id,
+        label="binding_operation_id",
+    )
+    return f"qualified-capability-execution:{resume_id}:{binding_id}"
+
+
 @dataclass(frozen=True, slots=True)
 class WorkerQualifiedCapabilityResumeRequest:
     """Evidence-backed resume — no discovery, acquisition, or re-qualification."""
@@ -142,6 +158,36 @@ class WorkerQualifiedCapabilityResumeRequest:
             validate_run_id(self.run_id)
         if self.attempt_id is not None:
             validate_attempt_id(self.attempt_id)
+        acquisition = self.acquisition_result
+        qualification = self.qualification_result
+        if qualification.acquisition_request_id != acquisition.request_id:
+            raise ValueError(
+                "qualification_result.acquisition_request_id must match acquisition_result.request_id",
+            )
+        if qualification.gap_id != acquisition.gap_id:
+            raise ValueError(
+                "qualification_result.gap_id must match acquisition_result.gap_id"
+            )
+        if qualification.strategy_id != acquisition.strategy_id:
+            raise ValueError(
+                "qualification_result.strategy_id must match acquisition_result.strategy_id",
+            )
+        provenance = self.provenance
+        if provenance.acquisition_request_id != acquisition.request_id:
+            raise ValueError("provenance.acquisition_request_id must match acquisition")
+        if provenance.gap_id != acquisition.gap_id:
+            raise ValueError("provenance.gap_id must match acquisition")
+        if provenance.acquisition_strategy_id != acquisition.strategy_id:
+            raise ValueError(
+                "provenance.acquisition_strategy_id must match acquisition"
+            )
+        if (
+            provenance.qualification_request_id
+            != qualification.qualification_request_id
+        ):
+            raise ValueError(
+                "provenance.qualification_request_id must match qualification"
+            )
 
 
 @dataclass(frozen=True, slots=True)
@@ -150,6 +196,7 @@ class WorkerQualifiedCapabilityExecutionRequest:
 
     resume_operation_id: str
     binding_operation_id: str
+    execution_request_id: str
     execution_target: QualifiedCapabilityExecutionTarget
     worker_instance_id: WorkerInstanceId
     worker_need_id: str
@@ -178,6 +225,20 @@ class WorkerQualifiedCapabilityExecutionRequest:
                 label="binding_operation_id",
             ),
         )
+        object.__setattr__(
+            self,
+            "execution_request_id",
+            require_non_empty_text(
+                self.execution_request_id,
+                label="execution_request_id",
+            ),
+        )
+        expected_execution = derive_qualified_capability_execution_request_id(
+            resume_operation_id=self.resume_operation_id,
+            binding_operation_id=self.binding_operation_id,
+        )
+        if self.execution_request_id != expected_execution:
+            raise ValueError("execution_request_id must match derived identity")
         if type(self.execution_target) is not QualifiedCapabilityExecutionTarget:
             raise TypeError(
                 "execution_target must be QualifiedCapabilityExecutionTarget"
@@ -265,6 +326,11 @@ class WorkerQualifiedCapabilityExecutionResult:
             validate_attempt_id(self.attempt_id)
         if self.execution_id is not None:
             validate_execution_id(self.execution_id)
+        if (
+            self.disposition is WorkerQualifiedCapabilityExecutionDisposition.DISPATCHED
+            and self.execution_request_id is None
+        ):
+            raise ValueError("DISPATCHED requires execution_request_id")
 
 
 @dataclass(frozen=True, slots=True)
@@ -321,4 +387,5 @@ __all__ = [
     "WorkerQualifiedCapabilityResumeRequest",
     "WorkerQualifiedCapabilityResumeResult",
     "derive_worker_capability_resume_operation_id",
+    "derive_qualified_capability_execution_request_id",
 ]

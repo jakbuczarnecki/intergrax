@@ -12,16 +12,6 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.autonomous_work.worker_qualified_capability_resume_coordinator import (
-    WorkerQualifiedCapabilityResumeCoordinator,
-    derive_qualified_capability_execution_request_id,
-)
-from intergrax.capability_qualification.qualified_capability_binding_service import (
-    QualifiedCapabilityBindingService,
-)
-from intergrax.contracts.autonomous_work.worker_capability_recovery import (
-    WorkerCapabilityRecoveryProvenance,
-)
 from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
     WorkerQualifiedCapabilityExecutionDisposition,
     WorkerQualifiedCapabilityExecutionRequest,
@@ -29,6 +19,15 @@ from intergrax.contracts.autonomous_work.worker_qualified_capability_resume impo
     WorkerQualifiedCapabilityResumeOutcome,
     WorkerQualifiedCapabilityResumeRequest,
     derive_worker_capability_resume_operation_id,
+)
+from intergrax.autonomous_work.worker_qualified_capability_resume_coordinator import (
+    WorkerQualifiedCapabilityResumeCoordinator,
+)
+from intergrax.capability_qualification.qualified_capability_binding_service import (
+    QualifiedCapabilityBindingService,
+)
+from intergrax.contracts.autonomous_work.worker_capability_recovery import (
+    WorkerCapabilityRecoveryProvenance,
 )
 from intergrax.contracts.capability_acquisition.acquisition_evidence import (
     CapabilityAcquisitionEvidence,
@@ -104,11 +103,11 @@ class _RecordingBindingProvider:
         self,
         request: QualifiedCapabilityBindingRequest,
     ) -> QualifiedCapabilityBindingResult:
-        self.bind_calls += 1
-        self.last_request = request
         cached = self._cache.get(request.binding_operation_id)
         if cached is not None:
             return cached
+        self.bind_calls += 1
+        self.last_request = request
         completed = request.requested_at
         target = QualifiedCapabilityExecutionTarget(
             execution_target_reference=f"execution-target:{request.binding_operation_id}",
@@ -132,22 +131,27 @@ class _RecordingBindingProvider:
 class _RecordingExecutionPort:
     calls: int = 0
     last_request: WorkerQualifiedCapabilityExecutionRequest | None = None
+    _cache: dict[str, WorkerQualifiedCapabilityExecutionResult] = field(
+        default_factory=dict,
+    )
 
     def execute(
         self,
         request: WorkerQualifiedCapabilityExecutionRequest,
     ) -> WorkerQualifiedCapabilityExecutionResult:
+        cached = self._cache.get(request.execution_request_id)
+        if cached is not None:
+            return cached
         self.calls += 1
         self.last_request = request
-        return WorkerQualifiedCapabilityExecutionResult(
+        result = WorkerQualifiedCapabilityExecutionResult(
             disposition=WorkerQualifiedCapabilityExecutionDisposition.DISPATCHED,
-            execution_request_id=derive_qualified_capability_execution_request_id(
-                resume_operation_id=request.resume_operation_id,
-                binding_operation_id=request.binding_operation_id,
-            ),
+            execution_request_id=request.execution_request_id,
             run_id=_RUN_ID,
             execution_id=_EXEC_ID,
         )
+        self._cache[request.execution_request_id] = result
+        return result
 
 
 @dataclass
@@ -363,7 +367,8 @@ def test_resume_binding_idempotent_on_retry() -> None:
 
     assert first.outcome is WorkerQualifiedCapabilityResumeOutcome.EXECUTION_DISPATCHED
     assert second.outcome is WorkerQualifiedCapabilityResumeOutcome.EXECUTION_DISPATCHED
-    assert binding.bind_calls == 2
+    assert binding.bind_calls == 1
+    assert execution.calls == 1
     assert binding.last_request is not None
     assert (
         derive_qualified_capability_binding_operation_id(

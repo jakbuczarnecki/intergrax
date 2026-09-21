@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from intergrax.codecraft.contracts import CraftResult
 from intergrax.contracts.codecraft.gap_synthesis import CodeCraftGapSynthesisOutcome
+from intergrax.runtime.codecraft.artifact_reference import artifact_reference_for_craft
 
 _UNAVAILABLE_ERRORS: frozenset[str] = frozenset(
     {
@@ -34,10 +35,6 @@ _BLOCKED_ERRORS: frozenset[str] = frozenset(
         "codecraft_run_mismatch",
     },
 )
-
-
-def artifact_reference_for_craft(craft_id: str) -> str:
-    return f"codecraft:artifact:{craft_id}"
 
 
 def gap_synthesis_outcome_for_craft_error(error: str) -> CodeCraftGapSynthesisOutcome:

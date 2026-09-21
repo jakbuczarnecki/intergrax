@@ -18,6 +18,7 @@ from intergrax.contracts.capability_qualification.qualified_subject import (
 from intergrax.contracts.capability_qualification.qualification_result import (
     CapabilityQualificationResult,
 )
+from intergrax.contracts.execution_identity import TaskId, validate_task_id
 
 SCHEMA_QUALIFIED_CAPABILITY_BINDING_REQUEST_V1: Final = (
     "qualified_capability_binding_request.v1"
@@ -105,6 +106,8 @@ class QualifiedCapabilityBindingRequest(BaseModel):
     qualification_result: CapabilityQualificationResult
     worker_need_id: str = _NON_EMPTY
     worker_instance_id: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    task_id: TaskId
     correlation_id: str | None = None
     causation_id: str | None = None
     requested_at: datetime
@@ -114,6 +117,7 @@ class QualifiedCapabilityBindingRequest(BaseModel):
         "resume_operation_id",
         "worker_need_id",
         "worker_instance_id",
+        "tenant_id",
         "correlation_id",
         "causation_id",
     )
@@ -129,6 +133,11 @@ class QualifiedCapabilityBindingRequest(BaseModel):
         if value.tzinfo is None or value.utcoffset() is None:
             raise ValueError("requested_at must be timezone-aware UTC")
         return value
+
+    @model_validator(mode="after")
+    def _validate_task(self) -> QualifiedCapabilityBindingRequest:
+        validate_task_id(self.task_id)
+        return self
 
     @model_validator(mode="after")
     def _binding_identity(self) -> QualifiedCapabilityBindingRequest:
