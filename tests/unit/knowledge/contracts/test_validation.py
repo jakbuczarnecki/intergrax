@@ -68,6 +68,24 @@ def test_safe_url_accepted() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    "value",
+    [
+        (1, 2),
+        {"x": (1, 2)},
+        [{"x": (1, 2)}],
+    ],
+)
+def test_validate_json_value_rejects_tuple_containers(value: object) -> None:
+    with pytest.raises(ValueError, match="JSON-compatible"):
+        validate_json_value(value, field_name="metadata")
+
+
+def test_validate_json_value_accepts_lists() -> None:
+    assert validate_json_value([1, 2], field_name="metadata") == [1, 2]
+    assert validate_json_value({"x": [1, 2]}, field_name="metadata") == {"x": [1, 2]}
+
+
 def test_knowledge_freezing_unchanged() -> None:
     frozen = freeze_knowledge_metadata({"region": "eu", "nested": {"n": 1}})
     with pytest.raises(TypeError, match="immutable"):

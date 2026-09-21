@@ -131,11 +131,39 @@ def _enforce_knowledge_metadata_policies(
     if isinstance(value, str) and is_url_like(value):
         label = path.rstrip(".") if path else field_name
         validate_safe_url(value, field_name=f"{field_name} value '{label}'")
-    return value
+        return value
+
+
+def _reject_knowledge_legacy_tuple_containers(
+    value: object,
+    *,
+    field_name: str,
+    path: str = "",
+) -> None:
+    """Reject tuple containers anywhere (historical Knowledge admission before platform delegation)."""
+    if isinstance(value, tuple):
+        label = path.rstrip(".") if path else field_name
+        raise ValueError(f"{field_name} must contain JSON-compatible values at '{label}'")
+    if isinstance(value, Mapping):
+        for key, child in value.items():
+            _reject_knowledge_legacy_tuple_containers(
+                child,
+                field_name=field_name,
+                path=f"{path}{key}.",
+            )
+        return
+    if isinstance(value, list):
+        for index, child in enumerate(value):
+            _reject_knowledge_legacy_tuple_containers(
+                child,
+                field_name=field_name,
+                path=f"{path}[{index}].",
+            )
 
 
 def validate_json_value(value: object, *, field_name: str, path: str = "") -> JsonValue:
     """Validate JSON structure, then apply Knowledge secret and URL safety policies."""
+    _reject_knowledge_legacy_tuple_containers(value, field_name=field_name, path=path)
     structured = validate_structured_json_value(value, field_name=field_name, path=path)
     return _enforce_knowledge_metadata_policies(structured, field_name=field_name, path=path)
 
