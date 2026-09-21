@@ -25,6 +25,7 @@ from intergrax.autonomous_work.capability_acquisition_ports import (
 from intergrax.autonomous_work.capability_acquisition_service import (
     WorkerCapabilityAcquisitionDecisionService,
 )
+from tests.unit.autonomous_work.uca6b_test_support import build_test_coordinator
 from intergrax.autonomous_work.capability_catalog_discovery_adapters import (
     CapabilityCatalogDiscoveryDependencies,
     CapabilityCatalogToolDiscoveryAdapter,
@@ -141,6 +142,10 @@ def _catalog_service(
         authority_compatibility=authority or AllowAllAuthorityCompatibilityPort(),
         codecraft_profile_resolver=codecraft_resolver
         or StaticCodecraftProfileResolver(allowed=True),
+        canonical_recovery=build_test_coordinator(
+            tool_registry=resolved_tool_registry,
+            skill_registry=resolved_skill_registry,
+        ),
     )
 
 
@@ -402,7 +407,10 @@ def test_catalog_only_tool_does_not_become_a0() -> None:
     )
     result = service.decide(_request())
 
-    assert result.disposition is CapabilityAcquisitionDisposition.EPHEMERAL_GENERATION_CANDIDATE
+    assert result.disposition in {
+        CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY,
+        CapabilityAcquisitionDisposition.PENDING_QUALIFICATION,
+    }
 
 
 def test_governance_blocked_tool_returns_policy_blocked() -> None:

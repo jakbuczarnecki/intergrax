@@ -26,6 +26,9 @@ from intergrax.autonomous_work.capability_acquisition_ports import (
     WorkerToolCapabilityDiscoveryPort,
 )
 from intergrax.autonomous_work.capability_discovery_adapters import normalize_candidates
+from intergrax.autonomous_work.worker_capability_recovery_coordinator import (
+    WorkerCapabilityRecoveryCoordinator,
+)
 from intergrax.contracts.autonomous_work.capability_acquisition import (
     ACQUISITION_DECISION_POLICY_VERSION,
     CapabilityAcquisitionDisposition,
@@ -65,7 +68,9 @@ _LADDER_RANK: dict[WorkerCapabilityCandidateKind, int] = {
     WorkerCapabilityCandidateKind.EXISTING_CONFIGURATION: 4,
 }
 
-_DISPOSITION_REASON: dict[WorkerCapabilityCandidateKind, CapabilityAcquisitionReasonCode] = {
+_DISPOSITION_REASON: dict[
+    WorkerCapabilityCandidateKind, CapabilityAcquisitionReasonCode
+] = {
     WorkerCapabilityCandidateKind.TOOL: CapabilityAcquisitionReasonCode.EXISTING_TOOL_SELECTED,
     WorkerCapabilityCandidateKind.SKILL: CapabilityAcquisitionReasonCode.EXISTING_SKILL_SELECTED,
     WorkerCapabilityCandidateKind.INTEGRATION: (
@@ -106,10 +111,12 @@ class WorkerCapabilityAcquisitionDecisionService:
         configuration_discovery: WorkerConfigurationOpportunityDiscoveryPort,
         authority_compatibility: WorkerCapabilityAuthorityCompatibilityPort,
         codecraft_profile_resolver: WorkerCodecraftProfileResolver | None = None,
+        canonical_recovery: WorkerCapabilityRecoveryCoordinator | None = None,
     ) -> None:
         self._profile_resolver = profile_resolver
         self._authority_compatibility = authority_compatibility
         self._codecraft_profile_resolver = codecraft_profile_resolver
+        self._canonical_recovery = canonical_recovery
         self._layers = (
             _DiscoveryLayer("tool", tool_discovery),
             _DiscoveryLayer("skill", skill_discovery),
@@ -172,7 +179,8 @@ class WorkerCapabilityAcquisitionDecisionService:
                         request=request,
                         disposition=layer_result.disposition,
                         reason_code=CapabilityAcquisitionReasonCode.DISCOVERY_UNAVAILABLE
-                        if layer_result.disposition is CapabilityAcquisitionDisposition.UNAVAILABLE
+                        if layer_result.disposition
+                        is CapabilityAcquisitionDisposition.UNAVAILABLE
                         else CapabilityAcquisitionReasonCode.CONFLICT,
                         decided_at=timestamp,
                     )
@@ -187,6 +195,30 @@ class WorkerCapabilityAcquisitionDecisionService:
                 )
                 if selected is not None:
                     return selected
+
+        if request.recovery_decision.strategy is RecoveryStrategy.ACQUIRE_CAPABILITY:
+            if request.need.need_kind in {
+                CapabilityNeedKind.EXTERNAL_INTEGRATION,
+                CapabilityNeedKind.SCHEMA_ADAPTATION,
+                CapabilityNeedKind.PROTOCOL_ADAPTATION,
+            }:
+                return self._classify_generated_candidate(
+                    request=request,
+                    policy=policy,
+                    decided_at=timestamp,
+                )
+            if self._canonical_recovery is None:
+                return _simple_result(
+                    request=request,
+                    disposition=CapabilityAcquisitionDisposition.UNAVAILABLE,
+                    reason_code=CapabilityAcquisitionReasonCode.CANONICAL_UCA_NOT_CONFIGURED,
+                    decided_at=timestamp,
+                )
+            return self._canonical_recovery.coordinate_acquisition_decision(
+                request,
+                policy=policy,
+                decided_at=timestamp,
+            )
 
         return self._classify_generated_candidate(
             request=request,
@@ -211,10 +243,19 @@ class WorkerCapabilityAcquisitionDecisionService:
                 decided_at=decided_at,
             )
 
-        eligible: list[tuple[WorkerCapabilityCandidate, WorkerCapabilityAuthorityCompatibility]] = []
+        eligible: list[
+            tuple[WorkerCapabilityCandidate, WorkerCapabilityAuthorityCompatibility]
+        ] = []
         authority_blocked: list[WorkerCapabilityCandidate] = []
         policy_blocked_autonomy = False
         for candidate in normalized:
+            if request.need.required_operations:
+                offered = set(candidate.operations)
+                if not all(
+                    operation in offered
+                    for operation in request.need.required_operations
+                ):
+                    continue
             if candidate.candidate_kind not in policy.allowed_candidate_kinds:
                 continue
             if not autonomy_level_allowed(
@@ -239,7 +280,10 @@ class WorkerCapabilityAcquisitionDecisionService:
                     reason_code=CapabilityAcquisitionReasonCode.DISCOVERY_UNAVAILABLE,
                     decided_at=decided_at,
                 )
-            if compatibility is WorkerCapabilityAuthorityCompatibility.AUTHORITY_CHANGE_REQUIRED:
+            if (
+                compatibility
+                is WorkerCapabilityAuthorityCompatibility.AUTHORITY_CHANGE_REQUIRED
+            ):
                 authority_blocked.append(candidate)
                 continue
             eligible.append((candidate, compatibility))
@@ -248,7 +292,8 @@ class WorkerCapabilityAcquisitionDecisionService:
             selected = _deterministic_select(eligible)
             disposition = (
                 CapabilityAcquisitionDisposition.CONFIGURE_EXISTING
-                if selected.candidate_kind is WorkerCapabilityCandidateKind.EXISTING_CONFIGURATION
+                if selected.candidate_kind
+                is WorkerCapabilityCandidateKind.EXISTING_CONFIGURATION
                 else CapabilityAcquisitionDisposition.USE_EXISTING
             )
             reason = _DISPOSITION_REASON[selected.candidate_kind]
@@ -343,39 +388,6 @@ class WorkerCapabilityAcquisitionDecisionService:
                 )
             return _policy_blocked_result(request, decided_at)
 
-        if policy.generated_capability_allowed:
-            if (
-                WorkerCapabilityCandidateKind.CODECRAFT_EPHEMERAL
-                not in policy.allowed_candidate_kinds
-            ):
-                return _policy_blocked_result(request, decided_at)
-            if autonomy_level_allowed(
-                WorkerAutonomyLevel.A1_EPHEMERAL_SAFE,
-                policy.allowed_autonomy_levels,
-            ) and _codecraft_allowed(
-                request,
-                self._codecraft_profile_resolver,
-            ):
-                candidate = _synthetic_candidate(
-                    request.need,
-                    candidate_kind=WorkerCapabilityCandidateKind.CODECRAFT_EPHEMERAL,
-                    autonomy=WorkerAutonomyLevel.A1_EPHEMERAL_SAFE,
-                    capability_ref="ephemeral:codecraft",
-                )
-                return _decision_result(
-                    request=request,
-                    disposition=CapabilityAcquisitionDisposition.EPHEMERAL_GENERATION_CANDIDATE,
-                    reason_code=CapabilityAcquisitionReasonCode.A1_CANDIDATE_ALLOWED,
-                    selected_candidate=candidate,
-                    autonomy_level=WorkerAutonomyLevel.A1_EPHEMERAL_SAFE,
-                    decided_at=decided_at,
-                )
-            if not autonomy_level_allowed(
-                WorkerAutonomyLevel.A1_EPHEMERAL_SAFE,
-                policy.allowed_autonomy_levels,
-            ):
-                return _policy_blocked_result(request, decided_at)
-
         return _fail_closed_no_safe(request, decided_at)
 
 
@@ -412,7 +424,10 @@ def _defense_rejection(
     obstacle_kind = recovery.obstacle_kind
     strategy = recovery.strategy
 
-    if obstacle_kind is WorkerObstacleKind.POLICY_DENIED or strategy is RecoveryStrategy.STOP:
+    if (
+        obstacle_kind is WorkerObstacleKind.POLICY_DENIED
+        or strategy is RecoveryStrategy.STOP
+    ):
         return WorkerCapabilityAcquisitionResult(
             disposition=CapabilityAcquisitionDisposition.ESCALATE,
             decision=_decision_only(
@@ -444,9 +459,13 @@ def _defense_rejection(
 
 
 def _deterministic_select(
-    eligible: list[tuple[WorkerCapabilityCandidate, WorkerCapabilityAuthorityCompatibility]],
+    eligible: list[
+        tuple[WorkerCapabilityCandidate, WorkerCapabilityAuthorityCompatibility]
+    ],
 ) -> WorkerCapabilityCandidate:
-    def sort_key(item: tuple[WorkerCapabilityCandidate, WorkerCapabilityAuthorityCompatibility]) -> tuple:
+    def sort_key(
+        item: tuple[WorkerCapabilityCandidate, WorkerCapabilityAuthorityCompatibility],
+    ) -> tuple:
         candidate = item[0]
         return (
             _LADDER_RANK.get(candidate.candidate_kind, 99),
@@ -612,7 +631,9 @@ def _build_decision(
 ) -> WorkerCapabilityAcquisitionDecision:
     need = request.need
     need_id = derive_worker_capability_need_id(need)
-    selected_id = selected_candidate.candidate_id if selected_candidate is not None else None
+    selected_id = (
+        selected_candidate.candidate_id if selected_candidate is not None else None
+    )
     decision_id = derive_worker_capability_acquisition_decision_id(
         worker_instance_id=need.worker_instance_id,
         obstacle_id=need.obstacle_id,
@@ -635,7 +656,8 @@ def _build_decision(
         selected_candidate=selected_candidate,
         autonomy_level=autonomy_level,
         capability_profile_ref=request.capability_profile_ref,
-        codecraft_profile_ref=request.codecraft_profile_ref or need.codecraft_profile_ref,
+        codecraft_profile_ref=request.codecraft_profile_ref
+        or need.codecraft_profile_ref,
         reason_code=reason_code,
         evidence_refs=evidence_refs,
         decided_at=decided_at,

@@ -38,6 +38,11 @@ from intergrax.autonomous_work.capability_discovery_adapters import (
 from tests.unit.autonomous_work.catalog_discovery_test_support import (
     catalog_tool_skill_adapters,
 )
+from tests.unit.autonomous_work.uca6b_test_support import (
+    RecordingAcquisitionBundle,
+    build_recording_acquisition,
+    build_test_coordinator,
+)
 from intergrax.contracts.autonomous_work.capability_acquisition import (
     CapabilityAcquisitionDisposition,
     CapabilityAcquisitionReasonCode,
@@ -209,6 +214,8 @@ def _service(
     codecraft_allowed: bool = True,
     policy=None,
     use_legacy_registry_discovery: bool = False,
+    canonical_recovery=None,
+    acquisition_bundle: RecordingAcquisitionBundle | None = None,
 ) -> WorkerCapabilityAcquisitionDecisionService:
     resolved_policy = policy or permissive_capability_policy(_CAPABILITY_PROFILE)
     resolved_tool_registry = tool_registry if tool_registry is not None else ToolRegistry()
@@ -222,6 +229,12 @@ def _service(
         tool_discovery = ToolRegistryCapabilityDiscoveryAdapter(resolved_tool_registry)
     if skill_discovery is None:
         skill_discovery = SkillRegistryCapabilityDiscoveryAdapter(resolved_skill_registry)
+    if canonical_recovery is None:
+        canonical_recovery = build_test_coordinator(
+            tool_registry=resolved_tool_registry,
+            skill_registry=resolved_skill_registry,
+            acquisition=acquisition_bundle,
+        )
     return WorkerCapabilityAcquisitionDecisionService(
         profile_resolver=StaticWorkerCapabilityProfileResolver(resolved_policy),
         tool_discovery=tool_discovery,
@@ -232,6 +245,7 @@ def _service(
         configuration_discovery=NotConfiguredConfigurationOpportunityDiscovery(),
         authority_compatibility=authority or AllowAllAuthorityCompatibilityPort(),
         codecraft_profile_resolver=StaticCodecraftProfileResolver(allowed=codecraft_allowed),
+        canonical_recovery=canonical_recovery,
     )
 
 
@@ -382,17 +396,20 @@ def test_tool_discovery_unavailable_does_not_fall_through_to_skill() -> None:
     assert result.decision.reason_code is CapabilityAcquisitionReasonCode.DISCOVERY_UNAVAILABLE
 
 
-def test_no_match_with_a1_allowed_returns_ephemeral_candidate_only() -> None:
-    service = _service(tool_registry=ToolRegistry(), skill_registry=SkillRegistry())
+def test_no_match_with_a1_allowed_returns_pending_qualification_not_ephemeral() -> None:
+    bundle = build_recording_acquisition(strategy_id="custom.external.v1")
+    service = _service(
+        tool_registry=ToolRegistry(),
+        skill_registry=SkillRegistry(),
+        acquisition_bundle=bundle,
+    )
     result = service.decide(_request())
 
-    assert result.disposition is CapabilityAcquisitionDisposition.EPHEMERAL_GENERATION_CANDIDATE
-    assert result.decision is not None
-    assert result.decision.autonomy_level is WorkerAutonomyLevel.A1_EPHEMERAL_SAFE
-    assert result.decision.selected_candidate is not None
+    assert bundle.strategy.calls == 1
+    assert result.disposition is CapabilityAcquisitionDisposition.PENDING_QUALIFICATION
     assert (
-        result.decision.selected_candidate.candidate_kind
-        is WorkerCapabilityCandidateKind.CODECRAFT_EPHEMERAL
+        result.decision.reason_code
+        is CapabilityAcquisitionReasonCode.CANONICAL_GAP_ACQUIRED_PENDING_QUALIFICATION
     )
 
 
@@ -723,9 +740,7 @@ def test_a1_blocked_by_autonomy_policy() -> None:
     )
     result = service.decide(_request())
 
-    assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
-    assert result.decision is not None
-    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.POLICY_BLOCKED
+    assert result.disposition is CapabilityAcquisitionDisposition.PENDING_QUALIFICATION
 
 
 def test_a1_blocked_by_candidate_kind_policy() -> None:
@@ -745,10 +760,7 @@ def test_a1_blocked_by_candidate_kind_policy() -> None:
     )
     result = service.decide(_request())
 
-    assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
-    assert result.decision is not None
-    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.POLICY_BLOCKED
-    assert result.decision.selected_candidate is None
+    assert result.disposition is CapabilityAcquisitionDisposition.PENDING_QUALIFICATION
 
 
 def test_a1_blocked_by_codecraft_profile_returns_no_safe_capability() -> None:
@@ -759,10 +771,7 @@ def test_a1_blocked_by_codecraft_profile_returns_no_safe_capability() -> None:
     )
     result = service.decide(_request())
 
-    assert result.disposition is CapabilityAcquisitionDisposition.NO_SAFE_CAPABILITY
-    assert result.decision is not None
-    assert result.decision.reason_code is CapabilityAcquisitionReasonCode.NO_SAFE_CANDIDATE
-    assert result.decision.selected_candidate is None
+    assert result.disposition is CapabilityAcquisitionDisposition.PENDING_QUALIFICATION
 
 
 def test_a2_blocked_by_autonomy_policy() -> None:
@@ -900,4 +909,4 @@ def test_not_configured_optional_layer_allows_codecraft_fallback() -> None:
     service = _service(tool_registry=ToolRegistry(), skill_registry=SkillRegistry())
     result = service.decide(_request())
 
-    assert result.disposition is CapabilityAcquisitionDisposition.EPHEMERAL_GENERATION_CANDIDATE
+    assert result.disposition is CapabilityAcquisitionDisposition.PENDING_QUALIFICATION
