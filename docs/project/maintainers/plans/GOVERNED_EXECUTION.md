@@ -180,7 +180,7 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-7 | External Effect / Reliability Boundary | **IMPLEMENTED** — qualification **OPEN** (ERL path; Reliability ≠ Governance) |
 | GR-8 | Governance Evidence Integration | **CANDIDATE CLOSED — PUBLIC CONTRACT FROZEN** — [ADR-GR-8-001](../../technical/adr/entries/2026-09-17/ADR-GR-8-001.md); independent final audit pending |
 | GR-9 | Diagnostic Consumption Proof | **OPEN** |
-| GR-10 | Execution Strategy Coverage | **PARTIAL** — **GR-10-FINAL** requalification; INFERENCE PRE_MODEL **QUALIFIED**; matrix partial rows remain |
+| GR-10 | Execution Strategy Coverage | **FINAL CLOSED within formally defined GR-10 scope** — full per-GEP Governance Evidence **deferred to GR-13** |
 | GR-10-FINAL | Strategy governance requalification | **CLOSED (qualification artifact)** — independent GitHub audit before GR-10 slice CLOSED |
 | GR-10-R3-R1 | UAEP kernel authority internal carrier | **CANDIDATE CLOSED — PUBLIC AGENT BOUNDARY RESTORED** — `UaepKernelStepExecution` adapter carrier; independent GitHub audit required |
 | GR-10-R3 | UAEP AGENT_DECISION authority on kernel path | **CANDIDATE CLOSED — FUNCTIONAL + ARCHITECTURAL CONFORMANCE COMPLETE** — kernel `policy_pre` via internal carrier → `GovernanceResolution`; G3B deny proof green; independent GitHub audit required |
@@ -195,11 +195,14 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-10-R7 | AGENTIC & ORCHESTRATION residual strategy requalification | **CANDIDATE CLOSED — MATRIX REQUALIFIED** — `GR10_AGENTIC/ORCHESTRATION_CAPABILITY_SEMANTICS` + `test_gr10_r7_agentic_orchestration_residual_requalification.py`; independent GitHub audit required |
 | GR-10-A1 / A1-R1 | AGENTIC production scope & ACP reachability | **CLOSED** — P-UAEP qualified; P-ACP reachability documented |
 | GR-10-A2 | AGENTIC execution model architecture decision | **CLOSED** — [ADR-GR-10-004](../../technical/adr/entries/2026-09-21/ADR-GR-10-004-agentic-execution-model-uaep-canonical.md) `UAEP_CANONICAL_ACP_EXPLICIT`; independent GitHub audit required |
-| GR-10-A3 | Implement UAEP-canonical decoupling (checkpoint ≠ SESSION_ENABLED) | **NEXT** — runtime migration; `GR10_A3_NEXT_REMEDIATION` |
+| GR-10-A3 / A3-R1 | UAEP-canonical decoupling + checkpoint authority | **CLOSED** — checkpoint ≠ `acp.session.v1`; P-UAEP `RuntimeCheckpoint` / `TaskCheckpointPersistence` |
+| GR-10-A4 / A4-R1 | Qualification blocker + acceptance evidence integrity | **CLOSED** — g3b import gates; 05c/05d/05e acceptance |
+| GR-10-A5 | R7 final AGENTIC qualification reconciliation | **CLOSED** — matrix aligned to `GR10_AGENTIC_CAPABILITY_SEMANTICS` |
+| GR-10 AGENTIC Final Recertification & Closure | Whole GR-10 formal closure | **CLOSED** — `GR10_OVERALL_FORMAL_CLOSURE` SSOT; **next: GR-12** |
 | GR-10-R9-ADR1 | Canonical orchestration MSE authority contract | **CLOSED — CANONICAL MSE AUTHORITY CONTRACT APPROVED** — [ADR-GR-10-002](../../technical/adr/entries/2026-09-19/ADR-GR-10-002.md); `test_gr10_r9_adr1_mse_authority_contract.py`; independent GitHub audit required |
-| GR-10-R9 | ORCHESTRATION MSE production coverage | **PARTIAL — REMEDIATION REQUIRED** — tool invoker pre-effect slice qualified; authority architecture blocked until **GR-10-R9-R1** |
-| GR-11 | Plugin & Enterprise Extensibility Certification | **OPEN** |
-| GR-12 | Control-Plane Governance | **GAP** / **OPEN** |
+| GR-10-R9 | ORCHESTRATION MSE production coverage | **CLOSED within GR-10 scope** — R9-R1/R2/R3 qualification slices |
+| GR-11 | Plugin & Enterprise Extensibility Certification | **OPEN** (after GR-12) |
+| GR-12 | Control-Plane Governance | **NEXT** after GR-10 — **GAP** / **OPEN** |
 | GR-13 | Full Governance Proof Matrix | **OPEN** — includes `GR13_ORCHESTRATION_GOVERNANCE_EVIDENCE_DEFERRED` per [ADR-GR-10-003](../../technical/adr/entries/2026-09-21/ADR-GR-10-003-gr10-gr13-governance-evidence-certification-scope.md) (GR-10-R15-R1) |
 | GR-14 | Real Application Integration — LKW | **OPEN** |
 | GR-15 | Governance UX / Application Contract | **OPEN** |

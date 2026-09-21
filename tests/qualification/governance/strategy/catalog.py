@@ -1087,6 +1087,54 @@ GR10_A1_NEXT_REMEDIATION: Gr10R7NextRemediation = GR10_R15_R1_NEXT_REMEDIATION
 GR10_R15_NEXT_REMEDIATION: Gr10R7NextRemediation = GR10_R15_R1_NEXT_REMEDIATION
 
 
+GR10_POST_CLOSURE_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-12 — Control-plane Governance",
+    strategy="PLATFORM",
+    capability="Control-plane mutation",
+    exact_blocker=(
+        "GR-10 FINAL CLOSED within formally defined strategy enforcement scope; "
+        "shared live control-plane mutation enforcement remains GAP (GR-12)."
+    ),
+    why_highest=(
+        "Next governance milestone after GR-10 per enterprise roadmap (GR-12 → GR-11 → GR-13)."
+    ),
+)
+
+
+@dataclass(frozen=True, slots=True)
+class Gr10FormalClosureStatus:
+    """GR-10 final recertification — strategy-level closure SSOT (not GOV-FINAL)."""
+
+    strategy: str
+    status: str
+    gr13_deferred_note: str
+
+
+GR10_INFERENCE_FORMAL_CLOSURE: Gr10FormalClosureStatus = Gr10FormalClosureStatus(
+    strategy="INFERENCE",
+    status="CLOSED",
+    gr13_deferred_note="",
+)
+
+GR10_ORCHESTRATION_FORMAL_CLOSURE: Gr10FormalClosureStatus = Gr10FormalClosureStatus(
+    strategy="ORCHESTRATION",
+    status="FINAL CLOSED within formally defined GR-10 scope",
+    gr13_deferred_note="",
+)
+
+GR10_AGENTIC_FORMAL_CLOSURE: Gr10FormalClosureStatus = Gr10FormalClosureStatus(
+    strategy="AGENTIC",
+    status="FINAL CLOSED within formally defined GR-10 scope",
+    gr13_deferred_note="full per-GEP Governance Evidence remains deferred to GR-13",
+)
+
+GR10_OVERALL_FORMAL_CLOSURE: Gr10FormalClosureStatus = Gr10FormalClosureStatus(
+    strategy="GR-10",
+    status="FINAL CLOSED within formally defined GR-10 scope",
+    gr13_deferred_note="full per-GEP Governance Evidence remains deferred to GR-13",
+)
+
+
 @dataclass(frozen=True, slots=True)
 class Gr10OrchestrationGovernanceEvidenceInventoryRow:
     path: str
