@@ -208,7 +208,16 @@ class RuntimeToolInvoker:
         self._execution_pool.shutdown(wait=True)
         if self._dependency_attempt_boundary is not None:
             self._dependency_attempt_boundary.drain_and_close()
+        self._dependency_attempt_boundary = None
         self._execution_pool_closed = True
+
+    def _release_dependency_attempt_boundary_ownership(
+        self,
+    ) -> DependencyAttemptExecutionBoundary | None:
+        """Relinquish boundary ownership so a replacement invoker becomes sole closer."""
+        boundary = self._dependency_attempt_boundary
+        self._dependency_attempt_boundary = None
+        return boundary
 
     def with_idempotency_store(
         self,
@@ -223,6 +232,7 @@ class RuntimeToolInvoker:
             build_production_runtime_tool_invoker,
         )
 
+        transferred_boundary = self._release_dependency_attempt_boundary_ownership()
         replacement = build_production_runtime_tool_invoker(
             registry=self._registry,
             executor=self._executor,
@@ -233,7 +243,7 @@ class RuntimeToolInvoker:
             agent_runtime_governance=self._agent_runtime_governance,
             inner_execution_guard=self._inner_execution_guard,
             sandbox_availability=self._sandbox_availability,
-            dependency_attempt_boundary=self._dependency_attempt_boundary,
+            dependency_attempt_boundary=transferred_boundary,
             external_operation_store=self._external_operation_store,
             external_operation_owner=self._external_operation_owner,
             external_operation_cancellation_port=self._external_operation_cancellation_port,
