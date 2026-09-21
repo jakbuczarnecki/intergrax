@@ -135,12 +135,14 @@ def bind_llm_external_operation_ports(
     stream_registry: ProviderStreamTransportRegistry | None = None,
 ) -> None:
     """Attach optional W4-C/D ports on LLMAdapter instances."""
-    from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+    from intergrax.llm_adapters.contracts.runtime_lifecycle_binding import (
+        LLMRuntimeLifecycleBinding,
+    )
 
     if not isinstance(adapter, LLMAdapter):
         raise TypeError("adapter must be LLMAdapter")
-    if not isinstance(adapter, BaseLLMAdapter):
+    if not isinstance(adapter, LLMRuntimeLifecycleBinding):
         return
     adapter.bind_external_operation_ports(
         store=None,
