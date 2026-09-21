@@ -131,7 +131,7 @@ def _enforce_knowledge_metadata_policies(
     if isinstance(value, str) and is_url_like(value):
         label = path.rstrip(".") if path else field_name
         validate_safe_url(value, field_name=f"{field_name} value '{label}'")
-        return value
+    return value
 
 
 def _reject_knowledge_legacy_tuple_containers(
