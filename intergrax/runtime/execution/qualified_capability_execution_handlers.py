@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Plugin dispatch handlers for bound qualified capability execution targets (UCA-6C-R)."""
+"""Binding-provider execution handlers invoked inside ExecutionRuntime (UCA-6C-R2)."""
 
 from __future__ import annotations
 
@@ -9,13 +9,16 @@ from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
     QualifiedCapabilityExecutionDispatchRequest,
-    QualifiedCapabilityExecutionDispatchResult,
 )
+from intergrax.contracts.execution.qualified_capability_execution_intake import (
+    QualifiedCapabilityExecutionDelegateResult,
+)
+from intergrax.contracts.execution_identity import AttemptId, ExecutionId, RunId
 
 
 @runtime_checkable
 class QualifiedCapabilityExecutionBindingHandler(Protocol):
-    """Domain-owned handler for one ``binding_provider_id`` — invoked by Execution Engine."""
+    """Provider-owned binding execution — runs under canonical execution identity."""
 
     @property
     def binding_provider_id(self) -> str: ...
@@ -23,25 +26,29 @@ class QualifiedCapabilityExecutionBindingHandler(Protocol):
     def dispatch_once(
         self,
         request: QualifiedCapabilityExecutionDispatchRequest,
-    ) -> QualifiedCapabilityExecutionDispatchResult: ...
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+        execution_id: ExecutionId,
+    ) -> QualifiedCapabilityExecutionDelegateResult: ...
 
 
 class QualifiedCapabilityExecutionBindingHandlerRegistry:
-    """Resolve execution handlers without AW or adapter provider branching."""
+    """Resolve binding handlers by provider id — not an execution lifecycle owner."""
+
+    __slots__ = ("_handlers",)
 
     def __init__(
         self,
         handlers: tuple[QualifiedCapabilityExecutionBindingHandler, ...],
     ) -> None:
-        seen: set[str] = set()
         mapped: dict[str, QualifiedCapabilityExecutionBindingHandler] = {}
         for handler in handlers:
             provider_id = handler.binding_provider_id
-            if provider_id in seen:
+            if provider_id in mapped:
                 raise ValueError(
-                    f"duplicate qualified execution handler: {provider_id!r}"
+                    f"duplicate qualified capability execution handler: {provider_id}",
                 )
-            seen.add(provider_id)
             mapped[provider_id] = handler
         self._handlers = mapped
 

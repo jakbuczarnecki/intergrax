@@ -1,16 +1,18 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""CodeCraft execution handler for bound qualified capabilities (UCA-6C-R)."""
+"""CodeCraft binding handler under ExecutionRuntime identity (UCA-6C-R2)."""
 
 from __future__ import annotations
 
 from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
     QualifiedCapabilityExecutionDispatchDisposition,
     QualifiedCapabilityExecutionDispatchRequest,
-    QualifiedCapabilityExecutionDispatchResult,
 )
-from intergrax.contracts.execution_identity import mint_execution_id
+from intergrax.contracts.execution.qualified_capability_execution_intake import (
+    QualifiedCapabilityExecutionDelegateResult,
+)
+from intergrax.contracts.execution_identity import AttemptId, ExecutionId, RunId
 from intergrax.runtime.codecraft.artifact_reference import (
     parse_codecraft_execution_target_reference,
 )
@@ -25,7 +27,7 @@ from intergrax.runtime.execution.qualified_capability_execution_handlers import 
 class CodeCraftQualifiedCapabilityExecutionHandler(
     QualifiedCapabilityExecutionBindingHandler,
 ):
-    """Resolve CodeCraft execution targets — does not bypass Execution Engine dispatch."""
+    """Resolve CodeCraft execution targets inside canonical ExecutionRuntime."""
 
     def __init__(self, *, side_effect_recorder: list[str] | None = None) -> None:
         self._side_effects = side_effect_recorder
@@ -37,24 +39,24 @@ class CodeCraftQualifiedCapabilityExecutionHandler(
     def dispatch_once(
         self,
         request: QualifiedCapabilityExecutionDispatchRequest,
-    ) -> QualifiedCapabilityExecutionDispatchResult:
+        *,
+        run_id: RunId,
+        attempt_id: AttemptId,
+        execution_id: ExecutionId,
+    ) -> QualifiedCapabilityExecutionDelegateResult:
         craft_id = parse_codecraft_execution_target_reference(
             request.execution_target.execution_target_reference,
         )
         if craft_id is None:
-            return QualifiedCapabilityExecutionDispatchResult(
+            return QualifiedCapabilityExecutionDelegateResult(
                 disposition=QualifiedCapabilityExecutionDispatchDisposition.FAILED,
-                execution_request_id=request.execution_request_id,
                 reason_detail="invalid_codecraft_execution_target",
             )
         if self._side_effects is not None:
             self._side_effects.append(craft_id)
-        return QualifiedCapabilityExecutionDispatchResult(
+        _ = (run_id, attempt_id, execution_id)
+        return QualifiedCapabilityExecutionDelegateResult(
             disposition=QualifiedCapabilityExecutionDispatchDisposition.DISPATCHED,
-            execution_request_id=request.execution_request_id,
-            run_id=request.run_id,
-            attempt_id=request.attempt_id,
-            execution_id=mint_execution_id(),
         )
 
 

@@ -78,11 +78,17 @@ from intergrax.runtime.codecraft.qualified_capability_execution_handler import (
     CodeCraftQualifiedCapabilityExecutionHandler,
 )
 from intergrax.runtime.codecraft.session_manager import CodeCraftSessionManager
+from intergrax.runtime.execution.qualified_capability_execution_composition import (
+    build_qualified_capability_execution_dispatch_service,
+)
 from intergrax.runtime.execution.qualified_capability_execution_dispatch_service import (
     QualifiedCapabilityExecutionDispatchService,
 )
 from intergrax.runtime.execution.qualified_capability_execution_handlers import (
     QualifiedCapabilityExecutionBindingHandlerRegistry,
+)
+from intergrax.runtime.governance.runtime_execution_policy_admission import (
+    AllowingRuntimeExecutionPolicyAdmission,
 )
 from intergrax.runtime.execution.worker_qualified_capability_execution_adapter import (
     WorkerQualifiedCapabilityExecutionEngineAdapter,
@@ -229,8 +235,9 @@ def _production_stack(
     handler_registry = QualifiedCapabilityExecutionBindingHandlerRegistry(
         (CodeCraftQualifiedCapabilityExecutionHandler(side_effect_recorder=[]),),
     )
-    dispatch = QualifiedCapabilityExecutionDispatchService(
+    dispatch, _, _ = build_qualified_capability_execution_dispatch_service(
         handler_registry=handler_registry,
+        runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
     )
     execution = WorkerQualifiedCapabilityExecutionEngineAdapter(dispatch=dispatch)
     coordinator = WorkerQualifiedCapabilityResumeCoordinator(
@@ -327,7 +334,7 @@ def test_cross_tenant_codecraft_binding_blocked() -> None:
 def test_production_ee_adapter_dispatches_once_per_request_id() -> None:
     ctx = _wiring()
     side_effects: list[str] = []
-    dispatch = QualifiedCapabilityExecutionDispatchService(
+    dispatch, _, _ = build_qualified_capability_execution_dispatch_service(
         handler_registry=QualifiedCapabilityExecutionBindingHandlerRegistry(
             (
                 CodeCraftQualifiedCapabilityExecutionHandler(
@@ -335,6 +342,7 @@ def test_production_ee_adapter_dispatches_once_per_request_id() -> None:
                 ),
             ),
         ),
+        runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
     )
     adapter = WorkerQualifiedCapabilityExecutionEngineAdapter(dispatch=dispatch)
     resume_id = "worker-capability-resume:r:e:e"

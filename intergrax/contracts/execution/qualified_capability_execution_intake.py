@@ -1,14 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Public Execution Engine dispatch contract for bound qualified capabilities (UCA-6C-R)."""
+"""Canonical ExecutionRuntime payload for bound qualified capabilities (UCA-6C-R2)."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
-from enum import StrEnum
-from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.autonomous_work._validation import (
     require_aware_utc,
@@ -21,30 +19,15 @@ from intergrax.contracts.autonomous_work.ids import (
 from intergrax.contracts.capability_qualification.qualified_capability_binding import (
     QualifiedCapabilityExecutionTarget,
 )
-from intergrax.contracts.execution_identity import (
-    AttemptId,
-    ExecutionId,
-    RunId,
-    TaskId,
-    validate_attempt_id,
-    validate_execution_id,
-    validate_run_id,
-    validate_task_id,
+from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
+    QualifiedCapabilityExecutionDispatchDisposition,
 )
-
-
-class QualifiedCapabilityExecutionDispatchDisposition(StrEnum):
-    """Typed dispatch outcome — not a capability gap signal."""
-
-    DISPATCHED = "dispatched"
-    UNAVAILABLE = "unavailable"
-    FAILED = "failed"
-    REJECTED = "rejected"
+from intergrax.contracts.execution_identity import TaskId, validate_task_id
 
 
 @dataclass(frozen=True, slots=True)
-class QualifiedCapabilityExecutionDispatchRequest:
-    """Canonical Execution Engine intake for one bound qualified capability."""
+class QualifiedCapabilityExecutionIntakePayload:
+    """Provider-neutral runtime payload after AW translation — not lifecycle authority."""
 
     execution_request_id: str
     execution_target: QualifiedCapabilityExecutionTarget
@@ -58,8 +41,6 @@ class QualifiedCapabilityExecutionDispatchRequest:
     acquisition_request_id: str
     qualified_subject_reference: str
     requested_at: datetime
-    run_id: RunId | None = None
-    attempt_id: AttemptId | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -98,29 +79,18 @@ class QualifiedCapabilityExecutionDispatchRequest:
                 label,
                 require_non_empty_text(value, label=label),
             )
-        if (
-            self.execution_target.qualified_subject_reference
-            != self.qualified_subject_reference
-        ):
-            raise ValueError("execution_target subject must match request subject")
         object.__setattr__(
             self,
             "requested_at",
             require_aware_utc(self.requested_at, label="requested_at"),
         )
-        if self.run_id is not None:
-            validate_run_id(self.run_id)
-        if self.attempt_id is not None:
-            validate_attempt_id(self.attempt_id)
 
 
 @dataclass(frozen=True, slots=True)
-class QualifiedCapabilityExecutionDispatchResult:
+class QualifiedCapabilityExecutionDelegateResult:
+    """Outcome produced inside ExecutionBoundary — not an execution authority."""
+
     disposition: QualifiedCapabilityExecutionDispatchDisposition
-    execution_request_id: str | None = None
-    run_id: RunId | None = None
-    attempt_id: AttemptId | None = None
-    execution_id: ExecutionId | None = None
     reason_detail: str = ""
 
     def __post_init__(self) -> None:
@@ -131,42 +101,9 @@ class QualifiedCapabilityExecutionDispatchResult:
             raise TypeError(
                 "disposition must be QualifiedCapabilityExecutionDispatchDisposition",
             )
-        if self.execution_request_id is not None:
-            object.__setattr__(
-                self,
-                "execution_request_id",
-                require_non_empty_text(
-                    self.execution_request_id,
-                    label="execution_request_id",
-                ),
-            )
-        if (
-            self.disposition
-            is QualifiedCapabilityExecutionDispatchDisposition.DISPATCHED
-        ):
-            if self.execution_request_id is None:
-                raise ValueError("DISPATCHED requires execution_request_id")
-        if self.run_id is not None:
-            validate_run_id(self.run_id)
-        if self.attempt_id is not None:
-            validate_attempt_id(self.attempt_id)
-        if self.execution_id is not None:
-            validate_execution_id(self.execution_id)
-
-
-@runtime_checkable
-class QualifiedCapabilityExecutionDispatchPort(Protocol):
-    """Ingress dedup port — delegates to canonical ExecutionRuntime via root launch."""
-
-    def dispatch(
-        self,
-        request: QualifiedCapabilityExecutionDispatchRequest,
-    ) -> QualifiedCapabilityExecutionDispatchResult: ...
 
 
 __all__ = [
-    "QualifiedCapabilityExecutionDispatchDisposition",
-    "QualifiedCapabilityExecutionDispatchPort",
-    "QualifiedCapabilityExecutionDispatchRequest",
-    "QualifiedCapabilityExecutionDispatchResult",
+    "QualifiedCapabilityExecutionDelegateResult",
+    "QualifiedCapabilityExecutionIntakePayload",
 ]
