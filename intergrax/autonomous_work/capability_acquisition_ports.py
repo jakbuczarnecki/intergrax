@@ -33,7 +33,9 @@ class WorkerCodecraftProfileResolutionError(Exception):
 class WorkerCapabilityProfileResolver(Protocol):
     """Resolve ``CapabilityProfileRef`` into immutable acquisition policy."""
 
-    def resolve(self, profile_ref: CapabilityProfileRef) -> ResolvedWorkerCapabilityPolicy:
+    def resolve(
+        self, profile_ref: CapabilityProfileRef
+    ) -> ResolvedWorkerCapabilityPolicy:
         """Return policy for ``profile_ref`` or raise resolution error."""
         ...
 
@@ -57,8 +59,7 @@ class WorkerToolCapabilityDiscoveryPort(Protocol):
     def discover(
         self,
         request: WorkerCapabilityDiscoveryRequest,
-    ) -> WorkerCapabilityDiscoveryLayerOutcome:
-        ...
+    ) -> WorkerCapabilityDiscoveryLayerOutcome: ...
 
 
 @runtime_checkable
@@ -68,8 +69,7 @@ class WorkerSkillCapabilityDiscoveryPort(Protocol):
     def discover(
         self,
         request: WorkerCapabilityDiscoveryRequest,
-    ) -> WorkerCapabilityDiscoveryLayerOutcome:
-        ...
+    ) -> WorkerCapabilityDiscoveryLayerOutcome: ...
 
 
 @runtime_checkable
@@ -79,8 +79,7 @@ class WorkerIntegrationCapabilityDiscoveryPort(Protocol):
     def discover(
         self,
         request: WorkerCapabilityDiscoveryRequest,
-    ) -> WorkerCapabilityDiscoveryLayerOutcome:
-        ...
+    ) -> WorkerCapabilityDiscoveryLayerOutcome: ...
 
 
 @runtime_checkable
@@ -90,8 +89,7 @@ class WorkerApprovedAlternateDiscoveryPort(Protocol):
     def discover(
         self,
         request: WorkerCapabilityDiscoveryRequest,
-    ) -> WorkerCapabilityDiscoveryLayerOutcome:
-        ...
+    ) -> WorkerCapabilityDiscoveryLayerOutcome: ...
 
 
 @runtime_checkable
@@ -101,8 +99,7 @@ class WorkerConfigurationOpportunityDiscoveryPort(Protocol):
     def discover(
         self,
         request: WorkerCapabilityDiscoveryRequest,
-    ) -> WorkerCapabilityDiscoveryLayerOutcome:
-        ...
+    ) -> WorkerCapabilityDiscoveryLayerOutcome: ...
 
 
 @runtime_checkable
@@ -114,8 +111,7 @@ class WorkerCapabilityAuthorityCompatibilityPort(Protocol):
         *,
         worker_instance_id: WorkerInstanceId,
         candidate: WorkerCapabilityCandidate,
-    ) -> WorkerCapabilityAuthorityCompatibility:
-        ...
+    ) -> WorkerCapabilityAuthorityCompatibility: ...
 
 
 class UnavailableToolCapabilityDiscovery:
@@ -243,7 +239,9 @@ class StaticWorkerCapabilityProfileResolver:
     def __init__(self, policy: ResolvedWorkerCapabilityPolicy) -> None:
         self._policy = policy
 
-    def resolve(self, profile_ref: CapabilityProfileRef) -> ResolvedWorkerCapabilityPolicy:
+    def resolve(
+        self, profile_ref: CapabilityProfileRef
+    ) -> ResolvedWorkerCapabilityPolicy:
         if profile_ref != self._policy.profile_ref:
             raise WorkerCapabilityProfileResolutionError(
                 f"capability profile unavailable: {profile_ref.profile_id}@"
@@ -261,7 +259,9 @@ class MappingWorkerCapabilityProfileResolver:
     ) -> None:
         self._policies = dict(policies)
 
-    def resolve(self, profile_ref: CapabilityProfileRef) -> ResolvedWorkerCapabilityPolicy:
+    def resolve(
+        self, profile_ref: CapabilityProfileRef
+    ) -> ResolvedWorkerCapabilityPolicy:
         key = (profile_ref.profile_id, profile_ref.version.value)
         policy = self._policies.get(key)
         if policy is None:
@@ -305,6 +305,19 @@ def permissive_capability_policy(
         adaptive_integration_allowed=True,
         durable_change_allowed=True,
     )
+
+
+class FailClosedWorkerCapabilityAuthorityCompatibilityPort:
+    """Fail-closed when authority wiring is absent — never permits DIRECT_REUSE reuse."""
+
+    def assess(
+        self,
+        *,
+        worker_instance_id: WorkerInstanceId,
+        candidate: WorkerCapabilityCandidate,
+    ) -> WorkerCapabilityAuthorityCompatibility:
+        del worker_instance_id, candidate
+        return WorkerCapabilityAuthorityCompatibility.UNAVAILABLE
 
 
 class AllowAllAuthorityCompatibilityPort:

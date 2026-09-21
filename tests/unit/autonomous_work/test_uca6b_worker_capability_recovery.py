@@ -46,7 +46,10 @@ from intergrax.contracts.capability_catalog.federation import (
 )
 from intergrax.contracts.capability_catalog.kind import CapabilityKind
 from tests.unit.autonomous_work import repository_contracts as contract_suite
-from intergrax.autonomous_work.capability_acquisition_ports import permissive_capability_policy
+from intergrax.autonomous_work.capability_acquisition_ports import (
+    AllowAllAuthorityCompatibilityPort,
+    permissive_capability_policy,
+)
 from tests.unit.autonomous_work.uca6b_test_support import (
     build_recording_acquisition,
 )
@@ -132,6 +135,7 @@ def test_direct_reuse_skips_uca_acquisition() -> None:
     coordinator = WorkerCapabilityRecoveryCoordinator(
         discovery=discovery,
         acquisition=bundle.service,
+        authority_compatibility=AllowAllAuthorityCompatibilityPort(),
     )
     request = WorkerCapabilityAcquisitionRequest(
         need=need,

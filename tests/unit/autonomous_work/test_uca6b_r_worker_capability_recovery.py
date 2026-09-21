@@ -27,6 +27,10 @@ from intergrax.autonomous_work.capability_acquisition_service import (
 from intergrax.autonomous_work.capability_discovery_adapters import (
     ToolRegistryCapabilityDiscoveryAdapter,
 )
+from intergrax.autonomous_work.capability_catalog_discovery_adapters import (
+    CapabilityCatalogGovernedDiscoveryService,
+    SkillRegistryManifestLookup,
+)
 from intergrax.autonomous_work.catalog_canonical_discovery_service import (
     CatalogCanonicalCapabilityDiscoveryService,
 )
@@ -213,9 +217,12 @@ def test_catalog_canonical_discovery_single_pass_per_kind() -> None:
         snapshot=snapshot,
         availability_evidence=availability,
     )
+    governed = CapabilityCatalogGovernedDiscoveryService(
+        dependencies,
+        manifest_lookup=SkillRegistryManifestLookup(skill_registry),
+    )
     discovery = CatalogCanonicalCapabilityDiscoveryService(
-        dependencies=dependencies,
-        skill_registry=skill_registry,
+        governed_discovery=governed,
     )
     need = _request().need
     from intergrax.autonomous_work.worker_capability_need_projection import (

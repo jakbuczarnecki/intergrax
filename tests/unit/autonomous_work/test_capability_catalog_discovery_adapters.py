@@ -37,7 +37,9 @@ from tests.unit.autonomous_work.uca6b_test_support import (
 )
 from intergrax.autonomous_work.capability_catalog_discovery_adapters import (
     CapabilityCatalogDiscoveryDependencies,
+    CapabilityCatalogGovernedDiscoveryService,
     CapabilityCatalogToolDiscoveryAdapter,
+    SkillRegistryManifestLookup,
     _tool_supports_required_operations,
     encode_source_qualified_capability_ref,
     identity_key_from_entry_identity,
@@ -454,10 +456,13 @@ def test_governance_blocked_tool_returns_policy_blocked() -> None:
         authority_compatibility=AllowAllAuthorityCompatibilityPort(),
         canonical_recovery=WorkerCapabilityRecoveryCoordinator(
             discovery=CatalogCanonicalCapabilityDiscoveryService(
-                dependencies=dependencies,
-                skill_registry=skill_registry,
+                governed_discovery=CapabilityCatalogGovernedDiscoveryService(
+                    dependencies,
+                    manifest_lookup=SkillRegistryManifestLookup(skill_registry),
+                ),
             ),
             acquisition=build_recording_acquisition().service,
+            authority_compatibility=AllowAllAuthorityCompatibilityPort(),
         ),
     )
     result = service.decide(_request())

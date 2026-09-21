@@ -8,7 +8,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from intergrax.autonomous_work.capability_acquisition_ports import (
-    AllowAllAuthorityCompatibilityPort,
+    FailClosedWorkerCapabilityAuthorityCompatibilityPort,
     WorkerCapabilityAuthorityCompatibilityPort,
 )
 from intergrax.autonomous_work.worker_capability_need_projection import (
@@ -130,7 +130,8 @@ class WorkerCapabilityRecoveryCoordinator:
             need_projection or DefaultWorkerCapabilityNeedProjection()
         )
         self._authority_compatibility = (
-            authority_compatibility or AllowAllAuthorityCompatibilityPort()
+            authority_compatibility
+            or FailClosedWorkerCapabilityAuthorityCompatibilityPort()
         )
 
     def coordinate_recovery(

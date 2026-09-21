@@ -6,6 +6,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.autonomous_work.capability_acquisition_ports import (
+    AllowAllAuthorityCompatibilityPort,
+)
+from intergrax.autonomous_work.capability_catalog_discovery_adapters import (
+    CapabilityCatalogGovernedDiscoveryService,
+    SkillRegistryManifestLookup,
+)
 from intergrax.autonomous_work.catalog_canonical_discovery_service import (
     CatalogCanonicalCapabilityDiscoveryService,
 )
@@ -15,7 +22,9 @@ from intergrax.autonomous_work.worker_capability_recovery_coordinator import (
 from intergrax.capability_acquisition.permit_acquisition_authorization import (
     PermitCapabilityAcquisitionAuthorizationPort,
 )
-from intergrax.capability_acquisition.acquisition_service import CapabilityAcquisitionService
+from intergrax.capability_acquisition.acquisition_service import (
+    CapabilityAcquisitionService,
+)
 from intergrax.contracts.capability_acquisition.acquisition_evidence import (
     CapabilityAcquisitionEvidence,
 )
@@ -57,7 +66,9 @@ class RecordingAcquisitionStrategy:
     def supports(self, request: CapabilityAcquisitionRequest) -> bool:
         return True
 
-    def acquire(self, request: CapabilityAcquisitionRequest) -> CapabilityAcquisitionResult:
+    def acquire(
+        self, request: CapabilityAcquisitionRequest
+    ) -> CapabilityAcquisitionResult:
         self.calls += 1
         completed = request.requested_at
         evidence = None
@@ -118,7 +129,9 @@ def build_test_coordinator(
         or entry.identity.logical.logical_id
         in {reg.manifest.skill_id for reg in skill_registry.list()}
     ]
-    availability = host_availability_for_entries(*host_entries) if host_entries else None
+    availability = (
+        host_availability_for_entries(*host_entries) if host_entries else None
+    )
     if availability is None:
         availability = host_availability_for_entries(
             *(tool_catalog_entry(reg.contract.tool_id) for reg in tool_registry.list()),
@@ -127,14 +140,17 @@ def build_test_coordinator(
         snapshot=snapshot,
         availability_evidence=availability,
     )
-    discovery = CatalogCanonicalCapabilityDiscoveryService(
-        dependencies=dependencies,
-        skill_registry=skill_registry,
+    governed = CapabilityCatalogGovernedDiscoveryService(
+        dependencies,
+        manifest_lookup=SkillRegistryManifestLookup(skill_registry),
     )
-    coordinator_kwargs = {
-        "discovery": discovery,
-        "acquisition": bundle.service,
-    }
-    if authority_compatibility is not None:
-        coordinator_kwargs["authority_compatibility"] = authority_compatibility
-    return WorkerCapabilityRecoveryCoordinator(**coordinator_kwargs)
+    discovery = CatalogCanonicalCapabilityDiscoveryService(
+        governed_discovery=governed,
+    )
+    return WorkerCapabilityRecoveryCoordinator(
+        discovery=discovery,
+        acquisition=bundle.service,
+        authority_compatibility=(
+            authority_compatibility or AllowAllAuthorityCompatibilityPort()
+        ),
+    )

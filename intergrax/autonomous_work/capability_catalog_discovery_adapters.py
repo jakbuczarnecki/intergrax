@@ -50,6 +50,9 @@ from intergrax.contracts.capability_catalog.availability import AvailabilityDisp
 from intergrax.contracts.capability_catalog.evidence import (
     CapabilityDiscoveryAvailabilityEvidence,
 )
+from intergrax.contracts.capability_catalog.federation import (
+    CapabilityCatalogFederationCompleteness,
+)
 from intergrax.contracts.capability_catalog.governance import (
     CapabilityGovernanceContext,
 )
@@ -102,6 +105,63 @@ class CatalogGovernedDiscoveryLayerResult:
 
     outcome: WorkerCapabilityDiscoveryLayerOutcome
     governed_allowed: tuple[GovernedCapabilityCandidate, ...] = ()
+
+
+@runtime_checkable
+class CapabilityCatalogGovernedDiscoveryPort(Protocol):
+    """Public governed catalog discovery seam — one discover/rank/govern pass per kind."""
+
+    def discover_tool(
+        self,
+        request: WorkerCapabilityDiscoveryRequest,
+    ) -> CatalogGovernedDiscoveryLayerResult:
+        """Run Tool discovery, ranking, and governance once for ``request``."""
+        ...
+
+    def discover_skill(
+        self,
+        request: WorkerCapabilityDiscoveryRequest,
+    ) -> CatalogGovernedDiscoveryLayerResult:
+        """Run Skill discovery, ranking, and governance once for ``request``."""
+        ...
+
+    @property
+    def federation_completeness(self) -> CapabilityCatalogFederationCompleteness:
+        """Federation completeness for the catalog snapshot used by this seam."""
+        ...
+
+
+class CapabilityCatalogGovernedDiscoveryService:
+    """Capability Catalog default implementation of ``CapabilityCatalogGovernedDiscoveryPort``."""
+
+    def __init__(
+        self,
+        dependencies: CapabilityCatalogDiscoveryDependencies,
+        *,
+        manifest_lookup: SkillManifestLookupPort,
+    ) -> None:
+        self._dependencies = dependencies
+        self._manifest_lookup = manifest_lookup
+
+    def discover_tool(
+        self,
+        request: WorkerCapabilityDiscoveryRequest,
+    ) -> CatalogGovernedDiscoveryLayerResult:
+        return _run_tool_discovery_layer(request, self._dependencies)
+
+    def discover_skill(
+        self,
+        request: WorkerCapabilityDiscoveryRequest,
+    ) -> CatalogGovernedDiscoveryLayerResult:
+        return _run_skill_discovery_layer(
+            request,
+            self._dependencies,
+            self._manifest_lookup,
+        )
+
+    @property
+    def federation_completeness(self) -> CapabilityCatalogFederationCompleteness:
+        return self._dependencies.snapshot.federation_completeness
 
 
 @dataclass(frozen=True, slots=True)

@@ -8,11 +8,8 @@ from __future__ import annotations
 from datetime import datetime
 
 from intergrax.autonomous_work.capability_catalog_discovery_adapters import (
-    CapabilityCatalogDiscoveryDependencies,
-    SkillRegistryManifestLookup,
+    CapabilityCatalogGovernedDiscoveryPort,
     identity_key_from_entry_identity,
-    _run_skill_discovery_layer,
-    _run_tool_discovery_layer,
 )
 from intergrax.autonomous_work.worker_capability_recovery_ports import (
     CanonicalCapabilityDiscoveryPort,
@@ -34,7 +31,6 @@ from intergrax.contracts.capability_catalog.federation import (
 )
 from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
 from intergrax.contracts.capability_catalog.availability import AvailabilityDisposition
-from intergrax.skills.registry.runtime import SkillRegistry
 
 
 def _catalog_only_keys(
@@ -111,11 +107,9 @@ class CatalogCanonicalCapabilityDiscoveryService(CanonicalCapabilityDiscoveryPor
     def __init__(
         self,
         *,
-        dependencies: CapabilityCatalogDiscoveryDependencies,
-        skill_registry: SkillRegistry,
+        governed_discovery: CapabilityCatalogGovernedDiscoveryPort,
     ) -> None:
-        self._dependencies = dependencies
-        self._manifest_lookup = SkillRegistryManifestLookup(skill_registry)
+        self._governed_discovery = governed_discovery
 
     def complete_discovery(
         self,
@@ -126,12 +120,8 @@ class CatalogCanonicalCapabilityDiscoveryService(CanonicalCapabilityDiscoveryPor
             profile_ref=request.worker_need.capability_profile_ref,
             worker_instance_id=request.worker_need.worker_instance_id,
         )
-        tool_layer = _run_tool_discovery_layer(worker_discovery, self._dependencies)
-        skill_layer = _run_skill_discovery_layer(
-            worker_discovery,
-            self._dependencies,
-            self._manifest_lookup,
-        )
+        tool_layer = self._governed_discovery.discover_tool(worker_discovery)
+        skill_layer = self._governed_discovery.discover_skill(worker_discovery)
         layer_outcomes = (tool_layer.outcome, skill_layer.outcome)
         merged_allowed = list(tool_layer.governed_allowed)
         merged_allowed.extend(skill_layer.governed_allowed)
@@ -141,7 +131,7 @@ class CatalogCanonicalCapabilityDiscoveryService(CanonicalCapabilityDiscoveryPor
         return aggregate_layer_outcomes_to_discovery_completion(
             need_id=need_id,
             discovery_correlation_id=request.discovery_correlation_id,
-            federation_completeness=self._dependencies.snapshot.federation_completeness,
+            federation_completeness=self._governed_discovery.federation_completeness,
             created_at=request.requested_at,
             layer_outcomes=layer_outcomes,
             governed_allowed=governed_allowed,
