@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 
-from intergrax.contracts.persisted_run_trace import PersistedRun, RunMetadata, RunSummary
+from intergrax.contracts.persisted_run_trace import PersistedRun, RunMetadata, RunSummary, persisted_trace_event_to_wire
 from intergrax.tools.providers.harness.contracts import (
     HarnessCompareRunsInput,
     HarnessCompareRunsOutput,
@@ -54,7 +54,7 @@ def _metadata_output(metadata: RunMetadata) -> HarnessRunMetadataOutput:
     error_type = ""
     error_message = ""
     if metadata.error is not None:
-        error_type = metadata.error.error_type
+        error_type = metadata.error.error_type.value
         error_message = metadata.error.message
     return HarnessRunMetadataOutput(
         run_id=metadata.run_id,
@@ -75,7 +75,7 @@ def harness_get_run(ctx: ToolWiringContext, params: HarnessGetRunInput) -> Harne
         params.run_id.strip(),
         params.tenant_id.strip(),
     )
-    events = [dict(item) for item in persisted.events]
+    events = [dict(persisted_trace_event_to_wire(item)) for item in persisted.events]
     return HarnessGetRunOutput(
         metadata=_metadata_output(persisted.metadata),
         events=events,
@@ -140,7 +140,7 @@ def harness_get_run_events(ctx: ToolWiringContext, params: HarnessGetRunEventsIn
     level_filter = params.level.strip().upper()
     filtered: list[HarnessRunEventOutput] = []
     for item in persisted.events:
-        event = dict(item)
+        event = dict(persisted_trace_event_to_wire(item))
         if step_filter and str(event.get("step", "")) != step_filter:
             continue
         if level_filter and str(event.get("level", "")).upper() != level_filter:
@@ -189,7 +189,9 @@ def harness_export_run_bundle(
         params.run_id.strip(),
         params.tenant_id.strip(),
     )
-    events = [dict(item) for item in persisted.events[: params.max_events]]
+    events = [
+        dict(persisted_trace_event_to_wire(item)) for item in persisted.events[: params.max_events]
+    ]
     payload = {
         "metadata": _metadata_output(persisted.metadata).model_dump(),
         "events": events,

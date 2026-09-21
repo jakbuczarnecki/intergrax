@@ -15,9 +15,11 @@ from intergrax.integrations.contracts.workflow_orchestrator import (
 )
 from intergrax.contracts.persisted_run_trace import (
     PersistedRun,
+    PersistedRunErrorCode,
     RunError,
     RunMetadata,
     RunStats,
+    decode_persisted_trace_event,
 )
 from intergrax.tools.providers.collaboration.contracts import (
     CollaborationCreateEventInput,
@@ -143,7 +145,22 @@ class InMemoryTraceReader:
                 started_at_utc="2026-06-07T10:00:00Z",
                 stats=RunStats(duration_ms=100, llm_usage={"input_tokens": 5}),
             ),
-            events=[{"event_id": "e-1"}],
+            events=[
+                decode_persisted_trace_event(
+                    {
+                        "event_id": "e-1",
+                        "run_id": "run-a",
+                        "seq": 1,
+                        "ts_utc": "t",
+                        "level": "INFO",
+                        "component": "engine",
+                        "step": "plan",
+                        "message": "m",
+                        "tags": {},
+                        "artifact_refs": [],
+                    }
+                )
+            ],
         )
         self._candidate = PersistedRun(
             metadata=RunMetadata(
@@ -153,9 +170,38 @@ class InMemoryTraceReader:
                 tenant_id="tenant-a",
                 started_at_utc="2026-06-07T10:05:00Z",
                 stats=RunStats(duration_ms=150, llm_usage={"input_tokens": 8}),
-                error=RunError(error_type="internal_error", message="boom"),
+                error=RunError(error_type=PersistedRunErrorCode.INTERNAL_ERROR, message="boom"),
             ),
-            events=[{"event_id": "e-1"}, {"event_id": "e-2"}],
+            events=[
+                decode_persisted_trace_event(
+                    {
+                        "event_id": "e-1",
+                        "run_id": "run-b",
+                        "seq": 1,
+                        "ts_utc": "t",
+                        "level": "INFO",
+                        "component": "engine",
+                        "step": "plan",
+                        "message": "m",
+                        "tags": {},
+                        "artifact_refs": [],
+                    }
+                ),
+                decode_persisted_trace_event(
+                    {
+                        "event_id": "e-2",
+                        "run_id": "run-b",
+                        "seq": 2,
+                        "ts_utc": "t",
+                        "level": "INFO",
+                        "component": "engine",
+                        "step": "plan",
+                        "message": "m",
+                        "tags": {},
+                        "artifact_refs": [],
+                    }
+                ),
+            ],
         )
 
     def read_run(self, run_id: str, tenant_id: str) -> PersistedRun:

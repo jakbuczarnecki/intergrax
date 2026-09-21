@@ -6,10 +6,12 @@ import pytest
 
 from intergrax.contracts.persisted_run_trace import (
     PersistedRun,
+    PersistedRunErrorCode,
     RunError,
     RunMetadata,
     RunStats,
     RunSummary,
+    decode_persisted_trace_event,
 )
 from intergrax.tools.providers.harness.contracts import (
     HarnessGetRunCostInput,
@@ -37,25 +39,39 @@ class InMemoryTraceReader:
             tenant_id="tenant-a",
             started_at_utc="2026-06-07T10:00:00Z",
             stats=RunStats(duration_ms=120, llm_usage={"input_tokens": 10, "output_tokens": 5}),
-            error=RunError(error_type="internal_error", message="boom"),
+            error=RunError(error_type=PersistedRunErrorCode.INTERNAL_ERROR, message="boom"),
         )
         self._events = [
-            {
-                "event_id": "e-1",
-                "step": "plan",
-                "level": "INFO",
-                "message": "planned",
-                "ts_utc": "2026-06-07T10:00:01Z",
-                "payload": {"tool": "rag.retrieve"},
-            },
-            {
-                "event_id": "e-2",
-                "step": "execute",
-                "level": "ERROR",
-                "message": "failed",
-                "ts_utc": "2026-06-07T10:00:02Z",
-                "payload": {},
-            },
+            decode_persisted_trace_event(
+                {
+                    "event_id": "e-1",
+                    "run_id": "run-1",
+                    "seq": 1,
+                    "step": "plan",
+                    "level": "INFO",
+                    "component": "engine",
+                    "message": "planned",
+                    "ts_utc": "2026-06-07T10:00:01Z",
+                    "payload": {"tool": "rag.retrieve"},
+                    "tags": {},
+                    "artifact_refs": [],
+                }
+            ),
+            decode_persisted_trace_event(
+                {
+                    "event_id": "e-2",
+                    "run_id": "run-1",
+                    "seq": 2,
+                    "step": "execute",
+                    "level": "ERROR",
+                    "component": "engine",
+                    "message": "failed",
+                    "ts_utc": "2026-06-07T10:00:02Z",
+                    "payload": {},
+                    "tags": {},
+                    "artifact_refs": [],
+                }
+            ),
         ]
 
     def read_run(self, run_id: str, tenant_id: str) -> PersistedRun:

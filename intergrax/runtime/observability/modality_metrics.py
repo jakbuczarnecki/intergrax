@@ -9,6 +9,7 @@ from typing import Any, Dict, List, Sequence
 from pydantic import BaseModel, Field
 
 from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.contracts.persisted_run_trace import PersistedTraceEvent
 from intergrax.runtime.nexus.tracing.persistence_models import SerializedTraceEvent
 
 
@@ -32,14 +33,18 @@ class ModalityMetricsPayload(BaseModel):
 
 
 def aggregate_modality_metrics_from_trace_events(
-    events: Sequence[SerializedTraceEvent | Dict[str, Any]],
+    events: Sequence[SerializedTraceEvent | PersistedTraceEvent | Dict[str, Any]],
 ) -> ModalityMetricsPayload:
     """Sum modality counters from ``tool_invocation_end`` trace events (fallback: last payload)."""
     aggregated = ModalityMetricsPayload()
     found = False
     for event in events:
         payload = _trace_event_payload(event)
-        step = event.step if isinstance(event, SerializedTraceEvent) else str(event.get("step", ""))
+        step = (
+            event.step
+            if isinstance(event, (SerializedTraceEvent, PersistedTraceEvent))
+            else str(event.get("step", ""))
+        )
         if step != "tool_invocation_end":
             continue
         modality_raw = payload.get("modality_metrics")
@@ -62,7 +67,7 @@ def aggregate_modality_metrics_from_trace_events(
     return ModalityMetricsPayload()
 
 
-def _trace_event_payload(event: SerializedTraceEvent | Dict[str, Any]) -> Dict[str, Any]:
+def _trace_event_payload(event: SerializedTraceEvent | PersistedTraceEvent | Dict[str, Any]) -> Dict[str, Any]:
     if isinstance(event, dict):
         raw = event.get("payload")
     else:
@@ -71,7 +76,7 @@ def _trace_event_payload(event: SerializedTraceEvent | Dict[str, Any]) -> Dict[s
 
 
 def build_task_completed_modality_payload(
-    events: Sequence[SerializedTraceEvent | Dict[str, Any]],
+    events: Sequence[SerializedTraceEvent | PersistedTraceEvent | Dict[str, Any]],
 ) -> Dict[str, Any] | None:
     """Runtime ``TASK_COMPLETED`` payload fragment when trace contains modality counters."""
     metrics = aggregate_modality_metrics_from_trace_events(events)

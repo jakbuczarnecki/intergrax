@@ -8,15 +8,21 @@ from dataclasses import asdict
 import json
 import sqlite3
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
-from intergrax.runtime.nexus.tracing.persistence_models import (
-    RunError,
-    RunStats,
-    RunSummary,
-    RunTraceStore,
+from intergrax.contracts.persisted_run_trace import (
     PersistedRun,
+    PersistedTraceEvent,
     RunMetadata,
+    RunSummary,
+    decode_persisted_run_error,
+    decode_persisted_run_stats,
+    decode_persisted_trace_event,
+    run_error_to_storage_dict,
+    run_stats_to_storage_dict,
+)
+from intergrax.runtime.nexus.tracing.persistence_models import (
+    RunTraceStore,
     SerializedTraceEvent,
 )
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
@@ -120,11 +126,11 @@ class SQLiteRunTraceStore(RunTraceStore):
             ).fetchall()
         export_parser_traces_from_events(json.loads(row[0]) for row in event_rows)
 
-        stats_json: str = json.dumps(asdict(metadata.stats))
+        stats_json: str = json.dumps(run_stats_to_storage_dict(metadata.stats))
 
         error_json: Optional[str] = None
         if metadata.error is not None:
-            error_json = json.dumps(asdict(metadata.error))
+            error_json = json.dumps(run_error_to_storage_dict(metadata.error))
 
         with self._get_connection() as conn:
             conn.execute(
@@ -188,18 +194,12 @@ class SQLiteRunTraceStore(RunTraceStore):
             ) = run_row
 
             stats_dict = json.loads(stats_json)
-            stats = RunStats(**stats_dict)
+            stats = decode_persisted_run_stats(stats_dict)
 
-            error: Optional[RunError] = None
+            error = None
             if error_json is not None:
                 error_dict = json.loads(error_json)
-                raw_type = error_dict.get("error_type", "")
-                if hasattr(raw_type, "value"):
-                    raw_type = raw_type.value
-                error = RunError(
-                    error_type=str(raw_type),
-                    message=str(error_dict.get("message", "")),
-                )
+                error = decode_persisted_run_error(error_dict)
 
             metadata = RunMetadata(
                 run_id=db_run_id,
@@ -221,8 +221,8 @@ class SQLiteRunTraceStore(RunTraceStore):
                 (run_id,),
             ).fetchall()
 
-            events: List[Dict[str, Any]] = [
-                json.loads(row[0]) for row in event_rows
+            events: List[PersistedTraceEvent] = [
+                decode_persisted_trace_event(json.loads(row[0])) for row in event_rows
             ]
 
         return PersistedRun(metadata=metadata, events=events)

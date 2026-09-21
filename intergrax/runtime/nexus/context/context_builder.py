@@ -36,6 +36,13 @@ class RetrievedChunk:
     metadata: Dict[str, Any]
     score: float
 
+    @property
+    def source_ref(self) -> str:
+        raw = self.metadata.get("source_ref")
+        if isinstance(raw, str) and raw.strip():
+            return raw
+        return self.id
+
 
 @dataclass
 class BuiltContext:

@@ -9,11 +9,13 @@ import json
 from typing import Any, Dict, List
 
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
-from intergrax.runtime.nexus.tracing.persistence_models import (
+from intergrax.contracts.persisted_run_trace import (
     PersistedRun,
+    PersistedTraceEvent,
     RunSummary,
-    SerializedTraceEvent,
+    persisted_trace_event_to_wire,
 )
+from intergrax.runtime.nexus.tracing.persistence_models import SerializedTraceEvent
 
 
 def format_run_list(runs: List[RunSummary]) -> str:
@@ -46,13 +48,15 @@ def format_run_show(persisted: PersistedRun) -> str:
         f"events:      {len(persisted.events)}",
     ]
     if meta.error is not None:
-        lines.append(f"error:       {meta.error.error_type} — {meta.error.message}")
+        lines.append(f"error:       {meta.error.error_type.value} — {meta.error.message}")
     return "\n".join(lines)
 
 
 def _normalize_trace_event(raw: Any) -> Dict[str, Any]:
     if isinstance(raw, dict):
         return raw
+    if isinstance(raw, PersistedTraceEvent):
+        return dict(persisted_trace_event_to_wire(raw))
     if isinstance(raw, SerializedTraceEvent):
         from dataclasses import asdict
 
@@ -89,11 +93,12 @@ def build_trace_payload(
 def format_trace_timeline(persisted: PersistedRun) -> str:
     lines = [f"Trace timeline for run {persisted.metadata.run_id} ({len(persisted.events)} events)", ""]
     for raw in persisted.events:
-        if not isinstance(raw, dict):
+        event = persisted_trace_event_to_wire(raw) if isinstance(raw, PersistedTraceEvent) else raw
+        if not isinstance(event, dict):
             continue
-        seq = raw.get("seq", "?")
-        ts = raw.get("ts_utc", "")
-        step = raw.get("step", "")
-        message = raw.get("message", "")
+        seq = event.get("seq", "?")
+        ts = event.get("ts_utc", "")
+        step = event.get("step", "")
+        message = event.get("message", "")
         lines.append(f"[{seq:>3}] {ts}  {step:<20}  {message}")
     return "\n".join(lines)
