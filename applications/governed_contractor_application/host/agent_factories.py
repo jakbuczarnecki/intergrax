@@ -6,10 +6,11 @@ from intergrax.applications.contracts.build_context import ApplicationBuildConte
 from intergrax.applications.contracts.manifest import AgentBinding
 from external_contractor_adapter.external_contractor_adapter_agent import ExternalContractorAdapterAgent
 from governed_contractor_application.host.agent_builders import GOVERNED_CONTRACTOR_AGENT_BUILDERS
+from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 
 
 def build_governed_contractor_external_contractor_adapter_from_context(
-    ctx: ApplicationBuildContext,
+    ctx: ApplicationBuildContext[GovernedContractorBackendSettings],
     binding: AgentBinding,
 ) -> ExternalContractorAdapterAgent:
     _ = ctx, binding

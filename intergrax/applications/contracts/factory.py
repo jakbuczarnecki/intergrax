@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
 
 from intergrax.contracts.tier2_agent import Tier2Agent
 
@@ -13,13 +13,15 @@ if TYPE_CHECKING:
     from intergrax.applications.contracts.build_context import ApplicationBuildContext
     from intergrax.applications.contracts.manifest import AgentBinding
 
+TSettings = TypeVar("TSettings")
 
-class CanonicalAgentFactory(Protocol):
+
+class CanonicalAgentFactory(Protocol, Generic[TSettings]):
     """Strict production factory contract: ``(ctx, binding) -> Tier2Agent``."""
 
     def __call__(
         self,
-        ctx: ApplicationBuildContext,
+        ctx: ApplicationBuildContext[TSettings],
         binding: AgentBinding,
     ) -> Tier2Agent: ...
 

@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import importlib
 from collections.abc import Mapping
-from typing import Any, Callable, Union
+from typing import Any, Callable, TypeVar, Union
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agent_distribution._immutable_json import DistributionJsonValue
@@ -40,6 +40,8 @@ from intergrax.skills.registry.factory import build_registry_from_profile
 from intergrax.skills.registry.runtime import SkillRegistry
 
 LegacyAgentFactoryCallable = Callable[..., Tier2Agent]
+
+TBuildSettings = TypeVar("TBuildSettings")
 
 BuilderMap = Union[
     Mapping[type[Agent], CanonicalAgentFactory],
@@ -560,7 +562,7 @@ def build_application_registry(
 def build_registry_from_manifest(
     manifest: ApplicationManifest,
     *,
-    settings: Any = None,
+    settings: TBuildSettings | None = None,
     builders: BuilderMap | None = None,
     require_enabled: bool = True,
 ) -> AgentRegistry:

@@ -42,13 +42,6 @@ _ENV_IO_NAMES = frozenset({"environ", "getenv"})
 
 _TYPE_IGNORE_RE = re.compile(r"#\s*type:\s*ignore\b")
 
-# EBH-2D-D outcome A — per-application settings injected by host; not a composition service bag.
-_SETTINGS_ANY_ALLOWLIST = frozenset(
-    {
-        _CONTRACTS_ROOT / "build_context.py",
-    }
-)
-
 # JSON-wire / migration helpers — declarative normalization only (EBH-2D-B profile ownership).
 _ANY_WIRE_MODULE_ALLOWLIST = frozenset(
     {
@@ -180,16 +173,24 @@ def test_whole_surface_has_no_type_ignore() -> None:
     assert not problems, "\n".join(problems)
 
 
-def test_application_build_context_settings_any_is_single_allowlisted_site() -> None:
+def test_application_build_context_settings_any_forbidden_in_contracts() -> None:
     any_sites: list[str] = []
     for path in _discover_contract_modules():
         source = _read(path)
         if re.search(r"\bsettings:\s*Any\b", source):
             any_sites.append(_relative_contract(path))
-    assert any_sites == ["build_context.py"]
-    assert _CONTRACTS_ROOT / "build_context.py" in _SETTINGS_ANY_ALLOWLIST
+    assert not any_sites, f"settings: Any forbidden in contracts: {any_sites}"
     field = next(f for f in ApplicationBuildContext.__dataclass_fields__.values() if f.name == "settings")
     assert field.type is not None
+    assert "Any" not in str(field.type)
+
+
+def test_application_build_context_is_generic_over_settings() -> None:
+    source = _read(_CONTRACTS_ROOT / "build_context.py")
+    assert "Generic[" in source or "Generic[" in source.replace(" ", "")
+    assert "class ApplicationBuildContext" in source
+    assert "TSettings" in source
+    assert "ApplicationBuildContext[Any]" not in source
 
 
 def test_weak_any_outside_wire_allowlist_is_absent() -> None:
@@ -200,7 +201,7 @@ def test_weak_any_outside_wire_allowlist_is_absent() -> None:
     )
     for path in _discover_contract_modules():
         rel = _relative_contract(path)
-        if rel in _ANY_WIRE_MODULE_ALLOWLIST or rel == "build_context.py":
+        if rel in _ANY_WIRE_MODULE_ALLOWLIST:
             continue
         source = _read(path)
         for pattern in patterns:

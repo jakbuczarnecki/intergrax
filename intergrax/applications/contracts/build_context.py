@@ -7,14 +7,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Generic, TypeVar, overload
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
 
+TSettings = TypeVar("TSettings")
+
 
 @dataclass(frozen=True)
-class ApplicationBuildContext:
+class ApplicationBuildContext(Generic[TSettings]):
     """
     Declarative inputs available when materializing agents for an application host.
 
@@ -24,28 +26,50 @@ class ApplicationBuildContext:
 
     ``settings`` is application-specific (e.g. ``LabApplicationSettings``,
     ``LegalBackendSettings``), injected by the host after env/filesystem load.
-    EBH-2D-D outcome **A**: intentional per-app polymorphism at the factory
-    boundary (not a runtime service bag; composition services stay in
-    ``ApplicationCompositionContext``). Strong typing via
-    ``ApplicationBuildContext[TSettings]`` is deferred (architecture wave).
+    The type parameter ties each host factory to its owned settings DTO without
+    central registration in platform core.
     """
 
     manifest: ApplicationManifest
-    settings: Any = None
+    settings: TSettings | None = None
     strict_harness: bool = False
     trace_db_path: Path | None = None
     environment: ApplicationEnvironmentProfile | None = None
+
+    @overload
+    @classmethod
+    def for_manifest(
+        cls,
+        manifest: ApplicationManifest,
+        *,
+        settings: None = None,
+        strict_harness: bool = False,
+        trace_db_path: Path | None = None,
+        environment: ApplicationEnvironmentProfile | None = None,
+    ) -> ApplicationBuildContext[None]: ...
+
+    @overload
+    @classmethod
+    def for_manifest(
+        cls,
+        manifest: ApplicationManifest,
+        *,
+        settings: TSettings,
+        strict_harness: bool = False,
+        trace_db_path: Path | None = None,
+        environment: ApplicationEnvironmentProfile | None = None,
+    ) -> ApplicationBuildContext[TSettings]: ...
 
     @classmethod
     def for_manifest(
         cls,
         manifest: ApplicationManifest,
         *,
-        settings: Any = None,
+        settings: TSettings | None = None,
         strict_harness: bool = False,
         trace_db_path: Path | None = None,
         environment: ApplicationEnvironmentProfile | None = None,
-    ) -> ApplicationBuildContext:
+    ) -> ApplicationBuildContext[TSettings] | ApplicationBuildContext[None]:
         return cls(
             manifest=manifest,
             settings=settings,

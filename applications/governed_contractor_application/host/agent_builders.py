@@ -16,18 +16,15 @@ from external_contractor_adapter.external_contractor_adapter_agent import (
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 
 
-def _backend_settings(ctx: ApplicationBuildContext) -> GovernedContractorBackendSettings | None:
-    settings = ctx.settings
-    if settings is None:
-        return None
-    if not isinstance(settings, GovernedContractorBackendSettings):
-        raise TypeError(
-            "governed_contractor host requires GovernedContractorBackendSettings on build context",
-        )
-    return settings
+def _backend_settings(
+    ctx: ApplicationBuildContext[GovernedContractorBackendSettings],
+) -> GovernedContractorBackendSettings | None:
+    return ctx.settings
 
 
-def _external_work_from_context(ctx: ApplicationBuildContext) -> ExternalWorkIntegration | None:
+def _external_work_from_context(
+    ctx: ApplicationBuildContext[GovernedContractorBackendSettings],
+) -> ExternalWorkIntegration | None:
     """Optional host injection via settings — Tier-2 never constructs providers."""
     settings = _backend_settings(ctx)
     if settings is None:
@@ -36,7 +33,7 @@ def _external_work_from_context(ctx: ApplicationBuildContext) -> ExternalWorkInt
 
 
 def _authorization_boundary_from_context(
-    ctx: ApplicationBuildContext,
+    ctx: ApplicationBuildContext[GovernedContractorBackendSettings],
 ) -> MeaningfulSideEffectAuthorizationBoundary | None:
     """Optional host injection of canonical meaningful side-effect authorization."""
     settings = _backend_settings(ctx)
@@ -46,7 +43,7 @@ def _authorization_boundary_from_context(
 
 
 def _build_external_contractor_adapter(
-    ctx: ApplicationBuildContext,
+    ctx: ApplicationBuildContext[GovernedContractorBackendSettings],
     _binding: AgentBinding,
 ) -> Agent:
     return ExternalContractorAdapterAgent(
@@ -55,6 +52,9 @@ def _build_external_contractor_adapter(
     )
 
 
-GOVERNED_CONTRACTOR_AGENT_BUILDERS: dict[type[Agent], AgentFactory] = {
+GOVERNED_CONTRACTOR_AGENT_BUILDERS: dict[
+    type[Agent],
+    AgentFactory[GovernedContractorBackendSettings],
+] = {
     ExternalContractorAdapterAgent: _build_external_contractor_adapter,
 }

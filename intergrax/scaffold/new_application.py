@@ -135,7 +135,10 @@ def _agent_builders_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgen
         # __AGENT_IMPORTS__
 
         def _zero_arg_factory(agent_cls: type[Agent]) -> AgentFactory:
-            def _build(_ctx: ApplicationBuildContext, _binding: AgentBinding) -> Agent:
+            def _build(
+                _ctx: ApplicationBuildContext[None],
+                _binding: AgentBinding,
+            ) -> Agent:
                 return agent_cls()
 
             return _build

@@ -65,10 +65,10 @@ def bind_incident_investigator_factory(factory: CanonicalAgentFactory) -> None:
 
 
 def resolve_incident_investigator_production_settings(
-    ctx: ApplicationBuildContext,
+    ctx: ApplicationBuildContext[IncidentInvestigatorProductionSettings],
 ) -> IncidentInvestigatorProductionSettings:
     settings = ctx.settings
-    if not isinstance(settings, IncidentInvestigatorProductionSettings):
+    if settings is None:
         raise TypeError(
             "incident_investigator_factory_requires_incident_investigator_production_settings"
         )
@@ -84,17 +84,14 @@ def build_incident_investigator_factory(
 ) -> CanonicalAgentFactory:
     """Return a configured factory closed over prepared runtime dependencies."""
 
-    def _factory(ctx: ApplicationBuildContext, binding: AgentBinding) -> Agent:
+    def _factory(
+        ctx: ApplicationBuildContext[IncidentInvestigatorProductionSettings],
+        binding: AgentBinding,
+    ) -> Agent:
         del binding
         settings = ctx.settings
-        if settings is not None and not isinstance(
-            settings, IncidentInvestigatorProductionSettings
-        ):
-            raise TypeError(
-                "incident_investigator_factory_requires_incident_investigator_production_settings"
-            )
         resolved_input = investigation_input
-        if isinstance(settings, IncidentInvestigatorProductionSettings):
+        if settings is not None:
             if settings.operational_data.station_id != operational_data.station_id:
                 raise ValueError(
                     "incident_investigator_settings_operational_data_mismatch"

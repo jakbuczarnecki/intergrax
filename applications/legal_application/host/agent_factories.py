@@ -13,13 +13,13 @@ from legal_application.host.settings import LegalBackendSettings
 
 
 def build_legal_agent_from_context(
-    ctx: ApplicationBuildContext,
+    ctx: ApplicationBuildContext[LegalBackendSettings],
     binding: AgentBinding,
 ) -> LegalAgent:
     """Canonical ``AgentFactory`` for :class:`~legal.legal_agent.LegalAgent`."""
     _ = binding
     settings = ctx.settings
-    if not isinstance(settings, LegalBackendSettings):
+    if settings is None:
         raise TypeError(
             "Legal agent factory requires LegalBackendSettings on ApplicationBuildContext"
         )

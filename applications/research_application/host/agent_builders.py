@@ -20,18 +20,18 @@ def build_research_agent_builders(
     *,
     tool_profile: ToolEnablementProfile | None = None,
     lab_harness: LabHarnessContext | None = None,
-) -> dict[type[Agent], AgentFactory]:
+) -> dict[type[Agent], AgentFactory[ResearchBackendSettings]]:
     """Compose research builder map with host-bound harness / tool-profile deps."""
 
     def build_research_agent_from_context(
-        ctx: ApplicationBuildContext,
+        ctx: ApplicationBuildContext[ResearchBackendSettings],
         binding: AgentBinding,
     ) -> ResearchAgent:
         _ = binding
         settings = ctx.settings
         enable_websearch = (
             settings.enable_websearch
-            if isinstance(settings, ResearchBackendSettings)
+            if settings is not None
             else ResearchBackendSettings().enable_websearch
         )
         environment = ctx.environment
@@ -60,4 +60,6 @@ def build_research_agent_builders(
 
 
 # Unbound defaults for tests / callers that do not yet wire composition deps.
-RESEARCH_AGENT_BUILDERS: dict[type[Agent], AgentFactory] = build_research_agent_builders()
+RESEARCH_AGENT_BUILDERS: dict[type[Agent], AgentFactory[ResearchBackendSettings]] = (
+    build_research_agent_builders()
+)
