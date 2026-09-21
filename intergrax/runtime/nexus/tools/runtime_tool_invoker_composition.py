@@ -13,7 +13,6 @@ from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
 from intergrax.runtime.governance.meaningful_side_effect_authorization_composition import (
     build_default_canonical_inner_execution_guard,
 )
-from intergrax.runtime.nexus.tools.catalog_dispatch import resolve_tool_registry
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
@@ -109,23 +108,11 @@ def recompose_runtime_tool_invoker_with_idempotency_store(
     *,
     idempotency_store: IdempotencyStore,
     production_mode: bool,
-) -> RuntimeToolInvoker | None:
-    """Rebuild a production invoker with idempotency pre-effect when not yet active."""
-    if invoker._pre_effect_coordinator is not None:
-        return None
-    registry = resolve_tool_registry(invoker)
-    if registry is None:
-        return None
-    return build_production_runtime_tool_invoker(
-        registry=registry,
-        executor=invoker._executor,
-        scope_policy=invoker._scope_policy,
-        idempotency_store=idempotency_store,
+) -> RuntimeToolInvoker:
+    """Delegate idempotency overlay to RuntimeToolInvoker owner-controlled reconfiguration."""
+    return invoker.with_idempotency_store(
+        idempotency_store,
         production_mode=production_mode,
-        meaningful_side_effect_authorization=invoker._meaningful_side_effect_authorization,
-        agent_runtime_governance=invoker._agent_runtime_governance,
-        inner_execution_guard=invoker._inner_execution_guard,
-        sandbox_availability=invoker._sandbox_availability,
     )
 
 

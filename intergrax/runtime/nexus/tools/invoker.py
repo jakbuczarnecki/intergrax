@@ -55,7 +55,7 @@ from intergrax.runtime.sandbox.isolation_gate import (
 )
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
-from intergrax.contracts.idempotency_store import ClaimOutcome
+from intergrax.contracts.idempotency_store import ClaimOutcome, IdempotencyStore
 from intergrax.contracts.dependency_concurrency_admission import (
     DependencyConcurrencyAdmissionRequest,
     DependencyConcurrencyAdmissionTimeoutError,
@@ -209,6 +209,38 @@ class RuntimeToolInvoker:
         if self._dependency_attempt_boundary is not None:
             self._dependency_attempt_boundary.drain_and_close()
         self._execution_pool_closed = True
+
+    def with_idempotency_store(
+        self,
+        idempotency_store: IdempotencyStore,
+        *,
+        production_mode: bool = False,
+    ) -> RuntimeToolInvoker:
+        """Return an invoker with pre-effect idempotency; idempotent when already configured."""
+        if self._pre_effect_coordinator is not None:
+            return self
+        from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
+            build_production_runtime_tool_invoker,
+        )
+
+        replacement = build_production_runtime_tool_invoker(
+            registry=self._registry,
+            executor=self._executor,
+            scope_policy=self._scope_policy,
+            idempotency_store=idempotency_store,
+            production_mode=production_mode,
+            meaningful_side_effect_authorization=self._meaningful_side_effect_authorization,
+            agent_runtime_governance=self._agent_runtime_governance,
+            inner_execution_guard=self._inner_execution_guard,
+            sandbox_availability=self._sandbox_availability,
+            dependency_attempt_boundary=self._dependency_attempt_boundary,
+            external_operation_store=self._external_operation_store,
+            external_operation_owner=self._external_operation_owner,
+            external_operation_cancellation_port=self._external_operation_cancellation_port,
+            invocation_wiring_resolver=self._invocation_wiring_resolver,
+        )
+        self.close()
+        return replacement
 
     @property
     def registry(self) -> ToolRegistryRead:

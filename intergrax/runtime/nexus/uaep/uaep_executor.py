@@ -29,7 +29,8 @@ from intergrax.agents.uaep_protocol import (
     UAEPAgentWithDecide,
     UAEPAgentWithResume,
 )
-from intergrax.contracts.acp_metadata_keys import AcpStructuredDataKey
+from intergrax.contracts.acp_metadata_keys import AcpMetadataKey, AcpStructuredDataKey
+from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.uaep_bridge_keys import UaepBridgeMetadataKey
@@ -346,9 +347,15 @@ class UAEPExecutor:
                 apply_host_idempotency_pre_effect_to_runtime_context,
             )
 
+            _host_idempotency_store = request.metadata.get(AcpMetadataKey.IDEMPOTENCY_STORE)
+            _resolved_idempotency_store = (
+                _host_idempotency_store
+                if isinstance(_host_idempotency_store, IdempotencyStore)
+                else None
+            )
             apply_host_idempotency_pre_effect_to_runtime_context(
                 runtime_context,
-                request.metadata,
+                _resolved_idempotency_store,
             )
             from intergrax.runtime.nexus.agents.skill_host_runtime_bridge import (
                 apply_host_skill_wiring_to_runtime_context,
