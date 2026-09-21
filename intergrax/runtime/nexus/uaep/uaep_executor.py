@@ -342,11 +342,11 @@ class UAEPExecutor:
             apply_host_tool_invoker_to_runtime_context(
                 runtime_context, request.metadata
             )
-            from intergrax.agents.persistence.idempotency_store_wiring import (
-                overlay_idempotency_pre_effect_on_runtime_context,
+            from intergrax.runtime.nexus.agents.idempotency_runtime_overlay import (
+                apply_host_idempotency_pre_effect_to_runtime_context,
             )
 
-            overlay_idempotency_pre_effect_on_runtime_context(
+            apply_host_idempotency_pre_effect_to_runtime_context(
                 runtime_context,
                 request.metadata,
             )
