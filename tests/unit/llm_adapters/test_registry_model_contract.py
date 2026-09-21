@@ -11,6 +11,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.llm_provider_registry import (
     LLMAdapterRegistrationError,
     LLMAdapterRegistry,
@@ -24,7 +25,7 @@ _REGISTRY_SOURCE = (
 )
 
 
-class _ModelContractAdapter(LLMAdapter):
+class _ModelContractAdapter(BaseLLMAdapter):
     provider = "model-contract-test"
     model = "default-model"
 
@@ -48,7 +49,7 @@ class _ModelContractAdapter(LLMAdapter):
         return build_adapter_response(content="ok")
 
 
-class _InvalidModelAdapter(LLMAdapter):
+class _InvalidModelAdapter(BaseLLMAdapter):
     provider = "invalid-model-contract"
 
     def __init__(self, **kwargs: Any) -> None:

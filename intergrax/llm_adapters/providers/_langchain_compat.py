@@ -31,7 +31,7 @@ def tool_calls_from_langchain_message(message: Any) -> tuple[LLMToolCall, ...]:
         if args is not None and not isinstance(args, (dict, str)):
             raise ValueError("langchain tool call args must be a dictionary or JSON string")
         out.append(
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id=str(call_id or ""),
                 name=str(name),
                 arguments=args if isinstance(args, (dict, str)) else {},

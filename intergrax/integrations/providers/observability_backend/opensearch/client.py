@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Mapping, Optional
+from typing import Mapping, Optional
 from urllib.parse import quote
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
@@ -14,14 +14,16 @@ from intergrax.integrations.contracts.observability_backend import (
     MetricPoint,
     MetricQueryResult,
     MetricSeries,
+    TraceQueryResult,
 )
+from intergrax.integrations.providers.observability_backend._http_contract import ObservabilityHttpClient
 from intergrax.integrations.providers.observability_backend.opensearch.config import OpenSearchIntegrationConfig
 
 
 class OpenSearchRestClient:
     """OpenSearch ``_search`` and index management client."""
 
-    def __init__(self, config: OpenSearchIntegrationConfig, *, http_client: Any) -> None:
+    def __init__(self, config: OpenSearchIntegrationConfig, *, http_client: ObservabilityHttpClient) -> None:
         if not config.base_url:
             raise IntegrationConfigurationError("OpenSearch base_url is required (INTERGRAX_OPENSEARCH_URL)")
         self._config = config
@@ -94,7 +96,13 @@ class OpenSearchRestClient:
             series=[MetricSeries(metric={"provider": "opensearch"}, points=points)],
         )
 
-    def index_document(self, *, index: str, document: Mapping[str, Any], doc_id: Optional[str] = None) -> str:
+    def query_traces(self, *, limit: int = 20, name: Optional[str] = None) -> TraceQueryResult:
+        _ = limit, name
+        raise IntegrationConfigurationError(
+            "OpenSearch REST client does not support trace queries",
+        )
+
+    def index_document(self, *, index: str, document: Mapping[str, object], doc_id: Optional[str] = None) -> str:
         path = self._index_path(index)
         if doc_id:
             response = self._http.put(f"{path}/_doc/{quote(doc_id, safe='')}", json=dict(document))

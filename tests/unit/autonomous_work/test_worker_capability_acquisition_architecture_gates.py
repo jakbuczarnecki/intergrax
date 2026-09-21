@@ -17,6 +17,10 @@ _AW7A_MODULE_PATHS = (
     "capability_acquisition_ports.py",
     "capability_discovery_adapters.py",
     "capability_catalog_discovery_adapters.py",
+    "worker_capability_recovery_coordinator.py",
+    "worker_capability_need_projection.py",
+    "worker_capability_recovery_ports.py",
+    "catalog_canonical_discovery_service.py",
 )
 
 _FORBIDDEN_IMPORTS = (

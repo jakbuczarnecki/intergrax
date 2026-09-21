@@ -14,7 +14,6 @@ import pytest
 
 from applications.governed_contractor_application.host.production_external_work_composition import (
     build_governed_external_work_production_runtime,
-    wire_governed_contractor_production_external_work_settings,
 )
 from applications.governed_contractor_application.tests.host.gr6_collaborative_work_test_support import (
     gr6_fixture_authority_clock,
@@ -608,20 +607,25 @@ def test_gr6_decision_flow_regression_on_injected_composition() -> None:
 
 
 def test_production_settings_wire_uses_injected_collaborative_work_repositories() -> None:
+    from governed_contractor_application.host.governed_contractor_host_runtime_composition import (
+        compose_governed_contractor_host_runtime,
+    )
+
     fake = DeterministicExternalWorkFake()
     cw_repositories = gr6_seeded_collaborative_work_repositories(
         tenant_id=_TENANT,
         workspace_id=_WORKSPACE,
         principal_id=_PRINCIPAL,
     )
-    wired = wire_governed_contractor_production_external_work_settings(
-        replace(
-            GovernedContractorBackendSettings.from_env(),
-            external_work_integration=fake,
-            runtime_policy_bundle=_policy_bundle(),
-            collaborative_work_repositories=cw_repositories,
-        ),
+    settings = replace(
+        GovernedContractorBackendSettings.from_env(),
+        runtime_policy_bundle=_policy_bundle(),
+    )
+    wired = compose_governed_contractor_host_runtime(
+        settings,
+        integration=fake,
         task_scope=StaticActiveTaskScope(mint_task_id()),
+        collaborative_work_repositories=cw_repositories,
     )
     assert wired.collaborative_work_repositories is cw_repositories
     assert wired.meaningful_side_effect_authorization_boundary is not None

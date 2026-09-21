@@ -3,7 +3,8 @@
 from intergrax.utils import attribute_access
 import pytest
 
-from intergrax.agents.agent_contract import Agent
+from testing_support.nexus_lab_task_execution import run_lab_nexus_task
+
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.runtime.nexus.uaep import UAEPExecutor
 from intergrax.contracts.agent_contract_meta import AgentContract
@@ -65,10 +66,11 @@ class _ShadowWriteAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="write", step_name="write", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         workspace = ctx.metadata.get("shadow_workspace")
         message = (ctx.request.message if ctx.request else "") or ""
         if workspace is not None:
@@ -128,7 +130,7 @@ async def test_nexus_loop_exposes_shadow_workspace_metadata(tmp_path):
         metadata={SHADOW_WORKSPACE_FLAG: True},
     )
 
-    result = await loop.handle_task(task)
+    result = await run_lab_nexus_task(loop, task)
 
     assert result.state == TaskState.COMPLETED
     assert result.metadata.get("shadow_workspace_id")

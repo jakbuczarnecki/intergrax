@@ -17,6 +17,23 @@ type StructuredJsonValue = (
 )
 StructuredJsonObject: TypeAlias = dict[str, StructuredJsonValue]
 
+# Platform-neutral JSON value aliases (single canonical authority for cross-layer contracts).
+JsonPrimitive: TypeAlias = StructuredJsonPrimitive
+type JsonValue = StructuredJsonValue
+JsonObject: TypeAlias = StructuredJsonObject
+
+__all__ = [
+    "JsonObject",
+    "JsonPrimitive",
+    "JsonValue",
+    "StructuredJsonObject",
+    "StructuredJsonPrimitive",
+    "StructuredJsonValue",
+    "normalize_structured_json_object",
+    "validate_json_value_structure",
+    "validate_structured_json_value",
+]
+
 
 def validate_structured_json_value(
     value: object,
@@ -68,6 +85,16 @@ def validate_structured_json_value(
 
     label = path.rstrip(".") if path else field_name
     raise ValueError(f"{field_name} must contain JSON-compatible values at '{label}'")
+
+
+def validate_json_value_structure(
+    value: object,
+    *,
+    field_name: str,
+    path: str = "",
+) -> JsonValue:
+    """Pure structural JSON validation without domain-specific policy."""
+    return validate_structured_json_value(value, field_name=field_name, path=path)
 
 
 def normalize_structured_json_object(

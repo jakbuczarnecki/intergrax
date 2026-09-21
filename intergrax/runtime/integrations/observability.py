@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Any, Literal, Mapping
+from typing import Any, Generic, Literal, Mapping, Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -199,7 +199,13 @@ def _signal_for_record_type(record_type: str) -> ObservabilityVendorSignal:
     return ObservabilityVendorSignal.EVENTS
 
 
-class ObservabilityVendorIntegrationContract(PlatformIntegrationContract):
+VendorConfigT = TypeVar("VendorConfigT", bound=ObservabilityVendorIntegrationConfig)
+
+
+class ObservabilityVendorIntegrationContract(
+    PlatformIntegrationContract[VendorConfigT],
+    Generic[VendorConfigT],
+):
     """
     Category-specific contract for observability vendor integrations.
 
@@ -211,15 +217,10 @@ class ObservabilityVendorIntegrationContract(PlatformIntegrationContract):
     vendor-neutral payloads; deliver_payload() is overridden by concrete integrations.
     """
 
-    schema_id: Literal["observability_vendor_integration_contract.v1"] = (
-        OBSERVABILITY_VENDOR_INTEGRATION_CONTRACT_SCHEMA
-    )
+    schema_id: str = OBSERVABILITY_VENDOR_INTEGRATION_CONTRACT_SCHEMA
     integration_kind: str = PlatformIntegrationKind.OBSERVABILITY_VENDOR.value
     supported_signals: tuple[ObservabilityVendorSignal, ...] = Field(
         default_factory=lambda: _DEFAULT_OBSERVABILITY_VENDOR_SIGNALS
-    )
-    config: ObservabilityVendorIntegrationConfig = Field(
-        default_factory=ObservabilityVendorIntegrationConfig
     )
 
     @classmethod
@@ -227,23 +228,40 @@ class ObservabilityVendorIntegrationContract(PlatformIntegrationContract):
         cls,
         *,
         provider_id: str,
+        integration_kind: str | PlatformIntegrationKind = PlatformIntegrationKind.OBSERVABILITY_VENDOR,
         supported_signals: tuple[ObservabilityVendorSignal, ...] = _DEFAULT_OBSERVABILITY_VENDOR_SIGNALS,
         capabilities: tuple[PlatformIntegrationCapability, ...] = _DEFAULT_OBSERVABILITY_VENDOR_CAPABILITIES,
         display_name: str | None = None,
         version: str | None = None,
-        config: ObservabilityVendorIntegrationConfig | None = None,
-    ) -> ObservabilityVendorIntegrationContract:
-        return cls(
-            integration_id=derive_platform_integration_id(
-                provider_id,
-                PlatformIntegrationKind.OBSERVABILITY_VENDOR.value,
-            ),
-            provider_id=provider_id,
-            display_name=display_name,
-            version=version,
-            capabilities=capabilities,
-            supported_signals=supported_signals,
-            config=config or ObservabilityVendorIntegrationConfig(),
+        config: PlatformIntegrationConfig | None = None,
+    ) -> Self:
+        kind_value = (
+            integration_kind.value
+            if isinstance(integration_kind, PlatformIntegrationKind)
+            else integration_kind
+        )
+        if config is None:
+            config_field = cls.model_fields["config"]
+            default = config_field.get_default(call_default_factory=True)
+            if isinstance(default, ObservabilityVendorIntegrationConfig):
+                resolved_config = default
+            else:
+                resolved_config = ObservabilityVendorIntegrationConfig()
+        elif not isinstance(config, ObservabilityVendorIntegrationConfig):
+            resolved_config = ObservabilityVendorIntegrationConfig.model_validate(config.model_dump())
+        else:
+            resolved_config = config
+        return cls.model_validate(
+            {
+                "integration_id": derive_platform_integration_id(provider_id, kind_value),
+                "provider_id": provider_id,
+                "integration_kind": kind_value,
+                "display_name": display_name,
+                "version": version,
+                "capabilities": capabilities,
+                "supported_signals": supported_signals,
+                "config": resolved_config,
+            }
         )
 
     def map_envelope(self, envelope: ObservabilityExportEnvelope) -> ObservabilityVendorMappingResult:

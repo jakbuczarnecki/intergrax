@@ -12,7 +12,7 @@ from intergrax.contracts.runtime_cost import (
     aggregate_execution_metrics,
     tokens_to_cost_units,
 )
-from intergrax.llm_adapters.contracts.llm_adapter import LLMRunStats
+from intergrax.llm_adapters.base.usage_log import LLMRunStats
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageReport
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeStats
 

@@ -9,10 +9,12 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
     DiagnosticExecutionScopeCandidate,
     DiagnosticScopeDiscoveryResult,
     DiagnosticScopeDiscoveryStatus,
+    DiagnosticScopeReference,
     DiagnosticScopeReferenceKind,
     DiagnosticScopeResolutionProvenance,
     ProblemScopeReference,
     build_diagnostic_scope_discovery_result,
+    unsupported_reference_result,
     validate_scope_discovery_candidate_limit,
     validate_scope_discovery_tenant_id,
 )
@@ -27,7 +29,8 @@ from intergrax.runtime.diagnostics.diagnostic_subject import (
     ExecutionDiagnosticSubjectRef,
     validate_execution_diagnostic_subject_ref,
 )
-from intergrax.runtime.diagnostics.problem_lifecycle import Problem, ProblemId, validate_problem_id
+from intergrax.contracts.diagnostics.problem_record import PersistedProblem
+from intergrax.runtime.diagnostics.problem_lifecycle import ProblemId, validate_problem_id
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
     ProblemOccurrencePage,
     ProblemOccurrencePersistence,
@@ -73,9 +76,11 @@ class ProblemScopeProvider:
         self,
         *,
         tenant_id: str,
-        reference: ProblemScopeReference,
+        reference: DiagnosticScopeReference,
         candidate_limit: int,
     ) -> DiagnosticScopeProviderResult:
+        if not isinstance(reference, ProblemScopeReference):
+            return _provider_result_from_public(unsupported_reference_result())
         tenant_id = validate_scope_discovery_tenant_id(tenant_id)
         candidate_limit = validate_scope_discovery_candidate_limit(candidate_limit)
         problem_id = validate_problem_id(reference.problem_id)
@@ -123,7 +128,7 @@ def _get_problem(
     *,
     tenant_id: str,
     problem_id: ProblemId,
-) -> Problem | None:
+) -> PersistedProblem | None:
     try:
         return problem_persistence.get(
             tenant_id=tenant_id,

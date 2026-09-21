@@ -18,7 +18,11 @@ from intergrax.llm_adapters.contracts.provider_extensions import (
     VllmProviderExtensions,
 )
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage, LLMTokenUsageValidationError
-from intergrax.llm_adapters.contracts.tool_call import LLMToolCall, tool_calls_from_openai_dicts, tool_calls_from_openai_message
+from intergrax.llm_adapters._shared.openai_tool_call_interop import (
+    tool_calls_from_openai_dicts,
+    tool_calls_from_openai_message,
+)
+from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 
 
 def usage_from_openai_chat_completion(usage: CompletionUsage | None) -> LLMTokenUsage:

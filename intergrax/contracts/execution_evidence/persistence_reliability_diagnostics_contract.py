@@ -55,6 +55,7 @@ class PersistenceReliabilityPolicyIdentifiable(Protocol):
     @property
     def policy_id(self) -> str:
         """Stable, provider-agnostic policy identifier."""
+        ...
 
 
 class PersistenceReliabilityDecisionObserver(Protocol):

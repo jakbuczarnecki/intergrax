@@ -11,15 +11,17 @@ from typing import Any, Dict, List, Optional, Union
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.registry.model_catalog import ModelRecord, lookup_model_record
 from intergrax.utils import attribute_access
 
 
-class CatalogCapabilityAdapter(LLMAdapter):
+class CatalogCapabilityAdapter(BaseLLMAdapter):
     """Overlay ModelCatalog capability flags on a concrete adapter."""
 
     def __init__(self, inner: LLMAdapter, record: ModelRecord) -> None:
@@ -99,11 +101,11 @@ class CatalogCapabilityAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> LLMAdapterResponse:
         return self._inner.generate_with_tools(
@@ -118,15 +120,15 @@ class CatalogCapabilityAdapter(LLMAdapter):
     def generate_structured(
         self,
         messages: Sequence[ChatMessage],
-        schema: Dict[str, Any],
+        output_model: type[TStructured],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> LLMStructuredResult:
+    ) -> LLMStructuredResult[TStructured]:
         return self._inner.generate_structured(
             messages,
-            schema,
+            output_model,
             temperature=temperature,
             max_tokens=max_tokens,
             run_id=run_id,

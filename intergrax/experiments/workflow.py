@@ -15,7 +15,7 @@ from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 
-from intergrax.contracts.execution_identity import mint_run_id
+from intergrax.contracts.persisted_run_trace import persisted_trace_event_to_wire
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.integrations.providers.relational_store.sqlite import (
     create_sqlite_trace_store,
@@ -201,8 +201,8 @@ class ExperimentSession:
             "cost": llm_usage.get("cost"),
             "total_tokens": llm_usage.get("total_tokens"),
             "lifecycle_steps": [
-                event.get("step")
+                persisted_trace_event_to_wire(event).get("step")
                 for event in persisted.events
-                if event.get("step") == "task_lifecycle"
+                if persisted_trace_event_to_wire(event).get("step") == "task_lifecycle"
             ],
         }

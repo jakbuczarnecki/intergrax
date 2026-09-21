@@ -21,6 +21,7 @@ from intergrax.runtime.policy.meaningful_side_effect_authorization import (
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.memory.conversational_memory import ChatMessage
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -32,7 +33,7 @@ from intergrax.runtime.nexus.session.session_manager import SessionManager
 # optional LLMRoutingProfile on ApplicationEnvironmentProfile; agents use stub LLM below only in tests.
 
 
-class _ExternalContractorAdapterStubLLM(LLMAdapter):
+class _ExternalContractorAdapterStubLLM(BaseLLMAdapter):
     provider = "external_contractor_adapter"
     model = "external_contractor_adapter-stub"
 

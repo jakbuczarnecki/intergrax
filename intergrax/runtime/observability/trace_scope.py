@@ -10,6 +10,8 @@ from contextvars import ContextVar, Token
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Iterator, Optional
 
+from intergrax.contracts.execution_identity import RunId, TaskId, validate_run_id, validate_task_id
+
 if TYPE_CHECKING:
     from intergrax.runtime.observability.emitter import ObservabilityEmitter
 
@@ -23,8 +25,8 @@ _trace_scope_var: ContextVar[Optional["TraceScopeState"]] = ContextVar(
 class TraceScopeState:
     """Active correlation context for nested spine emissions."""
 
-    run_id: str
-    task_id: str
+    run_id: RunId
+    task_id: TaskId
     tenant_id: str
     correlation_id: str
     parent_event_id: Optional[str] = None
@@ -74,8 +76,8 @@ class TraceScope:
         self,
         emitter: ObservabilityEmitter,
         *,
-        run_id: str,
-        task_id: str,
+        run_id: RunId | str,
+        task_id: TaskId | str,
         tenant_id: str,
         correlation_id: Optional[str] = None,
         parent_event_id: Optional[str] = None,
@@ -84,11 +86,13 @@ class TraceScope:
         agent_id: Optional[str] = None,
     ) -> None:
         self._emitter = emitter
+        resolved_run_id = validate_run_id(run_id)
+        resolved_task_id = validate_task_id(task_id)
         self._state = TraceScopeState(
-            run_id=run_id,
-            task_id=task_id,
+            run_id=resolved_run_id,
+            task_id=resolved_task_id,
             tenant_id=tenant_id,
-            correlation_id=correlation_id or task_id,
+            correlation_id=correlation_id or str(resolved_task_id),
             parent_event_id=parent_event_id or current_parent_event_id(),
             step_id=step_id,
             node_id=node_id,

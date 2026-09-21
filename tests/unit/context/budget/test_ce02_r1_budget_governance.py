@@ -30,11 +30,12 @@ from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
-class _Adapter(LLMAdapter):
+class _Adapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-ce02r1"
 

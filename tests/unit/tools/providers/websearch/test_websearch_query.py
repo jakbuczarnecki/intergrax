@@ -23,6 +23,7 @@ from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExe
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.websearch.schemas.search_hit import SearchHit
 from intergrax.websearch.schemas.web_search_result import WebSearchResult
+from intergrax.dev_support.execution_identity_scope import canonical_execution_identity_scope
 from testing_support.builder import build_runtime_state_for_tests
 
 pytestmark = pytest.mark.unit
@@ -116,6 +117,61 @@ def test_websearch_query_not_configured() -> None:
     assert out.reason == "websearch_not_configured"
 
 
+class _RecordingWebSearchExecutor:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    def search_sync(
+        self,
+        query: str,
+        top_k: int | None = None,
+        locale: str | None = None,
+        region: str | None = None,
+        language: str | None = None,
+        safe_search: bool | None = None,
+        top_n_fetch: int | None = None,
+    ) -> list[WebSearchResult]:
+        self.calls.append(
+            {
+                "query": query,
+                "top_k": top_k,
+                "locale": locale,
+                "region": region,
+                "language": language,
+                "safe_search": safe_search,
+                "top_n_fetch": top_n_fetch,
+            }
+        )
+        return []
+
+
+def test_websearch_query_executor_parameter_passthrough() -> None:
+    executor = _RecordingWebSearchExecutor()
+    ctx = ToolWiringContext(websearch_executor=executor)
+    perform_websearch_query(
+        ctx,
+        WebsearchQueryInput(
+            query="q",
+            limit=4,
+            locale="en-US",
+            region="US",
+            language="en",
+            safe_search=True,
+        ),
+    )
+    assert executor.calls == [
+        {
+            "query": "q",
+            "top_k": 4,
+            "locale": "en-US",
+            "region": "US",
+            "language": "en",
+            "safe_search": True,
+            "top_n_fetch": None,
+        }
+    ]
+
+
 def test_websearch_tool_registered_in_catalog() -> None:
     register_default_tools()
     assert "websearch.query" in list_catalog_tool_ids()
@@ -141,7 +197,8 @@ def test_websearch_query_via_runtime_invoker() -> None:
         input=WebsearchQueryInput(query="agent runtime", limit=5),
     )
 
-    result = invoker.invoke(state=state, agent_id="agent", request=request)
+    with canonical_execution_identity_scope("ws_run"):
+        result = invoker.invoke(state=state, agent_id="agent", request=request)
 
     assert result.success is True
     assert result.output is not None

@@ -7,9 +7,11 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, replace
-from typing import Protocol
+from typing import Protocol, cast
 
-from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
+from intergrax.contracts.admitted_root_governance_identity import (
+    AdmittedRootGovernanceIdentity,
+)
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
     AgentExecutionStatus,
@@ -45,8 +47,12 @@ from intergrax.contracts.runtime_execution_admission import (
 from intergrax.runtime.execution.agentic import AgentEnginePort
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.execution.budget.persistence import RunBudgetPersistence
-from intergrax.runtime.execution.deadline_authority import ExecutionDeadlineAuthorityResolver
-from intergrax.runtime.execution.protected_work_admission import TaskMetadataCancellationView
+from intergrax.runtime.execution.deadline_authority import (
+    ExecutionDeadlineAuthorityResolver,
+)
+from intergrax.runtime.execution.protected_work_admission import (
+    TaskMetadataCancellationView,
+)
 from intergrax.runtime.execution.execution_terminal.persistence import (
     terminal_outcome_from_task_state,
 )
@@ -92,10 +98,17 @@ from intergrax.runtime.long_running.checkpoint_builder import (
 from intergrax.runtime.long_running.resume_planner import (
     execution_identity_from_checkpoint,
 )
-from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
+from intergrax.runtime.execution.strategy_router import (
+    AgenticRouterDelegate,
+    OrchestrationRouterDelegate,
+    StrategyExecutionRouter,
+)
 from intergrax.runtime.execution.task_adapter import (
     TaskExecutionInput,
     execution_request_from_task,
+)
+from intergrax.runtime.human.declarative_hitl_grant import (
+    DeclarativeHitlGrantCoordinator,
 )
 from intergrax.runtime.execution.host_task_terminal_publisher import (
     HostTaskTerminalPublisher,
@@ -117,12 +130,16 @@ from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.agents.persistence.declarative_tool_executor import (
+    DeclarativeToolInvoker,
+)
 from intergrax.agents.persistence.skill_host_wiring import (
     HostSkillCatalogWiring,
     inject_acp_skill_host_wiring_metadata,
 )
-from intergrax.agents.persistence.tool_invoker_wiring import inject_acp_tool_invoker_metadata
+from intergrax.agents.persistence.tool_invoker_wiring import (
+    inject_acp_tool_invoker_metadata,
+)
 
 
 def resolve_task_execution_capabilities(
@@ -200,6 +217,12 @@ class TaskBoundAgenticDelegate:
             agent = self._agent_router.route(task, run_id=run_id)
             task = task.model_copy(update={"agent_id": agent.get_contract().id})
         runtime_request = task.to_runtime_request(run_id=run_id)
+        runtime_request = (
+            DeclarativeHitlGrantCoordinator.transfer_persisted_grant_for_resume(
+                task,
+                runtime_request,
+            )
+        )
         metadata = dict(runtime_request.metadata or {})
         inject_acp_tool_invoker_metadata(
             metadata,
@@ -233,16 +256,22 @@ def build_host_task_strategy_router(
         TaskResult,
         TaskResult,
     ](
-        agent_executor=TaskBoundAgenticDelegate(
-            task,
-            agent_engine=agent_engine,
-            agent_router=agent_router,
-            declarative_tool_invoker=declarative_tool_invoker,
-            skill_host_wiring=skill_host_wiring,
+        agent_executor=cast(
+            AgenticRouterDelegate,
+            TaskBoundAgenticDelegate(
+                task,
+                agent_engine=agent_engine,
+                agent_router=agent_router,
+                declarative_tool_invoker=declarative_tool_invoker,
+                skill_host_wiring=skill_host_wiring,
+            ),
         ),
-        orchestration_executor=TaskBoundOrchestrationDelegate(
-            task,
-            orchestration_executor,
+        orchestration_executor=cast(
+            OrchestrationRouterDelegate,
+            TaskBoundOrchestrationDelegate(
+                task,
+                orchestration_executor,
+            ),
         ),
     )
 
@@ -570,7 +599,7 @@ class HostTaskExecution:
                 RootExecutionLaunchRequest(
                     admitted_governance_identity=admitted_identity,
                     root_execution_operation=root_execution_operation_from_request(
-                        request
+                        cast(ExecutionRequest[object, object], request)
                     ),
                     collaborative_authority_scopes=host_upstream_collaborative_scopes(
                         task

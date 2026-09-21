@@ -20,12 +20,14 @@ class DiagnosticExtensionEvidenceStore(Protocol):
 
     def append(self, evidence: DiagnosticExtensionEvidence) -> DiagnosticExtensionEvidence:
         """Persist one immutable evidence fact."""
+        ...
 
     def query_for_scope(
         self,
         scope: DiagnosticEvidenceScope,
     ) -> tuple[DiagnosticExtensionEvidence, ...]:
         """Return evidence for one tenant-scoped execution scope."""
+        ...
 
 
 @dataclass(slots=True)

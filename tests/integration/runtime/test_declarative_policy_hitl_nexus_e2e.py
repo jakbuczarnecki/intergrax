@@ -5,9 +5,14 @@
 from __future__ import annotations
 
 import pytest
+
+from intergrax.contracts.execution_identity import mint_run_id
+from testing_support.nexus_lab_task_execution import (
+    resume_lab_nexus_hitl,
+    run_lab_nexus_task,
+)
 from pydantic import BaseModel
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
 from intergrax.applications.contracts.environment_profile import (
@@ -27,13 +32,19 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
+)
+from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
-from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
+from intergrax.runtime.task.task_contract import (
+    TaskExecutionOptions,
+    TaskLongRunningOptions,
+)
 from intergrax.utils import attribute_access
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
-from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.tool_executor import ToolExecutor
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 from tests.unit.runtime.nexus.tools.conftest import FakeRegistry
@@ -78,7 +89,9 @@ def _policy_bundle() -> object:
     return wire_policy_bundle(env)
 
 
-def _build_runtime_context(request: RuntimeRequest, executor: _CountingExecutor) -> RuntimeContext:
+def _build_runtime_context(
+    request: RuntimeRequest, executor: _CountingExecutor
+) -> RuntimeContext:
     contract = ToolContract(
         tool_id=_TOOL_ID,
         name=_TOOL_ID,
@@ -90,7 +103,15 @@ def _build_runtime_context(request: RuntimeRequest, executor: _CountingExecutor)
         risk_level=ToolRiskLevel.LOW,
     )
     registry = FakeRegistry(contract)
-    invoker = RuntimeToolInvoker(registry=registry, executor=executor, scope_policy=None)
+    idempotency_store = InMemoryIdempotencyStore()
+    invoker = RuntimeToolInvoker(
+        registry=registry,
+        executor=executor,
+        scope_policy=None,
+        pre_effect_coordinator=IdempotencyPreEffectCoordinator(
+            idempotency_store=idempotency_store,
+        ),
+    )
     bundle = _policy_bundle()
     config = RuntimeConfig(
         llm_adapter=FakeLLMAdapter(fixed_text="ok"),
@@ -98,6 +119,7 @@ def _build_runtime_context(request: RuntimeRequest, executor: _CountingExecutor)
         production_mode=False,
         tenant_id=request.tenant_id,
         tool_invoker=invoker,
+        idempotency_store=idempotency_store,
     )
     config.policy_bundle = bundle
     context = RuntimeContext.build(
@@ -139,10 +161,11 @@ class _PolicyHitlToolAgent(HarnessReferenceAgent):
         return _build_runtime_context(request, self._executor)
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="invoke_tool", step_name="invoke", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         await ctx.invoke_tool(
             ToolRequest(
                 tool_name=_TOOL_ID,
@@ -182,7 +205,8 @@ async def test_declarative_policy_hitl_nexus_pause_approve_resume(tmp_path) -> N
         ),
     )
 
-    paused = await loop.handle_task(task)
+    run_id = mint_run_id()
+    paused = await run_lab_nexus_task(loop, task, run_id=run_id)
     assert executor.calls == 0
     assert paused.state == TaskState.WAITING_FOR_HUMAN
     assert paused.metadata.get("governance_human_request") is not None
@@ -193,21 +217,15 @@ async def test_declarative_policy_hitl_nexus_pause_approve_resume(tmp_path) -> N
     token = paused.summary.resume_token
     assert token
 
-    approved = await loop.handle_task(
-        Task(
-            tenant_id="t1",
-            user_id="u1",
-            message="run governed tool",
-            context=TaskContext(capability="policy.hitl.tool"),
-            task_id=paused.task_id,
-            options=TaskExecutionOptions(
-                long_running=TaskLongRunningOptions(
-                    enabled=True,
-                    resume_token=token,
-                ),
-            ),
-            metadata={"human_response": "approve", "resume_token": token},
-        )
+    approved = await resume_lab_nexus_hitl(
+        loop,
+        paused=paused,
+        checkpoint_store=store,
+        tenant_id="t1",
+        user_id="u1",
+        message="run governed tool",
+        capability="policy.hitl.tool",
+        run_id=run_id,
     )
 
     assert executor.calls == 1

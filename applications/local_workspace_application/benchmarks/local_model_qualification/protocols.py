@@ -12,6 +12,9 @@ from pydantic import ValidationError
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.nexus.tools.canonical_tool_dispatch import (
+    materialize_canonical_tool_definitions_for_llm_dispatch,
+)
 
 from local_workspace_application.benchmarks.local_model_qualification.config import BenchmarkConfig
 from local_workspace_application.benchmarks.local_model_qualification.contracts import (
@@ -228,9 +231,12 @@ def run_protocol_attempt(
                     phase=FailurePhase.CAPABILITY_CHECK,
                     safe_error_code=SafeErrorCode.OLLAMA_MODEL_TOOLS_UNSUPPORTED.value,
                 )
+            canonical_tool_definitions = materialize_canonical_tool_definitions_for_llm_dispatch(
+                [SUBMIT_DRAFT_TOOL_SCHEMA]
+            )
             result = adapter.generate_with_tools(
                 messages,
-                [SUBMIT_DRAFT_TOOL_SCHEMA],
+                canonical_tool_definitions,
                 temperature=benchmark.temperature,
                 max_tokens=benchmark.max_tokens,
                 tool_choice="auto",

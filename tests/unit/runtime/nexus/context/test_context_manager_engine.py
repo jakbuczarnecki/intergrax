@@ -10,6 +10,7 @@ from intergrax.context.bootstrap import bootstrap_context_catalog, reset_context
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.context.bootstrap import materialize_context_plugin_registry
@@ -27,7 +28,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.asyncio]
 _ENGINE_SEED = "context-manager-engine"
 
 
-class _SmallWindowAdapter(LLMAdapter):
+class _SmallWindowAdapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-small"
 

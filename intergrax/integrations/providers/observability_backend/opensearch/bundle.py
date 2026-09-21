@@ -4,10 +4,14 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+from intergrax.integrations.providers.observability_backend._http_contract import (
+    ObservabilityHttpClient,
+    ObservabilityHttpClientFactory,
+)
 from intergrax.integrations.providers.observability_backend.opensearch.client import OpenSearchRestClient
 from intergrax.integrations.providers.observability_backend.opensearch.config import OpenSearchIntegrationConfig
 from intergrax.integrations.providers.observability_backend.opensearch.integration import (
@@ -46,8 +50,8 @@ def create_opensearch_integration(
     *,
     observability_backend: Optional[ObservabilityBackend] = None,
     client: Optional[OpenSearchRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[OpenSearchIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[OpenSearchIntegrationConfig] | None = None,
     **config_overrides: object,
 ) -> OpensearchIntegrationBundle:
     config = resolve_opensearch_config(**config_overrides)
@@ -73,8 +77,8 @@ def create_opensearch_observability_backend(
     *,
     observability_backend: Optional[ObservabilityBackend] = None,
     client: Optional[OpenSearchRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[OpenSearchIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[OpenSearchIntegrationConfig] | None = None,
     **config_overrides: object,
 ) -> OpensearchObservabilityIntegration:
     """Catalog factory for ``"opensearch"`` / ``OBSERVABILITY_BACKEND``."""

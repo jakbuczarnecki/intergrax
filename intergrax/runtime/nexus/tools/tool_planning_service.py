@@ -13,10 +13,7 @@ from typing import Dict, List, Optional, Sequence, Union
 from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.contracts.native_tool_choice import (
-    NativeToolChoice,
-    project_native_tool_choice_for_provider,
-)
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
     assert_strict_tool_argument_conformance_supported,
@@ -26,6 +23,9 @@ from intergrax.tools.exporters.openai import compute_openai_tools_schema_hash, t
 from intergrax.tools.exporters.schema import pydantic_parameters_schema
 from intergrax.tools.registry import ToolRegistry
 from intergrax.tools.registry.runtime import RegisteredTool
+from intergrax.runtime.nexus.tools.canonical_tool_dispatch import (
+    materialize_canonical_tool_definitions_for_llm_dispatch,
+)
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     AtomicPlannerRoundError,
     build_atomic_planner_round_tool_definition,
@@ -370,14 +370,18 @@ class ToolPlanningService:
             if protocol_config is not None
             else NATIVE_PLANNER_PROTOCOL_NONE
         )
-        provider_tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]]
         if effective_protocol.atomic_round_active:
             round_definition = build_atomic_planner_round_tool_definition(tools_schema)
-            provider_tools = (round_definition,)
+            canonical_tool_definitions = (round_definition,)
         elif effective_protocol.protocol_active:
-            provider_tools = append_planner_action_context_schema(tools_schema)
+            wire_tool_schemas = append_planner_action_context_schema(tools_schema)
+            canonical_tool_definitions = materialize_canonical_tool_definitions_for_llm_dispatch(
+                wire_tool_schemas
+            )
         else:
-            provider_tools = tools_schema
+            canonical_tool_definitions = materialize_canonical_tool_definitions_for_llm_dispatch(
+                tools_schema
+            )
         pruned = canonical_native_planner_messages(messages)
         if prepared_messages_hash is not None:
             computed_messages_hash = compute_model_facing_messages_hash(pruned)
@@ -390,25 +394,20 @@ class ToolPlanningService:
         effective_tool_choice: NativeToolChoice = (
             tool_choice if tool_choice is not None else "auto"
         )
-        projected_tool_choice = project_native_tool_choice_for_provider(
-            effective_tool_choice,
-            provider=self.llm._provider_slug(),
-        )
-
         _sync_routing_before_tool_planner_llm(
             self._routing_runtime_config,
             run_id=run_id,
         )
         assert_strict_tool_argument_conformance_supported(
             self.llm,
-            provider_tools,
+            canonical_tool_definitions,
         )
         result = self.llm.generate_with_tools(
             provider_messages,
-            provider_tools,
+            canonical_tool_definitions,
             temperature=self.cfg.temperature,
             max_tokens=self.cfg.max_answer_tokens,
-            tool_choice=projected_tool_choice,
+            tool_choice=effective_tool_choice,
             run_id=run_id,
         )
 

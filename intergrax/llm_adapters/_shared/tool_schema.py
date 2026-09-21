@@ -6,7 +6,8 @@ from __future__ import annotations
 
 from typing import Any, Dict, List
 
-from intergrax.llm_adapters.contracts.tool_call import LLMToolCall, tool_calls_from_openai_message
+from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_message
+from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 
 
 def openai_tools_to_anthropic(tools_schema: List[Dict[str, Any]]) -> List[Dict[str, Any]]:

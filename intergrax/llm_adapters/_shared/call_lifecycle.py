@@ -9,7 +9,8 @@ from typing import TYPE_CHECKING
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 
 if TYPE_CHECKING:
-    from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter, LLMCallStats
+    from intergrax.llm_adapters.base.usage_log import LLMCallStats
+    from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 
 @dataclass(slots=True)

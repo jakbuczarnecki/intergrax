@@ -7,13 +7,19 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any, Mapping, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from intergrax.runtime.observability.export_attributes import (
     ObservabilityAttributeValue,
     SanitizedApplicationObservabilityAttributes,
 )
 from intergrax.runtime.observability.export_boundary import ObservabilityExportEnvelope
+from intergrax.runtime.observability.otlp_json_payload import (
+    OtlpAnyValue,
+    OtlpKeyValue,
+    OtlpLogRecord,
+    OtlpLogsJsonPayload,
+)
 
 _EXPORT_SCOPE_NAME = "intergrax.observability.export"
 
@@ -32,7 +38,7 @@ class OtlpObservabilityExporterConfig:
 class OtlpTransport(Protocol):
     async def send(
         self,
-        payload: Mapping[str, Any],
+        payload: OtlpLogsJsonPayload,
         *,
         config: OtlpObservabilityExporterConfig,
     ) -> None: ...
@@ -42,7 +48,7 @@ def _timestamp_to_unix_nano(value: datetime) -> str:
     return str(int(value.timestamp() * 1_000_000_000))
 
 
-def _otlp_attribute_value(value: ObservabilityAttributeValue) -> dict[str, Any]:
+def _otlp_attribute_value(value: ObservabilityAttributeValue) -> OtlpAnyValue:
     if value is None:
         return {"stringValue": ""}
     if isinstance(value, bool):
@@ -62,11 +68,11 @@ def _otlp_attribute_value(value: ObservabilityAttributeValue) -> dict[str, Any]:
     return {"stringValue": str(value)}
 
 
-def _string_attr(key: str, value: str) -> dict[str, Any]:
+def _string_attr(key: str, value: str) -> OtlpKeyValue:
     return {"key": key, "value": {"stringValue": value}}
 
 
-def _optional_string_attr(key: str, value: str) -> dict[str, Any] | None:
+def _optional_string_attr(key: str, value: str) -> OtlpKeyValue | None:
     if not value:
         return None
     return _string_attr(key, value)
@@ -74,10 +80,10 @@ def _optional_string_attr(key: str, value: str) -> dict[str, Any] | None:
 
 def _map_sanitized_application_attributes(
     attributes: SanitizedApplicationObservabilityAttributes | None,
-) -> list[dict[str, Any]]:
+) -> list[OtlpKeyValue]:
     if attributes is None:
         return []
-    mapped: list[dict[str, Any]] = []
+    mapped: list[OtlpKeyValue] = []
     for key, value in sorted(attributes.attributes.items()):
         mapped.append({"key": key, "value": _otlp_attribute_value(value)})
     if attributes.namespace:
@@ -89,9 +95,9 @@ def _envelope_to_otlp_payload(
     envelope: ObservabilityExportEnvelope,
     *,
     config: OtlpObservabilityExporterConfig,
-) -> dict[str, Any]:
+) -> OtlpLogsJsonPayload:
     """Map a policy-sanitized export envelope to an OTLP-safe log record payload."""
-    log_attributes: list[dict[str, Any]] = []
+    log_attributes: list[OtlpKeyValue] = []
 
     for key, value in (
         ("intergrax.schema_version", envelope.schema_version),
@@ -137,7 +143,7 @@ def _envelope_to_otlp_payload(
 
     log_attributes.extend(_map_sanitized_application_attributes(envelope.sanitized_application_attributes))
 
-    resource_attributes: list[dict[str, Any]] = [
+    resource_attributes: list[OtlpKeyValue] = [
         _string_attr("service.name", config.service_name),
     ]
     if config.service_version:
@@ -145,7 +151,7 @@ def _envelope_to_otlp_payload(
     if config.environment:
         resource_attributes.append(_string_attr("deployment.environment", config.environment))
 
-    log_record: dict[str, Any] = {
+    log_record: OtlpLogRecord = {
         "timeUnixNano": _timestamp_to_unix_nano(envelope.recorded_at),
         "severityText": envelope.status.value.upper(),
         "body": {"stringValue": envelope.event_type or envelope.record_kind.value},

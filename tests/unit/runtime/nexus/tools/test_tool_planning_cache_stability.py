@@ -14,7 +14,10 @@ from pydantic import BaseModel, ConfigDict
 from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters._shared.strict_tool_enforcement import wire_schemas_from_definitions
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.nexus.tools.tool_planning_service import (
     ToolPlanningService,
     build_tool_planning_schema,
@@ -43,6 +46,14 @@ class _GammaInput(BaseModel):
 
 def _noop_handler(_input: BaseModel) -> dict[str, str]:
     return {"ok": "true"}
+
+
+def _wire_schemas_from_adapter_capture(
+    received: Sequence[CanonicalFunctionToolDefinition] | None,
+) -> list[dict[str, object]]:
+    if received is None:
+        return []
+    return [dict(entry) for entry in wire_schemas_from_definitions(received)]
 
 
 def _registry_register_order_b() -> ToolRegistry:
@@ -254,13 +265,13 @@ def test_canonical_tool_contract_not_mutated() -> None:
     assert registry.get("alpha.tool").contract.description == original
 
 
-class _CapturingAdapter(LLMAdapter):
+class _CapturingAdapter(BaseLLMAdapter):
     provider = "fake-capture"
     model = "fake-capture"
 
     def __init__(self) -> None:
         super().__init__()
-        self.received_schema: list[dict[str, Any]] | None = None
+        self.received_schema: tuple[CanonicalFunctionToolDefinition, ...] | None = None
         self.generate_with_tools_calls = 0
 
     @property
@@ -286,7 +297,7 @@ class _CapturingAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools_schema: list[dict[str, Any]],
+        tools_schema: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
@@ -294,7 +305,7 @@ class _CapturingAdapter(LLMAdapter):
         run_id: str | None = None,
     ) -> LLMAdapterResponse:
         self.generate_with_tools_calls += 1
-        self.received_schema = tools_schema
+        self.received_schema = tuple(tools_schema)
         return build_adapter_response(content="")
 
 
@@ -366,7 +377,8 @@ def test_exact_fingerprinted_schema_passed_to_adapter() -> None:
         prepared_tools_schema=list(envelope.tools_schema),
     )
     assert adapter.received_schema is not None
-    assert json.dumps(adapter.received_schema, sort_keys=True) == json.dumps(
+    received_wire = _wire_schemas_from_adapter_capture(adapter.received_schema)
+    assert json.dumps(received_wire, sort_keys=True) == json.dumps(
         list(envelope.tools_schema),
         sort_keys=True,
     )
@@ -385,7 +397,9 @@ def test_nested_schema_is_deep_copied() -> None:
         prepared_tools_schema=schema,
     )
     assert adapter.received_schema is not None
-    adapter.received_schema[0]["function"]["description"] = "SYNTH-MUTATED"
+    function = adapter.received_schema[0].wire_schema.get("function")
+    assert isinstance(function, dict)
+    function["description"] = "SYNTH-MUTATED"
     assert schema[0]["function"]["description"] == "SYNTH-DESC"
 
 
@@ -712,7 +726,9 @@ def test_adapter_receives_value_identical_schema() -> None:
         prepared_tools_schema_hash=envelope.envelope_hash,
     )
     assert adapter.received_schema is not None
-    assert adapter.received_schema == list(envelope.tools_schema)
+    assert _wire_schemas_from_adapter_capture(adapter.received_schema) == list(
+        envelope.tools_schema
+    )
 
 
 def test_adapter_not_called_after_integrity_failure() -> None:
@@ -769,7 +785,10 @@ def test_canonical_prepared_order_accepted() -> None:
     )
     assert adapter.generate_with_tools_calls == 1
     assert adapter.received_schema is not None
-    names = [entry["function"]["name"] for entry in adapter.received_schema]
+    names = [
+        entry["function"]["name"]
+        for entry in _wire_schemas_from_adapter_capture(adapter.received_schema)
+    ]
     assert names == ["alpha.tool", "beta.tool"]
 
 
@@ -820,4 +839,6 @@ def test_exact_canonical_schema_order_forwarded_to_adapter() -> None:
         prepared_tools_schema=list(envelope.tools_schema),
         prepared_tools_schema_hash=envelope.envelope_hash,
     )
-    assert adapter.received_schema == list(envelope.tools_schema)
+    assert _wire_schemas_from_adapter_capture(adapter.received_schema) == list(
+        envelope.tools_schema
+    )

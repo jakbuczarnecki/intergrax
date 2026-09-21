@@ -35,6 +35,7 @@ from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from intergrax.runtime.nexus.context.assembly_runtime_deps import (
@@ -71,7 +72,7 @@ _NEXUS_CANONICAL_CONTEXT_MODULES = (
 )
 
 
-class _SmallWindowAdapter(LLMAdapter):
+class _SmallWindowAdapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-gate"
 

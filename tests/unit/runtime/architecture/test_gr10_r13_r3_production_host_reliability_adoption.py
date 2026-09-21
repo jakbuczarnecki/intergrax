@@ -12,7 +12,13 @@ from pathlib import Path
 import pytest
 
 from applications.governed_contractor_application.host.stores import InMemoryProviderInvocationStore
-from governed_contractor_application.host.agent_builders import GOVERNED_CONTRACTOR_AGENT_BUILDERS
+from governed_contractor_application.host.agent_builders import (
+    build_governed_contractor_agent_builders,
+)
+from governed_contractor_application.host.governed_contractor_host_runtime_composition import (
+    GovernedContractorHostRuntimeComposition,
+    compose_governed_contractor_host_runtime,
+)
 from governed_contractor_application.host.environment_profile import (
     build_governed_contractor_environment_profile,
 )
@@ -300,14 +306,13 @@ def _r13r3_policy_bundle() -> object:
     )
 
 
-def _default_settings() -> GovernedContractorBackendSettings:
+def _default_production_host_fixture() -> tuple[
+    GovernedContractorBackendSettings,
+    GovernedContractorHostRuntimeComposition,
+]:
     from external_contractor_adapter.tests.fakes.deterministic_external_work import (
         DeterministicExternalWorkFake,
     )
-    from governed_contractor_application.host.production_external_work_composition import (
-        wire_governed_contractor_production_external_work_settings,
-    )
-    from intergrax.contracts.execution_identity import mint_task_id
     from tests.unit.runtime.governance.gr3_test_support import StaticActiveTaskScope
 
     fake = DeterministicExternalWorkFake()
@@ -316,20 +321,29 @@ def _default_settings() -> GovernedContractorBackendSettings:
         workspace_id="workspace-1",
         principal_id="principal-1",
     )
-    base = replace(
+    settings = replace(
         GovernedContractorBackendSettings(
             include_mcp=False,
             include_scheduler=False,
             include_interaction_routes=False,
         ),
-        external_work_integration=fake,
         runtime_policy_bundle=_r13r3_policy_bundle(),  # type: ignore[arg-type]
+    )
+    runtime = compose_governed_contractor_host_runtime(
+        settings,
+        integration=fake,
+        task_scope=StaticActiveTaskScope(_PRODUCTION_HOST_TASK_ID),
         collaborative_work_repositories=cw,
     )
-    return wire_governed_contractor_production_external_work_settings(
-        base,
-        task_scope=StaticActiveTaskScope(_PRODUCTION_HOST_TASK_ID),
-    )
+    return settings, runtime
+
+
+def _default_settings() -> GovernedContractorBackendSettings:
+    return _default_production_host_fixture()[0]
+
+
+def _default_host_runtime() -> GovernedContractorHostRuntimeComposition:
+    return _default_production_host_fixture()[1]
 
 
 def production_host_task_id() -> str:
@@ -342,15 +356,26 @@ def _continuation_store():
     )
 
 
-def _settings_topology_runtime_deny() -> GovernedContractorBackendSettings:
+def _settings_topology_runtime_deny() -> tuple[
+    GovernedContractorBackendSettings,
+    GovernedContractorHostRuntimeComposition,
+]:
     from applications.governed_contractor_application.tests.host.test_gr6_wire_production_decision_governance import (
         _test_policy_bundle,
     )
 
-    return replace(
-        _default_settings(),
+    settings, runtime = _default_production_host_fixture()
+    settings = replace(
+        settings,
         runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
     )
+    runtime = compose_governed_contractor_host_runtime(
+        settings,
+        integration=runtime.external_work_integration,
+        task_scope=runtime.active_execution_task_scope,
+        collaborative_work_repositories=runtime.collaborative_work_repositories,
+    )
+    return settings, runtime
 
 
 def _strict_host_app(
@@ -358,6 +383,7 @@ def _strict_host_app(
     tmp_path: Path,
     *,
     settings: GovernedContractorBackendSettings | None = None,
+    host_runtime: GovernedContractorHostRuntimeComposition | None = None,
 ):
     platform_persistence = build_reference_production_platform_persistence(
         db_path=tmp_path / "platform-kv.db",
@@ -368,7 +394,11 @@ def _strict_host_app(
         ),
         provider_invocation_store=store,
     )
-    resolved_settings = settings or _default_settings()
+    if settings is None:
+        resolved_settings, resolved_runtime = _default_production_host_fixture()
+    else:
+        resolved_settings = settings
+        resolved_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
     manifest = build_governed_contractor_manifest()
     env = manifest.environment or build_governed_contractor_environment_profile(
         resolved_settings,
@@ -376,7 +406,7 @@ def _strict_host_app(
     projection = build_test_registry_projection(
         manifest,
         env,
-        builders=GOVERNED_CONTRACTOR_AGENT_BUILDERS,
+        builders=build_governed_contractor_agent_builders(resolved_runtime),
         revision_id="rev-r13r3-strict-host",
         settings=resolved_settings,
     )
@@ -391,6 +421,7 @@ def _strict_host_app(
         registry_projection=projection,
         process_composition=composition,
         settings=resolved_settings,
+        host_runtime=resolved_runtime,
         document_store=platform.document_store,
         key_value_cache=platform.kv_store,
         trace_db_path=tmp_path / "trace.db",
@@ -503,12 +534,13 @@ def test_strict_process_app_missing_store_fails_at_factory(tmp_path: Path) -> No
         ),
     )
     settings = _default_settings()
+    host_runtime = _default_host_runtime()
     manifest = build_governed_contractor_manifest()
     env = manifest.environment or build_governed_contractor_environment_profile(settings)
     projection = build_test_registry_projection(
         manifest,
         env,
-        builders=GOVERNED_CONTRACTOR_AGENT_BUILDERS,
+        builders=build_governed_contractor_agent_builders(host_runtime),
         revision_id="rev-r13r3-missing-store",
         settings=settings,
     )
@@ -523,6 +555,7 @@ def test_strict_process_app_missing_store_fails_at_factory(tmp_path: Path) -> No
             registry_projection=projection,
             process_composition=composition,
             settings=settings,
+            host_runtime=host_runtime,
             document_store=composition.agent_platform_runtime.platform_persistence.document_store,
             key_value_cache=composition.agent_platform_runtime.platform_persistence.kv_store,
             trace_db_path=tmp_path / "trace.db",
@@ -541,12 +574,13 @@ def test_strict_process_app_non_durable_store_fails(tmp_path: Path) -> None:
         provider_invocation_store=InMemoryProviderInvocationStore(),
     )
     settings = _default_settings()
+    host_runtime = _default_host_runtime()
     manifest = build_governed_contractor_manifest()
     env = manifest.environment or build_governed_contractor_environment_profile(settings)
     projection = build_test_registry_projection(
         manifest,
         env,
-        builders=GOVERNED_CONTRACTOR_AGENT_BUILDERS,
+        builders=build_governed_contractor_agent_builders(host_runtime),
         revision_id="rev-r13r3-nondurable",
         settings=settings,
     )
@@ -561,6 +595,7 @@ def test_strict_process_app_non_durable_store_fails(tmp_path: Path) -> None:
             registry_projection=projection,
             process_composition=composition,
             settings=settings,
+            host_runtime=host_runtime,
             document_store=composition.agent_platform_runtime.platform_persistence.document_store,
             key_value_cache=composition.agent_platform_runtime.platform_persistence.kv_store,
             trace_db_path=tmp_path / "trace.db",
@@ -799,6 +834,7 @@ async def test_restart_visibility_via_shared_backing_and_rebuilt_host(
 
 def test_lab_factory_without_process_composition_does_not_require_store() -> None:
     settings = _default_settings()
+    host_runtime = _default_host_runtime()
     manifest = build_governed_contractor_manifest()
     env = build_governed_contractor_environment_profile(settings)
     if env.execution_mode.value == "strict":
@@ -806,12 +842,13 @@ def test_lab_factory_without_process_composition_does_not_require_store() -> Non
     projection = build_test_registry_projection(
         manifest,
         env,
-        builders=GOVERNED_CONTRACTOR_AGENT_BUILDERS,
+        builders=build_governed_contractor_agent_builders(host_runtime),
         revision_id="rev-r13r3-lab",
         settings=settings,
     )
     app = create_governed_contractor_backend_app(
         registry_projection=projection,
         settings=settings,
+        host_runtime=host_runtime,
     )
     assert app.state.harness_runtime.orchestration_topology is None

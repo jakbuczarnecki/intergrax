@@ -19,7 +19,7 @@ from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 @pytest.mark.gate
 def test_build_adapter_response_fields() -> None:
     usage = LLMTokenUsage.from_counts(input_tokens=10, output_tokens=5)
-    tc = LLMToolCall.from_openai_shape(call_id="c1", name="noop", arguments='{"x": 1}')
+    tc = LLMToolCall.from_native_parts(call_id="c1", name="noop", arguments='{"x": 1}')
     resp = build_adapter_response(
         content="hello",
         finish_reason=LLMFinishReason.COMPLETED,

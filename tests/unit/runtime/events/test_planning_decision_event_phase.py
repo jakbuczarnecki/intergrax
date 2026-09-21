@@ -8,7 +8,7 @@ from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_catalog import phase_for_event
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from testing_support.runtime_events import runtime_event_test_identity
+from testing_support.runtime_events import runtime_event_test_identity, with_preferred_canonical_payload
 from intergrax.runtime.events.schema_guard import RuntimeEventSchemaError, assert_runtime_event_schema
 from intergrax.runtime.nexus.orchestration import planning_runner
 
@@ -26,7 +26,7 @@ def _event(**overrides) -> RuntimeEvent:
         }
     )
     base.update(overrides)
-    return RuntimeEvent(**base)
+    return with_preferred_canonical_payload(RuntimeEvent(**base))
 
 
 def test_decision_emitted_catalog_phase_is_step_execution() -> None:

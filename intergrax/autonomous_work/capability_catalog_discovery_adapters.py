@@ -26,7 +26,10 @@ from intergrax.capability_catalog.governance import (
     CapabilityGovernanceEvaluator,
     govern_capability_candidates,
 )
-from intergrax.capability_catalog.ranking import CapabilityRanker, rank_capability_candidates
+from intergrax.capability_catalog.ranking import (
+    CapabilityRanker,
+    rank_capability_candidates,
+)
 from intergrax.capability_catalog.snapshot import CapabilityCatalogSnapshot
 from intergrax.capability_catalog.work_stage_effective import (
     select_effective_executable_candidates,
@@ -47,7 +50,12 @@ from intergrax.contracts.capability_catalog.availability import AvailabilityDisp
 from intergrax.contracts.capability_catalog.evidence import (
     CapabilityDiscoveryAvailabilityEvidence,
 )
-from intergrax.contracts.capability_catalog.governance import CapabilityGovernanceContext
+from intergrax.contracts.capability_catalog.federation import (
+    CapabilityCatalogFederationCompleteness,
+)
+from intergrax.contracts.capability_catalog.governance import (
+    CapabilityGovernanceContext,
+)
 from intergrax.contracts.capability_catalog.identity import CapabilityDiscoveryIdentity
 from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
 from intergrax.contracts.capability_catalog.kind import CapabilityKind
@@ -92,6 +100,71 @@ def _skill_manifest_operations(manifest: SkillManifest) -> tuple[str, ...]:
 
 
 @dataclass(frozen=True, slots=True)
+class CatalogGovernedDiscoveryLayerResult:
+    """Single-pass catalog layer: AW disposition + governed facts for DiscoveryCompletion."""
+
+    outcome: WorkerCapabilityDiscoveryLayerOutcome
+    governed_allowed: tuple[GovernedCapabilityCandidate, ...] = ()
+
+
+@runtime_checkable
+class CapabilityCatalogGovernedDiscoveryPort(Protocol):
+    """Public governed catalog discovery seam — one discover/rank/govern pass per kind."""
+
+    def discover_tool(
+        self,
+        request: WorkerCapabilityDiscoveryRequest,
+    ) -> CatalogGovernedDiscoveryLayerResult:
+        """Run Tool discovery, ranking, and governance once for ``request``."""
+        ...
+
+    def discover_skill(
+        self,
+        request: WorkerCapabilityDiscoveryRequest,
+    ) -> CatalogGovernedDiscoveryLayerResult:
+        """Run Skill discovery, ranking, and governance once for ``request``."""
+        ...
+
+    @property
+    def federation_completeness(self) -> CapabilityCatalogFederationCompleteness:
+        """Federation completeness for the catalog snapshot used by this seam."""
+        ...
+
+
+class CapabilityCatalogGovernedDiscoveryService:
+    """Capability Catalog default implementation of ``CapabilityCatalogGovernedDiscoveryPort``."""
+
+    def __init__(
+        self,
+        dependencies: CapabilityCatalogDiscoveryDependencies,
+        *,
+        manifest_lookup: SkillManifestLookupPort,
+    ) -> None:
+        self._dependencies = dependencies
+        self._manifest_lookup = manifest_lookup
+
+    def discover_tool(
+        self,
+        request: WorkerCapabilityDiscoveryRequest,
+    ) -> CatalogGovernedDiscoveryLayerResult:
+        return _run_tool_discovery_layer(request, self._dependencies)
+
+    def discover_skill(
+        self,
+        request: WorkerCapabilityDiscoveryRequest,
+    ) -> CatalogGovernedDiscoveryLayerResult:
+        return _run_skill_discovery_layer(
+            request,
+            self._dependencies,
+            self._manifest_lookup,
+        )
+
+    @property
+    def federation_completeness(self) -> CapabilityCatalogFederationCompleteness:
+        return self._dependencies.snapshot.federation_completeness
+
+
+@dataclass(frozen=True, slots=True)
 class CapabilityCatalogDiscoveryDependencies:
     """Immutable catalog discovery inputs for one AW recovery attempt."""
 
@@ -122,7 +195,9 @@ def map_worker_capability_need_to_discovery_query(
     )
 
 
-def encode_source_qualified_capability_ref(identity: CapabilityDiscoveryIdentity) -> str:
+def encode_source_qualified_capability_ref(
+    identity: CapabilityDiscoveryIdentity,
+) -> str:
     """Deterministic source-qualified capability reference for AW projection."""
     source = identity.source
     return (
@@ -133,7 +208,9 @@ def encode_source_qualified_capability_ref(identity: CapabilityDiscoveryIdentity
     )
 
 
-def encode_catalog_discovery_evidence_ref(identity: CapabilityDiscoveryIdentity) -> ProblemReference:
+def encode_catalog_discovery_evidence_ref(
+    identity: CapabilityDiscoveryIdentity,
+) -> ProblemReference:
     """Deterministic AW evidence reference preserving catalog identity."""
     source = identity.source
     return ProblemReference(
@@ -313,7 +390,7 @@ def _discover_rank_and_govern(
 def _run_tool_discovery_layer(
     request: WorkerCapabilityDiscoveryRequest,
     dependencies: CapabilityCatalogDiscoveryDependencies,
-) -> WorkerCapabilityDiscoveryLayerOutcome:
+) -> CatalogGovernedDiscoveryLayerResult:
     query = map_worker_capability_need_to_discovery_query(
         request.need,
         kind=CapabilityKind.TOOL,
@@ -326,19 +403,25 @@ def _run_tool_discovery_layer(
             availability_evidence=dependencies.availability_evidence,
         )
     except CapabilityCatalogIdentityConflict:
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.CONFLICT,
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.CONFLICT,
+            ),
         )
     except (
         CapabilityCatalogDiscoveryError,
         CapabilityCatalogSourceFailure,
         CapabilityGovernanceError,
     ):
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.UNAVAILABLE,
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.UNAVAILABLE,
+            ),
         )
     operation_relevant: list[
-        tuple[CapabilityDiscoveryCandidate, tuple[str, ...], CapabilityOperationCoverage]
+        tuple[
+            CapabilityDiscoveryCandidate, tuple[str, ...], CapabilityOperationCoverage
+        ]
     ] = []
     for candidate in discovered:
         resolved = _tool_supports_required_operations(
@@ -350,8 +433,10 @@ def _run_tool_discovery_layer(
             operation_relevant.append((candidate, operations, coverage))
     operation_relevant_count = len(operation_relevant)
     if operation_relevant_count == 0:
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.NO_MATCH,
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.NO_MATCH,
+            ),
         )
     filtered_candidates = tuple(item[0] for item in operation_relevant)
     try:
@@ -361,12 +446,16 @@ def _run_tool_discovery_layer(
             candidates=filtered_candidates,
         )
     except CapabilityCatalogIdentityConflict:
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.CONFLICT,
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.CONFLICT,
+            ),
         )
     except (CapabilityCatalogSourceFailure, CapabilityGovernanceError):
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.UNAVAILABLE,
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.UNAVAILABLE,
+            ),
         )
     executable = select_effective_executable_candidates(governed_result.allowed)
     disposition = _map_governed_layer_disposition(
@@ -389,12 +478,17 @@ def _run_tool_discovery_layer(
                     coverage=coverage,
                 ),
             )
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.MATCH_FOUND,
-            candidates=tuple(sorted(projected, key=_candidate_sort_key)),
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.MATCH_FOUND,
+                candidates=tuple(sorted(projected, key=_candidate_sort_key)),
+            ),
+            governed_allowed=governed_result.allowed,
         )
     if disposition is CapabilityDiscoveryDisposition.REALIZATION_REQUIRED:
-        catalog_candidates = _select_catalog_realization_candidates(governed_result.allowed)
+        catalog_candidates = _select_catalog_realization_candidates(
+            governed_result.allowed
+        )
         projected = []
         for governed in catalog_candidates:
             operations, coverage = coverage_by_identity[governed.identity.sort_key]
@@ -406,11 +500,17 @@ def _run_tool_discovery_layer(
                     coverage=coverage,
                 ),
             )
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.REALIZATION_REQUIRED,
-            candidates=tuple(sorted(projected, key=_candidate_sort_key)),
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.REALIZATION_REQUIRED,
+                candidates=tuple(sorted(projected, key=_candidate_sort_key)),
+            ),
+            governed_allowed=governed_result.allowed,
         )
-    return WorkerCapabilityDiscoveryLayerOutcome(disposition=disposition)
+    return CatalogGovernedDiscoveryLayerResult(
+        outcome=WorkerCapabilityDiscoveryLayerOutcome(disposition=disposition),
+        governed_allowed=governed_result.allowed,
+    )
 
 
 def _skill_supports_required_operations(
@@ -432,7 +532,7 @@ def _run_skill_discovery_layer(
     request: WorkerCapabilityDiscoveryRequest,
     dependencies: CapabilityCatalogDiscoveryDependencies,
     manifest_lookup: SkillManifestLookupPort,
-) -> WorkerCapabilityDiscoveryLayerOutcome:
+) -> CatalogGovernedDiscoveryLayerResult:
     query = map_worker_capability_need_to_discovery_query(
         request.need,
         kind=CapabilityKind.SKILL,
@@ -445,18 +545,26 @@ def _run_skill_discovery_layer(
             availability_evidence=dependencies.availability_evidence,
         )
     except CapabilityCatalogIdentityConflict:
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.CONFLICT,
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.CONFLICT,
+            ),
         )
     except (
         CapabilityCatalogDiscoveryError,
         CapabilityCatalogSourceFailure,
         CapabilityGovernanceError,
     ):
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.UNAVAILABLE,
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.UNAVAILABLE,
+            ),
         )
-    operation_relevant: list[tuple[CapabilityDiscoveryCandidate, tuple[str, ...], CapabilityOperationCoverage]] = []
+    operation_relevant: list[
+        tuple[
+            CapabilityDiscoveryCandidate, tuple[str, ...], CapabilityOperationCoverage
+        ]
+    ] = []
     for candidate in discovered:
         resolved = _skill_supports_required_operations(
             skill_logical_id=candidate.identity.logical.logical_id,
@@ -468,8 +576,10 @@ def _run_skill_discovery_layer(
             operation_relevant.append((candidate, operations, coverage))
     operation_relevant_count = len(operation_relevant)
     if operation_relevant_count == 0:
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.NO_MATCH,
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.NO_MATCH,
+            ),
         )
     filtered_candidates = tuple(item[0] for item in operation_relevant)
     try:
@@ -479,12 +589,16 @@ def _run_skill_discovery_layer(
             candidates=filtered_candidates,
         )
     except CapabilityCatalogIdentityConflict:
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.CONFLICT,
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.CONFLICT,
+            ),
         )
     except (CapabilityCatalogSourceFailure, CapabilityGovernanceError):
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.UNAVAILABLE,
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.UNAVAILABLE,
+            ),
         )
     executable = select_effective_executable_candidates(governed_result.allowed)
     disposition = _map_governed_layer_disposition(
@@ -507,12 +621,17 @@ def _run_skill_discovery_layer(
                     coverage=coverage,
                 ),
             )
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.MATCH_FOUND,
-            candidates=tuple(sorted(projected, key=_candidate_sort_key)),
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.MATCH_FOUND,
+                candidates=tuple(sorted(projected, key=_candidate_sort_key)),
+            ),
+            governed_allowed=governed_result.allowed,
         )
     if disposition is CapabilityDiscoveryDisposition.REALIZATION_REQUIRED:
-        catalog_candidates = _select_catalog_realization_candidates(governed_result.allowed)
+        catalog_candidates = _select_catalog_realization_candidates(
+            governed_result.allowed
+        )
         projected = []
         for governed in catalog_candidates:
             operations, coverage = coverage_by_identity[governed.identity.sort_key]
@@ -524,11 +643,17 @@ def _run_skill_discovery_layer(
                     coverage=coverage,
                 ),
             )
-        return WorkerCapabilityDiscoveryLayerOutcome(
-            disposition=CapabilityDiscoveryDisposition.REALIZATION_REQUIRED,
-            candidates=tuple(sorted(projected, key=_candidate_sort_key)),
+        return CatalogGovernedDiscoveryLayerResult(
+            outcome=WorkerCapabilityDiscoveryLayerOutcome(
+                disposition=CapabilityDiscoveryDisposition.REALIZATION_REQUIRED,
+                candidates=tuple(sorted(projected, key=_candidate_sort_key)),
+            ),
+            governed_allowed=governed_result.allowed,
         )
-    return WorkerCapabilityDiscoveryLayerOutcome(disposition=disposition)
+    return CatalogGovernedDiscoveryLayerResult(
+        outcome=WorkerCapabilityDiscoveryLayerOutcome(disposition=disposition),
+        governed_allowed=governed_result.allowed,
+    )
 
 
 class CapabilityCatalogToolDiscoveryAdapter:
@@ -541,7 +666,7 @@ class CapabilityCatalogToolDiscoveryAdapter:
         self,
         request: WorkerCapabilityDiscoveryRequest,
     ) -> WorkerCapabilityDiscoveryLayerOutcome:
-        return _run_tool_discovery_layer(request, self._dependencies)
+        return _run_tool_discovery_layer(request, self._dependencies).outcome
 
 
 class CapabilityCatalogSkillDiscoveryAdapter:
@@ -564,7 +689,7 @@ class CapabilityCatalogSkillDiscoveryAdapter:
             request,
             self._dependencies,
             self._manifest_lookup,
-        )
+        ).outcome
 
 
 def identity_key_from_entry_identity(

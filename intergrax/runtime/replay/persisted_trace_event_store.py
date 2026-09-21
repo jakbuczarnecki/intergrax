@@ -5,6 +5,8 @@ from __future__ import annotations
 
 from typing import Iterable, List
 
+from intergrax.contracts.persisted_run_trace import PersistedTraceEvent
+from intergrax.runtime.nexus.tracing.persisted_trace_codec import persisted_trace_event_to_serialized
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader, SerializedTraceEvent
 from intergrax.runtime.replay.contracts.trace_event_dto import TraceEventDTO
 from intergrax.runtime.replay.contracts.trace_event_store import TraceEventStore
@@ -21,7 +23,9 @@ class PersistedRunTraceEventStore(TraceEventStore):
         persisted = self._reader.read_run(run_id, tenant_id)
         serialized: List[SerializedTraceEvent] = []
         for raw in persisted.events:
-            if isinstance(raw, SerializedTraceEvent):
+            if isinstance(raw, PersistedTraceEvent):
+                serialized.append(persisted_trace_event_to_serialized(raw))
+            elif isinstance(raw, SerializedTraceEvent):
                 serialized.append(raw)
             elif isinstance(raw, dict):
                 serialized.append(

@@ -12,11 +12,20 @@ HTTP clients are opened only in ``opens.py``. Tier-3 code MUST use
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Optional
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+from intergrax.integrations.providers.observability_backend._http_contract import (
+    ObservabilityHttpClient,
+    ObservabilityHttpClientFactory,
+)
 from intergrax.integrations.providers.observability_backend.prometheus.integration import (
+    PROMETHEUS_OBSERVABILITY_PROVIDER_ID,
+    PROMETHEUS_SUPPORTED_SIGNALS,
     PrometheusObservabilityIntegration,
+    PrometheusObservabilityIntegrationConfig,
+    PrometheusObservabilityTransport,
 )
 from intergrax.integrations.providers.observability_backend.prometheus.client import PrometheusRestClient
 from intergrax.integrations.providers.observability_backend.prometheus.config import PrometheusIntegrationConfig
@@ -41,8 +50,8 @@ def create_prometheus_integration(
     *,
     observability_backend: Optional[ObservabilityBackend] = None,
     client: Optional[PrometheusRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[PrometheusIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[PrometheusIntegrationConfig] | None = None,
     **config_overrides: object,
 ) -> PrometheusIntegrationBundle:
     config = resolve_prometheus_config(**config_overrides)
@@ -68,8 +77,8 @@ def create_prometheus_observability_backend(
     *,
     observability_backend: Optional[ObservabilityBackend] = None,
     client: Optional[PrometheusRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[PrometheusIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[PrometheusIntegrationConfig] | None = None,
     **config_overrides: object,
 ) -> PrometheusObservabilityIntegration:
     """Catalog factory for ``"prometheus"`` / ``OBSERVABILITY_BACKEND``."""
@@ -80,16 +89,6 @@ def create_prometheus_observability_backend(
         http_client_factory=http_client_factory,
         **config_overrides,
     ).observability_backend
-
-
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.observability_backend.prometheus.integration import (
-    PROMETHEUS_OBSERVABILITY_PROVIDER_ID,
-    PROMETHEUS_SUPPORTED_SIGNALS,
-    PrometheusObservabilityIntegration,
-    PrometheusObservabilityIntegrationConfig,
-    PrometheusObservabilityTransport,
-)
 
 
 def create_prometheus_observability_integration(

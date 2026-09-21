@@ -20,17 +20,8 @@ class NativeForcedFunctionChoice:
 NativeToolChoice = Union[NativeToolChoiceLiteral, NativeForcedFunctionChoice]
 
 
-def project_native_tool_choice_for_provider(
-    choice: NativeToolChoice | None,
-    *,
-    provider: str,
-) -> str | dict[str, str] | None:
-    """Translate canonical Nexus tool-choice intent to provider wire format."""
-    if choice is None:
-        return None
+def native_tool_choice_function_name(choice: NativeToolChoice | None) -> str | None:
+    """Return the forced function name when tool choice pins a single tool."""
     if isinstance(choice, NativeForcedFunctionChoice):
-        provider_slug = provider.strip().lower()
-        if provider_slug in {"ollama", "native_ollama"}:
-            return "required"
-        return {"type": "function", "name": choice.function_name}
-    return choice
+        return choice.function_name
+    return None

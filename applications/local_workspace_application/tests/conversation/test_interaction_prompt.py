@@ -8,6 +8,7 @@ import pytest
 
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 
 from local_workspace_application.conversation.interaction_draft_models import (
@@ -156,7 +157,7 @@ def test_repair_message_sanitization() -> None:
         assert "input_value" not in message
 
 
-class _SingleCallAdapter(LLMAdapter):
+class _SingleCallAdapter(BaseLLMAdapter):
     provider = "recording"
     model = "recording"
 
@@ -199,7 +200,7 @@ async def test_valid_first_result_single_adapter_call() -> None:
     assert adapter.call_count == 1
 
 
-class _TwoCallAdapter(LLMAdapter):
+class _TwoCallAdapter(BaseLLMAdapter):
     provider = "recording"
     model = "recording"
 

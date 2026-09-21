@@ -18,6 +18,7 @@ from tests.qualification.governance.strategy.catalog import (
     GR10_SCENARIO_CATALOG,
     Gr10Applicability,
     Gr10CoverageStatus,
+    gr10_agentic_gep_semantics,
     gr10_matrix_agentic_status,
     gr10_matrix_inference_status,
     gr10_matrix_orchestration_status,
@@ -68,12 +69,26 @@ def test_gr10_r7_inference_rows_unchanged_no_residual_blocker() -> None:
 
 
 def test_gr10_r7_no_historical_r3_defect_wording_in_catalog() -> None:
+    """GR-10-R3 regression: Policy evaluation stays QUALIFIED on UAEP StepKernel spine (typed SSOT)."""
     from tests.qualification.governance.strategy import catalog as catalog_mod
 
     source = Path(catalog_mod.__file__).read_text(encoding="utf-8-sig")
-    assert "historical R3 defect" in source or "GR-10-R3 closed" in source
-    assert "PolicyDecision.DENY" not in source or "GR-10-R3" in source
-    assert "kernel policy_pre DENY" in source
+    for stale in ("historical R3 defect", "kernel policy_pre DENY"):
+        assert stale not in source
+
+    policy_sem = next(
+        row for row in GR10_AGENTIC_CAPABILITY_SEMANTICS if row.capability == "Policy evaluation"
+    )
+    assert policy_sem.applicability is Gr10Applicability.APPLICABLE
+    assert policy_sem.coverage is Gr10CoverageStatus.QUALIFIED
+    assert "GR-10-R3" in policy_sem.reason
+    assert "StepKernel" in policy_sem.reason
+    assert gr10_matrix_agentic_status("Policy evaluation") is Gr10CoverageStatus.QUALIFIED
+
+    pre_model = gr10_agentic_gep_semantics("PRE_MODEL")
+    assert pre_model.coverage is Gr10CoverageStatus.QUALIFIED
+    assert "StepKernel policy_pre" in pre_model.canonical_owner
+    assert pre_model.production_path.startswith("UAEP")
 
 
 def test_gr10_r7_agentic_partial_rows_have_precise_reasons() -> None:
@@ -82,21 +97,11 @@ def test_gr10_r7_agentic_partial_rows_have_precise_reasons() -> None:
         for row in GR10_AGENTIC_CAPABILITY_SEMANTICS
         if row.coverage is Gr10CoverageStatus.PARTIAL
     ]
-    assert {row.capability for row in partial} == {
-        "Inner Governance",
-        "Policy evaluation",
-        "MSE",
-        "Governance Evidence",
-    }
+    assert {row.capability for row in partial} == {"Governance Evidence"}
     for row in partial:
         assert len(row.reason) > 40
         lowered = row.reason.lower()
-        assert (
-            "not all" in lowered
-            or "residual" in lowered
-            or "optional" in lowered
-            or "not enterprise-adopted for all" in lowered
-        )
+        assert "deferred_to_gr13" in lowered or "deferred to gr-13" in lowered
 
 
 def test_gr10_r7_orchestration_partial_inventory() -> None:
@@ -105,9 +110,7 @@ def test_gr10_r7_orchestration_partial_inventory() -> None:
         for row in GR10_ORCHESTRATION_CAPABILITY_SEMANTICS
         if row.coverage is Gr10CoverageStatus.PARTIAL
     }
-    assert partial_caps == {
-        "Governance Evidence",
-    }
+    assert partial_caps == set()
 
 
 def test_gr10_r7_gep_inventory_covers_required_geps() -> None:

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 from typing import Union
 
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.registration_contract import (
@@ -143,7 +144,7 @@ class LLMAdapterRegistry:
             model=str(model_id) if model_id else None,
         )
 
-        adapter.validate()
+        _validate_registered_adapter(adapter)
         from intergrax.llm_adapters._shared.provider_dependency_boundary import (
             apply_llm_provider_dependency_boundary,
         )
@@ -155,6 +156,21 @@ class LLMAdapterRegistry:
     def registered_providers(cls) -> list[str]:
         cls.ensure_builtin_registrations_installed()
         return sorted(cls._factories.keys())
+
+
+def _validate_registered_adapter(adapter: LLMAdapter) -> None:
+    if isinstance(adapter, BaseLLMAdapter):
+        adapter.validate()
+        return
+    provider = adapter.provider
+    from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+
+    if isinstance(provider, LLMProvider):
+        provider = provider.value
+    if not isinstance(provider, str) or not provider.strip():
+        raise ValueError(
+            f"{type(adapter).__name__}.provider must be a non-empty string"
+        )
 
 
 def _resolve_adapter_model_id(adapter: LLMAdapter, kwargs: dict[str, object]) -> str | None:

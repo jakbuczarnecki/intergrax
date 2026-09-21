@@ -156,7 +156,7 @@ class _TwoRoundPlanner:
         _ = messages, allowed_tool_ids, run_id, tool_choice, protocol_config, kwargs
         self._round += 1
         if self._round == 1:
-            business_call = LLMToolCall.from_openai_shape(
+            business_call = LLMToolCall.from_native_parts(
                 call_id="tc-1",
                 name="probe.read",
                 arguments={"value": 1},

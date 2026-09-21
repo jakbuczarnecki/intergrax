@@ -21,7 +21,11 @@ from intergrax.applications._shared.harness_control_plane_policy_wiring import (
     build_harness_host_control_plane_policy_bundle,
     build_reference_production_lifecycle_policy_bundle,
 )
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from pathlib import Path
+
+from tests.unit.applications.task_control_product_host_test_support import (
+    build_task_control_product_harness_host_runtime,
+)
 from tests.unit.applications.harness_canonical_task_routes_test_support import (
     mount_canonical_harness_task_routes_for_tests,
 )
@@ -43,14 +47,6 @@ from intergrax.applications._shared.harness_host_composition import (
     resolve_harness_host_middleware_pipeline,
     resolve_harness_host_runtime_event_persistence,
 )
-from governed_contractor_application.tests.governed_contractor_ac3_projection import (
-    build_governed_contractor_test_registry_projection,
-)
-from governed_contractor_application.manifest import build_governed_contractor_manifest
-from governed_contractor_application.host.environment_profile import (
-    build_governed_contractor_environment_profile,
-)
-from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRequest
@@ -161,17 +157,13 @@ def _task(*, tenant_id: str = _TENANT) -> Task:
 
 
 def _product_runtime(
+    tmp_path: Path,
     *,
     mutation_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
 ) -> object:
-    settings = GovernedContractorBackendSettings.from_env()
-    manifest = build_governed_contractor_manifest()
-    env = manifest.environment or build_governed_contractor_environment_profile(settings)
-    return build_harness_host_runtime(
-        manifest,
-        env,
+    return build_task_control_product_harness_host_runtime(
+        tmp_path,
         mutation_authorization_boundary=mutation_boundary,
-        registry_projection=build_governed_contractor_test_registry_projection(),
     )
 
 
@@ -215,7 +207,10 @@ def test_taskcpm_p2_unmatched_cancel_rule_denies() -> None:
 
 
 @pytest.mark.asyncio
-async def test_taskcpm_p2b_unmatched_cancel_zero_side_effect(_stub_host_llm: None) -> None:
+async def test_taskcpm_p2b_unmatched_cancel_zero_side_effect(
+    tmp_path: Path,
+    _stub_host_llm: None,
+) -> None:
     empty_bundle = _variant_bundle()
     deny_boundary = ControlPlaneMutationAuthorizationBoundary(
         evaluator=BundleBackedControlPlaneMutationEvaluator(
@@ -225,7 +220,7 @@ async def test_taskcpm_p2b_unmatched_cancel_zero_side_effect(_stub_host_llm: Non
     task = _task()
     run_id = mint_run_id()
     await ActiveTaskRegistry.register(task, run_id)
-    runtime = _product_runtime(mutation_boundary=deny_boundary)
+    runtime = _product_runtime(tmp_path, mutation_boundary=deny_boundary)
     app = FastAPI()
     app.state.harness_auth = HarnessAuthState(
         identity_provider=_FakeIdentityProvider(),
@@ -254,7 +249,10 @@ async def test_taskcpm_p2b_unmatched_cancel_zero_side_effect(_stub_host_llm: Non
 
 
 @pytest.mark.asyncio
-async def test_taskcpm_p3_explicit_deny_zero_cancel_effect(_stub_host_llm: None) -> None:
+async def test_taskcpm_p3_explicit_deny_zero_cancel_effect(
+    tmp_path: Path,
+    _stub_host_llm: None,
+) -> None:
     deny_bundle = _variant_bundle(
         PolicyBundleRule(
             rule_id="harness.task_control.cancel_task_execution",
@@ -270,7 +268,7 @@ async def test_taskcpm_p3_explicit_deny_zero_cancel_effect(_stub_host_llm: None)
     task = _task()
     run_id = mint_run_id()
     await ActiveTaskRegistry.register(task, run_id)
-    runtime = _product_runtime(mutation_boundary=deny_boundary)
+    runtime = _product_runtime(tmp_path, mutation_boundary=deny_boundary)
     app = FastAPI()
     app.state.harness_auth = HarnessAuthState(
         identity_provider=_FakeIdentityProvider(),
@@ -299,7 +297,10 @@ async def test_taskcpm_p3_explicit_deny_zero_cancel_effect(_stub_host_llm: None)
 
 
 @pytest.mark.asyncio
-async def test_taskcpm_p4_require_human_zero_cancel_with_evidence(_stub_host_llm: None) -> None:
+async def test_taskcpm_p4_require_human_zero_cancel_with_evidence(
+    tmp_path: Path,
+    _stub_host_llm: None,
+) -> None:
     human_bundle = _variant_bundle(
         PolicyBundleRule(
             rule_id="harness.task_control.cancel_task_execution",
@@ -315,7 +316,7 @@ async def test_taskcpm_p4_require_human_zero_cancel_with_evidence(_stub_host_llm
     task = _task()
     run_id = mint_run_id()
     await ActiveTaskRegistry.register(task, run_id)
-    runtime = _product_runtime(mutation_boundary=human_boundary)
+    runtime = _product_runtime(tmp_path, mutation_boundary=human_boundary)
     app = FastAPI()
     app.state.harness_auth = HarnessAuthState(
         identity_provider=_FakeIdentityProvider(),
@@ -361,7 +362,7 @@ def test_taskcpm_p5_evaluator_receives_http_caller_identity() -> None:
     assert isinstance(evaluator, ApprovalConsumingControlPlaneMutationEvaluator)
     inner = evaluator.inner
     assert isinstance(inner, BundleBackedControlPlaneMutationEvaluator)
-    assert inner.bundle_evaluator.calls[-1].principal_id == "http-operator-77"
+    assert inner.bundle_evaluator.match_calls[-1].principal_id == "http-operator-77"
 
 
 def test_taskcpm_p6_policy_evaluates_exact_cancel_mutation_type() -> None:
@@ -415,16 +416,23 @@ def test_taskcpm_p9_approval_consuming_evaluator_preserves_scoped_approval() -> 
 
 
 def test_taskcpm_p10_product_host_uses_canonical_bundle_policy_authority(
+    tmp_path: Path,
     _stub_host_llm: None,
 ) -> None:
-    runtime = _product_runtime()
-    boundary = resolve_harness_task_control_mutation_boundary(runtime.control_plane_governance)
+    runtime = _product_runtime(tmp_path)
+    boundary = resolve_harness_task_control_mutation_boundary(
+        runtime.control_plane_governance,
+    )
     assert boundary is not None
     evaluator = boundary.evaluator
     assert isinstance(evaluator, ApprovalConsumingControlPlaneMutationEvaluator)
     inner = evaluator.inner
     assert isinstance(inner, BundleBackedControlPlaneMutationEvaluator)
     assert inner.bundle_evaluator.bundle.bundle_id == "harness.control_plane"
+    result = boundary.authorize(_cancel_request())
+    assert result.permitted is True
+    assert result.evidence.mutation_id == _MUTATION_ID
+    assert result.decision.policy_rule_id == "harness.task_control.cancel_task_execution"
 
 
 def test_taskcpm_p11_lab_missing_boundary_fail_closed() -> None:

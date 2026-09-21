@@ -11,6 +11,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
 )
@@ -409,7 +410,7 @@ def build_fixture_reasoning_proposal(
     )
 
 
-class FixtureDrivenIncidentInvestigationLLM(LLMAdapter):
+class FixtureDrivenIncidentInvestigationLLM(BaseLLMAdapter):
     """Fixture-world planner that drives tool order and reasoning for LAB proof runs."""
 
     provider = "fixture_lab"

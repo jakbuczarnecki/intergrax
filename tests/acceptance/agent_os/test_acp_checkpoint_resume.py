@@ -15,6 +15,7 @@ from intergrax.agents.persistence.checkpoint_store import InMemoryAgentCheckpoin
 from intergrax.agents.persistence.checkpoint_wiring import wire_acp_run_request
 from intergrax.contracts.agent_run import AgentExecutionOptions, AgentRunRequest, RequestIdentity
 from intergrax.contracts.agent_run_enums import AgentRunStatus
+from intergrax.dev_support.execution_identity_scope import canonical_agent_run_smoke_scope
 
 pytestmark = [pytest.mark.integration, pytest.mark.agent_os, pytest.mark.gate]
 
@@ -32,43 +33,48 @@ async def test_acceptance_05c_acp_checkpoint_resume() -> None:
     _CheckpointPlanProbe.perceive_calls = 0
     agent = _CheckpointPlanProbe()
     store = InMemoryAgentCheckpointStore()
-    run_id = "acceptance-acp-ckpt-1"
+    run_seed = "acceptance-acp-ckpt-1"
 
-    base = AgentRunRequest(
-        input="acp-checkpoint-acceptance",
-        identity=RequestIdentity(tenant_id="t-agent-os", user_id="u-acp"),
-        metadata={"run_id": run_id, "user_id": "u-acp"},
-    )
+    with canonical_agent_run_smoke_scope(
+        run_seed,
+        tenant_id="t-agent-os",
+        principal_id="u-acp",
+    ) as run_id:
+        base = AgentRunRequest(
+            input="acp-checkpoint-acceptance",
+            identity=RequestIdentity(tenant_id="t-agent-os", user_id="u-acp"),
+            metadata={"run_id": str(run_id), "user_id": "u-acp"},
+        )
 
-    await agent.run(
-        wire_acp_run_request(
-            base.model_copy(
-                update={
-                    "execution_options": AgentExecutionOptions(
-                        max_steps=1,
-                        checkpoint_every_step=True,
-                    ),
-                },
+        await agent.run(
+            wire_acp_run_request(
+                base.model_copy(
+                    update={
+                        "execution_options": AgentExecutionOptions(
+                            max_steps=1,
+                            checkpoint_every_step=True,
+                        ),
+                    },
+                ),
+                store,
             ),
-            store,
-        ),
-    )
-    assert store.get_latest(run_id, "t-agent-os") is not None
-    assert _CheckpointPlanProbe.perceive_calls == 1
+        )
+        assert store.get_latest(run_id, "t-agent-os") is not None
+        assert _CheckpointPlanProbe.perceive_calls == 1
 
-    result = await agent.run(
-        wire_acp_run_request(
-            base.model_copy(
-                update={
-                    "execution_options": AgentExecutionOptions(
-                        max_steps=10,
-                        checkpoint_every_step=True,
-                    ),
-                },
+        result = await agent.run(
+            wire_acp_run_request(
+                base.model_copy(
+                    update={
+                        "execution_options": AgentExecutionOptions(
+                            max_steps=10,
+                            checkpoint_every_step=True,
+                        ),
+                    },
+                ),
+                store,
+                resume=True,
             ),
-            store,
-            resume=True,
-        ),
-    )
+        )
     assert result.status == AgentRunStatus.SUCCEEDED
     assert _CheckpointPlanProbe.perceive_calls == 3

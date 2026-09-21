@@ -182,7 +182,7 @@ HARNESS_02_PROPAGATION_MATRIX: tuple[Harness02PropagationRow, ...] = (
     Harness02PropagationRow(
         flow_id="H02-llm-provider-boundary",
         source="ExecutionProtectedWorkAdmissionPort",
-        boundary="llm_adapters/contracts/llm_adapter.py",
+        boundary="llm_adapters/base/base_llm_adapter.py",
         propagated_state="active scope projection; provider timeout min(configured, remaining)",
         enforcement="assert_protected_provider_call_allowed before physical provider call",
         terminal_result="ExecutionProtectedWorkDeniedError / bounded timeout",

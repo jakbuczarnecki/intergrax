@@ -12,6 +12,7 @@ from typing import Any
 import pytest
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
+from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
 from intergrax.integrations.providers.layout import SLUG_CATEGORY
 from intergrax.runtime.integrations.contracts import PlatformIntegrationKind
 from intergrax.runtime.integrations.observability import (
@@ -21,7 +22,6 @@ from intergrax.runtime.integrations.observability import (
 )
 from intergrax.runtime.observability.export_attributes import (
     ApplicationObservabilityAttributes,
-    observability_attribute_key,
     sanitize_application_observability_attributes,
 )
 from intergrax.runtime.observability.export_boundary import (
@@ -55,6 +55,8 @@ WAVE3_SLUGS = (
     "mlflow",
 )
 ALL_MIGRATED_SLUGS = WAVE1_SLUGS + WAVE2_SLUGS + WAVE3_SLUGS
+
+_STRUCTURAL_GATE_SLUGS = ("arize", "prometheus", "datadog", "langfuse")
 
 LLM_SLUGS = frozenset(WAVE1_SLUGS)
 
@@ -175,6 +177,40 @@ def _provider_id_const(slug: str) -> str:
 
 def _forbidden_prefixes(slug: str) -> tuple[str, ...]:
     return _FORBIDDEN_IMPORT_PREFIXES.get(slug, (slug,))
+
+
+@pytest.mark.parametrize("slug", _STRUCTURAL_GATE_SLUGS)
+def test_integration_structurally_satisfies_observability_backend(slug: str) -> None:
+    integration_cls = _integration_class(slug)
+    integration = integration_cls.for_provider(provider_id=_provider_id_const(slug))
+    assert isinstance(integration, ObservabilityBackend)
+
+
+@pytest.mark.parametrize("slug", _STRUCTURAL_GATE_SLUGS)
+def test_for_provider_returns_concrete_integration_with_contract_fields(slug: str) -> None:
+    integration_cls = _integration_class(slug)
+    provider_id = _provider_id_const(slug)
+    integration = integration_cls.for_provider(provider_id=provider_id, display_name="R14 gate")
+    assert type(integration) is integration_cls
+    assert integration.provider_id == provider_id
+    assert integration.integration_id == f"{provider_id}:{PlatformIntegrationKind.OBSERVABILITY_VENDOR.value}"
+    assert integration.config.enabled is False
+    assert integration.supported_signals
+
+
+@pytest.mark.parametrize("slug", ALL_MIGRATED_SLUGS)
+def test_integration_module_has_no_nominal_observability_backend_register(slug: str) -> None:
+    path = (
+        _PROJECT_ROOT
+        / "intergrax"
+        / "integrations"
+        / "providers"
+        / "observability_backend"
+        / slug
+        / "integration.py"
+    )
+    source = path.read_text(encoding="utf-8")
+    assert "ObservabilityBackend.register" not in source
 
 
 def test_layout_observability_backend_slugs_match_migrated_batch() -> None:

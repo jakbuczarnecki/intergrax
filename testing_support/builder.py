@@ -26,6 +26,7 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
 )
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm.messages import ChatMessage
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
@@ -69,7 +70,7 @@ canonical_execution_identity_scope = (
 )
 
 
-class FakeLLMAdapter(LLMAdapter):
+class FakeLLMAdapter(BaseLLMAdapter):
     """
     Deterministic LLM adapter for CI-safe tests.
 

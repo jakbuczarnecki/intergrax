@@ -77,6 +77,7 @@ class ProblemPersistence(Protocol):
 
         ``cursor`` continues a prior page for the same tenant and status filter.
         """
+        ...
 
     def find_by_reconciliation_key(
         self,
@@ -107,6 +108,7 @@ class ProblemPersistence(Protocol):
         Idempotent when the same ``problem_id`` is written with identical content.
         Raises ``ProblemPersistenceConflictError`` on identity or index conflicts.
         """
+        ...
 
     def update(
         self,
@@ -121,6 +123,7 @@ class ProblemPersistence(Protocol):
         Raises ``ProblemPersistenceConflictError`` when ``expected_version`` does
         not match the stored record version.
         """
+        ...
 
     def close(self) -> None:
         """Release backend resources (no-op for most stores)."""

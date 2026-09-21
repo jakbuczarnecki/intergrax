@@ -17,8 +17,9 @@ from governed_contractor_application.host.environment_profile import (
     build_governed_contractor_environment_profile,
 )
 from governed_contractor_application.host.factory import create_governed_contractor_backend_app
-from governed_contractor_application.host.production_external_work_composition import (
-    wire_governed_contractor_production_external_work_settings,
+from governed_contractor_application.host.governed_contractor_host_runtime_composition import (
+    GovernedContractorHostRuntimeComposition,
+    compose_governed_contractor_host_runtime,
 )
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.manifest import build_governed_contractor_manifest
@@ -36,11 +37,13 @@ def create_governed_contractor_process_app(
     *,
     process_composition: ProductionProcessComposition,
     settings: GovernedContractorBackendSettings | None = None,
+    host_runtime: GovernedContractorHostRuntimeComposition | None = None,
 ) -> FastAPI:
     """Build the Governed Contractor STRICT host from an activated process composition."""
     manifest = build_governed_contractor_manifest()
-    resolved_settings = wire_governed_contractor_production_external_work_settings(
-        settings or GovernedContractorBackendSettings.from_env(),
+    resolved_settings = settings or GovernedContractorBackendSettings.from_env()
+    resolved_host_runtime = host_runtime or compose_governed_contractor_host_runtime(
+        resolved_settings,
     )
     env = manifest.environment or build_governed_contractor_environment_profile(
         resolved_settings,
@@ -53,6 +56,7 @@ def create_governed_contractor_process_app(
         ),
         process_composition=process_composition,
         settings=resolved_settings,
+        host_runtime=resolved_host_runtime,
     )
 
 

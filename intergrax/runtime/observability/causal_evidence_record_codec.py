@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any
+from collections.abc import Mapping
 
 from intergrax.contracts.npsc5f_compatibility import (
     ForbiddenPlatformCausalEvidenceV1WriteError,
@@ -22,7 +22,7 @@ _PERSISTENCE_SCHEMA = "intergrax.causal_evidence.persistence.v1"
 _PAYLOAD_FIELD = "payload"
 
 
-def encode_causal_evidence_record(evidence: PlatformCausalEvidence) -> dict[str, Any]:
+def encode_causal_evidence_record(evidence: PlatformCausalEvidence) -> dict[str, object]:
     """Serialize v2 evidence for document/KV storage (v1 platform write forbidden)."""
     payload = evidence.model_dump(mode="json")
     return {
@@ -69,7 +69,9 @@ def decode_causal_evidence_record_bytes_v2(raw: bytes) -> PlatformCausalEvidence
     return require_complete_v2(decode_causal_evidence_record_bytes(raw))
 
 
-def forbid_platform_causal_evidence_v1_write(evidence_payload: dict[str, Any]) -> None:
+def forbid_platform_causal_evidence_v1_write(
+    evidence_payload: Mapping[str, object],
+) -> None:
     """Guard for alternate persistence encodings that embed platform payloads directly."""
     schema_version = evidence_payload.get("schema_version")
     if schema_version == "platform_causal_evidence.v1":

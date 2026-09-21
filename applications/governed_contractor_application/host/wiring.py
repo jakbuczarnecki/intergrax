@@ -7,8 +7,11 @@ from intergrax.applications._shared.wiring import build_manifest_development_reg
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
-from governed_contractor_application.host.agent_builders import GOVERNED_CONTRACTOR_AGENT_BUILDERS
+from governed_contractor_application.host.agent_builders import build_governed_contractor_agent_builders
 from governed_contractor_application.host.environment_profile import build_governed_contractor_environment_profile
+from governed_contractor_application.host.governed_contractor_host_runtime_composition import (
+    GovernedContractorHostRuntimeComposition,
+)
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.manifest import APPLICATION_MANIFEST
 
@@ -23,8 +26,11 @@ def build_governed_contractor_manifest(settings: GovernedContractorBackendSettin
 
 def build_governed_contractor_registry(
     settings: GovernedContractorBackendSettings | None = None,
+    *,
+    host_runtime: GovernedContractorHostRuntimeComposition | None = None,
 ) -> AgentRegistry:
     settings = settings or GovernedContractorBackendSettings.from_env()
+    resolved_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
     manifest = build_governed_contractor_manifest(settings)
     env = manifest.environment or build_governed_contractor_environment_profile(settings)
     if manifest.environment is None:
@@ -33,5 +39,5 @@ def build_governed_contractor_registry(
     return build_manifest_development_registry(
         manifest,
         env_wiring.build_context,
-        builders=GOVERNED_CONTRACTOR_AGENT_BUILDERS,
+        builders=build_governed_contractor_agent_builders(resolved_runtime),
     )

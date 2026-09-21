@@ -2,7 +2,6 @@
 
 import pytest
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.runtime.nexus.uaep import UAEPExecutor
@@ -16,12 +15,16 @@ from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode
+from intergrax.runtime.nexus.execution.execution_graph import (
+    ExecutionGraph,
+    ExecutionNode,
+)
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.graph_execution_context import bound_graph_execution_context
 
 
 class _HandoffSourceAgent(HarnessReferenceAgent):
@@ -47,10 +50,11 @@ class _HandoffSourceAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="delegate", step_name="delegate", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _ = step, ctx
         return StepOutput(step_id=step.step_id, summary="source complete")
 
@@ -96,10 +100,11 @@ class _HandoffTargetAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="accept", step_name="accept", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _ = step
         shared = ctx.metadata.get("shared_task_context") or {}
         handoffs = {
@@ -137,7 +142,11 @@ async def test_graph_executor_runs_handoff_target_agent():
     graph = ExecutionGraph(
         graph_id="graph_handoff_1",
         task_id=task.task_id,
-        nodes=[ExecutionNode(node_id="n1", agent_id="handoff_source", capability="cap.source")],
+        nodes=[
+            ExecutionNode(
+                node_id="n1", agent_id="handoff_source", capability="cap.source"
+            )
+        ],
     )
 
     engine = AgentEngine(registry, uaep_executor=UAEPExecutor(event_bus=bus))
@@ -148,7 +157,8 @@ async def test_graph_executor_runs_handoff_target_agent():
         event_bus=bus,
     )
 
-    executions, retries, graph, failed = await executor.execute(graph, task)
+    with bound_graph_execution_context():
+        executions, retries, graph, failed = await executor.execute(graph, task)
 
     assert failed is False
     assert retries == []

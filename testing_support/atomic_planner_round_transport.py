@@ -17,7 +17,6 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.native_tool_choice import (
     NativeForcedFunctionChoice,
-    project_native_tool_choice_for_provider,
 )
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     PLANNER_ROUND_TOOL_ID,
@@ -282,10 +281,7 @@ def run_one_atomic_transport_attempt(
     )
     business_schemas = poc_business_tool_schemas()
     round_schema = build_atomic_planner_round_schema(business_schemas)
-    tool_choice = project_native_tool_choice_for_provider(
-        NativeForcedFunctionChoice(function_name=PLANNER_ROUND_TOOL_ID),
-        provider=provider,
-    )
+    tool_choice = NativeForcedFunctionChoice(function_name=PLANNER_ROUND_TOOL_ID)
     try:
         response = adapter.generate_with_tools(
             messages,

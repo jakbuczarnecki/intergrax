@@ -5,7 +5,11 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.events.payload_registry import assert_runtime_event_payload
+from intergrax.runtime.events.payload_registry import (
+    RuntimeEventPayloadError,
+    assert_canonical_production_runtime_event_payload,
+    assert_runtime_event_payload,
+)
 from intergrax.runtime.events.phase_coverage import phase_for_event
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.schema.registry import validate_schema_version
@@ -27,6 +31,7 @@ def assert_runtime_event_schema(event: RuntimeEvent) -> None:
             f"expected {expected_phase.value}, got {event.phase.value}"
         )
     try:
+        assert_canonical_production_runtime_event_payload(event)
         assert_runtime_event_payload(event)
-    except ValueError as exc:
+    except (RuntimeEventPayloadError, ValueError) as exc:
         raise RuntimeEventSchemaError(str(exc)) from exc

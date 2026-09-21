@@ -33,6 +33,7 @@ from intergrax.llm_adapters._shared.resilience import (
 from intergrax.llm_adapters._shared.retry import is_retriable_provider_error
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
 from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
     DependencyAttemptExecutionBoundary,
@@ -80,7 +81,7 @@ def admission_boundary() -> Iterator[DependencyAttemptExecutionBoundary]:
     boundary.close()
 
 
-class _SdkCountingAdapter(LLMAdapter):
+class _SdkCountingAdapter(BaseLLMAdapter):
     def __init__(self, slug: str) -> None:
         super().__init__()
         self.provider = slug

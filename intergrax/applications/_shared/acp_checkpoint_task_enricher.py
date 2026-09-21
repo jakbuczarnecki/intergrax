@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Task enricher — inject ACP agent checkpoint store for Tier-3 hosts."""
+"""Task enricher — wire ``AgentCheckpointStore`` only for explicit ``acp.session.v1`` tasks."""
 
 from __future__ import annotations
 
@@ -15,16 +15,23 @@ from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.runtime.task.task import Task
 
 
+def _acp_session_enabled_in_metadata(metadata: dict[str, object]) -> bool:
+    flag = metadata.get(AcpMetadataKey.SESSION_ENABLED)
+    return flag is True or flag == "true" or flag == "1"
+
+
 def make_acp_checkpoint_task_enricher(
     store: AgentCheckpointStore | None,
 ) -> Callable[[Task], Task] | None:
-    """Build a task enricher that wires ``AgentCheckpointStore`` into task metadata."""
+    """Build enricher that attaches ``AgentCheckpointStore`` when ``acp.session.v1`` is enabled."""
     if store is None:
         return None
 
     def enricher(task: Task) -> Task:
-        run_id = task.task_id
         metadata = dict(task.metadata)
+        if not _acp_session_enabled_in_metadata(metadata):
+            return task
+        run_id = task.task_id
         metadata.setdefault("user_id", task.user_id)
         metadata.setdefault("run_id", run_id)
         metadata.setdefault("task_id", run_id)
@@ -35,7 +42,6 @@ def make_acp_checkpoint_task_enricher(
             tenant_id=task.tenant_id,
         )
         wired = attach_checkpoint_wiring(metadata, store, resume=resume)
-        wired[AcpMetadataKey.SESSION_ENABLED] = True
         return task.model_copy(update={"metadata": wired})
 
     return enricher

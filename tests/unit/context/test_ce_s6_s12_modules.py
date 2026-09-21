@@ -26,6 +26,7 @@ from intergrax.context.providers.workspace_index import build_workspace_index
 from intergrax.context.tracking.context_spans import CE_OTEL_SPAN_NAMES, context_span
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.runtime.nexus.context.codebase_engine import CodebaseContextEngine
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -71,7 +72,7 @@ async def test_one_k_workspace_assemble_stays_under_budget() -> None:
     from intergrax.context.bootstrap import materialize_context_plugin_registry
     from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 
-    class _WindowAdapter(LLMAdapter):
+    class _WindowAdapter(BaseLLMAdapter):
         provider = "fake"
         model = "fake-1k"
 
@@ -189,7 +190,7 @@ async def test_orchestrator_bounded_hops() -> None:
     from intergrax.runtime.nexus.config import RuntimeConfig
     from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 
-    class _Adapter(LLMAdapter):
+    class _Adapter(BaseLLMAdapter):
         provider = "fake"
         model = "fake"
 

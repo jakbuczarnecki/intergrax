@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-from intergrax.contracts.agent_decision import HumanRequest
+from intergrax.contracts.agent_decision import HumanRequest, HumanRequestUrgency
 from intergrax.contracts.canonical_payload_hash import stable_payload_hash
 from intergrax.contracts.execution_continuation import (
     ExecutionContinuationLifecycleState,
@@ -18,10 +18,10 @@ from intergrax.contracts.execution_continuation import (
 from intergrax.contracts.execution_continuation_projection import (
     ExecutionContinuationProjectionError,
     ExecutionContinuationProjectionResult,
-    ExecutionContinuationProjectionSink,
     ExecutionContinuationProjectionStatus,
 )
 from intergrax.runtime.human.models import HumanResponseVerdict
+from intergrax.runtime.human.request_contract import HumanTimeoutCoordinator
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import (
     HumanApprovalResolution,
@@ -31,13 +31,15 @@ from intergrax.runtime.task.task_contract import (
     VERDICT_REJECT,
 )
 
-_PROJECTION_REPLACEMENT_ELIGIBLE: frozenset[ExecutionContinuationLifecycleState] = frozenset(
-    {
-        ExecutionContinuationLifecycleState.RESUMED,
-        ExecutionContinuationLifecycleState.REJECTED,
-        ExecutionContinuationLifecycleState.ESCALATED,
-        ExecutionContinuationLifecycleState.CANCELLED,
-    }
+_PROJECTION_REPLACEMENT_ELIGIBLE: frozenset[ExecutionContinuationLifecycleState] = (
+    frozenset(
+        {
+            ExecutionContinuationLifecycleState.RESUMED,
+            ExecutionContinuationLifecycleState.REJECTED,
+            ExecutionContinuationLifecycleState.ESCALATED,
+            ExecutionContinuationLifecycleState.CANCELLED,
+        }
+    )
 )
 
 
@@ -213,7 +215,9 @@ def prepare_task_continuation_projection(
 ) -> _PreparedTaskContinuationProjection:
     """Validate and derive a complete Task projection — does not mutate ``task``."""
     if str(pending.identity.task_id) != task.task_id:
-        raise ExecutionContinuationProjectionError("task identity mismatch for projection")
+        raise ExecutionContinuationProjectionError(
+            "task identity mismatch for projection"
+        )
 
     incoming_digest = execution_continuation_projection_payload_digest(pending)
     gov = task.runtime.governance
@@ -287,7 +291,11 @@ def prepare_task_continuation_projection(
             created_at=pending.requested_at or datetime.now(timezone.utc).isoformat(),
         )
         existing = gov.human_request
-        if existing is None or existing.request_id != human_request_id:
+        if existing is not None and existing.request_id == human_request_id:
+            human_request = existing.model_copy(
+                update={"governed_continuation": pending.governed_correlation},
+            )
+        else:
             human_request = HumanRequest(
                 request_id=human_request_id,
                 prompt=existing.prompt if existing else "",
@@ -300,11 +308,15 @@ def prepare_task_continuation_projection(
                         HumanResponseVerdict.ESCALATE.value,
                     ]
                 ),
+                urgency=existing.urgency if existing else HumanRequestUrgency.NORMAL,
+                timeout_seconds=existing.timeout_seconds if existing else None,
+                default_on_timeout=existing.default_on_timeout if existing else None,
+                context_artifacts=list(existing.context_artifacts) if existing else [],
                 governed_continuation=pending.governed_correlation,
             )
     elif state is ExecutionContinuationLifecycleState.RESUMED:
         clear_pause_on_resume = True
-        clear_declarative_hitl_on_resume = True
+        clear_declarative_hitl_on_resume = gov.declarative_hitl_pending is None
     elif state is ExecutionContinuationLifecycleState.CANCELLED:
         clear_pause_on_cancel = True
     elif state in {
@@ -398,6 +410,8 @@ def commit_task_continuation_projection(
 
     if prepared.human_request is not None:
         gov.human_request = prepared.human_request
+        if prepared.human_request.timeout_seconds is not None:
+            HumanTimeoutCoordinator.attach_to_task(task, prepared.human_request)
 
     if prepared.clear_hitl_and_grants:
         gov.hitl_resolution = None

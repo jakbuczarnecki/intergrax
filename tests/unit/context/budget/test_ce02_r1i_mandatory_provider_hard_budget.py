@@ -23,6 +23,7 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler, classify_candidates
 from intergrax.runtime.nexus.context.context_compiler_models import ContextCandidateSource
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -99,7 +100,7 @@ def _assert_message_preserved(before: ChatMessage, after: ChatMessage) -> None:
     assert after.metadata == before.metadata
 
 
-class _SmallWindowAdapter(LLMAdapter):
+class _SmallWindowAdapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-r1i"
 

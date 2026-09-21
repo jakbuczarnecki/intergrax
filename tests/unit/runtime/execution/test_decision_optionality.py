@@ -35,6 +35,7 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
 )
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.runtime.execution import (
@@ -102,7 +103,7 @@ class RiskAssessment:
     risk: str
 
 
-class StructuredOptionalityAdapter(LLMAdapter):
+class StructuredOptionalityAdapter(BaseLLMAdapter):
     provider = LLMProvider.OLLAMA
     model = "optionality-probe"
 

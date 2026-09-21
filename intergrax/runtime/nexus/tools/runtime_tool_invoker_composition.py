@@ -103,7 +103,21 @@ def build_production_runtime_tool_invoker(
     )
 
 
+def recompose_runtime_tool_invoker_with_idempotency_store(
+    invoker: RuntimeToolInvoker,
+    *,
+    idempotency_store: IdempotencyStore,
+    production_mode: bool,
+) -> RuntimeToolInvoker:
+    """Delegate idempotency overlay to RuntimeToolInvoker owner-controlled reconfiguration."""
+    return invoker.with_idempotency_store(
+        idempotency_store,
+        production_mode=production_mode,
+    )
+
+
 __all__ = [
     "ProductionRuntimeToolInvokerCompositionError",
     "build_production_runtime_tool_invoker",
+    "recompose_runtime_tool_invoker_with_idempotency_store",
 ]

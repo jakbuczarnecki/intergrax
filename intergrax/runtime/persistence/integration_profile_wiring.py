@@ -11,7 +11,7 @@ Prefer ``resolve_from_profile(profile, IntegrationCategory.RELATIONAL_STORE)`` o
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Optional
+from typing import Optional
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.relational_store.sqlite.bundle import (
@@ -20,9 +20,11 @@ from intergrax.integrations.providers.relational_store.sqlite.bundle import (
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.integrations.registry.factory import resolve_from_profile
+from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.stores.validating_runtime_event_store import (
     ValidatingRuntimeEventPersistence,
 )
+from intergrax.runtime.nexus.tracing.persistence_models import RunTraceStore
 
 
 def sqlite_bundle_for_profile(
@@ -43,11 +45,11 @@ def open_trace_store_from_profile(
     profile: IntegrationProfile,
     *,
     db_path: Path | None = None,
-) -> Any:
+) -> RunTraceStore:
     if db_path is not None:
-        from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_trace_store
+        from intergrax.integrations.providers.relational_store.sqlite.opens import open_trace_store_at
 
-        return create_sqlite_trace_store(db_path=db_path)
+        return open_trace_store_at(db_path)
     bundle = sqlite_bundle_for_profile(profile)
     if bundle is not None:
         return bundle.trace_store
@@ -57,7 +59,7 @@ def open_trace_store_from_profile(
     return open_run_trace_store(path)
 
 
-def _validating(store: Any) -> ValidatingRuntimeEventPersistence:
+def _validating(store: RuntimeEventPersistence) -> ValidatingRuntimeEventPersistence:
     if isinstance(store, ValidatingRuntimeEventPersistence):
         return store
     return ValidatingRuntimeEventPersistence(store)
@@ -67,11 +69,13 @@ def open_runtime_event_store_from_profile(
     profile: IntegrationProfile,
     *,
     db_path: Path | None = None,
-) -> Any:
+) -> RuntimeEventPersistence:
     if db_path is not None:
-        from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_runtime_event_store
+        from intergrax.integrations.providers.relational_store.sqlite.opens import (
+            open_runtime_event_store_at,
+        )
 
-        return _validating(create_sqlite_runtime_event_store(db_path=db_path))
+        return _validating(open_runtime_event_store_at(db_path))
 
     bundle = sqlite_bundle_for_profile(profile)
     if bundle is not None:
@@ -79,16 +83,23 @@ def open_runtime_event_store_from_profile(
 
     doc_slug = profile.slug_for_category(IntegrationCategory.DOCUMENT_STORE)
     if doc_slug == "cassandra":
-        from intergrax.integrations.providers.document_store.cassandra.adapter import (
-            CassandraDocumentStore,
+        from intergrax.integrations.providers.document_store.cassandra.integration import (
+            CassandraDocumentStoreIntegration,
         )
+        from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
         from intergrax.integrations.providers.document_store.cassandra.runtime_events import (
-            runtime_event_persistence_from_cassandra,
+            runtime_event_persistence_from_document_store,
         )
 
         resolved = resolve_from_profile(profile, IntegrationCategory.DOCUMENT_STORE)
-        if isinstance(resolved, CassandraDocumentStore):
-            return _validating(runtime_event_persistence_from_cassandra(resolved))
+        if isinstance(resolved, CassandraDocumentStoreIntegration):
+            store = resolved.as_document_store()
+            if not isinstance(store, ConditionalDocumentStore):
+                raise TypeError(
+                    "Cassandra document store must implement ConditionalDocumentStore "
+                    "for runtime event persistence wiring",
+                )
+            return _validating(runtime_event_persistence_from_document_store(store))
 
     obs_slug = profile.slug_for_category(IntegrationCategory.OBSERVABILITY_BACKEND)
     if obs_slug == "elasticsearch":
@@ -106,4 +117,9 @@ def open_runtime_event_store_from_profile(
     from intergrax.runtime.events.store import resolve_runtime_event_persistence, resolve_runtime_events_db_path
 
     path = resolve_runtime_events_db_path(None)
-    return resolve_runtime_event_persistence(db_path=path)
+    store = resolve_runtime_event_persistence(db_path=path)
+    if store is not None:
+        return store
+    from intergrax.runtime.events.store import open_runtime_event_store
+
+    return _validating(open_runtime_event_store(path))

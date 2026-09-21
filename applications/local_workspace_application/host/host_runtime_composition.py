@@ -20,6 +20,7 @@ from intergrax.applications._shared.harness_registry_authority import (
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
+from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
 from intergrax.integrations.contracts.document_store import DocumentStore
 from local_workspace_application.host.environment_profile import (
     build_local_workspace_environment_profile,
@@ -36,6 +37,13 @@ from local_workspace_application.workspaces.document_store_factory import (
 
 class LocalWorkspaceHostRuntimeAuthorityError(ValueError):
     """LKW host tenant/runtime authority violation."""
+
+
+@dataclass(frozen=True, slots=True)
+class LocalWorkspaceHostRuntimeComposition:
+    """Host-scoped runtime overrides for local_workspace_application (input to harness wiring)."""
+
+    orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,6 +117,7 @@ def build_local_workspace_harness_host_runtime(
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     idempotency_db_path: Path | None = None,
+    host_runtime: LocalWorkspaceHostRuntimeComposition | None = None,
 ) -> LocalWorkspaceHarnessHostRuntimeComposition:
     """Compose harness host runtime with one tenant authority and configured providers."""
     if registry_projection is None:
@@ -130,6 +139,7 @@ def build_local_workspace_harness_host_runtime(
         if idempotency_db_path is not None
         else Path(settings.idempotency_db_path)
     )
+    resolved_host_runtime = host_runtime or LocalWorkspaceHostRuntimeComposition()
     runtime = build_harness_host_runtime(
         resolved_manifest,
         resolved_environment,
@@ -141,7 +151,9 @@ def build_local_workspace_harness_host_runtime(
         document_store=resolved_document_store,
         registry_projection=registry_projection,
         orchestration_decision_requirement_policy=(
-            resolve_local_workspace_harness_orchestration_decision_requirement_policy(settings)
+            resolve_local_workspace_harness_orchestration_decision_requirement_policy(
+                resolved_host_runtime.orchestration_decision_requirement_policy,
+            )
         ),
     )
     return LocalWorkspaceHarnessHostRuntimeComposition(
@@ -153,6 +165,7 @@ def build_local_workspace_harness_host_runtime(
 
 
 __all__ = [
+    "LocalWorkspaceHostRuntimeComposition",
     "LocalWorkspaceHarnessHostRuntimeComposition",
     "LocalWorkspaceHostRuntimeAuthorityError",
     "LocalWorkspaceHostTenantBinding",

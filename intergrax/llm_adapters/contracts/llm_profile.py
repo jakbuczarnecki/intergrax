@@ -6,11 +6,14 @@
 from __future__ import annotations
 
 import os
-from typing import Any, Mapping, Optional, Union
+from collections.abc import Mapping
+from typing import Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from intergrax.contracts.structured_json_value import validate_json_value_structure
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.serialized_value import JsonValue
 
 _RAW_CREDENTIAL_OPTIONS_ERROR = (
     "raw credentials are not allowed in LLMProfile.options; "
@@ -18,6 +21,18 @@ _RAW_CREDENTIAL_OPTIONS_ERROR = (
 )
 
 _FORBIDDEN_CREDENTIAL_OPTION_KEYS = frozenset({"api_key"})
+
+
+def _validate_options_map(value: dict[str, object]) -> dict[str, JsonValue]:
+    validated: dict[str, JsonValue] = {}
+    for key, raw in value.items():
+        if not isinstance(key, str) or not key:
+            raise ValueError("LLMProfile.options keys must be non-empty strings")
+        validated[key] = validate_json_value_structure(
+            raw,
+            field_name="LLMProfile.options",
+        )
+    return validated
 
 
 class LLMProfile(BaseModel):
@@ -38,13 +53,22 @@ class LLMProfile(BaseModel):
 
     provider: Union[LLMProvider, str]
     model: Optional[str] = None
-    options: dict[str, Any] = Field(default_factory=dict)
+    options: dict[str, JsonValue] = Field(default_factory=dict)
     fallback_profiles: tuple[LLMProfile, ...] = Field(default_factory=tuple)
     routing_policy_hint: str | None = None
 
+    @field_validator("options", mode="before")
+    @classmethod
+    def _coerce_and_validate_options(cls, value: object) -> dict[str, JsonValue]:
+        if value is None:
+            return {}
+        if not isinstance(value, dict):
+            raise ValueError("LLMProfile.options must be a mapping")
+        return _validate_options_map(value)
+
     @field_validator("options")
     @classmethod
-    def _reject_raw_credentials_in_options(cls, value: dict[str, Any]) -> dict[str, Any]:
+    def _reject_raw_credentials_in_options(cls, value: dict[str, JsonValue]) -> dict[str, JsonValue]:
         forbidden = _FORBIDDEN_CREDENTIAL_OPTION_KEYS.intersection(value)
         if forbidden:
             raise ValueError(_RAW_CREDENTIAL_OPTIONS_ERROR)
@@ -88,6 +112,5 @@ class LLMProfile(BaseModel):
         return cls(provider=LLMProvider.OLLAMA, model="llama3.1:latest")
 
     @classmethod
-    def from_mapping(cls, data: Mapping[str, Any]) -> LLMProfile:
+    def from_mapping(cls, data: Mapping[str, JsonValue]) -> LLMProfile:
         return cls.model_validate(dict(data))
-

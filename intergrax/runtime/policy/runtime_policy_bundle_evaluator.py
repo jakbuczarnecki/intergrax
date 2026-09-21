@@ -12,8 +12,10 @@ evaluation.
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Callable
+from typing import Any, Callable
 from uuid import uuid4
 
 from intergrax.contracts.evaluated_policy_decision import (
@@ -26,6 +28,18 @@ from intergrax.contracts.runtime_policy_bundle import (
     ImmutableRuntimePolicyBundle,
     PolicyBundleRule,
 )
+
+
+@dataclass(frozen=True, slots=True)
+class RuntimePolicyBundleMatchInput:
+    """Neutral bundle evaluation input (control-plane and other non-MSE surfaces)."""
+
+    action: str
+    request_digest: str
+    principal_id: str | None = None
+    tenant_id: str | None = None
+    resource: str | None = None
+    context: Mapping[str, Any] = field(default_factory=dict)
 
 
 class RuntimePolicyBundleEvaluator:
@@ -49,6 +63,7 @@ class RuntimePolicyBundleEvaluator:
         self._decision_id_prefix = decision_id_prefix
         self.last_evaluation: EvaluatedPolicyDecision | None = None
         self.calls: list[MeaningfulSideEffectRequest] = []
+        self.match_calls: list[RuntimePolicyBundleMatchInput] = []
 
     @property
     def bundle(self) -> ImmutableRuntimePolicyBundle:
@@ -60,9 +75,35 @@ class RuntimePolicyBundleEvaluator:
     ) -> EvaluatedPolicyDecision:
         """Evaluate ``request`` against the bound immutable pack."""
         self.calls.append(request)
-        evaluated_at = self._clock()
         req_digest = request_digest_for_payload(request.model_dump(mode="json"))
-        rule = self._match_rule(request.action)
+        return self._evaluate_matched_action(request.action, req_digest)
+
+    def evaluate_match(
+        self,
+        match_input: RuntimePolicyBundleMatchInput,
+    ) -> EvaluatedPolicyDecision:
+        """Evaluate a neutral match input without execution-plane identity."""
+        self.match_calls.append(match_input)
+        normalized_action = match_input.action.strip()
+        if not normalized_action:
+            raise ValueError("bundle_match_action_required")
+        if not match_input.request_digest.strip():
+            raise ValueError("bundle_match_request_digest_required")
+        return self._evaluate_matched_action(
+            normalized_action,
+            match_input.request_digest.strip(),
+            matched_rule_audit_action=normalized_action,
+        )
+
+    def _evaluate_matched_action(
+        self,
+        action: str,
+        req_digest: str,
+        *,
+        matched_rule_audit_action: str | None = None,
+    ) -> EvaluatedPolicyDecision:
+        evaluated_at = self._clock()
+        rule = self._match_rule(action)
         if rule is None:
             decision = PolicyDecision(
                 action=PolicyAction.DENY,
@@ -78,10 +119,6 @@ class RuntimePolicyBundleEvaluator:
                     "evaluated_at": evaluated_at.isoformat(),
                 },
             )
-            # Fail closed with an explicit deny rule id that is not in the pack
-            # — callers must not treat this as an attested allow path.
-            # For EvaluatedPolicyDecision construction we use a synthetic deny
-            # that still binds pack identity (matched_rule_id = bundle.no_match).
             evaluated = EvaluatedPolicyDecision(
                 decision=decision,
                 bundle_id=self._bundle.bundle_id,
@@ -94,9 +131,10 @@ class RuntimePolicyBundleEvaluator:
             self.last_evaluation = evaluated
             return evaluated
 
-        action = self._effect_to_action(rule.effect)
+        policy_action = self._effect_to_action(rule.effect)
+        audit_match = matched_rule_audit_action or rule.match_action
         decision = PolicyDecision(
-            action=action,
+            action=policy_action,
             reason=f"bundle_rule:{rule.rule_id}",
             enforcement_level=EnforcementLevel.MANDATORY,
             policy_rule_id=rule.rule_id,
@@ -107,7 +145,7 @@ class RuntimePolicyBundleEvaluator:
             audit_payload={
                 "request_digest": req_digest,
                 "evaluated_at": evaluated_at.isoformat(),
-                "match_action": rule.match_action,
+                "match_action": audit_match,
             },
         )
         evaluated = EvaluatedPolicyDecision(

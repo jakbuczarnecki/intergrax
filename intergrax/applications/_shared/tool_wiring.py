@@ -14,6 +14,7 @@ from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.core.catalog_bootstrap import CatalogBootstrapResult, bootstrap_catalogs
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.tools.providers.websearch.executor_contract import WebSearchQueryExecutor
 from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
 
 
@@ -64,7 +65,7 @@ def build_application_tool_wiring(
     wiring_context: ToolWiringContext | None = None,
     vectorstore_manager: Any | None = None,
     embedding_manager: Any | None = None,
-    websearch_executor: Any | None = None,
+    websearch_executor: WebSearchQueryExecutor | None = None,
     rag_manager: Any | None = None,
     retriever_manager: Any | None = None,
     reranker_manager: Any | None = None,

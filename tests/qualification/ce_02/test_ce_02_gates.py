@@ -29,6 +29,7 @@ from intergrax.runtime.nexus.context.assembly_runtime_deps import (
 )
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.context.budget.degradation import DefaultContextDegradationPolicy
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.context.contracts import (
@@ -65,7 +66,7 @@ _FORBIDDEN_VENDOR_PREFIXES = (
 )
 
 
-class _FakeAdapter(LLMAdapter):
+class _FakeAdapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-budget"
 

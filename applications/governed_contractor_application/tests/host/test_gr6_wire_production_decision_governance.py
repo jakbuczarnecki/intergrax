@@ -14,7 +14,9 @@ import pytest
 
 from applications.governed_contractor_application.host.production_external_work_composition import (
     build_governed_external_work_production_runtime,
-    wire_governed_contractor_production_external_work_settings,
+)
+from governed_contractor_application.host.governed_contractor_host_runtime_composition import (
+    compose_governed_contractor_host_runtime,
 )
 from applications.governed_contractor_application.tests.host.gr6_collaborative_work_test_support import (
     gr6_fixture_authority_clock,
@@ -38,15 +40,14 @@ from external_contractor_adapter.side_effect_actions import (
 from external_contractor_adapter.tests.fakes.deterministic_external_work import (
     DeterministicExternalWorkFake,
 )
-from governed_contractor_application.host.agent_builders import GOVERNED_CONTRACTOR_AGENT_BUILDERS
-from governed_contractor_application.host.agent_factories import (
-    build_governed_contractor_external_contractor_adapter_from_context,
+from governed_contractor_application.host.agent_builders import (
+    build_governed_contractor_agent_builders,
 )
 from governed_contractor_application.host.environment_profile import (
     build_governed_contractor_environment_profile,
 )
 from governed_contractor_application.host.lifecycle_states import GovernedExternalWorkHostState
-from governed_contractor_application.host.main import create_governed_contractor_process_app
+from governed_contractor_application.host.factory import create_governed_contractor_backend_app
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from applications.governed_contractor_application.tests.host.durable_provider_invocation_test_store import (
     DurableTestProviderInvocationStore,
@@ -525,10 +526,15 @@ def test_production_wire_fails_closed_when_policy_bundle_missing() -> None:
     fake = DeterministicExternalWorkFake()
     base = GovernedContractorBackendSettings.from_env()
     with pytest.raises(ValueError, match="runtime_policy_bundle"):
-        wire_governed_contractor_production_external_work_settings(
+        compose_governed_contractor_host_runtime(
             base,
             integration=fake,
             task_scope=StaticActiveTaskScope(mint_task_id()),
+            collaborative_work_repositories=gr6_seeded_collaborative_work_repositories(
+                tenant_id=_TENANT,
+                workspace_id=_WORKSPACE,
+                principal_id=_PRINCIPAL,
+            ),
         )
 
 
@@ -565,6 +571,7 @@ def test_production_runtime_uses_injected_execution_store() -> None:
 
 def test_strict_host_composition_wires_agent_boundary_and_integration(
     monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
 ) -> None:
     from testing_support.host_fixture_wiring import (
         install_diagnostic_cursor_secret,
@@ -582,15 +589,17 @@ def test_strict_host_composition_wires_agent_boundary_and_integration(
         workspace_id=_WORKSPACE,
         principal_id=_PRINCIPAL,
     )
-    settings = wire_governed_contractor_production_external_work_settings(
-        replace(
-            GovernedContractorBackendSettings.from_env(),
-            external_work_integration=fake,
-            runtime_policy_bundle=bundle,  # type: ignore[arg-type]
-            collaborative_work_repositories=cw_repositories,
-        ),
-        task_scope=task_scope,
+    declarative_settings = replace(
+        GovernedContractorBackendSettings.from_env(),
+        runtime_policy_bundle=bundle,  # type: ignore[arg-type]
     )
+    host_runtime = compose_governed_contractor_host_runtime(
+        declarative_settings,
+        integration=fake,
+        task_scope=task_scope,
+        collaborative_work_repositories=cw_repositories,
+    )
+    settings = declarative_settings
     composition = create_reference_production_process_composition(
         provider_invocation_store=DurableTestProviderInvocationStore(),
     )
@@ -599,7 +608,7 @@ def test_strict_host_composition_wires_agent_boundary_and_integration(
     projection = build_test_registry_projection(
         manifest,
         env,
-        builders=GOVERNED_CONTRACTOR_AGENT_BUILDERS,
+        builders=build_governed_contractor_agent_builders(host_runtime),
         revision_id="rev-gr6wire-strict-host",
         settings=settings,
     )
@@ -609,23 +618,41 @@ def test_strict_host_composition_wires_agent_boundary_and_integration(
         application_environment_id=env.profile_id,
         projection=projection,
     )
-    app = create_governed_contractor_process_app(
+    from intergrax.runtime.execution.continuation.persistence import (
+        ExecutionContinuationDurableBacking,
+        export_durable_continuation_state,
+        execution_continuation_state_store_from_durable_export,
+    )
+
+    platform = composition.agent_platform_runtime.platform_persistence
+    continuation_store = execution_continuation_state_store_from_durable_export(
+        export_durable_continuation_state(ExecutionContinuationDurableBacking()),
+    )
+    app = create_governed_contractor_backend_app(
+        registry_projection=projection,
         process_composition=composition,
         settings=settings,
+        host_runtime=host_runtime,
+        document_store=platform.document_store,
+        key_value_cache=platform.kv_store,
+        trace_db_path=tmp_path / "trace.db",
+        runtime_events_db_path=tmp_path / "runtime_events.db",
+        checkpoints_db_path=tmp_path / "checkpoints.db",
+        execution_continuation_state_store=continuation_store,
     )
     harness = app.state.harness_runtime
     host_settings = harness.env_wiring.build_context.settings
     assert isinstance(host_settings, GovernedContractorBackendSettings)
-    assert host_settings.external_work_integration is fake
-    assert host_settings.meaningful_side_effect_authorization_boundary is not None
     assert host_settings.runtime_policy_bundle is bundle
-    assert host_settings.decision_requirement_policy is not None
+    app_runtime = app.state.governed_contractor_host_runtime
+    assert app_runtime.external_work_integration is fake
+    assert app_runtime.meaningful_side_effect_authorization_boundary is not None
+    assert app_runtime.decision_requirement_policy is not None
 
     binding = manifest.agents[0]
-    agent = build_governed_contractor_external_contractor_adapter_from_context(
-        harness.env_wiring.build_context,
-        binding,
-    )
+    agent = build_governed_contractor_agent_builders(host_runtime)[
+        ExternalContractorAdapterAgent
+    ](harness.env_wiring.build_context, binding)
     assert isinstance(agent, ExternalContractorAdapterAgent)
 
     import asyncio
@@ -642,7 +669,7 @@ def test_strict_host_composition_wires_agent_boundary_and_integration(
         ),
     )
     assert observation.data.get("has_external_work_integration") is True
-    assert host_settings.meaningful_side_effect_authorization_boundary is not None
+    assert app_runtime.meaningful_side_effect_authorization_boundary is not None
 
 
 def test_production_wire_fails_closed_when_collaborative_work_repositories_missing() -> None:
@@ -652,7 +679,7 @@ def test_production_wire_fails_closed_when_collaborative_work_repositories_missi
         runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
     )
     with pytest.raises(ValueError, match="collaborative_work_repositories"):
-        wire_governed_contractor_production_external_work_settings(
+        compose_governed_contractor_host_runtime(
             base,
             integration=fake,
             task_scope=StaticActiveTaskScope(mint_task_id()),
@@ -669,15 +696,16 @@ def test_production_settings_wire_authorization_boundary_idempotent() -> None:
     base = replace(
         GovernedContractorBackendSettings.from_env(),
         runtime_policy_bundle=_test_policy_bundle(),  # type: ignore[arg-type]
-        collaborative_work_repositories=cw_repositories,
     )
-    wired = wire_governed_contractor_production_external_work_settings(
+    task_scope = StaticActiveTaskScope(mint_task_id())
+    wired = compose_governed_contractor_host_runtime(
         base,
         integration=fake,
-        task_scope=StaticActiveTaskScope(mint_task_id()),
+        task_scope=task_scope,
+        collaborative_work_repositories=cw_repositories,
     )
     assert wired.meaningful_side_effect_authorization_boundary is not None
     assert wired.external_work_integration is fake
     assert wired.decision_requirement_policy is not None
-    rewired = wire_governed_contractor_production_external_work_settings(wired)
+    rewired = compose_governed_contractor_host_runtime(base, runtime=wired)
     assert rewired is wired

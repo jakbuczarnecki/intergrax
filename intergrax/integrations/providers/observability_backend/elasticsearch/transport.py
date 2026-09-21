@@ -9,7 +9,10 @@ import asyncio
 import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any, Mapping, Protocol, runtime_checkable
+from typing import Mapping, Protocol, runtime_checkable
+
+from intergrax.contracts.application_observability_attributes import ObservabilityAttributeValue
+from intergrax.integrations.providers.observability_backend._http_contract import ElasticsearchDocument
 
 from intergrax.integrations.providers.observability_backend.elasticsearch.client import (
     ElasticsearchDeliveryError,
@@ -22,7 +25,6 @@ from intergrax.integrations.providers.observability_backend.elasticsearch.config
     ElasticsearchRetryPolicy,
 )
 from intergrax.runtime.integrations.observability import ObservabilityVendorPayload
-from intergrax.runtime.observability.export_attributes import ObservabilityAttributeValue
 
 _INTERGRAX_DOC_PREFIX = "intergrax."
 _ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID = "elasticsearch"
@@ -107,12 +109,12 @@ def _transport_delivery_error(error: ElasticsearchDeliveryError) -> Elasticsearc
     )
 
 
-def _set_optional_string(doc: dict[str, Any], key: str, value: str) -> None:
+def _set_optional_string(doc: ElasticsearchDocument, key: str, value: str) -> None:
     if value:
         doc[key] = value
 
 
-def _attribute_value_to_document(value: ObservabilityAttributeValue) -> Any:
+def _attribute_value_to_document(value: ObservabilityAttributeValue) -> ObservabilityAttributeValue:
     if isinstance(value, list):
         return list(value)
     return value
@@ -122,10 +124,10 @@ def map_vendor_payload_to_elasticsearch_document(
     payload: ObservabilityVendorPayload,
     *,
     timestamp_field: str = DEFAULT_TIMESTAMP_FIELD,
-) -> dict[str, Any]:
+) -> ElasticsearchDocument:
     """Map a policy-safe vendor payload to an Elasticsearch/OpenSearch index document."""
     prefix = _INTERGRAX_DOC_PREFIX
-    document: dict[str, Any] = {
+    document: ElasticsearchDocument = {
         timestamp_field: payload.recorded_at.isoformat(),
         f"{prefix}schema_id": payload.schema_id,
         f"{prefix}provider_id": payload.provider_id,
@@ -170,10 +172,11 @@ class ElasticsearchObservabilityIndexer(Protocol):
         self,
         *,
         index: str,
-        document: Mapping[str, Any],
+        document: Mapping[str, object],
         doc_id: str | None = None,
     ) -> str:
         """Index one observability document."""
+        ...
 
 
 class ElasticsearchHttpObservabilityTransport:

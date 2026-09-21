@@ -7,7 +7,9 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, NotRequired, TypedDict
+from typing import TYPE_CHECKING, NotRequired, TypedDict
+
+from intergrax.llm_adapters.contracts.serialized_value import JsonObject, JsonValue
 
 if TYPE_CHECKING:
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -18,7 +20,7 @@ class CanonicalFunctionToolFunctionSchema(TypedDict):
 
     name: str
     description: NotRequired[str]
-    parameters: NotRequired[dict[str, object]]
+    parameters: NotRequired[JsonObject]
 
 
 class CanonicalFunctionToolWireSchema(TypedDict):
@@ -76,7 +78,7 @@ _CANONICAL_BINDING_KEYS = frozenset(
 
 
 def _coerce_wire_schema(
-    tool: Mapping[str, Any],
+    tool: Mapping[str, JsonValue],
     index: int,
 ) -> CanonicalFunctionToolWireSchema:
     if tool.get("type") != "function":
@@ -104,7 +106,7 @@ def _coerce_wire_schema(
 
 
 def coerce_canonical_tool_definitions(
-    tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+    tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, JsonValue]],
 ) -> tuple[CanonicalFunctionToolDefinition, ...]:
     """Normalize request tools into immutable canonical bindings."""
     definitions: list[CanonicalFunctionToolDefinition] = []
@@ -143,10 +145,10 @@ def tool_definitions_require_strict_argument_conformance(
 
 def assert_strict_tool_argument_conformance_supported(
     adapter: "LLMAdapter",
-    tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+    tools: Sequence[CanonicalFunctionToolDefinition],
 ) -> None:
     """Fail closed when strict tools are dispatched to an adapter without capability."""
-    definitions = coerce_canonical_tool_definitions(tools)
+    definitions = tuple(tools)
     if not tool_definitions_require_strict_argument_conformance(definitions):
         return
     if adapter.supports_strict_tool_argument_conformance():

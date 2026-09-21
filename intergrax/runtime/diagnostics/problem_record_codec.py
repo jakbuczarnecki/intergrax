@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from datetime import datetime
-from typing import Any
 
 from intergrax.contracts.execution_failure_evidence import ExecutionFailureKind
 from intergrax.contracts.execution_identity import ExecutionId, RunId, TaskId
@@ -68,7 +67,7 @@ _PERSISTENCE_SCHEMA_V3 = "intergrax.diagnostic_problem.persistence.v3"
 _PAYLOAD_FIELD = "payload"
 
 
-def encode_problem_record(problem: Problem) -> dict[str, Any]:
+def encode_problem_record(problem: Problem) -> dict[str, object]:
     """Serialize a bounded Problem aggregate for document/KV storage."""
     return {
         "schema_version": _PERSISTENCE_SCHEMA_V3,
@@ -162,9 +161,12 @@ def _decode_problem_payload_v2(payload: Mapping[str, object]) -> Problem:
         status=ProblemStatus(str(payload["status"])),
         first_seen_at=_decode_datetime(payload["first_seen_at"]),
         last_seen_at=_decode_datetime(payload["last_seen_at"]),
-        occurrence_count=int(payload["occurrence_count"]),  # type: ignore[arg-type]
+        occurrence_count=_require_int(
+            payload["occurrence_count"],
+            "occurrence_count",
+        ),
         provenance=_decode_provenance(payload["provenance"]),
-        record_version=int(payload["record_version"]),  # type: ignore[arg-type]
+        record_version=_require_int(payload["record_version"], "record_version"),
         occurrence_aggregate_health=_decode_occurrence_aggregate_health(
             payload.get("occurrence_aggregate_health"),
         ),
@@ -199,9 +201,12 @@ def _decode_bounded_problem_fields(payload: Mapping[str, object]) -> Problem:
         status=ProblemStatus(str(payload["status"])),
         first_seen_at=_decode_datetime(payload["first_seen_at"]),
         last_seen_at=_decode_datetime(payload["last_seen_at"]),
-        occurrence_count=int(payload["occurrence_count"]),  # type: ignore[arg-type]
+        occurrence_count=_require_int(
+            payload["occurrence_count"],
+            "occurrence_count",
+        ),
         provenance=_decode_provenance(payload["provenance"]),
-        record_version=int(payload["record_version"]),  # type: ignore[arg-type]
+        record_version=_require_int(payload["record_version"], "record_version"),
         occurrence_aggregate_health=_decode_occurrence_aggregate_health(
             payload.get("occurrence_aggregate_health"),
         ),
@@ -213,7 +218,7 @@ def _encode_legacy_problem_payload_v1(
     problem: Problem,
     current_subject_refs: tuple[ProblemGroupingSubjectRef, ...],
     occurrences: tuple[ProblemOccurrence, ...],
-) -> dict[str, Any]:
+) -> dict[str, object]:
     return {
         "problem_id": str(problem.problem_id),
         "tenant_id": problem.tenant_id,
@@ -479,6 +484,8 @@ def _encode_finding(
             "execution_id": finding.execution_id,
             "execution_failure_kind": finding.execution_failure_kind.value,
         }
+    if type(finding) is not DeterministicFindingSignature:
+        raise TypeError(f"unsupported finding signature type: {type(finding).__name__}")
     encoded = {
         "source": "lifecycle",
         "kind": finding.kind.value,
@@ -600,3 +607,9 @@ def _require_sequence(value: object) -> tuple[object, ...]:
     if not isinstance(value, list):
         raise ValueError("expected JSON array")
     return tuple(value)
+
+
+def _require_int(value: object, label: str) -> int:
+    if type(value) is not int or isinstance(value, bool):
+        raise ValueError(f"{label} must be int")
+    return value

@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Protocol, runtime_checkable
+from typing import Mapping, Protocol, runtime_checkable
 
 from pydantic import PrivateAttr
 
@@ -14,14 +14,13 @@ from intergrax.integrations.providers.observability_backend._catalog_client impo
     ObservabilityCatalogClient,
     require_observability_catalog_client,
 )
-from intergrax.integrations.contracts.observability_backend import MetricQueryResult, ObservabilityBackend, TraceQueryResult
+from intergrax.integrations.contracts.observability_backend import MetricQueryResult, TraceQueryResult
 from intergrax.runtime.integrations.observability import (
     ObservabilityVendorIntegrationConfig,
     ObservabilityVendorIntegrationContract,
     ObservabilityVendorPayload,
     ObservabilityVendorSignal,
 )
-from intergrax.utils import attribute_access
 
 
 OPENSEARCH_OBSERVABILITY_PROVIDER_ID = "opensearch"
@@ -49,7 +48,26 @@ class OpensearchObservabilityTransport(Protocol):
         """Deliver a policy-sanitized vendor payload to Opensearch."""
 
 
-class OpensearchObservabilityIntegration(ObservabilityVendorIntegrationContract):
+@runtime_checkable
+class OpenSearchIndexCatalogClient(ObservabilityCatalogClient, Protocol):
+    """Catalog client with OpenSearch index management."""
+
+    def index_document(
+        self,
+        *,
+        index: str,
+        document: Mapping[str, object],
+        doc_id: str | None = None,
+    ) -> str:
+        """Index one document."""
+        ...
+
+    def ensure_index(self, index: str) -> bool:
+        """Ensure index exists; return True when created."""
+        ...
+
+
+class OpensearchObservabilityIntegration(ObservabilityVendorIntegrationContract[OpensearchObservabilityIntegrationConfig]):
     """
     Single public Opensearch observability entrypoint.
 
@@ -116,25 +134,23 @@ class OpensearchObservabilityIntegration(ObservabilityVendorIntegrationContract)
         self,
         *,
         index: str,
-        document: Mapping[str, Any],
+        document: Mapping[str, object],
         doc_id: str | None = None,
     ) -> str:
         client = self._require_client()
-        index_document = attribute_access.optional(client, "index_document", None)
-        if not callable(index_document):
+        if not isinstance(client, OpenSearchIndexCatalogClient):
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} catalog client does not support index_document",
             )
-        return str(index_document(index=index, document=document, doc_id=doc_id))
+        return client.index_document(index=index, document=document, doc_id=doc_id)
 
     def ensure_index(self, index: str) -> bool:
         client = self._require_client()
-        ensure_index = attribute_access.optional(client, "ensure_index", None)
-        if not callable(ensure_index):
+        if not isinstance(client, OpenSearchIndexCatalogClient):
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} catalog client does not support ensure_index",
             )
-        return bool(ensure_index(index))
+        return client.ensure_index(index)
 
     def _require_client(self) -> ObservabilityCatalogClient:
         return require_observability_catalog_client(self, self._client)
@@ -168,4 +184,3 @@ class OpensearchObservabilityIntegration(ObservabilityVendorIntegrationContract)
         await self._transport.send_observability_payload(payload)
 
 
-ObservabilityBackend.register(OpensearchObservabilityIntegration)

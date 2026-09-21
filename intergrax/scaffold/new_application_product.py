@@ -108,7 +108,6 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
             EnvReader,
         )
         from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
-        from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
         from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
         from intergrax.fastapi_core.config import ApiEnvironment
 
@@ -160,7 +159,6 @@ def settings_py(names: ScaffoldApplicationNames) -> str:
             openapi_enabled_override: Optional[bool] = None
             api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
             interaction_execute_default: bool = True
-            orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None
 
             # ------------------------------------------------------------------
             # Application-specific settings
@@ -433,6 +431,34 @@ def integration_wiring_py(names: ScaffoldApplicationNames) -> str:
     )
 
 
+def host_runtime_composition_py(names: ScaffoldApplicationNames) -> str:
+    pkg = names.pkg
+    pascal = names.pascal
+    return dedent(
+        f'''\
+        # © Artur Czarnecki. All rights reserved.
+
+        """EBH-2D-D-R3 — {pkg} host runtime composition (not declarative settings)."""
+
+        from __future__ import annotations
+
+        from dataclasses import dataclass
+
+        from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
+
+
+        @dataclass(frozen=True, slots=True)
+        class {pascal}HostRuntimeComposition:
+            """Host-scoped runtime overrides for {pkg}."""
+
+            orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None
+
+
+        __all__ = ["{pascal}HostRuntimeComposition"]
+        '''
+    )
+
+
 def orchestration_decision_requirement_policy_py(names: ScaffoldApplicationNames) -> str:
     pkg = names.pkg
     short = names.short
@@ -450,9 +476,6 @@ def orchestration_decision_requirement_policy_py(names: ScaffoldApplicationNames
             PermissiveDecisionRequirementPolicy,
         )
 
-        from {pkg}.host.settings import {pascal}BackendSettings
-
-
         def default_{short}_harness_orchestration_decision_requirement_policy() -> (
             DecisionRequirementPolicy
         ):
@@ -461,11 +484,10 @@ def orchestration_decision_requirement_policy_py(names: ScaffoldApplicationNames
 
 
         def resolve_{short}_harness_orchestration_decision_requirement_policy(
-            settings: {pascal}BackendSettings,
+            runtime_override: DecisionRequirementPolicy | None = None,
         ) -> DecisionRequirementPolicy:
-            override = settings.orchestration_decision_requirement_policy
-            if override is not None:
-                return override
+            if runtime_override is not None:
+                return runtime_override
             return default_{short}_harness_orchestration_decision_requirement_policy()
 
 
@@ -520,6 +542,7 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
             wire_harness_product_observability_dashboard,
         )
         from intergrax.debug.store import open_default_task_checkpoint_persistence
+        from {pkg}.host.host_runtime_composition import {pascal}HostRuntimeComposition
         from {pkg}.host.orchestration_decision_requirement_policy import (
             resolve_{short}_harness_orchestration_decision_requirement_policy,
         )
@@ -536,8 +559,10 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
             trace_db_path: Path | None = None,
             runtime_events_db_path: Path | None = None,
             checkpoints_db_path: Path | None = None,
+            host_runtime: {pascal}HostRuntimeComposition | None = None,
         ) -> FastAPI:
             settings = settings or {pascal}BackendSettings.from_env()
+            resolved_host_runtime = host_runtime or {pascal}HostRuntimeComposition()
             api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
 
             manifest = build_{short}_manifest()
@@ -552,7 +577,9 @@ def factory_py(names: ScaffoldApplicationNames) -> str:
                 use_in_memory_trace=trace_db_path is None,
                 registry_projection=registry_projection,
                 orchestration_decision_requirement_policy=(
-                    resolve_{short}_harness_orchestration_decision_requirement_policy(settings)
+                    resolve_{short}_harness_orchestration_decision_requirement_policy(
+                        resolved_host_runtime.orchestration_decision_requirement_policy,
+                    )
                 ),
             )
             host_execution = runtime.execution

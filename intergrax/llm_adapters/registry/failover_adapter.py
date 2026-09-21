@@ -13,6 +13,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.retry import is_retriable_provider_error
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
     StrictToolArgumentConformanceError,
@@ -21,6 +22,7 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
 )
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 
 T = TypeVar("T")
 
@@ -39,7 +41,7 @@ class LLMRoutingAttemptRecord:
     error: str
 
 
-class FailoverLLMAdapter(LLMAdapter):
+class FailoverLLMAdapter(BaseLLMAdapter):
     """
     Try adapters in order on retriable provider errors (429, 5xx, timeout).
 
@@ -83,7 +85,7 @@ class FailoverLLMAdapter(LLMAdapter):
 
     def _eligible_adapter_chain(
         self,
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]] | None = None,
+        tools: Sequence[CanonicalFunctionToolDefinition] | None = None,
     ) -> tuple[tuple[LLMAdapter, ...], tuple[str, ...]]:
         """Return adapters eligible for dispatch; filter strict-ineligible children."""
         if tools is None:
@@ -161,11 +163,11 @@ class FailoverLLMAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
-        tool_choice: str | dict[str, Any] | None = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: str | None = None,
     ) -> LLMAdapterResponse:
         adapters, profile_ids = self._eligible_adapter_chain(tools)
@@ -201,11 +203,11 @@ class FailoverLLMAdapter(LLMAdapter):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: float | None = None,
         max_tokens: int | None = None,
-        tool_choice: str | dict[str, Any] | None = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: str | None = None,
     ) -> Iterable[LLMStreamEvent]:
         adapters, _profile_ids = self._eligible_adapter_chain(tools)

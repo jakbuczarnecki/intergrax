@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Protocol, runtime_checkable
+from typing import Mapping, Protocol, runtime_checkable
 
 from pydantic import PrivateAttr
 
@@ -14,14 +14,13 @@ from intergrax.integrations.providers.observability_backend._catalog_client impo
     ObservabilityCatalogClient,
     require_observability_catalog_client,
 )
-from intergrax.integrations.contracts.observability_backend import MetricQueryResult, ObservabilityBackend, TraceQueryResult
+from intergrax.integrations.contracts.observability_backend import MetricQueryResult, TraceQueryResult
 from intergrax.runtime.integrations.observability import (
     ObservabilityVendorIntegrationConfig,
     ObservabilityVendorIntegrationContract,
     ObservabilityVendorPayload,
     ObservabilityVendorSignal,
 )
-from intergrax.utils import attribute_access
 
 
 BRAINTRUST_OBSERVABILITY_PROVIDER_ID = "braintrust"
@@ -48,7 +47,23 @@ class BraintrustObservabilityTransport(Protocol):
         """Deliver a policy-sanitized vendor payload to Braintrust."""
 
 
-class BraintrustObservabilityIntegration(ObservabilityVendorIntegrationContract):
+@runtime_checkable
+class BraintrustEvalCatalogClient(ObservabilityCatalogClient, Protocol):
+    """Catalog client with Braintrust eval logging."""
+
+    def log_eval(
+        self,
+        *,
+        name: str,
+        score: float,
+        metadata: Mapping[str, object] | None = None,
+        project: str | None = None,
+    ) -> str:
+        """Log one eval score to Braintrust."""
+        ...
+
+
+class BraintrustObservabilityIntegration(ObservabilityVendorIntegrationContract[BraintrustObservabilityIntegrationConfig]):
     """
     Single public Braintrust observability entrypoint.
 
@@ -116,16 +131,15 @@ class BraintrustObservabilityIntegration(ObservabilityVendorIntegrationContract)
         *,
         name: str,
         score: float,
-        metadata: Mapping[str, Any] | None = None,
+        metadata: Mapping[str, object] | None = None,
         project: str | None = None,
     ) -> str:
         client = self._require_client()
-        log_eval = attribute_access.optional(client, "log_eval", None)
-        if not callable(log_eval):
+        if not isinstance(client, BraintrustEvalCatalogClient):
             raise IntegrationConfigurationError(
                 f"{type(self).__name__} catalog client does not support log_eval",
             )
-        return str(log_eval(name=name, score=score, metadata=metadata, project=project))
+        return client.log_eval(name=name, score=score, metadata=metadata, project=project)
 
     def _require_client(self) -> ObservabilityCatalogClient:
         return require_observability_catalog_client(self, self._client)
@@ -159,4 +173,3 @@ class BraintrustObservabilityIntegration(ObservabilityVendorIntegrationContract)
         await self._transport.send_observability_payload(payload)
 
 
-ObservabilityBackend.register(BraintrustObservabilityIntegration)

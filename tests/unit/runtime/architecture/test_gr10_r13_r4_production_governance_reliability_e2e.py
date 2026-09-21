@@ -118,8 +118,14 @@ def test_canonical_production_mse_gate_allows_topology_slot(_identity_ctx) -> No
         _default_settings,
     )
 
+    from tests.unit.runtime.architecture.test_gr10_r13_r3_production_host_reliability_adoption import (
+        _default_host_runtime,
+    )
+
     settings = _default_settings()
-    core = collaborative_work_core_repositories(settings.collaborative_work_repositories)
+    core = collaborative_work_core_repositories(
+        _default_host_runtime().collaborative_work_repositories,
+    )
     evaluator = resolve_production_runtime_policy_bundle_evaluator(settings)
     assert evaluator is not None
     gate = CollaborativeWorkEnforcementGate(
@@ -265,11 +271,13 @@ async def test_resolved_production_port_mse_deny_blocks_reliability(
         _settings_topology_runtime_deny,
     )
 
+    deny_settings, deny_runtime = _settings_topology_runtime_deny()
     store = DurableTestProviderInvocationStore()
     runtime = _strict_host_app(
         store,
         tmp_path,
-        settings=_settings_topology_runtime_deny(),
+        settings=deny_settings,
+        host_runtime=deny_runtime,
     ).state.harness_runtime
     inner = _MutatingSlotExecutor()
     result = await _submit_via_resolved_port(runtime, inner=inner)

@@ -20,9 +20,6 @@ from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
-from governed_contractor_application.host.orchestration_decision_requirement_policy import (
-    default_governed_contractor_harness_orchestration_decision_requirement_policy,
-)
 from intergrax.applications._shared.production_platform_persistence import (
     resolve_harness_host_profile_persistence_kwargs_from_composition,
     resolve_reference_production_strict_host_environment,
@@ -64,6 +61,12 @@ from intergrax.applications._shared.harness_host_orchestration_topology_wiring i
 from governed_contractor_application.host.orchestration_topology_production_composition import (
     build_governed_contractor_production_orchestration_topology_submission_port,
 )
+from governed_contractor_application.host.governed_contractor_host_runtime_composition import (
+    GovernedContractorHostRuntimeComposition,
+)
+from governed_contractor_application.host.orchestration_decision_requirement_policy import (
+    default_governed_contractor_harness_orchestration_decision_requirement_policy,
+)
 from governed_contractor_application.host.production_external_work_composition import (
     resolve_production_runtime_policy_bundle_evaluator,
 )
@@ -81,6 +84,7 @@ def create_governed_contractor_backend_app(
     registry_projection: MaterializedRegistryProjection,
     process_composition: ProductionProcessComposition | None = None,
     settings: Optional[GovernedContractorBackendSettings] = None,
+    host_runtime: GovernedContractorHostRuntimeComposition | None = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
@@ -90,6 +94,7 @@ def create_governed_contractor_backend_app(
     observability_export: ObservabilityExportOperatorConfig | None = None,
 ) -> FastAPI:
     settings = settings or GovernedContractorBackendSettings.from_env()
+    resolved_host_runtime = host_runtime or GovernedContractorHostRuntimeComposition()
     api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
 
     manifest = build_governed_contractor_manifest()
@@ -141,16 +146,16 @@ def create_governed_contractor_backend_app(
         runtime_events_db_path=runtime_events_db_path,
         checkpoints_db_path=checkpoints_db_path,
         registry_projection=registry_projection,
-        collaborative_work_repositories=settings.collaborative_work_repositories,
+        collaborative_work_repositories=resolved_host_runtime.collaborative_work_repositories,
         collaborative_work_integration_profile=collaborative_work_integration_profile,
         orchestration_decision_requirement_policy=(
-            settings.decision_requirement_policy
+            resolved_host_runtime.decision_requirement_policy
             or default_governed_contractor_harness_orchestration_decision_requirement_policy()
         ),
         runtime_policy_evaluator=resolve_production_runtime_policy_bundle_evaluator(
             settings,
         ),
-        active_execution_task_scope=settings.active_execution_task_scope,
+        active_execution_task_scope=resolved_host_runtime.active_execution_task_scope,
         execution_continuation_state_store=execution_continuation_state_store,
         provider_invocation_store=provider_invocation_store,
         require_strict_orchestration_topology_reliability=strict_topology_reliability,
@@ -277,4 +282,5 @@ def create_governed_contractor_backend_app(
 
     attach_plugin_shutdown(app, platform.shutdown_callbacks)
     app.state.harness_runtime = runtime
+    app.state.governed_contractor_host_runtime = resolved_host_runtime
     return app

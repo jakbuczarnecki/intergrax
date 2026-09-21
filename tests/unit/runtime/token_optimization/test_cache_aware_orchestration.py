@@ -14,6 +14,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.token_optimization.cache_aware_orchestration import (
@@ -102,7 +103,7 @@ def _router_request(
     )
 
 
-class _NativeToolsAdapter(LLMAdapter):
+class _NativeToolsAdapter(BaseLLMAdapter):
     provider = "fake-native"
     model = "fake-native"
 

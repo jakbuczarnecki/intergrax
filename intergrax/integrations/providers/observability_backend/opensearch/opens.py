@@ -5,9 +5,14 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from typing import Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+from intergrax.integrations.providers.observability_backend._http_contract import (
+    ObservabilityHttpClient,
+    ObservabilityHttpClientFactory,
+    ObservabilityHttpxClientAdapter,
+)
 from intergrax.integrations.providers.observability_backend.opensearch.client import OpenSearchRestClient
 from intergrax.integrations.providers.observability_backend.opensearch.config import OpenSearchIntegrationConfig
 from intergrax.integrations.providers.observability_backend.opensearch.integration import (
@@ -15,7 +20,7 @@ from intergrax.integrations.providers.observability_backend.opensearch.integrati
 )
 
 
-def _create_http_client(config: OpenSearchIntegrationConfig) -> Any:
+def _create_http_client(config: OpenSearchIntegrationConfig) -> ObservabilityHttpClient:
     import httpx
 
     auth = None
@@ -25,19 +30,21 @@ def _create_http_client(config: OpenSearchIntegrationConfig) -> Any:
     elif config.user and config.password:
         auth = (config.user, config.password)
     timeout = float(config.timeout_seconds or 30.0)
-    return httpx.Client(
+    return ObservabilityHttpxClientAdapter(
+        httpx.Client(
         base_url=config.base_url.rstrip("/"),
         auth=auth,
         headers=headers,
         timeout=timeout,
+        )
     )
 
 
 def open_opensearch_rest_client(
     config: OpenSearchIntegrationConfig,
     *,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[OpenSearchIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[OpenSearchIntegrationConfig] | None = None,
 ) -> OpenSearchRestClient:
     if http_client is None:
         factory = http_client_factory or _create_http_client
@@ -50,8 +57,8 @@ def open_opensearch_observability_backend(
     *,
     implementation: Optional[ObservabilityBackend] = None,
     client: Optional[OpenSearchRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[OpenSearchIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[OpenSearchIntegrationConfig] | None = None,
 ) -> ObservabilityBackend:
     if implementation is not None:
         return implementation

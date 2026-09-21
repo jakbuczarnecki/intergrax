@@ -53,6 +53,7 @@ from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.llm.messages import ChatMessage, MODEL_INPUT_MESSAGES_METADATA_KEY
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
@@ -73,7 +74,7 @@ from intergrax.runtime.task.task import Task, TaskContext
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
-class _WindowAdapter(LLMAdapter):
+class _WindowAdapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake"
 

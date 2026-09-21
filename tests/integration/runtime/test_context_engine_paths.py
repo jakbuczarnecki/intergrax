@@ -13,6 +13,7 @@ from intergrax.context.bootstrap import reset_context_catalog_bootstrap_for_test
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode
@@ -49,7 +50,7 @@ from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 pytestmark = [pytest.mark.asyncio, pytest.mark.integration, pytest.mark.gate]
 
 
-class _GateWindowAdapter(LLMAdapter):
+class _GateWindowAdapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-gate"
 

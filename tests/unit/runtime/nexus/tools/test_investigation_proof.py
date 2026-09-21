@@ -287,7 +287,7 @@ def test_valid_semantic_basis_binds_canonical_tool_call_id() -> None:
             "PURPOSE: inspect equipment degradation"
         ),
         tool_calls=(
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id="call_def",
                 name="probe.b",
                 arguments={"confirm": True},
@@ -320,7 +320,7 @@ def test_multiple_basis_references_bind_in_declaration_order() -> None:
             "PURPOSE: compare workload and throughput"
         ),
         tool_calls=(
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id="call_c",
                 name="probe.c",
                 arguments={"confirm": True},
@@ -348,7 +348,7 @@ def test_available_but_not_declared_basis_is_not_auto_bound() -> None:
         round_index=2,
         assistant_content="EVIDENCE_BASIS: evidence.b\nPURPOSE: inspect subgroup",
         tool_calls=(
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id="call_d",
                 name="probe.d",
                 arguments={"confirm": True},
@@ -475,7 +475,7 @@ def test_first_native_round_with_baseline_inventory_requires_basis() -> None:
             round_index=1,
             assistant_content="EVIDENCE_BASIS:\nPURPOSE: inspect staffing",
             tool_calls=(
-                LLMToolCall.from_openai_shape(
+                LLMToolCall.from_native_parts(
                     call_id="call_staffing",
                     name="production.staffing.schedule.read",
                     arguments={"line_id": "line4"},
@@ -498,7 +498,7 @@ def test_first_native_round_without_prior_evidence_allows_empty_basis() -> None:
         round_index=1,
         assistant_content="PURPOSE: gather initial telemetry",
         tool_calls=(
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id="call_a",
                 name="probe.a",
                 arguments={"label": "a"},
@@ -519,7 +519,7 @@ def test_independent_hypothesis_with_explicit_basis_passes() -> None:
             "PURPOSE: test staffing explanation"
         ),
         tool_calls=(
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id="call_staffing",
                 name="production.staffing.schedule.read",
                 arguments={"line_id": "line4"},
@@ -546,7 +546,7 @@ def test_generic_observation_reference_in_available_inventory_passes() -> None:
             "PURPOSE: confirm observation"
         ),
         tool_calls=(
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id="call_b",
                 name="probe.b",
                 arguments={"confirm": True},
@@ -586,7 +586,7 @@ def test_validate_native_tool_plan_alignment_name_mismatch() -> None:
     with pytest.raises(NativeToolPlanAlignmentError, match="name mismatch"):
         validate_native_tool_plan_alignment(
             (
-                LLMToolCall.from_openai_shape(
+                LLMToolCall.from_native_parts(
                     call_id="evidence-b",
                     name="probe.b",
                     arguments={"label": "b"},
@@ -608,12 +608,12 @@ def test_validate_native_tool_plan_alignment_count_mismatch() -> None:
     with pytest.raises(NativeToolPlanAlignmentError, match="count does not match"):
         validate_native_tool_plan_alignment(
             (
-                LLMToolCall.from_openai_shape(
+                LLMToolCall.from_native_parts(
                     call_id="evidence-a",
                     name="probe.a",
                     arguments={"label": "a"},
                 ),
-                LLMToolCall.from_openai_shape(
+                LLMToolCall.from_native_parts(
                     call_id="evidence-b",
                     name="probe.b",
                     arguments={"label": "b"},
@@ -635,7 +635,7 @@ def test_validate_native_tool_plan_alignment_argument_mismatch() -> None:
     with pytest.raises(NativeToolPlanAlignmentError, match="arguments mismatch"):
         validate_native_tool_plan_alignment(
             (
-                LLMToolCall.from_openai_shape(
+                LLMToolCall.from_native_parts(
                     call_id="evidence-a",
                     name="probe.a",
                     arguments={"label": "wrong"},
@@ -656,7 +656,7 @@ def test_validate_native_tool_plan_alignment_argument_mismatch() -> None:
 def test_validate_native_tool_plan_alignment_valid() -> None:
     validate_native_tool_plan_alignment(
         (
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id="evidence-a",
                 name="probe.a",
                 arguments={"label": "expected"},
@@ -751,7 +751,7 @@ def test_baseline_workload_reference_binds_from_prior_inventory() -> None:
             "PURPOSE: inspect staffing implications of workload pressure"
         ),
         tool_calls=(
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id="call_staffing",
                 name="production.staffing.schedule.read",
                 arguments={"line_id": "line4"},
@@ -784,7 +784,7 @@ def test_evidence_known_but_not_observed_fails_closed() -> None:
                 "PURPOSE: inspect subgroup"
             ),
             tool_calls=(
-                LLMToolCall.from_openai_shape(
+                LLMToolCall.from_native_parts(
                     call_id="call_next",
                     name="probe.b",
                     arguments={"confirm": True},

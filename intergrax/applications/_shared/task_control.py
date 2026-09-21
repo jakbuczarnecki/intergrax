@@ -74,6 +74,7 @@ class TaskControlResult:
     accepted: bool
     detail: str = ""
     state: str | None = None
+    mutation_id: str | None = None
     metadata: dict[str, Any] | None = None
     authorization_evidence: ControlPlaneMutationAuthorizationEvidence | None = None
     authorization_scope: ControlPlaneMutationAuthorizationScope | None = None
@@ -211,6 +212,7 @@ async def governed_cancel_active_task(
             action="cancel",
             accepted=False,
             detail="stale_active_binding",
+            mutation_id=normalized_mutation_id,
             authorization_evidence=authorization_result.evidence,
         )
 
@@ -221,6 +223,7 @@ async def governed_cancel_active_task(
         accepted=True,
         detail=reason,
         state=revalidated.task.state.value,
+        mutation_id=normalized_mutation_id,
         authorization_evidence=authorization_result.evidence,
     )
 
@@ -363,6 +366,7 @@ async def governed_set_task_autonomy(
             action="set_autonomy",
             accepted=False,
             detail="stale_active_binding",
+            mutation_id=normalized_mutation_id,
             authorization_evidence=authorization_result.evidence,
         )
 
@@ -373,6 +377,7 @@ async def governed_set_task_autonomy(
         accepted=True,
         detail=target_autonomy_level.value,
         state=revalidated.task.state.value,
+        mutation_id=normalized_mutation_id,
         metadata={"previous": previous.value if previous else None},
         authorization_evidence=authorization_result.evidence,
     )

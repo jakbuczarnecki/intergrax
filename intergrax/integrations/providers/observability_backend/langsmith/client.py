@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Mapping, Optional
+from typing import Optional
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.observability_backend import (
@@ -16,11 +16,20 @@ from intergrax.integrations.contracts.observability_backend import (
     TraceQueryResult,
     TraceRecord,
 )
+from intergrax.integrations.providers.observability_backend._http_contract import (
+    ObservabilityHttpClient,
+    ProviderJsonMapping,
+)
 from intergrax.integrations.providers.observability_backend.langsmith.config import LangSmithIntegrationConfig
 
 
-def _trace_rows(payload: Any, *, limit: int) -> TraceQueryResult:
-    rows = payload if isinstance(payload, list) else (payload.get("runs") if isinstance(payload, dict) else [])
+def _trace_rows(payload: object, *, limit: int) -> TraceQueryResult:
+    if isinstance(payload, list):
+        rows: object = payload
+    elif isinstance(payload, dict):
+        rows = payload.get("runs")
+    else:
+        rows = []
     traces: list[TraceRecord] = []
     for item in list(rows or [])[:limit]:
         if not isinstance(item, dict):
@@ -39,7 +48,7 @@ def _trace_rows(payload: Any, *, limit: int) -> TraceQueryResult:
 class LangSmithRestClient:
     """LangSmith REST API v1 client for runs and session metrics."""
 
-    def __init__(self, config: LangSmithIntegrationConfig, *, http_client: Any) -> None:
+    def __init__(self, config: LangSmithIntegrationConfig, *, http_client: ObservabilityHttpClient) -> None:
         if not config.api_key:
             raise IntegrationConfigurationError("LangSmith api_key is required (INTERGRAX_LANGSMITH_API_KEY)")
         self._config = config
@@ -57,7 +66,12 @@ class LangSmithRestClient:
         response = self._http.get("/api/v1/sessions", params=params)
         response.raise_for_status()
         payload = response.json()
-        count = len(payload) if isinstance(payload, list) else int((payload or {}).get("total", 0) or 0)
+        if isinstance(payload, list):
+            count = len(payload)
+        elif isinstance(payload, dict):
+            count = int(payload.get("total", 0) or 0)
+        else:
+            count = 0
         ts = float(eval_time if eval_time is not None else time.time())
         return MetricQueryResult(
             result_type="vector",
@@ -88,7 +102,7 @@ class LangSmithRestClient:
         response.raise_for_status()
         return _trace_rows(response.json(), limit=limit)
 
-    def get_run(self, run_id: str) -> Mapping[str, Any]:
+    def get_run(self, run_id: str) -> ProviderJsonMapping:
         response = self._http.get(f"/api/v1/runs/{run_id}")
         response.raise_for_status()
         payload = response.json()

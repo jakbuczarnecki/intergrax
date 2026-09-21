@@ -8,15 +8,28 @@ from unittest.mock import patch
 
 import pytest
 
+from intergrax.contracts.execution_identity import mint_run_id
+from testing_support.nexus_lab_task_execution import (
+    build_lab_unified_task_runner,
+    run_lab_nexus_task,
+)
+
 from intergrax.agents.agent_contract import Agent
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType, HumanRequest
+from intergrax.contracts.agent_decision import (
+    AgentDecision,
+    AgentDecisionType,
+    HumanRequest,
+)
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.long_running.notification import LoggingNotificationAdapter
-from intergrax.runtime.long_running.scheduler import LongRunningScheduler, UnifiedTaskResumeExecutor
+from intergrax.runtime.long_running.scheduler import (
+    LongRunningScheduler,
+    UnifiedTaskResumeExecutor,
+)
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -24,8 +37,10 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
-from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
-from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from intergrax.runtime.task.task_contract import (
+    TaskExecutionOptions,
+    TaskLongRunningOptions,
+)
 from intergrax.utils.time_provider import SystemTimeProvider
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
 
@@ -68,10 +83,11 @@ class _TimeoutFailAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="review", step_name="review", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _TimeoutFailAgent.runs += 1
         return StepOutput(step_id=step.step_id, summary="review")
 
@@ -133,10 +149,11 @@ class _TimeoutEscalateAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="review", step_name="review", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _TimeoutEscalateAgent.runs += 1
         return StepOutput(step_id=step.step_id, summary="review")
 
@@ -198,10 +215,11 @@ class _DelayedResumeAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="review", step_name="review", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _DelayedResumeAgent.runs += 1
         return StepOutput(step_id=step.step_id, summary="review")
 
@@ -225,7 +243,9 @@ class _DelayedResumeAgent(HarnessReferenceAgent):
         )
 
 
-def _build_scheduler(tmp_path, agent: Agent) -> tuple[LongRunningScheduler, NexusLoop, SQLiteTaskCheckpointStore]:
+def _build_scheduler(
+    tmp_path, agent: Agent
+) -> tuple[LongRunningScheduler, NexusLoop, SQLiteTaskCheckpointStore]:
     _TimeoutFailAgent.runs = 0
     _TimeoutEscalateAgent.runs = 0
     _DelayedResumeAgent.runs = 0
@@ -237,7 +257,7 @@ def _build_scheduler(tmp_path, agent: Agent) -> tuple[LongRunningScheduler, Nexu
         checkpoint_store=store,
         notification_adapter=LoggingNotificationAdapter(),
     )
-    runner = UnifiedTaskRunner(loop)
+    runner = build_lab_unified_task_runner(loop)
     scheduler = LongRunningScheduler(
         store,
         UnifiedTaskResumeExecutor(runner),
@@ -252,7 +272,9 @@ def _build_scheduler(tmp_path, agent: Agent) -> tuple[LongRunningScheduler, Nexu
 @pytest.mark.asyncio
 async def test_scheduler_enforces_human_timeout_fail(tmp_path) -> None:
     scheduler, loop, store = _build_scheduler(tmp_path, _TimeoutFailAgent())
-    paused = await loop.handle_task(
+    run_id = mint_run_id()
+    paused = await run_lab_nexus_task(
+        loop,
         Task(
             tenant_id="t1",
             user_id="u1",
@@ -261,12 +283,11 @@ async def test_scheduler_enforces_human_timeout_fail(tmp_path) -> None:
             options=TaskExecutionOptions(
                 long_running=TaskLongRunningOptions(enabled=True),
             ),
-        )
+        ),
+        run_id=run_id,
     )
     assert paused.state == TaskState.WAITING_FOR_HUMAN
-    expires_raw = paused.metadata["human_request_expires_at"]
-    expires_at = datetime.fromisoformat(expires_raw)
-    after_expiry = expires_at + timedelta(seconds=5)
+    after_expiry = datetime.now(timezone.utc) + timedelta(seconds=31)
 
     with patch.object(SystemTimeProvider, "utc_now", return_value=after_expiry):
         processed = await scheduler.tick(now=after_expiry)
@@ -283,7 +304,9 @@ async def test_scheduler_enforces_human_timeout_fail(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_scheduler_enforces_human_timeout_escalate(tmp_path) -> None:
     scheduler, loop, store = _build_scheduler(tmp_path, _TimeoutEscalateAgent())
-    paused = await loop.handle_task(
+    run_id = mint_run_id()
+    paused = await run_lab_nexus_task(
+        loop,
         Task(
             tenant_id="t1",
             user_id="u1",
@@ -292,11 +315,11 @@ async def test_scheduler_enforces_human_timeout_escalate(tmp_path) -> None:
             options=TaskExecutionOptions(
                 long_running=TaskLongRunningOptions(enabled=True),
             ),
-        )
+        ),
+        run_id=run_id,
     )
     assert paused.state == TaskState.WAITING_FOR_HUMAN
-    expires_at = datetime.fromisoformat(paused.metadata["human_request_expires_at"])
-    after_expiry = expires_at + timedelta(seconds=5)
+    after_expiry = datetime.now(timezone.utc) + timedelta(seconds=31)
 
     with patch.object(SystemTimeProvider, "utc_now", return_value=after_expiry):
         processed = await scheduler.tick(now=after_expiry)
@@ -313,7 +336,9 @@ async def test_scheduler_enforces_human_timeout_escalate(tmp_path) -> None:
 @pytest.mark.asyncio
 async def test_scheduler_delayed_resume_with_auto_approve(tmp_path) -> None:
     scheduler, loop, store = _build_scheduler(tmp_path, _DelayedResumeAgent())
-    paused = await loop.handle_task(
+    run_id = mint_run_id()
+    paused = await run_lab_nexus_task(
+        loop,
         Task(
             tenant_id="t1",
             user_id="u1",
@@ -322,19 +347,26 @@ async def test_scheduler_delayed_resume_with_auto_approve(tmp_path) -> None:
             options=TaskExecutionOptions(
                 long_running=TaskLongRunningOptions(enabled=True),
             ),
-        )
+        ),
+        run_id=run_id,
     )
     token = paused.summary.resume_token
     assert token
     assert paused.state == TaskState.WAITING_FOR_HUMAN
 
+    checkpoint = store.get_latest(paused.task_id, "t1")
+    assert checkpoint is not None and checkpoint.runtime is not None
     run_at = datetime.now(timezone.utc) - timedelta(seconds=1)
     scheduler.schedule_resume(
         task_id=paused.task_id,
         tenant_id="t1",
         resume_token=token,
         run_at_utc=run_at.isoformat(),
-        resume_metadata={"human_approved": True},
+        resume_metadata={
+            "human_approved": True,
+            "resume_token": token,
+            "attempt_id": checkpoint.runtime.attempt_id,
+        },
     )
 
     processed = await scheduler.tick(now=datetime.now(timezone.utc))

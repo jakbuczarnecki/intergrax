@@ -5,10 +5,12 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from pydantic import Field, field_validator
 
+from intergrax.contracts.application_observability_attributes import (
+    ObservabilityAttributeValue,
+    coerce_observability_attribute_mapping,
+)
 from intergrax.contracts.execution_failure_evidence import ExecutionFailureKind
 from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
 from intergrax.contracts.external_operations.failure import ExternalOperationFailureKind
@@ -50,7 +52,14 @@ class InterruptPayloadV1(RuntimeEventPayload):
     interrupt_type: str
     blocking: bool
     recommended_action: str
-    metadata: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, ObservabilityAttributeValue] = Field(default_factory=dict)
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def _coerce_metadata(cls, value: object) -> dict[str, ObservabilityAttributeValue]:
+        if not isinstance(value, dict):
+            return {}
+        return coerce_observability_attribute_mapping(value)
 
 
 class HumanPayloadV1(RuntimeEventPayload):
@@ -126,7 +135,14 @@ class TraceBridgePayloadV1(RuntimeEventPayload):
     message: str
     source: str = "trace_bridge"
     diagnostic_schema_id: str = ""
-    diagnostic_data: dict[str, Any] = Field(default_factory=dict)
+    diagnostic_data: dict[str, ObservabilityAttributeValue] = Field(default_factory=dict)
+
+    @field_validator("diagnostic_data", mode="before")
+    @classmethod
+    def _coerce_diagnostic_data(cls, value: object) -> dict[str, ObservabilityAttributeValue]:
+        if not isinstance(value, dict):
+            return {}
+        return coerce_observability_attribute_mapping(value)
 
 
 class SkillResolvedPayloadV1(RuntimeEventPayload):

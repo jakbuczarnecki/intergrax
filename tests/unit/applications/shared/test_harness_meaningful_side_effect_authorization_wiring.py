@@ -50,8 +50,13 @@ from intergrax.contracts.meaningful_side_effect_authorization import (
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
+from testing_support.orchestration_governance_evidence_wiring import (
+    default_test_orchestration_evidence_persistence,
+)
 
 pytestmark = pytest.mark.unit
+
+_STRICT_GEP = default_test_orchestration_evidence_persistence()
 
 _SHARED_APP_ROOT = Path(__file__).resolve().parents[4] / "intergrax" / "applications" / "_shared"
 _WIRING_MODULE = _SHARED_APP_ROOT / "harness_meaningful_side_effect_authorization_wiring.py"
@@ -135,6 +140,7 @@ def test_strict_default_uses_provider_resolver_not_sqlite(tmp_path: Path) -> Non
         wiring = resolve_harness_host_meaningful_side_effect_authorization_wiring(
             env,
             decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
+            governance_evidence_persistence=_STRICT_GEP,
         )
     resolve_mock.assert_called_once_with(env.integration_profile)
     assert wiring.authorization_port is not None
@@ -152,6 +158,7 @@ def test_build_port_with_injected_repositories_does_not_resolve_provider() -> No
             env,
             collaborative_work_repositories=bundle,
             decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
+            governance_evidence_persistence=_STRICT_GEP,
         )
     resolve_mock.assert_not_called()
     assert isinstance(port, MeaningfulSideEffectAuthorizationPort)
@@ -180,6 +187,7 @@ def test_borrowed_collaborative_work_repositories_are_not_host_owned() -> None:
         env,
         collaborative_work_repositories=bundle,
         decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
+        governance_evidence_persistence=_STRICT_GEP,
     )
     assert wiring.authorization_port is not None
     assert wiring.owned_collaborative_work_persistence is None
@@ -372,6 +380,7 @@ def test_strict_default_profile_reaches_resolver_without_host_mutation(tmp_path:
             env,
             collaborative_work_integration_profile=explicit_profile,
             decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
+            governance_evidence_persistence=_STRICT_GEP,
         )
     resolve_mock.assert_called_once_with(explicit_profile)
 
@@ -387,4 +396,5 @@ def test_strict_harness_missing_decision_policy_fails_closed() -> None:
         resolve_harness_host_meaningful_side_effect_authorization_wiring(
             env,
             collaborative_work_repositories=bundle,
+            governance_evidence_persistence=_STRICT_GEP,
         )

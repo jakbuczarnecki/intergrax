@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.llm_adapters.contracts.llm_adapter import LLMRunStats
+from intergrax.llm_adapters.base.usage_log import LLMRunStats
 
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
 from testing_support.builder import FakeLLMAdapter

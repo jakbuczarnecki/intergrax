@@ -17,6 +17,7 @@ from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.runtime.codecraft.orchestrator import resolve_codegen_adapter
@@ -27,7 +28,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 pytestmark = pytest.mark.unit
 
 
-class _StubLLM(LLMAdapter):
+class _StubLLM(BaseLLMAdapter):
     provider = LLMProvider.OLLAMA
     model = "stub-model"
 

@@ -19,6 +19,7 @@ from intergrax.applications._shared.acp_checkpoint_host_wiring import (
 from testing_support.application_harness_test_support import build_harness_host_runtime_for_tests
 from intergrax.applications._shared.task_control_wiring import build_reliability_task_enricher
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
+from intergrax.contracts.execution_identity import mint_task_id
 from intergrax.runtime.task.task import Task
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
@@ -52,7 +53,7 @@ def test_build_harness_host_runtime_exposes_agent_checkpoint_store() -> None:
     assert runtime.agent_checkpoint_store is not None
 
 
-def test_build_reliability_task_enricher_injects_checkpoint_store() -> None:
+def test_build_reliability_task_enricher_omits_agent_checkpoint_without_acp_session() -> None:
     settings = LabApplicationSettings.from_env()
     manifest = build_lab_manifest(settings)
     env = manifest.environment
@@ -63,7 +64,7 @@ def test_build_reliability_task_enricher_injects_checkpoint_store() -> None:
         agent_checkpoint_store=runtime.agent_checkpoint_store,
     )
     task = Task(
-        task_id="task-acp-1",
+        task_id=mint_task_id(),
         tenant_id="tenant-a",
         user_id="user-1",
         agent_id="echo",
@@ -71,8 +72,8 @@ def test_build_reliability_task_enricher_injects_checkpoint_store() -> None:
         metadata={},
     )
     enriched = enricher(task)
-    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is runtime.agent_checkpoint_store
-    assert enriched.metadata.get(AcpMetadataKey.SESSION_ENABLED) is True
+    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
+    assert enriched.metadata.get(AcpMetadataKey.SESSION_ENABLED) is None
 
 
 def test_build_reliability_task_enricher_injects_idempotency_store() -> None:
@@ -86,7 +87,7 @@ def test_build_reliability_task_enricher_injects_idempotency_store() -> None:
         idempotency_store=runtime.reliability.idempotency_store,
     )
     task = Task(
-        task_id="task-acp-idem-1",
+        task_id=mint_task_id(),
         tenant_id="tenant-a",
         user_id="user-1",
         agent_id="echo",

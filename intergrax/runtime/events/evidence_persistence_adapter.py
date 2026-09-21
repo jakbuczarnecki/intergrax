@@ -25,6 +25,10 @@ from intergrax.runtime.events.persistence_contract import (
     TaskRuntimeEventRuns,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.runtime.events.validating_evidence_persistence_port import (
+    CanonicalRuntimeEventWriteValidatedPort,
+    ValidatingEvidencePersistencePort,
+)
 
 __all__ = [
     "RuntimeEventPersistenceEvidenceAdapter",
@@ -159,8 +163,10 @@ def as_evidence_persistence_port(
     """
     if persistence is None:
         return None
-    if isinstance(persistence, RuntimeEventPersistenceEvidenceAdapter):
+    if isinstance(persistence, CanonicalRuntimeEventWriteValidatedPort):
         return persistence
     if isinstance(persistence, RuntimeEventPersistence):
-        return RuntimeEventPersistenceEvidenceAdapter(persistence)
-    return persistence
+        return ValidatingEvidencePersistencePort(
+            RuntimeEventPersistenceEvidenceAdapter(persistence),
+        )
+    return ValidatingEvidencePersistencePort(persistence)

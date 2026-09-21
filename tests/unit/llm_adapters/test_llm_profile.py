@@ -7,6 +7,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter, llm_profile_from_env
@@ -17,7 +18,7 @@ from intergrax.llm_adapters.registry.catalog_capabilities import unwrap_catalog_
 from intergrax.llm_adapters.providers.openai_compat_providers import GroqChatAdapter
 
 
-class _StubCustomEnvAdapter(LLMAdapter):
+class _StubCustomEnvAdapter(BaseLLMAdapter):
     provider = "custom_gateway_env"
     model = "custom-model"
 

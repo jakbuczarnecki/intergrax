@@ -9,12 +9,14 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional
 from uuid import uuid4
 
-from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
+from intergrax.contracts.agent_execution_result import (
+    AgentExecutionResult,
+    AgentExecutionStatus,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
     RunId,
-    TaskId,
     require_active_execution_id,
     validate_task_id,
 )
@@ -32,7 +34,6 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
     PLAN_SNAPSHOT_KEY,
     PendingDecision,
     RuntimeCheckpoint,
-    UaepStepOutput,
 )
 from intergrax.utils.time_provider import SystemTimeProvider
 from intergrax.runtime.nexus.execution.execution_graph import (
@@ -63,7 +64,11 @@ def build_task_checkpoint(
     resume_token: Optional[str] = None,
     runtime: Optional[RuntimeCheckpoint] = None,
 ) -> TaskCheckpoint:
-    token = resume_token or task.runtime.orchestration.resume_token or f"rt_{uuid4().hex[:20]}"
+    token = (
+        resume_token
+        or task.runtime.orchestration.resume_token
+        or f"rt_{uuid4().hex[:20]}"
+    )
     return TaskCheckpoint(
         task_id=task.task_id,
         tenant_id=task.tenant_id,
@@ -103,7 +108,9 @@ def build_runtime_checkpoint(
                 }
 
     plan_id = (plan.plan_id if plan else None) or task.runtime.orchestration.plan_id
-    graph_id = (graph.graph_id if graph else None) or task.runtime.orchestration.graph_id
+    graph_id = (
+        graph.graph_id if graph else None
+    ) or task.runtime.orchestration.graph_id
     graph_node_id = None
     if last_execution is not None and graph is not None:
         for node in graph.nodes:
@@ -230,6 +237,12 @@ def resolve_graph_node_recovery_state(
                     "execution tree COMPLETED entry missing canonical prior_output "
                     f"for graph node {node.node_id!r}"
                 )
+            if tree_entry.prior_output.status == AgentExecutionStatus.NEEDS_INPUT.value:
+                return _GraphNodeRecoveryState(
+                    status=ExecutionNodeStatus.PENDING,
+                    prior_output=None,
+                    skip_legacy=True,
+                )
             return _GraphNodeRecoveryState(
                 status=ExecutionNodeStatus.COMPLETED,
                 prior_output=_execution_result_from_tree_prior(
@@ -237,6 +250,12 @@ def resolve_graph_node_recovery_state(
                     run_id=run_id,
                     node=node,
                 ),
+                skip_legacy=True,
+            )
+        if tree_entry.status is ExecutionCheckpointStatus.INTERRUPTED:
+            return _GraphNodeRecoveryState(
+                status=ExecutionNodeStatus.PENDING,
+                prior_output=None,
                 skip_legacy=True,
             )
         restored_output = (
@@ -329,6 +348,8 @@ def should_skip_graph_node(
         if tree_entry.status is not ExecutionCheckpointStatus.COMPLETED:
             return False
         if tree_entry.prior_output is None:
+            return False
+        if tree_entry.prior_output.status == AgentExecutionStatus.NEEDS_INPUT.value:
             return False
         return node.node_id in prior_outputs
     if node.status not in (
@@ -483,6 +504,35 @@ def snapshot_active_execution_tree(
     return recorder.snapshot
 
 
+def reconcile_runtime_checkpoint_governance_pause_entries(task: Task) -> None:
+    """Reclassify legacy COMPLETED+needs_input tree slots as INTERRUPTED for replay."""
+    existing = resolve_task_runtime_checkpoint(task)
+    if existing is None:
+        return
+    updated_entries: list = []
+    changed = False
+    for entry in existing.execution_tree.entries:
+        if (
+            entry.status is ExecutionCheckpointStatus.COMPLETED
+            and entry.prior_output is not None
+            and entry.prior_output.status == AgentExecutionStatus.NEEDS_INPUT.value
+        ):
+            updated_entries.append(
+                entry.model_copy(
+                    update={"status": ExecutionCheckpointStatus.INTERRUPTED}
+                ),
+            )
+            changed = True
+        else:
+            updated_entries.append(entry)
+    if not changed:
+        return
+    tree = existing.execution_tree.model_copy(update={"entries": updated_entries})
+    task.runtime.orchestration.runtime_checkpoint = existing.model_copy(
+        update={"execution_tree": tree},
+    )
+
+
 def sync_execution_tree_to_task(
     task: Task,
     recorder: ExecutionTreeRecorder,
@@ -502,18 +552,15 @@ def record_graph_node_completion(
     node: ExecutionNode,
     execution: AgentExecutionResult,
 ) -> None:
-    status = (
-        ExecutionCheckpointStatus.FAILED
-        if execution.status is AgentExecutionStatus.FAILED
-        else ExecutionCheckpointStatus.COMPLETED
-    )
     prior_output = ExecutionPriorOutput(
         agent_id=execution.agent_id,
         summary=execution.summary,
         status=execution.status.value,
         graph_node_id=node.node_id,
     )
-    if status is ExecutionCheckpointStatus.FAILED:
+    if execution.status is AgentExecutionStatus.FAILED:
         recorder.record_failed(execution_id, prior_output=prior_output)
+    elif execution.status is AgentExecutionStatus.NEEDS_INPUT:
+        recorder.record_interrupted(execution_id, prior_output=prior_output)
     else:
         recorder.record_completed(execution_id, prior_output=prior_output)

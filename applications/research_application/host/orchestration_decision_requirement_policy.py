@@ -9,20 +9,16 @@ from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
 
-from research_application.host.settings import ResearchBackendSettings
-
-
 def default_research_harness_orchestration_decision_requirement_policy() -> DecisionRequirementPolicy:
     """Explicit host strategy — no domain decision-bound actions classified today."""
     return PermissiveDecisionRequirementPolicy()
 
 
 def resolve_research_harness_orchestration_decision_requirement_policy(
-    settings: ResearchBackendSettings,
+    runtime_override: DecisionRequirementPolicy | None = None,
 ) -> DecisionRequirementPolicy:
-    override = settings.orchestration_decision_requirement_policy
-    if override is not None:
-        return override
+    if runtime_override is not None:
+        return runtime_override
     return default_research_harness_orchestration_decision_requirement_policy()
 
 

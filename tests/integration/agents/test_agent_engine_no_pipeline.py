@@ -5,9 +5,8 @@
 import pytest
 
 from intergrax.agents.agent_contract import Agent
+from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_run import AgentRunRequest, AgentRunResult
-from intergrax.contracts.agent_step import AgentStep, StepOutput
-from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
 from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -27,17 +26,19 @@ from testing_support.builder import (
 # Agent WITHOUT pipeline
 # ----------------------------------------
 class NoPipelineAgent(Agent):
+    def get_contract(self) -> AgentContract:
+        return AgentContract(
+            id="no-pipeline",
+            name="No Pipeline",
+            description="missing pipeline fixture",
+            capabilities=["test.basic"],
+        )
 
     async def run(self, request: AgentRunRequest) -> AgentRunResult:
         _ = request
-        raise NotImplementedError("NoPipelineAgent is exercised via AgentEngine/UAEP only")
-
-    def get_steps(self) -> list[AgentStep]:
-        return [AgentStep(step_id="noop", step_name="noop", step_index=0)]
-
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
-        _ = ctx
-        return StepOutput(step_id=step.step_id, summary="noop")
+        raise NotImplementedError(
+            "NoPipelineAgent is exercised via AgentEngine/UAEP only"
+        )
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
         config = RuntimeConfig(
@@ -51,8 +52,7 @@ class NoPipelineAgent(Agent):
         # intentionally NO config.pipeline
 
         return RuntimeContext.build(
-            config=config,
-            session_manager=build_in_memory_session_manager()
+            config=config, session_manager=build_in_memory_session_manager()
         )
 
 

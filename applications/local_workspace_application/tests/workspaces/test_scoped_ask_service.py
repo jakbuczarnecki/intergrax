@@ -20,6 +20,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from local_workspace_application.host.factory import create_local_workspace_backend_app
 from local_workspace_application.tests.lkw_ac3_projection import build_lkw_test_registry_projection
@@ -39,7 +40,7 @@ pytestmark = pytest.mark.unit
 _PREFIX = "/v1/local_workspace"
 
 
-class RecordingFakeLLM(LLMAdapter):
+class RecordingFakeLLM(BaseLLMAdapter):
     provider = "fake"
     model = "fake"
 

@@ -15,15 +15,13 @@ from intergrax.integrations.providers.observability_backend._catalog_client impo
     ObservabilityCatalogClient,
     require_observability_catalog_client,
 )
-from intergrax.integrations.contracts.observability_backend import MetricQueryResult, ObservabilityBackend, TraceQueryResult
+from intergrax.integrations.contracts.observability_backend import MetricQueryResult, TraceQueryResult
 from intergrax.runtime.integrations.observability import (
     ObservabilityVendorIntegrationConfig,
     ObservabilityVendorIntegrationContract,
     ObservabilityVendorPayload,
     ObservabilityVendorSignal,
 )
-
-from intergrax.utils import attribute_access
 
 PROMETHEUS_OBSERVABILITY_PROVIDER_ID = "prometheus"
 
@@ -50,7 +48,16 @@ class PrometheusObservabilityTransport(Protocol):
         """Deliver a policy-sanitized vendor payload to Prometheus."""
 
 
-class PrometheusObservabilityIntegration(ObservabilityVendorIntegrationContract):
+@runtime_checkable
+class PrometheusHealthCatalogClient(ObservabilityCatalogClient, Protocol):
+    """Catalog client with Prometheus readiness probing."""
+
+    def health(self) -> bool | HealthStatus:
+        """Return readiness or an explicit health status."""
+        ...
+
+
+class PrometheusObservabilityIntegration(ObservabilityVendorIntegrationContract[PrometheusObservabilityIntegrationConfig]):
     """
     Single public Prometheus observability entrypoint.
 
@@ -115,15 +122,14 @@ class PrometheusObservabilityIntegration(ObservabilityVendorIntegrationContract)
 
     def health(self) -> HealthStatus:
         client = self._require_client()
-        health_fn = attribute_access.optional(client, "health", None)
-        if callable(health_fn):
-            result = health_fn()
-            if isinstance(result, HealthStatus):
-                return result
-            return HealthStatus(slug="prometheus", healthy=bool(result), detail="prometheus ready probe")
-        raise IntegrationConfigurationError(
-            f"{type(self).__name__} catalog client does not support health",
-        )
+        if not isinstance(client, PrometheusHealthCatalogClient):
+            raise IntegrationConfigurationError(
+                f"{type(self).__name__} catalog client does not support health",
+            )
+        result = client.health()
+        if isinstance(result, HealthStatus):
+            return result
+        return HealthStatus(slug="prometheus", healthy=bool(result), detail="prometheus ready probe")
 
     def _require_client(self) -> ObservabilityCatalogClient:
         return require_observability_catalog_client(self, self._client)
@@ -157,4 +163,3 @@ class PrometheusObservabilityIntegration(ObservabilityVendorIntegrationContract)
         await self._transport.send_observability_payload(payload)
 
 
-ObservabilityBackend.register(PrometheusObservabilityIntegration)

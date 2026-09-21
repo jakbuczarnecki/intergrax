@@ -9,10 +9,12 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
     DiagnosticExecutionScopeCandidate,
     DiagnosticScopeDiscoveryResult,
     DiagnosticScopeDiscoveryStatus,
+    DiagnosticScopeReference,
     DiagnosticScopeReferenceKind,
     DiagnosticScopeResolutionProvenance,
     TransportScopeReference,
     build_diagnostic_scope_discovery_result,
+    unsupported_reference_result,
     validate_scope_discovery_candidate_limit,
     validate_scope_discovery_tenant_id,
     validate_transport_scope_provider,
@@ -74,9 +76,11 @@ class CausalTransportScopeProvider:
         self,
         *,
         tenant_id: str,
-        reference: TransportScopeReference,
+        reference: DiagnosticScopeReference,
         candidate_limit: int,
     ) -> DiagnosticScopeProviderResult:
+        if not isinstance(reference, TransportScopeReference):
+            return _provider_result_from_public(unsupported_reference_result())
         tenant_id = validate_scope_discovery_tenant_id(tenant_id)
         candidate_limit = validate_scope_discovery_candidate_limit(candidate_limit)
         provider = validate_transport_scope_provider(reference.provider)

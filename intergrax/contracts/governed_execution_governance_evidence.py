@@ -16,7 +16,9 @@ from typing import Final, Literal, Protocol, runtime_checkable
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.canonical_payload_hash import stable_payload_hash
-from intergrax.contracts.decision_governance_material import DecisionGovernanceMaterialRef
+from intergrax.contracts.decision_governance_material import (
+    DecisionGovernanceMaterialRef,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
     EventId,
@@ -30,13 +32,15 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 
-CANONICAL_GOVERNANCE_EVIDENCE_POLICY_ACTIONS: Final[frozenset[PolicyAction]] = frozenset(
-    {
-        PolicyAction.ALLOW,
-        PolicyAction.DENY,
-        PolicyAction.REQUIRE_HUMAN,
-        PolicyAction.ESCALATE,
-    },
+CANONICAL_GOVERNANCE_EVIDENCE_POLICY_ACTIONS: Final[frozenset[PolicyAction]] = (
+    frozenset(
+        {
+            PolicyAction.ALLOW,
+            PolicyAction.DENY,
+            PolicyAction.REQUIRE_HUMAN,
+            PolicyAction.ESCALATE,
+        },
+    )
 )
 
 
@@ -161,10 +165,14 @@ class GovernanceDecisionEvidenceFact(BaseModel):
             )
         )
         if has_any and not (
-            self.policy_bundle_id and self.policy_bundle_version and self.policy_bundle_digest
+            self.policy_bundle_id
+            and self.policy_bundle_version
+            and self.policy_bundle_digest
         ):
             raise ValueError("policy_bundle_provenance_incomplete")
-        if self.policy_bundle_digest and not self.policy_bundle_digest.startswith("sha256:"):
+        if self.policy_bundle_digest and not self.policy_bundle_digest.startswith(
+            "sha256:"
+        ):
             raise ValueError("policy_bundle_digest_must_be_sha256")
         return self
 
@@ -192,7 +200,9 @@ class GovernanceEvidencePersistenceOutcome(BaseModel):
 class GovernanceEvidencePersistencePort(Protocol):
     """Append-only Governance fact persistence — never returns policy decisions."""
 
-    def persist(self, fact: GovernanceDecisionEvidenceFact) -> GovernanceEvidencePersistenceOutcome:
+    def persist(
+        self, fact: GovernanceDecisionEvidenceFact
+    ) -> GovernanceEvidencePersistenceOutcome:
         """Persist one immutable fact. Idempotent on ``evidence_id`` / idempotency key."""
         ...
 
@@ -203,7 +213,9 @@ def governance_evidence_id_from_idempotency(idempotency_key: str) -> str:
     return f"gov_ev_{suffix}"
 
 
-def deterministic_runtime_event_id_for_governance_fact(fact: GovernanceDecisionEvidenceFact) -> EventId:
+def deterministic_runtime_event_id_for_governance_fact(
+    fact: GovernanceDecisionEvidenceFact,
+) -> EventId:
     digest = stable_payload_hash(
         {
             "schema": fact.schema_version,
@@ -240,7 +252,15 @@ def build_governance_fact_from_policy_decision(
         raise ValueError(
             "governance_evidence_requires_allow_deny_require_human_or_escalate",
         )
-    evidence_id = governance_evidence_id_from_idempotency(idempotency_key)
+    scoped_idempotency_key = idempotency_key
+    if (
+        task_id is not None
+        and run_id is not None
+        and attempt_id is not None
+        and execution_id is not None
+    ):
+        scoped_idempotency_key = f"{idempotency_key}:run:{run_id}:exec:{execution_id}"
+    evidence_id = governance_evidence_id_from_idempotency(scoped_idempotency_key)
     return GovernanceDecisionEvidenceFact(
         evidence_id=evidence_id,
         recorded_at=recorded_at or datetime.now(timezone.utc),
@@ -263,7 +283,7 @@ def build_governance_fact_from_policy_decision(
         policy_bundle_digest=decision.policy_bundle_digest or "",
         policy_rule_id=decision.policy_rule_id or "",
         request_digest=request_digest,
-        idempotency_key=idempotency_key,
+        idempotency_key=scoped_idempotency_key,
         decision_material_ref=decision_material_ref,
         human_review_evidence_ref=human_review_evidence_ref,
     )

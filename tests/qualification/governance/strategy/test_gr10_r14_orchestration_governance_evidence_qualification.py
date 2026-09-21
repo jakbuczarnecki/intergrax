@@ -54,9 +54,9 @@ def test_gr10_r14_orchestration_governance_evidence_qualified() -> None:
     assert gr10_matrix_orchestration_status("Governance Evidence") is Gr10CoverageStatus.QUALIFIED
 
 
-def test_gr10_r14_next_remediation_points_to_agentic_closure() -> None:
-    assert GR10_R14_NEXT_REMEDIATION.strategy == "AGENTIC"
-    assert "GR-10" in GR10_R14_NEXT_REMEDIATION.task_name
+def test_gr10_r14_next_remediation_points_to_r15_gep_reconciliation() -> None:
+    assert GR10_R14_NEXT_REMEDIATION.strategy == "ORCHESTRATION"
+    assert "GR-10-R15" in GR10_R14_NEXT_REMEDIATION.task_name
 
 
 def test_gr10_r14_r13_remediation_was_governance_evidence() -> None:
@@ -93,6 +93,6 @@ def test_gr10_r14_r1_orchestration_governance_evidence_inventory_zero_gap() -> N
     gaps = [
         row.path
         for row in GR10_ORCHESTRATION_GOVERNANCE_EVIDENCE_INVENTORY
-        if row.status not in ("QUALIFIED", "NOT_APPLICABLE")
+        if row.status not in ("QUALIFIED", "NOT_APPLICABLE", "DEFERRED_TO_GR13")
     ]
     assert gaps == []

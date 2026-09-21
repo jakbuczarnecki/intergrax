@@ -10,7 +10,8 @@ from typing import Any, Dict, List, Optional
 
 from intergrax.runtime.governance.contracts.metrics_record_dto import RunMetricsRecord
 from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
-from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, SerializedTraceEvent
+from intergrax.contracts.persisted_run_trace import PersistedRun, PersistedTraceEvent
+from intergrax.runtime.nexus.tracing.persistence_models import SerializedTraceEvent
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent
 from intergrax.runtime.observability.modality_metrics import (
     ModalityMetricsPayload,
@@ -72,16 +73,10 @@ def export_run_metrics(persisted: PersistedRun, *, agent_id: Optional[str] = Non
     )
 
 
-def _extract_modality_metrics_from_trace(events: List[SerializedTraceEvent]) -> ModalityMetricsPayload:
+def _extract_modality_metrics_from_trace(
+    events: list[PersistedTraceEvent | SerializedTraceEvent],
+) -> ModalityMetricsPayload:
     return aggregate_modality_metrics_from_trace_events(events)
-
-
-def _trace_event_payload(event: SerializedTraceEvent | Dict[str, Any]) -> Dict[str, Any]:
-    if isinstance(event, dict):
-        raw = event.get("payload")
-    else:
-        raw = event.payload
-    return raw if isinstance(raw, dict) else {}
 
 
 def persist_run_metrics(
@@ -157,7 +152,7 @@ def _schema_id_from_event(event: TraceEvent | dict[str, Any]) -> str:
 
 
 def _summarize_trace_events(
-    events: List[TraceEvent | SerializedTraceEvent | dict[str, Any]],
+    events: List[TraceEvent | SerializedTraceEvent | PersistedTraceEvent | dict[str, Any]],
 ) -> Dict[str, int]:
     graph_events = 0
     step_events = 0
@@ -178,6 +173,11 @@ def _summarize_trace_events(
             message = event.message
             step = event.step
             schema_id = _schema_id_from_serialized(event)
+            component = event.component
+        elif isinstance(event, PersistedTraceEvent):
+            message = event.message
+            step = event.step
+            schema_id = str(event.payload_schema_id or "")
             component = event.component
         else:
             continue

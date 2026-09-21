@@ -265,9 +265,9 @@ class RuntimeEventBus:
 
     async def publish(self, event: RuntimeEvent) -> None:
         """Persist then notify subscribers once (async handlers are awaited)."""
-        self._commit_durable_evidence(event)
-        self._deliver_through_event_sink(event)
-        await self._dispatch_handlers_async(event)
+        committed = self._commit_durable_evidence(event)
+        self._deliver_through_event_sink(committed)
+        await self._dispatch_handlers_async(committed)
 
     @property
     def history(self) -> List[RuntimeEvent]:
@@ -292,9 +292,9 @@ class RuntimeEventBus:
 
     def record(self, event: RuntimeEvent, *, tenant_id: Optional[str] = None) -> None:
         """Synchronous append for callers that cannot await (e.g. TaskLifecycle)."""
-        self._commit_durable_evidence(event, tenant_id=tenant_id)
-        self._deliver_through_event_sink(event)
-        self._dispatch_handlers_sync(event)
+        committed = self._commit_durable_evidence(event, tenant_id=tenant_id)
+        self._deliver_through_event_sink(committed)
+        self._dispatch_handlers_sync(committed)
 
     def _deliver_through_event_sink(self, event: RuntimeEvent) -> None:
         from intergrax.runtime.observability.event_delivery.runtime_event_delivery import (
@@ -385,7 +385,8 @@ class RuntimeEventBus:
         event: RuntimeEvent,
         *,
         tenant_id: Optional[str] = None,
-    ) -> None:
+    ) -> RuntimeEvent:
+        committed = event
         requirement = evidence_persistence_requirement(event)
         if (
             self._persistence is not None
@@ -393,7 +394,8 @@ class RuntimeEventBus:
         ):
             scoped_tenant = resolve_event_tenant_id(event, tenant_id)
             try:
-                self._persistence.append(event, tenant_id=scoped_tenant)
+                positioned = self._persistence.append(event, tenant_id=scoped_tenant)
+                committed = positioned.event
             except MandatoryEvidencePersistenceError:
                 raise
             except EvidencePersistenceBoundaryError as exc:
@@ -406,10 +408,11 @@ class RuntimeEventBus:
                     "RuntimeEvent persistence failed for %s",
                     event.event_type.value,
                 )
-        self._history_buffer.append(event)
+        self._history_buffer.append(committed)
         with self._event_count_lock:
             self._event_count += 1
-        self._metric_scopes.record_accepted(event.task_id, event.run_id)
+        self._metric_scopes.record_accepted(committed.task_id, committed.run_id)
+        return committed
 
     async def _dispatch_handlers_async(self, event: RuntimeEvent) -> None:
         for sid, _prio, handler in self._collect_handlers(event):

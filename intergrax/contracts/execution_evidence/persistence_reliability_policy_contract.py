@@ -67,3 +67,4 @@ class PersistenceReliabilityPolicy(Protocol):
         request: PersistenceReliabilityPolicyRequest,
     ) -> PersistenceReliabilityPolicyDecision:
         """Return how Execution Runtime should react to the reported persistence problem."""
+        ...

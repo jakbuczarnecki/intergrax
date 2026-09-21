@@ -6,8 +6,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
+from intergrax.integrations.providers.observability_backend.elasticsearch.config import (
+    ElasticsearchIntegrationConfig,
+)
 from intergrax.runtime.observability.operator_wiring import (
     ElasticsearchExportOperatorConfig,
     ObservabilityExportOperatorConfig,
@@ -19,6 +22,8 @@ if TYPE_CHECKING:
         ElasticsearchObservabilityIntegration,
         ElasticsearchObservabilityTransport,
     )
+
+ElasticsearchHttpClientFactory = Callable[[ElasticsearchIntegrationConfig], object]
 
 
 def _require_enabled_elasticsearch_config(
@@ -47,8 +52,8 @@ def build_elasticsearch_observability_integration(
     config: ObservabilityExportOperatorConfig,
     *,
     transport: ElasticsearchObservabilityTransport | None = None,
-    http_client: Any | None = None,
-    http_client_factory: Callable[..., Any] | None = None,
+    http_client: object | None = None,
+    http_client_factory: ElasticsearchHttpClientFactory | None = None,
 ) -> ElasticsearchObservabilityIntegration:
     """Construct an Elasticsearch observability vendor integration from operator config."""
     from intergrax.integrations.providers.observability_backend.elasticsearch.bundle import (
@@ -60,12 +65,6 @@ def build_elasticsearch_observability_integration(
     )
 
     elasticsearch = _require_enabled_elasticsearch_config(config)
-    config_overrides: dict[str, object] = {
-        "base_url": elasticsearch.base_url,
-        "index": elasticsearch.index,
-    }
-    if elasticsearch.timeout_seconds is not None:
-        config_overrides["timeout_seconds"] = elasticsearch.timeout_seconds
 
     retry_policy = ElasticsearchRetryPolicy(
         enabled=elasticsearch.retry_enabled,
@@ -88,7 +87,9 @@ def build_elasticsearch_observability_integration(
         http_client_factory=http_client_factory,
         retry_policy=retry_policy,
         failed_delivery_sink=failed_delivery_sink,
-        **config_overrides,
+        index=elasticsearch.index,
+        base_url=elasticsearch.base_url,
+        timeout_seconds=elasticsearch.timeout_seconds,
     )
     return create_elasticsearch_observability_integration(
         transport=active_transport,

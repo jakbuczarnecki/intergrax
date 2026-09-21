@@ -10,6 +10,7 @@ from typing import Generic, TypeVar
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 
 T = TypeVar("T")
+TStructured = TypeVar("TStructured")
 
 
 @dataclass(frozen=True, slots=True)

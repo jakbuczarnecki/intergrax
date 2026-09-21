@@ -17,7 +17,8 @@ from intergrax.runtime.events.persistence_contract import (
     TaskRuntimeEventRuns,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent
-from intergrax.runtime.events.schema_guard import assert_runtime_event_schema
+from intergrax.runtime.events.schema_guard import RuntimeEventSchemaError, assert_runtime_event_schema
+from intergrax.runtime.events.spine_payload_codec import prepare_canonical_production_write_event
 
 
 class ValidatingRuntimeEventPersistence(RuntimeEventPersistence):
@@ -27,8 +28,12 @@ class ValidatingRuntimeEventPersistence(RuntimeEventPersistence):
         self._inner = inner
 
     def append(self, event: RuntimeEvent, *, tenant_id: str) -> PositionedRuntimeEvent:
-        assert_runtime_event_schema(event)
-        return self._inner.append(event, tenant_id=tenant_id)
+        try:
+            prepared = prepare_canonical_production_write_event(event)
+        except ValueError as exc:
+            raise RuntimeEventSchemaError(str(exc)) from exc
+        assert_runtime_event_schema(prepared)
+        return self._inner.append(prepared, tenant_id=tenant_id)
 
     def list_positioned_for_run(
         self,

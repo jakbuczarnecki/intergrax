@@ -25,11 +25,16 @@ from intergrax.llm_adapters._shared.openai_completion_mapping import (
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
-from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
+from intergrax.llm_adapters._shared.openai_tool_choice_projection import (
+    project_openai_compatible_tool_choice,
+)
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
@@ -48,7 +53,7 @@ class _MistralStreamChunk(Protocol):
     choices: List[_MistralStreamChoice]
 
 
-class MistralChatAdapter(LLMAdapter):
+class MistralChatAdapter(BaseLLMAdapter):
     """
     Mistral adapter based on the official Mistral Python SDK (mistralai).
 
@@ -256,7 +261,7 @@ class MistralChatAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> LLMAdapterResponse:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
@@ -305,7 +310,7 @@ class MistralChatAdapter(LLMAdapter):
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> Iterable[LLMStreamEvent]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
@@ -383,12 +388,12 @@ class MistralChatAdapter(LLMAdapter):
     def generate_structured(
         self,
         messages: Sequence[ChatMessage],
-        output_model: type,
+        output_model: type[TStructured],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> LLMStructuredResult[Any]:
+    ) -> LLMStructuredResult[TStructured]:
         schema = self._model_json_schema(output_model)
         schema_msg = ChatMessage(
             role="user",
@@ -417,7 +422,7 @@ class MistralChatAdapter(LLMAdapter):
         max_tokens: Optional[int],
         stream: bool,
         tools: Optional[List[Dict[str, Any]]] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
     ) -> dict:
         """
         Build a minimal, explicit Mistral Chat payload.
@@ -445,7 +450,9 @@ class MistralChatAdapter(LLMAdapter):
         if tools:
             payload["tools"] = tools
         if tool_choice is not None:
-            payload["tool_choice"] = tool_choice
+            projected = project_openai_compatible_tool_choice(tool_choice)
+            if projected is not None:
+                payload["tool_choice"] = projected
 
         return payload
 

@@ -13,16 +13,8 @@ from intergrax.applications._shared.settings_loader import (
 )
 from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
 from intergrax.fastapi_core.auth.api_key import ApiKeyIdentity
-from intergrax.contracts.active_execution_task_scope import ActiveExecutionTaskScopePort
-from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
-from intergrax.contracts.execution_evidence.attestation import HostAttestor
 from intergrax.contracts.runtime_policy_bundle import ImmutableRuntimePolicyBundle
 from intergrax.fastapi_core.config import ApiEnvironment
-from intergrax.collaborative_work.persistence import CollaborativeWorkMaterializedRepositories
-from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
-from intergrax.runtime.policy.meaningful_side_effect_authorization import (
-    MeaningfulSideEffectAuthorizationBoundary,
-)
 
 GovernedContractorIdentitySource = Literal["body_or_context", "context_only"]
 
@@ -73,17 +65,8 @@ class GovernedContractorBackendSettings(ApplicationSettingsEnvHost, IntergraxApp
     api_keys_map: Mapping[str, ApiKeyIdentity] = field(default_factory=dict)
     interaction_execute_default: bool = True
 
-    # Programmatic DI slots (not env-backed) — Execution Evidence / GEC wiring.
-    # Set on a settings instance or build-context settings object before mount.
-    external_work_integration: ExternalWorkIntegration | None = None
-    meaningful_side_effect_authorization_boundary: (
-        MeaningfulSideEffectAuthorizationBoundary | None
-    ) = None
-    decision_requirement_policy: DecisionRequirementPolicy | None = None
+    # Declarative policy pack (immutable config artifact — not a live runtime service).
     runtime_policy_bundle: ImmutableRuntimePolicyBundle | None = None
-    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None
-    active_execution_task_scope: ActiveExecutionTaskScopePort | None = None
-    host_attestor: HostAttestor | None = None
     attestation_required: bool = False
 
     # ------------------------------------------------------------------

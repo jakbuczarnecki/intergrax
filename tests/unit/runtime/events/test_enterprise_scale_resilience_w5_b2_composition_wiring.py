@@ -21,7 +21,7 @@ from intergrax.runtime.observability.event_delivery import (
 )
 from lab_application.host.settings import LabApplicationSettings
 from lab_application.manifest import build_lab_manifest
-from testing_support.runtime_events import runtime_event_test_identity
+from testing_support.runtime_events import runtime_event_test_identity, with_preferred_canonical_payload
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -38,10 +38,12 @@ def _bounded_delivery_environment(
 
 
 def _terminal_event() -> RuntimeEvent:
-    return RuntimeEvent(
-        event_type=RuntimeEventType.TASK_COMPLETED,
-        phase=ExecutionPhase.COMPLETION,
-        **runtime_event_test_identity(),
+    return with_preferred_canonical_payload(
+        RuntimeEvent(
+            event_type=RuntimeEventType.TASK_COMPLETED,
+            phase=ExecutionPhase.COMPLETION,
+            **runtime_event_test_identity(),
+        )
     )
 
 

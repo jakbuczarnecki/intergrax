@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
+from intergrax.contracts.diagnostics.problem_record import PersistedProblem
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     Problem,
     ProblemId,
@@ -15,6 +16,7 @@ from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemLifecycleProvenance,
     ProblemOccurrenceAggregateHealth,
     ProblemStatus,
+    coerce_runtime_problem_provenance,
 )
 from intergrax.runtime.diagnostics.problem_occurrence_partition_fingerprint import (
     ProblemOccurrenceRepairBoundary,
@@ -110,9 +112,21 @@ def scan_occurrence_aggregate(
     )
 
 
-def mark_problem_reconciliation_required(existing: Problem) -> Problem:
+def mark_problem_reconciliation_required(existing: PersistedProblem) -> Problem:
     if existing.occurrence_aggregate_health is ProblemOccurrenceAggregateHealth.RECONCILIATION_REQUIRED:
-        return existing
+        if type(existing) is Problem:
+            return existing
+        return Problem(
+            problem_id=existing.problem_id,
+            tenant_id=existing.tenant_id,
+            status=existing.status,
+            first_seen_at=existing.first_seen_at,
+            last_seen_at=existing.last_seen_at,
+            occurrence_count=existing.occurrence_count,
+            provenance=coerce_runtime_problem_provenance(existing.provenance),
+            record_version=existing.record_version,
+            occurrence_aggregate_health=existing.occurrence_aggregate_health,
+        )
     return Problem(
         problem_id=existing.problem_id,
         tenant_id=existing.tenant_id,
@@ -120,14 +134,14 @@ def mark_problem_reconciliation_required(existing: Problem) -> Problem:
         first_seen_at=existing.first_seen_at,
         last_seen_at=existing.last_seen_at,
         occurrence_count=existing.occurrence_count,
-        provenance=existing.provenance,
+        provenance=coerce_runtime_problem_provenance(existing.provenance),
         record_version=existing.record_version + 1,
         occurrence_aggregate_health=ProblemOccurrenceAggregateHealth.RECONCILIATION_REQUIRED,
     )
 
 
 def converge_problem_from_occurrence_scan(
-    existing: Problem,
+    existing: PersistedProblem,
     scan: OccurrenceAggregateScan,
     *,
     provenance: ProblemLifecycleProvenance | None = None,
@@ -151,13 +165,14 @@ def converge_problem_from_occurrence_scan(
         first_seen_at=scan.first_seen_at,
         last_seen_at=scan.last_seen_at,
         occurrence_count=scan.occurrence_count,
-        provenance=provenance or existing.provenance,
+        provenance=provenance
+        or coerce_runtime_problem_provenance(existing.provenance),
         record_version=existing.record_version + 1,
         occurrence_aggregate_health=ProblemOccurrenceAggregateHealth.CONSISTENT,
     )
 
 
-def aggregate_matches_problem(existing: Problem, scan: OccurrenceAggregateScan) -> bool:
+def aggregate_matches_problem(existing: PersistedProblem, scan: OccurrenceAggregateScan) -> bool:
     if scan.first_seen_at is None or scan.last_seen_at is None:
         return existing.occurrence_count == 0
     return (
@@ -168,10 +183,10 @@ def aggregate_matches_problem(existing: Problem, scan: OccurrenceAggregateScan) 
 
 
 def _persist_reconciliation_required_best_effort(
-    existing: Problem,
+    existing: PersistedProblem,
     *,
     problem_persistence: ProblemPersistence,
-) -> Problem:
+) -> PersistedProblem:
     marked = mark_problem_reconciliation_required(existing)
     if marked == existing:
         return existing
@@ -191,13 +206,13 @@ def _persist_reconciliation_required_best_effort(
 
 
 def reconcile_problem_occurrence_aggregate(
-    existing: Problem,
+    existing: PersistedProblem,
     *,
     occurrence_persistence: ProblemOccurrencePersistence,
     problem_persistence: ProblemPersistence,
     page_size: int = DEFAULT_REPAIR_PAGE_SIZE,
     provenance: ProblemLifecycleProvenance | None = None,
-) -> Problem:
+) -> PersistedProblem:
     """
     Snapshot-safe paginated repair using partition fingerprint boundaries.
 

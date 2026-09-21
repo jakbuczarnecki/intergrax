@@ -10,10 +10,12 @@ from intergrax.runtime.diagnostics.diagnostic_scope_discovery_models import (
     DiagnosticExecutionScopeCandidate,
     DiagnosticScopeDiscoveryResult,
     DiagnosticScopeDiscoveryStatus,
+    DiagnosticScopeReference,
     DiagnosticScopeReferenceKind,
     DiagnosticScopeResolutionProvenance,
     EventScopeReference,
     build_diagnostic_scope_discovery_result,
+    unsupported_reference_result,
     validate_scope_discovery_candidate_limit,
     validate_scope_discovery_tenant_id,
 )
@@ -59,9 +61,11 @@ class RuntimeEventScopeProvider:
         self,
         *,
         tenant_id: str,
-        reference: EventScopeReference,
+        reference: DiagnosticScopeReference,
         candidate_limit: int,
     ) -> DiagnosticScopeProviderResult:
+        if not isinstance(reference, EventScopeReference):
+            return _provider_result_from_public(unsupported_reference_result())
         tenant_id = validate_scope_discovery_tenant_id(tenant_id)
         validate_scope_discovery_candidate_limit(candidate_limit)
         event_id = validate_event_id(reference.event_id)

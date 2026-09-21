@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Mapping, Protocol
+from typing import Protocol
 
 from pydantic import BaseModel, Field
 
@@ -18,7 +18,7 @@ class RetrievalPoisoningInputChunk(Protocol):
     score: float
 
     @property
-    def metadata(self) -> Mapping[str, object]: ...
+    def source_ref(self) -> str: ...
 
 
 class RetrievalTrustLevel(str, Enum):

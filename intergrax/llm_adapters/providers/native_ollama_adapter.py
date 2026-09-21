@@ -17,13 +17,18 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
+)
+from intergrax.llm_adapters.contracts.native_tool_choice import (
+    NativeForcedFunctionChoice,
+    NativeToolChoice,
 )
 from intergrax.llm_adapters.contracts.tool_call import (
     LLMToolCall,
@@ -66,7 +71,7 @@ class _NativeOllamaClient(Protocol):
 _MISSING = object()
 
 
-class NativeOllamaAdapter(LLMAdapter):
+class NativeOllamaAdapter(BaseLLMAdapter):
     """Ollama adapter using the official native Python client."""
 
     DEFAULT_MODEL = "llama3.1:latest"
@@ -243,14 +248,17 @@ class NativeOllamaAdapter(LLMAdapter):
 
     @staticmethod
     def _validate_ollama_tool_choice(
-        tool_choice: Optional[Union[str, Dict[str, Any]]],
+        tool_choice: NativeToolChoice | None,
     ) -> None:
         if tool_choice is None:
+            return
+        if isinstance(tool_choice, NativeForcedFunctionChoice):
             return
         if isinstance(tool_choice, str) and tool_choice in {"auto", "required"}:
             return
         raise ValueError(
-            "Ollama native tool calling supports only tool_choice=None, 'auto', or 'required'"
+            "Ollama native tool calling supports only tool_choice=None, 'auto', 'required', "
+            "or a forced function choice"
         )
 
     def _generation_options(
@@ -555,11 +563,11 @@ class NativeOllamaAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, object]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> LLMAdapterResponse:
         if not self.supports_tools():
@@ -637,12 +645,12 @@ class NativeOllamaAdapter(LLMAdapter):
     def generate_structured(
         self,
         messages: Sequence[ChatMessage],
-        output_model: type,
+        output_model: type[TStructured],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> LLMStructuredResult[Any]:
+    ) -> LLMStructuredResult[TStructured]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
         success = False

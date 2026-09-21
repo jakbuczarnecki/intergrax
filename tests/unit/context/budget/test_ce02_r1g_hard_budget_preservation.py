@@ -13,6 +13,7 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -41,7 +42,7 @@ def _assert_mandatory_byte_for_byte(
         assert preserved.tool_call_id == original.tool_call_id
 
 
-class _Adapter(LLMAdapter):
+class _Adapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-r1g"
 

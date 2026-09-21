@@ -38,6 +38,7 @@ from intergrax.runtime.execution.budget.ledger import create_execution_budget_le
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
@@ -88,7 +89,7 @@ class _Out(BaseModel):
     result: int = 0
 
 
-class _WindowAdapter(LLMAdapter):
+class _WindowAdapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-window"
 
@@ -175,7 +176,7 @@ def _trace_for(step_id: str, tool_name: str) -> ToolCallTrace:
 def _native_round_blocks() -> list[IterativeToolOutputBlock]:
     return tool_output_blocks_from_native_round(
         [
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id="tc-1",
                 name="probe.read",
                 arguments={"value": 1},
@@ -219,7 +220,7 @@ def test_tool_output_block_preserves_full_observation_not_trace_preview() -> Non
         model_observation=ToolModelObservation(content=_FULL_OBSERVATION),
     )
     blocks = tool_output_blocks_from_native_round(
-        [LLMToolCall.from_openai_shape(call_id="tc-1", name="probe.read", arguments={})],
+        [LLMToolCall.from_native_parts(call_id="tc-1", name="probe.read", arguments={})],
         [PlannedToolCall(step_id="step-1", tool_id="probe.read", input=_In())],
         [outcome],
     )
@@ -253,7 +254,7 @@ class _IterativeCePlanner:
                 response=LLMAdapterResponse(
                     content="round one",
                     tool_calls=(
-                        LLMToolCall.from_openai_shape(
+                        LLMToolCall.from_native_parts(
                             call_id="tc-1",
                             name="probe.read",
                             arguments={"value": 1},
@@ -261,7 +262,7 @@ class _IterativeCePlanner:
                     ),
                 ),
                 materialized_tool_calls=(
-                    LLMToolCall.from_openai_shape(
+                    LLMToolCall.from_native_parts(
                         call_id="tc-1",
                         name="probe.read",
                         arguments={"value": 1},
@@ -329,7 +330,7 @@ async def test_ce_assembly_provenance_includes_tool_output() -> None:
     state = build_runtime_state_for_tests(run_id=mint_run_id())
     engine = _wire_ce_state(state)
     state.iterative_tool_output_blocks = tool_output_blocks_from_native_round(
-        [LLMToolCall.from_openai_shape(call_id="tc-prov", name="probe.read", arguments={})],
+        [LLMToolCall.from_native_parts(call_id="tc-prov", name="probe.read", arguments={})],
         [PlannedToolCall(step_id="step-prov", tool_id="probe.read", input=_In())],
         [
             PlannedToolCallOutcome(
@@ -490,7 +491,7 @@ def test_append_native_tool_messages_remains_legacy_helper() -> None:
         messages,
         assistant_content="call",
         tool_calls=[
-            LLMToolCall.from_openai_shape(call_id="tc-legacy", name="probe.read", arguments={})
+            LLMToolCall.from_native_parts(call_id="tc-legacy", name="probe.read", arguments={})
         ],
         outcomes=[outcome],
     )

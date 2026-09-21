@@ -10,15 +10,19 @@ from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationPhysicalState,
     ExternalOperationStatusPort,
 )
+from intergrax.contracts.external_operation_identity import ExternalOperationIdentity
 from intergrax.contracts.external_operation_termination import (
     ExternalOperationTerminationPort,
+    TerminationResult,
 )
+from intergrax.llm_adapters.base.lifecycle_binding import LLMRuntimeLifecycleBinding
 from intergrax.llm_adapters._shared.provider_external_operation_capabilities import (
     external_operation_capabilities_for_provider,
 )
 from intergrax.llm_adapters._shared.provider_stream_transport_registry import (
     ProviderStreamTransportRegistry,
 )
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
 
@@ -114,20 +118,13 @@ def resolve_llm_provider_external_operation_seam(
 class _NoOpTerminationPort:
     async def terminate(
         self,
-        identity: object,
-    ) -> object:
-        from intergrax.contracts.external_operation_identity import (
-            ExternalOperationIdentity,
-        )
-        from intergrax.contracts.external_operation_termination import TerminationResult
-
-        if not isinstance(identity, ExternalOperationIdentity):
-            raise TypeError("identity must be ExternalOperationIdentity")
+        identity: ExternalOperationIdentity,
+    ) -> TerminationResult:
         return TerminationResult.not_supported()
 
 
 def bind_llm_external_operation_ports(
-    adapter: object,
+    adapter: LLMAdapter,
     *,
     cancellation_port: ExternalOperationCancellationPort | None,
     status_port: ExternalOperationStatusPort | None,
@@ -135,10 +132,8 @@ def bind_llm_external_operation_ports(
     stream_registry: ProviderStreamTransportRegistry | None = None,
 ) -> None:
     """Attach optional W4-C/D ports on LLMAdapter instances."""
-    from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-
-    if not isinstance(adapter, LLMAdapter):
-        raise TypeError("adapter must be LLMAdapter")
+    if not isinstance(adapter, LLMRuntimeLifecycleBinding):
+        return
     adapter.bind_external_operation_ports(
         store=None,
         cancellation_port=cancellation_port,

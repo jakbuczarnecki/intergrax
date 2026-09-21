@@ -33,9 +33,9 @@ from intergrax.runtime.diagnostics.problem_grouping import (
     ProblemGroupingStrategyVersion,
     ProblemGroupingSubjectRef,
 )
+from intergrax.contracts.diagnostics.problem_record import ProblemLifecycleProvenance
 from intergrax.runtime.diagnostics.problem_lifecycle import (
     ProblemId,
-    ProblemLifecycleProvenance,
     ProblemOccurrenceAggregateHealth,
     ProblemReconciliationKeyKind,
     ProblemStatus,
@@ -168,18 +168,15 @@ def grouping_provenance_from_problem_provenance(
     provenance: ProblemLifecycleProvenance,
 ) -> DiagnosticGroupingProvenance:
     """Map persisted lifecycle provenance to operator-safe grouping provenance."""
-    if type(provenance) is not ProblemLifecycleProvenance:
-        raise TypeError("provenance must be ProblemLifecycleProvenance")
-
     reconciliation_key = provenance.reconciliation_key
     deterministic_signature: DeterministicProblemSignature | None = None
     if type(reconciliation_key) is DeterministicProblemReconciliationKey:
         deterministic_signature = reconciliation_key.signature
 
     return DiagnosticGroupingProvenance(
-        strategy_id=provenance.strategy_id,
-        strategy_version=provenance.strategy_version,
-        method=provenance.method,
-        reconciliation_key_kind=reconciliation_key.kind,
+        strategy_id=ProblemGroupingStrategyId(provenance.strategy_id),
+        strategy_version=ProblemGroupingStrategyVersion(provenance.strategy_version),
+        method=ProblemGroupingMethod(provenance.method),
+        reconciliation_key_kind=ProblemReconciliationKeyKind(reconciliation_key.kind),
         deterministic_signature=deterministic_signature,
     )

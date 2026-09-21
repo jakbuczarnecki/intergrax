@@ -54,7 +54,8 @@ def emit_platform_event(
         severity=severity,
         correlation_id=ctx.effective_correlation_id,
         parent_event_id=ctx.parent_event_id,
-        **_trace_fields_from_ctx(ctx),
+        traceparent=ctx.traceparent,
+        tracestate=ctx.tracestate,
     )
     event = runtime_event_with_payload(event, payload)
     if ctx.bus is not None:
@@ -102,7 +103,8 @@ def emit_domain_signal(
         severity=severity,
         correlation_id=ctx.effective_correlation_id,
         parent_event_id=ctx.parent_event_id,
-        **_trace_fields_from_ctx(ctx),
+        traceparent=ctx.traceparent,
+        tracestate=ctx.tracestate,
     )
     event = runtime_event_with_payload(event, safe_payload)
     if ctx.bus is not None:

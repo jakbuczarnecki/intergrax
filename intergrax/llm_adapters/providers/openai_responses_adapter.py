@@ -24,16 +24,21 @@ from intergrax.llm_adapters._shared.responses_input import messages_to_responses
 from intergrax.llm_adapters._shared.openai_completion_mapping import adapter_response_from_openai_responses
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
+from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
-from intergrax.llm_adapters.contracts.tool_call import tool_calls_from_openai_dicts
+from intergrax.llm_adapters._shared.openai_tool_call_interop import tool_calls_from_openai_dicts
+from intergrax.llm_adapters._shared.openai_tool_choice_projection import (
+    project_openai_compatible_tool_choice,
+)
 from intergrax.llm_adapters.providers._openai_schema import (
     prepare_openai_strict_generation_schema,
     project_atomic_planner_round_parameters_for_openai_strict,
     project_json_schema_for_openai_strict_tool_parameters,
 )
+from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
     StrictToolArgumentConformanceError,
@@ -219,24 +224,17 @@ def _extract_canonical_tool_names_from_responses_input(
 
 
 def _extract_tool_choice_canonical_name(
-    tool_choice: Union[str, Dict[str, Any]] | None,
+    tool_choice: NativeToolChoice | None,
 ) -> str | None:
-    if tool_choice is None or isinstance(tool_choice, str):
-        return None
-    if (
-        isinstance(tool_choice, dict)
-        and tool_choice.get("type") == "function"
-        and isinstance(tool_choice.get("name"), str)
-        and tool_choice["name"]
-    ):
-        return tool_choice["name"]
-    return None
+    from intergrax.llm_adapters.contracts.native_tool_choice import native_tool_choice_function_name
+
+    return native_tool_choice_function_name(tool_choice)
 
 
 def _build_request_canonical_tool_names(
     tools_schema: Sequence[Dict[str, Any]],
     input_items: Sequence[Dict[str, Any]],
-    tool_choice: Union[str, Dict[str, Any]] | None = None,
+    tool_choice: NativeToolChoice | None = None,
 ) -> List[str]:
     """Union of current callable, historical function_call, and forced-choice names."""
     names: List[str] = []
@@ -280,14 +278,15 @@ def _apply_tool_name_mapping_to_responses_tools(
 
 
 def _map_tool_choice_to_provider(
-    tool_choice: Union[str, Dict[str, Any]],
+    tool_choice: NativeToolChoice,
     name_mapping: _OpenAIToolNameMapping,
 ) -> Union[str, Dict[str, Any]]:
-    if isinstance(tool_choice, str):
-        return tool_choice
-    if not isinstance(tool_choice, dict):
-        return tool_choice
-    out = dict(tool_choice)
+    projected = project_openai_compatible_tool_choice(tool_choice)
+    if projected is None:
+        return "auto"
+    if isinstance(projected, str):
+        return projected
+    out = dict(projected)
     if out.get("type") == "function" and isinstance(out.get("name"), str) and out["name"]:
         out["name"] = name_mapping.to_provider(out["name"])
     return out
@@ -318,7 +317,7 @@ def _prepare_responses_tools_and_mapping(
     tool_definitions: Sequence[CanonicalFunctionToolDefinition],
     *,
     input_items: Sequence[Dict[str, Any]] | None = None,
-    tool_choice: Union[str, Dict[str, Any]] | None = None,
+    tool_choice: NativeToolChoice | None = None,
 ) -> tuple[List[Dict[str, Any]], _OpenAIToolNameMapping]:
     mapped_tools = _map_tools_to_responses_api(tool_definitions)
     tools_schema = [dict(definition.wire_schema) for definition in tool_definitions]
@@ -485,7 +484,7 @@ def _map_tools_to_responses_api(
     return mapped
 
 
-class OpenAIChatResponsesAdapter(LLMAdapter):
+class OpenAIChatResponsesAdapter(BaseLLMAdapter):
     """
     OpenAI adapter based on the new Responses API.
 
@@ -755,11 +754,11 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
     def stream_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> Iterable[LLMStreamEvent]:
         """
@@ -894,12 +893,12 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
     def generate_structured(
         self,
         messages: Sequence[ChatMessage],
-        output_model: type,
+        output_model: type[TStructured],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         run_id: Optional[str] = None,
-    ) -> LLMStructuredResult[Any]:
+    ) -> LLMStructuredResult[TStructured]:
         call = self.usage.begin_call(run_id=run_id, adapter=self)
         response: LLMAdapterResponse | None = None
         success = False
@@ -955,11 +954,11 @@ class OpenAIChatResponsesAdapter(LLMAdapter):
     def generate_with_tools(
         self,
         messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition | Mapping[str, Any]],
+        tools: Sequence[CanonicalFunctionToolDefinition],
         *,
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
-        tool_choice: Optional[Union[str, Dict[str, Any]]] = None,
+        tool_choice: NativeToolChoice | None = None,
         run_id: Optional[str] = None,
     ) -> LLMAdapterResponse:
         """

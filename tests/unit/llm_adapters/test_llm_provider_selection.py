@@ -23,13 +23,14 @@ from intergrax.llm_adapters.registry.registration_contract import (
     LLMProviderNotConfiguredError,
 )
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.registry.catalog_capabilities import unwrap_catalog_capability_adapter
 from intergrax.llm_adapters.providers.openai_compat_providers import GroqChatAdapter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
-class _StubCustomEnvAdapter(LLMAdapter):
+class _StubCustomEnvAdapter(BaseLLMAdapter):
     provider = "custom_gateway_env"
     model = "custom-model"
 

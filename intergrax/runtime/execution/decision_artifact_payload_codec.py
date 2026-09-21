@@ -9,7 +9,10 @@ from dataclasses import dataclass
 from typing import Protocol, TypeVar
 
 from intergrax.contracts.decision_record import DecisionArtifactKind, validate_decision_artifact_kind
-from intergrax.knowledge.contracts.validation import JsonValue, validate_json_value
+from intergrax.contracts.structured_json_value import (
+    JsonValue,
+    validate_json_value_structure,
+)
 from intergrax.runtime.execution.decision_persistence_codec_errors import (
     DecisionPersistenceUnknownPayloadCodecError,
 )
@@ -87,7 +90,7 @@ class JsonObjectDecisionArtifactPayloadCodec:
         for field_name in self._fields:
             if field_name not in payload:
                 raise ValueError(f"missing required artifact payload field {field_name!r}")
-            encoded[field_name] = validate_json_value(
+            encoded[field_name] = validate_json_value_structure(
                 payload[field_name],
                 field_name=field_name,
             )
@@ -100,7 +103,7 @@ class JsonObjectDecisionArtifactPayloadCodec:
         for field_name in self._fields:
             if field_name not in payload:
                 raise ValueError(f"missing required artifact payload field {field_name!r}")
-            decoded[field_name] = validate_json_value(
+            decoded[field_name] = validate_json_value_structure(
                 payload[field_name],
                 field_name=field_name,
             )

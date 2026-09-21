@@ -12,11 +12,20 @@ HTTP clients are opened only in ``opens.py``. Tier-3 code MUST use
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Callable, Optional
+from typing import Optional
 
+from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+from intergrax.integrations.providers.observability_backend._http_contract import (
+    ObservabilityHttpClient,
+    ObservabilityHttpClientFactory,
+)
 from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
+    ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID,
+    ELASTICSEARCH_SUPPORTED_SIGNALS,
     ElasticsearchObservabilityIntegration,
+    ElasticsearchObservabilityIntegrationConfig,
+    ElasticsearchObservabilityTransport,
 )
 from intergrax.integrations.providers.observability_backend.elasticsearch.client import ElasticsearchRestClient
 from intergrax.integrations.providers.observability_backend.elasticsearch.config import (
@@ -48,8 +57,8 @@ def create_elasticsearch_integration(
     *,
     observability_backend: Optional[ObservabilityBackend] = None,
     client: Optional[ElasticsearchRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[ElasticsearchIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[ElasticsearchIntegrationConfig] | None = None,
     **config_overrides: object,
 ) -> ElasticsearchIntegrationBundle:
     config = resolve_elasticsearch_config(**config_overrides)
@@ -75,8 +84,8 @@ def create_elasticsearch_observability_backend(
     *,
     observability_backend: Optional[ObservabilityBackend] = None,
     client: Optional[ElasticsearchRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[ElasticsearchIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[ElasticsearchIntegrationConfig] | None = None,
     **config_overrides: object,
 ) -> ElasticsearchObservabilityIntegration:
     """Catalog factory for ``"elasticsearch"`` / ``OBSERVABILITY_BACKEND``."""
@@ -89,21 +98,11 @@ def create_elasticsearch_observability_backend(
     ).observability_backend
 
 
-from intergrax.integrations.contracts.base import IntegrationConfigurationError
-from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
-    ELASTICSEARCH_OBSERVABILITY_PROVIDER_ID,
-    ELASTICSEARCH_SUPPORTED_SIGNALS,
-    ElasticsearchObservabilityIntegration,
-    ElasticsearchObservabilityIntegrationConfig,
-    ElasticsearchObservabilityTransport,
-)
-
-
 def create_elasticsearch_observability_transport(
     *,
     client: Optional[ElasticsearchRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[ElasticsearchIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[ElasticsearchIntegrationConfig] | None = None,
     index: Optional[str] = None,
     retry_policy: ElasticsearchRetryPolicy | None = None,
     failed_delivery_sink: ElasticsearchFailedDeliverySink | None = None,

@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
@@ -14,6 +13,11 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
 )
 from intergrax.contracts.agent_decision import AgentDecisionType
+from intergrax.contracts.agent_run_enums import PrincipalType
+from intergrax.contracts.human_approver import (
+    HumanApproverAuthMode,
+    HumanApproverEvidence,
+)
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.scheduled_resume import ScheduledResume
@@ -25,7 +29,33 @@ from intergrax.runtime.task.task_contract import (
 )
 
 
-def execution_identity_from_checkpoint(checkpoint: TaskCheckpoint) -> tuple[RunId, AttemptId]:
+def _scheduler_approver_evidence(task: Task) -> HumanApproverEvidence:
+    """Canonical approver for scheduler-driven HITL timeout / delayed resume."""
+    return HumanApproverEvidence(
+        tenant_id=task.tenant_id,
+        user_id="long_running_scheduler",
+        principal_type=PrincipalType.ORG_SYSTEM,
+        auth_subject="long_running_scheduler",
+        auth_mode=HumanApproverAuthMode.LOCAL_DEVELOPMENT,
+    )
+
+
+def _apply_scheduler_human_input(
+    task: Task,
+    *,
+    verdict: HumanResponseVerdict,
+    response_text: str,
+) -> None:
+    task.options.human = TaskHumanInput(
+        response_text=response_text,
+        verdict=verdict.value,
+        approver=_scheduler_approver_evidence(task),
+    )
+
+
+def execution_identity_from_checkpoint(
+    checkpoint: TaskCheckpoint,
+) -> tuple[RunId, AttemptId]:
     runtime = checkpoint.runtime
     if runtime is None:
         raise ValueError(
@@ -49,9 +79,10 @@ def build_timeout_resume_task(
     action: AgentDecisionType,
 ) -> Task:
     task = _base_resume_task(checkpoint)
-    task.options.human = TaskHumanInput(
+    _apply_scheduler_human_input(
+        task,
+        verdict=verdict,
         response_text=f"scheduler:timeout:{action.value}",
-        verdict=verdict.value,
     )
     task.metadata["scheduler_timeout"] = True
     task.metadata["scheduler_timeout_action"] = action.value
@@ -65,12 +96,17 @@ def build_scheduled_resume_task(
 ) -> Task:
     task = _base_resume_task(checkpoint)
     extra = dict(entry.resume_metadata or {})
+    if extra.pop("human_approved", False):
+        extra.setdefault("verdict", HumanResponseVerdict.APPROVE.value)
     verdict_raw = extra.pop("verdict", None)
     if verdict_raw:
         verdict = HumanResponseVerdict(str(verdict_raw))
-        task.options.human = TaskHumanInput(
-            response_text=str(extra.pop("response_text", f"scheduler:delayed:{verdict.value}")),
-            verdict=verdict.value,
+        _apply_scheduler_human_input(
+            task,
+            verdict=verdict,
+            response_text=str(
+                extra.pop("response_text", f"scheduler:delayed:{verdict.value}")
+            ),
         )
     task.metadata["scheduler_delayed_resume"] = True
     task.metadata["schedule_id"] = entry.schedule_id

@@ -1346,6 +1346,11 @@ def wire_causal_evidence_persistence(
         )
 
     if document_store is not None:
+        if not isinstance(document_store, ConditionalDocumentStore):
+            raise TypeError(
+                "document_store must implement ConditionalDocumentStore for "
+                "causal evidence persistence wiring",
+            )
         return DocumentStoreCausalEvidencePersistence(document_store)
 
     raise ValueError(

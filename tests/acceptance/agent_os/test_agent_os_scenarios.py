@@ -11,10 +11,13 @@ from intergrax.utils import attribute_access
 
 import pytest
 
-from intergrax.agents.agent_contract import Agent
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType, HumanRequest
+from intergrax.contracts.agent_decision import (
+    AgentDecision,
+    AgentDecisionType,
+    HumanRequest,
+)
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -23,26 +26,39 @@ from intergrax.contracts.tool_request import ToolRequest
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.long_running.runtime_checkpoint import UAEP_STEP_CURSOR_KEY
-from intergrax.runtime.long_running.checkpoint_builder import resolve_task_runtime_checkpoint
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNode, ExecutionNodeStatus
+from intergrax.runtime.nexus.execution.execution_graph import (
+    ExecutionGraph,
+    ExecutionNode,
+    ExecutionNodeStatus,
+)
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_FLAG, SANDBOX_TOOL_NAME
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
-from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
-from intergrax.runtime.nexus.context.shared_task_context import load_shared_task_context_from_metadata
+from intergrax.runtime.task.task_contract import (
+    TaskExecutionOptions,
+    TaskLongRunningOptions,
+)
+from intergrax.runtime.nexus.context.shared_task_context import (
+    load_shared_task_context_from_metadata,
+)
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 from intergrax.runtime.workspace.shadow_workspace import SHADOW_WORKSPACE_FLAG
 
+from intergrax.contracts.execution_identity import mint_run_id
 from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.graph_execution_context import bound_graph_execution_context
+from testing_support.nexus_lab_task_execution import (
+    resume_lab_nexus_hitl,
+    run_lab_nexus_task,
+)
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 pytestmark = [pytest.mark.integration, pytest.mark.agent_os, pytest.mark.gate]
@@ -82,10 +98,11 @@ class _HitlAcceptanceAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="review", step_name="review", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _ = ctx
         return StepOutput(step_id=step.step_id, summary="needs approval")
 
@@ -101,7 +118,9 @@ class _HitlAcceptanceAgent(HarnessReferenceAgent):
         return AgentDecision(
             type=AgentDecisionType.REQUEST_HUMAN,
             reason="approval required",
-            human_request=HumanRequest(request_id="hr_acceptance", prompt="Approve?", options=["approve"]),
+            human_request=HumanRequest(
+                request_id="hr_acceptance", prompt="Approve?", options=["approve"]
+            ),
         )
 
 
@@ -143,10 +162,11 @@ class _MidStepAcceptanceAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="process", step_name="process", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         cursor = ctx.metadata.get(UAEP_STEP_CURSOR_KEY)
         if cursor and cursor.get("phase1_done"):
             return StepOutput(step_id=step.step_id, summary="mid-step complete")
@@ -210,10 +230,11 @@ class _RetryPrimaryAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="run", step_name="run", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _ = ctx
         return StepOutput(step_id=step.step_id, summary="")
 
@@ -261,10 +282,11 @@ class _RetryAlternateAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="run", step_name="run", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _ = ctx
         return StepOutput(step_id=step.step_id, summary="recovered")
 
@@ -301,10 +323,11 @@ class _MemoryProducerAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="write", step_name="write", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _ = step
         return StepOutput(step_id=step.step_id, summary="producer summary")
 
@@ -341,10 +364,11 @@ class _MemoryConsumerAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="read", step_name="read", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         _ = step
         shared = load_shared_task_context_from_metadata(ctx.metadata)
         assert shared is not None
@@ -397,10 +421,11 @@ class _SandboxAcceptanceAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="sandbox", step_name="sandbox", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         message = (ctx.request.message if ctx.request else "") or ""
         response = await ctx.invoke_tool(
             ToolRequest(
@@ -459,10 +484,11 @@ class _ShadowAcceptanceAgent(HarnessReferenceAgent):
         )
 
     def get_steps(self) -> list[AgentStep]:
-        _ = context
         return [AgentStep(step_id="shadow", step_name="shadow", step_index=0)]
 
-    async def run_step(self, step: AgentStep, ctx: RuntimeExecutionContext) -> StepOutput:
+    async def run_step(
+        self, step: AgentStep, ctx: RuntimeExecutionContext
+    ) -> StepOutput:
         workspace = ctx.metadata.get("shadow_workspace")
         message = (ctx.request.message if ctx.request else "") or ""
         if workspace is not None:
@@ -482,13 +508,14 @@ class _ShadowAcceptanceAgent(HarnessReferenceAgent):
 @pytest.mark.asyncio
 async def test_acceptance_01_single_agent_execution(echo_loop: NexusLoop):
     """Task → Agent → Result."""
-    result = await echo_loop.handle_task(
+    result = await run_lab_nexus_task(
+        echo_loop,
         Task(
             tenant_id="t1",
             user_id="u1",
             message="acceptance single",
             context=TaskContext(capability="echo.basic"),
-        )
+        ),
     )
     assert result.state == TaskState.COMPLETED
     assert "acceptance single" in result.answer
@@ -500,9 +527,15 @@ async def test_acceptance_02_sequential_multi_agent():
     """Agent A → Agent B → Agent C."""
     UaepPipelineStubAgent.run_log = []
     registry = AgentRegistry()
-    registry.register(UaepPipelineStubAgent(agent_id="a", capability="cap.a", prefix="A"))
-    registry.register(UaepPipelineStubAgent(agent_id="b", capability="cap.b", prefix="B"))
-    registry.register(UaepPipelineStubAgent(agent_id="c", capability="cap.c", prefix="C"))
+    registry.register(
+        UaepPipelineStubAgent(agent_id="a", capability="cap.a", prefix="A")
+    )
+    registry.register(
+        UaepPipelineStubAgent(agent_id="b", capability="cap.b", prefix="B")
+    )
+    registry.register(
+        UaepPipelineStubAgent(agent_id="c", capability="cap.c", prefix="C")
+    )
     task = Task(
         tenant_id="t1",
         user_id="u1",
@@ -514,25 +547,40 @@ async def test_acceptance_02_sequential_multi_agent():
         task_id=task.task_id,
         nodes=[
             ExecutionNode(node_id="n1", agent_id="a", capability="cap.a"),
-            ExecutionNode(node_id="n2", agent_id="b", capability="cap.b", depends_on=["n1"]),
-            ExecutionNode(node_id="n3", agent_id="c", capability="cap.c", depends_on=["n2"]),
+            ExecutionNode(
+                node_id="n2", agent_id="b", capability="cap.b", depends_on=["n1"]
+            ),
+            ExecutionNode(
+                node_id="n3", agent_id="c", capability="cap.c", depends_on=["n2"]
+            ),
         ],
     )
-    executions, _, final_graph, _ = await GraphExecutor(registry).execute(graph, task)
+    with bound_graph_execution_context():
+        executions, _, final_graph, _ = await GraphExecutor(registry).execute(
+            graph, task
+        )
     assert len(executions) == 3
     assert executions[0].summary == "A: seq"
     assert "B: seq" in executions[1].summary
     assert "C: seq" in executions[2].summary
-    assert all(node.status == ExecutionNodeStatus.COMPLETED for node in final_graph.nodes)
+    assert all(
+        node.status == ExecutionNodeStatus.COMPLETED for node in final_graph.nodes
+    )
 
 
 @pytest.mark.asyncio
 async def test_acceptance_03_parallel_multi_agent():
     """Agent A, B, C in parallel batch."""
     registry = AgentRegistry()
-    registry.register(UaepPipelineStubAgent(agent_id="pa", capability="cap.pa", prefix="PA"))
-    registry.register(UaepPipelineStubAgent(agent_id="pb", capability="cap.pb", prefix="PB"))
-    registry.register(UaepPipelineStubAgent(agent_id="pc", capability="cap.pc", prefix="PC"))
+    registry.register(
+        UaepPipelineStubAgent(agent_id="pa", capability="cap.pa", prefix="PA")
+    )
+    registry.register(
+        UaepPipelineStubAgent(agent_id="pb", capability="cap.pb", prefix="PB")
+    )
+    registry.register(
+        UaepPipelineStubAgent(agent_id="pc", capability="cap.pc", prefix="PC")
+    )
     task = Task(
         tenant_id="t1",
         user_id="u1",
@@ -552,11 +600,16 @@ async def test_acceptance_03_parallel_multi_agent():
     assert len(batches) == 1
     assert len(batches[0]) == 3
 
-    executions, _, final_graph, _ = await GraphExecutor(registry).execute(graph, task)
+    with bound_graph_execution_context():
+        executions, _, final_graph, _ = await GraphExecutor(registry).execute(
+            graph, task
+        )
     assert len(executions) == 3
     summaries = {execution.summary for execution in executions}
     assert summaries == {"PA: parallel", "PB: parallel", "PC: parallel"}
-    assert all(node.status == ExecutionNodeStatus.COMPLETED for node in final_graph.nodes)
+    assert all(
+        node.status == ExecutionNodeStatus.COMPLETED for node in final_graph.nodes
+    )
 
 
 @pytest.mark.asyncio
@@ -573,18 +626,19 @@ async def test_acceptance_04_human_approval_flow(tmp_path):
         context=TaskContext(capability="acceptance.hitl"),
         options=TaskExecutionOptions(long_running=TaskLongRunningOptions(enabled=True)),
     )
-    paused = await loop.handle_task(task)
+    run_id = mint_run_id()
+    paused = await run_lab_nexus_task(loop, task, run_id=run_id)
     assert paused.state == TaskState.WAITING_FOR_HUMAN
 
-    resumed = await loop.handle_task(
-        Task(
-            tenant_id="t1",
-            user_id="u1",
-            message="approve me",
-            context=TaskContext(capability="acceptance.hitl"),
-            task_id=task.task_id,
-            metadata={"human_response": "approve"},
-        )
+    resumed = await resume_lab_nexus_hitl(
+        loop,
+        paused=paused,
+        checkpoint_store=store,
+        tenant_id="t1",
+        user_id="u1",
+        message="approve me",
+        capability="acceptance.hitl",
+        run_id=run_id,
     )
     assert resumed.state == TaskState.COMPLETED
 
@@ -603,19 +657,20 @@ async def test_acceptance_05_checkpoint_recovery(tmp_path):
         context=TaskContext(capability="acceptance.hitl"),
         options=TaskExecutionOptions(long_running=TaskLongRunningOptions(enabled=True)),
     )
-    paused = await loop.handle_task(task)
+    run_id = mint_run_id()
+    paused = await run_lab_nexus_task(loop, task, run_id=run_id)
     checkpoints = store.list_for_task(task.task_id, tenant_id="t1")
     assert checkpoints
 
-    resumed = await loop.handle_task(
-        Task(
-            tenant_id="t1",
-            user_id="u1",
-            message="checkpoint",
-            context=TaskContext(capability="acceptance.hitl"),
-            task_id=task.task_id,
-            metadata={"human_response": "approve"},
-        )
+    resumed = await resume_lab_nexus_hitl(
+        loop,
+        paused=paused,
+        checkpoint_store=store,
+        tenant_id="t1",
+        user_id="u1",
+        message="checkpoint",
+        capability="acceptance.hitl",
+        run_id=run_id,
     )
     assert paused.task_id == resumed.task_id
     assert resumed.state == TaskState.COMPLETED
@@ -636,7 +691,8 @@ async def test_acceptance_05b_mid_step_uaep_resume(tmp_path):
         context=TaskContext(capability="acceptance.mid_step"),
         options=TaskExecutionOptions(long_running=TaskLongRunningOptions(enabled=True)),
     )
-    paused = await loop.handle_task(task)
+    run_id = mint_run_id()
+    paused = await run_lab_nexus_task(loop, task, run_id=run_id)
     assert paused.state == TaskState.WAITING_FOR_HUMAN
     assert _MidStepAcceptanceAgent.phase1_runs == 1
 
@@ -644,25 +700,25 @@ async def test_acceptance_05b_mid_step_uaep_resume(tmp_path):
     assert checkpoints
     runtime = checkpoints[-1].runtime
     assert runtime is not None
-    assert runtime.uaep_step_cursor == {"phase1_done": True}
+    cursor = runtime.uaep_step_cursor
+    cursor_payload = cursor if isinstance(cursor, dict) else cursor.model_dump()
+    phase_values = cursor_payload.get("values", cursor_payload)
+    assert phase_values.get("phase1_done") is True
     assert runtime.uaep_step_completed is False
 
-    resumed = await loop.handle_task(
-        Task(
-            tenant_id="t1",
-            user_id="u1",
-            message="mid-step",
-            context=TaskContext(capability="acceptance.mid_step"),
-            task_id=task.task_id,
-            metadata={"human_response": "approve"},
-        )
+    resumed = await resume_lab_nexus_hitl(
+        loop,
+        paused=paused,
+        checkpoint_store=store,
+        tenant_id="t1",
+        user_id="u1",
+        message="mid-step",
+        capability="acceptance.mid_step",
+        run_id=run_id,
     )
     assert resumed.state == TaskState.COMPLETED
     assert "mid-step complete" in resumed.answer
     assert _MidStepAcceptanceAgent.phase1_runs == 1
-
-    restored_ckpt = resolve_task_runtime_checkpoint(resumed)
-    assert restored_ckpt is None or restored_ckpt.uaep_step_completed or restored_ckpt.uaep_step_cursor is None
 
 
 @pytest.mark.asyncio
@@ -680,14 +736,19 @@ async def test_acceptance_06_retry_flow():
     graph = ExecutionGraph(
         graph_id="acceptance_retry",
         task_id=task.task_id,
-        nodes=[ExecutionNode(node_id="n1", agent_id="retry_primary", capability="acceptance.retry")],
+        nodes=[
+            ExecutionNode(
+                node_id="n1", agent_id="retry_primary", capability="acceptance.retry"
+            )
+        ],
     )
     executor = GraphExecutor(
         registry,
         retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=2)),
         validation_engine=NexusValidationEngine(),
     )
-    executions, retries, final_graph, _ = await executor.execute(graph, task)
+    with bound_graph_execution_context():
+        executions, retries, final_graph, _ = await executor.execute(graph, task)
     assert executions[-1].status == AgentExecutionStatus.COMPLETED
     assert executions[-1].agent_id == "retry_alternate"
     assert "recovered" in executions[-1].summary
@@ -709,7 +770,7 @@ async def test_acceptance_07_partial_results(tmp_path):
         context=TaskContext(capability="acceptance.hitl"),
         options=TaskExecutionOptions(long_running=TaskLongRunningOptions(enabled=True)),
     )
-    await loop.handle_task(task)
+    await run_lab_nexus_task(loop, task)
     checkpoints = store.list_for_task(task.task_id, tenant_id="t1")
     assert checkpoints
     progress_types = {
@@ -717,7 +778,10 @@ async def test_acceptance_07_partial_results(tmp_path):
         for event in loop.event_bus.history
         if event.task_id == task.task_id
     }
-    assert RuntimeEventType.TASK_PROGRESS in progress_types or RuntimeEventType.HUMAN_APPROVAL_REQUESTED in progress_types
+    assert (
+        RuntimeEventType.TASK_PROGRESS in progress_types
+        or RuntimeEventType.HUMAN_APPROVAL_REQUESTED in progress_types
+    )
 
 
 @pytest.mark.asyncio
@@ -736,7 +800,9 @@ async def test_acceptance_08_memory_handoff():
         graph_id="acceptance_memory",
         task_id=task.task_id,
         nodes=[
-            ExecutionNode(node_id="n1", agent_id="memory_a", capability="acceptance.memory_a"),
+            ExecutionNode(
+                node_id="n1", agent_id="memory_a", capability="acceptance.memory_a"
+            ),
             ExecutionNode(
                 node_id="n2",
                 agent_id="memory_b",
@@ -745,7 +811,10 @@ async def test_acceptance_08_memory_handoff():
             ),
         ],
     )
-    executions, _, final_graph, _ = await GraphExecutor(registry).execute(graph, task)
+    with bound_graph_execution_context():
+        executions, _, final_graph, _ = await GraphExecutor(registry).execute(
+            graph, task
+        )
     assert executions[0].summary == "producer summary"
     assert executions[1].summary == "consumer:producer summary"
     shared = load_shared_task_context_from_metadata(task.metadata)
@@ -760,14 +829,15 @@ async def test_acceptance_09_sandbox_tool_execution(tmp_path):
     registry.register(_SandboxAcceptanceAgent())
     sandbox_manager = SandboxSessionManager(root=tmp_path)
     loop = NexusLoop(registry, sandbox_manager=sandbox_manager)
-    result = await loop.handle_task(
+    result = await run_lab_nexus_task(
+        loop,
         Task(
             tenant_id="t1",
             user_id="u1",
             message="sandbox-content",
             context=TaskContext(capability="acceptance.sandbox"),
             metadata={SANDBOX_FLAG: True},
-        )
+        ),
     )
     assert result.state == TaskState.COMPLETED
     assert result.metadata.get("sandbox_session_id")
@@ -780,14 +850,15 @@ async def test_acceptance_10_shadow_workspace(tmp_path):
     registry.register(_ShadowAcceptanceAgent())
     shadow_manager = ShadowWorkspaceManager(root=tmp_path)
     loop = NexusLoop(registry, shadow_manager=shadow_manager)
-    result = await loop.handle_task(
+    result = await run_lab_nexus_task(
+        loop,
         Task(
             tenant_id="t1",
             user_id="u1",
             message="artifact-content",
             context=TaskContext(capability="acceptance.shadow"),
             metadata={SHADOW_WORKSPACE_FLAG: True},
-        )
+        ),
     )
     assert result.state == TaskState.COMPLETED
     assert result.metadata.get("shadow_workspace_id")

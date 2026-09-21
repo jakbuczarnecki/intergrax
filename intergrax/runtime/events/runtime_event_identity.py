@@ -5,6 +5,8 @@
 
 from __future__ import annotations
 
+from typing import TypedDict
+
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -15,6 +17,13 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
+
+
+class RuntimeEventIdentityKwargs(TypedDict):
+    task_id: TaskId
+    run_id: RunId
+    attempt_id: AttemptId
+    execution_id: ExecutionId
 
 
 def require_bound_runtime_event_identity(
@@ -39,7 +48,7 @@ def runtime_event_identity_kwargs(
     *,
     task_id: object,
     run_id: object | None = None,
-) -> dict[str, TaskId | RunId | AttemptId | ExecutionId]:
+) -> RuntimeEventIdentityKwargs:
     resolved_task_id, resolved_run_id, attempt_id, execution_id = (
         require_bound_runtime_event_identity(task_id=task_id, run_id=run_id)
     )

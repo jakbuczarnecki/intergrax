@@ -52,6 +52,9 @@ from intergrax.applications._shared.harness_host_composition import (
     resolve_harness_host_middleware_pipeline,
     resolve_harness_host_runtime_event_persistence,
 )
+from dispute_sim_application.host.host_runtime_composition import (
+    DisputeSimHostRuntimeComposition,
+)
 from dispute_sim_application.host.orchestration_decision_requirement_policy import (
     resolve_dispute_sim_harness_orchestration_decision_requirement_policy,
 )
@@ -69,8 +72,10 @@ def create_dispute_sim_backend_app(
     runtime_events_db_path: Path | None = None,
     document_store: object | None = None,
     key_value_cache: object | None = None,
+    host_runtime: DisputeSimHostRuntimeComposition | None = None,
 ) -> FastAPI:
     settings = settings or DisputeSimBackendSettings.from_env()
+    resolved_host_runtime = host_runtime or DisputeSimHostRuntimeComposition()
     api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
 
     manifest = build_dispute_sim_manifest()
@@ -87,7 +92,9 @@ def create_dispute_sim_backend_app(
         document_store=document_store,
         key_value_cache=key_value_cache,
         orchestration_decision_requirement_policy=(
-            resolve_dispute_sim_harness_orchestration_decision_requirement_policy(settings)
+            resolve_dispute_sim_harness_orchestration_decision_requirement_policy(
+                resolved_host_runtime.orchestration_decision_requirement_policy,
+            )
         ),
     )
     host_execution = runtime.execution

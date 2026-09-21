@@ -6,10 +6,11 @@ from __future__ import annotations
 
 from typing import Dict, List
 
+from intergrax.contracts.persisted_run_trace import PersistedRun, RunMetadata, RunSummary
+from intergrax.runtime.nexus.tracing.persisted_trace_codec import (
+    serialized_trace_event_to_persisted,
+)
 from intergrax.runtime.nexus.tracing.persistence_models import (
-    PersistedRun,
-    RunMetadata,
-    RunSummary,
     RunTraceStore,
     SerializedTraceEvent,
 )
@@ -56,7 +57,10 @@ class InMemoryRunTraceStore(RunTraceStore):
 
         return PersistedRun(
             metadata=metadata,
-            events=list(self._events_by_run[run_id]),
+            events=[
+                serialized_trace_event_to_persisted(item)
+                for item in self._events_by_run[run_id]
+            ],
         )
 
     def list_runs(self, tenant_id: str, *, limit: int = 50) -> List[RunSummary]:

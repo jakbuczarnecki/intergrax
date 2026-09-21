@@ -12,6 +12,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.provider_extensions import (
     LLMProviderExtensions,
     VllmProviderExtensions,
@@ -76,7 +77,7 @@ def _decision(
     )
 
 
-class FakeNativeToolsAdapter(LLMAdapter):
+class FakeNativeToolsAdapter(BaseLLMAdapter):
     provider = "fake-integration"
     model = "fake-integration"
 

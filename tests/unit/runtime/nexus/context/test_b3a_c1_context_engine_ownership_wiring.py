@@ -32,6 +32,7 @@ from intergrax.runtime.nexus.context.ucl_artifact_ownership_composition import (
     resolve_ucl_artifact_ownership_scope,
 )
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from dataclasses import dataclass
@@ -50,7 +51,7 @@ class _RuntimeConfigStub:
             object.__setattr__(self, "metadata", {})
 
 
-class _SmallWindowAdapter(LLMAdapter):
+class _SmallWindowAdapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-small"
 

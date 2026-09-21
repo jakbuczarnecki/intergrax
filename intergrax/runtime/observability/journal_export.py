@@ -9,8 +9,9 @@ from intergrax.utils import attribute_access
 import hashlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Sequence
+from typing import TYPE_CHECKING, Mapping, Sequence
 
+from intergrax.contracts.persisted_run_trace import PersistedTraceEvent
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.w3c_trace_context import (
     is_valid_traceparent,
@@ -21,11 +22,21 @@ from intergrax.runtime.events.unified_run_journal import (
     JOURNAL_SCHEMA_VERSION,
     read_run_journal_page,
 )
-from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun
+from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, SerializedTraceEvent
+from intergrax.runtime.observability.otlp_json_payload import OtlpKeyValue
+
 if TYPE_CHECKING:
     from intergrax.runtime.observability.export_boundary import ObservabilityExportEnvelope
 
 JOURNAL_EXPORT_SCHEMA_VERSION = "journal_export.v2"
+
+JournalRefDict = dict[str, object]
+JournalExportSnapshotDict = dict[str, object]
+JournalOtlpJsonPayload = dict[str, object]
+
+TraceRowForTagExtraction = (
+    PersistedTraceEvent | SerializedTraceEvent | Mapping[str, object]
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,7 +49,7 @@ class JournalRef:
     event_count: int
     parser_trace_count: int
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JournalRefDict:
         return {
             "schema_version": self.schema_version,
             "run_id": self.run_id,
@@ -62,7 +73,7 @@ class JournalExportSnapshot:
     is_complete: bool
     has_continuation: bool
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> JournalExportSnapshotDict:
         return {
             "schema_version": self.schema_version,
             "journal_schema_version": self.journal_schema_version,
@@ -106,7 +117,7 @@ def build_journal_ref_payload(
     *,
     runtime_store: RuntimeEventPersistence,
     limit: int = 2000,
-) -> Dict[str, Any] | None:
+) -> JournalRefDict | None:
     """``TASK_COMPLETED`` payload fragment with unified journal metadata."""
     ref = build_journal_ref(persisted, runtime_store=runtime_store, limit=limit)
     if ref is None:
@@ -155,7 +166,7 @@ def serialize_runtime_event(event: RuntimeEvent) -> ObservabilityExportEnvelope:
     return envelope
 
 
-def count_parser_traces_in_trace_events(events: Sequence[Any]) -> int:
+def count_parser_traces_in_trace_events(events: Sequence[TraceRowForTagExtraction]) -> int:
     """Count persisted trace rows carrying ``integration_parser_trace`` tags."""
     count = 0
     for event in events:
@@ -166,7 +177,7 @@ def count_parser_traces_in_trace_events(events: Sequence[Any]) -> int:
     return count
 
 
-def render_journal_otlp_json(snapshot: JournalExportSnapshot) -> Dict[str, Any]:
+def render_journal_otlp_json(snapshot: JournalExportSnapshot) -> JournalOtlpJsonPayload:
     """
     OTLP-inspired JSON trace snapshot for observability backends / debug export.
 
@@ -175,7 +186,7 @@ def render_journal_otlp_json(snapshot: JournalExportSnapshot) -> Dict[str, Any]:
     """
     run_id = snapshot.run_id
     tenant_id = snapshot.tenant_id
-    spans: List[Dict[str, Any]] = []
+    spans: list[dict[str, object]] = []
     for envelope in snapshot.events:
         event_id = envelope.event_id
         event_type = envelope.event_type or "unknown"
@@ -187,7 +198,7 @@ def render_journal_otlp_json(snapshot: JournalExportSnapshot) -> Dict[str, Any]:
         else:
             trace_id = _otlp_hex_id(run_id, length=32)
             span_id = _otlp_hex_id(event_id, length=16)
-        span: Dict[str, Any] = {
+        span: dict[str, object] = {
             "traceId": trace_id,
             "spanId": span_id,
             "name": event_type,
@@ -224,8 +235,8 @@ def _span_attributes_from_envelope(
     envelope: ObservabilityExportEnvelope,  # noqa: F821 — TYPE_CHECKING
     *,
     tenant_id: str,
-) -> List[Dict[str, Any]]:
-    attrs: List[Dict[str, Any]] = [
+) -> list[OtlpKeyValue]:
+    attrs: list[OtlpKeyValue] = [
         {"key": "intergrax.event_id", "value": {"stringValue": envelope.event_id}},
         {"key": "intergrax.tenant_id", "value": {"stringValue": tenant_id}},
         {"key": "intergrax.task_id", "value": {"stringValue": envelope.task_id}},
@@ -244,7 +255,7 @@ def _span_attributes_from_envelope(
     return attrs
 
 
-def _trace_row_tags(event: Any) -> dict[str, Any]:
+def _trace_row_tags(event: TraceRowForTagExtraction) -> dict[str, object]:
     if isinstance(event, Mapping):
         tags = event.get("tags")
         return dict(tags) if isinstance(tags, dict) else {}
@@ -257,7 +268,7 @@ def _otlp_hex_id(value: str, *, length: int) -> str:
     return digest[:length]
 
 
-def _timestamp_to_unix_nano(value: Any) -> int:
+def _timestamp_to_unix_nano(value: datetime | str) -> int:
     if isinstance(value, datetime):
         dt = value if value.tzinfo else value.replace(tzinfo=timezone.utc)
         return int(dt.timestamp() * 1_000_000_000)

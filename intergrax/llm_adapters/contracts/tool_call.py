@@ -3,11 +3,12 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 import json
 from dataclasses import dataclass, replace
-from typing import Any, Iterable, Sequence
+from typing import Sequence
+
+from intergrax.llm_adapters.contracts.serialized_value import JsonObject
 from uuid import uuid4
 
 
@@ -77,12 +78,12 @@ class LLMToolCall:
     arguments_json: str
 
     @classmethod
-    def from_openai_shape(
+    def from_native_parts(
         cls,
         *,
         call_id: str,
         name: str,
-        arguments: str | dict[str, Any] | None,
+        arguments: str | JsonObject | None,
     ) -> LLMToolCall:
         if isinstance(arguments, str):
             args_json = arguments or "{}"
@@ -93,32 +94,6 @@ class LLMToolCall:
             name=str(name or ""),
             arguments_json=args_json,
         )
-
-
-def tool_calls_from_openai_message(message: Any) -> tuple[LLMToolCall, ...]:
-    """Extract typed tool calls from an OpenAI-style chat completion message."""
-    raw = attribute_access.optional(message, "tool_calls", None) or []
-    out: list[LLMToolCall] = []
-    for tc in raw:
-        fn = attribute_access.optional(tc, "function", None)
-        if fn is None and isinstance(tc, dict):
-            fn = tc.get("function")
-        name = attribute_access.optional(fn, "name", None) if fn is not None else None
-        args = attribute_access.optional(fn, "arguments", None) if fn is not None else None
-        if name is None and isinstance(fn, dict):
-            name = fn.get("name")
-            args = fn.get("arguments")
-        tc_id = attribute_access.optional(tc, "id", None) or (tc.get("id") if isinstance(tc, dict) else None)
-        if not name:
-            continue
-        out.append(
-            LLMToolCall.from_openai_shape(
-                call_id=str(tc_id or ""),
-                name=str(name),
-                arguments=args,
-            )
-        )
-    return finalize_accepted_tool_call_identities(out)
 
 
 def merge_streaming_tool_calls(chunks: Sequence[LLMToolCall]) -> tuple[LLMToolCall, ...]:
@@ -144,42 +119,10 @@ def merge_streaming_tool_calls(chunks: Sequence[LLMToolCall]) -> tuple[LLMToolCa
         args = "".join(p.arguments_json for p in parts)
         provider_call_id = key if key_had_provider_id.get(key) else ""
         merged.append(
-            LLMToolCall.from_openai_shape(
+            LLMToolCall.from_native_parts(
                 call_id=provider_call_id,
                 name=name,
                 arguments=args or "{}",
             )
         )
     return finalize_accepted_tool_call_identities(merged)
-
-
-def tool_calls_from_langchain_message(message: Any) -> tuple[LLMToolCall, ...]:
-    """Compatibility shim for the provider-local LangChain tool-call parser."""
-    from intergrax.llm_adapters.providers._langchain_compat import (
-        tool_calls_from_langchain_message as _parse_langchain_tool_calls,
-    )
-
-    return _parse_langchain_tool_calls(message)
-
-
-def tool_calls_from_openai_dicts(items: Iterable[Any]) -> tuple[LLMToolCall, ...]:
-    """Convert accumulated OpenAI-style tool call dicts to typed calls."""
-    out: list[LLMToolCall] = []
-    for tc in items:
-        if isinstance(tc, LLMToolCall):
-            out.append(tc)
-            continue
-        if not isinstance(tc, dict):
-            continue
-        fn = tc.get("function") or {}
-        name = fn.get("name") or tc.get("name")
-        if not name:
-            continue
-        out.append(
-            LLMToolCall.from_openai_shape(
-                call_id=str(tc.get("id") or ""),
-                name=str(name),
-                arguments=fn.get("arguments") or tc.get("arguments"),
-            )
-        )
-    return finalize_accepted_tool_call_identities(out)

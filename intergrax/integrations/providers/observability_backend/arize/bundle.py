@@ -3,6 +3,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
+from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+
 from intergrax.integrations._shared.p4.factories import create_arize_observability_backend as _legacy_create_arize_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.arize.integration import (
@@ -44,9 +48,20 @@ def create_arize_observability_integration(
     )
 
 
-def create_arize_observability_backend(**kwargs: object) -> ArizeObservabilityIntegration:
+def create_arize_observability_backend(
+    *,
+    observability_backend: ObservabilityBackend | None = None,
+    client: object | None = None,
+    client_factory: Callable[[], object] | None = None,
+    **config_overrides: object,
+) -> ArizeObservabilityIntegration:
     """Compatibility shim — constructs ArizeObservabilityIntegration from legacy runtime."""
-    runtime = _legacy_create_arize_observability_backend(**kwargs)
+    runtime = _legacy_create_arize_observability_backend(
+        observability_backend=observability_backend,
+        client=client,
+        client_factory=client_factory,
+        **config_overrides,
+    )
     if isinstance(runtime, ArizeObservabilityIntegration):
         return runtime
     return ArizeObservabilityIntegration.from_client(runtime)

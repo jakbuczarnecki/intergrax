@@ -11,9 +11,14 @@ All composition roots use ``bundle.create_elasticsearch_*`` or
 
 from __future__ import annotations
 
-from typing import Any, Callable, Optional
+from typing import Optional
 
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+from intergrax.integrations.providers.observability_backend._http_contract import (
+    ObservabilityHttpClient,
+    ObservabilityHttpClientFactory,
+    ObservabilityHttpxClientAdapter,
+)
 from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
     ElasticsearchObservabilityIntegration,
 )
@@ -24,7 +29,7 @@ from intergrax.integrations.providers.observability_backend.elasticsearch.config
 )
 
 
-def _create_http_client(config: ElasticsearchIntegrationConfig) -> Any:
+def _create_http_client(config: ElasticsearchIntegrationConfig) -> ObservabilityHttpClient:
     import httpx
 
     headers = {"Accept": "application/json", "Content-Type": "application/json"}
@@ -34,19 +39,21 @@ def _create_http_client(config: ElasticsearchIntegrationConfig) -> Any:
     if config.user and config.password:
         auth = (config.user, config.password)
     timeout = float(config.timeout_seconds or DEFAULT_TIMEOUT_SECONDS)
-    return httpx.Client(
+    return ObservabilityHttpxClientAdapter(
+        httpx.Client(
         base_url=config.api_base_url,
         timeout=timeout,
         headers=headers,
         auth=auth,
+        )
     )
 
 
 def open_elasticsearch_rest_client(
     config: ElasticsearchIntegrationConfig,
     *,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[ElasticsearchIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[ElasticsearchIntegrationConfig] | None = None,
 ) -> ElasticsearchRestClient:
     if http_client is None:
         factory = http_client_factory or _create_http_client
@@ -59,8 +66,8 @@ def open_elasticsearch_observability_backend(
     *,
     implementation: Optional[ObservabilityBackend] = None,
     client: Optional[ElasticsearchRestClient] = None,
-    http_client: Optional[Any] = None,
-    http_client_factory: Optional[Callable[[ElasticsearchIntegrationConfig], Any]] = None,
+    http_client: ObservabilityHttpClient | None = None,
+    http_client_factory: ObservabilityHttpClientFactory[ElasticsearchIntegrationConfig] | None = None,
 ) -> ObservabilityBackend:
     if implementation is not None:
         return implementation

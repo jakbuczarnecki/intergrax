@@ -3,6 +3,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
+from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+
 from intergrax.integrations._shared.p4.factories import create_phoenix_observability_backend as _legacy_create_phoenix_observability_backend
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.phoenix.integration import (
@@ -44,9 +48,20 @@ def create_phoenix_observability_integration(
     )
 
 
-def create_phoenix_observability_backend(**kwargs: object) -> PhoenixObservabilityIntegration:
+def create_phoenix_observability_backend(
+    *,
+    observability_backend: ObservabilityBackend | None = None,
+    client: object | None = None,
+    client_factory: Callable[[], object] | None = None,
+    **config_overrides: object,
+) -> PhoenixObservabilityIntegration:
     """Compatibility shim — constructs PhoenixObservabilityIntegration from legacy runtime."""
-    runtime = _legacy_create_phoenix_observability_backend(**kwargs)
+    runtime = _legacy_create_phoenix_observability_backend(
+        observability_backend=observability_backend,
+        client=client,
+        client_factory=client_factory,
+        **config_overrides,
+    )
     if isinstance(runtime, PhoenixObservabilityIntegration):
         return runtime
     return PhoenixObservabilityIntegration.from_client(runtime)

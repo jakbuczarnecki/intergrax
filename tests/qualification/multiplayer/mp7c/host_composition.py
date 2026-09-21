@@ -54,6 +54,9 @@ from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
     MeaningfulSideEffectRequest,
 )
+from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernanceEvidencePersistencePort,
+)
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
@@ -69,6 +72,9 @@ from intergrax.runtime.governance.decision_requirement_policy import (
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskContext
+from testing_support.orchestration_governance_evidence_wiring import (
+    default_test_orchestration_evidence_persistence,
+)
 from tests.unit.runtime.governance.gr3_test_support import (
     bound_gr3_active_execution,
     default_gr3_identity_bundle,
@@ -91,6 +97,11 @@ class _ObservableCollaborativeWorkStore:
 
     def close(self) -> None:
         self.closed = True
+
+
+def strict_host_governance_evidence_persistence() -> GovernanceEvidencePersistencePort:
+    """Caller-owned GR-8 port for strict host proofs that call canonical wiring directly."""
+    return default_test_orchestration_evidence_persistence()
 
 
 def strict_host_environment() -> ApplicationEnvironmentProfile:
@@ -138,12 +149,25 @@ def resolve_host_wiring(
     collaborative_work_repositories: CollaborativeWorkRepositories | None = None,
     collaborative_work_integration_profile: IntegrationProfile | None = None,
     runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
+    governance_evidence_persistence: GovernanceEvidencePersistencePort | None = None,
+    runtime_event_persistence: object | None = None,
 ) -> HarnessMeaningfulSideEffectAuthorizationWiring:
     """Call the canonical host resolver (optionally with injected runtime policy evaluator).
 
     Empty ``RuntimePolicyEngine()`` remains the production default when no evaluator
     is injected (fail-closed on indeterminate MSE runtime policy).
+
+    Strict hosts mirror ``harness_host_runtime``: inject an explicit GR-8 port or pass
+    runtime event persistence. When neither is supplied, use the shared test composition
+    helper (caller-owned in-memory port).
     """
+    resolved_governance = governance_evidence_persistence
+    if (
+        environment.execution_mode.value == "strict"
+        and resolved_governance is None
+        and runtime_event_persistence is None
+    ):
+        resolved_governance = default_test_orchestration_evidence_persistence()
     return resolve_harness_host_meaningful_side_effect_authorization_wiring(
         environment,
         explicit=explicit,
@@ -151,6 +175,8 @@ def resolve_host_wiring(
         collaborative_work_integration_profile=collaborative_work_integration_profile,
         decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
         runtime_policy_evaluator=runtime_policy_evaluator,
+        governance_evidence_persistence=resolved_governance,
+        runtime_event_persistence=runtime_event_persistence,
     )
 
 
@@ -432,4 +458,5 @@ __all__ = [
     "non_strict_host_environment",
     "resolve_host_wiring",
     "strict_host_environment",
+    "strict_host_governance_evidence_persistence",
 ]

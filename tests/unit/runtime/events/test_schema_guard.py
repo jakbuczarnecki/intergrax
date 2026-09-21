@@ -11,6 +11,7 @@ from intergrax.contracts.execution_identity import (
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.events.schema_guard import RuntimeEventSchemaError, assert_runtime_event_schema
+from testing_support.runtime_events import with_preferred_canonical_payload
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.event_severity import EventSeverity
 
@@ -28,7 +29,7 @@ def _event(**overrides) -> RuntimeEvent:
         severity=EventSeverity.INFO,
     )
     base.update(overrides)
-    return RuntimeEvent(**base)
+    return with_preferred_canonical_payload(RuntimeEvent(**base))
 
 
 def test_assert_runtime_event_schema_accepts_canonical_event():
