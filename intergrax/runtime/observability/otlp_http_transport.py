@@ -6,11 +6,10 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Mapping
-
 import httpx
 
 from intergrax.runtime.observability.otlp_exporter import OtlpObservabilityExporterConfig
+from intergrax.runtime.observability.otlp_json_payload import OtlpLogsJsonPayload
 
 
 class OtlpHttpTransport:
@@ -21,7 +20,7 @@ class OtlpHttpTransport:
 
     async def send(
         self,
-        payload: Mapping[str, Any],
+        payload: OtlpLogsJsonPayload,
         *,
         config: OtlpObservabilityExporterConfig,
     ) -> None:

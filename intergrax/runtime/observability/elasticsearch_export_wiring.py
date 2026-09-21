@@ -6,8 +6,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
+from intergrax.integrations.providers.observability_backend.elasticsearch.config import (
+    ElasticsearchIntegrationConfig,
+)
 from intergrax.runtime.observability.operator_wiring import (
     ElasticsearchExportOperatorConfig,
     ObservabilityExportOperatorConfig,
@@ -19,6 +22,8 @@ if TYPE_CHECKING:
         ElasticsearchObservabilityIntegration,
         ElasticsearchObservabilityTransport,
     )
+
+ElasticsearchHttpClientFactory = Callable[[ElasticsearchIntegrationConfig], object]
 
 
 def _require_enabled_elasticsearch_config(
@@ -47,8 +52,8 @@ def build_elasticsearch_observability_integration(
     config: ObservabilityExportOperatorConfig,
     *,
     transport: ElasticsearchObservabilityTransport | None = None,
-    http_client: Any | None = None,
-    http_client_factory: Callable[..., Any] | None = None,
+    http_client: object | None = None,
+    http_client_factory: ElasticsearchHttpClientFactory | None = None,
 ) -> ElasticsearchObservabilityIntegration:
     """Construct an Elasticsearch observability vendor integration from operator config."""
     from intergrax.integrations.providers.observability_backend.elasticsearch.bundle import (

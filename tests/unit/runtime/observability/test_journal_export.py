@@ -213,6 +213,11 @@ def test_count_parser_traces_in_trace_events() -> None:
     assert count_parser_traces_in_trace_events(events) == 1
 
 
+def test_count_parser_traces_accepts_mapping_trace_row() -> None:
+    events = [{"tags": {"integration_parser_trace": {"parser_id": "legacy"}}}]
+    assert count_parser_traces_in_trace_events(events) == 1
+
+
 class _RecordingStore(InMemoryRuntimeEventStore):
     def __init__(self) -> None:
         super().__init__()

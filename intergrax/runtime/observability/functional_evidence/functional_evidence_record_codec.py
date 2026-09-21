@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import json
-from typing import Any
 
 from pydantic import ValidationError
 
@@ -21,7 +20,7 @@ _PAYLOAD_FIELD = "payload"
 
 def encode_functional_evidence_record(
     evidence: PlatformFunctionalEvidence,
-) -> dict[str, Any]:
+) -> dict[str, object]:
     """Serialize functional evidence for document storage."""
     return {
         "schema_version": _PERSISTENCE_SCHEMA,

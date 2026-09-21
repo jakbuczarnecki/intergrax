@@ -8,7 +8,7 @@ from __future__ import annotations
 import asyncio
 import threading
 from collections.abc import Coroutine
-from typing import Any, TypeVar
+from typing import TypeVar
 
 _T = TypeVar("_T")
 
@@ -27,7 +27,7 @@ class AsyncExportRunner:
 
     def run(
         self,
-        coro: Coroutine[Any, Any, _T],
+        coro: Coroutine[None, None, _T],
         *,
         timeout_seconds: float = 30.0,
     ) -> _T:

@@ -429,3 +429,18 @@ def test_otlp_exporter_has_no_vendor_sdk_coupling() -> None:
 def test_fake_transport_does_not_perform_network_calls() -> None:
     transport = FakeOtlpTransport()
     assert isinstance(transport, OtlpTransport)
+
+
+@pytest.mark.asyncio
+async def test_otlp_transport_receives_bounded_logs_json_payload() -> None:
+    from intergrax.runtime.observability.otlp_json_payload import OtlpLogsJsonPayload
+
+    transport = FakeOtlpTransport()
+    exporter, _ = _exporter(transport)
+    envelope = ObservabilityExportEnvelope(
+        record_kind=ExportRecordKind.RUNTIME_EVENT,
+        run_id="run-1",
+    )
+    await exporter.export(envelope)
+    payload: OtlpLogsJsonPayload = transport.payloads[0]
+    assert payload["resourceLogs"][0]["scopeLogs"][0]["logRecords"]
