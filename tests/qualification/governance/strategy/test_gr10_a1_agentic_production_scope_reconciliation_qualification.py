@@ -84,14 +84,16 @@ def test_gr10_a1_legal_production_paths_no_vague_other_delegates() -> None:
     assert qualified[0].path_id == "P-UAEP"
     assert "TaskBoundAgenticDelegate" in qualified[0].legal_entry
     acp = next(row for row in GR10_AGENTIC_LEGAL_PRODUCTION_PATHS if row.path_id == "P-ACP-SESSION")
-    assert acp.status == "WIRED_NOT_QUALIFIED"
+    assert acp.status == "ARCHITECTURAL_MIGRATION_REQUIRED"
     assert "LEGACY_NO_PRODUCTION_USER" not in acp.status
 
 
-def test_gr10_a1_next_remediation_points_to_acp_governance_closure() -> None:
+def test_gr10_a1_next_remediation_points_to_a3_implementation() -> None:
+    from tests.qualification.governance.strategy.catalog import GR10_A3_NEXT_REMEDIATION
+
     assert GR10_A1_NEXT_REMEDIATION.strategy == "AGENTIC"
-    assert "ACP" in GR10_A1_NEXT_REMEDIATION.task_name
-    assert GR10_A1_NEXT_REMEDIATION is GR10_A1_R1_NEXT_REMEDIATION
+    assert "GR-10-A3" in GR10_A1_NEXT_REMEDIATION.task_name
+    assert GR10_A1_NEXT_REMEDIATION is GR10_A3_NEXT_REMEDIATION
 
 
 def test_gr10_a1_host_task_single_agentic_delegate_ast() -> None:

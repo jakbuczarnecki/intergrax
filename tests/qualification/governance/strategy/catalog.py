@@ -32,6 +32,29 @@ class Gr10EvidenceCertificationRequirement(StrEnum):
     REQUIRED_IN_GR13 = "REQUIRED_IN_GR13"
 
 
+class Gr10AgenticExecutionArchitectureDecision(StrEnum):
+    """GR-10-A2 — canonical AGENTIC execution model (qualification SSOT only)."""
+
+    UAEP_CANONICAL_ACP_EXPLICIT = "UAEP_CANONICAL_ACP_EXPLICIT"
+    DUAL_CANONICAL_AGENTIC_EXECUTION = "DUAL_CANONICAL_AGENTIC_EXECUTION"
+
+
+class Gr10CheckpointSessionCouplingStatus(StrEnum):
+    """GR-10-A2 — checkpoint enricher vs acp.session.v1 execution branch."""
+
+    DEPRECATED_MIGRATION_TARGET = "DEPRECATED_MIGRATION_TARGET"
+    RETAINED_AS_CONTRACT = "RETAINED_AS_CONTRACT"
+
+
+GR10_A2_ARCHITECTURE_DECISION: Gr10AgenticExecutionArchitectureDecision = (
+    Gr10AgenticExecutionArchitectureDecision.UAEP_CANONICAL_ACP_EXPLICIT
+)
+GR10_A2_CHECKPOINT_SESSION_COUPLING: Gr10CheckpointSessionCouplingStatus = (
+    Gr10CheckpointSessionCouplingStatus.DEPRECATED_MIGRATION_TARGET
+)
+GR10_A2_ADR_REFERENCE = "ADR-GR-10-004"
+
+
 @dataclass(frozen=True, slots=True)
 class Gr10InferenceCapabilitySemantics:
     capability: str
@@ -211,11 +234,9 @@ GR10_AGENTIC_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySemantics
         "Inner Governance",
         Gr10Applicability.APPLICABLE,
         Gr10CoverageStatus.PARTIAL,
-        "GR-10-A1-R1: P-UAEP qualified (TaskBoundAgenticDelegate → UAEPExecutor + inner guard on "
-        "strict tool invoker). P-ACP-SESSION is production-reachable when "
-        "make_acp_checkpoint_task_enricher sets acp.session.v1 on AGENT tasks — AgentEngine selects "
-        "IntergraxAgent.run before UAEPExecutor (governance=None at engine boundary). "
-        "Dual-path closure pending ACP governance recertification.",
+        "GR-10-A2 (ADR-GR-10-004): P-UAEP is the sole canonical AGENTIC governance spine. "
+        "P-ACP-SESSION remains runtime-reachable via explicit acp.session.v1 until GR-10-A3 "
+        "decouples checkpoint enricher side effects; not a second canonical execution model.",
     ),
     Gr10ResidualStrategyCapabilitySemantics(
         "Policy evaluation",
@@ -301,13 +322,12 @@ GR10_AGENTIC_LEGAL_PRODUCTION_PATHS: tuple[Gr10AgenticProductionPathRow, ...] = 
         "IntergraxAgent.run (run_acp_session)",
         "Checkpoint-wired Tier-3 harness hosts (build_reliability_task_enricher + "
         "agent_checkpoint_store); LKW orchestration-only via build_lkw_http_run_task_enricher",
-        "run_acp_session / AgentRuntime / StepKernel (not UAEPExecutor spine at engine boundary)",
-        "WIRED_NOT_QUALIFIED",
-        "GR-10-A1-R1: production reachability proven when agent_checkpoint_store is active — "
-        "SESSION_ENABLED is set for all tasks through build_reliability (not orchestration-only). "
-        "AgentEngine prefers ACP over UAEP for IntergraxAgent. Architectural coupling: checkpoint "
-        "wiring changes execution branch — decouple in a dedicated platform decision. "
-        "LKW direct capabilities intentionally omit acp.session.v1 (UAEP reflex preserved).",
+        "run_acp_session / AgentRuntime / StepKernel (authoring session loop — not canonical AGENTIC)",
+        "ARCHITECTURAL_MIGRATION_REQUIRED",
+        "GR-10-A1-R1: reachability proven when agent_checkpoint_store is active. GR-10-A2: "
+        "checkpoint≠execution mode — SESSION_ENABLED via enricher is DEPRECATED_MIGRATION_TARGET; "
+        "ACP session requires explicit opt-in contract after GR-10-A3. LKW direct capabilities omit "
+        "acp.session.v1 (UAEP preserved).",
     ),
 )
 
@@ -1050,23 +1070,34 @@ GR10_R15_R1_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
 
 
 GR10_A1_R1_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
-    task_name="GR-10 AGENTIC ACP Session Governance Closure",
+    task_name="GR-10-A2 AGENTIC Execution Model Architecture Decision",
     strategy="AGENTIC",
     capability="Inner Governance",
     exact_blocker=(
-        "GR-10-A1-R1 confirmed P-ACP-SESSION as production-reachable second AGENTIC path on "
-        "checkpoint-wired hosts; UAEPExecutor governance spine is bypassed when acp.session.v1 is "
-        "set on IntergraxAgent tasks. Close per-GEP ownership on run_acp_session or decouple "
-        "checkpoint enricher from SESSION_ENABLED execution semantics."
+        "GR-10-A1-R1 confirmed P-ACP-SESSION reachability via checkpoint enricher coupling; "
+        "architecture decision required before implementation."
+    ),
+    why_highest="Checkpoint persistence must not implicitly select AGENTIC execution architecture.",
+)
+
+
+GR10_A3_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10-A3 Implement UAEP-canonical AGENTIC execution decoupling",
+    strategy="AGENTIC",
+    capability="Inner Governance",
+    exact_blocker=(
+        "ADR-GR-10-004: decouple make_acp_checkpoint_task_enricher from SESSION_ENABLED; wire "
+        "checkpoint persistence into UAEPExecutor path; retain explicit acp.session.v1 opt-in for "
+        "authoring/session runs outside canonical production AGENTIC governance."
     ),
     why_highest=(
-        "Dual legal AGENTIC paths block Final Recertification until ACP branch governance is "
-        "qualified or checkpoint wiring stops flipping UAEP hosts into ACP execution."
+        "Runtime still couples checkpoint store to ACP session branch — GR-10 AGENTIC matrix "
+        "PARTIAL rows clear only after GR-10-A3."
     ),
 )
 
 
-GR10_A1_NEXT_REMEDIATION: Gr10R7NextRemediation = GR10_A1_R1_NEXT_REMEDIATION
+GR10_A1_NEXT_REMEDIATION: Gr10R7NextRemediation = GR10_A3_NEXT_REMEDIATION
 
 
 GR10_R15_NEXT_REMEDIATION: Gr10R7NextRemediation = GR10_R15_R1_NEXT_REMEDIATION
@@ -2191,7 +2222,7 @@ GR10_FINAL_CAPABILITY_MATRIX: tuple[Gr10CapabilityCell, ...] = (
         gr10_matrix_inference_status("Inner Governance"),
         gr10_matrix_agentic_status("Inner Governance"),
         gr10_matrix_orchestration_status("Inner Governance"),
-        "GR-10-A1-R1: AGENTIC Inner Governance PARTIAL — P-UAEP qualified; P-ACP-SESSION reachable.",
+        "GR-10-A2: AGENTIC Inner Governance PARTIAL — UAEP canonical; P-ACP migration required.",
     ),
     Gr10CapabilityCell(
         "Policy evaluation",

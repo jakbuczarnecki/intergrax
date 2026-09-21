@@ -193,6 +193,9 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-10-R5 | INFERENCE Inner Governance enterprise qualification | **CANDIDATE CLOSED — INFERENCE INNER GOVERNANCE NOT_APPLICABLE BY ARCHITECTURE** — GR-3/MSE spine row distinct from PRE_MODEL Policy evaluation; `test_gr10_r5_inference_inner_governance_qualification.py`; independent GitHub audit required |
 | GR-10-R6 / R6-R1 | INFERENCE Governance Evidence | **CANDIDATE CLOSED** — mandatory composition + PRE_MODEL verdict semantics; independent GitHub audit required |
 | GR-10-R7 | AGENTIC & ORCHESTRATION residual strategy requalification | **CANDIDATE CLOSED — MATRIX REQUALIFIED** — `GR10_AGENTIC/ORCHESTRATION_CAPABILITY_SEMANTICS` + `test_gr10_r7_agentic_orchestration_residual_requalification.py`; independent GitHub audit required |
+| GR-10-A1 / A1-R1 | AGENTIC production scope & ACP reachability | **CLOSED** — P-UAEP qualified; P-ACP reachability documented |
+| GR-10-A2 | AGENTIC execution model architecture decision | **CLOSED** — [ADR-GR-10-004](../../technical/adr/entries/2026-09-21/ADR-GR-10-004-agentic-execution-model-uaep-canonical.md) `UAEP_CANONICAL_ACP_EXPLICIT`; independent GitHub audit required |
+| GR-10-A3 | Implement UAEP-canonical decoupling (checkpoint ≠ SESSION_ENABLED) | **NEXT** — runtime migration; `GR10_A3_NEXT_REMEDIATION` |
 | GR-10-R9-ADR1 | Canonical orchestration MSE authority contract | **CLOSED — CANONICAL MSE AUTHORITY CONTRACT APPROVED** — [ADR-GR-10-002](../../technical/adr/entries/2026-09-19/ADR-GR-10-002.md); `test_gr10_r9_adr1_mse_authority_contract.py`; independent GitHub audit required |
 | GR-10-R9 | ORCHESTRATION MSE production coverage | **PARTIAL — REMEDIATION REQUIRED** — tool invoker pre-effect slice qualified; authority architecture blocked until **GR-10-R9-R1** |
 | GR-11 | Plugin & Enterprise Extensibility Certification | **OPEN** |

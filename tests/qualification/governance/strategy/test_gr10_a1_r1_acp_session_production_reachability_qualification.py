@@ -36,7 +36,7 @@ _GR10_A1_R1_PRODUCTION_HOSTS_WITH_CHECKPOINT_ENRICHER = (
 
 def test_gr10_a1_r1_catalog_acp_path_not_legacy() -> None:
     acp = next(row for row in GR10_AGENTIC_LEGAL_PRODUCTION_PATHS if row.path_id == "P-ACP-SESSION")
-    assert acp.status == "WIRED_NOT_QUALIFIED"
+    assert acp.status == "ARCHITECTURAL_MIGRATION_REQUIRED"
     assert "TaskBoundAgenticDelegate" in acp.legal_entry or "AgentEngine" in acp.legal_entry
 
 
