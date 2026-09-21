@@ -435,7 +435,9 @@ GR10_ORCHESTRATION_GEP_SEMANTICS: tuple[Gr10OrchestrationGepSemantics, ...] = (
         Gr10EvidenceCertificationRequirement.NOT_APPLICABLE,
         Gr10EvidenceCertificationRequirement.NOT_APPLICABLE,
         Gr10CoverageStatus.NOT_APPLICABLE,
-        "GR-10-R8: orchestration graph routing internal; permission GEP is Policy evaluation row.",
+        "GR-10-R8 / GR-10-R15-R2: policy APPLICABLE on UAEP delegate; orchestration graph routing "
+        "is not AGENT_DECISION GEP — canonical runtime and GR-8 evidence owner is AGENTIC/UAEP "
+        "(evaluate_decision), not ORCHESTRATION topology spine.",
     ),
     Gr10OrchestrationGepSemantics(
         "INTERRUPT",
@@ -625,7 +627,7 @@ GR10_GEP_COVERAGE_INVENTORY: tuple[Gr10GepCoverageRow, ...] = (
         True,
         Gr10CoverageStatus.QUALIFIED,
         "GR-10-R9-R2: tool + graph/non-tool orchestration consequential seams closed via canonical "
-        "MeaningfulSideEffectAuthorizationPort (ADR-GR-10-003).",
+        "MeaningfulSideEffectAuthorizationPort (ADR-GR-10-002).",
     ),
     Gr10GepCoverageRow(
         "PRE_OUTPUT",
@@ -696,7 +698,7 @@ GR10_R9_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
     exact_blocker=(
         "Nexus-local MeaningfulSideEffectAuthorizationPort returns object; production orchestration "
         "composition synthesizes membership/authority and default ALLOW via InMemory repositories "
-        "(ADR-GR-10-003 rejected design)."
+        "(ADR-GR-10-002 rejected design)."
     ),
     why_highest=(
         "P0 authority architecture blocker before ORCHESTRATION MSE can re-qualify or GR-10-R10 "
@@ -829,8 +831,8 @@ GR10_R15_R1_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
     capability="Governance Evidence",
     exact_blocker="Remaining AGENTIC strategy governance evidence and closure residuals.",
     why_highest=(
-        "ORCHESTRATION strategy enterprise qualification closed under GR-10-R15-R1 "
-        "(GR-10 vs GR-13 evidence scope reconciled)."
+        "ORCHESTRATION strategy enterprise qualification closed under GR-10-R15-R2 "
+        "(SSOT reference correction + clean-SHA recertification; GR-13 per-GEP proof deferred)."
     ),
 )
 
