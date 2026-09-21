@@ -47,6 +47,7 @@ from intergrax.applications._shared.harness_host_composition import (
     resolve_harness_host_middleware_pipeline,
     resolve_harness_host_runtime_event_persistence,
 )
+from research_application.host.host_runtime_composition import ResearchHostRuntimeComposition
 from research_application.host.orchestration_decision_requirement_policy import (
     resolve_research_harness_orchestration_decision_requirement_policy,
 )
@@ -66,8 +67,10 @@ def create_research_backend_app(
     settings: Optional[ResearchBackendSettings] = None,
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
+    host_runtime: ResearchHostRuntimeComposition | None = None,
 ) -> FastAPI:
     settings = settings or ResearchBackendSettings.from_env()
+    resolved_host_runtime = host_runtime or ResearchHostRuntimeComposition()
     if not settings.use_nexus_loop:
         raise ValueError(
             "Research backend requires NexusLoop (§41). "
@@ -102,7 +105,9 @@ def create_research_backend_app(
         runtime_events_db_path=runtime_events_db_path,
         registry_projection=registry_projection,
         orchestration_decision_requirement_policy=(
-            resolve_research_harness_orchestration_decision_requirement_policy(settings)
+            resolve_research_harness_orchestration_decision_requirement_policy(
+                resolved_host_runtime.orchestration_decision_requirement_policy,
+            )
         ),
         **profile_persistence_kwargs,
     )

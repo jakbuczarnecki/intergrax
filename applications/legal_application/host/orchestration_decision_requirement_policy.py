@@ -9,20 +9,16 @@ from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
 
-from legal_application.host.settings import LegalBackendSettings
-
-
 def default_legal_harness_orchestration_decision_requirement_policy() -> DecisionRequirementPolicy:
     """Explicit host strategy — orchestration MSE uses permissive classification until legal rules are configured."""
     return PermissiveDecisionRequirementPolicy()
 
 
 def resolve_legal_harness_orchestration_decision_requirement_policy(
-    settings: LegalBackendSettings,
+    runtime_override: DecisionRequirementPolicy | None = None,
 ) -> DecisionRequirementPolicy:
-    override = settings.orchestration_decision_requirement_policy
-    if override is not None:
-        return override
+    if runtime_override is not None:
+        return runtime_override
     return default_legal_harness_orchestration_decision_requirement_policy()
 
 

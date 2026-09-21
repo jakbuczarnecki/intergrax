@@ -10,8 +10,6 @@ from intergrax.applications._shared.settings_loader import (
     EnvReader,
 )
 from intergrax.applications.contracts.settings import IntergraxApplicationSettingsBase
-from intergrax.contracts.decision_requirement_policy import DecisionRequirementPolicy
-
 
 @dataclass(frozen=True, kw_only=True)
 class ResearchBackendSettings(ApplicationSettingsEnvHost, IntergraxApplicationSettingsBase):
@@ -28,10 +26,8 @@ class ResearchBackendSettings(ApplicationSettingsEnvHost, IntergraxApplicationSe
     enable_rag: bool = False
     enable_rag_ingest: bool = False
     extra_enabled_tool_ids: tuple[str, ...] = ()
-    websearch_executor: object | None = None
     llm_provider: str | None = None
     llm_model: str | None = None
-    orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None
 
     @property
     def enabled_tool_ids(self) -> list[str]:

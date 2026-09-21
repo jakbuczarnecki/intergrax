@@ -9,9 +9,6 @@ from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
 
-from dispute_sim_application.host.settings import DisputeSimBackendSettings
-
-
 def default_dispute_sim_harness_orchestration_decision_requirement_policy() -> (
     DecisionRequirementPolicy
 ):
@@ -20,11 +17,10 @@ def default_dispute_sim_harness_orchestration_decision_requirement_policy() -> (
 
 
 def resolve_dispute_sim_harness_orchestration_decision_requirement_policy(
-    settings: DisputeSimBackendSettings,
+    runtime_override: DecisionRequirementPolicy | None = None,
 ) -> DecisionRequirementPolicy:
-    override = settings.orchestration_decision_requirement_policy
-    if override is not None:
-        return override
+    if runtime_override is not None:
+        return runtime_override
     return default_dispute_sim_harness_orchestration_decision_requirement_policy()
 
 

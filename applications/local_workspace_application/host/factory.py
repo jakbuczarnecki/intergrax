@@ -54,6 +54,7 @@ from local_workspace_application.host.observability_wiring import (
 )
 from local_workspace_application.host.execution_wiring import build_lkw_host_task_execution
 from local_workspace_application.host.host_runtime_composition import (
+    LocalWorkspaceHostRuntimeComposition,
     build_local_workspace_harness_host_runtime,
     build_local_workspace_host_environment,
 )
@@ -89,6 +90,7 @@ def create_local_workspace_backend_app(
     observability_export: ObservabilityExportOperatorConfig | None = None,
     host_readiness: LocalWorkspaceReadinessProvider | None = None,
     hybrid_ask_service: Any | None = None,
+    host_runtime: LocalWorkspaceHostRuntimeComposition | None = None,
 ) -> FastAPI:
     resolved_settings = cast(
         LocalWorkspaceBackendSettings,
@@ -111,17 +113,18 @@ def create_local_workspace_backend_app(
 
     manifest = LOCAL_WORKSPACE_APPLICATION_MANIFEST
     env = build_local_workspace_host_environment(resolved_settings)
-    host_runtime = build_local_workspace_harness_host_runtime(
+    harness_host_runtime = build_local_workspace_harness_host_runtime(
         settings=resolved_settings,
         registry_projection=registry_projection,
         manifest=manifest,
         environment=env,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
+        host_runtime=host_runtime,
     )
-    lkw_document_store = host_runtime.document_store
-    host_tenant_id = host_runtime.tenant_binding.tenant_id
-    runtime = host_runtime.runtime
+    lkw_document_store = harness_host_runtime.document_store
+    host_tenant_id = harness_host_runtime.tenant_binding.tenant_id
+    runtime = harness_host_runtime.runtime
     lkw_managed_workspace_repository = ManagedWorkspaceRepository(lkw_document_store)
     from intergrax.applications._shared.declarative_tool_wiring import (
         build_declarative_invoker_for_application_host,

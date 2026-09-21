@@ -56,6 +56,7 @@ from intergrax.applications._shared.harness_host_composition import (
     resolve_harness_host_middleware_pipeline,
     resolve_harness_host_runtime_event_persistence,
 )
+from legal_application.host.host_runtime_composition import LegalHostRuntimeComposition
 from legal_application.host.orchestration_decision_requirement_policy import (
     resolve_legal_harness_orchestration_decision_requirement_policy,
 )
@@ -71,6 +72,7 @@ def create_legal_backend_app(
     runtime_events_db_path: Path | None = None,
     document_store: object | None = None,
     key_value_cache: object | None = None,
+    host_runtime: LegalHostRuntimeComposition | None = None,
 ) -> FastAPI:
     """
     Production host: Intergrax FastAPI Core (health, runs, middleware) + Legal Agent routes.
@@ -82,6 +84,7 @@ def create_legal_backend_app(
         uvicorn legal_application.host.main:app --host 0.0.0.0 --port 8000
     """
     settings = settings or LegalBackendSettings.from_env()
+    resolved_host_runtime = host_runtime or LegalHostRuntimeComposition()
 
     api_key_config = ApiKeyConfig(keys=settings.api_keys_map) if settings.api_keys_map else None
 
@@ -99,7 +102,9 @@ def create_legal_backend_app(
         document_store=document_store,
         key_value_cache=key_value_cache,
         orchestration_decision_requirement_policy=(
-            resolve_legal_harness_orchestration_decision_requirement_policy(settings)
+            resolve_legal_harness_orchestration_decision_requirement_policy(
+                resolved_host_runtime.orchestration_decision_requirement_policy,
+            )
         ),
     )
     host_execution = runtime.execution

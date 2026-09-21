@@ -68,7 +68,7 @@ def test_research_factory_uses_projected_registry_not_manifest_extra_agents(
         key_value_cache=platform.kv_store,
         document_store=platform.document_store,
         orchestration_decision_requirement_policy=(
-            resolve_research_harness_orchestration_decision_requirement_policy(settings)
+            resolve_research_harness_orchestration_decision_requirement_policy()
         ),
     )
     assert runtime.registry_projection_evidence is not None

@@ -8,6 +8,7 @@ from intergrax.applications._shared.wiring import build_manifest_development_reg
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from research_application.host.agent_builders import build_research_agent_builders
 from research_application.host.environment_profile import build_research_environment_profile
+from research_application.host.host_runtime_composition import ResearchHostRuntimeComposition
 from research_application.host.settings import ResearchBackendSettings
 from research_application.manifest import RESEARCH_APPLICATION_MANIFEST
 
@@ -21,9 +22,11 @@ __all__ = [
 def build_research_registry(
     *,
     settings: ResearchBackendSettings | None = None,
+    host_runtime: ResearchHostRuntimeComposition | None = None,
 ) -> AgentRegistry:
     """Compose research + summary agents via unified Tier-3 wiring."""
     settings = settings or ResearchBackendSettings.from_env()
+    resolved_host_runtime = host_runtime or ResearchHostRuntimeComposition()
     manifest = RESEARCH_APPLICATION_MANIFEST
     env = build_research_environment_profile(settings)
     if manifest.environment is None:
@@ -32,7 +35,7 @@ def build_research_registry(
         manifest,
         env,
         settings=settings,
-        websearch_executor=settings.websearch_executor,
+        websearch_executor=resolved_host_runtime.websearch_executor,
     )
     composition = env_wiring.composition
     builders = build_research_agent_builders(
