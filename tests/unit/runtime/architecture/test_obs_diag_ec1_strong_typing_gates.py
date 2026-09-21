@@ -56,3 +56,17 @@ def test_runtime_event_payload_policy_covers_all_enum_members() -> None:
 
     covered = {event_type for event_type, _ in iter_runtime_event_payload_policies()}
     assert covered == set(RuntimeEventType)
+
+
+def test_as_evidence_persistence_port_enforces_canonical_write_boundary() -> None:
+    adapter_path = _REPO_ROOT / "intergrax" / "runtime" / "events" / "evidence_persistence_adapter.py"
+    source = adapter_path.read_text(encoding="utf-8")
+    assert "ValidatingEvidencePersistencePort" in source
+    assert "CanonicalRuntimeEventWriteValidatedPort" in source
+
+
+def test_event_bus_commits_accepted_canonical_representation() -> None:
+    bus_path = _REPO_ROOT / "intergrax" / "runtime" / "events" / "event_bus.py"
+    source = bus_path.read_text(encoding="utf-8")
+    assert "committed = self._commit_durable_evidence" in source
+    assert "positioned.event" in source

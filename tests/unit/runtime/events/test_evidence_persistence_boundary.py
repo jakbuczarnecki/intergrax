@@ -15,12 +15,25 @@ from intergrax.contracts.execution_evidence.persistence_boundary_errors import (
     MandatoryEvidencePersistenceError,
 )
 from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
-from intergrax.contracts.execution_identity import EventId, mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import (
+    EventId,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
 from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
 from intergrax.runtime.events.evidence_persistence_adapter import (
     RuntimeEventPersistenceEvidenceAdapter,
     as_evidence_persistence_port,
 )
+from intergrax.runtime.events.schema_guard import RuntimeEventSchemaError
+from intergrax.runtime.events.validating_evidence_persistence_port import (
+    ValidatingEvidencePersistencePort,
+)
+from intergrax.runtime.events.payload_registry import validate_payload_envelope
+from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.execution_position import (
     AsOfBoundary,
@@ -242,8 +255,9 @@ def test_event_bus_wraps_legacy_runtime_event_persistence() -> None:
     bus = RuntimeEventBus(persistence=store, record_history=False)
     port = bus.persistence
     assert port is not None
-    assert isinstance(port, RuntimeEventPersistenceEvidenceAdapter)
-    assert port.inner is store
+    assert isinstance(port, ValidatingEvidencePersistencePort)
+    assert isinstance(port.inner, RuntimeEventPersistenceEvidenceAdapter)
+    assert port.inner.inner is store
 
 
 def test_as_evidence_persistence_port_idempotent() -> None:
@@ -263,9 +277,10 @@ def test_as_evidence_persistence_port_passes_through_port_implementation() -> No
     store = InMemoryRuntimeEventStore()
     port = _DelegateEvidencePersistencePort(store)
     normalized = as_evidence_persistence_port(port)
-    assert normalized is port
+    assert isinstance(normalized, ValidatingEvidencePersistencePort)
+    assert normalized.inner is port
     bus = RuntimeEventBus(persistence=port, record_history=False)
-    assert bus.persistence is port
+    assert isinstance(bus.persistence, ValidatingEvidencePersistencePort)
 
 
 def test_event_bus_persists_through_alternate_port_implementation() -> None:
@@ -278,6 +293,53 @@ def test_event_bus_persists_through_alternate_port_implementation() -> None:
     persisted = port.list_for_task(event.task_id, tenant_id=tenant_id)
     assert len(persisted) == 1
     assert persisted[0].event_id == event.event_id
+
+
+def test_custom_evidence_port_receives_canonical_typed_payload_on_bus_write() -> None:
+    captured: list[RuntimeEvent] = []
+
+    class _CapturingPort(_DelegateEvidencePersistencePort):
+        def append(self, event: RuntimeEvent, *, tenant_id: str) -> PositionedRuntimeEvent:
+            captured.append(event)
+            return super().append(event, tenant_id=tenant_id)
+
+    store = InMemoryRuntimeEventStore()
+    port = _CapturingPort(store)
+    bus = RuntimeEventBus(persistence=port, record_history=False)
+    tenant_id = "tenant-canonical-write"
+    event = RuntimeEvent(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+        tenant_id=tenant_id,
+        event_type=RuntimeEventType.PLAN_CREATED,
+        phase=ExecutionPhase.PLANNING,
+        payload={"plan_id": "plan-1", "step_count": 2, "task_state": "planned"},
+    )
+    bus.record(event, tenant_id=tenant_id)
+    assert len(captured) == 1
+    assert captured[0].payload.get("payload_schema_id") == "plan_lifecycle.v1"
+    validate_payload_envelope(captured[0].payload)
+
+
+def test_custom_evidence_port_rejects_unconvertible_canonical_raw_payload() -> None:
+    store = InMemoryRuntimeEventStore()
+    port = _DelegateEvidencePersistencePort(store)
+    bus = RuntimeEventBus(persistence=port, record_history=False)
+    tenant_id = "tenant-reject-raw"
+    event = sample_runtime_event(tenant_id=tenant_id).model_copy(
+        update={
+            "payload": {
+                "payload_schema_id": "unknown.schema.v99",
+                "payload_schema_version": 1,
+                "data": {},
+            }
+        }
+    )
+    with pytest.raises(RuntimeEventSchemaError):
+        bus.record(event, tenant_id=tenant_id)
+    assert port.list_for_task(event.task_id, tenant_id=tenant_id) == []
 
 
 def test_reconstruction_accepts_alternate_port_implementation() -> None:
