@@ -125,6 +125,10 @@ from intergrax.applications._shared.harness_registry_authority import (
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
+from intergrax.runtime.governance.orchestration_governance_evidence_composition import (
+    build_orchestration_governance_evidence_recorder,
+    require_strict_orchestration_governance_evidence_persistence,
+)
 from intergrax.applications._shared.registry_projection import (
     MaterializedRegistryProjection,
     RegistryProjectionEvidence,
@@ -434,6 +438,22 @@ def build_harness_host_runtime(
     )
     task_memory = wire_task_memory_from_profile(effective_environment)
     resolved_tenant_id = (tenant_id or "").strip()
+    strict_governance_evidence_persistence = (
+        require_strict_orchestration_governance_evidence_persistence(
+            explicit=None,
+            runtime_event_persistence=observability.runtime_event_store,
+            production_mode=production_mode,
+        )
+        if production_mode
+        else None
+    )
+    orchestration_governance_evidence_recorder = (
+        build_orchestration_governance_evidence_recorder(
+            governance_evidence_persistence=strict_governance_evidence_persistence,
+        )
+        if strict_governance_evidence_persistence is not None
+        else None
+    )
     meaningful_side_effect_wiring = (
         resolve_harness_host_meaningful_side_effect_authorization_wiring(
             effective_environment,
@@ -443,6 +463,8 @@ def build_harness_host_runtime(
             decision_requirement_policy=orchestration_decision_requirement_policy,
             runtime_policy_evaluator=runtime_policy_evaluator,
             active_execution_task_scope=active_execution_task_scope,
+            governance_evidence_persistence=strict_governance_evidence_persistence,
+            runtime_event_persistence=observability.runtime_event_store,
         )
     )
     resolved_meaningful_side_effect_authorization = (
@@ -576,6 +598,7 @@ def build_harness_host_runtime(
             scope=revision_scope,
         ),
         skill_host_wiring=build_host_skill_catalog_wiring_from_environment(env_wiring),
+        governance_evidence_recorder=orchestration_governance_evidence_recorder,
     )
     orchestration_topology_wiring: HarnessHostOrchestrationTopologyWiring | None = None
     if require_strict_orchestration_topology_reliability:

@@ -27,6 +27,9 @@ from intergrax.runtime.governance.orchestration_decision_bound_effect_compositio
     resolve_orchestration_decision_requirement_policy,
 )
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+from testing_support.orchestration_governance_evidence_wiring import (
+    default_test_orchestration_evidence_persistence,
+)
 from tests.unit.runtime.governance.gr3_test_support import (
     default_gr3_identity_bundle,
     default_gr3_inner_guard,
@@ -155,6 +158,7 @@ def test_gr10_r10_r2_custom_policy_reaches_production_boundary() -> None:
         decision_requirement_policy=custom,
         inner_execution_guard=default_gr3_inner_guard(default_gr3_identity_bundle()[0]),
         production_mode=True,
+        governance_evidence_persistence=default_test_orchestration_evidence_persistence(),
     )
     assert boundary._decision_requirement_policy is custom
 
@@ -165,6 +169,7 @@ def test_gr10_r10_r2_explicit_permissive_policy_composition_succeeds() -> None:
         decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
         inner_execution_guard=default_gr3_inner_guard(default_gr3_identity_bundle()[0]),
         production_mode=True,
+        governance_evidence_persistence=default_test_orchestration_evidence_persistence(),
     )
     assert boundary is not None
 

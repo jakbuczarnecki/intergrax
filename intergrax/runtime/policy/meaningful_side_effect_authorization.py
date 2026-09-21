@@ -51,6 +51,13 @@ from intergrax.runtime.human.governed_continuation_grant import (
 from intergrax.runtime.decision_governance_material import (
     assert_decision_governance_material_bound,
 )
+from intergrax.runtime.governance.active_governed_execution_task import (
+    peek_governed_execution_task,
+)
+from intergrax.runtime.human.governed_continuation_grant import (
+    grant_belongs_to_same_proposal_scope,
+    matches_current_requirement,
+)
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationResult,
 )
@@ -58,6 +65,50 @@ from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle, TaskState
 
 T = TypeVar("T")
+
+_MSE_EVIDENCE_FACT_ACTIONS = frozenset(
+    {
+        PolicyAction.ALLOW,
+        PolicyAction.DENY,
+        PolicyAction.REQUIRE_HUMAN,
+        PolicyAction.ESCALATE,
+    },
+)
+
+
+def _resolve_human_review_evidence_ref_for_allow(
+    request: CollaborativeWorkEnforcementRequest,
+    decision: PolicyDecision,
+) -> str | None:
+    if decision.action is not PolicyAction.ALLOW:
+        return None
+    side_effect = request.meaningful_side_effect_request
+    if type(side_effect) is not MeaningfulSideEffectRequest:
+        return None
+    task = peek_governed_execution_task()
+    if task is None:
+        return None
+    stored_grant = task.runtime.governance.governed_continuation_grant
+    if stored_grant is None:
+        return None
+    enforcement_scope = request.resource_scope
+    operation_id = request.operation_id
+    if not grant_belongs_to_same_proposal_scope(
+        stored_grant,
+        side_effect=side_effect,
+        operation_id=operation_id,
+        resource_scope=enforcement_scope,
+    ):
+        return None
+    if not matches_current_requirement(
+        stored_grant,
+        current_side_effect=side_effect,
+        current_operation_id=operation_id,
+        current_resource_scope=enforcement_scope,
+        current_decision=decision,
+    ):
+        return None
+    return stored_grant.human_request_id
 
 
 class MeaningfulSideEffectAuthorizationBoundary:
@@ -88,11 +139,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
         recorder = self._governance_evidence_recorder
         if recorder is None or recorder.persistence is None:
             return
-        if decision.action not in (
-            PolicyAction.ALLOW,
-            PolicyAction.DENY,
-            PolicyAction.REQUIRE_HUMAN,
-        ):
+        if decision.action not in _MSE_EVIDENCE_FACT_ACTIONS:
             return
         side_effect = request.meaningful_side_effect_request
         tenant_id = request.tenant_id
@@ -118,15 +165,28 @@ class MeaningfulSideEffectAuthorizationBoundary:
             resource_type = side_effect.kinds[0].value if side_effect.kinds else ""
             resource_scope = side_effect.side_effect_scope_id
             decision_material = side_effect.decision_governance_material
-        digest = request_digest_for_payload(
-            {
-                "operation_id": request.operation_id,
-                "resource_scope": request.resource_scope,
-                "decision_action": decision.action.value,
-                "policy_rule_id": decision.policy_rule_id,
-            }
-        )
+        digest_payload: dict[str, object] = {
+            "tenant_id": tenant_id,
+            "workspace_id": workspace_id,
+            "principal_id": principal_id,
+            "operation_id": request.operation_id,
+            "resource_scope": request.resource_scope,
+            "policy_rule_id": decision.policy_rule_id,
+        }
+        if task_id is not None:
+            digest_payload["task_id"] = str(task_id)
+        if run_id is not None:
+            digest_payload["run_id"] = str(run_id)
+        if attempt_id is not None:
+            digest_payload["attempt_id"] = str(attempt_id)
+        if execution_id is not None:
+            digest_payload["execution_id"] = str(execution_id)
+        digest = request_digest_for_payload(digest_payload)
         idempotency_key = f"mse:{digest}:{decision.action.value}"
+        human_review_evidence_ref = _resolve_human_review_evidence_ref_for_allow(
+            request,
+            decision,
+        )
         fact = build_governance_fact_from_policy_decision(
             evaluation_point=GovernedExecutionEvaluationPoint.MEANINGFUL_SIDE_EFFECT,
             tenant_id=tenant_id,
@@ -143,6 +203,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
             attempt_id=attempt_id,
             execution_id=execution_id,
             decision_material_ref=decision_material,
+            human_review_evidence_ref=human_review_evidence_ref,
         )
         recorder.record(fact)
 

@@ -225,8 +225,11 @@ def build_governance_fact_from_policy_decision(
         PolicyAction.ALLOW,
         PolicyAction.DENY,
         PolicyAction.REQUIRE_HUMAN,
+        PolicyAction.ESCALATE,
     ):
-        raise ValueError("governance_evidence_requires_allow_deny_or_require_human")
+        raise ValueError(
+            "governance_evidence_requires_allow_deny_require_human_or_escalate",
+        )
     evidence_id = governance_evidence_id_from_idempotency(idempotency_key)
     return GovernanceDecisionEvidenceFact(
         evidence_id=evidence_id,

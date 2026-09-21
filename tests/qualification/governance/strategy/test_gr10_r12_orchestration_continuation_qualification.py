@@ -100,10 +100,10 @@ def test_gr10_r12_next_remediation_is_reliability() -> None:
     assert "GR-10-R13" in GR10_R12_NEXT_REMEDIATION.task_name
 
 
-def test_gr10_r12_reliability_and_evidence_remain_partial() -> None:
+def test_gr10_r12_governance_evidence_qualified_after_r14() -> None:
     assert (
         gr10_matrix_orchestration_status("Governance Evidence")
-        is Gr10CoverageStatus.PARTIAL
+        is Gr10CoverageStatus.QUALIFIED
     )
 
 

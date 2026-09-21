@@ -23,7 +23,14 @@ from intergrax.contracts.meaningful_side_effect_policy import (
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
+from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernanceEvidencePersistencePort,
+)
 from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
+from intergrax.runtime.governance.orchestration_governance_evidence_composition import (
+    OrchestrationGovernanceEvidenceCompositionError,
+    build_orchestration_governance_evidence_recorder,
+)
 from intergrax.runtime.governance.orchestration_meaningful_side_effect_composition import (
     build_orchestration_meaningful_side_effect_authorization_boundary,
 )
@@ -72,6 +79,7 @@ def build_production_orchestration_meaningful_side_effect_authorization_boundary
     runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator,
     decision_requirement_policy: DecisionRequirementPolicy | None = None,
     inner_execution_guard: CanonicalInnerExecutionGuardPort | None = None,
+    governance_evidence_persistence: GovernanceEvidencePersistencePort | None = None,
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
     clock: Callable[[], datetime] | None = None,
     production_mode: bool = True,
@@ -80,6 +88,15 @@ def build_production_orchestration_meaningful_side_effect_authorization_boundary
     if not production_mode:
         raise OrchestrationDecisionBoundCompositionError(
             "production orchestration MSE boundary requires production_mode=True",
+        )
+    if governance_evidence_persistence is None and governance_evidence_recorder is None:
+        raise OrchestrationGovernanceEvidenceCompositionError(
+            "production orchestration MSE requires governance_evidence_persistence",
+        )
+    resolved_recorder = governance_evidence_recorder
+    if resolved_recorder is None:
+        resolved_recorder = build_orchestration_governance_evidence_recorder(
+            governance_evidence_persistence=governance_evidence_persistence,
         )
     resolved_policy = resolve_orchestration_decision_requirement_policy(
         decision_requirement_policy,
@@ -94,7 +111,7 @@ def build_production_orchestration_meaningful_side_effect_authorization_boundary
         runtime_policy_evaluator=runtime_policy_evaluator,
         inner_execution_guard=inner_execution_guard,
         decision_requirement_policy=resolved_policy,
-        governance_evidence_recorder=governance_evidence_recorder,
+        governance_evidence_recorder=resolved_recorder,
         clock=clock,
     )
 

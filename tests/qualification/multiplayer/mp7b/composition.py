@@ -54,6 +54,9 @@ from intergrax.runtime.governance.orchestration_decision_bound_effect_compositio
     build_production_orchestration_meaningful_side_effect_authorization_boundary,
 )
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
+from testing_support.orchestration_governance_evidence_wiring import (
+    default_test_orchestration_evidence_persistence,
+)
 from tests.unit.runtime.governance.gr3_test_support import (
     default_gr3_identity_bundle,
     default_gr3_inner_guard,
@@ -95,6 +98,7 @@ def _build_boundary(
         inner_execution_guard=default_gr3_inner_guard(task_id),
         clock=lambda: _NOW,
         production_mode=True,
+        governance_evidence_persistence=default_test_orchestration_evidence_persistence(),
     )
 
 

@@ -120,6 +120,9 @@ from intergrax.runtime.execution.orchestration_topology_submission import (
 from intergrax.runtime.governance.active_governed_execution_task import (
     ActiveGovernedExecutionTask,
 )
+from testing_support.orchestration_governance_evidence_wiring import (
+    default_test_orchestration_evidence_persistence,
+)
 from tests.unit.runtime.governance.gr3_test_support import (
     StaticActiveTaskScope,
     bound_gr3_active_execution,
@@ -299,6 +302,7 @@ def _orchestration_boundary(
         decision_requirement_policy=decision_requirement_policy,
         inner_execution_guard=default_gr3_inner_guard(task_id),
         production_mode=True,
+        governance_evidence_persistence=default_test_orchestration_evidence_persistence(),
     )
 
 
@@ -324,6 +328,7 @@ def test_missing_production_orchestration_decision_policy_fails_closed() -> None
             runtime_policy_evaluator=RuntimePolicyEngine(),
             decision_requirement_policy=None,
             production_mode=True,
+            governance_evidence_persistence=default_test_orchestration_evidence_persistence(),
         )
 
 

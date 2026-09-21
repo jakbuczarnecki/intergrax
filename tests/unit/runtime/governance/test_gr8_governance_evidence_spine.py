@@ -361,15 +361,29 @@ def test_governance_persistence_port_has_no_policy_decision_return() -> None:
     assert "PolicyDecision" not in str(hints)
 
 
-def test_build_fact_rejects_non_terminal_actions() -> None:
+def test_build_fact_rejects_modify_action() -> None:
     with pytest.raises(ValueError, match="governance_evidence_requires"):
         build_governance_fact_from_policy_decision(
             evaluation_point=GovernedExecutionEvaluationPoint.MEANINGFUL_SIDE_EFFECT,
             tenant_id="tenant_a",
             workspace_id="ws",
             principal_id="p",
-            decision=PolicyDecision(action=PolicyAction.ESCALATE, reason="x"),
-            request_digest="sha256:aa",
+            decision=PolicyDecision(action=PolicyAction.MODIFY, reason="x"),
+            request_digest="sha256:" + "aa" * 32,
             idempotency_key="k1",
             action="act",
         )
+
+
+def test_build_fact_accepts_escalate_action() -> None:
+    fact = build_governance_fact_from_policy_decision(
+        evaluation_point=GovernedExecutionEvaluationPoint.MEANINGFUL_SIDE_EFFECT,
+        tenant_id="tenant_a",
+        workspace_id="ws",
+        principal_id="p",
+        decision=PolicyDecision(action=PolicyAction.ESCALATE, reason="escalate"),
+        request_digest="sha256:" + "bb" * 32,
+        idempotency_key="k-escalate",
+        action="act",
+    )
+    assert fact.decision is PolicyAction.ESCALATE

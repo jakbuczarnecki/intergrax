@@ -339,10 +339,9 @@ GR10_ORCHESTRATION_CAPABILITY_SEMANTICS: tuple[Gr10ResidualStrategyCapabilitySem
     Gr10ResidualStrategyCapabilitySemantics(
         "Governance Evidence",
         Gr10Applicability.APPLICABLE,
-        Gr10CoverageStatus.PARTIAL,
-        "Some orchestration GEP emission via Nexus/governance bridges; mandatory GR-8 typed facts not "
-        "qualified per GEP on production orchestration paths (POST_RUN optional service; planning evidence "
-        "partial).",
+        Gr10CoverageStatus.QUALIFIED,
+        "GR-10-R14: strict orchestration MSE + root admission emit canonical GovernanceDecisionEvidenceFact "
+        "via pluginable GovernanceEvidencePersistencePort; ESCALATE recorded; evidence non-authoritative.",
     ),
 )
 
@@ -622,6 +621,15 @@ GR10_R13_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
         "Highest remaining ORCHESTRATION applicable capability row after GR-10-R13 Reliability "
         "enterprise qualification."
     ),
+)
+
+
+GR10_R14_NEXT_REMEDIATION: Gr10R7NextRemediation = Gr10R7NextRemediation(
+    task_name="GR-10 AGENTIC Residual + GR-10 Closure",
+    strategy="AGENTIC",
+    capability="Governance Evidence",
+    exact_blocker="Remaining AGENTIC strategy governance evidence and closure residuals.",
+    why_highest="ORCHESTRATION strategy enterprise qualification closed under GR-10-R14.",
 )
 
 

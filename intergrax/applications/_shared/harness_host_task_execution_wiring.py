@@ -23,6 +23,7 @@ from intergrax.applications._shared.profile_resolution.execution_admission impor
 )
 from intergrax.agents.persistence.skill_host_wiring import HostSkillCatalogWiring
 from intergrax.runtime.execution.host_task import HostTaskExecution
+from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
 __all__ = [
@@ -38,6 +39,7 @@ def build_harness_host_task_execution(
     pipeline_capability_suffix: str = ".pipeline",
     revision_admission: object | None = None,
     skill_host_wiring: HostSkillCatalogWiring | None = None,
+    governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
 ) -> HostTaskExecution:
     """Harness composition root — explicit harness governance identity admission."""
     return build_host_task_execution(
@@ -45,7 +47,9 @@ def build_harness_host_task_execution(
         orchestration_triggers=orchestration_triggers,
         pipeline_capability_suffix=pipeline_capability_suffix,
         revision_admission=revision_admission,
-        root_authority_admission=build_harness_root_execution_authority_admission(),
+        root_authority_admission=build_harness_root_execution_authority_admission(
+            governance_evidence_recorder=governance_evidence_recorder,
+        ),
         admit_root_governance_identity=admit_harness_root_governance_identity,
         skill_host_wiring=skill_host_wiring,
     )
@@ -57,6 +61,7 @@ def build_harness_environment_host_task_execution(
     *,
     pinning_dependencies: EffectiveProfileExecutionPinningDependencies | None = None,
     skill_host_wiring: HostSkillCatalogWiring | None = None,
+    governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
 ) -> HostTaskExecution:
     """Build harness host task execution from environment orchestration profile."""
     return build_environment_host_task_execution(
@@ -64,6 +69,8 @@ def build_harness_environment_host_task_execution(
         env,
         pinning_dependencies=pinning_dependencies,
         skill_host_wiring=skill_host_wiring,
-        root_authority_admission=build_harness_root_execution_authority_admission(),
+        root_authority_admission=build_harness_root_execution_authority_admission(
+            governance_evidence_recorder=governance_evidence_recorder,
+        ),
         admit_root_governance_identity=admit_harness_root_governance_identity,
     )
