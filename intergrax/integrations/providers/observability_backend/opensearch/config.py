@@ -22,7 +22,7 @@ class OpenSearchIntegrationConfig(BaseIntegrationConfig):
 
     @classmethod
     def from_env(cls, **overrides: object) -> OpenSearchIntegrationConfig:
-        payload = {
+        payload: dict[str, object] = {
             "base_url": os.environ.get("INTERGRAX_OPENSEARCH_URL", "http://localhost:9200").strip()
             or "http://localhost:9200",
             "index": os.environ.get("INTERGRAX_OPENSEARCH_INDEX", "logs-*").strip() or "logs-*",

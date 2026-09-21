@@ -10,6 +10,7 @@ from enum import StrEnum
 from typing import Any, Generic, Mapping, Self, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field
+from pydantic_core import PydanticUndefined
 
 PLATFORM_INTEGRATION_CONTRACT_SCHEMA = "platform_integration_contract.v1"
 
@@ -175,11 +176,24 @@ class PlatformIntegrationContract(BaseModel, Generic[ConfigT]):
     display_name: str | None = None
     version: str | None = None
     capabilities: tuple[PlatformIntegrationCapability, ...] = Field(default_factory=tuple)
-    config: ConfigT = Field(default_factory=PlatformIntegrationConfig)
+    config: ConfigT
     security_posture: PlatformIntegrationSecurityPosture = Field(
         default_factory=PlatformIntegrationSecurityPosture
     )
     expects_failure_isolation: bool = True
+
+    @classmethod
+    def _resolve_provider_config(
+        cls,
+        config: PlatformIntegrationConfig | None,
+    ) -> PlatformIntegrationConfig:
+        if config is not None:
+            return config
+        config_field = cls.model_fields["config"]
+        default = config_field.get_default(call_default_factory=True)
+        if default is not PydanticUndefined and isinstance(default, PlatformIntegrationConfig):
+            return default
+        return PlatformIntegrationConfig()
 
     @classmethod
     def for_provider(
@@ -197,14 +211,17 @@ class PlatformIntegrationContract(BaseModel, Generic[ConfigT]):
             if isinstance(integration_kind, PlatformIntegrationKind)
             else integration_kind
         )
-        return cls(
-            integration_id=derive_platform_integration_id(provider_id, kind_value),
-            provider_id=provider_id,
-            integration_kind=kind_value,
-            display_name=display_name,
-            version=version,
-            capabilities=capabilities,
-            config=config or PlatformIntegrationConfig(),
+        resolved_config = cls._resolve_provider_config(config)
+        return cls.model_validate(
+            {
+                "integration_id": derive_platform_integration_id(provider_id, kind_value),
+                "provider_id": provider_id,
+                "integration_kind": kind_value,
+                "display_name": display_name,
+                "version": version,
+                "capabilities": capabilities,
+                "config": resolved_config,
+            }
         )
 
     @property
