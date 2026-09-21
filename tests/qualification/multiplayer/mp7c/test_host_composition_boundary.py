@@ -34,6 +34,7 @@ from tests.qualification.multiplayer.mp7c.host_composition import (
     non_strict_host_environment,
     resolve_host_wiring,
     strict_host_environment,
+    strict_host_governance_evidence_persistence,
 )
 
 pytestmark = pytest.mark.unit
@@ -133,6 +134,7 @@ def test_strict_missing_decision_policy_fails_closed() -> None:
         resolve_harness_host_meaningful_side_effect_authorization_wiring(
             env,
             collaborative_work_repositories=bundle,
+            governance_evidence_persistence=strict_host_governance_evidence_persistence(),
         )
 
 

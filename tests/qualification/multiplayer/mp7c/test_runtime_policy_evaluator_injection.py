@@ -26,7 +26,10 @@ from tests.qualification.multiplayer.mp7c.host_composition import (
     empty_in_memory_repositories,
     resolve_host_wiring,
     strict_host_environment,
+    strict_host_governance_evidence_persistence,
 )
+
+_STRICT_GEP = strict_host_governance_evidence_persistence()
 
 pytestmark = pytest.mark.unit
 
@@ -74,6 +77,7 @@ def test_injected_evaluator_identity_reaches_production_builder() -> None:
             collaborative_work_repositories=bundle,
             decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
             runtime_policy_evaluator=injected,
+            governance_evidence_persistence=_STRICT_GEP,
         )
     build_mock.assert_called_once()
     assert build_mock.call_args.kwargs["runtime_policy_evaluator"] is injected
@@ -95,6 +99,7 @@ def test_default_path_constructs_runtime_policy_engine() -> None:
                 strict_host_environment(),
                 collaborative_work_repositories=bundle,
                 decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
+                governance_evidence_persistence=_STRICT_GEP,
             )
     engine_ctor.assert_called_once_with()
     forwarded = build_mock.call_args.kwargs["runtime_policy_evaluator"]
@@ -118,6 +123,7 @@ def test_injected_evaluator_skips_default_runtime_policy_engine_construction() -
                 collaborative_work_repositories=bundle,
                 decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
                 runtime_policy_evaluator=injected,
+                governance_evidence_persistence=_STRICT_GEP,
             )
     engine_ctor.assert_not_called()
     assert build_mock.call_args.kwargs["runtime_policy_evaluator"] is injected
@@ -162,6 +168,7 @@ def test_injected_repositories_path_forwards_evaluator_identity() -> None:
             collaborative_work_repositories=bundle,
             decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
             runtime_policy_evaluator=injected,
+            governance_evidence_persistence=_STRICT_GEP,
         )
     assert build_mock.call_args.kwargs["runtime_policy_evaluator"] is injected
 
@@ -198,6 +205,7 @@ def test_custom_conforming_evaluator_is_accepted_without_concrete_branching() ->
             collaborative_work_repositories=bundle,
             decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
             runtime_policy_evaluator=custom,
+            governance_evidence_persistence=_STRICT_GEP,
         )
     assert build_mock.call_args.kwargs["runtime_policy_evaluator"] is custom
     assert not isinstance(custom, RuntimePolicyEngine)
