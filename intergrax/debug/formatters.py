@@ -46,7 +46,7 @@ def format_run_show(persisted: PersistedRun) -> str:
         f"events:      {len(persisted.events)}",
     ]
     if meta.error is not None:
-        lines.append(f"error:       {meta.error.error_type.value} — {meta.error.message}")
+        lines.append(f"error:       {meta.error.error_type} — {meta.error.message}")
     return "\n".join(lines)
 
 

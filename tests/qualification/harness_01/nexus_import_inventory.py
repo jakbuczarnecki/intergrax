@@ -458,7 +458,6 @@ _PATHS: tuple[str, ...] = (
     "intergrax/runtime/adaptive/signal_emission.py",
     "intergrax/runtime/adaptive/trace_sequence_reader.py",
     "intergrax/runtime/agent_governance/request_builder.py",
-    "intergrax/runtime/architecture/retrieval_security_wiring.py",
     "intergrax/runtime/attestation/boundary_emitter.py",
     "intergrax/runtime/attestation/kernel_wiring.py",
     "intergrax/runtime/cancellation/coordinator.py",
@@ -529,11 +528,6 @@ _PATHS: tuple[str, ...] = (
     "intergrax/runtime/wiring/policy_runtime_bridge.py",
     "intergrax/runtime/wiring/reliability_runtime_bridge.py",
     "intergrax/runtime/workspace/exec_ctx_isolation.py",
-    "intergrax/tools/providers/context_tool/service.py",
-    "intergrax/tools/providers/harness/service.py",
-    "intergrax/tools/providers/rag/service.py",
-    "intergrax/tools/registry/runtime_bindings.py",
-    "intergrax/websearch/service/websearch_context_generator.py",
 )
 
 HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS: tuple[Harness01HigherLayerNexusImporter, ...] = tuple(

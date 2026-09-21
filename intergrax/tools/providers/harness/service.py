@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 
-from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunMetadata, RunSummary
+from intergrax.contracts.persisted_run_trace import PersistedRun, RunMetadata, RunSummary
 from intergrax.tools.providers.harness.contracts import (
     HarnessCompareRunsInput,
     HarnessCompareRunsOutput,
@@ -54,7 +54,7 @@ def _metadata_output(metadata: RunMetadata) -> HarnessRunMetadataOutput:
     error_type = ""
     error_message = ""
     if metadata.error is not None:
-        error_type = metadata.error.error_type.value
+        error_type = metadata.error.error_type
         error_message = metadata.error.message
     return HarnessRunMetadataOutput(
         run_id=metadata.run_id,

@@ -9,15 +9,15 @@ from intergrax.runtime.architecture.retrieval_security import (
     RetrievalTrustLevel,
     evaluate_retrieval_poisoning,
 )
-from intergrax.runtime.nexus.context.context_builder import RetrievedChunk
+from intergrax.runtime.architecture.retrieval_security import RetrievalPoisoningInputChunk
 
 
 def filter_retrieved_chunks_for_poisoning(
-    chunks: list[RetrievedChunk],
+    chunks: list[RetrievalPoisoningInputChunk],
     *,
     quarantine_threshold: float = 0.40,
     review_threshold: float = 0.70,
-) -> tuple[list[RetrievedChunk], list[str]]:
+) -> tuple[list[RetrievalPoisoningInputChunk], list[str]]:
     """Drop quarantined chunks and return manual-review warnings."""
     if not chunks:
         return [], []

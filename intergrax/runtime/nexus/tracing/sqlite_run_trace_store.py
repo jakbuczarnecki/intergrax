@@ -193,7 +193,13 @@ class SQLiteRunTraceStore(RunTraceStore):
             error: Optional[RunError] = None
             if error_json is not None:
                 error_dict = json.loads(error_json)
-                error = RunError(**error_dict)
+                raw_type = error_dict.get("error_type", "")
+                if hasattr(raw_type, "value"):
+                    raw_type = raw_type.value
+                error = RunError(
+                    error_type=str(raw_type),
+                    message=str(error_dict.get("message", "")),
+                )
 
             metadata = RunMetadata(
                 run_id=db_run_id,

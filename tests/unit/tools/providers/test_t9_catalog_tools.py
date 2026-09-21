@@ -13,8 +13,7 @@ from intergrax.integrations.contracts.workflow_orchestrator import (
     WorkflowRunHandle,
     WorkflowRunStatus,
 )
-from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
-from intergrax.runtime.nexus.tracing.persistence_models import (
+from intergrax.contracts.persisted_run_trace import (
     PersistedRun,
     RunError,
     RunMetadata,
@@ -154,7 +153,7 @@ class InMemoryTraceReader:
                 tenant_id="tenant-a",
                 started_at_utc="2026-06-07T10:05:00Z",
                 stats=RunStats(duration_ms=150, llm_usage={"input_tokens": 8}),
-                error=RunError(error_type=RuntimeErrorCode.INTERNAL_ERROR, message="boom"),
+                error=RunError(error_type="internal_error", message="boom"),
             ),
             events=[{"event_id": "e-1"}, {"event_id": "e-2"}],
         )
@@ -246,7 +245,7 @@ def test_harness_compare_and_export_run_bundle() -> None:
     )
     assert compare.duration_delta_ms == 50
     assert compare.event_count_delta == 1
-    assert compare.candidate.error_type == RuntimeErrorCode.INTERNAL_ERROR.value
+    assert compare.candidate.error_type == "internal_error"
 
     exported = harness_export_run_bundle(
         ctx,

@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
-from intergrax.runtime.nexus.tracing.persistence_models import (
+from intergrax.contracts.persisted_run_trace import (
     PersistedRun,
     RunError,
     RunMetadata,
@@ -38,7 +37,7 @@ class InMemoryTraceReader:
             tenant_id="tenant-a",
             started_at_utc="2026-06-07T10:00:00Z",
             stats=RunStats(duration_ms=120, llm_usage={"input_tokens": 10, "output_tokens": 5}),
-            error=RunError(error_type=RuntimeErrorCode.INTERNAL_ERROR, message="boom"),
+            error=RunError(error_type="internal_error", message="boom"),
         )
         self._events = [
             {
@@ -82,7 +81,7 @@ def test_harness_get_run_returns_metadata_and_events() -> None:
     ctx = ToolWiringContext(trace_reader=InMemoryTraceReader())
     out = harness_get_run(ctx, HarnessGetRunInput(run_id="run-1", tenant_id="tenant-a"))
     assert out.metadata.run_id == "run-1"
-    assert out.metadata.error_type == RuntimeErrorCode.INTERNAL_ERROR.value
+    assert out.metadata.error_type == "internal_error"
     assert out.event_count == 2
 
 

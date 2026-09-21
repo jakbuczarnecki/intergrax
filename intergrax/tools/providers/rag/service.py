@@ -230,13 +230,13 @@ def _apply_retrieval_poisoning_filter(
     if not chunks or not _retrieval_poisoning_defense_enabled(ctx):
         return chunks, citations, "", []
 
+    from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
     from intergrax.runtime.architecture.retrieval_security_wiring import (
         filter_retrieved_chunks_for_poisoning,
     )
-    from intergrax.runtime.nexus.context.context_builder import RetrievedChunk
 
     retrieved = [
-        RetrievedChunk(
+        RetrievalChunk(
             id=chunk.id,
             text=chunk.text,
             metadata=dict(chunk.metadata or {}),

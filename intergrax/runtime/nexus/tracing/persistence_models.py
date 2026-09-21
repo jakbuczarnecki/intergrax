@@ -8,7 +8,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from intergrax.runtime.nexus.artifacts.models import ArtifactRef
-from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
 
 @dataclass(frozen=True)
@@ -61,46 +60,13 @@ class SerializedTraceEvent:
         )
 
 
-@dataclass(frozen=True)
-class RunMetadata:
-    run_id: str
-    session_id: str
-    user_id: str
-    tenant_id: str
-    started_at_utc: str
-    stats: RunStats
-    error: Optional[RunError]=None
-
-
-@dataclass(frozen=True)
-class RunStats:
-    duration_ms: int
-    llm_usage: Dict[str, Any]
-
-
-@dataclass(frozen=True)
-class RunError:
-    error_type: RuntimeErrorCode
-    message: str
-
-
-@dataclass(frozen=True)
-class PersistedRun:
-    metadata: RunMetadata
-    events: List[Dict[str, Any]]  # Serialized TraceEvent dicts
-
-
-@dataclass(frozen=True)
-class RunSummary:
-    """Lightweight run row for debug CLI list (Phase D.1)."""
-
-    run_id: str
-    tenant_id: str
-    user_id: str
-    session_id: str
-    started_at_utc: str
-    duration_ms: int
-    event_count: int
+from intergrax.contracts.persisted_run_trace import (
+    PersistedRun,
+    RunError,
+    RunMetadata,
+    RunStats,
+    RunSummary,
+)
 
 
 class RunTraceWriter(ABC):

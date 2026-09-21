@@ -12,15 +12,10 @@ from intergrax.websearch.service.websearch_config import WebSearchConfig, WebSea
 
 
 def _sync_routing_before_websearch_llm(cfg: WebSearchConfig) -> None:
-    routing_config = cfg.routing_runtime_config
-    if routing_config is None:
+    sync_port = cfg.routing_snapshot_sync
+    if sync_port is None:
         return
-    from intergrax.runtime.nexus.config import RuntimeConfig
-    from intergrax.runtime.nexus.context.routing_snapshot_sync import sync_routing_before_llm_call
-
-    if not isinstance(routing_config, RuntimeConfig):
-        return
-    sync_routing_before_llm_call(routing_config, run_id=cfg.run_id)
+    sync_port.sync_before_llm_call(run_id=cfg.run_id)
 
 
 @dataclass
