@@ -55,6 +55,9 @@ class WorkerQualifiedCapabilityExecutionEngineAdapter:
             acquisition_request_id=request.acquisition_request_id,
             qualified_subject_reference=request.qualified_subject_reference,
             requested_at=request.requested_at,
+            admitted_governance_identity=request.admitted_governance_identity,
+            effective_authority_decision=request.effective_authority_decision,
+            collaborative_authority_scopes=request.collaborative_authority_scopes,
             run_id=request.run_id,
             attempt_id=request.attempt_id,
         )

@@ -95,6 +95,11 @@ from intergrax.runtime.execution.worker_qualified_capability_execution_adapter i
 )
 from intergrax.tools.registry.wiring import ToolWiringContext
 from tests.unit.autonomous_work import repository_contracts as contract_suite
+from tests.unit.autonomous_work.uca6c_worker_authority_fixtures import (
+    _READ,
+    build_worker_execution_admission_for_uca6c,
+    trusted_governance_from_admission,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -102,6 +107,8 @@ _NOW = datetime(2026, 9, 21, 11, 0, tzinfo=UTC)
 _WORKER_ID = contract_suite.mint_worker_instance_id()
 _TASK_ID = TaskId("task_" + "e" * 32)
 _TENANT = "tenant-uca6cr"
+_WORKSPACE = "workspace-uca6cr"
+_PRINCIPAL = "principal-uca6cr"
 _OTHER_TENANT = "tenant-other"
 _CRAFT_ID = "craft-uca6cr-1"
 _ARTIFACT = artifact_reference_for_craft(_CRAFT_ID)
@@ -220,6 +227,24 @@ def _resume_request(
         tenant_id=tenant_id,
         task_id=_TASK_ID,
         requested_at=_NOW,
+        requested_authority_scopes=(_READ,),
+    )
+
+
+def _authority_admission():
+    return build_worker_execution_admission_for_uca6c(
+        worker_instance_id=_WORKER_ID,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        principal_id=_PRINCIPAL,
+    )
+
+
+def _execution_governance():
+    return trusted_governance_from_admission(
+        admission=_authority_admission(),
+        worker_instance_id=_WORKER_ID,
+        requested_scopes=(_READ,),
     )
 
 
@@ -243,6 +268,7 @@ def _production_stack(
     coordinator = WorkerQualifiedCapabilityResumeCoordinator(
         binding=binding_service,
         execution=execution,
+        authority_admission=_authority_admission(),
     )
     return coordinator, dispatch, binding_provider
 
@@ -372,6 +398,7 @@ def test_production_ee_adapter_dispatches_once_per_request_id() -> None:
         resume_operation_id=resume_id,
         binding_operation_id=binding_id,
     )
+    admitted, decision, scopes = _execution_governance()
     request = WorkerQualifiedCapabilityExecutionRequest(
         resume_operation_id=resume_id,
         binding_operation_id=binding_id,
@@ -385,6 +412,9 @@ def test_production_ee_adapter_dispatches_once_per_request_id() -> None:
         acquisition_request_id=_ACQ_REQUEST,
         qualified_subject_reference=_subject().qualified_subject_reference,
         requested_at=_NOW,
+        admitted_governance_identity=admitted,
+        effective_authority_decision=decision,
+        collaborative_authority_scopes=scopes,
     )
     adapter.execute(request)
     adapter.execute(request)
@@ -439,6 +469,7 @@ def test_execution_id_mismatch_fail_closed() -> None:
         execution=WorkerQualifiedCapabilityExecutionEngineAdapter(
             dispatch=_MismatchDispatch()
         ),
+        authority_admission=_authority_admission(),
     )
     result = coordinator.resume(_resume_request(_qualification()))
     assert result.outcome is WorkerQualifiedCapabilityResumeOutcome.EXECUTION_FAILED
@@ -462,6 +493,7 @@ def test_execution_id_missing_on_dispatched_fail_closed() -> None:
             (CodeCraftQualifiedCapabilityBindingProvider(ctx),),
         ),
         execution=_MissingIdExecution(),
+        authority_admission=_authority_admission(),
     )
     with pytest.raises(ValueError, match="DISPATCHED requires execution_request_id"):
         coordinator.resume(_resume_request(_qualification()))

@@ -70,6 +70,10 @@ from intergrax.contracts.execution_identity import (
     TaskId,
 )
 from tests.unit.autonomous_work import repository_contracts as contract_suite
+from tests.unit.autonomous_work.uca6c_worker_authority_fixtures import (
+    _READ,
+    build_worker_execution_admission_for_uca6c,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -79,6 +83,8 @@ _TASK_ID = TaskId("task_" + "b" * 32)
 _RUN_ID = RunId("run_" + "c" * 32)
 _EXEC_ID = ExecutionId("exec_" + "d" * 32)
 _TENANT = "tenant-uca6c"
+_WORKSPACE = "workspace-uca6c"
+_PRINCIPAL = "principal-uca6c-1"
 _RECOVERY_DECISION = "recovery:uca6c:1"
 _ACQ_REQUEST = "capability-acquisition-request:gap-1:nonce-1"
 _QUAL_REQUEST = "capability-qualification-request:acq-1:qual-1"
@@ -249,17 +255,32 @@ def _resume_request(
         tenant_id=_TENANT,
         task_id=_TASK_ID,
         requested_at=_NOW,
+        requested_authority_scopes=(_READ,),
+    )
+
+
+def _authority_admission():
+    return build_worker_execution_admission_for_uca6c(
+        worker_instance_id=_WORKER_ID,
+        tenant_id=_TENANT,
+        workspace_id=_WORKSPACE,
+        principal_id=_PRINCIPAL,
     )
 
 
 def _coordinator(
     binding_provider: _RecordingBindingProvider | _BlockedBindingProvider,
     execution: _RecordingExecutionPort | None = None,
+    *,
+    authority_admission=None,
 ) -> WorkerQualifiedCapabilityResumeCoordinator:
     binding_service = QualifiedCapabilityBindingService((binding_provider,))
     return WorkerQualifiedCapabilityResumeCoordinator(
         binding=binding_service,
         execution=execution or _RecordingExecutionPort(),
+        authority_admission=authority_admission
+        if authority_admission is not None
+        else _authority_admission(),
     )
 
 

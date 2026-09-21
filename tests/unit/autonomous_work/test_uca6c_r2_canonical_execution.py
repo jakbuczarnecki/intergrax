@@ -58,6 +58,7 @@ from tests.unit.autonomous_work.test_uca6c_r_production_resume import (
     _TENANT,
     _WORKER_ID,
     _acquisition,
+    _execution_governance,
     _production_stack,
     _qualification,
     _resume_request,
@@ -140,6 +141,7 @@ def test_ee_admission_denied_rejected_no_delegate_side_effect() -> None:
         resume_operation_id=resume_id,
         binding_operation_id=binding_id,
     )
+    admitted, decision, scopes = _execution_governance()
     result = adapter.execute(
         WorkerQualifiedCapabilityExecutionRequest(
             resume_operation_id=resume_id,
@@ -154,6 +156,9 @@ def test_ee_admission_denied_rejected_no_delegate_side_effect() -> None:
             acquisition_request_id=_acquisition().request_id,
             qualified_subject_reference=_subject().qualified_subject_reference,
             requested_at=_NOW,
+            admitted_governance_identity=admitted,
+            effective_authority_decision=decision,
+            collaborative_authority_scopes=scopes,
         ),
     )
     assert result.disposition is WorkerQualifiedCapabilityExecutionDisposition.REJECTED
@@ -184,6 +189,10 @@ class _MismatchDispatch:
 
 def test_execution_request_id_mismatch_still_fail_closed() -> None:
     ctx = _wiring()
+    from tests.unit.autonomous_work.test_uca6c_r_production_resume import (
+        _authority_admission,
+    )
+
     coordinator = WorkerQualifiedCapabilityResumeCoordinator(
         binding=QualifiedCapabilityBindingService(
             (CodeCraftQualifiedCapabilityBindingProvider(ctx),),
@@ -191,6 +200,7 @@ def test_execution_request_id_mismatch_still_fail_closed() -> None:
         execution=WorkerQualifiedCapabilityExecutionEngineAdapter(
             dispatch=_MismatchDispatch(),
         ),
+        authority_admission=_authority_admission(),
     )
     result = coordinator.resume(_resume_request(_qualification()))
     assert result.outcome is WorkerQualifiedCapabilityResumeOutcome.EXECUTION_FAILED

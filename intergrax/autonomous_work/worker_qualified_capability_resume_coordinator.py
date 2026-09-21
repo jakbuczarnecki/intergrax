@@ -7,9 +7,19 @@ from __future__ import annotations
 
 from datetime import datetime
 
+from intergrax.autonomous_work.execution_authority_admission import (
+    WorkerExecutionAdmissionService,
+    WorkerExecutionAuthorityDenied,
+)
 from intergrax.autonomous_work.worker_qualified_capability_resume_ports import (
     QualifiedCapabilityBindingPort,
     WorkerQualifiedCapabilityExecutionPort,
+)
+from intergrax.contracts.admitted_root_governance_identity import (
+    AdmittedRootGovernanceIdentity,
+)
+from intergrax.contracts.autonomous_work.execution_authority import (
+    WorkerExecutionAuthorityRequest,
 )
 from intergrax.contracts.autonomous_work.worker_capability_recovery import (
     WorkerCapabilityRecoveryProvenance,
@@ -43,9 +53,11 @@ class WorkerQualifiedCapabilityResumeCoordinator:
         *,
         binding: QualifiedCapabilityBindingPort,
         execution: WorkerQualifiedCapabilityExecutionPort,
+        authority_admission: WorkerExecutionAdmissionService | None = None,
     ) -> None:
         self._binding = binding
         self._execution = execution
+        self._authority_admission = authority_admission
 
     def resume(
         self,
@@ -144,6 +156,43 @@ class WorkerQualifiedCapabilityResumeCoordinator:
             )
 
         assert binding_result.execution_target is not None
+        if self._authority_admission is None:
+            return WorkerQualifiedCapabilityResumeResult(
+                outcome=WorkerQualifiedCapabilityResumeOutcome.EXECUTION_UNAVAILABLE,
+                resume_operation_id=resume_id,
+                provenance=provenance,
+                binding_result=binding_result,
+                decided_at=timestamp,
+            )
+        try:
+            authority_context = self._authority_admission.prepare(
+                WorkerExecutionAuthorityRequest(
+                    worker_instance_id=request.worker_instance_id,
+                    requested_authority_scopes=request.requested_authority_scopes,
+                ),
+            )
+        except WorkerExecutionAuthorityDenied:
+            return WorkerQualifiedCapabilityResumeResult(
+                outcome=WorkerQualifiedCapabilityResumeOutcome.EXECUTION_REJECTED,
+                resume_operation_id=resume_id,
+                provenance=provenance,
+                binding_result=binding_result,
+                decided_at=timestamp,
+            )
+        principal = authority_context.resolved_principal
+        admitted_identity = AdmittedRootGovernanceIdentity(
+            tenant_id=principal.tenant_id,
+            workspace_id=principal.workspace_id,
+            principal_id=principal.principal_id,
+        )
+        if request.tenant_id != admitted_identity.tenant_id:
+            return WorkerQualifiedCapabilityResumeResult(
+                outcome=WorkerQualifiedCapabilityResumeOutcome.EXECUTION_REJECTED,
+                resume_operation_id=resume_id,
+                provenance=provenance,
+                binding_result=binding_result,
+                decided_at=timestamp,
+            )
         execution_request_id = derive_qualified_capability_execution_request_id(
             resume_operation_id=resume_id,
             binding_operation_id=binding_operation_id,
@@ -161,6 +210,9 @@ class WorkerQualifiedCapabilityResumeCoordinator:
             acquisition_request_id=qualification.acquisition_request_id,
             qualified_subject_reference=subject.qualified_subject_reference,
             requested_at=timestamp,
+            admitted_governance_identity=admitted_identity,
+            effective_authority_decision=authority_context.effective_authority_decision,
+            collaborative_authority_scopes=authority_context.collaborative_authority_scopes,
             run_id=request.run_id,
             attempt_id=request.attempt_id,
         )

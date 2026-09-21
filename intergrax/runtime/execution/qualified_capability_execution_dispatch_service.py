@@ -1,18 +1,13 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Ingress dedup and canonical root launch for qualified capabilities (UCA-6C-R2)."""
+"""Ingress dedup and canonical root launch for qualified capabilities (UCA-6C-R2/R3)."""
 
 from __future__ import annotations
 
 import threading
-from collections.abc import Callable
 from dataclasses import dataclass
 
-from intergrax.contracts.admitted_root_governance_identity import (
-    AdmittedRootGovernanceIdentity,
-)
-from intergrax.contracts.collaborative_work import EffectiveAuthorityDecision
 from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
     QualifiedCapabilityExecutionDispatchDisposition,
     QualifiedCapabilityExecutionDispatchPort,
@@ -29,13 +24,10 @@ from intergrax.contracts.root_execution_launch import (
     RootExecutionLaunchRequest,
 )
 from intergrax.contracts.root_execution_operation import RootExecutionOperation
-from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.execution.qualified_capability_execution_runtime_delegate import (
     QualifiedCapabilityExecutionRuntimeDelegate,
 )
 from intergrax.tools._shared.async_dispatch import run_async
-
-_WORKER_READ_SCOPE = "workspace.read"
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,17 +48,9 @@ class QualifiedCapabilityExecutionDispatchService(
             QualifiedCapabilityExecutionDelegateResult,
         ],
         runtime_delegate: QualifiedCapabilityExecutionRuntimeDelegate,
-        governance_identity_resolver: Callable[
-            [QualifiedCapabilityExecutionDispatchRequest],
-            AdmittedRootGovernanceIdentity,
-        ]
-        | None = None,
     ) -> None:
         self._launcher = root_execution_launcher
         self._runtime_delegate = runtime_delegate
-        self._governance_identity_resolver = (
-            governance_identity_resolver or _default_governance_identity_resolver
-        )
         self._ledger: dict[tuple[str, str], _IngressLedgerEntry] = {}
         self._lock = threading.RLock()
 
@@ -97,20 +81,17 @@ class QualifiedCapabilityExecutionDispatchService(
                 acquisition_request_id=request.acquisition_request_id,
                 qualified_subject_reference=request.qualified_subject_reference,
                 requested_at=request.requested_at,
+                admitted_governance_identity=request.admitted_governance_identity,
+                effective_authority_decision=request.effective_authority_decision,
+                collaborative_authority_scopes=request.collaborative_authority_scopes,
             )
-            admitted = self._governance_identity_resolver(request)
             launch_result = run_async(
                 self._launcher.launch(
                     RootExecutionLaunchRequest(
-                        admitted_governance_identity=admitted,
+                        admitted_governance_identity=request.admitted_governance_identity,
                         root_execution_operation=RootExecutionOperation.ROOT_WORKER_DISPATCH,
-                        collaborative_authority_scopes=(_WORKER_READ_SCOPE,),
-                        effective_authority_decision=EffectiveAuthorityDecision(
-                            decision=PolicyDecision(
-                                action=PolicyAction.ALLOW,
-                                reason="qualified_capability_resume",
-                            ),
-                        ),
+                        collaborative_authority_scopes=request.collaborative_authority_scopes,
+                        effective_authority_decision=request.effective_authority_decision,
                         payload=payload,
                         run_id=request.run_id,
                         attempt_id=request.attempt_id,
@@ -121,17 +102,6 @@ class QualifiedCapabilityExecutionDispatchService(
             result = _map_launch_result(request, launch_result)
             self._ledger[ledger_key] = _IngressLedgerEntry(result=result)
             return result
-
-
-def _default_governance_identity_resolver(
-    request: QualifiedCapabilityExecutionDispatchRequest,
-) -> AdmittedRootGovernanceIdentity:
-    tenant = request.tenant_id
-    return AdmittedRootGovernanceIdentity(
-        tenant_id=tenant,
-        workspace_id=tenant,
-        principal_id=f"worker:{request.worker_instance_id}",
-    )
 
 
 def _map_launch_result(
