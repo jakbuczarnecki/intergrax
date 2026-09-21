@@ -1119,7 +1119,7 @@ GR10_INFERENCE_FORMAL_CLOSURE: Gr10FormalClosureStatus = Gr10FormalClosureStatus
 GR10_ORCHESTRATION_FORMAL_CLOSURE: Gr10FormalClosureStatus = Gr10FormalClosureStatus(
     strategy="ORCHESTRATION",
     status="FINAL CLOSED within formally defined GR-10 scope",
-    gr13_deferred_note="",
+    gr13_deferred_note="full per-GEP Governance Evidence remains deferred to GR-13",
 )
 
 GR10_AGENTIC_FORMAL_CLOSURE: Gr10FormalClosureStatus = Gr10FormalClosureStatus(
@@ -1133,6 +1133,23 @@ GR10_OVERALL_FORMAL_CLOSURE: Gr10FormalClosureStatus = Gr10FormalClosureStatus(
     status="FINAL CLOSED within formally defined GR-10 scope",
     gr13_deferred_note="full per-GEP Governance Evidence remains deferred to GR-13",
 )
+
+GR10_STRATEGY_FORMAL_CLOSURES: tuple[Gr10FormalClosureStatus, ...] = (
+    GR10_INFERENCE_FORMAL_CLOSURE,
+    GR10_ORCHESTRATION_FORMAL_CLOSURE,
+    GR10_AGENTIC_FORMAL_CLOSURE,
+)
+
+
+def gr10_gr13_deferred_evidence_rows_for_strategy(
+    strategy: str,
+) -> tuple[Gr13OrchestrationGovernanceEvidenceDeferredRow, ...]:
+    """Typed GR-13 deferred per-GEP obligations by strategy (empty when none in SSOT)."""
+    if strategy == "ORCHESTRATION":
+        return GR13_ORCHESTRATION_GOVERNANCE_EVIDENCE_DEFERRED
+    if strategy == "AGENTIC":
+        return GR13_AGENTIC_GOVERNANCE_EVIDENCE_DEFERRED
+    return ()
 
 
 @dataclass(frozen=True, slots=True)

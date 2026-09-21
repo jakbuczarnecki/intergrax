@@ -16,7 +16,9 @@ from tests.qualification.governance.strategy.catalog import (
     GR10_OVERALL_FORMAL_CLOSURE,
     GR10_POST_CLOSURE_NEXT_REMEDIATION,
     GR10_R15_R1_NEXT_REMEDIATION,
+    GR10_STRATEGY_FORMAL_CLOSURES,
     Gr10CoverageStatus,
+    gr10_gr13_deferred_evidence_rows_for_strategy,
 )
 from tests.qualification.governance.strategy.gr10_inference_current_doc_ssot import (
     gr10_architecture_remaining_gaps_slice,
@@ -32,7 +34,20 @@ def test_gr10_final_closure_status_ssot() -> None:
     assert "FINAL CLOSED" in GR10_AGENTIC_FORMAL_CLOSURE.status
     assert "FINAL CLOSED" in GR10_OVERALL_FORMAL_CLOSURE.status
     assert "GR-13" in GR10_AGENTIC_FORMAL_CLOSURE.gr13_deferred_note
+    assert "GR-13" in GR10_ORCHESTRATION_FORMAL_CLOSURE.gr13_deferred_note
     assert "GR-13" in GR10_OVERALL_FORMAL_CLOSURE.gr13_deferred_note
+
+
+def test_gr10_final_closure_gr13_deferred_notes_consistent_with_inventory() -> None:
+    for closure in GR10_STRATEGY_FORMAL_CLOSURES:
+        if "FINAL CLOSED" not in closure.status:
+            continue
+        deferred = gr10_gr13_deferred_evidence_rows_for_strategy(closure.strategy)
+        if not deferred:
+            assert not closure.gr13_deferred_note.strip()
+            continue
+        assert closure.gr13_deferred_note.strip()
+        assert "GR-13" in closure.gr13_deferred_note
 
 
 def test_gr10_final_post_closure_next_is_gr12() -> None:
