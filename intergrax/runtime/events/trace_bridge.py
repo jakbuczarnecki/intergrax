@@ -397,6 +397,10 @@ def _attach_typed_bridge_payload(
                 "source": "task_lifecycle",
             },
         )
+    from intergrax.contracts.application_observability_attributes import (
+        coerce_observability_attribute_mapping,
+    )
+
     typed = TraceBridgePayloadV1(
         trace_event_id=trace.event_id,
         trace_step=trace.step,
@@ -404,7 +408,7 @@ def _attach_typed_bridge_payload(
         trace_seq=trace.seq,
         message=trace.message,
         diagnostic_schema_id=diagnostic_schema_id,
-        diagnostic_data=dict(extra_payload),
+        diagnostic_data=coerce_observability_attribute_mapping(extra_payload),
     )
     merged = merge_payload_envelope(base, typed)
     if diagnostic_schema_id:

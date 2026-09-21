@@ -8,26 +8,28 @@ from __future__ import annotations
 from typing import Any, TypeVar
 
 from intergrax.runtime.events.payloads import CANONICAL_PAYLOAD_TYPES, RuntimeEventPayload
-from intergrax.runtime.events.payloads.canonical import (
-    AgentSelectionPayloadV1,
-    ContextAssemblyPayloadV1,
-    ContextAssemblyPayloadV2,
-    ContextCandidatePayloadV1,
-    DecisionPayloadV1,
-    GraphNodePayloadV1,
-    DelegationGrantedPayloadV1,
-    HandoffPayloadV1,
-    HumanPayloadV1,
-    InterruptPayloadV1,
-    LlmCallPayloadV1,
-    SkillResolvedPayloadV1,
-    ExecutionFailurePayloadV1,
-    ExternalOperationFailurePayloadV1,
-    TaskLifecyclePayloadV1,
-    ToolPayloadV1,
-    ValidationPayloadV1,
+from intergrax.runtime.events.runtime_event import RuntimeEvent
+from intergrax.runtime.events.runtime_event_payload_policy import (
+    EVENT_TYPE_PREFERRED_SCHEMA,
+    PayloadWriteMode,
+    RuntimeEventTypeClassification,
+    get_runtime_event_payload_policy,
 )
-from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+
+__all__ = [
+    "EVENT_TYPE_PREFERRED_SCHEMA",
+    "RuntimeEventPayloadError",
+    "UnknownPayloadSchemaError",
+    "assert_canonical_production_runtime_event_payload",
+    "assert_runtime_event_payload",
+    "bootstrap_canonical_payload_registry",
+    "get_payload_schema",
+    "list_registered_payload_schema_ids",
+    "merge_payload_envelope",
+    "register_payload_schema",
+    "runtime_event_with_payload",
+    "validate_payload_envelope",
+]
 
 T = TypeVar("T", bound=RuntimeEventPayload)
 
@@ -41,43 +43,6 @@ class RuntimeEventPayloadError(ValueError):
 
 class UnknownPayloadSchemaError(RuntimeEventPayloadError):
     """Raised when payload_schema_id is not registered."""
-
-
-EVENT_TYPE_PREFERRED_SCHEMA: dict[RuntimeEventType, str] = {
-    RuntimeEventType.AGENT_SELECTED: AgentSelectionPayloadV1.schema_id,
-    RuntimeEventType.CONTEXT_ASSEMBLED: ContextAssemblyPayloadV2.schema_id,
-    RuntimeEventType.CONTEXT_BUILT: ContextAssemblyPayloadV1.schema_id,
-    RuntimeEventType.CONTEXT_CANDIDATE_COLLECTED: ContextCandidatePayloadV1.schema_id,
-    RuntimeEventType.CONTEXT_CANDIDATE_DROPPED: ContextCandidatePayloadV1.schema_id,
-    RuntimeEventType.CONTEXT_TRIMMED: ContextAssemblyPayloadV2.schema_id,
-    RuntimeEventType.CONTEXT_VALIDATION_FAILED: ValidationPayloadV1.schema_id,
-    RuntimeEventType.DECISION_EMITTED: DecisionPayloadV1.schema_id,
-    RuntimeEventType.DELEGATION_GRANTED: DelegationGrantedPayloadV1.schema_id,
-    RuntimeEventType.HANDOFF_COMPLETED: HandoffPayloadV1.schema_id,
-    RuntimeEventType.HANDOFF_INITIATED: HandoffPayloadV1.schema_id,
-    RuntimeEventType.HUMAN_APPROVAL_RECEIVED: HumanPayloadV1.schema_id,
-    RuntimeEventType.HUMAN_APPROVAL_REQUESTED: HumanPayloadV1.schema_id,
-    RuntimeEventType.INTERRUPT_HANDLED: InterruptPayloadV1.schema_id,
-    RuntimeEventType.INTERRUPT_REQUESTED: InterruptPayloadV1.schema_id,
-    RuntimeEventType.LLM_CALL: LlmCallPayloadV1.schema_id,
-    RuntimeEventType.SKILL_RESOLVED: SkillResolvedPayloadV1.schema_id,
-    RuntimeEventType.STEP_COMPLETED: GraphNodePayloadV1.schema_id,
-    RuntimeEventType.STEP_FAILED: ValidationPayloadV1.schema_id,
-    RuntimeEventType.STEP_STARTED: GraphNodePayloadV1.schema_id,
-    RuntimeEventType.TASK_CLASSIFIED: TaskLifecyclePayloadV1.schema_id,
-    RuntimeEventType.TASK_COMPLETED: TaskLifecyclePayloadV1.schema_id,
-    RuntimeEventType.EXECUTION_FAILED: ExecutionFailurePayloadV1.schema_id,
-    RuntimeEventType.EXTERNAL_OPERATION_FAILED: ExternalOperationFailurePayloadV1.schema_id,
-    RuntimeEventType.TASK_CREATED: TaskLifecyclePayloadV1.schema_id,
-    RuntimeEventType.TASK_FAILED: TaskLifecyclePayloadV1.schema_id,
-    RuntimeEventType.TOOL_COMPLETED: ToolPayloadV1.schema_id,
-    RuntimeEventType.TOOL_DENIED: ToolPayloadV1.schema_id,
-    RuntimeEventType.TOOL_FAILED: ToolPayloadV1.schema_id,
-    RuntimeEventType.TOOL_REQUESTED: ToolPayloadV1.schema_id,
-    RuntimeEventType.VALIDATION_FAILED: ValidationPayloadV1.schema_id,
-    RuntimeEventType.VALIDATION_PASSED: ValidationPayloadV1.schema_id,
-    RuntimeEventType.VALIDATION_STARTED: ValidationPayloadV1.schema_id,
-}
 
 
 def register_payload_schema(
@@ -187,19 +152,8 @@ def assert_canonical_production_runtime_event_payload(event: RuntimeEvent) -> No
     Spine event types with a preferred schema must carry a matching envelope.
     Custom ``event_kind`` values require a registered typed envelope (fail-closed).
     """
-    preferred = EVENT_TYPE_PREFERRED_SCHEMA.get(event.event_type)
-    if preferred is not None and _uses_spine_event_kind(event):
-        schema_id = event.payload.get("payload_schema_id")
-        if schema_id is None:
-            raise RuntimeEventPayloadError(
-                f"canonical production event {event.event_type.value} requires typed payload envelope"
-            )
-        if schema_id != preferred:
-            raise RuntimeEventPayloadError(
-                f"payload_schema_id mismatch for {event.event_type.value}: "
-                f"expected {preferred!r}, got {schema_id!r}"
-            )
-        validate_payload_envelope(event.payload)
+    policy = get_runtime_event_payload_policy(event.event_type)
+    if policy.classification != RuntimeEventTypeClassification.CANONICAL_PRODUCTION:
         return
     if not _uses_spine_event_kind(event):
         schema_id = event.payload.get("payload_schema_id")
@@ -208,3 +162,28 @@ def assert_canonical_production_runtime_event_payload(event: RuntimeEvent) -> No
                 f"extension event_kind {event.event_kind!r} requires registered typed payload envelope"
             )
         validate_payload_envelope(event.payload)
+        return
+    if policy.write_mode == PayloadWriteMode.EXTENSION_EVENT_KIND:
+        schema_id = event.payload.get("payload_schema_id")
+        if schema_id is None:
+            raise RuntimeEventPayloadError(
+                f"canonical event {event.event_type.value} requires extension typed payload envelope"
+            )
+        validate_payload_envelope(event.payload)
+        return
+    preferred = policy.schema_id
+    if preferred is None:
+        raise RuntimeEventPayloadError(
+            f"canonical production event {event.event_type.value} missing payload policy schema_id"
+        )
+    schema_id = event.payload.get("payload_schema_id")
+    if schema_id is None:
+        raise RuntimeEventPayloadError(
+            f"canonical production event {event.event_type.value} requires typed payload envelope"
+        )
+    if schema_id != preferred:
+        raise RuntimeEventPayloadError(
+            f"payload_schema_id mismatch for {event.event_type.value}: "
+            f"expected {preferred!r}, got {schema_id!r}"
+        )
+    validate_payload_envelope(event.payload)

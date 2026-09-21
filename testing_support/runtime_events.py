@@ -18,6 +18,21 @@ from intergrax.runtime.events.payload_registry import (
     runtime_event_with_payload,
 )
 from intergrax.runtime.events.payloads import RuntimeEventPayload
+from intergrax.runtime.events.payloads.spine_families import (
+    BudgetSignalPayloadV1,
+    CancellationLifecyclePayloadV1,
+    GraphBackpressurePayloadV1,
+    GuardrailBlockedPayloadV1,
+    HumanTimeoutPayloadV1,
+    MemoryAccessPayloadV1,
+    OperationalAlertPayloadV1,
+    PauseLifecyclePayloadV1,
+    PlanLifecyclePayloadV1,
+    PolicyDecisionSpinePayloadV1,
+    RetryLifecyclePayloadV1,
+    TaskProgressPayloadV1,
+    TracePersistedPayloadV1,
+)
 from intergrax.runtime.events.payloads.canonical import (
     AgentSelectionPayloadV1,
     ContextAssemblyPayloadV1,
@@ -90,6 +105,19 @@ def _minimal_payload_for_schema_id(schema_id: str) -> RuntimeEventPayload:
         "task_lifecycle.v1": TaskLifecyclePayloadV1(task_state="created"),
         "tool.v1": ToolPayloadV1(tool_name="tool.test", status="requested"),
         "validation.v1": ValidationPayloadV1(valid=True),
+        "plan_lifecycle.v1": PlanLifecyclePayloadV1(plan_id="plan.test", step_count=1, task_state="planned"),
+        "pause_lifecycle.v1": PauseLifecyclePayloadV1(lifecycle_state="paused"),
+        "retry_lifecycle.v1": RetryLifecyclePayloadV1(scope="run", attempt=1),
+        "cancellation_lifecycle.v1": CancellationLifecyclePayloadV1(reason="test"),
+        "memory_access.v1": MemoryAccessPayloadV1(namespace="ns", key="k", found=True),
+        "operational_alert.v1": OperationalAlertPayloadV1(alert_kind="test"),
+        "human_timeout.v1": HumanTimeoutPayloadV1(request_id="req"),
+        "policy_decision_spine.v1": PolicyDecisionSpinePayloadV1(evidence_id="evidence"),
+        "budget_signal.v1": BudgetSignalPayloadV1(scope="agent", signal_kind="threshold"),
+        "graph_backpressure.v1": GraphBackpressurePayloadV1(max_inflight_nodes=1),
+        "guardrail_blocked.v1": GuardrailBlockedPayloadV1(reason="blocked"),
+        "trace_persisted.v1": TracePersistedPayloadV1(trace_ref="trace"),
+        "task_progress.v1": TaskProgressPayloadV1(progress_kind="test"),
     }
     payload = builders.get(schema_id)
     if payload is None:

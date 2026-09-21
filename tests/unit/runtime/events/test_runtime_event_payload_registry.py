@@ -137,6 +137,34 @@ def test_canonical_production_write_rejects_legacy_untyped_payload() -> None:
         assert_runtime_event_schema(event)
 
 
+def test_validating_persistence_upgrades_legacy_plan_payload() -> None:
+    from intergrax.contracts.execution_identity import (
+        mint_attempt_id,
+        mint_execution_id,
+        mint_run_id,
+        mint_task_id,
+    )
+    from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+    from intergrax.runtime.events.stores.validating_runtime_event_store import (
+        ValidatingRuntimeEventPersistence,
+    )
+
+    inner = InMemoryRuntimeEventStore()
+    store = ValidatingRuntimeEventPersistence(inner)
+    event = RuntimeEvent(
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+        event_type=RuntimeEventType.PLAN_CREATED,
+        phase=ExecutionPhase.PLANNING,
+        payload={"plan_id": "plan-1", "step_count": 2, "task_state": "planned"},
+    )
+    positioned = store.append(event, tenant_id="tenant")
+    assert positioned.event.payload["payload_schema_id"] == "plan_lifecycle.v1"
+    validate_payload_envelope(positioned.event.payload)
+
+
 def test_merge_payload_envelope_promotes_ops_fields() -> None:
     typed = ToolPayloadV1(tool_name="websearch.query", status="requested")
     merged = merge_payload_envelope({}, typed, promote_fields={"tool_name": "websearch.query"})

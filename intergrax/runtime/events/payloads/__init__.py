@@ -4,6 +4,21 @@
 """Typed RuntimeEvent payload models (OBS-BUS-1)."""
 
 from intergrax.runtime.events.payloads.base import RuntimeEventPayload
+from intergrax.runtime.events.payloads.spine_families import (
+    BudgetSignalPayloadV1,
+    CancellationLifecyclePayloadV1,
+    GraphBackpressurePayloadV1,
+    GuardrailBlockedPayloadV1,
+    HumanTimeoutPayloadV1,
+    MemoryAccessPayloadV1,
+    OperationalAlertPayloadV1,
+    PauseLifecyclePayloadV1,
+    PlanLifecyclePayloadV1,
+    PolicyDecisionSpinePayloadV1,
+    RetryLifecyclePayloadV1,
+    TaskProgressPayloadV1,
+    TracePersistedPayloadV1,
+)
 from intergrax.runtime.events.payloads.canonical import (
     AgentSelectionPayloadV1,
     ContextAssemblyPayloadV1,
@@ -44,6 +59,19 @@ CANONICAL_PAYLOAD_TYPES: tuple[type[RuntimeEventPayload], ...] = (
     ExecutionFailurePayloadV1,
     ExternalOperationFailurePayloadV1,
     TaskLifecyclePayloadV1,
+    PlanLifecyclePayloadV1,
+    PauseLifecyclePayloadV1,
+    RetryLifecyclePayloadV1,
+    CancellationLifecyclePayloadV1,
+    MemoryAccessPayloadV1,
+    OperationalAlertPayloadV1,
+    HumanTimeoutPayloadV1,
+    PolicyDecisionSpinePayloadV1,
+    BudgetSignalPayloadV1,
+    GraphBackpressurePayloadV1,
+    GuardrailBlockedPayloadV1,
+    TracePersistedPayloadV1,
+    TaskProgressPayloadV1,
 )
 
 __all__ = [
