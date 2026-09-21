@@ -11,6 +11,7 @@ from typing import Any, Protocol
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
 )
@@ -34,7 +35,7 @@ class RoutingProfileSource(Protocol):
     llm_routing_profile: Any
 
 
-class RoutingEvaluatingLLMAdapter(LLMAdapter):
+class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
     """Re-evaluates ``LLMRoutingProfile`` before each LLM call and swaps inner adapter."""
 
     def __init__(

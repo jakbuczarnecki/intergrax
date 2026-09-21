@@ -41,6 +41,7 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
 )
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.task.task import TaskContext
 from typing import Optional, Sequence
@@ -116,7 +117,7 @@ class Dg001CanonicalMultiAgentDiagnosticHarness:
     tenant_id: str
 
 
-class _Dg001StubLlmAdapter(LLMAdapter):
+class _Dg001StubLlmAdapter(BaseLLMAdapter):
     provider = "dg001-stub"
     model = "dg001-stub"
 

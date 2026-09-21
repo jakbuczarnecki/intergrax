@@ -17,6 +17,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
@@ -27,7 +28,7 @@ from intergrax.runtime.nexus.tools.catalog_dispatch import invoke_catalog_tool_r
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 
 
-class _CatalogDispatchLLMStub(LLMAdapter):
+class _CatalogDispatchLLMStub(BaseLLMAdapter):
     """Minimal LLM adapter for catalog-only dispatch (no generation)."""
 
     provider = "acp_catalog_dispatch"

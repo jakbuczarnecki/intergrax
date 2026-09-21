@@ -56,6 +56,7 @@ from intergrax.runtime.token_optimization.pipeline import (
     TokenOptimizationPipelineRunner,
 )
 from intergrax.runtime.token_optimization.proofs.contracts import (
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
     SCHEMA_VERSION,
     ProofArtifactError,
     ProofArtifactRef,
@@ -535,7 +536,7 @@ def _adapter_create_kwargs(
     }
 
 
-class _OfflineSmokeAdapter(LLMAdapter):
+class _OfflineSmokeAdapter(BaseLLMAdapter):
     """Deterministic structured-output adapter used only by offline_smoke."""
 
     def __init__(

@@ -16,13 +16,14 @@ from intergrax.runtime.nexus.context.context_compiler_models import ContextCandi
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.runtime.nexus.context.degradation_ladder import DegradationStepKind
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm.messages import ChatMessage as LlmChatMessage
 
 pytestmark = pytest.mark.gate
 
 
-class _SmallWindowAdapter(LLMAdapter):
+class _SmallWindowAdapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-small"
 

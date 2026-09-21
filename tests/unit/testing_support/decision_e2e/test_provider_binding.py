@@ -10,6 +10,7 @@ import pytest
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from platform_proofs.scenarios.ai_incident_investigation.application.runtime_composition import (
@@ -28,7 +29,7 @@ from testing_support.strict_tool_contract_validator import STRICT_CAPABILITY_BLO
 pytestmark = pytest.mark.unit
 
 
-class _StrictlessStubAdapter(LLMAdapter):
+class _StrictlessStubAdapter(BaseLLMAdapter):
     provider = LLMProvider.OLLAMA
     model = "qwen2.5:32b"
 
@@ -42,7 +43,7 @@ class _StrictlessStubAdapter(LLMAdapter):
         return build_adapter_response(content="ok")
 
 
-class _StubAdapter(LLMAdapter):
+class _StubAdapter(BaseLLMAdapter):
     provider = LLMProvider.OPENAI
     model = "gpt-4.1"
 

@@ -26,6 +26,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.runtime.execution import ExecutionCapability, ExecutionStatus
@@ -100,7 +101,7 @@ class ChildLineageCapture:
     root_execution_id: ExecutionId | None = None
 
 
-class StructuredInferenceAdapter(LLMAdapter):
+class StructuredInferenceAdapter(BaseLLMAdapter):
     provider = LLMProvider.OLLAMA
     model = "test"
 

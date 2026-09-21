@@ -11,6 +11,7 @@ import pytest
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     StrictToolArgumentConformanceError,
 )
@@ -130,7 +131,7 @@ def test_atomic_planner_accepts_strict_capable_fixture() -> None:
 
 
 def test_non_strict_adapter_fails_closed_before_dispatch() -> None:
-    class _StrictlessAdapter(LLMAdapter):
+    class _StrictlessAdapter(BaseLLMAdapter):
         provider = "strictless"
         model = "strictless"
 

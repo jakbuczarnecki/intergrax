@@ -7,6 +7,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     CanonicalFunctionToolDefinition,
     StrictToolArgumentConformanceError,
@@ -29,7 +30,7 @@ from testing_support.atomic_planner_round_transport import poc_business_tool_sch
 pytestmark = pytest.mark.unit
 
 
-class _StrictCapableAdapter(LLMAdapter):
+class _StrictCapableAdapter(BaseLLMAdapter):
     provider = "strict-capable"
     model = "strict-capable"
 
@@ -44,7 +45,7 @@ class _StrictCapableAdapter(LLMAdapter):
         raise NotImplementedError
 
 
-class _ToolsOnlyAdapter(LLMAdapter):
+class _ToolsOnlyAdapter(BaseLLMAdapter):
     provider = "tools-only"
     model = "tools-only"
 

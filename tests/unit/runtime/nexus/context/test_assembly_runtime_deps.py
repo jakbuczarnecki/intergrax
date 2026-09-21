@@ -28,11 +28,12 @@ from intergrax.runtime.nexus.context.ucl_orchestration import NEXUS_UCL_RUNTIME_
 from intergrax.runtime.wiring.context_runtime_bridge import CONTEXT_OPTIMIZATION_POLICY_HANDLE
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
-class _Adapter(LLMAdapter):
+class _Adapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-runtime-deps"
 

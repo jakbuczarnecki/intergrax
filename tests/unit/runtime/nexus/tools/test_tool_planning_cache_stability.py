@@ -15,6 +15,7 @@ from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_ha
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.nexus.tools.tool_planning_service import (
     ToolPlanningService,
     build_tool_planning_schema,
@@ -254,7 +255,7 @@ def test_canonical_tool_contract_not_mutated() -> None:
     assert registry.get("alpha.tool").contract.description == original
 
 
-class _CapturingAdapter(LLMAdapter):
+class _CapturingAdapter(BaseLLMAdapter):
     provider = "fake-capture"
     model = "fake-capture"
 

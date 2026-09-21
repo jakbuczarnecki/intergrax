@@ -24,6 +24,7 @@ from intergrax.llm_adapters._shared.responses_input import messages_to_responses
 from intergrax.llm_adapters._shared.openai_completion_mapping import adapter_response_from_openai_responses
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
@@ -485,7 +486,7 @@ def _map_tools_to_responses_api(
     return mapped
 
 
-class OpenAIChatResponsesAdapter(LLMAdapter):
+class OpenAIChatResponsesAdapter(BaseLLMAdapter):
     """
     OpenAI adapter based on the new Responses API.
 

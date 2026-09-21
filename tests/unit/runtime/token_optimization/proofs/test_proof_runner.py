@@ -13,6 +13,7 @@ import pytest
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
@@ -190,7 +191,7 @@ def test_loader_accepts_canonical_provider_ids_without_network_call(
     assert config.adapter.provider == provider
 
 
-class _RecordingLiveAdapter(LLMAdapter):
+class _RecordingLiveAdapter(BaseLLMAdapter):
     def __init__(self, *, provider: str, **kwargs) -> None:
         super().__init__()
         self.provider = LLMProvider(provider)

@@ -6,6 +6,7 @@ import pytest
 
 from intergrax.contracts.acp_state import AcpInvocationUsageView, AcpTokenUsage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter
 from intergrax.llm_adapters.routing.context_bridge import tokens_used_from_usage
@@ -20,7 +21,7 @@ def _restore_registry_state():
         LLMAdapterRegistry._factories = snapshot
 
 
-class _StubCustomAdapter(LLMAdapter):
+class _StubCustomAdapter(BaseLLMAdapter):
     provider = "custom_gateway"
     model = "custom-model"
 

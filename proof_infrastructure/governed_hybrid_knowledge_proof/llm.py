@@ -14,6 +14,7 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
 )
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 
 from proof_infrastructure.governed_hybrid_knowledge_proof.fixtures import (
     DEPLOYMENT_POLICY_CONTENT,
@@ -32,7 +33,7 @@ class _AssemblerDecision(TypedDict, total=False):
     used_evidence_ids: list[str]
 
 
-class DeploymentReadinessDeterministicLLM(LLMAdapter):
+class DeploymentReadinessDeterministicLLM(BaseLLMAdapter):
     """Apply indexed deployment policy to live project status without network LLM calls."""
 
     provider = "proof"

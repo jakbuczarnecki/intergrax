@@ -12,6 +12,7 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult, Age
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
@@ -22,7 +23,7 @@ from intergrax.runtime.task.task import Task, TaskContext
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
 
 
-class _WindowAdapter(LLMAdapter):
+class _WindowAdapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake"
 

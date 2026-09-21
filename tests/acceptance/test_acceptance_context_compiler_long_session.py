@@ -12,12 +12,13 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_compiler import ContextCompiler
 from intergrax.runtime.nexus.context.context_preflight import verify_context_preflight
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 
 pytestmark = pytest.mark.gate
 
 
-class _SmallWindowAdapter(LLMAdapter):
+class _SmallWindowAdapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-small"
 

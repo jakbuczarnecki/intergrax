@@ -23,6 +23,7 @@ from intergrax.llm_adapters._shared.tool_schema import openai_tools_to_gemini
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
@@ -32,7 +33,7 @@ from intergrax.llm_adapters.contracts.tool_call import LLMToolCall, tool_calls_f
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
-class GeminiChatAdapter(LLMAdapter):
+class GeminiChatAdapter(BaseLLMAdapter):
     """
     Gemini adapter based on the official Google Gen AI SDK (google-genai).
 

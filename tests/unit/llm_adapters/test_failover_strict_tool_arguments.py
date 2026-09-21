@@ -11,6 +11,7 @@ import pytest
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     StrictToolArgumentConformanceError,
 )
@@ -24,7 +25,7 @@ from testing_support.atomic_planner_round_transport import poc_business_tool_sch
 pytestmark = pytest.mark.unit
 
 
-class _StrictToolsAdapter(LLMAdapter):
+class _StrictToolsAdapter(BaseLLMAdapter):
     provider = "strict-primary"
     model = "strict-primary"
 
@@ -70,7 +71,7 @@ class _StrictToolsAdapter(LLMAdapter):
         )
 
 
-class _StrictlessToolsAdapter(LLMAdapter):
+class _StrictlessToolsAdapter(BaseLLMAdapter):
     provider = "strictless"
     model = "strictless"
 

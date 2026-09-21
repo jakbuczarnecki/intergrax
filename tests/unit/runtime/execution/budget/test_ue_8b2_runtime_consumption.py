@@ -23,6 +23,7 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.execution.active_execution_budget import (
     ActiveExecutionBudgetState,
     bind_active_execution_budget,
@@ -150,7 +151,7 @@ def test_planner_iteration_exact_delta() -> None:
         _reset_budget(*tokens)
 
 
-class _CountingAdapter(LLMAdapter):
+class _CountingAdapter(BaseLLMAdapter):
     provider = "test"
     model = "test"
 

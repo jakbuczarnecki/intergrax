@@ -29,6 +29,7 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
 )
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 
 _MARKER_ROOT = "deployment of project Atlas failed because of database timeout"
 _MARKER_REPLY = "connection pool exhaustion"
@@ -56,7 +57,7 @@ _PREFIX = "/v1/local_workspace"
 _SIGNING_KEY = "e2e-connected-source-signing-key"
 
 
-class _RecordingFakeLLM(LLMAdapter):
+class _RecordingFakeLLM(BaseLLMAdapter):
     provider = "fake"
     model = "fake"
 

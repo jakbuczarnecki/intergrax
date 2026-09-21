@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Union
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
@@ -19,7 +20,7 @@ from intergrax.llm_adapters.registry.model_catalog import ModelRecord, lookup_mo
 from intergrax.utils import attribute_access
 
 
-class CatalogCapabilityAdapter(LLMAdapter):
+class CatalogCapabilityAdapter(BaseLLMAdapter):
     """Overlay ModelCatalog capability flags on a concrete adapter."""
 
     def __init__(self, inner: LLMAdapter, record: ModelRecord) -> None:

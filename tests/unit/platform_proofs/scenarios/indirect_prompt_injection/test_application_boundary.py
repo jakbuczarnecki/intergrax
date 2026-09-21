@@ -9,6 +9,7 @@ from intergrax.applications._shared.scenario_runtime_baseline import (
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
@@ -44,7 +45,7 @@ from tests.unit.platform_proofs.scenarios.indirect_prompt_injection.in_process_o
 pytestmark = pytest.mark.unit
 
 
-class _StubScenarioLLM(LLMAdapter):
+class _StubScenarioLLM(BaseLLMAdapter):
     provider = "stub"
     model = "stub"
 

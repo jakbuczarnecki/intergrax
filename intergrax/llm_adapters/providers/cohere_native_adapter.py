@@ -22,6 +22,7 @@ from intergrax.llm_adapters._shared.messages import split_system_messages
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.provider_extensions import LLMProviderExtensions
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
@@ -30,7 +31,7 @@ from intergrax.llm_adapters.contracts.tool_call import LLMToolCall, tool_calls_f
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
-class CohereNativeChatAdapter(LLMAdapter):
+class CohereNativeChatAdapter(BaseLLMAdapter):
     """Cohere ``ClientV2`` chat with optional tool definitions (v2 messages API)."""
 
     ENV_API_KEY = "COHERE_API_KEY"

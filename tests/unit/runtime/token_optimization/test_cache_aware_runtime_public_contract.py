@@ -15,6 +15,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.provider_extensions import (
     LLMProviderExtensions,
     VllmProviderExtensions,
@@ -225,7 +226,7 @@ def _router_request() -> token_optimization.TokenOptimizationLLMRouterRequest:
     )
 
 
-class _CountingNativeToolsAdapter(LLMAdapter):
+class _CountingNativeToolsAdapter(BaseLLMAdapter):
     provider = "fake-native"
     model = "fake-native"
 

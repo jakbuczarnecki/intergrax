@@ -14,6 +14,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import (
     LLMAdapterDependencyError,
@@ -94,7 +95,7 @@ class _SdkImportBlocker(importlib.abc.MetaPathFinder):
         raise ModuleNotFoundError(f"No module named '{name}'", name=name)
 
 
-class _FakeEnterpriseGatewayAdapter(LLMAdapter):
+class _FakeEnterpriseGatewayAdapter(BaseLLMAdapter):
     provider = "fake_enterprise_gateway"
     model = "fake-model"
 

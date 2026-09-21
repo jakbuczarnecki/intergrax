@@ -23,12 +23,13 @@ import pytest
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 
 
 pytestmark = pytest.mark.unit
 
 
-class _DummyAdapter(LLMAdapter):
+class _DummyAdapter(BaseLLMAdapter):
     """
     Minimal concrete adapter for testing non-public helper behavior.
     """

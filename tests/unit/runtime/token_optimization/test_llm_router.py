@@ -18,6 +18,7 @@ from intergrax.llm_adapters._shared.adapter_response_builders import (
 )
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
@@ -108,7 +109,7 @@ def _router_request(
     )
 
 
-class _NativeToolsAdapter(LLMAdapter):
+class _NativeToolsAdapter(BaseLLMAdapter):
     provider = "fake-native"
     model = "fake-native"
 
@@ -187,7 +188,7 @@ class _NativeToolsAdapter(LLMAdapter):
         )
 
 
-class _StructuredOutputAdapter(LLMAdapter):
+class _StructuredOutputAdapter(BaseLLMAdapter):
     provider = "fake-structured"
     model = "fake-structured"
 
@@ -230,7 +231,7 @@ class _StructuredOutputAdapter(LLMAdapter):
         )
 
 
-class _UnsupportedAdapter(LLMAdapter):
+class _UnsupportedAdapter(BaseLLMAdapter):
     provider = "fake-unsupported"
     model = "fake-unsupported"
 
@@ -897,7 +898,7 @@ def test_corpus_cases_define_required_fields(case: object) -> None:
     assert case.synthetic_marker
 
 
-class _CountingAdapter(LLMAdapter):
+class _CountingAdapter(BaseLLMAdapter):
     provider = "fake-counting"
     model = "fake-counting"
 
@@ -959,7 +960,7 @@ class _CountingAdapter(LLMAdapter):
         raise AssertionError("structured output must not be called during preflight")
 
 
-class _OllamaLikeAdapter(LLMAdapter):
+class _OllamaLikeAdapter(BaseLLMAdapter):
     provider = LLMProvider.OLLAMA
     model = "qwen2.5:7b"
 

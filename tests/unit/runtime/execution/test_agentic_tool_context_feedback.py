@@ -38,6 +38,7 @@ from intergrax.runtime.execution.budget.ledger import create_execution_budget_le
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
@@ -88,7 +89,7 @@ class _Out(BaseModel):
     result: int = 0
 
 
-class _WindowAdapter(LLMAdapter):
+class _WindowAdapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-window"
 

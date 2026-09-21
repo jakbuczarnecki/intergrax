@@ -13,6 +13,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.llm_adapters.providers.ollama_capabilities import (
@@ -64,7 +65,7 @@ def _decision(
     )
 
 
-class FakeNativeToolsAdapter(LLMAdapter):
+class FakeNativeToolsAdapter(BaseLLMAdapter):
     provider = "fake-native"
     model = "fake-native"
 
@@ -144,7 +145,7 @@ class FakeNativeToolsAdapter(LLMAdapter):
         raise AssertionError("structured fallback must not run after native failure")
 
 
-class FakeStructuredOutputAdapter(LLMAdapter):
+class FakeStructuredOutputAdapter(BaseLLMAdapter):
     provider = "fake-structured"
     model = "fake-structured"
 
@@ -385,7 +386,7 @@ def test_safe_reporting_remains_content_safe() -> None:
     assert "SYNTH-EVIDENCE" not in dumped
 
 
-class _OllamaLikeAdapter(LLMAdapter):
+class _OllamaLikeAdapter(BaseLLMAdapter):
     provider = "ollama"
     model = "legacy:7b"
 

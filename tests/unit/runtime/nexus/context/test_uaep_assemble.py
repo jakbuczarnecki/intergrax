@@ -15,6 +15,7 @@ from intergrax.llm.messages import ChatMessage, StructuredModelInputRequiredErro
 from intergrax.runtime.nexus.context.graph_assembly import text_from_assembled_messages
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.nexus.context.codebase_engine import CodebaseContextEngine
 from intergrax.runtime.nexus.context.uaep_assemble import (
     assemble_uaep_session_messages,
@@ -53,7 +54,7 @@ def _catalog() -> None:
     reset_context_catalog_bootstrap_for_tests()
 
 
-class _Adapter(LLMAdapter):
+class _Adapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake"
 

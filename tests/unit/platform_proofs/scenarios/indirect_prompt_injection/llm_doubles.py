@@ -6,6 +6,7 @@ import json
 
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.tools.atomic_planner_round import PLANNER_ROUND_TOOL_ID
@@ -25,7 +26,7 @@ def _record_usage(adapter: LLMAdapter, *, run_id: str | None, output_len: int) -
     )
 
 
-class WriteProposingOrderLLM(LLMAdapter):
+class WriteProposingOrderLLM(BaseLLMAdapter):
     provider = "test"
     model = "write-proposer"
 
@@ -97,7 +98,7 @@ class WriteProposingOrderLLM(LLMAdapter):
         )
 
 
-class SummaryOnlyOrderLLM(LLMAdapter):
+class SummaryOnlyOrderLLM(BaseLLMAdapter):
     provider = "test"
     model = "summary-only"
 

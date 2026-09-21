@@ -25,6 +25,7 @@ from intergrax.llm_adapters._shared.openai_completion_mapping import (
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
@@ -48,7 +49,7 @@ class _MistralStreamChunk(Protocol):
     choices: List[_MistralStreamChoice]
 
 
-class MistralChatAdapter(LLMAdapter):
+class MistralChatAdapter(BaseLLMAdapter):
     """
     Mistral adapter based on the official Mistral Python SDK (mistralai).
 

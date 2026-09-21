@@ -21,13 +21,14 @@ from intergrax.llm_adapters._shared.conformance import (
 )
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.providers.claude_adapter import ClaudeChatAdapter
 from intergrax.llm_adapters.providers.openai_responses_adapter import OpenAIChatResponsesAdapter
 
 pytestmark = pytest.mark.unit
 
 
-class _StubAdapter(LLMAdapter):
+class _StubAdapter(BaseLLMAdapter):
     provider = "stub"
     model = "stub"
 

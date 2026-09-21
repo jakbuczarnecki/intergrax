@@ -35,6 +35,7 @@ from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.context_lifecycle.contracts import (
     ContextOptimizationDecision,
     ContextOptimizationMode,
@@ -258,7 +259,7 @@ class _RuntimeConfigStub:
             object.__setattr__(self, "metadata", {})
 
 
-class _SmallWindowAdapter(LLMAdapter):
+class _SmallWindowAdapter(BaseLLMAdapter):
     provider = "fake"
     model = "fake-small"
 

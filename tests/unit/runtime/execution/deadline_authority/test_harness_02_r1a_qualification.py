@@ -60,6 +60,7 @@ from intergrax.runtime.execution.runtime import ExecutionRuntime
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 
 pytestmark = pytest.mark.unit
 
@@ -412,7 +413,7 @@ def test_q11_llm_execute_passes_bounded_timeout_to_resilience() -> None:
     )
     captured: list[float | None] = []
 
-    class _ProbeAdapter(LLMAdapter):
+    class _ProbeAdapter(BaseLLMAdapter):
         def __init__(self) -> None:
             super().__init__()
             self.provider = "openai"
@@ -463,7 +464,7 @@ def test_q18_streaming_expired_blocks_factory() -> None:
     )
     factory_calls = 0
 
-    class _ProbeAdapter(LLMAdapter):
+    class _ProbeAdapter(BaseLLMAdapter):
         def __init__(self) -> None:
             super().__init__()
             self.provider = "openai"

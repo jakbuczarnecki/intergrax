@@ -22,6 +22,7 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
 )
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.execution.active_execution_budget import (
     ActiveExecutionBudgetState,
     bind_active_execution_budget,
@@ -252,7 +253,7 @@ def test_q26_cancellation_after_start_blocks_llm_sync() -> None:
     )
     physical_calls = 0
 
-    class _ProbeAdapter(LLMAdapter):
+    class _ProbeAdapter(BaseLLMAdapter):
         def __init__(self) -> None:
             super().__init__()
             self.provider = "openai"
@@ -353,7 +354,7 @@ def test_q18_streaming_deadline_crossed_after_bind() -> None:
     monotonic.advance(6.0)
     factory_calls = 0
 
-    class _ProbeAdapter(LLMAdapter):
+    class _ProbeAdapter(BaseLLMAdapter):
         def __init__(self) -> None:
             super().__init__()
             self.provider = "openai"

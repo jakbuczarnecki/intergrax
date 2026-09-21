@@ -12,13 +12,14 @@ from intergrax.agents.run_environment import EffectiveAgentRunEnvironment
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from testing_support.builder import build_runtime_request_for_tests
 from typing import Optional, Sequence
 
 
-class _StubLLM(LLMAdapter):
+class _StubLLM(BaseLLMAdapter):
     provider = "stub"
     model = "stub"
 

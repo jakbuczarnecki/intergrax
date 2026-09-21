@@ -29,6 +29,7 @@ from intergrax.llm_adapters._shared.openai_completion_mapping import (
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.finish_reason import LLMFinishReason
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
@@ -46,7 +47,7 @@ from intergrax.llm_adapters.providers._openai_schema import prepare_openai_stric
 from intergrax.llm_adapters.registry.context_window import init_adapter_context_window_tokens
 
 
-class OpenAIChatCompletionsAdapter(LLMAdapter):
+class OpenAIChatCompletionsAdapter(BaseLLMAdapter):
     """Chat Completions via ``openai.OpenAI`` (Groq, vLLM, local gateways)."""
 
     _CONTEXT_WINDOWS: Dict[str, int] = {}

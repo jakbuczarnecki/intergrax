@@ -26,6 +26,8 @@ def get_llm_provider_dependency_boundary() -> DependencyAttemptExecutionBoundary
 
 
 def apply_llm_provider_dependency_boundary(adapter: LLMAdapter) -> None:
+    from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+
     boundary = _process_provider_dependency_boundary
-    if boundary is not None:
+    if boundary is not None and isinstance(adapter, BaseLLMAdapter):
         adapter.bind_provider_dependency_boundary(boundary)

@@ -17,6 +17,7 @@ from intergrax.llm_adapters.contracts.tool_call import LLMToolCall
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     PLANNER_ROUND_TOOL_ID,
     AtomicPlannerRoundError,
@@ -458,7 +459,7 @@ def test_atomic_round_schema_hash_is_deterministic() -> None:
     assert first == second
 
 
-class _TerminationCapturingAdapter(LLMAdapter):
+class _TerminationCapturingAdapter(BaseLLMAdapter):
     provider = "fake-termination"
     model = "fake-termination"
 

@@ -66,6 +66,7 @@ from intergrax.runtime.execution.protected_work_admission import (
 from intergrax.runtime.execution.retry.policy import evaluate_execution_retry_eligibility
 from intergrax.runtime.execution.runtime import ExecutionRuntime, RootExecutionContext
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 pytestmark = pytest.mark.unit
@@ -505,7 +506,7 @@ def test_q10_expired_blocks_llm_execute() -> None:
     )
     physical_calls = 0
 
-    class _ProbeAdapter(LLMAdapter):
+    class _ProbeAdapter(BaseLLMAdapter):
         def __init__(self) -> None:
             super().__init__()
             self.provider = "openai"
