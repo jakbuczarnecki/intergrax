@@ -23,6 +23,7 @@ class Gr12CoverageStatus(StrEnum):
     WIRED_NOT_QUALIFIED = "WIRED_NOT_QUALIFIED"
     QUALIFIED = "QUALIFIED"
     ARCHITECTURE_DECISION_REQUIRED = "ARCHITECTURE_DECISION_REQUIRED"
+    IMPLEMENTATION_REQUIRED = "IMPLEMENTATION_REQUIRED"
 
 
 GR12_CONSEQUENTIAL_MUTATION_DEFINITION: Final[str] = (
@@ -108,16 +109,27 @@ GR12_A4_RESIDUAL_PATH_IDS: Final[tuple[str, ...]] = (
 
 GR12_A4_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
     task_name=(
-        "GR-12-A4-R2 — Vector Administration Governance Architecture & CLA-04 Mapping Decision"
+        "GR-12-A4-R2-R1 — Governed Vector Index Operator Service & CLA-04 Enforcement"
     ),
     exact_blocker=(
-        "Vector index administration port exists without CLA-04 resource mapping and "
-        "governed operator admin API; destructive lifecycle semantics undecided."
+        "Vector R2 ADR closed: live operator VectorIndexAdminService + CLA-04 request "
+        "construction + provider-neutral configuration digest/revision tokens missing; "
+        "bootstrap-only prepare_index callers remain outside live operator path."
     ),
     why_highest=(
-        "Catalog hot reload qualification closed in GR-12-A4-R1-R1; Vector is the next "
-        "residual consequential control-plane surface."
+        "Vector administration architecture decision closed (GR-12-A4-R2); implementation "
+        "is the only remaining step before CP-VECTOR-INDEX-ADMIN qualification."
     ),
+)
+
+GR12_A4_R2_QUALIFICATION_PROOF: Final[str] = (
+    "tests/qualification/governance/gr12/"
+    "test_gr12_a4_r2_vector_administration_architecture_qualification.py"
+)
+
+GR12_A4_R2_VECTOR_ADR_PATH: Final[str] = (
+    "docs/project/maintainers/architecture/ADR/"
+    "ADR-GR-12-VECTOR-ADMIN-CONTROL-PLANE-BOUNDARY.md"
 )
 
 GR12_A4_R1_R1_QUALIFICATION_PROOF: Final[str] = (
@@ -553,15 +565,24 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
             "intergrax.integrations.contracts.vector_index_administration."
             "VectorIndexAdministration"
         ),
-        mutation="prepare_index (idempotent create/align); destructive ops provider-internal only",
+        mutation=(
+            "vector_index.prepare (live operator, consequential create only); "
+            "bootstrap prepare_index out of live CP scope; destructive lifecycle not on port"
+        ),
         consequential=True,
-        current_guard="provider adapter + bootstrap callers; no CLA-04 bridge",
-        current_authority="integration credentials",
-        audit_evidence="provider logs only",
-        applicability=Gr12Applicability.REQUIRES_ARCHITECTURE_DECISION,
-        coverage=Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED,
-        recommended_owner="integrations/RAG",
-        future_remediation="GR-12-A4-R2 vector admin CLA-04 mapping / operator exposure ADR",
+        current_guard=(
+            "bootstrap/proof callers use port directly; live operator service not wired; "
+            "CLA-04 mapping decided in GR-12-A4-R2 ADR"
+        ),
+        current_authority="integration credentials (bootstrap); RequestIdentity (future operator)",
+        audit_evidence="ControlPlaneMutationAuthorizationEvidence (after R2-R1)",
+        applicability=Gr12Applicability.APPLICABLE,
+        coverage=Gr12CoverageStatus.IMPLEMENTATION_REQUIRED,
+        recommended_owner="applications/control-plane orchestration (operator service)",
+        future_remediation=(
+            "GR-12-A4-R2-R1 — Governed Vector Index Operator Service & CLA-04 Enforcement"
+        ),
+        qualification_proof="",
     ),
 )
 

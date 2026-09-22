@@ -57,6 +57,7 @@ def test_gr12_a1_applicable_surfaces_have_consequential_true() -> None:
             Gr12CoverageStatus.QUALIFIED,
             Gr12CoverageStatus.DISCOVERED,
             Gr12CoverageStatus.APPLICABLE,
+            Gr12CoverageStatus.IMPLEMENTATION_REQUIRED,
         )
 
 

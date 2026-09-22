@@ -8,7 +8,16 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final
 
-from tests.qualification.governance.gr12.catalog import Gr12CoverageStatus
+from tests.qualification.governance.gr12.catalog import (
+    GR12_A4_R2_QUALIFICATION_PROOF,
+    Gr12Applicability,
+    Gr12CoverageStatus,
+)
+from tests.qualification.governance.gr12.gr12_a4_r2_vector_architecture_decision import (
+    GR12_A4_R2_VECTOR_ARCHITECTURE_DECISION,
+    GR12_VECTOR_CANONICAL_PORT,
+    GR12_VECTOR_NEXT_BOUNDED_TASK,
+)
 
 
 class Gr12A4PathKind(StrEnum):
@@ -67,6 +76,12 @@ class Gr12A4VectorDecision:
     destructive_ops_on_port: bool
     cla04_mapping_decision_required: bool
     architecture_blocker: str
+    architecture_phase: str
+    cla04_applicability: Gr12Applicability
+    live_operator_surface_exists: bool
+    prepare_index_governance: str
+    next_bounded_task: str
+    qualification_proof: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,21 +117,22 @@ GR12_A4_RESIDUAL_INVENTORY: tuple[Gr12A4ResidualInventoryRow, ...] = (
     ),
     Gr12A4ResidualInventoryRow(
         path_id="CP-VECTOR-INDEX-ADMIN",
-        path_kind=Gr12A4PathKind.ARCHITECTURE_DECISION_SURFACE,
+        path_kind=Gr12A4PathKind.MUTATION_SURFACE,
         production_entrypoint=(
             "intergrax.integrations.contracts.vector_index_administration.VectorIndexAdministration"
         ),
         mutation_owner="integrations vector index administration port (provider adapters)",
-        current_authority="integration credentials / bootstrap callers only",
-        consequential=True,
-        existing_contract="VectorIndexAdministration (provider-neutral port; no CLA-04 bridge)",
-        coverage=Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED,
-        cla04_reuse_blocker=(
-            "No governed operator admin API; CLA-04 resource mapping for prepare/drop/reindex "
-            "undecided; destructive lifecycle not on neutral port"
+        current_authority=(
+            "bootstrap/proof callers (integration credentials); live operator path pending R2-R1"
         ),
+        consequential=True,
+        existing_contract=(
+            "VectorIndexAdministration + future CLA-04 vector_index.prepare (GR-12-A4-R2 ADR)"
+        ),
+        coverage=Gr12CoverageStatus.IMPLEMENTATION_REQUIRED,
+        cla04_reuse_blocker="",
         operator_exposure=Gr12OperatorApiExposure.NOT_CURRENTLY_EXPOSED,
-        tenant_scope="tenant_id on VectorIndexIdentity (per-index)",
+        tenant_scope="tenant_id on VectorIndexIdentity (required; per-index tenant scope)",
     ),
     Gr12A4ResidualInventoryRow(
         path_id="CP-MEM-SPECIALIZED-MUTATION",
@@ -148,19 +164,20 @@ GR12_A4_CATALOG_DECISION: Gr12A4CatalogDecision = Gr12A4CatalogDecision(
 )
 
 GR12_A4_VECTOR_DECISION: Gr12A4VectorDecision = Gr12A4VectorDecision(
-    canonical_port=(
-        "intergrax.integrations.contracts.vector_index_administration.VectorIndexAdministration"
-    ),
+    canonical_port=GR12_VECTOR_CANONICAL_PORT,
     provider_impl_entrypoint=(
         "intergrax.integrations.providers.vector_store.qdrant.index_administration."
         "QdrantVectorIndexAdministration"
     ),
     destructive_ops_on_port=False,
-    cla04_mapping_decision_required=True,
-    architecture_blocker=(
-        "Provider-neutral port exists but production admin mutations are bootstrap/internal "
-        "callers only; CLA-04 mutation_type + revision binding for index admin undecided."
-    ),
+    cla04_mapping_decision_required=False,
+    architecture_blocker="",
+    architecture_phase=GR12_A4_R2_VECTOR_ARCHITECTURE_DECISION.architecture_phase.value,
+    cla04_applicability=GR12_A4_R2_VECTOR_ARCHITECTURE_DECISION.cla04_applicability,
+    live_operator_surface_exists=False,
+    prepare_index_governance=GR12_A4_R2_VECTOR_ARCHITECTURE_DECISION.prepare_index_decision.value,
+    next_bounded_task=GR12_VECTOR_NEXT_BOUNDED_TASK,
+    qualification_proof=GR12_A4_R2_QUALIFICATION_PROOF,
 )
 
 GR12_A4_MEMORY_DECISION: Gr12A4MemoryDecision = Gr12A4MemoryDecision(

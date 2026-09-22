@@ -27,7 +27,7 @@ def test_gr12_a4_r1_r1_catalog_hot_reload_qualified_ssot() -> None:
     assert row.applicability is Gr12Applicability.APPLICABLE
     assert row.future_remediation == ""
     assert GR12_A4_R1_R1_QUALIFICATION_PROOF in row.qualification_proof
-    assert "GR-12-A4-R2" in GR12_A4_NEXT_REMEDIATION.task_name
+    assert "GR-12-A4-R2-R1" in GR12_A4_NEXT_REMEDIATION.task_name
 
 
 def test_gr12_a4_r1_r1_execution_proof_nodes_bound_to_semantic_tests() -> None:
