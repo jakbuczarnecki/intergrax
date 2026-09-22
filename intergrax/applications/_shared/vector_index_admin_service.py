@@ -9,11 +9,13 @@ from intergrax.applications._shared.vector_index_admin_governance import (
 )
 from intergrax.applications._shared.vector_index_configuration_projection import (
     VECTOR_INDEX_ABSENT_REVISION,
+    VectorIndexConfigurationProjectionError,
     configuration_revision_token,
     current_revision_from_description,
     project_vector_index_description,
     target_revision_from_spec,
 )
+from intergrax.integrations.contracts.vector_index_administration import VectorIndexIdentity
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.vector_index_operator import (
     VectorIndexPrepareOperatorRequest,
@@ -34,10 +36,18 @@ BLOCKER_MISSING_PRINCIPAL = "VECTOR_INDEX_PREPARE_BLOCKED_MISSING_PRINCIPAL"
 BLOCKER_POLICY = "VECTOR_INDEX_PREPARE_BLOCKED_BY_POLICY"
 BLOCKER_POST_AUTH_STALE = "VECTOR_INDEX_PREPARE_BLOCKED_POST_AUTHORIZATION_STALE_REVISION"
 BLOCKER_COMPATIBILITY = "VECTOR_INDEX_PREPARE_BLOCKED_INCOMPATIBLE_INDEX"
+BLOCKER_TENANT_MISMATCH = "VECTOR_INDEX_PREPARE_BLOCKED_TENANT_MISMATCH"
+BLOCKER_UNPROJECTABLE_CURRENT_STATE = (
+    "VECTOR_INDEX_PREPARE_BLOCKED_UNPROJECTABLE_CURRENT_STATE"
+)
 
 
 class VectorIndexAdminService:
-    """Composition-owned governed vector prepare — no default ALLOW."""
+    """Composition-owned governed vector prepare — no default ALLOW.
+
+    Tenant binding (principal.tenant_id == spec.identity.tenant_id) is a
+    pre-policy domain authority invariant enforced before any resource read.
+    """
 
     def __init__(
         self,
@@ -90,14 +100,39 @@ class VectorIndexAdminService:
                 policy_action="invalid_operator_identity",
             )
 
-        description = self._admin.describe_index(identity)
-        before_revision = current_revision_from_description(description)
+        principal_tenant = principal.tenant_id.strip()
+        resource_tenant = identity.tenant_id.strip()
+        if principal_tenant != resource_tenant:
+            return self._blocked(
+                request,
+                before_revision=VECTOR_INDEX_ABSENT_REVISION,
+                after_revision=VECTOR_INDEX_ABSENT_REVISION,
+                blocker_code=BLOCKER_TENANT_MISMATCH,
+                policy_action="tenant_mismatch",
+            )
+
+        normalized_identity = VectorIndexIdentity(
+            logical_name=identity.logical_name.strip(),
+            tenant_id=resource_tenant,
+        )
+
+        description = self._admin.describe_index(normalized_identity)
+        try:
+            before_revision = current_revision_from_description(description)
+        except VectorIndexConfigurationProjectionError:
+            return self._blocked(
+                request,
+                before_revision=VECTOR_INDEX_ABSENT_REVISION,
+                after_revision=VECTOR_INDEX_ABSENT_REVISION,
+                blocker_code=BLOCKER_UNPROJECTABLE_CURRENT_STATE,
+                policy_action="unprojectable_current_state",
+            )
         target_revision = target_revision_from_spec(request.spec)
 
         mutation_request = build_vector_index_prepare_mutation_request(
             mutation_id=request.mutation_id,
             principal=principal,
-            identity=identity,
+            identity=normalized_identity,
             current_revision=before_revision,
             target_revision=target_revision,
         )
@@ -114,8 +149,19 @@ class VectorIndexAdminService:
             )
 
         authorized_current = before_revision
-        reread = self._admin.describe_index(identity)
-        reread_current = current_revision_from_description(reread)
+        reread = self._admin.describe_index(normalized_identity)
+        try:
+            reread_current = current_revision_from_description(reread)
+        except VectorIndexConfigurationProjectionError:
+            return VectorIndexPrepareOperatorResult(
+                mutation_id=request.mutation_id,
+                before_revision=VECTOR_INDEX_ABSENT_REVISION,
+                after_revision=VECTOR_INDEX_ABSENT_REVISION,
+                changed=False,
+                authorization_evidence=authorization.evidence,
+                blocker_code=BLOCKER_UNPROJECTABLE_CURRENT_STATE,
+                policy_action="unprojectable_current_state",
+            )
         if reread_current != authorized_current:
             return VectorIndexPrepareOperatorResult(
                 mutation_id=request.mutation_id,

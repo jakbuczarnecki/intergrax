@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from unittest.mock import MagicMock
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.applications._shared.vector_index_admin_governance import (
     MUTATION_TYPE_VECTOR_INDEX_PREPARE,
@@ -23,6 +24,8 @@ from intergrax.applications._shared.vector_index_admin_service import (
     BLOCKER_POLICY,
     BLOCKER_POST_AUTH_STALE,
     BLOCKER_COMPATIBILITY,
+    BLOCKER_TENANT_MISMATCH,
+    BLOCKER_UNPROJECTABLE_CURRENT_STATE,
     VectorIndexAdminService,
 )
 from intergrax.applications._shared.vector_index_admin_wiring import resolve_vector_index_admin_wiring
@@ -126,11 +129,13 @@ class _FakeVectorIndexAdmin:
     prepare_outcome: VectorIndexPrepareOutcome = VectorIndexPrepareOutcome.CREATED
     prepare_error: Exception | None = None
     _describe_index: int = 0
+    describe_calls: int = 0
 
     def probe(self) -> HealthStatus:
         return HealthStatus.HEALTHY
 
     def describe_index(self, identity: VectorIndexIdentity) -> VectorIndexDescription:
+        self.describe_calls += 1
         index = min(self._describe_index, len(self.descriptions) - 1)
         self._describe_index += 1
         return self.descriptions[index]
@@ -380,3 +385,111 @@ def test_vec_gov_compatibility_error_zero_prepare() -> None:
     assert admin.prepare_calls == 1
     assert result.blocker_code == BLOCKER_COMPATIBILITY
     assert result.changed is False
+
+
+def test_vec_gov_17_tenant_mismatch_fail_closed() -> None:
+    """VEC-GOV-17 / TEN-2–TEN-6: permissive ALLOW cannot bypass tenant isolation."""
+    other_tenant_spec = VectorIndexSpec(
+        identity=VectorIndexIdentity(logical_name="catalog", tenant_id="tenant-b"),
+        dense=_spec().dense,
+        required_capabilities=_spec().required_capabilities,
+        sparse_lexical=_spec().sparse_lexical,
+    )
+    admin = _FakeVectorIndexAdmin(descriptions=[_description(exists=False)])
+    evaluator = _RecordingEvaluator()
+    result = _service(admin, evaluator).prepare(
+        VectorIndexPrepareOperatorRequest(mutation_id="mut-tenant", spec=other_tenant_spec),
+        principal=_PRINCIPAL,
+    )
+    assert admin.describe_calls == 0
+    assert admin.prepare_calls == 0
+    assert evaluator.calls == []
+    assert result.changed is False
+    assert result.outcome is None
+    assert result.authorization_evidence is None
+    assert result.blocker_code == BLOCKER_TENANT_MISMATCH
+    assert result.policy_action == "tenant_mismatch"
+    assert result.before_revision == VECTOR_INDEX_ABSENT_REVISION
+    assert result.after_revision == VECTOR_INDEX_ABSENT_REVISION
+
+
+def test_vec_gov_18_same_tenant_reaches_cla04() -> None:
+    """VEC-GOV-18 / TEN-1: same-tenant principal reaches policy evaluation."""
+    admin = _FakeVectorIndexAdmin(descriptions=[_description(exists=False)])
+    evaluator = _RecordingEvaluator()
+    _service(admin, evaluator).prepare(_request(), principal=_PRINCIPAL)
+    assert len(evaluator.calls) == 1
+    assert admin.describe_calls >= 1
+
+
+def test_ten_7_principal_propagation_same_tenant_unchanged() -> None:
+    admin = _FakeVectorIndexAdmin(descriptions=[_description(exists=False)])
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.DENY,
+            reason="capture",
+            enforcement_level=EnforcementLevel.MANDATORY,
+            policy_rule_id="vector.prepare.capture",
+            decision_id="dec-capture",
+        )
+    )
+    _service(admin, evaluator).prepare(_request(), principal=_PRINCIPAL)
+    assert evaluator.calls[0].principal is _PRINCIPAL
+
+
+def test_ten_request_identity_rejects_whitespace_only_tenant() -> None:
+    with pytest.raises(ValidationError, match="tenant_id must be non-empty"):
+        RequestIdentity(
+            tenant_id="   ",
+            user_id="operator-1",
+            principal_type=PrincipalType.USER,
+            auth_subject="operator-1",
+        )
+
+
+def test_vec_gov_identity_strips_whitespace_for_authority_mapping() -> None:
+    padded_spec = VectorIndexSpec(
+        identity=VectorIndexIdentity(logical_name=" catalog ", tenant_id=" tenant-a "),
+        dense=_spec().dense,
+        required_capabilities=_spec().required_capabilities,
+        sparse_lexical=_spec().sparse_lexical,
+    )
+    admin = _FakeVectorIndexAdmin(descriptions=[_description(exists=False)])
+    evaluator = _RecordingEvaluator(
+        decision=PolicyDecision(
+            action=PolicyAction.DENY,
+            reason="map",
+            enforcement_level=EnforcementLevel.MANDATORY,
+            policy_rule_id="vector.prepare.map",
+            decision_id="dec-map",
+        )
+    )
+    _service(admin, evaluator).prepare(
+        VectorIndexPrepareOperatorRequest(mutation_id="mut-strip", spec=padded_spec),
+        principal=_PRINCIPAL,
+    )
+    captured = evaluator.calls[0]
+    assert captured.resource_id == f"{_TENANT}/catalog"
+
+
+def test_vec_gov_proj_1_unprojectable_current_state() -> None:
+    malformed = VectorIndexDescription(
+        identity=_identity(),
+        exists=True,
+        reachable=True,
+        point_count=0,
+        dense_dimension=1024,
+        dense_metric=None,
+        present_capabilities=frozenset({VectorSearchCapability.DENSE}),
+        dense_channel_name="dense",
+        sparse_lexical_channel_name=None,
+    )
+    admin = _FakeVectorIndexAdmin(descriptions=[malformed])
+    evaluator = _RecordingEvaluator()
+    result = _service(admin, evaluator).prepare(_request(), principal=_PRINCIPAL)
+    assert admin.describe_calls == 1
+    assert evaluator.calls == []
+    assert admin.prepare_calls == 0
+    assert result.changed is False
+    assert result.blocker_code == BLOCKER_UNPROJECTABLE_CURRENT_STATE
+    assert result.authorization_evidence is None

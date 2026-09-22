@@ -33,3 +33,12 @@ def test_gr12_a4_r2_r1_vector_operator_qualified_ssot() -> None:
 
 def test_gr12_a4_r2_r1_execution_proof_nodes_bound_to_semantic_tests() -> None:
     assert_proof_nodes_registered(GR12_A4_R2_R1_EXECUTION_PROOF_NODES)
+
+
+def test_gr12_a4_r2_r1_tenant_authority_proof_nodes_present() -> None:
+    tenant_nodes = (
+        node
+        for node in GR12_A4_R2_R1_EXECUTION_PROOF_NODES
+        if "tenant_mismatch" in node or "same_tenant" in node
+    )
+    assert any(tenant_nodes)

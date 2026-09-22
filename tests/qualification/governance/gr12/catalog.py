@@ -127,11 +127,17 @@ GR12_A4_R2_R1_QUALIFICATION_PROOF: Final[str] = (
 GR12_A4_R2_R1_EXECUTION_PROOF_NODES: Final[tuple[str, ...]] = (
     "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_1_allow_create",
     "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_2_deny",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_3_require_human",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_4_escalate",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_7_missing_boundary",
     "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_8_stale_after_authorization",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_17_tenant_mismatch_fail_closed",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_18_same_tenant_reaches_cla04",
     "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_identity_principal_propagation",
     "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_11_absent_semantics",
     "tests/unit/applications/test_vector_index_configuration_projection.py::test_vec_digest_capability_order_irrelevant",
     "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_9_external_evaluator_receives_cla04_request",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_proj_1_unprojectable_current_state",
     "tests/unit/integrations/contracts/test_vector_index_administration.py::test_vector_index_spec_rejects_empty_logical_name",
 )
 
