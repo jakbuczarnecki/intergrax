@@ -87,10 +87,10 @@ class LLMAdapterRegistry:
 
     @staticmethod
     def _validate_registration_spec(spec: LLMAdapterRegistrationSpec, key: str) -> None:
-        if key != spec.provider_id.strip().lower():
+        if spec.provider_id != key:
             raise LLMAdapterRegistrationError(
                 f"LLM provider registration spec provider_id={spec.provider_id!r} "
-                "must already be normalized."
+                f"must already be canonical/normalized (expected {key!r})."
             )
         seam_factory = spec.external_operation_seam_factory
         capabilities = spec.external_operation_capabilities

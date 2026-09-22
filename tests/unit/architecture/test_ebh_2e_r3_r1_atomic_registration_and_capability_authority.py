@@ -139,6 +139,49 @@ def test_ebh_2e_r3_r1_seam_builders_do_not_pass_capabilities_kwarg() -> None:
                 assert keyword.arg != "capabilities"
 
 
+_NONCANONICAL_REGISTRATION_PROVIDER_IDS = (
+    "OpenAI",
+    "OPENAI",
+    " openai",
+    "openai ",
+    " openai ",
+)
+
+
+@pytest.mark.parametrize("provider_id", _NONCANONICAL_REGISTRATION_PROVIDER_IDS)
+def test_ebh_2e_r3_r1_r1_noncanonical_registration_spec_rejected_atomically(
+    provider_id: str,
+) -> None:
+    LLMAdapterRegistry.reset_for_testing()
+    before = snapshot_registry_state()
+    spec = LLMAdapterRegistrationSpec(provider_id=provider_id, factory=_factory)
+    with pytest.raises(LLMAdapterRegistrationError, match="canonical/normalized"):
+        LLMAdapterRegistry.register_from_spec(spec)
+    assert snapshot_registry_state() == before
+
+
+def test_ebh_2e_r3_r1_r1_canonical_lowercase_registration_spec_accepted() -> None:
+    LLMAdapterRegistry.reset_for_testing()
+    provider_id = "r3-r1-r1-canonical-id"
+    LLMAdapterRegistry.register_from_spec(
+        LLMAdapterRegistrationSpec(provider_id=provider_id, factory=_factory)
+    )
+    assert provider_id in LLMAdapterRegistry.registered_providers()
+
+
+def test_ebh_2e_r3_r1_r1_friendly_register_normalizes_ingress() -> None:
+    LLMAdapterRegistry.reset_for_testing()
+    LLMAdapterRegistry.register("Provider-X", _factory)
+    assert "provider-x" in LLMAdapterRegistry.registered_providers()
+
+
+def test_ebh_2e_r3_r1_r1_duplicate_canonical_collision_via_friendly_register() -> None:
+    LLMAdapterRegistry.reset_for_testing()
+    LLMAdapterRegistry.register("Provider-X", _factory)
+    with pytest.raises(ValueError, match="already registered"):
+        LLMAdapterRegistry.register("provider-x", _factory)
+
+
 def test_ebh_2e_r3_r1_register_validates_before_mutating_factories() -> None:
     LLMAdapterRegistry.reset_for_testing()
     before = snapshot_registry_state()
