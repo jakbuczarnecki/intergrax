@@ -40,6 +40,8 @@ def require_invocation_evidence_matches_request(
     request: ExecutionBoundCatalogToolInvokeRequest,
 ) -> None:
     """Fail closed when scoped evidence does not match the invocation request."""
+    if evidence.tenant_id.strip() != request.tenant_id.strip():
+        raise ValueError("governance approval evidence tenant_id mismatch")
     if evidence.task_id != request.task_id:
         raise ValueError("governance approval evidence task_id mismatch")
     if evidence.run_id != request.run_id:

@@ -215,6 +215,8 @@ class WorkerQualifiedCapabilityResumeCoordinator:
             collaborative_authority_scopes=authority_context.collaborative_authority_scopes,
             run_id=request.run_id,
             attempt_id=request.attempt_id,
+            execution_id=request.execution_id,
+            governance_approval_evidence=request.governance_approval_evidence,
         )
         execution_result = self._execution.execute(execution_request)
 

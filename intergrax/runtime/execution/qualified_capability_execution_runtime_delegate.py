@@ -54,6 +54,7 @@ class QualifiedCapabilityExecutionRuntimeDelegate:
             admitted_governance_identity=request.admitted_governance_identity,
             effective_authority_decision=request.effective_authority_decision,
             collaborative_authority_scopes=request.collaborative_authority_scopes,
+            governance_approval_evidence=request.governance_approval_evidence,
         )
         handler = self._handlers.resolve(
             request.execution_target.binding_provider_id,

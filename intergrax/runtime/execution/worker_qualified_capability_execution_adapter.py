@@ -42,6 +42,13 @@ class WorkerQualifiedCapabilityExecutionEngineAdapter:
                 execution_request_id=request.execution_request_id,
                 reason_detail="execution_request_id_integrity_mismatch",
             )
+        if request.governance_approval_evidence is not None:
+            if request.governance_approval_evidence.tenant_id != request.tenant_id:
+                return WorkerQualifiedCapabilityExecutionResult(
+                    disposition=WorkerQualifiedCapabilityExecutionDisposition.REJECTED,
+                    execution_request_id=request.execution_request_id,
+                    reason_detail="governance_approval_evidence_tenant_mismatch",
+                )
         dispatch_request = QualifiedCapabilityExecutionDispatchRequest(
             execution_request_id=request.execution_request_id,
             execution_target=request.execution_target,
@@ -60,6 +67,8 @@ class WorkerQualifiedCapabilityExecutionEngineAdapter:
             collaborative_authority_scopes=request.collaborative_authority_scopes,
             run_id=request.run_id,
             attempt_id=request.attempt_id,
+            execution_id=request.execution_id,
+            governance_approval_evidence=request.governance_approval_evidence,
         )
         dispatch_result = self._dispatch.dispatch(dispatch_request)
         return _map_result(dispatch_result)

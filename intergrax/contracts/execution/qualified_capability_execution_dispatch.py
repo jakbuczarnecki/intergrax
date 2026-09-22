@@ -38,6 +38,9 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
+from intergrax.contracts.tool_invocation_governance_approval_evidence import (
+    ToolInvocationGovernanceApprovalEvidence,
+)
 
 
 class QualifiedCapabilityExecutionDispatchDisposition(StrEnum):
@@ -70,6 +73,8 @@ class QualifiedCapabilityExecutionDispatchRequest:
     collaborative_authority_scopes: tuple[str, ...]
     run_id: RunId | None = None
     attempt_id: AttemptId | None = None
+    execution_id: ExecutionId | None = None
+    governance_approval_evidence: ToolInvocationGovernanceApprovalEvidence | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -122,6 +127,25 @@ class QualifiedCapabilityExecutionDispatchRequest:
             validate_run_id(self.run_id)
         if self.attempt_id is not None:
             validate_attempt_id(self.attempt_id)
+        if self.execution_id is not None:
+            validate_execution_id(self.execution_id)
+        if self.governance_approval_evidence is not None:
+            if (
+                type(self.governance_approval_evidence)
+                is not ToolInvocationGovernanceApprovalEvidence
+            ):
+                raise TypeError(
+                    "governance_approval_evidence must be "
+                    "ToolInvocationGovernanceApprovalEvidence",
+                )
+            if self.governance_approval_evidence.tenant_id != self.tenant_id:
+                raise ValueError(
+                    "governance_approval_evidence.tenant_id must match tenant_id",
+                )
+            if str(self.governance_approval_evidence.task_id) != str(self.task_id):
+                raise ValueError(
+                    "governance_approval_evidence.task_id must match task_id",
+                )
         if (
             type(self.admitted_governance_identity)
             is not AdmittedRootGovernanceIdentity

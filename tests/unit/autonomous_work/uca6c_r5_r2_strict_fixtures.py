@@ -26,6 +26,8 @@ from intergrax.applications.contracts.manifest import AgentBinding, ApplicationM
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.contracts.tool_invocation_governance_approval_evidence import (
     ToolInvocationGovernanceApprovalEvidence,
+)
+from intergrax.runtime.governance.declarative_hitl_tool_invocation_approval_evidence import (
     tool_invocation_governance_approval_evidence_from_declarative_hitl,
 )
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
@@ -148,6 +150,7 @@ def uca6c_high_risk_tool_approval_evidence(
             agent_id=agent_id,
             tool_id=tool_id,
         ),
+        tenant_id=tenant_id,
     )
 
 

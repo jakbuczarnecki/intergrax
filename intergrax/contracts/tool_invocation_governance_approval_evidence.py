@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
+from intergrax.contracts.autonomous_work._validation import require_non_empty_text
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,6 +19,7 @@ class ToolInvocationGovernanceApprovalEvidence:
 
     evidence_ref: str
     invocation_scope_id: str
+    tenant_id: str
     task_id: str
     run_id: str
     step_id: str
@@ -31,29 +32,39 @@ class ToolInvocationGovernanceApprovalEvidence:
     pause_id: str = ""
     approved_at: str = ""
 
-
-def tool_invocation_governance_approval_evidence_from_declarative_hitl(
-    grant: DeclarativeHitlApprovalGrant,
-) -> ToolInvocationGovernanceApprovalEvidence:
-    """Adapt declarative HITL grant artifacts to the neutral invocation evidence shape."""
-    return ToolInvocationGovernanceApprovalEvidence(
-        evidence_ref=grant.grant_id,
-        invocation_scope_id=grant.invocation_scope_id,
-        task_id=grant.task_id,
-        run_id=grant.run_id,
-        step_id=grant.step_id,
-        tool_id=grant.tool_id,
-        agent_id=grant.agent_id,
-        idempotency_key=grant.idempotency_key,
-        matched_rule_ids=grant.matched_rule_ids,
-        human_request_id=grant.human_request_id,
-        policy_provenance_digest=grant.policy_provenance_digest,
-        pause_id=grant.pause_id,
-        approved_at=grant.approved_at,
-    )
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "evidence_ref",
+            require_non_empty_text(self.evidence_ref, label="evidence_ref"),
+        )
+        object.__setattr__(
+            self,
+            "invocation_scope_id",
+            require_non_empty_text(
+                self.invocation_scope_id,
+                label="invocation_scope_id",
+            ),
+        )
+        object.__setattr__(
+            self,
+            "tenant_id",
+            require_non_empty_text(self.tenant_id, label="tenant_id"),
+        )
+        for label, value in (
+            ("task_id", self.task_id),
+            ("run_id", self.run_id),
+            ("step_id", self.step_id),
+            ("tool_id", self.tool_id),
+            ("agent_id", self.agent_id),
+        ):
+            object.__setattr__(
+                self,
+                label,
+                require_non_empty_text(value, label=label),
+            )
 
 
 __all__ = [
     "ToolInvocationGovernanceApprovalEvidence",
-    "tool_invocation_governance_approval_evidence_from_declarative_hitl",
 ]
