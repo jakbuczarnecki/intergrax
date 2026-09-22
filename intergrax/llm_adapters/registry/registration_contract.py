@@ -39,7 +39,11 @@ class LLMAdapterFactory(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class ProviderExternalOperationSeam:
-    """Provider-owned external-operation runtime ports (capabilities live on registration spec)."""
+    """Physical provider ports only — no lifecycle semantics.
+
+    Capability values are declared on ``LLMAdapterRegistrationSpec`` and resolved via
+    ``LLMAdapterRegistry``; this seam exposes cancellation, termination, and stream transport only.
+    """
 
     cancellation: ExternalOperationCancellationPort
     termination: ExternalOperationTerminationPort

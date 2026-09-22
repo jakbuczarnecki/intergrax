@@ -69,7 +69,6 @@ class _LifecycleBindingRecorder:
         status_port: object | None = None,
         termination_port: object | None = None,
         stream_registry: object | None = None,
-        capabilities: object | None = None,
     ) -> None:
         _LifecycleBindingRecorder.external_ports = {
             "store": store,
@@ -78,7 +77,6 @@ class _LifecycleBindingRecorder:
             "status_port": status_port,
             "termination_port": termination_port,
             "stream_registry": stream_registry,
-            "capabilities": capabilities,
         }
 
 

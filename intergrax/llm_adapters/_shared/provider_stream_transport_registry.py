@@ -1,16 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Integrax framework – proprietary and confidential.
 
 """Adapter-instance stream transport registry (W4-D) — not process-global."""
 
 from __future__ import annotations
 
 from collections.abc import Callable
-
-from intergrax.runtime.external_operations.operation_termination import (
-    pop_stream_transport_closer,
-    register_stream_transport_closer,
-)
 
 
 class ProviderStreamTransportRegistry:
@@ -22,17 +17,12 @@ class ProviderStreamTransportRegistry:
         self._closers: dict[str, Callable[[], None]] = {}
 
     def register(self, operation_id: str, closer: Callable[[], None]) -> None:
-        register_stream_transport_closer(
-            self._closers,
-            operation_id=operation_id,
-            closer=closer,
-        )
+        if type(operation_id) is not str or not operation_id:
+            raise ValueError("operation_id must be a non-empty str")
+        self._closers[operation_id] = closer
 
     def close_transport(self, operation_id: str) -> bool:
-        closer = pop_stream_transport_closer(
-            self._closers,
-            operation_id=operation_id,
-        )
+        closer = self._closers.pop(operation_id, None)
         if closer is None:
             return False
         closer()

@@ -125,7 +125,6 @@ class BaseLLMAdapter(ABC):
         status_port: ExternalOperationStatusPort | None = None,
         termination_port: ExternalOperationTerminationPort | None = None,
         stream_registry: ProviderStreamTransportRegistry | None = None,
-        capabilities: ExternalOperationCapabilities | None = None,
     ) -> None:
         """Inject W4-C durable external operation tracking for provider calls."""
         from intergrax.runtime.external_operations.external_operation_ownership import (
@@ -140,9 +139,7 @@ class BaseLLMAdapter(ABC):
         self._external_operation_status_port = status_port
         self._external_operation_termination_port = termination_port
         self._external_operation_stream_registry = stream_registry
-        if capabilities is not None:
-            self._external_operation_capabilities = capabilities
-        elif store is not None:
+        if store is not None:
             from intergrax.llm_adapters._shared.provider_external_operation_capabilities import (
                 external_operation_capabilities_for_provider,
             )
