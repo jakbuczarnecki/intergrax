@@ -40,9 +40,21 @@ from platform_proofs.scenarios.indirect_prompt_injection.application.tools impor
     register_scenario_tools,
 )
 from platform_proofs.scenarios.indirect_prompt_injection.application.workflows import (
-    WorkflowKind,
     build_scenario_environment_profile,
 )
+
+__all__ = [
+    "ORDER_ASSISTANT_AGENT_ID",
+    "ORDER_ASSISTANT_CAPABILITY",
+    "SYNTHETIC_SCENARIO_TENANT_ID",
+    "ScenarioRuntimeComposition",
+    "build_agent_runtime_context",
+    "build_order_assistant_lab_manifest",
+    "build_scenario_environment_profile",
+    "build_scenario_runtime_composition",
+    "resolve_scenario_llm_adapter",
+    "trace_reader_from_composition",
+]
 
 ORDER_ASSISTANT_AGENT_ID = "order_assistant"
 ORDER_ASSISTANT_CAPABILITY = "indirect_prompt_injection.assist"
@@ -151,11 +163,15 @@ def build_agent_runtime_context(
         composition.environment,
         llm_adapter_override=composition.llm_adapter_override,
     )
+    application_composition = None
+    if composition.is_platform_attached:
+        application_composition = composition.platform.env_wiring.composition
     return build_runtime_context_from_environment(
         request,
         composition.build_context,
         composition.environment,
         llm_adapter=resolved_llm,
+        composition=application_composition,
     )
 
 
