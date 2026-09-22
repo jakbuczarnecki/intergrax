@@ -25,10 +25,12 @@ from intergrax.contracts.human_approver import human_approval_event_payload
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
+from intergrax.runtime.execution.suspended_operation.authorized_resume_reentry import (
+    resume_authorized_continuation_with_suspended_work_reentry,
+)
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
     InternalOrchestrationContinuation,
     canonical_execution_is_resumed,
-    canonical_resume_after_authorization,
     execution_continuation_identity_for_task,
     require_internal_hitl_continuation,
 )
@@ -207,8 +209,13 @@ class NexusIntakeRunner:
             if task.runtime.governance.human_request is not None:
                 GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
                 task.sync_metadata()
-            resumed_continuation = canonical_resume_after_authorization(
-                task, authorized, capability=hitl
+            resumed_continuation, _reentry = (
+                resume_authorized_continuation_with_suspended_work_reentry(
+                    task,
+                    authorized,
+                    capability=hitl,
+                    reentry_coordinator=hitl.suspended_work_reentry_coordinator,
+                )
             )
             if (
                 LongRunningCoordinator.is_long_running(task)

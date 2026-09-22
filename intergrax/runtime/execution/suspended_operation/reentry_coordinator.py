@@ -140,13 +140,9 @@ class ExecutionSuspendedWorkReentryCoordinator:
 
         grant: DeclarativeHitlApprovalGrant | None = None
         if task is not None:
-            task.runtime.governance.declarative_hitl_pending = (
-                _pending_from_pause_descriptor(
-                    payload,
-                    pending,
-                )
-            )
-            grant = DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
+            grant = task.runtime.governance.declarative_hitl_grant
+            if grant is None:
+                grant = DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
 
         invoke_request = _reconstruct_invoke_request(
             payload,
@@ -202,25 +198,6 @@ class BoundExecutionSuspendedWorkReentryPort:
             task=self.task,
             sandbox_session=self.sandbox_session,
         )
-
-
-def _pending_from_pause_descriptor(payload, pending):
-    from intergrax.contracts.declarative_hitl import DeclarativeHitlPendingApproval
-
-    return DeclarativeHitlPendingApproval(
-        invocation_scope_id=payload.invocation_scope_id,
-        task_id=str(pending.identity.task_id),
-        run_id=str(pending.identity.run_id),
-        step_id=payload.step_id,
-        tool_id=payload.tool_id,
-        idempotency_key=payload.idempotency_key,
-        matched_rule_ids=(),
-        human_request_id=pending.human_request_id or "",
-        policy_provenance_digest=None,
-        agent_id=payload.agent_id,
-        pause_id=pending.pause_id or "",
-        created_at=datetime.now(timezone.utc).isoformat(),
-    )
 
 
 def _reconstruct_invoke_request(

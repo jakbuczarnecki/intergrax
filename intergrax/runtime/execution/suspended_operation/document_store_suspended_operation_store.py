@@ -27,6 +27,9 @@ from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
     DocumentRecord,
 )
+from intergrax.integrations.contracts.document_store_process_durability import (
+    document_store_survives_process_restart,
+)
 from intergrax.runtime.execution.suspended_operation.store_engine import (
     SuspendedOperationBackingStore,
 )
@@ -51,7 +54,7 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
 
     @property
     def is_durable(self) -> bool:
-        return True
+        return document_store_survives_process_restart(self._document_store)
 
     def _load_from_document(self) -> None:
         record = self._document_store.get(_PARTITION, _ROW_KEY)

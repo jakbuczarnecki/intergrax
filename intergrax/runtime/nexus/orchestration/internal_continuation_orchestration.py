@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 from datetime import datetime, timezone
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
@@ -37,6 +38,11 @@ from intergrax.runtime.execution.continuation.lifecycle_driver import (
     ExecutionContinuationLifecycleDriver,
 )
 from intergrax.runtime.human.pause import HumanPauseCoordinator
+
+if TYPE_CHECKING:
+    from intergrax.runtime.execution.suspended_operation.reentry_coordinator import (
+        ExecutionSuspendedWorkReentryCoordinator,
+    )
 from intergrax.runtime.task.task import Task
 
 __all__ = [
@@ -63,6 +69,9 @@ class InternalOrchestrationContinuation:
     port: ExecutionContinuationPort
     lifecycle_driver: ExecutionContinuationLifecycleDriver
     projection_sink: ExecutionContinuationProjectionSink | None = None
+    suspended_work_reentry_coordinator: (
+        ExecutionSuspendedWorkReentryCoordinator | None
+    ) = None
 
 
 def require_internal_hitl_continuation(
