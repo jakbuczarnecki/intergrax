@@ -10,6 +10,9 @@ import inspect
 import pytest
 
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
+from intergrax.agent_distribution.effective_roster_authority import (
+    EffectiveRosterAuthorityService,
+)
 from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
 from intergrax.agent_distribution.in_memory_stores import (
     AgentDistributionStoreState,
