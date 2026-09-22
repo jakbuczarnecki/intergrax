@@ -99,7 +99,12 @@ from tests.unit.runtime.nexus.tools.test_gr10_r8_orchestration_inner_guard impor
     _RecordingGuard,
 )
 
-pytestmark = pytest.mark.unit
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.skip(
+        reason="UCA-6C-R6-R3 removed legacy TIGAE worker transport; use strict HITL E2E",
+    ),
+]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _GENERIC_EVIDENCE_PATH = (

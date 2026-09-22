@@ -47,6 +47,9 @@ from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.sandbox.isolation_gate import SandboxAvailabilityProvider
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
+from intergrax.tools.durable_invocation_wiring_binding_resolver import (
+    DurableToolInvocationWiringBindingResolver,
+)
 from intergrax.tools.registry.runtime import ToolRegistry
 
 
@@ -70,6 +73,7 @@ def build_execution_bound_catalog_tool_composition(
     document_store: ConditionalDocumentStore | None,
     continuation_dependencies: ExecutionEngineContinuationDependencies | None,
     reentry_claim_owner_id: str,
+    durable_wiring_binding_resolver: DurableToolInvocationWiringBindingResolver | None = None,
 ) -> ExecutionBoundCatalogToolComposition:
     tool_invoker = build_production_runtime_tool_invoker(
         registry=registry,
@@ -113,6 +117,11 @@ def build_execution_bound_catalog_tool_composition(
         continuation_aware_dependencies=continuation_aware_dependencies,
     )
     if continuation_dependencies is not None and continuation_aware_dependencies is not None:
+        if durable_wiring_binding_resolver is None:
+            raise RuntimeError(
+                "continuation-aware catalog invocation requires "
+                "durable_wiring_binding_resolver",
+            )
         host = ContinuationAwareCatalogToolHost(
             tool_invoker=tool_invoker,
             dependencies=continuation_aware_dependencies,
@@ -122,6 +131,7 @@ def build_execution_bound_catalog_tool_composition(
             continuation_port=continuation_dependencies.continuation,
             catalog_invoker=bound,
             catalog_host=host,
+            binding_resolver=durable_wiring_binding_resolver,
             claim_owner_id=reentry_claim_owner_id,
         )
         continuation_aware_dependencies = ContinuationAwareCatalogToolHostDependencies(

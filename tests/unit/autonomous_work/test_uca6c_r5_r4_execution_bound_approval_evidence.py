@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import dataclasses
 
+from pathlib import Path
+
 import pytest
 
 from intergrax.applications._shared.tool_wiring import ApplicationToolWiring
@@ -24,9 +26,7 @@ from intergrax.contracts.collaborative_work import (
     PolicyCompositionResult,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
-from intergrax.runtime.execution.continuation.composition import (
-    wire_execution_engine_continuation_dependencies,
-)
+from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.nexus.tools.nexus_execution_bound_catalog_tool_invoker import (
     NexusExecutionBoundCatalogToolInvoker,
 )
@@ -42,6 +42,7 @@ from tests.unit.autonomous_work.test_uca6c_r4_real_codecraft_execution import (
 from tests.unit.autonomous_work.uca6c_r5_r2_strict_fixtures import (
     uca6c_attach_catalog_hitl_grant,
     uca6c_high_risk_tool_approval_grant,
+    uca6c_strict_r6_durable_wiring,
     uca6c_strict_sandbox_env_profile,
     uca6c_strict_worker_manifest,
     uca6c_strict_worker_registry,
@@ -82,12 +83,17 @@ class _AllowMse:
         )
 
 
-def _strict_catalog_invoker() -> NexusExecutionBoundCatalogToolInvoker:
+def _strict_catalog_invoker(tmp_path: Path) -> NexusExecutionBoundCatalogToolInvoker:
     manifest = uca6c_strict_worker_manifest()
     registry = uca6c_strict_worker_registry(manifest)
+    r6 = uca6c_strict_r6_durable_wiring()
     tool_wiring = ApplicationToolWiring(
         profile=ToolProfile(enabled_bundles=["sandbox"]),
-        wiring_context=ToolWiringContext(),
+        wiring_context=ToolWiringContext(
+            extras={
+                "sandbox_session_manager": SandboxSessionManager(root=tmp_path),
+            },
+        ),
         registry=ToolRegistry(),
     )
     invoker = build_execution_bound_catalog_tool_invoker_for_qualified_capability(
@@ -98,7 +104,7 @@ def _strict_catalog_invoker() -> NexusExecutionBoundCatalogToolInvoker:
         manifest=manifest,
         agent_registry=registry,
         meaningful_side_effect_authorization=_AllowMse(),
-        continuation_dependencies=wire_execution_engine_continuation_dependencies(),
+        **r6,
     )
     assert isinstance(invoker, NexusExecutionBoundCatalogToolInvoker)
     return invoker
@@ -111,8 +117,8 @@ def test_public_invoke_request_does_not_expose_tigae_transport_field() -> None:
     assert "governance_approval_evidence" not in fields
 
 
-def test_binding_grant_maps_to_runtime_state() -> None:
-    catalog = _strict_catalog_invoker()
+def test_binding_grant_maps_to_runtime_state(tmp_path: Path) -> None:
+    catalog = _strict_catalog_invoker(tmp_path)
     run_id = str(mint_run_id())
     step_id = "uca6c.bound:nexus-grant"
     grant = uca6c_high_risk_tool_approval_grant(

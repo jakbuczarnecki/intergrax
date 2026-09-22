@@ -17,7 +17,6 @@ from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration i
     InternalOrchestrationContinuation,
     canonical_resume_after_authorization,
 )
-from intergrax.runtime.sandbox.session import SandboxSession
 from intergrax.runtime.task.task import Task
 
 
@@ -28,7 +27,6 @@ def resume_authorized_continuation_with_suspended_work_reentry(
     capability: InternalOrchestrationContinuation,
     reentry_coordinator: ExecutionSuspendedWorkReentryCoordinator | None = None,
     reentry_port: ExecutionSuspendedWorkReentryPort | None = None,
-    sandbox_session: SandboxSession | None = None,
 ) -> tuple[PendingExecutionContinuation, ExecutionSuspendedWorkReentryResult | None]:
     """Lifecycle-only resume, then optional Execution-owned tool re-entry."""
     resumed = canonical_resume_after_authorization(
@@ -45,7 +43,6 @@ def resume_authorized_continuation_with_suspended_work_reentry(
         reentry_result = reentry_coordinator.reenter_after_resume(
             request,
             task=task,
-            sandbox_session=sandbox_session,
         )
     elif reentry_port is not None:
         reentry_result = reentry_port.reenter_after_resume(request)

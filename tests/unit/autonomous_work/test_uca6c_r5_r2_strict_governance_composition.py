@@ -138,11 +138,20 @@ class _RecordingMsePort:
 
 
 def _codecraft_context(tmp_path: Path, craft_id: str) -> ToolWiringContext:
+    from intergrax.runtime.sandbox.manager import SandboxSessionManager
+
     sandbox = build_sandbox_session(
         tmp_path,
         tenant_id=_TENANT,
         task_id=str(_TASK_ID),
     )
+    sandbox_manager = SandboxSessionManager(root=tmp_path)
+    reattached = sandbox_manager.resolve_session(
+        session_id=sandbox.session_id,
+        tenant_id=_TENANT,
+        task_id=str(_TASK_ID),
+    )
+    assert reattached is not None
     sessions = CodeCraftSessionManager()
     ownership = CodeCraftSessionOwnership(tenant_id=_TENANT, task_id=str(_TASK_ID))
     session = sessions.open(
@@ -160,6 +169,7 @@ def _codecraft_context(tmp_path: Path, craft_id: str) -> ToolWiringContext:
     return ToolWiringContext(
         sandbox_session=sandbox,
         extras={
+            "sandbox_session_manager": sandbox_manager,
             "codecraft_session_manager": sessions,
             "codecraft_ephemeral_registry": registry,
             "codecraft_profile": CodeCraftProfile(

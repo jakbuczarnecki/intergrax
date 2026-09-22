@@ -47,10 +47,12 @@ from intergrax.runtime.nexus.tools.continuation_aware_catalog_tool_host import (
 from intergrax.runtime.nexus.tools.nexus_execution_bound_catalog_tool_invoker import (
     NexusExecutionBoundCatalogToolInvoker,
 )
-from intergrax.runtime.sandbox.session import SandboxSession
 from intergrax.runtime.task.task import Task
+from intergrax.tools.durable_invocation_wiring_binding_resolver import (
+    DurableToolInvocationWiringBindingResolutionError,
+    DurableToolInvocationWiringBindingResolver,
+)
 from intergrax.tools.execution_models import ToolExecutionResult
-from intergrax.tools.invocation_wiring import FixedSandboxSessionWiringResolver
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,6 +64,7 @@ class ExecutionSuspendedWorkReentryCoordinator:
     catalog_host: ContinuationAwareCatalogToolHost
     catalog_invoker: NexusExecutionBoundCatalogToolInvoker
     codec_registry: SuspendedOperationCodecRegistry
+    binding_resolver: DurableToolInvocationWiringBindingResolver
     claim_owner_id: str
     default_lease_seconds: int = 120
 
@@ -70,7 +73,6 @@ class ExecutionSuspendedWorkReentryCoordinator:
         request: ExecutionSuspendedWorkReentryRequest,
         *,
         task: Task | None = None,
-        sandbox_session: SandboxSession | None = None,
     ) -> ExecutionSuspendedWorkReentryResult:
         pending = self.continuation_port.get_pending(
             ExecutionContinuationLookup(continuation_id=request.continuation_id),
@@ -144,10 +146,16 @@ class ExecutionSuspendedWorkReentryCoordinator:
             if grant is None:
                 grant = DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
 
-        invoke_request = _reconstruct_invoke_request(
-            payload,
-            sandbox_session=sandbox_session,
-        )
+        try:
+            invoke_request = _reconstruct_invoke_request(
+                payload,
+                binding_resolver=self.binding_resolver,
+            )
+        except DurableToolInvocationWiringBindingResolutionError as exc:
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                reason_detail=exc.code,
+            )
         state = self.catalog_invoker.build_runtime_state(invoke_request)
         if grant is not None:
             state.declarative_hitl_grant = grant
@@ -181,34 +189,27 @@ class ExecutionSuspendedWorkReentryCoordinator:
         )
 
 
-@dataclass(frozen=True, slots=True)
-class BoundExecutionSuspendedWorkReentryPort:
-    """Composition-bound port with governed task and sandbox resolution."""
-
-    coordinator: ExecutionSuspendedWorkReentryCoordinator
-    task: Task | None
-    sandbox_session: SandboxSession | None
-
-    def reenter_after_resume(
-        self,
-        request: ExecutionSuspendedWorkReentryRequest,
-    ) -> ExecutionSuspendedWorkReentryResult:
-        return self.coordinator.reenter_after_resume(
-            request,
-            task=self.task,
-            sandbox_session=self.sandbox_session,
-        )
-
-
 def _reconstruct_invoke_request(
     payload: ExecutionBoundCatalogToolOperationPayload,
     *,
-    sandbox_session: SandboxSession | None,
+    binding_resolver: DurableToolInvocationWiringBindingResolver,
 ) -> ExecutionBoundCatalogToolInvokeRequest:
     wiring_resolver = None
-    if sandbox_session is not None:
-        wiring_resolver = FixedSandboxSessionWiringResolver(
-            sandbox_session=sandbox_session,
+    if payload.wiring_resolver_kind == "fixed_sandbox_session":
+        if not payload.sandbox_session_id:
+            raise DurableToolInvocationWiringBindingResolutionError(
+                "sandbox_session_id_missing",
+                "fixed_sandbox_session payload requires sandbox_session_id",
+            )
+        wiring_resolver = binding_resolver.resolve_fixed_sandbox_session_wiring(
+            sandbox_session_id=payload.sandbox_session_id,
+            tenant_id=payload.tenant_id,
+            task_id=payload.task_id,
+        )
+    elif payload.sandbox_session_id is not None:
+        raise DurableToolInvocationWiringBindingResolutionError(
+            "unsupported_wiring_resolver_kind",
+            f"unsupported wiring_resolver_kind: {payload.wiring_resolver_kind}",
         )
     return ExecutionBoundCatalogToolInvokeRequest(
         tool_id=payload.tool_id,
@@ -225,6 +226,5 @@ def _reconstruct_invoke_request(
 
 
 __all__ = [
-    "BoundExecutionSuspendedWorkReentryPort",
     "ExecutionSuspendedWorkReentryCoordinator",
 ]

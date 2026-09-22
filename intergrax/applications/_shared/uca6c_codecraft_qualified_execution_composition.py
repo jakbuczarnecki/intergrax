@@ -8,6 +8,7 @@ from intergrax.applications._shared.agent_runtime_governance_wiring import (
     capability_grants_from_application_manifest,
 )
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
+from intergrax.applications._shared.sandbox_wiring import wire_sandbox_sessions
 from intergrax.applications._shared.tool_wiring import ApplicationToolWiring
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -39,10 +40,16 @@ from intergrax.runtime.execution.suspended_operation.composition import (
     validate_document_store_for_production_suspended_operations,
 )
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
+from intergrax.runtime.sandbox.durable_sandbox_wiring_binding_resolver import (
+    as_durable_wiring_binding_resolver,
+)
 from intergrax.runtime.sandbox.isolation_gate import sandbox_availability_provider
 from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy, ToolScopePolicy
 from intergrax.runtime.wiring.agent_runtime_governance_factory import (
     build_agent_runtime_governance_boundary,
+)
+from intergrax.tools.durable_invocation_wiring_binding_resolver import (
+    DurableToolInvocationWiringBindingResolver,
 )
 from intergrax.tools.providers.sandbox.bundle import (
     CODE_EXEC_TOOL_ID,
@@ -52,6 +59,27 @@ from intergrax.tools.providers.sandbox.bundle import (
 
 class Uca6cCodecraftQualifiedExecutionCompositionError(RuntimeError):
     """Fail closed when production CodeCraft tool invocation cannot be wired."""
+
+
+def _require_durable_wiring_binding_resolver(
+    tool_wiring: ApplicationToolWiring,
+    environment: ApplicationEnvironmentProfile,
+    *,
+    injected: DurableToolInvocationWiringBindingResolver | None,
+) -> DurableToolInvocationWiringBindingResolver:
+    if injected is not None:
+        return injected
+    manager = wire_sandbox_sessions(environment)
+    if manager is None:
+        extra = tool_wiring.wiring_context.extras.get("sandbox_session_manager")
+        if extra is not None:
+            manager = extra
+    if manager is None:
+        raise Uca6cCodecraftQualifiedExecutionCompositionError(
+            "qualified capability catalog invocation requires sandbox session manager "
+            "for durable wiring binding resolution",
+        )
+    return as_durable_wiring_binding_resolver(manager)
 
 
 def bootstrap_uca6c_code_exec_catalog_tools(tool_wiring: ApplicationToolWiring) -> None:
@@ -75,6 +103,8 @@ def build_execution_bound_catalog_tool_invoker_for_qualified_capability(
     ensure_code_exec_registered: bool = True,
     document_store: ConditionalDocumentStore | None = None,
     continuation_dependencies: ExecutionEngineContinuationDependencies | None = None,
+    durable_wiring_binding_resolver: DurableToolInvocationWiringBindingResolver
+    | None = None,
 ) -> ExecutionBoundCatalogToolInvoker:
     if not caller_agent_id.strip():
         raise Uca6cCodecraftQualifiedExecutionCompositionError(
@@ -116,6 +146,13 @@ def build_execution_bound_catalog_tool_invoker_for_qualified_capability(
         raise Uca6cCodecraftQualifiedExecutionCompositionError(
             "STRICT execution requires execution continuation dependencies",
         )
+    binding_resolver: DurableToolInvocationWiringBindingResolver | None = None
+    if continuation_dependencies is not None:
+        binding_resolver = _require_durable_wiring_binding_resolver(
+            tool_wiring,
+            environment,
+            injected=durable_wiring_binding_resolver,
+        )
     composition = build_execution_bound_catalog_tool_composition(
         registry=tool_wiring.registry,
         policy_bundle=wire_policy_bundle(environment),
@@ -129,6 +166,7 @@ def build_execution_bound_catalog_tool_invoker_for_qualified_capability(
         document_store=document_store,
         continuation_dependencies=continuation_dependencies,
         reentry_claim_owner_id=f"uca6c:{caller_agent_id.strip()}",
+        durable_wiring_binding_resolver=binding_resolver,
     )
     return composition.invoker
 

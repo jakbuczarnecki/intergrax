@@ -94,6 +94,15 @@ def test_reentry_coordinator_does_not_synthesize_pending() -> None:
     text = (SUSPENDED_RUNTIME / "reentry_coordinator.py").read_text(encoding="utf-8")
     assert "_pending_from_pause_descriptor" not in text
     assert "DeclarativeHitlPendingApproval(" not in text
+    assert "sandbox_session:" not in text
+    assert "SandboxSession" not in text
+    assert "binding_resolver" in text
+
+
+def test_reentry_coordinator_requires_durable_binding_resolver_contract() -> None:
+    text = (SUSPENDED_RUNTIME / "reentry_coordinator.py").read_text(encoding="utf-8")
+    assert "DurableToolInvocationWiringBindingResolver" in text
+    assert "FixedSandboxSessionWiringResolver" not in text
 
 
 def test_aw_does_not_import_nexus() -> None:
