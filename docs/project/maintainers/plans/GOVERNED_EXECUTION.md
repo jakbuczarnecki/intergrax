@@ -198,12 +198,22 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-10-A3 / A3-R1 | UAEP-canonical decoupling + checkpoint authority | **CLOSED** — checkpoint ≠ `acp.session.v1`; P-UAEP `RuntimeCheckpoint` / `TaskCheckpointPersistence` |
 | GR-10-A4 / A4-R1 | Qualification blocker + acceptance evidence integrity | **CLOSED** — g3b import gates; 05c/05d/05e acceptance |
 | GR-10-A5 | R7 final AGENTIC qualification reconciliation | **CLOSED** — matrix aligned to `GR10_AGENTIC_CAPABILITY_SEMANTICS` |
-| GR-10 AGENTIC Final Recertification & Closure | Whole GR-10 formal closure | **CLOSED** — `GR10_OVERALL_FORMAL_CLOSURE` SSOT; **next: GR-12** |
+| GR-10 AGENTIC Final Recertification & Closure | Whole GR-10 formal closure | **FINAL CLOSED** — `GR10_OVERALL_FORMAL_CLOSURE` SSOT within formally defined GR-10 scope |
+| GR-12-A1 | Control-plane inventory + architecture | **CLOSED** |
+| GR-12-A2 | Mandatory CLA-04 composition | **FINAL CLOSED** |
+| GR-12-A3 | Core control-plane qualification | **FINAL CLOSED** |
+| GR-12-A4 | Residual path classification | **CLOSED** |
+| GR-12 Architecture Checkpoint | Scope + ownership revalidation | **CLOSED** |
+| GR-12-DOC-R1 | Canonical docs/status reconciliation | **CURRENT** |
+| GR-12-A4-R1-R1 | Catalog revision + ABA + explicit operator identity | **NEXT** |
+| GR-12-A4-R2 | Vector administration governance ADR | **AFTER CATALOG** |
+| GR-12-A4-R3 | Specialized memory governance ADR | **AFTER VECTOR** |
+| GR-12 Final Qualification | Final control-plane certification | **AFTER RESIDUALS** |
 | GR-10-R9-ADR1 | Canonical orchestration MSE authority contract | **CLOSED — CANONICAL MSE AUTHORITY CONTRACT APPROVED** — [ADR-GR-10-002](../../technical/adr/entries/2026-09-19/ADR-GR-10-002.md); `test_gr10_r9_adr1_mse_authority_contract.py`; independent GitHub audit required |
 | GR-10-R9 | ORCHESTRATION MSE production coverage | **CLOSED within GR-10 scope** — R9-R1/R2/R3 qualification slices |
 | GR-11 | Plugin & Enterprise Extensibility Certification | **OPEN** (after GR-12) |
-| GR-12 | Control-Plane Governance | **NEXT** after GR-10 — **GAP** / **OPEN** |
-| GR-13 | Full Governance Proof Matrix | **OPEN** — includes `GR13_ORCHESTRATION_GOVERNANCE_EVIDENCE_DEFERRED` per [ADR-GR-10-003](../../technical/adr/entries/2026-09-21/ADR-GR-10-003-gr10-gr13-governance-evidence-certification-scope.md) (GR-10-R15-R1) |
+| GR-12 | Control-Plane Governance | **IN PROGRESS** — shared CLA-04 spine + core path qualification; residual qualification open (not **CLOSED**) |
+| GR-13 | Full Governance Proof Matrix | **OPEN** (after GR-11) — includes `GR13_ORCHESTRATION_GOVERNANCE_EVIDENCE_DEFERRED` per [ADR-GR-10-003](../../technical/adr/entries/2026-09-21/ADR-GR-10-003-gr10-gr13-governance-evidence-certification-scope.md) (GR-10-R15-R1); evidence scope **not** folded into GR-12 |
 | GR-14 | Real Application Integration — LKW | **OPEN** |
 | GR-15 | Governance UX / Application Contract | **OPEN** |
 | GR-16 | Enterprise Qualification & Claims | **OPEN** |

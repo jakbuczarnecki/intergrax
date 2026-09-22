@@ -22,7 +22,9 @@ baseline SHA: `c3255c7c1fc589b9e5863f7560ee208df942341a`
 
 End-to-end proof that canonical Governance controls execution from root admission through meaningful side effects, HITL, Decision material (where required), Reliability handoff, and fail-closed negatives — **via production-class composition and contracts**, not parallel test-only authority.
 
-**Explicit non-claims:** full Governance Plane enterprise certification, GR-12 control-plane mutation, GR-10 strategy-wide closure, GR-8 full governance evidence plane.
+**Explicit non-claims:** full Governance Plane enterprise certification, **GR-12 CLOSED** / full control-plane enterprise qualification, GR-8 full per-GEP governance evidence plane.
+
+**Current status note (GR-12-DOC-R1 — supersedes stale *current* claims below, not historical audit rows):** GR-12 control-plane mutation — **core canonical paths qualified**; **residual control-plane qualification remains open**; **full GR-12 closure not claimed**. GR-10 **FINAL CLOSED** within formally defined GR-10 scope. See architecture SSOT § GR-12 CURRENT STATUS.
 
 ## Scenario matrix
 
@@ -58,7 +60,7 @@ Authoritative row list and pytest node IDs: `GOV_FINAL_4_SCENARIO_CATALOG` in `c
 | Z | Cross-tenant | fail closed | QUALIFIED |
 | RB | Resource binding mismatch | 0 effect | QUALIFIED |
 | POB | Provider operation binding SSOT | typed actions | QUALIFIED |
-| CP | Control-plane mutation | — | GAP (GR-12 OPEN) |
+| CP | Control-plane mutation | — | GAP (historical GOV-FINAL-4 session — see current GR-12 note above) |
 
 ## Strategy qualification matrix
 
@@ -115,16 +117,16 @@ Substitution rule: **contract + composition only** (no monkeypatch of private au
 | Slice | Status | Notes |
 | ----- | ------ | ----- |
 | GR-8 | **CLOSED** | Public contract frozen — ADR-GR-8-001; spine CANDIDATE CLOSED after GR-8-R1 independent audit |
-| GR-10 | **PARTIAL** | **GR-10-FINAL** + **GR-10-R7** residual AGENTIC/ORCH requalification; INFERENCE closed; next **GR-10-R8** (ORCH Inner Governance); no strategy-wide CLOSED |
+| GR-10 | **FINAL CLOSED** | Within formally defined GR-10 scope — SSOT `GR10_OVERALL_FORMAL_CLOSURE` (historical table above is audit snapshot) |
 
 ## Remaining gaps
 
 | ID | Status |
 | -- | ------ |
 | GR-8 | **CLOSED** — see **Current qualification status** (historical runs may reference pre-R1 OPEN) |
-| GR-10 | **PARTIAL** — `tests/qualification/governance/strategy/`; matrix in `GOVERNED_EXECUTION.md` §9 |
+| GR-10 | **FINAL CLOSED** within formally defined scope — `tests/qualification/governance/strategy/` |
 | GR-11 | OPEN — plugin enterprise certification |
-| GR-12 | GAP — control-plane mutation NOT QUALIFIED |
+| GR-12 | **IN PROGRESS** — core paths qualified; residual catalog / Vector / Memory + final qualification open (**not CLOSED**) |
 | GR-13 | OPEN — full proof matrix superseded in part by GOV-FINAL-4 catalog |
 | GR-14–GR-16 | See [`GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md`](GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md) |
 
@@ -133,7 +135,8 @@ Substitution rule: **contract + composition only** (no monkeypatch of private au
 - **Full Governance Plane enterprise certified: NO**
 - **GOV-FINAL-4 qualification evidence integrity: VERIFIED** (R1 — collectable pytest node IDs, composition pluginability proof, persisted mandatory run counts).
 - **GOV-FINAL-4 enterprise E2E qualification matrix: PARTIAL COMPLETE** — canonical paths proven on named composition roots; runtime strategy and control-plane gaps remain.
-- **QUALIFICATION BLOCKED BY GR-10** for strategy-wide closure; **NOT QUALIFIED — GR-12 OPEN** for control-plane mutation.
+- **GR-10:** **FINAL CLOSED** within formally defined GR-10 scope (historical runs may still show strategy **PARTIAL**).
+- **GR-12 control-plane mutation:** core canonical paths qualified; residual control-plane qualification remains open; full GR-12 closure not claimed.
 
 ## Test commands
 

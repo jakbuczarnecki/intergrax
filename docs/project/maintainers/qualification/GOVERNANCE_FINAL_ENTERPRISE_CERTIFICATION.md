@@ -41,7 +41,7 @@ Full Governance Plane within declared platform scope: ownership, contract-first 
 | Pluginability (required surfaces) | **PARTIAL** — root/inner/MSE/admission substitution proven; continuation/provider store **PARTIAL** per GOV-FINAL-4 matrix |
 | Runtime spine (named composition roots) | **QUALIFIED** on MP-4R7 / governed contractor / GOV-FINAL-4 catalog paths |
 | Strategy-wide coverage (GR-10) | **GAP** |
-| Control-plane mutation (GR-12) | **GAP** |
+| Control-plane mutation (GR-12) | **IN PROGRESS / PARTIAL QUALIFICATION** (audited SHA historical **GAP** — see current note below) |
 | Governance Evidence Plane (GR-8) | **GAP** |
 | Full qualification suite on audited SHA | **NOT GREEN** — 1 architecture gate failure (GR-5-R4) |
 | Documentation / code truth | **ALIGNED** on non-certification claims; certification explicitly **NOT CLAIMED** everywhere checked |
@@ -199,7 +199,7 @@ CI evidence: NOT AVAILABLE
 
 1. **GR-8** — governance facts not durably correlated in Evidence Plane (GOV-GAP-007).
 2. **GR-10** — INFERENCE / ORCHESTRATION paths not enterprise-qualified for full strategy matrix.
-3. **GR-12** — control-plane mutation not qualified (scenario CP GAP).
+3. **GR-12** — **IN PROGRESS / PARTIAL QUALIFICATION** on current `development`: core control-plane paths qualified; residual paths (catalog **WIRED_NOT_QUALIFIED**, Vector/Memory **ARCHITECTURE_DECISION_REQUIRED**) and final GR-12 qualification open. **Historical audited SHA:** scenario CP **GAP** (preserved above).
 4. **GR-11 / GR-13** — enterprise plugin certification and residual proof matrix.
 5. **GR-5-R4 architecture gate regression** on audited SHA (Task projection lifecycle authority in Category C runner).
 6. **Full mandatory suite not green** on audited SHA (blocker #5).
@@ -210,7 +210,7 @@ CI evidence: NOT AVAILABLE
 | -------- | --- | ----------- | ------------------ |
 | P0 | GR-8 | Forensic reconstruction / auditability requirement | GR-8 implementation + qualification |
 | P0 | GR-10 | Declared platform strategies lack qualified paths | Strategy qualification program |
-| P0 | GR-12 | Control-plane in declared Governance scope | GR-12 shared boundary + domain executors |
+| P0 | GR-12 | Residual control-plane qualification + final closure | **GR-12-A4-R1-R1** catalog hardening; **R2/R3** ADRs; final GR-12 qualification (core spine **implemented**) |
 | P1 | GR-5-R4 gate fail | Continuation ownership drift in orchestration runner | Remediate `intake_runner.py` vs canonical port authority |
 | P1 | GR-11 | Enterprise plugin sign-off open | GR-11 qualification bundle |
 | P2 | GR-13 residual | Matrix partially superseded by GOV-FINAL-4 | Close residual scenarios / sign-off |
@@ -218,6 +218,12 @@ CI evidence: NOT AVAILABLE
 ## Architecture decision condition
 
 No **new** public contract or ownership move is strictly required to **start** GR-8/10/12 remediation (targets already in architecture SSOT). Existing **TRANSITIONAL** Task/Nexus coupling may require ADR-level closure before claiming GR-5 enterprise CLOSED — track under GR-5, not re-opened as a new fork in this audit.
+
+## Current GR-12 blocker note (GR-12-DOC-R1 — supersedes stale *current* GR-12 claims only)
+
+**Verdict on audited SHA above remains:** `NOT CERTIFIED — ENTERPRISE BLOCKERS REMAIN`.
+
+**GR-12 on current `development` documentation truth:** **IN PROGRESS / PARTIAL QUALIFICATION** — shared CLA-04 control-plane spine implemented; core canonical paths qualified; residual catalog (**WIRED_NOT_QUALIFIED**), Vector/Memory (**ARCHITECTURE_DECISION_REQUIRED**), and final GR-12 qualification open. Does **not** imply Governance Plane enterprise certified, **GR-13** closed, or **GR-16** closed.
 
 ## Related artifacts
 
