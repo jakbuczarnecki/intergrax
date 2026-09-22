@@ -13,6 +13,7 @@ from intergrax.contracts.execution_continuation import (
 )
 from intergrax.contracts.execution.suspended_operation.claim import (
     SuspendedOperationClaimOutcome,
+    SuspendedOperationMutationOutcome,
 )
 from intergrax.contracts.execution.suspended_operation.codec import (
     SerializedSuspendedOperationEnvelope,
@@ -26,6 +27,9 @@ from intergrax.contracts.execution_identity import AttemptId, ExecutionId, RunId
 from intergrax.contracts.governed_continuation_correlation import (
     ContinuationReason,
     GovernedContinuationCorrelation,
+)
+from intergrax.contracts.execution.suspended_operation.entity_id import (
+    mint_suspended_operation_id,
 )
 from intergrax.runtime.execution.suspended_operation.in_memory_store import (
     InMemorySuspendedExecutionOperationStore,
@@ -50,7 +54,7 @@ def _descriptor() -> SuspendedExecutionOperationDescriptor:
         canonical_json="{}",
     )
     return SuspendedExecutionOperationDescriptor(
-        suspended_operation_id=InMemorySuspendedExecutionOperationStore.mint_suspended_operation_id(),
+        suspended_operation_id=mint_suspended_operation_id(),
         operation_kind=SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
         identity=_identity(),
         continuation_id="gcr_test123",

@@ -6,7 +6,11 @@ from intergrax.contracts.execution.suspended_operation.claim import (
     SuspendedOperationAbandonReason,
     SuspendedOperationClaimOutcome,
     SuspendedOperationClaimResult,
+    SuspendedOperationMutationOutcome,
     SuspendedOperationMutationResult,
+)
+from intergrax.contracts.execution.suspended_operation.entity_id import (
+    mint_suspended_operation_id,
 )
 from intergrax.contracts.execution.suspended_operation.codec import (
     SerializedSuspendedOperationEnvelope,
@@ -46,6 +50,8 @@ __all__ = [
     "SuspendedOperationAbandonReason",
     "SuspendedOperationClaimOutcome",
     "SuspendedOperationClaimResult",
+    "SuspendedOperationMutationOutcome",
+    "mint_suspended_operation_id",
     "SuspendedOperationCodecRegistry",
     "SuspendedOperationKind",
     "SuspendedOperationMaterializationState",

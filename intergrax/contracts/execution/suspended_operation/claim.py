@@ -25,6 +25,17 @@ class SuspendedOperationClaimOutcome(StrEnum):
     IDENTITY_MISMATCH = "identity_mismatch"
 
 
+class SuspendedOperationMutationOutcome(StrEnum):
+    APPLIED = "applied"
+    STALE_REVISION = "stale_revision"
+    INVALID_STATE = "invalid_state"
+    TERMINAL = "terminal"
+    NOT_FOUND = "not_found"
+    CONTINUATION_MISMATCH = "continuation_mismatch"
+    IDENTITY_MISMATCH = "identity_mismatch"
+    STALE_CLAIM = "stale_claim"
+
+
 class SuspendedOperationAbandonReason(StrEnum):
     ORPHAN_PREPARED = "orphan_prepared"
     CONTINUATION_TERMINAL = "continuation_terminal"
@@ -46,7 +57,7 @@ class SuspendedOperationClaimResult(BaseModel):
 class SuspendedOperationMutationResult(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    outcome: SuspendedOperationClaimOutcome
+    outcome: SuspendedOperationMutationOutcome
     descriptor: SuspendedExecutionOperationDescriptor | None = None
 
 
@@ -54,5 +65,6 @@ __all__ = [
     "SuspendedOperationAbandonReason",
     "SuspendedOperationClaimOutcome",
     "SuspendedOperationClaimResult",
+    "SuspendedOperationMutationOutcome",
     "SuspendedOperationMutationResult",
 ]

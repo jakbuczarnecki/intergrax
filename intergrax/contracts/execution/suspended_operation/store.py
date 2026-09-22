@@ -79,10 +79,10 @@ class SuspendedExecutionOperationStore(ABC):
         suspended_operation_id: str,
         expected_materialization_revision: int,
         owner_id: str,
-        fence: int,
         lease_expires_at: datetime,
+        expected_fence: int | None = None,
     ) -> SuspendedOperationMutationResult:
-        """Reclaim stale CLAIMED → BLOCKED with higher fence."""
+        """Reclaim expired CLAIMED lease; store mints monotonic fence for new owner."""
 
     @abstractmethod
     def mark_consumed(
