@@ -21,9 +21,15 @@ from intergrax.fastapi_core.auth.api_key import ApiKeyConfig
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.production_platform_persistence import (
+    HarnessHostProfilePersistenceKwargs,
     resolve_harness_host_profile_persistence_kwargs_from_composition,
     resolve_reference_production_strict_host_environment,
 )
+from intergrax.contracts.execution_continuation_state_store import (
+    ExecutionContinuationStateStore,
+)
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.applications._shared.production_process_composition import (
     ProductionProcessComposition,
 )
@@ -88,9 +94,9 @@ def create_governed_contractor_backend_app(
     trace_db_path: Path | None = None,
     runtime_events_db_path: Path | None = None,
     checkpoints_db_path: Path | None = None,
-    document_store: object | None = None,
-    key_value_cache: object | None = None,
-    execution_continuation_state_store: object | None = None,
+    document_store: DocumentStore | None = None,
+    key_value_cache: DistributedKVStore | None = None,
+    execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
     observability_export: ObservabilityExportOperatorConfig | None = None,
 ) -> FastAPI:
     settings = settings or GovernedContractorBackendSettings.from_env()
@@ -101,7 +107,7 @@ def create_governed_contractor_backend_app(
     env = manifest.environment or build_governed_contractor_environment_profile(settings)
     production_mode = env.execution_mode.value == "strict"
     manifest_for_runtime = manifest
-    profile_persistence_kwargs: dict[str, object] = {}
+    profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs()
     resolved_tenant_id = manifest.app_id
     strict_topology_reliability = production_mode and process_composition is not None
     provider_invocation_store = (
@@ -123,9 +129,10 @@ def create_governed_contractor_backend_app(
             composition=process_composition,
         )
     elif document_store is not None:
-        profile_persistence_kwargs = {"document_store": document_store}
-        if key_value_cache is not None:
-            profile_persistence_kwargs["key_value_cache"] = key_value_cache
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+            document_store=document_store,
+            key_value_cache=key_value_cache,
+        )
         if production_mode:
             env = resolve_reference_production_strict_host_environment(env)
             manifest_for_runtime = manifest.model_copy(update={"environment": env})
@@ -164,7 +171,8 @@ def create_governed_contractor_backend_app(
             if strict_topology_reliability
             else None
         ),
-        **profile_persistence_kwargs,
+        document_store=profile_persistence_kwargs.document_store,
+        key_value_cache=profile_persistence_kwargs.key_value_cache,
     )
     host_execution = runtime.execution
     registry = runtime.registry

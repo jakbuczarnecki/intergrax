@@ -146,10 +146,7 @@ def create_local_workspace_backend_app(
     runtime.env_wiring.tool_wiring.wiring_context.extras[
         functional_evidence_wiring_extra_key()
     ] = functional_evidence_wiring
-    platform = bootstrap_harness_host_platform(
-        runtime,
-        trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
-    )
+    platform = bootstrap_harness_host_platform(runtime)
     lkw_observability_plugins = build_local_workspace_observability_plugins(
         observability_export
     )

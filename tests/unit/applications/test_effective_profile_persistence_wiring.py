@@ -95,7 +95,7 @@ def test_shared_composition_reuses_platform_persistence_authority() -> None:
         production_mode=True,
         composition=composition,
     )
-    assert first["key_value_cache"] is second["key_value_cache"]
+    assert first.key_value_cache is second.key_value_cache
 
 
 def test_explicit_non_durable_revision_store_fails_closed_in_production() -> None:

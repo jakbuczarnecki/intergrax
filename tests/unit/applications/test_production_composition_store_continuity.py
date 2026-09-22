@@ -222,15 +222,17 @@ def test_production_store_continuity_resolves_active_projection_and_nexus_regist
 
     app = create_research_process_app(process_composition=composition)
     strict_env = resolve_reference_production_strict_host_environment(env)
+    profile_persistence_kwargs = resolve_harness_host_profile_persistence_kwargs_from_composition(
+        production_mode=strict_env.execution_mode.value == "strict",
+        composition=composition,
+    )
     runtime = build_harness_host_runtime(
         manifest.model_copy(update={"environment": strict_env}),
         strict_env,
         settings=settings,
         registry_projection=resolved,
-        **resolve_harness_host_profile_persistence_kwargs_from_composition(
-            production_mode=strict_env.execution_mode.value == "strict",
-            composition=composition,
-        ),
+        document_store=profile_persistence_kwargs.document_store,
+        key_value_cache=profile_persistence_kwargs.key_value_cache,
     )
     assert runtime.registry_projection_evidence.runtime_revision_id == revision_id
     assert runtime.registry.list_agent_ids() == ["research"]

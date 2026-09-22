@@ -9,6 +9,7 @@ from fastapi import FastAPI
 
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.production_platform_persistence import (
+    HarnessHostProfilePersistenceKwargs,
     build_reference_production_platform_persistence,
     resolve_harness_host_profile_persistence_kwargs_from_composition,
     resolve_reference_production_strict_host_environment,
@@ -96,10 +97,10 @@ def create_research_backend_app(
         )
     else:
         platform = build_reference_production_platform_persistence()
-        profile_persistence_kwargs = {
-            "key_value_cache": platform.kv_store,
-            "document_store": platform.document_store,
-        }
+        profile_persistence_kwargs = HarnessHostProfilePersistenceKwargs(
+            key_value_cache=platform.kv_store,
+            document_store=platform.document_store,
+        )
     runtime = build_harness_host_runtime(
         manifest.model_copy(update={"environment": env}),
         env,
@@ -112,13 +113,11 @@ def create_research_backend_app(
                 resolved_host_runtime.orchestration_decision_requirement_policy,
             )
         ),
-        **profile_persistence_kwargs,
+        document_store=profile_persistence_kwargs.document_store,
+        key_value_cache=profile_persistence_kwargs.key_value_cache,
     )
     host_execution = runtime.execution
-    platform = bootstrap_harness_host_platform(
-        runtime,
-        trace_store=runtime.observability.trace_store,  # type: ignore[arg-type]
-    )
+    platform = bootstrap_harness_host_platform(runtime)
 
     checkpoint_store = open_default_task_checkpoint_persistence()
     task_enricher = build_reliability_task_enricher(

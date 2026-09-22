@@ -189,7 +189,13 @@ def _build_diagnostic_nexus_loop(
     )
     assert deps is not None
     if problem_persistence is not None:
-        deps = replace(deps, problem_persistence=problem_persistence)
+        deps = replace(
+            deps,
+            persistence=replace(
+                deps.persistence,
+                problem_persistence=problem_persistence,
+            ),
+        )
     trigger = build_terminal_execution_diagnostic_trigger(deps)
 
     registry = AgentRegistry()
@@ -352,7 +358,12 @@ async def test_diagnostic_failure_does_not_change_business_outcome(
     assert failure.tenant_id == _TENANT_A
     assert failure.task_id == result.task_id
     assert failure.run_id == run_id
-    assert failure.payload["error_type"] == "RuntimeError"
+    from intergrax.runtime.events.payloads.platform_families import (
+        DiagnosticSubsystemFailurePayloadV1,
+    )
+
+    decoded_failure = DiagnosticSubsystemFailurePayloadV1.from_envelope(failure.payload)
+    assert decoded_failure.error_type == "RuntimeError"
     assert diagnostic_subsystem_failure_observed_for_run(
         runtime_store,
         tenant_id=_TENANT_A,
@@ -746,20 +757,39 @@ def test_harness_host_runtime_wires_terminal_diagnostic_trigger(
         _resolve,
     )
 
+    from governed_contractor_application.host.factory import (
+        create_governed_contractor_backend_app,
+    )
+
+    from intergrax.applications._shared.production_platform_persistence import (
+        build_reference_production_platform_persistence,
+    )
+    from intergrax.runtime.execution.continuation.persistence import (
+        ExecutionContinuationDurableBacking,
+        backing_execution_continuation_state_store,
+        execution_continuation_state_store_from_durable_export,
+        export_durable_continuation_state,
+    )
+
     document_store = InMemoryDocumentStore()
-    settings = GovernedContractorBackendSettings.from_env()
-    manifest = build_governed_contractor_manifest()
-    env = manifest.environment or build_governed_contractor_environment_profile(settings)
-    runtime = build_harness_host_runtime(
-        manifest,
-        env,
-        settings=settings,
-        tenant_id=_TENANT_A,
+    trace_db_path = tmp_path / "trace.db"  # type: ignore[operator]
+    kv_path = tmp_path / "strict_host_kv.db"  # type: ignore[operator]
+    platform_persistence = build_reference_production_platform_persistence(db_path=kv_path)
+    continuation_backing = ExecutionContinuationDurableBacking()
+    backing_execution_continuation_state_store(continuation_backing)
+    continuation_export = export_durable_continuation_state(continuation_backing)
+    continuation_store = execution_continuation_state_store_from_durable_export(
+        continuation_export,
+    )
+    app = create_governed_contractor_backend_app(
         registry_projection=build_governed_contractor_test_registry_projection(),
         document_store=document_store,
-        trace_db_path=tmp_path / "trace.db",  # type: ignore[operator]
+        key_value_cache=platform_persistence.kv_store,
+        execution_continuation_state_store=continuation_store,
+        trace_db_path=trace_db_path,
         runtime_events_db_path=tmp_path / "events.db",  # type: ignore[operator]
     )
+    runtime = app.state.harness_runtime
 
     assert runtime.diagnostic_wiring.attached  # noqa: SLF001
 

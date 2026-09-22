@@ -136,7 +136,7 @@ def create_dispute_sim_backend_app(
             pipeline_capability_suffix=pipeline_capability_suffix,
             production_mode=env.execution_mode is ExecutionMode.STRICT,
         )
-        run_service._execution_adapter = queue_wiring.execution_adapter
+        run_service.bind_execution_adapter(queue_wiring.execution_adapter)
 
     scheduler_wiring = wire_harness_host_long_running_scheduler(
         runtime,
