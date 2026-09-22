@@ -6,39 +6,40 @@ from __future__ import annotations
 
 from testing_support.obs_diag_observability_vendor_qualification.descriptor import (
     ObsDiagProofKind,
-    ObsDiagProofReference,
     ObservabilityPlatformIsolationEvidence,
     ObservabilityQualifiedPathRow,
     ObservabilityVendorQualificationEvidence,
     ObservabilityVendorQualificationRow,
     ObservabilityVendorQualificationStatus,
+    PlatformIsolationProofReference,
+    VendorQualificationProofReference,
 )
 from testing_support.obs_diag_provider_qualification.discovery import (
     discover_obs_diag_provider_surfaces,
 )
 
-_CONTRACT_MIGRATION = ObsDiagProofReference(
+_CONTRACT_MIGRATION = VendorQualificationProofReference(
     kind=ObsDiagProofKind.UNIT_CONTRACT,
     module="tests/unit/integrations/providers/observability_backend/test_observability_provider_contract_migration.py",
 )
-_VENDOR_CONTRACT = ObsDiagProofReference(
+_VENDOR_CONTRACT = VendorQualificationProofReference(
     kind=ObsDiagProofKind.UNIT_CONTRACT,
     module="tests/unit/runtime/integrations/test_observability_vendor_integration_contract.py",
 )
 
-_PLATFORM_EXPORT_NORMAL = ObsDiagProofReference(
+_PLATFORM_EXPORT_NORMAL = VendorQualificationProofReference(
     kind=ObsDiagProofKind.UNIT_CONTRACT,
     module="tests/unit/runtime/observability/test_harden_3c_export_failure_semantics.py",
 )
-_PLATFORM_EXPORT_FAILURE = ObsDiagProofReference(
+_PLATFORM_EXPORT_FAILURE = VendorQualificationProofReference(
     kind=ObsDiagProofKind.UNIT_CONTRACT,
     module="tests/unit/runtime/observability/test_harden_3d_exporter_health.py",
 )
-_PLATFORM_EXPORT_POLICY = ObsDiagProofReference(
+_PLATFORM_EXPORT_POLICY = VendorQualificationProofReference(
     kind=ObsDiagProofKind.UNIT_CONTRACT,
     module="tests/unit/runtime/observability/test_export_policy.py",
 )
-_PLATFORM_CANONICAL_ISOLATION = ObsDiagProofReference(
+_PLATFORM_CANONICAL_ISOLATION = PlatformIsolationProofReference(
     kind=ObsDiagProofKind.INTEGRATION,
     module="tests/integration/runtime/test_diag_final_external_otel_e2e.py",
 )
@@ -47,29 +48,29 @@ PLATFORM_CANONICAL_TRUTH_ISOLATION_EVIDENCE = ObservabilityPlatformIsolationEvid
     canonical_truth_isolation=_PLATFORM_CANONICAL_ISOLATION,
 )
 
-_EXTERNAL_OTLP_NORMAL = ObsDiagProofReference(
+_EXTERNAL_OTLP_NORMAL = VendorQualificationProofReference(
     kind=ObsDiagProofKind.EXTERNAL_LIVE,
     module="tests/integration/runtime/test_diag_final_external_otel_e2e.py",
 )
-_EXTERNAL_OTLP_PRIVACY = ObsDiagProofReference(
+_EXTERNAL_OTLP_PRIVACY = VendorQualificationProofReference(
     kind=ObsDiagProofKind.EXTERNAL_LIVE,
     module="tests/integration/runtime/diag_final_otel_support.py",
 )
 
-_ELASTIC_RETRY = ObsDiagProofReference(
+_ELASTIC_RETRY = VendorQualificationProofReference(
     kind=ObsDiagProofKind.UNIT_CONTRACT,
     module="tests/unit/integrations/providers/observability_backend/test_elasticsearch_observability_retry.py",
 )
-_ELASTIC_FAILURE = ObsDiagProofReference(
+_ELASTIC_FAILURE = VendorQualificationProofReference(
     kind=ObsDiagProofKind.UNIT_CONTRACT,
     module="tests/unit/integrations/providers/observability_backend/test_elasticsearch_observability_delivery_errors.py",
 )
-_ELASTIC_FAILED_SINK = ObsDiagProofReference(
+_ELASTIC_FAILED_SINK = VendorQualificationProofReference(
     kind=ObsDiagProofKind.UNIT_CONTRACT,
     module="tests/unit/integrations/providers/observability_backend/test_elasticsearch_observability_failed_delivery_sink.py",
 )
 
-_SENTRY_ISOLATION = ObsDiagProofReference(
+_SENTRY_ISOLATION = VendorQualificationProofReference(
     kind=ObsDiagProofKind.UNIT_CONTRACT,
     module="tests/unit/integrations/providers/observability_backend/test_sentry.py",
 )
@@ -162,11 +163,12 @@ OBSERVABILITY_QUALIFIED_PATHS: tuple[ObservabilityQualifiedPathRow, ...] = (
             normal_delivery=_PLATFORM_EXPORT_NORMAL,
             failure_isolation=_PLATFORM_EXPORT_FAILURE,
             recovery=_PLATFORM_EXPORT_POLICY,
-            canonical_truth_isolation=_PLATFORM_CANONICAL_ISOLATION,
+            canonical_truth_isolation=None,
             privacy=None,
         ),
         qualification=ObservabilityVendorQualificationStatus.LIVE_QUALIFIED,
         privacy_required=False,
+        platform_isolation=PLATFORM_CANONICAL_TRUTH_ISOLATION_EVIDENCE,
     ),
     ObservabilityQualifiedPathRow(
         path_id="external_otlp_collector_slice",

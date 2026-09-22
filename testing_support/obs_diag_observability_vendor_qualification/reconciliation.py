@@ -6,11 +6,10 @@ from __future__ import annotations
 
 from testing_support.obs_diag_observability_vendor_qualification.descriptor import (
     ObservabilityQualifiedPathRow,
+    ObservabilityVendorQualificationEvidence,
     ObservabilityVendorQualificationRow,
     ObservabilityVendorQualificationStatus,
-)
-from testing_support.obs_diag_observability_vendor_qualification.inventory import (
-    PLATFORM_CANONICAL_TRUTH_ISOLATION_EVIDENCE,
+    PlatformIsolationProofReference,
 )
 
 
@@ -34,6 +33,8 @@ def observability_qualified_path_without_evidence(
         if path.qualification != ObservabilityVendorQualificationStatus.LIVE_QUALIFIED:
             continue
         missing = path.evidence.missing_live_categories()
+        if path.platform_isolation is not None:
+            missing = tuple(item for item in missing if item != "canonical_truth_isolation")
         if not path.privacy_required:
             missing = tuple(item for item in missing if item != "privacy")
         if missing:
@@ -41,14 +42,27 @@ def observability_qualified_path_without_evidence(
     return violations
 
 
+def _vendor_evidence_references_platform_isolation(
+    evidence: ObservabilityVendorQualificationEvidence,
+) -> bool:
+    for ref in (
+        evidence.normal_delivery,
+        evidence.failure_isolation,
+        evidence.recovery,
+        evidence.canonical_truth_isolation,
+        evidence.privacy,
+    ):
+        if isinstance(ref, PlatformIsolationProofReference):
+            return True
+    return False
+
+
 def observability_vendor_rows_borrowing_platform_canonical_isolation(
     rows: tuple[ObservabilityVendorQualificationRow, ...],
 ) -> list[str]:
-    """Platform OTLP isolation proof must not appear on vendor-specific evidence rows."""
-    platform_ref = PLATFORM_CANONICAL_TRUTH_ISOLATION_EVIDENCE.canonical_truth_isolation
+    """Vendor rows must not attach platform isolation proof references to vendor evidence."""
     violations: list[str] = []
     for row in rows:
-        vendor_ref = row.evidence.canonical_truth_isolation
-        if vendor_ref is not None and vendor_ref == platform_ref:
+        if _vendor_evidence_references_platform_isolation(row.evidence):
             violations.append(row.provider_id)
     return violations

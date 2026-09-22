@@ -14,6 +14,18 @@ class ObsDiagProofKind(StrEnum):
     EXTERNAL_LIVE = "external_live"
 
 
+@dataclass(frozen=True, slots=True)
+class PlatformIsolationProofReference:
+    kind: ObsDiagProofKind
+    module: str
+
+
+@dataclass(frozen=True, slots=True)
+class VendorQualificationProofReference:
+    kind: ObsDiagProofKind
+    module: str
+
+
 class ObservabilityVendorQualificationStatus(StrEnum):
     ADAPTER_ONLY = "ADAPTER ONLY"
     CONTRACT_CONFORMANT = "CONTRACT CONFORMANT"
@@ -21,27 +33,21 @@ class ObservabilityVendorQualificationStatus(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
-class ObsDiagProofReference:
-    kind: ObsDiagProofKind
-    module: str
-
-
-@dataclass(frozen=True, slots=True)
 class ObservabilityPlatformIsolationEvidence:
     """Platform property: external export failure must not corrupt canonical diagnostic truth."""
 
-    canonical_truth_isolation: ObsDiagProofReference
+    canonical_truth_isolation: PlatformIsolationProofReference
 
 
 @dataclass(frozen=True, slots=True)
 class ObservabilityVendorQualificationEvidence:
     """Vendor-specific live/contract evidence only (no platform-level isolation proof)."""
 
-    normal_delivery: ObsDiagProofReference | None
-    failure_isolation: ObsDiagProofReference | None
-    recovery: ObsDiagProofReference | None
-    canonical_truth_isolation: ObsDiagProofReference | None
-    privacy: ObsDiagProofReference | None
+    normal_delivery: VendorQualificationProofReference | None
+    failure_isolation: VendorQualificationProofReference | None
+    recovery: VendorQualificationProofReference | None
+    canonical_truth_isolation: VendorQualificationProofReference | None
+    privacy: VendorQualificationProofReference | None
 
     def missing_live_categories(self) -> tuple[str, ...]:
         missing: list[str] = []
@@ -74,3 +80,4 @@ class ObservabilityQualifiedPathRow:
     evidence: ObservabilityVendorQualificationEvidence
     qualification: ObservabilityVendorQualificationStatus
     privacy_required: bool = True
+    platform_isolation: ObservabilityPlatformIsolationEvidence | None = None

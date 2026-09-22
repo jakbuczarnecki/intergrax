@@ -6,8 +6,16 @@ from __future__ import annotations
 
 import ast
 from pathlib import Path
+from typing import get_type_hints
 
 import pytest
+
+from testing_support.obs_diag_observability_vendor_qualification.descriptor import (
+    ObservabilityPlatformIsolationEvidence,
+    ObservabilityVendorQualificationEvidence,
+    PlatformIsolationProofReference,
+    VendorQualificationProofReference,
+)
 
 from testing_support.obs_diag_observability_vendor_qualification.inventory import (
     OBSERVABILITY_QUALIFIED_PATHS,
@@ -53,6 +61,20 @@ def test_ec3_no_catalog_observability_vendor_live_qualified_without_full_evidenc
 
 def test_ec3_qualified_paths_live_entries_have_full_evidence() -> None:
     assert observability_qualified_path_without_evidence(OBSERVABILITY_QUALIFIED_PATHS) == []
+
+
+def test_ec3_vendor_evidence_fields_are_vendor_proof_references_by_type() -> None:
+    hints = get_type_hints(ObservabilityVendorQualificationEvidence)
+    for field in (
+        "normal_delivery",
+        "failure_isolation",
+        "recovery",
+        "canonical_truth_isolation",
+        "privacy",
+    ):
+        assert hints[field] == VendorQualificationProofReference | None
+    platform_hints = get_type_hints(ObservabilityPlatformIsolationEvidence)
+    assert platform_hints["canonical_truth_isolation"] is PlatformIsolationProofReference
 
 
 def test_ec3_vendor_rows_do_not_borrow_platform_canonical_isolation_proof() -> None:

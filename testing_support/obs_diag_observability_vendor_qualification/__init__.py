@@ -4,11 +4,12 @@
 
 from testing_support.obs_diag_observability_vendor_qualification.descriptor import (
     ObsDiagProofKind,
-    ObsDiagProofReference,
     ObservabilityQualifiedPathRow,
     ObservabilityVendorQualificationEvidence,
     ObservabilityVendorQualificationRow,
     ObservabilityVendorQualificationStatus,
+    PlatformIsolationProofReference,
+    VendorQualificationProofReference,
 )
 from testing_support.obs_diag_observability_vendor_qualification.inventory import (
     OBSERVABILITY_QUALIFIED_PATHS,
@@ -24,7 +25,8 @@ __all__ = [
     "OBSERVABILITY_QUALIFIED_PATHS",
     "OBSERVABILITY_VENDOR_INVENTORY",
     "ObsDiagProofKind",
-    "ObsDiagProofReference",
+    "PlatformIsolationProofReference",
+    "VendorQualificationProofReference",
     "ObservabilityQualifiedPathRow",
     "ObservabilityVendorQualificationEvidence",
     "ObservabilityVendorQualificationRow",
