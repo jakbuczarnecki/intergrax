@@ -221,10 +221,13 @@ def test_host_composition_dashboard_diagnostics_ready_with_tenant_scope(
     document_store = InMemoryDocumentStore()
     persistence = wire_problem_persistence(list_cursor_secret=TEST_PROBLEM_LIST_CURSOR_SECRET, document_store=document_store)
     occurrence = document_store_occurrence_persistence_for_tests(document_store)
+    settings = GovernedContractorBackendSettings.from_env()
+    manifest = build_governed_contractor_manifest()
+    host_tenant_id = manifest.app_id
     _seed_problems_via_lifecycle(
         persistence,
         occurrence_persistence=occurrence,
-        tenant_id=_TENANT_A,
+        tenant_id=host_tenant_id,
         open_count=1,
         resolved_count=1,
     )
@@ -235,9 +238,6 @@ def test_host_composition_dashboard_diagnostics_ready_with_tenant_scope(
         open_count=1,
         resolved_count=0,
     )
-
-    settings = GovernedContractorBackendSettings.from_env()
-    manifest = build_governed_contractor_manifest()
     env = resolve_reference_production_strict_host_environment(_product_env())
     runtime = harness_host_runtime_module.build_harness_host_runtime(
         manifest.model_copy(update={"environment": env}),
@@ -315,7 +315,7 @@ def test_shared_problem_persistence_visible_after_lifecycle_reconcile(
     _seed_problems_via_lifecycle(
         deps.problem_persistence,
         occurrence_persistence=deps.occurrence_persistence,
-        tenant_id=_TENANT_A,
+        tenant_id=manifest.app_id,
         open_count=1,
         resolved_count=0,
     )

@@ -12,10 +12,11 @@ from fastapi import APIRouter, FastAPI
 from intergrax.applications._shared.architecture_health_wiring import resolve_architecture_health_wiring
 from intergrax.applications._shared.auditability_health_wiring import (
     HostAuditabilityHealthFacts,
+    assert_host_auditability_health_valid,
     project_auditability_health_snapshot,
-    project_host_auditability_health_facts,
     project_host_auditability_health_facts_from_runtime,
 )
+from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticAssemblyError
 from intergrax.applications._shared.diagnostic_read_wiring import resolve_host_diagnostic_read_service
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 from intergrax.applications._shared.compliance_profile_wiring import resolve_compliance_profile_wiring
@@ -48,10 +49,23 @@ class ProductObservabilityDashboardWiring:
     dashboard: ProductObservabilityDashboard | None
 
 
+def resolve_harness_operator_diagnostic_tenant_id(runtime: HarnessHostRuntime) -> str:
+    """Canonical operator diagnostic tenant scope from harness host runtime authority."""
+    tenant = (runtime.tenant_id or "").strip()
+    if not tenant:
+        raise DiagnosticAssemblyError(
+            (
+                "harness host runtime tenant_id is required for operator diagnostic read scope",
+            ),
+        )
+    return tenant
+
+
 def _build_diagnostic_operations_pane(
     env: ApplicationEnvironmentProfile,
     diagnostic_read_service: DiagnosticReadService | None,
     *,
+    operator_tenant_id: str | None = None,
     auditability_facts: HostAuditabilityHealthFacts | None = None,
 ) -> DiagnosticOperationsPane:
     """Project central diagnostic read capability for the host tenant scope."""
@@ -81,7 +95,7 @@ def _build_diagnostic_operations_pane(
             open_problem_count=0,
         )
 
-    tenant_id = env.profile_id
+    tenant_id = (operator_tenant_id or "").strip() or env.profile_id
     all_problems = diagnostic_read_service.list_problems(tenant_id=tenant_id)
     open_problems = diagnostic_read_service.list_problems(
         tenant_id=tenant_id,
@@ -105,6 +119,7 @@ def _build_dashboard(
     *,
     repo_root: Path | None = None,
     diagnostic_read_service: DiagnosticReadService | None = None,
+    operator_tenant_id: str | None = None,
     auditability_facts: HostAuditabilityHealthFacts | None = None,
 ) -> ProductObservabilityDashboard | None:
     health_wiring = resolve_health_dashboard_wiring(
@@ -135,6 +150,7 @@ def _build_dashboard(
     diagnostics = _build_diagnostic_operations_pane(
         env,
         diagnostic_read_service,
+        operator_tenant_id=operator_tenant_id,
         auditability_facts=auditability_facts,
     )
 
@@ -217,18 +233,22 @@ def wire_harness_product_observability_dashboard(
     from shared platform persistence on the same harness runtime — no dashboard-local stores.
     """
     env = runtime.environment
+    operator_tenant_id: str | None = None
     diagnostic_read_service: DiagnosticReadService | None = None
     if _diagnostics_pane_requires_read_service(env):
+        operator_tenant_id = resolve_harness_operator_diagnostic_tenant_id(runtime)
         try:
             diagnostic_read_service = resolve_host_diagnostic_read_service(runtime)
-        except ValueError:
-            diagnostic_read_service = None
+        except ValueError as exc:
+            raise DiagnosticAssemblyError((str(exc),)) from exc
 
     read_side_ready = _resolve_diagnostic_read_side_ready(runtime, diagnostic_read_service)
     auditability_facts = project_host_auditability_health_facts_from_runtime(
         runtime,
         diagnostic_read_side_ready=read_side_ready,
     )
+    if env.application_profile is ApplicationProfile.PRODUCT:
+        assert_host_auditability_health_valid(auditability_facts, env)
     health_wiring = resolve_health_dashboard_wiring_from_runtime(
         runtime,
         diagnostic_read_side_ready=read_side_ready,
@@ -240,6 +260,7 @@ def wire_harness_product_observability_dashboard(
             env,
             repo_root=repo_root,
             diagnostic_read_service=diagnostic_read_service,
+            operator_tenant_id=operator_tenant_id,
             auditability_facts=auditability_facts,
         )
         if dashboard is None:

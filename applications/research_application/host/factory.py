@@ -28,6 +28,9 @@ from intergrax.applications._shared.harness_host_auxiliary_wiring import (
     HostTaskExecutionExecutor,
     wire_harness_host_long_running_scheduler,
 )
+from intergrax.applications._shared.product_observability_dashboard_wiring import (
+    wire_harness_product_observability_dashboard,
+)
 from intergrax.applications._shared.interaction_wiring import wire_interaction_intake_service
 from intergrax.applications._shared.plugin_bootstrap import attach_plugin_shutdown
 from intergrax.applications._shared.task_control_wiring import (
@@ -139,6 +142,8 @@ def create_research_backend_app(
         host_execution=host_execution,
         prefix=settings.route_prefix,
     )
+
+    wire_harness_product_observability_dashboard(app, runtime=runtime)
 
     if settings.include_task_control:
         wire_harness_task_control(

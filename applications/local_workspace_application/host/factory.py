@@ -34,6 +34,9 @@ from intergrax.applications._shared.harness_host_composition import (
 from intergrax.applications._shared.harness_host_auxiliary_wiring import (
     wire_harness_host_long_running_scheduler,
 )
+from intergrax.applications._shared.product_observability_dashboard_wiring import (
+    wire_harness_product_observability_dashboard,
+)
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     wire_harness_task_control,
@@ -262,6 +265,9 @@ def create_local_workspace_backend_app(
         prefix=resolved_settings.route_prefix,
         default_agent_id=resolved_settings.default_agent_id,
     )
+
+    wire_harness_product_observability_dashboard(app, runtime=runtime)
+
     setattr(app.state, functional_evidence_wiring_extra_key(), functional_evidence_wiring)
     mount_functional_evidence_qualification_routes(app, prefix=resolved_settings.route_prefix)
     mount_managed_workspace_routes(

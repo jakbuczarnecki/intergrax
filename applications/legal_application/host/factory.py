@@ -39,6 +39,9 @@ from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications._shared.harness_host_auxiliary_wiring import (
     wire_harness_host_long_running_scheduler,
 )
+from intergrax.applications._shared.product_observability_dashboard_wiring import (
+    wire_harness_product_observability_dashboard,
+)
 from intergrax.applications._shared.task_control_wiring import (
     build_reliability_task_enricher,
     wire_harness_task_control,
@@ -194,6 +197,8 @@ def create_legal_backend_app(
         trace_store=observability.trace_store,
         host_execution=host_execution,
     )
+
+    wire_harness_product_observability_dashboard(app, runtime=runtime)
 
     if settings.include_task_control:
         wire_harness_task_control(

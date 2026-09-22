@@ -17,6 +17,7 @@ class ObsDiagX3AstRuleId(StrEnum):
     LOCAL_EXECUTION_RECONSTRUCTOR = "local_execution_reconstructor"
     DIRECT_NEXUS_ROOT = "direct_nexus_root"
     DIRECT_PROBLEM_PERSISTENCE_MUTATION = "direct_problem_persistence_mutation"
+    PRODUCT_OPERATOR_READ_NOT_ADOPTED = "product_operator_read_not_adopted"
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,8 +35,11 @@ _APPROVED_DIAGNOSTIC_COMPOSITION_RELATIVE = frozenset(
         "intergrax/applications/_shared/diagnostic_runtime_wiring.py",
         "intergrax/applications/_shared/diagnostic_read_wiring.py",
         "intergrax/applications/_shared/harness_host_runtime.py",
+        "intergrax/applications/_shared/product_observability_dashboard_wiring.py",
     }
 )
+
+_PRODUCT_OPERATOR_READ_WIRING_SYMBOL = "wire_harness_product_observability_dashboard"
 
 _FORBIDDEN_LOCAL_AUTHORITY_SYMBOLS = frozenset(
     {
@@ -209,6 +213,60 @@ def collect_obs_diag_x3_production_layer_violations(
     return _scan_python_files(paths, repo_root=repo_root)
 
 
+def _factory_ast_calls_symbol(tree: ast.AST, symbol: str) -> bool:
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        called = _call_symbol(node.func)
+        if called == symbol:
+            return True
+    return False
+
+
+def collect_product_operator_read_adoption_violations(
+    repo_root: Path,
+) -> list[ObsDiagX3AstViolation]:
+    """PRODUCT harness hosts must adopt canonical operator read via shared dashboard wiring."""
+    from intergrax.applications._shared.application_runtime_graph import list_application_projects
+    from intergrax.applications._shared.execution_surface_discovery import (
+        resolve_application_profile,
+    )
+    from intergrax.applications.contracts.application_host import ApplicationProfile
+
+    violations: list[ObsDiagX3AstViolation] = []
+    apps_root = repo_root / "applications"
+    if not apps_root.is_dir():
+        return violations
+
+    for app_name in list_application_projects(repo_root):
+        profile = resolve_application_profile(repo_root, app_name)
+        if profile is not ApplicationProfile.PRODUCT:
+            continue
+        factory_path = apps_root / app_name / "host" / "factory.py"
+        if not factory_path.is_file():
+            continue
+        relative = _relative_posix(factory_path, repo_root)
+        try:
+            tree = ast.parse(factory_path.read_text(encoding="utf-8"), filename=str(factory_path))
+        except SyntaxError:
+            continue
+        if _factory_ast_calls_symbol(tree, _PRODUCT_OPERATOR_READ_WIRING_SYMBOL):
+            continue
+        violations.append(
+            ObsDiagX3AstViolation(
+                rule_id=ObsDiagX3AstRuleId.PRODUCT_OPERATOR_READ_NOT_ADOPTED,
+                relative_path=relative,
+                line=1,
+                symbol=_PRODUCT_OPERATOR_READ_WIRING_SYMBOL,
+                message=(
+                    "PRODUCT harness host factory must call "
+                    "wire_harness_product_observability_dashboard"
+                ),
+            )
+        )
+    return violations
+
+
 def collect_factory_entry_path_violations(repo_root: Path) -> list[str]:
     from scripts.gates.check_application_production_gates import (
         check_no_ad_hoc_nexus_in_factories,
@@ -241,4 +299,5 @@ __all__ = [
     "ObsDiagX3AstViolation",
     "collect_factory_entry_path_violations",
     "collect_obs_diag_x3_production_layer_violations",
+    "collect_product_operator_read_adoption_violations",
 ]
