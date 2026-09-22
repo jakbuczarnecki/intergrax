@@ -55,8 +55,8 @@ from intergrax.runtime.token_optimization.llm_router_contracts import (
 from intergrax.runtime.token_optimization.pipeline import (
     TokenOptimizationPipelineRunner,
 )
-from intergrax.runtime.token_optimization.proofs.contracts import (
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.runtime.token_optimization.proofs.contracts import (
     SCHEMA_VERSION,
     ProofArtifactError,
     ProofArtifactRef,
