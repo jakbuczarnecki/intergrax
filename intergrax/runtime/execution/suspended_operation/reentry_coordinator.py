@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.contracts.execution_continuation import (
     ExecutionContinuationLifecycleState,
@@ -17,8 +18,12 @@ from intergrax.contracts.execution_bound_catalog_tool_invocation import (
 )
 from intergrax.contracts.execution.suspended_operation.claim import (
     SuspendedOperationClaimOutcome,
+    SuspendedOperationMutationOutcome,
 )
-from intergrax.contracts.execution.suspended_operation.codec import SuspendedOperationKind
+from intergrax.contracts.execution.suspended_operation.codec import (
+    SuspendedOperationCodecRegistry,
+    SuspendedOperationKind,
+)
 from intergrax.contracts.execution.suspended_operation.payload_catalog import (
     ExecutionBoundCatalogToolOperationPayload,
 )
@@ -30,13 +35,12 @@ from intergrax.contracts.execution.suspended_operation.reentry import (
 from intergrax.contracts.execution.suspended_operation.store import (
     SuspendedExecutionOperationStore,
 )
-from intergrax.runtime.execution.suspended_operation.codec_registry import (
-    DefaultSuspendedOperationCodecRegistry,
-)
 from intergrax.runtime.execution.suspended_operation.payload_digest import (
     digest_suspended_operation_envelope,
 )
-from intergrax.runtime.human.declarative_hitl_grant import DeclarativeHitlGrantCoordinator
+from intergrax.runtime.human.declarative_hitl_grant import (
+    DeclarativeHitlGrantCoordinator,
+)
 from intergrax.runtime.nexus.tools.continuation_aware_catalog_tool_host import (
     ContinuationAwareCatalogToolHost,
 )
@@ -57,7 +61,7 @@ class ExecutionSuspendedWorkReentryCoordinator:
     continuation_port: ExecutionContinuationPort
     catalog_host: ContinuationAwareCatalogToolHost
     catalog_invoker: NexusExecutionBoundCatalogToolInvoker
-    codec_registry: DefaultSuspendedOperationCodecRegistry
+    codec_registry: SuspendedOperationCodecRegistry
     claim_owner_id: str
     default_lease_seconds: int = 120
 
@@ -87,7 +91,16 @@ class ExecutionSuspendedWorkReentryCoordinator:
                 disposition=ExecutionSuspendedWorkReentryDisposition.REJECTED,
                 reason_detail="identity_mismatch",
             )
-        if digest_suspended_operation_envelope(descriptor.payload) != descriptor.payload_digest:
+        governed = pending.governed_correlation
+        if governed is None or descriptor.invocation_scope_id != governed.operation_id:
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.REJECTED,
+                reason_detail="invocation_scope_mismatch",
+            )
+        if (
+            digest_suspended_operation_envelope(descriptor.payload)
+            != descriptor.payload_digest
+        ):
             return ExecutionSuspendedWorkReentryResult(
                 disposition=ExecutionSuspendedWorkReentryDisposition.REJECTED,
                 reason_detail="payload_digest_mismatch",
@@ -127,9 +140,11 @@ class ExecutionSuspendedWorkReentryCoordinator:
 
         grant: DeclarativeHitlApprovalGrant | None = None
         if task is not None:
-            task.runtime.governance.declarative_hitl_pending = _pending_from_pause_descriptor(
-                payload,
-                pending,
+            task.runtime.governance.declarative_hitl_pending = (
+                _pending_from_pause_descriptor(
+                    payload,
+                    pending,
+                )
             )
             grant = DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
 
@@ -143,7 +158,6 @@ class ExecutionSuspendedWorkReentryCoordinator:
         tool_result = self.catalog_host.invoke(
             state=state,
             request=invoke_request,
-            runtime_state_builder=None,
             declarative_grant=grant,
             task=task,
         )
@@ -154,7 +168,7 @@ class ExecutionSuspendedWorkReentryCoordinator:
                 owner_id=claimed.claim_ownership.owner_id,
                 fence=claimed.claim_ownership.fence,
             )
-            if consumed.descriptor is None:
+            if consumed.outcome is not SuspendedOperationMutationOutcome.APPLIED:
                 return ExecutionSuspendedWorkReentryResult(
                     disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
                     reason_detail="mark_consumed_failed",
@@ -168,6 +182,25 @@ class ExecutionSuspendedWorkReentryCoordinator:
             disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
             tool_result=tool_result,
             reason_detail="tool_invocation_failed",
+        )
+
+
+@dataclass(frozen=True, slots=True)
+class BoundExecutionSuspendedWorkReentryPort:
+    """Composition-bound port with governed task and sandbox resolution."""
+
+    coordinator: ExecutionSuspendedWorkReentryCoordinator
+    task: Task | None
+    sandbox_session: SandboxSession | None
+
+    def reenter_after_resume(
+        self,
+        request: ExecutionSuspendedWorkReentryRequest,
+    ) -> ExecutionSuspendedWorkReentryResult:
+        return self.coordinator.reenter_after_resume(
+            request,
+            task=self.task,
+            sandbox_session=self.sandbox_session,
         )
 
 
@@ -214,4 +247,7 @@ def _reconstruct_invoke_request(
     )
 
 
-__all__ = ["ExecutionSuspendedWorkReentryCoordinator"]
+__all__ = [
+    "BoundExecutionSuspendedWorkReentryPort",
+    "ExecutionSuspendedWorkReentryCoordinator",
+]

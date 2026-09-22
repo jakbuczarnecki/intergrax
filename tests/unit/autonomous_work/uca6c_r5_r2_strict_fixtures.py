@@ -187,10 +187,10 @@ def uca6c_high_risk_tool_approval_grant(
     agent_id: str = _UCA6C_WORKER_ID,
     tool_id: str = CODE_EXEC_TOOL_ID,
 ) -> DeclarativeHitlApprovalGrant:
-    """Post-HITL approval artifact for HIGH-risk catalog tools (e.g. code.exec)."""
+    """Post-HITL approval artifact with bridge-style invocation scope."""
     return DeclarativeHitlApprovalGrant(
-        grant_id=f"uca6c-hitl-grant:{tool_id}:{step_id}",
-        invocation_scope_id=f"uca6c-scope:{step_id}",
+        grant_id=f"dhr_test_grant:{tool_id}:{step_id}",
+        invocation_scope_id=f"dhr_test_scope:{step_id}",
         task_id=task_id,
         run_id=run_id,
         step_id=step_id,
@@ -202,6 +202,17 @@ def uca6c_high_risk_tool_approval_grant(
         policy_provenance_digest=None,
         pause_id="uca6c-r5-r3-pause",
         approved_at="2026-09-22T00:00:00+00:00",
+    )
+
+
+def uca6c_attach_catalog_hitl_grant(catalog_invoker, grant: DeclarativeHitlApprovalGrant) -> None:
+    from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
+        CatalogDeclarativeRunBinding,
+    )
+
+    catalog_invoker.binding = CatalogDeclarativeRunBinding(
+        user_id=catalog_invoker.binding.user_id,
+        declarative_hitl_grant=grant,
     )
 
 
@@ -224,6 +235,7 @@ __all__ = [
     "build_sandbox_session",
     "uca6c_high_risk_tool_approval_evidence",
     "uca6c_high_risk_tool_approval_evidence_for_execution_request",
+    "uca6c_attach_catalog_hitl_grant",
     "uca6c_high_risk_tool_approval_grant",
     "uca6c_strict_echo_only_worker_manifest",
     "uca6c_strict_sandbox_env_profile",

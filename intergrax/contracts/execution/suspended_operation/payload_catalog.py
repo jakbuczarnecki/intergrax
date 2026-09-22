@@ -6,7 +6,9 @@ from __future__ import annotations
 
 from pydantic import ConfigDict, Field
 
-from intergrax.contracts.execution.suspended_operation.codec import SuspendedOperationPayload
+from intergrax.contracts.execution.suspended_operation.codec import (
+    SuspendedOperationPayload,
+)
 from intergrax.tools.providers.sandbox.contracts import CodeExecInput
 
 CODE_EXEC_INPUT_SCHEMA_ID = "sandbox.code_exec_input.v1"

@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import cast
 
 from pydantic import BaseModel
 
@@ -25,10 +24,16 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
-from intergrax.contracts.execution.suspended_operation.codec import SuspendedOperationKind
+from intergrax.contracts.execution.suspended_operation.codec import (
+    SuspendedOperationCodecRegistry,
+    SuspendedOperationKind,
+)
 from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedExecutionOperationDescriptor,
     SuspendedOperationMaterializationState,
+)
+from intergrax.contracts.execution.suspended_operation.entity_id import (
+    mint_suspended_operation_id,
 )
 from intergrax.contracts.execution.suspended_operation.payload_catalog import (
     CODE_EXEC_INPUT_SCHEMA_ID,
@@ -39,12 +44,6 @@ from intergrax.contracts.execution.suspended_operation.store import (
 )
 from intergrax.runtime.execution.suspended_operation.governed_request import (
     compose_governed_continuation_from_declarative_hitl_pause,
-)
-from intergrax.runtime.execution.suspended_operation.in_memory_store import (
-    InMemorySuspendedExecutionOperationStore,
-)
-from intergrax.runtime.execution.suspended_operation.codec_registry import (
-    DefaultSuspendedOperationCodecRegistry,
 )
 from intergrax.runtime.execution.suspended_operation.pause_required import (
     ExecutionSuspendedWorkPauseRequired,
@@ -67,7 +66,10 @@ from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.task.task import Task
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
-from intergrax.tools.invocation_wiring import ToolInvocationContext
+from intergrax.tools.invocation_wiring import (
+    ToolInvocationContext,
+    durable_sandbox_session_id_from_resolver,
+)
 from intergrax.tools.providers.sandbox.contracts import CodeExecInput
 
 
@@ -75,7 +77,7 @@ from intergrax.tools.providers.sandbox.contracts import CodeExecInput
 class ContinuationAwareCatalogToolHostDependencies:
     suspended_operation_store: SuspendedExecutionOperationStore
     hitl_continuation: InternalOrchestrationContinuation
-    codec_registry: DefaultSuspendedOperationCodecRegistry | None = None
+    codec_registry: SuspendedOperationCodecRegistry
 
 
 class ContinuationAwareCatalogToolHost:
@@ -89,18 +91,12 @@ class ContinuationAwareCatalogToolHost:
     ) -> None:
         self._tool_invoker = tool_invoker
         self._deps = dependencies
-        self._codecs = (
-            dependencies.codec_registry
-            if dependencies is not None and dependencies.codec_registry is not None
-            else DefaultSuspendedOperationCodecRegistry()
-        )
 
     def invoke(
         self,
         *,
         state: RuntimeState,
         request: ExecutionBoundCatalogToolInvokeRequest,
-        runtime_state_builder,
         declarative_grant: DeclarativeHitlApprovalGrant | None,
         task: Task | None = None,
     ) -> ToolExecutionResult[BaseModel]:
@@ -110,7 +106,7 @@ class ContinuationAwareCatalogToolHost:
             return self._tool_invoker.invoke(
                 state=state,
                 agent_id=agent_id,
-                request=cast(ToolExecutionRequest[BaseModel], tool_request),
+                request=tool_request,
             )
         except DeclarativePolicyHitlRequiredError as error:
             if self._deps is None:
@@ -119,7 +115,7 @@ class ContinuationAwareCatalogToolHost:
                 raise_hitl_pause_from_tool_invocation(
                     error,
                     state=state,
-                    request=cast(ToolExecutionRequest[object], tool_request),
+                    request=tool_request,
                     agent_id=agent_id,
                 )
             except DeclarativePolicyHitlPauseRequired as pause:
@@ -157,15 +153,13 @@ class ContinuationAwareCatalogToolHost:
             request,
             invocation_scope_id=pause.signal.invocation_scope_id,
         )
-        envelope = self._codecs.encode(
-            payload,
-            operation_kind=SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
-            payload_schema_version=payload.payload_schema_version,
+        codec = deps.codec_registry.resolve(
+            SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
+            payload.payload_schema_version,
         )
+        envelope = codec.encode(payload)
         digest = digest_suspended_operation_envelope(envelope)
-        suspended_operation_id = (
-            InMemorySuspendedExecutionOperationStore.mint_suspended_operation_id()
-        )
+        suspended_operation_id = mint_suspended_operation_id()
         descriptor = SuspendedExecutionOperationDescriptor(
             suspended_operation_id=suspended_operation_id,
             operation_kind=SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
@@ -250,7 +244,9 @@ def _tool_execution_request(
         invocation_context=invocation_context,
         idempotency_key=request.idempotency_key,
         declarative_hitl_invocation_scope_id=(
-            declarative_grant.invocation_scope_id if declarative_grant is not None else None
+            declarative_grant.invocation_scope_id
+            if declarative_grant is not None
+            else None
         ),
     )
 
@@ -263,12 +259,9 @@ def _catalog_payload_from_request(
     if type(request.input) is not CodeExecInput:
         raise TypeError("UCA-6C-R6 catalog suspended payload requires CodeExecInput")
     run_id_str = validate_run_id(request.run_id)
-    sandbox_session_id = None
-    resolver = request.wiring_resolver
-    if resolver is not None:
-        sandbox = getattr(resolver, "sandbox_session", None)
-        if sandbox is not None:
-            sandbox_session_id = str(getattr(sandbox, "session_id", "") or "") or None
+    sandbox_session_id = durable_sandbox_session_id_from_resolver(
+        request.wiring_resolver
+    )
     return ExecutionBoundCatalogToolOperationPayload(
         tool_id=request.tool_id,
         tool_input_schema_id=CODE_EXEC_INPUT_SCHEMA_ID,

@@ -75,7 +75,9 @@ from tests.unit.autonomous_work.test_uca6c_r4_real_codecraft_execution import (
 )
 from tests.unit.autonomous_work.uca6c_r5_r2_strict_fixtures import (
     build_sandbox_session,
+    uca6c_attach_catalog_hitl_grant,
     uca6c_high_risk_tool_approval_evidence,
+    uca6c_high_risk_tool_approval_grant,
     uca6c_strict_echo_only_worker_manifest,
     uca6c_strict_sandbox_env_profile,
     uca6c_strict_worker_manifest,
@@ -345,12 +347,15 @@ def test_strict_production_success_via_high_level_builder(tmp_path: Path) -> Non
     execution_id = mint_execution_id()
     execution_request_id = "qualified-capability-execution:uca6c-r5r2-direct:binding"
     step_id = derive_qualified_capability_governance_step_id(execution_request_id)
-    approval_evidence = uca6c_high_risk_tool_approval_evidence(
-        tenant_id=_TENANT,
-        task_id=str(_TASK_ID),
-        run_id=str(run_id),
-        step_id=step_id,
-        agent_id=caller_agent_id,
+    uca6c_attach_catalog_hitl_grant(
+        catalog,
+        uca6c_high_risk_tool_approval_grant(
+            tenant_id=_TENANT,
+            task_id=str(_TASK_ID),
+            run_id=str(run_id),
+            step_id=step_id,
+            agent_id=caller_agent_id,
+        ),
     )
     id_token = bind_active_execution_identity(
         run_id=run_id,
@@ -373,7 +378,6 @@ def test_strict_production_success_via_high_level_builder(tmp_path: Path) -> Non
                 run_id=None,
                 execution_id=execution_id,
                 execution_request_id=execution_request_id,
-                governance_approval_evidence=approval_evidence,
             ),
         )
     finally:
@@ -413,12 +417,15 @@ def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
     execution_id = mint_execution_id()
     execution_request_id = "qualified-capability-execution:uca6c-r5r2-direct:binding"
     step_id = derive_qualified_capability_governance_step_id(execution_request_id)
-    approval_evidence = uca6c_high_risk_tool_approval_evidence(
-        tenant_id=_TENANT,
-        task_id=str(_TASK_ID),
-        run_id=str(run_id),
-        step_id=step_id,
-        agent_id=caller_agent_id,
+    uca6c_attach_catalog_hitl_grant(
+        catalog,
+        uca6c_high_risk_tool_approval_grant(
+            tenant_id=_TENANT,
+            task_id=str(_TASK_ID),
+            run_id=str(run_id),
+            step_id=step_id,
+            agent_id=caller_agent_id,
+        ),
     )
     id_token = bind_active_execution_identity(
         run_id=run_id,
@@ -442,7 +449,6 @@ def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
                     run_id=None,
                     execution_id=execution_id,
                     execution_request_id=execution_request_id,
-                    governance_approval_evidence=approval_evidence,
                 ),
             )
     finally:

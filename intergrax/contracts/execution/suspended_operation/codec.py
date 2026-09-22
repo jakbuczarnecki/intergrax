@@ -41,7 +41,9 @@ class SuspendedOperationPayloadCodec(Protocol):
     @property
     def payload_schema_version(self) -> str: ...
 
-    def encode(self, payload: SuspendedOperationPayload) -> SerializedSuspendedOperationEnvelope:
+    def encode(
+        self, payload: SuspendedOperationPayload
+    ) -> SerializedSuspendedOperationEnvelope:
         """Serialize typed payload to canonical envelope."""
         ...
 

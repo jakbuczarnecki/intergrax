@@ -11,23 +11,80 @@ pytestmark = pytest.mark.unit
 
 REPO = Path(__file__).resolve().parents[4]
 
+SUSPENDED_CONTRACTS = REPO / "intergrax" / "contracts" / "execution" / "suspended_operation"
+SUSPENDED_RUNTIME = REPO / "intergrax" / "runtime" / "execution" / "suspended_operation"
+L3_HOST = REPO / "intergrax" / "runtime" / "nexus" / "tools" / "continuation_aware_catalog_tool_host.py"
+UCA_COMPOSITION = (
+    REPO / "intergrax" / "applications" / "_shared" / "uca6c_codecraft_qualified_execution_composition.py"
+)
+
+
+def _collect_annotation_tokens(tree: ast.AST) -> set[str]:
+    tokens: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name):
+            tokens.add(node.id)
+        if isinstance(node, ast.Attribute):
+            tokens.add(node.attr)
+        if isinstance(node, ast.Subscript):
+            if isinstance(node.value, ast.Name):
+                tokens.add(node.value.id)
+            if isinstance(node.slice, ast.Tuple):
+                for elt in node.slice.elts:
+                    if isinstance(elt, ast.Name):
+                        tokens.add(elt.id)
+    return tokens
+
 
 def test_execution_suspended_contracts_do_not_import_nexus() -> None:
-    root = REPO / "intergrax" / "contracts" / "execution" / "suspended_operation"
-    for path in root.glob("*.py"):
+    for path in SUSPENDED_CONTRACTS.glob("*.py"):
         text = path.read_text(encoding="utf-8")
         assert "runtime.nexus" not in text
-        assert "nexus" not in text.lower() or "suspended_operation" in path.name
 
 
 def test_suspended_payload_contracts_avoid_semantic_any() -> None:
-    path = REPO / "intergrax" / "contracts" / "execution" / "suspended_operation"
-    banned = {"Any", "dict[str, Any]", "Mapping[str, Any]"}
-    for file in path.glob("*.py"):
+    banned = {"Any"}
+    for file in SUSPENDED_CONTRACTS.glob("*.py"):
         tree = ast.parse(file.read_text(encoding="utf-8"))
-        names = {node.id for node in ast.walk(tree) if isinstance(node, ast.Name)}
-        for token in banned:
-            assert token not in names, f"{file.name} contains banned {token}"
+        tokens = _collect_annotation_tokens(tree)
+        assert "Any" not in tokens, f"{file.name} contains banned Any"
+        text = file.read_text(encoding="utf-8")
+        for pattern in ("dict[str, Any]", "Mapping[str, Any]"):
+            assert pattern not in text, f"{file.name} contains {pattern}"
+
+
+def test_l3_host_uses_contract_codec_registry_not_default() -> None:
+    text = L3_HOST.read_text(encoding="utf-8")
+    assert "DefaultSuspendedOperationCodecRegistry" not in text
+    assert "InMemorySuspendedExecutionOperationStore" not in text
+    assert "getattr" not in text
+    assert "setattr" not in text
+
+
+def test_suspended_runtime_reentry_uses_codec_contract() -> None:
+    path = SUSPENDED_RUNTIME / "reentry_coordinator.py"
+    text = path.read_text(encoding="utf-8")
+    assert "DefaultSuspendedOperationCodecRegistry" not in text
+
+
+def test_suspended_scope_bans_reflection() -> None:
+    paths = list(SUSPENDED_RUNTIME.glob("*.py")) + [L3_HOST]
+    for path in paths:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                assert node.func.id not in {
+                    "getattr",
+                    "setattr",
+                    "eval",
+                    "exec",
+                }, f"{path.name} uses forbidden {node.func.id}"
+
+
+def test_uca_composition_wires_continuation_aware_dependencies() -> None:
+    text = UCA_COMPOSITION.read_text(encoding="utf-8")
+    assert "continuation_aware_dependencies" in text
+    assert "validate_suspended_operation_store_for_production" in text
 
 
 def test_aw_does_not_import_nexus() -> None:

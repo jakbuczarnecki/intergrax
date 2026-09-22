@@ -78,7 +78,6 @@ class CodeCraftQualifiedCapabilityExecutionHandler(
                     run_id=None,
                     execution_id=execution_id,
                     execution_request_id=request.execution_request_id,
-                    governance_approval_evidence=request.governance_approval_evidence,
                 ),
             )
         except ExecutionSuspendedWorkPauseRequired:

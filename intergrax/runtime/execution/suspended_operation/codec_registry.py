@@ -22,7 +22,9 @@ class DefaultSuspendedOperationCodecRegistry(SuspendedOperationCodecRegistry):
         codecs: tuple[SuspendedOperationPayloadCodec, ...] | None = None,
     ) -> None:
         resolved = codecs or (ExecutionBoundCatalogToolPayloadCodec(),)
-        self._codecs: dict[tuple[SuspendedOperationKind, str], SuspendedOperationPayloadCodec] = {}
+        self._codecs: dict[
+            tuple[SuspendedOperationKind, str], SuspendedOperationPayloadCodec
+        ] = {}
         for codec in resolved:
             key = (codec.operation_kind, codec.payload_schema_version)
             if key in self._codecs:

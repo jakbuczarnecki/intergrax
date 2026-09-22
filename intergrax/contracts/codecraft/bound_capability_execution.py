@@ -11,9 +11,6 @@ from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.autonomous_work._validation import require_non_empty_text
 from intergrax.contracts.execution_identity import ExecutionId, TaskId
-from intergrax.contracts.tool_invocation_governance_approval_evidence import (
-    ToolInvocationGovernanceApprovalEvidence,
-)
 
 
 class CodeCraftBoundCapabilityExecutionOutcome(StrEnum):
@@ -35,7 +32,6 @@ class CodeCraftBoundCapabilityExecutionRequest:
     run_id: str | None
     execution_id: ExecutionId
     execution_request_id: str
-    governance_approval_evidence: ToolInvocationGovernanceApprovalEvidence | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(

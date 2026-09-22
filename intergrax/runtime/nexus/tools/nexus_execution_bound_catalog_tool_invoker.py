@@ -38,10 +38,6 @@ from intergrax.runtime.nexus.tools.continuation_aware_catalog_tool_host import (
     ContinuationAwareCatalogToolHost,
     ContinuationAwareCatalogToolHostDependencies,
 )
-from intergrax.runtime.nexus.tools.governance_approval_evidence_adapter import (
-    declarative_hitl_grant_from_invocation_evidence,
-    require_invocation_evidence_matches_request,
-)
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.governance.active_governed_execution_task import (
     peek_governed_execution_task,
@@ -93,7 +89,6 @@ class NexusExecutionBoundCatalogToolInvoker:
                 result = host.invoke(
                     state=state,
                     request=request,
-                    runtime_state_builder=None,
                     declarative_grant=declarative_grant,
                     task=peek_governed_execution_task(),
                 )
@@ -111,11 +106,6 @@ class NexusExecutionBoundCatalogToolInvoker:
             correlation_request_id=request.correlation_request_id,
             wiring_resolver=request.wiring_resolver,
         )
-        invocation_scope_id = (
-            request.governance_approval_evidence.invocation_scope_id
-            if request.governance_approval_evidence is not None
-            else None
-        )
         tool_request = ToolExecutionRequest(
             run_id=request.run_id,
             step_id=request.step_id,
@@ -123,7 +113,7 @@ class NexusExecutionBoundCatalogToolInvoker:
             input=request.input,
             invocation_context=invocation_context,
             idempotency_key=request.idempotency_key,
-            declarative_hitl_invocation_scope_id=invocation_scope_id,
+            declarative_hitl_invocation_scope_id=None,
         )
         from intergrax.runtime.nexus.errors.tool_scope_violation_error import (
             ToolScopeViolationError,
@@ -199,16 +189,8 @@ class NexusExecutionBoundCatalogToolInvoker:
 
     def _declarative_hitl_grant_for_request(
         self,
-        request: ExecutionBoundCatalogToolInvokeRequest,
+        _request: ExecutionBoundCatalogToolInvokeRequest,
     ) -> DeclarativeHitlApprovalGrant | None:
-        if request.governance_approval_evidence is not None:
-            require_invocation_evidence_matches_request(
-                request.governance_approval_evidence,
-                request,
-            )
-            return declarative_hitl_grant_from_invocation_evidence(
-                request.governance_approval_evidence,
-            )
         if self.binding.declarative_hitl_grant is not None:
             return self.binding.declarative_hitl_grant
         return None
