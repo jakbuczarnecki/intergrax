@@ -13,9 +13,10 @@
 | **QUALIFICATION_SHA / CERTIFIED_CODE_SHA** | `c5acfc17ecea4d0e4b03405eabf735799c020ff8` |
 | **origin/development at qualification start** | `c5acfc17ecea4d0e4b03405eabf735799c020ff8` |
 | **branch** | `development` |
-| **qualification record commit (CERTIFICATION_RECORD_COMMIT)** | `594bec4c2215f64b73f5758531c89c537a12078d` (docs-only; certified code remains `c5acfc17`) |
+| **qualification record commit (CERTIFICATION_RECORD_COMMIT)** | `150cf9a51833a1cf2ca89ded7e9447f3f9e2eea7` (docs-only; certified code remains `c5acfc17`) |
 | **relevant tree** | **clean** (no qualification-scope dirty paths) |
 | **HEAD drift during qualification** | **none** |
+| **certification metadata reconciliation** | docs-only correction committed after the original certification record; see Git history for the reconciliation commit SHA |
 
 Session evidence: `.tmp/session/final-3-clean-rerun-4/` (local logs; not certification authority).
 
@@ -62,7 +63,7 @@ Session evidence: `.tmp/session/final-3-clean-rerun-4/` (local logs; not certifi
 
 ```text
 CERTIFIED_CODE_SHA = c5acfc17ecea4d0e4b03405eabf735799c020ff8
-CERTIFICATION_RECORD_COMMIT = 594bec4c2215f64b73f5758531c89c537a12078d
+CERTIFICATION_RECORD_COMMIT = 150cf9a51833a1cf2ca89ded7e9447f3f9e2eea7
 ```
 
 ---
