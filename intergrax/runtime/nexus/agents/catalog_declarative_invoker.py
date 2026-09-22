@@ -91,29 +91,57 @@ class CatalogDeclarativeToolInvoker:
         self.binding.tenant_id = tenant_id
         self.binding.user_id = user_id
 
-    def bind_execution_identity(
+    def _resolve_invoke_identity(
         self,
         *,
         tenant_id: str,
         run_id: str,
         task_id: str,
         agent_id: str,
-    ) -> None:
-        self.bind_run(
-            run_id=run_id,
-            task_id=task_id,
-            agent_id=agent_id,
-            tenant_id=tenant_id,
+    ) -> tuple[str, str, str, str, str]:
+        explicit = (
+            bool(tenant_id.strip()),
+            bool(run_id.strip()),
+            bool(task_id.strip()),
+            bool(agent_id.strip()),
+        )
+        if any(explicit) and not all(explicit):
+            raise ValueError(
+                "catalog declarative invoke requires all execution identity fields "
+                "when any are provided",
+            )
+        if all(explicit):
+            return (
+                tenant_id.strip(),
+                run_id.strip(),
+                task_id.strip(),
+                agent_id.strip(),
+                self.binding.user_id,
+            )
+        return (
+            _require_bound_identity_field(self.binding.tenant_id, "tenant_id"),
+            _require_bound_identity_field(self.binding.run_id, "run_id"),
+            _require_bound_identity_field(self.binding.task_id, "task_id"),
+            _require_bound_identity_field(self.binding.agent_id, "agent_id"),
+            self.binding.user_id,
         )
 
-    def _runtime_state(self) -> RuntimeState:
+    def _runtime_state(
+        self,
+        *,
+        tenant_id: str,
+        run_id: str,
+        task_id: str,
+        agent_id: str,
+        user_id: str,
+    ) -> RuntimeState:
         from intergrax.contracts.execution_identity import (
             validate_run_id,
             validate_task_id,
         )
 
-        agent_id = _require_bound_identity_field(self.binding.agent_id, "agent_id")
-        tenant_id = _require_bound_identity_field(self.binding.tenant_id, "tenant_id")
+        agent_id = _require_bound_identity_field(agent_id, "agent_id")
+        tenant_id = _require_bound_identity_field(tenant_id, "tenant_id")
         host_tool_invoker = self.tool_invoker
         from intergrax.prompts.registry.prompt_registry_resolver import (
             resolve_yaml_prompt_registry,
@@ -141,13 +169,13 @@ class CatalogDeclarativeToolInvoker:
                 catalog_path=config.prompt_catalog_path,
             ),
         )
-        resolved_run_id = validate_run_id(self.binding.run_id)
-        resolved_task_id = validate_task_id(self.binding.task_id)
+        resolved_run_id = validate_run_id(run_id)
+        resolved_task_id = validate_task_id(task_id)
         return RuntimeState(
             context=context,
             request=RuntimeRequest(
                 agent_id=agent_id,
-                user_id=self.binding.user_id,
+                user_id=user_id,
                 session_id=str(resolved_run_id),
                 tenant_id=tenant_id,
                 message="acp.declarative",
@@ -164,8 +192,20 @@ class CatalogDeclarativeToolInvoker:
         tool_id: str,
         args: dict[str, Any],
         idempotency_key: str | None,
+        tenant_id: str = "",
+        run_id: str = "",
+        task_id: str = "",
+        agent_id: str = "",
     ) -> DeclarativeToolInvokeResult:
-        agent_id = _require_bound_identity_field(self.binding.agent_id, "agent_id")
+        resolved_tenant_id, resolved_run_id, resolved_task_id, resolved_agent_id, user_id = (
+            self._resolve_invoke_identity(
+                tenant_id=tenant_id,
+                run_id=run_id,
+                task_id=task_id,
+                agent_id=agent_id,
+            )
+        )
+        agent_id = resolved_agent_id
         request = ToolRequest(
             tool_name=tool_id,
             agent_id=agent_id,
@@ -174,7 +214,13 @@ class CatalogDeclarativeToolInvoker:
             idempotency_key=idempotency_key,
         )
         response = invoke_catalog_tool_request(
-            state=self._runtime_state(),
+            state=self._runtime_state(
+                tenant_id=resolved_tenant_id,
+                run_id=resolved_run_id,
+                task_id=resolved_task_id,
+                agent_id=resolved_agent_id,
+                user_id=user_id,
+            ),
             request=request,
             trace_step="AcpDeclarativeTool",
         )

@@ -125,10 +125,15 @@ async def test_a1_crash_after_compensation_effect_becomes_uncertain() -> None:
 
     invoker = RecordingExecutionBoundDeclarativeToolInvoker(_invoke)
     claim = store.claim_pending("tenant-a", "worker-a", lease_seconds=1, limit=1)[0]
+    req = claim.job.request
     await invoker.invoke(
-        tool_id=claim.job.request.compensation_tool_id,
-        args=claim.job.request.args,
-        idempotency_key=claim.job.request.idempotency_key,
+        tenant_id=claim.job.tenant_id,
+        run_id=claim.job.run_id,
+        task_id=claim.job.task_id,
+        agent_id=claim.job.agent_id,
+        tool_id=req.compensation_tool_id,
+        args=req.args,
+        idempotency_key=req.idempotency_key,
     )
     time.sleep(1.2)
     second_claims = store.claim_pending("tenant-a", "worker-b", lease_seconds=30, limit=1)

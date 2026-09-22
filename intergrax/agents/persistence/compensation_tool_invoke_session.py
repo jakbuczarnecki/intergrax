@@ -31,13 +31,11 @@ class BoundCompensationToolInvokeSession(CompensationToolInvokeSession):
         args: JsonObject,
         idempotency_key: str,
     ) -> CompensationSideEffectInvokeResult:
-        self._invoker.bind_execution_identity(
+        invoke_result = await self._invoker.invoke(
             tenant_id=tenant_id,
             run_id=run_id,
             task_id=task_id,
             agent_id=agent_id,
-        )
-        invoke_result = await self._invoker.invoke(
             tool_id=tool_id,
             args=dict(args),
             idempotency_key=idempotency_key,

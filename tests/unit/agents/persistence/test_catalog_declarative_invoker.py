@@ -98,13 +98,21 @@ async def test_catalog_declarative_invoker_routes_through_catalog() -> None:
 def test_catalog_declarative_invoker_builds_real_runtime_context() -> None:
     registry = _registry_with_tool()
     invoker = build_catalog_declarative_invoker_from_registry(registry)
+    run_id = mint_run_id()
+    task_id = mint_task_id()
     invoker.bind_run(
-        run_id=mint_run_id(),
-        task_id=mint_task_id(),
+        run_id=run_id,
+        task_id=task_id,
         agent_id="agent-a",
         tenant_id="tenant-1",
     )
-    state = invoker._runtime_state()  # noqa: SLF001 — wiring verification
+    state = invoker._runtime_state(  # noqa: SLF001 — wiring verification
+        tenant_id="tenant-1",
+        run_id=str(run_id),
+        task_id=str(task_id),
+        agent_id="agent-a",
+        user_id="",
+    )
     assert isinstance(state.context.session_manager, SessionManager)
     assert isinstance(state.context.config.llm_adapter, LLMAdapter)
 
