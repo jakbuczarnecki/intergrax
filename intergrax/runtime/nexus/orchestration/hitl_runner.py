@@ -8,10 +8,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Awaitable, Callable, Optional
 
-from intergrax.contracts.execution_identity import ActiveExecutionIdentity
+from intergrax.contracts.execution_identity import (
+    ActiveExecutionIdentity,
+    validate_attempt_id,
+    validate_run_id,
+)
 from intergrax.contracts.runtime_event_metric import RuntimeEventMetricScope
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.structured_json_value import JsonObject, normalize_structured_json_object
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.runtime_event import RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_notification
@@ -140,14 +145,19 @@ class NexusHitlRunner:
     ) -> TaskResult:
         resolution = task.runtime.governance.hitl_resolution
         run_id, attempt_id = self._require_execution_identity()
-        payload = (
-            human_approval_event_payload(
-                task_id=resolution.task_id,
-                pause_id=resolution.pause_id,
-                human_request_id=resolution.human_request_id,
-                verdict=HumanResponseVerdict.REJECT,
-                approver=resolution.approver,
-                response_text=task.options.human.response_text,
+        validated_run_id = validate_run_id(run_id)
+        validated_attempt_id = validate_attempt_id(attempt_id)
+        payload: JsonObject = (
+            normalize_structured_json_object(
+                human_approval_event_payload(
+                    task_id=resolution.task_id,
+                    pause_id=resolution.pause_id,
+                    human_request_id=resolution.human_request_id,
+                    verdict=HumanResponseVerdict.REJECT.value,
+                    approver=resolution.approver,
+                    response_text=task.options.human.response_text,
+                ),
+                field_name="human_rejection_payload",
             )
             if resolution is not None
             else {
@@ -158,8 +168,8 @@ class NexusHitlRunner:
         await self.publish(
             runtime_event_from_task_notification(
                 task,
-                run_id=run_id,
-                attempt_id=attempt_id,
+                run_id=validated_run_id,
+                attempt_id=validated_attempt_id,
                 message="human rejection received",
                 event_type=RuntimeEventType.HUMAN_APPROVAL_RECEIVED,
                 phase=ExecutionPhase.HUMAN_APPROVAL,
@@ -199,11 +209,13 @@ class NexusHitlRunner:
         self.persist_human_decision(task, HumanResponseVerdict.ESCALATE)
 
         run_id, attempt_id = self._require_execution_identity()
+        validated_run_id = validate_run_id(run_id)
+        validated_attempt_id = validate_attempt_id(attempt_id)
         await self.publish(
             runtime_event_from_task_notification(
                 task,
-                run_id=run_id,
-                attempt_id=attempt_id,
+                run_id=validated_run_id,
+                attempt_id=validated_attempt_id,
                 message="human escalation requested",
                 event_type=RuntimeEventType.INTERRUPT_ESCALATED,
                 phase=ExecutionPhase.HUMAN_APPROVAL,

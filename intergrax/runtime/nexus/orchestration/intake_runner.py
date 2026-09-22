@@ -11,6 +11,7 @@ from typing import Awaitable, Callable, Optional
 from intergrax.contracts.execution_identity import ActiveExecutionIdentity
 from intergrax.contracts.runtime_event_metric import RuntimeEventMetricScope
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.structured_json_value import normalize_structured_json_object
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_notification
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator
@@ -231,13 +232,16 @@ class NexusIntakeRunner:
                     message="human approval received",
                     event_type=RuntimeEventType.HUMAN_APPROVAL_RECEIVED,
                     phase=ExecutionPhase.HUMAN_APPROVAL,
-                    payload_raw=human_approval_event_payload(
-                        task_id=task.task_id,
-                        pause_id=resolution.pause_id,
-                        human_request_id=resolution.human_request_id,
-                        verdict=HumanResponseVerdict.APPROVE,
-                        approver=resolution.approver,
-                        response_text=task.options.human.response_text,
+                    payload_raw=normalize_structured_json_object(
+                        human_approval_event_payload(
+                            task_id=task.task_id,
+                            pause_id=resolution.pause_id,
+                            human_request_id=resolution.human_request_id,
+                            verdict=HumanResponseVerdict.APPROVE.value,
+                            approver=resolution.approver,
+                            response_text=task.options.human.response_text,
+                        ),
+                        field_name="human_approval_payload",
                     ),
                 )
             )

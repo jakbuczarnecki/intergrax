@@ -29,6 +29,7 @@ from intergrax.contracts.execution_identity import (
     validate_task_id,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.structured_json_value import JsonObject
 from intergrax.runtime.events.payload_registry import merge_payload_envelope
 from intergrax.runtime.events.spine_payload_codec import legacy_spine_payload_to_typed
 from intergrax.runtime.events.payloads import (
@@ -192,7 +193,7 @@ def runtime_event_from_task_state(
     event_type = _TASK_STATE_TO_EVENT.get(task.state, RuntimeEventType.STEP_STARTED)
     phase = _TASK_STATE_TO_PHASE.get(task.state, ExecutionPhase.STEP_EXECUTION)
     capability = task.context.capability or ""
-    lifecycle_raw = {
+    lifecycle_raw: JsonObject = {
         "task_state": task.state.value,
         "message": message,
         "capability": capability,
@@ -218,7 +219,7 @@ def runtime_event_from_task_notification(
     message: str,
     event_type: RuntimeEventType,
     phase: ExecutionPhase,
-    payload_raw: dict[str, Any] | None = None,
+    payload_raw: JsonObject | None = None,
     correlation_id: Optional[str] = None,
 ) -> RuntimeEvent:
     """Build a typed canonical ``RuntimeEvent`` for explicit task notifications."""
@@ -227,7 +228,7 @@ def runtime_event_from_task_notification(
     validated_run_id = validate_run_id(run_id)
     validated_attempt_id = validate_attempt_id(attempt_id)
     execution_id = require_active_execution_id()
-    raw = dict(payload_raw or {})
+    raw: JsonObject = dict(payload_raw or {})
     raw.setdefault("message", message)
     typed, promote_fields = legacy_spine_payload_to_typed(event_type, raw)
     base = RuntimeEvent(
@@ -335,10 +336,11 @@ def _step_event_uses_graph_node_payload(
         return True
     if diagnostic_schema_id == GraphNodeDiagV1.schema_id():
         return True
-    if (
-        event_type == RuntimeEventType.STEP_STARTED
-        and diagnostic_schema_id == RuntimeStepStartedDiagV1.schema_id()
-    ):
+    step_diag_graph_node: dict[RuntimeEventType, str] = {
+        RuntimeEventType.STEP_STARTED: RuntimeStepStartedDiagV1.schema_id(),
+        RuntimeEventType.STEP_COMPLETED: RuntimeStepFinishedDiagV1.schema_id(),
+    }
+    if diagnostic_schema_id == step_diag_graph_node.get(event_type):
         return True
     if trace.message.startswith("graph node "):
         return True

@@ -21,6 +21,7 @@ from intergrax.runtime.events.trace_bridge import (
     trace_bridge_subject_from_tags,
     trace_event_to_runtime_event,
 )
+from intergrax.runtime.nexus.tracing.steps.step_finished import RuntimeStepFinishedDiagV1
 from intergrax.runtime.nexus.tracing.steps.step_started import RuntimeStepStartedDiagV1
 from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
 from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
@@ -467,6 +468,44 @@ def test_trace_bridge_runtime_step_started_diag_maps_to_graph_node_payload() -> 
     assert event.payload["data"]["status"] == "running"
     assert event.payload["data"]["agent_id"] == "agent-42"
     assert event.payload["data"]["message"] == "runtime step started: plan_step"
+    assert event.payload["payload_schema_id"] != TraceBridgePayloadV1.schema_id
+    assert_canonical_production_runtime_event_payload(event)
+
+
+def test_trace_bridge_runtime_step_finished_diag_maps_to_graph_node_payload() -> None:
+    task_id, run_id, attempt_id, execution_id = _trace_identity()
+    task = Task(
+        task_id=task_id,
+        tenant_id="tenant",
+        user_id="user",
+        agent_id="agent-42",
+        message="q",
+    )
+    trace = TraceEvent(
+        event_id="runtime-step-finish",
+        run_id=run_id,
+        seq=4,
+        ts_utc="2026-06-01T00:00:00Z",
+        level=TraceLevel.INFO,
+        component=TraceComponent.ENGINE,
+        step="runtime_step",
+        message="runtime step finished: plan_step",
+        payload=RuntimeStepFinishedDiagV1(step_name="plan_step"),
+        tags={"task_id": task_id, "agent_id": "agent-42"},
+    )
+    event = trace_event_to_runtime_event(
+        trace,
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    assert event.event_type == RuntimeEventType.STEP_COMPLETED
+    assert event.payload["payload_schema_id"] == GraphNodePayloadV1.schema_id
+    assert event.payload["data"]["node_id"] == "plan_step"
+    assert event.payload["data"]["status"] == "completed"
+    assert event.payload["data"]["agent_id"] == "agent-42"
+    assert event.payload["data"]["message"] == "runtime step finished: plan_step"
     assert event.payload["payload_schema_id"] != TraceBridgePayloadV1.schema_id
     assert_canonical_production_runtime_event_payload(event)
 
