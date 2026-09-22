@@ -1,0 +1,111 @@
+# © Artur Czarnecki. All rights reserved.
+
+"""Suspended execution operation store contract (UCA-6C-R6)."""
+
+from __future__ import annotations
+
+from abc import ABC, abstractmethod
+from datetime import datetime
+
+from intergrax.contracts.execution_continuation import PendingExecutionContinuation
+from intergrax.contracts.execution.suspended_operation.claim import (
+    SuspendedOperationAbandonReason,
+    SuspendedOperationClaimResult,
+    SuspendedOperationMutationResult,
+)
+from intergrax.contracts.execution.suspended_operation.descriptor import (
+    SuspendedExecutionOperationDescriptor,
+)
+from intergrax.contracts.governed_continuation_correlation import (
+    GovernedContinuationCorrelation,
+)
+
+
+class SuspendedExecutionOperationStore(ABC):
+    """Pluginable durable work store — no SQL/ORM/vendor runtime state in contract."""
+
+    @property
+    @abstractmethod
+    def is_durable(self) -> bool:
+        """Whether descriptors survive process restart."""
+
+    @abstractmethod
+    def prepare(
+        self,
+        descriptor: SuspendedExecutionOperationDescriptor,
+    ) -> SuspendedOperationMutationResult:
+        """Insert descriptor in PREPARED state."""
+
+    @abstractmethod
+    def block(
+        self,
+        *,
+        suspended_operation_id: str,
+        expected_materialization_revision: int,
+        continuation: PendingExecutionContinuation,
+        governed_correlation: GovernedContinuationCorrelation,
+    ) -> SuspendedOperationMutationResult:
+        """CAS PREPARED → BLOCKED with continuation + HITL correlation validation."""
+
+    @abstractmethod
+    def load(
+        self,
+        suspended_operation_id: str,
+    ) -> SuspendedExecutionOperationDescriptor | None:
+        """Load descriptor by durable entity key."""
+
+    @abstractmethod
+    def load_active_for_continuation(
+        self,
+        continuation_id: str,
+    ) -> SuspendedExecutionOperationDescriptor | None:
+        """Return exactly 0 or 1 active BLOCKED/CLAIMED descriptor; fail if >1."""
+
+    @abstractmethod
+    def claim(
+        self,
+        *,
+        suspended_operation_id: str,
+        expected_materialization_revision: int,
+        owner_id: str,
+        lease_expires_at: datetime,
+    ) -> SuspendedOperationClaimResult:
+        """CAS BLOCKED → CLAIMED with new fence and lease."""
+
+    @abstractmethod
+    def reclaim(
+        self,
+        *,
+        suspended_operation_id: str,
+        expected_materialization_revision: int,
+        owner_id: str,
+        fence: int,
+        lease_expires_at: datetime,
+    ) -> SuspendedOperationMutationResult:
+        """Reclaim stale CLAIMED → BLOCKED with higher fence."""
+
+    @abstractmethod
+    def mark_consumed(
+        self,
+        *,
+        suspended_operation_id: str,
+        expected_materialization_revision: int,
+        owner_id: str,
+        fence: int,
+    ) -> SuspendedOperationMutationResult:
+        """CAS CLAIMED → CONSUMED for terminal successful re-entry."""
+
+    @abstractmethod
+    def abandon(
+        self,
+        *,
+        suspended_operation_id: str,
+        expected_materialization_revision: int,
+        reason: SuspendedOperationAbandonReason,
+        owner_id: str | None = None,
+        fence: int | None = None,
+    ) -> SuspendedOperationMutationResult:
+        """Terminal ABANDONED with typed reason."""
+
+
+__all__ = ["SuspendedExecutionOperationStore"]

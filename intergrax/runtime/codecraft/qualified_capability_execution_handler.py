@@ -25,6 +25,9 @@ from intergrax.runtime.codecraft.artifact_reference import (
 from intergrax.runtime.codecraft.qualified_capability_binding_provider import (
     CODECRAFT_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID,
 )
+from intergrax.runtime.execution.suspended_operation.pause_required import (
+    ExecutionSuspendedWorkPauseRequired,
+)
 from intergrax.runtime.execution.qualified_capability_execution_handlers import (
     QualifiedCapabilityExecutionBindingHandler,
 )
@@ -66,17 +69,20 @@ class CodeCraftQualifiedCapabilityExecutionHandler(
             )
 
         _ = (run_id, attempt_id)
-        port_result = self._execution_port.execute(
-            CodeCraftBoundCapabilityExecutionRequest(
-                craft_id=craft_id,
-                tenant_id=request.tenant_id,
-                task_id=request.task_id,
-                run_id=None,
-                execution_id=execution_id,
-                execution_request_id=request.execution_request_id,
-                governance_approval_evidence=request.governance_approval_evidence,
-            ),
-        )
+        try:
+            port_result = self._execution_port.execute(
+                CodeCraftBoundCapabilityExecutionRequest(
+                    craft_id=craft_id,
+                    tenant_id=request.tenant_id,
+                    task_id=request.task_id,
+                    run_id=None,
+                    execution_id=execution_id,
+                    execution_request_id=request.execution_request_id,
+                    governance_approval_evidence=request.governance_approval_evidence,
+                ),
+            )
+        except ExecutionSuspendedWorkPauseRequired:
+            raise
         if (
             port_result.outcome is CodeCraftBoundCapabilityExecutionOutcome.SUCCEEDED
             and self._side_effects is not None
