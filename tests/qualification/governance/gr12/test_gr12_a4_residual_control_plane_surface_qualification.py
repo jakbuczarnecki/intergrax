@@ -47,19 +47,22 @@ def test_gr12_a4_residual_paths_classified() -> None:
     for inv in GR12_A4_RESIDUAL_INVENTORY:
         row = _catalog_row(inv.path_id)
         assert row.coverage is inv.coverage
-        assert inv.consequential
         if inv.path_id == "CP-PLUGIN-CATALOG-HOT-RELOAD":
+            assert inv.consequential
             assert row.coverage is Gr12CoverageStatus.QUALIFIED
             assert row.applicability is Gr12Applicability.APPLICABLE
             assert row.qualification_proof.strip()
         elif inv.path_id == "CP-VECTOR-INDEX-ADMIN":
+            assert inv.consequential
             assert row.coverage is Gr12CoverageStatus.QUALIFIED
             assert row.applicability is Gr12Applicability.APPLICABLE
             assert row.qualification_proof.strip()
+        elif inv.path_id == "CP-MEM-SPECIALIZED-MUTATION":
+            assert not inv.consequential
+            assert row.coverage is Gr12CoverageStatus.NOT_APPLICABLE
+            assert row.applicability is Gr12Applicability.NOT_APPLICABLE
         else:
-            assert row.coverage is Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED
-            assert row.applicability is Gr12Applicability.REQUIRES_ARCHITECTURE_DECISION
-            assert not row.qualification_proof.strip()
+            raise AssertionError(f"unexpected residual path {inv.path_id}")
 
 
 def test_gr12_a4_catalog_residual_classification() -> None:
@@ -67,6 +70,8 @@ def test_gr12_a4_catalog_residual_classification() -> None:
         row = _catalog_row(path_id)
         if path_id in ("CP-PLUGIN-CATALOG-HOT-RELOAD", "CP-VECTOR-INDEX-ADMIN"):
             assert row.coverage is Gr12CoverageStatus.QUALIFIED
+        elif path_id == "CP-MEM-SPECIALIZED-MUTATION":
+            assert row.coverage is Gr12CoverageStatus.NOT_APPLICABLE
         else:
             assert row.coverage is not Gr12CoverageStatus.QUALIFIED
 
@@ -108,13 +113,14 @@ def test_gr12_a4_vector_governed_operator_entrypoint_in_catalog() -> None:
     assert GR12_A4_VECTOR_DECISION.cla04_applicability is Gr12Applicability.APPLICABLE
 
 
-def test_gr12_a4_memory_classification_option_c() -> None:
+def test_gr12_a4_memory_classification_after_r3() -> None:
     assert (
         GR12_A4_MEMORY_DECISION.cla04_compatibility
-        is Gr12MemoryCla04Compatibility.C_SEPARATE_POLICY_EVIDENCE_CONTRACT
+        is Gr12MemoryCla04Compatibility.D_NOT_CONTROL_PLANE
     )
     row = _catalog_row("CP-MEM-SPECIALIZED-MUTATION")
-    assert "MemoryGovernanceEvaluationRequest" in row.current_guard
+    assert "MemorySecurityGovernanceService" in row.current_guard
+    assert row.applicability is Gr12Applicability.NOT_APPLICABLE
 
 
 def test_gr12_a4_operator_exposure_honesty() -> None:
@@ -137,8 +143,8 @@ def test_gr12_a4_gr10_remains_final_closed() -> None:
     assert "FINAL CLOSED" in GR10_OVERALL_FORMAL_CLOSURE.status
 
 
-def test_gr12_a4_next_bounded_task_is_memory_r3() -> None:
-    assert "GR-12-A4-R3" in GR12_A4_NEXT_REMEDIATION.task_name
+def test_gr12_a4_next_bounded_task_is_memory_r3_r1() -> None:
+    assert "GR-12-A4-R3-R1" in GR12_A4_NEXT_REMEDIATION.task_name
     assert "memory" in GR12_A4_NEXT_REMEDIATION.exact_blocker.lower()
 
 

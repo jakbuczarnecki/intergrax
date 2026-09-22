@@ -18,6 +18,10 @@ from tests.qualification.governance.gr12.gr12_a4_r2_vector_architecture_decision
     GR12_VECTOR_CANONICAL_PORT,
     GR12_VECTOR_NEXT_BOUNDED_TASK,
 )
+from tests.qualification.governance.gr12.gr12_a4_r3_memory_architecture_decision import (
+    GR12_A4_R3_MEMORY_ARCHITECTURE_DECISION,
+    GR12_MEMORY_EVALUATION_REQUEST_CONTRACT,
+)
 
 
 class Gr12A4PathKind(StrEnum):
@@ -139,12 +143,12 @@ GR12_A4_RESIDUAL_INVENTORY: tuple[Gr12A4ResidualInventoryRow, ...] = (
         production_entrypoint="intergrax.memory.memory_specialized_mutation_governance",
         mutation_owner="memory domain (LTM/entity/procedure/summary writes)",
         current_authority="MemorySecurityGovernanceService + MemoryGovernanceEvaluationRequest",
-        consequential=True,
-        existing_contract="MemoryGovernanceEvaluationRequest (parallel to CLA-04)",
-        coverage=Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED,
+        consequential=False,
+        existing_contract=GR12_MEMORY_EVALUATION_REQUEST_CONTRACT,
+        coverage=Gr12CoverageStatus.NOT_APPLICABLE,
         cla04_reuse_blocker=(
-            "Record revision + canonical source semantics; MemoryGovernanceDecision evidence "
-            "≠ ControlPlaneMutationAuthorizationEvidence; not GR-10 MSE"
+            "Production paths are execution/background domain writes — GR-12 NOT_APPLICABLE; "
+            "future live operator API must use single authority (not dual ALLOW)"
         ),
         operator_exposure=Gr12OperatorApiExposure.NOT_CURRENTLY_EXPOSED,
         tenant_scope="MemoryControlPlaneScope (user/tenant scoped)",
@@ -180,17 +184,10 @@ GR12_A4_VECTOR_DECISION: Gr12A4VectorDecision = Gr12A4VectorDecision(
 )
 
 GR12_A4_MEMORY_DECISION: Gr12A4MemoryDecision = Gr12A4MemoryDecision(
-    contract="intergrax.memory.contracts.memory_security_governance.MemoryGovernanceEvaluationRequest",
-    cla04_compatibility=Gr12MemoryCla04Compatibility.C_SEPARATE_POLICY_EVIDENCE_CONTRACT,
-    architecture_blocker=(
-        "Specialized memory mutations use memory-native governance; semantic unification via "
-        "generic ControlPlaneMutationRequest would be fake unification (§28)."
-    ),
-    architecture_options=(
-        "Option 1: Document memory governance as parallel certified plane (keep CLA-04 for CP mutations only).",
-        "Option 2: Internal adapter mapping MemoryGovernanceEvaluationRequest → CLA-04 without new public port.",
-        "Option 3: New public MemoryControlPlaneMutation port bridging to GR-8 facts (ADR required).",
-    ),
+    contract=GR12_MEMORY_EVALUATION_REQUEST_CONTRACT,
+    cla04_compatibility=Gr12MemoryCla04Compatibility.D_NOT_CONTROL_PLANE,
+    architecture_blocker="",
+    architecture_options=GR12_A4_R3_MEMORY_ARCHITECTURE_DECISION.rejected_alternatives,
 )
 
 GR12_A4_CLASSIFICATION_PROOF: Final[str] = (
