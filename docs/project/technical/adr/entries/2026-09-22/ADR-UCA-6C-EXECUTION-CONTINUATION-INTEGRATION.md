@@ -216,11 +216,41 @@ R6 may start when this reconciliation is accepted on GitHub audit:
 | Identity / continuation frozen | PASS |
 | Canonical `dhr_*` scope | PASS |
 | TIGAE removal from UCA path defined | PASS |
-| **R6 ready (implementation)** | **YES** — subject to independent GitHub audit |
+| Exact invocation reconstruction from existing EE state (UCA-6C-ADR1-R2) | **FAIL** — see §22 |
+| **R6 ready (implementation)** | **NO** — blocked until §22 gap closed or ADR decision |
 
 ## 21. R6 forbidden scope
 
 Identity authority; `ExecutionContinuationPort` semantics; Governance policy semantics; ToolRuntime core semantics; public Nexus; new HITL subsystem; new grant store; universal L2 invoker; full HARNESS M2–M6 migration in one R6 slice.
+
+
+## 22. UCA-6C-ADR1-R2 — exact invocation reconstruction (state reuse proof)
+
+**Status:** Proposed addendum (2026-09-22). **Verdict:** existing persisted EE state is **insufficient** for UCA QCE code.exec exact resume without new durable operation materialization or EE work-reentry API (ADR decision required before R6).
+
+### 22.1 Canonical resumable operation (UCA-6C)
+
+**Owner level:** ToolExecutionRequest (materialized inside EE L3 from ExecutionBoundCatalogToolInvokeRequest). L2 carries the typed catalog scope + CodeExecInput; EE L3 owns bridge, continuation, and exact replay.
+
+PendingExecutionContinuation / continuation_id identify **lifecycle + four-ID only** — not operation payload (see intergrax/contracts/execution_continuation.py).
+
+### 22.2 QCE vs Task-graph canonical HITL
+
+| Mechanism | Task-graph / catalog_dispatch | UCA QCE path (today) |
+|-----------|--------------------------------|----------------------|
+| declarative_hitl_pending durable | Task checkpoint + governance | **Absent** — no Task host |
+| Tool input for replay | Plan/checkpoint or re-planned PlannedToolCall | **Ephemeral** — CodeCraftSessionManager (in-memory) + per-invoke RuntimeState |
+| ExecutionContinuationPort.resume() work reentry | Task intake / graph executor resumes node | **None** — delegate is single execute() pass |
+| Ingress ledger | N/A | _IngressLedgerEntry — **ingress dedup only** (in-memory) |
+
+### 22.3 FIRST MISSING LINK
+
+EE continuation-aware catalog host (L3, B1) **plus** durable exact-invocation datum (not present in PendingExecutionContinuation, DeclarativeHitlPendingApproval, or QCE dispatch ledger).
+
+### 22.4 R6 gate
+
+R6 **must not** start as “surgical wiring only” until architecture records **where** exact ToolExecutionRequest / CodeExecInput is durably owned for QCE, or accepts a new ADR for durable operation descriptor / work-reentry without violating frozen continuation contracts.
+
 
 ## Compliance
 
