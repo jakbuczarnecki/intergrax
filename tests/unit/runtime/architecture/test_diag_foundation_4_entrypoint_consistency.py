@@ -32,6 +32,7 @@ from intergrax.contracts.execution_identity import (
     ExecutionId,
     RunId,
     mint_attempt_id,
+    mint_event_id,
     mint_execution_id,
     mint_run_id,
     mint_task_id,
@@ -55,7 +56,8 @@ from intergrax.runtime.background_execution.required_audit_evidence import (
 from intergrax.runtime.background_execution.transport_ref import (
     BackgroundTransportExecutionRef,
 )
-from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
 from intergrax.runtime.execution.boundary import (
     ExecutionBoundary,
     ExecutionIdentityBinding,
@@ -81,6 +83,10 @@ from testing_support.runtime.diagnostics.problem_persistence_test_support import
     build_diagnostic_orchestrator_stack_for_tests,
     query_all_problems_for_tenant,
 )
+from testing_support.admitted_root_governance_identity import (
+    lab_admitted_root_governance_identity_for_task,
+)
+from testing_support.runtime_events import with_preferred_canonical_payload
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -151,6 +157,126 @@ def _repo_root() -> Path:
     return Path(__file__).resolve().parents[4]
 
 
+_CANONICAL_ORCHESTRATOR_MINT_FILE = (
+    _repo_root() / "intergrax/applications/_shared/diagnostic_composition.py"
+)
+_CANONICAL_ORCHESTRATOR_MINT_FUNCTION = "build_diagnostic_orchestrator_from_composition"
+_RUNTIME_WIRING_FILE = (
+    _repo_root() / "intergrax/applications/_shared/diagnostic_runtime_wiring.py"
+)
+
+
+def _typed_violating_runtime_event(
+    anchor: RuntimeEvent,
+    violating_event_type: RuntimeEventType,
+) -> RuntimeEvent:
+    reference = sample_runtime_event(
+        tenant_id=anchor.tenant_id,
+        task_id=anchor.task_id,
+        run_id=anchor.run_id,
+        attempt_id=anchor.attempt_id,
+    )
+    skeleton = RuntimeEvent(
+        event_id=mint_event_id(),
+        tenant_id=reference.tenant_id,
+        task_id=reference.task_id,
+        run_id=reference.run_id,
+        attempt_id=reference.attempt_id,
+        execution_id=reference.execution_id,
+        event_type=violating_event_type,
+        phase=reference.phase,
+        severity=reference.severity,
+        timestamp=reference.timestamp,
+        correlation_id=reference.correlation_id,
+    )
+    return with_preferred_canonical_payload(skeleton)
+
+
+def _inject_df4_violation_after_completed(
+    runtime_store: object,
+    *,
+    violating_event_type: RuntimeEventType,
+):
+    from intergrax.runtime.events.stores.memory_runtime_event_store import (
+        InMemoryRuntimeEventStore,
+    )
+
+    store = runtime_store
+    assert isinstance(store, InMemoryRuntimeEventStore)
+
+    def _handler(event: RuntimeEvent) -> None:
+        if event.event_type is not RuntimeEventType.TASK_COMPLETED:
+            return
+        store.append(
+            _typed_violating_runtime_event(event, violating_event_type),
+            tenant_id=event.tenant_id,
+        )
+
+    return _handler
+
+
+def _build_df4_diagnostic_nexus_loop(
+    *,
+    violating_event_type: RuntimeEventType = RuntimeEventType.RETRY_SCHEDULED,
+):
+    loop, runtime_store, deps = _build_diagnostic_nexus_loop(inject_violation=False)
+    loop.event_bus.subscribe(
+        _inject_df4_violation_after_completed(
+            runtime_store,
+            violating_event_type=violating_event_type,
+        ),
+        event_types={RuntimeEventType.TASK_COMPLETED},
+        priority=10,
+    )
+    return loop, runtime_store, deps
+
+
+@dataclass(frozen=True, slots=True)
+class _DiagnosticOrchestratorMintSite:
+    rel_path: str
+    lineno: int
+    enclosing_function: str | None
+
+
+def _direct_diagnostic_orchestrator_mint_sites(path: Path) -> list[_DiagnosticOrchestratorMintSite]:
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    rel = path.relative_to(_repo_root()).as_posix()
+    sites: list[_DiagnosticOrchestratorMintSite] = []
+    function_stack: list[str] = []
+
+    class _Visitor(ast.NodeVisitor):
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+            function_stack.append(node.name)
+            self.generic_visit(node)
+            function_stack.pop()
+
+        def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+            function_stack.append(node.name)
+            self.generic_visit(node)
+            function_stack.pop()
+
+        def visit_Call(self, node: ast.Call) -> None:
+            func = node.func
+            is_mint = (
+                isinstance(func, ast.Name) and func.id == "DiagnosticOrchestrator"
+            ) or (
+                isinstance(func, ast.Attribute) and func.attr == "DiagnosticOrchestrator"
+            )
+            if is_mint:
+                enclosing = function_stack[-1] if function_stack else None
+                sites.append(
+                    _DiagnosticOrchestratorMintSite(
+                        rel_path=rel,
+                        lineno=node.lineno,
+                        enclosing_function=enclosing,
+                    )
+                )
+            self.generic_visit(node)
+
+    _Visitor().visit(tree)
+    return sites
+
+
 def _run_coro_sync(coro: object) -> object:
     try:
         asyncio.get_running_loop()
@@ -176,7 +302,7 @@ def test_df4_behavior_table_covers_all_required_entrypoints() -> None:
 async def test_df4_standard_task_uses_nexus_terminal_diagnostic_bridge(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    loop, runtime_store, _ = _build_diagnostic_nexus_loop(inject_violation=True)
+    loop, runtime_store, _ = _build_df4_diagnostic_nexus_loop()
     bridge_calls: list[tuple[object, ...]] = []
 
     from intergrax.runtime.diagnostics import (
@@ -192,7 +318,10 @@ async def test_df4_standard_task_uses_nexus_terminal_diagnostic_bridge(
     monkeypatch.setattr(
         bridge_module, "invoke_terminal_execution_diagnostics", _capture_bridge
     )
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(
+        loop,
+        admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
+    )
     run_id = mint_run_id()
 
     result = await runner.run_task(
@@ -285,7 +414,7 @@ def test_df4_background_task_uses_shared_terminal_diagnostic_path(
         terminal_execution_diagnostic_bridge as bridge_module,
     )
 
-    loop, _, _ = _build_diagnostic_nexus_loop(inject_violation=True)
+    loop, _, _ = _build_df4_diagnostic_nexus_loop()
     assert loop._terminal_diagnostic_trigger is not None  # noqa: SLF001
     captured: list[RunId] = []
     original_invoke = bridge_module.invoke_terminal_execution_diagnostics
@@ -299,7 +428,10 @@ def test_df4_background_task_uses_shared_terminal_diagnostic_path(
     monkeypatch.setattr(
         bridge_module, "invoke_terminal_execution_diagnostics", _capture_bridge
     )
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(
+        loop,
+        admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
+    )
     registry = TaskExecutionRegistry()
     causal_store = InMemoryCausalEvidencePersistence()
     execution_identity = BackgroundExecutionIdentity(
@@ -501,14 +633,20 @@ def test_df4_only_central_wiring_mints_diagnostic_orchestrator_in_applications_s
     None
 ):
     shared_root = _repo_root() / "intergrax/applications/_shared"
-    violations: list[str] = []
+    mint_sites: list[_DiagnosticOrchestratorMintSite] = []
     for path in shared_root.rglob("*.py"):
-        if path.name == "diagnostic_runtime_wiring.py":
-            continue
-        source = path.read_text(encoding="utf-8")
-        if "DiagnosticOrchestrator(" in source:
-            violations.append(path.relative_to(_repo_root()).as_posix())
-    assert violations == []
+        mint_sites.extend(_direct_diagnostic_orchestrator_mint_sites(path))
+
+    assert len(mint_sites) == 1
+    site = mint_sites[0]
+    assert site.rel_path == _CANONICAL_ORCHESTRATOR_MINT_FILE.relative_to(
+        _repo_root()
+    ).as_posix()
+    assert site.enclosing_function == _CANONICAL_ORCHESTRATOR_MINT_FUNCTION
+
+    runtime_wiring_source = _RUNTIME_WIRING_FILE.read_text(encoding="utf-8")
+    assert "build_diagnostic_orchestrator_from_composition" in runtime_wiring_source
+    assert _direct_diagnostic_orchestrator_mint_sites(_RUNTIME_WIRING_FILE) == []
 
 
 def test_df4_nexus_loop_is_single_terminal_diagnostic_emitter() -> None:
