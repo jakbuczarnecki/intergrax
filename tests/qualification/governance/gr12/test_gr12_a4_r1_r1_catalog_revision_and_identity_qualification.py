@@ -8,11 +8,13 @@ import pytest
 
 from tests.qualification.governance.gr12.catalog import (
     GR12_A4_NEXT_REMEDIATION,
+    GR12_A4_R1_R1_EXECUTION_PROOF_NODES,
     GR12_A4_R1_R1_QUALIFICATION_PROOF,
     GR12_CONTROL_PLANE_SURFACES,
     Gr12Applicability,
     Gr12CoverageStatus,
 )
+from tests.qualification.governance.gr12.qualification_support import assert_proof_nodes_registered
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -28,11 +30,5 @@ def test_gr12_a4_r1_r1_catalog_hot_reload_qualified_ssot() -> None:
     assert "GR-12-A4-R2" in GR12_A4_NEXT_REMEDIATION.task_name
 
 
-def test_gr12_a4_r1_r1_execution_proofs_importable() -> None:
-    from tests.unit.integrations.registry import test_catalog_revision_and_mutation
-    from tests.unit.applications import test_catalog_hot_reload_governance
-    from tests.unit.applications import test_catalog_hot_reload_bypass_inventory
-
-    assert test_catalog_revision_and_mutation is not None
-    assert test_catalog_hot_reload_governance is not None
-    assert test_catalog_hot_reload_bypass_inventory is not None
+def test_gr12_a4_r1_r1_execution_proof_nodes_bound_to_semantic_tests() -> None:
+    assert_proof_nodes_registered(GR12_A4_R1_R1_EXECUTION_PROOF_NODES)

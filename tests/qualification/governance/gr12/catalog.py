@@ -124,6 +124,15 @@ GR12_A4_R1_R1_QUALIFICATION_PROOF: Final[str] = (
     "tests/qualification/governance/gr12/test_gr12_a4_r1_r1_catalog_revision_and_identity_qualification.py"
 )
 
+GR12_A4_R1_R1_EXECUTION_PROOF_NODES: Final[tuple[str, ...]] = (
+    "tests/unit/integrations/registry/test_catalog_revision_and_mutation.py::test_rev7_aba_generations_increase_when_digest_returns",
+    "tests/unit/integrations/registry/test_catalog_atomic_registration_concurrency.py::test_reg_conc_1_concurrent_same_slug_exactly_one_success",
+    "tests/unit/integrations/registry/test_catalog_atomic_registration_concurrency.py::test_reg_conc_3_generation_increases_exactly_once_from_initial",
+    "tests/unit/applications/test_catalog_hot_reload_governance.py::test_chr_r1r1_4_explicit_principal_reaches_cla04_request",
+    "tests/unit/applications/test_catalog_hot_reload_governance.py::test_chr_r1r1_5_missing_principal_fails_closed",
+    "tests/unit/applications/test_catalog_hot_reload_bypass_inventory.py::test_chr16_live_operator_catalog_mutation_paths_only_governed_reload",
+)
+
 GR12_A4_R1_QUALIFICATION_PROOF: Final[str] = GR12_A4_R1_R1_QUALIFICATION_PROOF
 
 

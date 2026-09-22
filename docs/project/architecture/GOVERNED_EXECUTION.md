@@ -59,7 +59,7 @@ Unchanged platform intent: contract-first evaluation at named **Governance Evalu
 
 - **Governance Evidence (GR-8):** public contract **frozen** — [ADR-GR-8-001](../technical/adr/entries/2026-09-17/ADR-GR-8-001.md); spine **CANDIDATE CLOSED — PUBLIC CONTRACT FROZEN** (independent final audit before CLOSED); **evaluation-point adoption** (AGENT_DECISION, INTERRUPT, PRE_MODEL, TOOL*, PRE_OUTPUT, POST_RUN, CONTROL_PLANE_MUTATION, fresh post-human re-evaluation) remains **open** under **GR-10 / GR-13**.
 - **Strategy coverage (GR-10):** **FINAL CLOSED within formally defined GR-10 scope** (typed matrix §9 + `tests/qualification/governance/strategy/`; SSOT `GR10_*_FORMAL_CLOSURE` in `catalog.py`; **GR-10-R7** residual matrix requalification retained as qualification artifact). **INFERENCE:** **CLOSED** — PRE_MODEL **QUALIFIED** on `InferenceExecutor` structured path (**GR-10-R2-C1/R1** — [ADR-GR-10-001](../technical/adr/entries/2026-09-18/ADR-GR-10-001.md)); root admission **NOT_APPLICABLE** (**GR-10-R4**); Inner Governance **NOT_APPLICABLE** (**GR-10-R5**); Governance Evidence **QUALIFIED** (**GR-10-R6 / R6-R1**); remaining INFERENCE blockers **NONE**. **ORCHESTRATION:** **FINAL CLOSED** — R8–R15 qualification slices; per-GEP GR-8 fact adoption **DEFERRED_TO_GR13** where typed ([ADR-GR-10-003](../technical/adr/entries/2026-09-21/ADR-GR-10-003-gr10-gr13-governance-evidence-certification-scope.md)). **AGENTIC:** **FINAL CLOSED** — P-UAEP canonical ([ADR-GR-10-004](../technical/adr/entries/2026-09-21/ADR-GR-10-004-agentic-execution-model-uaep-canonical.md)); `acp.session.v1` explicit opt-in only; Governance Evidence capability **PARTIAL** (mandatory spine qualified; per-GEP facts **GR-13**). **Next governance milestone:** **GR-12** control-plane mutation (not GR-10 scope).
-- **Control-plane mutation (GR-12):** **IN PROGRESS** — shared `ControlPlaneMutationAuthorizationBoundary` (CLA-04) spine implemented and mandatory composition **FINAL CLOSED** (A2); core production surfaces **FINAL CLOSED** qualified (A3); residual classification **CLOSED** (A4). Residual qualification: catalog **WIRED_NOT_QUALIFIED**, Vector/Memory **ARCHITECTURE_DECISION_REQUIRED**, final GR-12 certification open. Not an extension of `MeaningfulSideEffectRequest`.
+- **Control-plane mutation (GR-12):** **IN PROGRESS** — shared `ControlPlaneMutationAuthorizationBoundary` (CLA-04) spine implemented and mandatory composition **FINAL CLOSED** (A2); core production surfaces **FINAL CLOSED** qualified (A3); residual classification **CLOSED** (A4). Residual qualification: catalog **QUALIFIED** (`CP-PLUGIN-CATALOG-HOT-RELOAD`, GR-12-A4-R1-R1-R1); Vector/Memory **ARCHITECTURE_DECISION_REQUIRED**; final GR-12 certification open. Not an extension of `MeaningfulSideEffectRequest`.
 - **Plugin enterprise certification (GR-11)** and **full proof matrix (GR-13)** open.
 - **Transitional Task/Nexus coupling** on some pause bridges — Execution owns lifecycle target; port integration incomplete on non-orchestration strategies.
 - **Human APPROVED ≠ Governance ALLOW** — fresh DENY still applies; resume requires scoped authorization (see HITL section).
@@ -74,23 +74,24 @@ A2 — FINAL CLOSED
 A3 — FINAL CLOSED
 A4 classification — CLOSED
 
-Catalog — WIRED_NOT_QUALIFIED
+Catalog — QUALIFIED
 Vector — ADR_REQUIRED
 Memory — ADR_REQUIRED
 
 GR-12 overall — IN PROGRESS
+Next — Vector R2 (GR-12-A4-R2)
 ```
 
 **Canonical control-plane model (unchanged target):** shared **CONTROL_PLANE_MUTATION** authority context → canonical **CLA-04** authorization boundary → **domain owner** executes its own mutation. No universal mutation executor, no global `GovernanceEngine`, no second permission engine.
 
 | Residual path | Applicability | Documentation status |
 | ------------- | ------------- | -------------------- |
-| `CP-PLUGIN-CATALOG-HOT-RELOAD` | APPLICABLE | **WIRED_NOT_QUALIFIED** |
+| `CP-PLUGIN-CATALOG-HOT-RELOAD` | APPLICABLE | **QUALIFIED** |
 | `CP-VECTOR-INDEX-ADMIN` | REQUIRES_ARCHITECTURE_DECISION | **ARCHITECTURE_DECISION_REQUIRED** |
 | `CP-MEM-SPECIALIZED-MUTATION` | REQUIRES_ARCHITECTURE_DECISION | **ARCHITECTURE_DECISION_REQUIRED** |
 | `CP-BOOT-PLUGIN-REGISTER` | NOT_APPLICABLE | **NOT_APPLICABLE** (startup/bootstrap registry population ≠ live governed hot reload) |
 
-**Catalog — wired candidate (not enterprise-qualified):** `CatalogHotReloadService`, CLA-04 request construction, deterministic state digest, candidate catalog materialization, CAS primitive, no automatic reload during composition, external evaluator injection, fail-closed decisions. **Qualification blockers:** authoritative revision SSOT across canonical catalog state; ABA protection; explicit per-invocation `RequestIdentity`; removal of synthetic identity fallback.
+**Catalog — QUALIFIED (GR-12-A4-R1-R1-R1):** `CatalogHotReloadService`, CLA-04 request construction, deterministic state digest, candidate catalog materialization, CAS primitive, no automatic reload during composition, external evaluator injection, fail-closed decisions, authoritative `CatalogRevision` SSOT, ABA protection, explicit per-invocation `RequestIdentity`, atomic live `register_integration` duplicate check under canonical catalog lock.
 
 **Approved catalog revision decisions (embedded; no new ADR in DOC-R1):** (1) `CatalogRevision` describes entire canonical Integration Catalog state; (2) state + generation + digest + lock share one internal owner in Integration Registry; (3) hot reload uses explicit `RequestIdentity` per invocation; (4) `CatalogHotReloadService` orchestrates only — mutation owner remains Integration Registry.
 
@@ -380,7 +381,7 @@ flowchart TD
   SGC -.->|no central universal mutation executor| NOGOD[Not a platform god-engine]
 ```
 
-**G3B platform row:** **CONTROL_PLANE_MUTATION** remains **GAP** until final GR-12 closure (architecture honesty gate). **GR-12 program:** **IN PROGRESS** — shared CLA-04 spine wired; core paths qualified; catalog **WIRED_NOT_QUALIFIED**; not platform-wide **COVERED**; enterprise qualification not claimed.
+**G3B platform row:** **CONTROL_PLANE_MUTATION** remains **GAP** until final GR-12 closure (architecture honesty gate). **GR-12 program:** **IN PROGRESS** — shared CLA-04 spine wired; core paths qualified; catalog **QUALIFIED**; not platform-wide **COVERED**; enterprise qualification not claimed.
 
 ### 12. Pluginability — contract → composition → implementation (Diagram #11)
 
@@ -682,7 +683,7 @@ Status vocabulary: **COVERED** (wired enforcement on demonstrated production-cla
 | **MEANINGFUL_SIDE_EFFECT** | **PARTIAL** | Governance | `MeaningfulSideEffectAuthorizationBoundary`, `DecisionRequirementPolicy` (GR-6) | `authorize` / `authorize_and_execute`; provider dispatch only after authorization | External Work + collaborative-work production compositions; not all strategies | GR-1 identity **CLOSED**; GR-6 host suites; GR-3 inner guard | Not every effect path injected; inner-op (A) caller discipline still open on some adapters |
 | **PRE_OUTPUT** | **COVERED** | Governance | `PolicyEngine.evaluate_pre_output` | Harness terminal / Nexus finish paths | **ORCHESTRATION**, **AGENTIC** harness | Kernel/Nexus post-check tests | Non-terminal steps by design |
 | **POST_RUN** | **COVERED** | Governance | `PostRunGovernanceService` / `GovernanceService` | `invoke_post_run_governance` at Nexus/UAEP finish; `production_mode` requires service | **ORCHESTRATION**, **AGENTIC** when wired | Post-run integration tests; GR-10-R15 | Lab harness may omit service; strict production fail-closed |
-| **CONTROL_PLANE_MUTATION** | **GAP** | Domain executors + `ControlPlaneMutationAuthorizationBoundary` (CLA-04) | `ControlPlaneMutationPolicyEvaluator` + per-domain mutation owner | Shared boundary on qualified core paths; residuals open | **NOT_APPLICABLE** at platform spine for enterprise **COVERED** | Core AD/AHI/ECP/Task Control **QUALIFIED** (GR-12-A3); catalog **WIRED_NOT_QUALIFIED**; Vector/Memory **ADR_REQUIRED** | GR-12 **IN PROGRESS** — G3B **GAP** until final qualification; cannot mark GR-12 CLOSED |
+| **CONTROL_PLANE_MUTATION** | **GAP** | Domain executors + `ControlPlaneMutationAuthorizationBoundary` (CLA-04) | `ControlPlaneMutationPolicyEvaluator` + per-domain mutation owner | Shared boundary on qualified core paths; residuals open | **NOT_APPLICABLE** at platform spine for enterprise **COVERED** | Core AD/AHI/ECP/Task Control **QUALIFIED** (GR-12-A3); catalog **QUALIFIED** (GR-12-A4-R1-R1-R1); Vector/Memory **ADR_REQUIRED** | GR-12 **IN PROGRESS** — G3B **GAP** until final qualification; cannot mark GR-12 CLOSED |
 
 ### Strategy coverage matrix (production entry points, GOV-FINAL-1)
 

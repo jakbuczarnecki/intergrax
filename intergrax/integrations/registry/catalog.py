@@ -83,10 +83,6 @@ def _apply_material_change_if_digest_differs(before_digest: str) -> None:
 def register_integration(entry: IntegrationEntry, *, override: bool = False) -> None:
     """Register or replace a provider factory (used by providers and tests)."""
     normalized_slug = entry.slug.strip().lower()
-    sink = _REGISTRATION_SINK.get()
-    target = sink if sink is not None else _CATALOG
-    if normalized_slug in target and not override:
-        raise ValueError(f"Integration slug '{normalized_slug}' is already registered.")
     normalized_entry = IntegrationEntry(
         slug=normalized_slug,
         categories=entry.categories,
@@ -97,10 +93,15 @@ def register_integration(entry: IntegrationEntry, *, override: bool = False) -> 
         requires_local_container=entry.requires_local_container,
         contract_specs=entry.contract_specs,
     )
+    sink = _REGISTRATION_SINK.get()
     if sink is not None:
+        if normalized_slug in sink and not override:
+            raise ValueError(f"Integration slug '{normalized_slug}' is already registered.")
         sink[normalized_slug] = normalized_entry
         return
     with _CATALOG_STATE_LOCK:
+        if normalized_slug in _CATALOG and not override:
+            raise ValueError(f"Integration slug '{normalized_slug}' is already registered.")
         before_digest = compute_catalog_state_digest(_CATALOG)
         _CATALOG[normalized_slug] = normalized_entry
         _apply_material_change_if_digest_differs(before_digest)

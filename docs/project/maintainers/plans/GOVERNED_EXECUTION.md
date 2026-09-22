@@ -204,9 +204,10 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-12-A3 | Core control-plane qualification | **FINAL CLOSED** |
 | GR-12-A4 | Residual path classification | **CLOSED** |
 | GR-12 Architecture Checkpoint | Scope + ownership revalidation | **CLOSED** |
-| GR-12-DOC-R1 | Canonical docs/status reconciliation | **CURRENT** |
-| GR-12-A4-R1-R1 | Catalog revision + ABA + explicit operator identity | **NEXT** |
-| GR-12-A4-R2 | Vector administration governance ADR | **AFTER CATALOG** |
+| GR-12-DOC-R1 | Canonical docs/status reconciliation | **CLOSED** |
+| GR-12-A4-R1-R1 | Catalog revision + ABA + explicit operator identity | **CLOSED** |
+| GR-12-A4-R1-R1-R1 | Catalog atomic registration + qualification closure | **CLOSED** |
+| GR-12-A4-R2 | Vector administration governance ADR | **NEXT** |
 | GR-12-A4-R3 | Specialized memory governance ADR | **AFTER VECTOR** |
 | GR-12 Final Qualification | Final control-plane certification | **AFTER RESIDUALS** |
 | GR-10-R9-ADR1 | Canonical orchestration MSE authority contract | **CLOSED — CANONICAL MSE AUTHORITY CONTRACT APPROVED** — [ADR-GR-10-002](../../technical/adr/entries/2026-09-19/ADR-GR-10-002.md); `test_gr10_r9_adr1_mse_authority_contract.py`; independent GitHub audit required |
