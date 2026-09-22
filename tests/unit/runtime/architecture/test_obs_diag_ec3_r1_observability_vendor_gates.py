@@ -16,6 +16,7 @@ from testing_support.obs_diag_observability_vendor_qualification.inventory impor
 from testing_support.obs_diag_observability_vendor_qualification.reconciliation import (
     observability_qualified_path_without_evidence,
     observability_vendor_live_qualified_without_evidence,
+    observability_vendor_rows_borrowing_platform_canonical_isolation,
 )
 from testing_support.obs_diag_provider_qualification.discovery import (
     discover_obs_diag_provider_surfaces,
@@ -52,6 +53,15 @@ def test_ec3_no_catalog_observability_vendor_live_qualified_without_full_evidenc
 
 def test_ec3_qualified_paths_live_entries_have_full_evidence() -> None:
     assert observability_qualified_path_without_evidence(OBSERVABILITY_QUALIFIED_PATHS) == []
+
+
+def test_ec3_vendor_rows_do_not_borrow_platform_canonical_isolation_proof() -> None:
+    assert (
+        observability_vendor_rows_borrowing_platform_canonical_isolation(
+            OBSERVABILITY_VENDOR_INVENTORY,
+        )
+        == []
+    )
 
 
 def test_ec3_parser_trace_exporter_has_no_direct_vendor_delivery() -> None:

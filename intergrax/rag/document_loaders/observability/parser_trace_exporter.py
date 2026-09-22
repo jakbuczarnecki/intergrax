@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Optional
+from typing import Optional
+
+from intergrax.rag.document_loaders.observability.parser_trace_contract import DocumentParserTrace
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +28,7 @@ def _deprecated_vendor_export_requested() -> bool:
 def export_parser_trace(
     *,
     source: str,
-    trace: dict[str, Any],
+    trace: DocumentParserTrace,
     observability_slug: Optional[str] = None,
 ) -> None:
     """
@@ -36,14 +38,13 @@ def export_parser_trace(
     tagged as ``integration_parser_trace``. Direct vendor SDK or HTTP ingestion
     is not permitted from this module — use ``ObservabilityExportEnvelope`` routing.
     """
-    parser_id = trace.get("parser_id")
-    attempts = trace.get("attempts") or []
+    trace_payload = trace.to_logging_extra_value()
     logger.info(
         "document_parser_trace source=%s parser_id=%s attempts=%s",
         source,
-        parser_id,
-        len(attempts),
-        extra={"integration_parser_trace": trace},
+        trace.parser_id,
+        len(trace.attempts),
+        extra={"integration_parser_trace": trace_payload},
     )
 
     if _deprecated_vendor_export_requested():

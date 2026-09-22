@@ -27,7 +27,16 @@ class ObsDiagProofReference:
 
 
 @dataclass(frozen=True, slots=True)
+class ObservabilityPlatformIsolationEvidence:
+    """Platform property: external export failure must not corrupt canonical diagnostic truth."""
+
+    canonical_truth_isolation: ObsDiagProofReference
+
+
+@dataclass(frozen=True, slots=True)
 class ObservabilityVendorQualificationEvidence:
+    """Vendor-specific live/contract evidence only (no platform-level isolation proof)."""
+
     normal_delivery: ObsDiagProofReference | None
     failure_isolation: ObsDiagProofReference | None
     recovery: ObsDiagProofReference | None
@@ -36,15 +45,16 @@ class ObservabilityVendorQualificationEvidence:
 
     def missing_live_categories(self) -> tuple[str, ...]:
         missing: list[str] = []
-        for field in (
-            "normal_delivery",
-            "failure_isolation",
-            "recovery",
-            "canonical_truth_isolation",
-            "privacy",
-        ):
-            if getattr(self, field) is None:
-                missing.append(field)
+        if self.normal_delivery is None:
+            missing.append("normal_delivery")
+        if self.failure_isolation is None:
+            missing.append("failure_isolation")
+        if self.recovery is None:
+            missing.append("recovery")
+        if self.canonical_truth_isolation is None:
+            missing.append("canonical_truth_isolation")
+        if self.privacy is None:
+            missing.append("privacy")
         return tuple(missing)
 
 

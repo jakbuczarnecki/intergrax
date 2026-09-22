@@ -7,6 +7,7 @@ from __future__ import annotations
 from testing_support.obs_diag_observability_vendor_qualification.descriptor import (
     ObsDiagProofKind,
     ObsDiagProofReference,
+    ObservabilityPlatformIsolationEvidence,
     ObservabilityQualifiedPathRow,
     ObservabilityVendorQualificationEvidence,
     ObservabilityVendorQualificationRow,
@@ -42,6 +43,10 @@ _PLATFORM_CANONICAL_ISOLATION = ObsDiagProofReference(
     module="tests/integration/runtime/test_diag_final_external_otel_e2e.py",
 )
 
+PLATFORM_CANONICAL_TRUTH_ISOLATION_EVIDENCE = ObservabilityPlatformIsolationEvidence(
+    canonical_truth_isolation=_PLATFORM_CANONICAL_ISOLATION,
+)
+
 _EXTERNAL_OTLP_NORMAL = ObsDiagProofReference(
     kind=ObsDiagProofKind.EXTERNAL_LIVE,
     module="tests/integration/runtime/test_diag_final_external_otel_e2e.py",
@@ -74,21 +79,21 @@ _EVIDENCE_OVERRIDES: dict[str, ObservabilityVendorQualificationEvidence] = {
         normal_delivery=_ELASTIC_RETRY,
         failure_isolation=_ELASTIC_FAILURE,
         recovery=_ELASTIC_RETRY,
-        canonical_truth_isolation=_PLATFORM_CANONICAL_ISOLATION,
+        canonical_truth_isolation=None,
         privacy=None,
     ),
     "opensearch": ObservabilityVendorQualificationEvidence(
         normal_delivery=_CONTRACT_MIGRATION,
         failure_isolation=_CONTRACT_MIGRATION,
         recovery=None,
-        canonical_truth_isolation=_PLATFORM_CANONICAL_ISOLATION,
+        canonical_truth_isolation=None,
         privacy=None,
     ),
     "sentry": ObservabilityVendorQualificationEvidence(
         normal_delivery=_SENTRY_ISOLATION,
         failure_isolation=_SENTRY_ISOLATION,
         recovery=None,
-        canonical_truth_isolation=_PLATFORM_CANONICAL_ISOLATION,
+        canonical_truth_isolation=None,
         privacy=None,
     ),
 }
