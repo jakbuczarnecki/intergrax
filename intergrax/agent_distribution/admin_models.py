@@ -9,6 +9,9 @@ from collections.abc import Mapping
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from intergrax.agent_distribution.agent_contract_authority import (
+    PackageAgentContractAuthorityRecord,
+)
 from intergrax.agent_distribution.errors import AgentPackageTrustError
 from intergrax.agent_distribution._config_validation import (
     validate_non_secret_distribution_config,
@@ -124,6 +127,7 @@ class InstallAgentRequest(BaseModel):
     artifact_store_ref: str = _NON_EMPTY
     trust_record: AgentInstallationTrustRecord
     agent_project_metadata_ref: str = _NON_EMPTY
+    package_contract_authority: tuple[PackageAgentContractAuthorityRecord, ...] = ()
     catalog_entry_id: str | None = None
     version_selector: str | None = None
 
@@ -152,6 +156,18 @@ class InstallAgentRequest(BaseModel):
                 "install request trust record digest does not match package identity",
                 reason_code=AgentPackageTrustReasonCode.EVIDENCE_DIGEST_MISMATCH.value,
             )
+        identity = self.package_identity
+        for record in self.package_contract_authority:
+            if record.package_digest != identity.package_digest:
+                raise ValueError("package_contract_authority package_digest mismatch")
+            if record.distribution_package_id != identity.distribution_package_id:
+                raise ValueError("package_contract_authority distribution_package_id mismatch")
+            if record.artifact_store_ref != self.artifact_store_ref:
+                raise ValueError("package_contract_authority artifact_store_ref mismatch")
+            if record.agent_project_metadata_ref != self.agent_project_metadata_ref:
+                raise ValueError(
+                    "package_contract_authority agent_project_metadata_ref mismatch"
+                )
         return self
 
 

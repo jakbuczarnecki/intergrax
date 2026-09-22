@@ -22,6 +22,9 @@ from intergrax.agent_distribution.roster import EffectiveRoster
 from intergrax.agent_distribution.runtime_materialization_record import (
     RuntimeMaterializationRecord,
 )
+from intergrax.agent_distribution.agent_contract_authority import (
+    PackageAgentContractAuthorityRecord,
+)
 from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevision,
     RuntimeRevisionState,
@@ -229,6 +232,19 @@ class AgentArtifactMetadataStore(Protocol):
         self, metadata: AgentArtifactMetadata
     ) -> AgentArtifactMetadata:
         """Persist artifact metadata record."""
+
+    def get_package_contract_authority(
+        self,
+        package_digest: str,
+        contract_id: str,
+    ) -> PackageAgentContractAuthorityRecord | None:
+        """Load one immutable full AgentContract authority record."""
+
+    def persist_package_contract_authority(
+        self,
+        record: PackageAgentContractAuthorityRecord,
+    ) -> PackageAgentContractAuthorityRecord:
+        """Persist one package contract authority record."""
 
 
 class ApplicationEnvironmentServingRecord(BaseModel):

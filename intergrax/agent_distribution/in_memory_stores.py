@@ -11,6 +11,10 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime
 
+from intergrax.agent_distribution.agent_contract_authority import (
+    PackageAgentContractAuthorityError,
+    PackageAgentContractAuthorityRecord,
+)
 from intergrax.agent_distribution.application_environment_identity import (
     ApplicationEnvironmentIdentity,
 )
@@ -79,6 +83,9 @@ class AgentDistributionStoreState:
         default_factory=dict
     )
     artifact_metadata: dict[str, AgentArtifactMetadata] = field(default_factory=dict)
+    package_contract_authority: dict[
+        tuple[str, str], PackageAgentContractAuthorityRecord
+    ] = field(default_factory=dict)
     locks: dict[str, MaterializedRuntimeLock] = field(default_factory=dict)
     materializations: dict[str, RuntimeMaterializationRecord] = field(
         default_factory=dict
@@ -446,6 +453,31 @@ class InMemoryAgentArtifactMetadataStore:
         with self._lock:
             self._state.artifact_metadata[metadata.package_digest] = metadata
             return metadata
+
+    def get_package_contract_authority(
+        self,
+        package_digest: str,
+        contract_id: str,
+    ) -> PackageAgentContractAuthorityRecord | None:
+        with self._lock:
+            key = (package_digest.strip().lower(), contract_id.strip())
+            return self._state.package_contract_authority.get(key)
+
+    def persist_package_contract_authority(
+        self,
+        record: PackageAgentContractAuthorityRecord,
+    ) -> PackageAgentContractAuthorityRecord:
+        with self._lock:
+            key = (record.package_digest, record.contract_id)
+            existing = self._state.package_contract_authority.get(key)
+            if existing is not None:
+                if existing.metadata_digest != record.metadata_digest:
+                    raise PackageAgentContractAuthorityError(
+                        "conflicting package contract authority content"
+                    )
+                return existing
+            self._state.package_contract_authority[key] = record
+            return record
 
 
 def _normalize_effective_roster_revision_id(

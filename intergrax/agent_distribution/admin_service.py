@@ -42,6 +42,10 @@ from intergrax.agent_distribution.admin_models import (
     SetAgentEnablementRequest,
     UpdateAgentBindingRequest,
 )
+from intergrax.agent_distribution.agent_contract_authority import (
+    AgentPackageContractAuthorityService,
+    PackageAgentContractAuthorityError,
+)
 from intergrax.agent_distribution.agent_project_metadata import (
     AgentProjectMetadataProvider,
 )
@@ -274,6 +278,9 @@ class AgentPlatformAdminService:
         self._effective_roster_snapshot_store = effective_roster_snapshot_store
         self._effective_roster_authority = effective_roster_authority
         self._artifact_metadata_store = artifact_metadata_store
+        self._package_contract_authority_service = AgentPackageContractAuthorityService(
+            artifact_metadata_store
+        )
         self._installation_service = installation_service
         self._binding_service = binding_service
         self._revision_service = revision_service
@@ -674,6 +681,26 @@ class AgentPlatformAdminService:
                 agent_project_metadata_ref=request.agent_project_metadata_ref,
             )
         )
+        if request.package_contract_authority:
+            if self._metadata_provider is None:
+                raise AgentPlatformAdminBlockedError(
+                    "AP-11_BLOCKED_BY_MISSING_METADATA_PROVIDER",
+                    "package contract authority requires AgentProjectMetadataProvider",
+                )
+            metadata = self._metadata_provider.get_metadata(
+                request.agent_project_metadata_ref
+            )
+            if metadata is None:
+                raise PackageAgentContractAuthorityError(
+                    f"unresolved agent project metadata ref "
+                    f"{request.agent_project_metadata_ref!r}"
+                )
+            AgentPackageContractAuthorityService.validate_against_project_metadata(
+                metadata=metadata,
+                records=request.package_contract_authority,
+            )
+            for record in request.package_contract_authority:
+                self._package_contract_authority_service.persist_authority_record(record)
         return InstallationMutationResult(
             installation=_installation_view(promoted.value),
             audit_event_types=_event_types(created, verified, promoted),

@@ -7,7 +7,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from intergrax.applications._shared.agent_resolution import resolve_agent_contract_from_binding
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    ContractAuthority,
+    resolve_roster_agent_contract,
+)
 from intergrax.applications._shared.capability_graph_assembly_resolver import (
     CapabilityGraphAssemblyValidationResult,
     validate_environment_capability_graph,
@@ -68,6 +71,8 @@ def validate_strict_capability_graph_deploy(
     snapshot: HarnessRegistrySnapshot,
     manifest: ApplicationManifest,
     env: ApplicationEnvironmentProfile,
+    *,
+    contract_authority: ContractAuthority | None = None,
 ) -> CapabilityGraphAssemblyValidationResult:
     """Validate STRICT product deploy rules for environment capability graph."""
     errors = list(validate_environment_capability_graph(view, snapshot, manifest).errors)
@@ -93,10 +98,20 @@ def validate_strict_capability_graph_deploy(
         env.execution_mode is ExecutionMode.STRICT
         and env.application_profile is ApplicationProfile.PRODUCT
     ):
+        if contract_authority is None:
+            errors.append(
+                "STRICT product deploy validation requires revision-bound agent contract authority",
+            )
         for binding in manifest.enabled_agents():
             contract_id = resolve_binding_contract_id(binding)
             node_id = f"agent:{contract_id}"
-            contract = resolve_agent_contract_from_binding(binding)
+            if contract_authority is None:
+                continue
+            contract = resolve_roster_agent_contract(
+                binding,
+                contract_authority=contract_authority,
+                allow_compatibility_resolver=False,
+            )
             if contract.lifecycle_state in STRICT_DEPLOY_BLOCKED_AGENT_LIFECYCLES:
                 blast = impact_by_node.get(node_id)
                 radius_size = len(blast.blast_radius_node_ids) if blast is not None else 0
@@ -147,10 +162,16 @@ def check_strict_product_capability_graph(
     if snapshot is None:
         return [f"{product_id}: registry_snapshot not materialized"]
 
+    from intergrax.applications._shared.roster_agent_contract_authority import (
+        materialize_manifest_contract_authority_lab_compat,
+    )
+
+    authority = materialize_manifest_contract_authority_lab_compat(manifest)
     result = validate_strict_capability_graph_deploy(
         view,
         snapshot,
         manifest,
         env,
+        contract_authority=authority,
     )
     return [f"{product_id}: {error}" for error in result.errors]
