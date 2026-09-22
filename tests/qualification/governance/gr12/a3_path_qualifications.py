@@ -28,6 +28,11 @@ class Gr12QualificationPathKind(StrEnum):
     COMPOSITION_SURFACE = "COMPOSITION_SURFACE"
 
 
+class Gr12CompositionDomain(StrEnum):
+    HOST_TASK_CONTROL = "HOST_TASK_CONTROL"
+    ECP = "ECP"
+
+
 class Gr12ProofInvariant(StrEnum):
     ALLOW = "ALLOW"
     DENY = "DENY"
@@ -49,6 +54,7 @@ class Gr12ProofNode:
     invariant: Gr12ProofInvariant
     direct_path_id: str | None = None
     shared_mechanism_id: str | None = None
+    composition_domain: Gr12CompositionDomain | None = None
 
     def __post_init__(self) -> None:
         if self.direct_path_id is not None and self.shared_mechanism_id is not None:
@@ -156,6 +162,79 @@ _TC_RESUME = "tests/unit/applications/test_task_control_governed_resume.py"
 _TC_AUTONOMY = "tests/unit/applications/test_task_control_governed_autonomy.py"
 _TC_HOST = "tests/unit/applications/test_task_control_host_composition.py"
 _A2 = "tests/qualification/governance/gr12/test_gr12_a2_mandatory_cla04_composition.py"
+
+_COMPOSITION_INVARIANT_ORDER: Final[tuple[Gr12ProofInvariant, ...]] = (
+    Gr12ProofInvariant.AUTHORITY_REQUIRED,
+    Gr12ProofInvariant.MISSING_AUTHORITY_FAIL_CLOSED,
+    Gr12ProofInvariant.CANONICAL_CONSUMER,
+    Gr12ProofInvariant.NO_DUPLICATE_AUTHORITY,
+    Gr12ProofInvariant.EXTERNAL_EVALUATOR,
+)
+
+GR12_A3_COMPOSITION_PROOF_SSOT: Final[
+    dict[str, dict[Gr12ProofInvariant, tuple[str, Gr12CompositionDomain]]]
+] = {
+    "CP-HOST-BOUNDARY-OPTIONAL": {
+        Gr12ProofInvariant.AUTHORITY_REQUIRED: (
+            f"{_A2}::test_gr12_a2_product_task_control_wiring_requires_canonical_boundary",
+            Gr12CompositionDomain.HOST_TASK_CONTROL,
+        ),
+        Gr12ProofInvariant.MISSING_AUTHORITY_FAIL_CLOSED: (
+            f"{_A2}::test_gr12_a2_r2_product_task_control_fail_closed_when_canonical_boundary_unresolved",
+            Gr12CompositionDomain.HOST_TASK_CONTROL,
+        ),
+        Gr12ProofInvariant.CANONICAL_CONSUMER: (
+            f"{_A2}::test_gr12_a2_r2_task_control_wiring_passes_host_runtime_boundary_to_routes",
+            Gr12CompositionDomain.HOST_TASK_CONTROL,
+        ),
+        Gr12ProofInvariant.NO_DUPLICATE_AUTHORITY: (
+            f"{_A2}::test_gr12_a2_r2_task_control_wiring_consumes_host_boundary_without_rebuild",
+            Gr12CompositionDomain.HOST_TASK_CONTROL,
+        ),
+        Gr12ProofInvariant.EXTERNAL_EVALUATOR: (
+            f"{_A2}::test_gr12_a2_r2_external_evaluator_wired_through_product_host_composition",
+            Gr12CompositionDomain.HOST_TASK_CONTROL,
+        ),
+    },
+    "CP-ECP-BOUNDARY-OPTIONAL": {
+        Gr12ProofInvariant.AUTHORITY_REQUIRED: (
+            f"{_ECP}::test_ecp_cpm16_product_without_authority_fails_at_wiring",
+            Gr12CompositionDomain.ECP,
+        ),
+        Gr12ProofInvariant.MISSING_AUTHORITY_FAIL_CLOSED: (
+            f"{_ECP}::test_ecp_cpm14_production_missing_policy_fails_closed",
+            Gr12CompositionDomain.ECP,
+        ),
+        Gr12ProofInvariant.CANONICAL_CONSUMER: (
+            f"{_ECP}::test_ecp_gr12_r2_resolve_production_capacity_wiring_consumes_supplied_boundary",
+            Gr12CompositionDomain.ECP,
+        ),
+        Gr12ProofInvariant.NO_DUPLICATE_AUTHORITY: (
+            f"{_ECP}::test_ecp_gr12_r2_production_wiring_does_not_build_secondary_mutation_boundary",
+            Gr12CompositionDomain.ECP,
+        ),
+        Gr12ProofInvariant.EXTERNAL_EVALUATOR: (
+            f"{_ECP}::test_ecp_gr12_r2_external_evaluator_receives_composition_probe_mutations",
+            Gr12CompositionDomain.ECP,
+        ),
+    },
+}
+
+
+def gr12_a3_composition_proof_nodes(path_id: str) -> tuple[Gr12ProofNode, ...]:
+    bindings = GR12_A3_COMPOSITION_PROOF_SSOT[path_id]
+    missing = [inv for inv in _COMPOSITION_INVARIANT_ORDER if inv not in bindings]
+    if missing:
+        raise ValueError(f"{path_id} missing composition bindings: {missing}")
+    return tuple(
+        Gr12ProofNode(
+            test_id=bindings[invariant][0],
+            invariant=invariant,
+            direct_path_id=path_id,
+            composition_domain=bindings[invariant][1],
+        )
+        for invariant in _COMPOSITION_INVARIANT_ORDER
+    )
 
 GR12_A3_MECH_CREATE_ID_CONFLICT: Final[str] = "AD_DESIRED_STATE_CREATE_ID_CONFLICT"
 GR12_A3_MECH_BINDING_REVISION_CAS: Final[str] = "AD_BINDING_EXPECTED_REVISION_CAS"
@@ -579,78 +658,46 @@ GR12_A3_CORE_PATH_PROOFS: Final[tuple[Gr12A3PathProofBundle, ...]] = (
     Gr12A3PathProofBundle(
         path_id="CP-HOST-BOUNDARY-OPTIONAL",
         kind=Gr12QualificationPathKind.COMPOSITION_SURFACE,
-        allow=(f"{_A2}::test_gr12_a2_product_task_control_wiring_requires_canonical_boundary",),
-        deny=(f"{_A2}::test_gr12_a2_ecp_product_without_authority_fails_at_wiring",),
+        allow=(
+            GR12_A3_COMPOSITION_PROOF_SSOT["CP-HOST-BOUNDARY-OPTIONAL"][
+                Gr12ProofInvariant.AUTHORITY_REQUIRED
+            ][0],
+        ),
+        deny=(
+            GR12_A3_COMPOSITION_PROOF_SSOT["CP-HOST-BOUNDARY-OPTIONAL"][
+                Gr12ProofInvariant.MISSING_AUTHORITY_FAIL_CLOSED
+            ][0],
+        ),
         tenant=(),
         stale=(),
         hitl=(),
-        evidence=(f"{_A2}::test_gr12_a2_r2_product_host_composition_exposes_cla04_boundary",),
-        pluginability=f"{_A2}::test_gr12_a2_external_evaluator_injected_without_domain_changes",
-        proof_nodes=(
-            Gr12ProofNode(
-                f"{_A2}::test_gr12_a2_product_task_control_wiring_requires_canonical_boundary",
-                Gr12ProofInvariant.AUTHORITY_REQUIRED,
-                direct_path_id="CP-HOST-BOUNDARY-OPTIONAL",
-            ),
-            Gr12ProofNode(
-                f"{_A2}::test_gr12_a2_ecp_product_without_authority_fails_at_wiring",
-                Gr12ProofInvariant.MISSING_AUTHORITY_FAIL_CLOSED,
-                direct_path_id="CP-HOST-BOUNDARY-OPTIONAL",
-            ),
-            Gr12ProofNode(
-                f"{_TC_HOST}::test_taskcpm_h1_product_host_runtime_exposes_canonical_boundary",
-                Gr12ProofInvariant.CANONICAL_CONSUMER,
-                direct_path_id="CP-HOST-BOUNDARY-OPTIONAL",
-            ),
-            Gr12ProofNode(
-                f"{_A2}::test_gr12_a2_r2_product_host_composition_exposes_cla04_boundary",
-                Gr12ProofInvariant.NO_DUPLICATE_AUTHORITY,
-                direct_path_id="CP-HOST-BOUNDARY-OPTIONAL",
-            ),
-            Gr12ProofNode(
-                f"{_A2}::test_gr12_a2_external_evaluator_injected_without_domain_changes",
-                Gr12ProofInvariant.EXTERNAL_EVALUATOR,
-                direct_path_id="CP-HOST-BOUNDARY-OPTIONAL",
-            ),
-        ),
+        evidence=(),
+        pluginability=GR12_A3_COMPOSITION_PROOF_SSOT["CP-HOST-BOUNDARY-OPTIONAL"][
+            Gr12ProofInvariant.EXTERNAL_EVALUATOR
+        ][0],
+        proof_nodes=gr12_a3_composition_proof_nodes("CP-HOST-BOUNDARY-OPTIONAL"),
     ),
     Gr12A3PathProofBundle(
         path_id="CP-ECP-BOUNDARY-OPTIONAL",
         kind=Gr12QualificationPathKind.COMPOSITION_SURFACE,
-        allow=(f"{_ECP}::test_ecp_cpm16_product_without_authority_fails_at_wiring",),
-        deny=(f"{_A2}::test_gr12_a2_ecp_enabled_without_boundary_fails_at_wiring",),
+        allow=(
+            GR12_A3_COMPOSITION_PROOF_SSOT["CP-ECP-BOUNDARY-OPTIONAL"][
+                Gr12ProofInvariant.AUTHORITY_REQUIRED
+            ][0],
+        ),
+        deny=(
+            GR12_A3_COMPOSITION_PROOF_SSOT["CP-ECP-BOUNDARY-OPTIONAL"][
+                Gr12ProofInvariant.MISSING_AUTHORITY_FAIL_CLOSED
+            ][0],
+        ),
         tenant=(),
         stale=(),
         hitl=(),
-        evidence=(f"{_ECP}::test_ecp_cpm15_production_supplied_deny_policy_zero_provider_effect",),
-        pluginability=f"{_ECP}::test_ecp_cpm14_production_missing_policy_fails_closed",
-        proof_nodes=(
-            Gr12ProofNode(
-                f"{_ECP}::test_ecp_cpm16_product_without_authority_fails_at_wiring",
-                Gr12ProofInvariant.AUTHORITY_REQUIRED,
-                direct_path_id="CP-ECP-BOUNDARY-OPTIONAL",
-            ),
-            Gr12ProofNode(
-                f"{_A2}::test_gr12_a2_ecp_enabled_without_boundary_fails_at_wiring",
-                Gr12ProofInvariant.MISSING_AUTHORITY_FAIL_CLOSED,
-                direct_path_id="CP-ECP-BOUNDARY-OPTIONAL",
-            ),
-            Gr12ProofNode(
-                f"{_ECP}::test_ecp_r1_standalone_k8s_allow_without_execution_identity",
-                Gr12ProofInvariant.CANONICAL_CONSUMER,
-                direct_path_id="CP-ECP-BOUNDARY-OPTIONAL",
-            ),
-            Gr12ProofNode(
-                f"{_ECP}::test_ecp_cpm15_production_supplied_deny_policy_zero_provider_effect",
-                Gr12ProofInvariant.NO_DUPLICATE_AUTHORITY,
-                direct_path_id="CP-ECP-BOUNDARY-OPTIONAL",
-            ),
-            Gr12ProofNode(
-                f"{_ECP}::test_ecp_cpm14_production_missing_policy_fails_closed",
-                Gr12ProofInvariant.EXTERNAL_EVALUATOR,
-                direct_path_id="CP-ECP-BOUNDARY-OPTIONAL",
-            ),
-        ),
+        evidence=(),
+        pluginability=GR12_A3_COMPOSITION_PROOF_SSOT["CP-ECP-BOUNDARY-OPTIONAL"][
+            Gr12ProofInvariant.EXTERNAL_EVALUATOR
+        ][0],
+        proof_nodes=gr12_a3_composition_proof_nodes("CP-ECP-BOUNDARY-OPTIONAL"),
     ),
 )
 
