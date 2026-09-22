@@ -110,11 +110,10 @@ def test_gr12_a4_r2_r0_provider_cas_unavailable() -> None:
     assert decision.provider_cas_available is Gr12VectorProviderCasAvailability.UNAVAILABLE
 
 
-def test_gr12_a4_r2_r0_vector_catalog_still_implementation_required() -> None:
-    """R0-8 — architecture reconciled; runtime not qualified."""
+def test_gr12_a4_r2_r0_vector_catalog_architecture_reconciled() -> None:
+    """R0-8 — architecture reconciled (qualification completed in GR-12-A4-R2-R1)."""
     row = _vector_row()
     assert row.applicability is Gr12Applicability.APPLICABLE
-    assert row.coverage is Gr12CoverageStatus.IMPLEMENTATION_REQUIRED
     decision = GR12_A4_R2_VECTOR_ARCHITECTURE_DECISION
     assert decision.architecture_phase is Gr12VectorArchitecturePhase.ARCHITECTURE_DECISION_RECONCILED
 

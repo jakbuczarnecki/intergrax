@@ -9,7 +9,7 @@ from enum import StrEnum
 from typing import Final
 
 from tests.qualification.governance.gr12.catalog import (
-    GR12_A4_R2_QUALIFICATION_PROOF,
+    GR12_A4_R2_R1_QUALIFICATION_PROOF,
     Gr12Applicability,
     Gr12CoverageStatus,
 )
@@ -119,19 +119,18 @@ GR12_A4_RESIDUAL_INVENTORY: tuple[Gr12A4ResidualInventoryRow, ...] = (
         path_id="CP-VECTOR-INDEX-ADMIN",
         path_kind=Gr12A4PathKind.MUTATION_SURFACE,
         production_entrypoint=(
-            "intergrax.integrations.contracts.vector_index_administration.VectorIndexAdministration"
+            "intergrax.applications._shared.vector_index_admin_service."
+            "VectorIndexAdminService.prepare"
         ),
-        mutation_owner="integrations vector index administration port (provider adapters)",
-        current_authority=(
-            "bootstrap/proof callers (integration credentials); live operator path pending R2-R1"
+        mutation_owner=(
+            "VectorIndexAdminService (applications) → VectorIndexAdministration port"
         ),
+        current_authority="composition-injected ControlPlaneMutationAuthorizationBoundary",
         consequential=True,
-        existing_contract=(
-            "VectorIndexAdministration + future CLA-04 vector_index.prepare (GR-12-A4-R2 ADR)"
-        ),
-        coverage=Gr12CoverageStatus.IMPLEMENTATION_REQUIRED,
+        existing_contract="ControlPlaneMutationRequest (CLA-04) + configuration revision digest",
+        coverage=Gr12CoverageStatus.QUALIFIED,
         cla04_reuse_blocker="",
-        operator_exposure=Gr12OperatorApiExposure.NOT_CURRENTLY_EXPOSED,
+        operator_exposure=Gr12OperatorApiExposure.OPERATOR_REQUEST_PATH,
         tenant_scope="tenant_id on VectorIndexIdentity (required; per-index tenant scope)",
     ),
     Gr12A4ResidualInventoryRow(
@@ -174,10 +173,10 @@ GR12_A4_VECTOR_DECISION: Gr12A4VectorDecision = Gr12A4VectorDecision(
     architecture_blocker="",
     architecture_phase=GR12_A4_R2_VECTOR_ARCHITECTURE_DECISION.architecture_phase.value,
     cla04_applicability=GR12_A4_R2_VECTOR_ARCHITECTURE_DECISION.cla04_applicability,
-    live_operator_surface_exists=False,
+    live_operator_surface_exists=True,
     prepare_index_governance=GR12_A4_R2_VECTOR_ARCHITECTURE_DECISION.prepare_index_decision.value,
     next_bounded_task=GR12_VECTOR_NEXT_BOUNDED_TASK,
-    qualification_proof=GR12_A4_R2_QUALIFICATION_PROOF,
+    qualification_proof=GR12_A4_R2_R1_QUALIFICATION_PROOF,
 )
 
 GR12_A4_MEMORY_DECISION: Gr12A4MemoryDecision = Gr12A4MemoryDecision(

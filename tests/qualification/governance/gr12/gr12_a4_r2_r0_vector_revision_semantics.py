@@ -4,11 +4,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final
 
-from intergrax.rag.vectorstore.config.vector_config import Metric
+from intergrax.applications._shared.vector_index_configuration_projection import (
+    VectorIndexConfigurationProjection,
+)
 
 
 
@@ -101,19 +102,6 @@ GR12_VECTOR_FAKE_TENANT_ID_PATTERNS_FORBIDDEN: Final[tuple[str, ...]] = (
     "default",
     "profile_id_substitute",
 )
-
-
-@dataclass(frozen=True, slots=True)
-class VectorIndexConfigurationProjection:
-    """Single provider-neutral logical schema for current (description) and target (spec)."""
-
-    logical_name: str
-    tenant_id: str
-    dense_dimension: int
-    dense_metric: Metric
-    dense_channel_name: str
-    required_capabilities: frozenset[str]
-    sparse_lexical_channel_name: str | None = None
 
 
 GR12_VECTOR_CONFIGURATION_PROJECTION_SCHEMA: Final[str] = (

@@ -108,19 +108,31 @@ GR12_A4_RESIDUAL_PATH_IDS: Final[tuple[str, ...]] = (
 )
 
 GR12_A4_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
-    task_name=(
-        "GR-12-A4-R2-R1 — Governed Vector Index Operator Service & CLA-04 Enforcement"
-    ),
+    task_name="GR-12-A4-R3 — Specialized Memory Governance ADR",
     exact_blocker=(
-        "Vector R2-R0 reconciled identity/projection/TOCTOU semantics; live operator "
-        "VectorIndexAdminService + CLA-04 request construction + digest implementation "
-        "still missing (GR-12-A4-R2-R1); bootstrap-only prepare_index callers remain "
-        "outside live operator path."
+        "CP-VECTOR-INDEX-ADMIN qualified (GR-12-A4-R2-R1); specialized memory mutations "
+        "remain on MemoryGovernanceEvaluationRequest pending architecture ADR (GR-12-A4-R3)."
     ),
     why_highest=(
-        "Vector administration architecture reconciled (GR-12-A4-R2-R0); bounded "
-        "implementation is the remaining step before CP-VECTOR-INDEX-ADMIN qualification."
+        "Vector live operator path enforced; memory is the remaining residual "
+        "control-plane architecture decision before final GR-12 certification."
     ),
+)
+
+GR12_A4_R2_R1_QUALIFICATION_PROOF: Final[str] = (
+    "tests/qualification/governance/gr12/"
+    "test_gr12_a4_r2_r1_vector_operator_governance_qualification.py"
+)
+
+GR12_A4_R2_R1_EXECUTION_PROOF_NODES: Final[tuple[str, ...]] = (
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_1_allow_create",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_2_deny",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_8_stale_after_authorization",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_identity_principal_propagation",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_11_absent_semantics",
+    "tests/unit/applications/test_vector_index_configuration_projection.py::test_vec_digest_capability_order_irrelevant",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_9_external_evaluator_receives_cla04_request",
+    "tests/unit/integrations/contracts/test_vector_index_administration.py::test_vector_index_spec_rejects_empty_logical_name",
 )
 
 GR12_A4_R2_QUALIFICATION_PROOF: Final[str] = (
@@ -563,8 +575,8 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         path_id="CP-VECTOR-INDEX-ADMIN",
         surface="Vector index administration",
         production_entrypoint=(
-            "intergrax.integrations.contracts.vector_index_administration."
-            "VectorIndexAdministration"
+            "intergrax.applications._shared.vector_index_admin_service."
+            "VectorIndexAdminService.prepare"
         ),
         mutation=(
             "vector_index.prepare (live operator, consequential create only); "
@@ -572,18 +584,18 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         ),
         consequential=True,
         current_guard=(
-            "bootstrap/proof callers use port directly; live operator service not wired; "
-            "CLA-04 mapping decided in GR-12-A4-R2 ADR"
+            "VectorIndexAdminService + ControlPlaneMutationAuthorizationBoundary; "
+            "configuration revision digest + post-authorization stale re-read"
         ),
-        current_authority="integration credentials (bootstrap); RequestIdentity (future operator)",
-        audit_evidence="ControlPlaneMutationAuthorizationEvidence (after R2-R1)",
+        current_authority="composition-injected CLA-04 boundary + RequestIdentity per invocation",
+        audit_evidence=(
+            "ControlPlaneMutationAuthorizationEvidence + VectorIndexPrepareOperatorResult"
+        ),
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.IMPLEMENTATION_REQUIRED,
-        recommended_owner="applications/control-plane orchestration (operator service)",
-        future_remediation=(
-            "GR-12-A4-R2-R1 — Governed Vector Index Operator Service & CLA-04 Enforcement"
-        ),
-        qualification_proof="",
+        coverage=Gr12CoverageStatus.QUALIFIED,
+        recommended_owner="applications control-plane orchestration (operator service)",
+        future_remediation="",
+        qualification_proof=GR12_A4_R2_R1_QUALIFICATION_PROOF,
     ),
 )
 

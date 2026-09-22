@@ -14,8 +14,7 @@ from tests.qualification.governance.gr12.a4_residual_path_classifications import
     GR12_A4_VECTOR_DECISION,
 )
 from tests.qualification.governance.gr12.catalog import (
-    GR12_A4_NEXT_REMEDIATION,
-    GR12_A4_R2_QUALIFICATION_PROOF,
+    GR12_A4_R2_R1_QUALIFICATION_PROOF,
     GR12_A4_R2_VECTOR_ADR_PATH,
     GR12_CONTROL_PLANE_SURFACES,
     Gr12Applicability,
@@ -24,6 +23,7 @@ from tests.qualification.governance.gr12.catalog import (
 from tests.qualification.governance.gr12.gr12_a4_r2_vector_architecture_decision import (
     GR12_A4_R2_VECTOR_ARCHITECTURE_DECISION,
     GR12_VECTOR_CANONICAL_PORT,
+    GR12_VECTOR_NEXT_BOUNDED_TASK,
     GR12_VECTOR_OPERATION_CLASSIFICATIONS,
     GR12_VECTOR_REJECTED_ALTERNATIVES,
     Gr12VectorIndexOperationClass,
@@ -52,24 +52,23 @@ def test_gr12_a4_r2_vector_architecture_decision_closed_ssot() -> None:
         decision.prepare_index_decision
         is Gr12VectorPrepareIndexGovernanceDecision.OPTION_B_CONDITIONAL_LIVE_OPERATOR_ONLY
     )
-    assert decision.live_operator_surface_exists is False
+    assert decision.live_operator_surface_exists is True
     assert decision.destructive_ops_on_neutral_port is False
     assert decision.canonical_port == GR12_VECTOR_CANONICAL_PORT
-    assert decision.next_bounded_task == GR12_A4_NEXT_REMEDIATION.task_name
+    assert decision.next_bounded_task == GR12_VECTOR_NEXT_BOUNDED_TASK
 
 
-def test_gr12_a4_r2_vector_catalog_surface_implementation_required() -> None:
+def test_gr12_a4_r2_vector_catalog_surface_qualified_after_r2_r1() -> None:
     row = _vector_row()
     assert row.applicability is Gr12Applicability.APPLICABLE
-    assert row.coverage is Gr12CoverageStatus.IMPLEMENTATION_REQUIRED
-    assert row.coverage is not Gr12CoverageStatus.QUALIFIED
+    assert row.coverage is Gr12CoverageStatus.QUALIFIED
 
 
 def test_gr12_a4_r2_vector_residual_inventory_aligned() -> None:
     inv = next(row for row in GR12_A4_RESIDUAL_INVENTORY if row.path_id == "CP-VECTOR-INDEX-ADMIN")
     row = _vector_row()
     assert inv.coverage is row.coverage
-    assert GR12_A4_VECTOR_DECISION.qualification_proof == GR12_A4_R2_QUALIFICATION_PROOF
+    assert GR12_A4_VECTOR_DECISION.qualification_proof == GR12_A4_R2_R1_QUALIFICATION_PROOF
 
 
 def test_gr12_a4_r2_single_canonical_vector_admin_port() -> None:

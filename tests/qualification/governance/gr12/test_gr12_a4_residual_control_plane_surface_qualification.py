@@ -53,9 +53,9 @@ def test_gr12_a4_residual_paths_classified() -> None:
             assert row.applicability is Gr12Applicability.APPLICABLE
             assert row.qualification_proof.strip()
         elif inv.path_id == "CP-VECTOR-INDEX-ADMIN":
-            assert row.coverage is Gr12CoverageStatus.IMPLEMENTATION_REQUIRED
+            assert row.coverage is Gr12CoverageStatus.QUALIFIED
             assert row.applicability is Gr12Applicability.APPLICABLE
-            assert not row.qualification_proof.strip()
+            assert row.qualification_proof.strip()
         else:
             assert row.coverage is Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED
             assert row.applicability is Gr12Applicability.REQUIRES_ARCHITECTURE_DECISION
@@ -65,7 +65,7 @@ def test_gr12_a4_residual_paths_classified() -> None:
 def test_gr12_a4_catalog_residual_classification() -> None:
     for path_id in GR12_A4_RESIDUAL_PATH_IDS:
         row = _catalog_row(path_id)
-        if path_id == "CP-PLUGIN-CATALOG-HOT-RELOAD":
+        if path_id in ("CP-PLUGIN-CATALOG-HOT-RELOAD", "CP-VECTOR-INDEX-ADMIN"):
             assert row.coverage is Gr12CoverageStatus.QUALIFIED
         else:
             assert row.coverage is not Gr12CoverageStatus.QUALIFIED
@@ -79,6 +79,7 @@ def test_gr12_a4_a3_qualified_paths_unchanged() -> None:
     }
     assert set(GR12_A3_QUALIFIED_PATH_IDS).issubset(qualified)
     assert "CP-PLUGIN-CATALOG-HOT-RELOAD" in qualified
+    assert "CP-VECTOR-INDEX-ADMIN" in qualified
 
 
 def test_gr12_a4_catalog_hot_reload_not_host_compose_wired() -> None:
@@ -99,9 +100,9 @@ def test_gr12_a4_catalog_wiring_exposes_governed_service() -> None:
     assert "reload_integration_catalog" not in source
 
 
-def test_gr12_a4_vector_port_neutral_entrypoint_in_catalog() -> None:
+def test_gr12_a4_vector_governed_operator_entrypoint_in_catalog() -> None:
     row = _catalog_row("CP-VECTOR-INDEX-ADMIN")
-    assert "integrations.contracts.vector_index_administration" in row.production_entrypoint
+    assert "VectorIndexAdminService" in row.production_entrypoint
     assert not GR12_A4_VECTOR_DECISION.cla04_mapping_decision_required
     assert not GR12_A4_VECTOR_DECISION.destructive_ops_on_port
     assert GR12_A4_VECTOR_DECISION.cla04_applicability is Gr12Applicability.APPLICABLE
@@ -124,7 +125,7 @@ def test_gr12_a4_operator_exposure_honesty() -> None:
     )
     assert (
         by_id["CP-VECTOR-INDEX-ADMIN"].operator_exposure
-        is Gr12OperatorApiExposure.NOT_CURRENTLY_EXPOSED
+        is Gr12OperatorApiExposure.OPERATOR_REQUEST_PATH
     )
     assert (
         by_id["CP-MEM-SPECIALIZED-MUTATION"].operator_exposure
@@ -136,9 +137,9 @@ def test_gr12_a4_gr10_remains_final_closed() -> None:
     assert "FINAL CLOSED" in GR10_OVERALL_FORMAL_CLOSURE.status
 
 
-def test_gr12_a4_next_bounded_task_is_vector_r2_r1() -> None:
-    assert "GR-12-A4-R2-R1" in GR12_A4_NEXT_REMEDIATION.task_name
-    assert "vector" in GR12_A4_NEXT_REMEDIATION.exact_blocker.lower()
+def test_gr12_a4_next_bounded_task_is_memory_r3() -> None:
+    assert "GR-12-A4-R3" in GR12_A4_NEXT_REMEDIATION.task_name
+    assert "memory" in GR12_A4_NEXT_REMEDIATION.exact_blocker.lower()
 
 
 def test_gr12_a4_catalog_ssot_qualified() -> None:

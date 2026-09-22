@@ -75,11 +75,11 @@ A3 — FINAL CLOSED
 A4 classification — CLOSED
 
 Catalog — QUALIFIED
-Vector — APPLICABLE / ARCHITECTURE_DECISION_CLOSED / IMPLEMENTATION_REQUIRED
+Vector — QUALIFIED
 Memory — ADR_REQUIRED
 
 GR-12 overall — IN PROGRESS
-Next — Vector R2-R1 (GR-12-A4-R2-R1)
+Next — Memory R3 (GR-12-A4-R3)
 ```
 
 **Canonical control-plane model (unchanged target):** shared **CONTROL_PLANE_MUTATION** authority context → canonical **CLA-04** authorization boundary → **domain owner** executes its own mutation. No universal mutation executor, no global `GovernanceEngine`, no second permission engine.
@@ -87,7 +87,7 @@ Next — Vector R2-R1 (GR-12-A4-R2-R1)
 | Residual path | Applicability | Documentation status |
 | ------------- | ------------- | -------------------- |
 | `CP-PLUGIN-CATALOG-HOT-RELOAD` | APPLICABLE | **QUALIFIED** |
-| `CP-VECTOR-INDEX-ADMIN` | APPLICABLE | **IMPLEMENTATION_REQUIRED** (ADR **CLOSED** GR-12-A4-R2) |
+| `CP-VECTOR-INDEX-ADMIN` | APPLICABLE | **QUALIFIED** (GR-12-A4-R2-R1) |
 | `CP-MEM-SPECIALIZED-MUTATION` | REQUIRES_ARCHITECTURE_DECISION | **ARCHITECTURE_DECISION_REQUIRED** |
 | `CP-BOOT-PLUGIN-REGISTER` | NOT_APPLICABLE | **NOT_APPLICABLE** (startup/bootstrap registry population ≠ live governed hot reload) |
 
@@ -97,7 +97,7 @@ Next — Vector R2-R1 (GR-12-A4-R2-R1)
 
 **Memory boundary:** `MemoryGovernanceEvaluationRequest` and `MemorySecurityGovernanceService` remain memory-native policy/evidence semantics — **not** described as migrated under CLA-04.
 
-**Vector boundary (GR-12-A4-R2):** `VectorIndexAdministration` remains the canonical provider-neutral port. CLA-04 applies to **live operator** `vector_index.prepare` (conditional mutation); bootstrap-only `prepare_index` callers stay outside live CP scope. ADR: [ADR-GR-12-VECTOR-ADMIN-CONTROL-PLANE-BOUNDARY](../maintainers/architecture/ADR/ADR-GR-12-VECTOR-ADMIN-CONTROL-PLANE-BOUNDARY.md). Qualification requires **GR-12-A4-R2-R1** (operator service + configuration digest).
+**Vector — QUALIFIED (GR-12-A4-R2-R1):** live operator `VectorIndexAdminService` + CLA-04 `vector_index.prepare`, configuration revision digest, post-authorization stale re-read; `VectorIndexAdministration` port unchanged; bootstrap `prepare_index` callers outside live CP scope. ADR: [ADR-GR-12-VECTOR-ADMIN-CONTROL-PLANE-BOUNDARY](../maintainers/architecture/ADR/ADR-GR-12-VECTOR-ADMIN-CONTROL-PLANE-BOUNDARY.md).
 
 **GR-10:** **FINAL CLOSED** within formally defined GR-10 scope (unchanged).
 

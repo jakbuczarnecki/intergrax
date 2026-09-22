@@ -179,7 +179,7 @@ GR12_A4_R2_VECTOR_ARCHITECTURE_DECISION: Gr12A4R2VectorArchitectureDecision = (
         prepare_index_decision=(
             Gr12VectorPrepareIndexGovernanceDecision.OPTION_B_CONDITIONAL_LIVE_OPERATOR_ONLY
         ),
-        live_operator_surface_exists=False,
+        live_operator_surface_exists=True,
         destructive_ops_on_neutral_port=False,
         adr_path=GR12_A4_R2_VECTOR_ADR_PATH,
         canonical_port=GR12_VECTOR_CANONICAL_PORT,
