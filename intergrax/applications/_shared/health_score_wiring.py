@@ -74,9 +74,9 @@ def _deprecated_capability_violations(
         check_manifest_lists_canonical_capabilities(package, manifest, registry),
     )
     for binding in manifest.enabled_agents():
-        from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
+        from intergrax.applications._shared.agent_resolution import resolve_agent_contract_from_binding
 
-        contract = resolve_agent_type_from_binding(binding)().get_contract()
+        contract = resolve_agent_contract_from_binding(binding)
         if contract.lifecycle_state is AgentLifecycleState.DEPRECATED:
             violations.append(f"roster agent {contract.id} lifecycle is deprecated")
     return violations

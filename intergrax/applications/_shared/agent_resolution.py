@@ -10,6 +10,7 @@ from typing import TypeVar
 from intergrax.applications.contracts.agent_ref import qualname_for_agent
 from intergrax.applications.contracts.errors import AgentImportError
 from intergrax.applications.contracts.manifest import AgentBinding
+from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.tier2_agent import Tier2Agent
 
 AgentT = TypeVar("AgentT", bound=Tier2Agent)
@@ -61,4 +62,29 @@ def resolve_agent_type_from_binding(binding: AgentBinding) -> type[Tier2Agent]:
     )
 
 
-__all__ = ["resolve_agent_type", "resolve_agent_type_from_binding"]
+def resolve_agent_contract_from_binding(binding: AgentBinding) -> AgentContract:
+    """
+    Resolve agent contract metadata without materializing runtime dependencies.
+
+    Prefers declarative ``<package>.contract.build_agent_contract`` when present
+    so composition paths do not require zero-arg agent construction.
+    """
+    agent_type = resolve_agent_type_from_binding(binding)
+    package = agent_type.__module__.rsplit(".", 1)[0]
+    try:
+        contract_module = importlib.import_module(f"{package}.contract")
+    except ModuleNotFoundError:
+        return agent_type().get_contract()
+    builder = getattr(contract_module, "build_agent_contract", None)
+    if callable(builder):
+        contract = builder()
+        if isinstance(contract, AgentContract):
+            return contract
+    return agent_type().get_contract()
+
+
+__all__ = [
+    "resolve_agent_type",
+    "resolve_agent_type_from_binding",
+    "resolve_agent_contract_from_binding",
+]

@@ -75,9 +75,9 @@ def _node_type_from_id(node_id: str) -> CapabilityNodeType:
 def _agent_contract_from_binding(binding: AgentBinding) -> AgentContract | None:
     if binding.agent_type is None and binding.import_path is None:
         return None
-    from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
+    from intergrax.applications._shared.agent_resolution import resolve_agent_contract_from_binding
 
-    return resolve_agent_type_from_binding(binding)().get_contract()
+    return resolve_agent_contract_from_binding(binding)
 
 
 def build_environment_seed_capability_graph(

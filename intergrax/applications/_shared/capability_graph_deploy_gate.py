@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
+from intergrax.applications._shared.agent_resolution import resolve_agent_contract_from_binding
 from intergrax.applications._shared.capability_graph_assembly_resolver import (
     CapabilityGraphAssemblyValidationResult,
     validate_environment_capability_graph,
@@ -96,7 +96,7 @@ def validate_strict_capability_graph_deploy(
         for binding in manifest.enabled_agents():
             contract_id = resolve_binding_contract_id(binding)
             node_id = f"agent:{contract_id}"
-            contract = resolve_agent_type_from_binding(binding)().get_contract()
+            contract = resolve_agent_contract_from_binding(binding)
             if contract.lifecycle_state in STRICT_DEPLOY_BLOCKED_AGENT_LIFECYCLES:
                 blast = impact_by_node.get(node_id)
                 radius_size = len(blast.blast_radius_node_ids) if blast is not None else 0

@@ -40,9 +40,9 @@ def materialize_roster_certifications_for_agents(
     for binding in agents:
         if not binding.enabled:
             continue
-        from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
+        from intergrax.applications._shared.agent_resolution import resolve_agent_contract_from_binding
 
-        contract = resolve_agent_type_from_binding(binding)().get_contract()
+        contract = resolve_agent_contract_from_binding(binding)
         records.append(
             AgentCertificationRecord(
                 agent_id=contract.id,
@@ -107,9 +107,9 @@ def validate_strict_roster_agent_certification(
     certifications = {record.agent_id: record for record in governance.certifications}
 
     for binding in manifest.enabled_agents():
-        from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
+        from intergrax.applications._shared.agent_resolution import resolve_agent_contract_from_binding
 
-        contract = resolve_agent_type_from_binding(binding)().get_contract()
+        contract = resolve_agent_contract_from_binding(binding)
         contract_id = contract.id
         lifecycle = contract.lifecycle_state
 
