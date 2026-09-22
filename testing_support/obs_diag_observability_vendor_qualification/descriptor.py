@@ -26,6 +26,12 @@ class VendorQualificationProofReference:
     module: str
 
 
+@dataclass(frozen=True, slots=True)
+class QualifiedPathProofReference:
+    kind: ObsDiagProofKind
+    module: str
+
+
 class ObservabilityVendorQualificationStatus(StrEnum):
     ADAPTER_ONLY = "ADAPTER ONLY"
     CONTRACT_CONFORMANT = "CONTRACT CONFORMANT"
@@ -65,6 +71,31 @@ class ObservabilityVendorQualificationEvidence:
 
 
 @dataclass(frozen=True, slots=True)
+class ObservabilityQualifiedPathEvidence:
+    """Platform/integration path qualification evidence (not vendor-specific)."""
+
+    normal_delivery: QualifiedPathProofReference | None
+    failure_isolation: QualifiedPathProofReference | None
+    recovery: QualifiedPathProofReference | None
+    canonical_truth_isolation: QualifiedPathProofReference | None
+    privacy: QualifiedPathProofReference | None
+
+    def missing_live_categories(self) -> tuple[str, ...]:
+        missing: list[str] = []
+        if self.normal_delivery is None:
+            missing.append("normal_delivery")
+        if self.failure_isolation is None:
+            missing.append("failure_isolation")
+        if self.recovery is None:
+            missing.append("recovery")
+        if self.canonical_truth_isolation is None:
+            missing.append("canonical_truth_isolation")
+        if self.privacy is None:
+            missing.append("privacy")
+        return tuple(missing)
+
+
+@dataclass(frozen=True, slots=True)
 class ObservabilityVendorQualificationRow:
     provider_id: str
     manifest_path: str
@@ -77,7 +108,7 @@ class ObservabilityVendorQualificationRow:
 @dataclass(frozen=True, slots=True)
 class ObservabilityQualifiedPathRow:
     path_id: str
-    evidence: ObservabilityVendorQualificationEvidence
+    evidence: ObservabilityQualifiedPathEvidence
     qualification: ObservabilityVendorQualificationStatus
     privacy_required: bool = True
     platform_isolation: ObservabilityPlatformIsolationEvidence | None = None

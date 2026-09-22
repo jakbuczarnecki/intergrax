@@ -7,11 +7,13 @@ from __future__ import annotations
 from testing_support.obs_diag_observability_vendor_qualification.descriptor import (
     ObsDiagProofKind,
     ObservabilityPlatformIsolationEvidence,
+    ObservabilityQualifiedPathEvidence,
     ObservabilityQualifiedPathRow,
     ObservabilityVendorQualificationEvidence,
     ObservabilityVendorQualificationRow,
     ObservabilityVendorQualificationStatus,
     PlatformIsolationProofReference,
+    QualifiedPathProofReference,
     VendorQualificationProofReference,
 )
 from testing_support.obs_diag_provider_qualification.discovery import (
@@ -27,15 +29,15 @@ _VENDOR_CONTRACT = VendorQualificationProofReference(
     module="tests/unit/runtime/integrations/test_observability_vendor_integration_contract.py",
 )
 
-_PLATFORM_EXPORT_NORMAL = VendorQualificationProofReference(
+_PLATFORM_EXPORT_NORMAL = QualifiedPathProofReference(
     kind=ObsDiagProofKind.UNIT_CONTRACT,
     module="tests/unit/runtime/observability/test_harden_3c_export_failure_semantics.py",
 )
-_PLATFORM_EXPORT_FAILURE = VendorQualificationProofReference(
+_PLATFORM_EXPORT_FAILURE = QualifiedPathProofReference(
     kind=ObsDiagProofKind.UNIT_CONTRACT,
     module="tests/unit/runtime/observability/test_harden_3d_exporter_health.py",
 )
-_PLATFORM_EXPORT_POLICY = VendorQualificationProofReference(
+_PLATFORM_EXPORT_POLICY = QualifiedPathProofReference(
     kind=ObsDiagProofKind.UNIT_CONTRACT,
     module="tests/unit/runtime/observability/test_export_policy.py",
 )
@@ -48,11 +50,11 @@ PLATFORM_CANONICAL_TRUTH_ISOLATION_EVIDENCE = ObservabilityPlatformIsolationEvid
     canonical_truth_isolation=_PLATFORM_CANONICAL_ISOLATION,
 )
 
-_EXTERNAL_OTLP_NORMAL = VendorQualificationProofReference(
+_EXTERNAL_OTLP_NORMAL = QualifiedPathProofReference(
     kind=ObsDiagProofKind.EXTERNAL_LIVE,
     module="tests/integration/runtime/test_diag_final_external_otel_e2e.py",
 )
-_EXTERNAL_OTLP_PRIVACY = VendorQualificationProofReference(
+_EXTERNAL_OTLP_PRIVACY = QualifiedPathProofReference(
     kind=ObsDiagProofKind.EXTERNAL_LIVE,
     module="tests/integration/runtime/diag_final_otel_support.py",
 )
@@ -73,6 +75,23 @@ _ELASTIC_FAILED_SINK = VendorQualificationProofReference(
 _SENTRY_ISOLATION = VendorQualificationProofReference(
     kind=ObsDiagProofKind.UNIT_CONTRACT,
     module="tests/unit/integrations/providers/observability_backend/test_sentry.py",
+)
+
+_ELASTIC_PATH_RETRY = QualifiedPathProofReference(
+    kind=ObsDiagProofKind.UNIT_CONTRACT,
+    module="tests/unit/integrations/providers/observability_backend/test_elasticsearch_observability_retry.py",
+)
+_ELASTIC_PATH_FAILURE = QualifiedPathProofReference(
+    kind=ObsDiagProofKind.UNIT_CONTRACT,
+    module="tests/unit/integrations/providers/observability_backend/test_elasticsearch_observability_delivery_errors.py",
+)
+
+_ELASTICSEARCH_TRANSPORT_PATH_EVIDENCE = ObservabilityQualifiedPathEvidence(
+    normal_delivery=_ELASTIC_PATH_RETRY,
+    failure_isolation=_ELASTIC_PATH_FAILURE,
+    recovery=_ELASTIC_PATH_RETRY,
+    canonical_truth_isolation=None,
+    privacy=None,
 )
 
 _EVIDENCE_OVERRIDES: dict[str, ObservabilityVendorQualificationEvidence] = {
@@ -159,7 +178,7 @@ OBSERVABILITY_VENDOR_INVENTORY: tuple[ObservabilityVendorQualificationRow, ...] 
 OBSERVABILITY_QUALIFIED_PATHS: tuple[ObservabilityQualifiedPathRow, ...] = (
     ObservabilityQualifiedPathRow(
         path_id="platform_export_semantics",
-        evidence=ObservabilityVendorQualificationEvidence(
+        evidence=ObservabilityQualifiedPathEvidence(
             normal_delivery=_PLATFORM_EXPORT_NORMAL,
             failure_isolation=_PLATFORM_EXPORT_FAILURE,
             recovery=_PLATFORM_EXPORT_POLICY,
@@ -172,7 +191,7 @@ OBSERVABILITY_QUALIFIED_PATHS: tuple[ObservabilityQualifiedPathRow, ...] = (
     ),
     ObservabilityQualifiedPathRow(
         path_id="external_otlp_collector_slice",
-        evidence=ObservabilityVendorQualificationEvidence(
+        evidence=ObservabilityQualifiedPathEvidence(
             normal_delivery=_EXTERNAL_OTLP_NORMAL,
             failure_isolation=_EXTERNAL_OTLP_NORMAL,
             recovery=_EXTERNAL_OTLP_NORMAL,
@@ -183,7 +202,7 @@ OBSERVABILITY_QUALIFIED_PATHS: tuple[ObservabilityQualifiedPathRow, ...] = (
     ),
     ObservabilityQualifiedPathRow(
         path_id="elasticsearch_transport_contracts",
-        evidence=_EVIDENCE_OVERRIDES["elasticsearch"],
+        evidence=_ELASTICSEARCH_TRANSPORT_PATH_EVIDENCE,
         qualification=ObservabilityVendorQualificationStatus.CONTRACT_CONFORMANT,
     ),
 )

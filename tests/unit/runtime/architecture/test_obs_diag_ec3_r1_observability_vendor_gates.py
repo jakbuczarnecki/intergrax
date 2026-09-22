@@ -12,8 +12,10 @@ import pytest
 
 from testing_support.obs_diag_observability_vendor_qualification.descriptor import (
     ObservabilityPlatformIsolationEvidence,
+    ObservabilityQualifiedPathEvidence,
     ObservabilityVendorQualificationEvidence,
     PlatformIsolationProofReference,
+    QualifiedPathProofReference,
     VendorQualificationProofReference,
 )
 
@@ -73,8 +75,19 @@ def test_ec3_vendor_evidence_fields_are_vendor_proof_references_by_type() -> Non
         "privacy",
     ):
         assert hints[field] == VendorQualificationProofReference | None
+    path_hints = get_type_hints(ObservabilityQualifiedPathEvidence)
+    for field in (
+        "normal_delivery",
+        "failure_isolation",
+        "recovery",
+        "canonical_truth_isolation",
+        "privacy",
+    ):
+        assert path_hints[field] == QualifiedPathProofReference | None
     platform_hints = get_type_hints(ObservabilityPlatformIsolationEvidence)
     assert platform_hints["canonical_truth_isolation"] is PlatformIsolationProofReference
+    assert VendorQualificationProofReference is not QualifiedPathProofReference
+    assert QualifiedPathProofReference is not PlatformIsolationProofReference
 
 
 def test_ec3_vendor_rows_do_not_borrow_platform_canonical_isolation_proof() -> None:
