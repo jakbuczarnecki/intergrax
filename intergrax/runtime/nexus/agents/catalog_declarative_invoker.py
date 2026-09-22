@@ -12,17 +12,21 @@ from intergrax.agents.persistence.declarative_tool_executor import (
     DeclarativeToolInvokeResult,
     DeclarativeToolInvoker,
 )
+from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+)
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+from intergrax.runtime.nexus.session.in_memory_session_storage import (
+    InMemorySessionStorage,
+)
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.tools.catalog_dispatch import invoke_catalog_tool_request
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
@@ -59,6 +63,7 @@ class CatalogDeclarativeRunBinding:
     agent_id: str = ""
     tenant_id: str = ""
     user_id: str = ""
+    declarative_hitl_grant: DeclarativeHitlApprovalGrant | None = None
 
 
 @dataclass
@@ -66,7 +71,9 @@ class CatalogDeclarativeToolInvoker:
     """Invoke declarative actions through the Tier-1 catalog tool gateway."""
 
     tool_invoker: RuntimeToolInvoker
-    binding: CatalogDeclarativeRunBinding = field(default_factory=CatalogDeclarativeRunBinding)
+    binding: CatalogDeclarativeRunBinding = field(
+        default_factory=CatalogDeclarativeRunBinding
+    )
     production_mode: bool = False
 
     def bind_run(
@@ -100,7 +107,10 @@ class CatalogDeclarativeToolInvoker:
         )
 
     def _runtime_state(self) -> RuntimeState:
-        from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
+        from intergrax.contracts.execution_identity import (
+            validate_run_id,
+            validate_task_id,
+        )
 
         agent_id = _require_bound_identity_field(self.binding.agent_id, "agent_id")
         tenant_id = _require_bound_identity_field(self.binding.tenant_id, "tenant_id")
@@ -210,4 +220,6 @@ def resolve_declarative_tool_invoker(
         return None
     if isinstance(candidate, DeclarativeToolInvoker):
         return candidate
-    raise TypeError("declarative tool invoker metadata must implement DeclarativeToolInvoker")
+    raise TypeError(
+        "declarative tool invoker metadata must implement DeclarativeToolInvoker"
+    )

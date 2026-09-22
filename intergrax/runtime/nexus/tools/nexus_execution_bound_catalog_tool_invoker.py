@@ -146,6 +146,7 @@ class NexusExecutionBoundCatalogToolInvoker:
             ),
             run_id=resolved_run_id,
             tool_traces=[],
+            declarative_hitl_grant=self.binding.declarative_hitl_grant,
         )
 
 
