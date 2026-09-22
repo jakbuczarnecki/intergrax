@@ -100,6 +100,24 @@ GR12_A3_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
     ),
 )
 
+GR12_A4_RESIDUAL_PATH_IDS: Final[tuple[str, ...]] = (
+    "CP-PLUGIN-CATALOG-HOT-RELOAD",
+    "CP-VECTOR-INDEX-ADMIN",
+    "CP-MEM-SPECIALIZED-MUTATION",
+)
+
+GR12_A4_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
+    task_name="GR-12-A4-R1 — Catalog Hot Reload operator model, revision CAS, and CLA-04 enforcement",
+    exact_blocker=(
+        "CP-PLUGIN-CATALOG-HOT-RELOAD: consequential in-process registry reload without "
+        "revision semantics, without CLA-04, without operator API, and without host-compose wiring."
+    ),
+    why_highest=(
+        "Only residual path with a named live mutation function; vector and memory blocked "
+        "on architecture decisions (R2/R3) before qualification proofs."
+    ),
+)
+
 
 GR12_A1_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
     task_name=(
@@ -440,13 +458,15 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         production_entrypoint="intergrax.integrations.registry.catalog_hot_reload.reload_integration_catalog",
         mutation="in-process integration registry replace (override=True)",
         consequential=True,
-        current_guard="ApplicationProfile.PRODUCT + feature flag only",
-        current_authority="environment profile flag",
+        current_guard=(
+            "PRODUCT + catalog_hot_reload_enabled; wiring not in host compose; no CLA-04"
+        ),
+        current_authority="environment profile flag (not policy evaluator)",
         audit_evidence="CatalogHotReloadReport only",
-        applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.GAP,
-        recommended_owner="integrations registry",
-        future_remediation="GR-12-A4 catalog mutation governance slice",
+        applicability=Gr12Applicability.REQUIRES_ARCHITECTURE_DECISION,
+        coverage=Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED,
+        recommended_owner="integrations registry + applications composition",
+        future_remediation="GR-12-A4-R1 operator API + revision + CLA-04 enforcement",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-MEM-SPECIALIZED-MUTATION",
@@ -460,7 +480,7 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         applicability=Gr12Applicability.REQUIRES_ARCHITECTURE_DECISION,
         coverage=Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED,
         recommended_owner="memory domain",
-        future_remediation="ADR: bridge vs parallel port under CLA-04",
+        future_remediation="GR-12-A4-R3 specialized memory governance architecture ADR",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-MARKETPLACE-ACQUIRE",
@@ -507,16 +527,19 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
     Gr12ControlPlaneSurface(
         path_id="CP-VECTOR-INDEX-ADMIN",
         surface="Vector index administration",
-        production_entrypoint="intergrax.integrations.providers.vector_store.qdrant.index_administration.QdrantVectorIndexAdministration",
-        mutation="collection create/delete/reindex",
+        production_entrypoint=(
+            "intergrax.integrations.contracts.vector_index_administration."
+            "VectorIndexAdministration"
+        ),
+        mutation="prepare_index (idempotent create/align); destructive ops provider-internal only",
         consequential=True,
-        current_guard="provider adapter only",
+        current_guard="provider adapter + bootstrap callers; no CLA-04 bridge",
         current_authority="integration credentials",
         audit_evidence="provider logs only",
         applicability=Gr12Applicability.REQUIRES_ARCHITECTURE_DECISION,
-        coverage=Gr12CoverageStatus.GAP,
+        coverage=Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED,
         recommended_owner="integrations/RAG",
-        future_remediation="Scope decision: operator API vs internal only",
+        future_remediation="GR-12-A4-R2 vector admin CLA-04 mapping / operator exposure ADR",
     ),
 )
 
