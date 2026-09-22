@@ -2,7 +2,72 @@
 
 > **Enterprise certification record at the certified code SHA below — not a substitute for day-to-day architecture SSOT.** For current Observability + Diagnostics spine semantics reconciled to `development`, use [`OBSERVABILITY.md`](../../architecture/OBSERVABILITY.md) and [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md).
 
-## Final Verdict (authoritative)
+## FINAL-3 Exact-SHA Recertification — 2026-09-22
+
+### Final Verdict (FINAL-3 authoritative for OBS/DIAG enterprise core)
+
+**PASS — OBS/DIAG ENTERPRISE CORE QUALIFIED AT EXACT SHA**
+
+| Field | Value |
+| --- | --- |
+| **QUALIFICATION_SHA / CERTIFIED_CODE_SHA** | `c5acfc17ecea4d0e4b03405eabf735799c020ff8` |
+| **origin/development at qualification start** | `c5acfc17ecea4d0e4b03405eabf735799c020ff8` |
+| **branch** | `development` |
+| **qualification record commit (CERTIFICATION_RECORD_COMMIT)** | `594bec4c2215f64b73f5758531c89c537a12078d` (docs-only; certified code remains `c5acfc17`) |
+| **relevant tree** | **clean** (no qualification-scope dirty paths) |
+| **HEAD drift during qualification** | **none** |
+
+Session evidence: `.tmp/session/final-3-clean-rerun-4/` (local logs; not certification authority).
+
+**Scope honesty:** This PASS certifies **OBS/DIAG enterprise core** at the exact SHA above — not whole-platform certification, not all providers, not all scenarios, not production-scale or multi-region/HA blanket certification.
+
+### FINAL-3 certification matrix
+
+| Axis | Verdict | Evidence |
+| --- | --- | --- |
+| Architecture ownership | **PASS** | A1/A2 + architecture gates; SSOT hubs aligned (no overclaim vs PARTIAL/NOT_PROVEN rows) |
+| Layer boundaries | **PASS** | A1 conformance + import-direction gates |
+| Contract-first | **PASS** | P1 seams exercised in A1/D; host composition X2 |
+| Replaceable pluginability | **PASS** | X2 pluginability + conformance proofs |
+| Canonical invariants | **PASS** | one-spine gates; DF4 mint gate (R4) |
+| Parser strong typing | **PASS** | B — ec1/ec3 + parser trace tests |
+| STEP typed payload family | **PASS** | PRECHECK R3A trace-bridge tests |
+| Scenario typed binding | **PASS** | PRECHECK R3B conformance + E scenario E2E |
+| DF4 qualification integrity | **PASS** | GROUP D 129/129; R4 DF4 precheck |
+| Evidence semantics | **PASS** | A1 + obs_coverage_p1 |
+| Duplicate authority | **PASS** | C one-spine + X2A canonical composition |
+| Vendor independence | **PASS** | B/C vendor evidence gates |
+| Host composition | **PASS** | C — X2/X2A/X2B/X3/X3A/X5A |
+| Zero-bypass | **PASS** | C + E |
+| Durable Problem/read | **PASS** | D + X4A paths in X4 rerun |
+| Documentation SSOT | **PASS** | OBSERVABILITY.md / DIAGNOSTICS.md maturity boundaries |
+| External P4 (Kafka spine) | **PASS** (full rerun) | `test_obs_universal_spine_cross_process_x4_e2e.py` — 12 passed @ CERTIFIED_CODE_SHA |
+| Known limitations accuracy | **PASS** | external HITL vendor NOT_PROVEN; universal E2E/HTTP PARTIAL preserved |
+
+### FINAL-3 test matrix (summary)
+
+| Group | Passed | Failed | Errors | Skipped/Deselected | Verdict |
+| --- | ---: | ---: | ---: | ---: | --- |
+| PRECHECK | 18 | 0 | 0 | — | **PASS** (+ py_compile R1/R2) |
+| A1 mandatory OBS bundle | 152 | 0 | 0 | 0 | **PASS** |
+| A2 obs_coverage_p1 | 139 | 0 | 0 | 38725 deselected | **PASS** |
+| B parser/vendor typing | 25 | 0 | 0 | 0 | **PASS** |
+| C host composition / anti-drift | 77 | 0 | 0 | 0 | **PASS** |
+| D diagnostic core | 129 | 0 | 0 | 0 | **PASS** |
+| E representative E2E | 23 | 0 | 0 | 0 | **PASS** |
+| pyright (bounded FINAL-3 scope) | — | — | 0 errors | — | **PASS** |
+| X4 (+ X4A closure tests in module) | 12 | 0 | 0 | 0 | **PASS** (full rerun) |
+
+### SHA semantics (FINAL-3)
+
+```text
+CERTIFIED_CODE_SHA = c5acfc17ecea4d0e4b03405eabf735799c020ff8
+CERTIFICATION_RECORD_COMMIT = 594bec4c2215f64b73f5758531c89c537a12078d
+```
+
+---
+
+## Final Verdict (historical R1 — superseded for core freeze by FINAL-3 above)
 
 **PASS — ENTERPRISE CERTIFIED** (R1 clean exact-SHA recertification, 2026-09-16)
 
