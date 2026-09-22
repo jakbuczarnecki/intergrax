@@ -24,6 +24,7 @@ from intergrax.runtime.governance.control_plane_mutation_authorization import (
 )
 
 BLOCKER_MISSING_BOUNDARY = "CATALOG_HOT_RELOAD_BLOCKED_MISSING_BOUNDARY"
+BLOCKER_MISSING_PRINCIPAL = "CATALOG_HOT_RELOAD_BLOCKED_MISSING_PRINCIPAL"
 BLOCKER_PRECONDITION_REVISION = "CATALOG_HOT_RELOAD_BLOCKED_PRECONDITION_REVISION"
 BLOCKER_POLICY = "CATALOG_HOT_RELOAD_BLOCKED_BY_POLICY"
 BLOCKER_POST_AUTH_STALE = "CATALOG_HOT_RELOAD_BLOCKED_POST_AUTHORIZATION_STALE_REVISION"
@@ -36,10 +37,8 @@ class CatalogHotReloadService:
         self,
         *,
         mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None,
-        operator_principal: RequestIdentity,
     ) -> None:
         self._boundary = mutation_authorization_boundary
-        self._principal = operator_principal
 
     @property
     def mutation_authorization_boundary(
@@ -47,7 +46,21 @@ class CatalogHotReloadService:
     ) -> ControlPlaneMutationAuthorizationBoundary | None:
         return self._boundary
 
-    def reload(self, request: CatalogHotReloadOperatorRequest) -> CatalogHotReloadResult:
+    def reload(
+        self,
+        request: CatalogHotReloadOperatorRequest,
+        *,
+        principal: RequestIdentity | None = None,
+    ) -> CatalogHotReloadResult:
+        if principal is None:
+            return CatalogHotReloadResult(
+                mutation_id=request.mutation_id,
+                before_revision=request.expected_revision,
+                after_revision=request.expected_revision,
+                changed=False,
+                blocker_code=BLOCKER_MISSING_PRINCIPAL,
+                policy_action="missing_operator_principal",
+            )
         if self._boundary is None:
             return CatalogHotReloadResult(
                 mutation_id=request.mutation_id,
@@ -73,7 +86,7 @@ class CatalogHotReloadService:
         target_revision = project_target_revision(before, candidate)
         mutation_request = build_integration_catalog_hot_reload_mutation_request(
             mutation_id=request.mutation_id,
-            principal=self._principal,
+            principal=principal,
             preset=request.preset,
             current_revision=before,
             target_revision=target_revision,

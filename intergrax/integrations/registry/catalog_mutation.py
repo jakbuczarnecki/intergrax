@@ -12,11 +12,17 @@ from intergrax.integrations.contracts.base import IntegrationEntry
 from intergrax.integrations.registry.bootstrap import IntegrationPreset
 from intergrax.integrations.registry.catalog_revision import (
     CatalogRevision,
-    compute_catalog_state_digest,
     project_target_revision,
 )
 
-_CATALOG_GENERATION = 0
+__all__ = [
+    "CatalogReplaceOutcome",
+    "CatalogReplaceResult",
+    "build_catalog_entries_for_preset",
+    "current_catalog_revision",
+    "replace_catalog_if_revision",
+    "reset_catalog_revision_tracking_for_tests",
+]
 
 
 class CatalogReplaceOutcome(StrEnum):
@@ -34,12 +40,12 @@ class CatalogReplaceResult:
 
 def current_catalog_revision() -> CatalogRevision:
     from intergrax.integrations.registry.catalog import (
-        _catalog_entries_for_revision,
         catalog_state_lock,
+        read_catalog_revision_under_lock,
     )
 
     with catalog_state_lock():
-        return _read_revision_under_lock()
+        return read_catalog_revision_under_lock()
 
 
 def build_catalog_entries_for_preset(
@@ -69,11 +75,13 @@ def replace_catalog_if_revision(
     """CAS commit — generation bumps only on material digest change."""
     from intergrax.integrations.registry.catalog import (
         _atomic_replace_catalog_entries,
+        _assign_catalog_generation,
         catalog_state_lock,
+        read_catalog_revision_under_lock,
     )
 
     with catalog_state_lock():
-        before = _read_revision_under_lock()
+        before = read_catalog_revision_under_lock()
         if before != expected_revision:
             return CatalogReplaceResult(
                 outcome=CatalogReplaceOutcome.REVISION_CONFLICT,
@@ -88,8 +96,7 @@ def replace_catalog_if_revision(
                 after_revision=before,
             )
         _atomic_replace_catalog_entries(dict(candidate_entries))
-        global _CATALOG_GENERATION
-        _CATALOG_GENERATION = target.generation
+        _assign_catalog_generation(target.generation)
         return CatalogReplaceResult(
             outcome=CatalogReplaceOutcome.COMMITTED,
             before_revision=before,
@@ -98,28 +105,11 @@ def replace_catalog_if_revision(
 
 
 def reset_catalog_revision_tracking_for_tests() -> None:
-    """Test helper — reset generation counter after ``clear_catalog()``."""
-    global _CATALOG_GENERATION
-    from intergrax.integrations.registry.catalog import catalog_state_lock
+    """Test helper — reset generation counter after isolated catalog clears."""
+    from intergrax.integrations.registry.catalog import (
+        _assign_catalog_generation,
+        catalog_state_lock,
+    )
 
     with catalog_state_lock():
-        _CATALOG_GENERATION = 0
-
-
-def _read_revision_under_lock() -> CatalogRevision:
-    from intergrax.integrations.registry.catalog import _catalog_entries_for_revision
-
-    entries = _catalog_entries_for_revision()
-    digest = compute_catalog_state_digest(entries)
-    generation = _sync_generation_for_entries(entries)
-    return CatalogRevision(generation=generation, state_digest=digest)
-
-
-def _sync_generation_for_entries(entries: Mapping[str, IntegrationEntry]) -> int:
-    global _CATALOG_GENERATION
-    if not entries:
-        _CATALOG_GENERATION = 0
-        return 0
-    if _CATALOG_GENERATION == 0:
-        _CATALOG_GENERATION = 1
-    return _CATALOG_GENERATION
+        _assign_catalog_generation(0)

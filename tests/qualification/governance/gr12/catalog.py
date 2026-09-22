@@ -108,23 +108,23 @@ GR12_A4_RESIDUAL_PATH_IDS: Final[tuple[str, ...]] = (
 
 GR12_A4_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
     task_name=(
-        "GR-12-A4-R1-R1 — Catalog Revision Authority & Explicit Operator Identity Hardening"
+        "GR-12-A4-R2 — Vector Administration Governance Architecture & CLA-04 Mapping Decision"
     ),
     exact_blocker=(
-        "Catalog Hot Reload is wired through CLA-04, but CatalogRevision is not yet "
-        "authoritative across all canonical catalog mutations, ABA protection is not "
-        "fully proven, and composition still synthesizes operator RequestIdentity."
+        "Vector index administration port exists without CLA-04 resource mapping and "
+        "governed operator admin API; destructive lifecycle semantics undecided."
     ),
     why_highest=(
-        "Catalog was previously promoted to QUALIFIED before independent audit exposed "
-        "revision-authority and identity gaps; these must close before Vector/Memory "
-        "residual work."
+        "Catalog hot reload qualification closed in GR-12-A4-R1-R1; Vector is the next "
+        "residual consequential control-plane surface."
     ),
 )
 
-GR12_A4_R1_QUALIFICATION_PROOF: Final[str] = (
-    "tests/unit/applications/test_catalog_hot_reload_governance.py"
+GR12_A4_R1_R1_QUALIFICATION_PROOF: Final[str] = (
+    "tests/qualification/governance/gr12/test_gr12_a4_r1_r1_catalog_revision_and_identity_qualification.py"
 )
+
+GR12_A4_R1_QUALIFICATION_PROOF: Final[str] = GR12_A4_R1_R1_QUALIFICATION_PROOF
 
 
 GR12_A1_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
@@ -476,11 +476,9 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="composition-injected CLA-04 boundary",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence + CatalogHotReloadResult",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="integrations registry + applications composition",
-        future_remediation=(
-            "GR-12-A4-R1-R1 — Catalog Revision Authority & Explicit Operator Identity Hardening"
-        ),
+        future_remediation="",
         qualification_proof=GR12_A4_R1_QUALIFICATION_PROOF,
     ),
     Gr12ControlPlaneSurface(

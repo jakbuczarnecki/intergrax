@@ -22,7 +22,11 @@ from intergrax.integrations.contracts.base import (
 if TYPE_CHECKING:
     from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
 
+from intergrax.contracts.integration_catalog_revision import CatalogRevision
+from intergrax.integrations.registry.catalog_revision import compute_catalog_state_digest
+
 _CATALOG: dict[str, IntegrationEntry] = {}
+_CATALOG_GENERATION = 0
 _CATALOG_STATE_LOCK = threading.RLock()
 _REGISTRATION_SINK: contextvars.ContextVar[dict[str, IntegrationEntry] | None] = (
     contextvars.ContextVar("integration_catalog_registration_sink", default=None)
@@ -53,6 +57,29 @@ def _atomic_replace_catalog_entries(entries: dict[str, IntegrationEntry]) -> Non
     _CATALOG.update(entries)
 
 
+def read_catalog_revision_under_lock() -> CatalogRevision:
+    """Read authoritative revision; caller must hold ``catalog_state_lock``."""
+    digest = compute_catalog_state_digest(_CATALOG)
+    return CatalogRevision(generation=_CATALOG_GENERATION, state_digest=digest)
+
+
+def set_catalog_generation_for_tests(generation: int) -> None:
+    """Test helper — set generation under catalog lock (used with ``clear_catalog``)."""
+    _assign_catalog_generation(generation)
+
+
+def _assign_catalog_generation(generation: int) -> None:
+    global _CATALOG_GENERATION
+    _CATALOG_GENERATION = generation
+
+
+def _apply_material_change_if_digest_differs(before_digest: str) -> None:
+    global _CATALOG_GENERATION
+    after_digest = compute_catalog_state_digest(_CATALOG)
+    if after_digest != before_digest:
+        _CATALOG_GENERATION += 1
+
+
 def register_integration(entry: IntegrationEntry, *, override: bool = False) -> None:
     """Register or replace a provider factory (used by providers and tests)."""
     normalized_slug = entry.slug.strip().lower()
@@ -74,7 +101,9 @@ def register_integration(entry: IntegrationEntry, *, override: bool = False) -> 
         sink[normalized_slug] = normalized_entry
         return
     with _CATALOG_STATE_LOCK:
+        before_digest = compute_catalog_state_digest(_CATALOG)
         _CATALOG[normalized_slug] = normalized_entry
+        _apply_material_change_if_digest_differs(before_digest)
 
 
 def unregister_integration(slug: str) -> None:
@@ -82,19 +111,20 @@ def unregister_integration(slug: str) -> None:
     if sink is not None:
         sink.pop(slug, None)
         return
+    normalized = slug.strip().lower()
     with _CATALOG_STATE_LOCK:
-        _CATALOG.pop(slug, None)
+        if normalized not in _CATALOG:
+            return
+        before_digest = compute_catalog_state_digest(_CATALOG)
+        _CATALOG.pop(normalized, None)
+        _apply_material_change_if_digest_differs(before_digest)
 
 
 def clear_catalog() -> None:
-    """Test helper — reset catalog to empty."""
-    from intergrax.integrations.registry.catalog_mutation import (
-        reset_catalog_revision_tracking_for_tests,
-    )
-
+    """Test helper — reset catalog and revision generation to initial state."""
     with _CATALOG_STATE_LOCK:
         _CATALOG.clear()
-    reset_catalog_revision_tracking_for_tests()
+        _assign_catalog_generation(0)
 
 
 def get_entry(slug: str) -> IntegrationEntry:

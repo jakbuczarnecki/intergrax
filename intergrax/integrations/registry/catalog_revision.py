@@ -28,14 +28,17 @@ def logical_catalog_row(entry: IntegrationEntry) -> dict[str, object]:
         "env_prefix": entry.env_prefix,
         "description": entry.description,
         "requires_local_container": entry.requires_local_container,
-        "contract_specs": sorted(
+        "contract_specs": [
             {
                 "category": spec.category,
                 "provider_id": spec.provider_id,
                 "integration_kind": spec.integration_kind,
             }
-            for spec in entry.contract_specs
-        ),
+            for spec in sorted(
+                entry.contract_specs,
+                key=lambda spec: (spec.category, spec.provider_id, spec.integration_kind),
+            )
+        ],
     }
 
 

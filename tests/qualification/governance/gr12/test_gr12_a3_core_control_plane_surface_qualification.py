@@ -64,15 +64,18 @@ def test_gr12_a3_catalog_qualified_paths_match_ssot() -> None:
         for row in GR12_CONTROL_PLANE_SURFACES
         if row.coverage is Gr12CoverageStatus.QUALIFIED
     }
-    assert qualified_in_catalog == set(GR12_A3_QUALIFIED_PATH_IDS)
+    assert set(GR12_A3_QUALIFIED_PATH_IDS).issubset(qualified_in_catalog)
+    post_a3_qualified = qualified_in_catalog - set(GR12_A3_QUALIFIED_PATH_IDS)
+    assert post_a3_qualified <= {"CP-PLUGIN-CATALOG-HOT-RELOAD"}
 
 
 def test_gr12_a3_qualified_rows_carry_execution_proof_reference() -> None:
     for row in GR12_CONTROL_PLANE_SURFACES:
         if row.coverage is Gr12CoverageStatus.QUALIFIED:
             assert row.qualification_proof.strip()
-            bundle = gr12_a3_proof_bundle(row.path_id)
-            assert row.qualification_proof == bundle.primary_proof
+            if row.path_id in GR12_A3_QUALIFIED_PATH_IDS:
+                bundle = gr12_a3_proof_bundle(row.path_id)
+                assert row.qualification_proof == bundle.primary_proof
         elif row.applicability is Gr12Applicability.APPLICABLE:
             assert row.coverage is not Gr12CoverageStatus.QUALIFIED
 
