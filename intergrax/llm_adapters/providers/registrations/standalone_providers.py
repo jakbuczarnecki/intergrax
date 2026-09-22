@@ -6,6 +6,16 @@ from __future__ import annotations
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.providers.registrations._lazy_factory import register_lazy_adapter
+from intergrax.llm_adapters.providers.registrations.external_operation_seams import (
+    BEDROCK_EXTERNAL_OPERATION_CAPABILITIES,
+    HTTP_SDK_EXTERNAL_OPERATION_CAPABILITIES,
+    OLLAMA_LOCAL_EXTERNAL_OPERATION_CAPABILITIES,
+    build_bedrock_external_operation_seam,
+    build_claude_external_operation_seam,
+    build_mistral_external_operation_seam,
+    build_ollama_external_operation_seam,
+    build_openai_external_operation_seam,
+)
 from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterRegistrationTarget,
     OptionalDependencyRequirement,
@@ -78,6 +88,8 @@ def register_claude(registry: LLMAdapterRegistrationTarget) -> None:
         provider_id=LLMProvider.CLAUDE.value,
         dependency=_CLAUDE_DEPENDENCY,
         load_adapter_cls=_load_claude_adapter,
+        external_operation_seam_factory=build_claude_external_operation_seam,
+        external_operation_capabilities=HTTP_SDK_EXTERNAL_OPERATION_CAPABILITIES,
     )
 
 
@@ -87,6 +99,8 @@ def register_mistral(registry: LLMAdapterRegistrationTarget) -> None:
         provider_id=LLMProvider.MISTRAL.value,
         dependency=_MISTRAL_DEPENDENCY,
         load_adapter_cls=_load_mistral_adapter,
+        external_operation_seam_factory=build_mistral_external_operation_seam,
+        external_operation_capabilities=HTTP_SDK_EXTERNAL_OPERATION_CAPABILITIES,
     )
 
 
@@ -96,6 +110,8 @@ def register_aws_bedrock(registry: LLMAdapterRegistrationTarget) -> None:
         provider_id=LLMProvider.AWS_BEDROCK.value,
         dependency=_BEDROCK_DEPENDENCY,
         load_adapter_cls=_load_bedrock_adapter,
+        external_operation_seam_factory=build_bedrock_external_operation_seam,
+        external_operation_capabilities=BEDROCK_EXTERNAL_OPERATION_CAPABILITIES,
     )
 
 
@@ -105,6 +121,8 @@ def register_ollama(registry: LLMAdapterRegistrationTarget) -> None:
         provider_id=LLMProvider.OLLAMA.value,
         dependency=_OLLAMA_DEPENDENCY,
         load_adapter_cls=_load_native_ollama_adapter,
+        external_operation_seam_factory=build_ollama_external_operation_seam,
+        external_operation_capabilities=OLLAMA_LOCAL_EXTERNAL_OPERATION_CAPABILITIES,
     )
 
 
@@ -114,4 +132,6 @@ def register_cohere_native(registry: LLMAdapterRegistrationTarget) -> None:
         provider_id=LLMProvider.COHERE_NATIVE.value,
         dependency=_COHERE_NATIVE_DEPENDENCY,
         load_adapter_cls=_load_cohere_native_adapter,
+        external_operation_seam_factory=build_openai_external_operation_seam,
+        external_operation_capabilities=HTTP_SDK_EXTERNAL_OPERATION_CAPABILITIES,
     )

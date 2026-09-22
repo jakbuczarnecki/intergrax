@@ -6,6 +6,10 @@ from __future__ import annotations
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.providers.registrations._lazy_factory import register_lazy_adapter
+from intergrax.llm_adapters.providers.registrations.external_operation_seams import (
+    HTTP_SDK_EXTERNAL_OPERATION_CAPABILITIES,
+    build_gemini_external_operation_seam,
+)
 from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterRegistrationTarget,
     OptionalDependencyRequirement,
@@ -42,6 +46,8 @@ def register_gemini(registry: LLMAdapterRegistrationTarget) -> None:
         provider_id=LLMProvider.GEMINI.value,
         dependency=_GEMINI_DEPENDENCY,
         load_adapter_cls=_load_gemini_adapter,
+        external_operation_seam_factory=build_gemini_external_operation_seam,
+        external_operation_capabilities=HTTP_SDK_EXTERNAL_OPERATION_CAPABILITIES,
     )
 
 
@@ -51,4 +57,6 @@ def register_vertex_gemini(registry: LLMAdapterRegistrationTarget) -> None:
         provider_id=LLMProvider.VERTEX_GEMINI.value,
         dependency=_VERTEX_GEMINI_DEPENDENCY,
         load_adapter_cls=_load_vertex_gemini_adapter,
+        external_operation_seam_factory=build_gemini_external_operation_seam,
+        external_operation_capabilities=HTTP_SDK_EXTERNAL_OPERATION_CAPABILITIES,
     )
