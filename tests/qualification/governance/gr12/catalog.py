@@ -138,6 +138,7 @@ GR12_A4_R2_R1_EXECUTION_PROOF_NODES: Final[tuple[str, ...]] = (
     "tests/unit/applications/test_vector_index_configuration_projection.py::test_vec_digest_capability_order_irrelevant",
     "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_9_external_evaluator_receives_cla04_request",
     "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_proj_1_unprojectable_current_state",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_19_canonical_identity_authority_to_execution_binding",
     "tests/unit/integrations/contracts/test_vector_index_administration.py::test_vector_index_spec_rejects_empty_logical_name",
 )
 
