@@ -10,6 +10,7 @@ from typing import cast
 
 from pydantic import BaseModel
 
+from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvokeRequest,
 )
@@ -33,6 +34,10 @@ from intergrax.runtime.nexus.session.in_memory_session_storage import (
     InMemorySessionStorage,
 )
 from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.nexus.tools.governance_approval_evidence_adapter import (
+    declarative_hitl_grant_from_invocation_evidence,
+    require_invocation_evidence_matches_request,
+)
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
@@ -133,6 +138,7 @@ class NexusExecutionBoundCatalogToolInvoker:
         )
         resolved_run_id = validate_run_id(request.run_id)
         resolved_task_id = validate_task_id(request.task_id)
+        declarative_grant = self._declarative_hitl_grant_for_request(request)
         return RuntimeState(
             context=context,
             request=RuntimeRequest(
@@ -146,8 +152,24 @@ class NexusExecutionBoundCatalogToolInvoker:
             ),
             run_id=resolved_run_id,
             tool_traces=[],
-            declarative_hitl_grant=self.binding.declarative_hitl_grant,
+            declarative_hitl_grant=declarative_grant,
         )
+
+    def _declarative_hitl_grant_for_request(
+        self,
+        request: ExecutionBoundCatalogToolInvokeRequest,
+    ) -> DeclarativeHitlApprovalGrant | None:
+        if request.governance_approval_evidence is not None:
+            require_invocation_evidence_matches_request(
+                request.governance_approval_evidence,
+                request,
+            )
+            return declarative_hitl_grant_from_invocation_evidence(
+                request.governance_approval_evidence,
+            )
+        if self.binding.declarative_hitl_grant is not None:
+            return self.binding.declarative_hitl_grant
+        return None
 
 
 def _require_bound_identity_field(value: str, label: str) -> str:

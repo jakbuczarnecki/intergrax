@@ -191,6 +191,7 @@ class WiringCodeCraftBoundCapabilityExecution:
             step_id=step_id,
             correlation_request_id=str(request.execution_id),
             wiring_resolver=wiring_resolver,
+            governance_approval_evidence=request.governance_approval_evidence,
         )
         try:
             tool_result = self._catalog_tool_invoker.invoke(invoke_request)
@@ -235,19 +236,20 @@ def _map_tool_execution_result(
 
     code_value = str(tool_result.error.error_code)
     message = tool_result.error.error_message
+    reason_detail = message if message else code_value
     if code_value in {"permission_error", "policy_error"}:
         return CodeCraftBoundCapabilityExecutionResult(
             outcome=CodeCraftBoundCapabilityExecutionOutcome.REJECTED,
-            reason_detail=message or str(code),
+            reason_detail=reason_detail,
         )
     if code_value == "validation_error":
         return CodeCraftBoundCapabilityExecutionResult(
             outcome=CodeCraftBoundCapabilityExecutionOutcome.FAILED,
-            reason_detail=message or "validation_error",
+            reason_detail=reason_detail,
         )
     return CodeCraftBoundCapabilityExecutionResult(
         outcome=CodeCraftBoundCapabilityExecutionOutcome.FAILED,
-        reason_detail=message or str(code),
+        reason_detail=reason_detail,
     )
 
 

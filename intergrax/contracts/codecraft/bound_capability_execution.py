@@ -10,6 +10,9 @@ from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.execution_identity import ExecutionId, TaskId
+from intergrax.contracts.tool_invocation_governance_approval_evidence import (
+    ToolInvocationGovernanceApprovalEvidence,
+)
 
 
 class CodeCraftBoundCapabilityExecutionOutcome(StrEnum):
@@ -30,6 +33,7 @@ class CodeCraftBoundCapabilityExecutionRequest:
     task_id: TaskId
     run_id: str | None
     execution_id: ExecutionId
+    governance_approval_evidence: ToolInvocationGovernanceApprovalEvidence | None = None
 
 
 @dataclass(frozen=True, slots=True)

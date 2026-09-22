@@ -72,7 +72,7 @@ from tests.unit.autonomous_work.test_uca6c_r4_real_codecraft_execution import (
 )
 from tests.unit.autonomous_work.uca6c_r5_r2_strict_fixtures import (
     build_sandbox_session,
-    uca6c_high_risk_tool_approval_grant,
+    uca6c_high_risk_tool_approval_evidence,
     uca6c_strict_echo_only_worker_manifest,
     uca6c_strict_sandbox_env_profile,
     uca6c_strict_worker_manifest,
@@ -168,24 +168,6 @@ def _strict_tool_wiring(ctx: ToolWiringContext) -> ApplicationToolWiring:
     )
 
 
-def _bind_high_risk_approval_on_catalog(
-    catalog: NexusExecutionBoundCatalogToolInvoker,
-    *,
-    tenant_id: str,
-    task_id: str,
-    run_id: str,
-    step_id: str,
-    agent_id: str,
-) -> None:
-    catalog.binding.declarative_hitl_grant = uca6c_high_risk_tool_approval_grant(
-        tenant_id=tenant_id,
-        task_id=task_id,
-        run_id=run_id,
-        step_id=step_id,
-        agent_id=agent_id,
-    )
-
-
 def test_strict_production_tests_have_no_private_governance_mutation() -> None:
     tree = ast.parse(Path(__file__).read_text(encoding="utf-8"))
     for node in ast.walk(tree):
@@ -211,6 +193,10 @@ def test_strict_production_tests_have_no_private_governance_mutation() -> None:
         if isinstance(node, ast.Name) and node.id == "allow_all_agent_governance":
             raise AssertionError(
                 "strict production E2E must not use allow_all_agent_governance",
+            )
+        if isinstance(node, ast.Attribute) and node.attr == "declarative_hitl_grant":
+            raise AssertionError(
+                "strict production tests must not mutate catalog.binding declarative_hitl_grant",
             )
 
 
@@ -355,8 +341,7 @@ def test_strict_production_success_via_high_level_builder(tmp_path: Path) -> Non
     run_id = mint_run_id()
     execution_id = mint_execution_id()
     step_id = f"uca6c.bound:{execution_id}"
-    _bind_high_risk_approval_on_catalog(
-        catalog,
+    approval_evidence = uca6c_high_risk_tool_approval_evidence(
         tenant_id=_TENANT,
         task_id=str(_TASK_ID),
         run_id=str(run_id),
@@ -383,6 +368,7 @@ def test_strict_production_success_via_high_level_builder(tmp_path: Path) -> Non
                 task_id=_TASK_ID,
                 run_id=None,
                 execution_id=execution_id,
+                governance_approval_evidence=approval_evidence,
             ),
         )
     finally:
@@ -420,12 +406,12 @@ def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
     assert isinstance(catalog, NexusExecutionBoundCatalogToolInvoker)
     run_id = mint_run_id()
     execution_id = mint_execution_id()
-    _bind_high_risk_approval_on_catalog(
-        catalog,
+    step_id = f"uca6c.bound:{execution_id}"
+    approval_evidence = uca6c_high_risk_tool_approval_evidence(
         tenant_id=_TENANT,
         task_id=str(_TASK_ID),
         run_id=str(run_id),
-        step_id=f"uca6c.bound:{execution_id}",
+        step_id=step_id,
         agent_id=caller_agent_id,
     )
     id_token = bind_active_execution_identity(
@@ -449,6 +435,7 @@ def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
                     task_id=_TASK_ID,
                     run_id=None,
                     execution_id=execution_id,
+                    governance_approval_evidence=approval_evidence,
                 ),
             )
     finally:

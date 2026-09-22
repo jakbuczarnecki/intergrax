@@ -9,6 +9,9 @@ from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel
 
+from intergrax.contracts.tool_invocation_governance_approval_evidence import (
+    ToolInvocationGovernanceApprovalEvidence,
+)
 from intergrax.tools.execution_models import ToolExecutionResult
 from intergrax.tools.invocation_wiring import ToolInvocationWiringResolver
 
@@ -27,6 +30,7 @@ class ExecutionBoundCatalogToolInvokeRequest:
     correlation_request_id: str | None = None
     idempotency_key: str | None = None
     wiring_resolver: ToolInvocationWiringResolver | None = None
+    governance_approval_evidence: ToolInvocationGovernanceApprovalEvidence | None = None
 
 
 @runtime_checkable

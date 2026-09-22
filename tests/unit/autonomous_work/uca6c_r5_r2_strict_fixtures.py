@@ -24,6 +24,10 @@ from intergrax.applications.contracts.environment_profile.sub_profiles import (
 from intergrax.contracts.policy_enforcement_mode import PolicyEnforcementMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
+from intergrax.contracts.tool_invocation_governance_approval_evidence import (
+    ToolInvocationGovernanceApprovalEvidence,
+    tool_invocation_governance_approval_evidence_from_declarative_hitl,
+)
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.tools.providers.sandbox.bundle import CODE_EXEC_TOOL_ID
@@ -125,6 +129,28 @@ def uca6c_strict_worker_registry(manifest: ApplicationManifest) -> AgentRegistry
     return build_application_registry(manifest, ctx, composition=composition)
 
 
+def uca6c_high_risk_tool_approval_evidence(
+    *,
+    tenant_id: str,
+    task_id: str,
+    run_id: str,
+    step_id: str,
+    agent_id: str = _UCA6C_WORKER_ID,
+    tool_id: str = CODE_EXEC_TOOL_ID,
+) -> ToolInvocationGovernanceApprovalEvidence:
+    """Neutral post-HITL approval evidence for HIGH-risk catalog tools."""
+    return tool_invocation_governance_approval_evidence_from_declarative_hitl(
+        uca6c_high_risk_tool_approval_grant(
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+            step_id=step_id,
+            agent_id=agent_id,
+            tool_id=tool_id,
+        ),
+    )
+
+
 def uca6c_high_risk_tool_approval_grant(
     *,
     tenant_id: str,
@@ -169,6 +195,7 @@ __all__ = [
     "Uca6cEchoOnlyWorkerAgent",
     "Uca6cQualifiedSandboxWorkerAgent",
     "build_sandbox_session",
+    "uca6c_high_risk_tool_approval_evidence",
     "uca6c_high_risk_tool_approval_grant",
     "uca6c_strict_echo_only_worker_manifest",
     "uca6c_strict_sandbox_env_profile",
