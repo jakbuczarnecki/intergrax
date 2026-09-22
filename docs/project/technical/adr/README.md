@@ -130,6 +130,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-GR-10-004](entries/2026-09-21/ADR-GR-10-004-agentic-execution-model-uaep-canonical.md) | Canonical AGENTIC execution model — UAEP spine, ACP session explicit opt-in (GR-10-A2) | Accepted |
 | [ADR-GOVERNED-EXECUTION-003](entries/2026-09-18/ADR-GOVERNED-EXECUTION-003-ROOT-GOVERNANCE-IDENTITY-AUTHORITY.md) | Root governance identity authority boundary (OBS-DIAG-RECERT-P2C-R0A-ADR1) | Proposed |
 | [ADR-HARNESS-001](entries/2026-09-20/ADR-HARNESS-001.md) | Execution Engine public boundary & Nexus encapsulation model (HARNESS-01-ADR2) | Accepted (architecture freeze) |
+| [ADR-HARNESS-003](entries/2026-09-22/ADR-HARNESS-003.md) | Execution-bound capability invocation ownership (HARNESS-01-R5-ADR3) | Accepted (architecture freeze) |
 
 **Consolidation:** platform ownership, lifecycle, and invariants for GEC-0â€¦GEC-6 - [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 

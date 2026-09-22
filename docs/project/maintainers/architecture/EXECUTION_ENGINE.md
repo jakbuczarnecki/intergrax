@@ -12,6 +12,10 @@
 
 Public Execution Engine boundary and Nexus privacy are frozen by [`ADR-HARNESS-001`](../../technical/adr/entries/2026-09-20/ADR-HARNESS-001.md). Nexus is private to EE (`runtime/execution/**` + `runtime/nexus/**` only). Hosts use `HostTaskExecutionPort`; agents/tools/providers use domain contracts. HARNESS-01-R5 resumes under this ADR; HARNESS-01 is not closed until owner-zone metrics pass.
 
+### HARNESS-01-R5-ADR3 — Execution-bound invocation ownership
+
+L1/L2/L3 invocation ownership, EBCI invariants, per-call immutable execution scope (target), and Nexus `RuntimeState` projection rules are frozen by [`ADR-HARNESS-003`](../../technical/adr/entries/2026-09-22/ADR-HARNESS-003.md). Public Tools invocation ABI remains [`ToolInvocationInvokerPort`](../../technical/adr/entries/2026-09-20/ADR-HARNESS-001.md) (ADR-HARNESS-001 D5); domain execution-bound contracts live under `intergrax.contracts.*` and must not import Nexus.
+
 **This document does not own detailed execution semantics.** Normative cross-domain semantics remain in [`UNIFIED_EXECUTION_ARCHITECTURE.md`](../../architecture/UNIFIED_EXECUTION_ARCHITECTURE.md) (`META_ARCHITECTURE`). Domain lifecycle, topology, recovery, evidence, and qualification proofs remain with their listed canonical owners below.
 
 A documentation consolidation commit **does not reopen** frozen production semantics. Any change that contradicts frozen architecture or freeze records requires a separate architecture decision.
