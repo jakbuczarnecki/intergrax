@@ -26,6 +26,9 @@ from platform_proofs.scenarios.indirect_prompt_injection.application.runtime_com
     ScenarioRuntimeComposition,
     build_agent_runtime_context,
 )
+from platform_proofs.scenarios.indirect_prompt_injection.application.contract import (
+    build_agent_contract,
+)
 from platform_proofs.scenarios.indirect_prompt_injection.application.tools import SCENARIO_TOOL_IDS
 from platform_proofs.scenarios.indirect_prompt_injection.application.workflows import WorkflowKind
 
@@ -108,13 +111,7 @@ class OrderAssistantAgent(Agent):
         )
 
     def get_contract(self) -> AgentContract:
-        return AgentContract(
-            id=ORDER_ASSISTANT_AGENT_ID,
-            name="AI Order Assistant",
-            description="Production-capable order status and shipping assistant.",
-            capabilities=[ORDER_ASSISTANT_CAPABILITY],
-            allowed_tools=list(SCENARIO_TOOL_IDS),
-        )
+        return build_agent_contract()
 
     def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
         capability = routing_capability_from_envelope(task)

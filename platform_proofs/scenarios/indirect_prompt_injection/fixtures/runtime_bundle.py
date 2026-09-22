@@ -12,6 +12,9 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.tools.registry import ToolRegistry
 
 from platform_proofs.scenarios.indirect_prompt_injection.application.agent import OrderAssistantAgent
+from platform_proofs.scenarios.indirect_prompt_injection.application.agent_factory import (
+    bind_order_assistant_agent,
+)
 from platform_proofs.scenarios.indirect_prompt_injection.application.order_operations_port import (
     OrderOperationsPort,
 )
@@ -79,6 +82,7 @@ def build_fixture_runtime_bundle(
         composition=composition,
         agent_registry=agent_registry,
         order_operations=resolved_operations,
+        order_assistant_factory=bind_order_assistant_agent(agent),
     )
     run_bundle = OrderAssistantRunBundle(
         workflow=workflow,
