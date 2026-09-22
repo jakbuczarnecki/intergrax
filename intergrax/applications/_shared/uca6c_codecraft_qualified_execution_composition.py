@@ -1,6 +1,16 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Production composition for UCA-6C qualified CodeCraft catalog tool execution."""
+"""Production composition for UCA-6C qualified CodeCraft catalog tool execution.
+
+Bootstrap owner for ``code.exec`` catalog registration: application/host calls
+``bootstrap_uca6c_code_exec_catalog_tools`` once at startup (or relies on
+``ensure_code_exec_registered`` during host-owned composition construction).
+Registration must not occur per execution/resume.
+
+Default ``StaticToolScopePolicy({CODE_EXEC_TOOL_ID})`` narrows tool authority to the
+qualified CodeCraft execution surface only; host ``scope_policy`` may narrow further
+but must not widen beyond the injected policy.
+"""
 
 from __future__ import annotations
 
@@ -50,6 +60,13 @@ class Uca6cCodecraftQualifiedExecutionCompositionError(RuntimeError):
     """Fail closed when production CodeCraft tool invocation cannot be wired."""
 
 
+def bootstrap_uca6c_code_exec_catalog_tools(tool_wiring: ApplicationToolWiring) -> None:
+    """Register sandbox catalog tools (including ``code.exec``) on the application registry."""
+    registry = tool_wiring.registry
+    if not registry.has(CODE_EXEC_TOOL_ID):
+        register_sandbox_tools(registry, tool_wiring.wiring_context)
+
+
 def build_execution_bound_catalog_tool_invoker_for_qualified_capability(
     tool_wiring: ApplicationToolWiring,
     environment: ApplicationEnvironmentProfile,
@@ -74,14 +91,19 @@ def build_execution_bound_catalog_tool_invoker_for_qualified_capability(
             "tenant_id is required for qualified capability catalog invocation",
         )
     registry = tool_wiring.registry
-    if ensure_code_exec_registered and not registry.has(CODE_EXEC_TOOL_ID):
-        register_sandbox_tools(registry, tool_wiring.wiring_context)
+    if ensure_code_exec_registered:
+        bootstrap_uca6c_code_exec_catalog_tools(tool_wiring)
     production_mode = environment.execution_mode.value == "strict"
     governance = None
     if production_mode:
         if manifest is None or agent_registry is None:
             raise Uca6cCodecraftQualifiedExecutionCompositionError(
                 "STRICT execution requires manifest and agent_registry for tool governance",
+            )
+        if meaningful_side_effect_authorization is None:
+            raise Uca6cCodecraftQualifiedExecutionCompositionError(
+                "STRICT execution requires meaningful_side_effect_authorization "
+                "for tool governance",
             )
         grants = capability_grants_from_application_manifest(
             manifest,
@@ -119,6 +141,10 @@ def build_production_codecraft_qualified_capability_execution_handler(
     manifest: ApplicationManifest | None = None,
     agent_registry: AgentRegistryRead | None = None,
     scope_policy: ToolScopePolicy | None = None,
+    meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort
+    | None = None,
+    canonical_inner_execution_guard: CanonicalInnerExecutionGuardPort | None = None,
+    ensure_code_exec_registered: bool = True,
     side_effect_recorder: list[str] | None = None,
 ) -> CodeCraftQualifiedCapabilityExecutionHandler:
     """Production stack: host ToolRuntime → execution-bound invoker → CodeCraft handler."""
@@ -131,6 +157,9 @@ def build_production_codecraft_qualified_capability_execution_handler(
             manifest=manifest,
             agent_registry=agent_registry,
             scope_policy=scope_policy,
+            meaningful_side_effect_authorization=meaningful_side_effect_authorization,
+            canonical_inner_execution_guard=canonical_inner_execution_guard,
+            ensure_code_exec_registered=ensure_code_exec_registered,
         )
     )
     return build_codecraft_qualified_capability_execution_handler(
@@ -142,6 +171,7 @@ def build_production_codecraft_qualified_capability_execution_handler(
 
 __all__ = [
     "Uca6cCodecraftQualifiedExecutionCompositionError",
+    "bootstrap_uca6c_code_exec_catalog_tools",
     "build_execution_bound_catalog_tool_invoker_for_qualified_capability",
     "build_production_codecraft_qualified_capability_execution_handler",
 ]
