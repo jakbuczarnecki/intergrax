@@ -216,6 +216,21 @@ def uca6c_attach_catalog_hitl_grant(catalog_invoker, grant: DeclarativeHitlAppro
     )
 
 
+def uca6c_strict_r6_durable_wiring() -> dict[str, object]:
+    """STRICT UCA-6C-R6 production-shaped continuation + suspended-operation backing."""
+    from intergrax.runtime.execution.continuation.composition import (
+        wire_execution_engine_continuation_dependencies,
+    )
+    from testing_support.uca6c_process_restart_durable_document_store import (
+        ProcessRestartQualificationDocumentStore,
+    )
+
+    return {
+        "document_store": ProcessRestartQualificationDocumentStore(),
+        "continuation_dependencies": wire_execution_engine_continuation_dependencies(),
+    }
+
+
 def build_sandbox_session(tmp_path: Path, *, tenant_id: str, task_id: str):
     from intergrax.runtime.sandbox.session import SandboxSession
 
@@ -238,6 +253,7 @@ __all__ = [
     "uca6c_attach_catalog_hitl_grant",
     "uca6c_high_risk_tool_approval_grant",
     "uca6c_strict_echo_only_worker_manifest",
+    "uca6c_strict_r6_durable_wiring",
     "uca6c_strict_sandbox_env_profile",
     "uca6c_strict_worker_manifest",
     "uca6c_strict_worker_registry",

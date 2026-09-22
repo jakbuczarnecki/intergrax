@@ -63,9 +63,19 @@ def _block_descriptor(store, descriptor):
     )
 
 
+def test_inmemory_backing_is_not_durable() -> None:
+    store = DocumentStoreSuspendedExecutionOperationStore(InMemoryDocumentStore())
+    assert store.is_durable is False
+
+
 def test_durable_store_survives_process_reconnect() -> None:
-    document_store = InMemoryDocumentStore()
+    from testing_support.uca6c_process_restart_durable_document_store import (
+        ProcessRestartQualificationDocumentStore,
+    )
+
+    document_store = ProcessRestartQualificationDocumentStore()
     store_a = DocumentStoreSuspendedExecutionOperationStore(document_store)
+    assert store_a.is_durable is True
     descriptor = _descriptor()
     blocked = _block_descriptor(store_a, descriptor)
     assert blocked.outcome is SuspendedOperationMutationOutcome.APPLIED
@@ -77,7 +87,13 @@ def test_durable_store_survives_process_reconnect() -> None:
 
 
 def test_reclaim_increments_fence_monotonically() -> None:
-    store = DocumentStoreSuspendedExecutionOperationStore(InMemoryDocumentStore())
+    from testing_support.uca6c_process_restart_durable_document_store import (
+        ProcessRestartQualificationDocumentStore,
+    )
+
+    store = DocumentStoreSuspendedExecutionOperationStore(
+        ProcessRestartQualificationDocumentStore(),
+    )
     descriptor = _descriptor()
     blocked = _block_descriptor(store, descriptor)
     assert blocked.descriptor is not None

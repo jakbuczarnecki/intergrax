@@ -80,6 +80,7 @@ from tests.unit.autonomous_work.uca6c_r5_r2_strict_fixtures import (
     uca6c_high_risk_tool_approval_grant,
     uca6c_strict_echo_only_worker_manifest,
     uca6c_strict_sandbox_env_profile,
+    uca6c_strict_r6_durable_wiring,
     uca6c_strict_worker_manifest,
     uca6c_strict_worker_registry,
 )
@@ -88,6 +89,11 @@ from tests.unit.runtime.nexus.tools.test_gr10_r8_orchestration_inner_guard impor
 )
 
 pytestmark = pytest.mark.unit
+
+
+def _strict_r6_kwargs() -> dict[str, object]:
+    return uca6c_strict_r6_durable_wiring()
+
 
 _COMPOSITION_PATH = Path(
     "intergrax/applications/_shared/uca6c_codecraft_qualified_execution_composition.py",
@@ -237,6 +243,7 @@ def test_strict_missing_mse_fails_at_composition() -> None:
             manifest=manifest,
             agent_registry=registry,
             meaningful_side_effect_authorization=None,
+            **_strict_r6_kwargs(),
         )
 
 
@@ -255,6 +262,7 @@ def test_strict_missing_manifest_fails_closed() -> None:
             manifest=None,
             agent_registry=uca6c_strict_worker_registry(uca6c_strict_worker_manifest()),
             meaningful_side_effect_authorization=mse,
+            **_strict_r6_kwargs(),
         )
 
 
@@ -273,6 +281,7 @@ def test_strict_missing_agent_registry_fails_closed() -> None:
             manifest=uca6c_strict_worker_manifest(),
             agent_registry=None,
             meaningful_side_effect_authorization=mse,
+            **_strict_r6_kwargs(),
         )
 
 
@@ -291,6 +300,7 @@ def test_high_level_builder_propagates_mse_and_inner_guard() -> None:
         agent_registry=registry,
         meaningful_side_effect_authorization=mse,
         canonical_inner_execution_guard=guard,
+        **_strict_r6_kwargs(),
     )
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)
@@ -337,6 +347,7 @@ def test_strict_production_success_via_high_level_builder(tmp_path: Path) -> Non
         agent_registry=registry,
         meaningful_side_effect_authorization=mse,
         canonical_inner_execution_guard=inner_guard,
+        **_strict_r6_kwargs(),
     )
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)
@@ -408,6 +419,7 @@ def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
         agent_registry=registry,
         meaningful_side_effect_authorization=mse,
         canonical_inner_execution_guard=inner_guard,
+        **_strict_r6_kwargs(),
     )
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)
@@ -476,6 +488,7 @@ def test_strict_agent_governance_deny_blocks_before_mse(tmp_path: Path) -> None:
         agent_registry=registry,
         meaningful_side_effect_authorization=mse,
         canonical_inner_execution_guard=inner_guard,
+        **_strict_r6_kwargs(),
     )
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)
@@ -531,6 +544,7 @@ def test_strict_high_risk_without_approval_evidence_requires_governance_approval
         agent_registry=registry,
         meaningful_side_effect_authorization=mse,
         canonical_inner_execution_guard=_RecordingGuard(allow=True),
+        **_strict_r6_kwargs(),
     )
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)

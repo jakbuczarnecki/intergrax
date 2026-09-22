@@ -83,8 +83,17 @@ def test_suspended_scope_bans_reflection() -> None:
 
 def test_uca_composition_wires_continuation_aware_dependencies() -> None:
     text = UCA_COMPOSITION.read_text(encoding="utf-8")
-    assert "continuation_aware_dependencies" in text
-    assert "validate_suspended_operation_store_for_production" in text
+    assert "build_execution_bound_catalog_tool_composition" in text
+    assert "validate_document_store_for_production_suspended_operations" in text
+    assert "runtime.nexus" not in text
+    assert "InMemoryDocumentStore" not in text
+    assert "wire_execution_engine_continuation_dependencies" not in text
+
+
+def test_reentry_coordinator_does_not_synthesize_pending() -> None:
+    text = (SUSPENDED_RUNTIME / "reentry_coordinator.py").read_text(encoding="utf-8")
+    assert "_pending_from_pause_descriptor" not in text
+    assert "DeclarativeHitlPendingApproval(" not in text
 
 
 def test_aw_does_not_import_nexus() -> None:
