@@ -467,19 +467,22 @@ def test_ecp_gr12_r2_resolve_production_capacity_wiring_consumes_supplied_bounda
     assert len(recording.calls) >= 1
 
 
-def test_ecp_gr12_r2_production_wiring_does_not_build_secondary_mutation_boundary() -> None:
+def test_ecp_gr12_r2_production_wiring_passes_supplied_boundary_to_adapter_builder() -> None:
+    """GR-12-A3-R3: supplied CLA-04 boundary identity reaches adapter builder unchanged."""
     env = ApplicationEnvironmentProfile.product_defaults()
     supplied = ControlPlaneMutationAuthorizationBoundary(evaluator=_RecordingEvaluator())
     governance = build_production_capacity_governance(
         env,
         mutation_authorization_boundary=supplied,
     )
-    with patch(
-        "intergrax.applications._shared.production_capacity_control_plane_policy_wiring.build_production_capacity_mutation_boundary",
-    ) as auto_build:
-        wiring = resolve_production_capacity_wiring(env, governance=governance)
-        auto_build.assert_not_called()
     assert governance.mutation_authorization_boundary is supplied
+    with patch(
+        "intergrax.applications._shared.production_capacity_wiring.build_production_capacity_adapters",
+        wraps=build_production_capacity_adapters,
+    ) as build_adapters:
+        wiring = resolve_production_capacity_wiring(env, governance=governance)
+    assert build_adapters.call_args is not None
+    assert build_adapters.call_args.kwargs["mutation_boundary"] is supplied
     assert wiring.enabled is True
     assert wiring.adapters is not None
 

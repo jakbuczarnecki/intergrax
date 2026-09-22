@@ -210,7 +210,7 @@ GR12_A3_COMPOSITION_PROOF_SSOT: Final[
             Gr12CompositionDomain.ECP,
         ),
         Gr12ProofInvariant.NO_DUPLICATE_AUTHORITY: (
-            f"{_ECP}::test_ecp_gr12_r2_production_wiring_does_not_build_secondary_mutation_boundary",
+            f"{_ECP}::test_ecp_gr12_r2_production_wiring_passes_supplied_boundary_to_adapter_builder",
             Gr12CompositionDomain.ECP,
         ),
         Gr12ProofInvariant.EXTERNAL_EVALUATOR: (

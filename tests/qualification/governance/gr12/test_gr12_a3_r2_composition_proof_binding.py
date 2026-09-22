@@ -10,6 +10,7 @@ from tests.qualification.governance.gr12.a3_path_qualifications import (
     GR12_A3_COMPOSITION_PROOF_SSOT,
     GR12_A3_CORE_PATH_PROOFS,
     Gr12CompositionDomain,
+    Gr12ProofInvariant,
     Gr12QualificationPathKind,
 )
 from tests.qualification.governance.gr12.qualification_support import (
@@ -50,3 +51,12 @@ def test_gr12_a3_r2_composition_domains_do_not_cross_paths() -> None:
 def test_gr12_a3_r2_all_paths_remain_semantically_consistent() -> None:
     for bundle in GR12_A3_CORE_PATH_PROOFS:
         assert_gr12_a3_path_semantic_integrity(bundle)
+
+
+def test_gr12_a3_r3_ecp_no_duplicate_authority_is_adapter_builder_identity() -> None:
+    test_id, _domain = GR12_A3_COMPOSITION_PROOF_SSOT["CP-ECP-BOUNDARY-OPTIONAL"][
+        Gr12ProofInvariant.NO_DUPLICATE_AUTHORITY
+    ]
+    assert test_id.endswith(
+        "test_ecp_gr12_r2_production_wiring_passes_supplied_boundary_to_adapter_builder",
+    )
