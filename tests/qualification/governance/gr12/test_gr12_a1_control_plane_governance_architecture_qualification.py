@@ -42,6 +42,8 @@ def test_gr12_a1_no_qualified_without_proof() -> None:
     for row in GR12_CONTROL_PLANE_SURFACES:
         if row.coverage is Gr12CoverageStatus.QUALIFIED:
             assert row.qualification_proof.strip()
+        elif row.coverage is Gr12CoverageStatus.WIRED_NOT_QUALIFIED:
+            continue
         else:
             assert not row.qualification_proof.strip()
 

@@ -95,8 +95,11 @@ GR12_A4_RESIDUAL_INVENTORY: tuple[Gr12A4ResidualInventoryRow, ...] = (
         current_authority="composition-injected ControlPlaneMutationAuthorizationBoundary",
         consequential=True,
         existing_contract="ControlPlaneMutationRequest (CLA-04) + CatalogRevision CAS",
-        coverage=Gr12CoverageStatus.QUALIFIED,
-        cla04_reuse_blocker="",
+        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        cla04_reuse_blocker=(
+            "CLA-04 wiring exists; final qualification blocked by catalog revision authority, "
+            "ABA safety and explicit operator identity."
+        ),
         operator_exposure=Gr12OperatorApiExposure.OPERATOR_REQUEST_PATH,
         tenant_scope="host-global in-process registry (platform runtime)",
     ),

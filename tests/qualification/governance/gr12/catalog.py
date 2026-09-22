@@ -107,14 +107,18 @@ GR12_A4_RESIDUAL_PATH_IDS: Final[tuple[str, ...]] = (
 )
 
 GR12_A4_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
-    task_name="GR-12-A4-R2 — Vector Administration Governance Architecture & CLA-04 Mapping Decision",
+    task_name=(
+        "GR-12-A4-R1-R1 — Catalog Revision Authority & Explicit Operator Identity Hardening"
+    ),
     exact_blocker=(
-        "CP-VECTOR-INDEX-ADMIN: consequential vector index administration without CLA-04 "
-        "resource mapping and operator exposure ADR."
+        "Catalog Hot Reload is wired through CLA-04, but CatalogRevision is not yet "
+        "authoritative across all canonical catalog mutations, ABA protection is not "
+        "fully proven, and composition still synthesizes operator RequestIdentity."
     ),
     why_highest=(
-        "Catalog hot reload qualified under CLA-04 in GR-12-A4-R1; vector and memory remain "
-        "architecture-blocked (R2/R3)."
+        "Catalog was previously promoted to QUALIFIED before independent audit exposed "
+        "revision-authority and identity gaps; these must close before Vector/Memory "
+        "residual work."
     ),
 )
 
@@ -472,9 +476,11 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="composition-injected CLA-04 boundary",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence + CatalogHotReloadResult",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.QUALIFIED,
+        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
         recommended_owner="integrations registry + applications composition",
-        future_remediation="",
+        future_remediation=(
+            "GR-12-A4-R1-R1 — Catalog Revision Authority & Explicit Operator Identity Hardening"
+        ),
         qualification_proof=GR12_A4_R1_QUALIFICATION_PROOF,
     ),
     Gr12ControlPlaneSurface(

@@ -49,7 +49,7 @@ def test_gr12_a4_residual_paths_classified() -> None:
         assert row.coverage is inv.coverage
         assert inv.consequential
         if inv.path_id == "CP-PLUGIN-CATALOG-HOT-RELOAD":
-            assert row.coverage is Gr12CoverageStatus.QUALIFIED
+            assert row.coverage is Gr12CoverageStatus.WIRED_NOT_QUALIFIED
             assert row.applicability is Gr12Applicability.APPLICABLE
             assert row.qualification_proof.strip()
         else:
@@ -58,11 +58,11 @@ def test_gr12_a4_residual_paths_classified() -> None:
             assert not row.qualification_proof.strip()
 
 
-def test_gr12_a4_only_catalog_residual_qualified() -> None:
+def test_gr12_a4_catalog_residual_wired_not_qualified() -> None:
     for path_id in GR12_A4_RESIDUAL_PATH_IDS:
         row = _catalog_row(path_id)
         if path_id == "CP-PLUGIN-CATALOG-HOT-RELOAD":
-            assert row.coverage is Gr12CoverageStatus.QUALIFIED
+            assert row.coverage is Gr12CoverageStatus.WIRED_NOT_QUALIFIED
         else:
             assert row.coverage is not Gr12CoverageStatus.QUALIFIED
 
@@ -74,7 +74,7 @@ def test_gr12_a4_a3_qualified_paths_unchanged() -> None:
         if row.coverage is Gr12CoverageStatus.QUALIFIED
     }
     assert set(GR12_A3_QUALIFIED_PATH_IDS).issubset(qualified)
-    assert "CP-PLUGIN-CATALOG-HOT-RELOAD" in qualified
+    assert "CP-PLUGIN-CATALOG-HOT-RELOAD" not in qualified
 
 
 def test_gr12_a4_catalog_hot_reload_not_host_compose_wired() -> None:
@@ -131,5 +131,14 @@ def test_gr12_a4_gr10_remains_final_closed() -> None:
     assert "FINAL CLOSED" in GR10_OVERALL_FORMAL_CLOSURE.status
 
 
-def test_gr12_a4_next_bounded_task_is_vector_r2() -> None:
-    assert "GR-12-A4-R2" in GR12_A4_NEXT_REMEDIATION.task_name
+def test_gr12_a4_next_bounded_task_is_catalog_r1_r1() -> None:
+    assert "GR-12-A4-R1-R1" in GR12_A4_NEXT_REMEDIATION.task_name
+    blocker = GR12_A4_NEXT_REMEDIATION.exact_blocker.lower()
+    assert "revision" in blocker and "authoritative" in blocker
+    assert "aba" in blocker
+    assert "requestidentity" in blocker.replace(" ", "") or "request identity" in blocker
+
+
+def test_gr12_a4_catalog_ssot_wired_not_qualified() -> None:
+    row = _catalog_row("CP-PLUGIN-CATALOG-HOT-RELOAD")
+    assert row.coverage is Gr12CoverageStatus.WIRED_NOT_QUALIFIED
