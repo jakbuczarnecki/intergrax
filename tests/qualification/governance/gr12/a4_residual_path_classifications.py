@@ -86,20 +86,18 @@ GR12_A4_RESIDUAL_PATH_IDS: Final[tuple[str, ...]] = (
 GR12_A4_RESIDUAL_INVENTORY: tuple[Gr12A4ResidualInventoryRow, ...] = (
     Gr12A4ResidualInventoryRow(
         path_id="CP-PLUGIN-CATALOG-HOT-RELOAD",
-        path_kind=Gr12A4PathKind.ARCHITECTURE_DECISION_SURFACE,
+        path_kind=Gr12A4PathKind.MUTATION_SURFACE,
         production_entrypoint=(
-            "intergrax.integrations.registry.catalog_hot_reload.reload_integration_catalog"
+            "intergrax.applications._shared.catalog_hot_reload_service."
+            "CatalogHotReloadService.reload"
         ),
         mutation_owner="intergrax.integrations.registry (in-process _CATALOG)",
-        current_authority="ApplicationProfile.PRODUCT + integration_governance_profile.catalog_hot_reload_enabled",
+        current_authority="composition-injected ControlPlaneMutationAuthorizationBoundary",
         consequential=True,
-        existing_contract="ControlPlaneMutationRequest (CLA-04) — not wired",
-        coverage=Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED,
-        cla04_reuse_blocker=(
-            "No operator control-plane API; compose wiring not connected to host; "
-            "no catalog generation/revision for stale guards"
-        ),
-        operator_exposure=Gr12OperatorApiExposure.COMPOSE_OR_MAINTENANCE_ONLY,
+        existing_contract="ControlPlaneMutationRequest (CLA-04) + CatalogRevision CAS",
+        coverage=Gr12CoverageStatus.QUALIFIED,
+        cla04_reuse_blocker="",
+        operator_exposure=Gr12OperatorApiExposure.OPERATOR_REQUEST_PATH,
         tenant_scope="host-global in-process registry (platform runtime)",
     ),
     Gr12A4ResidualInventoryRow(
@@ -139,18 +137,14 @@ GR12_A4_RESIDUAL_INVENTORY: tuple[Gr12A4ResidualInventoryRow, ...] = (
 )
 
 GR12_A4_CATALOG_DECISION: Gr12A4CatalogDecision = Gr12A4CatalogDecision(
-    revision_semantics=Gr12CatalogRevisionSemantics.ABSENT_REPORTED_GAP,
+    revision_semantics=Gr12CatalogRevisionSemantics.PRESENT,
     host_compose_wired=False,
-    stale_cas_possible=False,
+    stale_cas_possible=True,
     preferred_governance_model=(
-        "operator/admin typed hot-reload request → tenant/scope resolution → CLA-04 → "
-        "precondition/revision check → atomic registry activation → evidence"
+        "CatalogHotReloadOperatorRequest → revision snapshot → candidate → CLA-04 → "
+        "post-authorization CAS → atomic registry replace → ControlPlaneMutationAuthorizationEvidence"
     ),
-    architecture_blocker=(
-        "Live reload mutates global in-process registry without revision CAS, without "
-        "CLA-04, and without a legal operator API; resolve_catalog_hot_reload_wiring is "
-        "not invoked from production host composition."
-    ),
+    architecture_blocker="",
 )
 
 GR12_A4_VECTOR_DECISION: Gr12A4VectorDecision = Gr12A4VectorDecision(

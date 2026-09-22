@@ -5,8 +5,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-from typing import TYPE_CHECKING, Iterator
+import contextlib
+import contextvars
+import threading
+from collections.abc import Iterable, Iterator
+from typing import TYPE_CHECKING
 
 from intergrax.integrations.contracts.base import (
     IntegrationCategory,
@@ -20,14 +23,44 @@ if TYPE_CHECKING:
     from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
 
 _CATALOG: dict[str, IntegrationEntry] = {}
+_CATALOG_STATE_LOCK = threading.RLock()
+_REGISTRATION_SINK: contextvars.ContextVar[dict[str, IntegrationEntry] | None] = (
+    contextvars.ContextVar("integration_catalog_registration_sink", default=None)
+)
+
+
+@contextlib.contextmanager
+def catalog_state_lock():
+    with _CATALOG_STATE_LOCK:
+        yield
+
+
+@contextlib.contextmanager
+def isolated_catalog_registration(sink: dict[str, IntegrationEntry]):
+    token = _REGISTRATION_SINK.set(sink)
+    try:
+        yield
+    finally:
+        _REGISTRATION_SINK.reset(token)
+
+
+def _catalog_entries_for_revision() -> dict[str, IntegrationEntry]:
+    return dict(_CATALOG)
+
+
+def _atomic_replace_catalog_entries(entries: dict[str, IntegrationEntry]) -> None:
+    _CATALOG.clear()
+    _CATALOG.update(entries)
 
 
 def register_integration(entry: IntegrationEntry, *, override: bool = False) -> None:
     """Register or replace a provider factory (used by providers and tests)."""
     normalized_slug = entry.slug.strip().lower()
-    if normalized_slug in _CATALOG and not override:
+    sink = _REGISTRATION_SINK.get()
+    target = sink if sink is not None else _CATALOG
+    if normalized_slug in target and not override:
         raise ValueError(f"Integration slug '{normalized_slug}' is already registered.")
-    _CATALOG[normalized_slug] = IntegrationEntry(
+    normalized_entry = IntegrationEntry(
         slug=normalized_slug,
         categories=entry.categories,
         factory=entry.factory,
@@ -37,15 +70,31 @@ def register_integration(entry: IntegrationEntry, *, override: bool = False) -> 
         requires_local_container=entry.requires_local_container,
         contract_specs=entry.contract_specs,
     )
+    if sink is not None:
+        sink[normalized_slug] = normalized_entry
+        return
+    with _CATALOG_STATE_LOCK:
+        _CATALOG[normalized_slug] = normalized_entry
 
 
 def unregister_integration(slug: str) -> None:
-    _CATALOG.pop(slug, None)
+    sink = _REGISTRATION_SINK.get()
+    if sink is not None:
+        sink.pop(slug, None)
+        return
+    with _CATALOG_STATE_LOCK:
+        _CATALOG.pop(slug, None)
 
 
 def clear_catalog() -> None:
     """Test helper — reset catalog to empty."""
-    _CATALOG.clear()
+    from intergrax.integrations.registry.catalog_mutation import (
+        reset_catalog_revision_tracking_for_tests,
+    )
+
+    with _CATALOG_STATE_LOCK:
+        _CATALOG.clear()
+    reset_catalog_revision_tracking_for_tests()
 
 
 def get_entry(slug: str) -> IntegrationEntry:

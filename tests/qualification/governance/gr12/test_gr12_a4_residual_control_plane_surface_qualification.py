@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import ast
 from pathlib import Path
 
 import pytest
@@ -48,16 +47,24 @@ def test_gr12_a4_residual_paths_classified() -> None:
     for inv in GR12_A4_RESIDUAL_INVENTORY:
         row = _catalog_row(inv.path_id)
         assert row.coverage is inv.coverage
-        assert row.coverage is Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED
-        assert row.applicability is Gr12Applicability.REQUIRES_ARCHITECTURE_DECISION
         assert inv.consequential
-        assert not row.qualification_proof.strip()
+        if inv.path_id == "CP-PLUGIN-CATALOG-HOT-RELOAD":
+            assert row.coverage is Gr12CoverageStatus.QUALIFIED
+            assert row.applicability is Gr12Applicability.APPLICABLE
+            assert row.qualification_proof.strip()
+        else:
+            assert row.coverage is Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED
+            assert row.applicability is Gr12Applicability.REQUIRES_ARCHITECTURE_DECISION
+            assert not row.qualification_proof.strip()
 
 
-def test_gr12_a4_no_residual_path_qualified() -> None:
+def test_gr12_a4_only_catalog_residual_qualified() -> None:
     for path_id in GR12_A4_RESIDUAL_PATH_IDS:
         row = _catalog_row(path_id)
-        assert row.coverage is not Gr12CoverageStatus.QUALIFIED
+        if path_id == "CP-PLUGIN-CATALOG-HOT-RELOAD":
+            assert row.coverage is Gr12CoverageStatus.QUALIFIED
+        else:
+            assert row.coverage is not Gr12CoverageStatus.QUALIFIED
 
 
 def test_gr12_a4_a3_qualified_paths_unchanged() -> None:
@@ -66,7 +73,8 @@ def test_gr12_a4_a3_qualified_paths_unchanged() -> None:
         for row in GR12_CONTROL_PLANE_SURFACES
         if row.coverage is Gr12CoverageStatus.QUALIFIED
     }
-    assert qualified == set(GR12_A3_QUALIFIED_PATH_IDS)
+    assert set(GR12_A3_QUALIFIED_PATH_IDS).issubset(qualified)
+    assert "CP-PLUGIN-CATALOG-HOT-RELOAD" in qualified
 
 
 def test_gr12_a4_catalog_hot_reload_not_host_compose_wired() -> None:
@@ -76,26 +84,15 @@ def test_gr12_a4_catalog_hot_reload_not_host_compose_wired() -> None:
     assert GR12_A4_CATALOG_DECISION.host_compose_wired is False
     assert (
         GR12_A4_CATALOG_DECISION.revision_semantics
-        is Gr12CatalogRevisionSemantics.ABSENT_REPORTED_GAP
+        is Gr12CatalogRevisionSemantics.PRESENT
     )
-    assert GR12_A4_CATALOG_DECISION.stale_cas_possible is False
+    assert GR12_A4_CATALOG_DECISION.stale_cas_possible is True
 
 
-def test_gr12_a4_catalog_wiring_has_no_cla04_boundary() -> None:
-    tree = ast.parse(_CATALOG_WIRING.read_text(encoding="utf-8"))
-    imported = {
-        alias.name
-        for node in ast.walk(tree)
-        if isinstance(node, ast.Import)
-        for alias in node.names
-    }
-    imported_from = {
-        node.module
-        for node in ast.walk(tree)
-        if isinstance(node, ast.ImportFrom) and node.module
-    }
-    assert "control_plane_mutation" not in imported
-    assert not any("control_plane" in mod for mod in imported_from)
+def test_gr12_a4_catalog_wiring_exposes_governed_service() -> None:
+    source = _CATALOG_WIRING.read_text(encoding="utf-8")
+    assert "CatalogHotReloadService" in source
+    assert "reload_integration_catalog" not in source
 
 
 def test_gr12_a4_vector_port_neutral_entrypoint_in_catalog() -> None:
@@ -118,7 +115,7 @@ def test_gr12_a4_operator_exposure_honesty() -> None:
     by_id = {row.path_id: row for row in GR12_A4_RESIDUAL_INVENTORY}
     assert (
         by_id["CP-PLUGIN-CATALOG-HOT-RELOAD"].operator_exposure
-        is Gr12OperatorApiExposure.COMPOSE_OR_MAINTENANCE_ONLY
+        is Gr12OperatorApiExposure.OPERATOR_REQUEST_PATH
     )
     assert (
         by_id["CP-VECTOR-INDEX-ADMIN"].operator_exposure
@@ -134,5 +131,5 @@ def test_gr12_a4_gr10_remains_final_closed() -> None:
     assert "FINAL CLOSED" in GR10_OVERALL_FORMAL_CLOSURE.status
 
 
-def test_gr12_a4_next_bounded_task_is_catalog_r1() -> None:
-    assert "GR-12-A4-R1" in GR12_A4_NEXT_REMEDIATION.task_name
+def test_gr12_a4_next_bounded_task_is_vector_r2() -> None:
+    assert "GR-12-A4-R2" in GR12_A4_NEXT_REMEDIATION.task_name

@@ -107,15 +107,19 @@ GR12_A4_RESIDUAL_PATH_IDS: Final[tuple[str, ...]] = (
 )
 
 GR12_A4_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
-    task_name="GR-12-A4-R1 — Catalog Hot Reload operator model, revision CAS, and CLA-04 enforcement",
+    task_name="GR-12-A4-R2 — Vector Administration Governance Architecture & CLA-04 Mapping Decision",
     exact_blocker=(
-        "CP-PLUGIN-CATALOG-HOT-RELOAD: consequential in-process registry reload without "
-        "revision semantics, without CLA-04, without operator API, and without host-compose wiring."
+        "CP-VECTOR-INDEX-ADMIN: consequential vector index administration without CLA-04 "
+        "resource mapping and operator exposure ADR."
     ),
     why_highest=(
-        "Only residual path with a named live mutation function; vector and memory blocked "
-        "on architecture decisions (R2/R3) before qualification proofs."
+        "Catalog hot reload qualified under CLA-04 in GR-12-A4-R1; vector and memory remain "
+        "architecture-blocked (R2/R3)."
     ),
+)
+
+GR12_A4_R1_QUALIFICATION_PROOF: Final[str] = (
+    "tests/unit/applications/test_catalog_hot_reload_governance.py"
 )
 
 
@@ -455,18 +459,23 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
     Gr12ControlPlaneSurface(
         path_id="CP-PLUGIN-CATALOG-HOT-RELOAD",
         surface="Integration catalog",
-        production_entrypoint="intergrax.integrations.registry.catalog_hot_reload.reload_integration_catalog",
-        mutation="in-process integration registry replace (override=True)",
+        production_entrypoint=(
+            "intergrax.applications._shared.catalog_hot_reload_service."
+            "CatalogHotReloadService.reload"
+        ),
+        mutation="integration_catalog.hot_reload",
         consequential=True,
         current_guard=(
-            "PRODUCT + catalog_hot_reload_enabled; wiring not in host compose; no CLA-04"
+            "CatalogHotReloadService + ControlPlaneMutationAuthorizationBoundary; "
+            "revision CAS in registry"
         ),
-        current_authority="environment profile flag (not policy evaluator)",
-        audit_evidence="CatalogHotReloadReport only",
-        applicability=Gr12Applicability.REQUIRES_ARCHITECTURE_DECISION,
-        coverage=Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED,
+        current_authority="composition-injected CLA-04 boundary",
+        audit_evidence="ControlPlaneMutationAuthorizationEvidence + CatalogHotReloadResult",
+        applicability=Gr12Applicability.APPLICABLE,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="integrations registry + applications composition",
-        future_remediation="GR-12-A4-R1 operator API + revision + CLA-04 enforcement",
+        future_remediation="",
+        qualification_proof=GR12_A4_R1_QUALIFICATION_PROOF,
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-MEM-SPECIALIZED-MUTATION",

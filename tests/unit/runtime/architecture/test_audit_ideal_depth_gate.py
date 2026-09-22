@@ -789,6 +789,7 @@ def test_audit_ideal_13_2_catalog_hot_reload() -> None:
         ApplicationEnvironmentProfile.product_defaults()
     )
     assert wiring.enabled is True
+    assert wiring.service is not None
 
 
 def test_audit_ideal_27_4_graph_editor() -> None:
