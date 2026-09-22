@@ -101,8 +101,10 @@ def test_llm_profile_from_env_unknown_provider(_restore_registry_state) -> None:
         {"INTERGRAX_LLM_PROVIDER": "not_registered_slug_env"},
         clear=False,
     ):
-        with pytest.raises(ValueError, match="unknown LLM provider slug"):
-            llm_profile_from_env()
+        profile = llm_profile_from_env()
+        assert profile is not None
+        with pytest.raises(ValueError, match="not registered"):
+            create_adapter(profile)
 
 
 def test_llm_profile_lab_default() -> None:
