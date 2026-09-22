@@ -348,16 +348,6 @@ class _RecordingCatalogInvoker:
     caller_agent_id: str = "worker-test"
     calls: int = 0
 
-    def bind_execution_identity(
-        self,
-        *,
-        tenant_id: str,
-        run_id: str,
-        task_id: str,
-        agent_id: str,
-    ) -> None:
-        _ = tenant_id, run_id, task_id, agent_id
-
     def invoke(
         self,
         request: ExecutionBoundCatalogToolInvokeRequest,

@@ -128,16 +128,6 @@ class _EvidenceRecordingCatalogInvoker:
     caller_agent_id: str = "worker-uca6c-qualified"
     last_evidence: ToolInvocationGovernanceApprovalEvidence | None = None
 
-    def bind_execution_identity(
-        self,
-        *,
-        tenant_id: str,
-        run_id: str,
-        task_id: str,
-        agent_id: str,
-    ) -> None:
-        _ = tenant_id, run_id, task_id, agent_id
-
     def invoke(
         self,
         request: ExecutionBoundCatalogToolInvokeRequest,
@@ -155,12 +145,6 @@ def test_custom_catalog_invoker_receives_typed_approval_evidence() -> None:
         task_id=str(_TASK_ID),
         run_id=run_id,
         step_id=step_id,
-    )
-    recording.bind_execution_identity(
-        tenant_id=_TENANT,
-        run_id=run_id,
-        task_id=str(_TASK_ID),
-        agent_id=recording.caller_agent_id,
     )
     recording.invoke(
         ExecutionBoundCatalogToolInvokeRequest(
@@ -187,12 +171,6 @@ def test_nexus_maps_request_evidence_to_runtime_state_grant() -> None:
         task_id=str(_TASK_ID),
         run_id=run_id,
         step_id=step_id,
-    )
-    catalog.bind_execution_identity(
-        tenant_id=_TENANT,
-        run_id=run_id,
-        task_id=str(_TASK_ID),
-        agent_id="worker-uca6c-qualified",
     )
     state = catalog._runtime_state(
         ExecutionBoundCatalogToolInvokeRequest(
@@ -276,12 +254,6 @@ def test_wrong_scope_evidence_fails_closed() -> None:
         run_id=run_id,
         step_id="uca6c.bound:expected",
     )
-    catalog.bind_execution_identity(
-        tenant_id=_TENANT,
-        run_id=run_id,
-        task_id=str(_TASK_ID),
-        agent_id="worker-uca6c-qualified",
-    )
     with pytest.raises(ValueError, match="step_id mismatch"):
         catalog._runtime_state(
             ExecutionBoundCatalogToolInvokeRequest(
@@ -307,12 +279,6 @@ def test_repeated_invoke_without_evidence_does_not_reuse_prior_grant() -> None:
         run_id=run_id,
         step_id=step_id,
     )
-    catalog.bind_execution_identity(
-        tenant_id=_TENANT,
-        run_id=run_id,
-        task_id=str(_TASK_ID),
-        agent_id="worker-uca6c-qualified",
-    )
     base = ExecutionBoundCatalogToolInvokeRequest(
         tool_id=CODE_EXEC_TOOL_ID,
         input=CodeExecInput(code="1", language="python", timeout_s=5),
@@ -332,12 +298,6 @@ def test_repeated_invoke_without_evidence_does_not_reuse_prior_grant() -> None:
 def test_concurrent_evidence_requests_are_isolated() -> None:
     catalog = _strict_catalog_invoker()
     run_id = str(mint_run_id())
-    catalog.bind_execution_identity(
-        tenant_id=_TENANT,
-        run_id=run_id,
-        task_id=str(_TASK_ID),
-        agent_id="worker-uca6c-qualified",
-    )
     step_a = "uca6c.bound:a"
     step_b = "uca6c.bound:b"
     evidence_a = uca6c_high_risk_tool_approval_evidence(

@@ -62,24 +62,10 @@ class NexusExecutionBoundCatalogToolInvoker:
         """Trace steps recorded on the RuntimeState during the last invoke (observability)."""
         return self._last_trace_steps
 
-    def bind_execution_identity(
-        self,
-        *,
-        tenant_id: str,
-        run_id: str,
-        task_id: str,
-        agent_id: str,
-    ) -> None:
-        self.binding.run_id = run_id
-        self.binding.task_id = task_id
-        self.binding.agent_id = agent_id
-        self.binding.tenant_id = tenant_id
-
     def invoke(
         self,
         request: ExecutionBoundCatalogToolInvokeRequest,
     ) -> ToolExecutionResult[BaseModel]:
-        _require_bound_identity_matches(request, self.binding)
         state = self._runtime_state(request)
         invocation_context = ToolInvocationContext(
             run_id=request.run_id,
@@ -122,8 +108,8 @@ class NexusExecutionBoundCatalogToolInvoker:
     def _runtime_state(
         self, request: ExecutionBoundCatalogToolInvokeRequest
     ) -> RuntimeState:
-        agent_id = _require_bound_identity_field(self.binding.agent_id, "agent_id")
-        tenant_id = _require_bound_identity_field(self.binding.tenant_id, "tenant_id")
+        agent_id = _require_request_identity_field(request.agent_id, "agent_id")
+        tenant_id = _require_request_identity_field(request.tenant_id, "tenant_id")
         config = RuntimeConfig(
             llm_adapter=cast(LLMAdapter, _CatalogDispatchLLMStub()),
             production_mode=self.production_mode,
@@ -178,34 +164,10 @@ class NexusExecutionBoundCatalogToolInvoker:
         return None
 
 
-def _require_bound_identity_field(value: str, label: str) -> str:
+def _require_request_identity_field(value: str, label: str) -> str:
     if not value or not value.strip():
-        raise ValueError(
-            f"execution-bound catalog {label} must be set via bind_execution_identity",
-        )
+        raise ValueError(f"execution-bound catalog {label} must be set on invoke request")
     return value.strip()
-
-
-def _require_bound_identity_matches(
-    request: ExecutionBoundCatalogToolInvokeRequest,
-    binding: CatalogDeclarativeRunBinding,
-) -> None:
-    expected_run = validate_run_id(binding.run_id)
-    expected_task = validate_task_id(binding.task_id)
-    if request.run_id != expected_run:
-        raise ValueError("execution-bound catalog run_id does not match bound identity")
-    if request.task_id != expected_task:
-        raise ValueError(
-            "execution-bound catalog task_id does not match bound identity"
-        )
-    if request.tenant_id.strip() != binding.tenant_id.strip():
-        raise ValueError(
-            "execution-bound catalog tenant_id does not match bound identity"
-        )
-    if request.agent_id.strip() != binding.agent_id.strip():
-        raise ValueError(
-            "execution-bound catalog agent_id does not match bound identity"
-        )
 
 
 __all__ = [

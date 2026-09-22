@@ -176,12 +176,6 @@ class WiringCodeCraftBoundCapabilityExecution:
         )
         wiring_resolver = FixedSandboxSessionWiringResolver(sandbox_session=sandbox)
         caller_agent_id = self._catalog_tool_invoker.caller_agent_id
-        self._catalog_tool_invoker.bind_execution_identity(
-            tenant_id=request.tenant_id,
-            run_id=run_id_str,
-            task_id=str(request.task_id),
-            agent_id=caller_agent_id,
-        )
         invoke_request = ExecutionBoundCatalogToolInvokeRequest(
             tool_id=CODE_EXEC_TOOL_ID,
             input=CodeExecInput(

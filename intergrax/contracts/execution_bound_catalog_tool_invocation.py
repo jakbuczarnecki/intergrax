@@ -42,15 +42,6 @@ class ExecutionBoundCatalogToolInvoker(Protocol):
         """Default caller identity configured by host composition."""
         ...
 
-    def bind_execution_identity(
-        self,
-        *,
-        tenant_id: str,
-        run_id: str,
-        task_id: str,
-        agent_id: str,
-    ) -> None: ...
-
     def invoke(
         self,
         request: ExecutionBoundCatalogToolInvokeRequest,
