@@ -41,6 +41,7 @@ from intergrax.agent_distribution.effective_roster_authority import (
 )
 from intergrax.agent_distribution.in_memory_stores import (
     AgentDistributionStoreState,
+    InMemoryAgentArtifactMetadataStore,
     InMemoryApplicationEnvironmentServingStore,
     InMemoryEffectiveRosterSnapshotStore,
     InMemoryMaterializedRuntimeLockStore,
@@ -48,6 +49,7 @@ from intergrax.agent_distribution.in_memory_stores import (
     InMemoryRuntimeRevisionStore,
 )
 from intergrax.agent_distribution.stores import (
+    AgentArtifactMetadataStore,
     ApplicationEnvironmentServingStore,
     EffectiveRosterSnapshotStore,
     MaterializedRuntimeLockStore,
@@ -77,6 +79,7 @@ class AgentPlatformRuntimeStores:
     lock_store: MaterializedRuntimeLockStore
     materialization_store: RuntimeMaterializationStore
     effective_roster_snapshot_store: EffectiveRosterSnapshotStore
+    artifact_metadata_store: AgentArtifactMetadataStore
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,6 +106,7 @@ def build_production_agent_platform_runtime(
         platform_persistence or build_reference_production_platform_persistence()
     )
     state = AgentDistributionStoreState()
+    artifact_metadata_store = InMemoryAgentArtifactMetadataStore(state)
     effective_roster_snapshot_store = InMemoryEffectiveRosterSnapshotStore(state)
     revision_store = InMemoryRuntimeRevisionStore(state)
     lock_store = InMemoryMaterializedRuntimeLockStore(state)
@@ -119,6 +123,7 @@ def build_production_agent_platform_runtime(
             lock_store=lock_store,
             materialization_store=materialization_store,
             effective_roster_snapshot_store=effective_roster_snapshot_store,
+            artifact_metadata_store=artifact_metadata_store,
         ),
         platform_persistence=resolved_platform_persistence,
         effective_roster_authority=effective_roster_authority,
@@ -127,6 +132,7 @@ def build_production_agent_platform_runtime(
             effective_roster_authority=effective_roster_authority,
             lock_store=lock_store,
             materialization_store=materialization_store,
+            artifact_metadata_store=artifact_metadata_store,
         ),
     )
 

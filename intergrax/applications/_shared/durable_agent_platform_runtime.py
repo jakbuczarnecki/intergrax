@@ -97,12 +97,14 @@ def build_durable_production_agent_platform_runtime(
         lock_store=lock_store,
         materialization_store=materialization_store,
         effective_roster_snapshot_store=effective_roster_snapshot_store,
+        artifact_metadata_store=distribution_bundle.artifact_metadata_store,
     )
     registry_projection_authority = RegistryProjectionAuthorityResolver(
         revision_store=revision_store,
         effective_roster_authority=effective_roster_authority,
         lock_store=lock_store,
         materialization_store=materialization_store,
+        artifact_metadata_store=distribution_bundle.artifact_metadata_store,
     )
     descriptor_store = distribution_bundle.projection_descriptor_store
     rehydrator = RuntimeRegistryProjectionRehydrator(

@@ -8,9 +8,11 @@ import pytest
 
 from intergrax.applications._shared.agent_certification_wiring import (
     apply_roster_agent_governance,
-    check_strict_product_agent_certification,
     materialize_roster_certifications_for_agents,
     validate_strict_roster_agent_certification,
+)
+from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+    check_strict_product_agent_certification,
 )
 from intergrax.applications._shared.roster_agent_contract_authority import (
     ManifestAgentContractAuthority,

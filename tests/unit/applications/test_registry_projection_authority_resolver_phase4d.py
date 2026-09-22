@@ -11,8 +11,9 @@ import pytest
 
 from intergrax.agent_distribution.binding import AgentBindingFactoryReference
 from intergrax.agent_distribution.dependency import MaterializedRuntimeLock
-from intergrax.agent_distribution.effective_roster_authority import (
-    EffectiveRosterAuthorityService,
+from intergrax.agent_distribution.in_memory_stores import (
+    AgentDistributionStoreState,
+    InMemoryAgentArtifactMetadataStore,
 )
 from intergrax.agent_distribution.errors import (
     EffectiveRosterAuthorityConflict,
@@ -184,6 +185,9 @@ def _resolver(
     snapshots = snapshot_store or _FakeSnapshotStore()
     locks = lock_store or _FakeLockStore()
     materializations = materialization_store or _FakeMaterializationStore()
+    artifact_metadata_store = InMemoryAgentArtifactMetadataStore(
+        AgentDistributionStoreState()
+    )
     return (
         RegistryProjectionAuthorityResolver(
             revision_store=revisions,
@@ -192,6 +196,7 @@ def _resolver(
             ),
             lock_store=locks,
             materialization_store=materializations,
+            artifact_metadata_store=artifact_metadata_store,
         ),
         revisions,
         snapshots,
@@ -399,6 +404,9 @@ def test_authority_service_errors_wrap_cleanly() -> None:
         materialization_store=_FakeMaterializationStore(
             records={revision.runtime_revision_id: _materialization(revision)},
         ),
+        artifact_metadata_store=InMemoryAgentArtifactMetadataStore(
+            AgentDistributionStoreState()
+        ),
     )
     with pytest.raises(RegistryProjectionAuthorityNotFound, match="missing roster"):
         resolver.require_for_revision(
@@ -419,6 +427,9 @@ def test_authority_service_errors_wrap_cleanly() -> None:
         lock_store=_FakeLockStore(locks={_LOCK_ID: _lock()}),
         materialization_store=_FakeMaterializationStore(
             records={revision.runtime_revision_id: _materialization(revision)},
+        ),
+        artifact_metadata_store=InMemoryAgentArtifactMetadataStore(
+            AgentDistributionStoreState()
         ),
     )
     with pytest.raises(RegistryProjectionAuthorityConflict, match="roster hash"):

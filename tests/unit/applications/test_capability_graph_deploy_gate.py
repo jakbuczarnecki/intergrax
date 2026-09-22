@@ -8,8 +8,10 @@ import pytest
 
 from intergrax.applications._shared.capability_graph_deploy_gate import (
     build_environment_capability_deploy_report,
-    check_strict_product_capability_graph,
     validate_strict_capability_graph_deploy,
+)
+from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+    check_strict_product_capability_graph,
 )
 from intergrax.applications._shared.capability_graph_wiring import EnvironmentCapabilityGraphView
 from intergrax.applications._shared.product_manifest_registry import iter_strict_product_manifests

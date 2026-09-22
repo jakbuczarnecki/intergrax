@@ -45,9 +45,12 @@ from intergrax.agent_distribution.admin_models import (
 from intergrax.agent_distribution.agent_contract_authority import (
     AgentPackageContractAuthorityService,
     PackageAgentContractAuthorityError,
+    PackageAgentContractAuthorityRecord,
 )
 from intergrax.agent_distribution.agent_project_metadata import (
+    AgentProjectMetadata,
     AgentProjectMetadataProvider,
+    project_agent_capability_descriptors,
 )
 from intergrax.agent_distribution.binding import ApplicationAgentBinding
 from intergrax.agent_distribution.binding_service import BindingService
@@ -614,6 +617,12 @@ class AgentPlatformAdminService:
                 and existing.environment_id == application_environment_id
                 and existing.package_identity == identity
             ):
+                metadata = self._require_install_project_metadata(request)
+                self._assert_idempotent_install_contract_authority(
+                    package_digest=identity.package_digest,
+                    metadata=metadata,
+                    records=request.package_contract_authority,
+                )
                 return InstallationMutationResult(
                     installation=_installation_view(existing),
                     audit_event_types=(),
@@ -659,6 +668,23 @@ class AgentPlatformAdminService:
             evaluated_at=self._package_trust_evaluation_time_source(),
         )
 
+        metadata = self._require_install_project_metadata(request)
+        authority_records = self._validated_install_contract_authority(
+            request=request,
+            identity=identity,
+            metadata=metadata,
+        )
+        self._artifact_metadata_store.persist_metadata(
+            AgentArtifactMetadata(
+                package_digest=identity.package_digest,
+                artifact_store_ref=request.artifact_store_ref,
+                distribution_package_id=identity.distribution_package_id,
+                agent_project_metadata_ref=request.agent_project_metadata_ref,
+            )
+        )
+        for record in authority_records:
+            self._package_contract_authority_service.persist_authority_record(record)
+
         created = self._installation_service.create_candidate_installation(
             installation_id=request.installation_id,
             installation_slot_id=request.installation_slot_id,
@@ -673,38 +699,83 @@ class AgentPlatformAdminService:
         promoted = self._installation_service.promote_verified_to_active(
             request.installation_id
         )
-        self._artifact_metadata_store.persist_metadata(
-            AgentArtifactMetadata(
-                package_digest=identity.package_digest,
-                artifact_store_ref=request.artifact_store_ref,
-                distribution_package_id=identity.distribution_package_id,
-                agent_project_metadata_ref=request.agent_project_metadata_ref,
-            )
-        )
-        if request.package_contract_authority:
-            if self._metadata_provider is None:
-                raise AgentPlatformAdminBlockedError(
-                    "AP-11_BLOCKED_BY_MISSING_METADATA_PROVIDER",
-                    "package contract authority requires AgentProjectMetadataProvider",
-                )
-            metadata = self._metadata_provider.get_metadata(
-                request.agent_project_metadata_ref
-            )
-            if metadata is None:
-                raise PackageAgentContractAuthorityError(
-                    f"unresolved agent project metadata ref "
-                    f"{request.agent_project_metadata_ref!r}"
-                )
-            AgentPackageContractAuthorityService.validate_against_project_metadata(
-                metadata=metadata,
-                records=request.package_contract_authority,
-            )
-            for record in request.package_contract_authority:
-                self._package_contract_authority_service.persist_authority_record(record)
         return InstallationMutationResult(
             installation=_installation_view(promoted.value),
             audit_event_types=_event_types(created, verified, promoted),
         )
+
+    def _require_install_project_metadata(
+        self,
+        request: InstallAgentRequest,
+    ) -> AgentProjectMetadata:
+        if self._metadata_provider is None:
+            raise AgentPlatformAdminBlockedError(
+                "AP-11_BLOCKED_BY_MISSING_METADATA_PROVIDER",
+                "install_agent requires AgentProjectMetadataProvider",
+            )
+        metadata = self._metadata_provider.get_metadata(
+            request.agent_project_metadata_ref
+        )
+        if metadata is None:
+            raise PackageAgentContractAuthorityError(
+                f"unresolved agent project metadata ref "
+                f"{request.agent_project_metadata_ref!r}"
+            )
+        return metadata
+
+    def _validated_install_contract_authority(
+        self,
+        *,
+        request: InstallAgentRequest,
+        identity: AgentPackageIdentity,
+        metadata: AgentProjectMetadata,
+    ) -> tuple[PackageAgentContractAuthorityRecord, ...]:
+        records = request.package_contract_authority
+        descriptors = project_agent_capability_descriptors(metadata)
+        if descriptors:
+            if not records:
+                raise PackageAgentContractAuthorityError(
+                    "incomplete package contract authority; missing declared contracts"
+                )
+        AgentPackageContractAuthorityService.validate_against_project_metadata(
+            metadata=metadata,
+            records=records,
+        )
+        for record in records:
+            if record.package_digest != identity.package_digest:
+                raise PackageAgentContractAuthorityError(
+                    "package_contract_authority package_digest mismatch with install identity"
+                )
+        return records
+
+    def _assert_idempotent_install_contract_authority(
+        self,
+        *,
+        package_digest: str,
+        metadata: AgentProjectMetadata,
+        records: tuple[PackageAgentContractAuthorityRecord, ...],
+    ) -> None:
+        descriptors = project_agent_capability_descriptors(metadata)
+        if not descriptors:
+            return
+        if not records:
+            raise PackageAgentContractAuthorityError(
+                "existing installation idempotency requires complete package contract authority"
+            )
+        AgentPackageContractAuthorityService.validate_against_project_metadata(
+            metadata=metadata,
+            records=records,
+        )
+        for descriptor in descriptors:
+            stored = self._artifact_metadata_store.get_package_contract_authority(
+                package_digest,
+                descriptor.contract_id,
+            )
+            if stored is None:
+                raise PackageAgentContractAuthorityError(
+                    f"missing persisted package contract authority for "
+                    f"{descriptor.contract_id!r}"
+                )
 
     def bind_agent(
         self,

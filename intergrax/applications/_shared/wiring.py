@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import importlib
 from collections.abc import Mapping
-from typing import Any, Callable, TypeVar, Union
+from typing import Any, Callable, TypeVar, Union, TYPE_CHECKING
 
 from intergrax.agents.agent_contract import Agent
 from intergrax.agent_distribution._immutable_json import DistributionJsonValue
@@ -25,6 +25,11 @@ from intergrax.applications._shared.runtime_agent_factory_resolver import (
 from intergrax.applications._shared.application_composition_context import (
     ApplicationCompositionContext,
 )
+
+if TYPE_CHECKING:
+    from intergrax.applications._shared.roster_agent_contract_authority import (
+        RosterAgentContractAuthority,
+    )
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.factory import CanonicalAgentFactory
 from intergrax.contracts.tier2_agent import Tier2Agent
@@ -403,6 +408,7 @@ def _register_binding(
     skill_registry: SkillRegistry | None,
     composition: ApplicationCompositionContext | None = None,
     resolved_factory: CanonicalAgentFactory | None = None,
+    roster_contract_authority: RosterAgentContractAuthority | None = None,
 ) -> None:
     if resolved_factory is not None:
         agent = invoke_canonical_agent_factory(
@@ -415,9 +421,13 @@ def _register_binding(
     active = composition
     tool_registry = active.tool_registry if active is not None else None
     event_bus = active.runtime_event_bus if active is not None else None
+    if roster_contract_authority is not None:
+        contract = roster_contract_authority.contract_for_binding(binding)
+    else:
+        contract = contract_for_binding(agent, binding)
     registry.register(
         agent,
-        contract=contract_for_binding(agent, binding),
+        contract=contract,
         skill_registry=skill_registry,
         tool_registry=tool_registry,
         event_bus=event_bus,
@@ -453,6 +463,7 @@ def build_application_registry(
     runtime_revision: RuntimeRevision | None = None,
     factory_resolver: RuntimeAgentFactoryResolver | None = None,
     composition: ApplicationCompositionContext | None = None,
+    roster_contract_authority: RosterAgentContractAuthority | None = None,
 ) -> AgentRegistry:
     """Canonical Tier-3 registry builder: manifest roster + context + optional builders.
 
@@ -546,6 +557,7 @@ def build_application_registry(
                 skill_registry=skill_registry,
                 composition=composition,
                 resolved_factory=resolved,
+                roster_contract_authority=roster_contract_authority,
             )
             continue
         _register_binding(

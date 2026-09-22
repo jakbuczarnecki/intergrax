@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Final, Protocol
+from typing import Final, TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -20,6 +20,9 @@ from intergrax.agent_distribution.contract_metadata_parity import (
 )
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.runtime.attestation.canonical_json import stable_payload_hash
+
+if TYPE_CHECKING:
+    from intergrax.agent_distribution.stores import AgentArtifactMetadataStore
 
 _NON_EMPTY = Field(min_length=1)
 
@@ -109,27 +112,10 @@ class PackageAgentContractAuthorityRecord(BaseModel):
         )
 
 
-class AgentPackageContractAuthorityStore(Protocol):
-    """Read/write port for package-level AgentContract authority records."""
-
-    def get_package_contract_authority(
-        self,
-        package_digest: str,
-        contract_id: str,
-    ) -> PackageAgentContractAuthorityRecord | None:
-        """Load one immutable contract authority by package digest and contract id."""
-
-    def persist_package_contract_authority(
-        self,
-        record: PackageAgentContractAuthorityRecord,
-    ) -> PackageAgentContractAuthorityRecord:
-        """Persist one contract authority record; reject digest conflicts."""
-
-
 class AgentPackageContractAuthorityService:
     """Validate and persist package AgentContract authority (distribution lifecycle)."""
 
-    def __init__(self, store: AgentPackageContractAuthorityStore) -> None:
+    def __init__(self, store: AgentArtifactMetadataStore) -> None:
         self._store = store
 
     def persist_authority_record(
@@ -214,7 +200,6 @@ def descriptor_for_contract_id(
 
 __all__ = [
     "AgentPackageContractAuthorityService",
-    "AgentPackageContractAuthorityStore",
     "PackageAgentContractAuthorityError",
     "PackageAgentContractAuthorityRecord",
     "contract_metadata_content_digest",

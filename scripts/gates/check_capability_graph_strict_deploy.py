@@ -14,7 +14,7 @@ for path in (REPO_ROOT, REPO_ROOT / "applications", REPO_ROOT / "agents"):
     if text not in sys.path:
         sys.path.insert(0, text)
 
-from intergrax.applications._shared.capability_graph_deploy_gate import (  # noqa: E402
+from intergrax.applications._shared.strict_product_manifest_ci_gates import (  # noqa: E402
     check_strict_product_capability_graph,
 )
 from intergrax.applications._shared.product_manifest_registry import (  # noqa: E402

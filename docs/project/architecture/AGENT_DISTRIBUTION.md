@@ -402,6 +402,8 @@ AVAILABLE
 | Fail-closed trust / certification | §10; production gates before activation |
 | No hot arbitrary Python installation | No runtime `pip install` into live production process |
 
+**Install authority precondition (EBH-2E-AR1-A-R1-R1):** After package trust admission, `install_agent` validates complete declared `AgentContract` snapshots, persists artifact metadata and digest-bound `PackageAgentContractAuthorityRecord` rows through the canonical `AgentArtifactMetadataStore`, and only then promotes the installation to `INSTALLED_ACTIVE`. Invalid authority or persistence failure leaves the slot unchanged. Production registry projection and rehydration resolve contracts through `RosterAgentContractAuthority` keyed by `(package_digest, contract_id)`; historical revisions retain prior snapshots; rollback restores the prior revision’s roster-bound snapshots. Manifest-only lab compatibility (`materialize_manifest_contract_authority_lab_compat`) is confined to CI gates under `strict_product_manifest_ci_gates.py`, not STRICT production serving.
+
 ### 3.3 Canonical platform chain
 
 ```text

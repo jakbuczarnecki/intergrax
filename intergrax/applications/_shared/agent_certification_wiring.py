@@ -16,7 +16,6 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications._shared.roster_agent_contract_authority import (
     ContractAuthority,
-    materialize_manifest_contract_authority_lab_compat,
     resolve_roster_agent_contract,
 )
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
@@ -156,19 +155,9 @@ def validate_strict_roster_agent_certification(
     return violations
 
 
-def check_strict_product_agent_certification(
-    product_id: str,
-    manifest: ApplicationManifest,
-) -> list[str]:
-    """Return certification-gate violations for one STRICT product manifest."""
-    env = manifest.resolved_environment()
-    authority = materialize_manifest_contract_authority_lab_compat(manifest)
-    prefix = f"{product_id}:"
-    return [
-        f"{prefix}{item}"
-        for item in validate_strict_roster_agent_certification(
-            manifest,
-            env,
-            contract_authority=authority,
-        )
-    ]
+__all__ = [
+    "apply_roster_agent_governance",
+    "materialize_roster_certifications_for_agents",
+    "validate_certification_record",
+    "validate_strict_roster_agent_certification",
+]

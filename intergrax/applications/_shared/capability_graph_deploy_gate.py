@@ -123,55 +123,9 @@ def validate_strict_capability_graph_deploy(
     return CapabilityGraphAssemblyValidationResult(valid=not errors, errors=tuple(errors))
 
 
-def _gate_wiring_environment(env: ApplicationEnvironmentProfile) -> ApplicationEnvironmentProfile:
-    """Use lab bindings for CI wiring — avoids optional vendor drivers (e.g. Neo4j)."""
-    from intergrax.applications.contracts.application_host import ApplicationProfile
-    from intergrax.integrations.registry.profile import IntegrationProfile
-
-    return env.model_copy(
-        update={
-            "integration_profile": IntegrationProfile.lab(),
-            "application_profile": ApplicationProfile.LAB,
-        }
-    )
-
-
-def check_strict_product_capability_graph(
-    product_id: str,
-    manifest: ApplicationManifest,
-) -> list[str]:
-    """Return deploy-gate violations for one STRICT product manifest."""
-    from intergrax.applications._shared.environment_wiring import wire_application_environment
-
-    env = manifest.resolved_environment()
-    if env.execution_mode is not ExecutionMode.STRICT:
-        return []
-    if manifest.profile is not ApplicationProfile.PRODUCT:
-        return []
-
-    gate_env = _gate_wiring_environment(env)
-    try:
-        wiring = wire_application_environment(manifest, gate_env, conformance_check=False)
-    except Exception as exc:  # noqa: BLE001 — gate surfaces wiring failures
-        return [f"{product_id}: wire_application_environment failed: {exc}"]
-
-    view = wiring.capability_graph
-    snapshot = wiring.registry_snapshot
-    if view is None:
-        return [f"{product_id}: capability_graph not materialized"]
-    if snapshot is None:
-        return [f"{product_id}: registry_snapshot not materialized"]
-
-    from intergrax.applications._shared.roster_agent_contract_authority import (
-        materialize_manifest_contract_authority_lab_compat,
-    )
-
-    authority = materialize_manifest_contract_authority_lab_compat(manifest)
-    result = validate_strict_capability_graph_deploy(
-        view,
-        snapshot,
-        manifest,
-        env,
-        contract_authority=authority,
-    )
-    return [f"{product_id}: {error}" for error in result.errors]
+__all__ = [
+    "EnvironmentCapabilityDeployReport",
+    "STRICT_DEPLOY_BLOCKED_AGENT_LIFECYCLES",
+    "build_environment_capability_deploy_report",
+    "validate_strict_capability_graph_deploy",
+]

@@ -66,6 +66,9 @@ from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     admin_test_principal,
     build_admin_stack,
 )
+from testing_support.agent_distribution.install_contract_authority_fixtures import (
+    reference_install_contract_authority_records,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -269,6 +272,7 @@ def _install_agent(
     mutation_id: str,
     metadata_ref: str = _META_REF,
 ) -> None:
+    artifact_store_ref = f"store://artifacts/{scenario.installation_id}"
     stack.service.install_agent(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -277,12 +281,21 @@ def _install_agent(
             installation_id=scenario.installation_id,
             installation_slot_id=_SLOT_ID,
             package_identity=_package_identity(scenario),
-            artifact_store_ref=f"store://artifacts/{scenario.installation_id}",
+            artifact_store_ref=artifact_store_ref,
             trust_record=_trust_record(scenario.package_digest),
             agent_project_metadata_ref=metadata_ref,
         ),
         principal=admin_test_principal(),
     )
+    authority_records = reference_install_contract_authority_records(
+        _manifest(),
+        package_digest=scenario.package_digest,
+        distribution_package_id=scenario.distribution_package_id,
+        artifact_store_ref=artifact_store_ref,
+        agent_project_metadata_ref=metadata_ref,
+    )
+    for record in authority_records:
+        stack.service._artifact_metadata_store.persist_package_contract_authority(record)
 
 
 def _bind_agent(
@@ -368,6 +381,7 @@ def _authority_resolver(stack: AdminStack) -> RegistryProjectionAuthorityResolve
         ),
         lock_store=stack.service._lock_store,
         materialization_store=stack.materialization_store,
+        artifact_metadata_store=stack.service._artifact_metadata_store,
     )
 
 
