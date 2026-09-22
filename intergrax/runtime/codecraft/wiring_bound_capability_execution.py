@@ -33,10 +33,6 @@ from intergrax.runtime.codecraft.session_manager import (
     CodeCraftSessionManager,
     get_session_manager,
 )
-from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
-from intergrax.runtime.nexus.errors.tool_scope_violation_error import (
-    ToolScopeViolationError,
-)
 from intergrax.runtime.sandbox.isolation_errors import SandboxIsolationRequiredError
 from intergrax.tools.execution_models import ToolExecutionResult
 from intergrax.tools.invocation_wiring import (
@@ -208,12 +204,6 @@ class WiringCodeCraftBoundCapabilityExecution:
                 outcome=CodeCraftBoundCapabilityExecutionOutcome.UNAVAILABLE,
                 reason_detail=exc.code,
             )
-        except ToolScopeViolationError as exc:
-            return CodeCraftBoundCapabilityExecutionResult(
-                outcome=CodeCraftBoundCapabilityExecutionOutcome.REJECTED,
-                reason_detail=str(exc),
-            )
-
         return _map_tool_execution_result(tool_result)
 
 
@@ -243,18 +233,14 @@ def _map_tool_execution_result(
             reason_detail="code_exec_failed",
         )
 
-    code = tool_result.error.error_code
-    code_value = code.value if isinstance(code, RuntimeErrorCode) else str(code)
+    code_value = str(tool_result.error.error_code)
     message = tool_result.error.error_message
-    if code_value in {
-        RuntimeErrorCode.PERMISSION_ERROR.value,
-        RuntimeErrorCode.POLICY_ERROR.value,
-    }:
+    if code_value in {"permission_error", "policy_error"}:
         return CodeCraftBoundCapabilityExecutionResult(
             outcome=CodeCraftBoundCapabilityExecutionOutcome.REJECTED,
             reason_detail=message or str(code),
         )
-    if code_value == RuntimeErrorCode.VALIDATION_ERROR.value:
+    if code_value == "validation_error":
         return CodeCraftBoundCapabilityExecutionResult(
             outcome=CodeCraftBoundCapabilityExecutionOutcome.FAILED,
             reason_detail=message or "validation_error",

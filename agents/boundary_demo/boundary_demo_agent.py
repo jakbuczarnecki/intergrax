@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 from boundary_demo.capabilities import CAPABILITIES, CAPABILITY
+from boundary_demo.contract import build_agent_contract
 from intergrax.agents.harness_reference_agent import HarnessReferenceAgent
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent  # ACP-MIG-3 fleet marker
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
@@ -18,9 +19,8 @@ from intergrax.runtime.nexus.agents.reference_harness_runtime import (
     build_lab_agent_runtime_config,
 )
 from intergrax.agents.tool_enablement import ToolEnablementProfile
-from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
+from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
-from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -33,7 +33,6 @@ from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
-from intergrax.skills.providers.data.manifests import DATA_RECORDS_ADMIN
 RECORDS_PUT_TOOL_ID = "records.put"
 _REFLEX_PATTERN = ReflexAgent  # retain ReflexAgent symbol for fleet inventory scan
 
@@ -58,21 +57,7 @@ class BoundaryDemoAgent(HarnessReferenceAgent):
         self._boundary_event_buffer = boundary_event_buffer
 
     def get_contract(self) -> AgentContract:
-        return AgentContract(
-            id=self.AGENT_ID,
-            name="Boundary Demo Agent",
-            description="Partner PoC agent — writes a demo record via records.put.",
-            version="0.1.0",
-            capabilities=list(CAPABILITIES),
-            skills=[DATA_RECORDS_ADMIN],
-            extra_tools=[],
-            risk_level=AgentRiskLevel.MEDIUM,
-            lifecycle_state=AgentLifecycleState.STAGING,
-            owner_team="platform",
-            max_steps=1,
-            cognitive_pattern=self.cognitive_pattern,
-            pattern_version="acp.v1",
-        )
+        return build_agent_contract()
 
     def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
         capability = routing_capability_from_envelope(task)

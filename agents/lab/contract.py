@@ -6,12 +6,15 @@ from intergrax.applications.contracts.errors import AgentImportError
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
 from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.tier2_agent import Tier2Agent
-from lab.mock_agents import (
-    ComposerMockAgent,
-    DocumentMockAgent,
-    ResearchMockAgent,
-    ValidatorMockAgent,
-)
+
+_RESEARCH_MOCK_QUALNAME = "lab.mock_agents.ResearchMockAgent"
+_DOCUMENT_MOCK_QUALNAME = "lab.mock_agents.DocumentMockAgent"
+_VALIDATOR_MOCK_QUALNAME = "lab.mock_agents.ValidatorMockAgent"
+_COMPOSER_MOCK_QUALNAME = "lab.mock_agents.ComposerMockAgent"
+
+
+def _agent_qualname(agent_type: type[Tier2Agent]) -> str:
+    return f"{agent_type.__module__}.{agent_type.__qualname__}"
 
 
 def _mock_contract(
@@ -36,25 +39,26 @@ def _mock_contract(
 
 
 def build_agent_contract(agent_type: type[Tier2Agent]) -> AgentContract:
-    if agent_type is ResearchMockAgent:
+    qualname = _agent_qualname(agent_type)
+    if qualname == _RESEARCH_MOCK_QUALNAME:
         return _mock_contract(
             agent_id="research_mock",
             name="Research Mock Agent",
             capability="lab.research_mock",
         )
-    if agent_type is DocumentMockAgent:
+    if qualname == _DOCUMENT_MOCK_QUALNAME:
         return _mock_contract(
             agent_id="document_mock",
             name="Document Mock Agent",
             capability="lab.document_mock",
         )
-    if agent_type is ValidatorMockAgent:
+    if qualname == _VALIDATOR_MOCK_QUALNAME:
         return _mock_contract(
             agent_id="validator_mock",
             name="Validator Mock Agent",
             capability="lab.validator_mock",
         )
-    if agent_type is ComposerMockAgent:
+    if qualname == _COMPOSER_MOCK_QUALNAME:
         return _mock_contract(
             agent_id="composer_mock",
             name="Composer Mock Agent",

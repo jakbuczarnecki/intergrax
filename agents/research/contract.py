@@ -8,8 +8,13 @@ from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
-from research.research_agent import ResearchAgent
-from research.summary_agent import SummaryAgent
+
+_RESEARCH_AGENT_QUALNAME = "research.research_agent.ResearchAgent"
+_SUMMARY_AGENT_QUALNAME = "research.summary_agent.SummaryAgent"
+
+
+def _agent_qualname(agent_type: type[Tier2Agent]) -> str:
+    return f"{agent_type.__module__}.{agent_type.__qualname__}"
 
 
 def _research_contract() -> AgentContract:
@@ -51,9 +56,10 @@ def _summary_contract() -> AgentContract:
 
 
 def build_agent_contract(agent_type: type[Tier2Agent]) -> AgentContract:
-    if agent_type is ResearchAgent:
+    qualname = _agent_qualname(agent_type)
+    if qualname == _RESEARCH_AGENT_QUALNAME:
         return _research_contract()
-    if agent_type is SummaryAgent:
+    if qualname == _SUMMARY_AGENT_QUALNAME:
         return _summary_contract()
     raise AgentImportError(
         f"No declarative AgentContract for agent type {agent_type!r} in research package"

@@ -16,8 +16,8 @@ from intergrax.agents.reference_harness import (
 from intergrax.runtime.nexus.agents.reference_harness_runtime import (
     build_lab_agent_runtime_context,
 )
-from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
-from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
+from intergrax.contracts.agent_contract_meta import AgentContract
+from research.contract import build_agent_contract
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -39,22 +39,7 @@ class SummaryAgent(ReflexAgent):
         self._harness = harness or default_reference_harness()
 
     def get_contract(self) -> AgentContract:
-        return AgentContract(
-            id="research-summary",
-            name="Research Summary Agent",
-            description="Summarizes research findings from prior graph nodes.",
-            version="0.1.0",
-            capabilities=["research.summarize"],
-            skills=[],
-            extra_tools=[],
-            risk_level=AgentRiskLevel.LOW,
-            lifecycle_state=AgentLifecycleState.STAGING,
-            owner_team="platform",
-            max_steps=5,
-            validation_rules=["non_empty_summary"],
-            cognitive_pattern=self.cognitive_pattern,
-            pattern_version=self.pattern_version,
-        )
+        return build_agent_contract(type(self))
 
     def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
         capability = routing_capability_from_envelope(task)
