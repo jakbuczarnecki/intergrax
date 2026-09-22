@@ -6,21 +6,17 @@ from __future__ import annotations
 
 import ast
 import re
-from collections.abc import Iterable, Sequence
 from pathlib import Path
-from typing import Optional
 
 import pytest
 
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import AgentBinding
-from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
-from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
-from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
-from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
+from tests.unit.architecture.ebh_2e_external_structural_llm_adapter import (
+    ExternalStructuralAdapter,
+    assert_external_structural_llm_adapter,
+)
 from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from model_routing_qualifier.model_routing_qualifier_agent import ModelRoutingQualifierAgent
@@ -51,81 +47,6 @@ _QUALIFIER_AGENT_MODULES = (
 _FORBIDDEN_IMPORT = "intergrax.llm_adapters.registry.profile"
 _FORBIDDEN_CALLS = ("create_adapter(", "create_adapter_with_failover(", "llm_profile_from_env(")
 _OPTIONAL_ADAPTER_PATTERN = re.compile(r"llm_adapter:\s*LLMAdapter\s*\|\s*None")
-
-
-class _ExternalStructuralAdapter:
-    """Structural LLMAdapter — no framework base class."""
-
-    @property
-    def slug(self) -> str:
-        return "external-ebh-2e-r4"
-
-    def invoke(
-        self,
-        messages: Sequence[ChatMessage],
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
-    ) -> LLMAdapterResponse:
-        raise NotImplementedError
-
-    def invoke_with_tools(
-        self,
-        messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition],
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
-    ) -> LLMAdapterResponse:
-        raise NotImplementedError
-
-    def stream(
-        self,
-        messages: Sequence[ChatMessage],
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
-    ) -> Iterable[LLMStreamEvent]:
-        raise NotImplementedError
-
-    def stream_with_tools(
-        self,
-        messages: Sequence[ChatMessage],
-        tools: Sequence[CanonicalFunctionToolDefinition],
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        tool_choice: NativeToolChoice | None = None,
-        run_id: Optional[str] = None,
-    ) -> Iterable[LLMStreamEvent]:
-        raise NotImplementedError
-
-    def supports_structured_output(self) -> bool:
-        return False
-
-    def generate_structured(
-        self,
-        messages: Sequence[ChatMessage],
-        output_model: type[TStructured],
-        *,
-        temperature: Optional[float] = None,
-        max_tokens: Optional[int] = None,
-        run_id: Optional[str] = None,
-    ) -> LLMStructuredResult[TStructured]:
-        raise NotImplementedError
-
-    def supports_vision(self) -> bool:
-        return False
-
-    def supports_audio_input(self) -> bool:
-        return False
-
-    def supports_audio_output(self) -> bool:
-        return False
 
 
 def _module_source(path: Path) -> str:
@@ -180,7 +101,8 @@ def test_ebh_2e_r4_production_factory_injects_llm_adapter(
     from local_workspace_application.host import agent_factories
     from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 
-    injected = _ExternalStructuralAdapter()
+    injected = ExternalStructuralAdapter()
+    assert_external_structural_llm_adapter(injected)
     factory = getattr(agent_factories, factory_name)
     ctx = ApplicationBuildContext.for_manifest(
         LOCAL_WORKSPACE_APPLICATION_MANIFEST,
@@ -203,7 +125,8 @@ def test_ebh_2e_r4_production_factory_injects_llm_adapter(
 def test_ebh_2e_r4_injected_structural_adapter_reaches_runtime_context(
     agent_cls: type,
 ) -> None:
-    injected = _ExternalStructuralAdapter()
+    injected = ExternalStructuralAdapter()
+    assert_external_structural_llm_adapter(injected)
     agent = agent_cls(llm_adapter=injected)
     runtime = agent.build_context(_minimal_runtime_request())
     assert runtime.config.llm_adapter is injected

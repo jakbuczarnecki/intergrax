@@ -42,3 +42,18 @@ def test_resolve_agent_contract_from_binding_uses_declarative_contract_module() 
     binding = AgentBinding.mount(WebSearchQualifierAgent, contract_id="web_search_qualifier")
     contract = resolve_agent_contract_from_binding(binding)
     assert contract.id == "web_search_qualifier"
+
+
+def test_resolve_agent_contract_from_binding_echo_without_instantiation() -> None:
+    binding = AgentBinding.mount(EchoAgent, contract_id="echo")
+    contract = resolve_agent_contract_from_binding(binding)
+    assert contract.id == "echo"
+
+
+def test_resolve_agent_contract_from_binding_missing_module_fails() -> None:
+    binding = AgentBinding(
+        import_path="definitely_missing_agent_package.agent.OrphanAgent",
+        contract_id="orphan",
+    )
+    with pytest.raises(AgentImportError, match="Cannot import module"):
+        resolve_agent_contract_from_binding(binding)

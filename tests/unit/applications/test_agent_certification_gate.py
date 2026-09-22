@@ -40,13 +40,15 @@ def test_strict_gate_blocks_experimental_agent(monkeypatch: pytest.MonkeyPatch) 
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="gate_cert.product")
     env = apply_roster_agent_governance(env, agents=manifest.agents, app_id="gate_cert")
 
-    original_get_contract = EchoAgent.get_contract
+    import echo.contract as echo_contract
 
-    def _experimental_contract(self: EchoAgent) -> object:
-        contract = original_get_contract(self)
+    original_builder = echo_contract.build_agent_contract
+
+    def _experimental_contract() -> object:
+        contract = original_builder()
         return contract.model_copy(update={"lifecycle_state": AgentLifecycleState.EXPERIMENTAL})
 
-    monkeypatch.setattr(EchoAgent, "get_contract", _experimental_contract)
+    monkeypatch.setattr(echo_contract, "build_agent_contract", _experimental_contract)
 
     violations = validate_strict_roster_agent_certification(manifest, env)
     assert any("blocked on STRICT product host" in item for item in violations)
