@@ -389,6 +389,8 @@ markers = [
   "obs_diag_x5a: OBS-DIAG-X5A provider evidence integrity, anti-drift, and lifecycle closure.",
   "obs_trace_1: OBS-TRACE-1 TraceEvent correlation qualification (Plane B; deterministic).",
   "obs_diag_conformance: OBS-DIAG-CONFORMANCE evidence → reconstruction → diagnostics qualification.",
+  "obs_diag_freeze: OBS-DIAG-FREEZE-1 frozen boundary change-control guard (fast checks).",
+  "obs_diag_freeze_bundle: OBS-DIAG-FREEZE-1 bundled reused-gate pytest subprocess (slow).",
   "ci_smoke: Lightweight representative subset for PR/merge CI (<~30s).",
   "no_ci: Excluded from GitHub CI — infra-heavy (FastAPI, SQLite, MCP, sleeps, threading).",
   "external_proof: Real external integration proof (Docker-backed); required in dedicated CI job only.",
