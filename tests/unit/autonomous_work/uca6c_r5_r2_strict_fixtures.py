@@ -23,6 +23,9 @@ from intergrax.applications.contracts.environment_profile.sub_profiles import (
 )
 from intergrax.contracts.policy_enforcement_mode import PolicyEnforcementMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
+from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
+    derive_qualified_capability_governance_step_id,
+)
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.contracts.tool_invocation_governance_approval_evidence import (
     ToolInvocationGovernanceApprovalEvidence,
@@ -131,6 +134,27 @@ def uca6c_strict_worker_registry(manifest: ApplicationManifest) -> AgentRegistry
     return build_application_registry(manifest, ctx, composition=composition)
 
 
+def uca6c_high_risk_tool_approval_evidence_for_execution_request(
+    *,
+    execution_request_id: str,
+    tenant_id: str,
+    task_id: str,
+    run_id: str,
+    agent_id: str = _UCA6C_WORKER_ID,
+    tool_id: str = CODE_EXEC_TOOL_ID,
+) -> ToolInvocationGovernanceApprovalEvidence:
+    """Pre-execution scoped approval correlated to canonical ``execution_request_id``."""
+    step_id = derive_qualified_capability_governance_step_id(execution_request_id)
+    return uca6c_high_risk_tool_approval_evidence(
+        tenant_id=tenant_id,
+        task_id=task_id,
+        run_id=run_id,
+        step_id=step_id,
+        agent_id=agent_id,
+        tool_id=tool_id,
+    )
+
+
 def uca6c_high_risk_tool_approval_evidence(
     *,
     tenant_id: str,
@@ -199,6 +223,7 @@ __all__ = [
     "Uca6cQualifiedSandboxWorkerAgent",
     "build_sandbox_session",
     "uca6c_high_risk_tool_approval_evidence",
+    "uca6c_high_risk_tool_approval_evidence_for_execution_request",
     "uca6c_high_risk_tool_approval_grant",
     "uca6c_strict_echo_only_worker_manifest",
     "uca6c_strict_sandbox_env_profile",

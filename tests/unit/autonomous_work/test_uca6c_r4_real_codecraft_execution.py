@@ -369,6 +369,7 @@ def test_production_wiring_port_requires_active_execution_id(tmp_path: Path) -> 
                 task_id=_TASK_ID,
                 run_id=None,
                 execution_id=execution_id,
+                execution_request_id="uca6c-test-execution-request-id",
             ),
         )
     finally:

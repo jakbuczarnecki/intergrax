@@ -28,6 +28,9 @@ from intergrax.contracts.autonomous_work.ids import (
 from intergrax.contracts.capability_qualification.qualified_capability_binding import (
     QualifiedCapabilityExecutionTarget,
 )
+from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
+    validate_governance_approval_evidence_for_execution_request,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -73,7 +76,6 @@ class QualifiedCapabilityExecutionDispatchRequest:
     collaborative_authority_scopes: tuple[str, ...]
     run_id: RunId | None = None
     attempt_id: AttemptId | None = None
-    execution_id: ExecutionId | None = None
     governance_approval_evidence: ToolInvocationGovernanceApprovalEvidence | None = None
 
     def __post_init__(self) -> None:
@@ -127,8 +129,6 @@ class QualifiedCapabilityExecutionDispatchRequest:
             validate_run_id(self.run_id)
         if self.attempt_id is not None:
             validate_attempt_id(self.attempt_id)
-        if self.execution_id is not None:
-            validate_execution_id(self.execution_id)
         if self.governance_approval_evidence is not None:
             if (
                 type(self.governance_approval_evidence)
@@ -146,6 +146,10 @@ class QualifiedCapabilityExecutionDispatchRequest:
                 raise ValueError(
                     "governance_approval_evidence.task_id must match task_id",
                 )
+            validate_governance_approval_evidence_for_execution_request(
+                self.governance_approval_evidence,
+                execution_request_id=self.execution_request_id,
+            )
         if (
             type(self.admitted_governance_identity)
             is not AdmittedRootGovernanceIdentity

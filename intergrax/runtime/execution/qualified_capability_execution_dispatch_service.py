@@ -105,7 +105,6 @@ class QualifiedCapabilityExecutionDispatchService(
                         payload=payload,
                         run_id=request.run_id,
                         attempt_id=request.attempt_id,
-                        execution_id=request.execution_id,
                         task_id=request.task_id,
                     ),
                 ),

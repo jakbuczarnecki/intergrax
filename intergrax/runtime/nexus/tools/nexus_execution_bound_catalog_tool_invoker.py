@@ -90,6 +90,11 @@ class NexusExecutionBoundCatalogToolInvoker:
             correlation_request_id=request.correlation_request_id,
             wiring_resolver=request.wiring_resolver,
         )
+        invocation_scope_id = (
+            request.governance_approval_evidence.invocation_scope_id
+            if request.governance_approval_evidence is not None
+            else None
+        )
         tool_request = ToolExecutionRequest(
             run_id=request.run_id,
             step_id=request.step_id,
@@ -97,6 +102,7 @@ class NexusExecutionBoundCatalogToolInvoker:
             input=request.input,
             invocation_context=invocation_context,
             idempotency_key=request.idempotency_key,
+            declarative_hitl_invocation_scope_id=invocation_scope_id,
         )
         from intergrax.runtime.nexus.errors.tool_scope_violation_error import (
             ToolScopeViolationError,

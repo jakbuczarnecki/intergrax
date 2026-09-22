@@ -31,6 +31,7 @@ from intergrax.contracts.autonomous_work.worker_qualified_capability_resume impo
     WorkerQualifiedCapabilityResumeRequest,
     WorkerQualifiedCapabilityResumeResult,
     derive_qualified_capability_execution_request_id,
+    validate_governance_approval_evidence_for_execution_request,
 )
 from intergrax.contracts.capability_qualification.qualification_outcome import (
     CapabilityQualificationOutcome,
@@ -197,6 +198,11 @@ class WorkerQualifiedCapabilityResumeCoordinator:
             resume_operation_id=resume_id,
             binding_operation_id=binding_operation_id,
         )
+        if request.governance_approval_evidence is not None:
+            validate_governance_approval_evidence_for_execution_request(
+                request.governance_approval_evidence,
+                execution_request_id=execution_request_id,
+            )
         execution_request = WorkerQualifiedCapabilityExecutionRequest(
             resume_operation_id=resume_id,
             binding_operation_id=binding_operation_id,
@@ -215,7 +221,6 @@ class WorkerQualifiedCapabilityResumeCoordinator:
             collaborative_authority_scopes=authority_context.collaborative_authority_scopes,
             run_id=request.run_id,
             attempt_id=request.attempt_id,
-            execution_id=request.execution_id,
             governance_approval_evidence=request.governance_approval_evidence,
         )
         execution_result = self._execution.execute(execution_request)

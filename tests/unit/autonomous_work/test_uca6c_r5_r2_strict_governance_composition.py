@@ -25,6 +25,9 @@ from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementResult,
     PolicyCompositionResult,
 )
+from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
+    derive_qualified_capability_governance_step_id,
+)
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
@@ -340,7 +343,8 @@ def test_strict_production_success_via_high_level_builder(tmp_path: Path) -> Non
     assert catalog.caller_agent_id == caller_agent_id
     run_id = mint_run_id()
     execution_id = mint_execution_id()
-    step_id = f"uca6c.bound:{execution_id}"
+    execution_request_id = "qualified-capability-execution:uca6c-r5r2-direct:binding"
+    step_id = derive_qualified_capability_governance_step_id(execution_request_id)
     approval_evidence = uca6c_high_risk_tool_approval_evidence(
         tenant_id=_TENANT,
         task_id=str(_TASK_ID),
@@ -368,6 +372,7 @@ def test_strict_production_success_via_high_level_builder(tmp_path: Path) -> Non
                 task_id=_TASK_ID,
                 run_id=None,
                 execution_id=execution_id,
+                execution_request_id=execution_request_id,
                 governance_approval_evidence=approval_evidence,
             ),
         )
@@ -406,7 +411,8 @@ def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
     assert isinstance(catalog, NexusExecutionBoundCatalogToolInvoker)
     run_id = mint_run_id()
     execution_id = mint_execution_id()
-    step_id = f"uca6c.bound:{execution_id}"
+    execution_request_id = "qualified-capability-execution:uca6c-r5r2-direct:binding"
+    step_id = derive_qualified_capability_governance_step_id(execution_request_id)
     approval_evidence = uca6c_high_risk_tool_approval_evidence(
         tenant_id=_TENANT,
         task_id=str(_TASK_ID),
@@ -435,6 +441,7 @@ def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
                     task_id=_TASK_ID,
                     run_id=None,
                     execution_id=execution_id,
+                    execution_request_id=execution_request_id,
                     governance_approval_evidence=approval_evidence,
                 ),
             )
@@ -467,6 +474,7 @@ def test_strict_agent_governance_deny_blocks_before_mse(tmp_path: Path) -> None:
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)
     run_id = mint_run_id()
+    execution_request_id = "qualified-capability-execution:uca6c-r5r2-direct:binding"
     execution_id = mint_execution_id()
     id_token = bind_active_execution_identity(
         run_id=run_id,
@@ -489,6 +497,7 @@ def test_strict_agent_governance_deny_blocks_before_mse(tmp_path: Path) -> None:
                     task_id=_TASK_ID,
                     run_id=None,
                     execution_id=execution_id,
+                    execution_request_id=execution_request_id,
                 ),
             )
     finally:
@@ -520,6 +529,7 @@ def test_strict_high_risk_without_approval_evidence_requires_governance_approval
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)
     run_id = mint_run_id()
+    execution_request_id = "qualified-capability-execution:uca6c-r5r2-direct:binding"
     execution_id = mint_execution_id()
     id_token = bind_active_execution_identity(
         run_id=run_id,
@@ -542,6 +552,7 @@ def test_strict_high_risk_without_approval_evidence_requires_governance_approval
                     task_id=_TASK_ID,
                     run_id=None,
                     execution_id=execution_id,
+                    execution_request_id=execution_request_id,
                 ),
             )
     finally:

@@ -107,6 +107,48 @@ def derive_qualified_capability_execution_request_id(
     return f"qualified-capability-execution:{resume_id}:{binding_id}"
 
 
+def derive_qualified_capability_governance_step_id(
+    execution_request_id: str,
+) -> str:
+    """Pre-execution catalog step scope for qualified-capability governance approval."""
+    request_id = require_non_empty_text(
+        execution_request_id,
+        label="execution_request_id",
+    )
+    return f"uca6c.bound:{request_id}"
+
+
+def derive_qualified_capability_governance_invocation_scope_id(
+    execution_request_id: str,
+) -> str:
+    """Pre-execution invocation scope correlated to ``execution_request_id``."""
+    step_id = derive_qualified_capability_governance_step_id(execution_request_id)
+    return f"uca6c-scope:{step_id}"
+
+
+def validate_governance_approval_evidence_for_execution_request(
+    evidence: ToolInvocationGovernanceApprovalEvidence,
+    *,
+    execution_request_id: str,
+) -> None:
+    """Fail closed when approval evidence is not scoped to the ingress execution request."""
+    expected_step = derive_qualified_capability_governance_step_id(
+        execution_request_id,
+    )
+    expected_scope = derive_qualified_capability_governance_invocation_scope_id(
+        execution_request_id,
+    )
+    if evidence.step_id != expected_step:
+        raise ValueError(
+            "governance_approval_evidence.step_id must match execution_request_id scope",
+        )
+    if evidence.invocation_scope_id != expected_scope:
+        raise ValueError(
+            "governance_approval_evidence.invocation_scope_id must match "
+            "execution_request_id scope",
+        )
+
+
 @dataclass(frozen=True, slots=True)
 class WorkerQualifiedCapabilityResumeRequest:
     """Evidence-backed resume — no discovery, acquisition, or re-qualification."""
@@ -124,7 +166,6 @@ class WorkerQualifiedCapabilityResumeRequest:
     requested_authority_scopes: tuple[str, ...]
     run_id: RunId | None = None
     attempt_id: AttemptId | None = None
-    execution_id: ExecutionId | None = None
     governance_approval_evidence: ToolInvocationGovernanceApprovalEvidence | None = None
 
     def __post_init__(self) -> None:
@@ -176,8 +217,6 @@ class WorkerQualifiedCapabilityResumeRequest:
             validate_run_id(self.run_id)
         if self.attempt_id is not None:
             validate_attempt_id(self.attempt_id)
-        if self.execution_id is not None:
-            validate_execution_id(self.execution_id)
         if self.governance_approval_evidence is not None:
             if (
                 type(self.governance_approval_evidence)
@@ -194,6 +233,16 @@ class WorkerQualifiedCapabilityResumeRequest:
             if str(self.governance_approval_evidence.task_id) != str(self.task_id):
                 raise ValueError(
                     "governance_approval_evidence.task_id must match task_id",
+                )
+            if (
+                self.run_id is not None
+                and self.governance_approval_evidence.run_id
+                != str(
+                    self.run_id,
+                )
+            ):
+                raise ValueError(
+                    "governance_approval_evidence.run_id must match run_id",
                 )
         acquisition = self.acquisition_result
         qualification = self.qualification_result
@@ -248,7 +297,6 @@ class WorkerQualifiedCapabilityExecutionRequest:
     collaborative_authority_scopes: tuple[str, ...]
     run_id: RunId | None = None
     attempt_id: AttemptId | None = None
-    execution_id: ExecutionId | None = None
     governance_approval_evidence: ToolInvocationGovernanceApprovalEvidence | None = None
 
     def __post_init__(self) -> None:
@@ -335,8 +383,6 @@ class WorkerQualifiedCapabilityExecutionRequest:
             validate_run_id(self.run_id)
         if self.attempt_id is not None:
             validate_attempt_id(self.attempt_id)
-        if self.execution_id is not None:
-            validate_execution_id(self.execution_id)
         if self.governance_approval_evidence is not None:
             if (
                 type(self.governance_approval_evidence)
@@ -354,6 +400,10 @@ class WorkerQualifiedCapabilityExecutionRequest:
                 raise ValueError(
                     "governance_approval_evidence.task_id must match task_id",
                 )
+            validate_governance_approval_evidence_for_execution_request(
+                self.governance_approval_evidence,
+                execution_request_id=self.execution_request_id,
+            )
         if (
             type(self.admitted_governance_identity)
             is not AdmittedRootGovernanceIdentity
@@ -467,6 +517,9 @@ __all__ = [
     "WorkerQualifiedCapabilityResumeOutcome",
     "WorkerQualifiedCapabilityResumeRequest",
     "WorkerQualifiedCapabilityResumeResult",
-    "derive_worker_capability_resume_operation_id",
     "derive_qualified_capability_execution_request_id",
+    "derive_qualified_capability_governance_invocation_scope_id",
+    "derive_qualified_capability_governance_step_id",
+    "derive_worker_capability_resume_operation_id",
+    "validate_governance_approval_evidence_for_execution_request",
 ]

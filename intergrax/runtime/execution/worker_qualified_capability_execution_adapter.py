@@ -67,7 +67,6 @@ class WorkerQualifiedCapabilityExecutionEngineAdapter:
             collaborative_authority_scopes=request.collaborative_authority_scopes,
             run_id=request.run_id,
             attempt_id=request.attempt_id,
-            execution_id=request.execution_id,
             governance_approval_evidence=request.governance_approval_evidence,
         )
         dispatch_result = self._dispatch.dispatch(dispatch_request)

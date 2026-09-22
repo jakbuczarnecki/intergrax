@@ -185,6 +185,7 @@ def test_scope_deny_blocks_before_backend(tmp_path: Path) -> None:
                 task_id=_TASK_ID,
                 run_id=None,
                 execution_id=execution_id,
+                execution_request_id="uca6c-test-execution-request-id",
             ),
         )
     finally:
@@ -267,6 +268,7 @@ def test_runtime_success_via_production_composition(tmp_path: Path) -> None:
                 task_id=_TASK_ID,
                 run_id=None,
                 execution_id=execution_id,
+                execution_request_id="uca6c-test-execution-request-id",
             ),
         )
     finally:
@@ -332,6 +334,7 @@ def test_missing_tool_invocation_binding_unavailable(tmp_path: Path) -> None:
                 task_id=_TASK_ID,
                 run_id=None,
                 execution_id=execution_id,
+                execution_request_id="uca6c-test-execution-request-id",
             ),
         )
     finally:
