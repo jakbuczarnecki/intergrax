@@ -5,14 +5,14 @@
 
 from __future__ import annotations
 
-from typing import cast
-
-from pydantic import BaseModel
-
 from intergrax.contracts.codecraft.bound_capability_execution import (
     CodeCraftBoundCapabilityExecutionOutcome,
     CodeCraftBoundCapabilityExecutionRequest,
     CodeCraftBoundCapabilityExecutionResult,
+)
+from intergrax.contracts.execution_bound_catalog_tool_invocation import (
+    ExecutionBoundCatalogToolInvokeRequest,
+    ExecutionBoundCatalogToolInvoker,
 )
 from intergrax.contracts.execution_identity import (
     require_active_execution_identity,
@@ -37,19 +37,16 @@ from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.errors.tool_scope_violation_error import (
     ToolScopeViolationError,
 )
-from intergrax.runtime.nexus.tools.catalog_tool_invocation_port import (
-    CatalogToolInvocationPort,
-)
 from intergrax.runtime.sandbox.isolation_errors import SandboxIsolationRequiredError
-from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.execution_models import ToolExecutionResult
 from intergrax.tools.invocation_wiring import (
     FixedSandboxSessionWiringResolver,
-    ToolInvocationContext,
     ToolWiringResolutionError,
 )
 from intergrax.tools.providers.sandbox.bundle import CODE_EXEC_TOOL_ID
 from intergrax.tools.providers.sandbox.contracts import CodeExecInput, SandboxExecOutput
 from intergrax.tools.registry.wiring import ToolWiringContext
+from pydantic import BaseModel
 
 
 class WiringCodeCraftBoundCapabilityExecution:
@@ -59,11 +56,11 @@ class WiringCodeCraftBoundCapabilityExecution:
         self,
         wiring_context: ToolWiringContext,
         *,
-        tool_invocation: CatalogToolInvocationPort | None = None,
+        catalog_tool_invoker: ExecutionBoundCatalogToolInvoker | None = None,
         session_manager: CodeCraftSessionManager | None = None,
     ) -> None:
         self._ctx = wiring_context
-        self._tool_invocation = tool_invocation
+        self._catalog_tool_invoker = catalog_tool_invoker
         self._sessions = session_manager or get_session_manager(wiring_context)
         self.runtime_execution_calls = 0
 
@@ -160,7 +157,7 @@ class WiringCodeCraftBoundCapabilityExecution:
                 reason_detail=detail,
             )
 
-        if self._tool_invocation is None:
+        if self._catalog_tool_invoker is None:
             return CodeCraftBoundCapabilityExecutionResult(
                 outcome=CodeCraftBoundCapabilityExecutionOutcome.UNAVAILABLE,
                 reason_detail="canonical_tool_invocation_unconfigured",
@@ -177,34 +174,30 @@ class WiringCodeCraftBoundCapabilityExecution:
             ),
         )
         wiring_resolver = FixedSandboxSessionWiringResolver(sandbox_session=sandbox)
-        caller_agent_id = self._tool_invocation.caller_agent_id
-        invocation_context = ToolInvocationContext(
-            run_id=run_id_str,
-            step_id=step_id,
-            tool_id=CODE_EXEC_TOOL_ID,
-            agent_id=caller_agent_id,
+        caller_agent_id = self._catalog_tool_invoker.caller_agent_id
+        self._catalog_tool_invoker.bind_execution_identity(
             tenant_id=request.tenant_id,
-            correlation_request_id=str(request.execution_id),
-            wiring_resolver=wiring_resolver,
-        )
-        tool_request = ToolExecutionRequest(
             run_id=run_id_str,
-            step_id=step_id,
+            task_id=str(request.task_id),
+            agent_id=caller_agent_id,
+        )
+        invoke_request = ExecutionBoundCatalogToolInvokeRequest(
             tool_id=CODE_EXEC_TOOL_ID,
             input=CodeExecInput(
                 code=code,
                 language=session.language,
                 timeout_s=effective_timeout,
             ),
-            invocation_context=invocation_context,
+            tenant_id=request.tenant_id,
+            task_id=str(request.task_id),
+            run_id=run_id_str,
+            agent_id=caller_agent_id,
+            step_id=step_id,
+            correlation_request_id=str(request.execution_id),
+            wiring_resolver=wiring_resolver,
         )
-        state = self._tool_invocation.runtime_state_for_invocation()
         try:
-            tool_result = self._tool_invocation.tool_invoker.invoke(
-                state=state,
-                agent_id=caller_agent_id,
-                request=cast(ToolExecutionRequest[BaseModel], tool_request),
-            )
+            tool_result = self._catalog_tool_invoker.invoke(invoke_request)
         except SandboxIsolationRequiredError as exc:
             return CodeCraftBoundCapabilityExecutionResult(
                 outcome=CodeCraftBoundCapabilityExecutionOutcome.UNAVAILABLE,
@@ -225,7 +218,7 @@ class WiringCodeCraftBoundCapabilityExecution:
 
 
 def _map_tool_execution_result(
-    tool_result,
+    tool_result: ToolExecutionResult[BaseModel],
 ) -> CodeCraftBoundCapabilityExecutionResult:
     if tool_result.success:
         output = tool_result.output

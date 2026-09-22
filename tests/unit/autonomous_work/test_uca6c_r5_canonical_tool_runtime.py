@@ -11,9 +11,17 @@ from pathlib import Path
 import pytest
 from pydantic import BaseModel
 
+from intergrax.applications._shared.tool_wiring import ApplicationToolWiring
+from intergrax.applications._shared.uca6c_codecraft_qualified_execution_composition import (
+    build_production_codecraft_qualified_capability_execution_handler,
+)
 from intergrax.contracts.codecraft.bound_capability_execution import (
     CodeCraftBoundCapabilityExecutionOutcome,
     CodeCraftBoundCapabilityExecutionRequest,
+)
+from intergrax.contracts.execution_bound_catalog_tool_invocation import (
+    ExecutionBoundCatalogToolInvokeRequest,
+    ExecutionBoundCatalogToolInvoker,
 )
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
@@ -28,29 +36,33 @@ from intergrax.runtime.codecraft.session_manager import CodeCraftSessionManager
 from intergrax.runtime.codecraft.wiring_bound_capability_execution import (
     WiringCodeCraftBoundCapabilityExecution,
 )
-from intergrax.runtime.sandbox.isolation_gate import sandbox_availability_provider
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
-from intergrax.runtime.nexus.tools.catalog_tool_invocation_port import (
-    CatalogToolInvocationBinding,
+from intergrax.runtime.nexus.tools.nexus_execution_bound_catalog_tool_invoker import (
+    NexusExecutionBoundCatalogToolInvoker,
 )
-from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.tool_invoker_protocol import ToolInvokerProtocol
+from intergrax.runtime.sandbox.isolation_gate import sandbox_availability_provider
+from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy
 from intergrax.tools.core.contracts import ToolRiskLevel
-from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
+from intergrax.tools.execution_models import ToolExecutionResult
 from intergrax.tools.providers.sandbox.bundle import CODE_EXEC_TOOL_ID
+from intergrax.tools.registry import ToolProfile
 from tests.unit.autonomous_work.test_uca6c_r4_real_codecraft_execution import (
     _TENANT,
     _TASK_ID,
 )
 from tests.unit.autonomous_work.uca6c_r5_tool_runtime_fixtures import (
-    build_r5_catalog_tool_binding,
+    build_r5_production_catalog_tool_invoker,
     build_sandbox_session,
+    sandbox_env_profile,
 )
-from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy
+from intergrax.tools.registry.runtime import ToolRegistry
 
 pytestmark = pytest.mark.unit
 
 _WIRING_PATH = Path("intergrax/runtime/codecraft/wiring_bound_capability_execution.py")
+_CONTRACT_PATH = Path(
+    "intergrax/contracts/execution_bound_catalog_tool_invocation.py",
+)
 
 
 def test_wiring_static_gate_no_direct_code_exec_or_sandbox_execute() -> None:
@@ -60,11 +72,16 @@ def test_wiring_static_gate_no_direct_code_exec_or_sandbox_execute() -> None:
         if isinstance(node, ast.ImportFrom) and node.module:
             assert node.module != "intergrax.tools.providers.sandbox.extended_service"
             assert "sandbox.session" not in (node.module or "")
+            assert "runtime_state" not in (node.module or "")
+            assert "runtime.nexus.engine.runtime_state" not in (node.module or "")
     assert "write_file" not in source
     assert "code_exec(" not in source
     assert "ToolRegistry.register" not in source
     assert "production_mode=False" not in source
     assert "PolicyAction.ALLOW" not in source
+    assert "RuntimeState" not in source
+    assert "runtime_state_for_invocation" not in source
+    assert "Callable[[], object]" not in source
 
 
 def test_wiring_static_gate_no_registry_mutation_tokens() -> None:
@@ -75,17 +92,27 @@ def test_wiring_static_gate_no_registry_mutation_tokens() -> None:
     assert "mint_execution_id" not in source
 
 
+def test_public_contract_location_and_typing() -> None:
+    assert _CONTRACT_PATH.is_file()
+    source = _CONTRACT_PATH.read_text(encoding="utf-8")
+    assert "class ExecutionBoundCatalogToolInvoker" in source
+    assert "ExecutionBoundCatalogToolInvokeRequest" in source
+    assert "-> object" not in source
+    assert "Callable[[], object]" not in source
+
+
 class _CountingExecutor:
     def __init__(self) -> None:
         self.calls = 0
 
-    def execute(self, request: ToolExecutionRequest[BaseModel]) -> BaseModel:
+    def execute(self, request) -> BaseModel:
         self.calls += 1
         raise AssertionError("backend must not run")
 
 
 def test_scope_deny_blocks_before_backend(tmp_path: Path) -> None:
     from intergrax.codecraft.profile import CodeCraftProfile
+    from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
     from intergrax.tools.registry.wiring import ToolWiringContext
     from testing_support.codecraft_execution_environment import (
         codecraft_sandbox_execution_profile,
@@ -123,10 +150,9 @@ def test_scope_deny_blocks_before_backend(tmp_path: Path) -> None:
         },
     )
     run_id = mint_run_id()
-    binding, tool_registry, _ = build_r5_catalog_tool_binding(
+    catalog_invoker, tool_registry, _ = build_r5_production_catalog_tool_invoker(
         ctx,
-        run_seed=str(run_id),
-        allowed_tool_ids=set(),
+        tenant_id=_TENANT,
     )
     executor = _CountingExecutor()
     deny_invoker = RuntimeToolInvoker(
@@ -135,12 +161,16 @@ def test_scope_deny_blocks_before_backend(tmp_path: Path) -> None:
         sandbox_availability=sandbox_availability_provider(ctx),
         scope_policy=StaticToolScopePolicy(allowed_tools=set()),
     )
-    binding = CatalogToolInvocationBinding(
+    assert isinstance(catalog_invoker, NexusExecutionBoundCatalogToolInvoker)
+    catalog_invoker = NexusExecutionBoundCatalogToolInvoker(
         tool_invoker=deny_invoker,
-        state_supplier=binding.state_supplier,
-        caller_agent_id=binding.caller_agent_id,
+        policy_bundle=catalog_invoker.policy_bundle,
+        caller_agent_id=catalog_invoker.caller_agent_id,
     )
-    port = WiringCodeCraftBoundCapabilityExecution(ctx, tool_invocation=binding)
+    port = WiringCodeCraftBoundCapabilityExecution(
+        ctx,
+        catalog_tool_invoker=catalog_invoker,
+    )
     execution_id = mint_execution_id()
     token = bind_active_execution_identity(
         run_id=run_id,
@@ -166,7 +196,7 @@ def test_scope_deny_blocks_before_backend(tmp_path: Path) -> None:
     assert executor.calls == 0
 
 
-def test_runtime_success_via_code_exec(tmp_path: Path) -> None:
+def test_runtime_success_via_production_composition(tmp_path: Path) -> None:
     from intergrax.codecraft.profile import CodeCraftProfile
     from intergrax.tools.registry.wiring import ToolWiringContext
     from testing_support.codecraft_execution_environment import (
@@ -205,12 +235,24 @@ def test_runtime_success_via_code_exec(tmp_path: Path) -> None:
         },
     )
     run_id = mint_run_id()
-    binding, tool_registry, _invoker = build_r5_catalog_tool_binding(
-        ctx,
-        run_seed=str(run_id),
+    tool_wiring = ApplicationToolWiring(
+        profile=ToolProfile(enabled_bundles=frozenset({"sandbox"})),
+        wiring_context=ctx,
+        registry=ToolRegistry(),
     )
+    handler = build_production_codecraft_qualified_capability_execution_handler(
+        tool_wiring,
+        sandbox_env_profile(),
+        caller_agent_id="worker-r5-e2e",
+        tenant_id=_TENANT,
+    )
+    port = handler._execution_port
+    assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)
+    assert port._catalog_tool_invoker is not None
+    catalog_invoker = port._catalog_tool_invoker
+    assert isinstance(catalog_invoker, NexusExecutionBoundCatalogToolInvoker)
+    tool_registry = catalog_invoker.tool_invoker.registry
     assert tool_registry.has(CODE_EXEC_TOOL_ID)
-    port = WiringCodeCraftBoundCapabilityExecution(ctx, tool_invocation=binding)
     execution_id = mint_execution_id()
     token = bind_active_execution_identity(
         run_id=run_id,
@@ -233,9 +275,7 @@ def test_runtime_success_via_code_exec(tmp_path: Path) -> None:
     contract = tool_registry.get(CODE_EXEC_TOOL_ID).contract
     assert contract.risk_level is ToolRiskLevel.HIGH
     assert contract.side_effects is True
-    assert tool_registry.has(CODE_EXEC_TOOL_ID)
-    state = binding.runtime_state_for_invocation()
-    assert any(e.step == "tool_invocation_start" for e in state.trace_events)
+    assert "tool_invocation_start" in catalog_invoker.last_invocation_trace_steps
 
 
 def test_missing_tool_invocation_binding_unavailable(tmp_path: Path) -> None:
@@ -301,33 +341,39 @@ def test_missing_tool_invocation_binding_unavailable(tmp_path: Path) -> None:
 
 
 @dataclass
-class _RecordingInvoker:
-    registry: object
+class _RecordingCatalogInvoker:
+    caller_agent_id: str = "worker-test"
     calls: int = 0
+
+    def bind_execution_identity(
+        self,
+        *,
+        tenant_id: str,
+        run_id: str,
+        task_id: str,
+        agent_id: str,
+    ) -> None:
+        _ = tenant_id, run_id, task_id, agent_id
 
     def invoke(
         self,
-        *,
-        state: object,
-        agent_id: str,
-        request: ToolExecutionRequest[BaseModel],
+        request: ExecutionBoundCatalogToolInvokeRequest,
     ) -> ToolExecutionResult[BaseModel]:
         self.calls += 1
+        _ = request
         return ToolExecutionResult.fail(
             RuntimeErrorCode.TOOL_ERROR.value,
             "injected",
         )
 
 
-def test_custom_tool_invoker_injection() -> None:
+def test_custom_catalog_tool_invoker_injection() -> None:
     from intergrax.tools.registry.wiring import ToolWiringContext
 
-    recording = _RecordingInvoker(registry=object())
-    binding = CatalogToolInvocationBinding(
-        tool_invoker=recording,
-        state_supplier=lambda: object(),
-        caller_agent_id="worker-test",
-    )
+    recording: ExecutionBoundCatalogToolInvoker = _RecordingCatalogInvoker()
     ctx = ToolWiringContext()
-    port = WiringCodeCraftBoundCapabilityExecution(ctx, tool_invocation=binding)
-    assert isinstance(port._tool_invocation.tool_invoker, ToolInvokerProtocol)
+    port = WiringCodeCraftBoundCapabilityExecution(
+        ctx,
+        catalog_tool_invoker=recording,
+    )
+    assert port._catalog_tool_invoker is recording
