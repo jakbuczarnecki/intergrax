@@ -32,6 +32,7 @@ from tests.qualification.governance.gr12.catalog import (
     Gr12CoverageStatus,
 )
 from tests.qualification.governance.gr12.qualification_support import (
+    assert_gr12_a3_path_semantic_integrity,
     assert_proof_nodes_registered,
 )
 from tests.qualification.governance.strategy.catalog import (
@@ -92,13 +93,7 @@ def test_gr12_a3_ad_mutation_inventory_exhaustive() -> None:
 
 def test_gr12_a3_matrix_mandatory_invariants_per_qualified_path() -> None:
     for bundle in GR12_A3_CORE_PATH_PROOFS:
-        assert bundle.allow, bundle.path_id
-        assert bundle.deny, bundle.path_id
-        assert bundle.tenant, bundle.path_id
-        assert bundle.stale, bundle.path_id
-        assert bundle.hitl, bundle.path_id
-        assert bundle.evidence, bundle.path_id
-        assert bundle.pluginability, bundle.path_id
+        assert_gr12_a3_path_semantic_integrity(bundle)
 
 
 def test_gr12_a3_task_control_paths_no_longer_gap() -> None:

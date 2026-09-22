@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Final
 
 from intergrax.agent_distribution.control_plane_governance import (
@@ -22,6 +23,50 @@ from intergrax.agent_distribution.control_plane_governance import (
 )
 
 
+class Gr12QualificationPathKind(StrEnum):
+    MUTATION_SURFACE = "MUTATION_SURFACE"
+    COMPOSITION_SURFACE = "COMPOSITION_SURFACE"
+
+
+class Gr12ProofInvariant(StrEnum):
+    ALLOW = "ALLOW"
+    DENY = "DENY"
+    TENANT = "TENANT"
+    STALE = "STALE"
+    HITL = "HITL"
+    EVIDENCE = "EVIDENCE"
+    PLUGINABILITY = "PLUGINABILITY"
+    AUTHORITY_REQUIRED = "AUTHORITY_REQUIRED"
+    MISSING_AUTHORITY_FAIL_CLOSED = "MISSING_AUTHORITY_FAIL_CLOSED"
+    NO_DUPLICATE_AUTHORITY = "NO_DUPLICATE_AUTHORITY"
+    CANONICAL_CONSUMER = "CANONICAL_CONSUMER"
+    EXTERNAL_EVALUATOR = "EXTERNAL_EVALUATOR"
+
+
+@dataclass(frozen=True, slots=True)
+class Gr12ProofNode:
+    test_id: str
+    invariant: Gr12ProofInvariant
+    direct_path_id: str | None = None
+    shared_mechanism_id: str | None = None
+
+    def __post_init__(self) -> None:
+        if self.direct_path_id is not None and self.shared_mechanism_id is not None:
+            raise ValueError("proof node must be direct or shared, not both")
+        if self.direct_path_id is None and self.shared_mechanism_id is None:
+            raise ValueError("proof node requires direct_path_id or shared_mechanism_id")
+
+
+@dataclass(frozen=True, slots=True)
+class Gr12SharedQualificationMechanism:
+    mechanism_id: str
+    applicable_path_ids: frozenset[str]
+    authorization_owner: str
+    proof_tests: tuple[str, ...]
+    stale_guard_owner: str | None = None
+    hitl_enforcement_owner: str | None = None
+
+
 @dataclass(frozen=True, slots=True)
 class Gr12A3PathProofBundle:
     path_id: str
@@ -32,6 +77,8 @@ class Gr12A3PathProofBundle:
     hitl: tuple[str, ...]
     evidence: tuple[str, ...]
     pluginability: str | None = None
+    kind: Gr12QualificationPathKind = Gr12QualificationPathKind.MUTATION_SURFACE
+    proof_nodes: tuple[Gr12ProofNode, ...] = ()
 
     @property
     def primary_proof(self) -> str:
@@ -50,6 +97,33 @@ class Gr12A3PathProofBundle:
             nodes.extend(group)
         if self.pluginability:
             nodes.append(self.pluginability)
+        for node in self.resolved_proof_nodes():
+            if node.test_id not in nodes:
+                nodes.append(node.test_id)
+        return tuple(nodes)
+
+    def resolved_proof_nodes(self) -> tuple[Gr12ProofNode, ...]:
+        if self.proof_nodes:
+            return self.proof_nodes
+        if self.kind is Gr12QualificationPathKind.COMPOSITION_SURFACE:
+            return ()
+        path_id = self.path_id
+        nodes: list[Gr12ProofNode] = [
+            Gr12ProofNode(self.allow[0], Gr12ProofInvariant.ALLOW, direct_path_id=path_id),
+            Gr12ProofNode(self.deny[0], Gr12ProofInvariant.DENY, direct_path_id=path_id),
+            Gr12ProofNode(self.tenant[0], Gr12ProofInvariant.TENANT, direct_path_id=path_id),
+            Gr12ProofNode(self.stale[0], Gr12ProofInvariant.STALE, direct_path_id=path_id),
+            Gr12ProofNode(self.hitl[0], Gr12ProofInvariant.HITL, direct_path_id=path_id),
+            Gr12ProofNode(self.evidence[0], Gr12ProofInvariant.EVIDENCE, direct_path_id=path_id),
+        ]
+        if self.pluginability:
+            nodes.append(
+                Gr12ProofNode(
+                    self.pluginability,
+                    Gr12ProofInvariant.PLUGINABILITY,
+                    direct_path_id=path_id,
+                )
+            )
         return tuple(nodes)
 
 
@@ -73,6 +147,7 @@ _AD_ACT = "tests/unit/agent_distribution/test_agent_distribution_activation_reme
 _AD_BUILD = "tests/unit/agent_distribution/test_agent_distribution_build_remediation.py"
 _AD_DRAIN = "tests/unit/agent_distribution/test_agent_distribution_drain_recovery_remediation.py"
 _AD_TENANT = "tests/unit/agent_distribution/test_agent_distribution_tenant_denial_remediation.py"
+_AD_DSR = "tests/unit/agent_distribution/test_agent_distribution_desired_state_idempotent_scope.py"
 
 _AHI = "tests/unit/runtime/adaptive/test_ahi_control_plane_governance.py"
 _ECP = "tests/unit/runtime/capacity/test_ecp_control_plane_governance.py"
@@ -81,6 +156,61 @@ _TC_RESUME = "tests/unit/applications/test_task_control_governed_resume.py"
 _TC_AUTONOMY = "tests/unit/applications/test_task_control_governed_autonomy.py"
 _TC_HOST = "tests/unit/applications/test_task_control_host_composition.py"
 _A2 = "tests/qualification/governance/gr12/test_gr12_a2_mandatory_cla04_composition.py"
+
+GR12_A3_MECH_CREATE_ID_CONFLICT: Final[str] = "AD_DESIRED_STATE_CREATE_ID_CONFLICT"
+GR12_A3_MECH_BINDING_REVISION_CAS: Final[str] = "AD_BINDING_EXPECTED_REVISION_CAS"
+GR12_A3_MECH_DESIRED_STATE_HITL: Final[str] = "AD_DESIRED_STATE_HITL_ENFORCEMENT"
+
+_DSR13 = f"{_AD_DSR}::test_dsr13_noop_target_change_not_treated_as_noop"
+_ADS3_HITL = f"{_AD_DS}::test_ads3_install_require_human_zero_mutations_preserves_scope"
+_TE7_HITL = f"{_AD_TENANT}::test_te7_real_require_human_preserves_scope"
+
+GR12_A3_SHARED_MECHANISMS: Final[tuple[Gr12SharedQualificationMechanism, ...]] = (
+    Gr12SharedQualificationMechanism(
+        mechanism_id=GR12_A3_MECH_CREATE_ID_CONFLICT,
+        applicable_path_ids=frozenset({"CP-AD-INSTALL", "CP-AD-BIND"}),
+        authorization_owner="intergrax/agent_distribution/admin_service.py",
+        stale_guard_owner=(
+            "intergrax/agent_distribution/admin_service.py + domain create conflict semantics"
+        ),
+        proof_tests=(_DSR13,),
+    ),
+    Gr12SharedQualificationMechanism(
+        mechanism_id=GR12_A3_MECH_BINDING_REVISION_CAS,
+        applicable_path_ids=frozenset(
+            {
+                "CP-AD-BINDING-CONFIG",
+                "CP-AD-ENABLE-BINDING",
+                "CP-AD-DISABLE-BINDING",
+            }
+        ),
+        authorization_owner="intergrax/agent_distribution/admin_service.py",
+        stale_guard_owner="intergrax/agent_distribution/binding_service.py::expected_revision CAS",
+        proof_tests=(
+            f"{_AD_DS}::test_ads12_update_config_cas_after_authorization",
+            f"{_AD_DS}::test_ads31_enable_cas_after_authorization",
+            f"{_AD_DS}::test_ads32_disable_cas_after_authorization",
+        ),
+    ),
+    Gr12SharedQualificationMechanism(
+        mechanism_id=GR12_A3_MECH_DESIRED_STATE_HITL,
+        applicable_path_ids=frozenset(
+            {
+                "CP-AD-BIND",
+                "CP-AD-BINDING-CONFIG",
+                "CP-AD-ENABLE-BINDING",
+                "CP-AD-DISABLE-BINDING",
+            }
+        ),
+        authorization_owner="intergrax/agent_distribution/admin_service.py::_enforce_authorization_result",
+        hitl_enforcement_owner="intergrax/agent_distribution/admin_service.py::_enforce_authorization_result",
+        proof_tests=(_ADS3_HITL, _TE7_HITL),
+    ),
+)
+
+GR12_A3_SHARED_MECHANISM_BY_ID: Final[dict[str, Gr12SharedQualificationMechanism]] = {
+    mechanism.mechanism_id: mechanism for mechanism in GR12_A3_SHARED_MECHANISMS
+}
 
 GR12_A3_CORE_PATH_PROOFS: Final[tuple[Gr12A3PathProofBundle, ...]] = (
     Gr12A3PathProofBundle(
@@ -108,20 +238,82 @@ GR12_A3_CORE_PATH_PROOFS: Final[tuple[Gr12A3PathProofBundle, ...]] = (
         allow=(f"{_AD_DS}::test_ads1_install_allow_one_mutation_sequence",),
         deny=(f"{_AD_DS}::test_ads2_install_deny_zero_mutations",),
         tenant=(f"{_AD_DS}::test_ads4_install_tenant_mismatch_zero_mutations",),
-        stale=(f"{_AD_DS}::test_ads12_update_config_cas_after_authorization",),
-        hitl=(f"{_AD_DS}::test_ads3_install_require_human_zero_mutations_preserves_scope",),
+        stale=(_DSR13,),
+        hitl=(_ADS3_HITL,),
         evidence=(f"{_AD_DS}::test_ads23_mutation_id_preserved_exactly",),
         pluginability=f"{_AD_DS}::test_ads18_no_policy_tenant_match_deny",
+        proof_nodes=(
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads1_install_allow_one_mutation_sequence",
+                Gr12ProofInvariant.ALLOW,
+                direct_path_id="CP-AD-INSTALL",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads2_install_deny_zero_mutations",
+                Gr12ProofInvariant.DENY,
+                direct_path_id="CP-AD-INSTALL",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads4_install_tenant_mismatch_zero_mutations",
+                Gr12ProofInvariant.TENANT,
+                direct_path_id="CP-AD-INSTALL",
+            ),
+            Gr12ProofNode(_DSR13, Gr12ProofInvariant.STALE, shared_mechanism_id=GR12_A3_MECH_CREATE_ID_CONFLICT),
+            Gr12ProofNode(_ADS3_HITL, Gr12ProofInvariant.HITL, direct_path_id="CP-AD-INSTALL"),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads23_mutation_id_preserved_exactly",
+                Gr12ProofInvariant.EVIDENCE,
+                direct_path_id="CP-AD-INSTALL",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads18_no_policy_tenant_match_deny",
+                Gr12ProofInvariant.PLUGINABILITY,
+                direct_path_id="CP-AD-INSTALL",
+            ),
+        ),
     ),
     Gr12A3PathProofBundle(
         path_id="CP-AD-BIND",
         allow=(f"{_AD_DS}::test_ads6_bind_allow_one_create",),
         deny=(f"{_AD_DS}::test_ads7_bind_deny_zero_create",),
         tenant=(f"{_AD_TENANT}::test_te2_wrong_tenant_bind_blocked_before_lookup",),
-        stale=(f"{_AD_DS}::test_ads12_update_config_cas_after_authorization",),
-        hitl=(f"{_AD_DS}::test_ads3_install_require_human_zero_mutations_preserves_scope",),
+        stale=(_DSR13,),
+        hitl=(_ADS3_HITL,),
         evidence=(f"{_AD_DS}::test_ads8_bind_target_identity_changes_request_digest",),
         pluginability=f"{_AD_DS}::test_ads18_no_policy_tenant_match_deny",
+        proof_nodes=(
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads6_bind_allow_one_create",
+                Gr12ProofInvariant.ALLOW,
+                direct_path_id="CP-AD-BIND",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads7_bind_deny_zero_create",
+                Gr12ProofInvariant.DENY,
+                direct_path_id="CP-AD-BIND",
+            ),
+            Gr12ProofNode(
+                f"{_AD_TENANT}::test_te2_wrong_tenant_bind_blocked_before_lookup",
+                Gr12ProofInvariant.TENANT,
+                direct_path_id="CP-AD-BIND",
+            ),
+            Gr12ProofNode(_DSR13, Gr12ProofInvariant.STALE, shared_mechanism_id=GR12_A3_MECH_CREATE_ID_CONFLICT),
+            Gr12ProofNode(
+                _ADS3_HITL,
+                Gr12ProofInvariant.HITL,
+                shared_mechanism_id=GR12_A3_MECH_DESIRED_STATE_HITL,
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads8_bind_target_identity_changes_request_digest",
+                Gr12ProofInvariant.EVIDENCE,
+                direct_path_id="CP-AD-BIND",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads18_no_policy_tenant_match_deny",
+                Gr12ProofInvariant.PLUGINABILITY,
+                direct_path_id="CP-AD-BIND",
+            ),
+        ),
     ),
     Gr12A3PathProofBundle(
         path_id="CP-AD-BINDING-CONFIG",
@@ -129,29 +321,140 @@ GR12_A3_CORE_PATH_PROOFS: Final[tuple[Gr12A3PathProofBundle, ...]] = (
         deny=(f"{_AD_DS}::test_ads10_update_config_deny_zero_updates",),
         tenant=(f"{_AD_TENANT}::test_te3_wrong_tenant_update_enable_disable_blocked_before_lookup",),
         stale=(f"{_AD_DS}::test_ads12_update_config_cas_after_authorization",),
-        hitl=(f"{_AD_DS}::test_ads3_install_require_human_zero_mutations_preserves_scope",),
+        hitl=(_ADS3_HITL,),
         evidence=(f"{_AD_DS}::test_ads13_config_digest_changes_target_request_digest",),
         pluginability=f"{_AD_DS}::test_ads18_no_policy_tenant_match_deny",
+        proof_nodes=(
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads9_update_config_allow_one_update",
+                Gr12ProofInvariant.ALLOW,
+                direct_path_id="CP-AD-BINDING-CONFIG",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads10_update_config_deny_zero_updates",
+                Gr12ProofInvariant.DENY,
+                direct_path_id="CP-AD-BINDING-CONFIG",
+            ),
+            Gr12ProofNode(
+                f"{_AD_TENANT}::test_te3_wrong_tenant_update_enable_disable_blocked_before_lookup",
+                Gr12ProofInvariant.TENANT,
+                direct_path_id="CP-AD-BINDING-CONFIG",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads12_update_config_cas_after_authorization",
+                Gr12ProofInvariant.STALE,
+                shared_mechanism_id=GR12_A3_MECH_BINDING_REVISION_CAS,
+            ),
+            Gr12ProofNode(
+                _ADS3_HITL,
+                Gr12ProofInvariant.HITL,
+                shared_mechanism_id=GR12_A3_MECH_DESIRED_STATE_HITL,
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads13_config_digest_changes_target_request_digest",
+                Gr12ProofInvariant.EVIDENCE,
+                direct_path_id="CP-AD-BINDING-CONFIG",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads18_no_policy_tenant_match_deny",
+                Gr12ProofInvariant.PLUGINABILITY,
+                direct_path_id="CP-AD-BINDING-CONFIG",
+            ),
+        ),
     ),
     Gr12A3PathProofBundle(
         path_id="CP-AD-ENABLE-BINDING",
         allow=(f"{_AD_DS}::test_ads14_enable_allow_once",),
         deny=(f"{_AD_DS}::test_ads15_enable_deny_zero_mutation",),
         tenant=(f"{_AD_TENANT}::test_te3_wrong_tenant_update_enable_disable_blocked_before_lookup",),
-        stale=(f"{_AD_DS}::test_ads12_update_config_cas_after_authorization",),
-        hitl=(f"{_AD_DS}::test_ads3_install_require_human_zero_mutations_preserves_scope",),
+        stale=(f"{_AD_DS}::test_ads31_enable_cas_after_authorization",),
+        hitl=(_ADS3_HITL,),
         evidence=(f"{_AD_DS}::test_ads17_enable_vs_disable_different_digest",),
         pluginability=f"{_AD_DS}::test_ads18_no_policy_tenant_match_deny",
+        proof_nodes=(
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads14_enable_allow_once",
+                Gr12ProofInvariant.ALLOW,
+                direct_path_id="CP-AD-ENABLE-BINDING",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads15_enable_deny_zero_mutation",
+                Gr12ProofInvariant.DENY,
+                direct_path_id="CP-AD-ENABLE-BINDING",
+            ),
+            Gr12ProofNode(
+                f"{_AD_TENANT}::test_te3_wrong_tenant_update_enable_disable_blocked_before_lookup",
+                Gr12ProofInvariant.TENANT,
+                direct_path_id="CP-AD-ENABLE-BINDING",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads31_enable_cas_after_authorization",
+                Gr12ProofInvariant.STALE,
+                shared_mechanism_id=GR12_A3_MECH_BINDING_REVISION_CAS,
+            ),
+            Gr12ProofNode(
+                _ADS3_HITL,
+                Gr12ProofInvariant.HITL,
+                shared_mechanism_id=GR12_A3_MECH_DESIRED_STATE_HITL,
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads17_enable_vs_disable_different_digest",
+                Gr12ProofInvariant.EVIDENCE,
+                direct_path_id="CP-AD-ENABLE-BINDING",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads18_no_policy_tenant_match_deny",
+                Gr12ProofInvariant.PLUGINABILITY,
+                direct_path_id="CP-AD-ENABLE-BINDING",
+            ),
+        ),
     ),
     Gr12A3PathProofBundle(
         path_id="CP-AD-DISABLE-BINDING",
         allow=(f"{_AD_DS}::test_ads16_disable_allow_once",),
         deny=(f"{_AD_DS}::test_ads15_enable_deny_zero_mutation",),
         tenant=(f"{_AD_TENANT}::test_te3_wrong_tenant_update_enable_disable_blocked_before_lookup",),
-        stale=(f"{_AD_DS}::test_ads12_update_config_cas_after_authorization",),
-        hitl=(f"{_AD_DS}::test_ads3_install_require_human_zero_mutations_preserves_scope",),
+        stale=(f"{_AD_DS}::test_ads32_disable_cas_after_authorization",),
+        hitl=(_ADS3_HITL,),
         evidence=(f"{_AD_DS}::test_ads17_enable_vs_disable_different_digest",),
         pluginability=f"{_AD_DS}::test_ads18_no_policy_tenant_match_deny",
+        proof_nodes=(
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads16_disable_allow_once",
+                Gr12ProofInvariant.ALLOW,
+                direct_path_id="CP-AD-DISABLE-BINDING",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads15_enable_deny_zero_mutation",
+                Gr12ProofInvariant.DENY,
+                direct_path_id="CP-AD-DISABLE-BINDING",
+            ),
+            Gr12ProofNode(
+                f"{_AD_TENANT}::test_te3_wrong_tenant_update_enable_disable_blocked_before_lookup",
+                Gr12ProofInvariant.TENANT,
+                direct_path_id="CP-AD-DISABLE-BINDING",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads32_disable_cas_after_authorization",
+                Gr12ProofInvariant.STALE,
+                shared_mechanism_id=GR12_A3_MECH_BINDING_REVISION_CAS,
+            ),
+            Gr12ProofNode(
+                _ADS3_HITL,
+                Gr12ProofInvariant.HITL,
+                shared_mechanism_id=GR12_A3_MECH_DESIRED_STATE_HITL,
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads17_enable_vs_disable_different_digest",
+                Gr12ProofInvariant.EVIDENCE,
+                direct_path_id="CP-AD-DISABLE-BINDING",
+            ),
+            Gr12ProofNode(
+                f"{_AD_DS}::test_ads18_no_policy_tenant_match_deny",
+                Gr12ProofInvariant.PLUGINABILITY,
+                direct_path_id="CP-AD-DISABLE-BINDING",
+            ),
+        ),
     ),
     Gr12A3PathProofBundle(
         path_id="CP-AD-ADMIT",
@@ -275,23 +578,79 @@ GR12_A3_CORE_PATH_PROOFS: Final[tuple[Gr12A3PathProofBundle, ...]] = (
     ),
     Gr12A3PathProofBundle(
         path_id="CP-HOST-BOUNDARY-OPTIONAL",
+        kind=Gr12QualificationPathKind.COMPOSITION_SURFACE,
         allow=(f"{_A2}::test_gr12_a2_product_task_control_wiring_requires_canonical_boundary",),
         deny=(f"{_A2}::test_gr12_a2_ecp_product_without_authority_fails_at_wiring",),
-        tenant=(f"{_TC_HOST}::test_taskcpm_h1_product_host_runtime_exposes_canonical_boundary",),
-        stale=(f"{_TC_CANCEL}::test_taskcpm_c6_binding_changes_after_authorization_zero_effect",),
-        hitl=(f"{_TC_CANCEL}::test_taskcpm_c3_require_human_zero_cancellation_effect",),
+        tenant=(),
+        stale=(),
+        hitl=(),
         evidence=(f"{_A2}::test_gr12_a2_r2_product_host_composition_exposes_cla04_boundary",),
         pluginability=f"{_A2}::test_gr12_a2_external_evaluator_injected_without_domain_changes",
+        proof_nodes=(
+            Gr12ProofNode(
+                f"{_A2}::test_gr12_a2_product_task_control_wiring_requires_canonical_boundary",
+                Gr12ProofInvariant.AUTHORITY_REQUIRED,
+                direct_path_id="CP-HOST-BOUNDARY-OPTIONAL",
+            ),
+            Gr12ProofNode(
+                f"{_A2}::test_gr12_a2_ecp_product_without_authority_fails_at_wiring",
+                Gr12ProofInvariant.MISSING_AUTHORITY_FAIL_CLOSED,
+                direct_path_id="CP-HOST-BOUNDARY-OPTIONAL",
+            ),
+            Gr12ProofNode(
+                f"{_TC_HOST}::test_taskcpm_h1_product_host_runtime_exposes_canonical_boundary",
+                Gr12ProofInvariant.CANONICAL_CONSUMER,
+                direct_path_id="CP-HOST-BOUNDARY-OPTIONAL",
+            ),
+            Gr12ProofNode(
+                f"{_A2}::test_gr12_a2_r2_product_host_composition_exposes_cla04_boundary",
+                Gr12ProofInvariant.NO_DUPLICATE_AUTHORITY,
+                direct_path_id="CP-HOST-BOUNDARY-OPTIONAL",
+            ),
+            Gr12ProofNode(
+                f"{_A2}::test_gr12_a2_external_evaluator_injected_without_domain_changes",
+                Gr12ProofInvariant.EXTERNAL_EVALUATOR,
+                direct_path_id="CP-HOST-BOUNDARY-OPTIONAL",
+            ),
+        ),
     ),
     Gr12A3PathProofBundle(
         path_id="CP-ECP-BOUNDARY-OPTIONAL",
+        kind=Gr12QualificationPathKind.COMPOSITION_SURFACE,
         allow=(f"{_ECP}::test_ecp_cpm16_product_without_authority_fails_at_wiring",),
         deny=(f"{_A2}::test_gr12_a2_ecp_enabled_without_boundary_fails_at_wiring",),
-        tenant=(f"{_ECP}::test_ecp_cpm4_wrong_tenant_blocked_before_provider_mutation",),
-        stale=(f"{_ECP}::test_ecp_cpm8_stale_k8s_state_blocks_apply",),
-        hitl=(f"{_ECP}::test_ecp_cpm3_require_human_k8s_zero_scale_calls",),
+        tenant=(),
+        stale=(),
+        hitl=(),
         evidence=(f"{_ECP}::test_ecp_cpm15_production_supplied_deny_policy_zero_provider_effect",),
         pluginability=f"{_ECP}::test_ecp_cpm14_production_missing_policy_fails_closed",
+        proof_nodes=(
+            Gr12ProofNode(
+                f"{_ECP}::test_ecp_cpm16_product_without_authority_fails_at_wiring",
+                Gr12ProofInvariant.AUTHORITY_REQUIRED,
+                direct_path_id="CP-ECP-BOUNDARY-OPTIONAL",
+            ),
+            Gr12ProofNode(
+                f"{_A2}::test_gr12_a2_ecp_enabled_without_boundary_fails_at_wiring",
+                Gr12ProofInvariant.MISSING_AUTHORITY_FAIL_CLOSED,
+                direct_path_id="CP-ECP-BOUNDARY-OPTIONAL",
+            ),
+            Gr12ProofNode(
+                f"{_ECP}::test_ecp_r1_standalone_k8s_allow_without_execution_identity",
+                Gr12ProofInvariant.CANONICAL_CONSUMER,
+                direct_path_id="CP-ECP-BOUNDARY-OPTIONAL",
+            ),
+            Gr12ProofNode(
+                f"{_ECP}::test_ecp_cpm15_production_supplied_deny_policy_zero_provider_effect",
+                Gr12ProofInvariant.NO_DUPLICATE_AUTHORITY,
+                direct_path_id="CP-ECP-BOUNDARY-OPTIONAL",
+            ),
+            Gr12ProofNode(
+                f"{_ECP}::test_ecp_cpm14_production_missing_policy_fails_closed",
+                Gr12ProofInvariant.EXTERNAL_EVALUATOR,
+                direct_path_id="CP-ECP-BOUNDARY-OPTIONAL",
+            ),
+        ),
     ),
 )
 
