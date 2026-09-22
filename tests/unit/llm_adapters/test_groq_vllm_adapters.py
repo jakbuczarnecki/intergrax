@@ -66,11 +66,16 @@ def test_llama_cpp_adapter_mocked_chat() -> None:
 
 
 def test_registry_lazy_groq() -> None:
-    snapshot = dict(LLMAdapterRegistry._factories)
+    from tests.unit.llm_adapters.registry_state_test_support import (
+        restore_registry_state,
+        snapshot_registry_state,
+    )
+
+    snapshot = snapshot_registry_state()
     try:
         LLMAdapterRegistry.reset_for_testing()
         with patch.dict("os.environ", {"GROQ_API_KEY": "k"}, clear=False):
             adapter = LLMAdapterRegistry.create(LLMProvider.GROQ, client=MagicMock(), model="m")
         assert isinstance(adapter, GroqChatAdapter)
     finally:
-        LLMAdapterRegistry._factories = snapshot
+        restore_registry_state(snapshot)

@@ -9,6 +9,10 @@ import pytest
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from testing_support.builder import FakeLLMAdapter
+from tests.unit.llm_adapters.registry_state_test_support import (
+    restore_registry_state,
+    snapshot_registry_state,
+)
 
 _RESEARCH_TEST_LLM_PROVIDER = "groq"
 _RESEARCH_TEST_LLM_MODEL = "llama-3.3-70b-versatile"
@@ -17,7 +21,7 @@ _RESEARCH_TEST_LLM_MODEL = "llama-3.3-70b-versatile"
 @pytest.fixture
 def configured_research_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     """Configure explicit Research LLM provider/model with a deterministic fake adapter."""
-    snapshot = dict(LLMAdapterRegistry._factories)
+    snapshot = snapshot_registry_state()
     LLMAdapterRegistry.register(
         LLMProvider.GROQ,
         lambda **_kwargs: FakeLLMAdapter(),
@@ -26,4 +30,4 @@ def configured_research_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("RESEARCH_LLM_PROVIDER", _RESEARCH_TEST_LLM_PROVIDER)
     monkeypatch.setenv("RESEARCH_LLM_MODEL", _RESEARCH_TEST_LLM_MODEL)
     yield
-    LLMAdapterRegistry._factories = snapshot
+    restore_registry_state(snapshot)

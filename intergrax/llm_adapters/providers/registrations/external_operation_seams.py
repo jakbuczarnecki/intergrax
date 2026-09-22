@@ -39,7 +39,6 @@ def build_openai_external_operation_seam() -> ProviderExternalOperationSeam:
         cancellation=cancel,
         termination=termination,
         stream_registry=registry,
-        capabilities=OPENAI_FAMILY_EXTERNAL_OPERATION_CAPABILITIES,
     )
 
 
@@ -53,7 +52,6 @@ def build_claude_external_operation_seam() -> ProviderExternalOperationSeam:
         cancellation=cancel,
         termination=termination,
         stream_registry=registry,
-        capabilities=HTTP_SDK_EXTERNAL_OPERATION_CAPABILITIES,
     )
 
 
@@ -67,7 +65,6 @@ def build_gemini_external_operation_seam() -> ProviderExternalOperationSeam:
         cancellation=cancel,
         termination=termination,
         stream_registry=registry,
-        capabilities=HTTP_SDK_EXTERNAL_OPERATION_CAPABILITIES,
     )
 
 
@@ -81,7 +78,6 @@ def build_mistral_external_operation_seam() -> ProviderExternalOperationSeam:
         cancellation=cancel,
         termination=termination,
         stream_registry=registry,
-        capabilities=HTTP_SDK_EXTERNAL_OPERATION_CAPABILITIES,
     )
 
 
@@ -95,7 +91,6 @@ def build_bedrock_external_operation_seam() -> ProviderExternalOperationSeam:
         cancellation=cancel,
         termination=termination,
         stream_registry=registry,
-        capabilities=BEDROCK_EXTERNAL_OPERATION_CAPABILITIES,
     )
 
 
@@ -109,5 +104,4 @@ def build_ollama_external_operation_seam() -> ProviderExternalOperationSeam:
         cancellation=cancel,
         termination=termination,
         stream_registry=registry,
-        capabilities=OLLAMA_LOCAL_EXTERNAL_OPERATION_CAPABILITIES,
     )

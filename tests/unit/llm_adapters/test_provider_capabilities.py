@@ -13,17 +13,21 @@ from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 from intergrax.llm_adapters.registry.catalog_capabilities import unwrap_catalog_capability_adapter
 from intergrax.llm_adapters.providers.openai_responses_adapter import OpenAIChatResponsesAdapter
+from tests.unit.llm_adapters.registry_state_test_support import (
+    restore_registry_state,
+    snapshot_registry_state,
+)
 
 pytestmark = pytest.mark.unit
 
 
 @pytest.fixture()
 def _restore_registry_state():
-    snapshot = dict(LLMAdapterRegistry._factories)
+    snapshot = snapshot_registry_state()
     try:
         yield snapshot
     finally:
-        LLMAdapterRegistry._factories = snapshot
+        restore_registry_state(snapshot)
 
 
 def test_openai_supports_tools_and_streaming() -> None:

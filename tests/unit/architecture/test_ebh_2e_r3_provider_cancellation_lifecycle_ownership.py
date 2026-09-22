@@ -126,11 +126,6 @@ def _external_seam_factory() -> ProviderExternalOperationSeam:
         cancellation=_ExternalCancellationPort(),
         termination=_ExternalTerminationPort(),
         stream_registry=ProviderStreamTransportRegistry(),
-        capabilities=ExternalOperationCapabilities(
-            supports_native_cancel=True,
-            supports_stream_abort=False,
-            supports_remote_termination=True,
-        ),
     )
 
 

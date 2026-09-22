@@ -313,7 +313,12 @@ def test_ebh_2e_r1_r1_execution_only_adapter_skips_optional_lifecycle_binding() 
 
 
 def test_ebh_2e_r1_r1_registry_accepts_execution_only_structural_adapter() -> None:
-    snapshot = dict(LLMAdapterRegistry._factories)
+    from tests.unit.llm_adapters.registry_state_test_support import (
+        restore_registry_state,
+        snapshot_registry_state,
+    )
+
+    snapshot = snapshot_registry_state()
     try:
         LLMAdapterRegistry.reset_for_testing()
         key = "ebh2e-r1-r1-exec-only"
@@ -326,7 +331,7 @@ def test_ebh_2e_r1_r1_registry_accepts_execution_only_structural_adapter() -> No
         assert isinstance(created, LLMAdapter)
         assert not isinstance(created, LLMRuntimeLifecycleBinding)
     finally:
-        LLMAdapterRegistry._factories = snapshot
+        restore_registry_state(snapshot)
 
 
 def test_ebh_2e_r1_r1_remaining_base_isinstance_in_llm_layer_classified() -> None:

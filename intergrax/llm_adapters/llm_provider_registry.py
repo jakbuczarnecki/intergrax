@@ -85,6 +85,43 @@ class LLMAdapterRegistry:
         cls._external_operation_seam_factories.clear()
         cls._external_operation_capabilities.clear()
 
+    @staticmethod
+    def _validate_registration_spec(spec: LLMAdapterRegistrationSpec, key: str) -> None:
+        if key != spec.provider_id.strip().lower():
+            raise LLMAdapterRegistrationError(
+                f"LLM provider registration spec provider_id={spec.provider_id!r} "
+                "must already be normalized."
+            )
+        seam_factory = spec.external_operation_seam_factory
+        capabilities = spec.external_operation_capabilities
+        if seam_factory is not None and capabilities is None:
+            raise LLMAdapterRegistrationError(
+                f"LLM provider registration spec provider_id={spec.provider_id!r} "
+                "must declare external_operation_capabilities when a seam factory is set."
+            )
+        if capabilities is not None and seam_factory is None:
+            raise LLMAdapterRegistrationError(
+                f"LLM provider registration spec provider_id={spec.provider_id!r} "
+                "must declare external_operation_seam_factory when capabilities are set."
+            )
+
+    @classmethod
+    def _commit_registration_spec(cls, spec: LLMAdapterRegistrationSpec, key: str) -> None:
+        cls._factories[key] = spec.factory
+        seam_factory = spec.external_operation_seam_factory
+        capabilities = spec.external_operation_capabilities
+        if seam_factory is not None:
+            if capabilities is None:
+                raise LLMAdapterRegistrationError(
+                    f"LLM provider registration spec provider_id={spec.provider_id!r} "
+                    "must declare external_operation_capabilities when a seam factory is set."
+                )
+            cls._external_operation_seam_factories[key] = seam_factory
+            cls._external_operation_capabilities[key] = capabilities
+        else:
+            cls._external_operation_seam_factories.pop(key, None)
+            cls._external_operation_capabilities.pop(key, None)
+
     @classmethod
     def register_from_spec(
         cls,
@@ -94,28 +131,12 @@ class LLMAdapterRegistry:
         skip_if_present: bool = False,
     ) -> None:
         key = cls._normalize_provider(spec.provider_id)
-        if key != spec.provider_id.strip().lower():
-            raise LLMAdapterRegistrationError(
-                f"LLM provider registration spec provider_id={spec.provider_id!r} "
-                "must already be normalized."
-            )
+        cls._validate_registration_spec(spec, key)
         if key in cls._factories and not override:
             if skip_if_present:
                 return
             raise ValueError(f"LLM adapter already registered for provider='{key}'")
-        cls._factories[key] = spec.factory
-        if spec.external_operation_seam_factory is not None:
-            declared_capabilities = spec.external_operation_capabilities
-            if declared_capabilities is None:
-                raise LLMAdapterRegistrationError(
-                    f"LLM provider registration spec provider_id={spec.provider_id!r} "
-                    "must declare external_operation_capabilities when a seam factory is set."
-                )
-            cls._external_operation_seam_factories[key] = spec.external_operation_seam_factory
-            cls._external_operation_capabilities[key] = declared_capabilities
-        else:
-            cls._external_operation_seam_factories.pop(key, None)
-            cls._external_operation_capabilities.pop(key, None)
+        cls._commit_registration_spec(spec, key)
 
     @classmethod
     def register(
@@ -186,10 +207,10 @@ class LLMAdapterRegistry:
         if registered is not None:
             return registered
         from intergrax.llm_adapters._shared.default_external_operation_seam import (
-            default_external_operation_seam,
+            unregistered_external_operation_capabilities,
         )
 
-        return default_external_operation_seam().capabilities
+        return unregistered_external_operation_capabilities()
 
     @classmethod
     def resolve_external_operation_seam(cls, provider_slug: str) -> ProviderExternalOperationSeam:
@@ -202,14 +223,7 @@ class LLMAdapterRegistry:
             )
 
             return default_external_operation_seam()
-        seam = seam_factory()
-        declared = cls._external_operation_capabilities.get(key)
-        if declared is not None and seam.capabilities != declared:
-            raise LLMAdapterRegistrationError(
-                f"LLM provider '{key}' external operation seam capabilities do not match "
-                "registration declaration."
-            )
-        return seam
+        return seam_factory()
 
 
 def _validate_registered_adapter(adapter: LLMAdapter) -> None:

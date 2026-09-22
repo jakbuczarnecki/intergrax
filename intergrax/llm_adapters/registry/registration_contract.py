@@ -39,12 +39,11 @@ class LLMAdapterFactory(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class ProviderExternalOperationSeam:
-    """Provider-owned external-operation ports bundled with declared capabilities."""
+    """Provider-owned external-operation runtime ports (capabilities live on registration spec)."""
 
     cancellation: ExternalOperationCancellationPort
     termination: ExternalOperationTerminationPort
     stream_registry: ProviderStreamTransportRegistry
-    capabilities: ExternalOperationCapabilities
     status_port: ExternalOperationStatusPort | None = None
 
 

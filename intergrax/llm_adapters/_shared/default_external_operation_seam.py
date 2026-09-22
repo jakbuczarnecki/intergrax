@@ -41,10 +41,13 @@ _UNREGISTERED_CAPABILITIES = ExternalOperationCapabilities(
 )
 
 
+def unregistered_external_operation_capabilities() -> ExternalOperationCapabilities:
+    return _UNREGISTERED_CAPABILITIES
+
+
 def default_external_operation_seam() -> ProviderExternalOperationSeam:
     return ProviderExternalOperationSeam(
         cancellation=NoOpExternalOperationCancellationPort(),
         termination=NoOpExternalOperationTerminationPort(),
         stream_registry=ProviderStreamTransportRegistry(),
-        capabilities=_UNREGISTERED_CAPABILITIES,
     )

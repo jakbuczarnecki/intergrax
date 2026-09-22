@@ -25,6 +25,11 @@ from intergrax.llm_adapters.registry.catalog_capabilities import (
     unwrap_catalog_capability_adapter,
 )
 from intergrax.llm_adapters.registry.registration_contract import LLMAdapterRegistrationSpec
+from tests.unit.llm_adapters.registry_state_test_support import (
+    RegistryStateSnapshot,
+    restore_registry_state,
+    snapshot_registry_state,
+)
 
 
 pytestmark = pytest.mark.unit
@@ -57,12 +62,12 @@ class _TestAdapter(BaseLLMAdapter):
 
 
 @pytest.fixture()
-def _restore_registry_state() -> Iterator[Dict[str, _Factory]]:
-    snapshot: Dict[str, _Factory] = dict(LLMAdapterRegistry._factories)
+def _restore_registry_state() -> Iterator[RegistryStateSnapshot]:
+    snapshot = snapshot_registry_state()
     try:
         yield snapshot
     finally:
-        LLMAdapterRegistry._factories = snapshot
+        restore_registry_state(snapshot)
 
 
 def test_normalize_provider_accepts_enum_values(_restore_registry_state: Dict[str, Any]) -> None:
@@ -238,9 +243,9 @@ def test_ensure_builtin_registrations_installs_ollama_and_groq(
 def test_repeated_builtin_bootstrap_is_idempotent(_restore_registry_state: Dict[str, Any]) -> None:
     LLMAdapterRegistry.reset_for_testing()
     LLMAdapterRegistry.ensure_builtin_registrations_installed()
-    first = dict(LLMAdapterRegistry._factories)
+    first = snapshot_registry_state()
     LLMAdapterRegistry.ensure_builtin_registrations_installed()
-    assert dict(LLMAdapterRegistry._factories) == first
+    assert snapshot_registry_state() == first
 
 
 def test_registry_reset_restores_builtins_on_next_create(
