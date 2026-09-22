@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import inspect
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
@@ -144,6 +145,9 @@ async def execute_declarative_actions(
     invoker: DeclarativeToolInvoker | None,
     idempotency_store: IdempotencyStore | None = None,
     tenant_id: str = "default",
+    run_id: str = "",
+    task_id: str = "",
+    agent_id: str = "",
 ) -> DeclarativeExecutionResult:
     """
     Execute validated declarative tool actions.
@@ -256,7 +260,12 @@ async def execute_declarative_actions(
                 raise RuntimeError("Ledger inconsistency: ACQUIRED without claim.")
 
         started = time.perf_counter()
-        invoke_result = await invoker.invoke(
+        invoke_result = await _invoke_declarative_tool(
+            invoker,
+            tenant_id=tenant_id,
+            run_id=run_id,
+            task_id=task_id,
+            agent_id=agent_id,
             tool_id=tool_id,
             args=args,
             idempotency_key=key,
@@ -298,6 +307,46 @@ async def execute_declarative_actions(
             )
         )
     return result
+
+
+def _declarative_invoker_requires_per_call_identity(invoker: DeclarativeToolInvoker) -> bool:
+    try:
+        sig = inspect.signature(invoker.invoke)
+    except (TypeError, ValueError):
+        return False
+    for name in ("tenant_id", "run_id", "task_id", "agent_id"):
+        param = sig.parameters.get(name)
+        if param is None or param.default is not inspect.Parameter.empty:
+            return False
+    return True
+
+
+async def _invoke_declarative_tool(
+    invoker: DeclarativeToolInvoker,
+    *,
+    tenant_id: str,
+    run_id: str,
+    task_id: str,
+    agent_id: str,
+    tool_id: str,
+    args: dict[str, Any],
+    idempotency_key: str | None,
+) -> DeclarativeToolInvokeResult:
+    if _declarative_invoker_requires_per_call_identity(invoker):
+        return await invoker.invoke(
+            tenant_id=tenant_id,
+            run_id=run_id,
+            task_id=task_id,
+            agent_id=agent_id,
+            tool_id=tool_id,
+            args=args,
+            idempotency_key=idempotency_key,
+        )
+    return await invoker.invoke(
+        tool_id=tool_id,
+        args=args,
+        idempotency_key=idempotency_key,
+    )
 
 
 @dataclass

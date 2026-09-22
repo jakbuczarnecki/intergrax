@@ -311,10 +311,6 @@ async def _run_acp_session_bound(
         declarative_invoker = resolve_declarative_tool_invoker_from_metadata(request.metadata)
     if isinstance(declarative_invoker, DeclarativeToolInvokerWithRunBinding):
         declarative_invoker.bind_run(
-            run_id=run_id,
-            task_id=task_id,
-            agent_id=merged.agent_id,
-            tenant_id=merged.tenant_id,
             user_id=str(request.identity.user_id or ""),
         )
 

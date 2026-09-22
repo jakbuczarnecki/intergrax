@@ -189,17 +189,16 @@ def test_adr3_imp_02_catalog_adapter_has_no_bind_execution_identity() -> None:
     assert "bind_execution_identity" not in methods
 
 
-def test_adr3_imp_02_catalog_invoke_accepts_per_call_identity_without_bind_run() -> None:
+def test_adr3_imp_02_catalog_invoke_requires_explicit_per_call_identity() -> None:
     invoker = CatalogDeclarativeToolInvoker(tool_invoker=cast(object, lambda *a, **k: None))  # type: ignore[arg-type]
-    tenant_id, run_id, task_id, agent_id, user_id = invoker._resolve_invoke_identity(
+    run_id = str(mint_run_id())
+    state = invoker._runtime_state(  # noqa: SLF001
         tenant_id=_TENANT,
-        run_id=str(mint_run_id()),
+        run_id=run_id,
         task_id=str(_TASK_ID),
         agent_id="agent-catalog",
+        user_id="",
     )
-    assert tenant_id == _TENANT
-    assert agent_id == "agent-catalog"
-    assert run_id
-    assert task_id
-    assert invoker.binding.run_id == ""
-    assert user_id == invoker.binding.user_id
+    assert str(state.run_id) == run_id
+    assert state.request.tenant_id == _TENANT
+    assert state.request.agent_id == "agent-catalog"

@@ -196,15 +196,13 @@ async def test_build_acp_session_host_from_harness_strict_tenant_governance_allo
 
     run_id = mint_run_id()
     task_id = mint_task_id()
-    invoker.bind_run(
-        run_id=run_id,
-        task_id=task_id,
-        agent_id="echo",
-        tenant_id=_TENANT,
-    )
     identity_token, budget_token = _bind_declarative_invoke_governance(run_id=run_id)
     try:
         result = await invoker.invoke(
+            tenant_id=_TENANT,
+            run_id=str(run_id),
+            task_id=str(task_id),
+            agent_id="echo",
             tool_id=_PROBE_TOOL_ID,
             args={},
             idempotency_key="acp-tenant-positive",
@@ -228,15 +226,13 @@ async def test_build_acp_session_host_from_harness_strict_tenant_governance_deni
 
     run_id = mint_run_id()
     task_id = mint_task_id()
-    invoker.bind_run(
-        run_id=run_id,
-        task_id=task_id,
-        agent_id="echo",
-        tenant_id=_OTHER_TENANT,
-    )
     identity_token, budget_token = _bind_declarative_invoke_governance(run_id=run_id)
     try:
         result = await invoker.invoke(
+            tenant_id=_OTHER_TENANT,
+            run_id=str(run_id),
+            task_id=str(task_id),
+            agent_id="echo",
             tool_id=_PROBE_TOOL_ID,
             args={},
             idempotency_key="acp-tenant-negative",

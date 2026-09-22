@@ -151,8 +151,7 @@ def test_adr3_imp_01_invoke_uses_request_identity_without_prior_bind() -> None:
     run_id = str(mint_run_id())
     catalog.invoke(_invoke_request(run_id, "adr3.imp01:a"))
     assert recorder.observed_run_ids == [run_id]
-    assert catalog.binding.run_id == ""
-    assert catalog.binding.task_id == ""
+    assert catalog.binding.user_id == ""
 
 
 def test_adr3_imp_01_sequential_invocations_do_not_leak_identity() -> None:

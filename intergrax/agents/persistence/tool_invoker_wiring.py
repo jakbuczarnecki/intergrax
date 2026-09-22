@@ -6,7 +6,6 @@ from __future__ import annotations
 
 from typing import Any
 
-from intergrax.agents.persistence.declarative_run_binding import DeclarativeToolInvokerWithRunBinding
 from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.contracts.agent_run import AgentRunRequest
@@ -45,13 +44,6 @@ def inject_acp_tool_invoker_metadata(
     """Mutate task/runtime metadata with the host catalog tool invoker when wired."""
     if invoker is None:
         return
-    if isinstance(invoker, DeclarativeToolInvokerWithRunBinding):
-        invoker.bind_run(
-            run_id=run_id,
-            task_id=task_id,
-            agent_id=agent_id,
-            tenant_id=tenant_id,
-        )
     metadata[AcpMetadataKey.DECLARATIVE_TOOL_INVOKER] = invoker
 
 
