@@ -8,8 +8,6 @@ import importlib
 import inspect
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock
-
 import pytest
 
 from intergrax.integrations.contracts.observability_backend import MetricQueryResult, TraceQueryResult
@@ -136,15 +134,31 @@ def test_observability_backend_layout_slugs_have_integration_modules() -> None:
     assert missing == []
 
 
+class _BraintrustEvalCatalogClient(_FakeCatalogClient):
+    def log_eval(
+        self,
+        *,
+        name: str,
+        score: float,
+        metadata: object | None = None,
+        project: str | None = None,
+    ) -> str:
+        del name, score, metadata, project
+        return "log-42"
+
+
 def test_braintrust_log_eval_on_integration() -> None:
     from intergrax.integrations.providers.observability_backend.braintrust.integration import (
         BraintrustObservabilityIntegration,
     )
 
-    client = MagicMock()
-    client.log_eval.return_value = "log-42"
-    integration = BraintrustObservabilityIntegration.from_client(client)
+    integration = BraintrustObservabilityIntegration.from_client(_BraintrustEvalCatalogClient())
     assert integration.log_eval(name="accuracy", score=0.9) == "log-42"
+
+
+class _PrometheusHealthCatalogClient(_FakeCatalogClient):
+    def health(self) -> bool:
+        return True
 
 
 def test_prometheus_health_on_integration() -> None:
@@ -152,7 +166,5 @@ def test_prometheus_health_on_integration() -> None:
         PrometheusObservabilityIntegration,
     )
 
-    client = MagicMock()
-    client.health.return_value = True
-    integration = PrometheusObservabilityIntegration.from_client(client)
+    integration = PrometheusObservabilityIntegration.from_client(_PrometheusHealthCatalogClient())
     assert integration.health().healthy is True

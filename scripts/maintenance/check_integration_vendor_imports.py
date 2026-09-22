@@ -53,7 +53,6 @@ RAG_ALLOWED_SUFFIXES = (
     "/opens.py",
     "/rag_store.py",
     "/client.py",
-    "/parser_trace_exporter.py",
 )
 
 

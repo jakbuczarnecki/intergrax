@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Export parser trace spans from finalized Nexus runs to observability vendors."""
+"""Flush parser trace tags from finalized Nexus runs into structured logging."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from intergrax.rag.document_loaders.observability.parser_trace_exporter import e
 
 
 def export_parser_traces_from_events(events: Iterable[Any]) -> None:
-    """Scan trace events for ``integration_parser_trace`` tags and export to Langfuse/Sentry."""
+    """Scan trace events for ``integration_parser_trace`` tags and emit structured logs."""
     for event in events:
         tags = _event_tags(event)
         trace = tags.get("integration_parser_trace")
