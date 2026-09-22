@@ -14,7 +14,7 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
+from intergrax.runtime.events.trace_bridge import runtime_event_from_task_notification
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.hooks.nexus_lifecycle_hooks import (
     NexusLifecycleHookCoordinator,
@@ -156,17 +156,14 @@ class NexusHitlRunner:
             }
         )
         await self.publish(
-            runtime_event_from_task_state(
+            runtime_event_from_task_notification(
                 task,
                 run_id=run_id,
                 attempt_id=attempt_id,
                 message="human rejection received",
-            ).model_copy(
-                update={
-                    "event_type": RuntimeEventType.HUMAN_APPROVAL_RECEIVED,
-                    "phase": ExecutionPhase.HUMAN_APPROVAL,
-                    "payload": payload,
-                }
+                event_type=RuntimeEventType.HUMAN_APPROVAL_RECEIVED,
+                phase=ExecutionPhase.HUMAN_APPROVAL,
+                payload_raw=payload,
             ),
             task=task,
         )
@@ -203,21 +200,18 @@ class NexusHitlRunner:
 
         run_id, attempt_id = self._require_execution_identity()
         await self.publish(
-            runtime_event_from_task_state(
+            runtime_event_from_task_notification(
                 task,
                 run_id=run_id,
                 attempt_id=attempt_id,
                 message="human escalation requested",
-            ).model_copy(
-                update={
-                    "event_type": RuntimeEventType.INTERRUPT_ESCALATED,
-                    "phase": ExecutionPhase.HUMAN_APPROVAL,
-                    "payload": {
-                        "level": outcome.level,
-                        "target": outcome.target.value,
-                        "message": outcome.message,
-                    },
-                }
+                event_type=RuntimeEventType.INTERRUPT_ESCALATED,
+                phase=ExecutionPhase.HUMAN_APPROVAL,
+                payload_raw={
+                    "level": outcome.level,
+                    "target": outcome.target.value,
+                    "message": outcome.message,
+                },
             ),
             task=task,
         )

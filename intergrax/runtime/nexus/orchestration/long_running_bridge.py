@@ -11,7 +11,7 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.execution_identity import peek_active_execution_identity
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
+from intergrax.runtime.events.trace_bridge import runtime_event_from_task_notification
 from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.long_running.notification import NotificationAdapter
@@ -59,20 +59,17 @@ async def maybe_restore_long_running(
             raise RuntimeError("attempt_id required for long-running restore event")
         resolved_attempt_id = active_identity[1]
     await publish(
-        runtime_event_from_task_state(
+        runtime_event_from_task_notification(
             task,
             run_id=run_id,
             attempt_id=resolved_attempt_id,
             message="long-running task restored from checkpoint",
-        ).model_copy(
-            update={
-                "event_type": RuntimeEventType.RESUMED,
-                "phase": ExecutionPhase.HUMAN_APPROVAL,
-                "payload": {
-                    "checkpoint_id": restored.checkpoint_id,
-                    "resume_token": restored.resume_token,
-                },
-            }
+            event_type=RuntimeEventType.RESUMED,
+            phase=ExecutionPhase.HUMAN_APPROVAL,
+            payload_raw={
+                "checkpoint_id": restored.checkpoint_id,
+                "resume_token": restored.resume_token,
+            },
         ),
         task=task,
     )
@@ -121,36 +118,30 @@ async def maybe_checkpoint_long_running(
 
     partial = partial_result_from_checkpoint(checkpoint)
     await publish(
-        runtime_event_from_task_state(
+        runtime_event_from_task_notification(
             task,
             run_id=run_id,
             attempt_id=attempt_id,
             message="long-running checkpoint saved",
-        ).model_copy(
-            update={
-                "event_type": RuntimeEventType.PAUSED,
-                "phase": ExecutionPhase.HUMAN_APPROVAL,
-                "payload": {
-                    "checkpoint_id": checkpoint.checkpoint_id,
-                    "resume_token": checkpoint.resume_token,
-                    "progress_message": progress_message,
-                },
-            }
+            event_type=RuntimeEventType.PAUSED,
+            phase=ExecutionPhase.HUMAN_APPROVAL,
+            payload_raw={
+                "checkpoint_id": checkpoint.checkpoint_id,
+                "resume_token": checkpoint.resume_token,
+                "progress_message": progress_message,
+            },
         ),
         task=task,
     )
     await publish(
-        runtime_event_from_task_state(
+        runtime_event_from_task_notification(
             task,
             run_id=run_id,
             attempt_id=attempt_id,
             message=progress_message or "task progress",
-        ).model_copy(
-            update={
-                "event_type": RuntimeEventType.TASK_PROGRESS,
-                "phase": ExecutionPhase.STEP_EXECUTION,
-                "payload": partial.model_dump(mode="json"),
-            }
+            event_type=RuntimeEventType.TASK_PROGRESS,
+            phase=ExecutionPhase.STEP_EXECUTION,
+            payload_raw=partial.model_dump(mode="json"),
         ),
         task=task,
     )

@@ -12,7 +12,10 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
+from intergrax.runtime.events.trace_bridge import (
+    runtime_event_from_task_notification,
+    runtime_event_from_task_state,
+)
 from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunTraceReader
 from intergrax.runtime.observability.journal_export import build_journal_ref_payload
 from intergrax.runtime.observability.modality_metrics import build_task_completed_modality_payload
@@ -97,16 +100,13 @@ class NexusRuntimeEventPublisher:
         payload: Optional[dict] = None,
     ) -> None:
         run_id, attempt_id = self._execution_identity.require()
-        base = runtime_event_from_task_state(
+        event = runtime_event_from_task_notification(
             task,
             run_id=run_id,
             attempt_id=attempt_id,
             message=message,
+            event_type=event_type,
+            phase=phase,
+            payload_raw=payload,
         )
-        update: dict = {
-            "event_type": event_type,
-            "phase": phase,
-        }
-        if payload is not None:
-            update["payload"] = payload
-        await self.publish(base.model_copy(update=update), task=task)
+        await self.publish(event, task=task)

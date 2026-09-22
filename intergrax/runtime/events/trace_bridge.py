@@ -187,13 +187,49 @@ def runtime_event_from_task_state(
     message: str = "",
     correlation_id: Optional[str] = None,
 ) -> RuntimeEvent:
+    validated_run_id = validate_run_id(run_id)
+    validated_attempt_id = validate_attempt_id(attempt_id)
+    event_type = _TASK_STATE_TO_EVENT.get(task.state, RuntimeEventType.STEP_STARTED)
+    phase = _TASK_STATE_TO_PHASE.get(task.state, ExecutionPhase.STEP_EXECUTION)
+    capability = task.context.capability or ""
+    lifecycle_raw = {
+        "task_state": task.state.value,
+        "message": message,
+        "capability": capability,
+        "source": "task_lifecycle",
+    }
+    return runtime_event_from_task_notification(
+        task,
+        run_id=validated_run_id,
+        attempt_id=validated_attempt_id,
+        message=message,
+        event_type=event_type,
+        phase=phase,
+        payload_raw=lifecycle_raw,
+        correlation_id=correlation_id,
+    )
+
+
+def runtime_event_from_task_notification(
+    task: Task,
+    *,
+    run_id: RunId,
+    attempt_id: AttemptId,
+    message: str,
+    event_type: RuntimeEventType,
+    phase: ExecutionPhase,
+    payload_raw: dict[str, Any] | None = None,
+    correlation_id: Optional[str] = None,
+) -> RuntimeEvent:
+    """Build a typed canonical ``RuntimeEvent`` for explicit task notifications."""
     from intergrax.runtime.events.payload_registry import runtime_event_with_payload
 
     validated_run_id = validate_run_id(run_id)
     validated_attempt_id = validate_attempt_id(attempt_id)
     execution_id = require_active_execution_id()
-    event_type = _TASK_STATE_TO_EVENT.get(task.state, RuntimeEventType.STEP_STARTED)
-    phase = _TASK_STATE_TO_PHASE.get(task.state, ExecutionPhase.STEP_EXECUTION)
+    raw = dict(payload_raw or {})
+    raw.setdefault("message", message)
+    typed, promote_fields = legacy_spine_payload_to_typed(event_type, raw)
     base = RuntimeEvent(
         tenant_id=task.tenant_id,
         task_id=task.task_id,
@@ -207,17 +243,9 @@ def runtime_event_from_task_state(
         timestamp=datetime.now(timezone.utc),
         correlation_id=correlation_id or task.task_id,
     )
-    capability = task.context.capability or ""
-    lifecycle_raw = {
-        "task_state": task.state.value,
-        "message": message,
-        "capability": capability,
-        "source": "task_lifecycle",
-    }
-    lifecycle, promote_fields = legacy_spine_payload_to_typed(event_type, lifecycle_raw)
     return runtime_event_with_payload(
         base,
-        lifecycle,
+        typed,
         promote_fields=promote_fields,
     )
 
@@ -293,6 +321,30 @@ _TOOL_STATUS_BY_EVENT: dict[RuntimeEventType, str] = {
 }
 
 
+def _step_event_uses_graph_node_payload(
+    event_type: RuntimeEventType,
+    trace: TraceEvent,
+    diagnostic_schema_id: str,
+) -> bool:
+    if event_type not in {
+        RuntimeEventType.STEP_STARTED,
+        RuntimeEventType.STEP_COMPLETED,
+    }:
+        return False
+    if trace.step in _GRAPH_STEP_TO_EVENT:
+        return True
+    if diagnostic_schema_id == GraphNodeDiagV1.schema_id():
+        return True
+    if (
+        event_type == RuntimeEventType.STEP_STARTED
+        and diagnostic_schema_id == RuntimeStepStartedDiagV1.schema_id()
+    ):
+        return True
+    if trace.message.startswith("graph node "):
+        return True
+    return False
+
+
 def _attach_typed_bridge_payload(
     *,
     event_type: RuntimeEventType,
@@ -301,20 +353,18 @@ def _attach_typed_bridge_payload(
     extra_payload: dict[str, Any],
     diagnostic_schema_id: str,
 ) -> dict[str, Any]:
-    if event_type in {
-        RuntimeEventType.STEP_STARTED,
-        RuntimeEventType.STEP_COMPLETED,
-    } and (
-        trace.step in _GRAPH_STEP_TO_EVENT
-        or diagnostic_schema_id == GraphNodeDiagV1.schema_id()
-        or trace.message.startswith("graph node ")
-    ):
+    if _step_event_uses_graph_node_payload(event_type, trace, diagnostic_schema_id):
         node_id = str(
             extra_payload.get("node_id")
             or trace.tags.get("node_id")
+            or extra_payload.get("step_name")
             or ""
         )
         status = str(extra_payload.get("status") or "")
+        if not status and event_type == RuntimeEventType.STEP_STARTED:
+            status = "running"
+        if not status and event_type == RuntimeEventType.STEP_COMPLETED:
+            status = "completed"
         agent_id = str(
             extra_payload.get("agent_id") or trace.tags.get("agent_id") or ""
         )

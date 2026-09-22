@@ -12,7 +12,7 @@ from intergrax.contracts.execution_identity import ActiveExecutionIdentity
 from intergrax.contracts.runtime_event_metric import RuntimeEventMetricScope
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
+from intergrax.runtime.events.trace_bridge import runtime_event_from_task_notification
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator
 from intergrax.runtime.human.declarative_hitl_grant import (
     DeclarativeHitlGrantCoordinator,
@@ -224,24 +224,21 @@ class NexusIntakeRunner:
                 response_text=task.options.human.response_text or "",
             )
             await self.publish(
-                runtime_event_from_task_state(
+                runtime_event_from_task_notification(
                     task,
                     run_id=run_id,
                     attempt_id=attempt_id,
                     message="human approval received",
-                ).model_copy(
-                    update={
-                        "event_type": RuntimeEventType.HUMAN_APPROVAL_RECEIVED,
-                        "phase": ExecutionPhase.HUMAN_APPROVAL,
-                        "payload": human_approval_event_payload(
-                            task_id=task.task_id,
-                            pause_id=resolution.pause_id,
-                            human_request_id=resolution.human_request_id,
-                            verdict=HumanResponseVerdict.APPROVE,
-                            approver=resolution.approver,
-                            response_text=task.options.human.response_text,
-                        ),
-                    }
+                    event_type=RuntimeEventType.HUMAN_APPROVAL_RECEIVED,
+                    phase=ExecutionPhase.HUMAN_APPROVAL,
+                    payload_raw=human_approval_event_payload(
+                        task_id=task.task_id,
+                        pause_id=resolution.pause_id,
+                        human_request_id=resolution.human_request_id,
+                        verdict=HumanResponseVerdict.APPROVE,
+                        approver=resolution.approver,
+                        response_text=task.options.human.response_text,
+                    ),
                 )
             )
             await self.human_hooks.after_response(
