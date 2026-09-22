@@ -18,11 +18,13 @@
 
 **GR-5-R1 HEAD:** `9979e3b3af64b436708d0e95fac669dc9ef6e3d1` base → commit on `development` — contract module `intergrax/contracts/execution_continuation.py` (two-phase `apply_resolution` / `resume`, CAS `revision`, `RESUME_AUTHORIZED` state). Runtime integration **not** in R1.
 
+**GR-12-DOC-R1:** canonical GR-12 status reconciliation in architecture SSOT § GR-12 CURRENT STATUS + maintainer plan GR-12 sub-roadmap — **GR-12 overall IN PROGRESS** (not **CLOSED**).
+
 ---
 
 ## Executive summary
 
-On current `development`, GR-1…GR-7 **implementation slices are present** (identity, root admission, inner guard, policy core, continuation port, Decision requirement at meaningful effects, ProviderInvocation reliability boundary). **Enterprise certification of the full Governance Plane is not claimed.** Remaining work is qualification and coverage: **GR-8** governance evidence, **GR-10** strategy matrix, **GR-12** control-plane mutation, **GR-11/GR-13/GR-16** enterprise proof and claims discipline.
+On current `development`, GR-1…GR-7 **implementation slices are present** (identity, root admission, inner guard, policy core, continuation port, Decision requirement at meaningful effects, ProviderInvocation reliability boundary). **GR-10** is **FINAL CLOSED** within formally defined GR-10 scope. **GR-12** is **IN PROGRESS** — shared CLA-04 control-plane governance spine **implemented**; core path qualification **FINAL CLOSED** (A3); residual catalog / Vector / Memory and **final GR-12 qualification remain open** (not **CLOSED**). **Enterprise certification of the full Governance Plane is not claimed.** Remaining work includes **GR-8** evaluation-point adoption (GR-10/GR-13), **GR-11/GR-13/GR-16** enterprise proof and claims discipline.
 
 **Enterprise verdict for implementation:** `QUALIFICATION_AND_COVERAGE_OPEN` — no blocking fork for GOV-FINAL-2 runtime gaps documented in § Open gaps; architecture SSOT: [`GOVERNED_EXECUTION.md`](../../architecture/GOVERNED_EXECUTION.md) § Governance implementation truth.
 
@@ -41,7 +43,7 @@ On current `development`, GR-1…GR-7 **implementation slices are present** (ide
 | GOV-REBASE-07 | **CONFIRMED** | P1 | Policy decisions use `audit_payload` on `PolicyDecision`; no systematic RuntimeEvent emission with five-ID correlation from governance spine. `governance_audit_event` is separate agent-governance channel — risk of parallel audit semantics. |
 | GOV-REBASE-08 | **CONFIRMED** | P1 | G3B table (`GOVERNED_EXECUTION.md`) wires most points via Nexus/UAEP; strategy matrix §9 encodes GR-10-R1 INFERENCE applicability (PRE_MODEL **BLOCKED**; MSE/HITL/Continuation/Reliability **N/A** on inference path); AGENTIC/ORCHESTRATION MSE + HITL qualification remains open. |
 | GOV-REBASE-09 | **CLOSED** | P2 | H9.2C: maintainer plan + arch G3B / Protocol v2.2 pointers reconciled with PG-FIX mechanism tests (`test_pg_fix_*`, `test_g5c2b*`); enterprise CLOSED still not claimed. |
-| GOV-REBASE-10 | **CONFIRMED** | P1 | G3B + plan: **CONTROL_PLANE_MUTATION** remains **GAP**; domain tests (e.g. ECP) are partial slices, not platform-wide shared boundary. |
+| GOV-REBASE-10 | **PARTIAL** | P1 | G3B **CONTROL_PLANE_MUTATION** platform row remains **GAP** (honesty gate). **GR-12 IN PROGRESS:** shared CLA-04 boundary + mandatory composition + core path qualification **closed**; catalog **WIRED_NOT_QUALIFIED**; Vector/Memory **ARCHITECTURE_DECISION_REQUIRED**; final GR-12 qualification open. |
 
 ---
 
@@ -57,7 +59,7 @@ On current `development`, GR-1…GR-7 **implementation slices are present** (ide
 | GOV-GAP-006 | P1 | Decision integration | `DecisionRequirementPolicy` + material ref at MSE boundary (GR-6) | Provenance for classified consequential effects on wired hosts | Platform-wide adoption + version qual | V2 decision reuses V1 approval without binding | Extend hosts + GR-10/GR-13 qual | Decision System + Governance | GR-6 | `test_gr6_*`, governed contractor GR-6 suites | **PARTIAL** |
 | GOV-GAP-007 | P1 | Evidence | Legacy `audit_payload` remains diagnostic-only | Typed `GovernanceDecisionEvidenceFact` + `GovernanceEvidencePersistencePort` on root admission + MSE spine | Residual inner evaluation points / full strategy matrix | Duplicate emission guarded by idempotency key | Extend emission to remaining GEPs under GR-10/13 | Governance + Evidence | GR-8 | `governed_execution_governance_evidence.py`, ADR-GR-8-001 | **CANDIDATE CLOSED — spine complete + public contract frozen** ([ADR-GR-8-001](../../technical/adr/entries/2026-09-17/ADR-GR-8-001.md)); residual GEP → GR-10/13; independent final audit required |
 | GOV-GAP-008 | P1 | Strategy coverage | G3B Nexus/UAEP-heavy COVERED rows | Matrix for INFERENCE/AGENTIC/ORCHESTRATION | “Nexus works” ≠ platform proof | **GR-10-R4–R6:** INFERENCE rows closed/N/A per SSOT; **GR-10-R7:** AGENTIC/ORCHESTRATION matrix requalified (`GR10_AGENTIC/ORCHESTRATION_CAPABILITY_SEMANTICS`, `test_gr10_r7_*`); **GR-10-R9-R1** next — ORCHESTRATION MSE authority contract + fail-closed composition ([ADR-GR-10-002](../../technical/adr/entries/2026-09-19/ADR-GR-10-002.md)) | `tests/qualification/governance/strategy/` + matrix §9 | GR-10 | GR-10-R9-R1 (ORCH MSE) | `GOVERNED_EXECUTION.md` §G3B | **PARTIAL** |
-| GOV-GAP-009 | P1 | Control plane | CONTROL_PLANE_MUTATION GAP | Shared authority context per domain executor | No unified taxonomy enforcement | Unsafe platform mutations | Per-domain adoption of shared boundary; no god executor | Domain plans | GR-12 | plan CLA block; ECP tests partial | OPEN |
+| GOV-GAP-009 | P1 | Control plane | **GR-12 IN PROGRESS** — CLA-04 spine + core paths qualified; G3B row **GAP**; residuals: catalog revision/identity hardening, Vector ADR, Memory ADR, final qualification | Shared authority context → CLA-04 → domain mutation owner | Residual paths not qualified; platform G3B not **COVERED** | Premature GR-12 **CLOSED** claim | **GR-12-A4-R1-R1** catalog hardening; **R2/R3** ADRs; final GR-12 qualification | GR-12-A2/A3 | GR-12 | `tests/qualification/governance/gr12/`; arch § GR-12 CURRENT STATUS | **IN PROGRESS / RESIDUAL QUALIFICATION OPEN** |
 | GOV-GAP-010 | P2 | Maintainer truth | Stale PG-FIX / Protocol v2.2 status in docs | IMPLEMENTED / VERIFIED / CLOSED distinguished | Operators mis-plan | False closure claims | Reconcile plan + arch pointers (GR-0) | GR-0 | GR-0 | `plans/GOVERNED_EXECUTION.md` | **CLOSED** (H9.2C) |
 | GOV-GAP-011 | P2 | Policy plugins | Catalog + handler slices; Nexus types in `policy_bundle.py` | Vendor-neutral core; platform plugin admission | Residual Nexus coupling in **documented adapter modules only** (`policy_bundle.py`, `tool_policy_resolution.py`, …) | Tier violation / test burden | **GR-4-R1:** neutral bundle assembly types; GR-11 owns certification | Platform plugins | GR-4-R1, GR-11 | `policy_bundle.py`, `tool_policy_resolution.py`, `test_gr4_policy_core_architecture_gates.py` | **PARTIAL** (neutral evaluator/catalog/handler core qualified; assembly adapters remain) |
 | GOV-GAP-012 | P2 | Admission vs inner | GR-2 root admission (`RuntimeExecutionPolicyAdmissionPort`) vs GR-3 inner guard (`CanonicalInnerExecutionGuardPort`) vs `ExecutionAuthorityPolicy` (child narrowing) | Admission = may start Execution; inner = may proceed; child authority ≠ governance evaluator | — | Misuse of admission as inner policy | Ports composed explicitly (`execution_admission_composition.py`, `meaningful_side_effect_authorization_composition.py`) | GR-2, GR-3 | GR-4 | `runtime_execution_policy_admission.py`, `meaningful_side_effect_authorization.py` | **CANDIDATE CLOSED** (independent audit pending) |
@@ -203,7 +205,7 @@ On current `development`, GR-1…GR-7 **implementation slices are present** (ide
 
 ### N — Control plane
 
-- **GAP** per G3B; partial domain tests only.
+- **GR-12 IN PROGRESS** (not **CLOSED**). **Closed/core:** shared CLA-04 `ControlPlaneMutationAuthorizationBoundary`, mandatory composition (A2), core path qualification (A3). **Residual:** catalog revision SSOT + ABA + explicit per-invocation `RequestIdentity` (**WIRED_NOT_QUALIFIED**); Vector (**ARCHITECTURE_DECISION_REQUIRED**); Memory (**ARCHITECTURE_DECISION_REQUIRED**); final GR-12 qualification. G3B platform row remains **GAP** until final closure.
 
 ### O — Strategy matrix (governance capability)
 
@@ -277,7 +279,7 @@ Historical AUDIT-5 findings remain valid context; **enterprise CLOSED** for PG-F
 | GR-10-R2-R1 | PRE_MODEL runtime identity conformance | **CANDIDATE CLOSED** — independent GitHub audit required | `ActiveExecutionGovernanceIdentity` sole live authority; no Evidence/lineage/Task fallbacks | GR-10-R2-C1 | — | Yes | `test_gr10_r2_r1_pre_model_identity_wiring.py` |
 | GR-10-R2 | INFERENCE PRE_MODEL wiring | **CANDIDATE CLOSED** — independent audit after R1 | ADR-compliant live identity on inference path | GR-10-R2-R1 | GR-10 final requalification | Yes | `test_inference_executor.py` PRE_MODEL tests |
 | GR-11 | Plugin Enterprise Certification | PLANNED | Admission, provenance, fail-closed | GR-4 | G4B | Yes | Plugin qual bundle |
-| GR-12 | Control-Plane Governance | PLANNED | Shared boundary; domain executors | GR-2 | CLA control-plane | Yes | Per-domain conformance |
+| GR-12 | Control-Plane Governance | **IN PROGRESS** | Shared CLA-04 boundary; domain executors; residuals + final qual open | GR-10 **FINAL CLOSED** | CLA control-plane | Yes (residuals) | `tests/qualification/governance/gr12/`; **not CLOSED** |
 | GR-13 | Full Governance Proof Matrix | PLANNED | E2E positive/negative scenarios | GR-1–GR-12 | G9–G12 | Yes | Proof matrix |
 | GR-14 | LKW Integration | PLANNED | Real application validation | GR-13 | — | Yes | LKW scenarios |
 | GR-15 | Governance UX / App Contract | PLANNED | Reusable approval contract | GR-5 | — | Yes | API contract tests |

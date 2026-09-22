@@ -6,6 +6,10 @@ from __future__ import annotations
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.providers.registrations._lazy_factory import register_lazy_adapter
+from intergrax.llm_adapters.providers.registrations.external_operation_seams import (
+    OPENAI_FAMILY_EXTERNAL_OPERATION_CAPABILITIES,
+    build_openai_external_operation_seam,
+)
 from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterRegistrationTarget,
     OptionalDependencyRequirement,
@@ -38,6 +42,8 @@ def register_openai(registry: LLMAdapterRegistrationTarget) -> None:
         provider_id=LLMProvider.OPENAI.value,
         dependency=_OPENAI_DEPENDENCY,
         load_adapter_cls=_load_openai_responses_adapter,
+        external_operation_seam_factory=build_openai_external_operation_seam,
+        external_operation_capabilities=OPENAI_FAMILY_EXTERNAL_OPERATION_CAPABILITIES,
     )
 
 
@@ -47,4 +53,6 @@ def register_azure_openai(registry: LLMAdapterRegistrationTarget) -> None:
         provider_id=LLMProvider.AZURE_OPENAI.value,
         dependency=_OPENAI_DEPENDENCY,
         load_adapter_cls=_load_azure_openai_adapter,
+        external_operation_seam_factory=build_openai_external_operation_seam,
+        external_operation_capabilities=OPENAI_FAMILY_EXTERNAL_OPERATION_CAPABILITIES,
     )

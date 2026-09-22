@@ -53,17 +53,23 @@ def collect_application_dependencies(
 ) -> list[ApplicationDependency]:
     """Collect direct dependencies from manifest and resolved environment."""
     dependencies: list[ApplicationDependency] = []
+    from intergrax.applications._shared.roster_agent_contract_authority import (
+        materialize_manifest_contract_authority_lab_compat,
+        resolve_roster_agent_contract,
+    )
+
+    manifest_contract_authority = materialize_manifest_contract_authority_lab_compat(manifest)
 
     for binding in manifest.enabled_agents():
         if binding.contract_id and binding.agent_type is None and binding.import_path is None:
             contract_ref = binding.contract_id
             version_constraint = "*"
         else:
-            from intergrax.applications._shared.agent_resolution import (
-                resolve_agent_type_from_binding,
+            contract = resolve_roster_agent_contract(
+                binding,
+                contract_authority=manifest_contract_authority,
+                allow_compatibility_resolver=False,
             )
-
-            contract = resolve_agent_type_from_binding(binding)().get_contract()
             contract_ref = contract.id
             version_constraint = f"={contract.version}"
         dependencies.append(

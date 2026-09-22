@@ -12,17 +12,21 @@ from intergrax.agents.persistence.declarative_tool_executor import (
     DeclarativeToolInvokeResult,
     DeclarativeToolInvoker,
 )
+from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
+from intergrax.llm_adapters._shared.adapter_response_builders import (
+    build_adapter_response,
+)
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+from intergrax.runtime.nexus.session.in_memory_session_storage import (
+    InMemorySessionStorage,
+)
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.tools.catalog_dispatch import invoke_catalog_tool_request
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
@@ -52,13 +56,10 @@ class _CatalogDispatchLLMStub(BaseLLMAdapter):
 
 @dataclass
 class CatalogDeclarativeRunBinding:
-    """Mutable run scope rebound before each ACP session or graph node."""
+    """Immutable session-scoped metadata for declarative catalog dispatch (not execution identity)."""
 
-    run_id: str = ""
-    task_id: str = ""
-    agent_id: str = ""
-    tenant_id: str = ""
     user_id: str = ""
+    declarative_hitl_grant: DeclarativeHitlApprovalGrant | None = None
 
 
 @dataclass
@@ -66,44 +67,40 @@ class CatalogDeclarativeToolInvoker:
     """Invoke declarative actions through the Tier-1 catalog tool gateway."""
 
     tool_invoker: RuntimeToolInvoker
-    binding: CatalogDeclarativeRunBinding = field(default_factory=CatalogDeclarativeRunBinding)
+    binding: CatalogDeclarativeRunBinding = field(
+        default_factory=CatalogDeclarativeRunBinding
+    )
     production_mode: bool = False
 
     def bind_run(
         self,
         *,
-        run_id: str,
-        task_id: str,
-        agent_id: str,
-        tenant_id: str,
+        run_id: str = "",
+        task_id: str = "",
+        agent_id: str = "",
+        tenant_id: str = "",
         user_id: str = "",
     ) -> None:
-        self.binding.run_id = run_id
-        self.binding.task_id = task_id
-        self.binding.agent_id = agent_id
-        self.binding.tenant_id = tenant_id
+        """Bind session metadata only (execution identity is per-call on ``invoke``)."""
+        _ = run_id, task_id, agent_id, tenant_id
         self.binding.user_id = user_id
 
-    def bind_execution_identity(
+    def _runtime_state(
         self,
         *,
         tenant_id: str,
         run_id: str,
         task_id: str,
         agent_id: str,
-    ) -> None:
-        self.bind_run(
-            run_id=run_id,
-            task_id=task_id,
-            agent_id=agent_id,
-            tenant_id=tenant_id,
+        user_id: str,
+    ) -> RuntimeState:
+        from intergrax.contracts.execution_identity import (
+            validate_run_id,
+            validate_task_id,
         )
 
-    def _runtime_state(self) -> RuntimeState:
-        from intergrax.contracts.execution_identity import validate_run_id, validate_task_id
-
-        agent_id = _require_bound_identity_field(self.binding.agent_id, "agent_id")
-        tenant_id = _require_bound_identity_field(self.binding.tenant_id, "tenant_id")
+        agent_id = _require_invoke_identity_field(agent_id, "agent_id")
+        tenant_id = _require_invoke_identity_field(tenant_id, "tenant_id")
         host_tool_invoker = self.tool_invoker
         from intergrax.prompts.registry.prompt_registry_resolver import (
             resolve_yaml_prompt_registry,
@@ -131,13 +128,14 @@ class CatalogDeclarativeToolInvoker:
                 catalog_path=config.prompt_catalog_path,
             ),
         )
-        resolved_run_id = validate_run_id(self.binding.run_id)
-        resolved_task_id = validate_task_id(self.binding.task_id)
+        resolved_run_id = validate_run_id(run_id)
+        resolved_task_id = validate_task_id(task_id)
+        grant = self.binding.declarative_hitl_grant
         return RuntimeState(
             context=context,
             request=RuntimeRequest(
                 agent_id=agent_id,
-                user_id=self.binding.user_id,
+                user_id=user_id,
                 session_id=str(resolved_run_id),
                 tenant_id=tenant_id,
                 message="acp.declarative",
@@ -146,25 +144,40 @@ class CatalogDeclarativeToolInvoker:
             ),
             run_id=resolved_run_id,
             tool_traces=[],
+            declarative_hitl_grant=grant,
         )
 
     async def invoke(
         self,
         *,
+        tenant_id: str,
+        run_id: str,
+        task_id: str,
+        agent_id: str,
         tool_id: str,
         args: dict[str, Any],
         idempotency_key: str | None,
     ) -> DeclarativeToolInvokeResult:
-        agent_id = _require_bound_identity_field(self.binding.agent_id, "agent_id")
+        resolved_tenant_id = _require_invoke_identity_field(tenant_id, "tenant_id")
+        resolved_run_id = _require_invoke_identity_field(run_id, "run_id")
+        resolved_task_id = _require_invoke_identity_field(task_id, "task_id")
+        resolved_agent_id = _require_invoke_identity_field(agent_id, "agent_id")
+        user_id = self.binding.user_id
         request = ToolRequest(
             tool_name=tool_id,
-            agent_id=agent_id,
+            agent_id=resolved_agent_id,
             step_id="acp.declarative",
             input=args,
             idempotency_key=idempotency_key,
         )
         response = invoke_catalog_tool_request(
-            state=self._runtime_state(),
+            state=self._runtime_state(
+                tenant_id=resolved_tenant_id,
+                run_id=resolved_run_id,
+                task_id=resolved_task_id,
+                agent_id=resolved_agent_id,
+                user_id=user_id,
+            ),
             request=request,
             trace_step="AcpDeclarativeTool",
         )
@@ -195,10 +208,10 @@ class CatalogDeclarativeToolInvoker:
         )
 
 
-def _require_bound_identity_field(value: str, label: str) -> str:
+def _require_invoke_identity_field(value: str, label: str) -> str:
     if not value or not value.strip():
         raise ValueError(
-            f"catalog declarative {label} must be set via bind_run before execution",
+            f"catalog declarative invoke requires explicit {label}",
         )
     return value.strip()
 
@@ -210,4 +223,6 @@ def resolve_declarative_tool_invoker(
         return None
     if isinstance(candidate, DeclarativeToolInvoker):
         return candidate
-    raise TypeError("declarative tool invoker metadata must implement DeclarativeToolInvoker")
+    raise TypeError(
+        "declarative tool invoker metadata must implement DeclarativeToolInvoker"
+    )

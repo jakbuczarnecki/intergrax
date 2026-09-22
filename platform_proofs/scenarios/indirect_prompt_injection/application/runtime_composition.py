@@ -24,6 +24,7 @@ from intergrax.applications._shared.scenario_runtime_profiles import (
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.graph_spec import ApplicationGraphSpec, GraphNode
+from intergrax.applications.contracts.factory import CanonicalAgentFactory
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
@@ -40,27 +41,64 @@ from platform_proofs.scenarios.indirect_prompt_injection.application.tools impor
     register_scenario_tools,
 )
 from platform_proofs.scenarios.indirect_prompt_injection.application.workflows import (
-    WorkflowKind,
     build_scenario_environment_profile,
 )
+
+__all__ = [
+    "ORDER_ASSISTANT_AGENT_ID",
+    "ORDER_ASSISTANT_CAPABILITY",
+    "SYNTHETIC_SCENARIO_TENANT_ID",
+    "ScenarioRuntimeComposition",
+    "build_agent_runtime_context",
+    "build_order_assistant_lab_manifest",
+    "build_scenario_environment_profile",
+    "build_scenario_runtime_composition",
+    "resolve_scenario_llm_adapter",
+    "trace_reader_from_composition",
+]
 
 ORDER_ASSISTANT_AGENT_ID = "order_assistant"
 ORDER_ASSISTANT_CAPABILITY = "indirect_prompt_injection.assist"
 SYNTHETIC_SCENARIO_TENANT_ID = "synthetic-scenario-indirect_prompt_injection"
 
 
+def _manifest_factory_placeholder() -> CanonicalAgentFactory:
+    from intergrax.agents.agent_contract import Agent
+
+    def _factory(
+        ctx: ApplicationBuildContext,
+        binding: AgentBinding,
+    ) -> Agent:
+        del ctx, binding
+        raise RuntimeError(
+            "order_assistant_agent_factory_requires_runtime_bootstrap"
+        )
+
+    return _factory
+
+
 def build_order_assistant_lab_manifest(
     environment: ApplicationEnvironmentProfile,
+    *,
+    agent_factory: CanonicalAgentFactory | None = None,
 ) -> ApplicationManifest:
+    from platform_proofs.scenarios.indirect_prompt_injection.application.agent import (
+        OrderAssistantAgent,
+    )
+
+    resolved_factory = agent_factory or _manifest_factory_placeholder()
+
     return ApplicationManifest.lab(
         app_id="scenario_indirect_prompt_injection",
         name="AI Order Assistant",
         route_prefix="/v1/scenario/indirect_prompt_injection",
         env_prefix="SCENARIO_INDIRECT_PROMPT_INJECTION_",
         agents=[
-            AgentBinding.reference(
+            AgentBinding.mount(
+                OrderAssistantAgent,
                 contract_id=ORDER_ASSISTANT_AGENT_ID,
                 capabilities=[ORDER_ASSISTANT_CAPABILITY],
+                factory=resolved_factory,
             ),
         ],
         application_owned_tools=application_owned_tool_declarations(SCENARIO_TOOL_IDS),
@@ -102,6 +140,7 @@ def build_scenario_runtime_composition(
     agent_registry: AgentRegistry | None = None,
     composition: ScenarioRuntimeComposition | None = None,
     order_operations: OrderOperationsPort,
+    order_assistant_factory: CanonicalAgentFactory | None = None,
 ) -> ScenarioRuntimeComposition:
     register_scenario_tools(registry, order_operations=order_operations)
     scenario_composition = composition or ScenarioRuntimeComposition(
@@ -114,7 +153,10 @@ def build_scenario_runtime_composition(
         nodes=[GraphNode(agent_id=ORDER_ASSISTANT_AGENT_ID)],
         trigger_capabilities=[ORDER_ASSISTANT_CAPABILITY],
     )
-    manifest = build_order_assistant_lab_manifest(environment)
+    manifest = build_order_assistant_lab_manifest(
+        environment,
+        agent_factory=order_assistant_factory,
+    )
     platform = build_scenario_runtime_from_environment(
         environment=environment,
         registry=roster,
@@ -151,11 +193,15 @@ def build_agent_runtime_context(
         composition.environment,
         llm_adapter_override=composition.llm_adapter_override,
     )
+    application_composition = None
+    if composition.is_platform_attached:
+        application_composition = composition.platform.env_wiring.composition
     return build_runtime_context_from_environment(
         request,
         composition.build_context,
         composition.environment,
         llm_adapter=resolved_llm,
+        composition=application_composition,
     )
 
 

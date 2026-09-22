@@ -287,6 +287,19 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
             boundary_status=status,
         )
 
+    if path.startswith("intergrax/runtime/token_optimization/proofs/"):
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="PLATFORM_RUNTIME",
+            classification="PLATFORM_RUNTIME_INTERNAL",
+            reason=(
+                "LLM live proof tooling Nexus coupling tracked for HARNESS-01-R5-W4 — "
+                "RAG/LLM/Integrations Nexus Dependency Inversion; not a final legal owner-zone."
+            ),
+            evidence=_EVIDENCE_CLASSIFIED,
+            boundary_status="DEBT",
+        )
+
     if path.startswith("intergrax/runtime/"):
         return Harness01HigherLayerNexusImporter(
             path=path,
@@ -434,6 +447,7 @@ _PATHS: tuple[str, ...] = (
     "intergrax/applications/_shared/security_wiring.py",
     "intergrax/applications/_shared/session_tool_wiring.py",
     "intergrax/applications/_shared/tool_engine_wiring.py",
+    "intergrax/applications/_shared/uca6c_codecraft_qualified_execution_composition.py",
     "intergrax/cli/mvp_evolution.py",
     "intergrax/debug/app.py",
     "intergrax/debug/formatters.py",
@@ -518,6 +532,7 @@ _PATHS: tuple[str, ...] = (
     "intergrax/runtime/task/unified_task_runner.py",
     "intergrax/runtime/task/worker_bootstrap.py",
     "intergrax/runtime/token_optimization/llm_router.py",
+    "intergrax/runtime/token_optimization/proofs/vllm_prefix_cache_live.py",
     "intergrax/runtime/tools/idempotency_pre_effect_coordinator.py",
     "intergrax/runtime/user_profile/memory_consolidation_job.py",
     "intergrax/runtime/user_profile/user_profile_debug_service.py",

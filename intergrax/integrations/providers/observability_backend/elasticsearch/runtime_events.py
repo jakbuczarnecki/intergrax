@@ -13,7 +13,7 @@ index implementing the same ``RuntimeEventPersistence`` contract.
 from __future__ import annotations
 
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
-from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
 from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
     ElasticsearchObservabilityIntegration,
 )
@@ -24,14 +24,14 @@ from intergrax.runtime.events.stores.document_backed_runtime_event_store import 
 
 
 def runtime_event_persistence_from_document_store(
-    store: DocumentStore,
+    store: ConditionalDocumentStore,
 ) -> RuntimeEventPersistence:
     return DocumentBackedRuntimeEventStore(store)
 
 
 def runtime_event_persistence_for_elasticsearch_lab(
     *,
-    document_store: DocumentStore | None = None,
+    document_store: ConditionalDocumentStore | None = None,
 ) -> RuntimeEventPersistence:
     """
     Lab/test persistence implementing the same protocol as production ES index path.
@@ -45,7 +45,7 @@ def runtime_event_persistence_for_elasticsearch_lab(
 def runtime_event_persistence_from_elasticsearch_backend(
     backend: ElasticsearchObservabilityIntegration,
     *,
-    document_store: DocumentStore | None = None,
+    document_store: ConditionalDocumentStore | None = None,
 ) -> RuntimeEventPersistence:
     """
     Resolve runtime event persistence for ``observability_backend=elasticsearch``.

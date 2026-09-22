@@ -66,6 +66,11 @@ from tests.unit.agent_distribution.test_agent_platform_admin_service import (
     admin_test_principal,
     build_admin_stack,
 )
+from testing_support.agent_distribution.install_contract_authority_fixtures import (
+    binding_agent_contract,
+    declared_contract_for,
+    package_contract_authority_record,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -244,17 +249,36 @@ def _build_request(
     )
 
 
+def _contract_for_scenario(scenario: _HistoricalScenario):
+    version = "1.0.0" if scenario.package_digest == _DIGEST_A else "2.0.0"
+    description = (
+        "phase4e historical proof package A"
+        if scenario.package_digest == _DIGEST_A
+        else "phase4e historical proof package B"
+    )
+    return binding_agent_contract(
+        contract_id=_LOGICAL_AGENT_ID,
+        version=version,
+        description=description,
+    )
+
+
+def _metadata_for_scenario(scenario: _HistoricalScenario) -> AgentProjectMetadata:
+    contract = _contract_for_scenario(scenario)
+    return AgentProjectMetadata(
+        distribution_package_id=scenario.distribution_package_id,
+        dependencies=(),
+        declared_contracts=(declared_contract_for(contract),),
+    )
+
+
 def _build_phase4e_stack(tmp_path: Path) -> AdminStack:
     stack = build_admin_stack()
-    stack.service._metadata_provider._records[_META_REF] = AgentProjectMetadata(
-        distribution_package_id=_PACKAGE_ID_A,
-        dependencies=(),
+    stack.service._metadata_provider._records[_META_REF] = _metadata_for_scenario(
+        _SCENARIO_A
     )
-    stack.service._metadata_provider._records["meta://package-b"] = (
-        AgentProjectMetadata(
-            distribution_package_id=_PACKAGE_ID_B,
-            dependencies=(),
-        )
+    stack.service._metadata_provider._records["meta://package-b"] = _metadata_for_scenario(
+        _SCENARIO_B
     )
     stack.service._materialization_service = RuntimeMaterializationService(
         {MaterializationTopology.VENV_BUNDLE: _Phase4eVenvBundleMaterializer(tmp_path)}
@@ -269,6 +293,15 @@ def _install_agent(
     mutation_id: str,
     metadata_ref: str = _META_REF,
 ) -> None:
+    artifact_store_ref = f"store://artifacts/{scenario.installation_id}"
+    contract = _contract_for_scenario(scenario)
+    authority_record = package_contract_authority_record(
+        contract=contract,
+        package_digest=scenario.package_digest,
+        distribution_package_id=scenario.distribution_package_id,
+        artifact_store_ref=artifact_store_ref,
+        agent_project_metadata_ref=metadata_ref,
+    )
     stack.service.install_agent(
         application_id=_APP,
         application_environment_id=_ENV,
@@ -277,9 +310,10 @@ def _install_agent(
             installation_id=scenario.installation_id,
             installation_slot_id=_SLOT_ID,
             package_identity=_package_identity(scenario),
-            artifact_store_ref=f"store://artifacts/{scenario.installation_id}",
+            artifact_store_ref=artifact_store_ref,
             trust_record=_trust_record(scenario.package_digest),
             agent_project_metadata_ref=metadata_ref,
+            package_contract_authority=(authority_record,),
         ),
         principal=admin_test_principal(),
     )
@@ -368,6 +402,7 @@ def _authority_resolver(stack: AdminStack) -> RegistryProjectionAuthorityResolve
         ),
         lock_store=stack.service._lock_store,
         materialization_store=stack.materialization_store,
+        artifact_metadata_store=stack.service._artifact_metadata_store,
     )
 
 

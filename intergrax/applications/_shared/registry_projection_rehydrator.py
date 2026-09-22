@@ -205,6 +205,10 @@ class RuntimeRegistryProjectionRehydrator:
                 "descriptor manifest application_id mismatch with runtime revision"
             )
         build_context = descriptor.build_context_snapshot.to_build_context(manifest)
+        roster_contract_authority = self._authority.roster_contract_authority_for(
+            resolved=resolved,
+            manifest=manifest,
+        )
         try:
             bundle = assemble_production_registry_projection_input_bundle(
                 runtime_revision=revision,
@@ -214,6 +218,7 @@ class RuntimeRegistryProjectionRehydrator:
                 build_context=build_context,
                 artifact_locator=descriptor.materialization_artifact_locator,
                 materialization_artifact_digest=descriptor.materialization_artifact_digest,
+                roster_contract_authority=roster_contract_authority,
             )
             projection = build_registry_projection(bundle)
         except (ProductionRegistryProjectionInputError, RegistryProjectionError) as exc:

@@ -383,7 +383,11 @@ def test_offline_runs_are_concurrent_and_do_not_mutate_global_registry(
         TokenOptimizationLLMRouter,
     )
 
-    before = dict(LLMAdapterRegistry._factories)
+    from tests.unit.llm_adapters.registry_state_test_support import (
+        snapshot_registry_state,
+    )
+
+    before = snapshot_registry_state()
     barrier = Barrier(2)
 
     def run(index: int):
@@ -404,7 +408,11 @@ def test_offline_runs_are_concurrent_and_do_not_mutate_global_registry(
         results = tuple(executor.map(run, (1, 2)))
 
     assert all(result.success for result in results)
-    assert dict(LLMAdapterRegistry._factories) == before
+    from tests.unit.llm_adapters.registry_state_test_support import (
+        snapshot_registry_state,
+    )
+
+    assert snapshot_registry_state() == before
 
 
 def test_failed_offline_composition_and_execution_preserve_global_registry(
@@ -412,7 +420,11 @@ def test_failed_offline_composition_and_execution_preserve_global_registry(
 ) -> None:
     from dataclasses import replace
 
-    before = dict(LLMAdapterRegistry._factories)
+    from tests.unit.llm_adapters.registry_state_test_support import (
+        snapshot_registry_state,
+    )
+
+    before = snapshot_registry_state()
     config = _config(tmp_path / "failed")
     invalid_router = replace(config.router, configuration_id="unknown")
     invalid_config = replace(config, router=invalid_router)
@@ -439,7 +451,11 @@ def test_failed_offline_composition_and_execution_preserve_global_registry(
     assert result.cases[0].router_evidence.review_required is None
     assert result.cases[0].router_evidence.confidence is None
     assert result.cases[0].pipeline_evidence.fallback_applied is None
-    assert dict(LLMAdapterRegistry._factories) == before
+    from tests.unit.llm_adapters.registry_state_test_support import (
+        snapshot_registry_state,
+    )
+
+    assert snapshot_registry_state() == before
 
 
 def _prompt_report(*, tools_schema: tuple[dict[str, object], ...] = ()):

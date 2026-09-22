@@ -12,21 +12,15 @@ from intergrax.knowledge.contracts.validation import JsonObject
 
 @runtime_checkable
 class ExecutionBoundDeclarativeToolInvoker(Protocol):
-    """Declarative invoker that must be rebound to active execution identity before invoke."""
+    """Declarative invoker under an immutable per-call execution identity (ADR3 M3)."""
 
-    def bind_execution_identity(
+    async def invoke(
         self,
         *,
         tenant_id: str,
         run_id: str,
         task_id: str,
         agent_id: str,
-    ) -> None:
-        ...
-
-    async def invoke(
-        self,
-        *,
         tool_id: str,
         args: JsonObject,
         idempotency_key: str | None,

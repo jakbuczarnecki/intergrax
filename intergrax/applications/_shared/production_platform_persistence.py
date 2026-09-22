@@ -88,27 +88,35 @@ def resolve_reference_production_strict_host_environment(
     )
 
 
+@dataclass(frozen=True, slots=True)
+class HarnessHostProfilePersistenceKwargs:
+    """Typed harness host persistence kwargs for profile-backed composition."""
+
+    key_value_cache: DistributedKVStore | None = None
+    document_store: DocumentStore | None = None
+
+
 def resolve_harness_host_profile_persistence_kwargs(
     *,
     production_mode: bool,
     platform_persistence: ProductionPlatformPersistence,
-) -> dict[str, DistributedKVStore | DocumentStore]:
+) -> HarnessHostProfilePersistenceKwargs:
     """Resolve harness host kwargs for shared composition profile persistence."""
     resolve_effective_profile_persistence_for_platform(
         production_mode=production_mode,
         platform_persistence=platform_persistence,
     )
-    return {
-        "key_value_cache": platform_persistence.kv_store,
-        "document_store": platform_persistence.document_store,
-    }
+    return HarnessHostProfilePersistenceKwargs(
+        key_value_cache=platform_persistence.kv_store,
+        document_store=platform_persistence.document_store,
+    )
 
 
 def resolve_harness_host_profile_persistence_kwargs_from_composition(
     *,
     production_mode: bool,
     composition: ProductionProcessComposition,
-) -> dict[str, DistributedKVStore | DocumentStore]:
+) -> HarnessHostProfilePersistenceKwargs:
     """Resolve harness host persistence kwargs from one activated process composition."""
     return resolve_harness_host_profile_persistence_kwargs(
         production_mode=production_mode,
@@ -117,6 +125,7 @@ def resolve_harness_host_profile_persistence_kwargs_from_composition(
 
 
 __all__ = [
+    "HarnessHostProfilePersistenceKwargs",
     "ProductionPlatformPersistence",
     "build_reference_production_platform_persistence",
     "resolve_effective_profile_persistence_for_platform",

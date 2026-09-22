@@ -16,7 +16,7 @@ from intergrax.fastapi_core.execution.adapters.adapter import ExecutionAdapter
 from intergrax.fastapi_core.runs.default_service import DefaultRunService
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
-from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
 )
@@ -40,7 +40,7 @@ def wire_optional_queue_execution(
     *,
     enabled: bool,
     host_execution: HostTaskExecutionPort,
-    registry: AgentRegistry,
+    registry: AgentRegistryRead,
     run_service: DefaultRunService,
     task_enricher: TaskEnricher | None = None,
     wait_for_result: bool = True,

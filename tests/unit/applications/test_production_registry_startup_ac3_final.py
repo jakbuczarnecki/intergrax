@@ -234,6 +234,7 @@ def _authority(
         ),
         lock_store=stores.lock_store,
         materialization_store=stores.materialization_store,
+        artifact_metadata_store=stores.artifact_metadata_store,
     )
 
 
@@ -245,7 +246,24 @@ def _seed_canonical_authority(
     lock: MaterializedRuntimeLock,
     artifact_root: Path,
     digest: str,
+    manifest: ApplicationManifest,
 ) -> str:
+    from testing_support.agent_distribution.install_contract_authority_fixtures import (
+        reference_install_contract_authority_records,
+    )
+
+    for entry in roster.entries:
+        if not entry.effective_enablement:
+            continue
+        records = reference_install_contract_authority_records(
+            manifest,
+            package_digest=entry.package_digest,
+            distribution_package_id=entry.distribution_package_id,
+            artifact_store_ref=f"store://artifacts/{entry.installation_slot_id}",
+            agent_project_metadata_ref=f"meta://{entry.logical_agent_id}",
+        )
+        for record in records:
+            stores.artifact_metadata_store.persist_package_contract_authority(record)
     stores.effective_roster_snapshot_store.persist(roster)
     stores.lock_store.persist_lock(lock)
     stores.materialization_store.persist(
@@ -275,6 +293,7 @@ def _canonical_bundle(
         lock=lock,
         artifact_root=artifact_root,
         digest=digest,
+        manifest=manifest,
     )
     authority = _authority(stores)
     bundle = build_production_registry_projection_input_bundle_for_revision(

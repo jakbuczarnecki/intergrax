@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import ast
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -398,6 +399,67 @@ def test_ads12_update_config_cas_after_authorization() -> None:
         )
 
 
+def test_ads31_enable_cas_after_authorization() -> None:
+    stack = _stack_with_evaluator(_RecordingEvaluator())
+    _install_and_bind(stack)
+    stack.service.update_binding_config(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        application_binding_id="bind-search",
+        request=UpdateAgentBindingRequest(
+            mutation_id="mut-ads31-config",
+            expected_revision=0,
+            config={"mode": "fast"},
+        ),
+        principal=admin_test_principal(),
+    )
+    with pytest.raises(BindingRevisionConflict):
+        stack.service.enable_binding(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            application_binding_id="bind-search",
+            request=SetAgentEnablementRequest(
+                mutation_id="mut-ads31",
+                expected_revision=0,
+            ),
+            principal=admin_test_principal(),
+        )
+
+
+def test_ads32_disable_cas_after_authorization() -> None:
+    stack = _stack_with_evaluator(_RecordingEvaluator())
+    _install_and_bind(stack)
+    stack.service.enable_binding(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        application_binding_id="bind-search",
+        request=SetAgentEnablementRequest(mutation_id="mut-enable", expected_revision=0),
+        principal=admin_test_principal(),
+    )
+    stack.service.update_binding_config(
+        application_id=_APP,
+        application_environment_id=_ENV,
+        application_binding_id="bind-search",
+        request=UpdateAgentBindingRequest(
+            mutation_id="mut-ads32-config",
+            expected_revision=1,
+            config={"mode": "fast"},
+        ),
+        principal=admin_test_principal(),
+    )
+    with pytest.raises(BindingRevisionConflict):
+        stack.service.disable_binding(
+            application_id=_APP,
+            application_environment_id=_ENV,
+            application_binding_id="bind-search",
+            request=SetAgentEnablementRequest(
+                mutation_id="mut-ads32",
+                expected_revision=0,
+            ),
+            principal=admin_test_principal(),
+        )
+
+
 def test_ads13_config_digest_changes_target_request_digest() -> None:
     principal = admin_test_principal()
     digest_a = binding_config_digest({"mode": "fast"})
@@ -664,19 +726,51 @@ def test_ads25_static_no_dynamic_access_in_changed_slice() -> None:
     assert offenders == []
 
 
-def test_ads26_static_admin_bypass_inventory() -> None:
-    allowed_relative = {
-        "intergrax/agent_distribution/admin_service.py",
+_AD_DOMAIN_SERVICE_MODULES = frozenset(
+    {
+        "intergrax.agent_distribution.installation_service",
+        "intergrax.agent_distribution.binding_service",
     }
+)
+_AD_DOMAIN_MUTATION_METHODS = frozenset(
+    {
+        "create_candidate_installation",
+        "create_binding",
+        "update_config",
+        "enable",
+        "disable",
+    }
+)
+_ADS26_GOVERNED_CALLER = "intergrax/agent_distribution/admin_service.py"
+_ADS26_DOMAIN_IMPLEMENTATIONS = frozenset(
+    {
+        "intergrax/agent_distribution/binding_service.py",
+        "intergrax/agent_distribution/installation_service.py",
+    }
+)
+
+
+def _imports_agent_distribution_domain_services(tree: ast.AST) -> bool:
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module in _AD_DOMAIN_SERVICE_MODULES:
+            return True
+    return False
+
+
+def _calls_agent_distribution_domain_mutation(tree: ast.AST) -> bool:
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        func = node.func
+        if isinstance(func, ast.Attribute) and func.attr in _AD_DOMAIN_MUTATION_METHODS:
+            return True
+    return False
+
+
+def _ads26_agent_distribution_mutation_bypass_offenders() -> list[str]:
+    """Production callers that import AD domain services and invoke mutation methods."""
     production_roots = (_REPO_ROOT / "intergrax", _REPO_ROOT / "applications")
-    patterns = (
-        ".create_candidate_installation(",
-        ".create_binding(",
-        ".update_config(",
-        ".enable(",
-        ".disable(",
-    )
-    hits: list[str] = []
+    offenders: list[str] = []
     for root in production_roots:
         if not root.exists():
             continue
@@ -686,18 +780,23 @@ def test_ads26_static_admin_bypass_inventory() -> None:
                 continue
             if "/docker/runtime-context/" in posix:
                 continue
-            text = path.read_text(encoding="utf-8")
-            if not any(pattern in text for pattern in patterns):
-                continue
             relative = path.relative_to(_REPO_ROOT).as_posix()
-            if relative in {
-                "intergrax/agent_distribution/binding_service.py",
-                "intergrax/agent_distribution/installation_service.py",
-                "applications/local_workspace_application/workspaces/knowledge_inspection_operations_service.py",
-            }:
+            if relative in _ADS26_DOMAIN_IMPLEMENTATIONS | {_ADS26_GOVERNED_CALLER}:
                 continue
-            hits.append(relative)
-    unexpected = sorted(path for path in hits if path not in allowed_relative)
+            text = path.read_text(encoding="utf-8")
+            try:
+                tree = ast.parse(text)
+            except SyntaxError:
+                continue
+            if not _imports_agent_distribution_domain_services(tree):
+                continue
+            if _calls_agent_distribution_domain_mutation(tree):
+                offenders.append(relative)
+    return sorted(set(offenders))
+
+
+def test_ads26_static_admin_bypass_inventory() -> None:
+    unexpected = _ads26_agent_distribution_mutation_bypass_offenders()
     assert unexpected == []
 
 

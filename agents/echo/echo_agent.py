@@ -19,8 +19,8 @@ from intergrax.agents.reference_harness import (
 from intergrax.runtime.nexus.agents.reference_harness_runtime import (
     build_lab_agent_runtime_context,
 )
+from echo.contract import build_agent_contract
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
-from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -32,7 +32,6 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.skills.providers.harness.manifests import HARNESS_TOOL_SMOKE
 
 
 class _EchoLLMAdapter(BaseLLMAdapter):
@@ -76,28 +75,7 @@ class EchoAgent(ReflexAgent):
         self._harness = harness or default_reference_harness()
 
     def get_contract(self) -> AgentContract:
-        return AgentContract(
-            id=self.contract_id,
-            name=self.agent_name,
-            description=self.agent_description,
-            version=self.agent_version,
-            capabilities=list(self.capabilities),
-            skills=[HARNESS_TOOL_SMOKE],
-            extra_tools=[],
-            risk_level=self.risk_level,
-            lifecycle_state=AgentLifecycleState.PRODUCTION,
-            production_eligible=True,
-            owner_team="platform",
-            owner_contact="harness@intergrax",
-            on_call_contact="harness@intergrax",
-            runbook_ref="docs/project/architecture/intergrax_runtime_architecture.md",
-            modality_profile_id="lab.default",
-            output_schema={"type": "object", "properties": {"answer": {"type": "string"}}},
-            validation_rules=["structured_output"],
-            max_steps=self.max_steps,
-            cognitive_pattern=self.cognitive_pattern,
-            pattern_version=self.pattern_version,
-        )
+        return build_agent_contract()
 
     def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
         capability = routing_capability_from_envelope(task)

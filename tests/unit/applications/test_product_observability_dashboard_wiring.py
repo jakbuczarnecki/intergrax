@@ -8,6 +8,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from fastapi import FastAPI
 
 from intergrax.applications._shared.product_observability_dashboard_wiring import (
     _build_diagnostic_operations_pane,
@@ -18,7 +19,10 @@ from intergrax.applications.contracts.environment_profile.sub_profiles import Ob
 from intergrax.runtime.diagnostics.diagnostic_read_service import DiagnosticReadService
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import STRATEGY_ID
 from intergrax.runtime.observability.reconstruction import ExecutionReconstructor
-from intergrax.runtime.diagnostics.in_memory_problem_persistence import InMemoryProblemPersistence
+from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.runtime.diagnostics.document_store_problem_persistence import (
+    wire_problem_persistence,
+)
 from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingEngine
 from intergrax.runtime.diagnostics.problem_grouping import ProblemGroupingStrategyRegistry
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
@@ -31,6 +35,10 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
     InMemoryCausalEvidencePersistence,
 )
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
+from testing_support.runtime.diagnostics.problem_persistence_test_support import (
+    TEST_PROBLEM_LIST_CURSOR_SECRET,
+    document_store_occurrence_persistence_for_tests,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -102,9 +110,14 @@ def _read_service_with_problems(
     open_count: int,
     resolved_count: int,
 ) -> DiagnosticReadService:
-    persistence = InMemoryProblemPersistence()
+    document_store = InMemoryDocumentStore()
+    persistence = wire_problem_persistence(
+        list_cursor_secret=TEST_PROBLEM_LIST_CURSOR_SECRET,
+        document_store=document_store,
+    )
+    occurrence_persistence = document_store_occurrence_persistence_for_tests(document_store)
     runtime_store = InMemoryRuntimeEventStore()
-    lifecycle = ProblemLifecycleEngine(persistence)
+    lifecycle = ProblemLifecycleEngine(persistence, occurrence_persistence)
     grouping_engine = _grouping_engine()
 
     open_violations = [
@@ -153,6 +166,7 @@ def _read_service_with_problems(
 
     return DiagnosticReadService(
         problem_persistence=persistence,
+        occurrence_persistence=occurrence_persistence,
         execution_reconstructor=ExecutionReconstructor(
             runtime_events=runtime_store,
             causal_evidence=InMemoryCausalEvidencePersistence(),
@@ -179,8 +193,15 @@ def test_diagnostic_pane_disabled_when_flag_off() -> None:
 
 def test_diagnostic_pane_empty_ready_when_service_wired() -> None:
     env = _product_env()
+    document_store = InMemoryDocumentStore()
+    problem_persistence = wire_problem_persistence(
+        list_cursor_secret=TEST_PROBLEM_LIST_CURSOR_SECRET,
+        document_store=document_store,
+    )
+    occurrence_persistence = document_store_occurrence_persistence_for_tests(document_store)
     service = DiagnosticReadService(
-        problem_persistence=InMemoryProblemPersistence(),
+        problem_persistence=problem_persistence,
+        occurrence_persistence=occurrence_persistence,
         execution_reconstructor=ExecutionReconstructor(
             runtime_events=InMemoryRuntimeEventStore(),
             causal_evidence=InMemoryCausalEvidencePersistence(),
@@ -244,6 +265,7 @@ def test_diagnostic_pane_uses_host_tenant_scope() -> None:
     pane = _build_diagnostic_operations_pane(
         env,
         other_tenant_service,
+        operator_tenant_id=_TENANT,
         auditability_facts=facts,
     )
     assert pane.ready is True
@@ -279,3 +301,48 @@ def test_dashboard_wiring_exposes_diagnostics_pane_not_legacy_causal() -> None:
     assert dashboard.diagnostics.ready is True
     assert dashboard.diagnostics.problem_count == 1
     assert dashboard.diagnostics.open_problem_count == 1
+
+
+def test_wire_harness_product_read_required_fail_closed_on_missing_read_service(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from unittest.mock import MagicMock
+
+    from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticAssemblyError
+    from intergrax.applications._shared.product_observability_dashboard_wiring import (
+        wire_harness_product_observability_dashboard,
+    )
+    from intergrax.applications.contracts.application_host import ApplicationProfile
+
+    env = _product_env(diagnostics_pane_enabled=True)
+    env = env.model_copy(update={"application_profile": ApplicationProfile.PRODUCT})
+    runtime = MagicMock()
+    runtime.environment = env
+    runtime.tenant_id = _TENANT
+    runtime.diagnostic_wiring = MagicMock(required=True, attached=True)
+
+    def _raise() -> DiagnosticReadService:
+        raise ValueError("diagnostic read dependencies unavailable")
+
+    monkeypatch.setattr(
+        "intergrax.applications._shared.product_observability_dashboard_wiring."
+        "resolve_host_diagnostic_read_service",
+        lambda _runtime: _raise(),
+    )
+
+    with pytest.raises(DiagnosticAssemblyError, match="diagnostic read dependencies"):
+        wire_harness_product_observability_dashboard(FastAPI(), runtime=runtime)
+
+
+def test_resolve_harness_operator_diagnostic_tenant_id_fail_closed_when_unset() -> None:
+    from unittest.mock import MagicMock
+
+    from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticAssemblyError
+    from intergrax.applications._shared.product_observability_dashboard_wiring import (
+        resolve_harness_operator_diagnostic_tenant_id,
+    )
+
+    runtime = MagicMock()
+    runtime.tenant_id = ""
+    with pytest.raises(DiagnosticAssemblyError, match="tenant_id is required"):
+        resolve_harness_operator_diagnostic_tenant_id(runtime)

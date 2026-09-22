@@ -7,6 +7,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    ManifestAgentContractAuthority,
+)
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.contracts.agent_contract_meta import AgentContract
@@ -72,12 +75,22 @@ def _node_type_from_id(node_id: str) -> CapabilityNodeType:
         raise ValueError(f"Unknown capability node prefix in {node_id!r}") from exc
 
 
-def _agent_contract_from_binding(binding: AgentBinding) -> AgentContract | None:
+def _agent_contract_from_binding(
+    binding: AgentBinding,
+    *,
+    contract_authority: ManifestAgentContractAuthority,
+) -> AgentContract | None:
     if binding.agent_type is None and binding.import_path is None:
         return None
-    from intergrax.applications._shared.agent_resolution import resolve_agent_type_from_binding
+    from intergrax.applications._shared.roster_agent_contract_authority import (
+        resolve_roster_agent_contract,
+    )
 
-    return resolve_agent_type_from_binding(binding)().get_contract()
+    return resolve_roster_agent_contract(
+        binding,
+        contract_authority=contract_authority,
+        allow_compatibility_resolver=False,
+    )
 
 
 def build_environment_seed_capability_graph(
@@ -90,6 +103,11 @@ def build_environment_seed_capability_graph(
     graph is intentionally seeded from the application manifest and the registries that
     were actually wired for this environment.
     """
+    from intergrax.applications._shared.roster_agent_contract_authority import (
+        materialize_manifest_contract_authority_lab_compat,
+    )
+
+    contract_authority = materialize_manifest_contract_authority_lab_compat(manifest)
     node_by_id: dict[str, CapabilityNode] = {}
     edges: list[CapabilityEdge] = []
 
@@ -117,7 +135,10 @@ def build_environment_seed_capability_graph(
                 edge_type=CapabilityEdgeType.DEPENDS_ON,
             )
         )
-        contract = _agent_contract_from_binding(binding)
+        contract = _agent_contract_from_binding(
+            binding,
+            contract_authority=contract_authority,
+        )
         if contract is None:
             continue
         for skill_manifest in contract.skills:

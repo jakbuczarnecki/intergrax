@@ -19,6 +19,7 @@ from intergrax.contracts.delegation_authority import ParentExecutionAuthority
 from intergrax.contracts.execution_bound_declarative_tool_invocation import (
     ExecutionBoundDeclarativeToolInvoker,
 )
+from intergrax.knowledge.contracts.validation import JsonObject
 from intergrax.runtime.execution.compensation_side_effect import (
     build_runtime_compensation_side_effect_execution,
 )
@@ -26,37 +27,36 @@ from intergrax.runtime.execution.compensation_side_effect import (
 
 @dataclass
 class RecordingExecutionBoundDeclarativeToolInvoker:
-    """Execution-bound test invoker that records bind_execution_identity before invoke."""
+    """Execution-bound test invoker that records per-call identity on invoke."""
 
     _invoke_fn: Callable[..., Awaitable[DeclarativeToolInvokeResult]]
-    bound_tenant_id: str | None = field(default=None, init=False)
-    bound_run_id: str | None = field(default=None, init=False)
-    bound_task_id: str | None = field(default=None, init=False)
-    bound_agent_id: str | None = field(default=None, init=False)
+    last_tenant_id: str | None = field(default=None, init=False)
+    last_run_id: str | None = field(default=None, init=False)
+    last_task_id: str | None = field(default=None, init=False)
+    last_agent_id: str | None = field(default=None, init=False)
 
-    def bind_execution_identity(
+    async def invoke(
         self,
         *,
         tenant_id: str,
         run_id: str,
         task_id: str,
         agent_id: str,
-    ) -> None:
-        self.bound_tenant_id = tenant_id
-        self.bound_run_id = run_id
-        self.bound_task_id = task_id
-        self.bound_agent_id = agent_id
-
-    async def invoke(
-        self,
-        *,
         tool_id: str,
-        args: dict[str, Any],
+        args: JsonObject,
         idempotency_key: str | None,
     ) -> DeclarativeToolInvokeResult:
+        self.last_tenant_id = tenant_id
+        self.last_run_id = run_id
+        self.last_task_id = task_id
+        self.last_agent_id = agent_id
         return await self._invoke_fn(
+            tenant_id=tenant_id,
+            run_id=run_id,
+            task_id=task_id,
+            agent_id=agent_id,
             tool_id=tool_id,
-            args=args,
+            args=dict(args),
             idempotency_key=idempotency_key,
         )
 

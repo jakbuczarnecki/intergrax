@@ -16,8 +16,8 @@ from intergrax.agents.reference_harness import (
 from intergrax.runtime.nexus.agents.reference_harness_runtime import (
     build_lab_agent_runtime_context,
 )
-from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
-from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
+from intergrax.contracts.agent_contract_meta import AgentContract
+from research.contract import build_agent_contract
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -25,7 +25,6 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.agents.tool_enablement import ToolEnablementProfile
-from intergrax.skills.providers.research.manifests import RESEARCH_LITERATURE_SCAN
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter
 
 
@@ -55,22 +54,7 @@ class ResearchAgent(ReflexAgent):
         return profile.is_tool_enabled(tool_id)
 
     def get_contract(self) -> AgentContract:
-        return AgentContract(
-            id="research",
-            name="Research Agent",
-            description="Prototype agent producing stub research findings.",
-            version="0.1.0",
-            capabilities=["research.web_search", "research.pipeline"],
-            skills=[RESEARCH_LITERATURE_SCAN],
-            extra_tools=[],
-            risk_level=AgentRiskLevel.LOW,
-            lifecycle_state=AgentLifecycleState.STAGING,
-            owner_team="platform",
-            max_steps=10,
-            validation_rules=["non_empty_summary"],
-            cognitive_pattern=self.cognitive_pattern,
-            pattern_version=self.pattern_version,
-        )
+        return build_agent_contract(type(self))
 
     def can_handle(self, task: TaskEnvelope) -> CapabilityMatchResult:
         capability = routing_capability_from_envelope(task)

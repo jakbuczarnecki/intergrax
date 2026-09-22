@@ -207,6 +207,54 @@ def _call_name(func: ast.AST) -> str | None:
     return None
 
 
+def _runtime_event_bus_publish_method(tree: ast.Module) -> ast.AsyncFunctionDef:
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name != "RuntimeEventBus":
+            continue
+        for item in node.body:
+            if isinstance(item, ast.AsyncFunctionDef) and item.name == "publish":
+                return item
+    raise AssertionError("RuntimeEventBus.publish not found in event_bus.py")
+
+
+def _ordered_method_calls(
+    func: ast.AsyncFunctionDef, *, attrs: frozenset[str]
+) -> list[tuple[int, str, ast.Call]]:
+    found: list[tuple[int, str, ast.Call]] = []
+    for node in ast.walk(func):
+        if not isinstance(node, ast.Call):
+            continue
+        name = _call_name(node.func)
+        if name in attrs:
+            found.append((node.lineno, name, node))
+    found.sort(key=lambda item: item[0])
+    return found
+
+
+def _committed_event_binding(func: ast.AsyncFunctionDef) -> str | None:
+    for node in func.body:
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        target = node.targets[0]
+        if not isinstance(target, ast.Name):
+            continue
+        if not isinstance(node.value, ast.Call):
+            continue
+        if _call_name(node.value.func) != "_commit_durable_evidence":
+            continue
+        return target.id
+    return None
+
+
+def _dispatch_handler_argument_name(call: ast.Call) -> str | None:
+    if not call.args:
+        return None
+    arg0 = call.args[0]
+    if isinstance(arg0, ast.Name):
+        return arg0.id
+    return None
+
+
 def _event_obs_python_files() -> list[Path]:
     files: list[Path] = []
     for root in _EVENT_OBS_MINT_ROOTS:
@@ -316,8 +364,19 @@ def test_gate_terminal_runtime_event_published_before_diagnostic_dispatch() -> N
 @pytest.mark.obs_coverage_p1
 def test_gate_event_bus_persists_before_handlers() -> None:
     bus_path = _REPO_ROOT / "intergrax" / "runtime" / "events" / "event_bus.py"
-    source = bus_path.read_text(encoding="utf-8")
-    publish_block = source.split("async def publish", 1)[1].split("\n    @property", 1)[0]
-    commit_idx = publish_block.index("self._commit_durable_evidence(event)")
-    dispatch_idx = publish_block.index("await self._dispatch_handlers_async(event)")
-    assert commit_idx < dispatch_idx
+    tree = ast.parse(bus_path.read_text(encoding="utf-8"), filename=str(bus_path))
+    publish = _runtime_event_bus_publish_method(tree)
+    tracked = frozenset(
+        {"_commit_durable_evidence", "_deliver_through_event_sink", "_dispatch_handlers_async"}
+    )
+    ordered = _ordered_method_calls(publish, attrs=tracked)
+    by_name = {name: lineno for lineno, name, _ in ordered}
+    assert "_commit_durable_evidence" in by_name
+    assert "_dispatch_handlers_async" in by_name
+    assert by_name["_commit_durable_evidence"] < by_name["_dispatch_handlers_async"]
+
+    committed_binding = _committed_event_binding(publish)
+    assert committed_binding is not None, "publish must bind durable commit to a local name"
+    dispatch_calls = [call for _, name, call in ordered if name == "_dispatch_handlers_async"]
+    assert len(dispatch_calls) == 1
+    assert _dispatch_handler_argument_name(dispatch_calls[0]) == committed_binding

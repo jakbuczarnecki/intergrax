@@ -14,7 +14,6 @@ from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.registry.profile import create_adapter, llm_profile_from_env
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
@@ -33,7 +32,7 @@ class WebSearchQualifierAgent(DiagnosticReflexAgent):
     cognitive_pattern = CognitivePattern.REFLEX
     main_step_id = "web_search_qualifier_step"
 
-    def __init__(self, llm_adapter: LLMAdapter | None = None) -> None:
+    def __init__(self, llm_adapter: LLMAdapter) -> None:
         self._llm_adapter = llm_adapter
 
     def get_contract(self):
@@ -53,10 +52,7 @@ class WebSearchQualifierAgent(DiagnosticReflexAgent):
         return CapabilityMatchResult(matched=False, rationale="capability not supported")
 
     def build_context(self, request: RuntimeRequest) -> RuntimeContext:
-        adapter = self._llm_adapter
-        if adapter is None:
-            adapter = create_adapter(llm_profile_from_env())
-        return build_agent_runtime_context(request, adapter)
+        return build_agent_runtime_context(request, self._llm_adapter)
 
     async def perceive(self, step_ctx: AgentStepContext):
         return perceive_run_input(step_ctx, self)

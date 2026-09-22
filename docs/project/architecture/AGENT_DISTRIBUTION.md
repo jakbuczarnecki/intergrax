@@ -390,7 +390,10 @@ AVAILABLE
 |-----------|-------------|
 | Tier-0 distribution ownership | Contracts, verification, installation/binding stores, lock production |
 | Tier-1 `AgentRegistry` projection | Population from materialization only; no install state |
-| Tier-2 reusable agent packages | `AgentContract` + `pyproject.toml` metadata in package |
+| Tier-2 reusable agent packages | `contract.py` authoring + `pyproject.toml` declarative rows |
+| Tier-2 → distribution production metadata | `PackageAgentContractAuthorityRecord` (digest-pinned full `AgentContract`, parity-checked at install) |
+| Tier-1 `AgentRegistry` | Derived serving projection only — not contract lifecycle authority |
+| Dynamic `resolve_agent_contract_from_binding` | Lab/authoring compatibility only — forbidden on STRICT production governance paths |
 | Tier-3 application defaults / admin hosting | Manifest defaults; harness admin API surface |
 | Capability-based routing at Execution Engine public boundary | Unchanged semantics - [`AGENT_CONTRACTS_AND_ASSEMBLY.md`](AGENT_CONTRACTS_AND_ASSEMBLY.md) §16; Nexus private when orchestration strategy applies |
 | Immutable production runtime | Model B materialization + activation swap |
@@ -398,6 +401,8 @@ AVAILABLE
 | Deterministic dependency closure | §15–§16 - **every activated runtime revision** |
 | Fail-closed trust / certification | §10; production gates before activation |
 | No hot arbitrary Python installation | No runtime `pip install` into live production process |
+
+**Install authority precondition (EBH-2E-AR1-A-R1-R1):** After package trust admission, `install_agent` validates complete declared `AgentContract` snapshots, persists artifact metadata and digest-bound `PackageAgentContractAuthorityRecord` rows through the canonical `AgentArtifactMetadataStore`, and only then promotes the installation to `INSTALLED_ACTIVE`. Invalid authority or persistence failure leaves the slot unchanged. Production registry projection and rehydration resolve contracts through `RosterAgentContractAuthority` keyed by `(package_digest, contract_id)`; historical revisions retain prior snapshots; rollback restores the prior revision’s roster-bound snapshots. Manifest-only lab compatibility (`materialize_manifest_contract_authority_lab_compat`) is confined to CI gates under `strict_product_manifest_ci_gates.py`, not STRICT production serving.
 
 ### 3.3 Canonical platform chain
 

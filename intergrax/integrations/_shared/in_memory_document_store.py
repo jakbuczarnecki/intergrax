@@ -12,6 +12,7 @@ from collections.abc import Sequence
 
 from intergrax.integrations._shared.document_store_query_support import query_documents_with_data_filters
 from intergrax.integrations.contracts.document_store import (
+    ConditionalDocumentStore,
     DocumentDataEquality,
     DocumentDataSort,
     DocumentQueryCursorCodec,
@@ -49,7 +50,7 @@ def _data_matches(current: DocumentRecord, expected: DocumentRecord) -> bool:
     )
 
 
-class InMemoryDocumentStore:
+class InMemoryDocumentStore(ConditionalDocumentStore):
     """Deterministic document store backing conformance suites."""
 
     def __init__(

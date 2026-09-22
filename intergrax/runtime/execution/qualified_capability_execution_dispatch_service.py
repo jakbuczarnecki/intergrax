@@ -68,6 +68,15 @@ class QualifiedCapabilityExecutionDispatchService(
             if existing is not None:
                 return existing.result
 
+            if request.governance_approval_evidence is not None:
+                evidence = request.governance_approval_evidence
+                if evidence.tenant_id != request.tenant_id:
+                    return QualifiedCapabilityExecutionDispatchResult(
+                        disposition=QualifiedCapabilityExecutionDispatchDisposition.REJECTED,
+                        execution_request_id=request.execution_request_id,
+                        reason_detail="governance_approval_evidence_tenant_mismatch",
+                    )
+
             payload = QualifiedCapabilityExecutionIntakePayload(
                 execution_request_id=request.execution_request_id,
                 execution_target=request.execution_target,
@@ -84,6 +93,7 @@ class QualifiedCapabilityExecutionDispatchService(
                 admitted_governance_identity=request.admitted_governance_identity,
                 effective_authority_decision=request.effective_authority_decision,
                 collaborative_authority_scopes=request.collaborative_authority_scopes,
+                governance_approval_evidence=request.governance_approval_evidence,
             )
             launch_result = run_async(
                 self._launcher.launch(

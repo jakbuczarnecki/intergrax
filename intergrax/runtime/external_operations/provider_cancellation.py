@@ -10,28 +10,14 @@ from intergrax.contracts.external_operation_cancellation import (
     ExternalOperationPhysicalState,
     ExternalOperationStatusPort,
 )
-from intergrax.contracts.external_operation_identity import ExternalOperationIdentity
 from intergrax.contracts.external_operation_termination import (
     ExternalOperationTerminationPort,
-    TerminationResult,
-)
-from intergrax.llm_adapters.base.lifecycle_binding import LLMRuntimeLifecycleBinding
-from intergrax.llm_adapters._shared.provider_external_operation_capabilities import (
-    external_operation_capabilities_for_provider,
 )
 from intergrax.llm_adapters._shared.provider_stream_transport_registry import (
     ProviderStreamTransportRegistry,
 )
+from intergrax.llm_adapters.base.lifecycle_binding import LLMRuntimeLifecycleBinding
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
-
-
-class NoOpExternalOperationCancellationPort:
-    """Providers without cancel API — intent-only cancellation."""
-
-    async def request_cancel(self, operation_id: str) -> None:
-        if type(operation_id) is not str or not operation_id:
-            raise ValueError("operation_id must be a non-empty str")
 
 
 class UnknownOnInquiryExternalOperationStatusPort:
@@ -50,77 +36,11 @@ def resolve_llm_provider_external_operation_seam(
     ExternalOperationTerminationPort,
     ProviderStreamTransportRegistry,
 ]:
-    """Capability-driven seam wiring — no provider string branching in runtime core."""
-    normalized = provider_slug.strip().lower()
-    if normalized in (
-        LLMProvider.OPENAI.value,
-        LLMProvider.AZURE_OPENAI.value,
-        LLMProvider.GROQ.value,
-        LLMProvider.VLLM.value,
-        LLMProvider.OPENROUTER.value,
-    ):
-        from intergrax.llm_adapters.providers.openai.cancellation import (
-            openai_external_operation_ports,
-        )
+    """Resolve provider-owned external-operation ports via adapter registration."""
+    from intergrax.llm_adapters.llm_provider_registry import LLMAdapterRegistry
 
-        cancel, termination, registry = openai_external_operation_ports()
-        return cancel, termination, registry
-    if normalized == LLMProvider.CLAUDE.value:
-        from intergrax.llm_adapters.providers.claude.cancellation import (
-            claude_external_operation_ports,
-        )
-
-        cancel, termination, registry = claude_external_operation_ports()
-        return cancel, termination, registry
-    if normalized in (LLMProvider.GEMINI.value, LLMProvider.VERTEX_GEMINI.value):
-        from intergrax.llm_adapters.providers.gemini.cancellation import (
-            gemini_external_operation_ports,
-        )
-
-        cancel, termination, registry = gemini_external_operation_ports()
-        return cancel, termination, registry
-    if normalized == LLMProvider.MISTRAL.value:
-        from intergrax.llm_adapters.providers.mistral.cancellation import (
-            mistral_external_operation_ports,
-        )
-
-        cancel, termination, registry = mistral_external_operation_ports()
-        return cancel, termination, registry
-    if normalized == LLMProvider.AWS_BEDROCK.value:
-        from intergrax.llm_adapters.providers.aws_bedrock.cancellation import (
-            bedrock_external_operation_ports,
-        )
-
-        cancel, termination, registry = bedrock_external_operation_ports()
-        return cancel, termination, registry
-    if normalized == LLMProvider.OLLAMA.value:
-        from intergrax.llm_adapters.providers.ollama.cancellation import (
-            ollama_external_operation_ports,
-        )
-
-        cancel, termination, registry = ollama_external_operation_ports()
-        return cancel, termination, registry
-    caps = external_operation_capabilities_for_provider(normalized)
-    if caps.supports_native_cancel or caps.supports_stream_abort:
-        from intergrax.llm_adapters.providers.openai.cancellation import (
-            openai_external_operation_ports,
-        )
-
-        cancel, termination, registry = openai_external_operation_ports()
-        return cancel, termination, registry
-    return (
-        NoOpExternalOperationCancellationPort(),
-        _NoOpTerminationPort(),
-        ProviderStreamTransportRegistry(),
-    )
-
-
-class _NoOpTerminationPort:
-    async def terminate(
-        self,
-        identity: ExternalOperationIdentity,
-    ) -> TerminationResult:
-        return TerminationResult.not_supported()
+    seam = LLMAdapterRegistry.resolve_external_operation_seam(provider_slug)
+    return seam.cancellation, seam.termination, seam.stream_registry
 
 
 def bind_llm_external_operation_ports(

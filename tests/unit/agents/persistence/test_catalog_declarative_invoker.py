@@ -77,13 +77,11 @@ async def test_catalog_declarative_invoker_routes_through_catalog() -> None:
     run_id = mint_run_id()
     identity_token, budget_token = _bind_catalog_execution(run_id)
     try:
-        invoker.bind_run(
-            run_id=run_id,
-            task_id=mint_task_id(),
-            agent_id="agent-a",
-            tenant_id="tenant-1",
-        )
         result = await invoker.invoke(
+            tenant_id="tenant-1",
+            run_id=str(run_id),
+            task_id=str(mint_task_id()),
+            agent_id="agent-a",
             tool_id=TOOL_ID,
             args={"value": 4},
             idempotency_key="key-1",
@@ -98,29 +96,24 @@ async def test_catalog_declarative_invoker_routes_through_catalog() -> None:
 def test_catalog_declarative_invoker_builds_real_runtime_context() -> None:
     registry = _registry_with_tool()
     invoker = build_catalog_declarative_invoker_from_registry(registry)
-    invoker.bind_run(
-        run_id=mint_run_id(),
-        task_id=mint_task_id(),
-        agent_id="agent-a",
+    run_id = mint_run_id()
+    task_id = mint_task_id()
+    state = invoker._runtime_state(  # noqa: SLF001 — wiring verification
         tenant_id="tenant-1",
+        run_id=str(run_id),
+        task_id=str(task_id),
+        agent_id="agent-a",
+        user_id="",
     )
-    state = invoker._runtime_state()  # noqa: SLF001 — wiring verification
     assert isinstance(state.context.session_manager, SessionManager)
     assert isinstance(state.context.config.llm_adapter, LLMAdapter)
 
 
 @pytest.mark.asyncio
-async def test_catalog_declarative_invoker_bind_run_updates_scope() -> None:
+async def test_catalog_declarative_invoker_bind_run_sets_session_user_id() -> None:
     registry = _registry_with_tool()
     invoker = CatalogDeclarativeToolInvoker(
         tool_invoker=build_catalog_declarative_invoker_from_registry(registry).tool_invoker,
     )
-    bound_run_id = mint_run_id()
-    invoker.bind_run(
-        run_id=bound_run_id,
-        task_id=mint_task_id(),
-        agent_id="agent-b",
-        tenant_id="tenant-2",
-    )
-    assert invoker.binding.run_id == bound_run_id
-    assert invoker.binding.agent_id == "agent-b"
+    invoker.bind_run(user_id="user-session-1")
+    assert invoker.binding.user_id == "user-session-1"

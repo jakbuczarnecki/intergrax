@@ -38,8 +38,9 @@ from unittest.mock import MagicMock
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.task.task import Task, TaskContext
-from testing_support.builder import (
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+
+from testing_support.builder import (
     build_runtime_state_for_tests,
     build_task_for_tests,
     canonical_run_id_for_tests,

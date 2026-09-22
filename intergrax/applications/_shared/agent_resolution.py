@@ -5,11 +5,14 @@
 from __future__ import annotations
 
 import importlib
+import importlib.util
+import inspect
 from typing import TypeVar
 
 from intergrax.applications.contracts.agent_ref import qualname_for_agent
 from intergrax.applications.contracts.errors import AgentImportError
 from intergrax.applications.contracts.manifest import AgentBinding
+from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.tier2_agent import Tier2Agent
 
 AgentT = TypeVar("AgentT", bound=Tier2Agent)
@@ -61,4 +64,67 @@ def resolve_agent_type_from_binding(binding: AgentBinding) -> type[Tier2Agent]:
     )
 
 
-__all__ = ["resolve_agent_type", "resolve_agent_type_from_binding"]
+def _invoke_build_agent_contract(
+    builder: object,
+    agent_type: type[Tier2Agent],
+) -> object:
+    if not callable(builder):
+        raise AgentImportError("build_agent_contract must be callable")
+    params = list(inspect.signature(builder).parameters.values())
+    if not params:
+        return builder()
+    if len(params) == 1:
+        return builder(agent_type)
+    raise AgentImportError(
+        "build_agent_contract must accept zero arguments or a single agent type argument"
+    )
+
+
+def resolve_agent_contract_from_binding(binding: AgentBinding) -> AgentContract:
+    """
+    Resolve agent contract metadata without materializing runtime dependencies.
+
+    Requires declarative ``<package>.contract.build_agent_contract`` (zero-arg or
+    single ``agent_type`` argument for multi-agent packages).
+    """
+    agent_type = resolve_agent_type_from_binding(binding)
+    package = agent_type.__module__.rsplit(".", 1)[0]
+    contract_module_name = f"{package}.contract"
+    if importlib.util.find_spec(contract_module_name) is None:
+        raise AgentImportError(
+            f"Agent {qualname_for_agent(agent_type)!r} has no declarative contract module "
+            f"{contract_module_name!r}"
+        )
+    try:
+        contract_module = importlib.import_module(contract_module_name)
+    except Exception as exc:
+        raise AgentImportError(
+            f"Failed to import declarative contract module {contract_module_name!r}"
+        ) from exc
+
+    builder = getattr(contract_module, "build_agent_contract", None)
+    if not callable(builder):
+        raise AgentImportError(
+            f"{contract_module_name!r} must define callable build_agent_contract()"
+        )
+
+    try:
+        contract = _invoke_build_agent_contract(builder, agent_type)
+    except Exception as exc:
+        raise AgentImportError(
+            f"build_agent_contract() failed for {contract_module_name!r}"
+        ) from exc
+
+    if not isinstance(contract, AgentContract):
+        raise AgentImportError(
+            f"build_agent_contract() for {contract_module_name!r} must return AgentContract, "
+            f"got {type(contract)!r}"
+        )
+    return contract
+
+
+__all__ = [
+    "resolve_agent_type",
+    "resolve_agent_type_from_binding",
+    "resolve_agent_contract_from_binding",
+]

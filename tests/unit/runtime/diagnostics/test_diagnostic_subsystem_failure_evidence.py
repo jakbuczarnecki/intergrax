@@ -36,6 +36,13 @@ from intergrax.runtime.diagnostics.terminal_execution_diagnostic_bridge import (
 )
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEventType
+from intergrax.runtime.events.payloads.platform_families import (
+    DiagnosticSubsystemFailurePayloadV1,
+)
+from intergrax.runtime.events.payload_registry import (
+    RuntimeEventPayloadError,
+    assert_canonical_production_runtime_event_payload,
+)
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.runtime.execution.boundary import ExecutionIdentityBinding
 
@@ -92,8 +99,11 @@ def test_record_diagnostic_subsystem_failure_persists_platform_signal() -> None:
     assert event.run_id == identity.run_id
     assert event.attempt_id == identity.attempt_id
     assert event.execution_id == identity.execution_id
-    assert event.payload["error_type"] == "RuntimeError"
-    assert event.payload["source"] == "terminal_execution_diagnostics"
+    assert event.payload["payload_schema_id"] == DiagnosticSubsystemFailurePayloadV1.schema_id
+    decoded = DiagnosticSubsystemFailurePayloadV1.from_envelope(event.payload)
+    assert decoded.error_type == "RuntimeError"
+    assert decoded.source == "terminal_execution_diagnostics"
+    assert_canonical_production_runtime_event_payload(event)
     assert "traceback" not in event.payload
     assert event.timestamp == _OBSERVED_AT
 
@@ -359,6 +369,24 @@ def test_bridge_unrelated_runtime_error_from_persistence_is_not_identity_mismatc
         tenant_id="tenant-a",
         run_id=identity.run_id,
     )
+
+
+def test_invalid_diagnostic_subsystem_failure_envelope_fails_closed() -> None:
+    runtime_store = InMemoryRuntimeEventStore()
+    event_bus = RuntimeEventBus(persistence=runtime_store)
+    task_id = mint_task_id()
+    with _terminal_execution_identity_scope() as identity:
+        event = record_diagnostic_subsystem_failure(
+            event_bus,
+            tenant_id="tenant-a",
+            task_id=task_id,
+            run_id=identity.run_id,
+            error_type="RuntimeError",
+            observed_at=_OBSERVED_AT,
+        )
+    broken = event.model_copy(update={"payload": {"error_type": "raw-only"}})
+    with pytest.raises(RuntimeEventPayloadError, match="requires registered typed payload"):
+        assert_canonical_production_runtime_event_payload(broken)
 
 
 def test_record_rejects_run_id_mismatch_with_active_context() -> None:

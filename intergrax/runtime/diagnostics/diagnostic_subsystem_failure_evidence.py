@@ -20,10 +20,25 @@ from intergrax.contracts.execution_identity import (
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.events.event_kind_registry import register_event_kind
+from intergrax.runtime.events.payload_registry import runtime_event_with_payload
+from intergrax.runtime.events.payloads.platform_families import (
+    DiagnosticSubsystemFailurePayloadV1,
+)
 from intergrax.runtime.events.spine_consolidation import build_platform_signal_event
 
 PLATFORM_DIAGNOSTIC_SUBSYSTEM_FAILURE_KIND = "platform.diagnostic.subsystem_failure"
 _DIAGNOSTIC_SUBSYSTEM_FAILURE_SOURCE = "terminal_execution_diagnostics"
+
+
+def _register_diagnostic_subsystem_failure_event_kind() -> None:
+    register_event_kind(
+        PLATFORM_DIAGNOSTIC_SUBSYSTEM_FAILURE_KIND,
+        DiagnosticSubsystemFailurePayloadV1.schema_id,
+    )
+
+
+_register_diagnostic_subsystem_failure_event_kind()
 
 
 def diagnostic_subsystem_failure_event_id(*, run_id: RunId, attempt_id: AttemptId) -> EventId:
@@ -70,6 +85,10 @@ def record_diagnostic_subsystem_failure(
     Must not route through DiagnosticOrchestrator or other diagnostic write paths.
     """
     safe_error_type = (error_type or "Exception").strip() or "Exception"
+    typed_payload = DiagnosticSubsystemFailurePayloadV1(
+        error_type=safe_error_type,
+        source=_DIAGNOSTIC_SUBSYSTEM_FAILURE_SOURCE,
+    )
     event = build_platform_signal_event(
         kind=PLATFORM_DIAGNOSTIC_SUBSYSTEM_FAILURE_KIND,
         task_id=str(task_id),
@@ -77,11 +96,8 @@ def record_diagnostic_subsystem_failure(
         tenant_id=tenant_id,
         severity=EventSeverity.ERROR,
         correlation_id=str(task_id),
-        payload={
-            "error_type": safe_error_type,
-            "source": _DIAGNOSTIC_SUBSYSTEM_FAILURE_SOURCE,
-        },
     )
+    event = runtime_event_with_payload(event, typed_payload)
     event = event.model_copy(
         update={
             "event_id": diagnostic_subsystem_failure_event_id(

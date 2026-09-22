@@ -350,6 +350,9 @@ class HarnessKernel:
                     invoker=kernel_ctx.declarative_tool_invoker,
                     idempotency_store=kernel_ctx.idempotency_store,
                     tenant_id=kernel_ctx.tenant_id,
+                    run_id=kernel_ctx.run_id,
+                    task_id=kernel_ctx.task_id,
+                    agent_id=kernel_ctx.agent_id,
                 )
                 tool_execution_diagnostics = {
                     "declarative_tool_execution": [

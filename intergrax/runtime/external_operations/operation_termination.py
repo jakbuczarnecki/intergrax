@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
-from collections.abc import Callable, Coroutine
+from collections.abc import Coroutine
 from typing import Any
 
 from intergrax.contracts.external_operation_cancellation import (
@@ -161,21 +161,3 @@ def timeout_physical_state(*, exceeded_deadline: bool) -> ExternalOperationPhysi
         return ExternalOperationPhysicalState.UNKNOWN
     return ExternalOperationPhysicalState.FAILED
 
-
-def register_stream_transport_closer(
-    registry: dict[str, Callable[[], None]],
-    *,
-    operation_id: str,
-    closer: Callable[[], None],
-) -> None:
-    if type(operation_id) is not str or not operation_id:
-        raise ValueError("operation_id must be a non-empty str")
-    registry[operation_id] = closer
-
-
-def pop_stream_transport_closer(
-    registry: dict[str, Callable[[], None]],
-    *,
-    operation_id: str,
-) -> Callable[[], None] | None:
-    return registry.pop(operation_id, None)

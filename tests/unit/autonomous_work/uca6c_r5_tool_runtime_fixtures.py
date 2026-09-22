@@ -1,13 +1,15 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""UCA-6C-R5 helpers — canonical RuntimeToolInvoker + host RuntimeState binding."""
+"""UCA-6C-R5 helpers — production-shaped catalog tool invocation composition."""
 
 from __future__ import annotations
 
-from dataclasses import replace
 from pathlib import Path
 
-from intergrax.applications._shared.policy_wiring import wire_policy_bundle
+from intergrax.applications._shared.tool_wiring import ApplicationToolWiring
+from intergrax.applications._shared.uca6c_codecraft_qualified_execution_composition import (
+    build_execution_bound_catalog_tool_invoker_for_qualified_capability,
+)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
@@ -16,21 +18,17 @@ from intergrax.applications.contracts.environment_profile.sub_profiles import (
     PolicyRulesProfile,
     SandboxProfile,
 )
-from intergrax.runtime.nexus.tools.catalog_tool_invocation_port import (
-    CatalogToolInvocationBinding,
+from intergrax.contracts.execution_bound_catalog_tool_invocation import (
+    ExecutionBoundCatalogToolInvoker,
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
-from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
-from intergrax.runtime.sandbox.isolation_gate import sandbox_availability_provider
-from intergrax.runtime.sandbox.session import SandboxSession
-from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy
-from intergrax.tools.providers.sandbox.bundle import (
-    CODE_EXEC_TOOL_ID,
-    register_sandbox_tools,
+from intergrax.runtime.nexus.tools.nexus_execution_bound_catalog_tool_invoker import (
+    NexusExecutionBoundCatalogToolInvoker,
 )
+from intergrax.runtime.sandbox.session import SandboxSession
+from intergrax.tools.registry import ToolProfile
 from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.registry.wiring import ToolWiringContext
-from testing_support.builder import build_runtime_state_for_tests
 
 
 def sandbox_env_profile() -> ApplicationEnvironmentProfile:
@@ -61,32 +59,28 @@ def build_sandbox_session(
     )
 
 
-def build_r5_catalog_tool_binding(
+def build_r5_production_catalog_tool_invoker(
     ctx: ToolWiringContext,
     *,
-    run_seed: str,
-    allowed_tool_ids: set[str] | None = None,
-) -> tuple[CatalogToolInvocationBinding, ToolRegistry, RuntimeToolInvoker]:
+    tenant_id: str,
+    caller_agent_id: str = "worker-uca6c-r5",
+) -> tuple[ExecutionBoundCatalogToolInvoker, ToolRegistry, RuntimeToolInvoker]:
+    """Production composition builder (lab profile, non-STRICT governance)."""
     registry = ToolRegistry()
-    register_sandbox_tools(registry, ctx)
-    allowed = allowed_tool_ids if allowed_tool_ids is not None else {CODE_EXEC_TOOL_ID}
-    invoker = RuntimeToolInvoker(
+    tool_wiring = ApplicationToolWiring(
+        profile=ToolProfile(enabled_bundles=frozenset({"sandbox"})),
+        wiring_context=ctx,
         registry=registry,
-        executor=RegistryToolExecutor(registry),
-        sandbox_availability=sandbox_availability_provider(ctx),
-        scope_policy=StaticToolScopePolicy(allowed_tools=allowed),
     )
-    state = build_runtime_state_for_tests(run_id=run_seed)
-    policy_env = sandbox_env_profile()
-    cfg = replace(
-        state.context.config,
-        policy_bundle=wire_policy_bundle(policy_env),
-        tool_invoker=invoker,
+    invoker = build_execution_bound_catalog_tool_invoker_for_qualified_capability(
+        tool_wiring,
+        sandbox_env_profile(),
+        caller_agent_id=caller_agent_id,
+        tenant_id=tenant_id,
     )
-    state = replace(state, context=replace(state.context, config=cfg))
-    binding = CatalogToolInvocationBinding(
-        tool_invoker=invoker,
-        state_supplier=lambda: state,
-        caller_agent_id=state.request.agent_id,
-    )
-    return binding, registry, invoker
+    assert isinstance(invoker, NexusExecutionBoundCatalogToolInvoker)
+    return invoker, registry, invoker.tool_invoker
+
+
+# Backward-compatible alias for tests migrating off manual CatalogToolInvocationBinding.
+build_r5_catalog_tool_binding = build_r5_production_catalog_tool_invoker

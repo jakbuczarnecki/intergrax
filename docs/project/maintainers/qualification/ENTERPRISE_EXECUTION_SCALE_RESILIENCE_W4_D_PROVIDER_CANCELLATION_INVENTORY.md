@@ -26,5 +26,6 @@
 ## Seam wiring
 
 - `resolve_llm_provider_external_operation_seam(slug)` — `runtime/external_operations/provider_cancellation.py`
-- `bind_external_operation_ports` on `LLMAdapter` — termination + stream registry
+- `bind_external_operation_ports` on framework adapters — termination + stream registry; `ExternalOperationCapabilities` resolved only from `LLMAdapterRegistry` when durable store is bound (no bind-time override)
+- `ProviderStreamTransportRegistry` — adapter-instance physical stream closer map (`llm_adapters/_shared/provider_stream_transport_registry.py`)
 - Observe helper — `runtime/external_operations/operation_termination.py`

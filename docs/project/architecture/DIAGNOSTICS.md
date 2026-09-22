@@ -2,7 +2,7 @@
 
 **Intergrax Central Diagnostics** is the **one** canonical deterministic diagnostic engine for the platform. It interprets persisted platform facts - primarily `RuntimeEvent` execution evidence - into tenant-scoped `Problem` state, bounded operator read models, and optional investigation inputs. It does **not** mint execution identity, own observability export, own shared factual reconstruction, or treat vendor telemetry or AI conclusions as truth.
 
-**Last reconciled against `development` @ `19307f1e4c3bfdcdc9ea675f4909383ab1d70878` (audited code SHA — OBS-DIAG-X1).** **SSOT:** diagnostic interpretation — this document; evidence / reconstruction — [`OBSERVABILITY.md`](OBSERVABILITY.md). Gap baseline: [`OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md). Qualification records are evidence at historical SHAs, not architecture override. Documentation commit SHA may differ after docs-only commits.
+**Last reconciled (FINAL-2 OBS/DIAG SSOT) @ documentation baseline `a068af8699783641f6cafa2bd4f779853d98c101` on branch `development`.** Documentation reconciliation baseline — **not** FINAL-3 exact-SHA enterprise qualification. Prior OBS-DIAG-X1 code anchor @ `19307f1e4c3bfdcdc9ea675f4909383ab1d70878` remains in qualification records. **SSOT:** diagnostic interpretation — this document; evidence / reconstruction — [`OBSERVABILITY.md`](OBSERVABILITY.md). Gap baseline: [`OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md`](../maintainers/audits/OBS_DIAG_UNIVERSAL_ENTERPRISE_GAP_BASELINE_X1.md). Qualification records are evidence at historical SHAs, not architecture override.
 
 **Platform operational spine:** see [`OBSERVABILITY.md` — Platform Operational Spine](OBSERVABILITY.md#platform-operational-spine). Diagnostics is the **interpretation plane** after shared reconstruction — not a second evidence or execution authority.
 
@@ -1083,14 +1083,15 @@ Engine HARDEN: M1–M24 PROVEN=22 NOT_APPLICABLE=2
 **Platform adoption qualification** - DIAG-PLATFORM **complete** (see [`DIAGNOSTIC_PLATFORM_QUALIFICATION_CLOSEOUT.md`](../maintainers/qualification/DIAGNOSTIC_PLATFORM_QUALIFICATION_CLOSEOUT.md)).
 
 ```text
-Platform adoption (current discovery @ OBS-DIAG-X1):
+Platform adoption (FINAL-2 SSOT — aligned with OBSERVABILITY.md qualification summary):
   PRODUCT write-path NATIVE = 4 hosts (+ LKW worker NATIVE write)
   Initialized scenario surfaces = 4 (discover_initialized_scenario_slugs)
   Factory composition PRODUCT BYPASS = 0
-  Universal runtime entry-path zero-bypass = NOT_PROVEN
+  Global entry-path zero-bypass = PROVEN (OBS-DIAG-X3/X3A)
+  Universal product/scenario E2E adoption = PARTIAL (OBS-DIAG-X6)
   CORE READ CONTRACT = PROVEN · UNIVERSAL HOST EXPOSURE = PARTIAL
-  true P3 flows include async spine · true P4 platform slices = Mongo + OTLP (+ DG-005 process topology)
-  P4 persistence-only ≠ full Kafka spine
+  Async worker spine P3 PROVEN · Kafka full external spine P4 PROVEN (OBS-DIAG-X4)
+  P4 platform slices (scoped) = Mongo + OTLP export semantics (+ DG-005 process topology) — not blanket live vendor qualification
 ```
 
 ### OBS-DIAG-X5 / X5A provider support matrix (reconciled)

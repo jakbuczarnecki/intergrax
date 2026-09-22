@@ -8,6 +8,7 @@ from typing import Union
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.contracts.external_operation_termination import ExternalOperationCapabilities
 from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterDependencyError,
     LLMProviderNotConfiguredError,
@@ -16,6 +17,8 @@ from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterRegistrationSpec,
     LLMAdapterRegistrationTarget,
     OptionalDependencyRequirement,
+    ProviderExternalOperationSeam,
+    ProviderExternalOperationSeamFactory,
 )
 
 __all__ = [
@@ -27,6 +30,8 @@ __all__ = [
     "LLMAdapterRegistrationTarget",
     "LLMAdapterRegistry",
     "OptionalDependencyRequirement",
+    "ProviderExternalOperationSeam",
+    "ProviderExternalOperationSeamFactory",
 ]
 
 
@@ -48,6 +53,8 @@ class _BuiltinBootstrapRegistry:
 
 class LLMAdapterRegistry:
     _factories: dict[str, LLMAdapterFactory] = {}
+    _external_operation_seam_factories: dict[str, ProviderExternalOperationSeamFactory] = {}
+    _external_operation_capabilities: dict[str, ExternalOperationCapabilities] = {}
 
     @staticmethod
     def _normalize_provider(provider: Union[str, LLMProvider]) -> str:
@@ -75,6 +82,45 @@ class LLMAdapterRegistry:
     def reset_for_testing(cls) -> None:
         """Clear registry contents for deterministic test isolation."""
         cls._factories.clear()
+        cls._external_operation_seam_factories.clear()
+        cls._external_operation_capabilities.clear()
+
+    @staticmethod
+    def _validate_registration_spec(spec: LLMAdapterRegistrationSpec, key: str) -> None:
+        if key != spec.provider_id.strip().lower():
+            raise LLMAdapterRegistrationError(
+                f"LLM provider registration spec provider_id={spec.provider_id!r} "
+                "must already be normalized."
+            )
+        seam_factory = spec.external_operation_seam_factory
+        capabilities = spec.external_operation_capabilities
+        if seam_factory is not None and capabilities is None:
+            raise LLMAdapterRegistrationError(
+                f"LLM provider registration spec provider_id={spec.provider_id!r} "
+                "must declare external_operation_capabilities when a seam factory is set."
+            )
+        if capabilities is not None and seam_factory is None:
+            raise LLMAdapterRegistrationError(
+                f"LLM provider registration spec provider_id={spec.provider_id!r} "
+                "must declare external_operation_seam_factory when capabilities are set."
+            )
+
+    @classmethod
+    def _commit_registration_spec(cls, spec: LLMAdapterRegistrationSpec, key: str) -> None:
+        cls._factories[key] = spec.factory
+        seam_factory = spec.external_operation_seam_factory
+        capabilities = spec.external_operation_capabilities
+        if seam_factory is not None:
+            if capabilities is None:
+                raise LLMAdapterRegistrationError(
+                    f"LLM provider registration spec provider_id={spec.provider_id!r} "
+                    "must declare external_operation_capabilities when a seam factory is set."
+                )
+            cls._external_operation_seam_factories[key] = seam_factory
+            cls._external_operation_capabilities[key] = capabilities
+        else:
+            cls._external_operation_seam_factories.pop(key, None)
+            cls._external_operation_capabilities.pop(key, None)
 
     @classmethod
     def register_from_spec(
@@ -85,16 +131,12 @@ class LLMAdapterRegistry:
         skip_if_present: bool = False,
     ) -> None:
         key = cls._normalize_provider(spec.provider_id)
-        if key != spec.provider_id.strip().lower():
-            raise LLMAdapterRegistrationError(
-                f"LLM provider registration spec provider_id={spec.provider_id!r} "
-                "must already be normalized."
-            )
+        cls._validate_registration_spec(spec, key)
         if key in cls._factories and not override:
             if skip_if_present:
                 return
             raise ValueError(f"LLM adapter already registered for provider='{key}'")
-        cls._factories[key] = spec.factory
+        cls._commit_registration_spec(spec, key)
 
     @classmethod
     def register(
@@ -156,6 +198,32 @@ class LLMAdapterRegistry:
     def registered_providers(cls) -> list[str]:
         cls.ensure_builtin_registrations_installed()
         return sorted(cls._factories.keys())
+
+    @classmethod
+    def external_operation_capabilities_for(cls, provider_slug: str) -> ExternalOperationCapabilities:
+        cls.ensure_builtin_registrations_installed()
+        key = cls._normalize_provider(provider_slug)
+        registered = cls._external_operation_capabilities.get(key)
+        if registered is not None:
+            return registered
+        from intergrax.llm_adapters._shared.default_external_operation_seam import (
+            unregistered_external_operation_capabilities,
+        )
+
+        return unregistered_external_operation_capabilities()
+
+    @classmethod
+    def resolve_external_operation_seam(cls, provider_slug: str) -> ProviderExternalOperationSeam:
+        cls.ensure_builtin_registrations_installed()
+        key = cls._normalize_provider(provider_slug)
+        seam_factory = cls._external_operation_seam_factories.get(key)
+        if seam_factory is None:
+            from intergrax.llm_adapters._shared.default_external_operation_seam import (
+                default_external_operation_seam,
+            )
+
+            return default_external_operation_seam()
+        return seam_factory()
 
 
 def _validate_registered_adapter(adapter: LLMAdapter) -> None:

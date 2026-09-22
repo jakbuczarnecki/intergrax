@@ -17,7 +17,7 @@ class BraintrustIntegrationConfig(BaseIntegrationConfig):
 
     @classmethod
     def from_env(cls, **overrides: object) -> BraintrustIntegrationConfig:
-        payload = {
+        payload: dict[str, object] = {
             "base_url": os.environ.get("INTERGRAX_BRAINTRUST_URL", "https://api.braintrust.dev").strip()
             or "https://api.braintrust.dev",
             "api_key": os.environ.get("INTERGRAX_BRAINTRUST_API_KEY", "").strip()

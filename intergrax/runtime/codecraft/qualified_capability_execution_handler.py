@@ -73,6 +73,8 @@ class CodeCraftQualifiedCapabilityExecutionHandler(
                 task_id=request.task_id,
                 run_id=None,
                 execution_id=execution_id,
+                execution_request_id=request.execution_request_id,
+                governance_approval_evidence=request.governance_approval_evidence,
             ),
         )
         if (

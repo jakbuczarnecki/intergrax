@@ -5,11 +5,24 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
-from typing import Protocol, runtime_checkable
+from collections.abc import Callable, Mapping
+from typing import Protocol, no_type_check, runtime_checkable
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.observability_backend.sentry.config import SentryIntegrationConfig
+
+
+@runtime_checkable
+class SentrySdkFacade(Protocol):
+    """Minimal lazy-imported sentry_sdk module surface used by this provider."""
+
+    def capture_event(self, event: dict[str, object]) -> object:
+        """Capture one SDK event payload."""
+        ...
+
+    def flush(self, timeout: float | None = None) -> None:
+        """Flush pending SDK events."""
+        ...
 
 
 @runtime_checkable
@@ -23,10 +36,29 @@ class SentryCaptureClient(Protocol):
         """Flush pending Sentry events."""
 
 
+class _SentrySdkModuleAdapter:
+    """Provider-owned binding from optional sentry_sdk callables to SentrySdkFacade."""
+
+    def __init__(
+        self,
+        *,
+        capture_event: Callable[[dict[str, object]], object],
+        flush: Callable[[float | None], None],
+    ) -> None:
+        self._capture_event = capture_event
+        self._flush = flush
+
+    def capture_event(self, event: dict[str, object]) -> object:
+        return self._capture_event(event)
+
+    def flush(self, timeout: float | None = None) -> None:
+        self._flush(timeout)
+
+
 class SentrySdkCaptureClient:
     """Lazy sentry_sdk-backed capture client — SDK import happens only here."""
 
-    def __init__(self, *, _sdk: object) -> None:
+    def __init__(self, *, _sdk: SentrySdkFacade) -> None:
         self._sdk = _sdk
 
     @classmethod
@@ -36,13 +68,28 @@ class SentrySdkCaptureClient:
                 "Sentry SDK client requires a DSN in provider configuration",
             )
         try:
-            import sentry_sdk
+            import sentry_sdk as sentry_sdk_module
         except ImportError as exc:
             raise IntegrationConfigurationError(
                 "Sentry SDK reporting requires sentry-sdk. Install with: uv pip install sentry-sdk",
             ) from exc
 
-        sentry_sdk.init(
+        capture_binding: object = sentry_sdk_module.capture_event
+        flush_binding: object = sentry_sdk_module.flush
+
+        @no_type_check
+        def _capture_event(event: dict[str, object]) -> object:
+            return capture_binding(dict(event))
+
+        @no_type_check
+        def _flush_sdk(timeout: float | None = None) -> None:
+            flush_binding(timeout=timeout)
+
+        sdk = _SentrySdkModuleAdapter(
+            capture_event=_capture_event,
+            flush=_flush_sdk,
+        )
+        sentry_sdk_module.init(
             dsn=config.dsn,
             environment=config.environment or None,
             release=config.release or None,
@@ -51,7 +98,7 @@ class SentrySdkCaptureClient:
             attach_stacktrace=False,
             debug=config.debug,
         )
-        return cls(_sdk=sentry_sdk)
+        return cls(_sdk=sdk)
 
     def capture_event(self, event: Mapping[str, object]) -> str | None:
         result = self._sdk.capture_event(dict(event))

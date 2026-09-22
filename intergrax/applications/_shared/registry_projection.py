@@ -32,6 +32,9 @@ from intergrax.applications._shared.application_composition_context import (
     ApplicationCompositionContext,
     composition_for_factory_context,
 )
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    RosterAgentContractAuthority,
+)
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.runtime.attestation.canonical_json import stable_payload_hash
@@ -128,6 +131,7 @@ class RegistryProjectionInputBundle:
     factory_resolver: RuntimeAgentFactoryResolver | None = None
     builders: BuilderMap | None = None
     materialization_artifact_digest: str | None = None
+    roster_contract_authority: RosterAgentContractAuthority | None = None
 
 
 class RegistryProjectionInputStore(Protocol):
@@ -394,9 +398,22 @@ def _validate_release_authority(bundle: RegistryProjectionInputBundle) -> None:
             raise RegistryProjectionError("materialization artifact digest mismatch")
 
 
+def _validate_roster_contract_authority(bundle: RegistryProjectionInputBundle) -> None:
+    authority = bundle.roster_contract_authority
+    if authority is None:
+        return
+    manifest_bindings = _index_manifest_bindings(bundle.manifest)
+    for entry in bundle.effective_roster.entries:
+        if not entry.effective_enablement:
+            continue
+        binding = binding_from_roster_entry(entry, manifest_bindings)
+        authority.contract_for_binding(binding)
+
+
 def _validate_revision_bundle(bundle: RegistryProjectionInputBundle) -> None:
     _validate_release_authority(bundle)
     _validate_factory_authority(bundle)
+    _validate_roster_contract_authority(bundle)
 
 
 def _validate_revision_identity(
@@ -459,6 +476,7 @@ def build_registry_projection(
             runtime_revision=bundle.runtime_revision,
             factory_resolver=bundle.factory_resolver,
             composition=bundle.composition,
+            roster_contract_authority=bundle.roster_contract_authority,
         )
     except RuntimeAgentFactoryResolutionError as exc:
         raise RegistryProjectionError(str(exc)) from exc

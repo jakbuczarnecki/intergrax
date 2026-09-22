@@ -28,6 +28,7 @@ from intergrax.applications._shared.obs_diag_surface_qualification import (
 from intergrax.runtime.architecture.obs_diag_x3_ast_gates import (
     collect_factory_entry_path_violations,
     collect_obs_diag_x3_production_layer_violations,
+    collect_product_operator_read_adoption_violations,
 )
 from scripts.proof.scenario_architecture_conformance import (
     assert_all_initialized_scenario_architectures,
@@ -71,6 +72,37 @@ def test_x3_all_initialized_scenarios_pass_architecture_conformance() -> None:
 def test_x3_application_factory_and_host_wiring_canonical() -> None:
     assert collect_factory_entry_path_violations(_REPO_ROOT) == []
     assert check_host_wiring_adoption(repo_root=_REPO_ROOT) == []
+
+
+def test_x3_product_operator_read_adoption_gate() -> None:
+    assert collect_product_operator_read_adoption_violations(_REPO_ROOT) == []
+
+
+def test_x3_lab_host_not_required_for_product_operator_read_gate() -> None:
+    descriptor = iter_obs_diag_surface_descriptor("lab_application")
+    assert descriptor.read_exposure is ObsDiagReadExposure.NOT_APPLICABLE
+    violations = [
+        item
+        for item in collect_product_operator_read_adoption_violations(_REPO_ROOT)
+        if "lab_application" in item.relative_path
+    ]
+    assert violations == []
+
+
+@pytest.mark.parametrize(
+    "application_id",
+    [
+        "governed_contractor_application",
+        "legal_application",
+        "dispute_sim_application",
+        "local_workspace_application",
+        "research_application",
+    ],
+)
+def test_x3_product_hosts_native_operator_read_exposure(application_id: str) -> None:
+    descriptor = iter_obs_diag_surface_descriptor(application_id)
+    assert descriptor.kind is ObsDiagSurfaceKind.PRODUCT_APPLICATION
+    assert descriptor.read_exposure is ObsDiagReadExposure.NATIVE
 
 
 def test_x3_product_application_factories_use_harness_runtime_marker() -> None:

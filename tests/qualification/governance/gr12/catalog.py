@@ -21,7 +21,9 @@ class Gr12CoverageStatus(StrEnum):
     NOT_APPLICABLE = "NOT_APPLICABLE"
     GAP = "GAP"
     WIRED_NOT_QUALIFIED = "WIRED_NOT_QUALIFIED"
+    QUALIFIED = "QUALIFIED"
     ARCHITECTURE_DECISION_REQUIRED = "ARCHITECTURE_DECISION_REQUIRED"
+    IMPLEMENTATION_REQUIRED = "IMPLEMENTATION_REQUIRED"
 
 
 GR12_CONSEQUENTIAL_MUTATION_DEFINITION: Final[str] = (
@@ -60,6 +62,7 @@ class Gr12ControlPlaneSurface:
     coverage: Gr12CoverageStatus
     recommended_owner: str
     future_remediation: str
+    qualification_proof: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,6 +85,86 @@ class Gr12NextRemediation:
     task_name: str
     exact_blocker: str
     why_highest: str
+
+
+GR12_A3_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
+    task_name=(
+        "GR-12-A4 — Residual Control-Plane Governance: Catalog Hot Reload, "
+        "Vector Administration & Specialized Domain Decisions"
+    ),
+    exact_blocker=(
+        "Core AD/AHI/ECP/Task Control surfaces qualified in GR-12-A3; residual "
+        "catalog hot reload, vector admin, and memory specialized mutations remain."
+    ),
+    why_highest=(
+        "Next bounded slice after core production control-plane qualification."
+    ),
+)
+
+GR12_A4_RESIDUAL_PATH_IDS: Final[tuple[str, ...]] = (
+    "CP-PLUGIN-CATALOG-HOT-RELOAD",
+    "CP-VECTOR-INDEX-ADMIN",
+    "CP-MEM-SPECIALIZED-MUTATION",
+)
+
+GR12_A4_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
+    task_name="GR-12-A4-R3 — Specialized Memory Governance ADR",
+    exact_blocker=(
+        "CP-VECTOR-INDEX-ADMIN qualified (GR-12-A4-R2-R1); specialized memory mutations "
+        "remain on MemoryGovernanceEvaluationRequest pending architecture ADR (GR-12-A4-R3)."
+    ),
+    why_highest=(
+        "Vector live operator path enforced; memory is the remaining residual "
+        "control-plane architecture decision before final GR-12 certification."
+    ),
+)
+
+GR12_A4_R2_R1_QUALIFICATION_PROOF: Final[str] = (
+    "tests/qualification/governance/gr12/"
+    "test_gr12_a4_r2_r1_vector_operator_governance_qualification.py"
+)
+
+GR12_A4_R2_R1_EXECUTION_PROOF_NODES: Final[tuple[str, ...]] = (
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_1_allow_create",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_2_deny",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_3_require_human",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_4_escalate",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_7_missing_boundary",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_8_stale_after_authorization",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_17_tenant_mismatch_fail_closed",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_18_same_tenant_reaches_cla04",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_identity_principal_propagation",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_11_absent_semantics",
+    "tests/unit/applications/test_vector_index_configuration_projection.py::test_vec_digest_capability_order_irrelevant",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_9_external_evaluator_receives_cla04_request",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_proj_1_unprojectable_current_state",
+    "tests/unit/integrations/contracts/test_vector_index_administration.py::test_vector_index_spec_rejects_empty_logical_name",
+)
+
+GR12_A4_R2_QUALIFICATION_PROOF: Final[str] = (
+    "tests/qualification/governance/gr12/"
+    "test_gr12_a4_r2_vector_administration_architecture_qualification.py"
+)
+
+GR12_A4_R2_VECTOR_ADR_PATH: Final[str] = (
+    "docs/project/maintainers/architecture/ADR/"
+    "ADR-GR-12-VECTOR-ADMIN-CONTROL-PLANE-BOUNDARY.md"
+)
+
+GR12_A4_R1_R1_QUALIFICATION_PROOF: Final[str] = (
+    "tests/qualification/governance/gr12/test_gr12_a4_r1_r1_catalog_revision_and_identity_qualification.py"
+)
+
+GR12_A4_R1_R1_EXECUTION_PROOF_NODES: Final[tuple[str, ...]] = (
+    "tests/unit/integrations/registry/test_catalog_revision_and_mutation.py::test_rev7_aba_generations_increase_when_digest_returns",
+    "tests/unit/integrations/registry/test_catalog_atomic_registration_concurrency.py::test_reg_conc_1_concurrent_same_slug_exactly_one_success",
+    "tests/unit/integrations/registry/test_catalog_atomic_registration_concurrency.py::test_reg_conc_3_generation_increases_exactly_once_from_initial",
+    "tests/unit/applications/test_catalog_hot_reload_governance.py::test_chr_r1r1_4_explicit_principal_reaches_cla04_request",
+    "tests/unit/applications/test_catalog_hot_reload_governance.py::test_chr_r1r1_5_missing_principal_fails_closed",
+    "tests/unit/applications/test_catalog_hot_reload_bypass_inventory.py::test_chr16_live_operator_catalog_mutation_paths_only_governed_reload",
+)
+
+GR12_A4_R1_QUALIFICATION_PROOF: Final[str] = GR12_A4_R1_R1_QUALIFICATION_PROOF
 
 
 GR12_A1_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
@@ -112,9 +195,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + ApplicationEnvironmentTenantResolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="agents/Tier-3 composition",
-        future_remediation="GR-12-A3 AD activation qualification slice",
+        future_remediation="",
+        qualification_proof="tests/unit/agent_distribution/test_agent_distribution_control_plane_governance.py::test_ad1_activation_allow_commits_once",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-AD-ROLLBACK",
@@ -126,9 +210,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + tenant resolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="agents/Tier-3 composition",
-        future_remediation="GR-12-A3 AD rollback slice",
+        future_remediation="",
+        qualification_proof="tests/unit/agent_distribution/test_agent_distribution_control_plane_governance.py::test_ad4_rollback_allow_commits_once",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-AD-INSTALL",
@@ -140,9 +225,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + tenant resolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="agent_distribution",
-        future_remediation="GR-12-A3",
+        future_remediation="",
+        qualification_proof="tests/unit/agent_distribution/test_agent_distribution_desired_state_remediation.py::test_ads1_install_allow_one_mutation_sequence",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-AD-BIND",
@@ -154,9 +240,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + tenant resolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="agent_distribution",
-        future_remediation="GR-12-A3",
+        future_remediation="",
+        qualification_proof="tests/unit/agent_distribution/test_agent_distribution_desired_state_remediation.py::test_ads6_bind_allow_one_create",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-AD-BINDING-CONFIG",
@@ -168,9 +255,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + tenant resolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="agent_distribution",
-        future_remediation="GR-12-A3",
+        future_remediation="",
+        qualification_proof="tests/unit/agent_distribution/test_agent_distribution_desired_state_remediation.py::test_ads9_update_config_allow_one_update",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-AD-ENABLE-BINDING",
@@ -182,9 +270,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + tenant resolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="agent_distribution",
-        future_remediation="GR-12-A3",
+        future_remediation="",
+        qualification_proof="tests/unit/agent_distribution/test_agent_distribution_desired_state_remediation.py::test_ads14_enable_allow_once",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-AD-DISABLE-BINDING",
@@ -196,9 +285,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + tenant resolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="agent_distribution",
-        future_remediation="GR-12-A3",
+        future_remediation="",
+        qualification_proof="tests/unit/agent_distribution/test_agent_distribution_desired_state_remediation.py::test_ads16_disable_allow_once",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-AD-ADMIT",
@@ -210,9 +300,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + tenant resolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="agent_distribution",
-        future_remediation="GR-12-A3",
+        future_remediation="",
+        qualification_proof="tests/unit/agent_distribution/test_agent_distribution_build_remediation.py::test_r1_7_reference_admission_allow_persists_revision",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-AD-BUILD",
@@ -224,9 +315,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + tenant resolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="agent_distribution",
-        future_remediation="GR-12-A3",
+        future_remediation="",
+        qualification_proof="tests/unit/agent_distribution/test_agent_distribution_build_remediation.py::test_adb1_build_allow_persists_once",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-AD-DRAIN",
@@ -238,9 +330,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + tenant resolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="agent_distribution",
-        future_remediation="GR-12-A3",
+        future_remediation="",
+        qualification_proof="tests/unit/agent_distribution/test_agent_distribution_drain_recovery_remediation.py::test_dr1_complete_drain_allow_stops_once",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-AD-POST-CUTOVER-FAIL",
@@ -252,9 +345,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + tenant resolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="agent_distribution",
-        future_remediation="GR-12-A3",
+        future_remediation="",
+        qualification_proof="tests/unit/agent_distribution/test_agent_distribution_drain_recovery_remediation.py::test_dr11_failure_mark_is_control_plane_mutation",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-AHI-APPLY",
@@ -266,9 +360,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + AhiTenantScopeResolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="runtime/adaptive + host composition",
-        future_remediation="GR-12-A3 AHI apply qualification",
+        future_remediation="",
+        qualification_proof="tests/unit/runtime/adaptive/test_ahi_control_plane_governance.py::test_ahicpm1_apply_allow_executes_with_evidence",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-AHI-ROLLBACK",
@@ -280,9 +375,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + AhiTenantScopeResolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="runtime/adaptive",
-        future_remediation="GR-12-A3",
+        future_remediation="",
+        qualification_proof="tests/unit/runtime/adaptive/test_ahi_control_plane_governance.py::test_ahicpm10_rollback_allow_uses_canonical_previous",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-ECP-SCALE-K8S",
@@ -294,9 +390,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + EcpResourceTenantResolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence + scheduler blocker codes",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="runtime/capacity",
-        future_remediation="GR-12-A3 ECP qualification (extends ECP-CPM proofs)",
+        future_remediation="",
+        qualification_proof="tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm1_allow_k8s_exact_target_and_evidence",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-ECP-SCALE-CELERY",
@@ -308,9 +405,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + EcpResourceTenantResolver",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="runtime/capacity",
-        future_remediation="GR-12-A3",
+        future_remediation="",
+        qualification_proof="tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm9_allow_celery_exact_target_and_evidence",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-TASK-CANCEL",
@@ -322,9 +420,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity; tenant from task scope",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.GAP,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="applications harness wiring",
-        future_remediation="Mandatory boundary on PRODUCT hosts (nullable today)",
+        future_remediation="",
+        qualification_proof="tests/unit/applications/test_task_control_governed_cancel.py::test_taskcpm_c1_allow_matching_binding_requests_cancel_once",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-TASK-RESUME",
@@ -336,9 +435,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity + checkpoint pause_record binding",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.GAP,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="applications harness",
-        future_remediation="GR-12-A2 composition",
+        future_remediation="",
+        qualification_proof="tests/unit/applications/test_task_control_governed_resume.py::test_taskcpm_r1_allow_exact_checkpoint_invokes_runner_once",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-TASK-AUTONOMY",
@@ -350,9 +450,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="RequestIdentity",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.GAP,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="applications harness",
-        future_remediation="GR-12-A2",
+        future_remediation="",
+        qualification_proof="tests/unit/applications/test_task_control_governed_autonomy.py::test_taskcpm_a1_allow_matching_binding_changes_autonomy_once",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-REF-ACTIVATE",
@@ -364,9 +465,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="composition-injected boundary",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="applications reference host",
-        future_remediation="GR-12-A3",
+        future_remediation="",
+        qualification_proof="tests/unit/agent_distribution/test_agent_distribution_activation_remediation.py::test_adr7_reference_production_allow_commits",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-HOST-BOUNDARY-OPTIONAL",
@@ -378,9 +480,10 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="build_harness_control_plane_governance + wire_harness_task_control",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="applications composition root",
-        future_remediation="GR-12-A3 surface qualification",
+        future_remediation="",
+        qualification_proof="tests/qualification/governance/gr12/test_gr12_a2_mandatory_cla04_composition.py::test_gr12_a2_product_task_control_wiring_requires_canonical_boundary",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-ECP-BOUNDARY-OPTIONAL",
@@ -392,23 +495,31 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         current_authority="build_production_capacity_governance + GovernedCapacityMutationExecutor",
         audit_evidence="ControlPlaneMutationAuthorizationEvidence",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        coverage=Gr12CoverageStatus.QUALIFIED,
         recommended_owner="applications capacity wiring",
-        future_remediation="GR-12-A3 ECP qualification",
+        future_remediation="",
+        qualification_proof="tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::test_ecp_cpm16_product_without_authority_fails_at_wiring",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-PLUGIN-CATALOG-HOT-RELOAD",
         surface="Integration catalog",
-        production_entrypoint="intergrax.integrations.registry.catalog_hot_reload.reload_integration_catalog",
-        mutation="in-process integration registry replace (override=True)",
+        production_entrypoint=(
+            "intergrax.applications._shared.catalog_hot_reload_service."
+            "CatalogHotReloadService.reload"
+        ),
+        mutation="integration_catalog.hot_reload",
         consequential=True,
-        current_guard="ApplicationProfile.PRODUCT + feature flag only",
-        current_authority="environment profile flag",
-        audit_evidence="CatalogHotReloadReport only",
+        current_guard=(
+            "CatalogHotReloadService + ControlPlaneMutationAuthorizationBoundary; "
+            "revision CAS in registry"
+        ),
+        current_authority="composition-injected CLA-04 boundary",
+        audit_evidence="ControlPlaneMutationAuthorizationEvidence + CatalogHotReloadResult",
         applicability=Gr12Applicability.APPLICABLE,
-        coverage=Gr12CoverageStatus.GAP,
-        recommended_owner="integrations registry",
-        future_remediation="GR-12-A4 catalog mutation governance slice",
+        coverage=Gr12CoverageStatus.QUALIFIED,
+        recommended_owner="integrations registry + applications composition",
+        future_remediation="",
+        qualification_proof=GR12_A4_R1_QUALIFICATION_PROOF,
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-MEM-SPECIALIZED-MUTATION",
@@ -422,7 +533,7 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         applicability=Gr12Applicability.REQUIRES_ARCHITECTURE_DECISION,
         coverage=Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED,
         recommended_owner="memory domain",
-        future_remediation="ADR: bridge vs parallel port under CLA-04",
+        future_remediation="GR-12-A4-R3 specialized memory governance architecture ADR",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-MARKETPLACE-ACQUIRE",
@@ -469,16 +580,28 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
     Gr12ControlPlaneSurface(
         path_id="CP-VECTOR-INDEX-ADMIN",
         surface="Vector index administration",
-        production_entrypoint="intergrax.integrations.providers.vector_store.qdrant.index_administration.QdrantVectorIndexAdministration",
-        mutation="collection create/delete/reindex",
+        production_entrypoint=(
+            "intergrax.applications._shared.vector_index_admin_service."
+            "VectorIndexAdminService.prepare"
+        ),
+        mutation=(
+            "vector_index.prepare (live operator, consequential create only); "
+            "bootstrap prepare_index out of live CP scope; destructive lifecycle not on port"
+        ),
         consequential=True,
-        current_guard="provider adapter only",
-        current_authority="integration credentials",
-        audit_evidence="provider logs only",
-        applicability=Gr12Applicability.REQUIRES_ARCHITECTURE_DECISION,
-        coverage=Gr12CoverageStatus.GAP,
-        recommended_owner="integrations/RAG",
-        future_remediation="Scope decision: operator API vs internal only",
+        current_guard=(
+            "VectorIndexAdminService + ControlPlaneMutationAuthorizationBoundary; "
+            "configuration revision digest + post-authorization stale re-read"
+        ),
+        current_authority="composition-injected CLA-04 boundary + RequestIdentity per invocation",
+        audit_evidence=(
+            "ControlPlaneMutationAuthorizationEvidence + VectorIndexPrepareOperatorResult"
+        ),
+        applicability=Gr12Applicability.APPLICABLE,
+        coverage=Gr12CoverageStatus.QUALIFIED,
+        recommended_owner="applications control-plane orchestration (operator service)",
+        future_remediation="",
+        qualification_proof=GR12_A4_R2_R1_QUALIFICATION_PROOF,
     ),
 )
 

@@ -15,6 +15,7 @@ from intergrax.applications._shared.control_plane_composition import (
     ControlPlaneCompositionError,
 )
 from intergrax.applications._shared.harness_control_plane_governance_wiring import (
+    HarnessControlPlaneGovernance,
     build_harness_control_plane_governance,
     resolve_harness_task_control_mutation_boundary,
 )
@@ -71,14 +72,16 @@ class _RecordingEvaluator:
         return self.decision
 
 
-def test_gr12_a2_host_boundary_catalog_wired_not_qualified() -> None:
+def test_gr12_a2_host_boundary_catalog_qualified_in_a3() -> None:
     row = next(r for r in GR12_CONTROL_PLANE_SURFACES if r.path_id == "CP-HOST-BOUNDARY-OPTIONAL")
-    assert row.coverage is Gr12CoverageStatus.WIRED_NOT_QUALIFIED
+    assert row.coverage is Gr12CoverageStatus.QUALIFIED
+    assert row.qualification_proof.strip()
 
 
-def test_gr12_a2_ecp_boundary_catalog_wired_not_qualified() -> None:
+def test_gr12_a2_ecp_boundary_catalog_qualified_in_a3() -> None:
     row = next(r for r in GR12_CONTROL_PLANE_SURFACES if r.path_id == "CP-ECP-BOUNDARY-OPTIONAL")
-    assert row.coverage is Gr12CoverageStatus.WIRED_NOT_QUALIFIED
+    assert row.coverage is Gr12CoverageStatus.QUALIFIED
+    assert row.qualification_proof.strip()
 
 
 def test_gr12_a2_product_task_control_wiring_requires_canonical_boundary() -> None:
@@ -201,6 +204,73 @@ def test_gr12_a2_r2_product_host_composition_exposes_cla04_boundary(
     assert result.evidence.task_id == task_id
     assert result.evidence.run_id == run_id
     assert result.decision.policy_rule_id == "harness.task_control.cancel_task_execution"
+
+
+def test_gr12_a2_r2_product_task_control_fail_closed_when_canonical_boundary_unresolved() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults(profile_id="tenant-a2-host-missing")
+    app = FastAPI()
+    empty_governance = HarnessControlPlaneGovernance(mutation_authorization_boundary=None)
+    with patch(
+        "intergrax.applications._shared.task_control_wiring.build_harness_control_plane_governance",
+        return_value=empty_governance,
+    ):
+        with pytest.raises(ControlPlaneCompositionError) as exc_info:
+            wire_harness_task_control(
+                app,
+                enabled=True,
+                host_execution=object(),
+                env=env,
+            )
+    assert exc_info.value.blocker_code == "TASK_CONTROL_BLOCKED_BY_MISSING_BOUNDARY"
+
+
+def test_gr12_a2_r2_task_control_wiring_passes_host_runtime_boundary_to_routes(
+    tmp_path: Path,
+    _stub_host_llm: None,
+) -> None:
+    runtime = build_task_control_product_harness_host_runtime(tmp_path)
+    host_boundary = resolve_harness_task_control_mutation_boundary(
+        runtime.control_plane_governance,
+    )
+    assert host_boundary is not None
+    app = FastAPI()
+    with patch(
+        "intergrax.applications._shared.task_control_wiring.mount_canonical_harness_task_routes",
+    ) as mount_routes:
+        wire_harness_task_control(
+            app,
+            enabled=True,
+            host_execution=runtime.execution,
+            env=runtime.environment,
+            runtime=runtime,
+        )
+        assert mount_routes.call_args.kwargs["mutation_boundary"] is host_boundary
+
+
+def test_gr12_a2_r2_external_evaluator_wired_through_product_host_composition(
+    tmp_path: Path,
+    _stub_host_llm: None,
+) -> None:
+    external = ControlPlaneMutationAuthorizationBoundary(evaluator=_RecordingEvaluator())
+    runtime = build_task_control_product_harness_host_runtime(
+        tmp_path,
+        mutation_authorization_boundary=external,
+    )
+    app = FastAPI()
+    with patch(
+        "intergrax.applications._shared.task_control_wiring.mount_canonical_harness_task_routes",
+    ) as mount_routes:
+        wire_harness_task_control(
+            app,
+            enabled=True,
+            host_execution=runtime.execution,
+            env=runtime.environment,
+            runtime=runtime,
+        )
+        wired_boundary = mount_routes.call_args.kwargs["mutation_boundary"]
+    evaluator = wired_boundary.evaluator
+    assert isinstance(evaluator, ApprovalConsumingControlPlaneMutationEvaluator)
+    assert evaluator.inner is external.evaluator
 
 
 def test_gr12_a2_r2_task_control_wiring_consumes_host_boundary_without_rebuild(

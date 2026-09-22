@@ -8,8 +8,10 @@ import pytest
 
 from intergrax.applications._shared.capability_graph_deploy_gate import (
     build_environment_capability_deploy_report,
-    check_strict_product_capability_graph,
     validate_strict_capability_graph_deploy,
+)
+from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+    check_strict_product_capability_graph,
 )
 from intergrax.applications._shared.capability_graph_wiring import EnvironmentCapabilityGraphView
 from intergrax.applications._shared.product_manifest_registry import iter_strict_product_manifests
@@ -77,9 +79,7 @@ def test_build_environment_capability_deploy_report_includes_impact() -> None:
     assert any(record.node_id == "agent:echo" for record in report.impact.impacts)
 
 
-def test_validate_strict_capability_graph_deploy_blocks_experimental_agent(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_validate_strict_capability_graph_deploy_blocks_experimental_agent() -> None:
     manifest = ApplicationManifest.lab(
         app_id="gate_test",
         name="Gate Test",
@@ -97,16 +97,26 @@ def test_validate_strict_capability_graph_deploy_blocks_experimental_agent(
         policy_bundle=None,
         agent_registry=None,
     )
-    original_get_contract = EchoAgent.get_contract
+    from intergrax.applications._shared.roster_agent_contract_authority import (
+        ManifestAgentContractAuthority,
+        materialize_manifest_contract_authority_lab_compat,
+    )
 
-    def experimental_contract(self: EchoAgent):
-        return original_get_contract(self).model_copy(
-            update={"lifecycle_state": AgentLifecycleState.EXPERIMENTAL}
-        )
+    base = materialize_manifest_contract_authority_lab_compat(manifest)
+    experimental = base.contracts_by_id["echo"].model_copy(
+        update={"lifecycle_state": AgentLifecycleState.EXPERIMENTAL},
+    )
+    authority = ManifestAgentContractAuthority(
+        contracts_by_id={**base.contracts_by_id, "echo": experimental},
+    )
 
-    monkeypatch.setattr(EchoAgent, "get_contract", experimental_contract)
-
-    result = validate_strict_capability_graph_deploy(view, snapshot, manifest, env)
+    result = validate_strict_capability_graph_deploy(
+        view,
+        snapshot,
+        manifest,
+        env,
+        contract_authority=authority,
+    )
     assert not result.valid
     assert any("STRICT deploy blocks roster agent" in error for error in result.errors)
 

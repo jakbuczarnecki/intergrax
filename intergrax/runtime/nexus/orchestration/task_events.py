@@ -9,10 +9,14 @@ from typing import Callable, Optional
 
 from intergrax.contracts.execution_identity import ActiveExecutionIdentity
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.structured_json_value import JsonObject, normalize_structured_json_object
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
+from intergrax.runtime.events.trace_bridge import (
+    runtime_event_from_task_notification,
+    runtime_event_from_task_state,
+)
 from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunTraceReader
 from intergrax.runtime.observability.journal_export import build_journal_ref_payload
 from intergrax.runtime.observability.modality_metrics import build_task_completed_modality_payload
@@ -70,7 +74,7 @@ class NexusRuntimeEventPublisher:
         except (KeyError, ValueError):
             return None
 
-    def _terminal_payload_for_task(self, task: Task) -> dict[str, object]:
+    def _terminal_payload_for_task(self, task: Task) -> JsonObject:
         persisted = self._read_persisted_run(task)
         if persisted is None:
             return {}
@@ -85,7 +89,7 @@ class NexusRuntimeEventPublisher:
             )
             if journal_ref is not None:
                 fragments["journal_ref"] = journal_ref
-        return fragments
+        return normalize_structured_json_object(fragments, field_name="terminal_payload")
 
     async def publish_from_task_state(
         self,
@@ -94,19 +98,21 @@ class NexusRuntimeEventPublisher:
         message: str,
         event_type: RuntimeEventType,
         phase: ExecutionPhase,
-        payload: Optional[dict] = None,
+        payload: JsonObject | None = None,
     ) -> None:
         run_id, attempt_id = self._execution_identity.require()
-        base = runtime_event_from_task_state(
+        notification_payload = (
+            normalize_structured_json_object(payload, field_name="task_state_payload")
+            if payload is not None
+            else None
+        )
+        event = runtime_event_from_task_notification(
             task,
             run_id=run_id,
             attempt_id=attempt_id,
             message=message,
+            event_type=event_type,
+            phase=phase,
+            payload_raw=notification_payload,
         )
-        update: dict = {
-            "event_type": event_type,
-            "phase": phase,
-        }
-        if payload is not None:
-            update["payload"] = payload
-        await self.publish(base.model_copy(update=update), task=task)
+        await self.publish(event, task=task)

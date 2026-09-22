@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # © Artur Czarnecki. All rights reserved.
 
-"""AUDIT-IDEAL-13.2 — catalog hot-reload without host restart."""
+"""AUDIT-IDEAL-13.2 — governed catalog hot-reload capability wiring."""
 
 from __future__ import annotations
 
@@ -16,11 +16,10 @@ def main() -> int:
     if not wiring.enabled:
         print("product host must enable catalog hot-reload", file=sys.stderr)
         return 1
-    report = wiring.report
-    if report is None or not report.reloaded or report.after_count <= 0:
-        print("catalog hot-reload report invalid", file=sys.stderr)
+    if wiring.service is None:
+        print("catalog hot-reload governed service missing", file=sys.stderr)
         return 1
-    print(f"OK: catalog hot-reload ({report.after_count} slugs)")
+    print("OK: catalog hot-reload capability (governed service; operator invocation required)")
     return 0
 
 

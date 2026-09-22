@@ -234,6 +234,7 @@ def _authority(
         ),
         lock_store=stores.lock_store,
         materialization_store=stores.materialization_store,
+        artifact_metadata_store=stores.artifact_metadata_store,
     )
 
 

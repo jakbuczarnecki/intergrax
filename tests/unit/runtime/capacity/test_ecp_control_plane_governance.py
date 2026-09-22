@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, fields
+from unittest.mock import patch
 
 import pytest
 
@@ -449,6 +450,59 @@ def test_ecp_cpm16_product_without_authority_fails_at_wiring() -> None:
     with pytest.raises(ControlPlaneCompositionError) as exc_info:
         resolve_production_capacity_wiring(env, governance=governance)
     assert exc_info.value.blocker_code == "ECP_BLOCKED_MISSING_BOUNDARY"
+
+
+def test_ecp_gr12_r2_resolve_production_capacity_wiring_consumes_supplied_boundary() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults()
+    recording = _RecordingEvaluator()
+    supplied = ControlPlaneMutationAuthorizationBoundary(evaluator=recording)
+    governance = build_production_capacity_governance(
+        env,
+        mutation_authorization_boundary=supplied,
+    )
+    assert governance.mutation_authorization_boundary is supplied
+    wiring = resolve_production_capacity_wiring(env, governance=governance)
+    assert wiring.enabled is True
+    assert wiring.adapters is not None
+    assert len(recording.calls) >= 1
+
+
+def test_ecp_gr12_r2_production_wiring_passes_supplied_boundary_to_adapter_builder() -> None:
+    """GR-12-A3-R3: supplied CLA-04 boundary identity reaches adapter builder unchanged."""
+    env = ApplicationEnvironmentProfile.product_defaults()
+    supplied = ControlPlaneMutationAuthorizationBoundary(evaluator=_RecordingEvaluator())
+    governance = build_production_capacity_governance(
+        env,
+        mutation_authorization_boundary=supplied,
+    )
+    assert governance.mutation_authorization_boundary is supplied
+    with patch(
+        "intergrax.applications._shared.production_capacity_wiring.build_production_capacity_adapters",
+        wraps=build_production_capacity_adapters,
+    ) as build_adapters:
+        wiring = resolve_production_capacity_wiring(env, governance=governance)
+    assert build_adapters.call_args is not None
+    assert build_adapters.call_args.kwargs["mutation_boundary"] is supplied
+    assert wiring.enabled is True
+    assert wiring.adapters is not None
+
+
+def test_ecp_gr12_r2_external_evaluator_receives_composition_probe_mutations() -> None:
+    env = ApplicationEnvironmentProfile.product_defaults()
+    recording = _RecordingEvaluator()
+    supplied = ControlPlaneMutationAuthorizationBoundary(evaluator=recording)
+    governance = build_production_capacity_governance(
+        env,
+        mutation_authorization_boundary=supplied,
+    )
+    wiring = resolve_production_capacity_wiring(env, governance=governance)
+    assert wiring.enabled is True
+    assert len(recording.calls) >= 1
+    mutation_types = {call.mutation_type for call in recording.calls}
+    assert MUTATION_TYPE_SCALE_K8S_DEPLOYMENT in mutation_types
+    assert MUTATION_TYPE_SCALE_CELERY_WORKERS in mutation_types
+    for call in recording.calls:
+        assert call.principal.tenant_id == governance.tenant_id
 
 
 def _bundle_backed_boundary(*, effect: str) -> ControlPlaneMutationAuthorizationBoundary:

@@ -3,9 +3,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.providers.registrations._lazy_factory import register_lazy_adapter
+from intergrax.llm_adapters.providers.registrations.external_operation_seams import (
+    HTTP_SDK_EXTERNAL_OPERATION_CAPABILITIES,
+    OLLAMA_LOCAL_EXTERNAL_OPERATION_CAPABILITIES,
+    build_ollama_external_operation_seam,
+    build_openai_external_operation_seam,
+)
 from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterRegistrationTarget,
     OptionalDependencyRequirement,
@@ -92,8 +100,25 @@ def _load_azure_ai_inference_adapter() -> type[LLMAdapter]:
     return AzureAiInferenceChatAdapter
 
 
-def register_groq(registry: LLMAdapterRegistrationTarget) -> None:
+def _register_openai_compat_adapter(
+    registry: LLMAdapterRegistrationTarget,
+    *,
+    provider_id: str,
+    dependency: OptionalDependencyRequirement | None,
+    load_adapter_cls: Callable[[], type[LLMAdapter]],
+) -> None:
     register_lazy_adapter(
+        registry,
+        provider_id=provider_id,
+        dependency=dependency,
+        load_adapter_cls=load_adapter_cls,
+        external_operation_seam_factory=build_openai_external_operation_seam,
+        external_operation_capabilities=HTTP_SDK_EXTERNAL_OPERATION_CAPABILITIES,
+    )
+
+
+def register_groq(registry: LLMAdapterRegistrationTarget) -> None:
+    _register_openai_compat_adapter(
         registry,
         provider_id=LLMProvider.GROQ.value,
         dependency=_GROQ_DEPENDENCY,
@@ -102,7 +127,7 @@ def register_groq(registry: LLMAdapterRegistrationTarget) -> None:
 
 
 def register_vllm(registry: LLMAdapterRegistrationTarget) -> None:
-    register_lazy_adapter(
+    _register_openai_compat_adapter(
         registry,
         provider_id=LLMProvider.VLLM.value,
         dependency=_VLLM_DEPENDENCY,
@@ -111,7 +136,7 @@ def register_vllm(registry: LLMAdapterRegistrationTarget) -> None:
 
 
 def register_together(registry: LLMAdapterRegistrationTarget) -> None:
-    register_lazy_adapter(
+    _register_openai_compat_adapter(
         registry,
         provider_id=LLMProvider.TOGETHER.value,
         dependency=_OPENAI_COMPAT_DEPENDENCY,
@@ -120,7 +145,7 @@ def register_together(registry: LLMAdapterRegistrationTarget) -> None:
 
 
 def register_fireworks(registry: LLMAdapterRegistrationTarget) -> None:
-    register_lazy_adapter(
+    _register_openai_compat_adapter(
         registry,
         provider_id=LLMProvider.FIREWORKS.value,
         dependency=_OPENAI_COMPAT_DEPENDENCY,
@@ -129,7 +154,7 @@ def register_fireworks(registry: LLMAdapterRegistrationTarget) -> None:
 
 
 def register_openrouter(registry: LLMAdapterRegistrationTarget) -> None:
-    register_lazy_adapter(
+    _register_openai_compat_adapter(
         registry,
         provider_id=LLMProvider.OPENROUTER.value,
         dependency=_OPENAI_COMPAT_DEPENDENCY,
@@ -138,7 +163,7 @@ def register_openrouter(registry: LLMAdapterRegistrationTarget) -> None:
 
 
 def register_deepseek(registry: LLMAdapterRegistrationTarget) -> None:
-    register_lazy_adapter(
+    _register_openai_compat_adapter(
         registry,
         provider_id=LLMProvider.DEEPSEEK.value,
         dependency=_OPENAI_COMPAT_DEPENDENCY,
@@ -147,7 +172,7 @@ def register_deepseek(registry: LLMAdapterRegistrationTarget) -> None:
 
 
 def register_xai(registry: LLMAdapterRegistrationTarget) -> None:
-    register_lazy_adapter(
+    _register_openai_compat_adapter(
         registry,
         provider_id=LLMProvider.XAI.value,
         dependency=_OPENAI_COMPAT_DEPENDENCY,
@@ -161,11 +186,13 @@ def register_llama_cpp(registry: LLMAdapterRegistrationTarget) -> None:
         provider_id=LLMProvider.LLAMA_CPP.value,
         dependency=_OPENAI_COMPAT_DEPENDENCY,
         load_adapter_cls=_load_llama_cpp_adapter,
+        external_operation_seam_factory=build_ollama_external_operation_seam,
+        external_operation_capabilities=OLLAMA_LOCAL_EXTERNAL_OPERATION_CAPABILITIES,
     )
 
 
 def register_cohere(registry: LLMAdapterRegistrationTarget) -> None:
-    register_lazy_adapter(
+    _register_openai_compat_adapter(
         registry,
         provider_id=LLMProvider.COHERE.value,
         dependency=_OPENAI_COMPAT_DEPENDENCY,
@@ -174,7 +201,7 @@ def register_cohere(registry: LLMAdapterRegistrationTarget) -> None:
 
 
 def register_azure_ai_inference(registry: LLMAdapterRegistrationTarget) -> None:
-    register_lazy_adapter(
+    _register_openai_compat_adapter(
         registry,
         provider_id=LLMProvider.AZURE_AI_INFERENCE.value,
         dependency=_OPENAI_COMPAT_DEPENDENCY,

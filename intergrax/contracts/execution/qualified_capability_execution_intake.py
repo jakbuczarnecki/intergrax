@@ -30,6 +30,9 @@ from intergrax.contracts.execution.qualified_capability_execution_dispatch impor
     QualifiedCapabilityExecutionDispatchDisposition,
 )
 from intergrax.contracts.execution_identity import TaskId, validate_task_id
+from intergrax.contracts.tool_invocation_governance_approval_evidence import (
+    ToolInvocationGovernanceApprovalEvidence,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +54,7 @@ class QualifiedCapabilityExecutionIntakePayload:
     admitted_governance_identity: AdmittedRootGovernanceIdentity
     effective_authority_decision: EffectiveAuthorityDecision
     collaborative_authority_scopes: tuple[str, ...]
+    governance_approval_evidence: ToolInvocationGovernanceApprovalEvidence | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -110,6 +114,23 @@ class QualifiedCapabilityExecutionIntakePayload:
             "collaborative_authority_scopes",
             validate_authority_scopes(self.collaborative_authority_scopes),
         )
+        if self.governance_approval_evidence is not None:
+            if (
+                type(self.governance_approval_evidence)
+                is not ToolInvocationGovernanceApprovalEvidence
+            ):
+                raise TypeError(
+                    "governance_approval_evidence must be "
+                    "ToolInvocationGovernanceApprovalEvidence",
+                )
+            if self.governance_approval_evidence.tenant_id != self.tenant_id:
+                raise ValueError(
+                    "governance_approval_evidence.tenant_id must match tenant_id",
+                )
+            if str(self.governance_approval_evidence.task_id) != str(self.task_id):
+                raise ValueError(
+                    "governance_approval_evidence.task_id must match task_id",
+                )
         if self.tenant_id != self.admitted_governance_identity.tenant_id:
             raise ValueError(
                 "tenant_id must match admitted_governance_identity.tenant_id",

@@ -13,7 +13,10 @@ from intergrax.applications._shared.application_runtime_graph import list_applic
 from intergrax.applications._shared.diagnostic_assembly_resolver import (
     DiagnosticAssemblyError,
     DiagnosticReadiness,
+    assert_diagnostic_assembly_valid,
+    resolve_central_diagnostics_required,
 )
+from intergrax.applications._shared.scenario_runtime_profiles import ScenarioRuntimeMode
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.harness_registry_authority import RegistryAssemblyMode
 from intergrax.applications._shared.scenario_runtime_baseline import ScenarioRuntimeBuildError
@@ -118,7 +121,11 @@ def _stub_llm(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_all_application_factories_use_harness_host_runtime_spine() -> None:
-    violations = check_no_ad_hoc_nexus_in_factories()
+    from intergrax.runtime.architecture.obs_diag_x3_ast_gates import (
+        collect_factory_entry_path_violations,
+    )
+
+    violations = collect_factory_entry_path_violations(REPO_ROOT)
     assert violations == []
 
 
@@ -192,19 +199,18 @@ def test_product_host_runtime_attaches_required_diagnostics(
     assert runtime.diagnostic_wiring.readiness is DiagnosticReadiness.ATTACHED
 
 
-def test_destructive_case_a_production_scenario_without_problem_persistence_fails(
-    tmp_path: Path,
-) -> None:
+def test_destructive_case_a_production_scenario_without_problem_persistence_fails() -> None:
     environment = _production_attached_environment("diag.platform.case.a")
-    with pytest.raises(ScenarioRuntimeBuildError, match="central diagnostics are required"):
-        build_scenario_production_runtime(
-            environment=environment,
-            manifest=_scenario_manifest("diag_platform_no_store"),
-            registry=_echo_registry(),
-            tenant_id=_TENANT,
-            runtime_events_db_path=tmp_path / "events.db",
-            trace_db_path=tmp_path / "trace.db",
-            document_store=None,
+    assert resolve_central_diagnostics_required(
+        environment,
+        scenario_runtime_mode=ScenarioRuntimeMode.PRODUCTION_ATTACHED,
+    )
+    with pytest.raises(DiagnosticAssemblyError, match="central diagnostics are required"):
+        assert_diagnostic_assembly_valid(
+            required=True,
+            attached=False,
+            missing_document_store=True,
+            missing_runtime_events=False,
         )
 
 

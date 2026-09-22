@@ -74,6 +74,9 @@ from intergrax.applications._shared.harness_registry_authority import (
     RegistryAssemblyMode,
     resolve_harness_host_registry,
 )
+from testing_support.agent_distribution.install_contract_authority_fixtures import (
+    reference_install_contract_authority_records,
+)
 from intergrax.applications._shared.production_agent_capability_runtime import (
     AgentCapabilityApplicationComposition,
     ProductionAgentPlatformAdminConfig,
@@ -752,6 +755,13 @@ class CanonicalAgentLifecycleProofStack:
                     ),
                 ),
                 agent_project_metadata_ref=self.config.metadata_ref,
+                package_contract_authority=reference_install_contract_authority_records(
+                    self.manifest,
+                    package_digest=self.config.package_digest,
+                    distribution_package_id=self.config.distribution_package_id,
+                    artifact_store_ref=f"store://artifacts/{self.config.installation_id}",
+                    agent_project_metadata_ref=self.config.metadata_ref,
+                ),
             ),
             principal=principal,
         )

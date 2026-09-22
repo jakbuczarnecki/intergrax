@@ -31,10 +31,15 @@ from intergrax.agent_distribution.runtime_revision import (
     RuntimeRevisionState,
 )
 from intergrax.agent_distribution.stores import (
+    AgentArtifactMetadataStore,
     MaterializedRuntimeLockStore,
     RuntimeMaterializationStore,
     RuntimeRevisionStore,
 )
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    RosterAgentContractAuthority,
+)
+from intergrax.applications.contracts.manifest import ApplicationManifest
 
 _PROJECTION_ELIGIBLE_REVISION_STATES = frozenset(
     {
@@ -77,11 +82,27 @@ class RegistryProjectionAuthorityResolver:
         effective_roster_authority: EffectiveRosterAuthorityService,
         lock_store: MaterializedRuntimeLockStore,
         materialization_store: RuntimeMaterializationStore,
+        artifact_metadata_store: AgentArtifactMetadataStore,
     ) -> None:
         self._revision_store = revision_store
         self._effective_roster_authority = effective_roster_authority
         self._lock_store = lock_store
         self._materialization_store = materialization_store
+        self._artifact_metadata_store = artifact_metadata_store
+
+    def roster_contract_authority_for(
+        self,
+        *,
+        resolved: ResolvedRegistryProjectionAuthority,
+        manifest: ApplicationManifest,
+    ) -> RosterAgentContractAuthority:
+        """Revision-bound AgentContract authority for production registry projection."""
+        return RosterAgentContractAuthority.from_revision_roster(
+            artifact_metadata_store=self._artifact_metadata_store,
+            runtime_revision=resolved.runtime_revision,
+            effective_roster=resolved.effective_roster,
+            manifest=manifest,
+        )
 
     def require_for_revision(
         self,

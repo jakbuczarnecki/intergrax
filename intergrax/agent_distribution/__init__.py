@@ -20,6 +20,12 @@ from intergrax.agent_distribution.agent_project_metadata import (
 from intergrax.agent_distribution.builtin_capability_metadata import (
     PackageAgentCapabilityMetadataProvider,
 )
+from intergrax.agent_distribution.agent_contract_authority import (
+    AgentPackageContractAuthorityService,
+    PackageAgentContractAuthorityError,
+    PackageAgentContractAuthorityRecord,
+    contract_metadata_content_digest,
+)
 from intergrax.agent_distribution.contract_metadata_parity import (
     AgentContractMetadataParityError,
     AgentContractMetadataParityMismatch,
@@ -694,6 +700,10 @@ __all__ = [
     "MaterializedRuntimeLockService",
     "MaterializedRuntimeLockStore",
     "merge_agent_capability_descriptors",
+    "AgentPackageContractAuthorityService",
+    "PackageAgentContractAuthorityError",
+    "PackageAgentContractAuthorityRecord",
+    "contract_metadata_content_digest",
     "validate_agent_contract_metadata_parity",
     "validate_coordination_id",
     "validate_delegation_id",

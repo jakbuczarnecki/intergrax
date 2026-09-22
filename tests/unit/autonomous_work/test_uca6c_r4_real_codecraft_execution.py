@@ -342,15 +342,18 @@ def test_production_wiring_port_requires_active_execution_id(tmp_path: Path) -> 
         },
     )
     from tests.unit.autonomous_work.uca6c_r5_tool_runtime_fixtures import (
-        build_r5_catalog_tool_binding,
+        build_r5_production_catalog_tool_invoker,
     )
 
     run_id = mint_run_id()
-    tool_binding, _, _ = build_r5_catalog_tool_binding(
+    catalog_invoker, _, _ = build_r5_production_catalog_tool_invoker(
         ctx,
-        run_seed=str(run_id),
+        tenant_id=_TENANT,
     )
-    port = WiringCodeCraftBoundCapabilityExecution(ctx, tool_invocation=tool_binding)
+    port = WiringCodeCraftBoundCapabilityExecution(
+        ctx,
+        catalog_tool_invoker=catalog_invoker,
+    )
     attempt_id = mint_attempt_id()
     execution_id = mint_execution_id()
     token = bind_active_execution_identity(
@@ -366,6 +369,7 @@ def test_production_wiring_port_requires_active_execution_id(tmp_path: Path) -> 
                 task_id=_TASK_ID,
                 run_id=None,
                 execution_id=execution_id,
+                execution_request_id="uca6c-test-execution-request-id",
             ),
         )
     finally:

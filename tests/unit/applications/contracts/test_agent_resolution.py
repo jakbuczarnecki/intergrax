@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from intergrax.applications._shared.agent_resolution import (
+    resolve_agent_contract_from_binding,
     resolve_agent_type,
     resolve_agent_type_from_binding,
 )
@@ -33,3 +34,26 @@ def test_resolve_agent_type_from_binding_mount() -> None:
 def test_invalid_import_path_raises_agent_import_error() -> None:
     with pytest.raises(AgentImportError, match="Cannot import module"):
         resolve_agent_type(agent_type=None, import_path="no.such.module.Agent")
+
+
+def test_resolve_agent_contract_from_binding_uses_declarative_contract_module() -> None:
+    from web_search_qualifier.web_search_qualifier_agent import WebSearchQualifierAgent
+
+    binding = AgentBinding.mount(WebSearchQualifierAgent, contract_id="web_search_qualifier")
+    contract = resolve_agent_contract_from_binding(binding)
+    assert contract.id == "web_search_qualifier"
+
+
+def test_resolve_agent_contract_from_binding_echo_without_instantiation() -> None:
+    binding = AgentBinding.mount(EchoAgent, contract_id="echo")
+    contract = resolve_agent_contract_from_binding(binding)
+    assert contract.id == "echo"
+
+
+def test_resolve_agent_contract_from_binding_missing_module_fails() -> None:
+    binding = AgentBinding(
+        import_path="definitely_missing_agent_package.agent.OrphanAgent",
+        contract_id="orphan",
+    )
+    with pytest.raises(AgentImportError, match="Cannot import module"):
+        resolve_agent_contract_from_binding(binding)

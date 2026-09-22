@@ -13,7 +13,6 @@ if TYPE_CHECKING:
         ExternalOperationStatusPort,
     )
     from intergrax.contracts.external_operation_termination import (
-        ExternalOperationCapabilities,
         ExternalOperationTerminationPort,
     )
     from intergrax.llm_adapters._shared.provider_stream_transport_registry import (
@@ -56,7 +55,6 @@ class LLMRuntimeLifecycleBinding(Protocol):
         status_port: ExternalOperationStatusPort | None = None,
         termination_port: ExternalOperationTerminationPort | None = None,
         stream_registry: ProviderStreamTransportRegistry | None = None,
-        capabilities: ExternalOperationCapabilities | None = None,
     ) -> None:
         ...
 

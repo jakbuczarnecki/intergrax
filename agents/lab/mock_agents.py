@@ -19,8 +19,8 @@ from intergrax.agents.reference_harness import (
 from intergrax.runtime.nexus.agents.reference_harness_runtime import (
     build_lab_agent_runtime_context,
 )
-from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
-from intergrax.contracts.agent_lifecycle_state import AgentLifecycleState
+from intergrax.contracts.agent_contract_meta import AgentContract
+from lab.contract import build_agent_contract
 from intergrax.contracts.agent_decision import AgentDecision, AgentDecisionType
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
@@ -86,19 +86,7 @@ class _MockAgentBase(HarnessReferenceAgent):
         self._provider = provider
 
     def get_contract(self) -> AgentContract:
-        return AgentContract(
-            id=self._agent_id,
-            name=self._name,
-            description=f"Runtime validation mock ({self._agent_id}).",
-            version="0.1.0",
-            capabilities=[self._capability],
-            skills=[],
-            extra_tools=[],
-            risk_level=AgentRiskLevel.LOW,
-            lifecycle_state=AgentLifecycleState.DEVELOPMENT,
-            owner_team="platform",
-            max_steps=5,
-        )
+        return build_agent_contract(type(self))
 
     def can_handle(self, task_context: TaskContext) -> CapabilityMatchResult:
         capability = task_context.capability

@@ -406,6 +406,7 @@ HARNESS_01_AUTHORIZED_RUNTIME_TOOL_INVOKER_CALLSITE_FILES: frozenset[str] = froz
     {
         "intergrax/runtime/nexus/tools/catalog_context.py",
         "intergrax/runtime/nexus/tools/catalog_dispatch.py",
+        "intergrax/runtime/nexus/tools/nexus_execution_bound_catalog_tool_invoker.py",
         "intergrax/runtime/nexus/tools/tool_loop.py",
         "intergrax/runtime/nexus/tools/patterns/deterministic_chain.py",
     }
@@ -421,6 +422,7 @@ HARNESS_01_RUNTIME_TOOL_INVOKER_REFERENCE_ALLOWLIST: frozenset[str] = frozenset(
         "intergrax/runtime/nexus/config_sections.py",
         "intergrax/runtime/nexus/context/iterative_tool_context_assembly.py",
         "intergrax/runtime/nexus/tools/invoker.py",
+        "intergrax/runtime/nexus/tools/nexus_execution_bound_catalog_tool_invoker.py",
         "intergrax/runtime/nexus/tools/patterns/bounded_react.py",
         "intergrax/runtime/nexus/tools/patterns/deterministic_chain.py",
         "intergrax/runtime/nexus/tools/patterns/parallel_batch.py",

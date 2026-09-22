@@ -8,9 +8,15 @@ import pytest
 
 from intergrax.applications._shared.agent_certification_wiring import (
     apply_roster_agent_governance,
-    check_strict_product_agent_certification,
     materialize_roster_certifications_for_agents,
     validate_strict_roster_agent_certification,
+)
+from intergrax.applications._shared.strict_product_manifest_ci_gates import (
+    check_strict_product_agent_certification,
+)
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    ManifestAgentContractAuthority,
+    materialize_manifest_contract_authority_lab_compat,
 )
 from intergrax.applications._shared.product_manifest_registry import iter_strict_product_manifests
 from intergrax.applications.contracts.agent_governance import AgentGovernanceProfile
@@ -29,7 +35,7 @@ def test_materialize_roster_certifications_for_enabled_agents() -> None:
     assert profile.certifications[0].agent_id == "echo"
 
 
-def test_strict_gate_blocks_experimental_agent(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_strict_gate_blocks_experimental_agent() -> None:
     manifest = ApplicationManifest.product(
         app_id="gate_cert",
         name="Gate Cert",
@@ -40,15 +46,19 @@ def test_strict_gate_blocks_experimental_agent(monkeypatch: pytest.MonkeyPatch) 
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="gate_cert.product")
     env = apply_roster_agent_governance(env, agents=manifest.agents, app_id="gate_cert")
 
-    original_get_contract = EchoAgent.get_contract
+    base = materialize_manifest_contract_authority_lab_compat(manifest)
+    experimental = base.contracts_by_id["echo"].model_copy(
+        update={"lifecycle_state": AgentLifecycleState.EXPERIMENTAL},
+    )
+    authority = ManifestAgentContractAuthority(
+        contracts_by_id={**base.contracts_by_id, "echo": experimental},
+    )
 
-    def _experimental_contract(self: EchoAgent) -> object:
-        contract = original_get_contract(self)
-        return contract.model_copy(update={"lifecycle_state": AgentLifecycleState.EXPERIMENTAL})
-
-    monkeypatch.setattr(EchoAgent, "get_contract", _experimental_contract)
-
-    violations = validate_strict_roster_agent_certification(manifest, env)
+    violations = validate_strict_roster_agent_certification(
+        manifest,
+        env,
+        contract_authority=authority,
+    )
     assert any("blocked on STRICT product host" in item for item in violations)
 
 
@@ -63,7 +73,12 @@ def test_strict_gate_requires_certification_for_staging_agent() -> None:
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="gate_cert2.product").model_copy(
         update={"agent_governance_profile": AgentGovernanceProfile()},
     )
-    violations = validate_strict_roster_agent_certification(manifest, env)
+    authority = materialize_manifest_contract_authority_lab_compat(manifest)
+    violations = validate_strict_roster_agent_certification(
+        manifest,
+        env,
+        contract_authority=authority,
+    )
     assert any("requires AgentCertificationRecord" in item for item in violations)
 
 

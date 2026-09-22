@@ -39,9 +39,13 @@ def test_gr12_a1_path_ids_unique() -> None:
 
 
 def test_gr12_a1_no_qualified_without_proof() -> None:
-    assert not any(
-        row.coverage.value == "QUALIFIED" for row in GR12_CONTROL_PLANE_SURFACES
-    )
+    for row in GR12_CONTROL_PLANE_SURFACES:
+        if row.coverage is Gr12CoverageStatus.QUALIFIED:
+            assert row.qualification_proof.strip()
+        elif row.coverage is Gr12CoverageStatus.WIRED_NOT_QUALIFIED:
+            continue
+        else:
+            assert not row.qualification_proof.strip()
 
 
 def test_gr12_a1_applicable_surfaces_have_consequential_true() -> None:
@@ -50,8 +54,10 @@ def test_gr12_a1_applicable_surfaces_have_consequential_true() -> None:
         assert row.coverage in (
             Gr12CoverageStatus.GAP,
             Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+            Gr12CoverageStatus.QUALIFIED,
             Gr12CoverageStatus.DISCOVERED,
             Gr12CoverageStatus.APPLICABLE,
+            Gr12CoverageStatus.IMPLEMENTATION_REQUIRED,
         )
 
 

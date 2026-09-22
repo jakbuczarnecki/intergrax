@@ -50,11 +50,16 @@ class _StubCustomEnvAdapter(BaseLLMAdapter):
 
 @pytest.fixture()
 def _restore_registry_state():
-    snapshot = dict(LLMAdapterRegistry._factories)
+    from tests.unit.llm_adapters.registry_state_test_support import (
+        restore_registry_state,
+        snapshot_registry_state,
+    )
+
+    snapshot = snapshot_registry_state()
     try:
         yield snapshot
     finally:
-        LLMAdapterRegistry._factories = snapshot
+        restore_registry_state(snapshot)
 
 
 def test_llm_profile_from_env_absent_provider_returns_none(monkeypatch: pytest.MonkeyPatch) -> None:

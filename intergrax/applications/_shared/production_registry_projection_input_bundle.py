@@ -29,6 +29,9 @@ from intergrax.applications._shared.registry_projection_authority_resolver impor
     RegistryProjectionAuthorityError,
     RegistryProjectionAuthorityResolver,
 )
+from intergrax.applications._shared.roster_agent_contract_authority import (
+    RosterAgentContractAuthority,
+)
 from intergrax.applications._shared.runtime_agent_factory_resolver import (
     RuntimeAgentFactoryResolutionError,
 )
@@ -167,6 +170,7 @@ def assemble_production_registry_projection_input_bundle(
     build_context: ApplicationBuildContext,
     artifact_locator: str,
     materialization_artifact_digest: str,
+    roster_contract_authority: RosterAgentContractAuthority,
 ) -> RegistryProjectionInputBundle:
     """Internal assembly from already-resolved canonical lifecycle authority."""
     _validate_revision_roster_lock_authority(
@@ -206,6 +210,7 @@ def assemble_production_registry_projection_input_bundle(
         factory_resolver=factory_resolver,
         builders=None,
         materialization_artifact_digest=materialization_artifact_digest,
+        roster_contract_authority=roster_contract_authority,
     )
 
 
@@ -228,6 +233,11 @@ def build_production_registry_projection_input_bundle_for_revision(
     except RegistryProjectionAuthorityError as exc:
         raise ProductionRegistryProjectionInputError(str(exc)) from exc
 
+    roster_contract_authority = authority.roster_contract_authority_for(
+        resolved=resolved,
+        manifest=manifest,
+    )
+
     return assemble_production_registry_projection_input_bundle(
         runtime_revision=resolved.runtime_revision,
         effective_roster=resolved.effective_roster,
@@ -237,6 +247,7 @@ def build_production_registry_projection_input_bundle_for_revision(
         artifact_locator=resolved.runtime_materialization.artifact_locator,
         materialization_artifact_digest=resolved.runtime_revision.materialization_artifact_digest
         or "",
+        roster_contract_authority=roster_contract_authority,
     )
 
 

@@ -36,6 +36,9 @@ class DefaultRunService(RunService):
         self._store = store
         self._execution_adapter = execution_adapter
 
+    def bind_execution_adapter(self, execution_adapter: ExecutionAdapter) -> None:
+        """Replace the execution adapter after optional queue wiring."""
+        self._execution_adapter = execution_adapter
 
     def create_run(
         self,

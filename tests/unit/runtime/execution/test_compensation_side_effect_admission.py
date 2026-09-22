@@ -82,8 +82,8 @@ async def test_u2_compensation_tool_runs_under_active_execution_identity() -> No
     result = await execution.execute(work)
     assert result.status == "success"
     assert observed_run_id == [work.run_id]
-    assert invoker.bound_run_id == work.run_id
-    assert invoker.bound_task_id == work.task_id
+    assert invoker.last_run_id == work.run_id
+    assert invoker.last_task_id == work.task_id
 
 
 @pytest.mark.asyncio

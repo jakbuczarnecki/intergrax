@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import pytest
+from pydantic import Field
 
 from intergrax.runtime.integrations.contracts import (
     PLATFORM_INTEGRATION_CONTRACT_SCHEMA,
@@ -12,7 +13,6 @@ from intergrax.runtime.integrations.contracts import (
     PlatformIntegrationConfig,
     PlatformIntegrationContract,
     PlatformIntegrationKind,
-    PlatformIntegrationSecurityPosture,
     PlatformIntegrationStatus,
     derive_platform_integration_id,
 )
@@ -30,10 +30,12 @@ _FORBIDDEN_VENDOR_IMPORT_PREFIXES = (
 
 class ExampleSearchIntegration(PlatformIntegrationContract):
     integration_kind: str = PlatformIntegrationKind.SEARCH.value
+    config: PlatformIntegrationConfig = Field(default_factory=PlatformIntegrationConfig)
 
 
 class ExampleVectorStoreIntegration(PlatformIntegrationContract):
     integration_kind: str = PlatformIntegrationKind.VECTOR_STORE.value
+    config: PlatformIntegrationConfig = Field(default_factory=PlatformIntegrationConfig)
 
 
 class SensitiveIntegrationConfig(PlatformIntegrationConfig):
@@ -128,6 +130,21 @@ def test_example_subclass_derives_from_platform_integration_contract() -> None:
 
     assert isinstance(integration, PlatformIntegrationContract)
     assert integration.integration_kind == PlatformIntegrationKind.SEARCH.value
+
+
+def test_observability_vendor_for_provider_returns_concrete_integration_and_config() -> None:
+    from intergrax.integrations.providers.observability_backend.elasticsearch.integration import (
+        ElasticsearchObservabilityIntegration,
+        ElasticsearchObservabilityIntegrationConfig,
+    )
+
+    integration = ElasticsearchObservabilityIntegration.for_provider(
+        provider_id="elasticsearch",
+        display_name="Elasticsearch",
+    )
+
+    assert type(integration) is ElasticsearchObservabilityIntegration
+    assert isinstance(integration.config, ElasticsearchObservabilityIntegrationConfig)
 
 
 def test_generic_contract_has_no_observability_vendor_behavior() -> None:

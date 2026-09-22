@@ -56,9 +56,9 @@ def build_local_workspace_tool_selection_qualifier_from_context(
     ctx: ApplicationBuildContext,
     binding: AgentBinding,
 ) -> ToolSelectionQualifierAgent:
-    from intergrax.applications._shared.llm_resolver import resolve_optional_llm_adapter
+    from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 
-    adapter = resolve_optional_llm_adapter(ctx.environment)
+    adapter = resolve_llm_adapter(ctx.environment)
     _ = binding
     return ToolSelectionQualifierAgent(llm_adapter=adapter)
 
@@ -67,9 +67,9 @@ def build_local_workspace_web_search_qualifier_from_context(
     ctx: ApplicationBuildContext,
     binding: AgentBinding,
 ) -> WebSearchQualifierAgent:
-    from intergrax.applications._shared.llm_resolver import resolve_optional_llm_adapter
+    from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
 
-    adapter = resolve_optional_llm_adapter(ctx.environment)
+    adapter = resolve_llm_adapter(ctx.environment)
     _ = binding
     return WebSearchQualifierAgent(llm_adapter=adapter)
 
@@ -91,8 +91,11 @@ def build_local_workspace_model_routing_qualifier_from_context(
             ),
         },
     )
+    from intergrax.applications._shared.llm_resolver import resolve_llm_adapter
+
+    adapter = resolve_llm_adapter(env)
     _ = binding
     return ModelRoutingQualifierAgent(
-        llm_adapter=None,
+        llm_adapter=adapter,
         routing_profile=env.llm_routing_profile,
     )
