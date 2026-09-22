@@ -71,14 +71,16 @@ class _RecordingEvaluator:
         return self.decision
 
 
-def test_gr12_a2_host_boundary_catalog_wired_not_qualified() -> None:
+def test_gr12_a2_host_boundary_catalog_qualified_in_a3() -> None:
     row = next(r for r in GR12_CONTROL_PLANE_SURFACES if r.path_id == "CP-HOST-BOUNDARY-OPTIONAL")
-    assert row.coverage is Gr12CoverageStatus.WIRED_NOT_QUALIFIED
+    assert row.coverage is Gr12CoverageStatus.QUALIFIED
+    assert row.qualification_proof.strip()
 
 
-def test_gr12_a2_ecp_boundary_catalog_wired_not_qualified() -> None:
+def test_gr12_a2_ecp_boundary_catalog_qualified_in_a3() -> None:
     row = next(r for r in GR12_CONTROL_PLANE_SURFACES if r.path_id == "CP-ECP-BOUNDARY-OPTIONAL")
-    assert row.coverage is Gr12CoverageStatus.WIRED_NOT_QUALIFIED
+    assert row.coverage is Gr12CoverageStatus.QUALIFIED
+    assert row.qualification_proof.strip()
 
 
 def test_gr12_a2_product_task_control_wiring_requires_canonical_boundary() -> None:
