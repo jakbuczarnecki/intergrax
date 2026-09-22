@@ -14,6 +14,20 @@ from tests.qualification.governance.gr12.catalog import (
     GR12_CANONICAL_POLICY_PORT,
     Gr12Applicability,
 )
+from tests.qualification.governance.gr12.gr12_a4_r2_r0_vector_revision_semantics import (
+    GR12_VECTOR_CONFIGURATION_DIGEST_EXCLUDED_RUNTIME_FIELDS,
+    GR12_VECTOR_CONFIGURATION_DIGEST_INCLUDED_FIELDS,
+    GR12_VECTOR_CONFIGURATION_PROJECTION_SCHEMA,
+    GR12_VECTOR_REVISION_DIGEST_INVARIANT,
+    Gr12VectorAbsentIndexRevisionState,
+    Gr12VectorAlreadyCompatibleRevisionSemantics,
+    Gr12VectorIdentityIntrinsicValidation,
+    Gr12VectorLiveOperatorIdentityValidation,
+    Gr12VectorLivePrepareAuthorizationTiming,
+    Gr12VectorProviderCasAvailability,
+    Gr12VectorStaleAuthorizationBehavior,
+    Gr12VectorStaleRetryFreshAuthorizationPolicy,
+)
 
 
 class Gr12VectorPrepareIndexGovernanceDecision(StrEnum):
@@ -24,6 +38,7 @@ class Gr12VectorPrepareIndexGovernanceDecision(StrEnum):
 
 class Gr12VectorArchitecturePhase(StrEnum):
     ARCHITECTURE_DECISION_CLOSED = "ARCHITECTURE_DECISION_CLOSED"
+    ARCHITECTURE_DECISION_RECONCILED = "ARCHITECTURE_DECISION_RECONCILED"
 
 
 class Gr12VectorIndexOperationClass(StrEnum):
@@ -64,15 +79,17 @@ GR12_VECTOR_PREFERRED_GOVERNANCE_MODEL: Final[str] = (
 )
 
 GR12_VECTOR_REVISION_STRATEGY: Final[str] = (
-    "ABSENT_CANONICAL_REVISION_SSOT — implementation must add provider-neutral "
-    "configuration digest from VectorIndexSpec (target) and VectorIndexDescription "
-    "(current) for CLA-04 current_revision/target_revision tokens"
+    f"{GR12_VECTOR_CONFIGURATION_PROJECTION_SCHEMA}: one logical schema for current "
+    "(VectorIndexDescription) and target (VectorIndexSpec); "
+    f"{GR12_VECTOR_REVISION_DIGEST_INVARIANT}; absent current token "
+    f"{Gr12VectorAbsentIndexRevisionState.ABSENT.value}"
 )
 
 GR12_VECTOR_TOCTOU_STRATEGY: Final[str] = (
-    "No provider CAS on neutral port; operator path re-reads describe_index before "
-    "prepare_index, rebuilds CLA-04 request on digest mismatch, fail-closed on stale "
-    "authorization scope (no fake CAS)"
+    "Optimistic stale-state detection: re-read describe_index before prepare_index; "
+    "stale state invalidates prior authorization; "
+    f"{Gr12VectorStaleAuthorizationBehavior.STALE_INVALIDATES_PRIOR_AUTHORIZATION_ABORT.value} "
+    "or bounded fresh CLA-04; provider CAS unavailable (no fake CAS)"
 )
 
 GR12_VECTOR_NEXT_BOUNDED_TASK: Final[str] = (
@@ -100,9 +117,9 @@ GR12_VECTOR_OPERATION_CLASSIFICATIONS: tuple[Gr12VectorIndexOperationClassificat
         consequential_for_control_plane=True,
         gr12_live_operator_applicable=True,
         reason=(
-            "CREATED outcome mutates provider index configuration; ALREADY_COMPATIBLE "
-            "is idempotent no-op. Live operator path requires CLA-04 only when "
-            "consequential create/change is authorized."
+            "Live operator prepare_index is governed before invocation (may mutate). "
+            "CREATED mutates provider index; ALREADY_COMPATIBLE is idempotent no-op "
+            "but remains an authorized operator action."
         ),
     ),
     Gr12VectorIndexOperationClassification(
@@ -139,6 +156,17 @@ class Gr12A4R2VectorArchitectureDecision:
     resource_scope_template: str
     revision_strategy: str
     toctou_strategy: str
+    identity_intrinsic_validation: Gr12VectorIdentityIntrinsicValidation
+    live_operator_identity_validation: Gr12VectorLiveOperatorIdentityValidation
+    configuration_projection_schema: str
+    configuration_digest_included_fields: tuple[str, ...]
+    excluded_revision_fields: tuple[str, ...]
+    absent_state_semantics: Gr12VectorAbsentIndexRevisionState
+    already_compatible_revision_semantics: Gr12VectorAlreadyCompatibleRevisionSemantics
+    live_prepare_authorization_timing: Gr12VectorLivePrepareAuthorizationTiming
+    stale_authorization_behavior: Gr12VectorStaleAuthorizationBehavior
+    stale_retry_fresh_authorization_policy: Gr12VectorStaleRetryFreshAuthorizationPolicy
+    provider_cas_available: Gr12VectorProviderCasAvailability
     policy_evaluator_port: str
     next_bounded_task: str
     rejected_alternatives: tuple[str, ...]
@@ -146,7 +174,7 @@ class Gr12A4R2VectorArchitectureDecision:
 
 GR12_A4_R2_VECTOR_ARCHITECTURE_DECISION: Gr12A4R2VectorArchitectureDecision = (
     Gr12A4R2VectorArchitectureDecision(
-        architecture_phase=Gr12VectorArchitecturePhase.ARCHITECTURE_DECISION_CLOSED,
+        architecture_phase=Gr12VectorArchitecturePhase.ARCHITECTURE_DECISION_RECONCILED,
         cla04_applicability=Gr12Applicability.APPLICABLE,
         prepare_index_decision=(
             Gr12VectorPrepareIndexGovernanceDecision.OPTION_B_CONDITIONAL_LIVE_OPERATOR_ONLY
@@ -163,6 +191,29 @@ GR12_A4_R2_VECTOR_ARCHITECTURE_DECISION: Gr12A4R2VectorArchitectureDecision = (
         resource_scope_template=VECTOR_INDEX_RESOURCE_SCOPE_TEMPLATE,
         revision_strategy=GR12_VECTOR_REVISION_STRATEGY,
         toctou_strategy=GR12_VECTOR_TOCTOU_STRATEGY,
+        identity_intrinsic_validation=Gr12VectorIdentityIntrinsicValidation.NONE,
+        live_operator_identity_validation=(
+            Gr12VectorLiveOperatorIdentityValidation.REQUIRED_NON_EMPTY_LOGICAL_NAME_AND_TENANT_ID
+        ),
+        configuration_projection_schema=GR12_VECTOR_CONFIGURATION_PROJECTION_SCHEMA,
+        configuration_digest_included_fields=tuple(
+            field.value for field in GR12_VECTOR_CONFIGURATION_DIGEST_INCLUDED_FIELDS
+        ),
+        excluded_revision_fields=GR12_VECTOR_CONFIGURATION_DIGEST_EXCLUDED_RUNTIME_FIELDS,
+        absent_state_semantics=Gr12VectorAbsentIndexRevisionState.ABSENT,
+        already_compatible_revision_semantics=(
+            Gr12VectorAlreadyCompatibleRevisionSemantics.NOT_REVISION_EQUALITY
+        ),
+        live_prepare_authorization_timing=(
+            Gr12VectorLivePrepareAuthorizationTiming.BEFORE_PREPARE_INDEX_INVOCATION
+        ),
+        stale_authorization_behavior=(
+            Gr12VectorStaleAuthorizationBehavior.STALE_INVALIDATES_PRIOR_AUTHORIZATION_ABORT
+        ),
+        stale_retry_fresh_authorization_policy=(
+            Gr12VectorStaleRetryFreshAuthorizationPolicy.ONE_EXPLICIT_REEVALUATION_OR_ABORT
+        ),
+        provider_cas_available=Gr12VectorProviderCasAvailability.UNAVAILABLE,
         policy_evaluator_port=GR12_CANONICAL_POLICY_PORT,
         next_bounded_task=GR12_VECTOR_NEXT_BOUNDED_TASK,
         rejected_alternatives=GR12_VECTOR_REJECTED_ALTERNATIVES,

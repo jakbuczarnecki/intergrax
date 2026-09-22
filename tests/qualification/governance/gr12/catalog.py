@@ -112,13 +112,14 @@ GR12_A4_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
         "GR-12-A4-R2-R1 — Governed Vector Index Operator Service & CLA-04 Enforcement"
     ),
     exact_blocker=(
-        "Vector R2 ADR closed: live operator VectorIndexAdminService + CLA-04 request "
-        "construction + provider-neutral configuration digest/revision tokens missing; "
-        "bootstrap-only prepare_index callers remain outside live operator path."
+        "Vector R2-R0 reconciled identity/projection/TOCTOU semantics; live operator "
+        "VectorIndexAdminService + CLA-04 request construction + digest implementation "
+        "still missing (GR-12-A4-R2-R1); bootstrap-only prepare_index callers remain "
+        "outside live operator path."
     ),
     why_highest=(
-        "Vector administration architecture decision closed (GR-12-A4-R2); implementation "
-        "is the only remaining step before CP-VECTOR-INDEX-ADMIN qualification."
+        "Vector administration architecture reconciled (GR-12-A4-R2-R0); bounded "
+        "implementation is the remaining step before CP-VECTOR-INDEX-ADMIN qualification."
     ),
 )
 

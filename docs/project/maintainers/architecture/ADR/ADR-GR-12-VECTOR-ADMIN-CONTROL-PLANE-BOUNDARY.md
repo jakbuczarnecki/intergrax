@@ -2,9 +2,9 @@
 
 | Field | Value |
 | ----- | ----- |
-| **Status** | Accepted (GR-12-A4-R2) |
+| **Status** | Accepted — reconciled (GR-12-A4-R2-R0) |
 | **Date** | 2026-09-22 |
-| **Task** | `GR-12-A4-R2 — Vector Administration Governance Architecture & CLA-04 Mapping Decision` |
+| **Task** | `GR-12-A4-R2 / GR-12-A4-R2-R0 — Vector administration governance & revision semantics` |
 
 ---
 
@@ -22,7 +22,7 @@ Control-plane qualification distinguishes **declarative bootstrap provisioning**
 | ---- | ----- |
 | Module | `intergrax.integrations.contracts.vector_index_administration` |
 | Contract | `VectorIndexAdministration` (runtime-checkable `Protocol`) |
-| Identity | `VectorIndexIdentity(logical_name, tenant_id)` — both non-empty strings |
+| Identity | `VectorIndexIdentity(logical_name, tenant_id)` — **no intrinsic non-empty validation** on the dataclass; non-empty enforcement is on `VectorIndexSpec.__post_init__` and on the **live operator path** before CLA-04 mapping |
 | Spec / description | `VectorIndexSpec`, `VectorIndexDescription`, `VectorIndexPrepareResult` |
 
 ### Public operations (code-evidenced)
@@ -73,18 +73,18 @@ No `intergrax.applications` or operator HTTP/CLI/admin service invokes `VectorIn
 | --------- | ----- | ------------------------- | ------------------- |
 | `probe` | READ_ONLY | No | No |
 | `describe_index` | READ_ONLY | No | No |
-| `prepare_index` | CONDITIONAL_MUTATION | Only when outcome is `CREATED` (or would fail compatibility) | Yes — when exposed via future operator service |
+| `prepare_index` | CONDITIONAL_MUTATION | May create authoritative configuration (`CREATED`) or no-op (`ALREADY_COMPATIBLE`) | Yes — live operator path (governed **before** port invocation) |
 | `close` | LIFECYCLE_ONLY | No | No |
 
 ---
 
 ## Decision 1 — `prepare_index` governance
 
-**Option B — conditional mutation; CLA-04 only on live operator path when mutation is consequential.**
+**Option B — conditional mutation on the port; CLA-04 on every live operator `prepare_index` invocation.**
 
-- `prepare_index` is **not** always a control-plane mutation (`ALREADY_COMPATIBLE` is a no-op).
+- `prepare_index` is **not** always a resulting state mutation (`ALREADY_COMPATIBLE` is a no-op), but the **live operator action may mutate** and must be governed **before** calling the port.
 - Bootstrap/proof callers may continue to use the port **without** CLA-04 (same class as declarative bootstrap registry population).
-- When a **live operator** initiates index preparation that may create or change authoritative configuration, that request must pass CLA-04 **before** calling `prepare_index`.
+- **Rejected timing:** authorize only after `prepare_index` or only when outcome is `CREATED` — mutation may already have occurred.
 
 Rejected: Option A (always CP mutation — ignores no-op path); Option C as sole label (port remains the domain mutation owner, but operator orchestration is missing).
 
@@ -100,7 +100,7 @@ There is no production API endpoint, admin service, or application operator surf
 
 ## CLA-04 applicability
 
-**APPLICABLE** for live operator-initiated `vector_index.prepare` when consequential.
+**APPLICABLE** for live operator-initiated `vector_index.prepare` (potentially consequential operation evaluated before invocation).
 
 **NOT** required for existing bootstrap-only `prepare_index` callers until/unless they are promoted to operator-governed entrypoints.
 
@@ -133,43 +133,90 @@ operator request (RequestIdentity)
 | ----- | ----- |
 | `mutation_type` | `vector_index.prepare` |
 | `resource_type` | `vector_index` |
-| `resource_id` | `{tenant_id}/{logical_name}` from `VectorIndexIdentity` (logical authority) |
+| `resource_id` | `{tenant_id}/{logical_name}` **after** live-operator validation of both fields |
 | `resource_scope` | `vector_index.tenant/{tenant_id}` |
 | `principal` | `RequestIdentity` on operator invocation (R2-R1) |
 
 Provider physical names (e.g. Qdrant `logical__tenant__tenant_id`) are **diagnostics only**, not permission SSOT.
 
-### Tenant semantics
+### Identity validation
 
-`VectorIndexIdentity.tenant_id` is **required** (validated non-empty). Indexes are **tenant-scoped** at the logical identity layer; host-global vector indexes are not modeled on this contract.
+1. `VectorIndexIdentity` is a frozen dataclass and **does not** validate non-empty `logical_name` / `tenant_id`.
+2. `VectorIndexSpec.__post_init__` validates non-empty identity when constructing a spec (bootstrap/spec paths).
+3. **Live operator path (R2-R1):** validate `logical_name` and `tenant_id` non-empty **before** CLA-04 resource identity construction — fail closed before policy evaluation.
+4. **Forbidden:** synthetic tenant placeholders (`platform`, `default`, `profile_id` as tenant) without real upstream identity.
 
----
-
-## Revision / state semantics
-
-There is **no** canonical `VectorIndexRevision` or generation SSOT today.
-
-`describe_index` exposes shape (dimension, metric, capabilities, point count) but not a version token suitable for CLA-04 `current_revision` / `target_revision`.
-
-**R2-R1 must introduce** a provider-neutral **configuration digest** function:
-
-- **current**: digest projected from `VectorIndexDescription` + channel names
-- **target**: digest from requested `VectorIndexSpec`
-
-Until then, vector control-plane adoption cannot be qualified.
+Indexes remain **tenant-scoped** at the logical identity layer.
 
 ---
 
-## TOCTOU / stale state
+## Canonical configuration projection
 
-Providers do not expose CAS mutation on the neutral port. Strategy:
+Qualification SSOT type: **`VectorIndexConfigurationProjection`** (provider-neutral logical schema; R2-R1 may promote to integrations contract types).
 
-1. Operator service reads `describe_index` → builds `current_revision` digest.
-2. CLA-04 authorizes against `current_revision` / `target_revision`.
-3. Immediately before `prepare_index`, **re-read** `describe_index`; if digest ≠ authorized `current_revision`, **fail closed** (reauthorize or abort).
-4. No fake CAS or provider-generation assumptions.
+| Field | Included in digest? | Notes |
+| ----- | ------------------- | ----- |
+| `logical_name` | Yes | logical identity |
+| `tenant_id` | Yes | authority scope |
+| `dense_dimension` | Yes | configuration |
+| `dense_metric` | Yes | configuration |
+| `dense_channel_name` | Yes | configuration |
+| `required_capabilities` | Yes | exact capability set |
+| `sparse_lexical_channel_name` | Conditional | when sparse capability required |
+| `point_count` | **No** | runtime data |
+| `reachable` | **No** | health/runtime |
+| physical provider id / host / credentials | **No** | provider diagnostics |
 
-Idempotency of `prepare_index` does **not** replace authorization.
+**Same schema** for:
+
+- **target:** `VectorIndexSpec` → projection → digest
+- **current:** `VectorIndexDescription` → projection → digest (when `exists=True`)
+
+Do **not** use Qdrant enums, collection payloads, or provider config objects in the canonical projection.
+
+### Revision digest semantics
+
+- Deterministic canonical serialization + cryptographic digest (algorithm chosen in R2-R1; not provider-specific).
+- Equal logical configuration → equal digest across providers.
+- **`VectorIndexPrepareOutcome.ALREADY_COMPATIBLE` ≠ guaranteed exact configuration equality** with the requested spec. Port helper `validate_spec_against_description` checks existence, dense dimension, and required capabilities — **not** dense metric, dense/sparse channel names, or full spec equality. Digest equality is defined only via the canonical projection, not via prepare outcome.
+
+### Absent index state
+
+When `describe_index` reports `exists=False`, **`current_revision`** uses semantic state **`ABSENT`** (or a canonical absent digest derived from that state). Target revision is the projection digest of the requested `VectorIndexSpec`. CLA-04 must represent mutation intent: **create vector index** (`ABSENT` → target).
+
+### Incompatible existing index
+
+If the index exists but persisted shape is incompatible with the requested spec, the neutral port **does not** rebuild or recreate. **Fail closed** (`VectorIndexCompatibilityError` / compatibility error). No automatic drop/recreate/migrate in R2/R2-R0.
+
+---
+
+## No CAS guarantee
+
+The neutral `VectorIndexAdministration` port does **not** expose compare-and-swap or provider generation tokens. Stale-state handling is **optimistic re-read + invalidation of prior authorization**, not CAS.
+
+---
+
+## TOCTOU invalidation
+
+Providers do not expose CAS on the neutral port (see **No CAS guarantee** above).
+
+1. Read `describe_index` → `current_revision` digest (or `ABSENT`).
+2. Build `target_revision` from requested spec projection.
+3. CLA-04 **authorize** against fresh `current_revision` / `target_revision` (and evidence fields).
+4. Immediately before `prepare_index`, **re-read** `describe_index` and recompute current digest.
+5. If authorized current digest **A** ≠ re-read digest **B**: **previous authorization is invalid**; `prepare_index` **must not** run under the stale authorization.
+6. **Allowed:** fail closed / abort with typed stale result (**preferred**), or **one bounded** fresh CLA-04 evaluation against the newly observed state — never rebuild the request and continue without `authorize()`.
+7. **No unbounded** `while stale: reauthorize` loops.
+
+**Race window:** re-read → `prepare_index` still has a tiny window without provider CAS; ADR does not claim strict serializable CAS.
+
+Idempotency of `prepare_index` does **not** replace authorization timing.
+
+---
+
+## Live prepare authorization timing
+
+Live operator `prepare_index` is a **governed potentially-consequential operation**. CLA-04 occurs **before** `VectorIndexAdministration.prepare_index` invocation, even when the final provider outcome may be `ALREADY_COMPATIBLE` (authorized operator action, no resulting mutation).
 
 ---
 
@@ -178,9 +225,10 @@ Idempotency of `prepare_index` does **not** replace authorization.
 | Path | Risk |
 | ---- | ---- |
 | `describe_index` / `probe` | No CLA-04 |
-| `prepare_index` → `ALREADY_COMPATIBLE` | Operator action; no resulting mutation — audit optional; no HIGH risk mutation |
-| `prepare_index` → `CREATED` | HIGH (new authoritative index configuration) |
-| Future drop/recreate on port | CRITICAL if ever added — out of scope for R2 |
+| Live `prepare_index` (authorized before call) → `ALREADY_COMPATIBLE` | Governed operator action; no resulting configuration mutation |
+| Live `prepare_index` → `CREATED` | HIGH (new authoritative index configuration) |
+| Stale digest at execution | Abort or fresh CLA-04 — no silent mutation |
+| Future drop/recreate on port | CRITICAL if ever added — out of scope |
 
 ---
 
@@ -189,8 +237,9 @@ Idempotency of `prepare_index` does **not** replace authorization.
 Emit `ControlPlaneMutationAuthorizationEvidence` (CLA-04) with at minimum:
 
 - `mutation_id`, `mutation_type`, `principal`, `resource_scope`, `resource_type`, `resource_id`
-- `current_revision`, `target_revision` (digests once implemented)
-- policy decision + provider-neutral prepare outcome (`CREATED` / `ALREADY_COMPATIBLE`)
+- `current_revision`, `target_revision` (configuration digests or `ABSENT`)
+- `mutation_id`, policy decision
+- provider prepare outcome (`CREATED` / `ALREADY_COMPATIBLE` / compatibility failure) is **execution result**, not authority identity
 
 No provider-specific evidence contract.
 
@@ -231,10 +280,12 @@ Deliver: operator service, CLA-04 request builder, configuration digest contract
 
 ---
 
-## Non-goals (R2)
+## Non-goals (R2 / R2-R0)
 
 - Memory governance (GR-12-A4-R3)
 - Catalog / GR-10 / RequestIdentity / CLA-04 public contract changes
-- Provider adapter authorization
-- Exposing destructive lifecycle on the neutral port
+- Provider adapter authorization or production digest implementation (R2-R1)
+- Changing public `VectorIndexIdentity` / `VectorIndexAdministration` surface in R2-R0
+- Drop, recreate, migrate, delete, reindex on the neutral port
 - Qualifying bootstrap-only paths as CLA-04 governed
+- Treating `QdrantRagStore.delete_collection` as evidence against the neutral admin port (separate architecture concern)
