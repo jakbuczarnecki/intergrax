@@ -8,13 +8,24 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.call_config import LLMCallConfig
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 
 
-class _StubAdapter:
+class _HttpStatusError(RuntimeError):
+    status_code: int
+
+    def __init__(self, message: str, *, status_code: int) -> None:
+        super().__init__(message)
+        self.status_code = status_code
+
+
+class _StubAdapter(BaseLLMAdapter):
+    provider: LLMProvider | str = LLMProvider.OPENAI
+    model: str = ""
+
     def __init__(
         self,
         *,
@@ -23,27 +34,25 @@ class _StubAdapter:
         fail: bool = False,
         status_code: int = 429,
     ) -> None:
+        super().__init__()
         self.provider = provider
         self.model = model
         self._fail = fail
         self._status_code = status_code
-        self.context_window_tokens = 128_000
 
-    def count_messages_tokens(self, messages: object) -> int:
-        del messages
-        return 1
+    @property
+    def context_window_tokens(self) -> int:
+        return 128_000
 
     def generate_messages(self, messages: object, **kwargs: object) -> LLMAdapterResponse:
         del messages, kwargs
         if self._fail:
-            exc = RuntimeError("rate limited")
-            exc.status_code = self._status_code  # type: ignore[attr-defined]
-            raise exc
+            raise _HttpStatusError("rate limited", status_code=self._status_code)
         return LLMAdapterResponse(
             content=f"ok-{self.model}",
             usage=LLMTokenUsage(input_tokens=3, output_tokens=2),
             model=self.model,
-            provider=self.provider.value,
+            provider=llm_provider_slug(self.provider),
         )
 
 
@@ -109,9 +118,7 @@ class _FrameworkFailAdapter(BaseLLMAdapter):
     def generate_messages(self, messages, **kwargs):
         del messages, kwargs
         if self._fail:
-            exc = RuntimeError("provider error")
-            exc.status_code = self._status_code  # type: ignore[attr-defined]
-            raise exc
+            raise _HttpStatusError("provider error", status_code=self._status_code)
         return build_adapter_response(content="framework-ok", model=self.model)
 
 
