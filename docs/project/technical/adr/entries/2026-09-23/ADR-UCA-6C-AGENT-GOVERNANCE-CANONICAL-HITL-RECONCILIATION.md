@@ -5,7 +5,7 @@
 | **Status** | Accepted (architecture); **R1** sequential pause + typed grant; **R2** grant recovery + reblock freeze (2026-09-23) |
 | **Date** | 2026-09-23 |
 | **Deciders** | Execution Engine / UCA-6C architecture |
-| **Related** | [ADR-UCA-6C-EXECUTION-CONTINUATION-INTEGRATION](../2026-09-22/ADR-UCA-6C-EXECUTION-CONTINUATION-INTEGRATION.md) Â· [ADR-UCA-6C-DURABLE-SUSPENDED-OPERATION-REENTRY](../2026-09-22/ADR-UCA-6C-DURABLE-SUSPENDED-OPERATION-REENTRY.md) Â· [ADR-HARNESS-003](../2026-09-22/ADR-HARNESS-003.md) Â· [ADR-GR-10-002](../2026-09-19/ADR-GR-10-002.md) |
+| **Related** | [ADR-UCA-6C-EXECUTION-CONTINUATION-INTEGRATION](../2026-09-22/ADR-UCA-6C-EXECUTION-CONTINUATION-INTEGRATION.md) · [ADR-UCA-6C-DURABLE-SUSPENDED-OPERATION-REENTRY](../2026-09-22/ADR-UCA-6C-DURABLE-SUSPENDED-OPERATION-REENTRY.md) · [ADR-HARNESS-003](../2026-09-22/ADR-HARNESS-003.md) · [ADR-GR-10-002](../2026-09-19/ADR-GR-10-002.md) |
 
 ## 1. Context
 
@@ -508,7 +508,7 @@ See §27.5. Implementers **must not** implement `if approval_evidence_ref: ALLOW
 | **R6-R5.1** | Agent Governance contracts + lifecycle states (AVAILABLE…TERMINAL) on canonical Task fields |
 | **R6-R5.2** | Canonical durable grant/pending via AgentGovernanceGrantLifecyclePort + checkpoint CAS adapter (R2.4) |
 | **R6-R5.3** | AgentGovernanceGrantVerifier + typed AgentRuntimePolicyEvaluationContext |
-| **R6-R5.4** | uthority_reblock_from_claimed + pause_generation / ClaimAuthority invariant tests |
+| **R6-R5.4** | authority_reblock_from_claimed + pause_generation / ClaimAuthority invariant tests |
 | **R6-R5.5** | Agent Governance EE L3 pause bridge |
 | **R6-R5.6** | Recovery + grant reservation/application + crash matrix behaviors |
 | **R6-R5.7** | Sequential Declarative/MSE reblock (no second prepare) |
@@ -525,9 +525,9 @@ See §27.5. Implementers **must not** implement `if approval_evidence_ref: ALLOW
 ### 31.2 Multi-generation invariants (proof obligations)
 
 ```text
-one logical invocation Â· one active suspended operation Â· one current pause generation
-Â· one active continuation instance for that generation Â· one current authority pending
-Â· one valid claim owner (or BLOCKED awaiting claim)
+one logical invocation · one active suspended operation · one current pause generation
+· one active continuation instance for that generation · one current authority pending
+· one valid claim owner (or BLOCKED awaiting claim)
 ```
 
 ## 32. R1 mini-audit checklist
