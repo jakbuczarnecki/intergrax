@@ -5,12 +5,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
-from typing import Any, Iterable, Sequence, TypeVar
+from typing import TypeVar
 
 from intergrax.llm.messages import ChatMessage
+from intergrax.llm_adapters._shared.call_config import LLMCallConfig
 from intergrax.llm_adapters._shared.retry import is_retriable_provider_error
+from intergrax.llm_adapters.contracts.llm_profile import llm_provider_slug
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
@@ -54,8 +56,11 @@ class FailoverLLMAdapter(BaseLLMAdapter):
         *,
         profile_ids: Sequence[str] | None = None,
         routing_attempt_observer: RoutingAttemptObserver | None = None,
+        failover_retry_config: LLMCallConfig | None = None,
     ) -> None:
         super().__init__()
+        if failover_retry_config is not None:
+            self.call_config = failover_retry_config
         if not adapters:
             raise ValueError("FailoverLLMAdapter requires at least one adapter")
         self._adapters = tuple(adapters)
@@ -69,8 +74,7 @@ class FailoverLLMAdapter(BaseLLMAdapter):
         primary = adapters[0]
         self.provider = primary.provider
         self.model = primary.model
-        self.model_name_for_token_estimation = primary.model_name_for_token_estimation
-        self.call_config = primary.call_config
+        self.model_name_for_token_estimation = primary.model or None
         self.routing_attempts: list[LLMRoutingAttemptRecord] = []
         self.routing_attempt_observer = routing_attempt_observer
 
@@ -79,9 +83,7 @@ class FailoverLLMAdapter(BaseLLMAdapter):
         return self._adapters[0].context_window_tokens
 
     def _provider_model(self, adapter: LLMAdapter) -> tuple[str, str]:
-        provider = adapter.provider
-        slug = provider.value if hasattr(provider, "value") else str(provider)
-        return slug, str(adapter.model or "")
+        return llm_provider_slug(adapter.provider), str(adapter.model or "")
 
     def _eligible_adapter_chain(
         self,
@@ -138,7 +140,7 @@ class FailoverLLMAdapter(BaseLLMAdapter):
                 if self.routing_attempt_observer is not None:
                     self.routing_attempt_observer(record)
                 is_last = index >= len(active_adapters) - 1
-                if is_last or not is_retriable_provider_error(exc, adapter.call_config):
+                if is_last or not is_retriable_provider_error(exc, self.call_config):
                     raise
         assert last_exc is not None
         raise last_exc

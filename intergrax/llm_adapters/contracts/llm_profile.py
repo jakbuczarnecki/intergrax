@@ -102,9 +102,14 @@ class LLMProfile(BaseModel):
 
     @classmethod
     def _provider_slug(cls, provider: LLMProvider | str) -> str:
-        if isinstance(provider, LLMProvider):
-            return provider.value
-        return str(provider).strip().lower()
+        return llm_provider_slug(provider)
+
+
+def llm_provider_slug(provider: LLMProvider | str) -> str:
+    """Canonical provider identity slug for profile, routing, and registry."""
+    if isinstance(provider, LLMProvider):
+        return provider.value
+    return str(provider).strip().lower()
 
     @classmethod
     def lab(cls) -> LLMProfile:

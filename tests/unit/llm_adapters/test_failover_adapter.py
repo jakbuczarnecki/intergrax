@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 import pytest
 
 from intergrax.llm.messages import ChatMessage
@@ -24,9 +22,6 @@ class _StubAdapter:
     ) -> None:
         self.provider = provider
         self.model = model
-        self.model_name_for_token_estimation = model
-        self.call_config = MagicMock()
-        self.call_config.retry_on_status = (429, 500, 502, 503, 504)
         self._fail = fail
         self._status_code = status_code
         self.context_window_tokens = 128_000

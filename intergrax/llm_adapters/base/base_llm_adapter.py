@@ -71,7 +71,7 @@ class BaseLLMAdapter(ABC):
     external-operation lifecycle helpers without making inheritance mandatory.
     """
 
-    provider: LLMProvider
+    provider: LLMProvider | str
     model: str
 
     # Hint used by the generic token estimator (e.g. OpenAI model name).
