@@ -1,0 +1,201 @@
+# Platform Enterprise Completion Roadmap
+
+**Document role:** canonical maintainer program tracker for reaching a fully recertified enterprise platform state before scenario-focused development.
+
+**Branch:** `development`
+
+**Scenario gate:** scenario work is **blocked** until all mandatory stages in this roadmap are independently closed and the final enterprise certification is complete.
+
+This document is a **program/closure SSOT**. It does not replace domain semantic authorities. Domain architecture, contracts and qualification records remain authoritative for their own semantics.
+
+Primary companion sources:
+
+- [Harness Architecture Evolution Roadmap](../../overview/HARNESS_ARCHITECTURE_EVOLUTION_ROADMAP.md)
+- [Harness Top-Tier Gap Audit](../qualification/HARNESS_TOP_TIER_GAP_AUDIT.md)
+- [Platform Plugin Enterprise Roadmap](PLATFORM_PLUGIN_ENTERPRISE_ROADMAP.md)
+- domain architecture / qualification records referenced by each stage
+
+DeepSeek/external audit findings may motivate work, but repository code, canonical contracts, architecture documents and independently audited GitHub commits are the authority for closure.
+
+---
+
+## 1. Non-negotiable enterprise invariants
+
+Every stage in this roadmap must preserve and revalidate these rules where applicable:
+
+1. **Contracts over implementations** — consumers depend on platform-defined contracts, not concrete implementations.
+2. **Exactly one owner per concern** — one semantic owner, one canonical contract, one sanctioned composition/selection owner.
+3. **Hard layer boundaries** — no reverse dependencies, no hidden cross-layer construction and no bypass of canonical control points.
+4. **Pluginability / replaceability** — externally supplied strategies/providers/implementations must be attachable through defined contracts where the mechanism is extensible.
+5. **Strong typing** — no weak semantic boundaries built from `Any`, generic `object`, reflection, string dispatch, dynamic attribute probing or dict pseudo-contracts when typed contracts exist.
+6. **No duplicate mechanisms** — no parallel factories, validators, dispatchers, authorities, execution paths, compatibility branches or shadow owners for the same responsibility.
+7. **Fail closed** — missing authority, configuration, evidence or required dependency must not silently become permission or fallback.
+8. **Evidence-backed closure** — a task is not CLOSED because an implementation report says so; closure requires independent audit of the exact GitHub SHA.
+9. **Execution authority remains singular** — all executable platform work enters through the approved Execution boundary.
+10. **Governance is not Execution** — Governance decides whether work/effects are permitted; Execution owns how admitted work runs.
+11. **Proposal != Permission != Execution.**
+12. **Child authority cannot exceed parent authority** — `child_authority ⊆ parent_authority`.
+13. **Downstream scopes may only narrow upstream authority**, never widen it.
+14. **Meaningful side effects require fresh governed authorization immediately before the effect** where policy requires it.
+15. **Required causal/audit evidence must exist before meaningful work begins** where the boundary requires such evidence.
+16. **Absence of HITL/human interaction never implies approval.**
+17. **Runtime extensions cannot self-expand authority.**
+18. **Observability/Diagnostics record or interpret truth; they do not mint execution truth.**
+19. **Configured state != effective state.**
+20. **No scenario transition before the final scenario gate is explicitly CLOSED.**
+
+---
+
+## 2. Mandatory update protocol
+
+This file must be referenced in every implementation/audit instruction that belongs to this enterprise-completion program.
+
+### 2.1 Required instruction header
+
+Every Cursor/implementation instruction must state:
+
+- this file path: `docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`;
+- current roadmap stage ID;
+- parent stage, if any;
+- whole-program goal;
+- statement that the task must not expand beyond its scope or cross a layer boundary without an architecture decision.
+
+### 2.2 Status lifecycle
+
+Allowed statuses:
+
+- `[x] CLOSED` — independently audited on exact GitHub SHA;
+- `[ ] CURRENT` — active task;
+- `[ ] READY FOR AUDIT` — implementation finished, independent GitHub audit still required;
+- `[ ] BLOCKED` — waiting for child task / architecture decision / dependency;
+- `[ ] QUEUED` — next ordered work;
+- `[ ] PLANNED` — later mandatory work;
+- `[ ] FINAL / MANDATORY` — terminal certification gate.
+
+### 2.3 Who may close a step
+
+Cursor/implementation agents **must not** declare a roadmap step finally CLOSED on their own authority.
+
+They may report `READY FOR AUDIT` and propose the new status. Final closure requires:
+
+1. exact implementation commit SHA;
+2. independent code audit on GitHub at that SHA;
+3. tests/evidence appropriate to the stage;
+4. no unresolved blocker in the stage scope;
+5. update of this roadmap with closure evidence.
+
+### 2.4 Evidence rule
+
+Every CLOSED row should eventually have an evidence anchor in §5:
+
+- exact SHA,
+- qualification/audit document when applicable,
+- important child task IDs.
+
+### 2.5 New blockers
+
+If a new blocker is discovered:
+
+- create a child task under the affected stage;
+- parent remains BLOCKED / NOT CLOSED;
+- do not skip forward;
+- do not hide the finding as “out of scope” if it breaks the parent invariant.
+
+---
+
+## 3. Canonical ordered roadmap
+
+| Etap | Co robimy | Opis zadania | Status |
+|---|---|---|---|
+| EBH-2E | Final LLM Boundary Certification | Finalna certyfikacja całego LLM boundary: provider/profile/registry/routing/failover/usage/composition jako jeden spójny subsystem z canonical contracts, jednym ownerem concernów i realną replaceability. | [x] CLOSED |
+| ADR3-IMP-03-R1 | Typed Declarative Dispatch & Contract Deduplication | Usunięcie realnych semantic duplicates w declarative dispatch i pozostawienie canonical typed contracts oraz jednego resolver/dispatch ownera. | [x] CLOSED |
+| ADR3-IMP-03 / M4 | Final Typed Declarative Dispatch Certification | Certyfikacja M4 jako jednego spójnego typed flow: metadata/composition → identity → dispatch → catalog gateway → canonical result → batch aggregation. | [x] CLOSED |
+| **ADR3-IMP-04-R1** | Catalog Host Capability Contract Deduplication | Usunięcie drugiej definicji per-call `invoke(...)` z host-specific Protocolu. `ExecutionBoundDeclarativeToolInvoker` pozostaje jedynym ownerem invocation semantics, a host Protocol dodaje wyłącznie host capability. | **[ ] CURRENT** |
+| ADR3-IMP-04 | Consumer Migration & Final Bind Removal — final recertification | Finalny audit migracji konsumentów: zero narrow legacy Protocolu, zero `inspect.signature` compatibility dispatch, metadata na canonical contract, explicit identity, brak concrete coupling i exactly-one owner per-call invocation contractu. | [ ] BLOCKED |
+| ADR3-IMP-05 | Qualification Gates | Mechaniczne architecture gates blokujące powrót narrow compatibility paths, reflection dispatch, duplicated ownership, concrete coupling, weak typing i alternate execution paths. | [ ] QUEUED |
+| HARNESS-01-R5-W3-R1-Q2 | Finalne zamknięcie Harness W3 | Powrót do przerwanego W3 po ADR3. Pełna kwalifikacja i closure W3 na aktualnym HEAD, bez ponownego otwierania zamkniętych foundation boundaries bez nowego dowodu. | [ ] QUEUED |
+| EBH-2F | Integrations & Hosting Boundary Hardening | Certyfikacja integrations/hosting: provider-neutral contracts, composition ownership, vendor independence, replaceability, brak host/runtime bypassów i concrete coupling. | [ ] PLANNED |
+| EBH-2G | RAG Contract Boundary Hardening | Certyfikacja retrieval/search/reranking/storage jako jednego pluginowalnego subsystemu z canonical contracts, jednym ownership i wymiennymi backendami. | [ ] PLANNED |
+| EBH-2H | Memory Contract Boundary Hardening | Certyfikacja Memory: exactly-one ownership, canonical contracts, backend replaceability, brak bocznych persistence/context paths. | [ ] PLANNED |
+| EBH-2I | Final EBH-2 Rescan | Ponowny przekrojowy audit wszystkich subsystem boundaries po lokalnych hardeningach. Sprawdzenie, czy poprawki nie stworzyły nowych cross-layer zależności, bypassów lub duplicated ownership. | [ ] PLANNED |
+| HARNESS-W4 | Harness W4 — Scale / Resilience / Cancellation recertification | Reconcile and close the W4 debt wave against current repository reality and existing W4 qualification artifacts. Verify cancellation, external-operation termination, provider cancellation boundaries and no alternate execution authority. Exact subwave scope must be revalidated from canonical Harness records before implementation. | [ ] PLANNED |
+| HARNESS-W5 | Harness W5 — Events / Observability delivery and export recertification | Reconcile and close W5 using existing event delivery/export/OTLP qualification records. Verify one event/evidence spine, lifecycle/composition ownership and no observability-created execution truth. | [ ] PLANNED |
+| HARNESS-W6 | Harness W6 — Runtime Intelligence recertification | Reconcile W6-A…W6-E against current HEAD: typed contracts, deterministic analysis, orchestration, execution advisory boundary. Runtime intelligence remains advisory/non-authoritative and must not become a second execution/governance owner. | [ ] PLANNED |
+| GOV-X1 | Governance Authority Boundary Recertification | Cross-cutting governance audit before global dependency/communication certification. Revalidate Governance ≠ Execution, proposal/permission/execution separation, authority narrowing, fresh side-effect authorization, HITL semantics, evidence-before-work and absence of governance bypasses. | [ ] PLANNED |
+| EBH-3 | Dependency & Ownership Certification | Formalny audit globalnego dependency graphu wszystkich warstw i exactly-one ownership każdej odpowiedzialności. Sprawdzenie directionality, contract purity, composition owners i reverse dependencies. | [ ] PLANNED |
+| EBH-4 | Communication, Composition & Bypass Certification | Audit wszystkich cross-layer communication/composition paths: event/call flows, resolvers, factories, host wiring, metadata bridges, provider seams i wszystkie sanctioned/bypass paths. | [ ] PLANNED |
+| HARNESS-W7 | Harness W7 — remaining top-tier harness debt wave | Close the next Harness debt wave after EBH-3/4. Exact semantic scope and child IDs must be reconciled from `HARNESS_TOP_TIER_GAP_AUDIT.md`, `HARNESS_ARCHITECTURE_EVOLUTION_ROADMAP.md` and current qualification records before implementation; do not invent a parallel authority. | [ ] PLANNED |
+| HARNESS-W8 | Harness W8 / final residual harness convergence | Final residual Harness convergence wave if still open on current HEAD. Scope must be code-first and derived from canonical Harness qualification records; if already qualified, perform recertification rather than rebuild. | [ ] PLANNED |
+| HARNESS-FINAL | Harness Final Closure / DeepSeek-derived gap closure | Final code-first recertification of the entire Harness program. All historical DeepSeek/external findings must be either CLOSED, superseded with evidence or explicitly classified non-blocking by canonical architecture. No unresolved harness enterprise blocker may remain. | [ ] PLANNED |
+| GOV-X2 | Governance + Execution end-to-end certification | End-to-end proof that authority/approval/governance decisions propagate correctly through canonical execution and tool/effect paths without self-expansion, stale approval reuse, missing evidence or alternate execution routes. | [ ] PLANNED |
+| EBH-5 | Replaceability & E2E Certification | Practical E2E proof that key providers, strategies and implementations can be replaced through platform contracts without modifying core mechanisms; verify real pluginability rather than test-only monkeypatching. | [ ] PLANNED |
+| EBH-6 | Final Architecture Recertification | Full cross-platform recertification after all local and Harness/Governance work: boundaries, ownership, communication, composition, evidence, fail-closed behavior, typing and regression protection. | [ ] PLANNED |
+| **EBH-7** | Comprehensive Platform Enterprise Architecture Certification | Ostateczna certyfikacja całej Integrax jako jednej platformy enterprise: hard boundaries, exactly-one ownership, canonical contracts, pluginability/replaceability, zero bypassów, zero duplicated mechanisms, correct Governance/Execution separation and validated E2E behavior. | **[ ] FINAL / MANDATORY** |
+| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formalny Go/No-Go do przejścia z hardeningu platformy do pełnej koncentracji na scenariuszach. Gate może być CLOSED tylko gdy wszystkie mandatory rows powyżej są CLOSED i nie istnieje znany enterprise blocker. | **[ ] BLOCKED** |
+
+---
+
+## 4. Mandatory cross-cutting audit matrix
+
+Every parent-level closure from this point forward must explicitly assess the applicable cells below.
+
+| Area | Required proof |
+|---|---|
+| Layer boundaries | No illegal imports, construction or ownership crossing layer boundaries. |
+| Communication | All cross-layer calls/events/metadata bridges use sanctioned contracts and documented owners. |
+| Composition | Concrete implementation selection exists only in sanctioned composition roots. |
+| Ownership | Exactly one semantic owner and one canonical contract per concern. |
+| Pluginability | External strategy/provider/implementation can replace defaults through platform-defined contracts where extensibility is claimed. |
+| Strong typing | No weak/dynamic semantic boundary, reflection dispatch or dict/string pseudo-contract replacing an existing typed contract. |
+| Bypass resistance | No direct consumer → concrete implementation path and no alternate runtime/execution/tool/governance path. |
+| Governance | Authority only narrows; proposal/permission/execution remain distinct; fresh authorization exists at required side-effect seam. |
+| Execution | Only canonical Execution authority admits meaningful executable work; no subsystem mints peer execution authority. |
+| Evidence | Required causal/audit evidence precedes meaningful work and is attributable/reconstructable to the promised level. |
+| Fail-closed | Missing required policy, authority, dependency, configuration or evidence cannot silently succeed/fallback. |
+| Replaceability | Demonstrated through structural/custom implementation proof, not only monkeypatching. |
+| Regression | Architecture gates + targeted functional tests protect every corrected invariant. |
+
+---
+
+## 5. Closure evidence ledger
+
+Update this section only after independent exact-SHA audit.
+
+| Etap | Closure SHA / evidence | Notes |
+|---|---|---|
+| EBH-2E | `6fa75172468461dc084a2221a5fdff6f23c1fa1c` | Final LLM boundary certification accepted after independent GitHub audit. |
+| ADR3-IMP-03-R1 | `255590897603f6e59ffebf4c1e4e7fde3ba747d1` | Typed declarative dispatch contract deduplication independently audited. |
+| ADR3-IMP-03 / M4 | `702cb0a2024a7a98ab0bb88c1f645efeb0e7eb38` | M4 final typed declarative dispatch certification independently audited. |
+| ADR3-IMP-04-R1 | — | CURRENT. |
+| ADR3-IMP-04 | — | BLOCKED by R1. |
+| remaining mandatory stages | — | Fill on closure. |
+
+---
+
+## 6. Required wording for future implementation instructions
+
+Every task instruction in this program must include an equivalent of:
+
+> `PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md` is the canonical enterprise-completion tracker. Work only on the current stage and its explicit children. Do not skip or silently reorder mandatory stages. Cursor may report READY FOR AUDIT but final CLOSED status is assigned only after independent audit of the exact GitHub commit. Any new enterprise blocker creates a child task and keeps the parent open. After independent closure, update the roadmap status and evidence ledger before starting the next mandatory stage.
+
+Every final Cursor report with code changes must also state:
+
+> **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 7. Program goal
+
+Bring the whole Integrax platform to a fully, independently recertified enterprise state before scenario-focused development:
+
+- hard and non-negotiable layer boundaries;
+- exactly one owner per mechanism/contract/decision;
+- contracts over implementations;
+- full modularity, pluginability and replaceability;
+- strongly typed semantic boundaries;
+- one sanctioned execution/governance/tool/composition path per responsibility;
+- zero hidden bypasses;
+- zero duplicated mechanisms;
+- complete cross-layer communication certification;
+- Governance and Execution authority separation proven end-to-end;
+- final closure only after `EBH-7` and `SCENARIO-GATE`.
