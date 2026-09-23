@@ -11,7 +11,6 @@ from typing import TypeVar
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.call_config import LLMCallConfig
-from intergrax.llm_adapters._shared.retry import is_retriable_provider_error
 from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -25,6 +24,12 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
+from intergrax.llm_adapters.contracts.failover_policy import (
+    FailoverDecision,
+    FailoverPolicy,
+    FailoverProgressionContext,
+)
+from intergrax.llm_adapters.registry.failover_policy import default_failover_policy
 
 T = TypeVar("T")
 
@@ -67,8 +72,12 @@ class FailoverLLMAdapter(BaseLLMAdapter):
         routing_attempt_observer: RoutingAttemptObserver | None = None,
         failover_retry_config: LLMCallConfig | None = None,
         adapter_failover_retry_configs: Sequence[LLMCallConfig] | None = None,
+        failover_policy: FailoverPolicy | None = None,
     ) -> None:
         super().__init__()
+        self._failover_policy = (
+            failover_policy if failover_policy is not None else default_failover_policy()
+        )
         if failover_retry_config is not None:
             self.call_config = failover_retry_config
         if not adapters:
@@ -163,9 +172,15 @@ class FailoverLLMAdapter(BaseLLMAdapter):
                 if self.routing_attempt_observer is not None:
                     self.routing_attempt_observer(record)
                 is_last = index >= len(active_chain) - 1
-                if is_last or not is_retriable_provider_error(
-                    exc, entry.failover_retry_config
-                ):
+                decision = self._failover_policy.decide_after_failure(
+                    FailoverProgressionContext(
+                        attempt_index=index,
+                        is_last_candidate=is_last,
+                        error=exc,
+                        failover_retry_config=entry.failover_retry_config,
+                    )
+                )
+                if decision is FailoverDecision.STOP:
                     raise
         assert last_exc is not None
         raise last_exc

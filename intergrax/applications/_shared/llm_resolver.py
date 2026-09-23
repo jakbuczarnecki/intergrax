@@ -111,7 +111,15 @@ def create_adapter_for_routing_evaluation(
         if ahi_hint:
             hint = ahi_hint
     if profile.fallback_profiles or hint or profile.routing_policy_hint:
-        return create_adapter_with_failover(profile, policy_route_hint=hint)
+        from intergrax.llm_adapters.registry.failover_policy import routing_authorisation_context
+
+        return create_adapter_with_failover(
+            profile,
+            policy_route_hint=hint,
+            routing_authorisation=routing_authorisation_context(
+                env.llm_routing_profile if env is not None else None
+            ),
+        )
     return create_adapter(profile)
 
 
@@ -180,7 +188,15 @@ def _create_base_llm_adapter(
     hint: str | None,
 ) -> LLMAdapter:
     if profile.fallback_profiles or hint or profile.routing_policy_hint:
-        return create_adapter_with_failover(profile, policy_route_hint=hint)
+        from intergrax.llm_adapters.registry.failover_policy import routing_authorisation_context
+
+        return create_adapter_with_failover(
+            profile,
+            policy_route_hint=hint,
+            routing_authorisation=routing_authorisation_context(
+                env.llm_routing_profile if env is not None else None
+            ),
+        )
     return create_adapter(profile)
 
 

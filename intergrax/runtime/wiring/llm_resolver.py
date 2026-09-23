@@ -119,7 +119,16 @@ def _resolve_llm_adapter_impl(
     )
     selected = router.ordered_profiles()[0]
     if selected.fallback_profiles or hint or selected.routing_policy_hint:
-        return create_adapter_with_failover(selected, policy_route_hint=hint)
+        from intergrax.llm_adapters.registry.failover_policy import routing_authorisation_context
+
+        routing_authorisation = routing_authorisation_context(
+            env.llm_routing_profile if env is not None else None
+        )
+        return create_adapter_with_failover(
+            selected,
+            policy_route_hint=hint,
+            routing_authorisation=routing_authorisation,
+        )
     return create_adapter(selected)
 
 
