@@ -94,6 +94,8 @@ class _PhysicalUsageSource:
 @dataclass
 class _LogicalUsageEntry:
     label: str
+    provider_slug: str
+    model: str
     sources: Dict[int, _PhysicalUsageSource] = field(default_factory=dict)
 
 
@@ -146,14 +148,30 @@ class LLMUsageTracker:
         instance_id = id(verified)
 
         logical = self._entries.get(resolved_label)
-        if logical is None:
-            logical = _LogicalUsageEntry(label=resolved_label)
-            self._entries[resolved_label] = logical
-
-        if instance_id in logical.sources:
+        if logical is not None and instance_id in logical.sources:
             return
 
-        logical.sources[instance_id] = self._physical_source(verified)
+        physical = self._physical_source(verified)
+
+        if logical is None:
+            logical = _LogicalUsageEntry(
+                label=resolved_label,
+                provider_slug=physical.provider_slug,
+                model=physical.model,
+            )
+            self._entries[resolved_label] = logical
+        elif (
+            physical.provider_slug != logical.provider_slug
+            or physical.model != logical.model
+        ):
+            raise ValueError(
+                f"logical usage label '{resolved_label}' already represents "
+                f"provider/model {logical.provider_slug}:{logical.model}, "
+                f"cannot register physical source with provider/model "
+                f"{physical.provider_slug}:{physical.model}"
+            )
+
+        logical.sources[instance_id] = physical
 
     def unregister_adapter(self, adapter: LLMAdapter | LLMUsageTrackable) -> None:
         """
