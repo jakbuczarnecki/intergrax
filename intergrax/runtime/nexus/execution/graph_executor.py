@@ -17,7 +17,9 @@ from intergrax.agents.persistence.compensation_queue_wiring import (
 from intergrax.agents.persistence.idempotency_store_wiring import (
     inject_acp_idempotency_store_metadata,
 )
-from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
+)
 from intergrax.agents.persistence.tool_invoker_wiring import inject_acp_tool_invoker_metadata
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.contracts.orchestration_topology import (
@@ -224,7 +226,7 @@ class GraphExecutor:
         agent_checkpoint_store: AgentCheckpointStore | None = None,
         compensation_queue_store: CompensationQueueStore | None = None,
         idempotency_store: IdempotencyStore | None = None,
-        declarative_tool_invoker: DeclarativeToolInvoker | None = None,
+        declarative_tool_invoker: ExecutionBoundDeclarativeToolInvoker | None = None,
         runtime_config: Optional["RuntimeConfig"] = None,
         execution_identity: ActiveExecutionIdentity | None = None,
         authority_policy: ExecutionAuthorityPolicy | None = None,

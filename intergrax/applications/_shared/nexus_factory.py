@@ -55,8 +55,8 @@ from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.contracts.attempt_lifecycle import AttemptLifecycleStore
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.agents.persistence.declarative_tool_executor import (
-    DeclarativeToolInvoker,
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
 )
 from intergrax.runtime.execution.authority import (
     resolve_execution_authority_policy_from_runtime_config,
@@ -112,7 +112,7 @@ def build_nexus_loop_from_environment(
     agent_checkpoint_store: AgentCheckpointStore | None = None,
     compensation_queue_store: CompensationQueueStore | None = None,
     idempotency_store: IdempotencyStore | None = None,
-    declarative_tool_invoker: DeclarativeToolInvoker | None = None,
+    declarative_tool_invoker: ExecutionBoundDeclarativeToolInvoker | None = None,
     notification_adapter: NotificationAdapter | None = None,
     runtime_events_db_path: Path | None = None,
     task_memory_store: Any | None = None,

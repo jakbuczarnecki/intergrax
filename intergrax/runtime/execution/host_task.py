@@ -130,8 +130,8 @@ from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
-from intergrax.agents.persistence.declarative_tool_executor import (
-    DeclarativeToolInvoker,
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
 )
 from intergrax.agents.persistence.skill_host_wiring import (
     HostSkillCatalogWiring,
@@ -197,7 +197,7 @@ class TaskBoundAgenticDelegate:
         *,
         agent_engine: AgentEnginePort,
         agent_router: AgentRouter,
-        declarative_tool_invoker: DeclarativeToolInvoker | None = None,
+        declarative_tool_invoker: ExecutionBoundDeclarativeToolInvoker | None = None,
         skill_host_wiring: HostSkillCatalogWiring | None = None,
     ) -> None:
         self._task = task
@@ -248,7 +248,7 @@ def build_host_task_strategy_router(
     agent_engine: AgentEnginePort,
     agent_router: AgentRouter,
     orchestration_executor: OrchestrationExecutor,
-    declarative_tool_invoker: DeclarativeToolInvoker | None = None,
+    declarative_tool_invoker: ExecutionBoundDeclarativeToolInvoker | None = None,
     skill_host_wiring: HostSkillCatalogWiring | None = None,
 ) -> StrategyExecutionRouter[TaskExecutionInput, TaskResult, TaskResult]:
     return StrategyExecutionRouter[
@@ -367,7 +367,7 @@ class HostTaskExecution:
     _recovery_admission: RecoveryAdmissionPort | None = None
     _execution_capacity_admission: ExecutionCapacityAdmissionPort | None = None
     _continuation_state_store: ExecutionContinuationStateStore | None = None
-    _declarative_tool_invoker: DeclarativeToolInvoker | None = None
+    _declarative_tool_invoker: ExecutionBoundDeclarativeToolInvoker | None = None
     _skill_host_wiring: HostSkillCatalogWiring | None = None
     _run_budget_persistence: RunBudgetPersistence | None = None
     _deadline_authority_resolver: ExecutionDeadlineAuthorityResolver | None = None

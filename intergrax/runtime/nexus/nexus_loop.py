@@ -170,8 +170,8 @@ from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
 )
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
-from intergrax.agents.persistence.declarative_tool_executor import (
-    DeclarativeToolInvoker,
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
 )
 
 if TYPE_CHECKING:
@@ -224,7 +224,7 @@ class NexusLoop:
         agent_checkpoint_store: AgentCheckpointStore | None = None,
         compensation_queue_store: CompensationQueueStore | None = None,
         idempotency_store: IdempotencyStore | None = None,
-        declarative_tool_invoker: DeclarativeToolInvoker | None = None,
+        declarative_tool_invoker: ExecutionBoundDeclarativeToolInvoker | None = None,
         notification_adapter: Optional[NotificationAdapter] = None,
         middleware: Optional[MiddlewarePipeline] = None,
         production_mode: bool = False,
@@ -547,7 +547,7 @@ class NexusLoop:
         return self._engine
 
     @property
-    def declarative_tool_invoker(self) -> DeclarativeToolInvoker | None:
+    def declarative_tool_invoker(self) -> ExecutionBoundDeclarativeToolInvoker | None:
         """Host-wired catalog tool invoker shared by graph and agentic execution paths."""
         return self._declarative_tool_invoker
 

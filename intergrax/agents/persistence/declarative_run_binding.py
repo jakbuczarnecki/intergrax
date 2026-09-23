@@ -6,11 +6,13 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
+)
 
 
 @runtime_checkable
-class DeclarativeToolInvokerWithRunBinding(DeclarativeToolInvoker, Protocol):
+class DeclarativeToolInvokerWithRunBinding(ExecutionBoundDeclarativeToolInvoker, Protocol):
     """Session metadata binding only; execution identity is per-call on ``invoke`` (ADR3 M4)."""
 
     def bind_run(

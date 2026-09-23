@@ -13,7 +13,9 @@ from intergrax.agents.persistence.compensation_queue_store import CompensationQu
 from intergrax.agents.persistence.compensation_queue_wiring import (
     make_acp_compensation_queue_task_enricher,
 )
-from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
+)
 from intergrax.agents.persistence.idempotency_store_wiring import (
     make_acp_idempotency_store_task_enricher,
 )
@@ -80,7 +82,9 @@ def build_lkw_combined_task_enricher(
     agent_checkpoint_store: AgentCheckpointStore | None = None,
     compensation_queue_store: CompensationQueueStore | None = None,
     idempotency_store: IdempotencyStore | None = None,
-    declarative_tool_invoker_factory: Callable[[], DeclarativeToolInvoker | None] | None = None,
+    declarative_tool_invoker_factory: Callable[
+        [], ExecutionBoundDeclarativeToolInvoker | None
+    ] | None = None,
 ) -> TaskEnricher:
     """Apply LKW defaults, shared reliability defaults, then orchestration ACP enrichment.
 
