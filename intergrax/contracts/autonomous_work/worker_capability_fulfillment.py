@@ -25,6 +25,7 @@ from intergrax.contracts.autonomous_work.worker_capability_recovery import (
     WorkerCapabilityRecoveryProvenance,
 )
 from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
+    WorkerQualifiedCapabilityExecutionResult,
     WorkerQualifiedCapabilityResumeResult,
 )
 from intergrax.contracts.capability_catalog.capability_gap import CapabilityGap
@@ -97,6 +98,7 @@ class WorkerCapabilityFulfillmentResult:
     recovery_outcome: WorkerCapabilityRecoveryOutcome | None = None
     capability_gap: CapabilityGap | None = None
     resume_result: WorkerQualifiedCapabilityResumeResult | None = None
+    execution_result: WorkerQualifiedCapabilityExecutionResult | None = None
     decided_at: datetime | None = None
 
     def __post_init__(self) -> None:

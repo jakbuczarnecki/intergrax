@@ -25,13 +25,17 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Protocol, runtime_checkable
 
-from intergrax.autonomous_work.principal_binding_resolver import WorkerPrincipalBindingResolver
+from intergrax.autonomous_work.principal_binding_resolver import (
+    WorkerPrincipalBindingResolver,
+)
 from intergrax.contracts.autonomous_work.execution_authority import (
     WorkerExecutionAuthorityContext,
     WorkerExecutionAuthorityRequest,
 )
 from intergrax.contracts.autonomous_work.ids import WorkerInstanceId
-from intergrax.contracts.autonomous_work.principal_binding import ResolvedWorkerPrincipal
+from intergrax.contracts.autonomous_work.principal_binding import (
+    ResolvedWorkerPrincipal,
+)
 from intergrax.contracts.collaborative_work import (
     AuthorityDelegation,
     DelegationStatus,
@@ -50,7 +54,9 @@ def _utc_now() -> datetime:
 class CollaborativeWorkAuthorityResolverPort(Protocol):
     """Stable authority resolver port — Collaborative Work owns semantics."""
 
-    def resolve(self, request: EffectiveAuthorityRequest) -> EffectiveAuthorityDecision: ...
+    def resolve(
+        self, request: EffectiveAuthorityRequest
+    ) -> EffectiveAuthorityDecision: ...
 
 
 class WorkerExecutionAuthorityDenied(Exception):
@@ -68,6 +74,16 @@ class WorkerExecutionAuthorityDenied(Exception):
             f"worker execution authority denied for {worker_instance_id}: "
             f"{decision.decision.reason}"
         )
+
+
+@runtime_checkable
+class WorkerExecutionAdmissionPort(Protocol):
+    """Prepare Worker execution authority context for canonical intake."""
+
+    def prepare(
+        self,
+        request: WorkerExecutionAuthorityRequest,
+    ) -> WorkerExecutionAuthorityContext: ...
 
 
 class WorkerExecutionAdmissionService:

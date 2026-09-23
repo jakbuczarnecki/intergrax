@@ -11,9 +11,11 @@ from intergrax.contracts.codecraft.bound_capability_execution import (
     CodeCraftBoundCapabilityExecutionRequest,
     CodeCraftBoundCapabilityExecutionResult,
 )
+from intergrax.contracts.execution.bound_capability_execution_dispatch import (
+    BoundCapabilityExecutionDispatchRequest,
+)
 from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
     QualifiedCapabilityExecutionDispatchDisposition,
-    QualifiedCapabilityExecutionDispatchRequest,
 )
 from intergrax.contracts.execution.qualified_capability_execution_intake import (
     QualifiedCapabilityExecutionDelegateResult,
@@ -53,7 +55,7 @@ class CodeCraftQualifiedCapabilityExecutionHandler(
 
     def dispatch_once(
         self,
-        request: QualifiedCapabilityExecutionDispatchRequest,
+        request: BoundCapabilityExecutionDispatchRequest,
         *,
         run_id: RunId,
         attempt_id: AttemptId,

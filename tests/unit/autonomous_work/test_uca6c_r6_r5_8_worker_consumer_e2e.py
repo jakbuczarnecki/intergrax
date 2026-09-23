@@ -572,10 +572,19 @@ def test_direct_reuse_production_adapter_binding_and_execution() -> None:
     assert bundle.strategy.calls == 0
     assert execution.calls == 1
     assert execution.last_request is not None
+    assert isinstance(
+        execution.last_request,
+        __import__(
+            "intergrax.contracts.autonomous_work.worker_host_available_capability_execution",
+            fromlist=["WorkerHostAvailableCapabilityExecutionRequest"],
+        ).WorkerHostAvailableCapabilityExecutionRequest,
+    )
     assert (
         result.disposition
         is WorkerCapabilityFulfillmentDisposition.EXECUTION_DISPATCHED
     )
+    assert result.execution_result is not None
+    assert result.execution_result.execution_id is not None
 
 
 @dataclass

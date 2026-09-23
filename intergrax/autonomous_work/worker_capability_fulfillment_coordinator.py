@@ -282,6 +282,7 @@ class WorkerCapabilityFulfillmentCoordinator:
                 provenance=provenance,
                 recovery_outcome=recovery,
                 resume_result=resume_result,
+                execution_result=resume_result.execution_result,
                 decided_at=decided_at,
             )
         if outcome in {

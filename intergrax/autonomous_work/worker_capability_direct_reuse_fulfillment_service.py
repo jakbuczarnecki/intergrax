@@ -7,14 +7,15 @@ from __future__ import annotations
 
 
 from intergrax.autonomous_work.execution_authority_admission import (
-    WorkerExecutionAdmissionService,
+    WorkerExecutionAdmissionPort,
     WorkerExecutionAuthorityDenied,
 )
 from intergrax.contracts.autonomous_work.worker_host_available_capability_binding import (
     HostAvailableCapabilityBindingPort,
 )
-from intergrax.autonomous_work.worker_qualified_capability_resume_ports import (
-    WorkerQualifiedCapabilityExecutionPort,
+from intergrax.contracts.autonomous_work.worker_host_available_capability_execution import (
+    WorkerHostAvailableCapabilityExecutionPort,
+    WorkerHostAvailableCapabilityExecutionRequest,
 )
 from intergrax.contracts.admitted_root_governance_identity import (
     AdmittedRootGovernanceIdentity,
@@ -41,7 +42,6 @@ from intergrax.contracts.autonomous_work.worker_host_available_capability_bindin
 )
 from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
     WorkerQualifiedCapabilityExecutionDisposition,
-    WorkerQualifiedCapabilityExecutionRequest,
     derive_qualified_capability_execution_request_id,
 )
 from intergrax.contracts.capability_qualification.qualified_capability_binding import (
@@ -56,8 +56,8 @@ class WorkerCapabilityDirectReuseFulfillmentService:
         self,
         *,
         binding: HostAvailableCapabilityBindingPort,
-        execution: WorkerQualifiedCapabilityExecutionPort,
-        authority_admission: WorkerExecutionAdmissionService | None = None,
+        execution: WorkerHostAvailableCapabilityExecutionPort,
+        authority_admission: WorkerExecutionAdmissionPort | None = None,
     ) -> None:
         self._binding = binding
         self._execution = execution
@@ -162,12 +162,8 @@ class WorkerCapabilityDirectReuseFulfillmentService:
             resume_operation_id=direct_reuse_operation_id,
             binding_operation_id=binding_operation_id,
         )
-        discovery_provenance_id = (
-            f"host-available:discovery:{provenance.discovery_correlation_id}"
-        )
-        worker_need_provenance_id = f"host-available:worker-need:{worker_need_id}"
-        execution_request = WorkerQualifiedCapabilityExecutionRequest(
-            resume_operation_id=direct_reuse_operation_id,
+        execution_request = WorkerHostAvailableCapabilityExecutionRequest(
+            direct_reuse_operation_id=direct_reuse_operation_id,
             binding_operation_id=binding_operation_id,
             execution_request_id=execution_request_id,
             execution_target=binding_result.execution_target,
@@ -175,9 +171,8 @@ class WorkerCapabilityDirectReuseFulfillmentService:
             worker_need_id=worker_need_id,
             tenant_id=request.tenant_id,
             task_id=request.task_id,
-            qualification_request_id=discovery_provenance_id,
-            acquisition_request_id=worker_need_provenance_id,
-            qualified_subject_reference=binding_result.host_subject_reference,
+            discovery_correlation_id=provenance.discovery_correlation_id,
+            host_subject_reference=binding_result.host_subject_reference,
             requested_at=timestamp,
             admitted_governance_identity=admitted_identity,
             effective_authority_decision=authority_context.effective_authority_decision,
@@ -194,6 +189,7 @@ class WorkerCapabilityDirectReuseFulfillmentService:
                 disposition=WorkerCapabilityFulfillmentDisposition.EXECUTION_DISPATCHED,
                 provenance=provenance,
                 recovery_outcome=recovery,
+                execution_result=execution_result,
                 decided_at=timestamp,
             )
         return WorkerCapabilityFulfillmentResult(

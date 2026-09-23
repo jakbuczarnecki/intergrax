@@ -5,6 +5,10 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.execution.execution_bound_capability_execution_intake import (
+    ExecutionBoundCapabilityExecutionDelegateResult,
+    ExecutionBoundCapabilityExecutionIntakePayload,
+)
 from intergrax.contracts.execution.qualified_capability_execution_intake import (
     QualifiedCapabilityExecutionDelegateResult,
     QualifiedCapabilityExecutionIntakePayload,
@@ -15,6 +19,12 @@ from intergrax.contracts.runtime_execution_policy_admission import (
 )
 from intergrax.runtime.execution.canonical_intake_adapter import (
     CanonicalExecutionRuntimeAdapter,
+)
+from intergrax.runtime.execution.execution_bound_capability_execution_dispatch_service import (
+    ExecutionBoundCapabilityExecutionDispatchService,
+)
+from intergrax.runtime.execution.execution_bound_capability_execution_runtime_delegate import (
+    ExecutionBoundCapabilityExecutionRuntimeDelegate,
 )
 from intergrax.runtime.execution.qualified_capability_execution_dispatch_service import (
     QualifiedCapabilityExecutionDispatchService,
@@ -60,4 +70,36 @@ def build_qualified_capability_execution_dispatch_service(
     return dispatch, delegate, launcher
 
 
-__all__ = ["build_qualified_capability_execution_dispatch_service"]
+def build_execution_bound_capability_execution_dispatch_service(
+    *,
+    handler_registry: QualifiedCapabilityExecutionBindingHandlerRegistry,
+    runtime_policy_admission: RuntimeExecutionPolicyAdmissionPort,
+) -> tuple[
+    ExecutionBoundCapabilityExecutionDispatchService,
+    ExecutionBoundCapabilityExecutionRuntimeDelegate,
+    RootExecutionLaunchPort[
+        ExecutionBoundCapabilityExecutionIntakePayload,
+        ExecutionBoundCapabilityExecutionDelegateResult,
+    ],
+]:
+    """Wire DIRECT_REUSE ingress dedup → root launcher → ExecutionRuntime delegate."""
+    delegate = ExecutionBoundCapabilityExecutionRuntimeDelegate(
+        handler_registry=handler_registry,
+    )
+    runtime = ExecutionRuntime(delegate)
+    intake = CanonicalExecutionRuntimeAdapter(runtime)
+    launcher = build_default_root_execution_launcher(
+        runtime_policy_admission=runtime_policy_admission,
+        execution_intake=intake,
+    )
+    dispatch = ExecutionBoundCapabilityExecutionDispatchService(
+        root_execution_launcher=launcher,
+        runtime_delegate=delegate,
+    )
+    return dispatch, delegate, launcher
+
+
+__all__ = [
+    "build_execution_bound_capability_execution_dispatch_service",
+    "build_qualified_capability_execution_dispatch_service",
+]

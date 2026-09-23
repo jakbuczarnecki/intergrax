@@ -1,19 +1,19 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""ExecutionRuntime delegate for bound qualified capability targets (UCA-6C-R2)."""
+"""ExecutionRuntime delegate for host-available bound capability targets (UCA-6C-R6-R5.8-H1-R1)."""
 
 from __future__ import annotations
 
 from intergrax.contracts.execution.bound_capability_execution_dispatch import (
     BoundCapabilityExecutionDispatchRequest,
 )
+from intergrax.contracts.execution.execution_bound_capability_execution_intake import (
+    ExecutionBoundCapabilityExecutionDelegateResult,
+    ExecutionBoundCapabilityExecutionIntakePayload,
+)
 from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
     QualifiedCapabilityExecutionDispatchDisposition,
-)
-from intergrax.contracts.execution.qualified_capability_execution_intake import (
-    QualifiedCapabilityExecutionDelegateResult,
-    QualifiedCapabilityExecutionIntakePayload,
 )
 from intergrax.contracts.execution_identity import (
     peek_active_execution_id,
@@ -24,8 +24,8 @@ from intergrax.runtime.execution.qualified_capability_execution_handlers import 
 )
 
 
-class QualifiedCapabilityExecutionRuntimeDelegate:
-    """Invoke binding handlers under active ExecutionRuntime identity — not a router."""
+class ExecutionBoundCapabilityExecutionRuntimeDelegate:
+    """Invoke binding handlers under active ExecutionRuntime identity — no fake provenance."""
 
     def __init__(
         self,
@@ -37,10 +37,10 @@ class QualifiedCapabilityExecutionRuntimeDelegate:
 
     async def execute(
         self,
-        request: QualifiedCapabilityExecutionIntakePayload,
-    ) -> QualifiedCapabilityExecutionDelegateResult:
+        request: ExecutionBoundCapabilityExecutionIntakePayload,
+    ) -> ExecutionBoundCapabilityExecutionDelegateResult:
         self.execute_calls += 1
-        dispatch_request = BoundCapabilityExecutionDispatchRequest(
+        handler_request = BoundCapabilityExecutionDispatchRequest(
             execution_request_id=request.execution_request_id,
             execution_target=request.execution_target,
             tenant_id=request.tenant_id,
@@ -50,23 +50,23 @@ class QualifiedCapabilityExecutionRuntimeDelegate:
             request.execution_target.binding_provider_id,
         )
         if handler is None:
-            return QualifiedCapabilityExecutionDelegateResult(
+            return ExecutionBoundCapabilityExecutionDelegateResult(
                 disposition=QualifiedCapabilityExecutionDispatchDisposition.UNAVAILABLE,
                 reason_detail="execution_handler_unavailable",
             )
         run_id, attempt_id = require_active_execution_identity()
         execution_id = peek_active_execution_id()
         if execution_id is None:
-            return QualifiedCapabilityExecutionDelegateResult(
+            return ExecutionBoundCapabilityExecutionDelegateResult(
                 disposition=QualifiedCapabilityExecutionDispatchDisposition.FAILED,
                 reason_detail="active_execution_id_missing",
             )
         return handler.dispatch_once(
-            dispatch_request,
+            handler_request,
             run_id=run_id,
             attempt_id=attempt_id,
             execution_id=execution_id,
         )
 
 
-__all__ = ["QualifiedCapabilityExecutionRuntimeDelegate"]
+__all__ = ["ExecutionBoundCapabilityExecutionRuntimeDelegate"]

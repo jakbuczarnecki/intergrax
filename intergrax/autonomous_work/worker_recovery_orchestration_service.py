@@ -44,6 +44,10 @@ from intergrax.autonomous_work.recovery_orchestration_ports import (
     WorkerRecoveryReplanPort,
     WorkerRecoveryReplanRequest,
 )
+from intergrax.contracts.autonomous_work.worker_capability_fulfillment import (
+    WorkerCapabilityFulfillmentDisposition,
+    WorkerCapabilityFulfillmentResult,
+)
 from intergrax.autonomous_work.repository import (
     AutonomousWorkEntityNotFound,
     AutonomousWorkRevisionConflict,
@@ -62,6 +66,7 @@ from intergrax.contracts.autonomous_work.execution_dispatch import (
 )
 from intergrax.contracts.autonomous_work.goal import WorkerGoalStatus
 from intergrax.contracts.autonomous_work.ids import WorkerInstanceId
+from intergrax.contracts.execution_identity import ExecutionId
 from intergrax.contracts.autonomous_work.lifecycle import WorkerLifecycleState
 from intergrax.contracts.autonomous_work.obstacle_recovery import RecoveryStrategy
 from intergrax.contracts.autonomous_work.recovery_orchestration import (
@@ -491,15 +496,11 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
                     disposition=WorkerRecoveryOrchestrationDisposition.UNAVAILABLE,
                     episode=episode,
                 )
-            episode = self._episode_repository.mark_escalated(
-                recovery_episode_id=episode.recovery_episode_id,
-                expected_revision=episode.revision,
-                completed_at=now,
-                terminal_reason="capability_fulfillment_deferred",
-            )
-            return WorkerRecoveryOrchestrationResult(
-                disposition=WorkerRecoveryOrchestrationDisposition.ESCALATED,
-                episode=episode,
+            return self._apply_capability_fulfillment_semantics(
+                episode,
+                fulfillment=fulfillment,
+                request=request,
+                now=now,
             )
         capability = self._capability_port.request_acquisition(
             WorkerCapabilityAcquisitionRequest(
@@ -526,6 +527,119 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
         )
         return WorkerRecoveryOrchestrationResult(
             disposition=WorkerRecoveryOrchestrationDisposition.ESCALATED,
+            episode=episode,
+        )
+
+    def _apply_capability_fulfillment_semantics(
+        self,
+        episode: WorkerRecoveryEpisode,
+        *,
+        fulfillment,
+        request: WorkerRecoveryOrchestrationRequest,
+        now: datetime,
+    ) -> WorkerRecoveryOrchestrationResult:
+        semantic = fulfillment.fulfillment_result
+        if semantic is None:
+            episode = self._episode_repository.mark_escalated(
+                recovery_episode_id=episode.recovery_episode_id,
+                expected_revision=episode.revision,
+                completed_at=now,
+                terminal_reason="capability_fulfillment_missing_result",
+            )
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.ESCALATED,
+                episode=episode,
+            )
+        disposition = semantic.disposition
+        if disposition is WorkerCapabilityFulfillmentDisposition.EXECUTION_DISPATCHED:
+            return self._apply_fulfillment_execution_dispatched(
+                episode,
+                semantic=semantic,
+                request=request,
+                now=now,
+            )
+        if disposition is WorkerCapabilityFulfillmentDisposition.DISCOVERY_UNAVAILABLE:
+            episode = self._episode_repository.mark_escalated(
+                recovery_episode_id=episode.recovery_episode_id,
+                expected_revision=episode.revision,
+                completed_at=now,
+                terminal_reason="capability_fulfillment_discovery_unavailable",
+            )
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.UNAVAILABLE,
+                episode=episode,
+            )
+        terminal_reason = f"capability_fulfillment_{disposition.value}"
+        episode = self._episode_repository.mark_escalated(
+            recovery_episode_id=episode.recovery_episode_id,
+            expected_revision=episode.revision,
+            completed_at=now,
+            terminal_reason=terminal_reason,
+        )
+        return WorkerRecoveryOrchestrationResult(
+            disposition=WorkerRecoveryOrchestrationDisposition.ESCALATED,
+            episode=episode,
+        )
+
+    def _apply_fulfillment_execution_dispatched(
+        self,
+        episode: WorkerRecoveryEpisode,
+        *,
+        semantic: WorkerCapabilityFulfillmentResult,
+        request: WorkerRecoveryOrchestrationRequest,
+        now: datetime,
+    ) -> WorkerRecoveryOrchestrationResult:
+        worker = self._load_worker(episode.worker_instance_id)
+        if worker is not None:
+            transition = self._transition_lifecycle(
+                worker=worker,
+                target_state=WorkerLifecycleState.WAITING_EXTERNAL,
+                reason="capability_fulfillment_execution_dispatched",
+            )
+            if transition.disposition in {
+                WorkerRecoveryLifecycleTransitionDisposition.CONFLICT,
+                WorkerRecoveryLifecycleTransitionDisposition.NOT_FOUND,
+                WorkerRecoveryLifecycleTransitionDisposition.INVALID,
+            }:
+                return WorkerRecoveryOrchestrationResult(
+                    disposition=WorkerRecoveryOrchestrationDisposition.CONFLICT,
+                    episode=episode,
+                )
+        attempt_number = episode.attempt_count + 1
+        claim = self._episode_repository.claim_attempt(
+            recovery_episode_id=episode.recovery_episode_id,
+            attempt_number=attempt_number,
+            expected_revision=episode.revision,
+            claimed_at=now,
+        )
+        if claim.status is WorkerRecoveryEpisodeClaimStatus.REVISION_CONFLICT:
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.CONFLICT,
+                episode=episode,
+            )
+        if claim.status is WorkerRecoveryEpisodeClaimStatus.TERMINAL:
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.ALREADY_TERMINAL,
+                episode=claim.episode,
+            )
+        if claim.status is not WorkerRecoveryEpisodeClaimStatus.CLAIMED:
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.CONFLICT,
+                episode=claim.episode,
+            )
+        episode = claim.episode
+        execution_id = _fulfillment_execution_id(semantic)
+        if execution_id is not None:
+            episode = self._episode_repository.record_execution(
+                recovery_episode_id=episode.recovery_episode_id,
+                attempt_number=attempt_number,
+                expected_revision=episode.revision,
+                execution_id=execution_id,
+                recorded_at=now,
+            )
+        _ = request
+        return WorkerRecoveryOrchestrationResult(
+            disposition=WorkerRecoveryOrchestrationDisposition.ATTEMPT_DISPATCHED,
             episode=episode,
         )
 
@@ -1186,6 +1300,17 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
             disposition=disposition,
             worker=result.worker_instance,
         )
+
+
+def _fulfillment_execution_id(
+    semantic: WorkerCapabilityFulfillmentResult,
+) -> ExecutionId | None:
+    if semantic.execution_result is not None:
+        return semantic.execution_result.execution_id
+    resume = semantic.resume_result
+    if resume is not None and resume.execution_result is not None:
+        return resume.execution_result.execution_id
+    return None
 
 
 def _orchestration_disposition_for_resume(
