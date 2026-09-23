@@ -32,6 +32,9 @@ from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedExecutionOperationDescriptor,
     SuspendedOperationMaterializationState,
 )
+from intergrax.contracts.execution.suspended_operation.authority_scope import (
+    SuspendedOperationAuthorityScope,
+)
 from intergrax.contracts.execution.suspended_operation.authority_scope_compat import (
     infer_authority_scope_from_invocation,
 )
@@ -45,7 +48,11 @@ from intergrax.contracts.execution.suspended_operation.payload_catalog import (
 from intergrax.contracts.execution.suspended_operation.store import (
     SuspendedExecutionOperationStore,
 )
+from intergrax.runtime.agent_governance.errors import (
+    ToolGovernanceApprovalRequiredError,
+)
 from intergrax.runtime.execution.suspended_operation.governed_request import (
+    compose_governed_continuation_from_agent_governance_pause,
     compose_governed_continuation_from_declarative_hitl_pause,
 )
 from intergrax.runtime.execution.suspended_operation.pause_required import (
@@ -61,6 +68,12 @@ from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
     InternalOrchestrationContinuation,
     establish_canonical_hitl_pause,
+)
+from intergrax.runtime.nexus.tools.agent_governance_approval_pause_bridge import (
+    AgentGovernanceApprovalPauseRequired,
+    build_agent_governance_pause_artifacts,
+    project_agent_governance_pause_onto_task,
+    raise_agent_governance_pause_from_tool_invocation,
 )
 from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
     DeclarativePolicyHitlPauseRequired,
@@ -122,13 +135,33 @@ class ContinuationAwareCatalogToolHost:
                     agent_id=agent_id,
                 )
             except DeclarativePolicyHitlPauseRequired as pause:
-                raise self._materialize_pause(
+                raise self._materialize_declarative_pause(
+                    pause,
+                    request=request,
+                    task=task,
+                ) from None
+        except ToolGovernanceApprovalRequiredError as error:
+            if error.governed_continuation_request is not None:
+                raise
+            if self._deps is None:
+                raise
+            contract = self._tool_invoker.registry.get(request.tool_id).contract
+            try:
+                raise_agent_governance_pause_from_tool_invocation(
+                    error,
+                    state=state,
+                    contract=contract,
+                    request=tool_request,
+                    agent_id=agent_id,
+                )
+            except AgentGovernanceApprovalPauseRequired as pause:
+                raise self._materialize_agent_governance_pause(
                     pause,
                     request=request,
                     task=task,
                 ) from None
 
-    def _materialize_pause(
+    def _materialize_declarative_pause(
         self,
         pause: DeclarativePolicyHitlPauseRequired,
         *,
@@ -214,7 +247,119 @@ class ContinuationAwareCatalogToolHost:
             raise RuntimeError("suspended operation block failed")
 
         return ExecutionSuspendedWorkPauseRequired(
-            pause=pause,
+            declarative_pause=pause,
+            governed_request=governed_request,
+            descriptor=blocked.descriptor,
+        )
+
+    def _materialize_agent_governance_pause(
+        self,
+        pause: AgentGovernanceApprovalPauseRequired,
+        *,
+        request: ExecutionBoundCatalogToolInvokeRequest,
+        task: Task | None,
+    ) -> ExecutionSuspendedWorkPauseRequired:
+        deps = self._deps
+        if deps is None:
+            raise RuntimeError("continuation-aware host dependencies required")
+        if task is None:
+            raise RuntimeError(
+                "governed execution task required for agent governance pause projection",
+            )
+
+        run_id, attempt_id = require_active_execution_identity()
+        execution_id = state_execution_id()
+        identity = ExecutionContinuationIdentity(
+            task_id=validate_task_id(str(request.task_id)),
+            run_id=RunId(str(run_id)),
+            attempt_id=AttemptId(str(attempt_id)),
+            execution_id=ExecutionId(str(execution_id)),
+        )
+        from intergrax.contracts.agent_governance_hitl import (
+            mint_agent_governance_invocation_scope_id,
+        )
+
+        scope_id = mint_agent_governance_invocation_scope_id()
+        payload = _catalog_payload_from_request(
+            request,
+            invocation_scope_id=scope_id,
+        )
+        codec = deps.codec_registry.resolve(
+            SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
+            payload.payload_schema_version,
+        )
+        envelope = codec.encode(payload)
+        digest = digest_suspended_operation_envelope(envelope)
+        requirement, pending, human_request = build_agent_governance_pause_artifacts(
+            pause.signal,
+            payload_digest=digest,
+            invocation_scope_id=scope_id,
+        )
+        governed_request = compose_governed_continuation_from_agent_governance_pause(
+            pause,
+            identity=identity,
+            invocation_scope_id=scope_id,
+        )
+        continuation_id = governed_request.continuation_request_id
+        if deps.suspended_operation_store.load_active_for_continuation(continuation_id):
+            raise RuntimeError(
+                "active suspended operation already exists for continuation",
+            )
+        suspended_operation_id = mint_suspended_operation_id()
+        descriptor = SuspendedExecutionOperationDescriptor(
+            suspended_operation_id=suspended_operation_id,
+            operation_kind=SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
+            identity=identity,
+            continuation_id=continuation_id,
+            invocation_scope_id=scope_id,
+            materialization_state=SuspendedOperationMaterializationState.PREPARED,
+            materialization_revision=0,
+            claim_ownership=None,
+            payload_digest=digest,
+            payload=envelope,
+            pause_generation=1,
+            logical_invocation_fingerprint=requirement.logical_invocation_fingerprint,
+            authority_scope=SuspendedOperationAuthorityScope.AGENT_RUNTIME_GOVERNANCE,
+        )
+        prepared = deps.suspended_operation_store.prepare(descriptor)
+        if prepared.descriptor is None:
+            raise RuntimeError("suspended operation prepare failed")
+
+        canonical_pending = establish_canonical_hitl_pause(
+            task,
+            identity=identity,
+            continuation_id=continuation_id,
+            reason=governed_request.reason,
+            pause_id=pending.pause_id,
+            human_request_id=pending.human_request_id,
+            capability=deps.hitl_continuation,
+            governed_correlation=governed_request.to_correlation(),
+            human_prompt=human_request.prompt,
+            execution_interrupt=None,
+        )
+        if canonical_pending.lifecycle_state not in {
+            ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN,
+            ExecutionContinuationLifecycleState.RESUME_AUTHORIZED,
+        }:
+            raise RuntimeError("canonical pause did not reach human-waiting state")
+
+        blocked = deps.suspended_operation_store.block(
+            suspended_operation_id=suspended_operation_id,
+            expected_materialization_revision=0,
+            continuation=canonical_pending,
+            governed_correlation=governed_request.to_correlation(),
+        )
+        if blocked.descriptor is None:
+            raise RuntimeError("suspended operation block failed")
+
+        project_agent_governance_pause_onto_task(
+            task,
+            pending=pending,
+            human_request=human_request,
+        )
+
+        return ExecutionSuspendedWorkPauseRequired(
+            agent_governance_pause=pause,
             governed_request=governed_request,
             descriptor=blocked.descriptor,
         )

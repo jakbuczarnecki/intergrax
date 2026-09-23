@@ -56,9 +56,16 @@ from intergrax.runtime.codecraft.wiring_bound_capability_execution import (
 )
 from intergrax.runtime.agent_governance.errors import (
     CapabilityNotGrantedError,
-    ToolGovernanceApprovalRequiredError,
     ToolGovernanceDeniedError,
 )
+from intergrax.runtime.execution.suspended_operation.pause_required import (
+    ExecutionSuspendedWorkPauseRequired,
+)
+from intergrax.runtime.governance.active_governed_execution_task import (
+    bind_governed_execution_task,
+    reset_governed_execution_task,
+)
+from intergrax.runtime.task.task import Task
 from intergrax.runtime.agent_governance.request_builder import (
     governance_capability_for_contract,
 )
@@ -563,6 +570,7 @@ def test_strict_high_risk_without_approval_evidence_requires_governance_approval
     registry = uca6c_strict_worker_registry(manifest)
     tool_wiring = _strict_tool_wiring(ctx)
     mse: MeaningfulSideEffectAuthorizationPort = _RecordingMsePort(allow=True)
+    r6_kwargs = _strict_r6_kwargs(tmp_path)
     handler = build_production_codecraft_qualified_capability_execution_handler(
         tool_wiring,
         uca6c_strict_sandbox_env_profile(),
@@ -572,7 +580,9 @@ def test_strict_high_risk_without_approval_evidence_requires_governance_approval
         agent_registry=registry,
         meaningful_side_effect_authorization=mse,
         canonical_inner_execution_guard=_RecordingGuard(allow=True),
-        **_strict_r6_kwargs(tmp_path),
+        document_store=r6_kwargs["document_store"],
+        continuation_dependencies=r6_kwargs["continuation_dependencies"],
+        durable_wiring_binding_resolver=r6_kwargs.get("durable_wiring_binding_resolver"),
     )
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)
@@ -591,8 +601,10 @@ def test_strict_high_risk_without_approval_evidence_requires_governance_approval
             principal_id="principal-uca6c",
         ),
     )
+    task = Task(tenant_id=_TENANT, user_id="u1", message="x", task_id=_TASK_ID)
+    task_token = bind_governed_execution_task(task)
     try:
-        with pytest.raises(ToolGovernanceApprovalRequiredError):
+        with pytest.raises(ExecutionSuspendedWorkPauseRequired):
             port.execute(
                 CodeCraftBoundCapabilityExecutionRequest(
                     craft_id=craft_id,
@@ -604,6 +616,7 @@ def test_strict_high_risk_without_approval_evidence_requires_governance_approval
                 ),
             )
     finally:
+        reset_governed_execution_task(task_token)
         reset_active_execution_governance_identity(gov_token)
         reset_active_execution_identity(id_token)
     assert mse.calls == 0
