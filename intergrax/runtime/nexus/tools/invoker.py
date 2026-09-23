@@ -852,8 +852,20 @@ class RuntimeToolInvoker:
             contract=contract,
             request=request,
         )
+        from intergrax.contracts.agent_runtime_policy_evaluation_context import (
+            AgentRuntimePolicyEvaluationContext,
+        )
+
+        policy_context = AgentRuntimePolicyEvaluationContext(
+            verified_agent_governance_human_approval=(
+                state.verified_agent_governance_human_approval
+            ),
+        )
         try:
-            governance.authorize_tool(auth_request)
+            governance.authorize_tool(
+                auth_request,
+                policy_context=policy_context,
+            )
         except ToolGovernanceDeniedError as exc:
             state.trace_event(
                 component=TraceComponent.TOOLS,

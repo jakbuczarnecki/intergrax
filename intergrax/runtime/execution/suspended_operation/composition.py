@@ -27,6 +27,9 @@ from intergrax.runtime.execution.suspended_operation.reentry_coordinator import 
     ExecutionSuspendedWorkReentryCoordinator,
 )
 from intergrax.contracts.execution_continuation import ExecutionContinuationPort
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
 from intergrax.runtime.nexus.tools.continuation_aware_catalog_tool_host import (
     ContinuationAwareCatalogToolHost,
 )
@@ -87,6 +90,7 @@ def wire_execution_suspended_work_reentry_coordinator(
     catalog_host: ContinuationAwareCatalogToolHost,
     binding_resolver: DurableToolInvocationWiringBindingResolver,
     claim_owner_id: str,
+    task_checkpoint_store: TaskCheckpointPersistence | None = None,
 ) -> ExecutionSuspendedWorkReentryCoordinator:
     return ExecutionSuspendedWorkReentryCoordinator(
         store=store,
@@ -96,6 +100,7 @@ def wire_execution_suspended_work_reentry_coordinator(
         codec_registry=wire_default_suspended_operation_codec_registry(),
         binding_resolver=binding_resolver,
         claim_owner_id=claim_owner_id,
+        task_checkpoint_store=task_checkpoint_store,
     )
 
 

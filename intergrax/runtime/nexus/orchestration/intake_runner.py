@@ -15,8 +15,14 @@ from intergrax.contracts.structured_json_value import normalize_structured_json_
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_notification
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator
+from intergrax.runtime.human.agent_governance_human_approval_grant import (
+    AgentGovernanceHumanApprovalGrantCoordinator,
+)
 from intergrax.runtime.human.declarative_hitl_grant import (
     DeclarativeHitlGrantCoordinator,
+)
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
 )
 from intergrax.runtime.human.governed_continuation_grant import (
     GovernedContinuationGrantCoordinator,
@@ -62,6 +68,7 @@ class NexusIntakeRunner:
     restore_long_running: RestoreFn
     execution_identity: ActiveExecutionIdentity | None = None
     hitl_continuation: InternalOrchestrationContinuation | None = None
+    task_checkpoint_store: TaskCheckpointPersistence | None = None
 
     async def run(
         self,
@@ -143,6 +150,9 @@ class NexusIntakeRunner:
                 response_text=task.options.human.response_text,
             )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
+            AgentGovernanceHumanApprovalGrantCoordinator.clear_pending_on_reject_or_escalate(
+                task,
+            )
             GovernedContinuationGrantCoordinator.clear_grant(task)
             result = await self.hitl.handle_human_rejection(
                 task,
@@ -166,6 +176,9 @@ class NexusIntakeRunner:
                 response_text=task.options.human.response_text,
             )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
+            AgentGovernanceHumanApprovalGrantCoordinator.clear_pending_on_reject_or_escalate(
+                task,
+            )
             GovernedContinuationGrantCoordinator.clear_grant(task)
             result = await self.hitl.handle_human_escalation(
                 task,
@@ -205,6 +218,16 @@ class NexusIntakeRunner:
             assert resolution is not None
             if task.runtime.governance.declarative_hitl_pending is not None:
                 DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
+                task.sync_metadata()
+            if (
+                task.runtime.governance.agent_governance_hitl_pending is not None
+                and self.task_checkpoint_store is not None
+            ):
+                AgentGovernanceHumanApprovalGrantCoordinator.persist_available_grant_from_human_approve(
+                    task,
+                    checkpoint_store=self.task_checkpoint_store,
+                    approver=approver,  # type: ignore[arg-type]
+                )
                 task.sync_metadata()
             if task.runtime.governance.human_request is not None:
                 GovernedContinuationGrantCoordinator.create_grant_from_approval(task)

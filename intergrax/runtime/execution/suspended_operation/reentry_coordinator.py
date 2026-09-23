@@ -35,11 +35,27 @@ from intergrax.contracts.execution.suspended_operation.reentry import (
 from intergrax.contracts.execution.suspended_operation.store import (
     SuspendedExecutionOperationStore,
 )
+from intergrax.runtime.agent_governance.errors import (
+    ToolGovernanceApprovalRequiredError,
+    ToolGovernanceDeniedError,
+)
 from intergrax.runtime.execution.suspended_operation.payload_digest import (
     digest_suspended_operation_envelope,
 )
+from intergrax.runtime.execution.suspended_operation.agent_governance_reentry_grant import (
+    AgentGovernanceReentryGrantError,
+    is_agent_governance_invocation_scope,
+    mark_agent_governance_grant_applied_after_governance,
+    prepare_agent_governance_grant_for_reentry,
+)
+from intergrax.runtime.human.agent_governance_human_approval_grant import (
+    AgentGovernanceHumanApprovalGrantCoordinator,
+)
 from intergrax.runtime.human.declarative_hitl_grant import (
     DeclarativeHitlGrantCoordinator,
+)
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
 )
 from intergrax.runtime.nexus.tools.continuation_aware_catalog_tool_host import (
     ContinuationAwareCatalogToolHost,
@@ -66,6 +82,7 @@ class ExecutionSuspendedWorkReentryCoordinator:
     codec_registry: SuspendedOperationCodecRegistry
     binding_resolver: DurableToolInvocationWiringBindingResolver
     claim_owner_id: str
+    task_checkpoint_store: TaskCheckpointPersistence | None = None
     default_lease_seconds: int = 120
 
     def reenter_after_resume(
@@ -141,6 +158,7 @@ class ExecutionSuspendedWorkReentryCoordinator:
             )
 
         grant: DeclarativeHitlApprovalGrant | None = None
+        agent_grant_prepare = None
         if task is not None:
             grant = task.runtime.governance.declarative_hitl_grant
             if grant is None:
@@ -159,12 +177,82 @@ class ExecutionSuspendedWorkReentryCoordinator:
         state = self.catalog_invoker.build_runtime_state(invoke_request)
         if grant is not None:
             state.declarative_hitl_grant = grant
-        tool_result = self.catalog_host.invoke(
-            state=state,
-            request=invoke_request,
-            declarative_grant=grant,
-            task=task,
-        )
+
+        if (
+            task is not None
+            and self.task_checkpoint_store is not None
+            and is_agent_governance_invocation_scope(claimed.invocation_scope_id)
+        ):
+            contract = self.catalog_host._tool_invoker.registry.get(
+                payload.tool_id,
+            ).contract
+            pending = task.runtime.governance.agent_governance_hitl_pending
+            pause_generation = (
+                pending.requirement.pause_generation if pending is not None else 1
+            )
+            try:
+                agent_grant_prepare = prepare_agent_governance_grant_for_reentry(
+                    task=task,
+                    checkpoint_store=self.task_checkpoint_store,
+                    payload=payload,
+                    contract=contract,
+                    state=state,
+                    claim_ownership=claimed.claim_ownership,
+                    pause_generation=pause_generation,
+                    lease_seconds=self.default_lease_seconds,
+                )
+            except AgentGovernanceReentryGrantError as exc:
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail=str(exc),
+                )
+            state.verified_agent_governance_human_approval = (
+                agent_grant_prepare.verified
+            )
+
+        try:
+            tool_result = self.catalog_host.invoke(
+                state=state,
+                request=invoke_request,
+                declarative_grant=grant,
+                task=task,
+            )
+        except ToolGovernanceDeniedError:
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                reason_detail="agent_governance_denied",
+            )
+        except ToolGovernanceApprovalRequiredError:
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                reason_detail="agent_governance_approval_still_required",
+            )
+
+        if agent_grant_prepare is not None and task is not None:
+            assert self.task_checkpoint_store is not None
+            lifecycle_record = (
+                task.runtime.governance.agent_governance_human_approval_grant
+            )
+            if lifecycle_record is None:
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail="agent_governance_grant_missing_after_invoke",
+                )
+            try:
+                mark_agent_governance_grant_applied_after_governance(
+                    task=task,
+                    checkpoint_store=self.task_checkpoint_store,
+                    lifecycle_record=lifecycle_record,
+                    claim_ownership=agent_grant_prepare.claim_ownership,
+                )
+            except AgentGovernanceReentryGrantError as exc:
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail=str(exc),
+                    tool_result=tool_result
+                    if isinstance(tool_result, ToolExecutionResult)
+                    else None,
+                )
         if isinstance(tool_result, ToolExecutionResult) and tool_result.success:
             consumed = self.store.mark_consumed(
                 suspended_operation_id=claimed.suspended_operation_id,
@@ -177,6 +265,15 @@ class ExecutionSuspendedWorkReentryCoordinator:
                     disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
                     reason_detail="mark_consumed_failed",
                     tool_result=tool_result,
+                )
+            if (
+                task is not None
+                and self.task_checkpoint_store is not None
+                and is_agent_governance_invocation_scope(claimed.invocation_scope_id)
+            ):
+                AgentGovernanceHumanApprovalGrantCoordinator.terminalize_after_successful_consumption(
+                    task,
+                    checkpoint_store=self.task_checkpoint_store,
                 )
             return ExecutionSuspendedWorkReentryResult(
                 disposition=ExecutionSuspendedWorkReentryDisposition.COMPLETED,

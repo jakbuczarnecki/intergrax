@@ -141,6 +141,7 @@ def build_execution_bound_catalog_tool_composition(
             catalog_host=host,
             binding_resolver=durable_wiring_binding_resolver,
             claim_owner_id=reentry_claim_owner_id,
+            task_checkpoint_store=task_checkpoint_store,
         )
         continuation_aware_dependencies = ContinuationAwareCatalogToolHostDependencies(
             suspended_operation_store=suspended_store,
