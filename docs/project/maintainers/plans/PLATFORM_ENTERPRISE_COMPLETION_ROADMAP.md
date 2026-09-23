@@ -97,9 +97,10 @@ Every CLOSED row should eventually have an evidence anchor in §5:
 If a new blocker is discovered:
 
 - create a child task under the affected stage;
-- parent remains BLOCKED / NOT CLOSED;
+- parent remains BLOCKED / NOT CLOSED when the blocker breaks the parent invariant;
 - do not skip forward;
-- do not hide the finding as “out of scope” if it breaks the parent invariant.
+- do not hide the finding as “out of scope” if it breaks the parent invariant;
+- if a finding is proven not to break the current parent but is still a real enterprise/qualification debt, record it as an explicit mandatory roadmap item before the relevant final certification wave.
 
 ---
 
@@ -113,11 +114,12 @@ If a new blocker is discovered:
 | ADR3-IMP-04-R1 | Catalog Host Capability Contract Deduplication | Usunięcie drugiej definicji per-call `invoke(...)` z host-specific Protocolu. `ExecutionBoundDeclarativeToolInvoker` pozostaje jedynym ownerem invocation semantics, a host Protocol dodaje wyłącznie host capability. | [x] CLOSED |
 | ADR3-IMP-04 | Consumer Migration & Final Bind Removal — final recertification | Finalny audit migracji konsumentów: zero narrow legacy Protocolu, zero `inspect.signature` compatibility dispatch, metadata na canonical contract, explicit identity, brak concrete coupling i exactly-one owner per-call invocation contractu. | [x] CLOSED |
 | ADR3-IMP-05 | Qualification Gates | Mechaniczne architecture gates blokujące powrót narrow compatibility paths, reflection dispatch, duplicated ownership, concrete coupling, weak typing i alternate execution paths. | [x] CLOSED |
-| **HARNESS-01-R5-W3-R1-Q2** | Finalne zamknięcie Harness W3 | Powrót do przerwanego W3 po ADR3. Pełna kwalifikacja i closure W3 na aktualnym HEAD, bez ponownego otwierania zamkniętych foundation boundaries bez nowego dowodu. | **[ ] CURRENT** |
-| EBH-2F | Integrations & Hosting Boundary Hardening | Certyfikacja integrations/hosting: provider-neutral contracts, composition ownership, vendor independence, replaceability, brak host/runtime bypassów i concrete coupling. | [ ] PLANNED |
+| HARNESS-01-R5-W3-R1-Q2 | Finalne zamknięcie Harness W3 | Finalna kwalifikacja Tools/WebSearch Nexus Dependency Inversion po zamknięciu ADR3: zero statycznego/dynamicznego/lazy Tools/WebSearch → Nexus resolution, typed provider-neutral seams, structural pluginability, poprawny ownership i brak bypassów. | [x] CLOSED |
+| **EBH-2F** | Integrations & Hosting Boundary Hardening | Certyfikacja integrations/hosting: provider-neutral contracts, composition ownership, vendor independence, replaceability, brak host/runtime bypassów i concrete coupling. | **[ ] CURRENT** |
 | EBH-2G | RAG Contract Boundary Hardening | Certyfikacja retrieval/search/reranking/storage jako jednego pluginowalnego subsystemu z canonical contracts, jednym ownership i wymiennymi backendami. | [ ] PLANNED |
 | EBH-2H | Memory Contract Boundary Hardening | Certyfikacja Memory: exactly-one ownership, canonical contracts, backend replaceability, brak bocznych persistence/context paths. | [ ] PLANNED |
 | EBH-2I | Final EBH-2 Rescan | Ponowny przekrojowy audit wszystkich subsystem boundaries po lokalnych hardeningach. Sprawdzenie, czy poprawki nie stworzyły nowych cross-layer zależności, bypassów lub duplicated ownership. | [ ] PLANNED |
+| HARNESS-QINF-01 | Harness Global Qualification Inventory Reconciliation | Zsynchronizować globalne `test_harness_01_gates.py` allowlist/inventory z nowszymi, osobno kwalifikowanymi EE/UCA/suspended-operation surfaces. Finding pochodzi z W3 recertification: 3 globalne gate failures nie naruszają W3, ale qualification inventory nie może pozostać czerwone ani utracić coverage przed kolejnymi Harness waves/final closure. Bez zmiany semantics produkcyjnych, chyba że reconciliation ujawni realny bypass. | [ ] PLANNED |
 | HARNESS-W4 | Harness W4 — Scale / Resilience / Cancellation recertification | Reconcile and close the W4 debt wave against current repository reality and existing W4 qualification artifacts. Verify cancellation, external-operation termination, provider cancellation boundaries and no alternate execution authority. Exact subwave scope must be revalidated from canonical Harness records before implementation. | [ ] PLANNED |
 | HARNESS-W5 | Harness W5 — Events / Observability delivery and export recertification | Reconcile and close W5 using existing event delivery/export/OTLP qualification records. Verify one event/evidence spine, lifecycle/composition ownership and no observability-created execution truth. | [ ] PLANNED |
 | HARNESS-W6 | Harness W6 — Runtime Intelligence recertification | Reconcile W6-A…W6-E against current HEAD: typed contracts, deterministic analysis, orchestration, execution advisory boundary. Runtime intelligence remains advisory/non-authoritative and must not become a second execution/governance owner. | [ ] PLANNED |
@@ -169,7 +171,8 @@ Update this section only after independent exact-SHA audit.
 | ADR3-IMP-04-R1 | `109dfd81e3a2af18affd76b0e5ac69d805783b31` | Catalog host capability contract deduplication independently audited; host Protocol now extends canonical execution-bound contract and owns only host-specific capability. |
 | ADR3-IMP-04 | `b466e0a202e7984fd50f2409493159566cf03a82` | Final parent recertification independently audited on committed HEAD; no code changes required. Canonical contract, explicit identity, sanctioned composition, structural replaceability and zero legacy/reflection compatibility confirmed. |
 | ADR3-IMP-05 | `b67281105f17cd2fe95d93e737470c28a043de60` | Enterprise qualification gates independently audited on exact GitHub SHA; mechanical protection confirmed for canonical ownership, no narrow/reflection regressions, metadata resolver ownership/typing, sanctioned concrete construction/gateway imports, explicit identity, UCA separation, structural replaceability, fail-closed governance and execution bypass protection. |
-| HARNESS-01-R5-W3-R1-Q2 | — | CURRENT — final Harness W3 qualification/closure. |
+| HARNESS-01-R5-W3-R1-Q2 | `b67281105f17cd2fe95d93e737470c28a043de60` | Final W3/Q2 recertification independently audited on exact committed HEAD; no code changes required. Tools/WebSearch → Nexus static/dynamic/lazy resolution = 0; typed provider-neutral seams, structural pluginability, ownership, W2 regression and ADR3 documentation gates confirmed. Three global `test_harness_01_gates.py` inventory/allowlist failures were independently classified as non-W3 qualification-inventory debt and are tracked as mandatory `HARNESS-QINF-01`. |
+| HARNESS-QINF-01 | — | PLANNED — reconcile global Harness qualification inventory before HARNESS-W4/final Harness closure. |
 | remaining mandatory stages | — | Fill on closure. |
 
 ---
