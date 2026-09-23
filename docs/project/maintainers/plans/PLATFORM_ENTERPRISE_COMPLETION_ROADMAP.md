@@ -112,8 +112,8 @@ If a new blocker is discovered:
 | ADR3-IMP-03 / M4 | Final Typed Declarative Dispatch Certification | Certyfikacja M4 jako jednego spójnego typed flow: metadata/composition → identity → dispatch → catalog gateway → canonical result → batch aggregation. | [x] CLOSED |
 | ADR3-IMP-04-R1 | Catalog Host Capability Contract Deduplication | Usunięcie drugiej definicji per-call `invoke(...)` z host-specific Protocolu. `ExecutionBoundDeclarativeToolInvoker` pozostaje jedynym ownerem invocation semantics, a host Protocol dodaje wyłącznie host capability. | [x] CLOSED |
 | ADR3-IMP-04 | Consumer Migration & Final Bind Removal — final recertification | Finalny audit migracji konsumentów: zero narrow legacy Protocolu, zero `inspect.signature` compatibility dispatch, metadata na canonical contract, explicit identity, brak concrete coupling i exactly-one owner per-call invocation contractu. | [x] CLOSED |
-| **ADR3-IMP-05** | Qualification Gates | Mechaniczne architecture gates blokujące powrót narrow compatibility paths, reflection dispatch, duplicated ownership, concrete coupling, weak typing i alternate execution paths. | **[ ] CURRENT** |
-| HARNESS-01-R5-W3-R1-Q2 | Finalne zamknięcie Harness W3 | Powrót do przerwanego W3 po ADR3. Pełna kwalifikacja i closure W3 na aktualnym HEAD, bez ponownego otwierania zamkniętych foundation boundaries bez nowego dowodu. | [ ] QUEUED |
+| ADR3-IMP-05 | Qualification Gates | Mechaniczne architecture gates blokujące powrót narrow compatibility paths, reflection dispatch, duplicated ownership, concrete coupling, weak typing i alternate execution paths. | [x] CLOSED |
+| **HARNESS-01-R5-W3-R1-Q2** | Finalne zamknięcie Harness W3 | Powrót do przerwanego W3 po ADR3. Pełna kwalifikacja i closure W3 na aktualnym HEAD, bez ponownego otwierania zamkniętych foundation boundaries bez nowego dowodu. | **[ ] CURRENT** |
 | EBH-2F | Integrations & Hosting Boundary Hardening | Certyfikacja integrations/hosting: provider-neutral contracts, composition ownership, vendor independence, replaceability, brak host/runtime bypassów i concrete coupling. | [ ] PLANNED |
 | EBH-2G | RAG Contract Boundary Hardening | Certyfikacja retrieval/search/reranking/storage jako jednego pluginowalnego subsystemu z canonical contracts, jednym ownership i wymiennymi backendami. | [ ] PLANNED |
 | EBH-2H | Memory Contract Boundary Hardening | Certyfikacja Memory: exactly-one ownership, canonical contracts, backend replaceability, brak bocznych persistence/context paths. | [ ] PLANNED |
@@ -168,7 +168,8 @@ Update this section only after independent exact-SHA audit.
 | ADR3-IMP-03 / M4 | `702cb0a2024a7a98ab0bb88c1f645efeb0e7eb38` | M4 final typed declarative dispatch certification independently audited. |
 | ADR3-IMP-04-R1 | `109dfd81e3a2af18affd76b0e5ac69d805783b31` | Catalog host capability contract deduplication independently audited; host Protocol now extends canonical execution-bound contract and owns only host-specific capability. |
 | ADR3-IMP-04 | `b466e0a202e7984fd50f2409493159566cf03a82` | Final parent recertification independently audited on committed HEAD; no code changes required. Canonical contract, explicit identity, sanctioned composition, structural replaceability and zero legacy/reflection compatibility confirmed. |
-| ADR3-IMP-05 | — | CURRENT — qualification gates. |
+| ADR3-IMP-05 | `b67281105f17cd2fe95d93e737470c28a043de60` | Enterprise qualification gates independently audited on exact GitHub SHA; mechanical protection confirmed for canonical ownership, no narrow/reflection regressions, metadata resolver ownership/typing, sanctioned concrete construction/gateway imports, explicit identity, UCA separation, structural replaceability, fail-closed governance and execution bypass protection. |
+| HARNESS-01-R5-W3-R1-Q2 | — | CURRENT — final Harness W3 qualification/closure. |
 | remaining mandatory stages | — | Fill on closure. |
 
 ---
