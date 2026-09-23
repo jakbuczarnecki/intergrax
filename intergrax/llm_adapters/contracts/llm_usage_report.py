@@ -5,9 +5,9 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any
 
 from intergrax.llm_adapters.contracts.llm_usage_stats import LLMRunStats
+from intergrax.llm_adapters.contracts.serialized_value import JsonObject
 
 
 @dataclass(frozen=True)
@@ -37,7 +37,7 @@ class LLMUsageReport:
     # Debug only: label -> instance_id of first registered physical source
     adapter_instance_ids: dict[str, int]
 
-    def to_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> JsonObject:
         return asdict(self)
 
     def pretty(self) -> str:
