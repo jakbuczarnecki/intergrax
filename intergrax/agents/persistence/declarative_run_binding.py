@@ -22,18 +22,3 @@ class DeclarativeToolInvokerWithRunBinding(DeclarativeToolInvoker, Protocol):
         tenant_id: str = "",
         user_id: str = "",
     ) -> None: ...
-
-
-@runtime_checkable
-class PerCallExecutionIdentityDeclarativeToolInvoker(Protocol):
-    async def invoke(
-        self,
-        *,
-        tenant_id: str,
-        run_id: str,
-        task_id: str,
-        agent_id: str,
-        tool_id: str,
-        args: dict[str, object],
-        idempotency_key: str | None,
-    ): ...

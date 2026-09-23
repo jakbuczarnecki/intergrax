@@ -6,12 +6,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import Optional
 
-from intergrax.agents.persistence.declarative_tool_executor import (
-    DeclarativeToolInvokeResult,
-    DeclarativeToolInvoker,
-)
+from intergrax.contracts.declarative_tool_invoke_result import DeclarativeToolInvokeResult
+from intergrax.knowledge.contracts.validation import JsonObject
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
 from intergrax.llm.messages import ChatMessage
@@ -155,7 +153,7 @@ class CatalogDeclarativeToolInvoker:
         task_id: str,
         agent_id: str,
         tool_id: str,
-        args: dict[str, Any],
+        args: JsonObject,
         idempotency_key: str | None,
     ) -> DeclarativeToolInvokeResult:
         resolved_tenant_id = _require_invoke_identity_field(tenant_id, "tenant_id")
@@ -214,15 +212,3 @@ def _require_invoke_identity_field(value: str, label: str) -> str:
             f"catalog declarative invoke requires explicit {label}",
         )
     return value.strip()
-
-
-def resolve_declarative_tool_invoker(
-    candidate: object | None,
-) -> DeclarativeToolInvoker | None:
-    if candidate is None:
-        return None
-    if isinstance(candidate, DeclarativeToolInvoker):
-        return candidate
-    raise TypeError(
-        "declarative tool invoker metadata must implement DeclarativeToolInvoker"
-    )
