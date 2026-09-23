@@ -4,12 +4,17 @@
 
 from __future__ import annotations
 
+import ast
+import inspect
+from pathlib import Path
+
 import pytest
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.call_config import LLMCallConfig
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.failover_policy import (
     FailoverCandidateEligibility,
     FailoverCandidateEligibilityContext,
@@ -32,6 +37,34 @@ from intergrax.llm_adapters.registry.profile import create_adapter_with_failover
 from intergrax.llm_adapters.routing.evaluator import profile_identity
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+_FAILOVER_POLICY_CONTRACT = (
+    _REPO_ROOT / "intergrax/llm_adapters/contracts/failover_policy.py"
+)
+_FAILOVER_ADAPTER = _REPO_ROOT / "intergrax/llm_adapters/registry/failover_adapter.py"
+_PROFILE_FACTORY = _REPO_ROOT / "intergrax/llm_adapters/registry/profile.py"
+
+
+def _imported_modules(path: Path) -> set[str]:
+    tree = ast.parse(path.read_text(encoding="utf-8"))
+    modules: set[str] = set()
+    for node in tree.body:
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                modules.add(alias.name)
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            modules.add(node.module)
+    return modules
+
+
+def _forbidden_import_prefixes(modules: set[str], prefixes: tuple[str, ...]) -> list[str]:
+    return sorted(
+        module
+        for module in modules
+        if any(module.startswith(prefix) or f".{prefix}" in module for prefix in prefixes)
+        or any(module == prefix for prefix in prefixes)
+    )
 
 
 class _HttpStatusError(RuntimeError):
@@ -233,3 +266,69 @@ def test_eligibility_error_names_profile_identity() -> None:
             routing_authorisation=auth,
         )
     assert profile_identity(rogue) in str(exc.value)
+
+
+def test_r4_r1_failover_contract_import_purity() -> None:
+    modules = _imported_modules(_FAILOVER_POLICY_CONTRACT)
+    forbidden = _forbidden_import_prefixes(
+        modules,
+        (
+            "intergrax.llm_adapters._shared",
+            "intergrax.llm_adapters.registry",
+            "intergrax.llm_adapters.routing.evaluator",
+            "intergrax.runtime",
+            "applications",
+        ),
+    )
+    assert forbidden == []
+
+
+def test_r4_r1_failover_executor_does_not_select_default_policy() -> None:
+    modules = _imported_modules(_FAILOVER_ADAPTER)
+    assert "intergrax.llm_adapters.registry.failover_policy" not in modules
+    source = _FAILOVER_ADAPTER.read_text(encoding="utf-8")
+    assert "default_failover_policy" not in source
+
+
+def test_r4_r1_composition_selects_default_failover_policy() -> None:
+    source = _PROFILE_FACTORY.read_text(encoding="utf-8")
+    assert "default_failover_policy()" in source
+    assert "failover_policy or default_failover_policy()" in source
+
+
+def test_r4_r1_canonical_llm_call_config_single_type() -> None:
+    from intergrax.llm_adapters._shared.call_config import LLMCallConfig as SharedConfig
+    from intergrax.llm_adapters.contracts.call_config import LLMCallConfig as CanonicalConfig
+
+    assert SharedConfig is CanonicalConfig
+    contract_path = _REPO_ROOT / "intergrax/llm_adapters/contracts/call_config.py"
+    tree = ast.parse(contract_path.read_text(encoding="utf-8"))
+    class_defs = [node.name for node in tree.body if isinstance(node, ast.ClassDef)]
+    assert class_defs.count("LLMCallConfig") == 1
+
+
+def test_r4_r1_failover_adapter_requires_explicit_policy() -> None:
+    params = inspect.signature(FailoverLLMAdapter.__init__).parameters
+    assert "failover_policy" in params
+    assert params["failover_policy"].default is inspect.Parameter.empty
+
+
+def test_r4_r1_create_adapter_with_failover_default_advances_on_429(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    profile_a = _profile(LLMProvider.OPENAI, "gpt-4o")
+    profile_b = _profile(LLMProvider.GROQ, "backup")
+    profile_a = profile_a.model_copy(update={"fallback_profiles": (profile_b,)})
+
+    def _fake_create(profile: LLMProfile, **kwargs: object) -> LLMAdapter:
+        del kwargs
+        fail = profile.provider is LLMProvider.OPENAI
+        return _StubAdapter(model=profile.model or "default", fail=fail, status_code=429)
+
+    monkeypatch.setattr(
+        "intergrax.llm_adapters.registry.profile.create_adapter",
+        _fake_create,
+    )
+    adapter = create_adapter_with_failover(profile_a)
+    response = adapter.generate_messages([ChatMessage(role="user", content="hi")])
+    assert response.content == "ok-backup"

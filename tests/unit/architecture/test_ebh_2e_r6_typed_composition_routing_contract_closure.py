@@ -17,6 +17,7 @@ from intergrax.llm_adapters.registry.catalog_capabilities import (
     enrich_adapter_with_catalog_capabilities,
 )
 from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
+from intergrax.llm_adapters.registry.failover_policy import PlatformDefaultFailoverPolicy
 from intergrax.llm_adapters.registry.model_catalog import ModelRecord
 from intergrax.llm_adapters.registry.model_router import ModelRouter
 from tests.unit.architecture.ebh_2e_external_structural_llm_adapter import (
@@ -75,6 +76,7 @@ def test_ebh_2e_r6_failover_with_structural_adapters() -> None:
     adapter = FailoverLLMAdapter(
         [primary, secondary],
         profile_ids=("external-structural:ext-model", "external-structural:ext-backup"),
+        failover_policy=PlatformDefaultFailoverPolicy(),
     )
     response = adapter.generate_messages([ChatMessage(role="user", content="hi")])
     assert response.content == "external"

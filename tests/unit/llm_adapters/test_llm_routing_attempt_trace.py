@@ -14,6 +14,7 @@ from intergrax.llm_adapters.registry.failover_adapter import (
     FailoverLLMAdapter,
     LLMRoutingAttemptRecord,
 )
+from intergrax.llm_adapters.registry.failover_policy import PlatformDefaultFailoverPolicy
 from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
     LLMRoutingAttemptDiagV1,
     attach_failover_routing_trace_observer,
@@ -80,6 +81,7 @@ def test_attach_failover_routing_trace_observer_emits_per_attempt() -> None:
     adapter = FailoverLLMAdapter(
         [primary, secondary],
         profile_ids=("openai:gpt-4o", "groq:llama-3.3-70b-versatile"),
+        failover_policy=PlatformDefaultFailoverPolicy(),
     )
     emitted: list[LLMRoutingAttemptDiagV1] = []
 
@@ -101,7 +103,11 @@ def test_attach_failover_routing_trace_observer_emits_per_attempt() -> None:
 def test_failover_adapter_clears_attempts_between_calls() -> None:
     primary = _StubAdapter(provider=LLMProvider.OPENAI, model="gpt-4o", fail=True)
     secondary = _StubAdapter(provider=LLMProvider.GROQ, model="backup")
-    adapter = FailoverLLMAdapter([primary, secondary], profile_ids=("openai:gpt-4o", "groq:backup"))
+    adapter = FailoverLLMAdapter(
+        [primary, secondary],
+        profile_ids=("openai:gpt-4o", "groq:backup"),
+        failover_policy=PlatformDefaultFailoverPolicy(),
+    )
     adapter.generate_messages([ChatMessage(role="user", content="hi")])
     assert len(adapter.routing_attempts) == 1
     primary._fail = False

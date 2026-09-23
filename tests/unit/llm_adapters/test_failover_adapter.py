@@ -11,6 +11,7 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
+from intergrax.llm_adapters.registry.failover_policy import PlatformDefaultFailoverPolicy
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 
 
@@ -64,6 +65,7 @@ def test_failover_adapter_uses_secondary_on_retriable_error() -> None:
     adapter = FailoverLLMAdapter(
         [primary, secondary],
         profile_ids=("openai:gpt-4o", "groq:llama-3.3-70b-versatile"),
+        failover_policy=PlatformDefaultFailoverPolicy(),
     )
     response = adapter.generate_messages([ChatMessage(role="user", content="hi")])
     assert response.content == "ok-llama-3.3-70b-versatile"
@@ -74,7 +76,10 @@ def test_failover_adapter_uses_secondary_on_retriable_error() -> None:
 def test_failover_adapter_raises_when_all_profiles_fail() -> None:
     primary = _StubAdapter(provider=LLMProvider.OPENAI, model="gpt-4o", fail=True)
     secondary = _StubAdapter(provider=LLMProvider.GROQ, model="backup", fail=True)
-    adapter = FailoverLLMAdapter([primary, secondary])
+    adapter = FailoverLLMAdapter(
+        [primary, secondary],
+        failover_policy=PlatformDefaultFailoverPolicy(),
+    )
     with pytest.raises(RuntimeError, match="rate limited"):
         adapter.generate_messages([ChatMessage(role="user", content="hi")])
     assert len(adapter.routing_attempts) == 2
@@ -86,7 +91,10 @@ def test_failover_adapter_advances_on_retriable_http_status(status_code: int) ->
         provider=LLMProvider.OPENAI, model="gpt-4o", fail=True, status_code=status_code
     )
     secondary = _StubAdapter(provider=LLMProvider.GROQ, model="backup")
-    adapter = FailoverLLMAdapter([primary, secondary])
+    adapter = FailoverLLMAdapter(
+        [primary, secondary],
+        failover_policy=PlatformDefaultFailoverPolicy(),
+    )
     response = adapter.generate_messages([ChatMessage(role="user", content="hi")])
     assert response.content == "ok-backup"
 
@@ -96,7 +104,10 @@ def test_failover_adapter_stops_on_non_retriable_error() -> None:
         provider=LLMProvider.OPENAI, model="gpt-4o", fail=True, status_code=400
     )
     secondary = _StubAdapter(provider=LLMProvider.GROQ, model="backup")
-    adapter = FailoverLLMAdapter([primary, secondary])
+    adapter = FailoverLLMAdapter(
+        [primary, secondary],
+        failover_policy=PlatformDefaultFailoverPolicy(),
+    )
     with pytest.raises(RuntimeError, match="rate limited"):
         adapter.generate_messages([ChatMessage(role="user", content="hi")])
     assert len(adapter.routing_attempts) == 1
@@ -130,6 +141,7 @@ def test_failover_adapter_uses_explicit_per_adapter_retry_config_for_eligibility
         [primary, secondary],
         failover_retry_config=primary_policy,
         adapter_failover_retry_configs=(primary_policy, LLMCallConfig()),
+        failover_policy=PlatformDefaultFailoverPolicy(),
     )
     response = adapter.generate_messages([ChatMessage(role="user", content="hi")])
     assert response.content == "framework-ok"

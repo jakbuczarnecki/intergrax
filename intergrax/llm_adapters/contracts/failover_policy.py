@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Protocol, runtime_checkable
 
-from intergrax.llm_adapters._shared.call_config import LLMCallConfig
+from intergrax.llm_adapters.contracts.call_config import LLMCallConfig
 from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
 
 

@@ -12,6 +12,7 @@ from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
+from intergrax.llm_adapters.registry.failover_policy import PlatformDefaultFailoverPolicy
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     build_atomic_planner_round_tool_definition,
 )
@@ -129,6 +130,7 @@ def test_ebh_2e_r6_r1_r1_strict_filter_preserves_per_entry_failover_retry_policy
         [adapter_a, adapter_b, adapter_c, adapter_d],
         profile_ids=("profile-a", "profile-b", "profile-c", "profile-d"),
         adapter_failover_retry_configs=(config_a, config_b, config_c, config_d),
+        failover_policy=PlatformDefaultFailoverPolicy(),
     )
     response = failover.generate_with_tools(
         [ChatMessage(role="user", content="plan")],
@@ -157,6 +159,7 @@ def test_ebh_2e_r6_r1_r1_misaligned_policy_would_stop_at_c() -> None:
         [adapter_a, adapter_b, adapter_c, adapter_d],
         profile_ids=("profile-a", "profile-b", "profile-c", "profile-d"),
         adapter_failover_retry_configs=(config_a, config_b, config_c_wrong, config_d),
+        failover_policy=PlatformDefaultFailoverPolicy(),
     )
     with pytest.raises(_HttpStatusError, match="provider error"):
         failover.generate_with_tools(
