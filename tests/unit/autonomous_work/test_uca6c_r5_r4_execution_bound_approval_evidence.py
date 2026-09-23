@@ -26,7 +26,6 @@ from intergrax.contracts.collaborative_work import (
     PolicyCompositionResult,
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
-from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.nexus.tools.nexus_execution_bound_catalog_tool_invoker import (
     NexusExecutionBoundCatalogToolInvoker,
 )
@@ -86,14 +85,10 @@ class _AllowMse:
 def _strict_catalog_invoker(tmp_path: Path) -> NexusExecutionBoundCatalogToolInvoker:
     manifest = uca6c_strict_worker_manifest()
     registry = uca6c_strict_worker_registry(manifest)
-    r6 = uca6c_strict_r6_durable_wiring()
+    r6 = uca6c_strict_r6_durable_wiring(tmp_path)
     tool_wiring = ApplicationToolWiring(
         profile=ToolProfile(enabled_bundles=["sandbox"]),
-        wiring_context=ToolWiringContext(
-            extras={
-                "sandbox_session_manager": SandboxSessionManager(root=tmp_path),
-            },
-        ),
+        wiring_context=ToolWiringContext(),
         registry=ToolRegistry(),
     )
     invoker = build_execution_bound_catalog_tool_invoker_for_qualified_capability(
@@ -104,7 +99,9 @@ def _strict_catalog_invoker(tmp_path: Path) -> NexusExecutionBoundCatalogToolInv
         manifest=manifest,
         agent_registry=registry,
         meaningful_side_effect_authorization=_AllowMse(),
-        **r6,
+        document_store=r6["document_store"],
+        continuation_dependencies=r6["continuation_dependencies"],
+        durable_wiring_binding_resolver=r6["durable_wiring_binding_resolver"],
     )
     assert isinstance(invoker, NexusExecutionBoundCatalogToolInvoker)
     return invoker

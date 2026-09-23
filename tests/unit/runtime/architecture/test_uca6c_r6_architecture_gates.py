@@ -88,6 +88,9 @@ def test_uca_composition_wires_continuation_aware_dependencies() -> None:
     assert "runtime.nexus" not in text
     assert "InMemoryDocumentStore" not in text
     assert "wire_execution_engine_continuation_dependencies" not in text
+    assert "wire_sandbox_sessions" not in text
+    assert "sandbox_session_manager" not in text
+    assert "DurableToolInvocationWiringBindingResolver" in text
 
 
 def test_reentry_coordinator_does_not_synthesize_pending() -> None:
