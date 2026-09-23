@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -18,7 +18,9 @@ from intergrax.contracts.execution.suspended_operation.authority_scope import (
     SuspendedOperationAuthorityScope,
 )
 from intergrax.contracts.execution.suspended_operation.authority_scope_compat import (
+    UnknownInvocationScopeError,
     invocation_scope_matches_authority_scope,
+    recognize_authority_scope_from_invocation,
 )
 from intergrax.contracts.agent_governance_hitl import LogicalInvocationFingerprint
 from intergrax.contracts.lease_claim import LeaseOwnership
@@ -59,21 +61,34 @@ class SuspendedExecutionOperationDescriptor(BaseModel):
     payload: SerializedSuspendedOperationEnvelope
     pause_generation: int = Field(default=1, ge=1)
     logical_invocation_fingerprint: LogicalInvocationFingerprint | None = None
-    authority_scope: SuspendedOperationAuthorityScope = (
-        SuspendedOperationAuthorityScope.AGENT_RUNTIME_GOVERNANCE
-    )
+    authority_scope: SuspendedOperationAuthorityScope
 
-    @field_validator("authority_scope", mode="before")
+    @model_validator(mode="before")
     @classmethod
-    def _default_authority_scope(cls, value: object) -> object:
-        if value is None:
-            return SuspendedOperationAuthorityScope.AGENT_RUNTIME_GOVERNANCE
-        return value
+    def _migrate_legacy_authority_scope(cls, data: Any) -> Any:
+        if not isinstance(data, dict):
+            return data
+        if data.get("authority_scope") is not None:
+            return data
+        scope = data.get("invocation_scope_id")
+        if not isinstance(scope, str):
+            raise ValueError("invocation_scope_id required for legacy descriptor")
+        try:
+            data["authority_scope"] = recognize_authority_scope_from_invocation(
+                scope,
+            ).value
+        except UnknownInvocationScopeError as exc:
+            raise ValueError("unknown invocation scope for legacy descriptor") from exc
+        return data
 
     @model_validator(mode="after")
     def _authority_scope_matches_invocation(
         self,
     ) -> SuspendedExecutionOperationDescriptor:
+        try:
+            recognize_authority_scope_from_invocation(self.invocation_scope_id)
+        except UnknownInvocationScopeError as exc:
+            raise ValueError("unknown invocation scope") from exc
         if not invocation_scope_matches_authority_scope(
             self.invocation_scope_id,
             self.authority_scope,

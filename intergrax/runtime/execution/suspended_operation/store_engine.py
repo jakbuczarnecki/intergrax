@@ -27,6 +27,7 @@ from intergrax.contracts.execution.suspended_operation.authority_scope import (
     SuspendedOperationAuthorityScope,
 )
 from intergrax.contracts.execution.suspended_operation.authority_scope_compat import (
+    UnknownInvocationScopeError,
     infer_authority_scope_from_invocation,
     invocation_scope_matches_authority_scope,
 )
@@ -145,9 +146,14 @@ class SuspendedOperationBackingStore:
             return SuspendedOperationMutationResult(
                 outcome=SuspendedOperationMutationOutcome.INVALID_STATE,
             )
-        authority_scope = infer_authority_scope_from_invocation(
-            current.invocation_scope_id
-        )
+        try:
+            authority_scope = infer_authority_scope_from_invocation(
+                current.invocation_scope_id,
+            )
+        except UnknownInvocationScopeError:
+            return SuspendedOperationMutationResult(
+                outcome=SuspendedOperationMutationOutcome.INVALID_STATE,
+            )
         updated = current.model_copy(
             update={
                 "materialization_state": SuspendedOperationMaterializationState.BLOCKED,
