@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 from intergrax.llm_adapters.registry.profile import LLMProfile
-from intergrax.llm_adapters.routing.contracts import (
+from intergrax.llm_adapters.contracts.routing_profile import (
     AllowlistViolationError,
     LLMRoutingProfile,
     LLMRoutingRule,

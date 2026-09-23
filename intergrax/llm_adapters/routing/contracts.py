@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from intergrax.llm_adapters.contracts.routing_profile import (
+    AllowlistViolationError,
     LLMRoutingProfile,
     LLMRoutingRule,
     LLMRoutingRuleBase,
@@ -13,10 +14,6 @@ from intergrax.llm_adapters.contracts.routing_profile import (
     RoutingHint,
     RoutingTarget,
 )
-
-
-class AllowlistViolationError(ValueError):
-    """Raised when a rule resolves to a profile outside ``allowed_profiles``."""
 
 
 __all__ = [

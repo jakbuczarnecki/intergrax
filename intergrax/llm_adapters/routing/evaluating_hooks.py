@@ -8,7 +8,7 @@ from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.routing.contracts import (
+from intergrax.llm_adapters.contracts.routing_profile import (
     AllowlistViolationError,
     RoutingContext,
     RoutingEvaluation,

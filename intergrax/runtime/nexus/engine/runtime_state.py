@@ -232,7 +232,7 @@ class RuntimeState(RuntimeStateContract):
             from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
             from intergrax.llm_adapters.routing.evaluating_hooks import wire_routing_evaluating_hooks
             from intergrax.llm_adapters.routing.metering import resolve_metering_adapter
-            from intergrax.llm_adapters.routing.contracts import (
+            from intergrax.llm_adapters.contracts.routing_profile import (
                 AllowlistViolationError,
                 RoutingContext,
                 RoutingEvaluation,

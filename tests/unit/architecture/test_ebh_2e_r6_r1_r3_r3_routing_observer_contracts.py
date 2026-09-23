@@ -17,7 +17,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _HOOKS_SOURCE = _REPO_ROOT / "intergrax/llm_adapters/routing/evaluating_hooks.py"
 _ADAPTER_SOURCE = _REPO_ROOT / "intergrax/llm_adapters/routing/evaluating_adapter.py"
-_CONTRACTS_SOURCE = _REPO_ROOT / "intergrax/llm_adapters/routing/contracts.py"
+_CANONICAL_ROUTING_CONTRACTS = (
+    _REPO_ROOT / "intergrax/llm_adapters/contracts/routing_profile.py"
+)
+_COMPAT_CONTRACTS_SOURCE = _REPO_ROOT / "intergrax/llm_adapters/routing/contracts.py"
 _EVALUATOR_SOURCE = _REPO_ROOT / "intergrax/llm_adapters/routing/evaluator.py"
 
 
@@ -50,9 +53,16 @@ def test_ebh_2e_r6_r1_r3_r3_allowlist_observer_not_object() -> None:
 
 
 def test_ebh_2e_r6_r1_r3_r3_allowlist_error_single_owner() -> None:
-    contract_defs = [
+    canonical_defs = [
         n
-        for n in ast.walk(ast.parse(_CONTRACTS_SOURCE.read_text(encoding="utf-8")))
+        for n in ast.walk(
+            ast.parse(_CANONICAL_ROUTING_CONTRACTS.read_text(encoding="utf-8"))
+        )
+        if isinstance(n, ast.ClassDef) and n.name == "AllowlistViolationError"
+    ]
+    compat_defs = [
+        n
+        for n in ast.walk(ast.parse(_COMPAT_CONTRACTS_SOURCE.read_text(encoding="utf-8")))
         if isinstance(n, ast.ClassDef) and n.name == "AllowlistViolationError"
     ]
     evaluator_defs = [
@@ -60,8 +70,22 @@ def test_ebh_2e_r6_r1_r3_r3_allowlist_error_single_owner() -> None:
         for n in ast.walk(ast.parse(_EVALUATOR_SOURCE.read_text(encoding="utf-8")))
         if isinstance(n, ast.ClassDef) and n.name == "AllowlistViolationError"
     ]
-    assert len(contract_defs) == 1
+    assert len(canonical_defs) == 1
+    assert len(compat_defs) == 0
     assert len(evaluator_defs) == 0
+
+
+def test_ebh_2e_r6_r1_r3_r3_r1_allowlist_error_reexport_identity() -> None:
+    from intergrax.llm_adapters.contracts.routing_profile import (
+        AllowlistViolationError as Canonical,
+    )
+    from intergrax.llm_adapters.routing import AllowlistViolationError as Public
+    from intergrax.llm_adapters.routing.contracts import (
+        AllowlistViolationError as Compatibility,
+    )
+
+    assert Canonical is Compatibility
+    assert Public is Canonical
 
 
 def test_ebh_2e_r6_r1_r3_r3_runtime_state_typed_observer_callbacks() -> None:
