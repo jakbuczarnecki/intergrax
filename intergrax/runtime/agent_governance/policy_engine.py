@@ -15,6 +15,9 @@ from intergrax.contracts.agent_runtime_governance import (
 from intergrax.contracts.agent_runtime_policy_evaluation_context import (
     AgentRuntimePolicyEvaluationContext,
 )
+from intergrax.contracts.agent_governance_verified_approval import (
+    VerifiedAgentGovernanceHumanApproval,
+)
 
 _DECISION_PRECEDENCE: tuple[ToolAuthorizationDecisionState, ...] = (
     ToolAuthorizationDecisionState.DENY,
@@ -35,9 +38,7 @@ def _merge_decisions(
 
     decision_rank = {state: index for index, state in enumerate(_DECISION_PRECEDENCE)}
     winning = min(results, key=lambda item: decision_rank[item.decision])
-    contributing = tuple(
-        item for item in results if item.decision is winning.decision
-    )
+    contributing = tuple(item for item in results if item.decision is winning.decision)
     reasons = "; ".join(item.reason for item in contributing)
     return ToolAuthorizationDecision(
         decision=winning.decision,
@@ -165,15 +166,9 @@ class FinancialApprovalPolicyProvider:
 
 
 def _verified_satisfies_request(
-    verified: object,
+    verified: VerifiedAgentGovernanceHumanApproval,
     request: ToolAuthorizationRequest,
 ) -> bool:
-    from intergrax.contracts.agent_governance_verified_approval import (
-        VerifiedAgentGovernanceHumanApproval,
-    )
-
-    if not isinstance(verified, VerifiedAgentGovernanceHumanApproval):
-        return False
     auth = verified.requirement.authorization_request
     return (
         auth.agent.agent_id == request.agent.agent_id

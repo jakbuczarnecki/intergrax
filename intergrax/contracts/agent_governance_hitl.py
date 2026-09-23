@@ -184,6 +184,18 @@ class AgentGovernanceHumanApprovalPending(BaseModel):
             raise ValueError("pending scope mismatch with requirement")
         if self.generation != req.pause_generation:
             raise ValueError("pending generation mismatch with requirement")
+        if self.task_id != req.task_id or self.run_id != req.run_id:
+            raise ValueError("pending four-id mismatch with requirement")
+        if self.attempt_id != req.attempt_id or self.execution_id != req.execution_id:
+            raise ValueError("pending execution identity mismatch with requirement")
+        if self.tenant_id != req.tenant_id or self.agent_id != req.agent_id:
+            raise ValueError("pending agent linkage mismatch with requirement")
+        if self.tool_id != req.tool_id or self.step_id != req.step_id:
+            raise ValueError("pending tool linkage mismatch with requirement")
+        if self.idempotency_key != req.idempotency_key:
+            raise ValueError("pending idempotency mismatch with requirement")
+        if self.policy_provenance_digest != req.policy_provenance_digest:
+            raise ValueError("pending policy digest mismatch with requirement")
         return self
 
 
