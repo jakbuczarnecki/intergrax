@@ -3,79 +3,46 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List, Optional
-import time
+from dataclasses import dataclass, field
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
-from intergrax.llm_adapters.base.usage_log import LLMRunStats
+from intergrax.llm_adapters.base.usage_log import require_llm_usage_trackable
+from intergrax.llm_adapters.contracts.llm_usage_stats import (
+    LLMRunStats,
+    LLMRunStatsReader,
+    LLMUsageTrackable,
+)
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
+from intergrax.llm_adapters.contracts.llm_usage_report import (
+    LLMAdapterMeta,
+    LLMAdapterUsageEntry,
+    LLMUsageReport,
+)
+
+__all__ = [
+    "LLMAdapterMeta",
+    "LLMAdapterUsageEntry",
+    "LLMUsageReport",
+    "LLMUsageTracker",
+]
 
 
-@dataclass(frozen=True)
-class LLMAdapterMeta:
+@dataclass
+class _PhysicalUsageSource:
+    trackable: LLMUsageTrackable
     adapter_type: str
-    provider: str
+    provider_slug: str
     model: str
+    stats: LLMRunStatsReader
 
 
-@dataclass(frozen=True)
-class LLMAdapterUsageEntry:
+@dataclass
+class _LogicalUsageEntry:
     label: str
-    meta: LLMAdapterMeta
-    stats: LLMRunStats
-    adapter_instance_id: int
-
-
-@dataclass(frozen=True)
-class LLMUsageReport:
-    run_id: str
-    total: LLMRunStats
-    entries: List[LLMAdapterUsageEntry]
-
-    # Optional aggregation by (provider, model)
-    by_provider_model: Dict[str, LLMRunStats]
-
-    # Debug only: label -> instance_id
-    adapter_instance_ids: Dict[str, int]
-
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
-    
-    def pretty(self) -> str:
-        lines: List[str] = []
-
-        t = self.total
-        lines.append(f"LLMUsageReport(run_id={self.run_id})")
-        lines.append("Total:")
-        lines.append(f"  calls        : {t.calls}")
-        lines.append(f"  input_tokens : {t.input_tokens}")
-        lines.append(f"  output_tokens: {t.output_tokens}")
-        lines.append(f"  total_tokens : {t.total_tokens}")
-        lines.append(f"  duration_ms  : {t.duration_ms}")
-        lines.append(f"  errors       : {t.errors}")
-
-        if self.by_provider_model:
-            lines.append("By provider/model:")
-            for key, st in self.by_provider_model.items():  # insertion order
-                lines.append(
-                    f"  - {key}: calls={st.calls} in={st.input_tokens} out={st.output_tokens} "
-                    f"total={st.total_tokens} ms={st.duration_ms} err={st.errors}"
-                )
-
-        if self.entries:
-            lines.append("Entries (registration order):")
-            for e in self.entries:  # registration order
-                st = e.stats
-                meta = e.meta
-                lines.append(f"  - {e.label} [{meta.provider}:{meta.model}] ({meta.adapter_type})")
-                lines.append(
-                    f"      calls={st.calls} in={st.input_tokens} out={st.output_tokens} "
-                    f"total={st.total_tokens} ms={st.duration_ms} err={st.errors} "
-                    f"instance_id={e.adapter_instance_id}"
-                )
-
-        return "\n".join(lines)
+    provider_slug: str
+    model: str
+    sources: Dict[int, _PhysicalUsageSource] = field(default_factory=dict)
 
 
 class LLMUsageTracker:
@@ -90,110 +57,178 @@ class LLMUsageTracker:
 
     def __init__(self, run_id: str) -> None:
         self.run_id = run_id
-        self._adapters: Dict[str, LLMAdapter] = {}
+        self._entries: Dict[str, _LogicalUsageEntry] = {}
 
+    @staticmethod
+    def _default_label(trackable: LLMUsageTrackable) -> str:
+        slug = llm_provider_slug(trackable.provider)
+        return f"{slug}:{trackable.model}"
 
-    def register_adapter(self, adapter: LLMAdapter, label: Optional[str] = None) -> None:
+    def _physical_source(
+        self,
+        verified: LLMUsageTrackable,
+    ) -> _PhysicalUsageSource:
+        return _PhysicalUsageSource(
+            trackable=verified,
+            adapter_type=verified.__class__.__name__,
+            provider_slug=llm_provider_slug(verified.provider),
+            model=str(verified.model or ""),
+            stats=verified.usage,
+        )
+
+    def register_adapter(
+        self,
+        trackable: LLMUsageTrackable,
+        label: Optional[str] = None,
+    ) -> None:
         """
-        Register an adapter used during this runtime run.
-        Idempotent by label.
+        Register a usage-trackable adapter used during this runtime run.
+
+        Idempotent per (logical label, physical instance): the same object registered
+        twice under one label is counted once. Multiple distinct instances under the
+        same semantic label aggregate into one logical report entry.
         """
-        if adapter is None:
+        verified = require_llm_usage_trackable(trackable)
+
+        resolved_label = label or self._default_label(verified)
+        instance_id = id(verified)
+
+        logical = self._entries.get(resolved_label)
+        if logical is not None and instance_id in logical.sources:
             return
-        
-        if not label:
-            label = adapter.id
-            
-        if label not in self._adapters:
-            self._adapters[label] = adapter
 
+        physical = self._physical_source(verified)
 
-    def unregister_adapter(self, adapter: LLMAdapter) -> None:
+        if logical is None:
+            logical = _LogicalUsageEntry(
+                label=resolved_label,
+                provider_slug=physical.provider_slug,
+                model=physical.model,
+            )
+            self._entries[resolved_label] = logical
+        elif (
+            physical.provider_slug != logical.provider_slug
+            or physical.model != logical.model
+        ):
+            raise ValueError(
+                f"logical usage label '{resolved_label}' already represents "
+                f"provider/model {logical.provider_slug}:{logical.model}, "
+                f"cannot register physical source with provider/model "
+                f"{physical.provider_slug}:{physical.model}"
+            )
+
+        logical.sources[instance_id] = physical
+
+    def unregister_adapter(self, adapter: LLMAdapter | LLMUsageTrackable) -> None:
         """
         Unregister an adapter from this runtime run.
 
         Safe to call multiple times.
         Does nothing if adapter is not registered.
         """
-        to_remove = None
+        instance_id = id(adapter)
+        labels_to_drop: List[str] = []
 
-        for label, a in self._adapters.items():
-            if a is adapter:
-                to_remove = label
-                break
+        for label, logical in self._entries.items():
+            if instance_id not in logical.sources:
+                continue
+            del logical.sources[instance_id]
+            if not logical.sources:
+                labels_to_drop.append(label)
 
-        if to_remove is not None:
-            del self._adapters[to_remove]
-            
-        
+        for label in labels_to_drop:
+            del self._entries[label]
 
     def registered_labels(self) -> List[str]:
-        return list(self._adapters.keys())
+        return list(self._entries.keys())
 
+    def _snapshot_stats(self, stats: LLMRunStatsReader) -> LLMRunStats:
+        st = stats.get_run_stats(self.run_id)
+        if st is None:
+            return LLMRunStats()
+        return st
+
+    def _aggregate_sources(self, sources: Dict[int, _PhysicalUsageSource]) -> LLMRunStats:
+        agg = LLMRunStats()
+        for source in sources.values():
+            st = self._snapshot_stats(source.stats)
+            agg.calls += st.calls
+            agg.input_tokens += st.input_tokens
+            agg.output_tokens += st.output_tokens
+            agg.total_tokens += st.total_tokens
+            agg.duration_ms += st.duration_ms
+            agg.errors += st.errors
+        return agg
+
+    def _primary_instance_id(self, logical: _LogicalUsageEntry) -> int:
+        return next(iter(logical.sources))
+
+    def _primary_source(self, logical: _LogicalUsageEntry) -> _PhysicalUsageSource:
+        return logical.sources[self._primary_instance_id(logical)]
+
+    def _iter_unique_physical_sources(
+        self,
+    ) -> Iterator[Tuple[int, _PhysicalUsageSource]]:
+        seen_ids: set[int] = set()
+        for logical in (self._entries or {}).values():
+            for instance_id, source in logical.sources.items():
+                if instance_id in seen_ids:
+                    continue
+                seen_ids.add(instance_id)
+                yield instance_id, source
 
     def build_report(self) -> LLMUsageReport:
         entries: List[LLMAdapterUsageEntry] = []
 
         adapter_instance_ids: Dict[str, int] = {}
-        for label, ad in (self._adapters or {}).items():
-            adapter_instance_ids[label] = id(ad) if ad is not None else 0
+        for label, logical in (self._entries or {}).items():
+            if logical.sources:
+                adapter_instance_ids[label] = self._primary_instance_id(logical)
 
-        # Build per-label entries (including meta)
-        for label, ad in (self._adapters or {}).items():
-            if ad is None:
+        for logical in (self._entries or {}).values():
+            if not logical.sources:
                 continue
-
-            provider = ad.provider
-            if isinstance(provider, LLMProvider):
-                provider = provider.value
+            primary = self._primary_source(logical)
             meta = LLMAdapterMeta(
-                adapter_type=ad.__class__.__name__,
-                provider=str(provider),
-                model=ad.model,
+                adapter_type=primary.adapter_type,
+                provider=primary.provider_slug,
+                model=primary.model,
             )
 
-            st = ad.usage.get_run_stats(self.run_id)
-            if st is None:
-                st = LLMRunStats()
+            st = self._aggregate_sources(logical.sources)
 
             entries.append(
                 LLMAdapterUsageEntry(
-                    label=label,
+                    label=logical.label,
                     meta=meta,
                     stats=st,
-                    adapter_instance_id=id(ad),
+                    adapter_instance_id=self._primary_instance_id(logical),
                 )
             )
 
-        # Total (dedup by instance)
         total = self.total()
 
-        # Aggregate by provider:model (dedup by instance)
         by_provider_model: Dict[str, LLMRunStats] = {}
-        seen_ids = set()
-        for e in entries:
-            if e.adapter_instance_id in seen_ids:
-                continue
-            seen_ids.add(e.adapter_instance_id)
-
-            key = f"{e.meta.provider}:{e.meta.model}"
+        for _instance_id, source in self._iter_unique_physical_sources():
+            st = self._snapshot_stats(source.stats)
+            key = f"{source.provider_slug}:{source.model}"
             agg = by_provider_model.get(key)
             if agg is None:
                 by_provider_model[key] = LLMRunStats(
-                    calls=e.stats.calls,
-                    input_tokens=e.stats.input_tokens,
-                    output_tokens=e.stats.output_tokens,
-                    total_tokens=e.stats.total_tokens,
-                    duration_ms=e.stats.duration_ms,
-                    errors=e.stats.errors,
+                    calls=st.calls,
+                    input_tokens=st.input_tokens,
+                    output_tokens=st.output_tokens,
+                    total_tokens=st.total_tokens,
+                    duration_ms=st.duration_ms,
+                    errors=st.errors,
                 )
             else:
-                agg.calls += e.stats.calls
-                agg.input_tokens += e.stats.input_tokens
-                agg.output_tokens += e.stats.output_tokens
-                agg.total_tokens += e.stats.total_tokens
-                agg.duration_ms += e.stats.duration_ms
-                agg.errors += e.stats.errors
+                agg.calls += st.calls
+                agg.input_tokens += st.input_tokens
+                agg.output_tokens += st.output_tokens
+                agg.total_tokens += st.total_tokens
+                agg.duration_ms += st.duration_ms
+                agg.errors += st.errors
 
         return LLMUsageReport(
             run_id=self.run_id,
@@ -203,26 +238,13 @@ class LLMUsageTracker:
             adapter_instance_ids=adapter_instance_ids,
         )
 
-
     def export(self) -> Dict[str, Any]:
         return self.build_report().to_dict()
 
-
-
     def total(self) -> LLMRunStats:
         agg = LLMRunStats()
-
-        seen_ids = set()
-        for _, ad in (self._adapters or {}).items():
-            if ad is None:
-                continue
-
-            ad_id = id(ad)
-            if ad_id in seen_ids:
-                continue
-            seen_ids.add(ad_id)
-
-            st = ad.usage.get_run_stats(self.run_id)
+        for _instance_id, source in self._iter_unique_physical_sources():
+            st = source.stats.get_run_stats(self.run_id)
             if st is None:
                 continue
 
@@ -234,16 +256,3 @@ class LLMUsageTracker:
             agg.errors += st.errors
 
         return agg
-
-        
-    def _describe_adapter(self, ad: LLMAdapter) -> Dict[str, Any]:
-        """
-        Typed adapter metadata extraction.
-        Relies on LLMAdapter contract: provider, model, kind must exist.
-        """
-        return {
-            "adapter_type": ad.__class__.__name__,
-            "provider": ad.provider,
-            "model": ad.model,
-        }
-

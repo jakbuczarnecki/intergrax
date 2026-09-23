@@ -35,6 +35,7 @@ from intergrax.llm_adapters._shared.adapter_response_builders import build_adapt
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
+from intergrax.llm_adapters.registry.failover_policy import PlatformDefaultFailoverPolicy
 from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
     DependencyAttemptExecutionBoundary,
 )
@@ -206,7 +207,11 @@ def test_failover_separate_provider_permits(
 
     openai.set_sdk(lambda: (_ for _ in ()).throw(Transient("openai")))
     claude.set_sdk(lambda: "claude-ok")
-    failover = FailoverLLMAdapter([openai, claude], profile_ids=("p0", "p1"))
+    failover = FailoverLLMAdapter(
+        [openai, claude],
+        profile_ids=("p0", "p1"),
+        failover_policy=PlatformDefaultFailoverPolicy(),
+    )
     failover.call_config = LLMCallConfig(max_retries=0)
     response = failover.generate_messages([ChatMessage(role="user", content="hi")])
     assert response.content == "claude-ok"

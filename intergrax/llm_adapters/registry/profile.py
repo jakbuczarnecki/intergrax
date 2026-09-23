@@ -8,8 +8,18 @@ import os
 from typing import Mapping, Optional
 
 from intergrax.integrations.contracts.secrets_store import SecretsStore
+from intergrax.llm_adapters._shared.call_config import parse_call_config
+from intergrax.llm_adapters.contracts.failover_policy import (
+    FailoverEligibilityPolicy,
+    FailoverPolicy,
+    FailoverRoutingAuthorisationContext,
+)
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
+from intergrax.llm_adapters.registry.failover_policy import (
+    assert_failover_chain_authorized,
+    default_failover_policy,
+)
 from intergrax.llm_adapters.registry.secrets import (
     load_api_key_from_secrets_store,
     merge_secrets_into_options,
@@ -39,6 +49,9 @@ def create_adapter_with_failover(
     *,
     secrets: Optional[Mapping[str, str]] = None,
     policy_route_hint: str | None = None,
+    routing_authorisation: FailoverRoutingAuthorisationContext | None = None,
+    failover_policy: FailoverPolicy | None = None,
+    failover_eligibility_policy: FailoverEligibilityPolicy | None = None,
     **overrides: object,
 ) -> LLMAdapter:
     from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
@@ -51,15 +64,33 @@ def create_adapter_with_failover(
         policy_route_hint=hint,
     )
     ordered_profiles = router.ordered_profiles()
+    assert_failover_chain_authorized(
+        ordered_profiles,
+        routing_authorisation=routing_authorisation,
+        eligibility_policy=failover_eligibility_policy,
+    )
     adapters = [
         create_adapter(candidate, secrets=secrets, **overrides)
         for candidate in ordered_profiles
     ]
     if len(adapters) == 1:
         return adapters[0]
+    adapter_failover_retry_configs = [
+        parse_call_config(
+            merge_secrets_into_options(
+                candidate.provider,
+                {**candidate.options, **overrides},
+                secrets,
+            )
+        )
+        for candidate in ordered_profiles
+    ]
     return FailoverLLMAdapter(
         adapters,
         profile_ids=router.ordered_profile_ids(),
+        failover_retry_config=adapter_failover_retry_configs[0],
+        adapter_failover_retry_configs=adapter_failover_retry_configs,
+        failover_policy=failover_policy or default_failover_policy(),
     )
 
 

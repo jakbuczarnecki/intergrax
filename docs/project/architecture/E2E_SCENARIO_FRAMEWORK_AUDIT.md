@@ -12,7 +12,7 @@
 - [`platform_proofs/PLATFORM_PROOF_AUTHORING_GUIDE.md`](../../platform_proofs/PLATFORM_PROOF_AUTHORING_GUIDE.md)
 - [`platform_proofs/README.md`](../../platform_proofs/README.md)
 
-**Frozen enterprise scenario portfolio (separate SSOT):** [`ENTERPRISE_E2E_SCENARIO_CATALOG.md`](../maintainers/plans/ENTERPRISE_E2E_SCENARIO_CATALOG.md) — **30** selection-frozen problems (v1). This audit is a **filesystem inventory** and framework analysis; it is not the portfolio authority.
+**Enterprise E2E Scenario Portfolio (separate SSOT):** [`ENTERPRISE_E2E_SCENARIO_CATALOG.md`](../maintainers/plans/ENTERPRISE_E2E_SCENARIO_CATALOG.md) — **v1 Frozen-30** (2026-09-14) + **v2 addendum +4** → **current membership 34**. This audit is a **filesystem inventory** and framework analysis; it is not the portfolio authority.
 
 ---
 

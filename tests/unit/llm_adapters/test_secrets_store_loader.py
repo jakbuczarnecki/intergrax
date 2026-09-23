@@ -20,6 +20,15 @@ def test_default_secret_path() -> None:
     assert default_secret_path_for_provider(LLMProvider.GROQ) == "llm/groq/api_key"
 
 
+@pytest.mark.unit
+@pytest.mark.gate
+def test_default_secret_path_external_provider_whitespace() -> None:
+    assert (
+        default_secret_path_for_provider(" External-Provider ")
+        == "llm/external-provider/api_key"
+    )
+
+
 def test_load_api_key_from_secrets_store() -> None:
     store = MagicMock()
     store.get_secret.return_value = "vault-key"

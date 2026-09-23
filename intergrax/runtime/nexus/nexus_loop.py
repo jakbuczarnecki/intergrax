@@ -490,6 +490,7 @@ class NexusLoop:
             restore_long_running=self._maybe_restore_long_running,
             execution_identity=self._execution_identity,
             hitl_continuation=self._hitl_continuation,
+            task_checkpoint_store=self._checkpoint_store,
         )
         self._planning_runner = NexusPlanningRunner(
             classifier=self._classifier,

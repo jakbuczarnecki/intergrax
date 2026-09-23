@@ -52,3 +52,25 @@ def test_llm_usage_tracker_export_shape_and_total_dedup() -> None:
     # Even though we registered two labels, entries list can contain two entries,
     # but total must be deduplicated by adapter instance.
     assert len(payload["entries"]) == 2
+
+
+def test_llm_usage_tracker_same_label_two_instances_aggregates_usage() -> None:
+    run_id = "run_multi_instance"
+    tracker = LLMUsageTracker(run_id=run_id)
+    label = "core_inner:vllm:model-x"
+
+    adapter_a = FakeLLMAdapter(fixed_text="a")
+    tracker.register_adapter(adapter_a, label=label)
+    call_a = adapter_a.usage.begin_call(run_id=run_id)
+    adapter_a.usage.end_call(call_a, input_tokens=1, output_tokens=1, success=True)
+
+    adapter_b = FakeLLMAdapter(fixed_text="b")
+    tracker.register_adapter(adapter_b, label=label)
+    call_b = adapter_b.usage.begin_call(run_id=run_id)
+    adapter_b.usage.end_call(call_b, input_tokens=2, output_tokens=2, success=True)
+
+    report = tracker.build_report()
+    by_label = {e.label: e for e in report.entries}
+    assert len(by_label) == 1
+    assert by_label[label].stats.calls == 2
+    assert report.total.calls == 2

@@ -6,7 +6,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
+from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,7 +45,7 @@ class ModelRouter:
 
     def _profile_id(self, profile: LLMProfile) -> str:
         model = profile.model or "default"
-        return f"{profile.provider.value}:{model}"
+        return f"{llm_provider_slug(profile.provider)}:{model}"
 
     def ordered_profile_ids(self) -> tuple[str, ...]:
         """Stable profile identifiers aligned with ``ordered_profiles()``."""
@@ -76,7 +77,7 @@ class ModelRouter:
             reason = "primary_with_fallbacks"
         return ModelRoutingDecision(
             profile_id=self._profile_id(selected),
-            provider=str(selected.provider.value),
+            provider=llm_provider_slug(selected.provider),
             model=selected.model or "",
             fallback_profile_id=fallback_id,
             routing_reason=reason,

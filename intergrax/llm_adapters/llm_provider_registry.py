@@ -7,7 +7,7 @@ from typing import Union
 
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
 from intergrax.contracts.external_operation_termination import ExternalOperationCapabilities
 from intergrax.llm_adapters.registry.registration_contract import (
     LLMAdapterDependencyError,
@@ -58,17 +58,7 @@ class LLMAdapterRegistry:
 
     @staticmethod
     def _normalize_provider(provider: Union[str, LLMProvider]) -> str:
-        if isinstance(provider, LLMProvider):
-            key = provider.value
-        elif isinstance(provider, str):
-            key = provider.strip()
-        else:
-            raise TypeError(f"provider must be str or LLMProvider, got {type(provider)!r}")
-
-        if not key:
-            raise ValueError("provider must not be empty")
-
-        return key.lower()
+        return llm_provider_slug(provider)
 
     @classmethod
     def ensure_builtin_registrations_installed(cls) -> None:
@@ -87,10 +77,10 @@ class LLMAdapterRegistry:
 
     @staticmethod
     def _validate_registration_spec(spec: LLMAdapterRegistrationSpec, key: str) -> None:
-        if key != spec.provider_id.strip().lower():
+        if spec.provider_id != key:
             raise LLMAdapterRegistrationError(
                 f"LLM provider registration spec provider_id={spec.provider_id!r} "
-                "must already be normalized."
+                f"must already be canonical/normalized (expected {key!r})."
             )
         seam_factory = spec.external_operation_seam_factory
         capabilities = spec.external_operation_capabilities

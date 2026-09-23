@@ -5,8 +5,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from enum import Enum
-from typing import Any, Protocol
+from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
@@ -18,22 +17,22 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
-from intergrax.llm_adapters.routing.contracts import RoutingContext, RoutingEvaluation
-from intergrax.llm_adapters.routing.evaluator import (
+from intergrax.llm_adapters.routing.contracts import (
     AllowlistViolationError,
-    LLMRoutingEvaluator,
-    profile_identity,
+    RoutingContext,
+    RoutingEvaluation,
 )
+from intergrax.llm_adapters.routing.evaluating_hooks import (
+    AllowlistViolationObserver,
+    InnerSwappedObserver,
+    RoutingEvaluationObserver,
+)
+from intergrax.llm_adapters.contracts.routing_evaluator import RoutingEvaluator
+from intergrax.llm_adapters.routing.evaluator import routing_evaluation_identity
+from intergrax.llm_adapters.routing.profile_source import RoutingProfileSource
 
-RoutingEvaluationObserver = Callable[[RoutingEvaluation], None]
-AllowlistViolationObserver = Callable[[AllowlistViolationError, RoutingContext], None]
 RoutingContextProvider = Callable[[], RoutingContext]
 RoutingAdapterFactory = Callable[[RoutingEvaluation, RoutingContext], LLMAdapter]
-InnerSwappedObserver = Callable[[LLMAdapter], None]
-
-
-class RoutingProfileSource(Protocol):
-    llm_routing_profile: Any
 
 
 class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
@@ -46,6 +45,7 @@ class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
         inner: LLMAdapter,
         context_provider: RoutingContextProvider,
         adapter_factory: RoutingAdapterFactory,
+        evaluator: RoutingEvaluator,
         on_evaluated: RoutingEvaluationObserver | None = None,
         on_allowlist_violation: AllowlistViolationObserver | None = None,
         on_inner_swapped: InnerSwappedObserver | None = None,
@@ -60,7 +60,7 @@ class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
         self._on_allowlist_violation = on_allowlist_violation
         self._on_inner_swapped = on_inner_swapped
         self._before_evaluate = before_evaluate
-        self._evaluator = LLMRoutingEvaluator()
+        self._evaluator = evaluator
         self._cached_identity: str | None = None
         self._sync_identity_from_inner()
 
@@ -102,18 +102,12 @@ class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
         self.model = self._inner.model
 
     def _evaluation_cache_key(self, evaluation: RoutingEvaluation) -> str:
-        hint = evaluation.policy_route_hint or ""
-        return f"{profile_identity(evaluation.selected_profile)}:{hint}"
+        return routing_evaluation_identity(evaluation)
 
     def _inner_matches_evaluation(self, evaluation: RoutingEvaluation) -> bool:
         profile = evaluation.selected_profile
 
-        def _provider_key(provider: object) -> str:
-            if isinstance(provider, Enum):
-                return str(provider.value)
-            return str(provider)
-
-        return _provider_key(profile.provider) == _provider_key(
+        return llm_provider_slug(profile.provider) == llm_provider_slug(
             self._inner.provider
         ) and (profile.model or "") == (self._inner.model or "")
 
@@ -124,7 +118,7 @@ class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
         self._cached_identity = self._evaluation_cache_key(evaluation)
         self._sync_identity_from_inner()
         if self._on_inner_swapped is not None:
-            self._on_inner_swapped(self._inner)
+            self._on_inner_swapped(self._inner, evaluation)
 
     def _refresh_inner_adapter(self) -> None:
         routing_profile = self._profile_source.llm_routing_profile

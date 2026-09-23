@@ -6,7 +6,7 @@ import pytest
 
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.model_router import ModelRouter
-from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
 
 
 def _profile(provider: LLMProvider, model: str) -> LLMProfile:

@@ -12,6 +12,12 @@ from intergrax.contracts.agent_runtime_governance import (
     ToolAuthorizationRequest,
     ToolAuthorizationRiskLevel,
 )
+from intergrax.contracts.agent_runtime_policy_evaluation_context import (
+    AgentRuntimePolicyEvaluationContext,
+)
+from intergrax.contracts.agent_governance_verified_approval import (
+    VerifiedAgentGovernanceHumanApproval,
+)
 
 _DECISION_PRECEDENCE: tuple[ToolAuthorizationDecisionState, ...] = (
     ToolAuthorizationDecisionState.DENY,
@@ -32,9 +38,7 @@ def _merge_decisions(
 
     decision_rank = {state: index for index, state in enumerate(_DECISION_PRECEDENCE)}
     winning = min(results, key=lambda item: decision_rank[item.decision])
-    contributing = tuple(
-        item for item in results if item.decision is winning.decision
-    )
+    contributing = tuple(item for item in results if item.decision is winning.decision)
     reasons = "; ".join(item.reason for item in contributing)
     return ToolAuthorizationDecision(
         decision=winning.decision,
@@ -58,10 +62,15 @@ class AgentRuntimePolicyEngine:
     def provider_ids(self) -> tuple[str, ...]:
         return tuple(provider.policy_id for provider in self._providers)
 
-    def evaluate(self, request: ToolAuthorizationRequest) -> ToolAuthorizationDecision:
+    def evaluate(
+        self,
+        request: ToolAuthorizationRequest,
+        context: AgentRuntimePolicyEvaluationContext | None = None,
+    ) -> ToolAuthorizationDecision:
+        evaluation_context = context or AgentRuntimePolicyEvaluationContext()
         results: list[PolicyEvaluationResult] = []
         for provider in self._providers:
-            results.append(provider.evaluate(request))
+            results.append(provider.evaluate(request, evaluation_context))
         return _merge_decisions(tuple(results))
 
 
@@ -72,7 +81,11 @@ class AllowAllPolicyProvider:
     def policy_id(self) -> str:
         return "governance.allow_all"
 
-    def evaluate(self, request: ToolAuthorizationRequest) -> PolicyEvaluationResult:
+    def evaluate(
+        self,
+        request: ToolAuthorizationRequest,
+        context: AgentRuntimePolicyEvaluationContext,
+    ) -> PolicyEvaluationResult:
         return PolicyEvaluationResult(
             policy_id=self.policy_id,
             decision=ToolAuthorizationDecisionState.ALLOW,
@@ -90,7 +103,11 @@ class DenyCapabilityPolicyProvider:
     def policy_id(self) -> str:
         return "governance.deny_capability"
 
-    def evaluate(self, request: ToolAuthorizationRequest) -> PolicyEvaluationResult:
+    def evaluate(
+        self,
+        request: ToolAuthorizationRequest,
+        context: AgentRuntimePolicyEvaluationContext,
+    ) -> PolicyEvaluationResult:
         if request.capability in self._denied:
             return PolicyEvaluationResult(
                 policy_id=self.policy_id,
@@ -123,13 +140,18 @@ class FinancialApprovalPolicyProvider:
     def policy_id(self) -> str:
         return "governance.financial_approval"
 
-    def evaluate(self, request: ToolAuthorizationRequest) -> PolicyEvaluationResult:
+    def evaluate(
+        self,
+        request: ToolAuthorizationRequest,
+        context: AgentRuntimePolicyEvaluationContext,
+    ) -> PolicyEvaluationResult:
         if request.capability in self._FINANCIAL_CAPABILITIES:
-            if request.approval_evidence_ref:
+            verified = context.verified_agent_governance_human_approval
+            if verified is not None and _verified_satisfies_request(verified, request):
                 return PolicyEvaluationResult(
                     policy_id=self.policy_id,
                     decision=ToolAuthorizationDecisionState.ALLOW,
-                    reason="financial_approval_evidence_present",
+                    reason="financial_verified_agent_governance_approval",
                 )
             return PolicyEvaluationResult(
                 policy_id=self.policy_id,
@@ -143,6 +165,23 @@ class FinancialApprovalPolicyProvider:
         )
 
 
+def _verified_satisfies_request(
+    verified: VerifiedAgentGovernanceHumanApproval,
+    request: ToolAuthorizationRequest,
+) -> bool:
+    auth = verified.requirement.authorization_request
+    return (
+        auth.agent.agent_id == request.agent.agent_id
+        and auth.agent.tenant_id == request.agent.tenant_id
+        and auth.task_id == request.task_id
+        and auth.run_id == request.run_id
+        and auth.attempt_id == request.attempt_id
+        and auth.execution_id == request.execution_id
+        and auth.tool_id == request.tool_id
+        and auth.capability == request.capability
+    )
+
+
 class HighRiskApprovalPolicyProvider:
     """Requires approval for HIGH and CRITICAL risk classifications."""
 
@@ -150,16 +189,21 @@ class HighRiskApprovalPolicyProvider:
     def policy_id(self) -> str:
         return "governance.high_risk_approval"
 
-    def evaluate(self, request: ToolAuthorizationRequest) -> PolicyEvaluationResult:
+    def evaluate(
+        self,
+        request: ToolAuthorizationRequest,
+        context: AgentRuntimePolicyEvaluationContext,
+    ) -> PolicyEvaluationResult:
         if request.risk_level in (
             ToolAuthorizationRiskLevel.HIGH,
             ToolAuthorizationRiskLevel.CRITICAL,
         ):
-            if request.approval_evidence_ref:
+            verified = context.verified_agent_governance_human_approval
+            if verified is not None and _verified_satisfies_request(verified, request):
                 return PolicyEvaluationResult(
                     policy_id=self.policy_id,
                     decision=ToolAuthorizationDecisionState.ALLOW,
-                    reason="high_risk_approval_evidence_present",
+                    reason="high_risk_verified_agent_governance_approval",
                 )
             return PolicyEvaluationResult(
                 policy_id=self.policy_id,

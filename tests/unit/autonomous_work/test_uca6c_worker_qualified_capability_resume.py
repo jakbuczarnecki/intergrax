@@ -12,6 +12,9 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.contracts.autonomous_work.worker_host_available_capability_execution import (
+    WorkerHostAvailableCapabilityExecutionRequest,
+)
 from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
     WorkerQualifiedCapabilityExecutionDisposition,
     WorkerQualifiedCapabilityExecutionRequest,
@@ -136,27 +139,33 @@ class _RecordingBindingProvider:
 @dataclass
 class _RecordingExecutionPort:
     calls: int = 0
-    last_request: WorkerQualifiedCapabilityExecutionRequest | None = None
+    last_request: (
+        WorkerQualifiedCapabilityExecutionRequest
+        | WorkerHostAvailableCapabilityExecutionRequest
+        | None
+    ) = None
     _cache: dict[str, WorkerQualifiedCapabilityExecutionResult] = field(
         default_factory=dict,
     )
 
     def execute(
         self,
-        request: WorkerQualifiedCapabilityExecutionRequest,
+        request: WorkerQualifiedCapabilityExecutionRequest
+        | WorkerHostAvailableCapabilityExecutionRequest,
     ) -> WorkerQualifiedCapabilityExecutionResult:
-        cached = self._cache.get(request.execution_request_id)
+        execution_request_id = request.execution_request_id
+        cached = self._cache.get(execution_request_id)
         if cached is not None:
             return cached
         self.calls += 1
         self.last_request = request
         result = WorkerQualifiedCapabilityExecutionResult(
             disposition=WorkerQualifiedCapabilityExecutionDisposition.DISPATCHED,
-            execution_request_id=request.execution_request_id,
+            execution_request_id=execution_request_id,
             run_id=_RUN_ID,
             execution_id=_EXEC_ID,
         )
-        self._cache[request.execution_request_id] = result
+        self._cache[execution_request_id] = result
         return result
 
 

@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import Any, ClassVar
 
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
 
 CatalogMissObserver = Callable[["ModelCatalogMissDiagV1"], None]
 
@@ -53,12 +53,6 @@ _trace_observer: CatalogMissObserver | None = None
 
 def _run_key(run_id: str | None) -> str:
     return str(run_id or "").strip()
-
-
-def _provider_slug(provider: LLMProvider | str) -> str:
-    if isinstance(provider, LLMProvider):
-        return provider.value
-    return str(provider or "").strip().lower()
 
 
 def reset_catalog_miss_diagnostics() -> None:
@@ -121,7 +115,7 @@ def maybe_emit_catalog_miss(
     run_id: str | None = None,
 ) -> ModelCatalogMissDiagV1 | None:
     """Return diagnostic payload on first miss per model/run; otherwise None."""
-    slug = _provider_slug(provider)
+    slug = llm_provider_slug(provider)
     model_id = (model or "").strip()
     tier = (
         resolution_tier.value

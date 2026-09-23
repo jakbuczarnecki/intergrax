@@ -196,6 +196,15 @@ def validate_invocation_wiring(
         )
 
 
+def durable_sandbox_session_id_from_resolver(
+    resolver: ToolInvocationWiringResolver | None,
+) -> str | None:
+    """Typed durable wiring reference for fixed sandbox session resolvers."""
+    if isinstance(resolver, FixedSandboxSessionWiringResolver):
+        return resolver.sandbox_session.session_id
+    return None
+
+
 @dataclass(frozen=True, slots=True)
 class FixedSandboxSessionWiringResolver:
     """Per-invocation sandbox overlay for catalog tools requiring isolation."""

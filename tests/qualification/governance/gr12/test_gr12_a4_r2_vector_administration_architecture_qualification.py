@@ -120,8 +120,8 @@ def test_gr12_a4_r2_memory_and_catalog_status_unchanged() -> None:
     memory_row = next(
         row for row in GR12_CONTROL_PLANE_SURFACES if row.path_id == "CP-MEM-SPECIALIZED-MUTATION"
     )
-    assert memory_row.coverage is Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED
-    assert GR12_A4_MEMORY_DECISION.architecture_blocker.strip()
+    assert memory_row.coverage is Gr12CoverageStatus.NOT_APPLICABLE
+    assert not GR12_A4_MEMORY_DECISION.architecture_blocker.strip()
 
 
 def test_gr12_a4_r2_gr10_remains_final_closed() -> None:

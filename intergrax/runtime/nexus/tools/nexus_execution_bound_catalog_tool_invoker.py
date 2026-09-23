@@ -34,11 +34,14 @@ from intergrax.runtime.nexus.session.in_memory_session_storage import (
     InMemorySessionStorage,
 )
 from intergrax.runtime.nexus.session.session_manager import SessionManager
-from intergrax.runtime.nexus.tools.governance_approval_evidence_adapter import (
-    declarative_hitl_grant_from_invocation_evidence,
-    require_invocation_evidence_matches_request,
+from intergrax.runtime.nexus.tools.continuation_aware_catalog_tool_host import (
+    ContinuationAwareCatalogToolHost,
+    ContinuationAwareCatalogToolHostDependencies,
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.runtime.governance.active_governed_execution_task import (
+    peek_governed_execution_task,
+)
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
 from intergrax.tools.invocation_wiring import ToolInvocationContext
@@ -55,7 +58,15 @@ class NexusExecutionBoundCatalogToolInvoker:
         default_factory=CatalogDeclarativeRunBinding,
     )
     production_mode: bool = False
+    continuation_aware_dependencies: ContinuationAwareCatalogToolHostDependencies | None = (
+        None
+    )
     _last_trace_steps: tuple[str, ...] = field(default=(), init=False, repr=False)
+    _continuation_host: ContinuationAwareCatalogToolHost | None = field(
+        default=None,
+        init=False,
+        repr=False,
+    )
 
     @property
     def last_invocation_trace_steps(self) -> tuple[str, ...]:
@@ -66,7 +77,26 @@ class NexusExecutionBoundCatalogToolInvoker:
         self,
         request: ExecutionBoundCatalogToolInvokeRequest,
     ) -> ToolExecutionResult[BaseModel]:
-        state = self._runtime_state(request)
+        state = self.build_runtime_state(request)
+        declarative_grant = self._declarative_hitl_grant_for_request(request)
+        host = self._continuation_host_instance()
+        if host is not None:
+            from intergrax.runtime.nexus.errors.tool_scope_violation_error import (
+                ToolScopeViolationError,
+            )
+
+            try:
+                result = host.invoke(
+                    state=state,
+                    request=request,
+                    declarative_grant=declarative_grant,
+                    task=peek_governed_execution_task(),
+                )
+            except ToolScopeViolationError as exc:
+                result = ToolExecutionResult.fail("permission_error", str(exc))
+            self._last_trace_steps = tuple(event.step for event in state.trace_events)
+            return result
+
         invocation_context = ToolInvocationContext(
             run_id=request.run_id,
             step_id=request.step_id,
@@ -76,11 +106,6 @@ class NexusExecutionBoundCatalogToolInvoker:
             correlation_request_id=request.correlation_request_id,
             wiring_resolver=request.wiring_resolver,
         )
-        invocation_scope_id = (
-            request.governance_approval_evidence.invocation_scope_id
-            if request.governance_approval_evidence is not None
-            else None
-        )
         tool_request = ToolExecutionRequest(
             run_id=request.run_id,
             step_id=request.step_id,
@@ -88,7 +113,7 @@ class NexusExecutionBoundCatalogToolInvoker:
             input=request.input,
             invocation_context=invocation_context,
             idempotency_key=request.idempotency_key,
-            declarative_hitl_invocation_scope_id=invocation_scope_id,
+            declarative_hitl_invocation_scope_id=None,
         )
         from intergrax.runtime.nexus.errors.tool_scope_violation_error import (
             ToolScopeViolationError,
@@ -104,6 +129,21 @@ class NexusExecutionBoundCatalogToolInvoker:
             result = ToolExecutionResult.fail("permission_error", str(exc))
         self._last_trace_steps = tuple(event.step for event in state.trace_events)
         return result
+
+    def _continuation_host_instance(self) -> ContinuationAwareCatalogToolHost | None:
+        if self.continuation_aware_dependencies is None:
+            return None
+        if self._continuation_host is None:
+            self._continuation_host = ContinuationAwareCatalogToolHost(
+                tool_invoker=self.tool_invoker,
+                dependencies=self.continuation_aware_dependencies,
+            )
+        return self._continuation_host
+
+    def build_runtime_state(
+        self, request: ExecutionBoundCatalogToolInvokeRequest
+    ) -> RuntimeState:
+        return self._runtime_state(request)
 
     def _runtime_state(
         self, request: ExecutionBoundCatalogToolInvokeRequest
@@ -149,16 +189,8 @@ class NexusExecutionBoundCatalogToolInvoker:
 
     def _declarative_hitl_grant_for_request(
         self,
-        request: ExecutionBoundCatalogToolInvokeRequest,
+        _request: ExecutionBoundCatalogToolInvokeRequest,
     ) -> DeclarativeHitlApprovalGrant | None:
-        if request.governance_approval_evidence is not None:
-            require_invocation_evidence_matches_request(
-                request.governance_approval_evidence,
-                request,
-            )
-            return declarative_hitl_grant_from_invocation_evidence(
-                request.governance_approval_evidence,
-            )
         if self.binding.declarative_hitl_grant is not None:
             return self.binding.declarative_hitl_grant
         return None

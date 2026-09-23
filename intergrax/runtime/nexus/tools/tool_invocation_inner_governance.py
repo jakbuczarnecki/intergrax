@@ -25,13 +25,16 @@ from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
     MeaningfulSideEffectRequest,
 )
+from intergrax.contracts.orchestration_tool_invocation_mse_operation import (
+    CANONICAL_ORCHESTRATION_TOOL_MSE_OPERATION_ID,
+)
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest
 
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 
-TOOL_INVOCATION_INNER_ACTION_PREFIX = "orchestration.tool_invocation_authorization"
+TOOL_INVOCATION_INNER_ACTION_PREFIX = CANONICAL_ORCHESTRATION_TOOL_MSE_OPERATION_ID
 
 
 def build_tool_invocation_inner_governance_request(

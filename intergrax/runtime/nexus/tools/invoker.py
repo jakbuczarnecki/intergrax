@@ -804,6 +804,59 @@ class RuntimeToolInvoker:
             policy_results=(),
         )
 
+    @staticmethod
+    def _require_agent_governance_approval_consumption_pair(
+        *,
+        state: "RuntimeState",
+        agent_id: str,
+        contract: ToolContract,
+        request: ToolExecutionRequest[BaseModel],
+    ) -> None:
+        """Fail closed unless verified approval and consumption port match (both or neither)."""
+        verified = state.verified_agent_governance_human_approval
+        consumption = state.agent_governance_approval_consumption
+        if verified is None and consumption is None:
+            return
+        if verified is not None and consumption is not None:
+            return
+
+        from intergrax.runtime.agent_governance.errors import ToolGovernanceDeniedError
+        from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+        from intergrax.runtime.nexus.tracing.tools.tool_invocation import (
+            ToolInvocationErrorDiagV1,
+        )
+        from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
+
+        capability = contract.category.strip() or contract.tool_id
+        reason = (
+            "agent_governance_approval_consumption_missing"
+            if verified is not None
+            else "agent_governance_verified_approval_missing"
+        )
+        state.trace_event(
+            component=TraceComponent.TOOLS,
+            step="agent_governance_approval_consumption_pair_invalid",
+            message=(
+                "Agent governance resume context has mismatched "
+                "verified approval and consumption port."
+            ),
+            level=TraceLevel.ERROR,
+            payload=ToolInvocationErrorDiagV1(
+                tool_id=request.tool_id,
+                step_id=str(request.step_id),
+                error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                error_message=reason,
+            ),
+        )
+        raise ToolGovernanceDeniedError(
+            run_id=state.run_id,
+            agent_id=agent_id,
+            tool_id=request.tool_id,
+            capability=capability,
+            reason=reason,
+            policy_results=(),
+        )
+
     def _require_agent_runtime_governance(
         self,
         *,
@@ -852,8 +905,26 @@ class RuntimeToolInvoker:
             contract=contract,
             request=request,
         )
+        from intergrax.contracts.agent_runtime_policy_evaluation_context import (
+            AgentRuntimePolicyEvaluationContext,
+        )
+
+        policy_context = AgentRuntimePolicyEvaluationContext(
+            verified_agent_governance_human_approval=(
+                state.verified_agent_governance_human_approval
+            ),
+        )
+        self._require_agent_governance_approval_consumption_pair(
+            state=state,
+            agent_id=agent_id,
+            contract=contract,
+            request=request,
+        )
         try:
-            governance.authorize_tool(auth_request)
+            governance.authorize_tool(
+                auth_request,
+                policy_context=policy_context,
+            )
         except ToolGovernanceDeniedError as exc:
             state.trace_event(
                 component=TraceComponent.TOOLS,
@@ -882,6 +953,38 @@ class RuntimeToolInvoker:
                 ),
             )
             raise
+
+        verified = state.verified_agent_governance_human_approval
+        consumption = state.agent_governance_approval_consumption
+        if verified is not None and consumption is not None:
+            from intergrax.contracts.agent_governance_approval_consumption_port import (
+                AgentGovernanceApprovalConsumptionError,
+            )
+
+            try:
+                consumption.mark_applied_after_governance_allow(verified)
+            except AgentGovernanceApprovalConsumptionError as exc:
+                state.trace_event(
+                    component=TraceComponent.TOOLS,
+                    step="agent_governance_grant_mark_applied_failed",
+                    message="Agent governance grant could not be marked APPLIED after ALLOW.",
+                    level=TraceLevel.ERROR,
+                    payload=ToolInvocationErrorDiagV1(
+                        tool_id=request.tool_id,
+                        step_id=str(request.step_id),
+                        error_code=RuntimeErrorCode.PERMISSION_ERROR,
+                        error_message=str(exc),
+                    ),
+                )
+                capability = contract.category.strip() or contract.tool_id
+                raise ToolGovernanceDeniedError(
+                    run_id=state.run_id,
+                    agent_id=agent_id,
+                    tool_id=request.tool_id,
+                    capability=capability,
+                    reason="agent_governance_grant_mark_applied_failed",
+                    policy_results=(),
+                ) from exc
 
     @staticmethod
     def _requires_idempotency_coordination(

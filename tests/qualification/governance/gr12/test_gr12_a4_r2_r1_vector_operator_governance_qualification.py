@@ -42,3 +42,12 @@ def test_gr12_a4_r2_r1_tenant_authority_proof_nodes_present() -> None:
         if "tenant_mismatch" in node or "same_tenant" in node
     )
     assert any(tenant_nodes)
+
+
+def test_gr12_a4_r2_r1_authority_to_execution_proof_node_present() -> None:
+    binding_nodes = (
+        node
+        for node in GR12_A4_R2_R1_EXECUTION_PROOF_NODES
+        if "authority_to_execution" in node
+    )
+    assert any(binding_nodes)

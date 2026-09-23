@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from intergrax.applications._shared.vector_index_admin_governance import (
     build_vector_index_prepare_mutation_request,
 )
@@ -15,7 +17,10 @@ from intergrax.applications._shared.vector_index_configuration_projection import
     project_vector_index_description,
     target_revision_from_spec,
 )
-from intergrax.integrations.contracts.vector_index_administration import VectorIndexIdentity
+from intergrax.integrations.contracts.vector_index_administration import (
+    VectorIndexIdentity,
+    VectorIndexSpec,
+)
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.vector_index_operator import (
     VectorIndexPrepareOperatorRequest,
@@ -74,6 +79,13 @@ class VectorIndexAdminService:
         *,
         principal: RequestIdentity | None = None,
     ) -> VectorIndexPrepareOperatorResult:
+        """Run governed vector prepare.
+
+        The canonical normalized ``VectorIndexSpec`` built after principal,
+        identity, and tenant validation is the single authority-to-execution
+        identity source for describe, CLA-04, stale re-read, and
+        ``prepare_index``.
+        """
         identity = request.spec.identity
         if principal is None:
             return self._blocked(
@@ -111,12 +123,10 @@ class VectorIndexAdminService:
                 policy_action="tenant_mismatch",
             )
 
-        normalized_identity = VectorIndexIdentity(
-            logical_name=identity.logical_name.strip(),
-            tenant_id=resource_tenant,
-        )
+        normalized_spec = _normalized_operator_spec(request.spec)
+        canonical_identity = normalized_spec.identity
 
-        description = self._admin.describe_index(normalized_identity)
+        description = self._admin.describe_index(canonical_identity)
         try:
             before_revision = current_revision_from_description(description)
         except VectorIndexConfigurationProjectionError:
@@ -127,12 +137,12 @@ class VectorIndexAdminService:
                 blocker_code=BLOCKER_UNPROJECTABLE_CURRENT_STATE,
                 policy_action="unprojectable_current_state",
             )
-        target_revision = target_revision_from_spec(request.spec)
+        target_revision = target_revision_from_spec(normalized_spec)
 
         mutation_request = build_vector_index_prepare_mutation_request(
             mutation_id=request.mutation_id,
             principal=principal,
-            identity=normalized_identity,
+            identity=canonical_identity,
             current_revision=before_revision,
             target_revision=target_revision,
         )
@@ -149,7 +159,7 @@ class VectorIndexAdminService:
             )
 
         authorized_current = before_revision
-        reread = self._admin.describe_index(normalized_identity)
+        reread = self._admin.describe_index(canonical_identity)
         try:
             reread_current = current_revision_from_description(reread)
         except VectorIndexConfigurationProjectionError:
@@ -174,7 +184,7 @@ class VectorIndexAdminService:
             )
 
         try:
-            prepare_result = self._admin.prepare_index(request.spec)
+            prepare_result = self._admin.prepare_index(normalized_spec)
         except VectorIndexCompatibilityError:
             after_revision = current_revision_from_description(reread)
             return VectorIndexPrepareOperatorResult(
@@ -225,3 +235,14 @@ class VectorIndexAdminService:
             blocker_code=blocker_code,
             policy_action=policy_action,
         )
+
+
+def _normalized_operator_spec(spec: VectorIndexSpec) -> VectorIndexSpec:
+    identity = spec.identity
+    return replace(
+        spec,
+        identity=VectorIndexIdentity(
+            logical_name=identity.logical_name.strip(),
+            tenant_id=identity.tenant_id.strip(),
+        ),
+    )

@@ -17,6 +17,9 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
 )
 from intergrax.llm_adapters.contracts.token_usage import LLMTokenUsage
 from intergrax.llm_adapters.registry.failover_adapter import FailoverLLMAdapter
+from intergrax.llm_adapters.registry.failover_policy import PlatformDefaultFailoverPolicy
+
+_DEFAULT_FAILOVER_POLICY = PlatformDefaultFailoverPolicy()
 from intergrax.runtime.nexus.tools.atomic_planner_round import (
     build_atomic_planner_round_tool_definition,
 )
@@ -121,14 +124,14 @@ def _strict_round_definition():
 def test_failover_supports_strict_reflects_primary_only() -> None:
     primary = _StrictlessToolsAdapter(label="primary")
     secondary = _StrictToolsAdapter(label="secondary")
-    adapter = FailoverLLMAdapter([primary, secondary])
+    adapter = FailoverLLMAdapter([primary, secondary], failover_policy=_DEFAULT_FAILOVER_POLICY)
     assert adapter.supports_strict_tool_argument_conformance() is False
 
 
 def test_failover_unsupported_primary_fails_closed_before_dispatch() -> None:
     primary = _StrictlessToolsAdapter(label="primary")
     secondary = _StrictToolsAdapter(label="secondary")
-    adapter = FailoverLLMAdapter([primary, secondary])
+    adapter = FailoverLLMAdapter([primary, secondary], failover_policy=_DEFAULT_FAILOVER_POLICY)
     with pytest.raises(StrictToolArgumentConformanceError, match="does not support"):
         adapter.generate_with_tools(
             [ChatMessage(role="user", content="plan")],
@@ -141,7 +144,11 @@ def test_failover_unsupported_primary_fails_closed_before_dispatch() -> None:
 def test_failover_supported_primary_does_not_fallback_to_unsupported() -> None:
     primary = _StrictToolsAdapter(fail=True, label="primary")
     secondary = _StrictlessToolsAdapter(label="secondary")
-    adapter = FailoverLLMAdapter([primary, secondary], profile_ids=("primary", "secondary"))
+    adapter = FailoverLLMAdapter(
+        [primary, secondary],
+        profile_ids=("primary", "secondary"),
+        failover_policy=_DEFAULT_FAILOVER_POLICY,
+    )
     with pytest.raises(RuntimeError, match="rate limited"):
         adapter.generate_with_tools(
             [ChatMessage(role="user", content="plan")],
@@ -155,7 +162,11 @@ def test_failover_supported_primary_does_not_fallback_to_unsupported() -> None:
 def test_failover_both_supported_allows_fallback() -> None:
     primary = _StrictToolsAdapter(fail=True, label="primary")
     secondary = _StrictToolsAdapter(label="secondary")
-    adapter = FailoverLLMAdapter([primary, secondary], profile_ids=("primary", "secondary"))
+    adapter = FailoverLLMAdapter(
+        [primary, secondary],
+        profile_ids=("primary", "secondary"),
+        failover_policy=_DEFAULT_FAILOVER_POLICY,
+    )
     response = adapter.generate_with_tools(
         [ChatMessage(role="user", content="plan")],
         [_strict_round_definition()],
@@ -167,7 +178,7 @@ def test_failover_both_supported_allows_fallback() -> None:
 def test_failover_both_unsupported_fails_closed() -> None:
     primary = _StrictlessToolsAdapter(label="primary")
     secondary = _StrictlessToolsAdapter(label="secondary")
-    adapter = FailoverLLMAdapter([primary, secondary])
+    adapter = FailoverLLMAdapter([primary, secondary], failover_policy=_DEFAULT_FAILOVER_POLICY)
     with pytest.raises(StrictToolArgumentConformanceError, match="does not support"):
         adapter.generate_with_tools(
             [ChatMessage(role="user", content="plan")],

@@ -74,5 +74,6 @@ def test_llm_profile_accepts_custom_registered_provider_slug(_restore_registry_s
 @pytest.mark.unit
 @pytest.mark.gate
 def test_llm_profile_rejects_unregistered_custom_slug(_restore_registry_state) -> None:
-    with pytest.raises(ValueError, match="unknown LLM provider slug"):
-        LLMProfile(provider="not_registered_slug", model="x")
+    profile = LLMProfile(provider="not_registered_slug", model="x")
+    with pytest.raises(ValueError, match="not registered"):
+        create_adapter(profile)

@@ -10,8 +10,14 @@ from typing import TYPE_CHECKING
 from intergrax.context.contracts import IterativeToolOutputBlock
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
+from intergrax.llm_adapters.contracts.llm_usage_aggregation import LLMUsageAggregator
 from intergrax.contracts.runtime_cost import tokens_to_cost_units
+from intergrax.contracts.agent_governance_approval_consumption_port import (
+    AgentGovernanceApprovalConsumptionPort,
+)
+from intergrax.contracts.agent_governance_verified_approval import (
+    VerifiedAgentGovernanceHumanApproval,
+)
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.runtime.nexus.engine.contracts.agent_state import AgentState
 from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsageRunRecord
@@ -58,6 +64,16 @@ class RuntimeState(RuntimeStateContract):
     # Typed declarative HITL grant mirror (transport only; scope is per ToolExecutionRequest).
     declarative_hitl_grant: DeclarativeHitlApprovalGrant | None = None
 
+    # Verified Agent Governance human approval (transport only; minted by grant verifier).
+    verified_agent_governance_human_approval: (
+        VerifiedAgentGovernanceHumanApproval | None
+    ) = None
+
+    # Per-invocation grant consumption (re-entry resume only; transport to governance boundary).
+    agent_governance_approval_consumption: (
+        AgentGovernanceApprovalConsumptionPort | None
+    ) = None
+
     # Utc
     started_at_utc: str = field(
         default_factory=lambda: SystemTimeProvider.utc_now().isoformat()
@@ -66,7 +82,7 @@ class RuntimeState(RuntimeStateContract):
     # --- Agent domain state (Tier-2) ---
     agent_state: Optional[AgentState] = None
 
-    llm_usage_tracker: Optional[LLMUsageTracker] = None
+    llm_usage_tracker: Optional[LLMUsageAggregator] = None
 
     # Session and ingestion
     session: Optional[ChatSession] = None
@@ -216,9 +232,11 @@ class RuntimeState(RuntimeStateContract):
 
 
     def configure_llm_tracker(self) -> None:
+        from intergrax.runtime.wiring.llm_usage_tracker_composition import (
+            ensure_llm_usage_tracker_on_state,
+        )
 
-        if self.llm_usage_tracker is None:
-           self.llm_usage_tracker = LLMUsageTracker(run_id=self.run_id)
+        ensure_llm_usage_tracker_on_state(self)
 
         from intergrax.runtime.nexus.tracing.adapters.model_catalog_miss import (
             wire_catalog_miss_trace_sink,
@@ -232,30 +250,35 @@ class RuntimeState(RuntimeStateContract):
             from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
             from intergrax.llm_adapters.routing.evaluating_hooks import wire_routing_evaluating_hooks
             from intergrax.llm_adapters.routing.metering import resolve_metering_adapter
+            from intergrax.llm_adapters.contracts.routing_profile import (
+                AllowlistViolationError,
+                RoutingContext,
+                RoutingEvaluation,
+            )
+            from intergrax.llm_adapters.routing.evaluator import routing_evaluation_identity
             from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
                 attach_failover_routing_trace_observer,
                 emit_llm_routing_allowlist_violation_diag,
                 emit_llm_routing_rule_diag,
             )
 
-            def _on_evaluated(evaluation: object) -> None:
-                from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
-
-                assert isinstance(evaluation, RoutingEvaluation)
+            def _on_evaluated(evaluation: RoutingEvaluation) -> None:
                 emit_llm_routing_rule_diag(self.trace_event, evaluation)
 
-            def _on_allowlist_violation(exc: object, context: object) -> None:
-                from intergrax.llm_adapters.routing.contracts import RoutingContext
-                from intergrax.llm_adapters.routing.evaluator import AllowlistViolationError
-
-                assert isinstance(exc, AllowlistViolationError)
-                assert isinstance(context, RoutingContext)
+            def _on_allowlist_violation(
+                exc: AllowlistViolationError,
+                context: RoutingContext,
+            ) -> None:
                 emit_llm_routing_allowlist_violation_diag(self.trace_event, exc, context)
 
-            def _on_inner_swapped(inner: LLMAdapter) -> None:
+            def _on_inner_swapped(
+                inner: LLMAdapter,
+                evaluation: RoutingEvaluation,
+            ) -> None:
+                route_id = routing_evaluation_identity(evaluation)
                 self.llm_usage_tracker.register_adapter(
                     inner,
-                    label=f"core_inner_{id(inner)}",
+                    label=f"core_inner:{route_id}",
                 )
                 attach_failover_routing_trace_observer(inner, self.trace_event)
 

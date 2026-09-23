@@ -83,10 +83,10 @@ Autonomous Organization **may use** Virtual Workers; it does **not** replace [Vi
 
 | Portfolio | Role |
 |-----------|------|
-| **[Enterprise E2E Scenario Catalog v1 (Frozen-30)](../maintainers/plans/ENTERPRISE_E2E_SCENARIO_CATALOG.md)** | Enterprise safety + execution substrate |
+| **[Enterprise E2E Scenario Portfolio](../maintainers/plans/ENTERPRISE_E2E_SCENARIO_CATALOG.md)** | Enterprise safety + execution substrate (v1 Frozen-30 + v2 addendum; current **34** identities) |
 | **Autonomous Organization Scenario Portfolio v1** | Goal → Capability → Organization → Learning → Reorganization — see [scenario portfolio](../maintainers/plans/AUTONOMOUS_ORGANIZATION_SCENARIO_PORTFOLIO.md) |
 
-Frozen-30 is **not modified** by this initiative; there is **no** merged mega-catalog.
+The enterprise portfolio’s **v1 Frozen-30** record is **not rewritten** by this initiative; VO **VO-S01–VO-S10** remains a **separate** portfolio — **no** merged mega-catalog.
 
 ---
 

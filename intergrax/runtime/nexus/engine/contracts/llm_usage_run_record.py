@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List
 from datetime import datetime
 
-from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageReport
+from intergrax.llm_adapters.contracts.llm_usage_report import LLMUsageReport
 
 
 @dataclass(frozen=True)

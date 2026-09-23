@@ -120,6 +120,30 @@ def test_adr3_imp_03_catalog_not_reexported_from_contracts() -> None:
         assert "catalog_declarative_invoker" not in text
 
 
+def test_adr3_imp_03_r1_nexus_adapter_does_not_import_agents_persistence() -> None:
+    source = _adapter_source()
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            assert "intergrax.agents.persistence" not in node.module
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                assert "intergrax.agents.persistence" not in alias.name
+
+
+def test_adr3_imp_03_r1_no_duplicate_per_call_identity_protocol() -> None:
+    binding_source = (
+        _REPO / "intergrax" / "agents" / "persistence" / "declarative_run_binding.py"
+    ).read_text(encoding="utf-8")
+    assert "PerCallExecutionIdentityDeclarativeToolInvoker" not in binding_source
+
+
+def test_adr3_imp_03_r1_invoke_result_from_contracts_only() -> None:
+    source = _adapter_source()
+    assert "declarative_tool_invoke_result" in source
+    assert "declarative_tool_executor" not in source
+
+
 @dataclass
 class _RecordingRuntimeToolInvoker:
     observed_run_ids: list[str] = field(default_factory=list)

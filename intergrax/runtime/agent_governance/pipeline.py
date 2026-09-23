@@ -12,6 +12,9 @@ from intergrax.contracts.agent_runtime_governance import (
     ToolAuthorizationDecisionState,
     ToolAuthorizationRequest,
 )
+from intergrax.contracts.agent_runtime_policy_evaluation_context import (
+    AgentRuntimePolicyEvaluationContext,
+)
 from intergrax.runtime.agent_governance.approval_boundary import AgentRuntimeApprovalBoundary
 from intergrax.runtime.agent_governance.audit import GovernanceAuditRecorder
 from intergrax.runtime.agent_governance.capability_resolver import require_capability_granted
@@ -40,7 +43,12 @@ class AgentRuntimeGovernancePipeline:
         self._approval_boundary = approval_boundary
         self._approval_ttl = approval_ttl
 
-    def evaluate(self, request: ToolAuthorizationRequest) -> ToolAuthorizationDecision:
+    def evaluate(
+        self,
+        request: ToolAuthorizationRequest,
+        *,
+        policy_context: AgentRuntimePolicyEvaluationContext | None = None,
+    ) -> ToolAuthorizationDecision:
         grant = self._capability_resolver.resolve_grant(request.agent)
         require_capability_granted(
             grant=grant,
@@ -50,7 +58,7 @@ class AgentRuntimeGovernancePipeline:
             tool_id=request.tool_id,
         )
 
-        decision = self._policy_engine.evaluate(request)
+        decision = self._policy_engine.evaluate(request, policy_context)
 
         if decision.requires_approval and self._approval_boundary is not None:
             expires_at = datetime.now(timezone.utc) + self._approval_ttl

@@ -101,13 +101,29 @@ def test_llm_profile_from_env_unknown_provider(_restore_registry_state) -> None:
         {"INTERGRAX_LLM_PROVIDER": "not_registered_slug_env"},
         clear=False,
     ):
-        with pytest.raises(ValueError, match="unknown LLM provider slug"):
-            llm_profile_from_env()
+        profile = llm_profile_from_env()
+        assert profile is not None
+        with pytest.raises(ValueError, match="not registered"):
+            create_adapter(profile)
 
 
 def test_llm_profile_lab_default() -> None:
     profile = LLMProfile.lab()
     assert profile.provider == LLMProvider.OLLAMA
+    assert profile.model == "llama3.1:latest"
+
+
+@pytest.mark.gate
+def test_llm_profile_from_mapping_round_trip() -> None:
+    data = {
+        "provider": "groq",
+        "model": "llama-3.3-70b-versatile",
+        "options": {"max_retries": 1},
+    }
+    profile = LLMProfile.from_mapping(data)
+    assert profile.provider == LLMProvider.GROQ
+    assert profile.model == "llama-3.3-70b-versatile"
+    assert profile.options == {"max_retries": 1}
 
 
 def test_llm_profile_propagates_canonical_model_and_ignores_legacy_env() -> None:

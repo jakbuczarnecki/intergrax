@@ -14,8 +14,8 @@ from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvokeRequest,
     ExecutionBoundCatalogToolInvoker,
 )
-from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
-    derive_qualified_capability_governance_step_id,
+from intergrax.runtime.execution.suspended_operation.pause_required import (
+    ExecutionSuspendedWorkPauseRequired,
 )
 from intergrax.contracts.execution_identity import (
     require_active_execution_identity,
@@ -165,9 +165,7 @@ class WiringCodeCraftBoundCapabilityExecution:
         self.runtime_execution_calls += 1
         active_run_id, _ = require_active_execution_identity()
         run_id_str = validate_run_id(str(active_run_id))
-        step_id = derive_qualified_capability_governance_step_id(
-            request.execution_request_id,
-        )
+        step_id = f"qce:{request.execution_request_id}"
         effective_timeout = int(
             max(
                 1.0,
@@ -190,10 +188,11 @@ class WiringCodeCraftBoundCapabilityExecution:
             step_id=step_id,
             correlation_request_id=str(request.execution_id),
             wiring_resolver=wiring_resolver,
-            governance_approval_evidence=request.governance_approval_evidence,
         )
         try:
             tool_result = self._catalog_tool_invoker.invoke(invoke_request)
+        except ExecutionSuspendedWorkPauseRequired:
+            raise
         except SandboxIsolationRequiredError as exc:
             return CodeCraftBoundCapabilityExecutionResult(
                 outcome=CodeCraftBoundCapabilityExecutionOutcome.UNAVAILABLE,

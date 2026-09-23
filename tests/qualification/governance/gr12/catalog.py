@@ -108,14 +108,15 @@ GR12_A4_RESIDUAL_PATH_IDS: Final[tuple[str, ...]] = (
 )
 
 GR12_A4_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
-    task_name="GR-12-A4-R3 — Specialized Memory Governance ADR",
+    task_name="GR-12-A4-R3-R1 — Memory Specialized Governance Qualification",
     exact_blocker=(
-        "CP-VECTOR-INDEX-ADMIN qualified (GR-12-A4-R2-R1); specialized memory mutations "
-        "remain on MemoryGovernanceEvaluationRequest pending architecture ADR (GR-12-A4-R3)."
+        "GR-12-A4-R3 ADR closed split architecture: production memory mutations are "
+        "execution/background domain writes under MemorySecurityGovernanceService; "
+        "enterprise qualification of invariants remains before final GR-12 close."
     ),
     why_highest=(
-        "Vector live operator path enforced; memory is the remaining residual "
-        "control-plane architecture decision before final GR-12 certification."
+        "Last residual GR-12 architecture decision (memory) is decided; bounded "
+        "qualification proves specialized authority invariants without CLA-04 on execution paths."
     ),
 )
 
@@ -138,6 +139,7 @@ GR12_A4_R2_R1_EXECUTION_PROOF_NODES: Final[tuple[str, ...]] = (
     "tests/unit/applications/test_vector_index_configuration_projection.py::test_vec_digest_capability_order_irrelevant",
     "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_9_external_evaluator_receives_cla04_request",
     "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_proj_1_unprojectable_current_state",
+    "tests/unit/applications/test_vector_index_admin_governance.py::test_vec_gov_19_canonical_identity_authority_to_execution_binding",
     "tests/unit/integrations/contracts/test_vector_index_administration.py::test_vector_index_spec_rejects_empty_logical_name",
 )
 
@@ -149,6 +151,11 @@ GR12_A4_R2_QUALIFICATION_PROOF: Final[str] = (
 GR12_A4_R2_VECTOR_ADR_PATH: Final[str] = (
     "docs/project/maintainers/architecture/ADR/"
     "ADR-GR-12-VECTOR-ADMIN-CONTROL-PLANE-BOUNDARY.md"
+)
+
+GR12_A4_R3_MEMORY_ADR_PATH: Final[str] = (
+    "docs/project/maintainers/architecture/ADR/"
+    "ADR-GR-12-MEMORY-SPECIALIZED-GOVERNANCE-BOUNDARY.md"
 )
 
 GR12_A4_R1_R1_QUALIFICATION_PROOF: Final[str] = (
@@ -525,15 +532,18 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         path_id="CP-MEM-SPECIALIZED-MUTATION",
         surface="Memory LTM/entity mutations",
         production_entrypoint="intergrax.memory.memory_specialized_mutation_governance",
-        mutation="memory domain writes/deletes/compactions",
-        consequential=True,
-        current_guard="MemoryGovernanceEvaluationRequest (separate contract)",
-        current_authority="memory control scope + memory policy port",
+        mutation="memory domain writes/deletes/compactions (execution/background only)",
+        consequential=False,
+        current_guard="MemoryGovernanceEvaluationRequest + MemorySecurityGovernanceService",
+        current_authority="specialized memory domain authority (not CLA-04)",
         audit_evidence="MemoryGovernanceDecision (not GR-8 fact)",
-        applicability=Gr12Applicability.REQUIRES_ARCHITECTURE_DECISION,
-        coverage=Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED,
+        applicability=Gr12Applicability.NOT_APPLICABLE,
+        coverage=Gr12CoverageStatus.NOT_APPLICABLE,
         recommended_owner="memory domain",
-        future_remediation="GR-12-A4-R3 specialized memory governance architecture ADR",
+        future_remediation=(
+            "Revisit if live operator memory mutation API is introduced; "
+            "GR-12-A4-R3-R1 qualifies specialized governance invariants"
+        ),
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-MARKETPLACE-ACQUIRE",

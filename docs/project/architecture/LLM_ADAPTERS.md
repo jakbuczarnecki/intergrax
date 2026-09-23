@@ -620,6 +620,8 @@ profile = LLMProfile(provider="my_gateway", model="vendor/model-id")
 
 Custom provider slugs validate against `LLMAdapterRegistry.registered_providers()` - no enum edit required (**M-LLM-X.14.3**).
 
+External providers are supported through registration contracts (`LLMAdapterRegistrationSpec` / `LLMAdapterRegistry.register`). Core enum modification is not required. Unknown execution providers fail closed: `LLMAdapterRegistry.create` raises when the slug is not registered (no implicit OpenAI-compatible or default adapter fallback). Unknown lifecycle seam and capability lookups are neutral and non-mutating: unregistered slugs receive no-op physical ports and `ExternalOperationCapabilities` with all flags false without writing registry state.
+
 ### Provider plugin layer (planned - LLM-PROVIDER-PLUGIN-1)
 
 Today's `LLMAdapterRegistry.register()` factory hook is sufficient for runtime extension but is **not** a full provider plugin system (no deterministic metadata snapshot, config/health/security posture contract, or package discovery parity with runtime integrations registry v2).

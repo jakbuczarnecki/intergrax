@@ -25,8 +25,16 @@ from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementResult,
     PolicyCompositionResult,
 )
-from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
-    derive_qualified_capability_governance_step_id,
+from tests.unit.autonomous_work.uca6c_r5_r2_strict_fixtures import (
+    build_sandbox_session,
+    uca6c_attach_catalog_hitl_grant,
+    uca6c_high_risk_tool_approval_grant,
+    uca6c_strict_echo_only_worker_manifest,
+    uca6c_strict_r6_durable_wiring,
+    uca6c_strict_sandbox_env_profile,
+    uca6c_strict_worker_manifest,
+    uca6c_strict_worker_registry,
+    uca6c_test_bound_catalog_step_id,
 )
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
@@ -48,9 +56,16 @@ from intergrax.runtime.codecraft.wiring_bound_capability_execution import (
 )
 from intergrax.runtime.agent_governance.errors import (
     CapabilityNotGrantedError,
-    ToolGovernanceApprovalRequiredError,
     ToolGovernanceDeniedError,
 )
+from intergrax.runtime.execution.suspended_operation.pause_required import (
+    ExecutionSuspendedWorkPauseRequired,
+)
+from intergrax.runtime.governance.active_governed_execution_task import (
+    bind_governed_execution_task,
+    reset_governed_execution_task,
+)
+from intergrax.runtime.task.task import Task
 from intergrax.runtime.agent_governance.request_builder import (
     governance_capability_for_contract,
 )
@@ -73,19 +88,16 @@ from tests.unit.autonomous_work.test_uca6c_r4_real_codecraft_execution import (
     _TENANT,
     _TASK_ID,
 )
-from tests.unit.autonomous_work.uca6c_r5_r2_strict_fixtures import (
-    build_sandbox_session,
-    uca6c_high_risk_tool_approval_evidence,
-    uca6c_strict_echo_only_worker_manifest,
-    uca6c_strict_sandbox_env_profile,
-    uca6c_strict_worker_manifest,
-    uca6c_strict_worker_registry,
-)
 from tests.unit.runtime.nexus.tools.test_gr10_r8_orchestration_inner_guard import (
     _RecordingGuard,
 )
 
 pytestmark = pytest.mark.unit
+
+
+def _strict_r6_kwargs(tmp_path: Path) -> dict[str, object]:
+    return uca6c_strict_r6_durable_wiring(tmp_path)
+
 
 _COMPOSITION_PATH = Path(
     "intergrax/applications/_shared/uca6c_codecraft_qualified_execution_composition.py",
@@ -129,12 +141,23 @@ class _RecordingMsePort:
         )
 
 
-def _codecraft_context(tmp_path: Path, craft_id: str) -> ToolWiringContext:
+def _codecraft_context(
+    tmp_path: Path,
+    craft_id: str,
+    *,
+    sandbox_manager,
+) -> ToolWiringContext:
     sandbox = build_sandbox_session(
         tmp_path,
         tenant_id=_TENANT,
         task_id=str(_TASK_ID),
     )
+    reattached = sandbox_manager.resolve_session(
+        session_id=sandbox.session_id,
+        tenant_id=_TENANT,
+        task_id=str(_TASK_ID),
+    )
+    assert reattached is not None
     sessions = CodeCraftSessionManager()
     ownership = CodeCraftSessionOwnership(tenant_id=_TENANT, task_id=str(_TASK_ID))
     session = sessions.open(
@@ -219,7 +242,7 @@ def test_composition_module_has_no_allow_mint() -> None:
     assert "AllowAll" not in source
 
 
-def test_strict_missing_mse_fails_at_composition() -> None:
+def test_strict_missing_mse_fails_at_composition(tmp_path: Path) -> None:
     manifest = uca6c_strict_worker_manifest()
     registry = uca6c_strict_worker_registry(manifest)
     tool_wiring = _strict_tool_wiring(ToolWiringContext())
@@ -235,10 +258,11 @@ def test_strict_missing_mse_fails_at_composition() -> None:
             manifest=manifest,
             agent_registry=registry,
             meaningful_side_effect_authorization=None,
+            **_strict_r6_kwargs(tmp_path),
         )
 
 
-def test_strict_missing_manifest_fails_closed() -> None:
+def test_strict_missing_manifest_fails_closed(tmp_path: Path) -> None:
     tool_wiring = _strict_tool_wiring(ToolWiringContext())
     mse: MeaningfulSideEffectAuthorizationPort = _RecordingMsePort(allow=True)
     with pytest.raises(
@@ -253,10 +277,11 @@ def test_strict_missing_manifest_fails_closed() -> None:
             manifest=None,
             agent_registry=uca6c_strict_worker_registry(uca6c_strict_worker_manifest()),
             meaningful_side_effect_authorization=mse,
+            **_strict_r6_kwargs(tmp_path),
         )
 
 
-def test_strict_missing_agent_registry_fails_closed() -> None:
+def test_strict_missing_agent_registry_fails_closed(tmp_path: Path) -> None:
     tool_wiring = _strict_tool_wiring(ToolWiringContext())
     mse: MeaningfulSideEffectAuthorizationPort = _RecordingMsePort(allow=True)
     with pytest.raises(
@@ -271,10 +296,11 @@ def test_strict_missing_agent_registry_fails_closed() -> None:
             manifest=uca6c_strict_worker_manifest(),
             agent_registry=None,
             meaningful_side_effect_authorization=mse,
+            **_strict_r6_kwargs(tmp_path),
         )
 
 
-def test_high_level_builder_propagates_mse_and_inner_guard() -> None:
+def test_high_level_builder_propagates_mse_and_inner_guard(tmp_path: Path) -> None:
     manifest = uca6c_strict_worker_manifest()
     registry = uca6c_strict_worker_registry(manifest)
     tool_wiring = _strict_tool_wiring(ToolWiringContext())
@@ -289,6 +315,7 @@ def test_high_level_builder_propagates_mse_and_inner_guard() -> None:
         agent_registry=registry,
         meaningful_side_effect_authorization=mse,
         canonical_inner_execution_guard=guard,
+        **_strict_r6_kwargs(tmp_path),
     )
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)
@@ -300,9 +327,9 @@ def test_high_level_builder_propagates_mse_and_inner_guard() -> None:
     assert runtime_invoker._inner_execution_guard is guard  # noqa: SLF001
 
 
-def test_bootstrap_registers_code_exec_once_and_repeated_composition_is_stable() -> (
-    None
-):
+def test_bootstrap_registers_code_exec_once_and_repeated_composition_is_stable(
+    tmp_path: Path,
+) -> None:
     tool_wiring = _strict_tool_wiring(ToolWiringContext())
     assert not tool_wiring.registry.has(CODE_EXEC_TOOL_ID)
     bootstrap_uca6c_code_exec_catalog_tools(tool_wiring)
@@ -319,7 +346,12 @@ def test_bootstrap_registers_code_exec_once_and_repeated_composition_is_stable()
 
 def test_strict_production_success_via_high_level_builder(tmp_path: Path) -> None:
     craft_id = "craft-r5r2-strict-ok"
-    ctx = _codecraft_context(tmp_path, craft_id)
+    bundle = uca6c_strict_r6_durable_wiring(tmp_path)
+    ctx = _codecraft_context(
+        tmp_path,
+        craft_id,
+        sandbox_manager=bundle["sandbox_session_manager"],
+    )
     manifest = uca6c_strict_worker_manifest()
     registry = uca6c_strict_worker_registry(manifest)
     caller_agent_id = "worker-uca6c-qualified"
@@ -335,6 +367,7 @@ def test_strict_production_success_via_high_level_builder(tmp_path: Path) -> Non
         agent_registry=registry,
         meaningful_side_effect_authorization=mse,
         canonical_inner_execution_guard=inner_guard,
+        **_strict_r6_kwargs(tmp_path),
     )
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)
@@ -344,13 +377,16 @@ def test_strict_production_success_via_high_level_builder(tmp_path: Path) -> Non
     run_id = mint_run_id()
     execution_id = mint_execution_id()
     execution_request_id = "qualified-capability-execution:uca6c-r5r2-direct:binding"
-    step_id = derive_qualified_capability_governance_step_id(execution_request_id)
-    approval_evidence = uca6c_high_risk_tool_approval_evidence(
-        tenant_id=_TENANT,
-        task_id=str(_TASK_ID),
-        run_id=str(run_id),
-        step_id=step_id,
-        agent_id=caller_agent_id,
+    step_id = uca6c_test_bound_catalog_step_id(execution_request_id)
+    uca6c_attach_catalog_hitl_grant(
+        catalog,
+        uca6c_high_risk_tool_approval_grant(
+            tenant_id=_TENANT,
+            task_id=str(_TASK_ID),
+            run_id=str(run_id),
+            step_id=step_id,
+            agent_id=caller_agent_id,
+        ),
     )
     id_token = bind_active_execution_identity(
         run_id=run_id,
@@ -373,7 +409,6 @@ def test_strict_production_success_via_high_level_builder(tmp_path: Path) -> Non
                 run_id=None,
                 execution_id=execution_id,
                 execution_request_id=execution_request_id,
-                governance_approval_evidence=approval_evidence,
             ),
         )
     finally:
@@ -388,7 +423,12 @@ def test_strict_production_success_via_high_level_builder(tmp_path: Path) -> Non
 
 def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
     craft_id = "craft-r5r2-strict-deny"
-    ctx = _codecraft_context(tmp_path, craft_id)
+    bundle = uca6c_strict_r6_durable_wiring(tmp_path)
+    ctx = _codecraft_context(
+        tmp_path,
+        craft_id,
+        sandbox_manager=bundle["sandbox_session_manager"],
+    )
     manifest = uca6c_strict_worker_manifest()
     registry = uca6c_strict_worker_registry(manifest)
     caller_agent_id = "worker-uca6c-qualified"
@@ -404,6 +444,7 @@ def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
         agent_registry=registry,
         meaningful_side_effect_authorization=mse,
         canonical_inner_execution_guard=inner_guard,
+        **_strict_r6_kwargs(tmp_path),
     )
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)
@@ -412,13 +453,16 @@ def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
     run_id = mint_run_id()
     execution_id = mint_execution_id()
     execution_request_id = "qualified-capability-execution:uca6c-r5r2-direct:binding"
-    step_id = derive_qualified_capability_governance_step_id(execution_request_id)
-    approval_evidence = uca6c_high_risk_tool_approval_evidence(
-        tenant_id=_TENANT,
-        task_id=str(_TASK_ID),
-        run_id=str(run_id),
-        step_id=step_id,
-        agent_id=caller_agent_id,
+    step_id = uca6c_test_bound_catalog_step_id(execution_request_id)
+    uca6c_attach_catalog_hitl_grant(
+        catalog,
+        uca6c_high_risk_tool_approval_grant(
+            tenant_id=_TENANT,
+            task_id=str(_TASK_ID),
+            run_id=str(run_id),
+            step_id=step_id,
+            agent_id=caller_agent_id,
+        ),
     )
     id_token = bind_active_execution_identity(
         run_id=run_id,
@@ -442,7 +486,6 @@ def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
                     run_id=None,
                     execution_id=execution_id,
                     execution_request_id=execution_request_id,
-                    governance_approval_evidence=approval_evidence,
                 ),
             )
     finally:
@@ -454,7 +497,12 @@ def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
 
 def test_strict_agent_governance_deny_blocks_before_mse(tmp_path: Path) -> None:
     craft_id = "craft-r5r2-gov-deny"
-    ctx = _codecraft_context(tmp_path, craft_id)
+    bundle = uca6c_strict_r6_durable_wiring(tmp_path)
+    ctx = _codecraft_context(
+        tmp_path,
+        craft_id,
+        sandbox_manager=bundle["sandbox_session_manager"],
+    )
     manifest = uca6c_strict_echo_only_worker_manifest()
     registry = uca6c_strict_worker_registry(manifest)
     caller_agent_id = "worker-uca6c-echo-only"
@@ -470,6 +518,7 @@ def test_strict_agent_governance_deny_blocks_before_mse(tmp_path: Path) -> None:
         agent_registry=registry,
         meaningful_side_effect_authorization=mse,
         canonical_inner_execution_guard=inner_guard,
+        **_strict_r6_kwargs(tmp_path),
     )
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)
@@ -511,11 +560,17 @@ def test_strict_high_risk_without_approval_evidence_requires_governance_approval
     tmp_path: Path,
 ) -> None:
     craft_id = "craft-r5r2-approval-required"
-    ctx = _codecraft_context(tmp_path, craft_id)
+    bundle = uca6c_strict_r6_durable_wiring(tmp_path)
+    ctx = _codecraft_context(
+        tmp_path,
+        craft_id,
+        sandbox_manager=bundle["sandbox_session_manager"],
+    )
     manifest = uca6c_strict_worker_manifest()
     registry = uca6c_strict_worker_registry(manifest)
     tool_wiring = _strict_tool_wiring(ctx)
     mse: MeaningfulSideEffectAuthorizationPort = _RecordingMsePort(allow=True)
+    r6_kwargs = _strict_r6_kwargs(tmp_path)
     handler = build_production_codecraft_qualified_capability_execution_handler(
         tool_wiring,
         uca6c_strict_sandbox_env_profile(),
@@ -525,6 +580,9 @@ def test_strict_high_risk_without_approval_evidence_requires_governance_approval
         agent_registry=registry,
         meaningful_side_effect_authorization=mse,
         canonical_inner_execution_guard=_RecordingGuard(allow=True),
+        document_store=r6_kwargs["document_store"],
+        continuation_dependencies=r6_kwargs["continuation_dependencies"],
+        durable_wiring_binding_resolver=r6_kwargs.get("durable_wiring_binding_resolver"),
     )
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)
@@ -543,8 +601,10 @@ def test_strict_high_risk_without_approval_evidence_requires_governance_approval
             principal_id="principal-uca6c",
         ),
     )
+    task = Task(tenant_id=_TENANT, user_id="u1", message="x", task_id=_TASK_ID)
+    task_token = bind_governed_execution_task(task)
     try:
-        with pytest.raises(ToolGovernanceApprovalRequiredError):
+        with pytest.raises(ExecutionSuspendedWorkPauseRequired):
             port.execute(
                 CodeCraftBoundCapabilityExecutionRequest(
                     craft_id=craft_id,
@@ -556,6 +616,7 @@ def test_strict_high_risk_without_approval_evidence_requires_governance_approval
                 ),
             )
     finally:
+        reset_governed_execution_task(task_token)
         reset_active_execution_governance_identity(gov_token)
         reset_active_execution_identity(id_token)
     assert mse.calls == 0
@@ -567,7 +628,12 @@ def test_non_strict_lab_regression_still_composes_without_mse(tmp_path: Path) ->
     )
 
     craft_id = "craft-r5r2-lab"
-    ctx = _codecraft_context(tmp_path, craft_id)
+    bundle = uca6c_strict_r6_durable_wiring(tmp_path)
+    ctx = _codecraft_context(
+        tmp_path,
+        craft_id,
+        sandbox_manager=bundle["sandbox_session_manager"],
+    )
     tool_wiring = _strict_tool_wiring(ctx)
     handler = build_production_codecraft_qualified_capability_execution_handler(
         tool_wiring,

@@ -129,3 +129,7 @@ class RoutingEvaluation(BaseModel):
     routing_reason: str
     selected_profile: LLMProfile
     policy_route_hint: str | None = None
+
+
+class AllowlistViolationError(ValueError):
+    """Raised when a rule resolves to a profile outside ``allowed_profiles``."""

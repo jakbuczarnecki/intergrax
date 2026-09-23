@@ -14,9 +14,13 @@ from intergrax.contracts.autonomous_work.execution_dispatch import (
     WorkerExecutionDispatchRequest,
     WorkerExecutionDispatchResult,
 )
-from intergrax.contracts.autonomous_work.obstacle_recovery import RecoveryStrategy
+from intergrax.contracts.autonomous_work.worker_capability_fulfillment import (
+    WorkerCapabilityFulfillmentRequest,
+    WorkerCapabilityFulfillmentResult,
+)
 from intergrax.contracts.autonomous_work.recovery_orchestration import (
     WorkerRecoveryEpisode,
+    WorkerRecoveryOrchestrationRequest,
     WorkerRecoveryResumeTarget,
 )
 from intergrax.contracts.autonomous_work.references import HumanPendingReference
@@ -120,40 +124,72 @@ class WorkerRecoveryReplanPort(Protocol):
     def prepare_alternative(
         self,
         request: WorkerRecoveryReplanRequest,
-    ) -> WorkerRecoveryReplanResult:
-        ...
+    ) -> WorkerRecoveryReplanResult: ...
 
 
 class WorkerCapabilityAcquisitionPort(Protocol):
     def request_acquisition(
         self,
         request: WorkerCapabilityAcquisitionRequest,
-    ) -> WorkerCapabilityAcquisitionResult:
-        ...
+    ) -> WorkerCapabilityAcquisitionResult: ...
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerRecoveryCapabilityFulfillmentRequest:
+    """Episode-scoped fulfillment handoff — builder supplies canonical fulfillment request."""
+
+    episode: WorkerRecoveryEpisode
+    orchestration_request: WorkerRecoveryOrchestrationRequest
+    fulfillment_request: WorkerCapabilityFulfillmentRequest
+
+
+@dataclass(frozen=True, slots=True)
+class WorkerRecoveryCapabilityFulfillmentResult:
+    """Fulfillment port outcome for recovery orchestration."""
+
+    disposition: PortAvailabilityDisposition
+    fulfillment_result: WorkerCapabilityFulfillmentResult | None = None
+
+
+class WorkerRecoveryCapabilityFulfillmentRequestBuilderPort(Protocol):
+    """Maps durable recovery episode context to consumer fulfillment request."""
+
+    def build_fulfillment_request(
+        self,
+        *,
+        episode: WorkerRecoveryEpisode,
+        request: WorkerRecoveryOrchestrationRequest,
+    ) -> WorkerCapabilityFulfillmentRequest | None: ...
+
+
+class WorkerRecoveryCapabilityFulfillmentPort(Protocol):
+    """Canonical worker capability fulfillment entry for recovery orchestration."""
+
+    def fulfill_recovery_capability(
+        self,
+        handoff: WorkerRecoveryCapabilityFulfillmentRequest,
+    ) -> WorkerRecoveryCapabilityFulfillmentResult: ...
 
 
 class CanonicalExecutionOutcomeReader(Protocol):
     def get_terminal_outcome(
         self,
         execution_id: ExecutionId,
-    ) -> CanonicalExecutionTerminalOutcome:
-        ...
+    ) -> CanonicalExecutionTerminalOutcome: ...
 
 
 class HumanDecisionRequestPort(Protocol):
     def request_human_decision(
         self,
         request: HumanDecisionRequest,
-    ) -> HumanDecisionRequestResult:
-        ...
+    ) -> HumanDecisionRequestResult: ...
 
 
 class WorkerEscalationPort(Protocol):
     def escalate(
         self,
         request: WorkerEscalationRequest,
-    ) -> WorkerEscalationResult:
-        ...
+    ) -> WorkerEscalationResult: ...
 
 
 class WorkerRecoveryExecutionDispatchPort(Protocol[InputT, OutputT]):
@@ -167,8 +203,7 @@ class WorkerRecoveryExecutionDispatchPort(Protocol[InputT, OutputT]):
         resume_target: WorkerRecoveryResumeTarget,
         attempt_number: int,
         request: WorkerExecutionDispatchRequest[InputT, OutputT],
-    ) -> WorkerExecutionDispatchResult[OutputT]:
-        ...
+    ) -> WorkerExecutionDispatchResult[OutputT]: ...
 
 
 class UnavailableWorkerRecoveryReplanPort:
@@ -176,7 +211,9 @@ class UnavailableWorkerRecoveryReplanPort:
         self,
         request: WorkerRecoveryReplanRequest,
     ) -> WorkerRecoveryReplanResult:
-        return WorkerRecoveryReplanResult(disposition=PortAvailabilityDisposition.UNAVAILABLE)
+        return WorkerRecoveryReplanResult(
+            disposition=PortAvailabilityDisposition.UNAVAILABLE
+        )
 
 
 class UnavailableWorkerCapabilityAcquisitionPort:
@@ -189,12 +226,24 @@ class UnavailableWorkerCapabilityAcquisitionPort:
         )
 
 
+class UnavailableWorkerRecoveryCapabilityFulfillmentPort:
+    def fulfill_recovery_capability(
+        self,
+        handoff: WorkerRecoveryCapabilityFulfillmentRequest,
+    ) -> WorkerRecoveryCapabilityFulfillmentResult:
+        return WorkerRecoveryCapabilityFulfillmentResult(
+            disposition=PortAvailabilityDisposition.UNAVAILABLE,
+        )
+
+
 class UnavailableHumanDecisionRequestPort:
     def request_human_decision(
         self,
         request: HumanDecisionRequest,
     ) -> HumanDecisionRequestResult:
-        return HumanDecisionRequestResult(disposition=PortAvailabilityDisposition.UNAVAILABLE)
+        return HumanDecisionRequestResult(
+            disposition=PortAvailabilityDisposition.UNAVAILABLE
+        )
 
 
 class UnavailableWorkerEscalationPort:
@@ -202,7 +251,9 @@ class UnavailableWorkerEscalationPort:
         self,
         request: WorkerEscalationRequest,
     ) -> WorkerEscalationResult:
-        return WorkerEscalationResult(disposition=PortAvailabilityDisposition.UNAVAILABLE)
+        return WorkerEscalationResult(
+            disposition=PortAvailabilityDisposition.UNAVAILABLE
+        )
 
 
 class UnavailableCanonicalExecutionOutcomeReader:

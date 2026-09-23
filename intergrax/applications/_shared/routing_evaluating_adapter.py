@@ -11,14 +11,18 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.routing.evaluating_adapter import (
-    AllowlistViolationObserver,
-    InnerSwappedObserver,
     RoutingAdapterFactory,
     RoutingContextProvider,
     RoutingEvaluatingLLMAdapter as PlatformRoutingEvaluatingLLMAdapter,
-    RoutingEvaluationObserver,
-    RoutingProfileSource,
 )
+from intergrax.llm_adapters.routing.evaluating_hooks import (
+    AllowlistViolationObserver,
+    InnerSwappedObserver,
+    RoutingEvaluationObserver,
+)
+from intergrax.llm_adapters.contracts.routing_evaluator import RoutingEvaluator
+from intergrax.llm_adapters.routing.composition import resolve_routing_evaluator
+from intergrax.llm_adapters.routing.profile_source import RoutingProfileSource
 
 __all__ = [
     "AllowlistViolationObserver",
@@ -42,6 +46,7 @@ class RoutingEvaluatingLLMAdapter(PlatformRoutingEvaluatingLLMAdapter):
         inner: LLMAdapter,
         context_provider: RoutingContextProvider,
         adapter_factory: RoutingAdapterFactory | None = None,
+        routing_evaluator: RoutingEvaluator | None = None,
         on_evaluated: RoutingEvaluationObserver | None = None,
         on_allowlist_violation: AllowlistViolationObserver | None = None,
         on_inner_swapped: InnerSwappedObserver | None = None,
@@ -65,6 +70,7 @@ class RoutingEvaluatingLLMAdapter(PlatformRoutingEvaluatingLLMAdapter):
             inner=inner,
             context_provider=context_provider,
             adapter_factory=adapter_factory,
+            evaluator=resolve_routing_evaluator(routing_evaluator),
             on_evaluated=on_evaluated,
             on_allowlist_violation=on_allowlist_violation,
             on_inner_swapped=on_inner_swapped,
@@ -78,6 +84,7 @@ def wrap_routing_evaluating_adapter(
     *,
     context_provider: RoutingContextProvider,
     adapter_factory: RoutingAdapterFactory,
+    routing_evaluator: RoutingEvaluator | None = None,
     on_evaluated: RoutingEvaluationObserver | None = None,
     on_allowlist_violation: AllowlistViolationObserver | None = None,
     on_inner_swapped: InnerSwappedObserver | None = None,
@@ -92,6 +99,7 @@ def wrap_routing_evaluating_adapter(
         inner=adapter,
         context_provider=context_provider,
         adapter_factory=adapter_factory,
+        routing_evaluator=routing_evaluator,
         on_evaluated=on_evaluated,
         on_allowlist_violation=on_allowlist_violation,
         on_inner_swapped=on_inner_swapped,

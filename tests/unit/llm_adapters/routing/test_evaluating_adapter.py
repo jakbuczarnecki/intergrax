@@ -9,6 +9,7 @@ from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.applications._shared.routing_evaluating_adapter import RoutingEvaluatingLLMAdapter
 from intergrax.llm_adapters.routing import (
+    AllowlistViolationError,
     BudgetBelowRule,
     LLMRoutingProfile,
     RoutingContext,
@@ -97,3 +98,33 @@ def test_evaluating_adapter_emits_on_evaluated_callback() -> None:
     adapter.generate_messages([ChatMessage(role="user", content="ping")])
     assert len(seen) == 1
     assert seen[0] == "default_profile"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluating_adapter_allowlist_violation_invokes_observer_and_reraises() -> None:
+    allowed = LLMProfile(provider=LLMProvider.OPENAI, model="gpt-4o")
+    disallowed = LLMProfile(provider=LLMProvider.GROQ, model="llama")
+    env = ApplicationEnvironmentProfile.lab_defaults()
+    env.llm_profile = allowed
+    env.llm_routing_profile = LLMRoutingProfile(
+        default_profile=allowed,
+        allowed_profiles=(allowed,),
+        rules=(BudgetBelowRule(threshold=0.5, profile=disallowed, priority=10),),
+    )
+    inner = FakeLLMAdapter()
+    observed: list[AllowlistViolationError] = []
+
+    def _on_allowlist(exc: AllowlistViolationError, _ctx: RoutingContext) -> None:
+        observed.append(exc)
+
+    adapter = RoutingEvaluatingLLMAdapter(
+        env=env,
+        inner=inner,
+        context_provider=lambda: RoutingContext(budget_remaining_ratio=0.1),
+        on_allowlist_violation=_on_allowlist,
+    )
+    with pytest.raises(AllowlistViolationError):
+        adapter.generate_messages([ChatMessage(role="user", content="x")])
+    assert len(observed) == 1
+    assert observed[0] is not None

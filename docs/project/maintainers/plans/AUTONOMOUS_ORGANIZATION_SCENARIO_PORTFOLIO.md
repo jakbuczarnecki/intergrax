@@ -14,7 +14,7 @@ This file is the **Canonical SSOT** for **selection-frozen Autonomous Organizati
 | Role | Document |
 |------|----------|
 | **Frozen VO problem portfolio (this file)** | Selection-frozen organizational E2E problems for design, VO overlay, and proof work |
-| **Enterprise Frozen-30** | [`ENTERPRISE_E2E_SCENARIO_CATALOG.md`](ENTERPRISE_E2E_SCENARIO_CATALOG.md) — separate substrate portfolio |
+| **Enterprise E2E Scenario Portfolio** | [`ENTERPRISE_E2E_SCENARIO_CATALOG.md`](ENTERPRISE_E2E_SCENARIO_CATALOG.md) — separate substrate portfolio (v1 **Frozen-30**, 2026-09-14; **current 34** after v2 addendum — not merged with VO-S01–VO-S10) |
 | **Current per-package lifecycle** | `platform_proofs/scenarios/<slug>/SCENARIO_SPEC.md` YAML frontmatter |
 | **Implementation priority** | [`AUTONOMOUS_ORGANIZATION_ROADMAP.md`](AUTONOMOUS_ORGANIZATION_ROADMAP.md) — **not** lifecycle |
 

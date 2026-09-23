@@ -9,12 +9,13 @@ from typing import Any
 
 from intergrax.contracts.runtime_environment import RuntimeEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.registry.model_router import ModelRouter
 from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter, create_adapter_with_failover, llm_profile_from_env
 from intergrax.llm_adapters.registry.registration_contract import LLMProviderNotConfiguredError
-from intergrax.llm_adapters.routing import LLMRoutingEvaluator, RoutingContext, RoutingEvaluation
+from intergrax.llm_adapters.contracts.routing_evaluator import RoutingEvaluator
+from intergrax.llm_adapters.routing import RoutingContext, RoutingEvaluation
+from intergrax.llm_adapters.routing.composition import resolve_routing_evaluator
 from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
-from intergrax.llm_adapters.routing.evaluator import AllowlistViolationError
+from intergrax.llm_adapters.routing.contracts import AllowlistViolationError
 
 _last_routing_evaluation: RoutingEvaluation | None = None
 
@@ -51,6 +52,7 @@ def evaluate_llm_routing(
     env: RuntimeEnvironmentProfile | None,
     *,
     routing_context: RoutingContext | None = None,
+    routing_evaluator: RoutingEvaluator | None = None,
     on_evaluated: Callable[[RoutingEvaluation], None] | None = None,
 ) -> tuple[LLMProfile, str | None, str | None]:
     """Evaluate ``LLMRoutingProfile`` rules when configured."""
@@ -64,7 +66,10 @@ def evaluate_llm_routing(
 
     context = routing_context or RoutingContext()
     try:
-        evaluation = LLMRoutingEvaluator().evaluate(env.llm_routing_profile, context)
+        evaluation = resolve_routing_evaluator(routing_evaluator).evaluate(
+            env.llm_routing_profile,
+            context,
+        )
     except AllowlistViolationError:
         raise
     _last_routing_evaluation = evaluation
@@ -103,6 +108,7 @@ def _resolve_llm_adapter_impl(
     routing_metadata: dict[str, Any] | None = None,
     tenant_id: str | None = None,
     agent_id: str | None = None,
+    routing_evaluator: RoutingEvaluator | None = None,
 ) -> LLMAdapter:
     context = _resolve_routing_context(
         routing_context=routing_context,
@@ -110,17 +116,24 @@ def _resolve_llm_adapter_impl(
         tenant_id=tenant_id,
         agent_id=agent_id,
     )
-    profile, rule_hint, _reason = evaluate_llm_routing(env, routing_context=context)
-    hint = policy_route_hint or rule_hint or profile.routing_policy_hint
-    router = ModelRouter.from_profiles(
-        profile,
-        fallbacks=profile.fallback_profiles,
-        policy_route_hint=hint,
+    profile, rule_hint, _reason = evaluate_llm_routing(
+        env,
+        routing_context=context,
+        routing_evaluator=routing_evaluator,
     )
-    selected = router.ordered_profiles()[0]
-    if selected.fallback_profiles or hint or selected.routing_policy_hint:
-        return create_adapter_with_failover(selected, policy_route_hint=hint)
-    return create_adapter(selected)
+    hint = policy_route_hint or rule_hint or profile.routing_policy_hint
+    if profile.fallback_profiles or hint or profile.routing_policy_hint:
+        from intergrax.llm_adapters.registry.failover_policy import routing_authorisation_context
+
+        routing_authorisation = routing_authorisation_context(
+            env.llm_routing_profile if env is not None else None
+        )
+        return create_adapter_with_failover(
+            profile,
+            policy_route_hint=hint,
+            routing_authorisation=routing_authorisation,
+        )
+    return create_adapter(profile)
 
 
 def resolve_optional_llm_adapter(
@@ -132,6 +145,7 @@ def resolve_optional_llm_adapter(
     routing_metadata: dict[str, Any] | None = None,
     tenant_id: str | None = None,
     agent_id: str | None = None,
+    routing_evaluator: RoutingEvaluator | None = None,
 ) -> LLMAdapter | None:
     """Resolve LLM adapter only when a provider is explicitly selected."""
     if agent_override is not None:
@@ -145,6 +159,7 @@ def resolve_optional_llm_adapter(
         routing_metadata=routing_metadata,
         tenant_id=tenant_id,
         agent_id=agent_id,
+        routing_evaluator=routing_evaluator,
     )
 
 
@@ -157,6 +172,7 @@ def resolve_llm_adapter(
     routing_metadata: dict[str, Any] | None = None,
     tenant_id: str | None = None,
     agent_id: str | None = None,
+    routing_evaluator: RoutingEvaluator | None = None,
 ) -> LLMAdapter:
     """Resolve LLM adapter from runtime environment profile."""
     if agent_override is not None:
@@ -170,4 +186,5 @@ def resolve_llm_adapter(
         routing_metadata=routing_metadata,
         tenant_id=tenant_id,
         agent_id=agent_id,
+        routing_evaluator=routing_evaluator,
     )

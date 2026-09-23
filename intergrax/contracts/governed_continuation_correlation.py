@@ -36,6 +36,7 @@ class ContinuationReason(StrEnum):
 
     QUOTE = "quote"
     SECURITY = "security"
+    AGENT_RUNTIME_GOVERNANCE = "agent_runtime_governance"
     LEGAL = "legal"
     PROCUREMENT = "procurement"
     COMPLIANCE = "compliance"

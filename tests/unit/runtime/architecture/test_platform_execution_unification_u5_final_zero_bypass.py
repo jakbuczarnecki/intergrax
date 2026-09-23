@@ -32,7 +32,12 @@ _U5_ACP_TENANT_PROOF = (
     _REPO_ROOT / "tests" / "unit" / "applications" / "test_acp_session_host_wiring.py"
 )
 _CATALOG_INVOKER = (
-    _REPO_ROOT / "intergrax" / "agents" / "persistence" / "catalog_declarative_invoker.py"
+    _REPO_ROOT
+    / "intergrax"
+    / "runtime"
+    / "nexus"
+    / "agents"
+    / "catalog_declarative_invoker.py"
 )
 _PERSISTENCE_PACKAGE = _REPO_ROOT / "intergrax" / "agents" / "persistence" / "__init__.py"
 _RUNTIME_CONTEXT = (

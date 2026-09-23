@@ -3,7 +3,20 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
+
 from enum import Enum
+
+
+def llm_provider_slug(provider: LLMProvider | str) -> str:
+    """Canonical provider identity slug for profile, routing, registry, and failover."""
+    if isinstance(provider, LLMProvider):
+        return provider.value
+    if not isinstance(provider, str):
+        raise TypeError(f"provider must be str or LLMProvider, got {type(provider)!r}")
+    key = provider.strip()
+    if not key:
+        raise ValueError("provider must not be empty")
+    return key.lower()
 
 
 class LLMProvider(str, Enum):

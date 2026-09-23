@@ -9,6 +9,9 @@ from intergrax.contracts.agent_runtime_governance import (
     ToolAuthorizationDecisionState,
     ToolAuthorizationRequest,
 )
+from intergrax.contracts.agent_runtime_policy_evaluation_context import (
+    AgentRuntimePolicyEvaluationContext,
+)
 from intergrax.runtime.agent_governance.errors import (
     ToolGovernanceApprovalRequiredError,
     ToolGovernanceDeniedError,
@@ -30,8 +33,10 @@ class AgentRuntimeGovernanceBoundary:
     def authorize_tool(
         self,
         request: ToolAuthorizationRequest,
+        *,
+        policy_context: AgentRuntimePolicyEvaluationContext | None = None,
     ) -> ToolAuthorizationDecision:
-        decision = self._pipeline.evaluate(request)
+        decision = self._pipeline.evaluate(request, policy_context=policy_context)
         if decision.is_terminal_deny:
             raise ToolGovernanceDeniedError(
                 run_id=str(request.run_id),

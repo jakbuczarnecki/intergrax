@@ -1,17 +1,26 @@
-# Enterprise E2E Scenario Catalog
+# Enterprise E2E Scenario Catalog — v1 + v2 Addendum
 
-**Document type:** Maintainer-level frozen scenario portfolio record  
-**Catalog:** Enterprise E2E Scenario Catalog **v1**  
-**Selection status:** **FROZEN**  
-**Scenario count:** **30** (7 previously frozen · 23 newly frozen in v1 portfolio freeze)  
-**Last frozen:** 2026-09-14  
-**Task:** SCENARIO-CATALOG-FREEZE-30-DOCS-R1 · **Authority ratification:** SCENARIO-CATALOG-FREEZE-30-DOCS-R2
+**Document type:** Maintainer-level scenario portfolio record  
+**Canonical SSOT:** Enterprise E2E Scenario Portfolio (this file)
+
+| Portfolio lineage | Count | Status |
+|-------------------|-------|--------|
+| **v1 — frozen membership** | **30** (7 previously frozen · 23 newly frozen in v1 freeze) | **FROZEN** · **Last frozen:** 2026-09-14 |
+| **v2 addendum** | **+4** (#31–#34) | **FROZEN** · **Addendum dated:** 2026-09-23 |
+| **Current portfolio membership** | **34** | v1 historical selection **unchanged** + v2 addendum |
+
+**v1 tasks:** SCENARIO-CATALOG-FREEZE-30-DOCS-R1 · **Authority ratification:** SCENARIO-CATALOG-FREEZE-30-DOCS-R2  
+**v2 addendum task:** SCENARIO-PORTFOLIO-V2-ADDENDUM-34
+
+**Catalog identity/order does not imply implementation priority.**
 
 ---
 
 ## Authority and boundaries
 
-This file is the **Canonical Single Source of Truth (SSOT)** for the **selection-frozen Enterprise E2E Scenario Portfolio v1**: which problems are in the portfolio, catalog numbers **1–30**, slug identity, **Selection status: FROZEN**, and portfolio membership (7 previously frozen · 23 newly frozen).
+This file is the **Canonical Single Source of Truth (SSOT)** for the **Enterprise E2E Scenario Portfolio**: catalog numbers **1–34** (current membership), stable slug identity, selection-frozen problem identities, and dated portfolio lineage (**v1 frozen 30** + **v2 addendum +4**).
+
+Historical **v1** remains the authoritative record of the **2026-09-14** freeze: problems **1–30**, **Selection status: FROZEN** at v1, and v1 portfolio membership (7 previously frozen · 23 newly frozen). **v2 addendum** appends **#31–#34** without renumbering or altering v1 rows.
 
 | Role | Document |
 |------|----------|
@@ -30,7 +39,7 @@ This file is the **Canonical Single Source of Truth (SSOT)** for the **selection
 - an implementation priority list;
 - a mandate to create `platform_proofs/scenarios/<slug>/` for every row.
 
-Adding, removing, or replacing a scenario after v1 freeze requires an explicit **portfolio governance** decision—not casual edits to this table.
+Adding, removing, or replacing a scenario after a portfolio freeze requires an explicit **portfolio governance** decision—not casual edits to this table.
 
 ---
 
@@ -48,7 +57,7 @@ Frozen **does not** mean: implemented, initialized, executable, verified, produc
 
 ## Catalog order vs implementation order
 
-Numbers **1–30** are stable **catalog identity and display order** only. They are not implementation priority unless a separate program record says otherwise.
+Numbers **1–34** are stable **catalog identity and display order** only (v1: **1–30** frozen 2026-09-14; v2 addendum: **31–34** frozen 2026-09-23). They are not implementation priority unless a separate program record says otherwise.
 
 Do not conflate:
 
@@ -77,7 +86,7 @@ A frozen scenario **must**:
 
 ---
 
-## Frozen catalog (30)
+## Frozen catalog v1 (30) — historical membership (2026-09-14)
 
 | # | Scenario | Problem (summary) | Slug | Package | Lifecycle at v1 freeze | Frozen in v1 |
 |---|----------|-------------------|------|---------|----------------------------|--------------|
@@ -113,6 +122,65 @@ A frozen scenario **must**:
 | 30 | Emergency Product Recall / Stop-Ship | Defective batch requires tracing dependents, stopping sale/ship, and auditable safe state across systems | `emergency_product_recall_stop_ship` | No | — | Newly frozen |
 
 **Lifecycle at v1 freeze** is a **historical snapshot** only: values were taken from `SCENARIO_SPEC.md` YAML when portfolio v1 was frozen (**Last frozen:** 2026-09-14). Do **not** update this column when package lifecycle changes later. For **current** lifecycle, read `platform_proofs/scenarios/<slug>/SCENARIO_SPEC.md` frontmatter. Do not infer lifecycle from selection status or from this snapshot.
+
+---
+
+## v2 addendum — portfolio extension (+4) — 2026-09-23
+
+### Addendum rationale (selection only)
+
+Portfolio **v1** (Frozen-30, 2026-09-14) remains historically correct and is **not** rewritten. Later external market research on consequential agent execution identified four additional problem identities that are **material and distinct** from the v1 set. They were added because the problems exist **independently of Intergrax**, not because of platform fit or proof results.
+
+**Addendum selection does not mean:** commercial validation, production readiness, implementation, proof acceptance, willingness-to-pay, or implementation priority. Each new row means **problem selected for future falsification** only.
+
+### v2 addendum catalog
+
+| # | Scenario | Problem (summary) | Slug | Package | Added in v2 addendum |
+|---|----------|-------------------|------|---------|----------------------|
+| 31 | Unauthorized Commercial Commitment | Agent can invoke a business API, but the **business consequence** (refund, discount, credit, SLA/pricing/contract/purchase commitment, guarantee, commercial term change) exceeds the **organizational/commercial mandate** to bind the org — technical capability ≠ business authority | `unauthorized_commercial_commitment` | No | 2026-09-23 |
+| 32 | Stale Evidence Before Consequential Action | Decision/plan relied on evidence that was **valid when assessed** but **no longer valid** before a consequential action executes (temporal validity / freshness of material evidence — not corruption or policy version alone) | `stale_evidence_before_consequence` | No | 2026-09-23 |
+| 33 | Correct Action, Wrong Principal | Operation is business- and technically correct, but the **consequence is attributed** to the wrong principal, legal entity, tenant, account, or organizational context (`correct action + wrong principal = invalid consequence`) | `correct_action_wrong_principal` | No | 2026-09-23 |
+| 34 | Purpose-Bound Data Egress / Trusted Tool Exfiltration | Individually legal **read** and **send/transfer** capabilities compose into a **forbidden information flow** (wrong purpose, destination, or data class) — not reducible to blocking a whole tool or DLP checkbox | `purpose_bound_data_egress` | No | 2026-09-23 |
+
+No `platform_proofs/scenarios/<slug>/` packages exist for #31–#34 at addendum time. Creating packages is a separate gated process.
+
+### Per-scenario addendum notes
+
+#### #31 — `unauthorized_commercial_commitment`
+
+| Field | Content |
+|-------|---------|
+| **Real problem** | Financial or contractual obligation is incurred at a value or under terms beyond the actor’s **business mandate**, while the underlying API call may be technically permitted. |
+| **Why distinct** | **#10** (`delegated_authority_confused_deputy`): agent’s technical rights exceed the **requesting principal’s** rights. **#31**: operation may be within tool/IAM scope, but **binding commercial authority** for that specific outcome is missing. **#13** / **#28** address deceptive approval and role separation, not mandate-to-bind for commercial effects. |
+| **Material consequence** | Financial loss, contractual liability, unauthorized commercial concessions, audit/regulatory exposure. |
+| **Selection caveat** | Portfolio membership only — not validation, implementation, or proof acceptance. |
+
+#### #32 — `stale_evidence_before_consequence`
+
+| Field | Content |
+|-------|---------|
+| **Real problem** | Consequential action proceeds on a **stale evidence snapshot** after the world changed (e.g. verified supplier status invalidated before payment). |
+| **Why distinct** | **#7**: **policy/rule** changes mid-flight. **#32**: **truth or validity of material evidence** changes. **#25**: data was **wrong/corrupted** upstream. **#32**: earlier evidence was **correct**, then became insufficient. **#11**: **poisoned** persistent memory — not required here. |
+| **Material consequence** | Fraudulent or mistaken payments, wrong authorization, operational and financial harm. |
+| **Selection caveat** | Portfolio membership only — not validation, implementation, or proof acceptance. |
+
+#### #33 — `correct_action_wrong_principal`
+
+| Field | Content |
+|-------|---------|
+| **Real problem** | Valid operation applied under the **wrong organizational principal** (legal entity, tenant, account, authority chain) without requiring a data leak or confused deputy. |
+| **Why distinct** | **#9**: **cross-tenant isolation** failure (reach others’ data/memory/RAG). **#33**: may occur with correct data access and valid API — **wrong attribution of consequence**. **#10**: wrong **user vs agent credentials**; **#33**: wrong **entity on whose behalf** the effect occurs. |
+| **Material consequence** | Cross-entity accounting/legal error, misallocated payments, compliance and contractual breach. |
+| **Selection caveat** | Portfolio membership only — not validation, implementation, or proof acceptance. |
+
+#### #34 — `purpose_bound_data_egress`
+
+| Field | Content |
+|-------|---------|
+| **Real problem** | Composed **purpose-bound information flow violation**: sensitive data leaves through an allowed channel to a **non-allowed destination or purpose**. |
+| **Why distinct** | **#8**: **untrusted content** drives privileged behavior. **#34**: **flow semantics** across allowed capabilities (trigger may vary). **#9**: tenant **data isolation** breach. **#16**: **compromised** supply chain. **#20**: **geography/residency** constraint — orthogonal to purpose/destination pairing of tools. |
+| **Material consequence** | Confidentiality breach, regulatory exposure, loss of customer trust. |
+| **Selection caveat** | Portfolio membership only — not validation, implementation, or proof acceptance. |
 
 ---
 
@@ -152,8 +220,12 @@ Design or template packages that are **not** portfolio v1 selections (do not del
 
 ## Change control
 
-After v1 freeze:
+**v1 freeze (2026-09-14):** problems **1–30** — do not renumber, alter problem identity, or rewrite **Lifecycle at v1 freeze** / **Frozen in v1** cells to reflect later package state.
 
-1. Open an explicit portfolio change (addendum or v2) with rationale.
-2. Update this table and counts; preserve historical rows or dated addenda per [`PRODUCT_PORTFOLIO_SELECTION.md`](../product-portfolio/PRODUCT_PORTFOLIO_SELECTION.md) integrity pattern.
-3. Do **not** rewrite lifecycle snapshot cells to mirror current package state; portfolio addenda may record a **new** freeze snapshot date if governance requires it. For live lifecycle, use `SCENARIO_SPEC.md` only.
+**v2 addendum (2026-09-23):** problems **#31–#34** appended per task SCENARIO-PORTFOLIO-V2-ADDENDUM-34; v1 table preserved as historical membership.
+
+After any portfolio freeze:
+
+1. Open an explicit portfolio change (addendum or new version) with rationale.
+2. Update counts and lineage; preserve historical rows or dated addenda per [`PRODUCT_PORTFOLIO_SELECTION.md`](../product-portfolio/PRODUCT_PORTFOLIO_SELECTION.md) integrity pattern.
+3. Do **not** rewrite v1 lifecycle snapshot cells; addenda use separate provenance columns/tables. For live lifecycle, use `SCENARIO_SPEC.md` only.

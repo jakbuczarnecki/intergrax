@@ -1,12 +1,12 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Integrax framework – proprietary and confidential.
 
 """Catalog-driven LLM capability flags (M-LLM-X.1.7 · AUDIT-IDEAL-6.3)."""
 
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping, Sequence
-from typing import Any, Dict, List, Optional, Union
+from collections.abc import Iterable, Sequence
+from typing import Optional
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
@@ -18,7 +18,6 @@ from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResu
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.registry.model_catalog import ModelRecord, lookup_model_record
-from intergrax.utils import attribute_access
 
 
 class CatalogCapabilityAdapter(BaseLLMAdapter):
@@ -29,19 +28,8 @@ class CatalogCapabilityAdapter(BaseLLMAdapter):
         self._inner = inner
         self._record = record
         self.provider = inner.provider
-        self.model = attribute_access.optional_str(inner, "model")
-        self.model_name_for_token_estimation = attribute_access.optional(
-            inner, "model_name_for_token_estimation", None
-        )
-        inner_call_config = attribute_access.optional(inner, "call_config", None)
-        if inner_call_config is not None:
-            self.call_config = inner_call_config
-        inner_usage = attribute_access.optional(inner, "usage", None)
-        if inner_usage is not None:
-            self.usage = inner_usage
-        inner_id = attribute_access.optional(inner, "id", None)
-        if inner_id:
-            self.id = inner_id
+        self.model = inner.model
+        self.model_name_for_token_estimation = inner.model or None
 
     @property
     def context_window_tokens(self) -> int:
@@ -134,12 +122,6 @@ class CatalogCapabilityAdapter(BaseLLMAdapter):
             run_id=run_id,
         )
 
-    def count_messages_tokens(self, messages: Sequence[ChatMessage]) -> int:
-        return self._inner.count_messages_tokens(messages)
-
-    def validate(self) -> None:
-        self._inner.validate()
-
 
 def unwrap_catalog_capability_adapter(adapter: LLMAdapter) -> LLMAdapter:
     """Return the concrete adapter when catalog enrichment wrapped it."""
@@ -155,7 +137,7 @@ def enrich_adapter_with_catalog_capabilities(
     model: str | None,
 ) -> LLMAdapter:
     """Return adapter wrapped with catalog capability flags when model is known."""
-    model_id = (model or attribute_access.optional(adapter, "model", None) or "").strip()
+    model_id = (model or adapter.model or "").strip()
     if not model_id:
         return adapter
     record = lookup_model_record(model_id)

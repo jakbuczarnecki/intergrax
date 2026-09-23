@@ -15,8 +15,14 @@ from intergrax.contracts.structured_json_value import normalize_structured_json_
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.trace_bridge import runtime_event_from_task_notification
 from intergrax.runtime.human.hitl_hooks import HumanApprovalHookCoordinator
+from intergrax.runtime.human.agent_governance_human_approval_grant import (
+    AgentGovernanceHumanApprovalGrantCoordinator,
+)
 from intergrax.runtime.human.declarative_hitl_grant import (
     DeclarativeHitlGrantCoordinator,
+)
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
 )
 from intergrax.runtime.human.governed_continuation_grant import (
     GovernedContinuationGrantCoordinator,
@@ -25,10 +31,12 @@ from intergrax.contracts.human_approver import human_approval_event_payload
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
+from intergrax.runtime.execution.suspended_operation.authorized_resume_reentry import (
+    resume_authorized_continuation_with_suspended_work_reentry,
+)
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
     InternalOrchestrationContinuation,
     canonical_execution_is_resumed,
-    canonical_resume_after_authorization,
     execution_continuation_identity_for_task,
     require_internal_hitl_continuation,
 )
@@ -38,6 +46,9 @@ from intergrax.runtime.nexus.orchestration.human_response import (
     clear_consumed_human_input,
     normalize_human_response,
     prepare_hitl_resume_after_checkpoint_restore,
+)
+from intergrax.contracts.execution.suspended_operation.reentry import (
+    ExecutionSuspendedWorkReentryDisposition,
 )
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
@@ -60,6 +71,7 @@ class NexusIntakeRunner:
     restore_long_running: RestoreFn
     execution_identity: ActiveExecutionIdentity | None = None
     hitl_continuation: InternalOrchestrationContinuation | None = None
+    task_checkpoint_store: TaskCheckpointPersistence | None = None
 
     async def run(
         self,
@@ -141,6 +153,15 @@ class NexusIntakeRunner:
                 response_text=task.options.human.response_text,
             )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
+            if task.runtime.governance.agent_governance_hitl_pending is not None:
+                if self.task_checkpoint_store is None:
+                    raise RuntimeError(
+                        "task_checkpoint_store required to clear agent governance pending",
+                    )
+                AgentGovernanceHumanApprovalGrantCoordinator.clear_pending_on_reject_or_escalate(
+                    task,
+                    checkpoint_store=self.task_checkpoint_store,
+                )
             GovernedContinuationGrantCoordinator.clear_grant(task)
             result = await self.hitl.handle_human_rejection(
                 task,
@@ -164,6 +185,15 @@ class NexusIntakeRunner:
                 response_text=task.options.human.response_text,
             )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
+            if task.runtime.governance.agent_governance_hitl_pending is not None:
+                if self.task_checkpoint_store is None:
+                    raise RuntimeError(
+                        "task_checkpoint_store required to clear agent governance pending",
+                    )
+                AgentGovernanceHumanApprovalGrantCoordinator.clear_pending_on_reject_or_escalate(
+                    task,
+                    checkpoint_store=self.task_checkpoint_store,
+                )
             GovernedContinuationGrantCoordinator.clear_grant(task)
             result = await self.hitl.handle_human_escalation(
                 task,
@@ -204,12 +234,36 @@ class NexusIntakeRunner:
             if task.runtime.governance.declarative_hitl_pending is not None:
                 DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
                 task.sync_metadata()
+            if (
+                task.runtime.governance.agent_governance_hitl_pending is not None
+                and self.task_checkpoint_store is not None
+            ):
+                AgentGovernanceHumanApprovalGrantCoordinator.persist_available_grant_from_human_approve(
+                    task,
+                    checkpoint_store=self.task_checkpoint_store,
+                    approver=approver,  # type: ignore[arg-type]
+                )
+                task.sync_metadata()
             if task.runtime.governance.human_request is not None:
                 GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
                 task.sync_metadata()
-            resumed_continuation = canonical_resume_after_authorization(
-                task, authorized, capability=hitl
+            resumed_continuation, reentry = (
+                resume_authorized_continuation_with_suspended_work_reentry(
+                    task,
+                    authorized,
+                    capability=hitl,
+                    reentry_coordinator=hitl.suspended_work_reentry_coordinator,
+                )
             )
+            if (
+                reentry is not None
+                and reentry.disposition
+                is ExecutionSuspendedWorkReentryDisposition.PAUSED_FOR_NEXT_AUTHORITY
+            ):
+                task.state = TaskState.WAITING_FOR_HUMAN
+                task.sync_metadata()
+                clear_consumed_human_input(task)
+                return IntakePhaseOutcome()
             if (
                 LongRunningCoordinator.is_long_running(task)
                 and canonical_execution_is_resumed(

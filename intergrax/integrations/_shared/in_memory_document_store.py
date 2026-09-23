@@ -80,6 +80,10 @@ class InMemoryDocumentStore(ConditionalDocumentStore):
     def last_query_rows_examined(self) -> int:
         return self._last_query_rows_examined
 
+    @property
+    def survives_process_restart(self) -> bool:
+        return False
+
     def get(self, partition_key: str, row_key: str) -> DocumentRecord | None:
         with self._lock:
             return self._rows.get((partition_key, row_key))

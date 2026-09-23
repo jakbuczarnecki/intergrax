@@ -5,9 +5,11 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.execution.bound_capability_execution_dispatch import (
+    BoundCapabilityExecutionDispatchRequest,
+)
 from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
     QualifiedCapabilityExecutionDispatchDisposition,
-    QualifiedCapabilityExecutionDispatchRequest,
 )
 from intergrax.contracts.execution.qualified_capability_execution_intake import (
     QualifiedCapabilityExecutionDelegateResult,
@@ -38,23 +40,11 @@ class QualifiedCapabilityExecutionRuntimeDelegate:
         request: QualifiedCapabilityExecutionIntakePayload,
     ) -> QualifiedCapabilityExecutionDelegateResult:
         self.execute_calls += 1
-        dispatch_request = QualifiedCapabilityExecutionDispatchRequest(
+        dispatch_request = BoundCapabilityExecutionDispatchRequest(
             execution_request_id=request.execution_request_id,
             execution_target=request.execution_target,
             tenant_id=request.tenant_id,
             task_id=request.task_id,
-            worker_instance_id=request.worker_instance_id,
-            worker_need_id=request.worker_need_id,
-            resume_operation_id=request.resume_operation_id,
-            binding_operation_id=request.binding_operation_id,
-            qualification_request_id=request.qualification_request_id,
-            acquisition_request_id=request.acquisition_request_id,
-            qualified_subject_reference=request.qualified_subject_reference,
-            requested_at=request.requested_at,
-            admitted_governance_identity=request.admitted_governance_identity,
-            effective_authority_decision=request.effective_authority_decision,
-            collaborative_authority_scopes=request.collaborative_authority_scopes,
-            governance_approval_evidence=request.governance_approval_evidence,
         )
         handler = self._handlers.resolve(
             request.execution_target.binding_provider_id,

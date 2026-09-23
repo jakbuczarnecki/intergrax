@@ -58,12 +58,6 @@ def build_tool_authorization_request(
     except RuntimeError:
         execution_id = None
 
-    approval_ref: str | None = None
-    if state.declarative_hitl_grant is not None:
-        approval_ref = state.declarative_hitl_grant.grant_id
-    elif request.declarative_hitl_invocation_scope_id:
-        approval_ref = request.declarative_hitl_invocation_scope_id
-
     return ToolAuthorizationRequest(
         agent=AgentIdentity(
             agent_id=agent_id,
@@ -77,7 +71,7 @@ def build_tool_authorization_request(
         tool_id=request.tool_id,
         requested_action=f"execute:{request.tool_id}",
         risk_level=_RISK_MAP.get(contract.risk_level, ToolAuthorizationRiskLevel.LOW),
-        approval_evidence_ref=approval_ref,
+        approval_evidence_ref=None,
     )
 
 

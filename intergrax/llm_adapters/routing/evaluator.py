@@ -4,8 +4,10 @@
 
 from __future__ import annotations
 
+from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 from intergrax.llm_adapters.registry.profile import LLMProfile
-from intergrax.llm_adapters.routing.contracts import (
+from intergrax.llm_adapters.contracts.routing_profile import (
+    AllowlistViolationError,
     LLMRoutingProfile,
     LLMRoutingRule,
     RoutingContext,
@@ -14,13 +16,15 @@ from intergrax.llm_adapters.routing.contracts import (
 )
 
 
-class AllowlistViolationError(ValueError):
-    """Raised when a rule resolves to a profile outside ``allowed_profiles``."""
-
-
 def profile_identity(profile: LLMProfile) -> str:
     model = profile.model or "default"
-    return f"{profile.provider.value}:{model}"
+    return f"{llm_provider_slug(profile.provider)}:{model}"
+
+
+def routing_evaluation_identity(evaluation: RoutingEvaluation) -> str:
+    """Canonical semantic identity for a routing evaluation (cache / usage labels)."""
+    hint = evaluation.policy_route_hint or ""
+    return f"{profile_identity(evaluation.selected_profile)}:{hint}"
 
 
 def effective_allowlist(profile: LLMRoutingProfile) -> tuple[LLMProfile, ...]:

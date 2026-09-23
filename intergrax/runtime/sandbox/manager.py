@@ -53,6 +53,42 @@ class SandboxSessionManager:
     def get(self, session_id: str) -> SandboxSession | None:
         return self._active.get(session_id)
 
+    def resolve_session(
+        self,
+        *,
+        session_id: str,
+        tenant_id: str,
+        task_id: str,
+    ) -> SandboxSession | None:
+        """Reattach an on-disk session or return the active handle (fail closed on mismatch)."""
+        sid = session_id.strip()
+        if not sid:
+            return None
+        existing = self._active.get(sid)
+        if existing is not None:
+            if (
+                existing.session_id != sid
+                or existing.tenant_id != tenant_id
+                or existing.task_id != task_id
+            ):
+                return None
+            if existing.exists_on_disk():
+                return existing
+            return None
+        root = self._root / tenant_id / task_id / sid
+        if not root.is_dir():
+            return None
+        session = SandboxSession(
+            session_id=sid,
+            root=root,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            created_at_utc="reattached",
+        )
+        self._active[sid] = session
+        self._active[f"{tenant_id}:{task_id}"] = session
+        return session
+
     def cleanup(self, session_id: str) -> bool:
         session = self._active.pop(session_id, None)
         if session is None:

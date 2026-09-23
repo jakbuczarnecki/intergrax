@@ -2,17 +2,35 @@
 
 from __future__ import annotations
 
+import inspect
+
 import pytest
 
 from intergrax.applications._shared.routing_evaluating_adapter import RoutingEvaluatingLLMAdapter
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
-from intergrax.llm_adapters.routing import BudgetBelowRule, LLMRoutingProfile, RoutingContext
+from intergrax.llm_adapters.routing import (
+    BudgetBelowRule,
+    LLMRoutingProfile,
+    RoutingContext,
+    routing_evaluation_identity,
+)
 from intergrax.llm_adapters.routing.metering import resolve_metering_adapter, tokens_used_from_adapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
 from testing_support.builder import FakeLLMAdapter
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_runtime_state_swap_registration_uses_semantic_route_identity() -> None:
+    from intergrax.runtime.nexus.engine import runtime_state as runtime_state_mod
+
+    source = inspect.getsource(runtime_state_mod.RuntimeState.configure_llm_tracker)
+    assert "id(inner)" not in source
+    assert "routing_evaluation_identity" in source
+    assert "core_inner:" in source
 
 
 @pytest.mark.unit
@@ -84,9 +102,17 @@ def test_usage_tracker_registers_inner_after_swap(monkeypatch: pytest.MonkeyPatc
     )
     tracker = LLMUsageTracker(run_id="run-meter")
     tracker.register_adapter(adapter.inner_adapter, label="core_adapter")
-    adapter.set_on_inner_swapped(
-        lambda inner: tracker.register_adapter(inner, label=f"core_inner_{id(inner)}"),
-    )
+    swapped_labels: list[str] = []
+
+    def _on_inner_swapped(inner: object, evaluation: object) -> None:
+        from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
+
+        assert isinstance(evaluation, RoutingEvaluation)
+        label = f"core_inner:{routing_evaluation_identity(evaluation)}"
+        swapped_labels.append(label)
+        tracker.register_adapter(inner, label=label)
+
+    adapter.set_on_inner_swapped(_on_inner_swapped)
 
     adapter.generate_messages([ChatMessage(role="user", content="one")], run_id="run-meter")
     ratio_holder["ratio"] = 0.1
@@ -95,3 +121,99 @@ def test_usage_tracker_registers_inner_after_swap(monkeypatch: pytest.MonkeyPatc
     report = tracker.build_report()
     assert report.total.calls == 2
     assert report.total.total_tokens > 0
+    assert swapped_labels
+    assert all(label.startswith("core_inner:") for label in swapped_labels)
+    assert all("id(" not in label for label in swapped_labels)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_routing_evaluation_identity_is_deterministic_across_instances() -> None:
+    from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
+    from intergrax.llm_adapters.routing.evaluator import LLMRoutingEvaluator
+
+    profile = LLMProfile(provider=LLMProvider.OPENAI, model="gpt-4o-mini")
+    routing_profile = LLMRoutingProfile(
+        default_profile=profile,
+        allowed_profiles=(profile,),
+    )
+    evaluation = LLMRoutingEvaluator().evaluate(routing_profile, RoutingContext())
+    assert isinstance(evaluation, RoutingEvaluation)
+
+    identity_a = routing_evaluation_identity(evaluation)
+    identity_b = routing_evaluation_identity(evaluation)
+    assert identity_a == identity_b
+    assert identity_a == "openai:gpt-4o-mini:"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_routing_evaluation_identity_distinguishes_different_routes() -> None:
+    from intergrax.llm_adapters.routing.contracts import RoutingEvaluation, RoutingTarget
+
+    primary = LLMProfile(provider=LLMProvider.OPENAI, model="gpt-4o-mini")
+    local = LLMProfile(provider=LLMProvider.VLLM, model="meta-llama/Llama-3.1-8B")
+    eval_primary = RoutingEvaluation(
+        matched_rule_id=None,
+        target=RoutingTarget(profile=primary),
+        routing_reason="default",
+        selected_profile=primary,
+    )
+    eval_local = RoutingEvaluation(
+        matched_rule_id="budget",
+        target=RoutingTarget(profile=local),
+        routing_reason="budget",
+        selected_profile=local,
+    )
+    assert routing_evaluation_identity(eval_primary) != routing_evaluation_identity(eval_local)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_usage_tracker_same_semantic_label_preserves_all_instances() -> None:
+    label = "core_inner:vllm:meta-llama/Llama-3.1-8B:"
+    first = FakeLLMAdapter(fixed_text="local-v1")
+    first.model = "meta-llama/Llama-3.1-8B"
+    second = FakeLLMAdapter(fixed_text="local-v2")
+    second.model = "meta-llama/Llama-3.1-8B"
+    tracker = LLMUsageTracker(run_id="run-reregister")
+    tracker.register_adapter(first, label=label)
+    first.generate_messages([ChatMessage(role="user", content="one")], run_id="run-reregister")
+    tracker.register_adapter(second, label=label)
+    second.generate_messages([ChatMessage(role="user", content="two")], run_id="run-reregister")
+
+    report = tracker.build_report()
+    by_label = {entry.label: entry for entry in report.entries}
+    assert len(by_label) == 1
+    assert label in by_label
+    assert by_label[label].stats.calls == 2
+    assert report.total.calls == 2
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_usage_tracker_same_instance_registered_twice_counts_once() -> None:
+    label = "core_inner:openai:gpt-4o-mini:"
+    adapter = FakeLLMAdapter(fixed_text="once")
+    tracker = LLMUsageTracker(run_id="run-twice")
+    tracker.register_adapter(adapter, label=label)
+    tracker.register_adapter(adapter, label=label)
+    adapter.generate_messages([ChatMessage(role="user", content="one")], run_id="run-twice")
+
+    report = tracker.build_report()
+    assert len(report.entries) == 1
+    assert report.entries[0].stats.calls == 1
+    assert report.total.calls == 1
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_usage_tracker_same_instance_under_aliases_dedupes_total() -> None:
+    adapter = FakeLLMAdapter(fixed_text="alias")
+    tracker = LLMUsageTracker(run_id="run-alias")
+    tracker.register_adapter(adapter, label="label1")
+    tracker.register_adapter(adapter, label="label2")
+    adapter.generate_messages([ChatMessage(role="user", content="one")], run_id="run-alias")
+
+    assert tracker.total().calls == 1
+    assert len(tracker.build_report().entries) == 2

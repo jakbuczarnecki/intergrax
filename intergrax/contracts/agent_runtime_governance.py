@@ -12,7 +12,12 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import StrEnum
-from typing import Final, Literal, Protocol
+from typing import TYPE_CHECKING, Final, Literal, Protocol
+
+if TYPE_CHECKING:
+    from intergrax.contracts.agent_runtime_policy_evaluation_context import (
+        AgentRuntimePolicyEvaluationContext,
+    )
 from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
@@ -348,6 +353,7 @@ class AgentRuntimePolicyProvider(Protocol):
     def evaluate(
         self,
         request: ToolAuthorizationRequest,
+        context: "AgentRuntimePolicyEvaluationContext",
     ) -> PolicyEvaluationResult: ...
 
 

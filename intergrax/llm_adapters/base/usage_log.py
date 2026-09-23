@@ -8,13 +8,28 @@ import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
+from intergrax.llm_adapters.contracts.llm_usage_stats import (
+    LLMRunStats,
+    LLMRunStatsReader,
+    LLMUsageTrackable,
+)
 
 if TYPE_CHECKING:
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 
-class LLMAdapterUsageLog:
+def require_llm_usage_trackable(candidate: object) -> LLMUsageTrackable:
+    """Runtime guard for ``LLMUsageTrackable`` before usage-tracker registration."""
+    if not isinstance(candidate, LLMUsageTrackable):
+        raise TypeError(
+            "LLMUsageTracker.register_adapter requires LLMUsageTrackable "
+            "(provider, model, and usage stats reader)"
+        )
+    return candidate
+
+
+class LLMAdapterUsageLog(LLMRunStatsReader):
     def __init__(self) -> None:
         self._run_stats: Dict[str, LLMRunStats] = {}
 
@@ -40,11 +55,7 @@ class LLMAdapterUsageLog:
             self._run_stats[rid] = LLMRunStats()
         call = LLMCallStats(run_id=rid)
         if adapter is not None:
-            prov = adapter.provider
-            if isinstance(prov, LLMProvider):
-                call.provider = prov.value
-            elif isinstance(prov, str):
-                call.provider = prov
+            call.provider = llm_provider_slug(adapter.provider)
             call.model = str(adapter.model or "")
         return call
 
@@ -106,7 +117,7 @@ class LLMAdapterUsageLog:
                 error_type=call.error_type,
             )
 
-    def get_run_stats(self, run_id: Optional[str] = None) -> LLMRunStats:
+    def get_run_stats(self, run_id: Optional[str] = None) -> LLMRunStats | None:
         """
         Get aggregated stats for a given run_id.
         Returns None if no stats exist for that run_id.
@@ -198,11 +209,11 @@ class LLMCallStats:
     model: str = ""
 
 
-@dataclass
-class LLMRunStats:
-    calls: int = 0
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_tokens: int = 0
-    duration_ms: int = 0
-    errors: int = 0
+__all__ = [
+    "LLMAdapterUsageLog",
+    "LLMCallStats",
+    "LLMRunStats",
+    "LLMRunStatsReader",
+    "LLMUsageTrackable",
+    "require_llm_usage_trackable",
+]

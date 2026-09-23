@@ -23,16 +23,7 @@ from intergrax.applications.contracts.environment_profile.sub_profiles import (
 )
 from intergrax.contracts.policy_enforcement_mode import PolicyEnforcementMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
-from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
-    derive_qualified_capability_governance_step_id,
-)
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
-from intergrax.contracts.tool_invocation_governance_approval_evidence import (
-    ToolInvocationGovernanceApprovalEvidence,
-)
-from intergrax.runtime.governance.declarative_hitl_tool_invocation_approval_evidence import (
-    tool_invocation_governance_approval_evidence_from_declarative_hitl,
-)
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.tools.providers.sandbox.bundle import CODE_EXEC_TOOL_ID
@@ -134,6 +125,11 @@ def uca6c_strict_worker_registry(manifest: ApplicationManifest) -> AgentRegistry
     return build_application_registry(manifest, ctx, composition=composition)
 
 
+def uca6c_test_bound_catalog_step_id(execution_request_id: str) -> str:
+    """Test-only catalog step correlation (not production uca6c-scope transport)."""
+    return f"uca6c.bound:{execution_request_id}"
+
+
 def uca6c_high_risk_tool_approval_evidence_for_execution_request(
     *,
     execution_request_id: str,
@@ -142,17 +138,9 @@ def uca6c_high_risk_tool_approval_evidence_for_execution_request(
     run_id: str,
     agent_id: str = _UCA6C_WORKER_ID,
     tool_id: str = CODE_EXEC_TOOL_ID,
-) -> ToolInvocationGovernanceApprovalEvidence:
-    """Pre-execution scoped approval correlated to canonical ``execution_request_id``."""
-    step_id = derive_qualified_capability_governance_step_id(execution_request_id)
-    return uca6c_high_risk_tool_approval_evidence(
-        tenant_id=tenant_id,
-        task_id=task_id,
-        run_id=run_id,
-        step_id=step_id,
-        agent_id=agent_id,
-        tool_id=tool_id,
-    )
+) -> None:
+    """Removed — legacy TIGAE transport is not part of UCA production graph."""
+    raise RuntimeError("TIGAE transport removed from UCA; use DeclarativeHitlApprovalGrant")
 
 
 def uca6c_high_risk_tool_approval_evidence(
@@ -163,19 +151,8 @@ def uca6c_high_risk_tool_approval_evidence(
     step_id: str,
     agent_id: str = _UCA6C_WORKER_ID,
     tool_id: str = CODE_EXEC_TOOL_ID,
-) -> ToolInvocationGovernanceApprovalEvidence:
-    """Neutral post-HITL approval evidence for HIGH-risk catalog tools."""
-    return tool_invocation_governance_approval_evidence_from_declarative_hitl(
-        uca6c_high_risk_tool_approval_grant(
-            tenant_id=tenant_id,
-            task_id=task_id,
-            run_id=run_id,
-            step_id=step_id,
-            agent_id=agent_id,
-            tool_id=tool_id,
-        ),
-        tenant_id=tenant_id,
-    )
+) -> None:
+    raise RuntimeError("TIGAE transport removed from UCA; use DeclarativeHitlApprovalGrant")
 
 
 def uca6c_high_risk_tool_approval_grant(
@@ -187,10 +164,10 @@ def uca6c_high_risk_tool_approval_grant(
     agent_id: str = _UCA6C_WORKER_ID,
     tool_id: str = CODE_EXEC_TOOL_ID,
 ) -> DeclarativeHitlApprovalGrant:
-    """Post-HITL approval artifact for HIGH-risk catalog tools (e.g. code.exec)."""
+    """Post-HITL approval artifact with bridge-style invocation scope."""
     return DeclarativeHitlApprovalGrant(
-        grant_id=f"uca6c-hitl-grant:{tool_id}:{step_id}",
-        invocation_scope_id=f"uca6c-scope:{step_id}",
+        grant_id=f"dhr_test_grant:{tool_id}:{step_id}",
+        invocation_scope_id=f"dhr_test_scope:{step_id}",
         task_id=task_id,
         run_id=run_id,
         step_id=step_id,
@@ -203,6 +180,52 @@ def uca6c_high_risk_tool_approval_grant(
         pause_id="uca6c-r5-r3-pause",
         approved_at="2026-09-22T00:00:00+00:00",
     )
+
+
+def uca6c_attach_catalog_hitl_grant(catalog_invoker, grant: DeclarativeHitlApprovalGrant) -> None:
+    from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
+        CatalogDeclarativeRunBinding,
+    )
+
+    catalog_invoker.binding = CatalogDeclarativeRunBinding(
+        user_id=catalog_invoker.binding.user_id,
+        declarative_hitl_grant=grant,
+    )
+
+
+def uca6c_strict_r6_durable_wiring(
+    tmp_path: Path | None = None,
+) -> dict[str, object]:
+    """STRICT UCA-6C-R6 production-shaped continuation + suspended-operation backing."""
+    from intergrax.runtime.execution.continuation.composition import (
+        wire_execution_engine_continuation_dependencies,
+    )
+    from intergrax.runtime.sandbox.durable_sandbox_wiring_binding_resolver import (
+        as_durable_wiring_binding_resolver,
+    )
+    from intergrax.runtime.sandbox.manager import SandboxSessionManager
+    from testing_support.uca6c_process_restart_durable_document_store import (
+        ProcessRestartQualificationDocumentStore,
+    )
+
+    from testing_support.uca6c_memory_task_checkpoint_store import (
+        Uca6cMemoryTaskCheckpointStore,
+    )
+
+    document_store = ProcessRestartQualificationDocumentStore()
+    continuation_dependencies = wire_execution_engine_continuation_dependencies()
+    kwargs: dict[str, object] = {
+        "document_store": document_store,
+        "continuation_dependencies": continuation_dependencies,
+        "task_checkpoint_store": Uca6cMemoryTaskCheckpointStore(),
+    }
+    if tmp_path is not None:
+        manager = SandboxSessionManager(root=tmp_path)
+        kwargs["durable_wiring_binding_resolver"] = as_durable_wiring_binding_resolver(
+            manager,
+        )
+        kwargs["sandbox_session_manager"] = manager
+    return kwargs
 
 
 def build_sandbox_session(tmp_path: Path, *, tenant_id: str, task_id: str):
@@ -222,11 +245,12 @@ __all__ = [
     "Uca6cEchoOnlyWorkerAgent",
     "Uca6cQualifiedSandboxWorkerAgent",
     "build_sandbox_session",
-    "uca6c_high_risk_tool_approval_evidence",
-    "uca6c_high_risk_tool_approval_evidence_for_execution_request",
+    "uca6c_attach_catalog_hitl_grant",
     "uca6c_high_risk_tool_approval_grant",
     "uca6c_strict_echo_only_worker_manifest",
+    "uca6c_strict_r6_durable_wiring",
     "uca6c_strict_sandbox_env_profile",
     "uca6c_strict_worker_manifest",
     "uca6c_strict_worker_registry",
+    "uca6c_test_bound_catalog_step_id",
 ]

@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
-from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
-    QualifiedCapabilityExecutionDispatchRequest,
+from intergrax.contracts.execution.bound_capability_execution_dispatch import (
+    BoundCapabilityExecutionDispatchRequest,
 )
 from intergrax.contracts.execution.qualified_capability_execution_intake import (
     QualifiedCapabilityExecutionDelegateResult,
@@ -25,7 +25,7 @@ class QualifiedCapabilityExecutionBindingHandler(Protocol):
 
     def dispatch_once(
         self,
-        request: QualifiedCapabilityExecutionDispatchRequest,
+        request: BoundCapabilityExecutionDispatchRequest,
         *,
         run_id: RunId,
         attempt_id: AttemptId,

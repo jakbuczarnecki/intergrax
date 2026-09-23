@@ -34,7 +34,7 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.contracts.task_envelope import TaskEnvelope
 from intergrax.llm.messages import AttachmentRef
-from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageReport
+from intergrax.llm_adapters.contracts.llm_usage_report import LLMUsageReport
 from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
 
 

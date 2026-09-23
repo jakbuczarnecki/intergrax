@@ -116,7 +116,7 @@ There is **no** manual scenario registry in `platform_proofs/`. Scenario existen
 
 **Related (outside this folder):**
 
-- [Enterprise E2E Scenario Catalog v1 (frozen portfolio)](../docs/project/maintainers/plans/ENTERPRISE_E2E_SCENARIO_CATALOG.md) — maintainer SSOT for **selected** scenario problems (not proof acceptance)
+- [Enterprise E2E Scenario Catalog (v1 Frozen-30 + v2 addendum; current portfolio 34)](../docs/project/maintainers/plans/ENTERPRISE_E2E_SCENARIO_CATALOG.md) — maintainer SSOT for **selected** scenario problems (not proof acceptance)
 - [Public Scenario catalog](../docs/project/proofs/PROOF_LIBRARY.md)
 - [Public proof dashboard](../docs/project/proofs/PROOFS.md)
 - [Public proof and claims model](../docs/project/maintainers/public-adoption/PUBLIC_PROOF_AND_CLAIMS_MODEL.md)

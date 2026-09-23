@@ -32,6 +32,7 @@ from intergrax.applications._shared.vector_index_admin_wiring import resolve_vec
 from intergrax.applications._shared.vector_index_configuration_projection import (
     VECTOR_INDEX_ABSENT_REVISION,
     current_revision_from_description,
+    target_revision_from_spec,
 )
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
@@ -130,18 +131,22 @@ class _FakeVectorIndexAdmin:
     prepare_error: Exception | None = None
     _describe_index: int = 0
     describe_calls: int = 0
+    described_identities: list[VectorIndexIdentity] = field(default_factory=list)
+    prepared_specs: list[VectorIndexSpec] = field(default_factory=list)
 
     def probe(self) -> HealthStatus:
         return HealthStatus.HEALTHY
 
     def describe_index(self, identity: VectorIndexIdentity) -> VectorIndexDescription:
         self.describe_calls += 1
+        self.described_identities.append(identity)
         index = min(self._describe_index, len(self.descriptions) - 1)
         self._describe_index += 1
         return self.descriptions[index]
 
     def prepare_index(self, spec: VectorIndexSpec) -> VectorIndexPrepareResult:
         self.prepare_calls += 1
+        self.prepared_specs.append(spec)
         if self.prepare_error is not None:
             raise self.prepare_error
         return VectorIndexPrepareResult(
@@ -445,6 +450,43 @@ def test_ten_request_identity_rejects_whitespace_only_tenant() -> None:
             principal_type=PrincipalType.USER,
             auth_subject="operator-1",
         )
+
+
+def test_vec_gov_19_canonical_identity_authority_to_execution_binding() -> None:
+    """VEC-GOV-19 / BIND-1–BIND-8: canonical spec binds authority to execution."""
+    padded_spec = VectorIndexSpec(
+        identity=VectorIndexIdentity(logical_name=" catalog ", tenant_id=" tenant-a "),
+        dense=_spec().dense,
+        required_capabilities=_spec().required_capabilities,
+        sparse_lexical=_spec().sparse_lexical,
+    )
+    canonical_identity = VectorIndexIdentity(logical_name="catalog", tenant_id=_TENANT)
+    normalized_spec = VectorIndexSpec(
+        identity=canonical_identity,
+        dense=padded_spec.dense,
+        required_capabilities=padded_spec.required_capabilities,
+        sparse_lexical=padded_spec.sparse_lexical,
+    )
+    admin = _FakeVectorIndexAdmin(
+        descriptions=[_description(exists=False), _description(exists=False)]
+    )
+    evaluator = _RecordingEvaluator()
+    result = _service(admin, evaluator).prepare(
+        VectorIndexPrepareOperatorRequest(mutation_id="mut-bind", spec=padded_spec),
+        principal=_PRINCIPAL,
+    )
+    assert result.changed is True
+    assert admin.prepare_calls == 1
+    captured = evaluator.calls[0]
+    assert captured.resource_id == f"{_TENANT}/catalog"
+    assert captured.target_revision == target_revision_from_spec(normalized_spec)
+    assert captured.target_revision != target_revision_from_spec(padded_spec)
+    assert admin.described_identities == [canonical_identity, canonical_identity]
+    prepared = admin.prepared_specs[0]
+    assert prepared.identity == canonical_identity
+    assert prepared.identity.logical_name == "catalog"
+    assert prepared.identity.tenant_id == _TENANT
+    assert admin.described_identities[0] == admin.described_identities[1] == prepared.identity
 
 
 def test_vec_gov_identity_strips_whitespace_for_authority_mapping() -> None:

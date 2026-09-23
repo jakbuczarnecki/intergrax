@@ -5,7 +5,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 
-from intergrax.llm_adapters.base.usage_log import LLMAdapterUsageLog
+from intergrax.llm_adapters.base.usage_log import LLMAdapterUsageLog, LLMRunStatsReader
 from contextlib import contextmanager
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from typing import TYPE_CHECKING, Callable, Optional, Any, Dict, Union, List, TypeVar
@@ -21,7 +21,7 @@ from intergrax.llm_adapters._shared.retry import call_with_retry
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
 from intergrax.llm_adapters.contracts.strict_tool_arguments import CanonicalFunctionToolDefinition
 from intergrax.llm_adapters.contracts.structured_result import TStructured
@@ -71,8 +71,9 @@ class BaseLLMAdapter(ABC):
     external-operation lifecycle helpers without making inheritance mandatory.
     """
 
-    provider: LLMProvider
+    provider: LLMProvider | str
     model: str
+    usage: LLMRunStatsReader
 
     # Hint used by the generic token estimator (e.g. OpenAI model name).
     model_name_for_token_estimation: Optional[str] = None
@@ -170,10 +171,7 @@ class BaseLLMAdapter(ABC):
         self.call_config = parse_call_config(defaults)
 
     def _provider_slug(self) -> str:
-        prov = self.provider
-        if isinstance(prov, LLMProvider):
-            return prov.value
-        return str(prov or "unknown")
+        return llm_provider_slug(self.provider)
 
     def _adapter_identity(self) -> tuple[str, str]:
         return self._provider_slug(), str(self.model or "")

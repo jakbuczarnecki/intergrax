@@ -79,7 +79,7 @@ Vector — QUALIFIED
 Memory — ADR_REQUIRED
 
 GR-12 overall — IN PROGRESS
-Next — Memory R3 (GR-12-A4-R3)
+Next — Memory specialized qualification (GR-12-A4-R3-R1)
 ```
 
 **Canonical control-plane model (unchanged target):** shared **CONTROL_PLANE_MUTATION** authority context → canonical **CLA-04** authorization boundary → **domain owner** executes its own mutation. No universal mutation executor, no global `GovernanceEngine`, no second permission engine.
@@ -88,14 +88,14 @@ Next — Memory R3 (GR-12-A4-R3)
 | ------------- | ------------- | -------------------- |
 | `CP-PLUGIN-CATALOG-HOT-RELOAD` | APPLICABLE | **QUALIFIED** |
 | `CP-VECTOR-INDEX-ADMIN` | APPLICABLE | **QUALIFIED** (GR-12-A4-R2-R1) |
-| `CP-MEM-SPECIALIZED-MUTATION` | REQUIRES_ARCHITECTURE_DECISION | **ARCHITECTURE_DECISION_REQUIRED** |
+| `CP-MEM-SPECIALIZED-MUTATION` | NOT_APPLICABLE (execution/background domain writes) | **NOT_APPLICABLE** (ADR GR-12-A4-R3) |
 | `CP-BOOT-PLUGIN-REGISTER` | NOT_APPLICABLE | **NOT_APPLICABLE** (startup/bootstrap registry population ≠ live governed hot reload) |
 
 **Catalog — QUALIFIED (GR-12-A4-R1-R1-R1):** `CatalogHotReloadService`, CLA-04 request construction, deterministic state digest, candidate catalog materialization, CAS primitive, no automatic reload during composition, external evaluator injection, fail-closed decisions, authoritative `CatalogRevision` SSOT, ABA protection, explicit per-invocation `RequestIdentity`, atomic live `register_integration` duplicate check under canonical catalog lock.
 
 **Approved catalog revision decisions (embedded; no new ADR in DOC-R1):** (1) `CatalogRevision` describes entire canonical Integration Catalog state; (2) state + generation + digest + lock share one internal owner in Integration Registry; (3) hot reload uses explicit `RequestIdentity` per invocation; (4) `CatalogHotReloadService` orchestrates only — mutation owner remains Integration Registry.
 
-**Memory boundary:** `MemoryGovernanceEvaluationRequest` and `MemorySecurityGovernanceService` remain memory-native policy/evidence semantics — **not** described as migrated under CLA-04.
+**Memory boundary (GR-12-A4-R3):** production memory mutations are **execution/background** domain writes under `MemorySecurityGovernanceService` — **GR-12 NOT_APPLICABLE** for current surfaces; **no** CLA-04 on execution paths; revisit if live operator memory API is introduced. ADR: [ADR-GR-12-MEMORY-SPECIALIZED-GOVERNANCE-BOUNDARY](../maintainers/architecture/ADR/ADR-GR-12-MEMORY-SPECIALIZED-GOVERNANCE-BOUNDARY.md).
 
 **Vector — QUALIFIED (GR-12-A4-R2-R1):** live operator `VectorIndexAdminService` + CLA-04 `vector_index.prepare`, configuration revision digest, post-authorization stale re-read; `VectorIndexAdministration` port unchanged; bootstrap `prepare_index` callers outside live CP scope. ADR: [ADR-GR-12-VECTOR-ADMIN-CONTROL-PLANE-BOUNDARY](../maintainers/architecture/ADR/ADR-GR-12-VECTOR-ADMIN-CONTROL-PLANE-BOUNDARY.md).
 

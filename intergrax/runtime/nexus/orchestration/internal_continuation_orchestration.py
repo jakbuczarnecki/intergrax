@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 from datetime import datetime, timezone
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
@@ -28,6 +29,7 @@ from intergrax.contracts.execution_identity import (
     RunId,
     TaskId,
 )
+from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 from intergrax.contracts.governed_continuation_correlation import (
     ContinuationReason,
@@ -37,6 +39,11 @@ from intergrax.runtime.execution.continuation.lifecycle_driver import (
     ExecutionContinuationLifecycleDriver,
 )
 from intergrax.runtime.human.pause import HumanPauseCoordinator
+
+if TYPE_CHECKING:
+    from intergrax.runtime.execution.suspended_operation.reentry_coordinator import (
+        ExecutionSuspendedWorkReentryCoordinator,
+    )
 from intergrax.runtime.task.task import Task
 
 __all__ = [
@@ -63,6 +70,9 @@ class InternalOrchestrationContinuation:
     port: ExecutionContinuationPort
     lifecycle_driver: ExecutionContinuationLifecycleDriver
     projection_sink: ExecutionContinuationProjectionSink | None = None
+    suspended_work_reentry_coordinator: (
+        ExecutionSuspendedWorkReentryCoordinator | None
+    ) = None
 
 
 def require_internal_hitl_continuation(
@@ -115,7 +125,9 @@ def _load_pending_optional(
     continuation_id: str,
 ) -> PendingExecutionContinuation | None:
     try:
-        return port.get_pending(ExecutionContinuationLookup(continuation_id=continuation_id))
+        return port.get_pending(
+            ExecutionContinuationLookup(continuation_id=continuation_id)
+        )
     except ExecutionContinuationError as exc:
         if exc.code is ExecutionContinuationErrorCode.NOT_FOUND:
             return None
@@ -150,7 +162,7 @@ def establish_canonical_hitl_pause(
     capability: InternalOrchestrationContinuation,
     governed_correlation: GovernedContinuationCorrelation | None = None,
     human_prompt: str | None = None,
-    execution_interrupt: object | None = None,
+    execution_interrupt: ExecutionInterrupt | None = None,
 ) -> PendingExecutionContinuation:
     """Canonical pause lifecycle + Task projection — not Task-only authority."""
     port = capability.port
@@ -205,10 +217,12 @@ def establish_canonical_hitl_pause(
     )
     if human_prompt and task.runtime.governance.human_request is not None:
         task.runtime.governance.human_request = (
-            task.runtime.governance.human_request.model_copy(update={"prompt": human_prompt})
+            task.runtime.governance.human_request.model_copy(
+                update={"prompt": human_prompt}
+            )
         )
     if execution_interrupt is not None:
-        task.runtime.governance.execution_interrupt = execution_interrupt  # type: ignore[assignment]
+        task.runtime.governance.execution_interrupt = execution_interrupt
     task.sync_metadata()
     return pending
 
@@ -221,7 +235,9 @@ def canonical_execution_is_resumed(
     if capability is None:
         return False
     try:
-        pending = capability.port.get_pending(ExecutionContinuationLookup(identity=identity))
+        pending = capability.port.get_pending(
+            ExecutionContinuationLookup(identity=identity)
+        )
     except ExecutionContinuationError as exc:
         if exc.code is ExecutionContinuationErrorCode.NOT_FOUND:
             return False
