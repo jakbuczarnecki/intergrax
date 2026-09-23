@@ -29,6 +29,7 @@ from intergrax.contracts.execution_identity import (
     RunId,
     TaskId,
 )
+from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 from intergrax.contracts.governed_continuation_correlation import (
     ContinuationReason,
@@ -124,7 +125,9 @@ def _load_pending_optional(
     continuation_id: str,
 ) -> PendingExecutionContinuation | None:
     try:
-        return port.get_pending(ExecutionContinuationLookup(continuation_id=continuation_id))
+        return port.get_pending(
+            ExecutionContinuationLookup(continuation_id=continuation_id)
+        )
     except ExecutionContinuationError as exc:
         if exc.code is ExecutionContinuationErrorCode.NOT_FOUND:
             return None
@@ -159,7 +162,7 @@ def establish_canonical_hitl_pause(
     capability: InternalOrchestrationContinuation,
     governed_correlation: GovernedContinuationCorrelation | None = None,
     human_prompt: str | None = None,
-    execution_interrupt: object | None = None,
+    execution_interrupt: ExecutionInterrupt | None = None,
 ) -> PendingExecutionContinuation:
     """Canonical pause lifecycle + Task projection — not Task-only authority."""
     port = capability.port
@@ -214,10 +217,12 @@ def establish_canonical_hitl_pause(
     )
     if human_prompt and task.runtime.governance.human_request is not None:
         task.runtime.governance.human_request = (
-            task.runtime.governance.human_request.model_copy(update={"prompt": human_prompt})
+            task.runtime.governance.human_request.model_copy(
+                update={"prompt": human_prompt}
+            )
         )
     if execution_interrupt is not None:
-        task.runtime.governance.execution_interrupt = execution_interrupt  # type: ignore[assignment]
+        task.runtime.governance.execution_interrupt = execution_interrupt
     task.sync_metadata()
     return pending
 
@@ -230,7 +235,9 @@ def canonical_execution_is_resumed(
     if capability is None:
         return False
     try:
-        pending = capability.port.get_pending(ExecutionContinuationLookup(identity=identity))
+        pending = capability.port.get_pending(
+            ExecutionContinuationLookup(identity=identity)
+        )
     except ExecutionContinuationError as exc:
         if exc.code is ExecutionContinuationErrorCode.NOT_FOUND:
             return False

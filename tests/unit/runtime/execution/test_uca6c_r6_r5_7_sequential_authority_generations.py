@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -47,6 +48,7 @@ from intergrax.contracts.execution.suspended_operation.authority_scope import (
 from intergrax.contracts.execution.suspended_operation.reentry import (
     ExecutionSuspendedWorkReentryDisposition,
 )
+from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
@@ -64,6 +66,21 @@ from intergrax.contracts.orchestration_tool_invocation_mse_operation import (
 )
 from intergrax.contracts.policy_enforcement_mode import PolicyEnforcementMode
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.core.plugins.admission import DomainPluginLoadReport
+from intergrax.core.plugins.discovery import EP_POLICY_RULES
+from intergrax.runtime.policy.policy_bundle import (
+    DeclarativePolicyRuntime,
+    RuntimePolicyBundle,
+)
+from intergrax.runtime.policy.rules.evaluation import (
+    PolicyEnforcementMode as DeclarativeEnforcementMode,
+)
+from intergrax.runtime.policy.rules.provenance import PolicyBundleProvenance
+from intergrax.runtime.policy.rules.registry import PolicyRuleRegistry
+from intergrax.runtime.policy.rules.schema import (
+    DeclarativePolicyRule,
+    PolicyRuleAction,
+)
 from intergrax.runtime.execution.suspended_operation.authorized_resume_reentry import (
     resume_authorized_continuation_with_suspended_work_reentry,
 )
@@ -120,6 +137,74 @@ from tests.unit.runtime.nexus.tools.test_gr10_r8_orchestration_inner_guard impor
 pytestmark = pytest.mark.unit
 
 _DECLARATIVE_RULE_ID = "uca6c.r57.code_exec_hitl"
+_COUNTING_HANDLER_ID = "uca6c_r57_counting_hitl"
+_EMPTY_POLICY_PROVENANCE = PolicyBundleProvenance(
+    source_kind="inline",
+    rules_path=None,
+    rules_digest_sha256="uca6c-r57-test",
+    handler_provenance=(),
+)
+
+
+class _DeclarativeRequireHitlOnceHandler:
+    """Test policy: REQUIRE_HITL on first matching evaluation, then ALLOW."""
+
+    rule_id = _COUNTING_HANDLER_ID
+
+    def __init__(self) -> None:
+        self.matching_evaluations = 0
+
+    def evaluate(
+        self,
+        rule: DeclarativePolicyRule,
+        *,
+        context: object,
+    ) -> PolicyRuleAction:
+        from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
+
+        if not isinstance(context, PolicyEvaluationContext):
+            return PolicyRuleAction.ALLOW
+        if rule.resource_kind != "tool":
+            return PolicyRuleAction.ALLOW
+        if rule.resource_id != "*" and rule.resource_id != context.tool_id:
+            return PolicyRuleAction.ALLOW
+        self.matching_evaluations += 1
+        if self.matching_evaluations <= 1:
+            return PolicyRuleAction.REQUIRE_HITL
+        return PolicyRuleAction.ALLOW
+
+
+def _declarative_policy_bundle(
+    *,
+    always_require_hitl: bool,
+    counting_handler: _DeclarativeRequireHitlOnceHandler | None = None,
+) -> RuntimePolicyBundle:
+    env = (
+        _r57_env_profile()
+        if always_require_hitl
+        else uca6c_strict_sandbox_env_profile()
+    )
+    bundle = wire_policy_bundle(env)
+    if always_require_hitl:
+        return bundle
+    handler = counting_handler or _DeclarativeRequireHitlOnceHandler()
+    registry = PolicyRuleRegistry()
+    registry.register(handler)
+    rule = DeclarativePolicyRule(
+        rule_id=_DECLARATIVE_RULE_ID,
+        handler_id=handler.rule_id,
+        resource_kind="tool",
+        resource_id=CODE_EXEC_TOOL_ID,
+        action=PolicyRuleAction.REQUIRE_HITL,
+    )
+    runtime = DeclarativePolicyRuntime(
+        registry=registry,
+        rules=(rule,),
+        load_report=DomainPluginLoadReport.empty(EP_POLICY_RULES),
+        provenance=_EMPTY_POLICY_PROVENANCE,
+        enforcement_mode=DeclarativeEnforcementMode.ENFORCE,
+    )
+    return replace(bundle, declarative_policy_runtime=runtime)
 
 
 def _r57_env_profile() -> ApplicationEnvironmentProfile:
@@ -154,9 +239,7 @@ class _MseRequireHumanOncePort:
         source_step_id: str | None = None,
     ) -> MeaningfulSideEffectAuthorizationResult:
         self.calls += 1
-        action = (
-            PolicyAction.REQUIRE_HUMAN if self.calls == 1 else PolicyAction.ALLOW
-        )
+        action = PolicyAction.REQUIRE_HUMAN if self.calls == 1 else PolicyAction.ALLOW
         decision = PolicyDecision(
             action=action,
             reason="uca6c-r57-mse",
@@ -190,7 +273,12 @@ class _MseRequireHumanOncePort:
         )
 
 
-def _build_handler(tmp_path: Path, mse_port: _MseRequireHumanOncePort):
+def _build_handler(
+    tmp_path: Path,
+    mse_port: _MseRequireHumanOncePort,
+    *,
+    policy_bundle: RuntimePolicyBundle | None = None,
+):
     craft_id = "craft-r5-7-sequential"
     bundle = uca6c_strict_r6_durable_wiring(tmp_path)
     ctx = _codecraft_context(
@@ -210,9 +298,12 @@ def _build_handler(tmp_path: Path, mse_port: _MseRequireHumanOncePort):
         tenant_id=_TENANT,
         agent_registry=registry,
     )
+    resolved_policy = (
+        policy_bundle if policy_bundle is not None else wire_policy_bundle(env)
+    )
     composition = build_execution_bound_catalog_tool_composition(
         registry=tool_wiring.registry,
-        policy_bundle=wire_policy_bundle(env),
+        policy_bundle=resolved_policy,
         caller_agent_id="worker-uca6c-qualified",
         sandbox_availability=sandbox_availability_provider(tool_wiring.wiring_context),
         production_mode=True,
@@ -225,7 +316,9 @@ def _build_handler(tmp_path: Path, mse_port: _MseRequireHumanOncePort):
         document_store=r6_kwargs["document_store"],
         continuation_dependencies=r6_kwargs["continuation_dependencies"],
         reentry_claim_owner_id="uca6c:worker-uca6c-qualified",
-        durable_wiring_binding_resolver=r6_kwargs.get("durable_wiring_binding_resolver"),
+        durable_wiring_binding_resolver=r6_kwargs.get(
+            "durable_wiring_binding_resolver"
+        ),
         task_checkpoint_store=r6_kwargs["task_checkpoint_store"],
     )
     handler = build_codecraft_qualified_capability_execution_handler(
@@ -238,7 +331,14 @@ def _build_handler(tmp_path: Path, mse_port: _MseRequireHumanOncePort):
         lifecycle_driver=r6_kwargs["continuation_dependencies"].lifecycle_driver,
         suspended_work_reentry_coordinator=composition.suspended_work_reentry_coordinator,
     )
-    return handler, composition, side_effects, craft_id, hitl, r6_kwargs["task_checkpoint_store"]
+    return (
+        handler,
+        composition,
+        side_effects,
+        craft_id,
+        hitl,
+        r6_kwargs["task_checkpoint_store"],
+    )
 
 
 def _approve_current_pause(
@@ -292,11 +392,13 @@ def _approve_current_pause(
         )
     if task.runtime.governance.human_request is not None:
         GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
-    _resumed, reentry_result = resume_authorized_continuation_with_suspended_work_reentry(
-        task,
-        authorized,
-        capability=hitl,
-        reentry_coordinator=hitl.suspended_work_reentry_coordinator,
+    _resumed, reentry_result = (
+        resume_authorized_continuation_with_suspended_work_reentry(
+            task,
+            authorized,
+            capability=hitl,
+            reentry_coordinator=hitl.suspended_work_reentry_coordinator,
+        )
     )
     if (
         reentry_result is not None
@@ -308,11 +410,36 @@ def _approve_current_pause(
     return reentry_result
 
 
-def test_three_authority_sequential_generations_happy_path(tmp_path: Path) -> None:
+def _start_gen1_pause(handler, craft_id: str, execution_id) -> object:
+    with pytest.raises(ExecutionSuspendedWorkPauseRequired) as exc:
+        handler._execution_port.execute(  # noqa: SLF001
+            CodeCraftBoundCapabilityExecutionRequest(
+                craft_id=craft_id,
+                tenant_id=_TENANT,
+                task_id=_TASK_ID,
+                run_id=None,
+                execution_id=execution_id,
+                execution_request_id="uca6c-r57-gen1",
+            ),
+        )
+    return exc.value
+
+
+def _assert_four_ids_match(descriptor, *, run_id, fingerprint) -> None:
+    assert str(descriptor.identity.task_id) == str(_TASK_ID)
+    assert str(descriptor.identity.run_id) == str(run_id)
+    assert descriptor.logical_invocation_fingerprint == fingerprint
+
+
+def test_three_authority_generations_without_backend_when_declarative_always_requires(
+    tmp_path: Path,
+) -> None:
     mse_port = _MseRequireHumanOncePort()
-    handler, composition, side_effects, craft_id, hitl, checkpoint_store = _build_handler(
-        tmp_path,
-        mse_port,
+    handler, composition, side_effects, craft_id, hitl, checkpoint_store = (
+        _build_handler(
+            tmp_path,
+            mse_port,
+        )
     )
     reentry = composition.suspended_work_reentry_coordinator
     assert reentry is not None
@@ -336,22 +463,14 @@ def test_three_authority_sequential_generations_happy_path(tmp_path: Path) -> No
     )
     task_token = bind_governed_execution_task(task)
     try:
-        with pytest.raises(ExecutionSuspendedWorkPauseRequired) as gen1_exc:
-            handler._execution_port.execute(  # noqa: SLF001
-                CodeCraftBoundCapabilityExecutionRequest(
-                    craft_id=craft_id,
-                    tenant_id=_TENANT,
-                    task_id=_TASK_ID,
-                    run_id=None,
-                    execution_id=execution_id,
-                    execution_request_id="uca6c-r57-gen1",
-                ),
-            )
-        gen1 = gen1_exc.value
+        gen1 = _start_gen1_pause(handler, craft_id, execution_id)
         assert gen1.agent_governance_pause is not None
         d1 = gen1.descriptor
         assert d1.pause_generation == 1
-        assert d1.authority_scope is SuspendedOperationAuthorityScope.AGENT_RUNTIME_GOVERNANCE
+        assert (
+            d1.authority_scope
+            is SuspendedOperationAuthorityScope.AGENT_RUNTIME_GOVERNANCE
+        )
         assert d1.invocation_scope_id.startswith("agr_")
         suspended_id = d1.suspended_operation_id
         fingerprint = d1.logical_invocation_fingerprint
@@ -371,7 +490,10 @@ def test_three_authority_sequential_generations_happy_path(tmp_path: Path) -> No
         assert d2 is not None
         assert d2.suspended_operation_id == suspended_id
         assert d2.pause_generation == 2
-        assert d2.authority_scope is SuspendedOperationAuthorityScope.DECLARATIVE_GOVERNANCE
+        assert (
+            d2.authority_scope
+            is SuspendedOperationAuthorityScope.DECLARATIVE_GOVERNANCE
+        )
         assert d2.invocation_scope_id.startswith("dhr_")
         assert d2.continuation_id != c1
         assert side_effects == []
@@ -389,7 +511,10 @@ def test_three_authority_sequential_generations_happy_path(tmp_path: Path) -> No
         d3 = store.load_active_for_logical_invocation(fingerprint)
         assert d3 is not None
         assert d3.pause_generation == 3
-        assert d3.authority_scope is SuspendedOperationAuthorityScope.MEANINGFUL_SIDE_EFFECT
+        assert (
+            d3.authority_scope
+            is SuspendedOperationAuthorityScope.MEANINGFUL_SIDE_EFFECT
+        )
         assert (
             d3.invocation_scope_id == CANONICAL_ORCHESTRATION_TOOL_MSE_OPERATION_ID
             or d3.invocation_scope_id.startswith(
@@ -399,18 +524,150 @@ def test_three_authority_sequential_generations_happy_path(tmp_path: Path) -> No
         assert side_effects == []
 
         assert mse_port.calls == 1
+        c3 = d3.continuation_id
+        _approve_current_pause(
+            task,
+            hitl=hitl,
+            continuation_id=c3,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+            checkpoint_store=checkpoint_store,
+        )
+        d4 = store.load_active_for_logical_invocation(fingerprint)
+        assert d4 is not None
+        assert d4.pause_generation == 4
+        assert (
+            d4.authority_scope
+            is SuspendedOperationAuthorityScope.DECLARATIVE_GOVERNANCE
+        )
+        assert d4.invocation_scope_id.startswith("dhr_")
+        assert d4.suspended_operation_id == suspended_id
+        assert d4.continuation_id not in {c1, c2, c3}
         assert side_effects == []
+        assert task.state is TaskState.WAITING_FOR_HUMAN
     finally:
         reset_governed_execution_task(task_token)
         reset_active_execution_governance_identity(gov_token)
         reset_active_execution_identity(id_token)
 
-    for gen in (d1, d2, d3):
-        assert str(gen.identity.task_id) == str(_TASK_ID)
-        assert str(gen.identity.run_id) == str(run_id)
+    for gen in (d1, d2, d3, d4):
+        _assert_four_ids_match(gen, run_id=run_id, fingerprint=fingerprint)
         assert str(gen.identity.attempt_id) == str(attempt_id)
         assert str(gen.identity.execution_id) == str(execution_id)
-        assert gen.logical_invocation_fingerprint == fingerprint
 
     pending_c1 = hitl.port.get_pending(ExecutionContinuationLookup(continuation_id=c1))
     assert pending_c1.lifecycle_state.value in {"resumed", "cancelled", "rejected"}
+
+
+def test_eventual_backend_when_each_authority_requires_human_once(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from intergrax.runtime.execution import (
+        execution_bound_catalog_tool_composition as comp,
+    )
+    from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
+        build_production_runtime_tool_invoker as _orig_build_invoker,
+    )
+
+    def _build_invoker_with_idempotency(**kwargs: object) -> object:
+        if kwargs.get("idempotency_store") is None:
+            kwargs = {**kwargs, "idempotency_store": InMemoryIdempotencyStore()}
+        return _orig_build_invoker(**kwargs)
+
+    monkeypatch.setattr(
+        comp, "build_production_runtime_tool_invoker", _build_invoker_with_idempotency
+    )
+
+    counting = _DeclarativeRequireHitlOnceHandler()
+    mse_port = _MseRequireHumanOncePort()
+    handler, composition, side_effects, craft_id, hitl, checkpoint_store = (
+        _build_handler(
+            tmp_path,
+            mse_port,
+            policy_bundle=_declarative_policy_bundle(
+                always_require_hitl=False,
+                counting_handler=counting,
+            ),
+        )
+    )
+    store = composition.suspended_work_reentry_coordinator.store
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    task = Task(tenant_id=_TENANT, user_id="u1", message="x", task_id=_TASK_ID)
+    id_token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+    gov_token = bind_active_execution_governance_identity(
+        ActiveExecutionGovernanceIdentity(
+            tenant_id=_TENANT,
+            workspace_id="workspace-uca6c",
+            principal_id="principal-uca6c",
+        ),
+    )
+    task_token = bind_governed_execution_task(task)
+    try:
+        gen1 = _start_gen1_pause(handler, craft_id, execution_id)
+        d1 = gen1.descriptor
+        fingerprint = d1.logical_invocation_fingerprint
+        suspended_id = d1.suspended_operation_id
+        c1 = d1.continuation_id
+
+        _approve_current_pause(
+            task,
+            hitl=hitl,
+            continuation_id=c1,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+            checkpoint_store=checkpoint_store,
+        )
+        d2 = store.load_active_for_logical_invocation(fingerprint)
+        assert d2 is not None and d2.pause_generation == 2
+        c2 = d2.continuation_id
+
+        _approve_current_pause(
+            task,
+            hitl=hitl,
+            continuation_id=c2,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+            checkpoint_store=checkpoint_store,
+        )
+        d3 = store.load_active_for_logical_invocation(fingerprint)
+        assert d3 is not None and d3.pause_generation == 3
+        c3 = d3.continuation_id
+
+        final_reentry = _approve_current_pause(
+            task,
+            hitl=hitl,
+            continuation_id=c3,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_id=execution_id,
+            checkpoint_store=checkpoint_store,
+        )
+        assert final_reentry is not None
+        assert (
+            final_reentry.disposition
+            is ExecutionSuspendedWorkReentryDisposition.COMPLETED
+        )
+        assert final_reentry.tool_result is not None
+        assert final_reentry.tool_result.success is True
+        assert side_effects == []
+        assert mse_port.calls == 2
+        assert counting.matching_evaluations == 3
+        active = store.load_active_for_logical_invocation(fingerprint)
+        assert active is None
+        assert d1.suspended_operation_id == suspended_id
+        for gen in (d1, d2, d3):
+            _assert_four_ids_match(gen, run_id=run_id, fingerprint=fingerprint)
+    finally:
+        reset_governed_execution_task(task_token)
+        reset_active_execution_governance_identity(gov_token)
+        reset_active_execution_identity(id_token)

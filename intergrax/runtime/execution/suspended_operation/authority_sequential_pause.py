@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.execution_interrupt import ExecutionInterrupt
 from intergrax.contracts.execution_continuation import (
     ExecutionContinuationIdentity,
     ExecutionContinuationLifecycleState,
@@ -68,7 +69,7 @@ def reblock_claimed_descriptor_for_next_authority_pause(
     pause_id: str,
     human_request_id: str,
     human_prompt: str | None = None,
-    execution_interrupt: object | None = None,
+    execution_interrupt: ExecutionInterrupt | None = None,
 ) -> SuspendedExecutionOperationDescriptor:
     """CAS CLAIMED → BLOCKED for the next monotonic pause generation."""
     ownership = claimed.claim_ownership
