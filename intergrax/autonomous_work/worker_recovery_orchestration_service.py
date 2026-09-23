@@ -589,6 +589,30 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
         request: WorkerRecoveryOrchestrationRequest,
         now: datetime,
     ) -> WorkerRecoveryOrchestrationResult:
+        correlation = _resolve_fulfillment_execution_correlation(semantic)
+        if correlation.sources_conflict:
+            episode = self._episode_repository.mark_escalated(
+                recovery_episode_id=episode.recovery_episode_id,
+                expected_revision=episode.revision,
+                completed_at=now,
+                terminal_reason="capability_fulfillment_execution_id_conflict",
+            )
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.ESCALATED,
+                episode=episode,
+            )
+        execution_id = correlation.execution_id
+        if execution_id is None:
+            episode = self._episode_repository.mark_escalated(
+                recovery_episode_id=episode.recovery_episode_id,
+                expected_revision=episode.revision,
+                completed_at=now,
+                terminal_reason="capability_fulfillment_execution_id_missing",
+            )
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.ESCALATED,
+                episode=episode,
+            )
         worker = self._load_worker(episode.worker_instance_id)
         if worker is not None:
             transition = self._transition_lifecycle(
@@ -628,15 +652,13 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
                 episode=claim.episode,
             )
         episode = claim.episode
-        execution_id = _fulfillment_execution_id(semantic)
-        if execution_id is not None:
-            episode = self._episode_repository.record_execution(
-                recovery_episode_id=episode.recovery_episode_id,
-                attempt_number=attempt_number,
-                expected_revision=episode.revision,
-                execution_id=execution_id,
-                recorded_at=now,
-            )
+        episode = self._episode_repository.record_execution(
+            recovery_episode_id=episode.recovery_episode_id,
+            attempt_number=attempt_number,
+            expected_revision=episode.revision,
+            execution_id=execution_id,
+            recorded_at=now,
+        )
         _ = request
         return WorkerRecoveryOrchestrationResult(
             disposition=WorkerRecoveryOrchestrationDisposition.ATTEMPT_DISPATCHED,
@@ -1302,15 +1324,37 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
         )
 
 
-def _fulfillment_execution_id(
+@dataclass(frozen=True, slots=True)
+class _FulfillmentExecutionCorrelation:
+    execution_id: ExecutionId | None = None
+    sources_conflict: bool = False
+
+
+def _resolve_fulfillment_execution_correlation(
     semantic: WorkerCapabilityFulfillmentResult,
-) -> ExecutionId | None:
-    if semantic.execution_result is not None:
-        return semantic.execution_result.execution_id
+) -> _FulfillmentExecutionCorrelation:
+    direct = semantic.execution_result
     resume = semantic.resume_result
-    if resume is not None and resume.execution_result is not None:
-        return resume.execution_result.execution_id
-    return None
+    resume_execution = (
+        resume.execution_result
+        if resume is not None and resume.execution_result is not None
+        else None
+    )
+    has_direct = direct is not None
+    has_resume = resume_execution is not None
+    if has_direct and has_resume:
+        direct_id = direct.execution_id
+        resume_id = resume_execution.execution_id
+        if direct_id != resume_id:
+            return _FulfillmentExecutionCorrelation(sources_conflict=True)
+        return _FulfillmentExecutionCorrelation(execution_id=direct_id)
+    if has_direct:
+        return _FulfillmentExecutionCorrelation(execution_id=direct.execution_id)
+    if has_resume:
+        return _FulfillmentExecutionCorrelation(
+            execution_id=resume_execution.execution_id,
+        )
+    return _FulfillmentExecutionCorrelation()
 
 
 def _orchestration_disposition_for_resume(
