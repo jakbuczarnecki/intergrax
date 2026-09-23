@@ -13,7 +13,7 @@ from __future__ import annotations
 import os
 from typing import TYPE_CHECKING, Mapping, Optional
 
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
 
 if TYPE_CHECKING:
     from intergrax.integrations.contracts.secrets_store import SecretsStore
@@ -36,17 +36,11 @@ _API_KEY_ENV: dict[LLMProvider, str] = {
 }
 
 
-def _provider_slug(provider: LLMProvider | str) -> str:
-    if isinstance(provider, LLMProvider):
-        return provider.value
-    return str(provider or "").strip().lower()
-
-
 def _coerce_builtin_provider(provider: LLMProvider | str) -> LLMProvider | None:
     if isinstance(provider, LLMProvider):
         return provider
     try:
-        return LLMProvider(_provider_slug(provider))
+        return LLMProvider(llm_provider_slug(provider))
     except ValueError:
         return None
 
@@ -78,7 +72,7 @@ def resolve_api_key(
 
 def default_secret_path_for_provider(provider: LLMProvider | str, *, prefix: str = "llm") -> str:
     """Vault-style path: ``{prefix}/{provider}/api_key``."""
-    return f"{prefix.strip('/')}/{_provider_slug(provider)}/api_key"
+    return f"{prefix.strip('/')}/{llm_provider_slug(provider)}/api_key"
 
 
 def load_api_key_from_secrets_store(
@@ -92,7 +86,7 @@ def load_api_key_from_secrets_store(
     value = store.get_secret(secret_path)
     if not value or not str(value).strip():
         raise RuntimeError(
-            f"Empty secret at path='{secret_path}' for provider='{_provider_slug(provider)}'."
+            f"Empty secret at path='{secret_path}' for provider='{llm_provider_slug(provider)}'."
         )
     return str(value).strip()
 

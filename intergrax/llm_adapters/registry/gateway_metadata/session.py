@@ -15,12 +15,6 @@ from intergrax.llm_adapters.registry.gateway_metadata.openrouter_client import (
 _session_client: OpenRouterModelMetadataClient | None = None
 
 
-def _provider_slug(provider: LLMProvider | str) -> str:
-    if isinstance(provider, LLMProvider):
-        return provider.value
-    return str(provider or "").strip().lower()
-
-
 def reset_gateway_metadata_session() -> None:
     """Clear process-wide gateway metadata cache (tests)."""
     global _session_client

@@ -6,6 +6,7 @@ import pytest
 
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.registry.profile import LLMProfile
+from intergrax.llm_adapters.routing.evaluator import profile_identity
 from intergrax.llm_adapters.routing import (
     AllowlistViolationError,
     BudgetBelowRule,
@@ -21,8 +22,60 @@ from intergrax.llm_adapters.routing import (
 )
 
 
-def _profile(provider: LLMProvider, model: str) -> LLMProfile:
+def _profile(provider: LLMProvider | str, model: str) -> LLMProfile:
     return LLMProfile(provider=provider, model=model)
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_profile_identity_external_string_provider() -> None:
+    profile = _profile("external-provider", "m")
+    assert profile_identity(profile) == "external-provider:m"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_profile_identity_builtin_provider() -> None:
+    profile = _profile(LLMProvider.OPENAI, "gpt-4o")
+    assert profile_identity(profile) == "openai:gpt-4o"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluator_allowlist_external_provider_match() -> None:
+    external = _profile("external-provider", "model-x")
+    default = _profile(LLMProvider.OPENAI, "gpt-4o")
+    routing = LLMRoutingProfile(
+        default_profile=default,
+        allowed_profiles=(default, external),
+        rules=(
+            BudgetBelowRule(
+                threshold=0.5,
+                profile=external,
+                priority=10,
+            ),
+        ),
+    )
+    evaluation = LLMRoutingEvaluator().evaluate(
+        routing,
+        RoutingContext(budget_remaining_ratio=0.1),
+    )
+    assert evaluation.selected_profile.provider == "external-provider"
+    assert evaluation.selected_profile.model == "model-x"
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_evaluator_default_external_provider() -> None:
+    external = _profile("external-provider", "model-x")
+    routing = LLMRoutingProfile(
+        default_profile=external,
+        allowed_profiles=(external,),
+        rules=(),
+    )
+    evaluation = LLMRoutingEvaluator().evaluate(routing, RoutingContext())
+    assert evaluation.selected_profile.provider == "external-provider"
+    assert evaluation.routing_reason == "default_profile"
 
 
 @pytest.mark.unit

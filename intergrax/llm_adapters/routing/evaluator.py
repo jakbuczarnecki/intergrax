@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.llm_adapters.routing.contracts import (
     LLMRoutingProfile,
@@ -20,7 +21,7 @@ class AllowlistViolationError(ValueError):
 
 def profile_identity(profile: LLMProfile) -> str:
     model = profile.model or "default"
-    return f"{profile.provider.value}:{model}"
+    return f"{llm_provider_slug(profile.provider)}:{model}"
 
 
 def effective_allowlist(profile: LLMRoutingProfile) -> tuple[LLMProfile, ...]:

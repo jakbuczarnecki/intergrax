@@ -7,19 +7,13 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
 from intergrax.llm_adapters.registry.catalog_miss_diag import (
     CatalogResolutionTier,
     maybe_emit_catalog_miss,
 )
 from intergrax.llm_adapters.registry.gateway_metadata.session import lookup_gateway_context_window
 from intergrax.llm_adapters.registry.model_catalog import ModelCatalog, get_model_catalog
-
-
-def _provider_slug(provider: LLMProvider | str) -> str:
-    if isinstance(provider, LLMProvider):
-        return provider.value
-    return str(provider or "").strip().lower()
 
 
 def pop_context_window_override(kwargs: dict[str, Any]) -> int | None:
@@ -103,7 +97,7 @@ def resolve_context_window_tokens(
         if legacy_hit is not None:
             return int(legacy_hit)
 
-    provider_default = cat.provider_default(_provider_slug(provider))
+    provider_default = cat.provider_default(llm_provider_slug(provider))
     if provider_default is not None:
         _record_catalog_miss(
             provider,

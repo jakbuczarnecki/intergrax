@@ -9,7 +9,7 @@ import time
 
 from intergrax.llm_adapters.base.usage_log import LLMRunStats
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 
 
 @dataclass(frozen=True)
@@ -143,12 +143,9 @@ class LLMUsageTracker:
             if ad is None:
                 continue
 
-            provider = ad.provider
-            if isinstance(provider, LLMProvider):
-                provider = provider.value
             meta = LLMAdapterMeta(
                 adapter_type=ad.__class__.__name__,
-                provider=str(provider),
+                provider=llm_provider_slug(ad.provider),
                 model=ad.model,
             )
 

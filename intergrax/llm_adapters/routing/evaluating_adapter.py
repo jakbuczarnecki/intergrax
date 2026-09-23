@@ -5,8 +5,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from enum import Enum
 from typing import Any, Protocol
+
+from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
@@ -108,12 +109,7 @@ class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
     def _inner_matches_evaluation(self, evaluation: RoutingEvaluation) -> bool:
         profile = evaluation.selected_profile
 
-        def _provider_key(provider: object) -> str:
-            if isinstance(provider, Enum):
-                return str(provider.value)
-            return str(provider)
-
-        return _provider_key(profile.provider) == _provider_key(
+        return llm_provider_slug(profile.provider) == llm_provider_slug(
             self._inner.provider
         ) and (profile.model or "") == (self._inner.model or "")
 
