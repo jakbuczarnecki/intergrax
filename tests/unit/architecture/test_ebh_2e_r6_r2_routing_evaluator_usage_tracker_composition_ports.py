@@ -24,7 +24,7 @@ from intergrax.llm_adapters.contracts.routing_profile import (
     RoutingTarget,
 )
 from intergrax.llm_adapters.routing import BudgetBelowRule
-from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageReport
+from intergrax.llm_adapters.contracts.llm_usage_report import LLMUsageReport
 from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
 from intergrax.runtime.wiring.llm_resolver import evaluate_llm_routing as runtime_evaluate_llm_routing
 from testing_support.builder import FakeLLMAdapter, build_runtime_state_for_tests

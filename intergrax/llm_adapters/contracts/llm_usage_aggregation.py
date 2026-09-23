@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Protocol, runtime_checkable
 
 from intergrax.llm_adapters.base.usage_log import LLMUsageTrackable
-from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageReport
+from intergrax.llm_adapters.contracts.llm_usage_report import LLMUsageReport
 
 
 @runtime_checkable

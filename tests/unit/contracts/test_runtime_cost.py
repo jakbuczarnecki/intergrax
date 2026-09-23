@@ -13,7 +13,7 @@ from intergrax.contracts.runtime_cost import (
     tokens_to_cost_units,
 )
 from intergrax.llm_adapters.base.usage_log import LLMRunStats
-from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageReport
+from intergrax.llm_adapters.contracts.llm_usage_report import LLMUsageReport
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeStats
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]

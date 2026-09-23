@@ -3,7 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from dataclasses import asdict, dataclass, field
+from dataclasses import dataclass, field
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from intergrax.llm_adapters.base.usage_log import (
@@ -14,72 +14,18 @@ from intergrax.llm_adapters.base.usage_log import (
 )
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
+from intergrax.llm_adapters.contracts.llm_usage_report import (
+    LLMAdapterMeta,
+    LLMAdapterUsageEntry,
+    LLMUsageReport,
+)
 
-
-@dataclass(frozen=True)
-class LLMAdapterMeta:
-    adapter_type: str
-    provider: str
-    model: str
-
-
-@dataclass(frozen=True)
-class LLMAdapterUsageEntry:
-    label: str
-    meta: LLMAdapterMeta
-    stats: LLMRunStats
-    adapter_instance_id: int
-
-
-@dataclass(frozen=True)
-class LLMUsageReport:
-    run_id: str
-    total: LLMRunStats
-    entries: List[LLMAdapterUsageEntry]
-
-    # Optional aggregation by (provider, model)
-    by_provider_model: Dict[str, LLMRunStats]
-
-    # Debug only: label -> instance_id of first registered physical source
-    adapter_instance_ids: Dict[str, int]
-
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
-    
-    def pretty(self) -> str:
-        lines: List[str] = []
-
-        t = self.total
-        lines.append(f"LLMUsageReport(run_id={self.run_id})")
-        lines.append("Total:")
-        lines.append(f"  calls        : {t.calls}")
-        lines.append(f"  input_tokens : {t.input_tokens}")
-        lines.append(f"  output_tokens: {t.output_tokens}")
-        lines.append(f"  total_tokens : {t.total_tokens}")
-        lines.append(f"  duration_ms  : {t.duration_ms}")
-        lines.append(f"  errors       : {t.errors}")
-
-        if self.by_provider_model:
-            lines.append("By provider/model:")
-            for key, st in self.by_provider_model.items():  # insertion order
-                lines.append(
-                    f"  - {key}: calls={st.calls} in={st.input_tokens} out={st.output_tokens} "
-                    f"total={st.total_tokens} ms={st.duration_ms} err={st.errors}"
-                )
-
-        if self.entries:
-            lines.append("Entries (registration order):")
-            for e in self.entries:  # registration order
-                st = e.stats
-                meta = e.meta
-                lines.append(f"  - {e.label} [{meta.provider}:{meta.model}] ({meta.adapter_type})")
-                lines.append(
-                    f"      calls={st.calls} in={st.input_tokens} out={st.output_tokens} "
-                    f"total={st.total_tokens} ms={st.duration_ms} err={st.errors} "
-                    f"instance_id={e.adapter_instance_id}"
-                )
-
-        return "\n".join(lines)
+__all__ = [
+    "LLMAdapterMeta",
+    "LLMAdapterUsageEntry",
+    "LLMUsageReport",
+    "LLMUsageTracker",
+]
 
 
 @dataclass
