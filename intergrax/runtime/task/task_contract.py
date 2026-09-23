@@ -22,6 +22,10 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.human_approver import HumanApproverEvidence
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.contracts.autonomy_level import AutonomyLevel
+from intergrax.contracts.agent_governance_hitl import (
+    AgentGovernanceGrantLifecycleRecord,
+    AgentGovernanceHumanApprovalPending,
+)
 from intergrax.contracts.declarative_hitl import (
     DeclarativeHitlApprovalGrant,
     DeclarativeHitlPendingApproval,
@@ -158,6 +162,10 @@ class TaskGovernanceState(BaseModel):
     escalation_chain: List[EscalationStep] = Field(default_factory=list)
     declarative_hitl_pending: Optional[DeclarativeHitlPendingApproval] = None
     declarative_hitl_grant: Optional[DeclarativeHitlApprovalGrant] = None
+    agent_governance_hitl_pending: Optional[AgentGovernanceHumanApprovalPending] = None
+    agent_governance_human_approval_grant: Optional[
+        AgentGovernanceGrantLifecycleRecord
+    ] = None
     governed_continuation_grant: Optional[GovernedContinuationApprovalGrant] = None
     physical_delegation_governed_continuation: Optional[
         PhysicalDelegationGovernedContinuation

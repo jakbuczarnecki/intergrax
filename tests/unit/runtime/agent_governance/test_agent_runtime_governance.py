@@ -152,7 +152,7 @@ def test_financial_policy_requires_approval() -> None:
     assert "approval_id=" in decision.reason
 
 
-def test_financial_policy_allows_with_evidence() -> None:
+def test_financial_policy_rejects_raw_evidence_ref() -> None:
     grant = CapabilityGrant(
         agent_id="invoice-agent",
         tenant_id="tenant-a",
@@ -165,7 +165,7 @@ def test_financial_policy_allows_with_evidence() -> None:
     decision = pipeline.evaluate(
         _request(capability="approve_payment", approval_evidence_ref="approval-xyz"),
     )
-    assert decision.is_allowed
+    assert decision.requires_approval
 
 
 def test_high_risk_policy_requires_approval() -> None:

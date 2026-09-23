@@ -59,10 +59,8 @@ def build_tool_authorization_request(
         execution_id = None
 
     approval_ref: str | None = None
-    if state.declarative_hitl_grant is not None:
-        approval_ref = state.declarative_hitl_grant.grant_id
-    elif request.declarative_hitl_invocation_scope_id:
-        approval_ref = request.declarative_hitl_invocation_scope_id
+    if request.idempotency_key:
+        approval_ref = request.idempotency_key
 
     return ToolAuthorizationRequest(
         agent=AgentIdentity(

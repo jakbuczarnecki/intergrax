@@ -14,6 +14,9 @@ from intergrax.contracts.execution.suspended_operation.claim import (
     SuspendedOperationClaimResult,
     SuspendedOperationMutationResult,
 )
+from intergrax.contracts.execution.suspended_operation.authority_scope import (
+    SuspendedOperationAuthorityScope,
+)
 from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedExecutionOperationDescriptor,
 )
@@ -186,6 +189,7 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
         expected_materialization_revision: int,
         owner_id: str,
         fence: int,
+        expected_pause_generation: int | None = None,
     ) -> SuspendedOperationMutationResult:
         return self._mutate(
             lambda backing: backing.mark_consumed(
@@ -193,6 +197,36 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
                 expected_materialization_revision=expected_materialization_revision,
                 owner_id=owner_id,
                 fence=fence,
+                expected_pause_generation=expected_pause_generation,
+            ),
+        )
+
+    def authority_reblock_from_claimed(
+        self,
+        *,
+        suspended_operation_id: str,
+        expected_materialization_revision: int,
+        expected_pause_generation: int,
+        expected_owner_id: str,
+        expected_fence: int,
+        next_pause_generation: int,
+        next_continuation: PendingExecutionContinuation,
+        next_governed_correlation: GovernedContinuationCorrelation,
+        next_invocation_scope_id: str,
+        next_authority_scope: SuspendedOperationAuthorityScope,
+    ) -> SuspendedOperationMutationResult:
+        return self._mutate(
+            lambda backing: backing.authority_reblock_from_claimed(
+                suspended_operation_id=suspended_operation_id,
+                expected_materialization_revision=expected_materialization_revision,
+                expected_pause_generation=expected_pause_generation,
+                expected_owner_id=expected_owner_id,
+                expected_fence=expected_fence,
+                next_pause_generation=next_pause_generation,
+                next_continuation=next_continuation,
+                next_governed_correlation=next_governed_correlation,
+                next_invocation_scope_id=next_invocation_scope_id,
+                next_authority_scope=next_authority_scope,
             ),
         )
 
@@ -204,6 +238,7 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
         reason: SuspendedOperationAbandonReason,
         owner_id: str | None = None,
         fence: int | None = None,
+        expected_pause_generation: int | None = None,
     ) -> SuspendedOperationMutationResult:
         return self._mutate(
             lambda backing: backing.abandon(
@@ -212,6 +247,7 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
                 reason=reason,
                 owner_id=owner_id,
                 fence=fence,
+                expected_pause_generation=expected_pause_generation,
             ),
         )
 

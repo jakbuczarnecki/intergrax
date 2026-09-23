@@ -18,6 +18,9 @@ from intergrax.contracts.execution.suspended_operation.descriptor import (
 from intergrax.contracts.execution.suspended_operation.store import (
     SuspendedExecutionOperationStore,
 )
+from intergrax.contracts.execution.suspended_operation.authority_scope import (
+    SuspendedOperationAuthorityScope,
+)
 from intergrax.contracts.governed_continuation_correlation import (
     GovernedContinuationCorrelation,
 )
@@ -115,6 +118,7 @@ class InMemorySuspendedExecutionOperationStore(SuspendedExecutionOperationStore)
         expected_materialization_revision: int,
         owner_id: str,
         fence: int,
+        expected_pause_generation: int | None = None,
     ) -> SuspendedOperationMutationResult:
         with self._lock:
             return self._backing.mark_consumed(
@@ -122,6 +126,35 @@ class InMemorySuspendedExecutionOperationStore(SuspendedExecutionOperationStore)
                 expected_materialization_revision=expected_materialization_revision,
                 owner_id=owner_id,
                 fence=fence,
+                expected_pause_generation=expected_pause_generation,
+            )
+
+    def authority_reblock_from_claimed(
+        self,
+        *,
+        suspended_operation_id: str,
+        expected_materialization_revision: int,
+        expected_pause_generation: int,
+        expected_owner_id: str,
+        expected_fence: int,
+        next_pause_generation: int,
+        next_continuation: PendingExecutionContinuation,
+        next_governed_correlation: GovernedContinuationCorrelation,
+        next_invocation_scope_id: str,
+        next_authority_scope: SuspendedOperationAuthorityScope,
+    ) -> SuspendedOperationMutationResult:
+        with self._lock:
+            return self._backing.authority_reblock_from_claimed(
+                suspended_operation_id=suspended_operation_id,
+                expected_materialization_revision=expected_materialization_revision,
+                expected_pause_generation=expected_pause_generation,
+                expected_owner_id=expected_owner_id,
+                expected_fence=expected_fence,
+                next_pause_generation=next_pause_generation,
+                next_continuation=next_continuation,
+                next_governed_correlation=next_governed_correlation,
+                next_invocation_scope_id=next_invocation_scope_id,
+                next_authority_scope=next_authority_scope,
             )
 
     def abandon(
@@ -132,6 +165,7 @@ class InMemorySuspendedExecutionOperationStore(SuspendedExecutionOperationStore)
         reason: SuspendedOperationAbandonReason,
         owner_id: str | None = None,
         fence: int | None = None,
+        expected_pause_generation: int | None = None,
     ) -> SuspendedOperationMutationResult:
         with self._lock:
             return self._backing.abandon(
@@ -140,6 +174,7 @@ class InMemorySuspendedExecutionOperationStore(SuspendedExecutionOperationStore)
                 reason=reason,
                 owner_id=owner_id,
                 fence=fence,
+                expected_pause_generation=expected_pause_generation,
             )
 
 

@@ -16,6 +16,9 @@ from intergrax.contracts.execution.suspended_operation.claim import (
 from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedExecutionOperationDescriptor,
 )
+from intergrax.contracts.execution.suspended_operation.authority_scope import (
+    SuspendedOperationAuthorityScope,
+)
 from intergrax.contracts.governed_continuation_correlation import (
     GovernedContinuationCorrelation,
 )
@@ -92,6 +95,7 @@ class SuspendedExecutionOperationStore(ABC):
         expected_materialization_revision: int,
         owner_id: str,
         fence: int,
+        expected_pause_generation: int | None = None,
     ) -> SuspendedOperationMutationResult:
         """CAS CLAIMED → CONSUMED for terminal successful re-entry."""
 
@@ -104,8 +108,26 @@ class SuspendedExecutionOperationStore(ABC):
         reason: SuspendedOperationAbandonReason,
         owner_id: str | None = None,
         fence: int | None = None,
+        expected_pause_generation: int | None = None,
     ) -> SuspendedOperationMutationResult:
         """Terminal ABANDONED with typed reason."""
+
+    @abstractmethod
+    def authority_reblock_from_claimed(
+        self,
+        *,
+        suspended_operation_id: str,
+        expected_materialization_revision: int,
+        expected_pause_generation: int,
+        expected_owner_id: str,
+        expected_fence: int,
+        next_pause_generation: int,
+        next_continuation: PendingExecutionContinuation,
+        next_governed_correlation: GovernedContinuationCorrelation,
+        next_invocation_scope_id: str,
+        next_authority_scope: SuspendedOperationAuthorityScope,
+    ) -> SuspendedOperationMutationResult:
+        """CAS CLAIMED → BLOCKED for the next authority pause (same logical invocation)."""
 
 
 __all__ = ["SuspendedExecutionOperationStore"]

@@ -14,6 +14,7 @@ from intergrax.contracts.execution.suspended_operation.codec import (
     SerializedSuspendedOperationEnvelope,
     SuspendedOperationKind,
 )
+from intergrax.contracts.agent_governance_hitl import LogicalInvocationFingerprint
 from intergrax.contracts.lease_claim import LeaseOwnership
 from intergrax.contracts.validation import validate_content_digest
 
@@ -50,6 +51,8 @@ class SuspendedExecutionOperationDescriptor(BaseModel):
     claim_ownership: LeaseOwnership | None = None
     payload_digest: str = Field(min_length=1)
     payload: SerializedSuspendedOperationEnvelope
+    pause_generation: int = Field(default=1, ge=1)
+    logical_invocation_fingerprint: LogicalInvocationFingerprint | None = None
 
     @field_validator("payload_digest")
     @classmethod
