@@ -35,6 +35,7 @@ from intergrax.autonomous_work.recovery_orchestration_ports import (
     UnavailableWorkerRecoveryReplanPort,
     WorkerCapabilityAcquisitionPort,
     WorkerRecoveryCapabilityFulfillmentPort,
+    WorkerRecoveryCapabilityFulfillmentAsyncPort,
     WorkerRecoveryCapabilityFulfillmentRequest,
     WorkerRecoveryCapabilityFulfillmentRequestBuilderPort,
     WorkerCapabilityAcquisitionRequest,
@@ -140,6 +141,9 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
         recovery_capability_fulfillment_port: (
             WorkerRecoveryCapabilityFulfillmentPort | None
         ) = None,
+        recovery_capability_fulfillment_async_port: (
+            WorkerRecoveryCapabilityFulfillmentAsyncPort | None
+        ) = None,
         recovery_capability_fulfillment_request_builder: (
             WorkerRecoveryCapabilityFulfillmentRequestBuilderPort | None
         ) = None,
@@ -161,6 +165,9 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
         self._recovery_capability_fulfillment = (
             recovery_capability_fulfillment_port
             or UnavailableWorkerRecoveryCapabilityFulfillmentPort()
+        )
+        self._recovery_capability_fulfillment_async = (
+            recovery_capability_fulfillment_async_port
         )
         self._recovery_capability_fulfillment_request_builder = (
             recovery_capability_fulfillment_request_builder
@@ -248,7 +255,7 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
             RecoveryStrategy.ADAPT_INTEGRATION,
             RecoveryStrategy.ACQUIRE_CAPABILITY,
         }:
-            return self._handle_capability_deferred(episode, request=request, now=now)
+            return await self._handle_capability_deferred(episode, request=request, now=now)
         if strategy is RecoveryStrategy.REPLAN:
             return await self._handle_replan(
                 episode,
@@ -461,7 +468,7 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
             episode=episode,
         )
 
-    def _handle_capability_deferred(
+    async def _handle_capability_deferred(
         self,
         episode: WorkerRecoveryEpisode,
         *,
@@ -480,11 +487,18 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
                 orchestration_request=request,
                 fulfillment_request=fulfillment_request,
             )
-            fulfillment = (
-                self._recovery_capability_fulfillment.fulfill_recovery_capability(
-                    handoff,
+            if self._recovery_capability_fulfillment_async is not None:
+                fulfillment = (
+                    await self._recovery_capability_fulfillment_async.fulfill_recovery_capability_async(
+                        handoff,
+                    )
                 )
-            )
+            else:
+                fulfillment = (
+                    self._recovery_capability_fulfillment.fulfill_recovery_capability(
+                        handoff,
+                    )
+                )
             if fulfillment.disposition is PortAvailabilityDisposition.UNAVAILABLE:
                 episode = self._episode_repository.mark_escalated(
                     recovery_episode_id=episode.recovery_episode_id,

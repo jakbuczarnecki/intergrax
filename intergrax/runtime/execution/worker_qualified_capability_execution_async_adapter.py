@@ -1,34 +1,36 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Production WorkerQualifiedCapabilityExecutionPort adapter (UCA-6C-R)."""
+"""Async Execution Engine adapter for worker qualified capabilities (UCA-6C-R6-R5.8-R2-H1)."""
 
 from __future__ import annotations
 
+from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
+    QualifiedCapabilityExecutionAsyncDispatchPort,
+    QualifiedCapabilityExecutionDispatchDisposition,
+)
 from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
     WorkerQualifiedCapabilityExecutionDisposition,
     WorkerQualifiedCapabilityExecutionRequest,
     WorkerQualifiedCapabilityExecutionResult,
     derive_qualified_capability_execution_request_id,
 )
-from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
-    QualifiedCapabilityExecutionDispatchDisposition,
-    QualifiedCapabilityExecutionDispatchPort,
-    QualifiedCapabilityExecutionDispatchRequest,
+from intergrax.runtime.execution.worker_qualified_capability_execution_adapter import (
+    map_qualified_dispatch_result,
 )
 
 
-class WorkerQualifiedCapabilityExecutionEngineAdapter:
-    """Translate worker resume execution requests into canonical Execution Engine dispatch."""
+class WorkerQualifiedCapabilityExecutionEngineAsyncAdapter:
+    """Async root launch boundary for worker orchestration already on the event loop."""
 
     def __init__(
         self,
         *,
-        dispatch: QualifiedCapabilityExecutionDispatchPort,
+        dispatch: QualifiedCapabilityExecutionAsyncDispatchPort,
     ) -> None:
         self._dispatch = dispatch
 
-    def execute(
+    async def execute_async(
         self,
         request: WorkerQualifiedCapabilityExecutionRequest,
     ) -> WorkerQualifiedCapabilityExecutionResult:
@@ -42,6 +44,10 @@ class WorkerQualifiedCapabilityExecutionEngineAdapter:
                 execution_request_id=request.execution_request_id,
                 reason_detail="execution_request_id_integrity_mismatch",
             )
+        from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
+            QualifiedCapabilityExecutionDispatchRequest,
+        )
+
         dispatch_request = QualifiedCapabilityExecutionDispatchRequest(
             execution_request_id=request.execution_request_id,
             execution_target=request.execution_target,
@@ -61,54 +67,17 @@ class WorkerQualifiedCapabilityExecutionEngineAdapter:
             run_id=request.run_id,
             attempt_id=request.attempt_id,
         )
-        dispatch_result = self._dispatch.dispatch(dispatch_request)
+        dispatch_result = await self._dispatch.dispatch_async(dispatch_request)
+        if (
+            dispatch_result.disposition
+            is QualifiedCapabilityExecutionDispatchDisposition.DISPATCHED
+            and dispatch_result.execution_request_id is None
+        ):
+            return WorkerQualifiedCapabilityExecutionResult(
+                disposition=WorkerQualifiedCapabilityExecutionDisposition.FAILED,
+                reason_detail="execution_request_id_missing",
+            )
         return map_qualified_dispatch_result(dispatch_result)
 
 
-def map_qualified_dispatch_result(
-    dispatch_result,
-) -> WorkerQualifiedCapabilityExecutionResult:
-    return _map_result(dispatch_result)
-
-
-def _map_result(
-    dispatch_result,
-) -> WorkerQualifiedCapabilityExecutionResult:
-    mapping = {
-        QualifiedCapabilityExecutionDispatchDisposition.DISPATCHED: (
-            WorkerQualifiedCapabilityExecutionDisposition.DISPATCHED
-        ),
-        QualifiedCapabilityExecutionDispatchDisposition.UNAVAILABLE: (
-            WorkerQualifiedCapabilityExecutionDisposition.UNAVAILABLE
-        ),
-        QualifiedCapabilityExecutionDispatchDisposition.FAILED: (
-            WorkerQualifiedCapabilityExecutionDisposition.FAILED
-        ),
-        QualifiedCapabilityExecutionDispatchDisposition.REJECTED: (
-            WorkerQualifiedCapabilityExecutionDisposition.REJECTED
-        ),
-    }
-    disposition = mapping[dispatch_result.disposition]
-    execution_request_id = dispatch_result.execution_request_id
-    if (
-        disposition is WorkerQualifiedCapabilityExecutionDisposition.DISPATCHED
-        and execution_request_id is None
-    ):
-        return WorkerQualifiedCapabilityExecutionResult(
-            disposition=WorkerQualifiedCapabilityExecutionDisposition.FAILED,
-            reason_detail="execution_request_id_missing",
-        )
-    return WorkerQualifiedCapabilityExecutionResult(
-        disposition=disposition,
-        execution_request_id=execution_request_id,
-        run_id=dispatch_result.run_id,
-        attempt_id=dispatch_result.attempt_id,
-        execution_id=dispatch_result.execution_id,
-        reason_detail=dispatch_result.reason_detail,
-    )
-
-
-__all__ = [
-    "WorkerQualifiedCapabilityExecutionEngineAdapter",
-    "map_qualified_dispatch_result",
-]
+__all__ = ["WorkerQualifiedCapabilityExecutionEngineAsyncAdapter"]

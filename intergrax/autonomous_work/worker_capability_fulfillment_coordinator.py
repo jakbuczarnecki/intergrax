@@ -83,6 +83,53 @@ class WorkerCapabilityFulfillmentCoordinator:
             after_realization=False,
         )
 
+    async def fulfill_async(
+        self,
+        request: WorkerCapabilityFulfillmentRequest,
+        *,
+        decided_at: datetime | None = None,
+    ) -> WorkerCapabilityFulfillmentResult:
+        timestamp = decided_at or request.requested_at
+        recovery = self._recovery.coordinate_recovery(
+            request.acquisition_request,
+            decided_at=timestamp,
+            allow_generic_acquisition=request.allow_generic_acquisition,
+        )
+        return await self._fulfill_from_recovery_async(
+            request,
+            recovery=recovery,
+            decided_at=timestamp,
+            after_realization=False,
+        )
+
+    async def _fulfill_from_recovery_async(
+        self,
+        request: WorkerCapabilityFulfillmentRequest,
+        *,
+        recovery,
+        decided_at: datetime,
+        after_realization: bool,
+    ) -> WorkerCapabilityFulfillmentResult:
+        if recovery.phase is WorkerCapabilityRecoveryPhase.QUALIFICATION_COMPLETE:
+            if after_realization:
+                return WorkerCapabilityFulfillmentResult(
+                    disposition=WorkerCapabilityFulfillmentDisposition.REALIZATION_NOT_VISIBLE,
+                    provenance=recovery.provenance,
+                    recovery_outcome=recovery,
+                    decided_at=decided_at,
+                )
+            return await self._fulfill_qualified_async(
+                request,
+                recovery=recovery,
+                decided_at=decided_at,
+            )
+        return self._fulfill_from_recovery(
+            request,
+            recovery=recovery,
+            decided_at=decided_at,
+            after_realization=after_realization,
+        )
+
     def _fulfill_from_recovery(
         self,
         request: WorkerCapabilityFulfillmentRequest,
@@ -261,6 +308,60 @@ class WorkerCapabilityFulfillmentCoordinator:
             attempt_id=request.attempt_id,
         )
         resume_result = self._resume.resume(resume_request, decided_at=decided_at)
+        return self._map_resume(
+            recovery=recovery,
+            resume_result=resume_result,
+            decided_at=decided_at,
+        )
+
+    async def _fulfill_qualified_async(
+        self,
+        request: WorkerCapabilityFulfillmentRequest,
+        *,
+        recovery,
+        decided_at: datetime,
+    ) -> WorkerCapabilityFulfillmentResult:
+        acquisition = recovery.acquisition_result
+        qualification = recovery.qualification_result
+        if acquisition is None or qualification is None:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+                provenance=recovery.provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        if qualification.outcome is not CapabilityQualificationOutcome.QUALIFIED:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.QUALIFICATION_FAILED,
+                provenance=recovery.provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        need = request.acquisition_request.need
+        worker_need_id = derive_worker_capability_need_id(need)
+        resume_operation_id = derive_worker_capability_resume_operation_id(
+            recovery_decision_id=need.recovery_decision_id,
+            qualification_request_id=qualification.qualification_request_id,
+        )
+        resume_request = WorkerQualifiedCapabilityResumeRequest(
+            worker_instance_id=request.worker_instance_id,
+            worker_need_id=worker_need_id,
+            recovery_decision_id=need.recovery_decision_id,
+            provenance=recovery.provenance,
+            acquisition_result=acquisition,
+            qualification_result=qualification,
+            resume_operation_id=resume_operation_id,
+            tenant_id=request.tenant_id,
+            task_id=request.task_id,
+            requested_at=decided_at,
+            requested_authority_scopes=request.requested_authority_scopes,
+            run_id=request.run_id,
+            attempt_id=request.attempt_id,
+        )
+        resume_result = await self._resume.resume_async(
+            resume_request,
+            decided_at=decided_at,
+        )
         return self._map_resume(
             recovery=recovery,
             resume_result=resume_result,

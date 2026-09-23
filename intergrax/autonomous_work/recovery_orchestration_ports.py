@@ -171,6 +171,15 @@ class WorkerRecoveryCapabilityFulfillmentPort(Protocol):
     ) -> WorkerRecoveryCapabilityFulfillmentResult: ...
 
 
+class WorkerRecoveryCapabilityFulfillmentAsyncPort(Protocol):
+    """Async fulfillment entry for worker orchestration on the event loop (UCA-6C-R6-R5.8-R2-H1)."""
+
+    async def fulfill_recovery_capability_async(
+        self,
+        handoff: WorkerRecoveryCapabilityFulfillmentRequest,
+    ) -> WorkerRecoveryCapabilityFulfillmentResult: ...
+
+
 class CanonicalExecutionOutcomeReader(Protocol):
     def get_terminal_outcome(
         self,

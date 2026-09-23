@@ -187,6 +187,15 @@ class ActiveTaskRegistry:
         return task_id
 
     @staticmethod
+    def peek_binding(task_id: TaskId | str) -> ActiveTaskBinding | None:
+        """Process-local lookup of the in-flight task binding for governed execution scope."""
+        validated_task_id = validate_task_id(task_id)
+        binding = _TASK_BINDINGS.get(validated_task_id)
+        if binding is not None:
+            _assert_task_binding_index_consistent(binding)
+        return binding
+
+    @staticmethod
     def clear_for_tests() -> None:
         _TASK_BINDINGS.clear()
         _TASK_BY_RUN.clear()
