@@ -108,6 +108,12 @@ def test_reentry_coordinator_requires_durable_binding_resolver_contract() -> Non
     assert "FixedSandboxSessionWiringResolver" not in text
 
 
+def test_reentry_coordinator_has_no_private_host_registry_access() -> None:
+    text = (SUSPENDED_RUNTIME / "reentry_coordinator.py").read_text(encoding="utf-8")
+    assert "catalog_host._tool_invoker" not in text
+    assert "ToolRegistryRead" in text
+
+
 def test_aw_does_not_import_nexus() -> None:
     aw_root = REPO / "intergrax" / "autonomous_work"
     for path in aw_root.rglob("*.py"):

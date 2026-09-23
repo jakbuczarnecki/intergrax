@@ -150,9 +150,15 @@ class NexusIntakeRunner:
                 response_text=task.options.human.response_text,
             )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
-            AgentGovernanceHumanApprovalGrantCoordinator.clear_pending_on_reject_or_escalate(
-                task,
-            )
+            if task.runtime.governance.agent_governance_hitl_pending is not None:
+                if self.task_checkpoint_store is None:
+                    raise RuntimeError(
+                        "task_checkpoint_store required to clear agent governance pending",
+                    )
+                AgentGovernanceHumanApprovalGrantCoordinator.clear_pending_on_reject_or_escalate(
+                    task,
+                    checkpoint_store=self.task_checkpoint_store,
+                )
             GovernedContinuationGrantCoordinator.clear_grant(task)
             result = await self.hitl.handle_human_rejection(
                 task,
@@ -176,9 +182,15 @@ class NexusIntakeRunner:
                 response_text=task.options.human.response_text,
             )
             DeclarativeHitlGrantCoordinator.clear_pending_and_grant(task)
-            AgentGovernanceHumanApprovalGrantCoordinator.clear_pending_on_reject_or_escalate(
-                task,
-            )
+            if task.runtime.governance.agent_governance_hitl_pending is not None:
+                if self.task_checkpoint_store is None:
+                    raise RuntimeError(
+                        "task_checkpoint_store required to clear agent governance pending",
+                    )
+                AgentGovernanceHumanApprovalGrantCoordinator.clear_pending_on_reject_or_escalate(
+                    task,
+                    checkpoint_store=self.task_checkpoint_store,
+                )
             GovernedContinuationGrantCoordinator.clear_grant(task)
             result = await self.hitl.handle_human_escalation(
                 task,

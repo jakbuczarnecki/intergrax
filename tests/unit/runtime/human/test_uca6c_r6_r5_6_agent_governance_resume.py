@@ -18,6 +18,7 @@ from intergrax.runtime.human.agent_governance_human_approval_grant import (
     AgentGovernanceHumanApprovalGrantError,
 )
 from intergrax.runtime.human.models import HumanResponseVerdict
+from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import HumanApprovalResolution
 from tests.unit.runtime.human.test_agent_governance_grant_lifecycle_h1 import (
     _MemoryTaskCheckpointStore,
@@ -79,12 +80,21 @@ def test_approve_materializes_available_grant_once() -> None:
 
 def test_reject_path_clears_pending_without_grant() -> None:
     task = _task()
+    store = _MemoryTaskCheckpointStore()
+    _seed_checkpoint(task, store)
     requirement = _requirement()
     pending = _pending(requirement)
     task.runtime.governance.agent_governance_hitl_pending = pending
-    AgentGovernanceHumanApprovalGrantCoordinator.clear_pending_on_reject_or_escalate(task)
+    AgentGovernanceHumanApprovalGrantCoordinator.clear_pending_on_reject_or_escalate(
+        task,
+        checkpoint_store=store,
+    )
     assert task.runtime.governance.agent_governance_hitl_pending is None
     assert task.runtime.governance.agent_governance_human_approval_grant is None
+    reloaded = Task.model_validate(
+        store.get_latest(str(task.task_id), task.tenant_id).task_snapshot
+    )
+    assert reloaded.runtime.governance.agent_governance_hitl_pending is None
 
 
 def test_incompatible_existing_grant_fails_closed() -> None:

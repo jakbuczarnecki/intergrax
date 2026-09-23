@@ -20,6 +20,10 @@ from intergrax.contracts.human_approver import HumanApproverEvidence
 from intergrax.runtime.human.agent_governance_grant_lifecycle import (
     TaskAgentGovernanceGrantLifecycleAdapter,
 )
+from intergrax.runtime.human.agent_governance_pause_projection import (
+    AgentGovernancePauseProjectionOutcome,
+    TaskAgentGovernancePauseProjectionAdapter,
+)
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
@@ -165,9 +169,26 @@ class AgentGovernanceHumanApprovalGrantCoordinator:
         return result
 
     @staticmethod
-    def clear_pending_on_reject_or_escalate(task: Task) -> None:
-        task.runtime.governance.agent_governance_hitl_pending = None
-        task.sync_metadata()
+    def clear_pending_on_reject_or_escalate(
+        task: Task,
+        *,
+        checkpoint_store: TaskCheckpointPersistence,
+    ) -> None:
+        if task.runtime.governance.agent_governance_hitl_pending is None:
+            return
+        adapter = TaskAgentGovernancePauseProjectionAdapter(
+            task=task,
+            checkpoint_store=checkpoint_store,
+        )
+        result = adapter.clear_pending_durably()
+        if result.outcome is AgentGovernancePauseProjectionOutcome.STALE_REVISION:
+            raise AgentGovernanceHumanApprovalGrantError(
+                "stale checkpoint while clearing agent governance pending",
+            )
+        if result.outcome is not AgentGovernancePauseProjectionOutcome.APPLIED:
+            raise AgentGovernanceHumanApprovalGrantError(
+                "failed to clear agent governance pending durably",
+            )
 
     @staticmethod
     def terminalize_after_successful_consumption(

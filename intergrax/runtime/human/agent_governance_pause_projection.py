@@ -53,6 +53,19 @@ class TaskAgentGovernancePauseProjectionAdapter:
         self._task = task
         self._checkpoint_store = checkpoint_store
 
+    def clear_pending_durably(
+        self,
+    ) -> AgentGovernancePauseProjectionResult:
+        snapshot = self._load_canonical_pause_snapshot()
+        if snapshot.pending is None:
+            return AgentGovernancePauseProjectionResult(
+                outcome=AgentGovernancePauseProjectionOutcome.APPLIED,
+                pending=None,
+            )
+        return self._clear_pending_through_checkpoint(
+            expected_checkpoint_revision=snapshot.checkpoint_revision,
+        )
+
     def persist_pause_projection(
         self,
         *,
@@ -104,6 +117,38 @@ class TaskAgentGovernancePauseProjectionAdapter:
         return _PauseProjectionSnapshot(
             pending=self._task.runtime.governance.agent_governance_hitl_pending,
             checkpoint_revision=latest.revision,
+        )
+
+    def _clear_pending_through_checkpoint(
+        self,
+        *,
+        expected_checkpoint_revision: int | None,
+    ) -> AgentGovernancePauseProjectionResult:
+        draft = self._task.model_copy(deep=True)
+        draft.runtime.governance.agent_governance_hitl_pending = None
+        draft.sync_metadata()
+        runtime = resolve_task_runtime_checkpoint(self._task)
+        checkpoint = build_task_checkpoint(
+            draft,
+            progress_message=self._task.runtime.orchestration.progress_message,
+            resume_token=self._task.runtime.orchestration.resume_token,
+            runtime=runtime,
+        )
+        try:
+            saved = self._checkpoint_store.save(
+                checkpoint,
+                expected_revision=expected_checkpoint_revision,
+            )
+        except StaleCheckpointWriteError:
+            snapshot = self._load_canonical_pause_snapshot()
+            return AgentGovernancePauseProjectionResult(
+                outcome=AgentGovernancePauseProjectionOutcome.STALE_REVISION,
+                pending=snapshot.pending,
+            )
+        self._apply_checkpoint_to_task(saved)
+        return AgentGovernancePauseProjectionResult(
+            outcome=AgentGovernancePauseProjectionOutcome.APPLIED,
+            pending=self._task.runtime.governance.agent_governance_hitl_pending,
         )
 
     def _persist_through_checkpoint(

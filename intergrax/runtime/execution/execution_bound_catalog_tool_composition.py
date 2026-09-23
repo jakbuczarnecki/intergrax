@@ -137,6 +137,7 @@ def build_execution_bound_catalog_tool_composition(
         reentry_coordinator = wire_execution_suspended_work_reentry_coordinator(
             store=suspended_store,
             continuation_port=continuation_dependencies.continuation,
+            tool_registry=registry,
             catalog_invoker=bound,
             catalog_host=host,
             binding_resolver=durable_wiring_binding_resolver,

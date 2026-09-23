@@ -39,6 +39,7 @@ from intergrax.runtime.nexus.tools.nexus_execution_bound_catalog_tool_invoker im
 from intergrax.tools.durable_invocation_wiring_binding_resolver import (
     DurableToolInvocationWiringBindingResolver,
 )
+from intergrax.tools.registry.read import ToolRegistryRead
 
 
 class SuspendedOperationCompositionError(RuntimeError):
@@ -86,6 +87,7 @@ def wire_execution_suspended_work_reentry_coordinator(
     *,
     store: SuspendedExecutionOperationStore,
     continuation_port: ExecutionContinuationPort,
+    tool_registry: ToolRegistryRead,
     catalog_invoker: NexusExecutionBoundCatalogToolInvoker,
     catalog_host: ContinuationAwareCatalogToolHost,
     binding_resolver: DurableToolInvocationWiringBindingResolver,
@@ -95,6 +97,7 @@ def wire_execution_suspended_work_reentry_coordinator(
     return ExecutionSuspendedWorkReentryCoordinator(
         store=store,
         continuation_port=continuation_port,
+        tool_registry=tool_registry,
         catalog_host=catalog_host,
         catalog_invoker=catalog_invoker,
         codec_registry=wire_default_suspended_operation_codec_registry(),

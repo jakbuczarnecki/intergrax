@@ -12,6 +12,9 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
 from intergrax.contracts.runtime_cost import tokens_to_cost_units
+from intergrax.contracts.agent_governance_approval_consumption_port import (
+    AgentGovernanceApprovalConsumptionPort,
+)
 from intergrax.contracts.agent_governance_verified_approval import (
     VerifiedAgentGovernanceHumanApproval,
 )
@@ -64,6 +67,11 @@ class RuntimeState(RuntimeStateContract):
     # Verified Agent Governance human approval (transport only; minted by grant verifier).
     verified_agent_governance_human_approval: (
         VerifiedAgentGovernanceHumanApproval | None
+    ) = None
+
+    # Per-invocation grant consumption (re-entry resume only; transport to governance boundary).
+    agent_governance_approval_consumption: (
+        AgentGovernanceApprovalConsumptionPort | None
     ) = None
 
     # Utc

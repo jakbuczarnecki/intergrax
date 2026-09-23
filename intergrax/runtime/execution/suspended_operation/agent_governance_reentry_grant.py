@@ -129,7 +129,7 @@ def prepare_agent_governance_grant_for_reentry(
             tool_id=record.grant.tool_id,
             step_id=record.grant.step_id,
             idempotency_key=record.grant.idempotency_key,
-            approval_id="recovery",
+            approval_id=record.grant.human_request_id,
             authorization_request=auth_request,
             logical_invocation_fingerprint=record.grant.logical_invocation_fingerprint,
             pause_generation=pause_generation,
