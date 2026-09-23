@@ -69,10 +69,20 @@ from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration i
     InternalOrchestrationContinuation,
     establish_canonical_hitl_pause,
 )
+from intergrax.contracts.execution.suspended_operation.claim import (
+    SuspendedOperationMutationOutcome,
+)
+from intergrax.runtime.human.agent_governance_pause_projection import (
+    AgentGovernancePauseProjectionOutcome,
+    TaskAgentGovernancePauseProjectionAdapter,
+)
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
 from intergrax.runtime.nexus.tools.agent_governance_approval_pause_bridge import (
     AgentGovernanceApprovalPauseRequired,
+    assert_agent_governance_pause_identity_consistency,
     build_agent_governance_pause_artifacts,
-    project_agent_governance_pause_onto_task,
     raise_agent_governance_pause_from_tool_invocation,
 )
 from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
@@ -94,6 +104,7 @@ class ContinuationAwareCatalogToolHostDependencies:
     suspended_operation_store: SuspendedExecutionOperationStore
     hitl_continuation: InternalOrchestrationContinuation
     codec_registry: SuspendedOperationCodecRegistry
+    task_checkpoint_store: TaskCheckpointPersistence | None = None
 
 
 class ContinuationAwareCatalogToolHost:
@@ -266,6 +277,10 @@ class ContinuationAwareCatalogToolHost:
             raise RuntimeError(
                 "governed execution task required for agent governance pause projection",
             )
+        if deps.task_checkpoint_store is None:
+            raise RuntimeError(
+                "task_checkpoint_store required for agent governance pause projection",
+            )
 
         run_id, attempt_id = require_active_execution_identity()
         execution_id = state_execution_id()
@@ -275,93 +290,198 @@ class ContinuationAwareCatalogToolHost:
             attempt_id=AttemptId(str(attempt_id)),
             execution_id=ExecutionId(str(execution_id)),
         )
+        assert_agent_governance_pause_identity_consistency(
+            pause.signal,
+            request=request,
+            run_id=RunId(str(run_id)),
+            attempt_id=AttemptId(str(attempt_id)),
+            execution_id=ExecutionId(str(execution_id)),
+        )
+        if task.runtime.governance.agent_governance_hitl_pending is not None:
+            existing_scope = task.runtime.governance.agent_governance_hitl_pending.agent_governance_invocation_scope_id
+            if not existing_scope.startswith("agr_"):
+                raise RuntimeError("incompatible agent governance pending on task")
+
         from intergrax.contracts.agent_governance_hitl import (
+            digest_logical_invocation_fingerprint,
             mint_agent_governance_invocation_scope_id,
         )
 
-        scope_id = mint_agent_governance_invocation_scope_id()
+        payload_probe = _catalog_payload_from_request(
+            request,
+            invocation_scope_id="agr_probe",
+        )
+        codec = deps.codec_registry.resolve(
+            SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
+            payload_probe.payload_schema_version,
+        )
+        probe_envelope = codec.encode(payload_probe)
+        digest = digest_suspended_operation_envelope(probe_envelope)
+        fingerprint = digest_logical_invocation_fingerprint(
+            task_id=str(pause.signal.task_id),
+            run_id=str(pause.signal.run_id),
+            attempt_id=str(pause.signal.attempt_id),
+            execution_id=str(pause.signal.execution_id),
+            tenant_id=pause.signal.tenant_id,
+            agent_id=pause.signal.agent_id,
+            tool_id=pause.signal.tool_id,
+            step_id=pause.signal.step_id,
+            idempotency_key=pause.signal.idempotency_key,
+            payload_digest=digest,
+        )
+        existing_descriptor = (
+            deps.suspended_operation_store.load_active_for_logical_invocation(
+                fingerprint,
+            )
+        )
+        scope_id = (
+            existing_descriptor.invocation_scope_id
+            if existing_descriptor is not None
+            else mint_agent_governance_invocation_scope_id()
+        )
         payload = _catalog_payload_from_request(
             request,
             invocation_scope_id=scope_id,
         )
-        codec = deps.codec_registry.resolve(
-            SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
-            payload.payload_schema_version,
-        )
         envelope = codec.encode(payload)
         digest = digest_suspended_operation_envelope(envelope)
+        stable_pause_id: str | None = None
+        stable_human_request_id: str | None = None
+        if existing_descriptor is not None:
+            task_pending = task.runtime.governance.agent_governance_hitl_pending
+            if (
+                task_pending is not None
+                and task_pending.agent_governance_invocation_scope_id == scope_id
+            ):
+                stable_pause_id = task_pending.pause_id
+                stable_human_request_id = task_pending.human_request_id
+            elif existing_descriptor.materialization_state in {
+                SuspendedOperationMaterializationState.BLOCKED,
+                SuspendedOperationMaterializationState.CLAIMED,
+            }:
+                from intergrax.contracts.execution_continuation import (
+                    ExecutionContinuationLookup,
+                )
+
+                port_pending = deps.hitl_continuation.port.get_pending(
+                    ExecutionContinuationLookup(
+                        continuation_id=existing_descriptor.continuation_id,
+                    ),
+                )
+                stable_pause_id = port_pending.pause_id
+                stable_human_request_id = port_pending.human_request_id
         requirement, pending, human_request = build_agent_governance_pause_artifacts(
             pause.signal,
             payload_digest=digest,
             invocation_scope_id=scope_id,
+            pause_id=stable_pause_id,
+            human_request_id=stable_human_request_id,
         )
         governed_request = compose_governed_continuation_from_agent_governance_pause(
             pause,
             identity=identity,
             invocation_scope_id=scope_id,
         )
-        continuation_id = governed_request.continuation_request_id
-        if deps.suspended_operation_store.load_active_for_continuation(continuation_id):
-            raise RuntimeError(
-                "active suspended operation already exists for continuation",
+        if existing_descriptor is not None:
+            governed_request = governed_request.model_copy(
+                update={
+                    "continuation_request_id": existing_descriptor.continuation_id,
+                },
             )
-        suspended_operation_id = mint_suspended_operation_id()
-        descriptor = SuspendedExecutionOperationDescriptor(
-            suspended_operation_id=suspended_operation_id,
-            operation_kind=SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
-            identity=identity,
-            continuation_id=continuation_id,
-            invocation_scope_id=scope_id,
-            materialization_state=SuspendedOperationMaterializationState.PREPARED,
-            materialization_revision=0,
-            claim_ownership=None,
-            payload_digest=digest,
-            payload=envelope,
-            pause_generation=1,
-            logical_invocation_fingerprint=requirement.logical_invocation_fingerprint,
-            authority_scope=SuspendedOperationAuthorityScope.AGENT_RUNTIME_GOVERNANCE,
-        )
-        prepared = deps.suspended_operation_store.prepare(descriptor)
-        if prepared.descriptor is None:
-            raise RuntimeError("suspended operation prepare failed")
+        continuation_id = governed_request.continuation_request_id
+        if existing_descriptor is None:
+            suspended_operation_id = mint_suspended_operation_id()
+            descriptor = SuspendedExecutionOperationDescriptor(
+                suspended_operation_id=suspended_operation_id,
+                operation_kind=SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
+                identity=identity,
+                continuation_id=continuation_id,
+                invocation_scope_id=scope_id,
+                materialization_state=SuspendedOperationMaterializationState.PREPARED,
+                materialization_revision=0,
+                claim_ownership=None,
+                payload_digest=digest,
+                payload=envelope,
+                pause_generation=1,
+                logical_invocation_fingerprint=requirement.logical_invocation_fingerprint,
+                authority_scope=SuspendedOperationAuthorityScope.AGENT_RUNTIME_GOVERNANCE,
+            )
+            prepared = deps.suspended_operation_store.prepare(descriptor)
+            if prepared.descriptor is None:
+                raise RuntimeError("suspended operation prepare failed")
+            if prepared.outcome is SuspendedOperationMutationOutcome.ALREADY_ACTIVE:
+                existing_descriptor = prepared.descriptor
+            else:
+                existing_descriptor = prepared.descriptor
 
-        canonical_pending = establish_canonical_hitl_pause(
-            task,
-            identity=identity,
-            continuation_id=continuation_id,
-            reason=governed_request.reason,
-            pause_id=pending.pause_id,
-            human_request_id=pending.human_request_id,
-            capability=deps.hitl_continuation,
-            governed_correlation=governed_request.to_correlation(),
-            human_prompt=human_request.prompt,
-            execution_interrupt=None,
-        )
-        if canonical_pending.lifecycle_state not in {
-            ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN,
-            ExecutionContinuationLifecycleState.RESUME_AUTHORIZED,
+        assert existing_descriptor is not None
+        blocked_descriptor = existing_descriptor
+        if (
+            existing_descriptor.materialization_state
+            is SuspendedOperationMaterializationState.PREPARED
+        ):
+            canonical_pending = establish_canonical_hitl_pause(
+                task,
+                identity=identity,
+                continuation_id=continuation_id,
+                reason=governed_request.reason,
+                pause_id=pending.pause_id,
+                human_request_id=pending.human_request_id,
+                capability=deps.hitl_continuation,
+                governed_correlation=governed_request.to_correlation(),
+                human_prompt=human_request.prompt,
+                execution_interrupt=None,
+            )
+            if canonical_pending.lifecycle_state not in {
+                ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN,
+                ExecutionContinuationLifecycleState.RESUME_AUTHORIZED,
+            }:
+                raise RuntimeError("canonical pause did not reach human-waiting state")
+
+            blocked = deps.suspended_operation_store.block(
+                suspended_operation_id=existing_descriptor.suspended_operation_id,
+                expected_materialization_revision=existing_descriptor.materialization_revision,
+                continuation=canonical_pending,
+                governed_correlation=governed_request.to_correlation(),
+            )
+            if blocked.descriptor is None:
+                raise RuntimeError("suspended operation block failed")
+            blocked_descriptor = blocked.descriptor
+        elif existing_descriptor.materialization_state in {
+            SuspendedOperationMaterializationState.BLOCKED,
+            SuspendedOperationMaterializationState.CLAIMED,
         }:
-            raise RuntimeError("canonical pause did not reach human-waiting state")
+            establish_canonical_hitl_pause(
+                task,
+                identity=identity,
+                continuation_id=continuation_id,
+                reason=governed_request.reason,
+                pause_id=pending.pause_id,
+                human_request_id=pending.human_request_id,
+                capability=deps.hitl_continuation,
+                governed_correlation=governed_request.to_correlation(),
+                human_prompt=human_request.prompt,
+                execution_interrupt=None,
+            )
+        else:
+            raise RuntimeError("unexpected suspended operation state for agent pause")
 
-        blocked = deps.suspended_operation_store.block(
-            suspended_operation_id=suspended_operation_id,
-            expected_materialization_revision=0,
-            continuation=canonical_pending,
-            governed_correlation=governed_request.to_correlation(),
-        )
-        if blocked.descriptor is None:
-            raise RuntimeError("suspended operation block failed")
-
-        project_agent_governance_pause_onto_task(
-            task,
+        projection = TaskAgentGovernancePauseProjectionAdapter(
+            task=task,
+            checkpoint_store=deps.task_checkpoint_store,
+        ).persist_pause_projection(
             pending=pending,
             human_request=human_request,
         )
+        if projection.outcome is AgentGovernancePauseProjectionOutcome.CONFLICT:
+            raise RuntimeError("agent governance pause projection conflict")
+        if projection.outcome is AgentGovernancePauseProjectionOutcome.STALE_REVISION:
+            raise RuntimeError("agent governance pause checkpoint stale")
 
         return ExecutionSuspendedWorkPauseRequired(
             agent_governance_pause=pause,
             governed_request=governed_request,
-            descriptor=blocked.descriptor,
+            descriptor=blocked_descriptor,
         )
 
 

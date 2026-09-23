@@ -19,6 +19,7 @@ from intergrax.contracts.execution.suspended_operation.descriptor import (
 from intergrax.contracts.execution.suspended_operation.authority_scope import (
     SuspendedOperationAuthorityScope,
 )
+from intergrax.contracts.agent_governance_hitl import LogicalInvocationFingerprint
 from intergrax.contracts.governed_continuation_correlation import (
     GovernedContinuationCorrelation,
 )
@@ -63,6 +64,13 @@ class SuspendedExecutionOperationStore(ABC):
         continuation_id: str,
     ) -> SuspendedExecutionOperationDescriptor | None:
         """Return exactly 0 or 1 active BLOCKED/CLAIMED descriptor; fail if >1."""
+
+    @abstractmethod
+    def load_active_for_logical_invocation(
+        self,
+        logical_invocation_fingerprint: LogicalInvocationFingerprint,
+    ) -> SuspendedExecutionOperationDescriptor | None:
+        """Return exactly 0 or 1 active descriptor for the logical invocation fingerprint."""
 
     @abstractmethod
     def claim(

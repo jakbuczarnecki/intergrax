@@ -126,6 +126,7 @@ def test_mse_governed_continuation_error_is_not_agent_bridge_input() -> None:
             authorization_request=auth,
             execution_id=str(auth.execution_id),
             step_id="step-1",
+            idempotency_key="idem-A",
         )
 
 
@@ -155,6 +156,7 @@ def test_agent_governance_first_pause_materializes_waiting_task(tmp_path: Path) 
         durable_wiring_binding_resolver=r6_kwargs.get(
             "durable_wiring_binding_resolver"
         ),
+        task_checkpoint_store=r6_kwargs["task_checkpoint_store"],
     )
     port = handler._execution_port
     run_id = mint_run_id()

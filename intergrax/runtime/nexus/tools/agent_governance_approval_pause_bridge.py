@@ -24,6 +24,18 @@ from intergrax.contracts.agent_runtime_governance import (
     PolicyEvaluationResult,
     ToolAuthorizationRequest,
 )
+from intergrax.contracts.execution_bound_catalog_tool_invocation import (
+    ExecutionBoundCatalogToolInvokeRequest,
+)
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    validate_attempt_id,
+    validate_execution_id,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.runtime.agent_governance.errors import (
     ToolGovernanceApprovalRequiredError,
 )
@@ -36,7 +48,7 @@ from intergrax.runtime.nexus.tracing.tools.tool_invocation import (
     ToolInvocationErrorDiagV1,
 )
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
-from intergrax.runtime.task.task import Task, TaskState
+from intergrax.runtime.task.task import Task
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest
 
@@ -63,6 +75,7 @@ def translate_agent_governance_approval_error(
     authorization_request: ToolAuthorizationRequest,
     execution_id: str,
     step_id: str,
+    idempotency_key: str | None,
 ) -> AgentGovernanceApprovalPauseSignal:
     if error.governed_continuation_request is not None:
         raise error
@@ -76,7 +89,7 @@ def translate_agent_governance_approval_error(
         tool_id=error.tool_id,
         step_id=step_id,
         capability=error.capability,
-        idempotency_key=authorization_request.approval_evidence_ref,
+        idempotency_key=idempotency_key,
         approval_id=error.approval_id,
         reason=error.reason,
         policy_results=error.policy_results,
@@ -132,6 +145,8 @@ def build_agent_governance_pause_artifacts(
     *,
     payload_digest: str,
     invocation_scope_id: str | None = None,
+    pause_id: str | None = None,
+    human_request_id: str | None = None,
 ) -> tuple[
     AgentGovernanceHumanApprovalRequirement,
     AgentGovernanceHumanApprovalPending,
@@ -170,13 +185,17 @@ def build_agent_governance_pause_artifacts(
         logical_invocation_fingerprint=fingerprint,
         pause_generation=1,
     )
+    resolved_human_request_id = human_request_id or f"hr_{uuid4().hex[:12]}"
     human_request = build_human_request_for_agent_governance_pause(
         scope_id=scope_id,
         tool_id=signal.tool_id,
         capability=signal.capability,
         reason=signal.reason,
     )
-    pause_id = f"pause_{uuid4().hex[:12]}"
+    human_request = human_request.model_copy(
+        update={"request_id": resolved_human_request_id},
+    )
+    resolved_pause_id = pause_id or f"pause_{uuid4().hex[:12]}"
     pending = AgentGovernanceHumanApprovalPending(
         agent_governance_invocation_scope_id=scope_id,
         requirement=requirement,
@@ -190,12 +209,38 @@ def build_agent_governance_pause_artifacts(
         step_id=signal.step_id,
         idempotency_key=signal.idempotency_key,
         human_request_id=human_request.request_id,
-        pause_id=pause_id,
+        pause_id=resolved_pause_id,
         policy_provenance_digest=signal.policy_provenance_digest,
         created_at=datetime.now(timezone.utc).isoformat(),
         generation=1,
     )
     return requirement, pending, human_request
+
+
+def assert_agent_governance_pause_identity_consistency(
+    signal: AgentGovernanceApprovalPauseSignal,
+    *,
+    request: ExecutionBoundCatalogToolInvokeRequest,
+    run_id: RunId,
+    attempt_id: AttemptId,
+    execution_id: ExecutionId,
+) -> None:
+    if str(signal.task_id) != str(validate_task_id(request.task_id)):
+        raise RuntimeError("agent governance pause task_id mismatch")
+    if str(signal.run_id) != str(validate_run_id(run_id)):
+        raise RuntimeError("agent governance pause run_id mismatch")
+    if str(signal.attempt_id) != str(validate_attempt_id(attempt_id)):
+        raise RuntimeError("agent governance pause attempt_id mismatch")
+    if str(signal.execution_id) != str(validate_execution_id(execution_id)):
+        raise RuntimeError("agent governance pause execution_id mismatch")
+    if signal.tenant_id != request.tenant_id:
+        raise RuntimeError("agent governance pause tenant_id mismatch")
+    if signal.agent_id != request.agent_id:
+        raise RuntimeError("agent governance pause agent_id mismatch")
+    if signal.tool_id != request.tool_id:
+        raise RuntimeError("agent governance pause tool_id mismatch")
+    if signal.step_id != str(request.step_id):
+        raise RuntimeError("agent governance pause step_id mismatch")
 
 
 def project_agent_governance_pause_onto_task(
@@ -204,14 +249,9 @@ def project_agent_governance_pause_onto_task(
     pending: AgentGovernanceHumanApprovalPending,
     human_request: HumanRequest,
 ) -> None:
-    if task.runtime.governance.agent_governance_hitl_pending is not None:
-        raise RuntimeError(
-            "agent governance pause already materialized for task",
-        )
-    task.runtime.governance.agent_governance_hitl_pending = pending
-    task.runtime.governance.human_request = human_request
-    task.state = TaskState.WAITING_FOR_HUMAN
-    task.sync_metadata()
+    raise RuntimeError(
+        "agent governance pause projection requires TaskCheckpointPersistence CAS",
+    )
 
 
 def raise_agent_governance_pause_from_tool_invocation(
@@ -238,6 +278,7 @@ def raise_agent_governance_pause_from_tool_invocation(
         authorization_request=authorization_request,
         execution_id=execution_id,
         step_id=str(request.step_id),
+        idempotency_key=request.idempotency_key,
     )
     state.trace_event(
         component=TraceComponent.TOOLS,
@@ -256,6 +297,7 @@ def raise_agent_governance_pause_from_tool_invocation(
 
 __all__ = [
     "AgentGovernanceApprovalPauseRequired",
+    "assert_agent_governance_pause_identity_consistency",
     "build_agent_governance_pause_artifacts",
     "digest_agent_governance_policy_provenance",
     "project_agent_governance_pause_onto_task",

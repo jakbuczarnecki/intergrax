@@ -27,6 +27,7 @@ class SuspendedOperationClaimOutcome(StrEnum):
 
 class SuspendedOperationMutationOutcome(StrEnum):
     APPLIED = "applied"
+    ALREADY_ACTIVE = "already_active"
     STALE_REVISION = "stale_revision"
     INVALID_STATE = "invalid_state"
     TERMINAL = "terminal"

@@ -58,10 +58,6 @@ def build_tool_authorization_request(
     except RuntimeError:
         execution_id = None
 
-    approval_ref: str | None = None
-    if request.idempotency_key:
-        approval_ref = request.idempotency_key
-
     return ToolAuthorizationRequest(
         agent=AgentIdentity(
             agent_id=agent_id,
@@ -75,7 +71,7 @@ def build_tool_authorization_request(
         tool_id=request.tool_id,
         requested_action=f"execute:{request.tool_id}",
         risk_level=_RISK_MAP.get(contract.risk_level, ToolAuthorizationRiskLevel.LOW),
-        approval_evidence_ref=approval_ref,
+        approval_evidence_ref=None,
     )
 
 

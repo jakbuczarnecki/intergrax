@@ -17,6 +17,7 @@ from intergrax.contracts.execution.suspended_operation.claim import (
 from intergrax.contracts.execution.suspended_operation.authority_scope import (
     SuspendedOperationAuthorityScope,
 )
+from intergrax.contracts.agent_governance_hitl import LogicalInvocationFingerprint
 from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedExecutionOperationDescriptor,
 )
@@ -145,6 +146,15 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
     ) -> SuspendedExecutionOperationDescriptor | None:
         with self._lock:
             return self._backing.load_active_for_continuation(continuation_id)
+
+    def load_active_for_logical_invocation(
+        self,
+        logical_invocation_fingerprint: LogicalInvocationFingerprint,
+    ) -> SuspendedExecutionOperationDescriptor | None:
+        with self._lock:
+            return self._backing.load_active_for_logical_invocation(
+                logical_invocation_fingerprint,
+            )
 
     def claim(
         self,

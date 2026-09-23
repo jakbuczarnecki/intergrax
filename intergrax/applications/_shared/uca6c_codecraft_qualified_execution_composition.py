@@ -38,6 +38,7 @@ from intergrax.runtime.execution.execution_bound_catalog_tool_composition import
 from intergrax.runtime.execution.suspended_operation.composition import (
     validate_document_store_for_production_suspended_operations,
 )
+from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.sandbox.isolation_gate import sandbox_availability_provider
 from intergrax.runtime.tools.scope_policy import StaticToolScopePolicy, ToolScopePolicy
@@ -92,6 +93,7 @@ def build_execution_bound_catalog_tool_invoker_for_qualified_capability(
     continuation_dependencies: ExecutionEngineContinuationDependencies | None = None,
     durable_wiring_binding_resolver: DurableToolInvocationWiringBindingResolver
     | None = None,
+    task_checkpoint_store: TaskCheckpointPersistence | None = None,
 ) -> ExecutionBoundCatalogToolInvoker:
     if not caller_agent_id.strip():
         raise Uca6cCodecraftQualifiedExecutionCompositionError(
@@ -152,6 +154,7 @@ def build_execution_bound_catalog_tool_invoker_for_qualified_capability(
         continuation_dependencies=continuation_dependencies,
         reentry_claim_owner_id=f"uca6c:{caller_agent_id.strip()}",
         durable_wiring_binding_resolver=binding_resolver,
+        task_checkpoint_store=task_checkpoint_store,
     )
     return composition.invoker
 
@@ -174,6 +177,7 @@ def build_production_codecraft_qualified_capability_execution_handler(
     continuation_dependencies: ExecutionEngineContinuationDependencies | None = None,
     durable_wiring_binding_resolver: DurableToolInvocationWiringBindingResolver
     | None = None,
+    task_checkpoint_store: TaskCheckpointPersistence | None = None,
 ) -> CodeCraftQualifiedCapabilityExecutionHandler:
     if (
         continuation_dependencies is None
@@ -196,6 +200,7 @@ def build_production_codecraft_qualified_capability_execution_handler(
         document_store=document_store,
         continuation_dependencies=continuation_dependencies,
         durable_wiring_binding_resolver=durable_wiring_binding_resolver,
+        task_checkpoint_store=task_checkpoint_store,
     )
     return build_codecraft_qualified_capability_execution_handler(
         tool_wiring.wiring_context,

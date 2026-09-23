@@ -38,6 +38,7 @@ from intergrax.runtime.nexus.tools.continuation_aware_catalog_tool_host import (
     ContinuationAwareCatalogToolHost,
     ContinuationAwareCatalogToolHostDependencies,
 )
+from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.tools.nexus_execution_bound_catalog_tool_invoker import (
     NexusExecutionBoundCatalogToolInvoker,
 )
@@ -74,6 +75,7 @@ def build_execution_bound_catalog_tool_composition(
     continuation_dependencies: ExecutionEngineContinuationDependencies | None,
     reentry_claim_owner_id: str,
     durable_wiring_binding_resolver: DurableToolInvocationWiringBindingResolver | None = None,
+    task_checkpoint_store: TaskCheckpointPersistence | None = None,
 ) -> ExecutionBoundCatalogToolComposition:
     tool_invoker = build_production_runtime_tool_invoker(
         registry=registry,
@@ -97,6 +99,11 @@ def build_execution_bound_catalog_tool_composition(
                 document_store=document_store,
                 store=suspended_store,
             )
+            if task_checkpoint_store is None:
+                raise RuntimeError(
+                    "STRICT execution requires task_checkpoint_store for "
+                    "agent governance pause projection",
+                )
         continuation_aware_dependencies = ContinuationAwareCatalogToolHostDependencies(
             suspended_operation_store=suspended_store,
             hitl_continuation=InternalOrchestrationContinuation(
@@ -104,6 +111,7 @@ def build_execution_bound_catalog_tool_composition(
                 lifecycle_driver=continuation_dependencies.lifecycle_driver,
             ),
             codec_registry=wire_default_suspended_operation_codec_registry(),
+            task_checkpoint_store=task_checkpoint_store,
         )
     elif production_mode:
         raise RuntimeError(
@@ -142,6 +150,7 @@ def build_execution_bound_catalog_tool_composition(
                 suspended_work_reentry_coordinator=reentry_coordinator,
             ),
             codec_registry=wire_default_suspended_operation_codec_registry(),
+            task_checkpoint_store=task_checkpoint_store,
         )
         bound = NexusExecutionBoundCatalogToolInvoker(
             tool_invoker=tool_invoker,

@@ -130,6 +130,7 @@ def test_initial_and_reentry_share_one_injected_resolver_instance(
         continuation_dependencies=bundle["continuation_dependencies"],
         reentry_claim_owner_id="uca6c:test",
         durable_wiring_binding_resolver=resolver,
+        task_checkpoint_store=bundle["task_checkpoint_store"],
     )
     assert composition.suspended_work_reentry_coordinator is not None
     assert (

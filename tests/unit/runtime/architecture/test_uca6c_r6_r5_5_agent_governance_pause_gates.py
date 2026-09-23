@@ -59,6 +59,19 @@ def test_signal_contract_is_nexus_free() -> None:
     assert "runtime.nexus" not in text
 
 
+def test_bridge_does_not_source_idempotency_from_approval_evidence_ref() -> None:
+    source = BRIDGE.read_text(encoding="utf-8")
+    assert "idempotency_key=authorization_request.approval_evidence_ref" not in source
+    assert "idempotency_key=idempotency_key" in source or "idempotency_key=request.idempotency_key" in source
+
+
+def test_host_uses_task_checkpoint_pause_projection() -> None:
+    host_source = HOST.read_text(encoding="utf-8")
+    assert "TaskAgentGovernancePauseProjectionAdapter" in host_source
+    assert "task_checkpoint_store" in host_source
+    assert "load_active_for_logical_invocation" in host_source
+
+
 def test_bridge_bans_reflection_and_tigae() -> None:
     source = BRIDGE.read_text(encoding="utf-8")
     assert "ToolInvocationGovernanceApprovalEvidence" not in source

@@ -119,6 +119,7 @@ def test_qce_composition_reuses_injected_continuation_bundle(tmp_path: Path) -> 
         continuation_dependencies=deps,
         reentry_claim_owner_id="uca6c:test",
         durable_wiring_binding_resolver=bundle["durable_wiring_binding_resolver"],
+        task_checkpoint_store=bundle["task_checkpoint_store"],
     )
     host_deps = composition.invoker.continuation_aware_dependencies
     assert host_deps is not None

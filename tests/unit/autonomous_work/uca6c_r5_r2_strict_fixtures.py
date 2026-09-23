@@ -208,11 +208,16 @@ def uca6c_strict_r6_durable_wiring(
         ProcessRestartQualificationDocumentStore,
     )
 
+    from testing_support.uca6c_memory_task_checkpoint_store import (
+        Uca6cMemoryTaskCheckpointStore,
+    )
+
     document_store = ProcessRestartQualificationDocumentStore()
     continuation_dependencies = wire_execution_engine_continuation_dependencies()
     kwargs: dict[str, object] = {
         "document_store": document_store,
         "continuation_dependencies": continuation_dependencies,
+        "task_checkpoint_store": Uca6cMemoryTaskCheckpointStore(),
     }
     if tmp_path is not None:
         manager = SandboxSessionManager(root=tmp_path)

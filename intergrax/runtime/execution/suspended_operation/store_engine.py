@@ -31,6 +31,7 @@ from intergrax.contracts.execution.suspended_operation.authority_scope_compat im
     infer_authority_scope_from_invocation,
     invocation_scope_matches_authority_scope,
 )
+from intergrax.contracts.agent_governance_hitl import LogicalInvocationFingerprint
 from intergrax.contracts.governed_continuation_correlation import (
     GovernedContinuationCorrelation,
 )
@@ -39,6 +40,15 @@ from intergrax.contracts.lease_claim import LeaseOwnership
 
 class SuspendedOperationStoreInvariantError(RuntimeError):
     """Active descriptor uniqueness violated — fail closed."""
+
+
+_ACTIVE_MATERIALIZATION_STATES = frozenset(
+    {
+        SuspendedOperationMaterializationState.PREPARED,
+        SuspendedOperationMaterializationState.BLOCKED,
+        SuspendedOperationMaterializationState.CLAIMED,
+    },
+)
 
 
 def _utc_now() -> datetime:
@@ -71,6 +81,15 @@ class SuspendedOperationBackingStore:
         descriptor: SuspendedExecutionOperationDescriptor,
     ) -> SuspendedOperationMutationResult:
         if descriptor.suspended_operation_id in self._by_id:
+            existing = self._by_id[descriptor.suspended_operation_id]
+            if (
+                existing.materialization_state
+                in _ACTIVE_MATERIALIZATION_STATES
+            ):
+                return SuspendedOperationMutationResult(
+                    outcome=SuspendedOperationMutationOutcome.ALREADY_ACTIVE,
+                    descriptor=existing,
+                )
             return SuspendedOperationMutationResult(
                 outcome=SuspendedOperationMutationOutcome.INVALID_STATE,
             )
@@ -81,6 +100,15 @@ class SuspendedOperationBackingStore:
             return SuspendedOperationMutationResult(
                 outcome=SuspendedOperationMutationOutcome.INVALID_STATE,
             )
+        if descriptor.logical_invocation_fingerprint is not None:
+            active = self.load_active_for_logical_invocation(
+                descriptor.logical_invocation_fingerprint,
+            )
+            if active is not None:
+                return SuspendedOperationMutationResult(
+                    outcome=SuspendedOperationMutationOutcome.ALREADY_ACTIVE,
+                    descriptor=active,
+                )
         self._by_id[descriptor.suspended_operation_id] = descriptor
         return SuspendedOperationMutationResult(
             outcome=SuspendedOperationMutationOutcome.APPLIED,
@@ -173,6 +201,26 @@ class SuspendedOperationBackingStore:
         suspended_operation_id: str,
     ) -> SuspendedExecutionOperationDescriptor | None:
         return self._by_id.get(suspended_operation_id)
+
+    def load_active_for_logical_invocation(
+        self,
+        logical_invocation_fingerprint: LogicalInvocationFingerprint,
+    ) -> SuspendedExecutionOperationDescriptor | None:
+        digest = logical_invocation_fingerprint.digest
+        active = [
+            descriptor
+            for descriptor in self._by_id.values()
+            if descriptor.logical_invocation_fingerprint is not None
+            and descriptor.logical_invocation_fingerprint.digest == digest
+            and descriptor.materialization_state in _ACTIVE_MATERIALIZATION_STATES
+        ]
+        if len(active) > 1:
+            raise SuspendedOperationStoreInvariantError(
+                "multiple active suspended operations for logical invocation",
+            )
+        if not active:
+            return None
+        return active[0]
 
     def load_active_for_continuation(
         self,
