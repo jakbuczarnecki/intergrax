@@ -24,6 +24,12 @@ def profile_identity(profile: LLMProfile) -> str:
     return f"{llm_provider_slug(profile.provider)}:{model}"
 
 
+def routing_evaluation_identity(evaluation: RoutingEvaluation) -> str:
+    """Canonical semantic identity for a routing evaluation (cache / usage labels)."""
+    hint = evaluation.policy_route_hint or ""
+    return f"{profile_identity(evaluation.selected_profile)}:{hint}"
+
+
 def effective_allowlist(profile: LLMRoutingProfile) -> tuple[LLMProfile, ...]:
     if profile.allowed_profiles:
         return profile.allowed_profiles

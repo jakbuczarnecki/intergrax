@@ -64,7 +64,7 @@ def test_wire_routing_evaluating_hooks_attaches_observers() -> None:
         wrapped,
         on_evaluated=lambda _evaluation: observed.append("evaluated"),
         on_allowlist_violation=lambda _exc, _ctx: observed.append("allowlist"),
-        on_inner_swapped=lambda _inner: observed.append("swapped"),
+        on_inner_swapped=lambda _inner, _evaluation: observed.append("swapped"),
         attach_failover_observer=lambda adapter: failover.append(adapter),
     )
     assert wired is True
@@ -85,7 +85,7 @@ def test_wire_routing_evaluating_hooks_attaches_observers() -> None:
         plain,
         on_evaluated=lambda _evaluation: observed.append("plain"),
         on_allowlist_violation=lambda _exc, _ctx: None,
-        on_inner_swapped=lambda _inner: None,
+        on_inner_swapped=lambda _inner, _evaluation: None,
         attach_failover_observer=lambda adapter: failover.append(adapter),
     )
     assert not_wired is False

@@ -46,6 +46,7 @@ from intergrax.llm_adapters.routing.evaluator import (
     effective_allowlist,
     is_profile_allowed,
     profile_identity,
+    routing_evaluation_identity,
 )
 
 __all__ = [
@@ -85,5 +86,6 @@ __all__ = [
     "effective_allowlist",
     "is_profile_allowed",
     "profile_identity",
+    "routing_evaluation_identity",
     "tokens_used_from_usage",
 ]

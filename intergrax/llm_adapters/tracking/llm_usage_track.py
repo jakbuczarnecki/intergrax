@@ -125,7 +125,8 @@ class LLMUsageTracker:
 
         resolved_label = label or self._default_label(verified)
 
-        if resolved_label not in self._entries:
+        existing = self._entries.get(resolved_label)
+        if existing is None:
             self._entries[resolved_label] = _TrackedLLMUsageEntry(
                 label=resolved_label,
                 trackable=verified,
@@ -134,6 +135,13 @@ class LLMUsageTracker:
                 model=str(verified.model or ""),
                 stats=verified.usage,
             )
+            return
+
+        existing.trackable = verified
+        existing.adapter_type = verified.__class__.__name__
+        existing.provider_slug = llm_provider_slug(verified.provider)
+        existing.model = str(verified.model or "")
+        existing.stats = verified.usage
 
     def unregister_adapter(self, adapter: LLMAdapter | LLMUsageTrackable) -> None:
         """

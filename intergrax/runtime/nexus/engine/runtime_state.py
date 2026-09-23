@@ -252,10 +252,15 @@ class RuntimeState(RuntimeStateContract):
                 assert isinstance(context, RoutingContext)
                 emit_llm_routing_allowlist_violation_diag(self.trace_event, exc, context)
 
-            def _on_inner_swapped(inner: LLMAdapter) -> None:
+            def _on_inner_swapped(inner: LLMAdapter, evaluation: object) -> None:
+                from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
+                from intergrax.llm_adapters.routing.evaluator import routing_evaluation_identity
+
+                assert isinstance(evaluation, RoutingEvaluation)
+                route_id = routing_evaluation_identity(evaluation)
                 self.llm_usage_tracker.register_adapter(
                     inner,
-                    label=f"core_inner_{id(inner)}",
+                    label=f"core_inner:{route_id}",
                 )
                 attach_failover_routing_trace_observer(inner, self.trace_event)
 

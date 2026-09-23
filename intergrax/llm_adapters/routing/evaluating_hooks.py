@@ -12,7 +12,7 @@ from intergrax.llm_adapters.routing.contracts import RoutingContext, RoutingEval
 
 RoutingEvaluationObserver = Callable[[RoutingEvaluation], None]
 AllowlistViolationObserver = Callable[[object, RoutingContext], None]
-InnerSwappedObserver = Callable[[LLMAdapter], None]
+InnerSwappedObserver = Callable[[LLMAdapter, RoutingEvaluation], None]
 
 
 @runtime_checkable
