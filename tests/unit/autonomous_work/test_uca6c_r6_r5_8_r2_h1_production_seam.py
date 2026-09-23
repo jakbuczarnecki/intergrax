@@ -73,6 +73,12 @@ from tests.unit.autonomous_work.test_uca6c_worker_qualified_capability_resume im
 
 pytestmark = pytest.mark.unit
 
+
+@pytest.fixture(autouse=True)
+def _clear_active_task_registry() -> None:
+    ActiveTaskRegistry.clear_for_tests()
+
+
 _NOW = datetime(2026, 9, 23, 15, 0, tzinfo=UTC)
 _REPO = Path(__file__).resolve().parents[3]
 _BUILDER_PATH = (

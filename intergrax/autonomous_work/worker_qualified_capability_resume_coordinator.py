@@ -9,11 +9,12 @@ from dataclasses import dataclass
 from datetime import datetime
 
 from intergrax.autonomous_work.execution_authority_admission import (
-    WorkerExecutionAdmissionService,
+    WorkerExecutionAdmissionPort,
     WorkerExecutionAuthorityDenied,
 )
 from intergrax.autonomous_work.worker_qualified_capability_resume_ports import (
     QualifiedCapabilityBindingPort,
+    WorkerQualifiedCapabilityAsyncExecutionPort,
     WorkerQualifiedCapabilityExecutionPort,
 )
 from intergrax.contracts.admitted_root_governance_identity import (
@@ -46,11 +47,6 @@ from intergrax.contracts.capability_qualification.qualified_capability_binding i
 from intergrax.contracts.capability_qualification.qualified_subject import (
     qualified_capability_subject_from_result,
 )
-from intergrax.runtime.execution.worker_qualified_capability_execution_async_adapter import (
-    WorkerQualifiedCapabilityExecutionEngineAsyncAdapter,
-)
-
-
 @dataclass(frozen=True, slots=True)
 class _QualifiedExecutionHandoff:
     resume_id: str
@@ -69,8 +65,8 @@ class WorkerQualifiedCapabilityResumeCoordinator:
         *,
         binding: QualifiedCapabilityBindingPort,
         execution: WorkerQualifiedCapabilityExecutionPort,
-        authority_admission: WorkerExecutionAdmissionService | None = None,
-        async_execution: WorkerQualifiedCapabilityExecutionEngineAsyncAdapter | None = None,
+        authority_admission: WorkerExecutionAdmissionPort | None = None,
+        async_execution: WorkerQualifiedCapabilityAsyncExecutionPort | None = None,
     ) -> None:
         self._binding = binding
         self._execution = execution

@@ -5,23 +5,38 @@
 
 from __future__ import annotations
 
+from intergrax.autonomous_work.capability_acquisition_ports import (
+    WorkerCapabilityProfileResolver,
+)
+from intergrax.autonomous_work.execution_authority_admission import WorkerExecutionAdmissionPort
+from intergrax.autonomous_work.repository import WorkerPrincipalBindingRepository
 from intergrax.autonomous_work.worker_capability_fulfillment_coordinator import (
     WorkerCapabilityFulfillmentCoordinator,
+)
+from intergrax.autonomous_work.worker_qualified_capability_resume_composition import (
+    build_worker_qualified_capability_resume_coordinator,
+)
+from intergrax.autonomous_work.worker_qualified_capability_resume_coordinator import (
+    WorkerQualifiedCapabilityResumeCoordinator,
+)
+from intergrax.autonomous_work.worker_qualified_capability_resume_ports import (
+    QualifiedCapabilityBindingPort,
 )
 from intergrax.autonomous_work.worker_recovery_capability_fulfillment_async_service import (
     WorkerRecoveryCapabilityFulfillmentAsyncService,
 )
-from intergrax.autonomous_work.worker_recovery_capability_fulfillment_episode_context import (
-    WorkerRecoveryCapabilityFulfillmentEpisodeContextPort,
+from intergrax.autonomous_work.worker_recovery_capability_fulfillment_episode_context_ports import (
+    WorkerRecoveryFulfillmentTaskContextReadPort,
+    WorkerRecoveryObstacleCapabilityNeedReadPort,
+)
+from intergrax.autonomous_work.worker_recovery_capability_fulfillment_episode_context_provider import (
+    DurableWorkerRecoveryCapabilityFulfillmentEpisodeContextProvider,
 )
 from intergrax.autonomous_work.worker_recovery_capability_fulfillment_request_builder import (
     WorkerRecoveryCapabilityFulfillmentRequestBuilder,
 )
 from intergrax.autonomous_work.worker_recovery_capability_fulfillment_service import (
     WorkerRecoveryCapabilityFulfillmentService,
-)
-from intergrax.autonomous_work.worker_qualified_capability_resume_coordinator import (
-    WorkerQualifiedCapabilityResumeCoordinator,
 )
 from intergrax.runtime.execution.governed_task_scoped_qualified_capability_execution_dispatch import (
     ActiveTaskRegistryGovernedExecutionTaskLookup,
@@ -41,20 +56,43 @@ from intergrax.runtime.execution.worker_qualified_capability_execution_async_ada
 def build_worker_recovery_governed_fulfillment_wiring(
     *,
     fulfillment_coordinator: WorkerCapabilityFulfillmentCoordinator,
-    episode_context: WorkerRecoveryCapabilityFulfillmentEpisodeContextPort,
     inner_dispatch: QualifiedCapabilityExecutionDispatchService,
+    binding: QualifiedCapabilityBindingPort,
+    obstacle_capability_need_reader: WorkerRecoveryObstacleCapabilityNeedReadPort,
+    task_context_reader: WorkerRecoveryFulfillmentTaskContextReadPort,
+    principal_binding_repository: WorkerPrincipalBindingRepository,
+    capability_profile_resolver: WorkerCapabilityProfileResolver,
+    authority_admission: WorkerExecutionAdmissionPort | None = None,
 ) -> tuple[
     WorkerRecoveryCapabilityFulfillmentRequestBuilder,
     WorkerRecoveryCapabilityFulfillmentService,
     WorkerRecoveryCapabilityFulfillmentAsyncService,
     GovernedTaskScopedQualifiedCapabilityExecutionDispatchService,
+    WorkerQualifiedCapabilityResumeCoordinator,
 ]:
-    """Wire production builder, sync/async fulfillment, and governed-task scoped dispatch."""
+    """Wire production builder, sync/async fulfillment, governed dispatch, and resume coordinator."""
+    episode_context = DurableWorkerRecoveryCapabilityFulfillmentEpisodeContextProvider(
+        obstacle_capability_need_reader=obstacle_capability_need_reader,
+        task_context_reader=task_context_reader,
+        principal_binding_repository=principal_binding_repository,
+        capability_profile_resolver=capability_profile_resolver,
+    )
     governed_dispatch = GovernedTaskScopedQualifiedCapabilityExecutionDispatchService(
         inner=inner_dispatch,
         task_lookup=ActiveTaskRegistryGovernedExecutionTaskLookup(),
     )
-    _ = governed_dispatch
+    sync_execution = WorkerQualifiedCapabilityExecutionEngineAdapter(
+        dispatch=governed_dispatch,
+    )
+    async_execution = WorkerQualifiedCapabilityExecutionEngineAsyncAdapter(
+        dispatch=governed_dispatch,
+    )
+    resume_coordinator = build_worker_qualified_capability_resume_coordinator(
+        binding=binding,
+        execution=sync_execution,
+        async_execution=async_execution,
+        authority_admission=authority_admission,
+    )
     request_builder = WorkerRecoveryCapabilityFulfillmentRequestBuilder(
         episode_context=episode_context,
     )
@@ -69,30 +107,8 @@ def build_worker_recovery_governed_fulfillment_wiring(
         recovery_fulfillment,
         recovery_fulfillment_async,
         governed_dispatch,
+        resume_coordinator,
     )
 
 
-def wire_governed_execution_into_resume_coordinator(
-    *,
-    resume: WorkerQualifiedCapabilityResumeCoordinator,
-    governed_dispatch: GovernedTaskScopedQualifiedCapabilityExecutionDispatchService,
-) -> tuple[
-    WorkerQualifiedCapabilityExecutionEngineAdapter,
-    WorkerQualifiedCapabilityExecutionEngineAsyncAdapter,
-]:
-    """Attach governed scoped dispatch to sync/async worker execution adapters."""
-    sync_execution = WorkerQualifiedCapabilityExecutionEngineAdapter(
-        dispatch=governed_dispatch,
-    )
-    async_execution = WorkerQualifiedCapabilityExecutionEngineAsyncAdapter(
-        dispatch=governed_dispatch,
-    )
-    resume._execution = sync_execution  # noqa: SLF001 — composition root explicit wiring
-    resume._async_execution = async_execution  # noqa: SLF001
-    return sync_execution, async_execution
-
-
-__all__ = [
-    "build_worker_recovery_governed_fulfillment_wiring",
-    "wire_governed_execution_into_resume_coordinator",
-]
+__all__ = ["build_worker_recovery_governed_fulfillment_wiring"]
