@@ -108,6 +108,7 @@ def _resolve_llm_adapter_impl(
     routing_metadata: dict[str, Any] | None = None,
     tenant_id: str | None = None,
     agent_id: str | None = None,
+    routing_evaluator: RoutingEvaluator | None = None,
 ) -> LLMAdapter:
     context = _resolve_routing_context(
         routing_context=routing_context,
@@ -115,7 +116,11 @@ def _resolve_llm_adapter_impl(
         tenant_id=tenant_id,
         agent_id=agent_id,
     )
-    profile, rule_hint, _reason = evaluate_llm_routing(env, routing_context=context)
+    profile, rule_hint, _reason = evaluate_llm_routing(
+        env,
+        routing_context=context,
+        routing_evaluator=routing_evaluator,
+    )
     hint = policy_route_hint or rule_hint or profile.routing_policy_hint
     if profile.fallback_profiles or hint or profile.routing_policy_hint:
         from intergrax.llm_adapters.registry.failover_policy import routing_authorisation_context
@@ -140,6 +145,7 @@ def resolve_optional_llm_adapter(
     routing_metadata: dict[str, Any] | None = None,
     tenant_id: str | None = None,
     agent_id: str | None = None,
+    routing_evaluator: RoutingEvaluator | None = None,
 ) -> LLMAdapter | None:
     """Resolve LLM adapter only when a provider is explicitly selected."""
     if agent_override is not None:
@@ -153,6 +159,7 @@ def resolve_optional_llm_adapter(
         routing_metadata=routing_metadata,
         tenant_id=tenant_id,
         agent_id=agent_id,
+        routing_evaluator=routing_evaluator,
     )
 
 
@@ -165,6 +172,7 @@ def resolve_llm_adapter(
     routing_metadata: dict[str, Any] | None = None,
     tenant_id: str | None = None,
     agent_id: str | None = None,
+    routing_evaluator: RoutingEvaluator | None = None,
 ) -> LLMAdapter:
     """Resolve LLM adapter from runtime environment profile."""
     if agent_override is not None:
@@ -178,4 +186,5 @@ def resolve_llm_adapter(
         routing_metadata=routing_metadata,
         tenant_id=tenant_id,
         agent_id=agent_id,
+        routing_evaluator=routing_evaluator,
     )
