@@ -111,8 +111,8 @@ If a new blocker is discovered:
 | ADR3-IMP-03-R1 | Typed Declarative Dispatch & Contract Deduplication | Usunięcie realnych semantic duplicates w declarative dispatch i pozostawienie canonical typed contracts oraz jednego resolver/dispatch ownera. | [x] CLOSED |
 | ADR3-IMP-03 / M4 | Final Typed Declarative Dispatch Certification | Certyfikacja M4 jako jednego spójnego typed flow: metadata/composition → identity → dispatch → catalog gateway → canonical result → batch aggregation. | [x] CLOSED |
 | ADR3-IMP-04-R1 | Catalog Host Capability Contract Deduplication | Usunięcie drugiej definicji per-call `invoke(...)` z host-specific Protocolu. `ExecutionBoundDeclarativeToolInvoker` pozostaje jedynym ownerem invocation semantics, a host Protocol dodaje wyłącznie host capability. | [x] CLOSED |
-| **ADR3-IMP-04** | Consumer Migration & Final Bind Removal — final recertification | Finalny audit migracji konsumentów: zero narrow legacy Protocolu, zero `inspect.signature` compatibility dispatch, metadata na canonical contract, explicit identity, brak concrete coupling i exactly-one owner per-call invocation contractu. | **[ ] CURRENT** |
-| ADR3-IMP-05 | Qualification Gates | Mechaniczne architecture gates blokujące powrót narrow compatibility paths, reflection dispatch, duplicated ownership, concrete coupling, weak typing i alternate execution paths. | [ ] QUEUED |
+| ADR3-IMP-04 | Consumer Migration & Final Bind Removal — final recertification | Finalny audit migracji konsumentów: zero narrow legacy Protocolu, zero `inspect.signature` compatibility dispatch, metadata na canonical contract, explicit identity, brak concrete coupling i exactly-one owner per-call invocation contractu. | [x] CLOSED |
+| **ADR3-IMP-05** | Qualification Gates | Mechaniczne architecture gates blokujące powrót narrow compatibility paths, reflection dispatch, duplicated ownership, concrete coupling, weak typing i alternate execution paths. | **[ ] CURRENT** |
 | HARNESS-01-R5-W3-R1-Q2 | Finalne zamknięcie Harness W3 | Powrót do przerwanego W3 po ADR3. Pełna kwalifikacja i closure W3 na aktualnym HEAD, bez ponownego otwierania zamkniętych foundation boundaries bez nowego dowodu. | [ ] QUEUED |
 | EBH-2F | Integrations & Hosting Boundary Hardening | Certyfikacja integrations/hosting: provider-neutral contracts, composition ownership, vendor independence, replaceability, brak host/runtime bypassów i concrete coupling. | [ ] PLANNED |
 | EBH-2G | RAG Contract Boundary Hardening | Certyfikacja retrieval/search/reranking/storage jako jednego pluginowalnego subsystemu z canonical contracts, jednym ownership i wymiennymi backendami. | [ ] PLANNED |
@@ -167,7 +167,8 @@ Update this section only after independent exact-SHA audit.
 | ADR3-IMP-03-R1 | `255590897603f6e59ffebf4c1e4e7fde3ba747d1` | Typed declarative dispatch contract deduplication independently audited. |
 | ADR3-IMP-03 / M4 | `702cb0a2024a7a98ab0bb88c1f645efeb0e7eb38` | M4 final typed declarative dispatch certification independently audited. |
 | ADR3-IMP-04-R1 | `109dfd81e3a2af18affd76b0e5ac69d805783b31` | Catalog host capability contract deduplication independently audited; host Protocol now extends canonical execution-bound contract and owns only host-specific capability. |
-| ADR3-IMP-04 | — | CURRENT — final parent recertification required. |
+| ADR3-IMP-04 | `b466e0a202e7984fd50f2409493159566cf03a82` | Final parent recertification independently audited on committed HEAD; no code changes required. Canonical contract, explicit identity, sanctioned composition, structural replaceability and zero legacy/reflection compatibility confirmed. |
+| ADR3-IMP-05 | — | CURRENT — qualification gates. |
 | remaining mandatory stages | — | Fill on closure. |
 
 ---
