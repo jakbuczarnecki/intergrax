@@ -1,0 +1,363 @@
+# © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
+
+"""Worker consumer fulfillment — sequences canonical recovery, realization, resume (UCA-6C-R6-R5.8)."""
+
+from __future__ import annotations
+
+from datetime import datetime
+
+from intergrax.autonomous_work.worker_capability_fulfillment_ports import (
+    CapabilityRealizationCoordinatorPort,
+    WorkerCapabilityDirectReuseFulfillmentPort,
+)
+from intergrax.autonomous_work.worker_capability_recovery_coordinator import (
+    WorkerCapabilityRecoveryCoordinator,
+)
+from intergrax.autonomous_work.worker_qualified_capability_resume_coordinator import (
+    WorkerQualifiedCapabilityResumeCoordinator,
+)
+from intergrax.contracts.autonomous_work.capability_acquisition import (
+    derive_worker_capability_need_id,
+)
+from intergrax.contracts.autonomous_work.worker_capability_fulfillment import (
+    WorkerCapabilityFulfillmentDisposition,
+    WorkerCapabilityFulfillmentRequest,
+    WorkerCapabilityFulfillmentResult,
+)
+from intergrax.contracts.autonomous_work.worker_capability_recovery import (
+    WorkerCapabilityRecoveryPhase,
+)
+from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
+    WorkerQualifiedCapabilityResumeOutcome,
+    WorkerQualifiedCapabilityResumeRequest,
+    derive_worker_capability_resume_operation_id,
+)
+from intergrax.contracts.capability_acquisition.outcome import (
+    CapabilityRealizationOutcome,
+)
+from intergrax.contracts.capability_acquisition.request import (
+    CapabilityRealizationRequest,
+    derive_capability_realization_request_id,
+)
+from intergrax.contracts.capability_catalog.capability_gap import CapabilityGap
+from intergrax.contracts.capability_catalog.capability_realization_need import (
+    CapabilityRealizationNeed,
+)
+from intergrax.contracts.capability_catalog.discovery_completion import (
+    DiscoveryCompletionOutcome,
+)
+from intergrax.contracts.capability_qualification.qualification_outcome import (
+    CapabilityQualificationOutcome,
+)
+
+
+class WorkerCapabilityFulfillmentCoordinator:
+    """Requester/orchestrator — routes to canonical discovery, UCA, qualification, execution."""
+
+    def __init__(
+        self,
+        *,
+        recovery: WorkerCapabilityRecoveryCoordinator,
+        resume: WorkerQualifiedCapabilityResumeCoordinator,
+        direct_reuse: WorkerCapabilityDirectReuseFulfillmentPort,
+        realization: CapabilityRealizationCoordinatorPort | None = None,
+    ) -> None:
+        self._recovery = recovery
+        self._resume = resume
+        self._direct_reuse = direct_reuse
+        self._realization = realization
+
+    def fulfill(
+        self,
+        request: WorkerCapabilityFulfillmentRequest,
+        *,
+        decided_at: datetime | None = None,
+    ) -> WorkerCapabilityFulfillmentResult:
+        timestamp = decided_at or request.requested_at
+        acquisition_request = request.acquisition_request
+        recovery = self._recovery.coordinate_recovery(
+            acquisition_request,
+            decided_at=timestamp,
+            allow_generic_acquisition=request.allow_generic_acquisition,
+        )
+        provenance = recovery.provenance
+
+        if recovery.phase is WorkerCapabilityRecoveryPhase.DIRECT_REUSE:
+            return self._direct_reuse.fulfill_direct_reuse(request, recovery)
+
+        if recovery.phase is WorkerCapabilityRecoveryPhase.REALIZATION_REQUIRED:
+            return self._fulfill_realization_required(
+                request,
+                recovery=recovery,
+                decided_at=timestamp,
+            )
+
+        if recovery.phase is WorkerCapabilityRecoveryPhase.QUALIFICATION_COMPLETE:
+            return self._fulfill_qualified(
+                request, recovery=recovery, decided_at=timestamp
+            )
+
+        if recovery.phase is WorkerCapabilityRecoveryPhase.FAIL_CLOSED:
+            return self._map_fail_closed(
+                request,
+                recovery=recovery,
+                decided_at=timestamp,
+            )
+
+        return WorkerCapabilityFulfillmentResult(
+            disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+            provenance=provenance,
+            recovery_outcome=recovery,
+            decided_at=timestamp,
+        )
+
+    def _fulfill_realization_required(
+        self,
+        request: WorkerCapabilityFulfillmentRequest,
+        *,
+        recovery,
+        decided_at: datetime,
+    ) -> WorkerCapabilityFulfillmentResult:
+        if request.post_realization_retry:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.REALIZATION_FAILED,
+                provenance=recovery.provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        if self._realization is None:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+                provenance=recovery.provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        completion = recovery.discovery_completion
+        if completion is None or not completion.suitable_catalog_allowed_keys:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+                provenance=recovery.provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        catalog_key = sorted(
+            completion.suitable_catalog_allowed_keys,
+            key=lambda item: item.sort_key,
+        )[0]
+        realization_need = CapabilityRealizationNeed.from_discovery_completion(
+            completion,
+            capability_identity=catalog_key,
+        )
+        need = request.acquisition_request.need
+        nonce = f"{need.recovery_decision_id}:realize"
+        realization_request = CapabilityRealizationRequest(
+            request_id=derive_capability_realization_request_id(
+                realization_need_id=realization_need.realization_need_id,
+                request_nonce=nonce,
+            ),
+            request_nonce=nonce,
+            realization_need=realization_need,
+            correlation_id=recovery.provenance.discovery_correlation_id,
+            causation_id=need.recovery_decision_id,
+            requested_at=decided_at,
+        )
+        realization_result = self._realization.realize(realization_request)
+        if realization_result.outcome is not CapabilityRealizationOutcome.SUCCEEDED:
+            disposition = WorkerCapabilityFulfillmentDisposition.REALIZATION_FAILED
+            if realization_result.outcome in {
+                CapabilityRealizationOutcome.BLOCKED,
+                CapabilityRealizationOutcome.REQUIRES_HITL,
+            }:
+                disposition = WorkerCapabilityFulfillmentDisposition.DISCOVERY_BLOCKED
+            if realization_result.outcome is CapabilityRealizationOutcome.UNAVAILABLE:
+                disposition = (
+                    WorkerCapabilityFulfillmentDisposition.DISCOVERY_UNAVAILABLE
+                )
+            return WorkerCapabilityFulfillmentResult(
+                disposition=disposition,
+                provenance=recovery.provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        retry = WorkerCapabilityFulfillmentRequest(
+            acquisition_request=request.acquisition_request,
+            worker_instance_id=request.worker_instance_id,
+            tenant_id=request.tenant_id,
+            task_id=request.task_id,
+            requested_at=request.requested_at,
+            requested_authority_scopes=request.requested_authority_scopes,
+            allow_generic_acquisition=request.allow_generic_acquisition,
+            post_realization_retry=True,
+            run_id=request.run_id,
+            attempt_id=request.attempt_id,
+        )
+        return self.fulfill(retry, decided_at=decided_at)
+
+    def _fulfill_qualified(
+        self,
+        request: WorkerCapabilityFulfillmentRequest,
+        *,
+        recovery,
+        decided_at: datetime,
+    ) -> WorkerCapabilityFulfillmentResult:
+        acquisition = recovery.acquisition_result
+        qualification = recovery.qualification_result
+        if acquisition is None or qualification is None:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+                provenance=recovery.provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        if qualification.outcome is not CapabilityQualificationOutcome.QUALIFIED:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.QUALIFICATION_FAILED,
+                provenance=recovery.provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        need = request.acquisition_request.need
+        worker_need_id = derive_worker_capability_need_id(need)
+        resume_operation_id = derive_worker_capability_resume_operation_id(
+            recovery_decision_id=need.recovery_decision_id,
+            qualification_request_id=qualification.qualification_request_id,
+        )
+        resume_request = WorkerQualifiedCapabilityResumeRequest(
+            worker_instance_id=request.worker_instance_id,
+            worker_need_id=worker_need_id,
+            recovery_decision_id=need.recovery_decision_id,
+            provenance=recovery.provenance,
+            acquisition_result=acquisition,
+            qualification_result=qualification,
+            resume_operation_id=resume_operation_id,
+            tenant_id=request.tenant_id,
+            task_id=request.task_id,
+            requested_at=decided_at,
+            requested_authority_scopes=request.requested_authority_scopes,
+            run_id=request.run_id,
+            attempt_id=request.attempt_id,
+        )
+        resume_result = self._resume.resume(resume_request, decided_at=decided_at)
+        return self._map_resume(
+            recovery=recovery,
+            resume_result=resume_result,
+            decided_at=decided_at,
+        )
+
+    def _map_resume(
+        self,
+        *,
+        recovery,
+        resume_result,
+        decided_at: datetime,
+    ) -> WorkerCapabilityFulfillmentResult:
+        provenance = resume_result.provenance
+        outcome = resume_result.outcome
+        if outcome is WorkerQualifiedCapabilityResumeOutcome.EXECUTION_DISPATCHED:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.EXECUTION_DISPATCHED,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                resume_result=resume_result,
+                decided_at=decided_at,
+            )
+        if outcome in {
+            WorkerQualifiedCapabilityResumeOutcome.BINDING_FAILED,
+            WorkerQualifiedCapabilityResumeOutcome.BINDING_BLOCKED,
+            WorkerQualifiedCapabilityResumeOutcome.BINDING_UNAVAILABLE,
+            WorkerQualifiedCapabilityResumeOutcome.BINDING_HITL,
+        }:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.BINDING_FAILED,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                resume_result=resume_result,
+                decided_at=decided_at,
+            )
+        return WorkerCapabilityFulfillmentResult(
+            disposition=WorkerCapabilityFulfillmentDisposition.EXECUTION_FAILED,
+            provenance=provenance,
+            recovery_outcome=recovery,
+            resume_result=resume_result,
+            decided_at=decided_at,
+        )
+
+    def _map_fail_closed(
+        self,
+        request: WorkerCapabilityFulfillmentRequest,
+        *,
+        recovery,
+        decided_at: datetime,
+    ) -> WorkerCapabilityFulfillmentResult:
+        completion = recovery.discovery_completion
+        provenance = recovery.provenance
+        if completion is None:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        outcome = completion.outcome
+        if (
+            outcome is DiscoveryCompletionOutcome.MISSING_CAPABILITY
+            and not request.allow_generic_acquisition
+        ):
+            gap = CapabilityGap.from_discovery_completion(completion)
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.CAPABILITY_GAP,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                capability_gap=gap,
+                decided_at=decided_at,
+            )
+        if outcome is DiscoveryCompletionOutcome.MISSING_CAPABILITY:
+            qual = recovery.qualification_result
+            if (
+                qual is not None
+                and qual.outcome is not CapabilityQualificationOutcome.QUALIFIED
+            ):
+                return WorkerCapabilityFulfillmentResult(
+                    disposition=WorkerCapabilityFulfillmentDisposition.QUALIFICATION_FAILED,
+                    provenance=provenance,
+                    recovery_outcome=recovery,
+                    decided_at=decided_at,
+                )
+        if outcome is DiscoveryCompletionOutcome.BLOCKED:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.DISCOVERY_BLOCKED,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        if outcome is DiscoveryCompletionOutcome.UNAVAILABLE:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.DISCOVERY_UNAVAILABLE,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        if outcome is DiscoveryCompletionOutcome.INCOMPLETE:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.DISCOVERY_INCOMPLETE,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        if outcome is DiscoveryCompletionOutcome.CONFLICT:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.DISCOVERY_CONFLICT,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        return WorkerCapabilityFulfillmentResult(
+            disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+            provenance=provenance,
+            recovery_outcome=recovery,
+            decided_at=decided_at,
+        )
+
+
+__all__ = ["WorkerCapabilityFulfillmentCoordinator"]
