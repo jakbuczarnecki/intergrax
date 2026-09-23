@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from intergrax.contracts.canonical_inner_governance import (
     CanonicalInnerExecutionGuardPort,
@@ -38,7 +39,9 @@ from intergrax.runtime.nexus.tools.continuation_aware_catalog_tool_host import (
     ContinuationAwareCatalogToolHost,
     ContinuationAwareCatalogToolHostDependencies,
 )
-from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
 from intergrax.runtime.nexus.tools.nexus_execution_bound_catalog_tool_invoker import (
     NexusExecutionBoundCatalogToolInvoker,
 )
@@ -52,6 +55,10 @@ from intergrax.tools.durable_invocation_wiring_binding_resolver import (
     DurableToolInvocationWiringBindingResolver,
 )
 from intergrax.tools.registry.runtime import ToolRegistry
+from intergrax.tools.tool_executor import ToolExecutor
+
+if TYPE_CHECKING:
+    from intergrax.contracts.idempotency_store import IdempotencyStore
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,25 +81,30 @@ def build_execution_bound_catalog_tool_composition(
     document_store: ConditionalDocumentStore | None,
     continuation_dependencies: ExecutionEngineContinuationDependencies | None,
     reentry_claim_owner_id: str,
-    durable_wiring_binding_resolver: DurableToolInvocationWiringBindingResolver | None = None,
+    durable_wiring_binding_resolver: DurableToolInvocationWiringBindingResolver
+    | None = None,
     task_checkpoint_store: TaskCheckpointPersistence | None = None,
+    idempotency_store: IdempotencyStore | None = None,
+    tool_executor: ToolExecutor | None = None,
 ) -> ExecutionBoundCatalogToolComposition:
     tool_invoker = build_production_runtime_tool_invoker(
         registry=registry,
+        executor=tool_executor,
         sandbox_availability=sandbox_availability,
         agent_runtime_governance=agent_runtime_governance,
         inner_execution_guard=canonical_inner_execution_guard,
         meaningful_side_effect_authorization=meaningful_side_effect_authorization,
         scope_policy=scope_policy,
+        idempotency_store=idempotency_store,
         production_mode=production_mode,
     )
     suspended_store = wire_suspended_execution_operation_store(
         document_store=document_store,
     )
     reentry_coordinator: ExecutionSuspendedWorkReentryCoordinator | None = None
-    continuation_aware_dependencies: ContinuationAwareCatalogToolHostDependencies | None = (
-        None
-    )
+    continuation_aware_dependencies: (
+        ContinuationAwareCatalogToolHostDependencies | None
+    ) = None
     if continuation_dependencies is not None:
         if production_mode:
             validate_production_suspended_operation_wiring(
@@ -124,7 +136,10 @@ def build_execution_bound_catalog_tool_composition(
         production_mode=production_mode,
         continuation_aware_dependencies=continuation_aware_dependencies,
     )
-    if continuation_dependencies is not None and continuation_aware_dependencies is not None:
+    if (
+        continuation_dependencies is not None
+        and continuation_aware_dependencies is not None
+    ):
         if durable_wiring_binding_resolver is None:
             raise RuntimeError(
                 "continuation-aware catalog invocation requires "

@@ -8,6 +8,7 @@ from dataclasses import replace
 from pathlib import Path
 
 import pytest
+from pydantic import BaseModel
 
 from intergrax.applications._shared.uca6c_codecraft_qualified_execution_composition import (
     bootstrap_uca6c_code_exec_catalog_tools,
@@ -48,7 +49,13 @@ from intergrax.contracts.execution.suspended_operation.authority_scope import (
 from intergrax.contracts.execution.suspended_operation.reentry import (
     ExecutionSuspendedWorkReentryDisposition,
 )
+from intergrax.contracts.execution.suspended_operation.descriptor import (
+    SuspendedOperationMaterializationState,
+)
+from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExecutor
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
+from intergrax.tools.execution_models import ToolExecutionRequest
+from intergrax.tools.tool_executor import ToolExecutor
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
@@ -59,6 +66,7 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.governed_continuation_correlation import ContinuationReason
 from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.contracts.meaningful_side_effect_authorization import (
+    MeaningfulSideEffectAuthorizationPort,
     MeaningfulSideEffectAuthorizationResult,
 )
 from intergrax.contracts.orchestration_tool_invocation_mse_operation import (
@@ -138,6 +146,20 @@ pytestmark = pytest.mark.unit
 
 _DECLARATIVE_RULE_ID = "uca6c.r57.code_exec_hitl"
 _COUNTING_HANDLER_ID = "uca6c_r57_counting_hitl"
+
+
+class _CountingToolExecutor:
+    """Delegates to the canonical registry executor; counts physical backend invocations."""
+
+    def __init__(self, delegate: ToolExecutor) -> None:
+        self._delegate = delegate
+        self.calls = 0
+
+    def execute(self, request: ToolExecutionRequest[BaseModel]) -> BaseModel:
+        self.calls += 1
+        return self._delegate.execute(request)
+
+
 _EMPTY_POLICY_PROVENANCE = PolicyBundleProvenance(
     source_kind="inline",
     rules_path=None,
@@ -275,9 +297,12 @@ class _MseRequireHumanOncePort:
 
 def _build_handler(
     tmp_path: Path,
-    mse_port: _MseRequireHumanOncePort,
+    mse_port: MeaningfulSideEffectAuthorizationPort,
     *,
     policy_bundle: RuntimePolicyBundle | None = None,
+    idempotency_store: InMemoryIdempotencyStore | None = None,
+    inner_guard: _RecordingGuard | None = None,
+    tool_executor: ToolExecutor | None = None,
 ):
     craft_id = "craft-r5-7-sequential"
     bundle = uca6c_strict_r6_durable_wiring(tmp_path)
@@ -298,9 +323,19 @@ def _build_handler(
         tenant_id=_TENANT,
         agent_registry=registry,
     )
+    guard = inner_guard or _RecordingGuard(allow=True)
     resolved_policy = (
         policy_bundle if policy_bundle is not None else wire_policy_bundle(env)
     )
+    idem = idempotency_store or InMemoryIdempotencyStore()
+    base_executor = RegistryToolExecutor(registry=tool_wiring.registry)
+    counting_executor = (
+        tool_executor
+        if tool_executor is not None
+        else _CountingToolExecutor(base_executor)
+    )
+    if not isinstance(counting_executor, _CountingToolExecutor):
+        counting_executor = _CountingToolExecutor(counting_executor)
     composition = build_execution_bound_catalog_tool_composition(
         registry=tool_wiring.registry,
         policy_bundle=resolved_policy,
@@ -311,7 +346,7 @@ def _build_handler(
         agent_runtime_governance=build_agent_runtime_governance_boundary(
             capability_grants=grants,
         ),
-        canonical_inner_execution_guard=_RecordingGuard(allow=True),
+        canonical_inner_execution_guard=guard,
         meaningful_side_effect_authorization=mse_port,
         document_store=r6_kwargs["document_store"],
         continuation_dependencies=r6_kwargs["continuation_dependencies"],
@@ -320,6 +355,8 @@ def _build_handler(
             "durable_wiring_binding_resolver"
         ),
         task_checkpoint_store=r6_kwargs["task_checkpoint_store"],
+        idempotency_store=idem,
+        tool_executor=counting_executor,
     )
     handler = build_codecraft_qualified_capability_execution_handler(
         tool_wiring.wiring_context,
@@ -338,6 +375,8 @@ def _build_handler(
         craft_id,
         hitl,
         r6_kwargs["task_checkpoint_store"],
+        counting_executor,
+        guard,
     )
 
 
@@ -435,7 +474,7 @@ def test_three_authority_generations_without_backend_when_declarative_always_req
     tmp_path: Path,
 ) -> None:
     mse_port = _MseRequireHumanOncePort()
-    handler, composition, side_effects, craft_id, hitl, checkpoint_store = (
+    handler, composition, side_effects, craft_id, hitl, checkpoint_store, _, _ = (
         _build_handler(
             tmp_path,
             mse_port,
@@ -562,35 +601,25 @@ def test_three_authority_generations_without_backend_when_declarative_always_req
 
 def test_eventual_backend_when_each_authority_requires_human_once(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    from intergrax.runtime.execution import (
-        execution_bound_catalog_tool_composition as comp,
-    )
-    from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
-        build_production_runtime_tool_invoker as _orig_build_invoker,
-    )
-
-    def _build_invoker_with_idempotency(**kwargs: object) -> object:
-        if kwargs.get("idempotency_store") is None:
-            kwargs = {**kwargs, "idempotency_store": InMemoryIdempotencyStore()}
-        return _orig_build_invoker(**kwargs)
-
-    monkeypatch.setattr(
-        comp, "build_production_runtime_tool_invoker", _build_invoker_with_idempotency
-    )
-
     counting = _DeclarativeRequireHitlOnceHandler()
     mse_port = _MseRequireHumanOncePort()
-    handler, composition, side_effects, craft_id, hitl, checkpoint_store = (
-        _build_handler(
-            tmp_path,
-            mse_port,
-            policy_bundle=_declarative_policy_bundle(
-                always_require_hitl=False,
-                counting_handler=counting,
-            ),
-        )
+    (
+        handler,
+        composition,
+        side_effects,
+        craft_id,
+        hitl,
+        checkpoint_store,
+        backend,
+        guard,
+    ) = _build_handler(
+        tmp_path,
+        mse_port,
+        policy_bundle=_declarative_policy_bundle(
+            always_require_hitl=False,
+            counting_handler=counting,
+        ),
     )
     store = composition.suspended_work_reentry_coordinator.store
     run_id = mint_run_id()
@@ -660,10 +689,18 @@ def test_eventual_backend_when_each_authority_requires_human_once(
         assert final_reentry.tool_result is not None
         assert final_reentry.tool_result.success is True
         assert side_effects == []
+        assert backend.calls == 1
+        assert guard.calls >= 1
         assert mse_port.calls == 2
         assert counting.matching_evaluations == 3
         active = store.load_active_for_logical_invocation(fingerprint)
         assert active is None
+        terminal = store.load(suspended_id)
+        assert terminal is not None
+        assert (
+            terminal.materialization_state
+            is SuspendedOperationMaterializationState.CONSUMED
+        )
         assert d1.suspended_operation_id == suspended_id
         for gen in (d1, d2, d3):
             _assert_four_ids_match(gen, run_id=run_id, fingerprint=fingerprint)
