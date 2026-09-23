@@ -13,7 +13,7 @@ import pytest
 
 from intergrax.applications._shared.llm_resolver import evaluate_llm_routing
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.llm_adapters.base.usage_log import LLMRunStats, LLMUsageTrackable
+from intergrax.llm_adapters.contracts.llm_usage_stats import LLMRunStats, LLMUsageTrackable
 from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 from intergrax.llm_adapters.contracts.routing_evaluator import RoutingEvaluator

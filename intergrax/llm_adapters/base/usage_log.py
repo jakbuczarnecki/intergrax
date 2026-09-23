@@ -6,39 +6,17 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, Optional, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Any, Dict, Optional
 
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
+from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
+from intergrax.llm_adapters.contracts.llm_usage_stats import (
+    LLMRunStats,
+    LLMRunStatsReader,
+    LLMUsageTrackable,
+)
 
 if TYPE_CHECKING:
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-
-
-@dataclass
-class LLMRunStats:
-    calls: int = 0
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_tokens: int = 0
-    duration_ms: int = 0
-    errors: int = 0
-
-
-@runtime_checkable
-class LLMRunStatsReader(Protocol):
-    """Internal: per-adapter run-level usage snapshot access (not execution ABI)."""
-
-    def get_run_stats(self, run_id: Optional[str] = None) -> LLMRunStats | None:
-        ...
-
-
-@runtime_checkable
-class LLMUsageTrackable(Protocol):
-    """Internal: adapter identity + usage stats source for ``LLMUsageTracker`` registration."""
-
-    provider: LLMProvider | str
-    model: str
-    usage: LLMRunStatsReader
 
 
 def require_llm_usage_trackable(candidate: object) -> LLMUsageTrackable:

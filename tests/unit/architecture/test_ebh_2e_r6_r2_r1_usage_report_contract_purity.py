@@ -19,6 +19,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _FORBIDDEN_CONTRACT_PREFIXES = (
+    "intergrax.llm_adapters.base",
     "intergrax.llm_adapters.tracking",
     "intergrax.runtime",
     "intergrax.applications",
@@ -69,7 +70,7 @@ def test_ebh_2e_r6_r2_r1_external_aggregator_uses_only_canonical_contract_import
             del trackable, label
 
         def build_report(self) -> LLMUsageReport:
-            from intergrax.llm_adapters.base.usage_log import LLMRunStats
+            from intergrax.llm_adapters.contracts.llm_usage_stats import LLMRunStats
 
             return LLMUsageReport(
                 run_id="external",

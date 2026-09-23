@@ -6,11 +6,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
-from intergrax.llm_adapters.base.usage_log import (
+from intergrax.llm_adapters.base.usage_log import require_llm_usage_trackable
+from intergrax.llm_adapters.contracts.llm_usage_stats import (
     LLMRunStats,
     LLMRunStatsReader,
     LLMUsageTrackable,
-    require_llm_usage_trackable,
 )
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug

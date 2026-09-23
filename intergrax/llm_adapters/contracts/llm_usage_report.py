@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 from typing import Any
 
-from intergrax.llm_adapters.base.usage_log import LLMRunStats
+from intergrax.llm_adapters.contracts.llm_usage_stats import LLMRunStats
 
 
 @dataclass(frozen=True)
