@@ -26,6 +26,10 @@ from intergrax.contracts.execution.suspended_operation.descriptor import (
 from intergrax.contracts.execution.suspended_operation.authority_scope import (
     SuspendedOperationAuthorityScope,
 )
+from intergrax.contracts.execution.suspended_operation.authority_scope_compat import (
+    infer_authority_scope_from_invocation,
+    invocation_scope_matches_authority_scope,
+)
 from intergrax.contracts.governed_continuation_correlation import (
     GovernedContinuationCorrelation,
 )
@@ -141,11 +145,15 @@ class SuspendedOperationBackingStore:
             return SuspendedOperationMutationResult(
                 outcome=SuspendedOperationMutationOutcome.INVALID_STATE,
             )
+        authority_scope = infer_authority_scope_from_invocation(
+            current.invocation_scope_id
+        )
         updated = current.model_copy(
             update={
                 "materialization_state": SuspendedOperationMaterializationState.BLOCKED,
                 "materialization_revision": current.materialization_revision + 1,
                 "claim_ownership": None,
+                "authority_scope": authority_scope,
             },
         )
         self._by_id[suspended_operation_id] = updated
@@ -401,9 +409,50 @@ class SuspendedOperationBackingStore:
             return SuspendedOperationMutationResult(
                 outcome=SuspendedOperationMutationOutcome.INVALID_STATE,
             )
-        if next_continuation.continuation_id != next_governed_correlation.continuation_request_id:
+        if not invocation_scope_matches_authority_scope(
+            next_invocation_scope_id,
+            next_authority_scope,
+        ):
+            return SuspendedOperationMutationResult(
+                outcome=SuspendedOperationMutationOutcome.INVALID_STATE,
+            )
+        if next_governed_correlation.operation_id != next_invocation_scope_id.strip():
             return SuspendedOperationMutationResult(
                 outcome=SuspendedOperationMutationOutcome.CONTINUATION_MISMATCH,
+            )
+        try:
+            assert_execution_continuation_identity_match(
+                current.identity,
+                next_continuation.identity,
+            )
+        except Exception:
+            return SuspendedOperationMutationResult(
+                outcome=SuspendedOperationMutationOutcome.IDENTITY_MISMATCH,
+            )
+        if (
+            next_continuation.continuation_id
+            != next_governed_correlation.continuation_request_id
+        ):
+            return SuspendedOperationMutationResult(
+                outcome=SuspendedOperationMutationOutcome.CONTINUATION_MISMATCH,
+            )
+        try:
+            assert_governed_correlation_matches_continuation(
+                continuation_id=next_continuation.continuation_id,
+                identity=next_continuation.identity,
+                reason=next_continuation.reason,
+                governed_correlation=next_governed_correlation,
+            )
+        except Exception:
+            return SuspendedOperationMutationResult(
+                outcome=SuspendedOperationMutationOutcome.CONTINUATION_MISMATCH,
+            )
+        if next_continuation.lifecycle_state not in {
+            ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN,
+            ExecutionContinuationLifecycleState.RESUME_AUTHORIZED,
+        }:
+            return SuspendedOperationMutationResult(
+                outcome=SuspendedOperationMutationOutcome.INVALID_STATE,
             )
         updated = current.model_copy(
             update={
@@ -413,9 +462,9 @@ class SuspendedOperationBackingStore:
                 "materialization_revision": current.materialization_revision + 1,
                 "continuation_id": next_continuation.continuation_id,
                 "invocation_scope_id": next_invocation_scope_id.strip(),
+                "authority_scope": next_authority_scope,
             },
         )
-        _ = next_authority_scope
         self._by_id[suspended_operation_id] = updated
         return SuspendedOperationMutationResult(
             outcome=SuspendedOperationMutationOutcome.APPLIED,

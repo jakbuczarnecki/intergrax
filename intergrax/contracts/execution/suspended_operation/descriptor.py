@@ -7,12 +7,18 @@ from __future__ import annotations
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from intergrax.contracts.execution_continuation import ExecutionContinuationIdentity
 from intergrax.contracts.execution.suspended_operation.codec import (
     SerializedSuspendedOperationEnvelope,
     SuspendedOperationKind,
+)
+from intergrax.contracts.execution.suspended_operation.authority_scope import (
+    SuspendedOperationAuthorityScope,
+)
+from intergrax.contracts.execution.suspended_operation.authority_scope_compat import (
+    invocation_scope_matches_authority_scope,
 )
 from intergrax.contracts.agent_governance_hitl import LogicalInvocationFingerprint
 from intergrax.contracts.lease_claim import LeaseOwnership
@@ -53,6 +59,27 @@ class SuspendedExecutionOperationDescriptor(BaseModel):
     payload: SerializedSuspendedOperationEnvelope
     pause_generation: int = Field(default=1, ge=1)
     logical_invocation_fingerprint: LogicalInvocationFingerprint | None = None
+    authority_scope: SuspendedOperationAuthorityScope = (
+        SuspendedOperationAuthorityScope.AGENT_RUNTIME_GOVERNANCE
+    )
+
+    @field_validator("authority_scope", mode="before")
+    @classmethod
+    def _default_authority_scope(cls, value: object) -> object:
+        if value is None:
+            return SuspendedOperationAuthorityScope.AGENT_RUNTIME_GOVERNANCE
+        return value
+
+    @model_validator(mode="after")
+    def _authority_scope_matches_invocation(
+        self,
+    ) -> SuspendedExecutionOperationDescriptor:
+        if not invocation_scope_matches_authority_scope(
+            self.invocation_scope_id,
+            self.authority_scope,
+        ):
+            raise ValueError("authority scope incompatible with invocation scope")
+        return self
 
     @field_validator("payload_digest")
     @classmethod

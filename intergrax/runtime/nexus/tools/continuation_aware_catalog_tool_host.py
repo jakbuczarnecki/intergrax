@@ -32,6 +32,9 @@ from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedExecutionOperationDescriptor,
     SuspendedOperationMaterializationState,
 )
+from intergrax.contracts.execution.suspended_operation.authority_scope_compat import (
+    infer_authority_scope_from_invocation,
+)
 from intergrax.contracts.execution.suspended_operation.entity_id import (
     mint_suspended_operation_id,
 )
@@ -171,6 +174,9 @@ class ContinuationAwareCatalogToolHost:
             claim_ownership=None,
             payload_digest=digest,
             payload=envelope,
+            authority_scope=infer_authority_scope_from_invocation(
+                pause.signal.invocation_scope_id,
+            ),
         )
         prepared = deps.suspended_operation_store.prepare(descriptor)
         if prepared.descriptor is None:

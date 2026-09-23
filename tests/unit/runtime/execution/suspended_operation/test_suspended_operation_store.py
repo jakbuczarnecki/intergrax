@@ -66,6 +66,7 @@ def _descriptor() -> SuspendedExecutionOperationDescriptor:
         materialization_revision=0,
         payload_digest="sha256:" + ("0" * 64),
         payload=envelope,
+        authority_scope=SuspendedOperationAuthorityScope.DECLARATIVE_GOVERNANCE,
     )
 
 
@@ -185,5 +186,82 @@ def test_authority_reblock_from_claimed_requires_full_claim_authority() -> None:
     assert reblocked.outcome is SuspendedOperationMutationOutcome.APPLIED
     assert reblocked.descriptor is not None
     assert reblocked.descriptor.pause_generation == 2
-    assert reblocked.descriptor.materialization_state is SuspendedOperationMaterializationState.BLOCKED
+    assert (
+        reblocked.descriptor.materialization_state
+        is SuspendedOperationMaterializationState.BLOCKED
+    )
     assert reblocked.descriptor.claim_ownership is None
+    assert (
+        reblocked.descriptor.authority_scope
+        is SuspendedOperationAuthorityScope.DECLARATIVE_GOVERNANCE
+    )
+
+
+def test_authority_reblock_rejects_wrong_authority_scope() -> None:
+    store = InMemorySuspendedExecutionOperationStore()
+    descriptor = _descriptor()
+    store.prepare(descriptor)
+    pending = PendingExecutionContinuation(
+        continuation_id=descriptor.continuation_id,
+        identity=descriptor.identity,
+        lifecycle_state=ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN,
+        reason=ContinuationReason.AGENT_RUNTIME_GOVERNANCE,
+        revision=1,
+        governed_correlation=GovernedContinuationCorrelation(
+            continuation_request_id=descriptor.continuation_id,
+            reason=ContinuationReason.AGENT_RUNTIME_GOVERNANCE,
+            task_id=descriptor.identity.task_id,
+            run_id=descriptor.identity.run_id,
+            attempt_id=descriptor.identity.attempt_id,
+            execution_id=descriptor.identity.execution_id,
+            operation_id=descriptor.invocation_scope_id,
+        ),
+        pause_id="pause_1",
+        human_request_id="hr_1",
+    )
+    blocked = store.block(
+        suspended_operation_id=descriptor.suspended_operation_id,
+        expected_materialization_revision=0,
+        continuation=pending,
+        governed_correlation=pending.governed_correlation,
+    )
+    assert blocked.descriptor is not None
+    lease = datetime.now(UTC) + timedelta(minutes=5)
+    claimed = store.claim(
+        suspended_operation_id=descriptor.suspended_operation_id,
+        expected_materialization_revision=blocked.descriptor.materialization_revision,
+        owner_id="host-a",
+        lease_expires_at=lease,
+    )
+    assert claimed.descriptor is not None
+    next_cont = PendingExecutionContinuation(
+        continuation_id="gcr_gen2",
+        identity=descriptor.identity,
+        lifecycle_state=ExecutionContinuationLifecycleState.WAITING_FOR_HUMAN,
+        reason=ContinuationReason.SECURITY,
+        revision=1,
+        governed_correlation=GovernedContinuationCorrelation(
+            continuation_request_id="gcr_gen2",
+            reason=ContinuationReason.SECURITY,
+            task_id=descriptor.identity.task_id,
+            run_id=descriptor.identity.run_id,
+            attempt_id=descriptor.identity.attempt_id,
+            execution_id=descriptor.identity.execution_id,
+            operation_id="dhr_gen2",
+        ),
+        pause_id="pause_2",
+        human_request_id="hr_2",
+    )
+    reblocked = store.authority_reblock_from_claimed(
+        suspended_operation_id=descriptor.suspended_operation_id,
+        expected_materialization_revision=claimed.descriptor.materialization_revision,
+        expected_pause_generation=1,
+        expected_owner_id="host-a",
+        expected_fence=claimed.descriptor.claim_ownership.fence,
+        next_pause_generation=2,
+        next_continuation=next_cont,
+        next_governed_correlation=next_cont.governed_correlation,
+        next_invocation_scope_id="dhr_gen2",
+        next_authority_scope=SuspendedOperationAuthorityScope.AGENT_RUNTIME_GOVERNANCE,
+    )
+    assert reblocked.outcome is SuspendedOperationMutationOutcome.INVALID_STATE
