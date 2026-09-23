@@ -11,6 +11,7 @@ from intergrax.llm_adapters.base.usage_log import (
     LLMRunStats,
     LLMRunStatsReader,
     LLMUsageTrackable,
+    require_llm_usage_trackable,
 )
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
@@ -109,7 +110,7 @@ class LLMUsageTracker:
     @staticmethod
     def _default_label(trackable: LLMUsageTrackable) -> str:
         slug = llm_provider_slug(trackable.provider)
-        return f"{slug}:{trackable.model}@{id(trackable)}"
+        return f"{slug}:{trackable.model}"
 
     def register_adapter(
         self,
@@ -120,22 +121,18 @@ class LLMUsageTracker:
         Register a usage-trackable adapter used during this runtime run.
         Idempotent by label.
         """
-        if not isinstance(trackable, LLMUsageTrackable):
-            raise TypeError(
-                "LLMUsageTracker.register_adapter requires LLMUsageTrackable "
-                "(provider, model, and usage stats reader)"
-            )
+        verified = require_llm_usage_trackable(trackable)
 
-        resolved_label = label or self._default_label(trackable)
+        resolved_label = label or self._default_label(verified)
 
         if resolved_label not in self._entries:
             self._entries[resolved_label] = _TrackedLLMUsageEntry(
                 label=resolved_label,
-                trackable=trackable,
-                adapter_type=trackable.__class__.__name__,
-                provider_slug=llm_provider_slug(trackable.provider),
-                model=str(trackable.model or ""),
-                stats=trackable.usage,
+                trackable=verified,
+                adapter_type=verified.__class__.__name__,
+                provider_slug=llm_provider_slug(verified.provider),
+                model=str(verified.model or ""),
+                stats=verified.usage,
             )
 
     def unregister_adapter(self, adapter: LLMAdapter | LLMUsageTrackable) -> None:

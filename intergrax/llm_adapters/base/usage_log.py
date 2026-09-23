@@ -8,7 +8,7 @@ import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, Optional, Protocol, runtime_checkable
 
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
 
 if TYPE_CHECKING:
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -41,6 +41,16 @@ class LLMUsageTrackable(Protocol):
     usage: LLMRunStatsReader
 
 
+def require_llm_usage_trackable(candidate: object) -> LLMUsageTrackable:
+    """Runtime guard for ``LLMUsageTrackable`` before usage-tracker registration."""
+    if not isinstance(candidate, LLMUsageTrackable):
+        raise TypeError(
+            "LLMUsageTracker.register_adapter requires LLMUsageTrackable "
+            "(provider, model, and usage stats reader)"
+        )
+    return candidate
+
+
 class LLMAdapterUsageLog(LLMRunStatsReader):
     def __init__(self) -> None:
         self._run_stats: Dict[str, LLMRunStats] = {}
@@ -67,11 +77,7 @@ class LLMAdapterUsageLog(LLMRunStatsReader):
             self._run_stats[rid] = LLMRunStats()
         call = LLMCallStats(run_id=rid)
         if adapter is not None:
-            prov = adapter.provider
-            if isinstance(prov, LLMProvider):
-                call.provider = prov.value
-            elif isinstance(prov, str):
-                call.provider = prov
+            call.provider = llm_provider_slug(adapter.provider)
             call.model = str(adapter.model or "")
         return call
 
@@ -231,4 +237,5 @@ __all__ = [
     "LLMRunStats",
     "LLMRunStatsReader",
     "LLMUsageTrackable",
+    "require_llm_usage_trackable",
 ]

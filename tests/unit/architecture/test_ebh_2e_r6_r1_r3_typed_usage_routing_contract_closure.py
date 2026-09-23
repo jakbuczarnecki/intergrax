@@ -11,7 +11,11 @@ from typing import Optional
 
 import pytest
 
-from intergrax.llm_adapters.base.usage_log import LLMRunStats, LLMUsageTrackable
+from intergrax.llm_adapters.base.usage_log import (
+    LLMRunStats,
+    LLMUsageTrackable,
+    require_llm_usage_trackable,
+)
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
 from intergrax.llm_adapters.contracts.routing_profile import LLMRoutingProfile
@@ -93,12 +97,37 @@ def test_ebh_2e_r6_r1_r3_structural_usage_trackable_registration_and_report() ->
     assert report.entries[0].meta.provider == "external-provider"
 
 
+def test_ebh_2e_r6_r1_r3_register_adapter_calls_trackable_runtime_guard() -> None:
+    tree = ast.parse(_USAGE_TRACKER_SOURCE.read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef) or node.name != "register_adapter":
+            continue
+        calls = [
+            c.func.id
+            for c in ast.walk(node)
+            if isinstance(c, ast.Call) and isinstance(c.func, ast.Name)
+        ]
+        assert "require_llm_usage_trackable" in calls
+        return
+    pytest.fail("register_adapter must call require_llm_usage_trackable")
+
+
+def _register_through_trackable_guard(
+    tracker: LLMUsageTracker,
+    candidate: object,
+    *,
+    label: str | None = None,
+) -> None:
+    trackable = require_llm_usage_trackable(candidate)
+    tracker.register_adapter(trackable, label=label)
+
+
 def test_ebh_2e_r6_r1_r3_plain_llm_adapter_not_trackable_explicit_type_error() -> None:
     plain = ExternalStructuralAdapter()
     assert not isinstance(plain, LLMUsageTrackable)
     tracker = LLMUsageTracker(run_id="run-plain")
     with pytest.raises(TypeError, match="LLMUsageTrackable"):
-        tracker.register_adapter(plain)  # type: ignore[arg-type]
+        _register_through_trackable_guard(tracker, plain)
 
 
 class ExternalRoutingProfileSource:

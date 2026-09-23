@@ -22,9 +22,20 @@ from __future__ import annotations
 import pytest
 
 from intergrax.llm_adapters.base.usage_log import LLMAdapterUsageLog
+from testing_support.builder import FakeLLMAdapter
 
 
 pytestmark = pytest.mark.unit
+
+
+def test_begin_call_canonicalizes_provider_via_llm_provider_slug() -> None:
+    usage = LLMAdapterUsageLog()
+    adapter = FakeLLMAdapter(fixed_text="x")
+    adapter.provider = " External-Provider "
+
+    call = usage.begin_call(run_id="run-canonical", adapter=adapter)
+
+    assert call.provider == "external-provider"
 
 
 def test_initial_stats_are_zero() -> None:
