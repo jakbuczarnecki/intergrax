@@ -72,6 +72,17 @@ def test_host_uses_task_checkpoint_pause_projection() -> None:
     assert "load_active_for_logical_invocation" in host_source
 
 
+def test_host_does_not_use_agr_probe_for_logical_identity() -> None:
+    host_source = HOST.read_text(encoding="utf-8")
+    assert "agr_probe" not in host_source
+
+
+def test_bridge_accepts_precomputed_logical_fingerprint() -> None:
+    bridge_source = BRIDGE.read_text(encoding="utf-8")
+    assert "logical_invocation_fingerprint: LogicalInvocationFingerprint" in bridge_source
+    assert "digest_logical_invocation_fingerprint(" not in bridge_source
+
+
 def test_bridge_bans_reflection_and_tigae() -> None:
     source = BRIDGE.read_text(encoding="utf-8")
     assert "ToolInvocationGovernanceApprovalEvidence" not in source

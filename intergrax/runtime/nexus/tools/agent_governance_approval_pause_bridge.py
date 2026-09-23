@@ -17,7 +17,7 @@ from intergrax.contracts.agent_governance_approval_pause_signal import (
 from intergrax.contracts.agent_governance_hitl import (
     AgentGovernanceHumanApprovalPending,
     AgentGovernanceHumanApprovalRequirement,
-    digest_logical_invocation_fingerprint,
+    LogicalInvocationFingerprint,
     mint_agent_governance_invocation_scope_id,
 )
 from intergrax.contracts.agent_runtime_governance import (
@@ -143,6 +143,7 @@ def build_human_request_for_agent_governance_pause(
 def build_agent_governance_pause_artifacts(
     signal: AgentGovernanceApprovalPauseSignal,
     *,
+    logical_invocation_fingerprint: LogicalInvocationFingerprint,
     payload_digest: str,
     invocation_scope_id: str | None = None,
     pause_id: str | None = None,
@@ -155,18 +156,6 @@ def build_agent_governance_pause_artifacts(
     scope_id = invocation_scope_id or mint_agent_governance_invocation_scope_id()
     if not scope_id.startswith("agr_"):
         raise ValueError("agent governance invocation scope must use agr_ prefix")
-    fingerprint = digest_logical_invocation_fingerprint(
-        task_id=str(signal.task_id),
-        run_id=str(signal.run_id),
-        attempt_id=str(signal.attempt_id),
-        execution_id=str(signal.execution_id),
-        tenant_id=signal.tenant_id,
-        agent_id=signal.agent_id,
-        tool_id=signal.tool_id,
-        step_id=signal.step_id,
-        idempotency_key=signal.idempotency_key,
-        payload_digest=payload_digest,
-    )
     requirement = AgentGovernanceHumanApprovalRequirement(
         agent_governance_invocation_scope_id=scope_id,
         task_id=signal.task_id,
@@ -182,7 +171,7 @@ def build_agent_governance_pause_artifacts(
         authorization_request=signal.authorization_request,
         policy_results=signal.policy_results,
         policy_provenance_digest=signal.policy_provenance_digest,
-        logical_invocation_fingerprint=fingerprint,
+        logical_invocation_fingerprint=logical_invocation_fingerprint,
         pause_generation=1,
     )
     resolved_human_request_id = human_request_id or f"hr_{uuid4().hex[:12]}"

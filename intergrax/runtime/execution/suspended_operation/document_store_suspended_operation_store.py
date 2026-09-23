@@ -62,8 +62,15 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
 
     def _load_from_document(self) -> None:
         record = self._document_store.get(_PARTITION, _ROW_KEY)
+        self._backing = self._backing_from_record(record)
+
+    def _backing_from_record(
+        self,
+        record: DocumentRecord | None,
+    ) -> SuspendedOperationBackingStore:
+        backing = SuspendedOperationBackingStore()
         if record is None:
-            return
+            return backing
         payload = record.data.get("backing")
         if not isinstance(payload, dict):
             raise RuntimeError("corrupt suspended operation durable backing")
@@ -77,28 +84,40 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
             restored[str(key)] = SuspendedExecutionOperationDescriptor.model_validate(
                 value
             )
-        self._backing.replace_all(restored)
+        backing.replace_all(restored)
+        return backing
 
-    def _persist(self) -> None:
+    def _serialize_backing(
+        self,
+        backing: SuspendedOperationBackingStore,
+    ) -> DocumentRecord:
         snapshot = {
             "schema_version": _DURABLE_SCHEMA_V1,
             "records": {
                 key: descriptor.model_dump(mode="json")
-                for key, descriptor in self._backing.snapshot().items()
+                for key, descriptor in backing.snapshot().items()
             },
         }
-        replacement = DocumentRecord(
+        return DocumentRecord(
             partition_key=_PARTITION,
             row_key=_ROW_KEY,
             data={"backing": copy.deepcopy(snapshot)},
         )
-        existing = self._document_store.get(_PARTITION, _ROW_KEY)
-        if existing is None:
+
+    def _persist_snapshot(
+        self,
+        backing: SuspendedOperationBackingStore,
+        *,
+        expected_record: DocumentRecord | None,
+    ) -> None:
+        replacement = self._serialize_backing(backing)
+        if expected_record is None:
             if not self._document_store.put_if_absent(replacement):
+                self._load_from_document()
                 raise RuntimeError("suspended operation durable persist race")
             return
         if not self._document_store.replace_if_match(
-            expected=existing,
+            expected=expected_record,
             replacement=replacement,
         ):
             self._load_from_document()
@@ -106,8 +125,14 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
 
     def _mutate(self, operation):
         with self._lock:
-            result = operation(self._backing)
-            self._persist()
+            expected_record = self._document_store.get(_PARTITION, _ROW_KEY)
+            backing = self._backing_from_record(expected_record)
+            result = operation(backing)
+            try:
+                self._persist_snapshot(backing, expected_record=expected_record)
+            except RuntimeError:
+                raise
+            self._backing = backing
             return result
 
     def prepare(

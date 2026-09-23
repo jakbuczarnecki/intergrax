@@ -48,7 +48,7 @@ def _fingerprint() -> LogicalInvocationFingerprint:
         tool_id="tool-a",
         step_id="step-a",
         idempotency_key="idem",
-        payload_digest="sha256:" + "a" * 64,
+        invocation_intent_digest="sha256:" + "a" * 64,
     )
 
 

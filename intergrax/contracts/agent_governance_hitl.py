@@ -312,8 +312,13 @@ def digest_logical_invocation_fingerprint(
     tool_id: str,
     step_id: str,
     idempotency_key: str | None,
-    payload_digest: str,
+    invocation_intent_digest: str,
 ) -> LogicalInvocationFingerprint:
+    """Logical identity for one exact tool invocation (excludes pause/materialization metadata).
+
+    ``invocation_intent_digest`` is the canonical tool intent digest — not the durable
+    suspended payload digest (which may include ``invocation_scope_id``).
+    """
     import hashlib
 
     parts = (
@@ -326,7 +331,7 @@ def digest_logical_invocation_fingerprint(
         tool_id,
         step_id,
         idempotency_key or "",
-        payload_digest,
+        invocation_intent_digest,
     )
     digest = hashlib.sha256("|".join(parts).encode("utf-8")).hexdigest()
     return LogicalInvocationFingerprint(digest=f"sha256:{digest}")

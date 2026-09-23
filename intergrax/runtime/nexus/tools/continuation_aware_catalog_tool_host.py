@@ -58,6 +58,11 @@ from intergrax.runtime.execution.suspended_operation.governed_request import (
 from intergrax.runtime.execution.suspended_operation.pause_required import (
     ExecutionSuspendedWorkPauseRequired,
 )
+from intergrax.runtime.execution.suspended_operation.catalog_tool_invocation_intent import (
+    digest_execution_bound_catalog_tool_invocation_intent,
+    digest_execution_bound_catalog_tool_invocation_intent_from_request,
+    resolved_catalog_tool_idempotency_key,
+)
 from intergrax.runtime.execution.suspended_operation.payload_digest import (
     digest_suspended_operation_envelope,
 )
@@ -307,16 +312,14 @@ class ContinuationAwareCatalogToolHost:
             mint_agent_governance_invocation_scope_id,
         )
 
-        payload_probe = _catalog_payload_from_request(
-            request,
-            invocation_scope_id="agr_probe",
+        invocation_intent_digest = (
+            digest_execution_bound_catalog_tool_invocation_intent_from_request(request)
         )
-        codec = deps.codec_registry.resolve(
-            SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
-            payload_probe.payload_schema_version,
+        resolved_idempotency_key = resolved_catalog_tool_idempotency_key(
+            run_id=str(pause.signal.run_id),
+            step_id=pause.signal.step_id,
+            idempotency_key=pause.signal.idempotency_key,
         )
-        probe_envelope = codec.encode(payload_probe)
-        digest = digest_suspended_operation_envelope(probe_envelope)
         fingerprint = digest_logical_invocation_fingerprint(
             task_id=str(pause.signal.task_id),
             run_id=str(pause.signal.run_id),
@@ -326,8 +329,8 @@ class ContinuationAwareCatalogToolHost:
             agent_id=pause.signal.agent_id,
             tool_id=pause.signal.tool_id,
             step_id=pause.signal.step_id,
-            idempotency_key=pause.signal.idempotency_key,
-            payload_digest=digest,
+            idempotency_key=resolved_idempotency_key,
+            invocation_intent_digest=invocation_intent_digest,
         )
         existing_descriptor = (
             deps.suspended_operation_store.load_active_for_logical_invocation(
@@ -343,8 +346,17 @@ class ContinuationAwareCatalogToolHost:
             request,
             invocation_scope_id=scope_id,
         )
+        codec = deps.codec_registry.resolve(
+            SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
+            payload.payload_schema_version,
+        )
         envelope = codec.encode(payload)
         digest = digest_suspended_operation_envelope(envelope)
+        intent_from_payload = digest_execution_bound_catalog_tool_invocation_intent(
+            payload,
+        )
+        if intent_from_payload != invocation_intent_digest:
+            raise RuntimeError("catalog invocation intent digest mismatch")
         stable_pause_id: str | None = None
         stable_human_request_id: str | None = None
         if existing_descriptor is not None:
@@ -372,6 +384,7 @@ class ContinuationAwareCatalogToolHost:
                 stable_human_request_id = port_pending.human_request_id
         requirement, pending, human_request = build_agent_governance_pause_artifacts(
             pause.signal,
+            logical_invocation_fingerprint=fingerprint,
             payload_digest=digest,
             invocation_scope_id=scope_id,
             pause_id=stable_pause_id,
@@ -406,7 +419,16 @@ class ContinuationAwareCatalogToolHost:
                 logical_invocation_fingerprint=requirement.logical_invocation_fingerprint,
                 authority_scope=SuspendedOperationAuthorityScope.AGENT_RUNTIME_GOVERNANCE,
             )
-            prepared = deps.suspended_operation_store.prepare(descriptor)
+            try:
+                prepared = deps.suspended_operation_store.prepare(descriptor)
+            except RuntimeError as exc:
+                message = str(exc)
+                if (
+                    "durable persist stale" not in message
+                    and "durable persist race" not in message
+                ):
+                    raise
+                prepared = deps.suspended_operation_store.prepare(descriptor)
             if prepared.descriptor is None:
                 raise RuntimeError("suspended operation prepare failed")
             if prepared.outcome is SuspendedOperationMutationOutcome.ALREADY_ACTIVE:

@@ -94,7 +94,7 @@ def test_signal_idempotency_ignores_approval_evidence_ref() -> None:
         tool_id=signal.tool_id,
         step_id=signal.step_id,
         idempotency_key=signal.idempotency_key,
-        payload_digest="sha256:" + ("a" * 64),
+        invocation_intent_digest="sha256:" + ("a" * 64),
     )
     assert "idem-A" in digest.digest or digest.digest
 
@@ -145,7 +145,7 @@ def test_store_enforces_single_active_descriptor_per_fingerprint() -> None:
         tool_id="code.exec",
         step_id="step-1",
         idempotency_key="idem-1",
-        payload_digest=first.payload_digest,
+        invocation_intent_digest="sha256:" + ("b" * 64),
     )
     first = first.model_copy(
         update={"logical_invocation_fingerprint": fingerprint},
