@@ -7,11 +7,8 @@ from __future__ import annotations
 from intergrax.contracts.execution.suspended_operation.authority_scope import (
     SuspendedOperationAuthorityScope,
 )
-
-# Canonical MSE operation_id for orchestration tool invocation enforcement
-# (see ``TOOL_INVOCATION_INNER_ACTION_PREFIX`` in runtime inner governance).
-CANONICAL_ORCHESTRATION_TOOL_MSE_OPERATION_ID = (
-    "orchestration.tool_invocation_authorization"
+from intergrax.contracts.orchestration_tool_invocation_mse_operation import (
+    CANONICAL_ORCHESTRATION_TOOL_MSE_OPERATION_ID,
 )
 
 
