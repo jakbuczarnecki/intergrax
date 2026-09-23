@@ -5,8 +5,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from typing import Any, Protocol
-
 from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 
 from intergrax.llm.messages import ChatMessage
@@ -25,16 +23,13 @@ from intergrax.llm_adapters.routing.evaluator import (
     LLMRoutingEvaluator,
     profile_identity,
 )
+from intergrax.llm_adapters.routing.profile_source import RoutingProfileSource
 
 RoutingEvaluationObserver = Callable[[RoutingEvaluation], None]
 AllowlistViolationObserver = Callable[[AllowlistViolationError, RoutingContext], None]
 RoutingContextProvider = Callable[[], RoutingContext]
 RoutingAdapterFactory = Callable[[RoutingEvaluation, RoutingContext], LLMAdapter]
 InnerSwappedObserver = Callable[[LLMAdapter], None]
-
-
-class RoutingProfileSource(Protocol):
-    llm_routing_profile: Any
 
 
 class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):

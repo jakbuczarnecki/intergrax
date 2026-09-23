@@ -7,7 +7,11 @@ from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
 import time
 
-from intergrax.llm_adapters.base.usage_log import LLMRunStats
+from intergrax.llm_adapters.base.usage_log import (
+    LLMRunStats,
+    LLMRunStatsReader,
+    LLMUsageTrackable,
+)
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 
@@ -78,6 +82,16 @@ class LLMUsageReport:
         return "\n".join(lines)
 
 
+@dataclass
+class _TrackedLLMUsageEntry:
+    label: str
+    trackable: LLMUsageTrackable
+    adapter_type: str
+    provider_slug: str
+    model: str
+    stats: LLMRunStatsReader
+
+
 class LLMUsageTracker:
     """
     Aggregates usage across multiple adapters used during a single runtime.run().
@@ -90,25 +104,41 @@ class LLMUsageTracker:
 
     def __init__(self, run_id: str) -> None:
         self.run_id = run_id
-        self._adapters: Dict[str, LLMAdapter] = {}
+        self._entries: Dict[str, _TrackedLLMUsageEntry] = {}
 
+    @staticmethod
+    def _default_label(trackable: LLMUsageTrackable) -> str:
+        slug = llm_provider_slug(trackable.provider)
+        return f"{slug}:{trackable.model}@{id(trackable)}"
 
-    def register_adapter(self, adapter: LLMAdapter, label: Optional[str] = None) -> None:
+    def register_adapter(
+        self,
+        trackable: LLMUsageTrackable,
+        label: Optional[str] = None,
+    ) -> None:
         """
-        Register an adapter used during this runtime run.
+        Register a usage-trackable adapter used during this runtime run.
         Idempotent by label.
         """
-        if adapter is None:
-            return
-        
-        if not label:
-            label = adapter.id
-            
-        if label not in self._adapters:
-            self._adapters[label] = adapter
+        if not isinstance(trackable, LLMUsageTrackable):
+            raise TypeError(
+                "LLMUsageTracker.register_adapter requires LLMUsageTrackable "
+                "(provider, model, and usage stats reader)"
+            )
 
+        resolved_label = label or self._default_label(trackable)
 
-    def unregister_adapter(self, adapter: LLMAdapter) -> None:
+        if resolved_label not in self._entries:
+            self._entries[resolved_label] = _TrackedLLMUsageEntry(
+                label=resolved_label,
+                trackable=trackable,
+                adapter_type=trackable.__class__.__name__,
+                provider_slug=llm_provider_slug(trackable.provider),
+                model=str(trackable.model or ""),
+                stats=trackable.usage,
+            )
+
+    def unregister_adapter(self, adapter: LLMAdapter | LLMUsageTrackable) -> None:
         """
         Unregister an adapter from this runtime run.
 
@@ -117,55 +147,50 @@ class LLMUsageTracker:
         """
         to_remove = None
 
-        for label, a in self._adapters.items():
-            if a is adapter:
+        for label, entry in self._entries.items():
+            if entry.trackable is adapter:
                 to_remove = label
                 break
 
         if to_remove is not None:
-            del self._adapters[to_remove]
-            
-        
+            del self._entries[to_remove]
 
     def registered_labels(self) -> List[str]:
-        return list(self._adapters.keys())
+        return list(self._entries.keys())
 
+    def _snapshot_stats(self, stats: LLMRunStatsReader) -> LLMRunStats:
+        st = stats.get_run_stats(self.run_id)
+        if st is None:
+            return LLMRunStats()
+        return st
 
     def build_report(self) -> LLMUsageReport:
         entries: List[LLMAdapterUsageEntry] = []
 
         adapter_instance_ids: Dict[str, int] = {}
-        for label, ad in (self._adapters or {}).items():
-            adapter_instance_ids[label] = id(ad) if ad is not None else 0
+        for label, entry in (self._entries or {}).items():
+            adapter_instance_ids[label] = id(entry.trackable)
 
-        # Build per-label entries (including meta)
-        for label, ad in (self._adapters or {}).items():
-            if ad is None:
-                continue
-
+        for entry in (self._entries or {}).values():
             meta = LLMAdapterMeta(
-                adapter_type=ad.__class__.__name__,
-                provider=llm_provider_slug(ad.provider),
-                model=ad.model,
+                adapter_type=entry.adapter_type,
+                provider=entry.provider_slug,
+                model=entry.model,
             )
 
-            st = ad.usage.get_run_stats(self.run_id)
-            if st is None:
-                st = LLMRunStats()
+            st = self._snapshot_stats(entry.stats)
 
             entries.append(
                 LLMAdapterUsageEntry(
-                    label=label,
+                    label=entry.label,
                     meta=meta,
                     stats=st,
-                    adapter_instance_id=id(ad),
+                    adapter_instance_id=id(entry.trackable),
                 )
             )
 
-        # Total (dedup by instance)
         total = self.total()
 
-        # Aggregate by provider:model (dedup by instance)
         by_provider_model: Dict[str, LLMRunStats] = {}
         seen_ids = set()
         for e in entries:
@@ -200,26 +225,20 @@ class LLMUsageTracker:
             adapter_instance_ids=adapter_instance_ids,
         )
 
-
     def export(self) -> Dict[str, Any]:
         return self.build_report().to_dict()
-
-
 
     def total(self) -> LLMRunStats:
         agg = LLMRunStats()
 
         seen_ids = set()
-        for _, ad in (self._adapters or {}).items():
-            if ad is None:
-                continue
-
-            ad_id = id(ad)
+        for entry in (self._entries or {}).values():
+            ad_id = id(entry.trackable)
             if ad_id in seen_ids:
                 continue
             seen_ids.add(ad_id)
 
-            st = ad.usage.get_run_stats(self.run_id)
+            st = entry.stats.get_run_stats(self.run_id)
             if st is None:
                 continue
 
@@ -231,16 +250,3 @@ class LLMUsageTracker:
             agg.errors += st.errors
 
         return agg
-
-        
-    def _describe_adapter(self, ad: LLMAdapter) -> Dict[str, Any]:
-        """
-        Typed adapter metadata extraction.
-        Relies on LLMAdapter contract: provider, model, kind must exist.
-        """
-        return {
-            "adapter_type": ad.__class__.__name__,
-            "provider": ad.provider,
-            "model": ad.model,
-        }
-

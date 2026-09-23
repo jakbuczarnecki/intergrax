@@ -5,7 +5,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 
-from intergrax.llm_adapters.base.usage_log import LLMAdapterUsageLog
+from intergrax.llm_adapters.base.usage_log import LLMAdapterUsageLog, LLMRunStatsReader
 from contextlib import contextmanager
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from typing import TYPE_CHECKING, Callable, Optional, Any, Dict, Union, List, TypeVar
@@ -73,6 +73,7 @@ class BaseLLMAdapter(ABC):
 
     provider: LLMProvider | str
     model: str
+    usage: LLMRunStatsReader
 
     # Hint used by the generic token estimator (e.g. OpenAI model name).
     model_name_for_token_estimation: Optional[str] = None

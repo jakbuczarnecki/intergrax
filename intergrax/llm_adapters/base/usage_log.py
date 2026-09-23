@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional, Protocol, runtime_checkable
 
 from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
 
@@ -14,7 +14,34 @@ if TYPE_CHECKING:
     from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
 
-class LLMAdapterUsageLog:
+@dataclass
+class LLMRunStats:
+    calls: int = 0
+    input_tokens: int = 0
+    output_tokens: int = 0
+    total_tokens: int = 0
+    duration_ms: int = 0
+    errors: int = 0
+
+
+@runtime_checkable
+class LLMRunStatsReader(Protocol):
+    """Internal: per-adapter run-level usage snapshot access (not execution ABI)."""
+
+    def get_run_stats(self, run_id: Optional[str] = None) -> LLMRunStats | None:
+        ...
+
+
+@runtime_checkable
+class LLMUsageTrackable(Protocol):
+    """Internal: adapter identity + usage stats source for ``LLMUsageTracker`` registration."""
+
+    provider: LLMProvider | str
+    model: str
+    usage: LLMRunStatsReader
+
+
+class LLMAdapterUsageLog(LLMRunStatsReader):
     def __init__(self) -> None:
         self._run_stats: Dict[str, LLMRunStats] = {}
 
@@ -106,7 +133,7 @@ class LLMAdapterUsageLog:
                 error_type=call.error_type,
             )
 
-    def get_run_stats(self, run_id: Optional[str] = None) -> LLMRunStats:
+    def get_run_stats(self, run_id: Optional[str] = None) -> LLMRunStats | None:
         """
         Get aggregated stats for a given run_id.
         Returns None if no stats exist for that run_id.
@@ -198,11 +225,10 @@ class LLMCallStats:
     model: str = ""
 
 
-@dataclass
-class LLMRunStats:
-    calls: int = 0
-    input_tokens: int = 0
-    output_tokens: int = 0
-    total_tokens: int = 0
-    duration_ms: int = 0
-    errors: int = 0
+__all__ = [
+    "LLMAdapterUsageLog",
+    "LLMCallStats",
+    "LLMRunStats",
+    "LLMRunStatsReader",
+    "LLMUsageTrackable",
+]

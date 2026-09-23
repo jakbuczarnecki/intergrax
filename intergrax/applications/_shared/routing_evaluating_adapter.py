@@ -17,8 +17,8 @@ from intergrax.llm_adapters.routing.evaluating_adapter import (
     RoutingContextProvider,
     RoutingEvaluatingLLMAdapter as PlatformRoutingEvaluatingLLMAdapter,
     RoutingEvaluationObserver,
-    RoutingProfileSource,
 )
+from intergrax.llm_adapters.routing.profile_source import RoutingProfileSource
 
 __all__ = [
     "AllowlistViolationObserver",
