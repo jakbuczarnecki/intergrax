@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from intergrax.llm_adapters.routing.evaluating_adapter import (
     RoutingContextProvider,
     RoutingEvaluatingLLMAdapter,
-    RoutingEvaluationObserver,
 )
+from intergrax.llm_adapters.routing.evaluating_hooks import RoutingEvaluationObserver
 from intergrax.llm_adapters.routing import RoutingEvaluation
 from model_routing_qualifier.qualification_types import ObservedRoutingDecision
 

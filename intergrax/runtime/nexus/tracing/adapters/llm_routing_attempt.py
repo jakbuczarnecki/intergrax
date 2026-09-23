@@ -13,7 +13,7 @@ from intergrax.llm_adapters.registry.failover_adapter import (
     FailoverLLMAdapter,
     LLMRoutingAttemptRecord,
 )
-from intergrax.llm_adapters.routing.evaluator import AllowlistViolationError
+from intergrax.llm_adapters.routing.contracts import AllowlistViolationError
 from intergrax.runtime.nexus.tracing.trace_models import (
     DiagnosticPayload,
     TraceComponent,

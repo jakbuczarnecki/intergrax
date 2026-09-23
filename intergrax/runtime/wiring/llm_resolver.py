@@ -14,7 +14,7 @@ from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter, 
 from intergrax.llm_adapters.registry.registration_contract import LLMProviderNotConfiguredError
 from intergrax.llm_adapters.routing import LLMRoutingEvaluator, RoutingContext, RoutingEvaluation
 from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
-from intergrax.llm_adapters.routing.evaluator import AllowlistViolationError
+from intergrax.llm_adapters.routing.contracts import AllowlistViolationError
 
 _last_routing_evaluation: RoutingEvaluation | None = None
 

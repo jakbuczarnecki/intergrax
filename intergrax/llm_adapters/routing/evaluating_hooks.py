@@ -8,10 +8,14 @@ from collections.abc import Callable
 from typing import Protocol, runtime_checkable
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.llm_adapters.routing.contracts import RoutingContext, RoutingEvaluation
+from intergrax.llm_adapters.routing.contracts import (
+    AllowlistViolationError,
+    RoutingContext,
+    RoutingEvaluation,
+)
 
 RoutingEvaluationObserver = Callable[[RoutingEvaluation], None]
-AllowlistViolationObserver = Callable[[object, RoutingContext], None]
+AllowlistViolationObserver = Callable[[AllowlistViolationError, RoutingContext], None]
 InnerSwappedObserver = Callable[[LLMAdapter, RoutingEvaluation], None]
 
 

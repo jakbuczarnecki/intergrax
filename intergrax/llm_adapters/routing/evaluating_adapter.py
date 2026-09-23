@@ -17,19 +17,24 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
 from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResult, TStructured
 from intergrax.llm_adapters.contracts.stream_event import LLMStreamEvent
 from intergrax.llm_adapters.contracts.native_tool_choice import NativeToolChoice
-from intergrax.llm_adapters.routing.contracts import RoutingContext, RoutingEvaluation
-from intergrax.llm_adapters.routing.evaluator import (
+from intergrax.llm_adapters.routing.contracts import (
     AllowlistViolationError,
+    RoutingContext,
+    RoutingEvaluation,
+)
+from intergrax.llm_adapters.routing.evaluating_hooks import (
+    AllowlistViolationObserver,
+    InnerSwappedObserver,
+    RoutingEvaluationObserver,
+)
+from intergrax.llm_adapters.routing.evaluator import (
     LLMRoutingEvaluator,
     routing_evaluation_identity,
 )
 from intergrax.llm_adapters.routing.profile_source import RoutingProfileSource
 
-RoutingEvaluationObserver = Callable[[RoutingEvaluation], None]
-AllowlistViolationObserver = Callable[[AllowlistViolationError, RoutingContext], None]
 RoutingContextProvider = Callable[[], RoutingContext]
 RoutingAdapterFactory = Callable[[RoutingEvaluation, RoutingContext], LLMAdapter]
-InnerSwappedObserver = Callable[[LLMAdapter, RoutingEvaluation], None]
 
 
 class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):

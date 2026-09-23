@@ -18,7 +18,7 @@ from intergrax.applications._shared.routing_evaluating_adapter import (
     RoutingContextProvider,
     wrap_routing_evaluating_adapter,
 )
-from intergrax.llm_adapters.routing.evaluator import AllowlistViolationError
+from intergrax.llm_adapters.routing.contracts import AllowlistViolationError
 
 _last_routing_evaluation: RoutingEvaluation | None = None
 

@@ -32,6 +32,7 @@ from intergrax.llm_adapters.routing.context_bridge import (
     tokens_used_from_usage,
 )
 from intergrax.llm_adapters.routing.contracts import (
+    AllowlistViolationError,
     LLMRoutingProfile,
     LLMRoutingRule,
     LLMRoutingRuleBase,
@@ -41,7 +42,6 @@ from intergrax.llm_adapters.routing.contracts import (
     RoutingTarget,
 )
 from intergrax.llm_adapters.routing.evaluator import (
-    AllowlistViolationError,
     LLMRoutingEvaluator,
     effective_allowlist,
     is_profile_allowed,

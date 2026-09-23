@@ -11,11 +11,13 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.routing.evaluating_adapter import (
-    AllowlistViolationObserver,
-    InnerSwappedObserver,
     RoutingAdapterFactory,
     RoutingContextProvider,
     RoutingEvaluatingLLMAdapter as PlatformRoutingEvaluatingLLMAdapter,
+)
+from intergrax.llm_adapters.routing.evaluating_hooks import (
+    AllowlistViolationObserver,
+    InnerSwappedObserver,
     RoutingEvaluationObserver,
 )
 from intergrax.llm_adapters.routing.profile_source import RoutingProfileSource

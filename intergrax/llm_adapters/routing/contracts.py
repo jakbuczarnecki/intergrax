@@ -14,7 +14,13 @@ from intergrax.llm_adapters.contracts.routing_profile import (
     RoutingTarget,
 )
 
+
+class AllowlistViolationError(ValueError):
+    """Raised when a rule resolves to a profile outside ``allowed_profiles``."""
+
+
 __all__ = [
+    "AllowlistViolationError",
     "LLMRoutingProfile",
     "LLMRoutingRule",
     "LLMRoutingRuleBase",

@@ -7,16 +7,13 @@ from __future__ import annotations
 from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 from intergrax.llm_adapters.registry.profile import LLMProfile
 from intergrax.llm_adapters.routing.contracts import (
+    AllowlistViolationError,
     LLMRoutingProfile,
     LLMRoutingRule,
     RoutingContext,
     RoutingEvaluation,
     RoutingTarget,
 )
-
-
-class AllowlistViolationError(ValueError):
-    """Raised when a rule resolves to a profile outside ``allowed_profiles``."""
 
 
 def profile_identity(profile: LLMProfile) -> str:

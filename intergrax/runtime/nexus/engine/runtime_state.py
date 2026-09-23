@@ -232,31 +232,31 @@ class RuntimeState(RuntimeStateContract):
             from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
             from intergrax.llm_adapters.routing.evaluating_hooks import wire_routing_evaluating_hooks
             from intergrax.llm_adapters.routing.metering import resolve_metering_adapter
+            from intergrax.llm_adapters.routing.contracts import (
+                AllowlistViolationError,
+                RoutingContext,
+                RoutingEvaluation,
+            )
+            from intergrax.llm_adapters.routing.evaluator import routing_evaluation_identity
             from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
                 attach_failover_routing_trace_observer,
                 emit_llm_routing_allowlist_violation_diag,
                 emit_llm_routing_rule_diag,
             )
 
-            def _on_evaluated(evaluation: object) -> None:
-                from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
-
-                assert isinstance(evaluation, RoutingEvaluation)
+            def _on_evaluated(evaluation: RoutingEvaluation) -> None:
                 emit_llm_routing_rule_diag(self.trace_event, evaluation)
 
-            def _on_allowlist_violation(exc: object, context: object) -> None:
-                from intergrax.llm_adapters.routing.contracts import RoutingContext
-                from intergrax.llm_adapters.routing.evaluator import AllowlistViolationError
-
-                assert isinstance(exc, AllowlistViolationError)
-                assert isinstance(context, RoutingContext)
+            def _on_allowlist_violation(
+                exc: AllowlistViolationError,
+                context: RoutingContext,
+            ) -> None:
                 emit_llm_routing_allowlist_violation_diag(self.trace_event, exc, context)
 
-            def _on_inner_swapped(inner: LLMAdapter, evaluation: object) -> None:
-                from intergrax.llm_adapters.routing.contracts import RoutingEvaluation
-                from intergrax.llm_adapters.routing.evaluator import routing_evaluation_identity
-
-                assert isinstance(evaluation, RoutingEvaluation)
+            def _on_inner_swapped(
+                inner: LLMAdapter,
+                evaluation: RoutingEvaluation,
+            ) -> None:
                 route_id = routing_evaluation_identity(evaluation)
                 self.llm_usage_tracker.register_adapter(
                     inner,
