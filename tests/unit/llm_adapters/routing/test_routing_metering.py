@@ -170,7 +170,7 @@ def test_routing_evaluation_identity_distinguishes_different_routes() -> None:
 
 @pytest.mark.unit
 @pytest.mark.gate
-def test_usage_tracker_reregister_same_semantic_label_updates_trackable() -> None:
+def test_usage_tracker_same_semantic_label_preserves_all_instances() -> None:
     label = "core_inner:vllm:meta-llama/Llama-3.1-8B:"
     first = FakeLLMAdapter(fixed_text="local-v1")
     first.model = "meta-llama/Llama-3.1-8B"
@@ -184,5 +184,36 @@ def test_usage_tracker_reregister_same_semantic_label_updates_trackable() -> Non
 
     report = tracker.build_report()
     by_label = {entry.label: entry for entry in report.entries}
-    assert by_label[label].adapter_instance_id == id(second)
-    assert by_label[label].stats.calls == 1
+    assert len(by_label) == 1
+    assert label in by_label
+    assert by_label[label].stats.calls == 2
+    assert report.total.calls == 2
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_usage_tracker_same_instance_registered_twice_counts_once() -> None:
+    label = "core_inner:openai:gpt-4o-mini:"
+    adapter = FakeLLMAdapter(fixed_text="once")
+    tracker = LLMUsageTracker(run_id="run-twice")
+    tracker.register_adapter(adapter, label=label)
+    tracker.register_adapter(adapter, label=label)
+    adapter.generate_messages([ChatMessage(role="user", content="one")], run_id="run-twice")
+
+    report = tracker.build_report()
+    assert len(report.entries) == 1
+    assert report.entries[0].stats.calls == 1
+    assert report.total.calls == 1
+
+
+@pytest.mark.unit
+@pytest.mark.gate
+def test_usage_tracker_same_instance_under_aliases_dedupes_total() -> None:
+    adapter = FakeLLMAdapter(fixed_text="alias")
+    tracker = LLMUsageTracker(run_id="run-alias")
+    tracker.register_adapter(adapter, label="label1")
+    tracker.register_adapter(adapter, label="label2")
+    adapter.generate_messages([ChatMessage(role="user", content="one")], run_id="run-alias")
+
+    assert tracker.total().calls == 1
+    assert len(tracker.build_report().entries) == 2

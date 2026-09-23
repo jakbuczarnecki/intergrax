@@ -5,7 +5,6 @@
 from __future__ import annotations
 from dataclasses import asdict, dataclass, field
 from typing import Any, Dict, List, Optional
-import time
 
 from intergrax.llm_adapters.base.usage_log import (
     LLMRunStats,
@@ -41,7 +40,7 @@ class LLMUsageReport:
     # Optional aggregation by (provider, model)
     by_provider_model: Dict[str, LLMRunStats]
 
-    # Debug only: label -> instance_id
+    # Debug only: label -> instance_id of first registered physical source
     adapter_instance_ids: Dict[str, int]
 
     def to_dict(self) -> Dict[str, Any]:
@@ -84,13 +83,18 @@ class LLMUsageReport:
 
 
 @dataclass
-class _TrackedLLMUsageEntry:
-    label: str
+class _PhysicalUsageSource:
     trackable: LLMUsageTrackable
     adapter_type: str
     provider_slug: str
     model: str
     stats: LLMRunStatsReader
+
+
+@dataclass
+class _LogicalUsageEntry:
+    label: str
+    sources: Dict[int, _PhysicalUsageSource] = field(default_factory=dict)
 
 
 class LLMUsageTracker:
@@ -105,12 +109,24 @@ class LLMUsageTracker:
 
     def __init__(self, run_id: str) -> None:
         self.run_id = run_id
-        self._entries: Dict[str, _TrackedLLMUsageEntry] = {}
+        self._entries: Dict[str, _LogicalUsageEntry] = {}
 
     @staticmethod
     def _default_label(trackable: LLMUsageTrackable) -> str:
         slug = llm_provider_slug(trackable.provider)
         return f"{slug}:{trackable.model}"
+
+    def _physical_source(
+        self,
+        verified: LLMUsageTrackable,
+    ) -> _PhysicalUsageSource:
+        return _PhysicalUsageSource(
+            trackable=verified,
+            adapter_type=verified.__class__.__name__,
+            provider_slug=llm_provider_slug(verified.provider),
+            model=str(verified.model or ""),
+            stats=verified.usage,
+        )
 
     def register_adapter(
         self,
@@ -119,29 +135,25 @@ class LLMUsageTracker:
     ) -> None:
         """
         Register a usage-trackable adapter used during this runtime run.
-        Idempotent by label.
+
+        Idempotent per (logical label, physical instance): the same object registered
+        twice under one label is counted once. Multiple distinct instances under the
+        same semantic label aggregate into one logical report entry.
         """
         verified = require_llm_usage_trackable(trackable)
 
         resolved_label = label or self._default_label(verified)
+        instance_id = id(verified)
 
-        existing = self._entries.get(resolved_label)
-        if existing is None:
-            self._entries[resolved_label] = _TrackedLLMUsageEntry(
-                label=resolved_label,
-                trackable=verified,
-                adapter_type=verified.__class__.__name__,
-                provider_slug=llm_provider_slug(verified.provider),
-                model=str(verified.model or ""),
-                stats=verified.usage,
-            )
+        logical = self._entries.get(resolved_label)
+        if logical is None:
+            logical = _LogicalUsageEntry(label=resolved_label)
+            self._entries[resolved_label] = logical
+
+        if instance_id in logical.sources:
             return
 
-        existing.trackable = verified
-        existing.adapter_type = verified.__class__.__name__
-        existing.provider_slug = llm_provider_slug(verified.provider)
-        existing.model = str(verified.model or "")
-        existing.stats = verified.usage
+        logical.sources[instance_id] = self._physical_source(verified)
 
     def unregister_adapter(self, adapter: LLMAdapter | LLMUsageTrackable) -> None:
         """
@@ -150,15 +162,18 @@ class LLMUsageTracker:
         Safe to call multiple times.
         Does nothing if adapter is not registered.
         """
-        to_remove = None
+        instance_id = id(adapter)
+        labels_to_drop: List[str] = []
 
-        for label, entry in self._entries.items():
-            if entry.trackable is adapter:
-                to_remove = label
-                break
+        for label, logical in self._entries.items():
+            if instance_id not in logical.sources:
+                continue
+            del logical.sources[instance_id]
+            if not logical.sources:
+                labels_to_drop.append(label)
 
-        if to_remove is not None:
-            del self._entries[to_remove]
+        for label in labels_to_drop:
+            del self._entries[label]
 
     def registered_labels(self) -> List[str]:
         return list(self._entries.keys())
@@ -169,28 +184,50 @@ class LLMUsageTracker:
             return LLMRunStats()
         return st
 
+    def _aggregate_sources(self, sources: Dict[int, _PhysicalUsageSource]) -> LLMRunStats:
+        agg = LLMRunStats()
+        for source in sources.values():
+            st = self._snapshot_stats(source.stats)
+            agg.calls += st.calls
+            agg.input_tokens += st.input_tokens
+            agg.output_tokens += st.output_tokens
+            agg.total_tokens += st.total_tokens
+            agg.duration_ms += st.duration_ms
+            agg.errors += st.errors
+        return agg
+
+    def _primary_instance_id(self, logical: _LogicalUsageEntry) -> int:
+        return next(iter(logical.sources))
+
+    def _primary_source(self, logical: _LogicalUsageEntry) -> _PhysicalUsageSource:
+        return logical.sources[self._primary_instance_id(logical)]
+
     def build_report(self) -> LLMUsageReport:
         entries: List[LLMAdapterUsageEntry] = []
 
         adapter_instance_ids: Dict[str, int] = {}
-        for label, entry in (self._entries or {}).items():
-            adapter_instance_ids[label] = id(entry.trackable)
+        for label, logical in (self._entries or {}).items():
+            if logical.sources:
+                adapter_instance_ids[label] = self._primary_instance_id(logical)
 
-        for entry in (self._entries or {}).values():
+        for logical in (self._entries or {}).values():
+            if not logical.sources:
+                continue
+            primary = self._primary_source(logical)
             meta = LLMAdapterMeta(
-                adapter_type=entry.adapter_type,
-                provider=entry.provider_slug,
-                model=entry.model,
+                adapter_type=primary.adapter_type,
+                provider=primary.provider_slug,
+                model=primary.model,
             )
 
-            st = self._snapshot_stats(entry.stats)
+            st = self._aggregate_sources(logical.sources)
 
             entries.append(
                 LLMAdapterUsageEntry(
-                    label=entry.label,
+                    label=logical.label,
                     meta=meta,
                     stats=st,
-                    adapter_instance_id=id(entry.trackable),
+                    adapter_instance_id=self._primary_instance_id(logical),
                 )
             )
 
@@ -236,22 +273,22 @@ class LLMUsageTracker:
     def total(self) -> LLMRunStats:
         agg = LLMRunStats()
 
-        seen_ids = set()
-        for entry in (self._entries or {}).values():
-            ad_id = id(entry.trackable)
-            if ad_id in seen_ids:
-                continue
-            seen_ids.add(ad_id)
+        seen_ids: set[int] = set()
+        for logical in (self._entries or {}).values():
+            for instance_id, source in logical.sources.items():
+                if instance_id in seen_ids:
+                    continue
+                seen_ids.add(instance_id)
 
-            st = entry.stats.get_run_stats(self.run_id)
-            if st is None:
-                continue
+                st = source.stats.get_run_stats(self.run_id)
+                if st is None:
+                    continue
 
-            agg.calls += st.calls
-            agg.input_tokens += st.input_tokens
-            agg.output_tokens += st.output_tokens
-            agg.total_tokens += st.total_tokens
-            agg.duration_ms += st.duration_ms
-            agg.errors += st.errors
+                agg.calls += st.calls
+                agg.input_tokens += st.input_tokens
+                agg.output_tokens += st.output_tokens
+                agg.total_tokens += st.total_tokens
+                agg.duration_ms += st.duration_ms
+                agg.errors += st.errors
 
         return agg
