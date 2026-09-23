@@ -44,6 +44,11 @@ _LIFECYCLE_ADAPTER = (
 _STORE_ENGINE = (
     _REPO / "intergrax/runtime/execution/suspended_operation/store_engine.py"
 )
+_AUTH_SCOPE_COMPAT = (
+    _REPO
+    / "intergrax/contracts/execution/suspended_operation/authority_scope_compat.py"
+)
+_DESCRIPTOR = _REPO / "intergrax/contracts/execution/suspended_operation/descriptor.py"
 
 
 def _fingerprint() -> LogicalInvocationFingerprint:
@@ -200,6 +205,22 @@ def test_lifecycle_adapter_uses_checkpoint_persistence_contract() -> None:
         not in source
     )
     assert "self._checkpoint_store.save" in source
+    assert "_canonical_checkpoint_revision" not in source
+    assert "expected_checkpoint_revision=snapshot.checkpoint_revision" in source
+
+
+def test_authority_scope_unknown_cannot_map_to_mse() -> None:
+    source = _AUTH_SCOPE_COMPAT.read_text(encoding="utf-8")
+    assert "UnknownInvocationScopeError" in source
+    assert "is_meaningful_side_effect_invocation_scope_id" in source
+    assert "raise UnknownInvocationScopeError" in source
+
+
+def test_descriptor_v1_dhr_without_authority_scope_remains_readable() -> None:
+    source = _DESCRIPTOR.read_text(encoding="utf-8")
+    assert "_migrate_legacy_authority_scope" in source
+    assert "_default_authority_scope" not in source
+    assert "recognize_authority_scope_from_invocation" in source
 
 
 def test_reblock_and_block_share_continuation_helpers() -> None:

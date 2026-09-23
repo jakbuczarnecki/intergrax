@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from intergrax.contracts.agent_governance_grant_lifecycle_port import (
@@ -43,6 +44,12 @@ GrantLifecycleMutator = Callable[
 ]
 
 
+@dataclass(frozen=True, slots=True)
+class _CanonicalTaskGovernanceSnapshot:
+    grant_record: AgentGovernanceGrantLifecycleRecord | None
+    checkpoint_revision: int | None
+
+
 class TaskAgentGovernanceGrantLifecycleAdapter(AgentGovernanceGrantLifecyclePort):
     """Canonical Task governance grant lifecycle via ``TaskCheckpointPersistence`` CAS."""
 
@@ -63,8 +70,8 @@ class TaskAgentGovernanceGrantLifecycleAdapter(AgentGovernanceGrantLifecyclePort
     ) -> AgentGovernanceGrantLifecycleRecord | None:
         if not self._tenant_task_matches(task_id=task_id, tenant_id=tenant_id):
             return None
-        self._sync_from_canonical_checkpoint_if_present()
-        return self._task.runtime.governance.agent_governance_human_approval_grant
+        snapshot = self._load_canonical_governance_snapshot()
+        return snapshot.grant_record
 
     def persist_available_grant(
         self,
@@ -300,15 +307,6 @@ class TaskAgentGovernanceGrantLifecycleAdapter(AgentGovernanceGrantLifecyclePort
             return False
         return self._task.tenant_id == tenant_id
 
-    def _canonical_checkpoint_revision(self) -> int | None:
-        latest = self._checkpoint_store.get_latest(
-            str(self._task.task_id),
-            self._task.tenant_id,
-        )
-        if latest is not None and latest.revision is not None:
-            return latest.revision
-        return None
-
     def _apply_checkpoint_to_task(self, checkpoint: TaskCheckpoint) -> None:
         restored = Task.model_validate(checkpoint.task_snapshot)
         self._task.runtime.governance = restored.runtime.governance
@@ -317,23 +315,33 @@ class TaskAgentGovernanceGrantLifecycleAdapter(AgentGovernanceGrantLifecyclePort
         self._task.runtime.orchestration.resume_token = checkpoint.resume_token
         self._task.sync_metadata()
 
-    def _sync_from_canonical_checkpoint_if_present(self) -> None:
+    def _load_canonical_governance_snapshot(self) -> _CanonicalTaskGovernanceSnapshot:
         latest = self._checkpoint_store.get_latest(
             str(self._task.task_id),
             self._task.tenant_id,
         )
-        if latest is not None:
-            self._apply_checkpoint_to_task(latest)
+        if latest is None:
+            return _CanonicalTaskGovernanceSnapshot(
+                grant_record=self._task.runtime.governance.agent_governance_human_approval_grant,
+                checkpoint_revision=None,
+            )
+        self._apply_checkpoint_to_task(latest)
+        return _CanonicalTaskGovernanceSnapshot(
+            grant_record=self._task.runtime.governance.agent_governance_human_approval_grant,
+            checkpoint_revision=latest.revision,
+        )
 
     def _reload_canonical_task_state(
         self,
     ) -> AgentGovernanceGrantLifecycleRecord | None:
-        self._sync_from_canonical_checkpoint_if_present()
-        return self._task.runtime.governance.agent_governance_human_approval_grant
+        snapshot = self._load_canonical_governance_snapshot()
+        return snapshot.grant_record
 
     def _persist_through_checkpoint(
         self,
         updated_record: AgentGovernanceGrantLifecycleRecord,
+        *,
+        expected_checkpoint_revision: int | None,
     ) -> AgentGovernanceGrantLifecycleMutationResult:
         draft = self._task.model_copy(deep=True)
         draft.runtime.governance.agent_governance_human_approval_grant = updated_record
@@ -345,7 +353,6 @@ class TaskAgentGovernanceGrantLifecycleAdapter(AgentGovernanceGrantLifecyclePort
             resume_token=self._task.runtime.orchestration.resume_token,
             runtime=runtime,
         )
-        expected_checkpoint_revision = self._canonical_checkpoint_revision()
         try:
             saved = self._checkpoint_store.save(
                 checkpoint,
@@ -376,8 +383,8 @@ class TaskAgentGovernanceGrantLifecycleAdapter(AgentGovernanceGrantLifecyclePort
             return AgentGovernanceGrantLifecycleMutationResult(
                 outcome=AgentGovernanceGrantLifecycleOutcome.NOT_FOUND,
             )
-        self._sync_from_canonical_checkpoint_if_present()
-        current = self._task.runtime.governance.agent_governance_human_approval_grant
+        snapshot = self._load_canonical_governance_snapshot()
+        current = snapshot.grant_record
         current_revision = current.lifecycle_revision if current is not None else 0
         if current_revision != expected_lifecycle_revision:
             return AgentGovernanceGrantLifecycleMutationResult(
@@ -391,7 +398,10 @@ class TaskAgentGovernanceGrantLifecycleAdapter(AgentGovernanceGrantLifecyclePort
                 outcome=AgentGovernanceGrantLifecycleOutcome.INVALID_STATE,
                 record=current,
             )
-        return self._persist_through_checkpoint(updated)
+        return self._persist_through_checkpoint(
+            updated,
+            expected_checkpoint_revision=snapshot.checkpoint_revision,
+        )
 
 
 __all__ = [

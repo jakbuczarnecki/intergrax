@@ -11,8 +11,6 @@ from intergrax.contracts.agent_governance_grant_lifecycle_port import (
     AgentGovernanceGrantLifecycleOutcome,
 )
 from intergrax.contracts.agent_governance_hitl import (
-    AgentGovernanceGrantLifecycleRecord,
-    AgentGovernanceGrantLifecycleState,
     AgentGovernanceHumanApprovalGrant,
     LogicalInvocationFingerprint,
     mint_agent_governance_invocation_scope_id,
@@ -21,7 +19,6 @@ from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_execution_id,
     mint_run_id,
-    mint_task_id,
 )
 from intergrax.runtime.long_running.checkpoint_builder import build_task_checkpoint
 from intergrax.runtime.long_running.checkpoint_revision import StaleCheckpointWriteError
@@ -174,6 +171,60 @@ def _seed_checkpoint(task: Task, store: _MemoryTaskCheckpointStore) -> None:
     latest = store.get_latest(str(task.task_id), task.tenant_id)
     assert latest is not None
     task.runtime.orchestration.checkpoint_revision = latest.revision
+
+
+def test_checkpoint_cas_uses_snapshot_revision_not_fresh_latest() -> None:
+    task = _task()
+    store = _MemoryTaskCheckpointStore()
+    _seed_checkpoint(task, store)
+    base_revision = store.get_latest(str(task.task_id), task.tenant_id)
+    assert base_revision is not None
+    captured: list[int | None] = []
+
+    class _RecordingStore(_MemoryTaskCheckpointStore):
+        def save(
+            self,
+            checkpoint: TaskCheckpoint,
+            *,
+            expected_revision: int | None = None,
+        ) -> TaskCheckpoint:
+            captured.append(expected_revision)
+            return super().save(
+                checkpoint,
+                expected_revision=expected_revision,
+            )
+
+    recording = _RecordingStore()
+    recording._latest = store._latest
+    recording._sequence = store._sequence
+    adapter_a = TaskAgentGovernanceGrantLifecycleAdapter(
+        task=task,
+        checkpoint_store=recording,
+    )
+    task_b = Task.model_validate(task.model_dump(mode="json"))
+    adapter_b = TaskAgentGovernanceGrantLifecycleAdapter(
+        task=task_b,
+        checkpoint_store=recording,
+    )
+    grant = _grant(task)
+    first = adapter_a.persist_available_grant(
+        task_id=task.task_id,
+        tenant_id=task.tenant_id,
+        expected_lifecycle_revision=0,
+        grant=grant,
+    )
+    assert first.outcome is AgentGovernanceGrantLifecycleOutcome.APPLIED
+    stale = adapter_b._persist_through_checkpoint(
+        first.record,
+        expected_checkpoint_revision=base_revision.revision,
+    )
+    assert stale.outcome is AgentGovernanceGrantLifecycleOutcome.STALE_REVISION
+    assert captured[0] == base_revision.revision
+    assert len(captured) == 2
+    assert captured[1] == base_revision.revision
+    latest = recording.get_latest(str(task.task_id), task.tenant_id)
+    assert latest is not None
+    assert latest.revision == base_revision.revision + 1
 
 
 def test_checkpoint_cas_second_writer_stale() -> None:
