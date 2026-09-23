@@ -12,7 +12,7 @@ from typing import TypeVar
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.call_config import LLMCallConfig
 from intergrax.llm_adapters._shared.retry import is_retriable_provider_error
-from intergrax.llm_adapters.contracts.llm_profile import llm_provider_slug
+from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
@@ -57,6 +57,7 @@ class FailoverLLMAdapter(BaseLLMAdapter):
         profile_ids: Sequence[str] | None = None,
         routing_attempt_observer: RoutingAttemptObserver | None = None,
         failover_retry_config: LLMCallConfig | None = None,
+        adapter_failover_retry_configs: Sequence[LLMCallConfig] | None = None,
     ) -> None:
         super().__init__()
         if failover_retry_config is not None:
@@ -64,6 +65,16 @@ class FailoverLLMAdapter(BaseLLMAdapter):
         if not adapters:
             raise ValueError("FailoverLLMAdapter requires at least one adapter")
         self._adapters = tuple(adapters)
+        if adapter_failover_retry_configs is not None:
+            if len(adapter_failover_retry_configs) != len(adapters):
+                raise ValueError(
+                    "adapter_failover_retry_configs length must match adapters length"
+                )
+            self._adapter_failover_retry_configs = tuple(adapter_failover_retry_configs)
+        else:
+            self._adapter_failover_retry_configs = tuple(
+                self.call_config for _ in adapters
+            )
         if profile_ids is not None and len(profile_ids) != len(adapters):
             raise ValueError("profile_ids length must match adapters length")
         self._profile_ids = tuple(
@@ -140,7 +151,8 @@ class FailoverLLMAdapter(BaseLLMAdapter):
                 if self.routing_attempt_observer is not None:
                     self.routing_attempt_observer(record)
                 is_last = index >= len(active_adapters) - 1
-                if is_last or not is_retriable_provider_error(exc, self.call_config):
+                eligibility_config = self._adapter_failover_retry_configs[index]
+                if is_last or not is_retriable_provider_error(exc, eligibility_config):
                     raise
         assert last_exc is not None
         raise last_exc

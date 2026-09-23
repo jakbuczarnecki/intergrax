@@ -6,7 +6,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.llm_adapters.contracts.llm_profile import LLMProfile, llm_provider_slug
+from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
+from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 
 
 @dataclass(frozen=True, slots=True)

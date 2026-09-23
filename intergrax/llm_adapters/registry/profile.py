@@ -8,6 +8,7 @@ import os
 from typing import Mapping, Optional
 
 from intergrax.integrations.contracts.secrets_store import SecretsStore
+from intergrax.llm_adapters._shared.call_config import parse_call_config
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
 from intergrax.llm_adapters.registry.secrets import (
@@ -57,9 +58,21 @@ def create_adapter_with_failover(
     ]
     if len(adapters) == 1:
         return adapters[0]
+    adapter_failover_retry_configs = [
+        parse_call_config(
+            merge_secrets_into_options(
+                candidate.provider,
+                {**candidate.options, **overrides},
+                secrets,
+            )
+        )
+        for candidate in ordered_profiles
+    ]
     return FailoverLLMAdapter(
         adapters,
         profile_ids=router.ordered_profile_ids(),
+        failover_retry_config=adapter_failover_retry_configs[0],
+        adapter_failover_retry_configs=adapter_failover_retry_configs,
     )
 
 

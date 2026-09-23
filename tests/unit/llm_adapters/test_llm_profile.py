@@ -110,6 +110,20 @@ def test_llm_profile_from_env_unknown_provider(_restore_registry_state) -> None:
 def test_llm_profile_lab_default() -> None:
     profile = LLMProfile.lab()
     assert profile.provider == LLMProvider.OLLAMA
+    assert profile.model == "llama3.1:latest"
+
+
+@pytest.mark.gate
+def test_llm_profile_from_mapping_round_trip() -> None:
+    data = {
+        "provider": "groq",
+        "model": "llama-3.3-70b-versatile",
+        "options": {"max_retries": 1},
+    }
+    profile = LLMProfile.from_mapping(data)
+    assert profile.provider == LLMProvider.GROQ
+    assert profile.model == "llama-3.3-70b-versatile"
+    assert profile.options == {"max_retries": 1}
 
 
 def test_llm_profile_propagates_canonical_model_and_ignores_legacy_env() -> None:

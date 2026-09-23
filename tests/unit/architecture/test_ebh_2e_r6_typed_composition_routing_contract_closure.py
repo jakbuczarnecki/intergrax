@@ -10,8 +10,8 @@ from pathlib import Path
 import pytest
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.llm_adapters.contracts.llm_profile import LLMProfile, llm_provider_slug
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_profile import LLMProfile
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
 from intergrax.llm_adapters.registry.catalog_capabilities import (
     CatalogCapabilityAdapter,
     enrich_adapter_with_catalog_capabilities,

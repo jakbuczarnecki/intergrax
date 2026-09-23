@@ -12,7 +12,7 @@ from typing import Optional, Union
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.contracts.structured_json_value import validate_json_value_structure
-from intergrax.llm_adapters.contracts.llm_provider import LLMProvider
+from intergrax.llm_adapters.contracts.llm_provider import LLMProvider, llm_provider_slug
 from intergrax.llm_adapters.contracts.serialized_value import JsonValue
 
 _RAW_CREDENTIAL_OPTIONS_ERROR = (
@@ -104,13 +104,6 @@ class LLMProfile(BaseModel):
     def _provider_slug(cls, provider: LLMProvider | str) -> str:
         return llm_provider_slug(provider)
 
-
-def llm_provider_slug(provider: LLMProvider | str) -> str:
-    """Canonical provider identity slug for profile, routing, and registry."""
-    if isinstance(provider, LLMProvider):
-        return provider.value
-    return str(provider).strip().lower()
-
     @classmethod
     def lab(cls) -> LLMProfile:
         """Laboratory default — local Ollama."""
@@ -119,3 +112,6 @@ def llm_provider_slug(provider: LLMProvider | str) -> str:
     @classmethod
     def from_mapping(cls, data: Mapping[str, JsonValue]) -> LLMProfile:
         return cls.model_validate(dict(data))
+
+
+__all__ = ["LLMProfile", "llm_provider_slug"]
