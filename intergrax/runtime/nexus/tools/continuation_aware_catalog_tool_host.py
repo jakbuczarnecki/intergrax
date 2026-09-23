@@ -45,6 +45,9 @@ from intergrax.contracts.execution.suspended_operation.payload_catalog import (
     CODE_EXEC_INPUT_SCHEMA_ID,
     ExecutionBoundCatalogToolOperationPayload,
 )
+from intergrax.contracts.execution.suspended_operation.persistence_conflict import (
+    SuspendedOperationPersistenceConflictError,
+)
 from intergrax.contracts.execution.suspended_operation.store import (
     SuspendedExecutionOperationStore,
 )
@@ -76,6 +79,7 @@ from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration i
 )
 from intergrax.contracts.execution.suspended_operation.claim import (
     SuspendedOperationMutationOutcome,
+    SuspendedOperationMutationResult,
 )
 from intergrax.runtime.human.agent_governance_pause_projection import (
     AgentGovernancePauseProjectionOutcome,
@@ -102,6 +106,17 @@ from intergrax.tools.invocation_wiring import (
     durable_sandbox_session_id_from_resolver,
 )
 from intergrax.tools.providers.sandbox.contracts import CodeExecInput
+
+
+def _prepare_suspended_operation_with_persistence_reconciliation(
+    store: SuspendedExecutionOperationStore,
+    descriptor: SuspendedExecutionOperationDescriptor,
+) -> SuspendedOperationMutationResult:
+    """Retry prepare once after durable CAS conflict (UCA-6C-R6-R5.5-H2-R1)."""
+    try:
+        return store.prepare(descriptor)
+    except SuspendedOperationPersistenceConflictError:
+        return store.prepare(descriptor)
 
 
 @dataclass(frozen=True, slots=True)
@@ -419,16 +434,10 @@ class ContinuationAwareCatalogToolHost:
                 logical_invocation_fingerprint=requirement.logical_invocation_fingerprint,
                 authority_scope=SuspendedOperationAuthorityScope.AGENT_RUNTIME_GOVERNANCE,
             )
-            try:
-                prepared = deps.suspended_operation_store.prepare(descriptor)
-            except RuntimeError as exc:
-                message = str(exc)
-                if (
-                    "durable persist stale" not in message
-                    and "durable persist race" not in message
-                ):
-                    raise
-                prepared = deps.suspended_operation_store.prepare(descriptor)
+            prepared = _prepare_suspended_operation_with_persistence_reconciliation(
+                deps.suspended_operation_store,
+                descriptor,
+            )
             if prepared.descriptor is None:
                 raise RuntimeError("suspended operation prepare failed")
             if prepared.outcome is SuspendedOperationMutationOutcome.ALREADY_ACTIVE:

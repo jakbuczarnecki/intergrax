@@ -14,6 +14,9 @@ from intergrax.contracts.agent_governance_hitl import (
 from intergrax.contracts.execution.suspended_operation.claim import (
     SuspendedOperationMutationOutcome,
 )
+from intergrax.contracts.execution.suspended_operation.persistence_conflict import (
+    SuspendedOperationPersistenceConflictError,
+)
 from intergrax.contracts.execution.suspended_operation.codec import (
     SuspendedOperationKind,
 )
@@ -235,13 +238,7 @@ def test_two_store_instances_same_fingerprint_one_active_descriptor() -> None:
             barrier.wait()
             try:
                 outcomes.append(store.prepare(desc))
-            except RuntimeError as exc:
-                message = str(exc)
-                if (
-                    "durable persist stale" not in message
-                    and "durable persist race" not in message
-                ):
-                    raise
+            except SuspendedOperationPersistenceConflictError:
                 outcomes.append(store.prepare(desc))
         except BaseException as exc:
             errors.append(exc)
@@ -316,8 +313,9 @@ def test_failed_cas_does_not_leave_ghost_active_descriptor() -> None:
     assert store_a.prepare(winner).outcome is SuspendedOperationMutationOutcome.APPLIED
     try:
         store_b.prepare(loser)
-    except RuntimeError as exc:
-        assert "stale" in str(exc) or "race" in str(exc)
+    except SuspendedOperationPersistenceConflictError:
+        retry = store_b.prepare(loser)
+        assert retry.outcome is SuspendedOperationMutationOutcome.ALREADY_ACTIVE
     else:
         retry = store_b.prepare(loser)
         assert retry.outcome is SuspendedOperationMutationOutcome.ALREADY_ACTIVE
@@ -338,3 +336,10 @@ def test_document_store_gate_snapshot_coupled_cas() -> None:
     assert "_backing_from_record(expected_record)" in source
     assert "_persist_snapshot(backing, expected_record=expected_record)" in source
     assert "existing = self._document_store.get" not in source
+
+
+def test_host_gate_no_durable_persist_message_routing() -> None:
+    source = HOST.read_text(encoding="utf-8")
+    assert "durable persist stale" not in source
+    assert "durable persist race" not in source
+    assert "SuspendedOperationPersistenceConflictError" in source

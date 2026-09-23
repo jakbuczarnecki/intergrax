@@ -21,6 +21,9 @@ from intergrax.contracts.agent_governance_hitl import LogicalInvocationFingerpri
 from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedExecutionOperationDescriptor,
 )
+from intergrax.contracts.execution.suspended_operation.persistence_conflict import (
+    SuspendedOperationPersistenceConflictError,
+)
 from intergrax.contracts.execution.suspended_operation.store import (
     SuspendedExecutionOperationStore,
 )
@@ -114,14 +117,18 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
         if expected_record is None:
             if not self._document_store.put_if_absent(replacement):
                 self._load_from_document()
-                raise RuntimeError("suspended operation durable persist race")
+                raise SuspendedOperationPersistenceConflictError(
+                    "suspended operation durable persist race",
+                )
             return
         if not self._document_store.replace_if_match(
             expected=expected_record,
             replacement=replacement,
         ):
             self._load_from_document()
-            raise RuntimeError("suspended operation durable persist stale")
+            raise SuspendedOperationPersistenceConflictError(
+                "suspended operation durable persist stale",
+            )
 
     def _mutate(self, operation):
         with self._lock:
@@ -130,7 +137,7 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
             result = operation(backing)
             try:
                 self._persist_snapshot(backing, expected_record=expected_record)
-            except RuntimeError:
+            except SuspendedOperationPersistenceConflictError:
                 raise
             self._backing = backing
             return result

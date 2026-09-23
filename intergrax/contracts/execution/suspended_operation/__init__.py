@@ -28,6 +28,9 @@ from intergrax.contracts.execution.suspended_operation.payload_catalog import (
     CODE_EXEC_INPUT_SCHEMA_ID,
     ExecutionBoundCatalogToolOperationPayload,
 )
+from intergrax.contracts.execution.suspended_operation.persistence_conflict import (
+    SuspendedOperationPersistenceConflictError,
+)
 from intergrax.contracts.execution.suspended_operation.reentry import (
     ExecutionSuspendedWorkReentryPort,
     ExecutionSuspendedWorkReentryRequest,
@@ -51,6 +54,7 @@ __all__ = [
     "SuspendedOperationClaimOutcome",
     "SuspendedOperationClaimResult",
     "SuspendedOperationMutationOutcome",
+    "SuspendedOperationPersistenceConflictError",
     "mint_suspended_operation_id",
     "SuspendedOperationCodecRegistry",
     "SuspendedOperationKind",
