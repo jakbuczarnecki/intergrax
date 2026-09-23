@@ -113,11 +113,9 @@ This table is the **only** canonical implementation priority record for the prog
 
 ---
 
-## Relationship to Frozen-30
+## Relationship to Enterprise E2E Scenario Portfolio
 
-Epoch work **assumes** enterprise execution substrate scenarios and platform mechanisms mature through **Frozen-30** and normal platform evolution. VO epochs do **not** renumber or replace Frozen-30.
-
-Parallel track reference: [`ENTERPRISE_E2E_SCENARIO_CATALOG.md`](ENTERPRISE_E2E_SCENARIO_CATALOG.md).
+Epoch work **assumes** enterprise execution substrate scenarios and platform mechanisms mature through the [**Enterprise E2E Scenario Portfolio**](ENTERPRISE_E2E_SCENARIO_CATALOG.md) (historical v1 **Frozen-30**; current membership **34** after v2 addendum) and normal platform evolution. VO epochs do **not** renumber v1 **1–30** or merge VO-S01–VO-S10 into that catalog.
 
 ---
 

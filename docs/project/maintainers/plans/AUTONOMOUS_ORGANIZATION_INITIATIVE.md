@@ -25,7 +25,7 @@ It **does not** duplicate Frozen-30, Proof Library protocol, Autonomous Work arc
 | [`AUTONOMOUS_ORGANIZATION_SCENARIO_PORTFOLIO.md`](AUTONOMOUS_ORGANIZATION_SCENARIO_PORTFOLIO.md) | Frozen VO scenario identities (v1) |
 | [`AUTONOMOUS_ORGANIZATION_CAPABILITY_MODEL.md`](AUTONOMOUS_ORGANIZATION_CAPABILITY_MODEL.md) | Capability domains, gap clusters, dependency spine |
 | [`AUTONOMOUS_ORGANIZATION_ROADMAP.md`](AUTONOMOUS_ORGANIZATION_ROADMAP.md) | Epoch outcome gates and implementation priority |
-| [`ENTERPRISE_E2E_SCENARIO_CATALOG.md`](ENTERPRISE_E2E_SCENARIO_CATALOG.md) | **Frozen-30** — enterprise safety + execution substrate (separate portfolio) |
+| [`ENTERPRISE_E2E_SCENARIO_CATALOG.md`](ENTERPRISE_E2E_SCENARIO_CATALOG.md) | **Enterprise E2E Scenario Portfolio** — enterprise safety + execution substrate (v1 Frozen-30 + v2 addendum; **separate** from VO portfolio) |
 | [`PROOF_LIBRARY.md`](../../proofs/PROOF_LIBRARY.md) · [`platform_proofs/README.md`](../../../../platform_proofs/README.md) | Proof Library gateway |
 | [`PLATFORM_PROOF_AUTHORING_GUIDE.md`](../../../../platform_proofs/PLATFORM_PROOF_AUTHORING_GUIDE.md) | Scenario lifecycle, quality gate, platform gap discipline |
 | [`AUTONOMOUS_WORK.md`](../../architecture/AUTONOMOUS_WORK.md) | Virtual Worker domain ownership |
@@ -237,13 +237,14 @@ Additional qualification for Autonomous Organization scenarios **on top of** exi
 
 ---
 
-## Frozen-30 vs VO portfolio
+## Enterprise scenario portfolio vs VO portfolio
 
-| | Frozen-30 | VO portfolio v1 |
-|---|-----------|-----------------|
+| | Enterprise E2E Scenario Portfolio | VO portfolio v1 |
+|---|-----------------------------------|-----------------|
 | **Focus** | Enterprise safety + execution substrate | Goal → capability → organization → learning → reorganization |
 | **SSOT** | [`ENTERPRISE_E2E_SCENARIO_CATALOG.md`](ENTERPRISE_E2E_SCENARIO_CATALOG.md) | [`AUTONOMOUS_ORGANIZATION_SCENARIO_PORTFOLIO.md`](AUTONOMOUS_ORGANIZATION_SCENARIO_PORTFOLIO.md) |
-| **Interaction** | Complementary; **do not merge catalogs or renumber Frozen-30** |
+| **Membership** | v1 **Frozen-30** (2026-09-14); **current 34** after v2 addendum (#31–#34) | **VO-S01–VO-S10** (unchanged) |
+| **Interaction** | Complementary; **do not merge catalogs** or renumber v1 **1–30** |
 
 ---
 
