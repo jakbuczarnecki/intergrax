@@ -58,6 +58,11 @@ from intergrax.runtime.execution.suspended_operation.governed_request import (
     compose_governed_continuation_from_agent_governance_pause,
     compose_governed_continuation_from_declarative_hitl_pause,
 )
+from intergrax.runtime.execution.suspended_operation.authority_sequential_pause import (
+    AuthoritySequentialPauseError,
+    ensure_prior_continuation_resumed_projection_for_replacement,
+    reblock_claimed_descriptor_for_next_authority_pause,
+)
 from intergrax.runtime.execution.suspended_operation.pause_required import (
     ExecutionSuspendedWorkPauseRequired,
 )
@@ -97,6 +102,13 @@ from intergrax.runtime.nexus.tools.agent_governance_approval_pause_bridge import
 from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
     DeclarativePolicyHitlPauseRequired,
     raise_hitl_pause_from_tool_invocation,
+)
+from intergrax.runtime.human.governed_continuation_bridge import (
+    bridge_governed_continuation_to_governance,
+)
+from intergrax.runtime.nexus.tools.mse_governed_continuation_hitl_bridge import (
+    GovernedContinuationHitlPauseRequired,
+    raise_mse_governed_continuation_hitl_pause,
 )
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
 from intergrax.runtime.task.task import Task
@@ -146,6 +158,7 @@ class ContinuationAwareCatalogToolHost:
         request: ExecutionBoundCatalogToolInvokeRequest,
         declarative_grant: DeclarativeHitlApprovalGrant | None,
         task: Task | None = None,
+        reentry_claimed_descriptor: SuspendedExecutionOperationDescriptor | None = None,
     ) -> ToolExecutionResult[BaseModel]:
         tool_request = _tool_execution_request(request, declarative_grant)
         agent_id = request.agent_id
@@ -170,10 +183,32 @@ class ContinuationAwareCatalogToolHost:
                     pause,
                     request=request,
                     task=task,
+                    reentry_claimed_descriptor=reentry_claimed_descriptor,
                 ) from None
         except ToolGovernanceApprovalRequiredError as error:
             if error.governed_continuation_request is not None:
-                raise
+                if self._deps is None:
+                    raise
+                if reentry_claimed_descriptor is None:
+                    raise_mse_governed_continuation_hitl_pause(
+                        error,
+                        state=state,
+                        request=tool_request,
+                        agent_id=agent_id,
+                    )
+                continuation = error.governed_continuation_request
+                if continuation is None:
+                    raise error
+                mse_pause = GovernedContinuationHitlPauseRequired(
+                    governed_continuation_request=continuation,
+                    governance=bridge_governed_continuation_to_governance(continuation),
+                )
+                raise self._materialize_mse_governed_pause(
+                    mse_pause,
+                    request=request,
+                    task=task,
+                    reentry_claimed_descriptor=reentry_claimed_descriptor,
+                ) from None
             if self._deps is None:
                 raise
             contract = self._tool_invoker.registry.get(request.tool_id).contract
@@ -198,6 +233,7 @@ class ContinuationAwareCatalogToolHost:
         *,
         request: ExecutionBoundCatalogToolInvokeRequest,
         task: Task | None,
+        reentry_claimed_descriptor: SuspendedExecutionOperationDescriptor | None = None,
     ) -> ExecutionSuspendedWorkPauseRequired:
         deps = self._deps
         if deps is None:
@@ -216,9 +252,42 @@ class ContinuationAwareCatalogToolHost:
             identity=identity,
         )
         continuation_id = governed_request.continuation_request_id
+        scope_id = pause.signal.invocation_scope_id
+
+        if task is None:
+            raise RuntimeError(
+                "governed execution task required for canonical HITL pause projection",
+            )
+        task.runtime.governance.declarative_hitl_pending = pause.pending
+        task.sync_metadata()
+
+        if reentry_claimed_descriptor is not None:
+            try:
+                blocked_descriptor = reblock_claimed_descriptor_for_next_authority_pause(
+                    store=deps.suspended_operation_store,
+                    hitl_continuation=deps.hitl_continuation,
+                    task=task,
+                    claimed=reentry_claimed_descriptor,
+                    identity=identity,
+                    governed_request=governed_request,
+                    next_invocation_scope_id=scope_id,
+                    next_authority_scope=SuspendedOperationAuthorityScope.DECLARATIVE_GOVERNANCE,
+                    pause_id=pause.pending.pause_id,
+                    human_request_id=pause.pending.human_request_id,
+                    human_prompt=None,
+                    execution_interrupt=pause.governance.interrupt,
+                )
+            except AuthoritySequentialPauseError as exc:
+                raise RuntimeError(str(exc)) from exc
+            return ExecutionSuspendedWorkPauseRequired(
+                declarative_pause=pause,
+                governed_request=governed_request,
+                descriptor=blocked_descriptor,
+            )
+
         payload = _catalog_payload_from_request(
             request,
-            invocation_scope_id=pause.signal.invocation_scope_id,
+            invocation_scope_id=scope_id,
         )
         codec = deps.codec_registry.resolve(
             SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
@@ -232,24 +301,18 @@ class ContinuationAwareCatalogToolHost:
             operation_kind=SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
             identity=identity,
             continuation_id=continuation_id,
-            invocation_scope_id=pause.signal.invocation_scope_id,
+            invocation_scope_id=scope_id,
             materialization_state=SuspendedOperationMaterializationState.PREPARED,
             materialization_revision=0,
             claim_ownership=None,
             payload_digest=digest,
             payload=envelope,
-            authority_scope=infer_authority_scope_from_invocation(
-                pause.signal.invocation_scope_id,
-            ),
+            authority_scope=infer_authority_scope_from_invocation(scope_id),
         )
         prepared = deps.suspended_operation_store.prepare(descriptor)
         if prepared.descriptor is None:
             raise RuntimeError("suspended operation prepare failed")
 
-        if task is None:
-            raise RuntimeError(
-                "governed execution task required for canonical HITL pause projection",
-            )
         pending = establish_canonical_hitl_pause(
             task,
             identity=identity,
@@ -281,6 +344,72 @@ class ContinuationAwareCatalogToolHost:
             declarative_pause=pause,
             governed_request=governed_request,
             descriptor=blocked.descriptor,
+        )
+
+    def _materialize_mse_governed_pause(
+        self,
+        pause: GovernedContinuationHitlPauseRequired,
+        *,
+        request: ExecutionBoundCatalogToolInvokeRequest,
+        task: Task | None,
+        reentry_claimed_descriptor: SuspendedExecutionOperationDescriptor | None = None,
+    ) -> ExecutionSuspendedWorkPauseRequired:
+        deps = self._deps
+        if deps is None:
+            raise RuntimeError("continuation-aware host dependencies required")
+        if task is None:
+            raise RuntimeError(
+                "governed execution task required for MSE governed pause projection",
+            )
+        if reentry_claimed_descriptor is None:
+            raise RuntimeError(
+                "MSE governed continuation requires sequential reblock from CLAIMED",
+            )
+
+        run_id, attempt_id = require_active_execution_identity()
+        execution_id = state_execution_id()
+        identity = ExecutionContinuationIdentity(
+            task_id=validate_task_id(str(request.task_id)),
+            run_id=RunId(str(run_id)),
+            attempt_id=AttemptId(str(attempt_id)),
+            execution_id=ExecutionId(str(execution_id)),
+        )
+        governed_request = pause.governed_continuation_request
+        operation_id = governed_request.operation_id
+        if operation_id is None:
+            raise RuntimeError("MSE governed continuation requires operation_id")
+        ensure_prior_continuation_resumed_projection_for_replacement(
+            task=task,
+            hitl_continuation=deps.hitl_continuation,
+            prior_continuation_id=reentry_claimed_descriptor.continuation_id,
+        )
+        resolution = bridge_governed_continuation_to_governance(governed_request)
+        human_request = resolution.human_request
+        if human_request is None:
+            raise RuntimeError("MSE governed pause requires human_request")
+        task.runtime.governance.human_request = human_request
+        pause_id = f"pause_{governed_request.continuation_request_id[-12:]}"
+        try:
+            blocked_descriptor = reblock_claimed_descriptor_for_next_authority_pause(
+                store=deps.suspended_operation_store,
+                hitl_continuation=deps.hitl_continuation,
+                task=task,
+                claimed=reentry_claimed_descriptor,
+                identity=identity,
+                governed_request=governed_request,
+                next_invocation_scope_id=operation_id,
+                next_authority_scope=SuspendedOperationAuthorityScope.MEANINGFUL_SIDE_EFFECT,
+                pause_id=pause_id,
+                human_request_id=human_request.request_id,
+                human_prompt=governed_request.prompt,
+                execution_interrupt=pause.governance.interrupt,
+            )
+        except AuthoritySequentialPauseError as exc:
+            raise RuntimeError(str(exc)) from exc
+        return ExecutionSuspendedWorkPauseRequired(
+            governed_request=governed_request,
+            descriptor=blocked_descriptor,
+            mse_governed_pause=pause,
         )
 
     def _materialize_agent_governance_pause(
@@ -352,11 +481,16 @@ class ContinuationAwareCatalogToolHost:
                 fingerprint,
             )
         )
-        scope_id = (
-            existing_descriptor.invocation_scope_id
-            if existing_descriptor is not None
-            else mint_agent_governance_invocation_scope_id()
-        )
+        scope_id = mint_agent_governance_invocation_scope_id()
+        if (
+            existing_descriptor is not None
+            and existing_descriptor.invocation_scope_id.startswith(
+                "agr_",
+            )
+        ):
+            scope_id = existing_descriptor.invocation_scope_id
+        elif task.runtime.governance.agent_governance_human_approval_grant is not None:
+            scope_id = task.runtime.governance.agent_governance_human_approval_grant.grant.agent_governance_invocation_scope_id
         payload = _catalog_payload_from_request(
             request,
             invocation_scope_id=scope_id,

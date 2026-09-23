@@ -35,17 +35,21 @@ def resume_authorized_continuation_with_suspended_work_reentry(
         capability=capability,
     )
     reentry_result: ExecutionSuspendedWorkReentryResult | None = None
-    request = ExecutionSuspendedWorkReentryRequest(
-        continuation_id=resumed.continuation_id,
-        identity=resumed.identity,
-    )
     if reentry_coordinator is not None:
+        request = ExecutionSuspendedWorkReentryRequest(
+            continuation_id=resumed.continuation_id,
+            identity=resumed.identity,
+            claim_owner_id=reentry_coordinator.claim_owner_id,
+        )
         reentry_result = reentry_coordinator.reenter_after_resume(
             request,
             task=task,
         )
     elif reentry_port is not None:
-        reentry_result = reentry_port.reenter_after_resume(request)
+        raise RuntimeError(
+            "reentry_port requires ExecutionSuspendedWorkReentryRequest.claim_owner_id; "
+            "use reentry_coordinator",
+        )
     return resumed, reentry_result
 
 

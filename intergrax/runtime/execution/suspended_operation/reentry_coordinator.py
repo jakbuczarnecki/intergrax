@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
+from intergrax.contracts.agent_governance_hitl import AgentGovernanceGrantLifecycleState
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.contracts.execution_continuation import (
     ExecutionContinuationLifecycleState,
@@ -47,12 +48,16 @@ from intergrax.runtime.execution.suspended_operation.agent_governance_reentry_gr
     is_agent_governance_invocation_scope,
     prepare_agent_governance_grant_for_reentry,
 )
+from intergrax.runtime.execution.suspended_operation.pause_required import (
+    ExecutionSuspendedWorkPauseRequired,
+)
 from intergrax.runtime.human.agent_governance_human_approval_grant import (
     AgentGovernanceHumanApprovalGrantCoordinator,
 )
 from intergrax.runtime.human.declarative_hitl_grant import (
     DeclarativeHitlGrantCoordinator,
 )
+from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
@@ -104,6 +109,8 @@ class ExecutionSuspendedWorkReentryCoordinator:
                 disposition=ExecutionSuspendedWorkReentryDisposition.NOT_READY,
                 reason_detail="continuation_not_resumed",
             )
+        if task is not None:
+            HumanPauseCoordinator.project_continuation(task, pending)
         descriptor = self.store.load_active_for_continuation(request.continuation_id)
         if descriptor is None:
             return ExecutionSuspendedWorkReentryResult(
@@ -183,16 +190,30 @@ class ExecutionSuspendedWorkReentryCoordinator:
         if grant is not None:
             state.declarative_hitl_grant = grant
 
+        agent_grant_record = (
+            task.runtime.governance.agent_governance_human_approval_grant
+            if task is not None
+            else None
+        )
+        agent_grant_applied = (
+            agent_grant_record is not None
+            and agent_grant_record.lifecycle_state
+            is AgentGovernanceGrantLifecycleState.APPLIED
+        )
         if (
             task is not None
             and self.task_checkpoint_store is not None
-            and is_agent_governance_invocation_scope(claimed.invocation_scope_id)
+            and (
+                is_agent_governance_invocation_scope(claimed.invocation_scope_id)
+                or agent_grant_applied
+            )
         ):
             contract = self._tool_contract(payload.tool_id)
-            pending = task.runtime.governance.agent_governance_hitl_pending
-            pause_generation = (
-                pending.requirement.pause_generation if pending is not None else 1
-            )
+            pause_generation = claimed.pause_generation
+            if agent_grant_applied and not is_agent_governance_invocation_scope(
+                claimed.invocation_scope_id,
+            ):
+                pause_generation = 1
             try:
                 agent_grant_prepare = prepare_agent_governance_grant_for_reentry(
                     task=task,
@@ -227,6 +248,12 @@ class ExecutionSuspendedWorkReentryCoordinator:
                 request=invoke_request,
                 declarative_grant=grant,
                 task=task,
+                reentry_claimed_descriptor=claimed,
+            )
+        except ExecutionSuspendedWorkPauseRequired:
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.PAUSED_FOR_NEXT_AUTHORITY,
+                reason_detail="authority_sequential_reblock",
             )
         except ToolGovernanceDeniedError:
             return ExecutionSuspendedWorkReentryResult(
@@ -247,6 +274,7 @@ class ExecutionSuspendedWorkReentryCoordinator:
                 expected_materialization_revision=claimed.materialization_revision,
                 owner_id=claimed.claim_ownership.owner_id,
                 fence=claimed.claim_ownership.fence,
+                expected_pause_generation=claimed.pause_generation,
             )
             if consumed.outcome is not SuspendedOperationMutationOutcome.APPLIED:
                 return ExecutionSuspendedWorkReentryResult(

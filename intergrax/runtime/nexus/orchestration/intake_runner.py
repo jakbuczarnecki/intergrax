@@ -47,6 +47,9 @@ from intergrax.runtime.nexus.orchestration.human_response import (
     normalize_human_response,
     prepare_hitl_resume_after_checkpoint_restore,
 )
+from intergrax.contracts.execution.suspended_operation.reentry import (
+    ExecutionSuspendedWorkReentryDisposition,
+)
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task_trace import TaskTraceEmitter
@@ -244,7 +247,7 @@ class NexusIntakeRunner:
             if task.runtime.governance.human_request is not None:
                 GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
                 task.sync_metadata()
-            resumed_continuation, _reentry = (
+            resumed_continuation, reentry = (
                 resume_authorized_continuation_with_suspended_work_reentry(
                     task,
                     authorized,
@@ -252,6 +255,15 @@ class NexusIntakeRunner:
                     reentry_coordinator=hitl.suspended_work_reentry_coordinator,
                 )
             )
+            if (
+                reentry is not None
+                and reentry.disposition
+                is ExecutionSuspendedWorkReentryDisposition.PAUSED_FOR_NEXT_AUTHORITY
+            ):
+                task.state = TaskState.WAITING_FOR_HUMAN
+                task.sync_metadata()
+                clear_consumed_human_input(task)
+                return IntakePhaseOutcome()
             if (
                 LongRunningCoordinator.is_long_running(task)
                 and canonical_execution_is_resumed(

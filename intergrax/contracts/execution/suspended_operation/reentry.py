@@ -20,6 +20,7 @@ class ExecutionSuspendedWorkReentryDisposition(StrEnum):
     UNAVAILABLE = "unavailable"
     FAILED = "failed"
     NOT_READY = "not_ready"
+    PAUSED_FOR_NEXT_AUTHORITY = "paused_for_next_authority"
 
 
 @dataclass(frozen=True, slots=True)

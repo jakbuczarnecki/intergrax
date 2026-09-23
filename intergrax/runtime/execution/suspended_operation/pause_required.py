@@ -16,6 +16,9 @@ from intergrax.runtime.nexus.tools.agent_governance_approval_pause_bridge import
 from intergrax.runtime.nexus.tools.declarative_policy_hitl_bridge import (
     DeclarativePolicyHitlPauseRequired,
 )
+from intergrax.runtime.nexus.tools.mse_governed_continuation_hitl_bridge import (
+    GovernedContinuationHitlPauseRequired,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,13 +29,18 @@ class ExecutionSuspendedWorkPauseRequired(RuntimeError):
     descriptor: SuspendedExecutionOperationDescriptor
     declarative_pause: DeclarativePolicyHitlPauseRequired | None = None
     agent_governance_pause: AgentGovernanceApprovalPauseRequired | None = None
+    mse_governed_pause: GovernedContinuationHitlPauseRequired | None = None
 
     def __post_init__(self) -> None:
-        has_declarative = self.declarative_pause is not None
-        has_agent = self.agent_governance_pause is not None
-        if has_declarative == has_agent:
+        kinds = (
+            self.declarative_pause is not None,
+            self.agent_governance_pause is not None,
+            self.mse_governed_pause is not None,
+        )
+        if sum(kinds) != 1:
             raise ValueError(
-                "exactly one of declarative_pause or agent_governance_pause required",
+                "exactly one authority pause payload "
+                "(declarative, agent_governance, or mse_governed) required",
             )
 
     @property
