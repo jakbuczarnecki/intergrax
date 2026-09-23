@@ -133,6 +133,7 @@ Examples: `ADR-FLOW-001`, `ADR-LLM-001`, `ADR-ADAPT-001`.
 | [ADR-HARNESS-003](entries/2026-09-22/ADR-HARNESS-003.md) | Execution-bound capability invocation ownership (HARNESS-01-R5-ADR3) | Accepted (architecture freeze) |
 | [ADR-UCA-6C-EXECUTION-CONTINUATION-INTEGRATION](entries/2026-09-22/ADR-UCA-6C-EXECUTION-CONTINUATION-INTEGRATION.md) | Continuation-aware execution-bound tool invocation (UCA-6C-ADR1) | Accepted |
 | [ADR-UCA-6C-DURABLE-SUSPENDED-OPERATION-REENTRY](entries/2026-09-22/ADR-UCA-6C-DURABLE-SUSPENDED-OPERATION-REENTRY.md) | Durable suspended operation & Execution work re-entry (UCA-6C-ADR2) | Accepted (architecture) |
+| [ADR-UCA-6C-AGENT-GOVERNANCE-CANONICAL-HITL-RECONCILIATION](entries/2026-09-23/ADR-UCA-6C-AGENT-GOVERNANCE-CANONICAL-HITL-RECONCILIATION.md) | Agent governance approval vs canonical Execution HITL (UCA-6C-ADR3) | Accepted (architecture) |
 
 **Consolidation:** platform ownership, lifecycle, and invariants for GEC-0â€¦GEC-6 - [`docs/project/technical/platform/governed_external_execution.md`](../platform/governed_external_execution.md).
 
