@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 from dataclasses import asdict, dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from intergrax.llm_adapters.base.usage_log import (
     LLMRunStats,
@@ -202,6 +202,17 @@ class LLMUsageTracker:
     def _primary_source(self, logical: _LogicalUsageEntry) -> _PhysicalUsageSource:
         return logical.sources[self._primary_instance_id(logical)]
 
+    def _iter_unique_physical_sources(
+        self,
+    ) -> Iterator[Tuple[int, _PhysicalUsageSource]]:
+        seen_ids: set[int] = set()
+        for logical in (self._entries or {}).values():
+            for instance_id, source in logical.sources.items():
+                if instance_id in seen_ids:
+                    continue
+                seen_ids.add(instance_id)
+                yield instance_id, source
+
     def build_report(self) -> LLMUsageReport:
         entries: List[LLMAdapterUsageEntry] = []
 
@@ -234,30 +245,26 @@ class LLMUsageTracker:
         total = self.total()
 
         by_provider_model: Dict[str, LLMRunStats] = {}
-        seen_ids = set()
-        for e in entries:
-            if e.adapter_instance_id in seen_ids:
-                continue
-            seen_ids.add(e.adapter_instance_id)
-
-            key = f"{e.meta.provider}:{e.meta.model}"
+        for _instance_id, source in self._iter_unique_physical_sources():
+            st = self._snapshot_stats(source.stats)
+            key = f"{source.provider_slug}:{source.model}"
             agg = by_provider_model.get(key)
             if agg is None:
                 by_provider_model[key] = LLMRunStats(
-                    calls=e.stats.calls,
-                    input_tokens=e.stats.input_tokens,
-                    output_tokens=e.stats.output_tokens,
-                    total_tokens=e.stats.total_tokens,
-                    duration_ms=e.stats.duration_ms,
-                    errors=e.stats.errors,
+                    calls=st.calls,
+                    input_tokens=st.input_tokens,
+                    output_tokens=st.output_tokens,
+                    total_tokens=st.total_tokens,
+                    duration_ms=st.duration_ms,
+                    errors=st.errors,
                 )
             else:
-                agg.calls += e.stats.calls
-                agg.input_tokens += e.stats.input_tokens
-                agg.output_tokens += e.stats.output_tokens
-                agg.total_tokens += e.stats.total_tokens
-                agg.duration_ms += e.stats.duration_ms
-                agg.errors += e.stats.errors
+                agg.calls += st.calls
+                agg.input_tokens += st.input_tokens
+                agg.output_tokens += st.output_tokens
+                agg.total_tokens += st.total_tokens
+                agg.duration_ms += st.duration_ms
+                agg.errors += st.errors
 
         return LLMUsageReport(
             run_id=self.run_id,
@@ -272,23 +279,16 @@ class LLMUsageTracker:
 
     def total(self) -> LLMRunStats:
         agg = LLMRunStats()
+        for _instance_id, source in self._iter_unique_physical_sources():
+            st = source.stats.get_run_stats(self.run_id)
+            if st is None:
+                continue
 
-        seen_ids: set[int] = set()
-        for logical in (self._entries or {}).values():
-            for instance_id, source in logical.sources.items():
-                if instance_id in seen_ids:
-                    continue
-                seen_ids.add(instance_id)
-
-                st = source.stats.get_run_stats(self.run_id)
-                if st is None:
-                    continue
-
-                agg.calls += st.calls
-                agg.input_tokens += st.input_tokens
-                agg.output_tokens += st.output_tokens
-                agg.total_tokens += st.total_tokens
-                agg.duration_ms += st.duration_ms
-                agg.errors += st.errors
+            agg.calls += st.calls
+            agg.input_tokens += st.input_tokens
+            agg.output_tokens += st.output_tokens
+            agg.total_tokens += st.total_tokens
+            agg.duration_ms += st.duration_ms
+            agg.errors += st.errors
 
         return agg
