@@ -27,10 +27,8 @@ from intergrax.llm_adapters.routing.evaluating_hooks import (
     InnerSwappedObserver,
     RoutingEvaluationObserver,
 )
-from intergrax.llm_adapters.routing.evaluator import (
-    LLMRoutingEvaluator,
-    routing_evaluation_identity,
-)
+from intergrax.llm_adapters.contracts.routing_evaluator import RoutingEvaluator
+from intergrax.llm_adapters.routing.evaluator import routing_evaluation_identity
 from intergrax.llm_adapters.routing.profile_source import RoutingProfileSource
 
 RoutingContextProvider = Callable[[], RoutingContext]
@@ -47,6 +45,7 @@ class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
         inner: LLMAdapter,
         context_provider: RoutingContextProvider,
         adapter_factory: RoutingAdapterFactory,
+        evaluator: RoutingEvaluator,
         on_evaluated: RoutingEvaluationObserver | None = None,
         on_allowlist_violation: AllowlistViolationObserver | None = None,
         on_inner_swapped: InnerSwappedObserver | None = None,
@@ -61,7 +60,7 @@ class RoutingEvaluatingLLMAdapter(BaseLLMAdapter):
         self._on_allowlist_violation = on_allowlist_violation
         self._on_inner_swapped = on_inner_swapped
         self._before_evaluate = before_evaluate
-        self._evaluator = LLMRoutingEvaluator()
+        self._evaluator = evaluator
         self._cached_identity: str | None = None
         self._sync_identity_from_inner()
 

@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING
 from intergrax.context.contracts import IterativeToolOutputBlock
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
+from intergrax.llm_adapters.contracts.llm_usage_aggregation import LLMUsageAggregator
 from intergrax.contracts.runtime_cost import tokens_to_cost_units
 from intergrax.contracts.agent_governance_approval_consumption_port import (
     AgentGovernanceApprovalConsumptionPort,
@@ -82,7 +82,7 @@ class RuntimeState(RuntimeStateContract):
     # --- Agent domain state (Tier-2) ---
     agent_state: Optional[AgentState] = None
 
-    llm_usage_tracker: Optional[LLMUsageTracker] = None
+    llm_usage_tracker: Optional[LLMUsageAggregator] = None
 
     # Session and ingestion
     session: Optional[ChatSession] = None
@@ -232,9 +232,11 @@ class RuntimeState(RuntimeStateContract):
 
 
     def configure_llm_tracker(self) -> None:
+        from intergrax.runtime.wiring.llm_usage_tracker_composition import (
+            ensure_llm_usage_tracker_on_state,
+        )
 
-        if self.llm_usage_tracker is None:
-           self.llm_usage_tracker = LLMUsageTracker(run_id=self.run_id)
+        ensure_llm_usage_tracker_on_state(self)
 
         from intergrax.runtime.nexus.tracing.adapters.model_catalog_miss import (
             wire_catalog_miss_trace_sink,

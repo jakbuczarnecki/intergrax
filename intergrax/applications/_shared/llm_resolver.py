@@ -12,7 +12,9 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.registry.model_router import ModelRouter, ModelRoutingDecision
 from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter, create_adapter_with_failover, llm_profile_from_env
 from intergrax.llm_adapters.registry.registration_contract import LLMProviderNotConfiguredError
-from intergrax.llm_adapters.routing import LLMRoutingEvaluator, RoutingContext, RoutingEvaluation
+from intergrax.llm_adapters.contracts.routing_evaluator import RoutingEvaluator
+from intergrax.llm_adapters.routing import RoutingContext, RoutingEvaluation
+from intergrax.llm_adapters.routing.composition import resolve_routing_evaluator
 from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
 from intergrax.applications._shared.routing_evaluating_adapter import (
     RoutingContextProvider,
@@ -64,6 +66,7 @@ def evaluate_llm_routing(
     env: ApplicationEnvironmentProfile | None,
     *,
     routing_context: RoutingContext | None = None,
+    routing_evaluator: RoutingEvaluator | None = None,
     on_evaluated: Callable[[RoutingEvaluation], None] | None = None,
 ) -> tuple[LLMProfile, str | None, str | None]:
     """
@@ -81,7 +84,10 @@ def evaluate_llm_routing(
 
     context = routing_context or RoutingContext()
     try:
-        evaluation = LLMRoutingEvaluator().evaluate(env.llm_routing_profile, context)
+        evaluation = resolve_routing_evaluator(routing_evaluator).evaluate(
+            env.llm_routing_profile,
+            context,
+        )
     except AllowlistViolationError:
         raise
     _last_routing_evaluation = evaluation
