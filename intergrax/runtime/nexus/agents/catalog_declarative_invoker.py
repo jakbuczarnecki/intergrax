@@ -9,6 +9,9 @@ from dataclasses import dataclass, field
 from typing import Optional, Protocol, runtime_checkable
 
 from intergrax.contracts.declarative_tool_invoke_result import DeclarativeToolInvokeResult
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
+)
 from intergrax.knowledge.contracts.validation import JsonObject
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
@@ -207,22 +210,13 @@ class CatalogDeclarativeToolInvoker:
 
 
 @runtime_checkable
-class CatalogHostDeclarativeToolInvoker(Protocol):
+class CatalogHostDeclarativeToolInvoker(
+    ExecutionBoundDeclarativeToolInvoker,
+    Protocol,
+):
     """Execution-bound declarative invoker with host ``RuntimeToolInvoker`` wiring."""
 
     tool_invoker: RuntimeToolInvoker
-
-    async def invoke(
-        self,
-        *,
-        tenant_id: str,
-        run_id: str,
-        task_id: str,
-        agent_id: str,
-        tool_id: str,
-        args: JsonObject,
-        idempotency_key: str | None,
-    ) -> DeclarativeToolInvokeResult: ...
 
 
 def _require_invoke_identity_field(value: str, label: str) -> str:

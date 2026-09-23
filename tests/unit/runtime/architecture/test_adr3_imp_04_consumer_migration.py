@@ -19,12 +19,24 @@ from intergrax.contracts.execution_bound_declarative_tool_invocation import (
     ExecutionBoundDeclarativeToolInvoker,
 )
 from intergrax.knowledge.contracts.validation import JsonObject
+from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
+    CatalogDeclarativeToolInvoker,
+    CatalogHostDeclarativeToolInvoker,
+)
+from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+from intergrax.tools.registry import ToolRegistry
+from testing_support.catalog_declarative_invoker import (
+    build_catalog_declarative_invoker_from_registry,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO = Path(__file__).resolve().parents[4]
 _EXECUTOR = _REPO / "intergrax" / "agents" / "persistence" / "declarative_tool_executor.py"
 _UAEP_SHIM = _REPO / "intergrax" / "runtime" / "nexus" / "agents" / "acp_uaep_shim.py"
+_CATALOG_DECLARATIVE = (
+    _REPO / "intergrax" / "runtime" / "nexus" / "agents" / "catalog_declarative_invoker.py"
+)
 _PRODUCTION_ROOTS = (
     _REPO / "intergrax" / "runtime",
     _REPO / "intergrax" / "agents",
@@ -74,6 +86,76 @@ def test_adr3_imp_04_uaep_shim_does_not_couple_to_catalog_concrete() -> None:
     source = _UAEP_SHIM.read_text(encoding="utf-8")
     assert "CatalogDeclarativeToolInvoker" not in source
     assert "CatalogHostDeclarativeToolInvoker" in source
+
+
+def test_adr3_imp_04_r1_catalog_host_inherits_execution_bound_contract() -> None:
+    tree = ast.parse(_CATALOG_DECLARATIVE.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        if node.name != "CatalogHostDeclarativeToolInvoker":
+            continue
+        base_names: list[str] = []
+        for base in node.bases:
+            if isinstance(base, ast.Name):
+                base_names.append(base.id)
+            elif isinstance(base, ast.Attribute):
+                base_names.append(base.attr)
+        assert "ExecutionBoundDeclarativeToolInvoker" in base_names
+        method_names = {
+            child.name
+            for child in node.body
+            if isinstance(child, (ast.AsyncFunctionDef, ast.FunctionDef))
+        }
+        assert "invoke" not in method_names
+        return
+    raise AssertionError("CatalogHostDeclarativeToolInvoker not found")
+
+
+def test_adr3_imp_04_r1_execution_bound_is_canonical_invoke_owner() -> None:
+    canonical = _REPO / "intergrax" / "contracts" / "execution_bound_declarative_tool_invocation.py"
+    tree = ast.parse(canonical.read_text(encoding="utf-8"))
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == "ExecutionBoundDeclarativeToolInvoker":
+            assert any(
+                isinstance(child, ast.AsyncFunctionDef) and child.name == "invoke"
+                for child in node.body
+            )
+            return
+    raise AssertionError("ExecutionBoundDeclarativeToolInvoker.invoke not found")
+
+
+@dataclass
+class _StructuralCatalogHostInvoker:
+    """Host-capable L2 invoker without catalog concrete subclass."""
+
+    tool_invoker: RuntimeToolInvoker
+    calls: list[str] = field(default_factory=list)
+
+    async def invoke(
+        self,
+        *,
+        tenant_id: str,
+        run_id: str,
+        task_id: str,
+        agent_id: str,
+        tool_id: str,
+        args: JsonObject,
+        idempotency_key: str | None,
+    ) -> DeclarativeToolInvokeResult:
+        self.calls.append(tool_id)
+        _ = tenant_id, run_id, task_id, agent_id, args, idempotency_key
+        return DeclarativeToolInvokeResult(status="success", output={"ok": True})
+
+
+def test_adr3_imp_04_r1_structural_host_capability_without_catalog_subclass() -> None:
+    registry = ToolRegistry()
+    catalog = build_catalog_declarative_invoker_from_registry(registry)
+    custom = _StructuralCatalogHostInvoker(tool_invoker=catalog.tool_invoker)
+    assert isinstance(custom, ExecutionBoundDeclarativeToolInvoker)
+    assert isinstance(custom, CatalogHostDeclarativeToolInvoker)
+    assert not isinstance(custom, CatalogDeclarativeToolInvoker)
+    assert isinstance(catalog, CatalogHostDeclarativeToolInvoker)
 
 
 @dataclass
