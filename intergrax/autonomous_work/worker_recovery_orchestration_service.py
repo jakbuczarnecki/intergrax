@@ -31,8 +31,12 @@ from intergrax.autonomous_work.recovery_orchestration_ports import (
     UnavailableHumanDecisionRequestPort,
     UnavailableWorkerCapabilityAcquisitionPort,
     UnavailableWorkerEscalationPort,
+    UnavailableWorkerRecoveryCapabilityFulfillmentPort,
     UnavailableWorkerRecoveryReplanPort,
     WorkerCapabilityAcquisitionPort,
+    WorkerRecoveryCapabilityFulfillmentPort,
+    WorkerRecoveryCapabilityFulfillmentRequest,
+    WorkerRecoveryCapabilityFulfillmentRequestBuilderPort,
     WorkerCapabilityAcquisitionRequest,
     WorkerEscalationPort,
     WorkerEscalationRequest,
@@ -128,6 +132,12 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
         dispatch_port: WorkerRecoveryExecutionDispatchPort,
         replan_port: WorkerRecoveryReplanPort | None = None,
         capability_port: WorkerCapabilityAcquisitionPort | None = None,
+        recovery_capability_fulfillment_port: (
+            WorkerRecoveryCapabilityFulfillmentPort | None
+        ) = None,
+        recovery_capability_fulfillment_request_builder: (
+            WorkerRecoveryCapabilityFulfillmentRequestBuilderPort | None
+        ) = None,
         human_decision_port: HumanDecisionRequestPort | None = None,
         escalation_port: WorkerEscalationPort | None = None,
         execution_outcome_reader: CanonicalExecutionOutcomeReader | None = None,
@@ -140,8 +150,19 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
         self._lifecycle_service = lifecycle_service
         self._dispatch_port = dispatch_port
         self._replan_port = replan_port or UnavailableWorkerRecoveryReplanPort()
-        self._capability_port = capability_port or UnavailableWorkerCapabilityAcquisitionPort()
-        self._human_decision_port = human_decision_port or UnavailableHumanDecisionRequestPort()
+        self._capability_port = (
+            capability_port or UnavailableWorkerCapabilityAcquisitionPort()
+        )
+        self._recovery_capability_fulfillment = (
+            recovery_capability_fulfillment_port
+            or UnavailableWorkerRecoveryCapabilityFulfillmentPort()
+        )
+        self._recovery_capability_fulfillment_request_builder = (
+            recovery_capability_fulfillment_request_builder
+        )
+        self._human_decision_port = (
+            human_decision_port or UnavailableHumanDecisionRequestPort()
+        )
         self._escalation_port = escalation_port or UnavailableWorkerEscalationPort()
         self._execution_outcome_reader = (
             execution_outcome_reader or UnavailableCanonicalExecutionOutcomeReader()
@@ -218,7 +239,10 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
             return self._handle_human_decision(episode, request=request, now=now)
         if strategy in {RecoveryStrategy.WAIT, RecoveryStrategy.THROTTLE}:
             return self._handle_wait(episode, decision=decision, now=now)
-        if strategy in {RecoveryStrategy.ADAPT_INTEGRATION, RecoveryStrategy.ACQUIRE_CAPABILITY}:
+        if strategy in {
+            RecoveryStrategy.ADAPT_INTEGRATION,
+            RecoveryStrategy.ACQUIRE_CAPABILITY,
+        }:
             return self._handle_capability_deferred(episode, request=request, now=now)
         if strategy is RecoveryStrategy.REPLAN:
             return await self._handle_replan(
@@ -439,6 +463,44 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
         request: WorkerRecoveryOrchestrationRequest,
         now: datetime,
     ) -> WorkerRecoveryOrchestrationResult:
+        fulfillment_request = None
+        if self._recovery_capability_fulfillment_request_builder is not None:
+            fulfillment_request = self._recovery_capability_fulfillment_request_builder.build_fulfillment_request(
+                episode=episode,
+                request=request,
+            )
+        if fulfillment_request is not None:
+            handoff = WorkerRecoveryCapabilityFulfillmentRequest(
+                episode=episode,
+                orchestration_request=request,
+                fulfillment_request=fulfillment_request,
+            )
+            fulfillment = (
+                self._recovery_capability_fulfillment.fulfill_recovery_capability(
+                    handoff,
+                )
+            )
+            if fulfillment.disposition is PortAvailabilityDisposition.UNAVAILABLE:
+                episode = self._episode_repository.mark_escalated(
+                    recovery_episode_id=episode.recovery_episode_id,
+                    expected_revision=episode.revision,
+                    completed_at=now,
+                    terminal_reason="capability_fulfillment_unavailable",
+                )
+                return WorkerRecoveryOrchestrationResult(
+                    disposition=WorkerRecoveryOrchestrationDisposition.UNAVAILABLE,
+                    episode=episode,
+                )
+            episode = self._episode_repository.mark_escalated(
+                recovery_episode_id=episode.recovery_episode_id,
+                expected_revision=episode.revision,
+                completed_at=now,
+                terminal_reason="capability_fulfillment_deferred",
+            )
+            return WorkerRecoveryOrchestrationResult(
+                disposition=WorkerRecoveryOrchestrationDisposition.ESCALATED,
+                episode=episode,
+            )
         capability = self._capability_port.request_acquisition(
             WorkerCapabilityAcquisitionRequest(
                 episode=episode,
@@ -639,7 +701,10 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
                 ),
             )
 
-        if dispatch_request.source.source_kind is not WorkerExecutionSourceKind.RECOVERY:
+        if (
+            dispatch_request.source.source_kind
+            is not WorkerExecutionSourceKind.RECOVERY
+        ):
             episode = self._episode_repository.record_attempt_outcome(
                 recovery_episode_id=episode.recovery_episode_id,
                 expected_revision=episode.revision,
@@ -678,10 +743,7 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
                 now=now,
                 worker=worker,
             )
-            if (
-                resume_result.disposition
-                is WorkerOriginalWorkResumeDisposition.RESUMED
-            ):
+            if resume_result.disposition is WorkerOriginalWorkResumeDisposition.RESUMED:
                 episode = self._episode_repository.mark_succeeded(
                     recovery_episode_id=episode.recovery_episode_id,
                     expected_revision=episode.revision,
@@ -738,15 +800,24 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
                 dispatch_result.rejection_reason
                 is WorkerExecutionDispatchRejectionReason.BUDGET_DENIED
             ):
-                orchestration_disposition = WorkerRecoveryOrchestrationDisposition.LIMIT_EXCEEDED
+                orchestration_disposition = (
+                    WorkerRecoveryOrchestrationDisposition.LIMIT_EXCEEDED
+                )
             if (
                 dispatch_result.rejection_reason
                 is WorkerExecutionDispatchRejectionReason.STALE_SOURCE
             ):
-                orchestration_disposition = WorkerRecoveryOrchestrationDisposition.STALE_SOURCE
-        elif dispatch_result.disposition is WorkerExecutionDispatchDisposition.UNAVAILABLE:
+                orchestration_disposition = (
+                    WorkerRecoveryOrchestrationDisposition.STALE_SOURCE
+                )
+        elif (
+            dispatch_result.disposition
+            is WorkerExecutionDispatchDisposition.UNAVAILABLE
+        ):
             attempt_disposition = WorkerRecoveryAttemptDisposition.UNAVAILABLE
-            orchestration_disposition = WorkerRecoveryOrchestrationDisposition.UNAVAILABLE
+            orchestration_disposition = (
+                WorkerRecoveryOrchestrationDisposition.UNAVAILABLE
+            )
 
         execution_id = dispatch_result.correlation.execution_id
         if execution_id is not None:
@@ -767,7 +838,9 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
                 terminal_reason="attempt_failed_terminal",
                 last_failure_ref=failure_ref,
             )
-            orchestration_disposition = WorkerRecoveryOrchestrationDisposition.LIMIT_EXCEEDED
+            orchestration_disposition = (
+                WorkerRecoveryOrchestrationDisposition.LIMIT_EXCEEDED
+            )
         else:
             episode = self._episode_repository.record_attempt_outcome(
                 recovery_episode_id=episode.recovery_episode_id,
@@ -849,10 +922,7 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
                 now=now,
                 worker=worker,
             )
-            if (
-                resume_result.disposition
-                is WorkerOriginalWorkResumeDisposition.RESUMED
-            ):
+            if resume_result.disposition is WorkerOriginalWorkResumeDisposition.RESUMED:
                 episode = self._episode_repository.mark_succeeded(
                     recovery_episode_id=episode.recovery_episode_id,
                     expected_revision=episode.revision,
@@ -941,10 +1011,12 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
         now: datetime,
         worker: WorkerInstance,
     ) -> tuple[WorkerRecoveryEpisode, WorkerOriginalWorkResumeResult]:
-        episode, continuity_revision, continuity_conflict = self._apply_continuity_for_resume(
-            episode=episode,
-            request=request,
-            now=now,
+        episode, continuity_revision, continuity_conflict = (
+            self._apply_continuity_for_resume(
+                episode=episode,
+                request=request,
+                now=now,
+            )
         )
         if continuity_conflict:
             return episode, WorkerOriginalWorkResumeResult(
@@ -1060,8 +1132,12 @@ class WorkerRecoveryOrchestrationService[InputT, OutputT]:
             return WorkerRecoveryOrchestrationDisposition.STALE_SOURCE
         return None
 
-    def _load_worker(self, worker_instance_id: WorkerInstanceId) -> WorkerInstance | None:
-        return self._worker_instance_repository.get(worker_instance_id=worker_instance_id)
+    def _load_worker(
+        self, worker_instance_id: WorkerInstanceId
+    ) -> WorkerInstance | None:
+        return self._worker_instance_repository.get(
+            worker_instance_id=worker_instance_id
+        )
 
     def _transition_lifecycle(
         self,
@@ -1144,7 +1220,9 @@ def _episode_from_request(
         recovery_decision_id=decision.decision_id,
     )
     human_ref = (
-        str(decision.human_decision_ref) if decision.human_decision_ref is not None else None
+        str(decision.human_decision_ref)
+        if decision.human_decision_ref is not None
+        else None
     )
     return WorkerRecoveryEpisode(
         recovery_episode_id=episode_id,
@@ -1199,7 +1277,10 @@ def _resume_lifecycle_state(
     pre_recovery: WorkerLifecycleState | None,
     worker: WorkerInstance,
 ) -> WorkerLifecycleState:
-    if pre_recovery is not None and pre_recovery not in _INELIGIBLE_WORKER_LIFECYCLE_STATES:
+    if (
+        pre_recovery is not None
+        and pre_recovery not in _INELIGIBLE_WORKER_LIFECYCLE_STATES
+    ):
         return pre_recovery
     if worker.lifecycle_state is WorkerLifecycleState.IDLE:
         return WorkerLifecycleState.IDLE

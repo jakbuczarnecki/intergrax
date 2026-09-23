@@ -48,6 +48,7 @@ class WorkerCapabilityFulfillmentDisposition(StrEnum):
     DISCOVERY_INCOMPLETE = "discovery_incomplete"
     DISCOVERY_CONFLICT = "discovery_conflict"
     REALIZATION_FAILED = "realization_failed"
+    REALIZATION_NOT_VISIBLE = "realization_not_visible"
     QUALIFICATION_FAILED = "qualification_failed"
     BINDING_FAILED = "binding_failed"
     EXECUTION_FAILED = "execution_failed"
@@ -65,7 +66,6 @@ class WorkerCapabilityFulfillmentRequest:
     requested_at: datetime
     requested_authority_scopes: tuple[str, ...]
     allow_generic_acquisition: bool = True
-    post_realization_retry: bool = False
     run_id: RunId | None = None
     attempt_id: AttemptId | None = None
 

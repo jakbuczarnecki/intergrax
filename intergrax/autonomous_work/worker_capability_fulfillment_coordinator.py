@@ -10,12 +10,8 @@ from datetime import datetime
 from intergrax.autonomous_work.worker_capability_fulfillment_ports import (
     CapabilityRealizationCoordinatorPort,
     WorkerCapabilityDirectReuseFulfillmentPort,
-)
-from intergrax.autonomous_work.worker_capability_recovery_coordinator import (
-    WorkerCapabilityRecoveryCoordinator,
-)
-from intergrax.autonomous_work.worker_qualified_capability_resume_coordinator import (
-    WorkerQualifiedCapabilityResumeCoordinator,
+    WorkerCapabilityRecoveryPort,
+    WorkerQualifiedCapabilityResumePort,
 )
 from intergrax.contracts.autonomous_work.capability_acquisition import (
     derive_worker_capability_need_id,
@@ -58,8 +54,8 @@ class WorkerCapabilityFulfillmentCoordinator:
     def __init__(
         self,
         *,
-        recovery: WorkerCapabilityRecoveryCoordinator,
-        resume: WorkerQualifiedCapabilityResumeCoordinator,
+        recovery: WorkerCapabilityRecoveryPort,
+        resume: WorkerQualifiedCapabilityResumePort,
         direct_reuse: WorkerCapabilityDirectReuseFulfillmentPort,
         realization: CapabilityRealizationCoordinatorPort | None = None,
     ) -> None:
@@ -75,41 +71,76 @@ class WorkerCapabilityFulfillmentCoordinator:
         decided_at: datetime | None = None,
     ) -> WorkerCapabilityFulfillmentResult:
         timestamp = decided_at or request.requested_at
-        acquisition_request = request.acquisition_request
         recovery = self._recovery.coordinate_recovery(
-            acquisition_request,
+            request.acquisition_request,
             decided_at=timestamp,
             allow_generic_acquisition=request.allow_generic_acquisition,
         )
+        return self._fulfill_from_recovery(
+            request,
+            recovery=recovery,
+            decided_at=timestamp,
+            after_realization=False,
+        )
+
+    def _fulfill_from_recovery(
+        self,
+        request: WorkerCapabilityFulfillmentRequest,
+        *,
+        recovery,
+        decided_at: datetime,
+        after_realization: bool,
+    ) -> WorkerCapabilityFulfillmentResult:
         provenance = recovery.provenance
 
         if recovery.phase is WorkerCapabilityRecoveryPhase.DIRECT_REUSE:
             return self._direct_reuse.fulfill_direct_reuse(request, recovery)
 
         if recovery.phase is WorkerCapabilityRecoveryPhase.REALIZATION_REQUIRED:
+            if after_realization:
+                return WorkerCapabilityFulfillmentResult(
+                    disposition=WorkerCapabilityFulfillmentDisposition.REALIZATION_NOT_VISIBLE,
+                    provenance=provenance,
+                    recovery_outcome=recovery,
+                    decided_at=decided_at,
+                )
             return self._fulfill_realization_required(
                 request,
                 recovery=recovery,
-                decided_at=timestamp,
+                decided_at=decided_at,
             )
 
         if recovery.phase is WorkerCapabilityRecoveryPhase.QUALIFICATION_COMPLETE:
+            if after_realization:
+                return WorkerCapabilityFulfillmentResult(
+                    disposition=WorkerCapabilityFulfillmentDisposition.REALIZATION_NOT_VISIBLE,
+                    provenance=provenance,
+                    recovery_outcome=recovery,
+                    decided_at=decided_at,
+                )
             return self._fulfill_qualified(
-                request, recovery=recovery, decided_at=timestamp
+                request, recovery=recovery, decided_at=decided_at
             )
 
         if recovery.phase is WorkerCapabilityRecoveryPhase.FAIL_CLOSED:
+            if after_realization:
+                return WorkerCapabilityFulfillmentResult(
+                    disposition=WorkerCapabilityFulfillmentDisposition.REALIZATION_NOT_VISIBLE,
+                    provenance=provenance,
+                    recovery_outcome=recovery,
+                    decided_at=decided_at,
+                )
             return self._map_fail_closed(
                 request,
                 recovery=recovery,
-                decided_at=timestamp,
+                decided_at=decided_at,
             )
 
         return WorkerCapabilityFulfillmentResult(
             disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
             provenance=provenance,
             recovery_outcome=recovery,
-            decided_at=timestamp,
+            decided_at=decided_at,
         )
 
     def _fulfill_realization_required(
@@ -119,13 +150,6 @@ class WorkerCapabilityFulfillmentCoordinator:
         recovery,
         decided_at: datetime,
     ) -> WorkerCapabilityFulfillmentResult:
-        if request.post_realization_retry:
-            return WorkerCapabilityFulfillmentResult(
-                disposition=WorkerCapabilityFulfillmentDisposition.REALIZATION_FAILED,
-                provenance=recovery.provenance,
-                recovery_outcome=recovery,
-                decided_at=decided_at,
-            )
         if self._realization is None:
             return WorkerCapabilityFulfillmentResult(
                 disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
@@ -180,19 +204,17 @@ class WorkerCapabilityFulfillmentCoordinator:
                 recovery_outcome=recovery,
                 decided_at=decided_at,
             )
-        retry = WorkerCapabilityFulfillmentRequest(
-            acquisition_request=request.acquisition_request,
-            worker_instance_id=request.worker_instance_id,
-            tenant_id=request.tenant_id,
-            task_id=request.task_id,
-            requested_at=request.requested_at,
-            requested_authority_scopes=request.requested_authority_scopes,
-            allow_generic_acquisition=request.allow_generic_acquisition,
-            post_realization_retry=True,
-            run_id=request.run_id,
-            attempt_id=request.attempt_id,
+        reconciled = self._recovery.coordinate_recovery(
+            request.acquisition_request,
+            decided_at=decided_at,
+            allow_generic_acquisition=False,
         )
-        return self.fulfill(retry, decided_at=decided_at)
+        return self._fulfill_from_recovery(
+            request,
+            recovery=reconciled,
+            decided_at=decided_at,
+            after_realization=True,
+        )
 
     def _fulfill_qualified(
         self,
