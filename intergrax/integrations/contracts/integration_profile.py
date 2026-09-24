@@ -5,9 +5,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, ClassVar, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Callable, ClassVar, Mapping, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+if TYPE_CHECKING:
+    from intergrax.runtime.integrations.contracts import PlatformIntegrationContract
 
 from intergrax.integrations.contracts.base import (
     PROFILE_FIELD_BY_CATEGORY,
@@ -184,14 +187,27 @@ class IntegrationProfile(BaseModel):
             return {}
         return dict(self.options.get(key, {}))
 
-    def instance_for_category(self, category: IntegrationCategory) -> Any | None:
+    def instance_for_category(
+        self,
+        category: IntegrationCategory,
+    ) -> PlatformIntegrationContract | None:
         field_name = PROFILE_FIELD_BY_CATEGORY.get(category.value)
         if field_name is None:
             return None
         binding = self.binding_for_field(field_name)
         if binding is None:
             return None
-        return binding.instance
+        instance = binding.instance
+        if instance is None:
+            return None
+        from intergrax.runtime.integrations.contracts import PlatformIntegrationContract
+
+        if not isinstance(instance, PlatformIntegrationContract):
+            raise TypeError(
+                f"Pre-built integration for category {category.value!r} is "
+                f"{type(instance).__name__}, expected PlatformIntegrationContract."
+            )
+        return instance
 
     @classmethod
     def harness_lab(cls) -> IntegrationProfile:

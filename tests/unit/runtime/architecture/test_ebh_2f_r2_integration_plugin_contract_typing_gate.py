@@ -17,6 +17,8 @@ _PLUGIN_CONTRACT = _REPO_ROOT / "intergrax" / "integrations" / "contracts" / "pl
 _PLUGIN_REGISTER = _REPO_ROOT / "intergrax" / "integrations" / "registry" / "plugin_register.py"
 _CATALOG_FACTORY = _REPO_ROOT / "intergrax" / "integrations" / "contracts" / "catalog_factory.py"
 _BASE_TYPES = _REPO_ROOT / "intergrax" / "integrations" / "contracts" / "base.py"
+_RESOLVER = _REPO_ROOT / "intergrax" / "integrations" / "registry" / "factory.py"
+_CONTRACT_SPEC = _REPO_ROOT / "intergrax" / "integrations" / "registry" / "contract_spec.py"
 
 
 def _read(path: Path) -> str:
@@ -63,3 +65,17 @@ def test_registry_v2_reuses_canonical_integration_factory_type() -> None:
     source = _read(_REPO_ROOT / "intergrax" / "runtime" / "integrations" / "registry_v2.py")
     assert "Callable[..., PlatformIntegrationContract]" not in source
     assert "catalog_factory import IntegrationFactory" in source
+
+
+def test_canonical_resolver_has_no_any_semantic_result() -> None:
+    source = _read(_RESOLVER)
+    assert "-> Any" not in source
+    assert "PlatformIntegrationContract" in source
+
+
+def test_contract_spec_factory_aliases_catalog_factory_without_any() -> None:
+    source = _read(_CONTRACT_SPEC)
+    assert "Callable[..., Any]" not in source
+    assert "IntegrationContractFactory = IntegrationFactory" in source
+    assert "contract_class: type[PlatformIntegrationContract]" in source
+    assert "security_posture: PlatformIntegrationSecurityPosture" in source

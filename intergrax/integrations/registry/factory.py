@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Any, Mapping, Optional
 
 from intergrax.integrations._shared.config import merge_config, read_integration_slug_from_env
+from intergrax.runtime.integrations.contracts import PlatformIntegrationContract
 from intergrax.integrations.contracts.base import (
     IntegrationCategory,
     IntegrationCategoryMismatchError,
@@ -83,13 +84,27 @@ def resolve_slug(
     )
 
 
+def _require_platform_integration_contract(
+    value: object,
+    *,
+    slug: str,
+    category: IntegrationCategory,
+) -> PlatformIntegrationContract:
+    if not isinstance(value, PlatformIntegrationContract):
+        raise TypeError(
+            f"Integration factory for slug {slug!r} (category {category.value!r}) "
+            f"returned {type(value).__name__}, expected a PlatformIntegrationContract."
+        )
+    return value
+
+
 def resolve(
     category: str | IntegrationCategory,
     slug: SlugInput | None = None,
     *,
     profile: Optional[IntegrationProfile] = None,
     config: Optional[Mapping[str, Any]] = None,
-) -> Any:
+) -> PlatformIntegrationContract:
     """
     Instantiate the provider for ``category``.
 
@@ -109,12 +124,19 @@ def resolve(
 
     if len(entry.categories) > 1:
         if merged:
-            return entry.factory(integration_category=normalized, **merged)
-        return entry.factory(integration_category=normalized)
+            materialized = entry.factory(integration_category=normalized, **merged)
+        else:
+            materialized = entry.factory(integration_category=normalized)
+    elif merged:
+        materialized = entry.factory(**merged)
+    else:
+        materialized = entry.factory()
 
-    if merged:
-        return entry.factory(**merged)
-    return entry.factory()
+    return _require_platform_integration_contract(
+        materialized,
+        slug=resolved_slug,
+        category=normalized,
+    )
 
 
 def resolve_from_profile(
@@ -122,9 +144,14 @@ def resolve_from_profile(
     category: str | IntegrationCategory,
     *,
     config: Optional[Mapping[str, Any]] = None,
-) -> Any:
+) -> PlatformIntegrationContract:
     normalized = normalize_category(category)
     instance = profile.instance_for_category(normalized)
     if instance is not None:
-        return instance
+        slug = profile.slug_for_category(normalized) or normalized.value
+        return _require_platform_integration_contract(
+            instance,
+            slug=slug,
+            category=normalized,
+        )
     return resolve(category, profile=profile, config=config)
