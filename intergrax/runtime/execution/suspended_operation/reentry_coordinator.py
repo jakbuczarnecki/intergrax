@@ -144,10 +144,21 @@ class ExecutionSuspendedWorkReentryCoordinator:
                 disposition=ExecutionSuspendedWorkReentryDisposition.REJECTED,
                 reason_detail="payload_digest_mismatch",
             )
-        if request.claim_owner_id != self.claim_owner_id:
+        authority = request.claim_authority
+        if authority.owner_id != self.claim_owner_id:
             return ExecutionSuspendedWorkReentryResult(
                 disposition=ExecutionSuspendedWorkReentryDisposition.REJECTED,
                 reason_detail="claim_owner_mismatch",
+            )
+        if authority.materialization_revision != descriptor.materialization_revision:
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.REJECTED,
+                reason_detail="stale_materialization_revision",
+            )
+        if authority.pause_generation != descriptor.pause_generation:
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.REJECTED,
+                reason_detail="stale_pause_generation",
             )
 
         now = datetime.now(timezone.utc)
@@ -161,10 +172,15 @@ class ExecutionSuspendedWorkReentryCoordinator:
                     disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
                     reason_detail="claim_missing_descriptor",
                 )
-            if ownership.owner_id != self.claim_owner_id:
+            if ownership.owner_id != authority.owner_id:
                 return ExecutionSuspendedWorkReentryResult(
                     disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
                     reason_detail="stale_claim_owner",
+                )
+            if authority.fence != ownership.fence:
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail="stale_claim_fence",
                 )
             if ownership.lease_expires_at <= now:
                 return ExecutionSuspendedWorkReentryResult(
@@ -173,11 +189,21 @@ class ExecutionSuspendedWorkReentryCoordinator:
                 )
             claimed = descriptor
         else:
+            if descriptor.claim_ownership is not None:
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail="claim_ownership_unexpected",
+                )
+            if authority.fence != 0:
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail="stale_claim_fence",
+                )
             lease_expires = now + timedelta(seconds=self.default_lease_seconds)
             claim = self.store.claim(
                 suspended_operation_id=descriptor.suspended_operation_id,
-                expected_materialization_revision=descriptor.materialization_revision,
-                owner_id=self.claim_owner_id,
+                expected_materialization_revision=authority.materialization_revision,
+                owner_id=authority.owner_id,
                 lease_expires_at=lease_expires,
             )
             if claim.outcome is not SuspendedOperationClaimOutcome.CLAIMED:
@@ -191,6 +217,13 @@ class ExecutionSuspendedWorkReentryCoordinator:
                     disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
                     reason_detail="claim_missing_descriptor",
                 )
+
+        claim_ownership = claimed.claim_ownership
+        if claim_ownership is None:
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                reason_detail="claim_missing_descriptor",
+            )
 
         codec = self.codec_registry.resolve(
             SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
@@ -255,7 +288,7 @@ class ExecutionSuspendedWorkReentryCoordinator:
                     payload=payload,
                     contract=contract,
                     state=state,
-                    claim_ownership=claimed.claim_ownership,
+                    claim_ownership=claim_ownership,
                     pause_generation=pause_generation,
                     lease_seconds=self.default_lease_seconds,
                 )
@@ -306,8 +339,8 @@ class ExecutionSuspendedWorkReentryCoordinator:
             consumed = self.store.mark_consumed(
                 suspended_operation_id=claimed.suspended_operation_id,
                 expected_materialization_revision=claimed.materialization_revision,
-                owner_id=claimed.claim_ownership.owner_id,
-                fence=claimed.claim_ownership.fence,
+                owner_id=claim_ownership.owner_id,
+                fence=claim_ownership.fence,
                 expected_pause_generation=claimed.pause_generation,
             )
             if consumed.outcome is not SuspendedOperationMutationOutcome.APPLIED:

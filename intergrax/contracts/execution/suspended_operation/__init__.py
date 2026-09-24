@@ -2,6 +2,9 @@
 
 """Execution-owned durable suspended work contracts (UCA-6C-R6)."""
 
+from intergrax.contracts.execution.suspended_operation.claim_authority import (
+    SuspendedOperationClaimAuthority,
+)
 from intergrax.contracts.execution.suspended_operation.claim import (
     SuspendedOperationAbandonReason,
     SuspendedOperationClaimOutcome,
@@ -51,6 +54,7 @@ __all__ = [
     "SuspendedExecutionOperationDescriptor",
     "SuspendedExecutionOperationStore",
     "SuspendedOperationAbandonReason",
+    "SuspendedOperationClaimAuthority",
     "SuspendedOperationClaimOutcome",
     "SuspendedOperationClaimResult",
     "SuspendedOperationMutationOutcome",

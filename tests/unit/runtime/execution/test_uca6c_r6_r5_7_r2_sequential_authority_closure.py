@@ -14,6 +14,9 @@ from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementResult,
     PolicyCompositionResult,
 )
+from intergrax.contracts.execution.suspended_operation.claim_authority import (
+    SuspendedOperationClaimAuthority,
+)
 from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedOperationMaterializationState,
 )
@@ -236,7 +239,10 @@ def test_stale_continuation_reentry_blocks_backend(tmp_path: Path) -> None:
             ExecutionSuspendedWorkReentryRequest(
                 continuation_id=c1,
                 identity=d3.identity,
-                claim_owner_id=reentry.claim_owner_id,
+                claim_authority=SuspendedOperationClaimAuthority.for_host_pending_claim(
+                    host_owner_id=reentry.claim_owner_id,
+                    descriptor=d3,
+                ),
             ),
             task=None,
         )

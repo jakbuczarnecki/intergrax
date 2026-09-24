@@ -23,6 +23,9 @@ from intergrax.contracts.execution.suspended_operation.claim import (
     SuspendedOperationClaimOutcome,
     SuspendedOperationMutationOutcome,
 )
+from intergrax.contracts.execution.suspended_operation.claim_authority import (
+    SuspendedOperationClaimAuthority,
+)
 from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedOperationMaterializationState,
 )
@@ -445,6 +448,29 @@ def _resume_gen3_without_reentry(
     )
 
 
+def _claim_authority_for_coordinator(
+    coordinator: ExecutionSuspendedWorkReentryCoordinator,
+    continuation_id: str,
+) -> SuspendedOperationClaimAuthority:
+    active = coordinator.store.load_active_for_continuation(continuation_id)
+    if active is None:
+        return SuspendedOperationClaimAuthority(
+            owner_id=coordinator.claim_owner_id,
+            fence=0,
+            materialization_revision=0,
+            pause_generation=1,
+        )
+    if (
+        active.materialization_state is SuspendedOperationMaterializationState.CLAIMED
+        and active.claim_ownership is not None
+    ):
+        return SuspendedOperationClaimAuthority.from_claimed_descriptor(active)
+    return SuspendedOperationClaimAuthority.for_host_pending_claim(
+        host_owner_id=coordinator.claim_owner_id,
+        descriptor=active,
+    )
+
+
 def _reenter(
     coordinator: ExecutionSuspendedWorkReentryCoordinator,
     *,
@@ -453,16 +479,20 @@ def _reenter(
     task: Task | None,
     counters: ReentryFenceCounters,
     host: str,
+    claim_authority: SuspendedOperationClaimAuthority | None = None,
 ) -> object:
     if host == "a":
         counters.host_a_reentry_attempts += 1
     else:
         counters.host_b_reentry_attempts += 1
+    authority = claim_authority
+    if authority is None:
+        authority = _claim_authority_for_coordinator(coordinator, continuation_id)
     result = coordinator.reenter_after_resume(
         ExecutionSuspendedWorkReentryRequest(
             continuation_id=continuation_id,
             identity=identity,
-            claim_owner_id=coordinator.claim_owner_id,
+            claim_authority=authority,
         ),
         task=task,
     )
@@ -574,6 +604,12 @@ def test_canonical_reentry_stale_host_blocked_current_host_completes(
             root_guard_calls = fixture.guard_a.calls
             reentry_a = fixture.composition_a.suspended_work_reentry_coordinator
             assert reentry_a is not None
+            stale_authority = SuspendedOperationClaimAuthority(
+                owner_id=OWNER_HOST_A,
+                fence=fence_a,
+                materialization_revision=revision_b,
+                pause_generation=pause_gen,
+            )
             stale = _reenter(
                 reentry_a,
                 continuation_id=c3,
@@ -581,6 +617,7 @@ def test_canonical_reentry_stale_host_blocked_current_host_completes(
                 task=task,
                 counters=fixture.counters,
                 host="a",
+                claim_authority=stale_authority,
             )
             assert stale.disposition is ExecutionSuspendedWorkReentryDisposition.FAILED
             assert stale.reason_detail == "stale_claim_owner"
@@ -748,7 +785,7 @@ def test_stale_host_with_valid_grants_still_blocked(tmp_path: Path) -> None:
                 attempt_id=attempt_id,
                 execution_id=execution_id,
             )
-            fence_a, revision_a, _ = _claim_host_a_short_lease(fixture, d3)
+            fence_a, revision_a, pause_gen = _claim_host_a_short_lease(fixture, d3)
             expired_now = datetime.now(UTC) + timedelta(hours=2)
             reclaim_bridge = _ReclaimBridge(
                 descriptor=d3,
@@ -756,7 +793,7 @@ def test_stale_host_with_valid_grants_still_blocked(tmp_path: Path) -> None:
                 store_b=fixture.composition_b.suspended_work_reentry_coordinator.store,
             )
             with advance_lease_clock(expired_now):
-                reclaim_as(
+                reclaimed = reclaim_as(
                     reclaim_bridge,
                     "b",
                     expected_revision=revision_a,
@@ -764,6 +801,8 @@ def test_stale_host_with_valid_grants_still_blocked(tmp_path: Path) -> None:
                     expected_fence=fence_a,
                     lease_at=expired_now + timedelta(minutes=5),
                 )
+            assert reclaimed.descriptor is not None
+            revision_b = reclaimed.descriptor.materialization_revision
             _sync_host_stores(fixture)
             _resume_gen3_without_reentry(
                 fixture,
@@ -782,6 +821,12 @@ def test_stale_host_with_valid_grants_still_blocked(tmp_path: Path) -> None:
             )
             reentry_a = fixture.composition_a.suspended_work_reentry_coordinator
             assert reentry_a is not None
+            stale_authority = SuspendedOperationClaimAuthority(
+                owner_id=OWNER_HOST_A,
+                fence=fence_a,
+                materialization_revision=revision_b,
+                pause_generation=pause_gen,
+            )
             stale = _reenter(
                 reentry_a,
                 continuation_id=c3,
@@ -789,6 +834,7 @@ def test_stale_host_with_valid_grants_still_blocked(tmp_path: Path) -> None:
                 task=task,
                 counters=fixture.counters,
                 host="a",
+                claim_authority=stale_authority,
             )
             assert stale.disposition is ExecutionSuspendedWorkReentryDisposition.FAILED
             assert stale.reason_detail == "stale_claim_owner"
@@ -858,11 +904,12 @@ def test_reentry_rejects_identity_mismatch(tmp_path: Path) -> None:
             reentry_a = fixture.composition_a.suspended_work_reentry_coordinator
             assert reentry_a is not None
             bad_identity = replace(d3.identity, execution_id=wrong_execution)
+            bad_authority = _claim_authority_for_coordinator(reentry_a, c3)
             result = reentry_a.reenter_after_resume(
                 ExecutionSuspendedWorkReentryRequest(
                     continuation_id=c3,
                     identity=bad_identity,
-                    claim_owner_id=reentry_a.claim_owner_id,
+                    claim_authority=bad_authority,
                 ),
                 task=None,
             )
