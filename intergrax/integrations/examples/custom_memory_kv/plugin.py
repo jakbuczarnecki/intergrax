@@ -10,23 +10,25 @@ For agent task KV use ``wire_task_memory_from_profile``; for user LTM use
 
 from __future__ import annotations
 
-from typing import Any
-
-from intergrax.integrations.contracts.key_value_cache import KeyValueCache
+from intergrax.integrations.contracts.catalog_factory import IntegrationFactoryConfigValue
 from intergrax.integrations.core.manifest import IntegrationManifest
-from intergrax.integrations.examples.custom_memory_kv.adapter import InProcessKeyValueCache
+from intergrax.integrations.examples.custom_memory_kv.bundle import create_custom_memory_kv_integration
 from intergrax.integrations.examples.custom_memory_kv.contract_spec import CONTRACT_SPECS
+from intergrax.integrations.examples.custom_memory_kv.integration import CustomMemoryKvIntegration
 from intergrax.integrations.examples.custom_memory_kv.manifest import MANIFEST
+from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
 
 
 class CustomMemoryKvPlugin:
-    CONTRACT_SPECS = CONTRACT_SPECS
-
     @classmethod
     def integration_manifest(cls) -> IntegrationManifest:
         return MANIFEST
 
     @classmethod
-    def create_integration(cls, **kwargs: Any) -> KeyValueCache:
+    def integration_contract_specs(cls) -> tuple[IntegrationContractSpec, ...]:
+        return CONTRACT_SPECS
+
+    @classmethod
+    def create_integration(cls, **kwargs: IntegrationFactoryConfigValue) -> CustomMemoryKvIntegration:
         _ = kwargs
-        return InProcessKeyValueCache()
+        return create_custom_memory_kv_integration()

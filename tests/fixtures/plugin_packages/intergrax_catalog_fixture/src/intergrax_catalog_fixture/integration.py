@@ -4,18 +4,17 @@
 
 from __future__ import annotations
 
-from typing import Any
-
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationStatus
-from intergrax.integrations.contracts.key_value_cache import KeyValueCache
+from intergrax.integrations.contracts.catalog_factory import IntegrationFactoryConfigValue
 from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.examples.custom_memory_kv.adapter import InProcessKeyValueCache
+from intergrax.integrations.examples.custom_memory_kv.integration import CustomMemoryKvIntegration
+from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
 
 from intergrax_catalog_fixture.integration_contract import CONTRACT_SPECS
 
 
 class FixtureKvIntegrationPlugin:
-    CONTRACT_SPECS = CONTRACT_SPECS
     """Distinct slug from ``custom_memory_kv`` for entry-point-only registration tests."""
 
     @classmethod
@@ -29,6 +28,10 @@ class FixtureKvIntegrationPlugin:
         )
 
     @classmethod
-    def create_integration(cls, **kwargs: Any) -> KeyValueCache:
+    def integration_contract_specs(cls) -> tuple[IntegrationContractSpec, ...]:
+        return CONTRACT_SPECS
+
+    @classmethod
+    def create_integration(cls, **kwargs: IntegrationFactoryConfigValue) -> CustomMemoryKvIntegration:
         _ = kwargs
-        return InProcessKeyValueCache()
+        return CustomMemoryKvIntegration.from_client(InProcessKeyValueCache())

@@ -18,6 +18,7 @@ from intergrax.integrations.examples.custom_memory_kv import CustomMemoryKvPlugi
 from intergrax.integrations.registry.bootstrap import reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog, get_entry
 from intergrax.integrations.registry.catalog_manifests import SQLITE
+from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
 from intergrax.skills.registry.bootstrap import reset_default_skills_for_tests
 from intergrax.skills.registry.catalog import clear_skill_catalog
 from intergrax.tools.registry.bootstrap import reset_default_tools_bootstrap
@@ -49,6 +50,12 @@ class _SqliteOverridePlugin:
     @classmethod
     def integration_manifest(cls) -> IntegrationManifest:
         return SQLITE
+
+    @classmethod
+    def integration_contract_specs(cls) -> tuple[IntegrationContractSpec, ...]:
+        from intergrax.integrations.providers.relational_store.sqlite.contract_spec import CONTRACT_SPECS
+
+        return CONTRACT_SPECS
 
     @classmethod
     def create_integration(cls, **kwargs: object) -> object:

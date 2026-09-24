@@ -16,7 +16,7 @@ from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.providers.managed_retrieval.openai.manifest import MANIFEST as OPENAI_MANAGED_RETRIEVAL
 from intergrax.integrations.registry.bootstrap import register_default_integrations, reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog, get_entry
-from intergrax.integrations.registry.contract_spec import declare_integration_contract
+from intergrax.integrations.registry.contract_spec import IntegrationContractSpec, declare_integration_contract
 from intergrax.integrations.registry.plugin_register import register_integration_plugin
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.integrations.categories.managed_retrieval import (
@@ -130,6 +130,10 @@ class VendorBPlugin:
             slug=VENDOR_B_MANAGED_RETRIEVAL_PROVIDER_ID,
             categories=(IntegrationCategory.MANAGED_RETRIEVAL,),
         )
+
+    @classmethod
+    def integration_contract_specs(cls) -> tuple[IntegrationContractSpec, ...]:
+        return ()
 
     @classmethod
     def create_integration(cls, **kwargs: object) -> ManagedRetrievalBackend:

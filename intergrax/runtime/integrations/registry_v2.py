@@ -19,6 +19,7 @@ from types import MappingProxyType
 from typing import TypeAlias, cast
 
 from intergrax.integrations.contracts.base import UnknownIntegrationError
+from intergrax.integrations.contracts.catalog_factory import IntegrationFactory
 from intergrax.integrations.providers.layout import SLUG_CATEGORY
 from intergrax.integrations.registry.catalog import catalog_snapshot, get_entry
 from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
@@ -38,7 +39,6 @@ from intergrax.runtime.integrations.contracts import (
 
 IntegrationCapability: TypeAlias = PlatformIntegrationCapability
 IntegrationSecurityPosture: TypeAlias = PlatformIntegrationSecurityPosture
-IntegrationFactory: TypeAlias = Callable[..., PlatformIntegrationContract]
 RegistrationKey: TypeAlias = tuple[str, str]
 
 

@@ -57,6 +57,10 @@ class ExternalRelationalPlugin:
         )
 
     @classmethod
+    def integration_contract_specs(cls) -> tuple[IntegrationContractSpec, ...]:
+        return ()
+
+    @classmethod
     def create_integration(cls, **kwargs: object) -> _ExternalRelationalIntegration:
         _ = kwargs
         return _external_contract_factory(enabled=True)

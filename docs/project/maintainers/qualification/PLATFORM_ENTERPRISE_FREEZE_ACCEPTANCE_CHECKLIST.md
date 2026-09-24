@@ -62,20 +62,20 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 | FRZ-OWN-03 | Ownership | one sanctioned composition owner | EBH-2*, EBH-3 | OPEN | — |
 | FRZ-OWN-04 | Ownership | no shadow authority | EBH-2*, EBH-3 | OPEN | — |
 | FRZ-OWN-05 | Ownership | no duplicated semantic mechanism | EBH-2*, EBH-3 | OPEN | — |
-| FRZ-CTR-01 | Contracts / abstraction | consumers depend on contracts | EBH-2*, EBH-3, EBH-4 | OPEN | — |
+| FRZ-CTR-01 | Contracts / abstraction | consumers depend on contracts | EBH-2*, EBH-3, EBH-4 | OPEN | EBH-2F-R2 (in progress): public integration plugins materialize through typed `PlatformIntegrationContract` factories, not `Any` seams. |
 | FRZ-CTR-02 | Contracts / abstraction | concrete provider leakage = 0 | EBH-2*, EBH-3, EBH-4 | OPEN | — |
-| FRZ-CTR-03 | Contracts / abstraction | no pseudo-contract dicts | EBH-2*, EBH-3, EBH-4 | OPEN | — |
+| FRZ-CTR-03 | Contracts / abstraction | no pseudo-contract dicts | EBH-2*, EBH-3, EBH-4 | OPEN | EBH-2F-R2 (in progress): remove magic `CONTRACT_SPECS` attribute probing; explicit `contract_specs` / `integration_contract_specs()` only. |
 | FRZ-CTR-04 | Contracts / abstraction | public/internal contracts classified | EBH-2*, EBH-3, EBH-4 | OPEN | — |
-| FRZ-CTR-05 | Contracts / abstraction | contract responsibility narrow/cohesive | EBH-2*, EBH-3, EBH-4 | OPEN | — |
+| FRZ-CTR-05 | Contracts / abstraction | contract responsibility narrow/cohesive | EBH-2*, EBH-3, EBH-4 | OPEN | EBH-2F-R2 (in progress): `IntegrationPlugin` + catalog factory typing owned by `catalog_factory.py` / `registry_v2` projection. |
 | FRZ-CTR-06 | Contracts / abstraction | contracts do not encode concrete vendor/runtime implementation | EBH-2*, EBH-3, EBH-4 | OPEN | — |
-| FRZ-TYP-01 | Strong typing | semantic boundaries strongly typed | EBH-2* | OPEN | — |
-| FRZ-TYP-02 | Strong typing | Any at semantic boundaries = 0 unless evidence-backed transport reason | EBH-2* | OPEN | — |
+| FRZ-TYP-01 | Strong typing | semantic boundaries strongly typed | EBH-2* | OPEN | EBH-2F-R2 (in progress): typed `IntegrationPlugin.create_integration` + `IntegrationFactory` catalog boundary. |
+| FRZ-TYP-02 | Strong typing | Any at semantic boundaries = 0 unless evidence-backed transport reason | EBH-2* | OPEN | EBH-2F-R2 blocker evidence at `8c89bdfa046bbf124ed838b64834bdc825bb8f57`: `Any` on plugin factory seam. |
 | FRZ-TYP-03 | Strong typing | generic object semantic seams = 0 | EBH-2* | OPEN | — |
-| FRZ-TYP-04 | Strong typing | reflection-based semantic dispatch = 0 | EBH-2* | OPEN | — |
+| FRZ-TYP-04 | Strong typing | reflection-based semantic dispatch = 0 | EBH-2* | OPEN | EBH-2F-R2 blocker: `getattr(plugin, "CONTRACT_SPECS", None)` on registration path (audit SHA above). |
 | FRZ-TYP-05 | Strong typing | string-dispatch substitute for typed contract = 0 | EBH-2* | OPEN | — |
 | FRZ-TYP-06 | Strong typing | type-ignore/cast cannot mask architecture mismatch | EBH-2* | OPEN | — |
-| FRZ-PLG-01 | Pluginability | extensible mechanisms expose platform contracts | EBH-2*, EBH-5 | OPEN | — |
-| FRZ-PLG-02 | Pluginability | external structural implementation works without core patch | EBH-2*, EBH-5 | OPEN | — |
+| FRZ-PLG-01 | Pluginability | extensible mechanisms expose platform contracts | EBH-2*, EBH-5 | OPEN | EBH-2F-R2 (in progress): external plugins declare specs via `integration_contract_specs()` / registration `contract_specs`. |
+| FRZ-PLG-02 | Pluginability | external structural implementation works without core patch | EBH-2*, EBH-5 | OPEN | EBH-2F-R2 structural proof: external plugin → registration → catalog → projection → resolve. |
 | FRZ-PLG-03 | Pluginability | provider discovery has explicit owner | EBH-2*, EBH-5 | OPEN | — |
 | FRZ-PLG-04 | Pluginability | provider selection has explicit owner | EBH-2*, EBH-5 | OPEN | — |
 | FRZ-PLG-05 | Pluginability | activation/admission explicit | EBH-2*, EBH-5 | OPEN | — |
@@ -180,14 +180,14 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 | FRZ-PRD-07 | Production qualification | strict vs lab semantics separated | PROD-Q | OPEN | — |
 | FRZ-PRD-08 | Production qualification | production-only bypass count = 0 | PROD-Q | OPEN | — |
 | FRZ-REG-01 | Regression / qualification infrastructure | every frozen invariant has evidence protection | QUAL-X | OPEN | — |
-| FRZ-REG-02 | Regression / qualification infrastructure | every corrected blocker has regression gate | QUAL-X | OPEN | — |
+| FRZ-REG-02 | Regression / qualification infrastructure | every corrected blocker has regression gate | QUAL-X | OPEN | EBH-2F-R2: `test_ebh_2f_r2_integration_plugin_contract_typing_gate.py` (in progress). |
 | FRZ-REG-03 | Regression / qualification infrastructure | negative tests prove gates detect violations | QUAL-X | OPEN | — |
 | FRZ-REG-04 | Regression / qualification infrastructure | allowlists minimal and justified | QUAL-X | OPEN | — |
 | FRZ-REG-05 | Regression / qualification infrastructure | stale inventories = 0 | QUAL-X | OPEN | — |
 | FRZ-REG-06 | Regression / qualification infrastructure | deterministic qualification tests | QUAL-X | OPEN | — |
 | FRZ-REG-07 | Regression / qualification infrastructure | clean checkout reproducibility | QUAL-X | OPEN | — |
 | FRZ-REG-08 | Regression / qualification infrastructure | environment failures cannot become false PASS | QUAL-X | OPEN | — |
-| FRZ-REG-09 | Regression / qualification infrastructure | critical invariant protected by code/test, not docs only | QUAL-X | OPEN | — |
+| FRZ-REG-09 | Regression / qualification infrastructure | critical invariant protected by code/test, not docs only | QUAL-X | OPEN | EBH-2F-R2 gates on `plugin.py`, `plugin_register.py`, `catalog_factory.py`, `registry_v2.py` (in progress). |
 | FRZ-REG-10 | Regression / qualification infrastructure | mandatory freeze qualification suite defined | QUAL-X | OPEN | — |
 | FRZ-HRN-01 | Harness / Top-Tier | INV-1..INV-34 recertified current HEAD | HARNESS-FINAL | OPEN | — |
 | FRZ-HRN-02 | Harness / Top-Tier | A-Z Top-Tier audit repeated current HEAD | HARNESS-FINAL | OPEN | — |
@@ -230,6 +230,7 @@ This log records independently audited evidence contributions without upgrading 
 | --- | --- | --- | --- | --- |
 | EBH-2F-R1 | `324ad07d60211cb9c72bcff668e988f180e6ff5b` | Final host-execution-boundary recertification. Tier-3 production hosts consume `runtime.execution` / `HostTaskExecutionPort`; shared harness execution wiring is governance-only and contains no `NexusLoop`; Nexus-backed materialization remains in sanctioned runtime/composition owners; revision admission is strongly typed; structural custom execution-port replaceability and anti-regression gates were independently verified. | FRZ-BND-04, FRZ-BND-05, FRZ-OWN-03, FRZ-CTR-01, FRZ-CTR-02, FRZ-CTR-06, FRZ-TYP-01, FRZ-TYP-03, FRZ-PLG-02, FRZ-RPL-02, FRZ-RPL-03, FRZ-EXE-01, FRZ-EXE-03, FRZ-REG-02, FRZ-REG-09 | Evidence contribution only; criteria remain `OPEN` until their platform-wide closing stages. |
 | R1-SQLITE-ENV-01 | `324ad07d60211cb9c72bcff668e988f180e6ff5b` | `test_governed_contractor_http_root_uses_canonical_execution_facade` still fails before reaching the execution-facade spy with `sqlite3.DatabaseError: file is not a database` during collaborative-work persistence bootstrap. Independent R1 audit found no causal relation to the host-execution boundary. | FRZ-STA-03, FRZ-PRD-04, FRZ-REG-08 | Open evidence item. Must be resolved or independently classified with reproducible environment/test-isolation evidence before the applicable `STATE-X` / `PROD-Q` / `QUAL-X` criteria can close. It is not an R1 blocker. |
+| EBH-2F-R2-BLOCKER | `8c89bdfa046bbf124ed838b64834bdc825bb8f57` | Independent audit rejected EBH-2F parent closure: weak `IntegrationPlugin` / `IntegrationFactory` typing and `CONTRACT_SPECS` reflection on `register_integration_plugin`. Tracked as EBH-2F-R2 CURRENT. | FRZ-CTR-01, FRZ-CTR-03, FRZ-CTR-05, FRZ-TYP-01, FRZ-TYP-02, FRZ-TYP-04, FRZ-PLG-01, FRZ-PLG-02, FRZ-REG-02, FRZ-REG-09 | Blocker evidence; FRZ rows remain OPEN until independent closure at platform scope. |
 
 ---
 
