@@ -13,6 +13,7 @@ from intergrax.contracts.execution_continuation import (
     ExecutionContinuationLifecycleState,
     ExecutionContinuationLookup,
     ExecutionContinuationPort,
+    PendingExecutionContinuation,
 )
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvokeRequest,
@@ -32,6 +33,10 @@ from intergrax.contracts.execution.suspended_operation.reentry import (
     ExecutionSuspendedWorkReentryDisposition,
     ExecutionSuspendedWorkReentryRequest,
     ExecutionSuspendedWorkReentryResult,
+)
+from intergrax.contracts.execution.crash_injection import (
+    ExecutionSuspendedWorkReentryCrashCheckpoint,
+    ExecutionSuspendedWorkReentryCrashInjectionPort,
 )
 from intergrax.contracts.execution.execution_terminal_outcome_by_execution_id import (
     ExecutionTerminalOutcomeByExecutionIdDisposition,
@@ -73,11 +78,17 @@ from intergrax.runtime.long_running.persistence_contract import (
 from intergrax.runtime.execution.suspended_operation.suspended_work_agent_governance_approval_consumption import (
     SuspendedWorkAgentGovernanceApprovalConsumption,
 )
+from intergrax.runtime.execution.suspended_operation.crash_injection import (
+    NoOpExecutionSuspendedWorkReentryCrashInjection,
+)
 from intergrax.runtime.nexus.tools.continuation_aware_catalog_tool_host import (
     ContinuationAwareCatalogToolHost,
 )
 from intergrax.runtime.nexus.tools.nexus_execution_bound_catalog_tool_invoker import (
     NexusExecutionBoundCatalogToolInvoker,
+)
+from intergrax.runtime.task.execution_continuation_projection import (
+    continuation_projection_allows_replacement,
 )
 from intergrax.runtime.task.task import Task
 from intergrax.tools.core.contracts import ToolContract
@@ -103,6 +114,9 @@ class ExecutionSuspendedWorkReentryCoordinator:
     claim_owner_id: str
     task_checkpoint_store: TaskCheckpointPersistence | None = None
     terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None
+    crash_injection: ExecutionSuspendedWorkReentryCrashInjectionPort = field(
+        default_factory=NoOpExecutionSuspendedWorkReentryCrashInjection,
+    )
     default_lease_seconds: int = 120
     utc_clock: UtcClockPort = field(default_factory=SystemUtcClock)
 
@@ -121,9 +135,15 @@ class ExecutionSuspendedWorkReentryCoordinator:
                 reason_detail="continuation_not_resumed",
             )
         if task is not None:
+            _reconcile_task_projection_for_resumed_suspended_reentry(task, pending)
             HumanPauseCoordinator.project_continuation(task, pending)
         descriptor = self.store.load_active_for_continuation(request.continuation_id)
         if descriptor is None:
+            reconciled = self._reconcile_consumed_without_terminal_outcome(
+                request=request,
+            )
+            if reconciled is not None:
+                return reconciled
             return ExecutionSuspendedWorkReentryResult(
                 disposition=ExecutionSuspendedWorkReentryDisposition.NOT_READY,
                 reason_detail="no_active_suspended_operation",
@@ -312,6 +332,9 @@ class ExecutionSuspendedWorkReentryCoordinator:
                 )
             )
 
+        self.crash_injection.raise_if_scheduled(
+            ExecutionSuspendedWorkReentryCrashCheckpoint.AFTER_CLAIM_BEFORE_TOOL_RUNTIME,
+        )
         try:
             tool_result = self.catalog_host.invoke(
                 state=state,
@@ -339,6 +362,9 @@ class ExecutionSuspendedWorkReentryCoordinator:
             state.agent_governance_approval_consumption = None
 
         if isinstance(tool_result, ToolExecutionResult) and tool_result.success:
+            self.crash_injection.raise_if_scheduled(
+                ExecutionSuspendedWorkReentryCrashCheckpoint.AFTER_EFFECT_COMMIT_BEFORE_CONSUME,
+            )
             consumed = self.store.mark_consumed(
                 suspended_operation_id=claimed.suspended_operation_id,
                 expected_materialization_revision=claimed.materialization_revision,
@@ -352,6 +378,9 @@ class ExecutionSuspendedWorkReentryCoordinator:
                     reason_detail="mark_consumed_failed",
                     tool_result=tool_result,
                 )
+            self.crash_injection.raise_if_scheduled(
+                ExecutionSuspendedWorkReentryCrashCheckpoint.AFTER_CONSUME_BEFORE_TERMINAL,
+            )
             if (
                 task is not None
                 and self.task_checkpoint_store is not None
@@ -366,6 +395,9 @@ class ExecutionSuspendedWorkReentryCoordinator:
                     request.identity.execution_id,
                     ExecutionTerminalOutcomeByExecutionIdDisposition.SUCCEEDED,
                 )
+            self.crash_injection.raise_if_scheduled(
+                ExecutionSuspendedWorkReentryCrashCheckpoint.AFTER_TERMINAL_BEFORE_RETURN,
+            )
             return ExecutionSuspendedWorkReentryResult(
                 disposition=ExecutionSuspendedWorkReentryDisposition.COMPLETED,
                 tool_result=tool_result,
@@ -381,8 +413,74 @@ class ExecutionSuspendedWorkReentryCoordinator:
             reason_detail="tool_invocation_failed",
         )
 
+    def _reconcile_consumed_without_terminal_outcome(
+        self,
+        *,
+        request: ExecutionSuspendedWorkReentryRequest,
+    ) -> ExecutionSuspendedWorkReentryResult | None:
+        materialized = self.store.load_materialized_for_continuation(
+            request.continuation_id,
+        )
+        if materialized is None:
+            return None
+        if (
+            materialized.materialization_state
+            is not SuspendedOperationMaterializationState.CONSUMED
+        ):
+            return None
+        if materialized.identity != request.identity:
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.REJECTED,
+                reason_detail="identity_mismatch",
+            )
+        if self.terminal_outcome_store is None:
+            return None
+        recorded = self.terminal_outcome_store.get_recorded_disposition(
+            request.identity.execution_id,
+        )
+        if recorded is None:
+            self.terminal_outcome_store.record_terminal_disposition(
+                request.identity.execution_id,
+                ExecutionTerminalOutcomeByExecutionIdDisposition.SUCCEEDED,
+            )
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.COMPLETED,
+                reason_detail="consumed_terminal_reconciled",
+            )
+        if recorded is ExecutionTerminalOutcomeByExecutionIdDisposition.SUCCEEDED:
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.NOT_READY,
+                reason_detail="execution_already_terminal",
+            )
+        return ExecutionSuspendedWorkReentryResult(
+            disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+            reason_detail="consumed_terminal_conflict",
+        )
+
     def _tool_contract(self, tool_id: str) -> ToolContract:
         return self.tool_registry.get(tool_id).contract
+
+
+def _reconcile_task_projection_for_resumed_suspended_reentry(
+    task: Task,
+    pending: PendingExecutionContinuation,
+) -> None:
+    """Allow RESUMED re-entry when Task still projects a prior authority generation."""
+    if pending.lifecycle_state is not ExecutionContinuationLifecycleState.RESUMED:
+        return
+    gov = task.runtime.governance
+    if gov.projected_continuation_id == pending.continuation_id:
+        return
+    if gov.projected_continuation_id is None:
+        return
+    if continuation_projection_allows_replacement(
+        gov.projected_continuation_lifecycle_state,
+    ):
+        return
+    gov.projected_continuation_id = None
+    gov.projected_continuation_revision = None
+    gov.projected_continuation_lifecycle_state = None
+    gov.projected_continuation_payload_digest = None
 
 
 def _reconstruct_invoke_request(

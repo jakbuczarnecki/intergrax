@@ -242,6 +242,29 @@ class SuspendedOperationBackingStore:
             return None
         return active[0]
 
+    def load_materialized_for_continuation(
+        self,
+        continuation_id: str,
+    ) -> SuspendedExecutionOperationDescriptor | None:
+        materialized = [
+            descriptor
+            for descriptor in self._by_id.values()
+            if descriptor.continuation_id == continuation_id
+            and descriptor.materialization_state
+            in {
+                SuspendedOperationMaterializationState.BLOCKED,
+                SuspendedOperationMaterializationState.CLAIMED,
+                SuspendedOperationMaterializationState.CONSUMED,
+            }
+        ]
+        if len(materialized) > 1:
+            raise SuspendedOperationStoreInvariantError(
+                "multiple materialized suspended operations for continuation",
+            )
+        if not materialized:
+            return None
+        return materialized[0]
+
     def claim(
         self,
         *,

@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.execution.crash_injection import (
+    ExecutionSuspendedWorkReentryCrashInjectionPort,
+)
 from intergrax.contracts.execution.execution_terminal_outcome_by_execution_id import (
     ExecutionTerminalOutcomeByExecutionIdStore,
 )
@@ -104,21 +107,25 @@ def wire_execution_suspended_work_reentry_coordinator(
     task_checkpoint_store: TaskCheckpointPersistence | None = None,
     terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None,
     utc_clock: UtcClockPort | None = None,
+    crash_injection: ExecutionSuspendedWorkReentryCrashInjectionPort | None = None,
 ) -> ExecutionSuspendedWorkReentryCoordinator:
     resolved_utc_clock = utc_clock if utc_clock is not None else SystemUtcClock()
-    return ExecutionSuspendedWorkReentryCoordinator(
-        store=store,
-        continuation_port=continuation_port,
-        tool_registry=tool_registry,
-        catalog_host=catalog_host,
-        catalog_invoker=catalog_invoker,
-        codec_registry=wire_default_suspended_operation_codec_registry(),
-        binding_resolver=binding_resolver,
-        claim_owner_id=claim_owner_id,
-        task_checkpoint_store=task_checkpoint_store,
-        terminal_outcome_store=terminal_outcome_store,
-        utc_clock=resolved_utc_clock,
-    )
+    coordinator_kwargs = {
+        "store": store,
+        "continuation_port": continuation_port,
+        "tool_registry": tool_registry,
+        "catalog_host": catalog_host,
+        "catalog_invoker": catalog_invoker,
+        "codec_registry": wire_default_suspended_operation_codec_registry(),
+        "binding_resolver": binding_resolver,
+        "claim_owner_id": claim_owner_id,
+        "task_checkpoint_store": task_checkpoint_store,
+        "terminal_outcome_store": terminal_outcome_store,
+        "utc_clock": resolved_utc_clock,
+    }
+    if crash_injection is not None:
+        coordinator_kwargs["crash_injection"] = crash_injection
+    return ExecutionSuspendedWorkReentryCoordinator(**coordinator_kwargs)
 
 
 def validate_production_suspended_operation_wiring(

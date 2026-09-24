@@ -66,6 +66,13 @@ class SuspendedExecutionOperationStore(ABC):
         """Return exactly 0 or 1 active BLOCKED/CLAIMED descriptor; fail if >1."""
 
     @abstractmethod
+    def load_materialized_for_continuation(
+        self,
+        continuation_id: str,
+    ) -> SuspendedExecutionOperationDescriptor | None:
+        """Return exactly 0 or 1 BLOCKED/CLAIMED/CONSUMED descriptor; fail if >1."""
+
+    @abstractmethod
     def load_active_for_logical_invocation(
         self,
         logical_invocation_fingerprint: LogicalInvocationFingerprint,

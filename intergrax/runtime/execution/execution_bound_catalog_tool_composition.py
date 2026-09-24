@@ -63,6 +63,10 @@ from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.tool_executor import ToolExecutor
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution.crash_injection import (
+        ExecutionSuspendedWorkReentryCrashInjectionPort,
+        ToolRuntimeEffectCrashInjectionPort,
+    )
     from intergrax.contracts.idempotency_store import IdempotencyStore
 
 
@@ -93,6 +97,8 @@ def build_execution_bound_catalog_tool_composition(
     tool_executor: ToolExecutor | None = None,
     terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None,
     utc_clock: UtcClockPort | None = None,
+    reentry_crash_injection: ExecutionSuspendedWorkReentryCrashInjectionPort | None = None,
+    tool_runtime_effect_crash_injection: ToolRuntimeEffectCrashInjectionPort | None = None,
 ) -> ExecutionBoundCatalogToolComposition:
     tool_invoker = build_production_runtime_tool_invoker(
         registry=registry,
@@ -104,6 +110,7 @@ def build_execution_bound_catalog_tool_composition(
         scope_policy=scope_policy,
         idempotency_store=idempotency_store,
         production_mode=production_mode,
+        effect_crash_injection=tool_runtime_effect_crash_injection,
     )
     shared_utc_clock = utc_clock if utc_clock is not None else SystemUtcClock()
     suspended_store = wire_suspended_execution_operation_store(
@@ -169,6 +176,7 @@ def build_execution_bound_catalog_tool_composition(
             task_checkpoint_store=task_checkpoint_store,
             terminal_outcome_store=terminal_outcome_store,
             utc_clock=shared_utc_clock,
+            crash_injection=reentry_crash_injection,
         )
         continuation_aware_dependencies = ContinuationAwareCatalogToolHostDependencies(
             suspended_operation_store=suspended_store,
