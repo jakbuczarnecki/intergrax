@@ -36,7 +36,6 @@ _ALLOWED_RAW_NEXUS_IMPORTERS = frozenset(
         "intergrax/applications/_shared/harness_host_runtime.py",
         "intergrax/applications/_shared/nexus_factory.py",
         "intergrax/applications/_shared/governed_contractor_orchestration_topology_production.py",
-        "intergrax/applications/_shared/harness_host_task_execution_wiring.py",
         "intergrax/applications/_shared/harness_host_orchestration_topology_wiring.py",
         "intergrax/applications/_shared/platform_wiring.py",
         "intergrax/applications/_shared/plugin_bootstrap.py",
@@ -216,10 +215,45 @@ def test_npsc42_ebh2f_r1_tier3_host_modules_forbid_raw_nexus_loop_import() -> No
 
 @pytest.mark.gate
 def test_npsc42_ebh2f_r1_shared_host_task_execution_wiring_has_no_nexus_loop() -> None:
-    path = _SHARED_ROOT / "host_task_execution_wiring.py"
+    for name in ("host_task_execution_wiring.py", "harness_host_task_execution_wiring.py"):
+        path = _SHARED_ROOT / name
+        source = path.read_text(encoding="utf-8-sig")
+        assert "NexusLoop" not in source, name
+        assert "intergrax.runtime.nexus.nexus_loop" not in source, name
+
+
+def _param_uses_object_annotation(arg: ast.arg) -> bool:
+    annotation = arg.annotation
+    if annotation is None:
+        return False
+    if isinstance(annotation, ast.Name):
+        return annotation.id == "object"
+    if isinstance(annotation, ast.BinOp) and isinstance(annotation.op, ast.BitOr):
+        parts: list[ast.expr] = [annotation.left, annotation.right]
+        while parts:
+            part = parts.pop()
+            if isinstance(part, ast.BinOp) and isinstance(part.op, ast.BitOr):
+                parts.extend((part.left, part.right))
+                continue
+            if isinstance(part, ast.Name) and part.id == "object":
+                return True
+    return False
+
+
+@pytest.mark.gate
+def test_npsc42_ebh2f_r1_r1_harness_wiring_has_no_weak_revision_admission_object() -> None:
+    path = _SHARED_ROOT / "harness_host_task_execution_wiring.py"
     source = path.read_text(encoding="utf-8-sig")
-    assert "NexusLoop" not in source
-    assert "intergrax.runtime.nexus.nexus_loop" not in source
+    tree = ast.parse(source, filename=str(path))
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef):
+            continue
+        for arg in node.args.args:
+            if arg.arg == "revision_admission":
+                assert not _param_uses_object_annotation(arg), (
+                    f"{node.name} must not use object for revision_admission"
+                )
+    assert "EffectiveProfileRevisionAdmissionPort" in source
 
 
 @pytest.mark.gate

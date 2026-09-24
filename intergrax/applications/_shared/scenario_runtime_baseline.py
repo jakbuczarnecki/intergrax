@@ -73,7 +73,10 @@ from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.applications._shared.harness_host_task_execution_wiring import (
-    build_harness_environment_host_task_execution,
+    build_harness_host_task_execution_governance,
+)
+from intergrax.runtime.execution.environment_host_task_execution import (
+    build_environment_host_task_execution,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.observability.qualification_runtime_trace import (
@@ -466,9 +469,12 @@ async def execute_scenario_task(
         task_kwargs["context"] = TaskContext(capability=request.capability)
 
     task = Task(**task_kwargs)
-    host_execution = build_harness_environment_host_task_execution(
+    harness_execution_governance = build_harness_host_task_execution_governance()
+    host_execution = build_environment_host_task_execution(
         composition.nexus_loop,
         composition.environment,
+        root_authority_admission=harness_execution_governance.root_authority_admission,
+        admit_root_governance_identity=harness_execution_governance.admit_root_governance_identity,
     )
     composition.nexus_loop.set_hold_persisted_trace_finalize(
         request.hold_persisted_trace_finalize,

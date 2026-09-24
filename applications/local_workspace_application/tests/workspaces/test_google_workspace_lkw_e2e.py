@@ -34,7 +34,7 @@ from local_workspace_application.host.lkw_task_enricher import (
     build_lkw_combined_task_enricher,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
-from intergrax.applications._shared.harness_host_task_execution_wiring import (
+from tests.fixtures.harness_host_task_execution import (
     build_harness_environment_host_task_execution,
 )
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor

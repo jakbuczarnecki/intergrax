@@ -17,7 +17,7 @@ from legal_application.serving.fastapi_router import (
 from legal_application.serving.schemas import LegalChatRequestV1
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.applications._shared.harness_host_task_execution_wiring import (
+from tests.fixtures.harness_host_task_execution import (
     build_harness_host_task_execution,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop

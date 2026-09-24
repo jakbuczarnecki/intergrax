@@ -28,7 +28,7 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
 from governed_contractor_application.host.environment_profile import (
     build_governed_contractor_environment_profile,
 )
-from intergrax.applications._shared.harness_host_task_execution_wiring import (
+from tests.fixtures.harness_host_task_execution import (
     build_harness_environment_host_task_execution,
 )
 from governed_contractor_application.host.factory import create_governed_contractor_backend_app

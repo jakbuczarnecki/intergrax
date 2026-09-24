@@ -418,7 +418,6 @@ _PATHS: tuple[str, ...] = (
     "intergrax/applications/_shared/harness_host_composition.py",
     "intergrax/applications/_shared/harness_host_runtime.py",
     "intergrax/applications/_shared/harness_host_orchestration_topology_wiring.py",
-    "intergrax/applications/_shared/harness_host_task_execution_wiring.py",
     "intergrax/applications/_shared/lab_harness_context.py",
     "intergrax/applications/_shared/lab_runtime_config.py",
     "intergrax/applications/_shared/integration_runtime_bridge.py",

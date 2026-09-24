@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from intergrax.applications._shared.harness_host_task_execution_wiring import (
+from tests.fixtures.harness_host_task_execution import (
     build_harness_environment_host_task_execution,
 )
 from intergrax.contracts.execution_identity import (

@@ -12,7 +12,7 @@ from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.fastapi_core.app_factory import create_app
 from intergrax.fastapi_core.config import ApiConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.applications._shared.harness_host_task_execution_wiring import (
+from tests.fixtures.harness_host_task_execution import (
     build_harness_host_task_execution,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop

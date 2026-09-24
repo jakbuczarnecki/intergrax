@@ -23,7 +23,7 @@ from intergrax.runtime.execution.strategy import ExecutionStrategy, StrategyReso
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.task_adapter import TaskExecutionInput
-from intergrax.applications._shared.harness_host_task_execution_wiring import (
+from tests.fixtures.harness_host_task_execution import (
     build_harness_environment_host_task_execution,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop

@@ -29,9 +29,6 @@ from intergrax.debug.app import create_debug_app
 from intergrax.debug.hitl_service import DebugHitlResumeService
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.router import create_interaction_intake_router
-from intergrax.applications._shared.harness_host_task_execution_wiring import (
-    build_harness_environment_host_task_execution,
-)
 from intergrax.applications._shared.harness_host_composition import (
     bootstrap_harness_host_application_plugins,
     bootstrap_harness_host_platform,
