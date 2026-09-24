@@ -20,7 +20,9 @@ from intergrax.autonomous_work.repository import (
     WorkerWakeUpReceiptClaim,
     WorkerWakeUpReceiptClaimStatus,
 )
-from intergrax.autonomous_work.wake_up_receipt_claim import resolve_wake_up_receipt_claim
+from intergrax.autonomous_work.wake_up_receipt_claim import (
+    resolve_wake_up_receipt_claim,
+)
 from intergrax.autonomous_work.serialization import (
     responsibility_from_json,
     responsibility_to_json,
@@ -39,7 +41,9 @@ from intergrax.autonomous_work.serialization import (
 )
 from intergrax.contracts.autonomous_work.continuity import WorkContinuityState
 from intergrax.contracts.autonomous_work.goal import WorkerGoal
-from intergrax.contracts.autonomous_work.goal_evaluation import GoalEvaluationCadenceState
+from intergrax.contracts.autonomous_work.goal_evaluation import (
+    GoalEvaluationCadenceState,
+)
 from intergrax.contracts.autonomous_work.ids import (
     ResponsibilityId,
     WakeUpId,
@@ -86,7 +90,8 @@ _SCHEMA_VERSION_V3 = 3
 _SCHEMA_VERSION_V4 = 4
 _SCHEMA_VERSION_V5 = 5
 _SCHEMA_VERSION_V6 = 6
-_SCHEMA_VERSION = _SCHEMA_VERSION_V6
+_SCHEMA_VERSION_V7 = 7
+_SCHEMA_VERSION = _SCHEMA_VERSION_V7
 _SCHEMA_META_TABLE = "autonomous_work_schema_meta"
 _SCHEMA_LOCK_KEY = "autonomous_work_schema_init"
 
@@ -168,7 +173,9 @@ class PostgreSQLAutonomousWorkStore:
             if self._schema_ready:
                 return
             self._provider.ensure_schema_exists(session, self._schema_name)
-            session.execute("SELECT pg_advisory_xact_lock(hashtext(%s))", (_SCHEMA_LOCK_KEY,))
+            session.execute(
+                "SELECT pg_advisory_xact_lock(hashtext(%s))", (_SCHEMA_LOCK_KEY,)
+            )
             session.execute(
                 f"""
                 CREATE TABLE IF NOT EXISTS {_SCHEMA_META_TABLE} (
@@ -239,6 +246,13 @@ class PostgreSQLAutonomousWorkStore:
                     record_json TEXT NOT NULL,
                     revision INTEGER NOT NULL
                 );
+
+                CREATE TABLE IF NOT EXISTS aw_worker_obstacle_capability_needs (
+                    worker_instance_id TEXT NOT NULL,
+                    obstacle_id TEXT NOT NULL,
+                    record_json TEXT NOT NULL,
+                    PRIMARY KEY (worker_instance_id, obstacle_id)
+                );
                 """
             )
             session.execute(
@@ -297,6 +311,9 @@ class PostgreSQLAutonomousWorkStore:
             from_version = _SCHEMA_VERSION_V5
         if from_version == _SCHEMA_VERSION_V5:
             self._migrate_v5_to_v6(session)
+            from_version = _SCHEMA_VERSION_V6
+        if from_version == _SCHEMA_VERSION_V6:
+            self._migrate_v6_to_v7(session)
             return
         raise AutonomousWorkSchemaVersionError(
             f"unsupported Autonomous Work schema migration from version {from_version}"
@@ -463,6 +480,32 @@ class PostgreSQLAutonomousWorkStore:
             updated_rows=updated.rowcount,
         )
 
+    def _migrate_v6_to_v7(self, session: PostgreSQLSession) -> None:
+        session.execute(
+            """
+            CREATE TABLE IF NOT EXISTS aw_worker_obstacle_capability_needs (
+                worker_instance_id TEXT NOT NULL,
+                obstacle_id TEXT NOT NULL,
+                record_json TEXT NOT NULL,
+                PRIMARY KEY (worker_instance_id, obstacle_id)
+            );
+            """
+        )
+        updated = session.execute(
+            f"""
+            UPDATE {_SCHEMA_META_TABLE}
+            SET schema_version = %s
+            WHERE id = 1 AND schema_version = %s
+            """,
+            (_SCHEMA_VERSION_V7, _SCHEMA_VERSION_V6),
+        )
+        self._complete_migration_step(
+            session,
+            expected_from=_SCHEMA_VERSION_V6,
+            expected_to=_SCHEMA_VERSION_V7,
+            updated_rows=updated.rowcount,
+        )
+
 
 class _ImmutableCreateRepository(Generic[_EntityT]):
     def __init__(
@@ -514,7 +557,9 @@ class _ImmutableCreateRepository(Generic[_EntityT]):
                     f"for {entity_id}"
                 ) from exc
 
-    def _get_in_transaction(self, conn: PostgreSQLSession, entity: _EntityT) -> _EntityT | None:
+    def _get_in_transaction(
+        self, conn: PostgreSQLSession, entity: _EntityT
+    ) -> _EntityT | None:
         row = conn.execute(self._select_sql, self._select_params(entity)).fetchone()
         if row is None:
             return None
@@ -629,7 +674,9 @@ class _RevisionedRepository(Generic[_EntityT]):
                 )
             updated = conn.execute(
                 self._update_sql,
-                self._update_params(persisted, record_json, expected_revision, entity_id),
+                self._update_params(
+                    persisted, record_json, expected_revision, entity_id
+                ),
             )
             if updated.rowcount == 1:
                 return persisted
@@ -734,7 +781,9 @@ class PostgreSQLWorkerInstanceRepository:
             identity_for_conflict=lambda instance: instance.worker_instance_id,
             entity_id_column="worker_instance_id",
             read_revision=lambda instance: instance.revision,
-            write_revision=lambda instance, revision: replace(instance, revision=revision),
+            write_revision=lambda instance, revision: replace(
+                instance, revision=revision
+            ),
             insert_sql="""
                 INSERT INTO aw_worker_instances (
                     worker_instance_id, record_json, revision
@@ -792,7 +841,9 @@ class PostgreSQLResponsibilityRepository:
             entity_kind="Responsibility",
             to_json=responsibility_to_json,
             from_json=responsibility_from_json,
-            identity_for_conflict=lambda responsibility: responsibility.responsibility_id,
+            identity_for_conflict=lambda responsibility: (
+                responsibility.responsibility_id
+            ),
             entity_id_column="responsibility_id",
             read_revision=lambda responsibility: responsibility.revision,
             write_revision=lambda responsibility, revision: replace(
@@ -842,7 +893,9 @@ class PostgreSQLResponsibilityRepository:
         *,
         expected_revision: Revision,
     ) -> Responsibility:
-        return self._delegate.replace(responsibility, expected_revision=expected_revision)
+        return self._delegate.replace(
+            responsibility, expected_revision=expected_revision
+        )
 
     def list_for_worker_instance(
         self,
@@ -859,9 +912,7 @@ class PostgreSQLResponsibilityRepository:
                 """,
                 (worker_instance_id.strip(),),
             ).fetchall()
-        return tuple(
-            responsibility_from_json(row["record_json"]) for row in rows
-        )
+        return tuple(responsibility_from_json(row["record_json"]) for row in rows)
 
 
 class PostgreSQLWorkerGoalRepository:
@@ -989,7 +1040,9 @@ class PostgreSQLWorkContinuityStateRepository:
     def create(self, state: WorkContinuityState) -> WorkContinuityState:
         return self._delegate.create(state)
 
-    def get(self, *, worker_instance_id: WorkerInstanceId) -> WorkContinuityState | None:
+    def get(
+        self, *, worker_instance_id: WorkerInstanceId
+    ) -> WorkContinuityState | None:
         return self._delegate.get(worker_instance_id)
 
     def replace(

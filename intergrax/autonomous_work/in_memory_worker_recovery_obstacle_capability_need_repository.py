@@ -5,7 +5,10 @@
 
 from __future__ import annotations
 
-from intergrax.contracts.autonomous_work.capability_acquisition import WorkerCapabilityNeed
+from intergrax.autonomous_work.repository import AutonomousWorkEntityConflict
+from intergrax.contracts.autonomous_work.capability_acquisition import (
+    WorkerCapabilityNeed,
+)
 from intergrax.contracts.autonomous_work.ids import WorkerInstanceId
 
 
@@ -17,6 +20,14 @@ class InMemoryWorkerRecoveryObstacleCapabilityNeedRepository:
 
     def record_obstacle_capability_need(self, need: WorkerCapabilityNeed) -> None:
         key = (str(need.worker_instance_id), need.obstacle_id)
+        existing = self._needs.get(key)
+        if existing is not None:
+            if existing == need:
+                return
+            raise AutonomousWorkEntityConflict(
+                "worker obstacle capability need already exists with different content "
+                f"for {key[0]}:{key[1]}",
+            )
         self._needs[key] = need
 
     def get_obstacle_capability_need(

@@ -8,7 +8,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from intergrax.contracts.autonomous_work.capability_acquisition import WorkerCapabilityNeed
+from intergrax.contracts.autonomous_work.capability_acquisition import (
+    WorkerCapabilityNeed,
+)
 from intergrax.contracts.autonomous_work.ids import WorkerInstanceId
 from intergrax.contracts.execution_identity import AttemptId, RunId, TaskId
 
@@ -34,6 +36,15 @@ class WorkerRecoveryObstacleCapabilityNeedReadPort(Protocol):
     ) -> WorkerCapabilityNeed | None: ...
 
 
+class WorkerRecoveryObstacleCapabilityNeedStorePort(
+    WorkerRecoveryObstacleCapabilityNeedReadPort,
+    Protocol,
+):
+    """Authoritative durable write surface for obstacle capability needs (AW)."""
+
+    def record_obstacle_capability_need(self, need: WorkerCapabilityNeed) -> None: ...
+
+
 class WorkerRecoveryFulfillmentTaskContextReadPort(Protocol):
     """Resolve active execution task context without discovery or acquisition."""
 
@@ -48,4 +59,5 @@ __all__ = [
     "WorkerRecoveryFulfillmentTaskContext",
     "WorkerRecoveryFulfillmentTaskContextReadPort",
     "WorkerRecoveryObstacleCapabilityNeedReadPort",
+    "WorkerRecoveryObstacleCapabilityNeedStorePort",
 ]

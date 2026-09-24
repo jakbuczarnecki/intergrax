@@ -327,13 +327,14 @@ def test_postgresql_schema_current_to_current_is_idempotent(
         reopened.close()
 
 
-def test_postgresql_unsupported_schema_version_v6_fails_closed(
+def test_postgresql_unsupported_schema_version_future_fails_closed(
     postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
 ) -> None:
+    future_version = pg_repo_module._SCHEMA_VERSION + 1
     with postgresql_autonomous_work_bundle.store.transaction() as conn:
         conn.execute(
             "UPDATE autonomous_work_schema_meta SET schema_version = %s WHERE id = 1",
-            (6,),
+            (future_version,),
         )
     schema_name = postgresql_autonomous_work_bundle.store.schema_name
     options = materialization_options_for_schema(schema_name)
