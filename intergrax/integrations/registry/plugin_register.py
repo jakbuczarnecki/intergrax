@@ -90,5 +90,14 @@ def register_integration_plugin(
         return plugin.create_integration(**kwargs)
 
     manifest = integration_manifest_for_plugin(plugin)
-    contract_specs = getattr(plugin, "CONTRACT_SPECS", None)
-    return register_from_manifest(manifest, _factory, override=override, contract_specs=contract_specs)
+    resolved_contract_specs = (
+        contract_specs
+        if contract_specs is not None
+        else getattr(plugin, "CONTRACT_SPECS", None)
+    )
+    return register_from_manifest(
+        manifest,
+        _factory,
+        override=override,
+        contract_specs=resolved_contract_specs,
+    )
