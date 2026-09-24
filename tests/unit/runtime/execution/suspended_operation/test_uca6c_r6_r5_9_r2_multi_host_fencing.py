@@ -41,7 +41,7 @@ from intergrax.contracts.governed_continuation_correlation import (
 from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
-from intergrax.runtime.execution.suspended_operation import store_engine
+from intergrax.runtime.execution.deadline_authority.system_clocks import SystemUtcClock
 from intergrax.runtime.execution.suspended_operation.document_store_suspended_operation_store import (
     DocumentStoreSuspendedExecutionOperationStore,
     reconnect_document_store_suspended_operation_store,
@@ -200,7 +200,7 @@ def claim_as(
 
 @contextmanager
 def advance_lease_clock(target: datetime) -> Iterator[None]:
-    with patch.object(store_engine, "_utc_now", return_value=target):
+    with patch.object(SystemUtcClock, "now_utc", return_value=target):
         yield
 
 

@@ -4,9 +4,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from datetime import datetime, timedelta, timezone
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 
+from intergrax.contracts.execution_deadline.clock import UtcClockPort
 from intergrax.contracts.execution.suspended_operation.claim import (
     SuspendedOperationClaimOutcome,
     SuspendedOperationMutationOutcome,
@@ -24,7 +25,7 @@ from intergrax.contracts.execution.suspended_operation.resume_authority_context 
 from intergrax.contracts.execution.suspended_operation.store import (
     SuspendedExecutionOperationStore,
 )
-from intergrax.runtime.execution.suspended_operation import store_engine
+from intergrax.runtime.execution.deadline_authority.system_clocks import SystemUtcClock
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,6 +35,7 @@ class ExecutionSuspendedWorkClaimLifecycleCoordinator:
     store: SuspendedExecutionOperationStore
     claim_owner_id: str
     default_lease_seconds: int = 120
+    utc_clock: UtcClockPort = field(default_factory=SystemUtcClock)
 
     def claim_blocked(
         self,
@@ -46,7 +48,7 @@ class ExecutionSuspendedWorkClaimLifecycleCoordinator:
             is not SuspendedOperationMaterializationState.BLOCKED
         ):
             return None
-        now = datetime.now(timezone.utc)
+        now = self.utc_clock.now_utc()
         lease = lease_expires_at or (
             now + timedelta(seconds=self.default_lease_seconds)
         )
@@ -83,7 +85,7 @@ class ExecutionSuspendedWorkClaimLifecycleCoordinator:
         ownership = descriptor.claim_ownership
         if ownership is None:
             return None
-        now = store_engine._utc_now()
+        now = self.utc_clock.now_utc()
         if ownership.lease_expires_at > now:
             return None
         result = self.store.reclaim(

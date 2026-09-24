@@ -108,10 +108,10 @@ def test_reclaim_increments_fence_monotonically() -> None:
     assert claimed.descriptor is not None
     assert claimed.descriptor.claim_ownership is not None
     old_fence = claimed.descriptor.claim_ownership.fence
-    from intergrax.runtime.execution.suspended_operation import store_engine
+    from intergrax.runtime.execution.deadline_authority.system_clocks import SystemUtcClock
 
     future_now = datetime.now(UTC) + timedelta(hours=1)
-    with patch.object(store_engine, "_utc_now", return_value=future_now):
+    with patch.object(SystemUtcClock, "now_utc", return_value=future_now):
         reclaimed = store.reclaim(
             suspended_operation_id=descriptor.suspended_operation_id,
             expected_materialization_revision=claimed.descriptor.materialization_revision,

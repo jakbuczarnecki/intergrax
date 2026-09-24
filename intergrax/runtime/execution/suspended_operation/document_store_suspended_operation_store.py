@@ -30,6 +30,7 @@ from intergrax.contracts.execution.suspended_operation.store import (
 from intergrax.contracts.governed_continuation_correlation import (
     GovernedContinuationCorrelation,
 )
+from intergrax.contracts.execution_deadline.clock import UtcClockPort
 from intergrax.integrations.contracts.document_store import (
     ConditionalDocumentStore,
     DocumentRecord,
@@ -37,6 +38,7 @@ from intergrax.integrations.contracts.document_store import (
 from intergrax.integrations.contracts.document_store_process_durability import (
     document_store_survives_process_restart,
 )
+from intergrax.runtime.execution.deadline_authority.system_clocks import SystemUtcClock
 from intergrax.runtime.execution.suspended_operation.store_engine import (
     SuspendedOperationBackingStore,
 )
@@ -49,14 +51,20 @@ _ROW_KEY = "backing"
 class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationStore):
     """Durable provider — descriptors survive process restart via document store."""
 
-    def __init__(self, document_store: ConditionalDocumentStore) -> None:
+    def __init__(
+        self,
+        document_store: ConditionalDocumentStore,
+        *,
+        utc_clock: UtcClockPort | None = None,
+    ) -> None:
         if not isinstance(document_store, ConditionalDocumentStore):
             raise TypeError(
                 "suspended operation persistence requires ConditionalDocumentStore",
             )
         self._document_store = document_store
+        self._utc_clock = utc_clock if utc_clock is not None else SystemUtcClock()
         self._lock = threading.Lock()
-        self._backing = SuspendedOperationBackingStore()
+        self._backing = SuspendedOperationBackingStore(utc_clock=self._utc_clock)
         self._load_from_document()
 
     @property
@@ -71,7 +79,7 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
         self,
         record: DocumentRecord | None,
     ) -> SuspendedOperationBackingStore:
-        backing = SuspendedOperationBackingStore()
+        backing = SuspendedOperationBackingStore(utc_clock=self._utc_clock)
         if record is None:
             return backing
         payload = record.data.get("backing")

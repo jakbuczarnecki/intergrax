@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from intergrax.contracts.execution.suspended_operation.claim_authority import (
     SuspendedOperationClaimAuthority,
@@ -16,6 +17,20 @@ from intergrax.contracts.execution.suspended_operation.resume_authority_context 
 
 class ExecutionSuspendedWorkResumeAuthorityTransportConflictError(RuntimeError):
     """Deliver rejected: slot bound to a different continuation."""
+
+
+class ExecutionSuspendedWorkResumeAuthorityTransportAuthorityConflictError(
+    RuntimeError,
+):
+    """Deliver rejected: slot already holds different authority for continuation."""
+
+
+class ExecutionSuspendedWorkResumeAuthorityTransportReplacementOutcome(StrEnum):
+    APPLIED = "applied"
+    IDEMPOTENT = "idempotent"
+    NOT_FOUND = "not_found"
+    CONTINUATION_MISMATCH = "continuation_mismatch"
+    STALE_AUTHORITY = "stale_authority"
 
 
 @dataclass
@@ -38,7 +53,30 @@ class ExecutionSuspendedWorkResumeAuthorityTransport:
             )
         if pending.claim_authority == context.claim_authority:
             return
-        self._pending = context
+        raise ExecutionSuspendedWorkResumeAuthorityTransportAuthorityConflictError(
+            "transport slot already holds different authority; use explicit replacement",
+        )
+
+    def replace_for_continuation(
+        self,
+        *,
+        continuation_id: str,
+        expected_authority: SuspendedOperationClaimAuthority,
+        replacement: ExecutionSuspendedWorkResumeAuthorityContext,
+    ) -> ExecutionSuspendedWorkResumeAuthorityTransportReplacementOutcome:
+        if replacement.continuation_id != continuation_id:
+            return ExecutionSuspendedWorkResumeAuthorityTransportReplacementOutcome.CONTINUATION_MISMATCH
+        pending = self._pending
+        if pending is None:
+            return ExecutionSuspendedWorkResumeAuthorityTransportReplacementOutcome.NOT_FOUND
+        if pending.continuation_id != continuation_id:
+            return ExecutionSuspendedWorkResumeAuthorityTransportReplacementOutcome.CONTINUATION_MISMATCH
+        if pending.claim_authority == replacement.claim_authority:
+            return ExecutionSuspendedWorkResumeAuthorityTransportReplacementOutcome.IDEMPOTENT
+        if pending.claim_authority != expected_authority:
+            return ExecutionSuspendedWorkResumeAuthorityTransportReplacementOutcome.STALE_AUTHORITY
+        self._pending = replacement
+        return ExecutionSuspendedWorkResumeAuthorityTransportReplacementOutcome.APPLIED
 
     def peek(self) -> ExecutionSuspendedWorkResumeAuthorityContext | None:
         return self._pending
@@ -79,6 +117,8 @@ class ProductionSuspendedWorkAuthorityTelemetry:
 
 __all__ = [
     "ExecutionSuspendedWorkResumeAuthorityTransport",
+    "ExecutionSuspendedWorkResumeAuthorityTransportAuthorityConflictError",
     "ExecutionSuspendedWorkResumeAuthorityTransportConflictError",
+    "ExecutionSuspendedWorkResumeAuthorityTransportReplacementOutcome",
     "ProductionSuspendedWorkAuthorityTelemetry",
 ]

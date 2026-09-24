@@ -6,15 +6,18 @@ from __future__ import annotations
 
 from datetime import timedelta
 
+from intergrax.contracts.execution.suspended_operation.claim_authority import (
+    SuspendedOperationClaimAuthority,
+)
 from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedOperationMaterializationState,
 )
-from intergrax.runtime.execution.suspended_operation import store_engine
 from intergrax.runtime.execution.suspended_operation.claim_lifecycle import (
     ExecutionSuspendedWorkClaimLifecycleCoordinator,
 )
 from intergrax.runtime.execution.suspended_operation.resume_authority_transport import (
     ExecutionSuspendedWorkResumeAuthorityTransport,
+    ExecutionSuspendedWorkResumeAuthorityTransportReplacementOutcome,
     ProductionSuspendedWorkAuthorityTelemetry,
 )
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
@@ -58,7 +61,7 @@ def prepare_suspended_work_caller_authority_for_hitl_intake(
     descriptor = reentry.store.load_active_for_continuation(continuation_id)
     if descriptor is None:
         return
-    now = store_engine._utc_now()
+    now = lifecycle.utc_clock.now_utc()
     state = descriptor.materialization_state
     if state is SuspendedOperationMaterializationState.BLOCKED:
         context = lifecycle.claim_blocked(descriptor)
@@ -78,6 +81,12 @@ def prepare_suspended_work_caller_authority_for_hitl_intake(
         return
     if ownership.lease_expires_at > now:
         return
+    expected_prior_authority = SuspendedOperationClaimAuthority(
+        owner_id=ownership.owner_id,
+        fence=ownership.fence,
+        materialization_revision=descriptor.materialization_revision,
+        pause_generation=descriptor.pause_generation,
+    )
     lease_at = now + timedelta(seconds=lifecycle.default_lease_seconds)
     context = lifecycle.reclaim_expired_lease(
         descriptor,
@@ -89,7 +98,20 @@ def prepare_suspended_work_caller_authority_for_hitl_intake(
     if telemetry is not None:
         telemetry.reclaim_successes += 1
         telemetry.authority_snapshots_created += 1
-    transport.deliver(context)
+    existing_after = transport.peek()
+    if existing_after is not None and existing_after.continuation_id == continuation_id:
+        outcome = transport.replace_for_continuation(
+            continuation_id=continuation_id,
+            expected_authority=expected_prior_authority,
+            replacement=context,
+        )
+        if outcome not in (
+            ExecutionSuspendedWorkResumeAuthorityTransportReplacementOutcome.APPLIED,
+            ExecutionSuspendedWorkResumeAuthorityTransportReplacementOutcome.IDEMPOTENT,
+        ):
+            return
+    else:
+        transport.deliver(context)
     if telemetry is not None:
         telemetry.authority_snapshots_transported += 1
 

@@ -25,6 +25,7 @@ from intergrax.contracts.execution.suspended_operation.authority_scope import (
 from intergrax.contracts.governed_continuation_correlation import (
     GovernedContinuationCorrelation,
 )
+from intergrax.contracts.execution_deadline.clock import UtcClockPort
 from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.runtime.execution.suspended_operation.store_engine import (
     SuspendedOperationBackingStore,
@@ -33,9 +34,9 @@ from intergrax.runtime.execution.suspended_operation.store_engine import (
 
 
 class InMemorySuspendedExecutionOperationStore(SuspendedExecutionOperationStore):
-    def __init__(self) -> None:
+    def __init__(self, *, utc_clock: UtcClockPort | None = None) -> None:
         self._lock = threading.Lock()
-        self._backing = SuspendedOperationBackingStore()
+        self._backing = SuspendedOperationBackingStore(utc_clock=utc_clock)
 
     @property
     def is_durable(self) -> bool:

@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from intergrax.contracts.execution_continuation import (
     ExecutionContinuationLifecycleState,
@@ -35,7 +35,9 @@ from intergrax.contracts.agent_governance_hitl import LogicalInvocationFingerpri
 from intergrax.contracts.governed_continuation_correlation import (
     GovernedContinuationCorrelation,
 )
+from intergrax.contracts.execution_deadline.clock import UtcClockPort
 from intergrax.contracts.lease_claim import LeaseOwnership
+from intergrax.runtime.execution.deadline_authority.system_clocks import SystemUtcClock
 
 
 class SuspendedOperationStoreInvariantError(RuntimeError):
@@ -51,21 +53,20 @@ _ACTIVE_MATERIALIZATION_STATES = frozenset(
 )
 
 
-def _utc_now() -> datetime:
-    return datetime.now(timezone.utc)
-
-
-def _validate_lease_expires_at(lease_expires_at: datetime) -> bool:
-    if lease_expires_at.tzinfo is None:
-        return False
-    return lease_expires_at > _utc_now()
-
-
 class SuspendedOperationBackingStore:
     """In-process descriptor map — backing for memory and document providers."""
 
-    def __init__(self) -> None:
+    def __init__(self, *, utc_clock: UtcClockPort | None = None) -> None:
+        self._utc_clock = utc_clock if utc_clock is not None else SystemUtcClock()
         self._by_id: dict[str, SuspendedExecutionOperationDescriptor] = {}
+
+    def _now_utc(self) -> datetime:
+        return self._utc_clock.now_utc()
+
+    def _validate_lease_expires_at(self, lease_expires_at: datetime) -> bool:
+        if lease_expires_at.tzinfo is None:
+            return False
+        return lease_expires_at > self._now_utc()
 
     def snapshot(self) -> dict[str, SuspendedExecutionOperationDescriptor]:
         return dict(self._by_id)
@@ -82,10 +83,7 @@ class SuspendedOperationBackingStore:
     ) -> SuspendedOperationMutationResult:
         if descriptor.suspended_operation_id in self._by_id:
             existing = self._by_id[descriptor.suspended_operation_id]
-            if (
-                existing.materialization_state
-                in _ACTIVE_MATERIALIZATION_STATES
-            ):
+            if existing.materialization_state in _ACTIVE_MATERIALIZATION_STATES:
                 return SuspendedOperationMutationResult(
                     outcome=SuspendedOperationMutationOutcome.ALREADY_ACTIVE,
                     descriptor=existing,
@@ -252,7 +250,7 @@ class SuspendedOperationBackingStore:
         owner_id: str,
         lease_expires_at: datetime,
     ) -> SuspendedOperationClaimResult:
-        if not _validate_lease_expires_at(lease_expires_at):
+        if not self._validate_lease_expires_at(lease_expires_at):
             return SuspendedOperationClaimResult(
                 outcome=SuspendedOperationClaimOutcome.INVALID_STATE,
             )
@@ -314,7 +312,7 @@ class SuspendedOperationBackingStore:
         lease_expires_at: datetime,
         expected_fence: int | None = None,
     ) -> SuspendedOperationMutationResult:
-        if not _validate_lease_expires_at(lease_expires_at):
+        if not self._validate_lease_expires_at(lease_expires_at):
             return SuspendedOperationMutationResult(
                 outcome=SuspendedOperationMutationOutcome.INVALID_STATE,
             )
@@ -343,7 +341,7 @@ class SuspendedOperationBackingStore:
             return SuspendedOperationMutationResult(
                 outcome=SuspendedOperationMutationOutcome.STALE_CLAIM,
             )
-        if claim.lease_expires_at > _utc_now():
+        if claim.lease_expires_at > self._now_utc():
             return SuspendedOperationMutationResult(
                 outcome=SuspendedOperationMutationOutcome.INVALID_STATE,
             )
