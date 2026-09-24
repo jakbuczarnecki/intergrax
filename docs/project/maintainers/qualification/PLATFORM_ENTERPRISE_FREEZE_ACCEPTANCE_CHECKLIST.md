@@ -62,20 +62,20 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 | FRZ-OWN-03 | Ownership | one sanctioned composition owner | EBH-2*, EBH-3 | OPEN | — |
 | FRZ-OWN-04 | Ownership | no shadow authority | EBH-2*, EBH-3 | OPEN | — |
 | FRZ-OWN-05 | Ownership | no duplicated semantic mechanism | EBH-2*, EBH-3 | OPEN | — |
-| FRZ-CTR-01 | Contracts / abstraction | consumers depend on contracts | EBH-2*, EBH-3, EBH-4 | OPEN | Historical: R2-R1-R1-R1-R1-R1 (`be8c6aa…`); R2-R2 independently accepted (`311064f…`); EBH-2F-R2 parent recert READY FOR AUDIT on HEAD `f7fabab…`. |
+| FRZ-CTR-01 | Contracts / abstraction | consumers depend on contracts | EBH-2*, EBH-3, EBH-4 | OPEN | R2 independently closed (`f7fabab…`); EBH-2F parent recert evidence on HEAD `765fabe…` (R1+R2+cross-boundary). |
 | FRZ-CTR-02 | Contracts / abstraction | concrete provider leakage = 0 | EBH-2*, EBH-3, EBH-4 | OPEN | — |
 | FRZ-CTR-03 | Contracts / abstraction | no pseudo-contract dicts | EBH-2*, EBH-3, EBH-4 | OPEN | Historical `EBH-2F-R2-BLOCKER` superseded; `IntegrationContractFactory = IntegrationFactory`; explicit `contract_specs` / `integration_contract_specs()` only (gate). |
-| FRZ-CTR-04 | Contracts / abstraction | public/internal contracts classified | EBH-2*, EBH-3, EBH-4 | OPEN | R2-R2 accepted (`311064f…`): `resolve_contract` overloads → `CategoryIntegrationInstance` / `T`; parent recert `f7fabab…` revalidates on current HEAD. |
+| FRZ-CTR-04 | Contracts / abstraction | public/internal contracts classified | EBH-2*, EBH-3, EBH-4 | OPEN | R2-R2 (`311064f…`); R2 closed (`f7fabab…`); parent recert `765fabe…` revalidates on current HEAD. |
 | FRZ-CTR-05 | Contracts / abstraction | contract responsibility narrow/cohesive | EBH-2*, EBH-3, EBH-4 | OPEN | `IntegrationPlugin` / `IntegrationFactory` → `catalog_factory.py`; `resolve_typed` delegates to `resolve_from_profile` (no parallel resolver owner). |
 | FRZ-CTR-06 | Contracts / abstraction | contracts do not encode concrete vendor/runtime implementation | EBH-2*, EBH-3, EBH-4 | OPEN | — |
-| FRZ-TYP-01 | Strong typing | semantic boundaries strongly typed | EBH-2* | OPEN | R2-R2 accepted (`311064f…`); current-HEAD parent recert (`f7fabab…`) confirms registry/core semantic surfaces without `-> Any`. |
+| FRZ-TYP-01 | Strong typing | semantic boundaries strongly typed | EBH-2* | OPEN | R2 closed (`f7fabab…`); parent recert `765fabe…` confirms `integrations/registry/*` semantic surfaces without `-> Any`. |
 | FRZ-TYP-02 | Strong typing | Any at semantic boundaries = 0 unless evidence-backed transport reason | EBH-2* | OPEN | R2 chain closed at child level; provider `_open_*` transport `Any` outside R2 registration/resolution semantic owner. |
 | FRZ-TYP-03 | Strong typing | generic object semantic seams = 0 | EBH-2* | OPEN | R2-R2: no-expected `resolve_contract` → `CategoryIntegrationInstance` (AST gate + pyright). |
 | FRZ-TYP-04 | Strong typing | reflection-based semantic dispatch = 0 | EBH-2* | OPEN | Historical `EBH-2F-R2-BLOCKER` superseded; `plugin_register` has no `getattr`/`CONTRACT_SPECS` (architecture gate). |
 | FRZ-TYP-05 | Strong typing | string-dispatch substitute for typed contract = 0 | EBH-2* | OPEN | — |
 | FRZ-TYP-06 | Strong typing | type-ignore/cast cannot mask architecture mismatch | EBH-2* | OPEN | R2-R2 accepted (`311064f…`): `resolve_typed.py` AST gate — no `cast(` / `# type: ignore` on resolution helper. |
 | FRZ-PLG-01 | Pluginability | extensible mechanisms expose platform contracts | EBH-2*, EBH-5 | OPEN | Parent recert: `register_integration_plugin` → `integration_contract_specs()` / explicit `contract_specs` (`test_p2_003_explicit_contract_specs.py`). |
-| FRZ-PLG-02 | Pluginability | external structural implementation works without core patch | EBH-2*, EBH-5 | OPEN | Parent recert: `test_external_plugin.py` + registry projection tests on HEAD `26f529e8…`. |
+| FRZ-PLG-02 | Pluginability | external structural implementation works without core patch | EBH-2*, EBH-5 | OPEN | Parent recert `765fabe…`: `test_external_plugin.py`, R1 replaceability gate, registry projection. |
 | FRZ-PLG-03 | Pluginability | provider discovery has explicit owner | EBH-2*, EBH-5 | OPEN | — |
 | FRZ-PLG-04 | Pluginability | provider selection has explicit owner | EBH-2*, EBH-5 | OPEN | — |
 | FRZ-PLG-05 | Pluginability | activation/admission explicit | EBH-2*, EBH-5 | OPEN | — |
@@ -187,7 +187,7 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 | FRZ-REG-06 | Regression / qualification infrastructure | deterministic qualification tests | QUAL-X | OPEN | — |
 | FRZ-REG-07 | Regression / qualification infrastructure | clean checkout reproducibility | QUAL-X | OPEN | — |
 | FRZ-REG-08 | Regression / qualification infrastructure | environment failures cannot become false PASS | QUAL-X | OPEN | — |
-| FRZ-REG-09 | Regression / qualification infrastructure | critical invariant protected by code/test, not docs only | QUAL-X | OPEN | R2 gate + parent recert `f7fabab…`: 550 targeted tests green; pyright `factory.py` + `resolve_typed.py` = 0 errors. |
+| FRZ-REG-09 | Regression / qualification infrastructure | critical invariant protected by code/test, not docs only | QUAL-X | OPEN | R2 gate + EBH-2F parent recert `765fabe…`: 559 targeted tests green; pyright `factory.py` + `resolve_typed.py` = 0 errors. |
 | FRZ-REG-10 | Regression / qualification infrastructure | mandatory freeze qualification suite defined | QUAL-X | OPEN | — |
 | FRZ-HRN-01 | Harness / Top-Tier | INV-1..INV-34 recertified current HEAD | HARNESS-FINAL | OPEN | — |
 | FRZ-HRN-02 | Harness / Top-Tier | A-Z Top-Tier audit repeated current HEAD | HARNESS-FINAL | OPEN | — |
@@ -238,7 +238,8 @@ This log records independently audited evidence contributions without upgrading 
 | EBH-2F-R2-R1-R1-R1-R1-R1 | `be8c6aaec48431d74dc93572fa27e34433e7c4c5` | Independent audit accepted catalog vs profile resolution result precision (`resolve` → `PlatformIntegrationContract`; profile surfaces → `CategoryIntegrationInstance`). | FRZ-CTR-01, FRZ-TYP-02, FRZ-TYP-03, FRZ-REG-02, FRZ-REG-09 | Child CLOSED; FRZ criteria remain OPEN at platform scope. |
 | EBH-2F-R2-PARENT-RECERT | `26f529e8cac295a9791f2b5763ae9d43da7633c5` | Independent parent recertification **rejected** closure: public `resolve_typed.resolve_contract()` generic overload + implementation declared semantic `Any`. EBH-2F-R2 **BLOCKED**; remediation **EBH-2F-R2-R2** CURRENT. | FRZ-CTR-01, FRZ-CTR-04, FRZ-CTR-05, FRZ-TYP-01, FRZ-TYP-02, FRZ-TYP-03, FRZ-TYP-06, FRZ-REG-02, FRZ-REG-09 | Blocker evidence; FRZ rows remain OPEN. |
 | EBH-2F-R2-R2 | `311064ffc9534e053498f5ae1d70f1c398cb319b` | Independent audit accepted generic integration resolution helper strong typing (`resolve_contract` → `CategoryIntegrationInstance` / `T`; semantic `Any` = 0; cast/type-ignore = 0). **Historical accepted evidence.** | FRZ-CTR-01, FRZ-CTR-04, FRZ-CTR-05, FRZ-TYP-01, FRZ-TYP-02, FRZ-TYP-03, FRZ-TYP-06, FRZ-OWN-02, FRZ-OWN-05, FRZ-PLG-01, FRZ-PLG-02, FRZ-REG-02, FRZ-REG-09 | Child CLOSED; FRZ criteria remain OPEN at platform scope. |
-| EBH-2F-R2-PARENT-RECERT-FINAL | `f7fabab880595c6baf941847219701e466f67c39` | Cursor AI final parent recertification on current `development` HEAD after R2-R2 closure — **READY FOR AUDIT** (not CLOSED). Full R2 closed-world inventory, historical blocker chain revalidated, 550 tests + pyright green; no production code change. | FRZ-BND-02..06, FRZ-OWN-01..05, FRZ-CTR-01..06, FRZ-TYP-01..06, FRZ-PLG-01..08, FRZ-REG-02, FRZ-REG-09, FRZ-RPL-02..04 | Evidence contribution only; all FRZ rows remain OPEN. |
+| EBH-2F-R2 | `f7fabab880595c6baf941847219701e466f67c39` | Independent audit accepted R2 parent closure on exact GitHub SHA (typed plugin/factory, explicit specs, no reflection, catalog/profile precision, DI-only `external_work`, `resolve_typed` strong typing, structural external plugin, fail-closed negatives, regression gate). | FRZ-CTR-01, FRZ-CTR-03..06, FRZ-TYP-01..06, FRZ-OWN-02, FRZ-OWN-05, FRZ-PLG-01..02, FRZ-REG-02, FRZ-REG-09 | Child CLOSED at platform stage scope; FRZ rows remain OPEN until platform-wide closure stages. |
+| EBH-2F-PARENT-RECERT-FINAL | `765fabe38d0f35fe9087ae811887382b41aa9323` | Cursor AI final EBH-2F parent recertification (R1+R2+cross-boundary) on current `development` HEAD — **READY FOR AUDIT** (not CLOSED). Closed-world inventory, cross-boundary interaction audit, 559 tests + pyright green; post-R2 UCA cross-host reclaim (`8b49ba702`) in scope without blocker. | FRZ-BND-01..06, FRZ-OWN-01..05, FRZ-CTR-01..06, FRZ-TYP-01..06, FRZ-PLG-01..08, FRZ-REG-02, FRZ-REG-09, FRZ-RPL-02..04 | Evidence contribution only; all FRZ rows remain OPEN. |
 
 ---
 
