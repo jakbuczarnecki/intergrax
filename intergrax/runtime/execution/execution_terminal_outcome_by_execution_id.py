@@ -14,7 +14,11 @@ from intergrax.autonomous_work.recovery_orchestration_ports import (
 )
 from intergrax.contracts.execution.execution_terminal_outcome_by_execution_id import (
     ExecutionTerminalOutcomeByExecutionIdDisposition,
+    ExecutionTerminalOutcomeByExecutionIdReadPort,
     ExecutionTerminalOutcomeByExecutionIdStore,
+)
+from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
+    QualifiedCapabilityExecutionDispatchDisposition,
 )
 from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
 
@@ -62,7 +66,7 @@ class ExecutionTerminalOutcomeByExecutionIdCanonicalReader(
 
     def __init__(
         self,
-        read_port: ExecutionTerminalOutcomeByExecutionIdStore,
+        read_port: ExecutionTerminalOutcomeByExecutionIdReadPort,
     ) -> None:
         self._read_port = read_port
 
@@ -88,29 +92,22 @@ class ExecutionTerminalOutcomeByExecutionIdCanonicalReader(
 
 
 def build_canonical_execution_outcome_reader(
-    store: ExecutionTerminalOutcomeByExecutionIdStore,
+    read_port: ExecutionTerminalOutcomeByExecutionIdReadPort,
 ) -> CanonicalExecutionOutcomeReader:
-    return ExecutionTerminalOutcomeByExecutionIdCanonicalReader(store)
+    return ExecutionTerminalOutcomeByExecutionIdCanonicalReader(read_port)
 
 
 def record_delegate_terminal_disposition(
     store: ExecutionTerminalOutcomeByExecutionIdStore | None,
     *,
     execution_id: ExecutionId,
-    disposition: object,
+    disposition: QualifiedCapabilityExecutionDispatchDisposition,
 ) -> None:
     if store is None:
         return
-    from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
-        QualifiedCapabilityExecutionDispatchDisposition,
-    )
-
     if disposition is QualifiedCapabilityExecutionDispatchDisposition.DISPATCHED:
-        store.record_terminal_disposition(
-            execution_id,
-            ExecutionTerminalOutcomeByExecutionIdDisposition.SUCCEEDED,
-        )
-    elif disposition in {
+        return
+    if disposition in {
         QualifiedCapabilityExecutionDispatchDisposition.FAILED,
         QualifiedCapabilityExecutionDispatchDisposition.REJECTED,
         QualifiedCapabilityExecutionDispatchDisposition.UNAVAILABLE,

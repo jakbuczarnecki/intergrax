@@ -636,19 +636,22 @@ def _build_full_handler_stack(
     *,
     terminal_outcome_store: InMemoryExecutionTerminalOutcomeByExecutionIdStore,
 ):
-    handler, composition, _, craft_id, hitl, checkpoint_store, backend, _ = (
-        _build_handler(
-            tmp_path,
-            _AllowingMsePort(),
-            terminal_outcome_store=terminal_outcome_store,
-        )
+    (
+        handler,
+        composition,
+        _,
+        craft_id,
+        hitl,
+        checkpoint_store,
+        backend,
+        _,
+        codecraft_composition,
+    ) = _build_handler(
+        tmp_path,
+        _AllowingMsePort(),
+        terminal_outcome_store=terminal_outcome_store,
     )
-    from intergrax.runtime.codecraft.wiring_bound_capability_execution import (
-        WiringCodeCraftBoundCapabilityExecution,
-    )
-
-    assert isinstance(handler._execution_port, WiringCodeCraftBoundCapabilityExecution)
-    tool_ctx = handler._execution_port._ctx  # noqa: SLF001 — same production wiring ctx as handler
+    tool_ctx = codecraft_composition.tool_wiring_context
     return handler, composition, craft_id, hitl, checkpoint_store, backend, tool_ctx
 
 

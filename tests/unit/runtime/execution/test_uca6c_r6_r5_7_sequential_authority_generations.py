@@ -14,7 +14,7 @@ from intergrax.applications._shared.uca6c_codecraft_qualified_execution_composit
     bootstrap_uca6c_code_exec_catalog_tools,
 )
 from intergrax.runtime.codecraft.qualified_capability_execution_wiring import (
-    build_codecraft_qualified_capability_execution_handler,
+    build_codecraft_qualified_capability_execution_composition,
 )
 from intergrax.applications._shared.policy_wiring import wire_policy_bundle
 from intergrax.runtime.execution.execution_bound_catalog_tool_composition import (
@@ -360,11 +360,12 @@ def _build_handler(
         tool_executor=counting_executor,
         terminal_outcome_store=terminal_outcome_store,
     )
-    handler = build_codecraft_qualified_capability_execution_handler(
+    codecraft_composition = build_codecraft_qualified_capability_execution_composition(
         tool_wiring.wiring_context,
         catalog_tool_invoker=composition.invoker,
         side_effect_recorder=side_effects,
     )
+    handler = codecraft_composition.handler
     hitl = InternalOrchestrationContinuation(
         port=r6_kwargs["continuation_dependencies"].continuation,
         lifecycle_driver=r6_kwargs["continuation_dependencies"].lifecycle_driver,
@@ -379,6 +380,7 @@ def _build_handler(
         r6_kwargs["task_checkpoint_store"],
         counting_executor,
         guard,
+        codecraft_composition,
     )
 
 
@@ -476,7 +478,7 @@ def test_three_authority_generations_without_backend_when_declarative_always_req
     tmp_path: Path,
 ) -> None:
     mse_port = _MseRequireHumanOncePort()
-    handler, composition, side_effects, craft_id, hitl, checkpoint_store, _, _ = (
+    handler, composition, side_effects, craft_id, hitl, checkpoint_store, _, _, _ = (
         _build_handler(
             tmp_path,
             mse_port,
@@ -615,6 +617,7 @@ def test_eventual_backend_when_each_authority_requires_human_once(
         checkpoint_store,
         backend,
         guard,
+        _,
     ) = _build_handler(
         tmp_path,
         mse_port,

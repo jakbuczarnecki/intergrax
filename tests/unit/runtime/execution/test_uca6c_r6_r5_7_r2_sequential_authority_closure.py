@@ -154,7 +154,7 @@ def _advance_to_gen3_pause(
     mse_port: _MseRequireHumanOncePort | _MseRequireThenDenyPort,
 ) -> tuple:
     counting = _DeclarativeRequireHitlOnceHandler()
-    handler, composition, _, craft_id, hitl, checkpoint_store, backend, _ = (
+    handler, composition, _, craft_id, hitl, checkpoint_store, backend, _, _ = (
         _build_handler(
             tmp_path,
             mse_port,
@@ -383,7 +383,7 @@ def test_backend_failure_invokes_executor_without_consumed_success(
 ) -> None:
     mse_port = _MseRequireHumanOncePort()
     counting_decl = _DeclarativeRequireHitlOnceHandler()
-    handler, composition, _, craft_id, hitl, checkpoint_store, backend, _ = (
+    handler, composition, _, craft_id, hitl, checkpoint_store, backend, _, _ = (
         _build_handler(
             tmp_path,
             mse_port,
