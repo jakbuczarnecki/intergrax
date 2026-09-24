@@ -222,6 +222,17 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 
 ---
 
+## Accumulated evidence log
+
+This log records independently audited evidence contributions without upgrading global freeze criteria prematurely. `OPEN` remains `OPEN` until the criterion's designated closing stage proves the criterion at platform scope.
+
+| Evidence ID | Exact SHA / HEAD | Scope | FRZ criteria informed | Effect |
+| --- | --- | --- | --- | --- |
+| EBH-2F-R1 | `324ad07d60211cb9c72bcff668e988f180e6ff5b` | Final host-execution-boundary recertification. Tier-3 production hosts consume `runtime.execution` / `HostTaskExecutionPort`; shared harness execution wiring is governance-only and contains no `NexusLoop`; Nexus-backed materialization remains in sanctioned runtime/composition owners; revision admission is strongly typed; structural custom execution-port replaceability and anti-regression gates were independently verified. | FRZ-BND-04, FRZ-BND-05, FRZ-OWN-03, FRZ-CTR-01, FRZ-CTR-02, FRZ-CTR-06, FRZ-TYP-01, FRZ-TYP-03, FRZ-PLG-02, FRZ-RPL-02, FRZ-RPL-03, FRZ-EXE-01, FRZ-EXE-03, FRZ-REG-02, FRZ-REG-09 | Evidence contribution only; criteria remain `OPEN` until their platform-wide closing stages. |
+| R1-SQLITE-ENV-01 | `324ad07d60211cb9c72bcff668e988f180e6ff5b` | `test_governed_contractor_http_root_uses_canonical_execution_facade` still fails before reaching the execution-facade spy with `sqlite3.DatabaseError: file is not a database` during collaborative-work persistence bootstrap. Independent R1 audit found no causal relation to the host-execution boundary. | FRZ-STA-03, FRZ-PRD-04, FRZ-REG-08 | Open evidence item. Must be resolved or independently classified with reproducible environment/test-isolation evidence before the applicable `STATE-X` / `PROD-Q` / `QUAL-X` criteria can close. It is not an R1 blocker. |
+
+---
+
 ## Freeze Criteria Coverage Matrix
 
 Completeness detector: every FRZ family must have at least one primary closing stage. If a family lacks a stage owner, the program is incomplete.
