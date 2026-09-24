@@ -39,6 +39,7 @@ from intergrax.runtime.execution.suspended_operation.claim_lifecycle import (
     ExecutionSuspendedWorkClaimLifecycleCoordinator,
 )
 from intergrax.runtime.execution.suspended_operation.hitl_resume_claim_preparation import (
+    discard_prepared_suspended_work_resume_authority,
     prepare_suspended_work_caller_authority_for_hitl_intake,
 )
 from intergrax.runtime.execution.suspended_operation.resume_authority_transport import (
@@ -104,13 +105,6 @@ class NexusIntakeRunner:
         normalize_human_response(task)
         await self.restore_long_running(task)
         prepare_hitl_resume_after_checkpoint_restore(task)
-        prepare_suspended_work_caller_authority_for_hitl_intake(
-            task,
-            hitl=self.hitl_continuation,
-            lifecycle=self.suspended_work_claim_lifecycle,
-            transport=self.suspended_work_resume_authority_transport,
-            telemetry=self.suspended_work_authority_telemetry,
-        )
 
         continuation_identity = None
         if self.execution_identity is not None:
@@ -167,6 +161,10 @@ class NexusIntakeRunner:
                 )
             hitl_run_id, hitl_attempt_id = self.execution_identity.require()
         if verdict == HumanResponseVerdict.REJECT:
+            discard_prepared_suspended_work_resume_authority(
+                task,
+                transport=self.suspended_work_resume_authority_transport,
+            )
             hitl = require_internal_hitl_continuation(self.hitl_continuation)
             HumanPauseCoordinator.resolve_human_response_and_apply_canonical(
                 task,
@@ -199,6 +197,10 @@ class NexusIntakeRunner:
             clear_consumed_human_input(task)
             return IntakePhaseOutcome(early_result=result)
         if verdict == HumanResponseVerdict.ESCALATE:
+            discard_prepared_suspended_work_resume_authority(
+                task,
+                transport=self.suspended_work_resume_authority_transport,
+            )
             hitl = require_internal_hitl_continuation(self.hitl_continuation)
             HumanPauseCoordinator.resolve_human_response_and_apply_canonical(
                 task,
@@ -283,6 +285,13 @@ class NexusIntakeRunner:
             if task.runtime.governance.human_request is not None:
                 GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
                 task.sync_metadata()
+            prepare_suspended_work_caller_authority_for_hitl_intake(
+                task,
+                hitl=self.hitl_continuation,
+                lifecycle=self.suspended_work_claim_lifecycle,
+                transport=self.suspended_work_resume_authority_transport,
+                telemetry=self.suspended_work_authority_telemetry,
+            )
             continuation_id_for_authority: str | None = None
             human_request = task.runtime.governance.human_request
             if human_request is not None:

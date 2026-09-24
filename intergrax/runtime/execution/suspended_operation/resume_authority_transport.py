@@ -14,6 +14,10 @@ from intergrax.contracts.execution.suspended_operation.resume_authority_context 
 )
 
 
+class ExecutionSuspendedWorkResumeAuthorityTransportConflictError(RuntimeError):
+    """Deliver rejected: slot bound to a different continuation."""
+
+
 @dataclass
 class ExecutionSuspendedWorkResumeAuthorityTransport:
     """Explicit DI slot — not a store, not durable."""
@@ -24,10 +28,29 @@ class ExecutionSuspendedWorkResumeAuthorityTransport:
     )
 
     def deliver(self, context: ExecutionSuspendedWorkResumeAuthorityContext) -> None:
+        pending = self._pending
+        if pending is None:
+            self._pending = context
+            return
+        if pending.continuation_id != context.continuation_id:
+            raise ExecutionSuspendedWorkResumeAuthorityTransportConflictError(
+                "transport slot already bound to a different continuation",
+            )
+        if pending.claim_authority == context.claim_authority:
+            return
         self._pending = context
 
     def peek(self) -> ExecutionSuspendedWorkResumeAuthorityContext | None:
         return self._pending
+
+    def discard_for_continuation(self, continuation_id: str) -> bool:
+        pending = self._pending
+        if pending is None:
+            return False
+        if pending.continuation_id != continuation_id:
+            return False
+        self._pending = None
+        return True
 
     def take_for_continuation(
         self,
@@ -56,5 +79,6 @@ class ProductionSuspendedWorkAuthorityTelemetry:
 
 __all__ = [
     "ExecutionSuspendedWorkResumeAuthorityTransport",
+    "ExecutionSuspendedWorkResumeAuthorityTransportConflictError",
     "ProductionSuspendedWorkAuthorityTelemetry",
 ]

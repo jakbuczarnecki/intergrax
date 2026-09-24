@@ -4,11 +4,12 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedOperationMaterializationState,
 )
+from intergrax.runtime.execution.suspended_operation import store_engine
 from intergrax.runtime.execution.suspended_operation.claim_lifecycle import (
     ExecutionSuspendedWorkClaimLifecycleCoordinator,
 )
@@ -22,7 +23,7 @@ from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration i
 from intergrax.runtime.task.task import Task, TaskState
 
 
-def _continuation_id_for_waiting_hitl(task: Task) -> str | None:
+def continuation_id_for_waiting_hitl(task: Task) -> str | None:
     human_request = task.runtime.governance.human_request
     if human_request is None:
         return None
@@ -45,18 +46,19 @@ def prepare_suspended_work_caller_authority_for_hitl_intake(
         return
     if hitl is None or lifecycle is None or transport is None:
         return
-    if transport.peek() is not None:
-        return
     reentry = hitl.suspended_work_reentry_coordinator
     if reentry is None:
         return
-    continuation_id = _continuation_id_for_waiting_hitl(task)
+    continuation_id = continuation_id_for_waiting_hitl(task)
     if continuation_id is None:
+        return
+    existing = transport.peek()
+    if existing is not None and existing.continuation_id != continuation_id:
         return
     descriptor = reentry.store.load_active_for_continuation(continuation_id)
     if descriptor is None:
         return
-    now = datetime.now(timezone.utc)
+    now = store_engine._utc_now()
     state = descriptor.materialization_state
     if state is SuspendedOperationMaterializationState.BLOCKED:
         context = lifecycle.claim_blocked(descriptor)
@@ -92,4 +94,21 @@ def prepare_suspended_work_caller_authority_for_hitl_intake(
         telemetry.authority_snapshots_transported += 1
 
 
-__all__ = ["prepare_suspended_work_caller_authority_for_hitl_intake"]
+def discard_prepared_suspended_work_resume_authority(
+    task: Task,
+    *,
+    transport: ExecutionSuspendedWorkResumeAuthorityTransport | None,
+) -> bool:
+    if transport is None:
+        return False
+    continuation_id = continuation_id_for_waiting_hitl(task)
+    if continuation_id is None:
+        return False
+    return transport.discard_for_continuation(continuation_id)
+
+
+__all__ = [
+    "continuation_id_for_waiting_hitl",
+    "discard_prepared_suspended_work_resume_authority",
+    "prepare_suspended_work_caller_authority_for_hitl_intake",
+]

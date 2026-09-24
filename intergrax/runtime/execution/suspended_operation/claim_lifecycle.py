@@ -24,6 +24,7 @@ from intergrax.contracts.execution.suspended_operation.resume_authority_context 
 from intergrax.contracts.execution.suspended_operation.store import (
     SuspendedExecutionOperationStore,
 )
+from intergrax.runtime.execution.suspended_operation import store_engine
 
 
 @dataclass(frozen=True, slots=True)
@@ -82,7 +83,8 @@ class ExecutionSuspendedWorkClaimLifecycleCoordinator:
         ownership = descriptor.claim_ownership
         if ownership is None:
             return None
-        if ownership.owner_id != self.claim_owner_id:
+        now = store_engine._utc_now()
+        if ownership.lease_expires_at > now:
             return None
         result = self.store.reclaim(
             suspended_operation_id=descriptor.suspended_operation_id,
