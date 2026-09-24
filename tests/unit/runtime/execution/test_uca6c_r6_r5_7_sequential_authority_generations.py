@@ -303,6 +303,7 @@ def _build_handler(
     idempotency_store: InMemoryIdempotencyStore | None = None,
     inner_guard: _RecordingGuard | None = None,
     tool_executor: ToolExecutor | None = None,
+    terminal_outcome_store=None,
 ):
     craft_id = "craft-r5-7-sequential"
     bundle = uca6c_strict_r6_durable_wiring(tmp_path)
@@ -357,6 +358,7 @@ def _build_handler(
         task_checkpoint_store=r6_kwargs["task_checkpoint_store"],
         idempotency_store=idem,
         tool_executor=counting_executor,
+        terminal_outcome_store=terminal_outcome_store,
     )
     handler = build_codecraft_qualified_capability_execution_handler(
         tool_wiring.wiring_context,

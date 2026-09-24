@@ -4,8 +4,6 @@
 
 from __future__ import annotations
 
-import asyncio
-import concurrent.futures
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
 from pathlib import Path
@@ -99,7 +97,6 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     reset_active_execution_identity,
 )
-from intergrax.contracts.execution_continuation import ExecutionContinuationLookup
 from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.contracts.root_execution_launch import (
     RootExecutionLaunchPort,
@@ -124,10 +121,6 @@ from intergrax.runtime.governance.active_execution_governance_identity import (
     bind_active_execution_governance_identity,
     reset_active_execution_governance_identity,
 )
-from intergrax.runtime.governance.active_governed_execution_task import (
-    bind_governed_execution_task,
-    reset_governed_execution_task,
-)
 from intergrax.runtime.governance.runtime_execution_policy_admission import (
     AllowingRuntimeExecutionPolicyAdmission,
 )
@@ -144,7 +137,10 @@ from intergrax.runtime.task.task import Task, TaskState
 from intergrax.autonomous_work.recovery_orchestration_ports import (
     CanonicalExecutionOutcomeReader,
     CanonicalExecutionTerminalDisposition,
-    CanonicalExecutionTerminalOutcome,
+)
+from intergrax.runtime.execution.execution_terminal_outcome_by_execution_id import (
+    InMemoryExecutionTerminalOutcomeByExecutionIdStore,
+    build_canonical_execution_outcome_reader,
 )
 from intergrax.autonomous_work.worker_recovery_capability_fulfillment_async_service import (
     WorkerRecoveryCapabilityFulfillmentAsyncService,
@@ -353,35 +349,6 @@ class _CountingAsyncRecoveryFulfillment:
         return await self.inner.fulfill_recovery_capability_async(handoff)
 
 
-@dataclass
-class _BackendLinkedExecutionOutcomeReader(CanonicalExecutionOutcomeReader):
-    """Maps canonical terminal disposition to observed backend exactly-once completion."""
-
-    backend_calls: callable
-    logical_effects: callable | None = None
-
-    def get_terminal_outcome(
-        self,
-        execution_id: ExecutionId,
-    ) -> CanonicalExecutionTerminalOutcome:
-        physical = self.backend_calls()
-        logical = physical if self.logical_effects is None else self.logical_effects()
-        if physical < 1:
-            return CanonicalExecutionTerminalOutcome(
-                disposition=CanonicalExecutionTerminalDisposition.IN_PROGRESS,
-                execution_id=execution_id,
-            )
-        if logical < 1:
-            return CanonicalExecutionTerminalOutcome(
-                disposition=CanonicalExecutionTerminalDisposition.IN_PROGRESS,
-                execution_id=execution_id,
-            )
-        return CanonicalExecutionTerminalOutcome(
-            disposition=CanonicalExecutionTerminalDisposition.SUCCEEDED,
-            execution_id=execution_id,
-        )
-
-
 @dataclass(frozen=True)
 class _GovernedE2EStack:
     wiring: WorkerRecoveryGovernedFulfillmentWiring
@@ -400,6 +367,7 @@ class _GovernedE2EStack:
     task: Task
     run_id: RunId
     attempt_id: AttemptId
+    terminal_outcome_store: InMemoryExecutionTerminalOutcomeByExecutionIdStore
 
 
 def _aligned_worker_need():
@@ -423,11 +391,6 @@ def _missing_capability_discovery() -> _StaticDiscovery:
     return _StaticDiscovery(completion)
 
 
-def _run_async_in_thread(coro):
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-        return pool.submit(asyncio.run, coro).result()
-
-
 def _seed_obstacle_need_repo(
     need_repo: InMemoryWorkerRecoveryObstacleCapabilityNeedRepository,
     principal_repo: InMemoryWorkerPrincipalBindingRepository,
@@ -448,6 +411,7 @@ def _build_governed_e2e_stack(
     tool_wiring_context,
     craft_id: str,
     handler,
+    terminal_outcome_store: InMemoryExecutionTerminalOutcomeByExecutionIdStore,
 ) -> _GovernedE2EStack:
     artifact = artifact_reference_for_craft(craft_id)
     dispatch, delegate, inner_launcher = (
@@ -456,6 +420,7 @@ def _build_governed_e2e_stack(
                 (handler,)
             ),
             runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
+            terminal_outcome_store=terminal_outcome_store,
         )
     )
     root_launcher = _CountingRootLauncher(inner_launcher)
@@ -532,6 +497,7 @@ def _build_governed_e2e_stack(
         task=task,
         run_id=run_id,
         attempt_id=attempt_id,
+        terminal_outcome_store=terminal_outcome_store,
     )
 
 
@@ -609,41 +575,17 @@ async def _register_task(stack: _GovernedE2EStack) -> None:
 def _continuation_for_worker_pause(
     task: Task,
     composition,
-    execution_id: ExecutionId,
 ) -> tuple[str, object]:
     human_request = task.runtime.governance.human_request
     assert human_request is not None
-    if human_request.governed_continuation is not None:
-        continuation_id = human_request.governed_continuation.continuation_request_id
-    else:
-        reentry = composition.suspended_work_reentry_coordinator
-        assert reentry is not None
-        backing = reentry.store._backing  # noqa: SLF001 — single active descriptor lookup
-        matches = [
-            descriptor
-            for descriptor in backing.snapshot().values()
-            if str(descriptor.identity.execution_id) == str(execution_id)
-        ]
-        assert len(matches) == 1
-        continuation_id = matches[0].continuation_id
+    governed = human_request.governed_continuation
+    assert governed is not None
+    continuation_id = governed.continuation_request_id
     reentry = composition.suspended_work_reentry_coordinator
     assert reentry is not None
     descriptor = reentry.store.load_active_for_continuation(continuation_id)
     assert descriptor is not None
     return continuation_id, descriptor
-
-
-def _project_governed_continuation(task: Task, hitl, continuation_id: str) -> None:
-    human_request = task.runtime.governance.human_request
-    if human_request is None or human_request.governed_continuation is not None:
-        return
-    pending = hitl.port.get_pending(
-        ExecutionContinuationLookup(continuation_id=continuation_id),
-    )
-    if pending.governed_correlation is not None:
-        task.runtime.governance.human_request = human_request.model_copy(
-            update={"governed_continuation": pending.governed_correlation},
-        )
 
 
 def _approve_until_backend(
@@ -668,9 +610,7 @@ def _approve_until_backend(
         continuation_id, descriptor = _continuation_for_worker_pause(
             stack.task,
             composition,
-            execution_id,
         )
-        _project_governed_continuation(stack.task, hitl, continuation_id)
         id_token = bind_active_execution_identity(
             run_id=descriptor.identity.run_id,
             attempt_id=descriptor.identity.attempt_id,
@@ -691,11 +631,16 @@ def _approve_until_backend(
     assert backend.calls == 1
 
 
-def _build_full_handler_stack(tmp_path: Path):
+def _build_full_handler_stack(
+    tmp_path: Path,
+    *,
+    terminal_outcome_store: InMemoryExecutionTerminalOutcomeByExecutionIdStore,
+):
     handler, composition, _, craft_id, hitl, checkpoint_store, backend, _ = (
         _build_handler(
             tmp_path,
             _AllowingMsePort(),
+            terminal_outcome_store=terminal_outcome_store,
         )
     )
     from intergrax.runtime.codecraft.wiring_bound_capability_execution import (
@@ -710,22 +655,20 @@ def _build_full_handler_stack(tmp_path: Path):
 @pytest.mark.asyncio
 async def test_worker_governed_execution_pause_resume_single_backend(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    for module in (
-        "intergrax.runtime.execution.qualified_capability_execution_dispatch_service",
-        "intergrax.runtime.execution.execution_bound_capability_execution_dispatch_service",
-        "intergrax.tools._shared.async_dispatch",
-    ):
-        monkeypatch.setattr(f"{module}.run_async", _run_async_in_thread)
+    terminal_outcome_store = InMemoryExecutionTerminalOutcomeByExecutionIdStore()
     handler, composition, craft_id, hitl, checkpoint_store, backend, tool_ctx = (
-        _build_full_handler_stack(tmp_path)
+        _build_full_handler_stack(
+            tmp_path,
+            terminal_outcome_store=terminal_outcome_store,
+        )
     )
     stack = _build_governed_e2e_stack(
         tmp_path,
         tool_wiring_context=tool_ctx,
         craft_id=craft_id,
         handler=handler,
+        terminal_outcome_store=terminal_outcome_store,
     )
     stack = replace(
         stack,
@@ -735,10 +678,7 @@ async def test_worker_governed_execution_pause_resume_single_backend(
         backend=backend,
     )
     await _register_task(stack)
-    outcome_reader = _BackendLinkedExecutionOutcomeReader(
-        backend_calls=lambda: backend.calls,
-        logical_effects=lambda: getattr(backend, "logical_effects", backend.calls),
-    )
+    outcome_reader = build_canonical_execution_outcome_reader(terminal_outcome_store)
     service, ctx = _build_orchestration_service(stack, outcome_reader=outcome_reader)
     orch_request = _orch_request_for_stack(stack)
     gov_token = bind_active_execution_governance_identity(
@@ -748,7 +688,6 @@ async def test_worker_governed_execution_pause_resume_single_backend(
             principal_id=_PRINCIPAL,
         ),
     )
-    task_token = bind_governed_execution_task(stack.task)
     try:
         first = await service.orchestrate(orch_request)
         assert (
@@ -773,13 +712,9 @@ async def test_worker_governed_execution_pause_resume_single_backend(
         pause_record = stack.task.runtime.governance.pause_record
         human_request = stack.task.runtime.governance.human_request
         assert pause_record is not None and human_request is not None
+        assert human_request.governed_continuation is not None
         reentry = composition.suspended_work_reentry_coordinator
         assert reentry is not None
-        continuation_id, descriptor = _continuation_for_worker_pause(
-            stack.task,
-            composition,
-            execution_id,
-        )
         _approve_until_backend(
             stack,
             composition=composition,
@@ -792,6 +727,10 @@ async def test_worker_governed_execution_pause_resume_single_backend(
         assert stack.acquisition.calls == 1
         assert stack.qualification.calls == 1
         assert stack.binding.bind_calls == 1
+        terminal = outcome_reader.get_terminal_outcome(execution_id)
+        assert (
+            terminal.disposition is CanonicalExecutionTerminalDisposition.SUCCEEDED
+        )
 
         final = await service.orchestrate(orch_request)
         assert final.disposition is WorkerRecoveryOrchestrationDisposition.RESUMED
@@ -800,34 +739,29 @@ async def test_worker_governed_execution_pause_resume_single_backend(
         assert backend.calls == 1
         assert final.episode.last_execution_id == execution_id
     finally:
-        reset_governed_execution_task(task_token)
         reset_active_execution_governance_identity(gov_token)
 
 
 @pytest.mark.asyncio
 async def test_worker_governed_no_reacquisition_after_resume(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    for module in (
-        "intergrax.runtime.execution.qualified_capability_execution_dispatch_service",
-        "intergrax.runtime.execution.execution_bound_capability_execution_dispatch_service",
-        "intergrax.tools._shared.async_dispatch",
-    ):
-        monkeypatch.setattr(f"{module}.run_async", _run_async_in_thread)
+    terminal_outcome_store = InMemoryExecutionTerminalOutcomeByExecutionIdStore()
     handler, composition, craft_id, hitl, checkpoint_store, backend, tool_ctx = (
-        _build_full_handler_stack(tmp_path)
+        _build_full_handler_stack(
+            tmp_path,
+            terminal_outcome_store=terminal_outcome_store,
+        )
     )
     stack = _build_governed_e2e_stack(
         tmp_path,
         tool_wiring_context=tool_ctx,
         craft_id=craft_id,
         handler=handler,
+        terminal_outcome_store=terminal_outcome_store,
     )
     await _register_task(stack)
-    outcome_reader = _BackendLinkedExecutionOutcomeReader(
-        backend_calls=lambda: backend.calls,
-    )
+    outcome_reader = build_canonical_execution_outcome_reader(terminal_outcome_store)
     service, _ = _build_orchestration_service(stack, outcome_reader=outcome_reader)
     orch_request = _orch_request_for_stack(stack)
     gov_token = bind_active_execution_governance_identity(
@@ -837,7 +771,6 @@ async def test_worker_governed_no_reacquisition_after_resume(
             principal_id=_PRINCIPAL,
         ),
     )
-    task_token = bind_governed_execution_task(stack.task)
     try:
         first = await service.orchestrate(orch_request)
         acq_before = stack.acquisition.calls
@@ -849,9 +782,7 @@ async def test_worker_governed_no_reacquisition_after_resume(
         continuation_id, descriptor = _continuation_for_worker_pause(
             stack.task,
             composition,
-            execution_id,
         )
-        _project_governed_continuation(stack.task, hitl, continuation_id)
         id_token = bind_active_execution_identity(
             run_id=descriptor.identity.run_id,
             attempt_id=descriptor.identity.attempt_id,
@@ -874,36 +805,31 @@ async def test_worker_governed_no_reacquisition_after_resume(
         assert stack.binding.bind_calls == bind_before
         assert stack.discovery.calls == disc_before
     finally:
-        reset_governed_execution_task(task_token)
         reset_active_execution_governance_identity(gov_token)
 
 
 @pytest.mark.asyncio
 async def test_worker_governed_stale_approval_blocks_backend(
     tmp_path: Path,
-    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    for module in (
-        "intergrax.runtime.execution.qualified_capability_execution_dispatch_service",
-        "intergrax.runtime.execution.execution_bound_capability_execution_dispatch_service",
-        "intergrax.tools._shared.async_dispatch",
-    ):
-        monkeypatch.setattr(f"{module}.run_async", _run_async_in_thread)
+    terminal_outcome_store = InMemoryExecutionTerminalOutcomeByExecutionIdStore()
     handler, composition, craft_id, hitl, checkpoint_store, backend, tool_ctx = (
-        _build_full_handler_stack(tmp_path)
+        _build_full_handler_stack(
+            tmp_path,
+            terminal_outcome_store=terminal_outcome_store,
+        )
     )
     stack = _build_governed_e2e_stack(
         tmp_path,
         tool_wiring_context=tool_ctx,
         craft_id=craft_id,
         handler=handler,
+        terminal_outcome_store=terminal_outcome_store,
     )
     await _register_task(stack)
     service, _ = _build_orchestration_service(
         stack,
-        outcome_reader=_BackendLinkedExecutionOutcomeReader(
-            backend_calls=lambda: backend.calls,
-        ),
+        outcome_reader=build_canonical_execution_outcome_reader(terminal_outcome_store),
     )
     orch_request = _orch_request_for_stack(stack)
     gov_token = bind_active_execution_governance_identity(
@@ -913,7 +839,6 @@ async def test_worker_governed_stale_approval_blocks_backend(
             principal_id=_PRINCIPAL,
         ),
     )
-    task_token = bind_governed_execution_task(stack.task)
     try:
         first = await service.orchestrate(orch_request)
         pause_record = stack.task.runtime.governance.pause_record
@@ -923,9 +848,7 @@ async def test_worker_governed_stale_approval_blocks_backend(
         continuation_id, descriptor = _continuation_for_worker_pause(
             stack.task,
             composition,
-            first.episode.last_execution_id,
         )
-        _project_governed_continuation(stack.task, hitl, continuation_id)
         execution_id = descriptor.identity.execution_id
         id_token = bind_active_execution_identity(
             run_id=descriptor.identity.run_id,
@@ -953,5 +876,4 @@ async def test_worker_governed_stale_approval_blocks_backend(
         assert stack.root_launcher.launch_count == 1
         assert stack.acquisition.calls == 1
     finally:
-        reset_governed_execution_task(task_token)
         reset_active_execution_governance_identity(gov_token)

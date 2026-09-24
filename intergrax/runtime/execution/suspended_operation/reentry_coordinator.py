@@ -33,6 +33,10 @@ from intergrax.contracts.execution.suspended_operation.reentry import (
     ExecutionSuspendedWorkReentryRequest,
     ExecutionSuspendedWorkReentryResult,
 )
+from intergrax.contracts.execution.execution_terminal_outcome_by_execution_id import (
+    ExecutionTerminalOutcomeByExecutionIdDisposition,
+    ExecutionTerminalOutcomeByExecutionIdStore,
+)
 from intergrax.contracts.execution.suspended_operation.store import (
     SuspendedExecutionOperationStore,
 )
@@ -93,6 +97,7 @@ class ExecutionSuspendedWorkReentryCoordinator:
     binding_resolver: DurableToolInvocationWiringBindingResolver
     claim_owner_id: str
     task_checkpoint_store: TaskCheckpointPersistence | None = None
+    terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None
     default_lease_seconds: int = 120
 
     def reenter_after_resume(
@@ -291,9 +296,19 @@ class ExecutionSuspendedWorkReentryCoordinator:
                     task,
                     checkpoint_store=self.task_checkpoint_store,
                 )
+            if self.terminal_outcome_store is not None:
+                self.terminal_outcome_store.record_terminal_disposition(
+                    request.identity.execution_id,
+                    ExecutionTerminalOutcomeByExecutionIdDisposition.SUCCEEDED,
+                )
             return ExecutionSuspendedWorkReentryResult(
                 disposition=ExecutionSuspendedWorkReentryDisposition.COMPLETED,
                 tool_result=tool_result,
+            )
+        if self.terminal_outcome_store is not None:
+            self.terminal_outcome_store.record_terminal_disposition(
+                request.identity.execution_id,
+                ExecutionTerminalOutcomeByExecutionIdDisposition.FAILED,
             )
         return ExecutionSuspendedWorkReentryResult(
             disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,

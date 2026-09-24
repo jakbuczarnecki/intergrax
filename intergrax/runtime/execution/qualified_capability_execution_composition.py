@@ -9,6 +9,9 @@ from intergrax.contracts.execution.execution_bound_capability_execution_intake i
     ExecutionBoundCapabilityExecutionDelegateResult,
     ExecutionBoundCapabilityExecutionIntakePayload,
 )
+from intergrax.contracts.execution.execution_terminal_outcome_by_execution_id import (
+    ExecutionTerminalOutcomeByExecutionIdStore,
+)
 from intergrax.contracts.execution.qualified_capability_execution_intake import (
     QualifiedCapabilityExecutionDelegateResult,
     QualifiedCapabilityExecutionIntakePayload,
@@ -45,6 +48,7 @@ def build_qualified_capability_execution_dispatch_service(
     *,
     handler_registry: QualifiedCapabilityExecutionBindingHandlerRegistry,
     runtime_policy_admission: RuntimeExecutionPolicyAdmissionPort,
+    terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None,
 ) -> tuple[
     QualifiedCapabilityExecutionDispatchService,
     QualifiedCapabilityExecutionRuntimeDelegate,
@@ -56,6 +60,7 @@ def build_qualified_capability_execution_dispatch_service(
     """Wire ingress dedup → root launcher → ExecutionRuntime delegate."""
     delegate = QualifiedCapabilityExecutionRuntimeDelegate(
         handler_registry=handler_registry,
+        terminal_outcome_store=terminal_outcome_store,
     )
     runtime = ExecutionRuntime(delegate)
     intake = CanonicalExecutionRuntimeAdapter(runtime)

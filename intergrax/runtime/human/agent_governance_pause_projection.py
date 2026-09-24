@@ -160,7 +160,17 @@ class TaskAgentGovernancePauseProjectionAdapter:
     ) -> AgentGovernancePauseProjectionResult:
         draft = self._task.model_copy(deep=True)
         draft.runtime.governance.agent_governance_hitl_pending = pending
-        draft.runtime.governance.human_request = human_request
+        canonical_human_request = human_request
+        existing = self._task.runtime.governance.human_request
+        if (
+            canonical_human_request.governed_continuation is None
+            and existing is not None
+            and existing.governed_continuation is not None
+        ):
+            canonical_human_request = canonical_human_request.model_copy(
+                update={"governed_continuation": existing.governed_continuation},
+            )
+        draft.runtime.governance.human_request = canonical_human_request
         draft.state = TaskState.WAITING_FOR_HUMAN
         draft.sync_metadata()
         runtime = resolve_task_runtime_checkpoint(self._task)

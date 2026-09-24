@@ -10,6 +10,9 @@ from typing import TYPE_CHECKING
 from intergrax.contracts.canonical_inner_governance import (
     CanonicalInnerExecutionGuardPort,
 )
+from intergrax.contracts.execution.execution_terminal_outcome_by_execution_id import (
+    ExecutionTerminalOutcomeByExecutionIdStore,
+)
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvoker,
 )
@@ -86,6 +89,7 @@ def build_execution_bound_catalog_tool_composition(
     task_checkpoint_store: TaskCheckpointPersistence | None = None,
     idempotency_store: IdempotencyStore | None = None,
     tool_executor: ToolExecutor | None = None,
+    terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None,
 ) -> ExecutionBoundCatalogToolComposition:
     tool_invoker = build_production_runtime_tool_invoker(
         registry=registry,
@@ -158,6 +162,7 @@ def build_execution_bound_catalog_tool_composition(
             binding_resolver=durable_wiring_binding_resolver,
             claim_owner_id=reentry_claim_owner_id,
             task_checkpoint_store=task_checkpoint_store,
+            terminal_outcome_store=terminal_outcome_store,
         )
         continuation_aware_dependencies = ContinuationAwareCatalogToolHostDependencies(
             suspended_operation_store=suspended_store,

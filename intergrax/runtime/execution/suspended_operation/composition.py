@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.execution.execution_terminal_outcome_by_execution_id import (
+    ExecutionTerminalOutcomeByExecutionIdStore,
+)
 from intergrax.contracts.execution.suspended_operation.codec import (
     SuspendedOperationCodecRegistry,
 )
@@ -93,6 +96,7 @@ def wire_execution_suspended_work_reentry_coordinator(
     binding_resolver: DurableToolInvocationWiringBindingResolver,
     claim_owner_id: str,
     task_checkpoint_store: TaskCheckpointPersistence | None = None,
+    terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None,
 ) -> ExecutionSuspendedWorkReentryCoordinator:
     return ExecutionSuspendedWorkReentryCoordinator(
         store=store,
@@ -104,6 +108,7 @@ def wire_execution_suspended_work_reentry_coordinator(
         binding_resolver=binding_resolver,
         claim_owner_id=claim_owner_id,
         task_checkpoint_store=task_checkpoint_store,
+        terminal_outcome_store=terminal_outcome_store,
     )
 
 
