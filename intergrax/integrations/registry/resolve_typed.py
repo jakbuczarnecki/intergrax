@@ -18,8 +18,21 @@ from intergrax.integrations.contracts.feature_flag import FeatureFlagBackend
 from intergrax.integrations.contracts.ci_cd import CiCdBackend
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.integrations.registry.factory import resolve_from_profile
+from intergrax.runtime.integrations.contract_metadata import CategoryIntegrationInstance
 
 T = TypeVar("T")
+
+
+def _require_expected_contract(
+    value: CategoryIntegrationInstance,
+    expected: type[T],
+) -> T:
+    if not isinstance(value, expected):
+        raise TypeError(
+            f"Integration resolved to {type(value).__name__}, "
+            f"expected {expected.__name__}."
+        )
+    return value
 
 
 @overload
@@ -28,7 +41,7 @@ def resolve_contract(
     category: IntegrationCategory,
     *,
     config: Optional[Mapping[str, Any]] = None,
-) -> Any: ...
+) -> CategoryIntegrationInstance: ...
 
 
 @overload
@@ -46,15 +59,12 @@ def resolve_contract(
     category: IntegrationCategory,
     *,
     config: Optional[Mapping[str, Any]] = None,
-    expected: type[Any] | None = None,
-) -> Any:
+    expected: type[T] | None = None,
+) -> CategoryIntegrationInstance | T:
     """Resolve and optionally assert instance type for IDE-friendly call sites."""
     value = resolve_from_profile(profile, category, config=config)
-    if expected is not None and not isinstance(value, expected):
-        raise TypeError(
-            f"Integration for {category.value!r} resolved to {type(value).__name__}, "
-            f"expected {expected.__name__}."
-        )
+    if expected is not None:
+        return _require_expected_contract(value, expected)
     return value
 
 

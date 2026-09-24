@@ -18,6 +18,7 @@ _PLUGIN_REGISTER = _REPO_ROOT / "intergrax" / "integrations" / "registry" / "plu
 _CATALOG_FACTORY = _REPO_ROOT / "intergrax" / "integrations" / "contracts" / "catalog_factory.py"
 _BASE_TYPES = _REPO_ROOT / "intergrax" / "integrations" / "contracts" / "base.py"
 _RESOLVER = _REPO_ROOT / "intergrax" / "integrations" / "registry" / "factory.py"
+_RESOLVE_TYPED = _REPO_ROOT / "intergrax" / "integrations" / "registry" / "resolve_typed.py"
 _CONTRACT_SPEC = _REPO_ROOT / "intergrax" / "integrations" / "registry" / "contract_spec.py"
 _INTEGRATION_PROFILE = _REPO_ROOT / "intergrax" / "integrations" / "contracts" / "integration_profile.py"
 _CONTRACT_METADATA = _REPO_ROOT / "intergrax" / "runtime" / "integrations" / "contract_metadata.py"
@@ -112,6 +113,20 @@ def test_canonical_category_contract_resolver_supports_di_only_categories() -> N
     assert "contract_for_category" in profile_source
 
 
+def _is_overload_decorator(node: ast.expr) -> bool:
+    if isinstance(node, ast.Name) and node.id == "overload":
+        return True
+    return isinstance(node, ast.Attribute) and node.attr == "overload"
+
+
+def _resolve_contract_definitions(module: ast.Module) -> list[ast.FunctionDef]:
+    return [
+        node
+        for node in module.body
+        if isinstance(node, ast.FunctionDef) and node.name == "resolve_contract"
+    ]
+
+
 def _function_return_annotation(module: ast.Module, name: str) -> str:
     for node in module.body:
         if isinstance(node, ast.FunctionDef) and node.name == name:
@@ -178,10 +193,84 @@ def test_external_work_integration_not_subclass_of_platform_contract() -> None:
     assert "PlatformIntegrationContract" not in source
 
 
+def test_resolve_typed_generic_overload_declares_category_integration_instance() -> None:
+    tree = _parse(_RESOLVE_TYPED)
+    overloads = [
+        fn
+        for fn in _resolve_contract_definitions(tree)
+        if any(_is_overload_decorator(dec) for dec in fn.decorator_list)
+    ]
+    assert len(overloads) >= 2
+    no_expected = [
+        fn
+        for fn in overloads
+        if not any(
+            isinstance(arg, ast.arg) and arg.arg == "expected"
+            for arg in fn.args.kwonlyargs
+        )
+    ]
+    assert len(no_expected) == 1
+    annotation = ast.unparse(no_expected[0].returns) if no_expected[0].returns else ""
+    assert annotation.strip() == "CategoryIntegrationInstance"
+    assert "Any" not in annotation
+
+
+def test_resolve_typed_expected_overload_declares_typevar_result() -> None:
+    tree = _parse(_RESOLVE_TYPED)
+    overloads = [
+        fn
+        for fn in _resolve_contract_definitions(tree)
+        if any(_is_overload_decorator(dec) for dec in fn.decorator_list)
+    ]
+    with_expected = [
+        fn
+        for fn in overloads
+        if any(
+            isinstance(arg, ast.arg) and arg.arg == "expected"
+            for arg in fn.args.kwonlyargs
+        )
+    ]
+    assert len(with_expected) == 1
+    annotation = ast.unparse(with_expected[0].returns) if with_expected[0].returns else ""
+    assert annotation.strip() == "T"
+    assert "Any" not in annotation
+
+
+def test_resolve_typed_implementation_has_no_semantic_any_or_object_result() -> None:
+    tree = _parse(_RESOLVE_TYPED)
+    implementations = [
+        fn
+        for fn in _resolve_contract_definitions(tree)
+        if not any(_is_overload_decorator(dec) for dec in fn.decorator_list)
+    ]
+    assert len(implementations) == 1
+    impl = implementations[0]
+    annotation = ast.unparse(impl.returns) if impl.returns else ""
+    assert "Any" not in annotation
+    assert annotation.strip() not in {"object", "Any"}
+    assert "CategoryIntegrationInstance" in annotation
+    expected_param = next(
+        (arg for arg in impl.args.kwonlyargs if arg.arg == "expected"),
+        None,
+    )
+    assert expected_param is not None
+    assert expected_param.annotation is not None
+    expected_ann = ast.unparse(expected_param.annotation)
+    assert "type[Any]" not in expected_ann.replace(" ", "")
+    assert "type[T]" in expected_ann.replace(" ", "")
+
+
+def test_resolve_typed_source_has_no_cast_or_type_ignore_masking() -> None:
+    source = _read(_RESOLVE_TYPED)
+    assert "cast(" not in source
+    assert "# type: ignore" not in source
+    assert "pyright: ignore" not in source
+
+
 def test_category_resolution_surfaces_pyright_clean() -> None:
     import subprocess
 
-    targets = [str(_RESOLVER)]
+    targets = [str(_RESOLVER), str(_RESOLVE_TYPED)]
     result = subprocess.run(
         ["uv", "run", "pyright", *targets],
         cwd=_REPO_ROOT,
