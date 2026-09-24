@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 
 from intergrax.contracts.agent_governance_hitl import AgentGovernanceGrantLifecycleState
@@ -43,6 +43,8 @@ from intergrax.contracts.execution.suspended_operation.descriptor import (
 from intergrax.contracts.execution.suspended_operation.store import (
     SuspendedExecutionOperationStore,
 )
+from intergrax.contracts.execution_deadline.clock import UtcClockPort
+from intergrax.runtime.execution.deadline_authority.system_clocks import SystemUtcClock
 from intergrax.runtime.agent_governance.errors import (
     ToolGovernanceApprovalRequiredError,
     ToolGovernanceDeniedError,
@@ -102,6 +104,7 @@ class ExecutionSuspendedWorkReentryCoordinator:
     task_checkpoint_store: TaskCheckpointPersistence | None = None
     terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None
     default_lease_seconds: int = 120
+    utc_clock: UtcClockPort = field(default_factory=SystemUtcClock)
 
     def reenter_after_resume(
         self,

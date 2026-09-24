@@ -13,6 +13,8 @@ from intergrax.contracts.execution.suspended_operation.codec import (
 from intergrax.contracts.execution.suspended_operation.store import (
     SuspendedExecutionOperationStore,
 )
+from intergrax.contracts.execution_deadline.clock import UtcClockPort
+from intergrax.runtime.execution.deadline_authority.system_clocks import SystemUtcClock
 from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
 from intergrax.integrations.contracts.document_store_process_durability import (
     document_store_survives_process_restart,
@@ -52,10 +54,14 @@ class SuspendedOperationCompositionError(RuntimeError):
 def wire_suspended_execution_operation_store(
     *,
     document_store: ConditionalDocumentStore | None = None,
+    utc_clock: UtcClockPort | None = None,
 ) -> SuspendedExecutionOperationStore:
     if document_store is not None:
-        return DocumentStoreSuspendedExecutionOperationStore(document_store)
-    return InMemorySuspendedExecutionOperationStore()
+        return DocumentStoreSuspendedExecutionOperationStore(
+            document_store,
+            utc_clock=utc_clock,
+        )
+    return InMemorySuspendedExecutionOperationStore(utc_clock=utc_clock)
 
 
 def validate_document_store_for_production_suspended_operations(
@@ -97,7 +103,9 @@ def wire_execution_suspended_work_reentry_coordinator(
     claim_owner_id: str,
     task_checkpoint_store: TaskCheckpointPersistence | None = None,
     terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None,
+    utc_clock: UtcClockPort | None = None,
 ) -> ExecutionSuspendedWorkReentryCoordinator:
+    resolved_utc_clock = utc_clock if utc_clock is not None else SystemUtcClock()
     return ExecutionSuspendedWorkReentryCoordinator(
         store=store,
         continuation_port=continuation_port,
@@ -109,6 +117,7 @@ def wire_execution_suspended_work_reentry_coordinator(
         claim_owner_id=claim_owner_id,
         task_checkpoint_store=task_checkpoint_store,
         terminal_outcome_store=terminal_outcome_store,
+        utc_clock=resolved_utc_clock,
     )
 
 

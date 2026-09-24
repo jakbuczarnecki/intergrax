@@ -304,9 +304,14 @@ class DocumentStoreSuspendedExecutionOperationStore(SuspendedExecutionOperationS
 
 def reconnect_document_store_suspended_operation_store(
     document_store: ConditionalDocumentStore,
+    *,
+    utc_clock: UtcClockPort | None = None,
 ) -> DocumentStoreSuspendedExecutionOperationStore:
     """Process B: new store object over existing durable backing."""
-    return DocumentStoreSuspendedExecutionOperationStore(document_store)
+    return DocumentStoreSuspendedExecutionOperationStore(
+        document_store,
+        utc_clock=utc_clock,
+    )
 
 
 __all__ = [

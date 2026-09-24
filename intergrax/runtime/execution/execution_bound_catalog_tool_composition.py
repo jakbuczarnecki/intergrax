@@ -19,7 +19,9 @@ from intergrax.contracts.execution_bound_catalog_tool_invocation import (
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
+from intergrax.contracts.execution_deadline.clock import UtcClockPort
 from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
+from intergrax.runtime.execution.deadline_authority.system_clocks import SystemUtcClock
 from intergrax.runtime.agent_governance.authorization_boundary import (
     AgentRuntimeGovernanceBoundary,
 )
@@ -90,6 +92,7 @@ def build_execution_bound_catalog_tool_composition(
     idempotency_store: IdempotencyStore | None = None,
     tool_executor: ToolExecutor | None = None,
     terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None,
+    utc_clock: UtcClockPort | None = None,
 ) -> ExecutionBoundCatalogToolComposition:
     tool_invoker = build_production_runtime_tool_invoker(
         registry=registry,
@@ -102,8 +105,10 @@ def build_execution_bound_catalog_tool_composition(
         idempotency_store=idempotency_store,
         production_mode=production_mode,
     )
+    shared_utc_clock = utc_clock if utc_clock is not None else SystemUtcClock()
     suspended_store = wire_suspended_execution_operation_store(
         document_store=document_store,
+        utc_clock=shared_utc_clock,
     )
     reentry_coordinator: ExecutionSuspendedWorkReentryCoordinator | None = None
     continuation_aware_dependencies: (
@@ -163,6 +168,7 @@ def build_execution_bound_catalog_tool_composition(
             claim_owner_id=reentry_claim_owner_id,
             task_checkpoint_store=task_checkpoint_store,
             terminal_outcome_store=terminal_outcome_store,
+            utc_clock=shared_utc_clock,
         )
         continuation_aware_dependencies = ContinuationAwareCatalogToolHostDependencies(
             suspended_operation_store=suspended_store,

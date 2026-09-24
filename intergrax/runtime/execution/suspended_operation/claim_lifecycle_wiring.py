@@ -24,6 +24,7 @@ def claim_lifecycle_from_hitl_continuation(
         store=reentry.store,
         claim_owner_id=reentry.claim_owner_id,
         default_lease_seconds=reentry.default_lease_seconds,
+        utc_clock=reentry.utc_clock,
     )
 
 
