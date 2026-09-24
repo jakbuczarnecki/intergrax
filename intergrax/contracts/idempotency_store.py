@@ -95,6 +95,20 @@ class PreEffectSuspendedWorkRecoveryAuthority(BaseModel):
     fence: int
 
 
+def validate_pre_effect_recovery_authority(
+    recovery_authority: PreEffectSuspendedWorkRecoveryAuthority,
+) -> None:
+    """Fail closed when suspended-work recovery correlation is missing."""
+    if not recovery_authority.owner_id.strip():
+        raise ValueError(
+            "recovery_authority.owner_id is required for pre-effect recovery."
+        )
+    if recovery_authority.fence < 1:
+        raise ValueError(
+            "recovery_authority.fence must be positive for pre-effect recovery."
+        )
+
+
 def assert_operation_identity_compatible(
     stored: InvocationOperationIdentity | None,
     requested: InvocationOperationIdentity | None,
@@ -196,6 +210,27 @@ class IdempotencyStore(ABC):
         """
 
     @abstractmethod
+    def external_effect_may_have_started(
+        self,
+        tenant_id: str,
+        key: str,
+    ) -> bool:
+        """True when durable ledger records external effect admission (W3 boundary)."""
+
+    @abstractmethod
+    def admit_external_effect_may_have_started_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        """
+        Durable PRE_EFFECT -> MAY_HAVE_STARTED transition before physical backend effect.
+
+        Raises ``StaleClaimError`` when fence or owner is superseded.
+        """
+
+    @abstractmethod
     def reconcile_abandoned_pre_effect_not_started(
         self,
         tenant_id: str,
@@ -208,7 +243,8 @@ class IdempotencyStore(ABC):
         Clear a STARTED ledger row after process loss before external effect.
 
         Caller must validate ``recovery_authority`` against the current suspended-work
-        claim. Returns True when a row was removed, False when no STARTED row existed.
+        claim. Deletes only when durable effect admission has not been recorded.
+        Returns True when a pre-effect row was removed, False otherwise.
         """
 
     @abstractmethod
