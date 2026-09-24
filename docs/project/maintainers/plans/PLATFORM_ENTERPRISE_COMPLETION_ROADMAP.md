@@ -4,7 +4,7 @@
 
 **Branch:** `development`
 
-**Scenario gate:** scenario work is **blocked** until all mandatory stages in this roadmap are independently closed and the final enterprise certification is complete.
+**Scenario gate:** scenario work is **blocked** until all mandatory stages in this roadmap are independently closed, the architecture freeze is certified, and the final enterprise certification is complete.
 
 This document is a **program/closure SSOT**. It does not replace domain semantic authorities. Domain architecture, contracts and qualification records remain authoritative for their own semantics.
 
@@ -43,6 +43,8 @@ Every stage in this roadmap must preserve and revalidate these rules where appli
 18. **Observability/Diagnostics record or interpret truth; they do not mint execution truth.**
 19. **Configured state != effective state.**
 20. **No scenario transition before the final scenario gate is explicitly CLOSED.**
+21. **No architecture freeze with unresolved architecture state** — `Partial`, `Deferred`, `Planned`, temporary compatibility seams, transitional authorities or known architecture debt must be either closed or explicitly classified outside the frozen platform scope with evidence.
+22. **Frozen contracts must have an evolution policy** — public/stable contracts, persisted schemas, events and plugin/provider contracts must have explicit versioning, compatibility, migration and deprecation rules before `ARCH-FREEZE`.
 
 ---
 
@@ -115,8 +117,9 @@ If a new blocker is discovered:
 | ADR3-IMP-04 | Consumer Migration & Final Bind Removal — final recertification | Finalny audit migracji konsumentów: zero narrow legacy Protocolu, zero `inspect.signature` compatibility dispatch, metadata na canonical contract, explicit identity, brak concrete coupling i exactly-one owner per-call invocation contractu. | [x] CLOSED |
 | ADR3-IMP-05 | Qualification Gates | Mechaniczne architecture gates blokujące powrót narrow compatibility paths, reflection dispatch, duplicated ownership, concrete coupling, weak typing i alternate execution paths. | [x] CLOSED |
 | HARNESS-01-R5-W3-R1-Q2 | Finalne zamknięcie Harness W3 | Finalna kwalifikacja Tools/WebSearch Nexus Dependency Inversion po zamknięciu ADR3: zero statycznego/dynamicznego/lazy Tools/WebSearch → Nexus resolution, typed provider-neutral seams, structural pluginability, poprawny ownership i brak bypassów. | [x] CLOSED |
-| EBH-2F | Integrations & Hosting Boundary Hardening | Certyfikacja integrations/hosting: provider-neutral contracts, composition ownership, vendor independence, replaceability, brak host/runtime bypassów i concrete coupling. Parent pozostaje otwarty po niezależnym audycie, który wykazał concrete `NexusLoop` leakage do Tier-3/shared host composition API. | [ ] BLOCKED |
-| **EBH-2F-R1** | Host Execution Boundary Decoupling | Usunąć `NexusLoop` jako concrete dependency z Tier-3 `applications/*/host/execution_wiring.py` oraz z publicznego/shared host-composition seam `intergrax/applications/_shared/host_task_execution_wiring.py`. Host ma konsumować publiczny Execution/composition contract, a wybór i materializacja prywatnej implementacji Nexus muszą pozostać po stronie Tier-1/runtime-owned composition. Bez zmiany Execution/Governance semantics i bez drugiego execution authority. | **[ ] CURRENT** |
+| EBH-2F | Integrations & Hosting Boundary Hardening | Certyfikacja integrations/hosting: provider-neutral contracts, composition ownership, vendor independence, replaceability, brak host/runtime bypassów i concrete coupling. Parent pozostaje otwarty do pełnego usunięcia concrete Nexus leakage z application/shared host boundary. | [ ] BLOCKED |
+| EBH-2F-R1 | Host Execution Boundary Decoupling | Migracja production Tier-3 hostów na canonical `HostTaskExecutionPort` / `runtime.execution`. Independent audit potwierdził poprawny kierunek migracji, ale odrzucił closure: harness-specific shared application seam nadal przyjmuje concrete `NexusLoop` i osłabia typed revision-admission boundary do `object`. | [ ] BLOCKED |
+| **EBH-2F-R1-R1** | Harness Host Execution Wiring Contract Purity & Runtime Ownership | Usunąć concrete `NexusLoop` z `intergrax/applications/_shared/harness_host_task_execution_wiring.py`, pozostawić Nexus-backed materialization wyłącznie w Tier-1 runtime-owned composition oraz przywrócić `EffectiveProfileRevisionAdmissionPort | None` zamiast `object | None`. Bez nowego Nexus façade, bez dual path i bez zmiany Execution/Governance semantics. | **[ ] CURRENT** |
 | EBH-2G | RAG Contract Boundary Hardening | Certyfikacja retrieval/search/reranking/storage jako jednego pluginowalnego subsystemu z canonical contracts, jednym ownership i wymiennymi backendami. | [ ] PLANNED |
 | EBH-2H | Memory Contract Boundary Hardening | Certyfikacja Memory: exactly-one ownership, canonical contracts, backend replaceability, brak bocznych persistence/context paths. | [ ] PLANNED |
 | EBH-2I | Final EBH-2 Rescan | Ponowny przekrojowy audit wszystkich subsystem boundaries po lokalnych hardeningach. Sprawdzenie, czy poprawki nie stworzyły nowych cross-layer zależności, bypassów lub duplicated ownership. | [ ] PLANNED |
@@ -131,10 +134,15 @@ If a new blocker is discovered:
 | HARNESS-W8 | Harness W8 / final residual harness convergence | Final residual Harness convergence wave if still open on current HEAD. Scope must be code-first and derived from canonical Harness qualification records; if already qualified, perform recertification rather than rebuild. | [ ] PLANNED |
 | HARNESS-FINAL | Harness Final Closure / DeepSeek-derived gap closure | Final code-first recertification of the entire Harness program. All historical DeepSeek/external findings must be either CLOSED, superseded with evidence or explicitly classified non-blocking by canonical architecture. No unresolved harness enterprise blocker may remain. | [ ] PLANNED |
 | GOV-X2 | Governance + Execution end-to-end certification | End-to-end proof that authority/approval/governance decisions propagate correctly through canonical execution and tool/effect paths without self-expansion, stale approval reuse, missing evidence or alternate execution routes. | [ ] PLANNED |
+| CTRL-X | Enterprise Control-Plane Recertification | Reconcile and recertify all cross-cutting control planes on current HEAD: Security, Reliability, Cost/Budget, Evaluation, Critic/Verification, Observability/Diagnostics, Tools/Skills, Agent Distribution/Registry/Assembly, Capability Graph and Context/Prompt. Historical CLOSED is evidence, not automatic current certification. Verify mutual boundaries, exactly-one ownership and that advisory/recording planes do not become peer execution/governance authorities. | [ ] PLANNED / MANDATORY |
+| STATE-X | Persistence, State & Recovery Certification | Global certification of durable and runtime state: checkpoints, continuation, evidence/trace, budgets, lineage, idempotency, policy artifacts, registries/projections and task/run state. Verify exactly-one truth owner, transactional/atomic boundaries, tenant isolation, crash/restart/resume/replay/fork consistency, stale-state rejection and no duplicate stores representing the same semantic truth. | [ ] PLANNED / MANDATORY |
+| COMPAT-X | Contract, Schema & Evolution Certification | Identify frozen public/stable vs internal contracts and certify versioning/evolution rules for APIs, events, persisted schemas, plugin/provider contracts and serialization. Verify backward/forward compatibility policy, migrations, deprecation/removal rules and no compatibility shim becoming a permanent parallel authority. | [ ] PLANNED / MANDATORY |
+| PROD-Q | Platform Production Qualification | Prove production readiness rather than harness/lab maturity: provider/plugin admission and qualification, startup/shutdown/resource lifecycle, strict-vs-lab mode separation, unsupported configuration handling, production bypass prevention, secrets/tenant isolation, degraded operation and fail-closed materialization. Historical `implementation complete` or harness qualification is not sufficient. | [ ] PLANNED / MANDATORY |
 | EBH-5 | Replaceability & E2E Certification | Practical E2E proof that key providers, strategies and implementations can be replaced through platform contracts without modifying core mechanisms; verify real pluginability rather than test-only monkeypatching. | [ ] PLANNED |
-| EBH-6 | Final Architecture Recertification | Full cross-platform recertification after all local and Harness/Governance work: boundaries, ownership, communication, composition, evidence, fail-closed behavior, typing and regression protection. | [ ] PLANNED |
+| EBH-6 | Final Architecture Recertification | Full cross-platform recertification after all local, Harness, Governance, control-plane, state, compatibility and production-qualification work: boundaries, ownership, communication, composition, evidence, fail-closed behavior, typing and regression protection. | [ ] PLANNED |
 | **EBH-7** | Comprehensive Platform Enterprise Architecture Certification | Ostateczna certyfikacja całej Integrax jako jednej platformy enterprise: hard boundaries, exactly-one ownership, canonical contracts, pluginability/replaceability, zero bypassów, zero duplicated mechanisms, correct Governance/Execution separation and validated E2E behavior. | **[ ] FINAL / MANDATORY** |
-| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formalny Go/No-Go do przejścia z hardeningu platformy do pełnej koncentracji na scenariuszach. Gate może być CLOSED tylko gdy wszystkie mandatory rows powyżej są CLOSED i nie istnieje znany enterprise blocker. | **[ ] BLOCKED** |
+| **ARCH-FREEZE** | Architecture Freeze Certification | Formalny freeze gate po EBH-7. Wymaga: zero unresolved architecture state (`Partial`, `Deferred`, `Planned`, temporary/legacy/transitional seams) w frozen scope; canonical contract/layer/ownership/composition manifests; pełny architecture qualification suite green; docs-code reconciliation; jawny non-blocking debt register; oraz politykę zmian po freeze wymagającą ADR + architecture review + freeze exception + targeted recertification dla naruszenia frozen contract/boundary/ownership. | **[ ] FINAL / MANDATORY** |
+| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formalny Go/No-Go do przejścia z hardeningu platformy do pełnej koncentracji na scenariuszach. Gate może być CLOSED tylko gdy wszystkie mandatory rows powyżej, w tym `ARCH-FREEZE`, są CLOSED i nie istnieje znany enterprise blocker. | **[ ] BLOCKED** |
 
 ---
 
@@ -157,6 +165,10 @@ Every parent-level closure from this point forward must explicitly assess the ap
 | Fail-closed | Missing required policy, authority, dependency, configuration or evidence cannot silently succeed/fallback. |
 | Replaceability | Demonstrated through structural/custom implementation proof, not only monkeypatching. |
 | Regression | Architecture gates + targeted functional tests protect every corrected invariant. |
+| Persistence / state | Exactly one semantic truth owner per state family; recovery/replay/resume cannot create divergent truth. |
+| Compatibility / evolution | Frozen contracts/schemas/events/plugins have explicit versioning, migration, deprecation and compatibility policy. |
+| Production qualification | Production mode is independently qualified; lab/harness success is not accepted as production proof. |
+| Freeze readiness | No unresolved architecture state remains inside the declared frozen platform scope. |
 
 ---
 
@@ -173,9 +185,15 @@ Update this section only after independent exact-SHA audit.
 | ADR3-IMP-04 | `b466e0a202e7984fd50f2409493159566cf03a82` | Final parent recertification independently audited on committed HEAD; no code changes required. Canonical contract, explicit identity, sanctioned composition, structural replaceability and zero legacy/reflection compatibility confirmed. |
 | ADR3-IMP-05 | `b67281105f17cd2fe95d93e737470c28a043de60` | Enterprise qualification gates independently audited on exact GitHub SHA; mechanical protection confirmed for canonical ownership, no narrow/reflection regressions, metadata resolver ownership/typing, sanctioned concrete construction/gateway imports, explicit identity, UCA separation, structural replaceability, fail-closed governance and execution bypass protection. |
 | HARNESS-01-R5-W3-R1-Q2 | `b67281105f17cd2fe95d93e737470c28a043de60` | Final W3/Q2 recertification independently audited on exact committed HEAD; no code changes required. Tools/WebSearch → Nexus static/dynamic/lazy resolution = 0; typed provider-neutral seams, structural pluginability, ownership, W2 regression and ADR3 documentation gates confirmed. Three global `test_harness_01_gates.py` inventory/allowlist failures were independently classified as non-W3 qualification-inventory debt and are tracked as mandatory `HARNESS-QINF-01`. |
-| EBH-2F | `a804dd29ffaa7172e603d548def79e33870e5154` | Independent audit rejected parent closure despite Cursor READY FOR AUDIT. Concrete `NexusLoop` leaks into Tier-3 host execution wiring and shared host-composition API, violating the EBH-2F hard host/runtime boundary and contracts-over-implementations invariant. Parent BLOCKED on `EBH-2F-R1`. |
-| EBH-2F-R1 | — | CURRENT — remove concrete Nexus ownership from Tier-3/shared host execution composition seam, then re-run parent recertification. |
+| EBH-2F | `a804dd29ffaa7172e603d548def79e33870e5154` | Independent audit rejected parent closure despite Cursor READY FOR AUDIT. Concrete `NexusLoop` leaked into Tier-3 host execution wiring and shared host-composition API, violating the EBH-2F hard host/runtime boundary and contracts-over-implementations invariant. Parent BLOCKED on EBH-2F-R1. |
+| EBH-2F-R1 | `fd718b7f969a800cf459c0c70aa3e458d479868a` | Independent audit rejected R1 closure. Production Tier-3 migration to `runtime.execution` is directionally correct, but new `intergrax/applications/_shared/harness_host_task_execution_wiring.py` still exposes concrete `NexusLoop`, and `revision_admission: object | None` weakens an existing typed semantic boundary. R1 BLOCKED on EBH-2F-R1-R1. |
+| EBH-2F-R1-R1 | — | CURRENT — remove Nexus concrete leakage from harness shared application seam and restore typed revision-admission contract before R1 recertification. |
 | HARNESS-QINF-01 | — | PLANNED — reconcile global Harness qualification inventory before HARNESS-W4/final Harness closure. |
+| CTRL-X | — | PLANNED / MANDATORY — current-HEAD recertification of all cross-cutting control planes before freeze. |
+| STATE-X | — | PLANNED / MANDATORY — global persistence/state/recovery certification before freeze. |
+| COMPAT-X | — | PLANNED / MANDATORY — contract/schema/event/plugin evolution certification before freeze. |
+| PROD-Q | — | PLANNED / MANDATORY — explicit production qualification before final enterprise certification. |
+| ARCH-FREEZE | — | FINAL / MANDATORY — formal architecture freeze gate before scenario transition. |
 | remaining mandatory stages | — | Fill on closure. |
 
 ---
@@ -194,7 +212,7 @@ Every final Cursor report with code changes must also state:
 
 ## 7. Program goal
 
-Bring the whole Integrax platform to a fully, independently recertified enterprise state before scenario-focused development:
+Bring the whole Integrax platform to a fully, independently recertified and formally frozen enterprise architecture state before scenario-focused development:
 
 - hard and non-negotiable layer boundaries;
 - exactly one owner per mechanism/contract/decision;
@@ -206,4 +224,10 @@ Bring the whole Integrax platform to a fully, independently recertified enterpri
 - zero duplicated mechanisms;
 - complete cross-layer communication certification;
 - Governance and Execution authority separation proven end-to-end;
-- final closure only after `EBH-7` and `SCENARIO-GATE`.
+- all cross-cutting control planes recertified on current HEAD;
+- persistence/state/recovery semantics globally certified;
+- contract/schema/plugin evolution rules frozen and explicit;
+- production qualification proven independently from harness/lab maturity;
+- final enterprise closure through `EBH-7`;
+- formal `ARCH-FREEZE` before `SCENARIO-GATE`;
+- after freeze, any change to a frozen contract/boundary/ownership rule requires ADR, architecture review, explicit freeze exception and targeted recertification.
