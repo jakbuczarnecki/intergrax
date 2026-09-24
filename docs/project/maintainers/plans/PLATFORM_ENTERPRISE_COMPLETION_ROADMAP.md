@@ -13,9 +13,20 @@ Primary companion sources:
 - [Harness Architecture Evolution Roadmap](../../overview/HARNESS_ARCHITECTURE_EVOLUTION_ROADMAP.md)
 - [Harness Top-Tier Gap Audit](../qualification/HARNESS_TOP_TIER_GAP_AUDIT.md)
 - [Platform Plugin Enterprise Roadmap](PLATFORM_PLUGIN_ENTERPRISE_ROADMAP.md)
+- [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md)
 - domain architecture / qualification records referenced by each stage
 
+**Document roles (do not conflate):**
+
+| Artifact | Role |
+|---|---|
+| This roadmap | Ordering, program status, stage closure SSOT |
+| [Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) | Global acceptance completeness control (`FRZ-*`); not a second semantic authority |
+| Domain architecture / qualification records | Semantic authority for mechanisms, contracts and in-domain evidence |
+
 DeepSeek/external audit findings may motivate work, but repository code, canonical contracts, architecture documents and independently audited GitHub commits are the authority for closure.
+
+**Whole-program goal:** reach a **formally freezable enterprise architecture** with evidence-backed certainty—before scenario work—on boundaries, ownership, contracts, typing, pluginability, Governance, Execution, Observability, Traceability, Persistence, Compatibility, Production qualification and regression protection. After `ARCH-FREEZE`, fundamental architecture is frozen; scenarios must not be used to discover known fundamental architecture gaps.
 
 ---
 
@@ -51,6 +62,56 @@ Every stage in this roadmap must preserve and revalidate these rules where appli
 ## 2. Mandatory update protocol
 
 This file must be referenced in every implementation/audit instruction that belongs to this enterprise-completion program.
+
+### 2.0 Global freeze-acceptance protocol
+
+**Before every task** (implementation or audit instruction generation), read:
+
+1. `docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`
+2. `docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`
+
+Then resolve:
+
+- current stage ID and status;
+- parent stage (if any);
+- next mandatory ordered stage;
+- applicable `FRZ-*` criteria for the task scope;
+- known blockers;
+- relevant domain semantic authorities (not the checklist).
+
+**After every Cursor implementation:** status may advance only to `READY FOR AUDIT`. Cursor must not finally close a stage or a freeze criterion. Closure requires an **independent exact GitHub SHA audit**.
+
+**After every independent closure**, update **atomically** (same maintenance action, no partial closure):
+
+1. roadmap stage/status in §3;
+2. roadmap evidence ledger in §5;
+3. freeze acceptance checklist evidence for every `FRZ-*` criterion closed or advanced by that stage.
+
+Forbidden state: roadmap stage `CLOSED` while corresponding freeze evidence was not updated.
+
+### 2.0.1 Stage → freeze criteria linkage
+
+From the current workflow position forward, every **parent-level** roadmap stage must declare which `FRZ-*` families it verifies or for which it supplies closure evidence. The checklist [Freeze Criteria Coverage Matrix](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md#freeze-criteria-coverage-matrix) is the completeness detector; an `FRZ` family without a stage owner means the program is incomplete.
+
+Minimum planned linkage:
+
+| Stage group | Primary `FRZ` families |
+|---|---|
+| EBH-2* | BND, OWN, CTR, TYP, PLG |
+| HARNESS-* | HRN, EXE, GOV, OBS |
+| GOV-X1 / GOV-X2 | GOV, EXE, TRC |
+| EBH-3 | BND, OWN, CTR |
+| EBH-4 | BND, CTR, EXE, GOV |
+| CTRL-X | CTL, SEC, REL, OBS |
+| STATE-X | STA, REC |
+| TRACE-X | TRC, OBS, GOV |
+| COMPAT-X | CMP |
+| PROD-Q | PRD, SEC, REL |
+| QUAL-X | REG |
+| EBH-5 | PLG, RPL |
+| EBH-6 | all applicable architecture families |
+| EBH-7 | all enterprise families |
+| ARCH-FREEZE | FRZ, DEBT, DOC + all remaining |
 
 ### 2.1 Required instruction header
 
@@ -132,17 +193,19 @@ If a new blocker is discovered:
 | EBH-4 | Communication, Composition & Bypass Certification | Audit wszystkich cross-layer communication/composition paths: event/call flows, resolvers, factories, host wiring, metadata bridges, provider seams i wszystkie sanctioned/bypass paths. | [ ] PLANNED |
 | HARNESS-W7 | Harness W7 — remaining top-tier harness debt wave | Close the next Harness debt wave after EBH-3/4. Exact semantic scope and child IDs must be reconciled from `HARNESS_TOP_TIER_GAP_AUDIT.md`, `HARNESS_ARCHITECTURE_EVOLUTION_ROADMAP.md` and current qualification records before implementation; do not invent a parallel authority. | [ ] PLANNED |
 | HARNESS-W8 | Harness W8 / final residual harness convergence | Final residual Harness convergence wave if still open on current HEAD. Scope must be code-first and derived from canonical Harness qualification records; if already qualified, perform recertification rather than rebuild. | [ ] PLANNED |
-| HARNESS-FINAL | Harness Final Closure / DeepSeek-derived gap closure | Final code-first recertification of the entire Harness program. All historical DeepSeek/external findings must be either CLOSED, superseded with evidence or explicitly classified non-blocking by canonical architecture. No unresolved harness enterprise blocker may remain. | [ ] PLANNED |
+| HARNESS-FINAL | Current-HEAD Top-Tier Harness Final Certification | **Mandatory current-HEAD recertification** (not historical closure alone). Minimum deliverables: full **A–Z Top-Tier scorecard**, **INV-1..INV-34** re-audit on exact SHA, **pluginability matrix**, **governance coverage matrix**, **durability matrix**, **recovery matrix**. Every historical/current `PARTIAL`, `GAP`, `TARGET`, or `DEFERRED` item in **frozen platform scope** must end as `CLOSED` / `ENTERPRISE QUALIFIED` or `OUTSIDE FROZEN PLATFORM SCOPE` with explicit justification and evidence—unresolved gaps may not be hidden as backlog. Historical DeepSeek/external findings must additionally be CLOSED, superseded with evidence, or explicitly non-blocking with evidence. | [ ] PLANNED / MANDATORY |
 | GOV-X2 | Governance + Execution end-to-end certification | End-to-end proof that authority/approval/governance decisions propagate correctly through canonical execution and tool/effect paths without self-expansion, stale approval reuse, missing evidence or alternate execution routes. | [ ] PLANNED |
 | CTRL-X | Enterprise Control-Plane Recertification | Reconcile and recertify all cross-cutting control planes on current HEAD: Security, Reliability, Cost/Budget, Evaluation, Critic/Verification, Observability/Diagnostics, Tools/Skills, Agent Distribution/Registry/Assembly, Capability Graph and Context/Prompt. Historical CLOSED is evidence, not automatic current certification. Verify mutual boundaries, exactly-one ownership and that advisory/recording planes do not become peer execution/governance authorities. | [ ] PLANNED / MANDATORY |
 | STATE-X | Persistence, State & Recovery Certification | Global certification of durable and runtime state: checkpoints, continuation, evidence/trace, budgets, lineage, idempotency, policy artifacts, registries/projections and task/run state. Verify exactly-one truth owner, transactional/atomic boundaries, tenant isolation, crash/restart/resume/replay/fork consistency, stale-state rejection and no duplicate stores representing the same semantic truth. | [ ] PLANNED / MANDATORY |
+| **TRACE-X** | End-to-End Traceability & Evidence Certification | Prove end-to-end **causal traceability** forward: transport identity → runtime identity → execution → task → child execution → strategy → agent → model/context decision → tool call → governance decision → side-effect authorization → provider invocation → external effect → runtime evidence/events → diagnostics → terminal outcome; and **reverse reconstruction**: effect/failure/diagnostic → execution → authority → policy/profile revision → provider → contract/version → causal parent. Mandatory coverage includes `ExecutionId`, `RunId`, `TaskId`, parent/child causality, provider/delegation/tool invocation correlation, model/context attribution, profile/policy revision attribution, side-effect authorization evidence, restart/resume continuity, terminal outcome evidence, diagnostic provenance, evidence version attribution, configured vs effective provenance. | [ ] PLANNED / MANDATORY |
 | COMPAT-X | Contract, Schema & Evolution Certification | Identify frozen public/stable vs internal contracts and certify versioning/evolution rules for APIs, events, persisted schemas, plugin/provider contracts and serialization. Verify backward/forward compatibility policy, migrations, deprecation/removal rules and no compatibility shim becoming a permanent parallel authority. | [ ] PLANNED / MANDATORY |
 | PROD-Q | Platform Production Qualification | Prove production readiness rather than harness/lab maturity: provider/plugin admission and qualification, startup/shutdown/resource lifecycle, strict-vs-lab mode separation, unsupported configuration handling, production bypass prevention, secrets/tenant isolation, degraded operation and fail-closed materialization. Historical `implementation complete` or harness qualification is not sufficient. | [ ] PLANNED / MANDATORY |
+| **QUAL-X** | Enterprise Qualification & Regression Infrastructure Certification | Certify the **mechanical protection system** for frozen architecture—not only platform behavior. Verify: every frozen invariant has qualification evidence; corrected blockers have regression gates; architecture gates scan current closed-world surface; allowlists minimal and evidence-backed; stale inventories = 0; negative tests detect violations; critical invariants not docs-only; qualification tests deterministic; clean-checkout reproducibility; environment failure cannot auto-classify as architecture PASS; flaky tests cannot be freeze evidence; tests cannot assert names/other tests instead of invariants; qualification records match current code; mandatory architecture suite runnable as one defined freeze-oriented qualification set. | [ ] PLANNED / MANDATORY |
 | EBH-5 | Replaceability & E2E Certification | Practical E2E proof that key providers, strategies and implementations can be replaced through platform contracts without modifying core mechanisms; verify real pluginability rather than test-only monkeypatching. | [ ] PLANNED |
 | EBH-6 | Final Architecture Recertification | Full cross-platform recertification after all local, Harness, Governance, control-plane, state, compatibility and production-qualification work: boundaries, ownership, communication, composition, evidence, fail-closed behavior, typing and regression protection. | [ ] PLANNED |
 | **EBH-7** | Comprehensive Platform Enterprise Architecture Certification | Ostateczna certyfikacja całej Integrax jako jednej platformy enterprise: hard boundaries, exactly-one ownership, canonical contracts, pluginability/replaceability, zero bypassów, zero duplicated mechanisms, correct Governance/Execution separation and validated E2E behavior. | **[ ] FINAL / MANDATORY** |
-| **ARCH-FREEZE** | Architecture Freeze Certification | Formalny freeze gate po EBH-7. Wymaga: zero unresolved architecture state (`Partial`, `Deferred`, `Planned`, temporary/legacy/transitional seams) w frozen scope; canonical contract/layer/ownership/composition manifests; pełny architecture qualification suite green; docs-code reconciliation; jawny non-blocking debt register; oraz politykę zmian po freeze wymagającą ADR + architecture review + freeze exception + targeted recertification dla naruszenia frozen contract/boundary/ownership. | **[ ] FINAL / MANDATORY** |
-| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formalny Go/No-Go do przejścia z hardeningu platformy do pełnej koncentracji na scenariuszach. Gate może być CLOSED tylko gdy wszystkie mandatory rows powyżej, w tym `ARCH-FREEZE`, są CLOSED i nie istnieje znany enterprise blocker. | **[ ] BLOCKED** |
+| **ARCH-FREEZE** | Architecture Freeze Certification | Formalny freeze gate po EBH-7. Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0. Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification). | **[ ] FINAL / MANDATORY** |
+| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formalny Go/No-Go do przejścia z hardeningu platformy do pełnej koncentracji na scenariuszach. **Remains BLOCKED while `ARCH-FREEZE` ≠ CLOSED.** Scenarios must not compensate for unfrozen architecture gaps. Gate CLOSED only when all mandatory rows above—including `ARCH-FREEZE`—are CLOSED with independent SHA evidence and no known enterprise blocker. | **[ ] BLOCKED** |
 
 ---
 
@@ -191,9 +254,11 @@ Update this section only after independent exact-SHA audit.
 | HARNESS-QINF-01 | — | PLANNED — reconcile global Harness qualification inventory before HARNESS-W4/final Harness closure. |
 | CTRL-X | — | PLANNED / MANDATORY — current-HEAD recertification of all cross-cutting control planes before freeze. |
 | STATE-X | — | PLANNED / MANDATORY — global persistence/state/recovery certification before freeze. |
+| TRACE-X | — | PLANNED / MANDATORY — end-to-end traceability and evidence certification (`STATE-X` → `TRACE-X` → `COMPAT-X`). |
 | COMPAT-X | — | PLANNED / MANDATORY — contract/schema/event/plugin evolution certification before freeze. |
 | PROD-Q | — | PLANNED / MANDATORY — explicit production qualification before final enterprise certification. |
-| ARCH-FREEZE | — | FINAL / MANDATORY — formal architecture freeze gate before scenario transition. |
+| QUAL-X | — | PLANNED / MANDATORY — qualification/regression infrastructure certification (`PROD-Q` → `QUAL-X` → `EBH-5`). |
+| ARCH-FREEZE | — | FINAL / MANDATORY — formal architecture freeze gate; requires checklist complete per mechanical entry requirements in §3. |
 | remaining mandatory stages | — | Fill on closure. |
 
 ---
@@ -226,8 +291,10 @@ Bring the whole Integrax platform to a fully, independently recertified and form
 - Governance and Execution authority separation proven end-to-end;
 - all cross-cutting control planes recertified on current HEAD;
 - persistence/state/recovery semantics globally certified;
+- end-to-end traceability and evidence certification (`TRACE-X`);
 - contract/schema/plugin evolution rules frozen and explicit;
 - production qualification proven independently from harness/lab maturity;
+- qualification/regression infrastructure certified (`QUAL-X`);
 - final enterprise closure through `EBH-7`;
-- formal `ARCH-FREEZE` before `SCENARIO-GATE`;
+- formal `ARCH-FREEZE` (checklist-complete) before `SCENARIO-GATE`;
 - after freeze, any change to a frozen contract/boundary/ownership rule requires ADR, architecture review, explicit freeze exception and targeted recertification.
