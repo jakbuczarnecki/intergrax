@@ -14,6 +14,9 @@ from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementResult,
     PolicyCompositionResult,
 )
+from intergrax.contracts.execution.suspended_operation.claim_authority import (
+    SuspendedOperationClaimAuthority,
+)
 from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedOperationMaterializationState,
 )
@@ -154,7 +157,7 @@ def _advance_to_gen3_pause(
     mse_port: _MseRequireHumanOncePort | _MseRequireThenDenyPort,
 ) -> tuple:
     counting = _DeclarativeRequireHitlOnceHandler()
-    handler, composition, _, craft_id, hitl, checkpoint_store, backend, _ = (
+    handler, composition, _, craft_id, hitl, checkpoint_store, backend, _, _ = (
         _build_handler(
             tmp_path,
             mse_port,
@@ -236,7 +239,10 @@ def test_stale_continuation_reentry_blocks_backend(tmp_path: Path) -> None:
             ExecutionSuspendedWorkReentryRequest(
                 continuation_id=c1,
                 identity=d3.identity,
-                claim_owner_id=reentry.claim_owner_id,
+                claim_authority=SuspendedOperationClaimAuthority.for_host_pending_claim(
+                    host_owner_id=reentry.claim_owner_id,
+                    descriptor=d3,
+                ),
             ),
             task=None,
         )
@@ -383,7 +389,7 @@ def test_backend_failure_invokes_executor_without_consumed_success(
 ) -> None:
     mse_port = _MseRequireHumanOncePort()
     counting_decl = _DeclarativeRequireHitlOnceHandler()
-    handler, composition, _, craft_id, hitl, checkpoint_store, backend, _ = (
+    handler, composition, _, craft_id, hitl, checkpoint_store, backend, _, _ = (
         _build_handler(
             tmp_path,
             mse_port,

@@ -83,6 +83,13 @@ from intergrax.runtime.nexus.orchestration.long_running_bridge import (
 from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.intake_runner import NexusIntakeRunner
+from intergrax.runtime.execution.suspended_operation.claim_lifecycle_wiring import (
+    claim_lifecycle_from_hitl_continuation,
+)
+from intergrax.runtime.execution.suspended_operation.resume_authority_transport import (
+    ExecutionSuspendedWorkResumeAuthorityTransport,
+    ProductionSuspendedWorkAuthorityTelemetry,
+)
 from intergrax.runtime.nexus.orchestration.planning_runner import NexusPlanningRunner
 from intergrax.runtime.nexus.orchestration.lifecycle_bridge import (
     finalize_persisting_trace,
@@ -157,7 +164,9 @@ from intergrax.runtime.execution.continuation.composition import (
 from intergrax.runtime.execution.continuation.durability_policy import (
     validate_execution_continuation_for_composition,
 )
-from intergrax.runtime.execution.continuation.service import ExecutionContinuationService
+from intergrax.runtime.execution.continuation.service import (
+    ExecutionContinuationService,
+)
 from intergrax.runtime.execution.continuation.lifecycle_driver import (
     ExecutionContinuationLifecycleDriver,
 )
@@ -170,8 +179,8 @@ from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
 )
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.middleware.trace_middleware import TraceEmittingMiddleware
-from intergrax.agents.persistence.declarative_tool_executor import (
-    DeclarativeToolInvoker,
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
 )
 
 if TYPE_CHECKING:
@@ -224,7 +233,7 @@ class NexusLoop:
         agent_checkpoint_store: AgentCheckpointStore | None = None,
         compensation_queue_store: CompensationQueueStore | None = None,
         idempotency_store: IdempotencyStore | None = None,
-        declarative_tool_invoker: DeclarativeToolInvoker | None = None,
+        declarative_tool_invoker: ExecutionBoundDeclarativeToolInvoker | None = None,
         notification_adapter: Optional[NotificationAdapter] = None,
         middleware: Optional[MiddlewarePipeline] = None,
         production_mode: bool = False,
@@ -483,6 +492,12 @@ class NexusLoop:
             decision_flow_gate=decision_flow_gate,
             hitl_continuation=self._hitl_continuation,
         )
+        self._suspended_work_resume_authority_transport = (
+            ExecutionSuspendedWorkResumeAuthorityTransport()
+        )
+        self._suspended_work_authority_telemetry = (
+            ProductionSuspendedWorkAuthorityTelemetry()
+        )
         self._intake_runner = NexusIntakeRunner(
             hitl=self._hitl,
             human_hooks=self._human_hooks,
@@ -491,6 +506,13 @@ class NexusLoop:
             execution_identity=self._execution_identity,
             hitl_continuation=self._hitl_continuation,
             task_checkpoint_store=self._checkpoint_store,
+            suspended_work_claim_lifecycle=claim_lifecycle_from_hitl_continuation(
+                self._hitl_continuation,
+            ),
+            suspended_work_resume_authority_transport=(
+                self._suspended_work_resume_authority_transport
+            ),
+            suspended_work_authority_telemetry=self._suspended_work_authority_telemetry,
         )
         self._planning_runner = NexusPlanningRunner(
             classifier=self._classifier,
@@ -547,12 +569,14 @@ class NexusLoop:
         return self._engine
 
     @property
-    def declarative_tool_invoker(self) -> DeclarativeToolInvoker | None:
+    def declarative_tool_invoker(self) -> ExecutionBoundDeclarativeToolInvoker | None:
         """Host-wired catalog tool invoker shared by graph and agentic execution paths."""
         return self._declarative_tool_invoker
 
     @property
-    def execution_continuation_state_store(self) -> ExecutionContinuationStateStore | None:
+    def execution_continuation_state_store(
+        self,
+    ) -> ExecutionContinuationStateStore | None:
         """Canonical continuation store shared with HostTaskExecution / Runtime binding."""
         return self._execution_continuation_state_store
 

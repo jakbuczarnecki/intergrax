@@ -90,6 +90,10 @@ from intergrax.runtime.human.agent_governance_pause_projection import (
     AgentGovernancePauseProjectionOutcome,
     TaskAgentGovernancePauseProjectionAdapter,
 )
+from intergrax.runtime.long_running.checkpoint_builder import (
+    mark_task_runtime_execution_tree_interrupted_for_pause,
+    materialize_task_runtime_checkpoint_for_active_execution,
+)
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
@@ -630,6 +634,9 @@ class ContinuationAwareCatalogToolHost:
             )
         else:
             raise RuntimeError("unexpected suspended operation state for agent pause")
+
+        materialize_task_runtime_checkpoint_for_active_execution(task)
+        mark_task_runtime_execution_tree_interrupted_for_pause(task)
 
         projection = TaskAgentGovernancePauseProjectionAdapter(
             task=task,

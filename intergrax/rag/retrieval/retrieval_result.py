@@ -22,6 +22,16 @@ class RetrievalChunk:
     user_metadata: Dict[str, Any] = field(default_factory=dict)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def source_ref(self) -> str:
+        """Stable source reference for retrieval poisoning defense."""
+        for bucket in (self.metadata, self.user_metadata, self.provenance):
+            for key in ("url", "source", "source_id"):
+                value = bucket.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value
+        return self.id
+
 
 @dataclass
 class RetrievalTrace:

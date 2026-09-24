@@ -21,6 +21,7 @@ from intergrax.contracts.idempotency_store import (
     InvocationClaim,
     InvocationOperationIdentity,
     InvocationStatus,
+    PreEffectSuspendedWorkRecoveryAuthority,
 )
 from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.contracts.persistence_topology import PersistenceTopology
@@ -309,6 +310,76 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     f"Stale uncertain transition rejected for key={key} fence={claim.fence}.",
                 )
             conn.commit()
+
+    def abandon_pre_effect_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        now = datetime.now(UTC)
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            deleted = conn.execute(
+                """
+                DELETE FROM idempotency_ledger
+                WHERE tenant_id = ? AND key = ?
+                  AND status = ?
+                  AND owner_id = ?
+                  AND fence = ?
+                  AND lease_expires_at > ?
+                """,
+                (
+                    tenant_id,
+                    key,
+                    InvocationStatus.STARTED.value,
+                    claim.owner_id,
+                    claim.fence,
+                    now.isoformat(),
+                ),
+            )
+            if deleted.rowcount != 1:
+                conn.rollback()
+                raise StaleClaimError(
+                    f"Stale pre-effect abandon rejected for key={key} fence={claim.fence}.",
+                )
+            conn.commit()
+
+    def reconcile_abandoned_pre_effect_not_started(
+        self,
+        tenant_id: str,
+        key: str,
+        operation_identity: InvocationOperationIdentity,
+        *,
+        recovery_authority: PreEffectSuspendedWorkRecoveryAuthority,
+    ) -> bool:
+        del recovery_authority
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            row = conn.execute(
+                """
+                SELECT status, operation_tool_id, operation_fingerprint
+                FROM idempotency_ledger
+                WHERE tenant_id = ? AND key = ?
+                """,
+                (tenant_id, key),
+            ).fetchone()
+            if row is None or InvocationStatus(row["status"]) is not InvocationStatus.STARTED:
+                conn.commit()
+                return False
+            assert_operation_identity_compatible(
+                self._row_operation_identity(row),
+                operation_identity,
+            )
+            deleted = conn.execute(
+                """
+                DELETE FROM idempotency_ledger
+                WHERE tenant_id = ? AND key = ? AND status = ?
+                """,
+                (tenant_id, key, InvocationStatus.STARTED.value),
+            )
+            conn.commit()
+            return deleted.rowcount == 1
 
     def record_started(
         self,

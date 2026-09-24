@@ -11,9 +11,10 @@ from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
+from tests.unit.rag.retrieval.retrieval_hit_fixtures import stub_retrieval_hit
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 
 pytestmark = pytest.mark.gate
@@ -24,19 +25,19 @@ class _VersionedRetriever(BaseRetriever):
     def name(cls) -> str:
         return "versioned"
 
-    def retrieve(self, query: RetrieverQuery) -> List[RetrieverCandidate]:
+    def retrieve(self, query: RetrieverQuery) -> List[RetrievalHit]:
         return [
-            RetrieverCandidate(
-                id="new",
+            stub_retrieval_hit(
+                document_id="new",
                 content="fresh",
-                metadata={"embedding_model_version": "v2"},
                 score=0.9,
+                metadata={"embedding_model_version": "v2"},
             ),
-            RetrieverCandidate(
-                id="old",
+            stub_retrieval_hit(
+                document_id="old",
                 content="stale",
-                metadata={"embedding_model_version": "v1"},
                 score=0.85,
+                metadata={"embedding_model_version": "v1"},
             ),
         ]
 
@@ -51,7 +52,7 @@ class _VersionedRetrieverManager(BaseRetrieverManager):
         top_k: int = 5,
         metadata_filter=None,
         include_embeddings: bool = False,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         return _VersionedRetriever().retrieve(
             RetrieverQuery(
                 query_text=query_text,

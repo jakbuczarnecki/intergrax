@@ -15,9 +15,15 @@ from intergrax.contracts.execution.qualified_capability_execution_intake import 
     QualifiedCapabilityExecutionDelegateResult,
     QualifiedCapabilityExecutionIntakePayload,
 )
+from intergrax.contracts.execution.execution_terminal_outcome_by_execution_id import (
+    ExecutionTerminalOutcomeByExecutionIdStore,
+)
 from intergrax.contracts.execution_identity import (
     peek_active_execution_id,
     require_active_execution_identity,
+)
+from intergrax.runtime.execution.execution_terminal_outcome_by_execution_id import (
+    record_delegate_terminal_disposition,
 )
 from intergrax.runtime.execution.qualified_capability_execution_handlers import (
     QualifiedCapabilityExecutionBindingHandlerRegistry,
@@ -31,8 +37,10 @@ class QualifiedCapabilityExecutionRuntimeDelegate:
         self,
         *,
         handler_registry: QualifiedCapabilityExecutionBindingHandlerRegistry,
+        terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None,
     ) -> None:
         self._handlers = handler_registry
+        self._terminal_outcome_store = terminal_outcome_store
         self.execute_calls = 0
 
     async def execute(
@@ -61,12 +69,18 @@ class QualifiedCapabilityExecutionRuntimeDelegate:
                 disposition=QualifiedCapabilityExecutionDispatchDisposition.FAILED,
                 reason_detail="active_execution_id_missing",
             )
-        return handler.dispatch_once(
+        result = handler.dispatch_once(
             dispatch_request,
             run_id=run_id,
             attempt_id=attempt_id,
             execution_id=execution_id,
         )
+        record_delegate_terminal_disposition(
+            self._terminal_outcome_store,
+            execution_id=execution_id,
+            disposition=result.disposition,
+        )
+        return result
 
 
 __all__ = ["QualifiedCapabilityExecutionRuntimeDelegate"]

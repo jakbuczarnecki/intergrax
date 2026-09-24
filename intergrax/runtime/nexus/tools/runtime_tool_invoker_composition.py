@@ -30,6 +30,9 @@ from intergrax.tools.invocation_wiring import ToolInvocationWiringResolver
 from intergrax.tools.registry.read import ToolRegistryRead
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution.crash_injection import (
+        ToolRuntimeEffectCrashInjectionPort,
+    )
     from intergrax.contracts.external_operation_cancellation import (
         ExternalOperationCancellationPort,
     )
@@ -63,6 +66,7 @@ def build_production_runtime_tool_invoker(
     external_operation_cancellation_port: ExternalOperationCancellationPort | None = None,
     invocation_wiring_resolver: ToolInvocationWiringResolver | None = None,
     production_mode: bool = False,
+    effect_crash_injection: ToolRuntimeEffectCrashInjectionPort | None = None,
 ) -> RuntimeToolInvoker:
     """Wire canonical inner guard + production-required governance before tool effects."""
     if production_mode and agent_runtime_governance is None:
@@ -100,6 +104,7 @@ def build_production_runtime_tool_invoker(
         external_operation_owner=external_operation_owner,
         external_operation_cancellation_port=external_operation_cancellation_port,
         invocation_wiring_resolver=invocation_wiring_resolver,
+        effect_crash_injection=effect_crash_injection,
     )
 
 

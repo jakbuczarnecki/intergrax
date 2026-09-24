@@ -1,14 +1,17 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Catalog-backed ``DeclarativeToolInvoker`` for ACP host wiring (ACP-PROD-2 depth)."""
+"""Catalog-backed execution-bound declarative invoker for ACP host wiring (ACP-PROD-2)."""
 
 from __future__ import annotations
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Optional, Protocol, runtime_checkable
 
 from intergrax.contracts.declarative_tool_invoke_result import DeclarativeToolInvokeResult
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
+)
 from intergrax.knowledge.contracts.validation import JsonObject
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
@@ -204,6 +207,16 @@ class CatalogDeclarativeToolInvoker:
             error=response.error,
             duration_ms=response.duration_ms,
         )
+
+
+@runtime_checkable
+class CatalogHostDeclarativeToolInvoker(
+    ExecutionBoundDeclarativeToolInvoker,
+    Protocol,
+):
+    """Execution-bound declarative invoker with host ``RuntimeToolInvoker`` wiring."""
+
+    tool_invoker: RuntimeToolInvoker
 
 
 def _require_invoke_identity_field(value: str, label: str) -> str:

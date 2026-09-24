@@ -11,7 +11,9 @@ from intergrax.agents.persistence.compensation_queue_store import (
     CompensationJob,
     CompensationQueueStore,
 )
-from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
+)
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
 from intergrax.contracts.execution_identity import validate_task_id
 from intergrax.contracts.side_effect import CompensationRequest, SideEffectRecord
@@ -96,7 +98,7 @@ async def enqueue_compensations_for_step_failure(
     ledger: SideEffectLedger | None,
     tool_profiles: dict[str, ToolExecutionProfile],
     step_index: int,
-    invoker: DeclarativeToolInvoker | None = None,
+    invoker: ExecutionBoundDeclarativeToolInvoker | None = None,
     action_args: dict[str, dict[str, Any]] | None = None,
     compensation_queue: CompensationQueueStore | None = None,
     run_id: str = "",
@@ -181,6 +183,10 @@ async def enqueue_compensations_for_step_failure(
             continue
 
         invoke_result = await invoker.invoke(
+            tenant_id=tenant_id,
+            run_id=run_id,
+            task_id=task_id,
+            agent_id=agent_id,
             tool_id=compensation_tool_id,
             args=request.args,
             idempotency_key=request.idempotency_key,

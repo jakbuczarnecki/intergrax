@@ -13,9 +13,14 @@ from pydantic import BaseModel, Field
 class RetrievalPoisoningInputChunk(Protocol):
     """Minimal chunk shape for retrieval poisoning defense (vendor-neutral)."""
 
-    id: str
-    text: str
-    score: float
+    @property
+    def id(self) -> str: ...
+
+    @property
+    def text(self) -> str: ...
+
+    @property
+    def score(self) -> float: ...
 
     @property
     def source_ref(self) -> str: ...

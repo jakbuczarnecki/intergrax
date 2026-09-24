@@ -42,6 +42,7 @@ from intergrax.integrations.contracts.external_work import (
     ExternalWorkIntegration,
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.runtime.integrations.contract_metadata import IntegrationContractMetadataError
 
 _DIGEST = "sha256:" + ("ab" * 32)
 _T0 = datetime(2026, 7, 20, 12, 0, 0, tzinfo=timezone.utc)
@@ -448,8 +449,12 @@ def test_retryable_error_classification() -> None:
 def test_profile_binds_external_work_instance_without_catalog_slug() -> None:
     fake = _InMemoryExternalWorkIntegration()
     profile = IntegrationProfile(external_work=fake)
-    assert profile.instance_for_category(IntegrationCategory.EXTERNAL_WORK) is fake
+    assert profile.external_work is not None
+    assert profile.external_work.instance is fake
     assert profile.slug_for_category(IntegrationCategory.EXTERNAL_WORK) is None
+    resolved = profile.instance_for_category(IntegrationCategory.EXTERNAL_WORK)
+    assert resolved is fake
+    assert isinstance(resolved, ExternalWorkIntegration)
 
 
 @pytest.mark.unit

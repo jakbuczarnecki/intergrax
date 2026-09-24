@@ -64,7 +64,7 @@ from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.applications._shared.harness_host_orchestration_topology_wiring import (
     HarnessHostOrchestrationTopologyReliabilityCompositionError,
 )
-from governed_contractor_application.host.orchestration_topology_production_composition import (
+from intergrax.applications._shared.governed_contractor_orchestration_topology_production import (
     build_governed_contractor_production_orchestration_topology_submission_port,
 )
 from governed_contractor_application.host.governed_contractor_host_runtime_composition import (

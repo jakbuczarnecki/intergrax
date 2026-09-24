@@ -47,9 +47,9 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.agents.persistence.compensation_enqueue import (
     enqueue_compensations_for_step_failure,
 )
-from intergrax.agents.persistence.declarative_tool_executor import (
-    DeclarativeToolInvoker,
-    execute_declarative_actions,
+from intergrax.agents.persistence.declarative_tool_executor import execute_declarative_actions
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
 )
 from intergrax.contracts.side_effect import CompensationRequest
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
@@ -98,7 +98,7 @@ class StepKernelContext:
     allow_permissive_missing_policy: bool = False
     organizational: OrganizationalPolicyContext | None = None
     side_effect_ledger: SideEffectLedger | None = None
-    declarative_tool_invoker: DeclarativeToolInvoker | None = None
+    declarative_tool_invoker: ExecutionBoundDeclarativeToolInvoker | None = None
     compensation_queue: CompensationQueueStore | None = None
     idempotency_store: IdempotencyStore | None = None
     compensation_requests: list[CompensationRequest] = field(default_factory=list)

@@ -36,7 +36,6 @@ from local_workspace_application.host.lkw_task_enricher import (
     build_lkw_combined_task_enricher,
 )
 from local_workspace_application.host.settings import LocalWorkspaceBackendSettings
-from local_workspace_application.host.execution_wiring import build_lkw_host_task_execution
 from local_workspace_application.host.task_executor import LocalWorkspaceTaskExecutor
 from local_workspace_application.manifest import LOCAL_WORKSPACE_APPLICATION_MANIFEST
 from local_workspace_application.model_runtime_proof.config import (
@@ -159,9 +158,8 @@ def build_proof_runtime_session(
         compensation_queue_store=harness_runtime.compensation_queue_store,
         idempotency_store=harness_runtime.reliability.idempotency_store,
     )
-    nexus_loop = harness_runtime._internal_composition._orchestration_backend  # noqa: SLF001
     task_executor = LocalWorkspaceTaskExecutor(
-        build_lkw_host_task_execution(nexus_loop, environment_profile),
+        harness_runtime.execution,
         task_enricher=task_enricher,
         readiness=lifecycle,
     )

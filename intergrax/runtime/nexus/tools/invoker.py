@@ -13,6 +13,9 @@ from typing import TYPE_CHECKING, Optional, Protocol, Type, cast, runtime_checka
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution.crash_injection import (
+        ToolRuntimeEffectCrashInjectionPort,
+    )
     from intergrax.contracts.canonical_inner_governance import CanonicalInnerExecutionGuardPort
     from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
     from intergrax.contracts.meaningful_side_effect_authorization import (
@@ -55,7 +58,14 @@ from intergrax.runtime.sandbox.isolation_gate import (
 )
 from intergrax.runtime.policy.rules.evaluation import PolicyEvaluationContext
 from intergrax.runtime.policy.rules.schema import PolicyRuleAction
+from intergrax.contracts.execution.crash_injection import (
+    SimulatedHostProcessLostError,
+    ToolRuntimeEffectCrashCheckpoint,
+)
 from intergrax.contracts.idempotency_store import ClaimOutcome, IdempotencyStore
+from intergrax.runtime.nexus.tools.tool_runtime_effect_crash_injection import (
+    NoOpToolRuntimeEffectCrashInjection,
+)
 from intergrax.contracts.dependency_concurrency_admission import (
     DependencyConcurrencyAdmissionRequest,
     DependencyConcurrencyAdmissionTimeoutError,
@@ -170,6 +180,7 @@ class RuntimeToolInvoker:
         external_operation_owner: ProcessLocalExternalOperationOwner | None = None,
         external_operation_cancellation_port: ExternalOperationCancellationPort | None = None,
         invocation_wiring_resolver: ToolInvocationWiringResolver | None = None,
+        effect_crash_injection: Optional["ToolRuntimeEffectCrashInjectionPort"] = None,
     ) -> None:
         from intergrax.runtime.nexus.tools.tool_operation_termination import (
             ToolExecutorTerminationPort,
@@ -198,6 +209,10 @@ class RuntimeToolInvoker:
         self._invocation_wiring_resolver = (
             invocation_wiring_resolver or DelegatingToolInvocationWiringResolver()
         )
+        if effect_crash_injection is None:
+            self._effect_crash_injection = NoOpToolRuntimeEffectCrashInjection()
+        else:
+            self._effect_crash_injection = effect_crash_injection
 
     def close(self) -> None:
         """Shut down admission boundary (when configured) and the execution pool."""
@@ -249,6 +264,7 @@ class RuntimeToolInvoker:
                 external_operation_owner=self._external_operation_owner,
                 external_operation_cancellation_port=self._external_operation_cancellation_port,
                 invocation_wiring_resolver=self._invocation_wiring_resolver,
+                effect_crash_injection=self._effect_crash_injection,
             )
         except Exception:
             self._dependency_attempt_boundary = transferred_boundary
@@ -318,6 +334,9 @@ class RuntimeToolInvoker:
                 )
             boundary = _ExternalEffectBoundary()
             try:
+                self._effect_crash_injection.raise_if_scheduled(
+                    ToolRuntimeEffectCrashCheckpoint.AFTER_TOOL_RUNTIME_ADMISSION_BEFORE_BACKEND,
+                )
                 result = self._execute_external_effect(
                     state=state,
                     agent_id=agent_id,
@@ -325,11 +344,30 @@ class RuntimeToolInvoker:
                     request=request,
                     boundary=boundary,
                 )
+            except SimulatedHostProcessLostError:
+                if boundary.may_have_started:
+                    coordinator.on_post_claim_exception(
+                        claim_context=claim_context,
+                        contract=contract,
+                        effect_may_have_started=True,
+                    )
+                raise
             except Exception:
                 coordinator.on_post_claim_exception(
                     claim_context=claim_context,
                     contract=contract,
                     effect_may_have_started=boundary.may_have_started,
+                )
+                raise
+            try:
+                self._effect_crash_injection.raise_if_scheduled(
+                    ToolRuntimeEffectCrashCheckpoint.AFTER_BACKEND_BEFORE_EFFECT_COMMIT,
+                )
+            except SimulatedHostProcessLostError:
+                coordinator.on_post_claim_exception(
+                    claim_context=claim_context,
+                    contract=contract,
+                    effect_may_have_started=True,
                 )
                 raise
             coordinator.after_external_effect(

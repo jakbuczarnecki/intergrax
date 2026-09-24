@@ -22,7 +22,10 @@ from intergrax.integrations.registry.plugin_register import register_integration
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
-from intergrax.runtime.integrations.contracts import PlatformIntegrationCapability
+from intergrax.runtime.integrations.contracts import (
+    PlatformIntegrationCapability,
+    PlatformIntegrationSecurityPosture,
+)
 from intergrax.runtime.integrations.registry_v2 import (
     build_contract_registry_snapshot,
     build_integration_registration,
@@ -55,6 +58,10 @@ class ExternalRelationalPlugin:
             env_prefix="INTERGRAX_EXTERNAL_SQL",
             description="Synthetic external relational provider for canonical projection proof",
         )
+
+    @classmethod
+    def integration_contract_specs(cls) -> tuple[IntegrationContractSpec, ...]:
+        return ()
 
     @classmethod
     def create_integration(cls, **kwargs: object) -> _ExternalRelationalIntegration:
@@ -132,6 +139,7 @@ def test_identity_mismatch_fails_registration() -> None:
                     integration_kind="relational_store",
                     contract_class=RelationalStoreIntegrationContract,
                     integration_class=_ExternalRelationalIntegration,
+                    security_posture=PlatformIntegrationSecurityPosture(),
                     contract_factory=_external_contract_factory,
                 ),
             ),

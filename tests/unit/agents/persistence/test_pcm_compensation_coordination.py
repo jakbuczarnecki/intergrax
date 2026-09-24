@@ -162,6 +162,10 @@ async def test_a2_uncertain_is_not_claimable() -> None:
         return DeclarativeToolInvokeResult(status="success")
 
     await CallableDeclarativeToolInvoker(_invoke).invoke(
+        tenant_id="tenant-a",
+        run_id="run-1",
+        task_id="task-1",
+        agent_id="agent-1",
         tool_id=claim.job.request.compensation_tool_id,
         args=claim.job.request.args,
         idempotency_key=claim.job.request.idempotency_key,

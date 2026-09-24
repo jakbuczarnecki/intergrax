@@ -29,6 +29,10 @@ from intergrax.contracts.root_execution_operation import RootExecutionOperation
 from intergrax.runtime.execution.execution_bound_capability_execution_runtime_delegate import (
     ExecutionBoundCapabilityExecutionRuntimeDelegate,
 )
+from intergrax.runtime.execution.canonical_dispatch_invocation_outcome import (
+    qualified_dispatch_result_for_invocation_failure,
+)
+from intergrax.contracts.execution_intake import CanonicalExecutionInvocationFailed
 from intergrax.tools._shared.async_dispatch import run_async
 
 
@@ -86,20 +90,28 @@ class ExecutionBoundCapabilityExecutionDispatchService(
                 effective_authority_decision=request.effective_authority_decision,
                 collaborative_authority_scopes=request.collaborative_authority_scopes,
             )
-            launch_result = run_async(
-                self._launcher.launch(
-                    RootExecutionLaunchRequest(
-                        admitted_governance_identity=request.admitted_governance_identity,
-                        root_execution_operation=RootExecutionOperation.ROOT_WORKER_DISPATCH,
-                        collaborative_authority_scopes=request.collaborative_authority_scopes,
-                        effective_authority_decision=request.effective_authority_decision,
-                        payload=payload,
-                        run_id=request.run_id,
-                        attempt_id=request.attempt_id,
-                        task_id=request.task_id,
+            try:
+                launch_result = run_async(
+                    self._launcher.launch(
+                        RootExecutionLaunchRequest(
+                            admitted_governance_identity=request.admitted_governance_identity,
+                            root_execution_operation=RootExecutionOperation.ROOT_WORKER_DISPATCH,
+                            collaborative_authority_scopes=request.collaborative_authority_scopes,
+                            effective_authority_decision=request.effective_authority_decision,
+                            payload=payload,
+                            run_id=request.run_id,
+                            attempt_id=request.attempt_id,
+                            task_id=request.task_id,
+                        ),
                     ),
-                ),
-            )
+                )
+            except CanonicalExecutionInvocationFailed as exc:
+                result = qualified_dispatch_result_for_invocation_failure(
+                    exc,
+                    execution_request_id=request.execution_request_id,
+                )
+                self._ledger[ledger_key] = _IngressLedgerEntry(result=result)
+                return result
             result = _map_launch_result(request, launch_result)
             self._ledger[ledger_key] = _IngressLedgerEntry(result=result)
             return result

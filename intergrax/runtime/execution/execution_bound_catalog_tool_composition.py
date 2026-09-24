@@ -10,13 +10,18 @@ from typing import TYPE_CHECKING
 from intergrax.contracts.canonical_inner_governance import (
     CanonicalInnerExecutionGuardPort,
 )
+from intergrax.contracts.execution.execution_terminal_outcome_by_execution_id import (
+    ExecutionTerminalOutcomeByExecutionIdStore,
+)
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvoker,
 )
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
 )
+from intergrax.contracts.execution_deadline.clock import UtcClockPort
 from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
+from intergrax.runtime.execution.deadline_authority.system_clocks import SystemUtcClock
 from intergrax.runtime.agent_governance.authorization_boundary import (
     AgentRuntimeGovernanceBoundary,
 )
@@ -48,6 +53,9 @@ from intergrax.runtime.nexus.tools.nexus_execution_bound_catalog_tool_invoker im
 from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
     build_production_runtime_tool_invoker,
 )
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
+)
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.sandbox.isolation_gate import SandboxAvailabilityProvider
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
@@ -58,6 +66,10 @@ from intergrax.tools.registry.runtime import ToolRegistry
 from intergrax.tools.tool_executor import ToolExecutor
 
 if TYPE_CHECKING:
+    from intergrax.contracts.execution.crash_injection import (
+        ExecutionSuspendedWorkReentryCrashInjectionPort,
+        ToolRuntimeEffectCrashInjectionPort,
+    )
     from intergrax.contracts.idempotency_store import IdempotencyStore
 
 
@@ -86,7 +98,16 @@ def build_execution_bound_catalog_tool_composition(
     task_checkpoint_store: TaskCheckpointPersistence | None = None,
     idempotency_store: IdempotencyStore | None = None,
     tool_executor: ToolExecutor | None = None,
+    terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None,
+    utc_clock: UtcClockPort | None = None,
+    reentry_crash_injection: ExecutionSuspendedWorkReentryCrashInjectionPort | None = None,
+    tool_runtime_effect_crash_injection: ToolRuntimeEffectCrashInjectionPort | None = None,
 ) -> ExecutionBoundCatalogToolComposition:
+    pre_effect_coordinator = (
+        IdempotencyPreEffectCoordinator(idempotency_store=idempotency_store)
+        if idempotency_store is not None
+        else None
+    )
     tool_invoker = build_production_runtime_tool_invoker(
         registry=registry,
         executor=tool_executor,
@@ -96,10 +117,14 @@ def build_execution_bound_catalog_tool_composition(
         meaningful_side_effect_authorization=meaningful_side_effect_authorization,
         scope_policy=scope_policy,
         idempotency_store=idempotency_store,
+        pre_effect_coordinator=pre_effect_coordinator,
         production_mode=production_mode,
+        effect_crash_injection=tool_runtime_effect_crash_injection,
     )
+    shared_utc_clock = utc_clock if utc_clock is not None else SystemUtcClock()
     suspended_store = wire_suspended_execution_operation_store(
         document_store=document_store,
+        utc_clock=shared_utc_clock,
     )
     reentry_coordinator: ExecutionSuspendedWorkReentryCoordinator | None = None
     continuation_aware_dependencies: (
@@ -158,6 +183,10 @@ def build_execution_bound_catalog_tool_composition(
             binding_resolver=durable_wiring_binding_resolver,
             claim_owner_id=reentry_claim_owner_id,
             task_checkpoint_store=task_checkpoint_store,
+            terminal_outcome_store=terminal_outcome_store,
+            utc_clock=shared_utc_clock,
+            crash_injection=reentry_crash_injection,
+            pre_effect_coordinator=pre_effect_coordinator,
         )
         continuation_aware_dependencies = ContinuationAwareCatalogToolHostDependencies(
             suspended_operation_store=suspended_store,

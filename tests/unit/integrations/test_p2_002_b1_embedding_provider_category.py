@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 
 import pytest
 from pydantic import ValidationError
@@ -17,6 +16,7 @@ from intergrax.integrations.registry.contract_spec import declare_integration_co
 from intergrax.integrations.registry.factory import resolve_from_profile
 from intergrax.integrations.registry.plugin_register import register_from_manifest
 from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.core.ref import validate_integration_ref
 from intergrax.runtime.integrations.categories import (
     PROVIDER_CATEGORY_CONTRACT_REGISTRY,
     EmbeddingProviderIntegrationContract,
@@ -35,11 +35,6 @@ from intergrax.runtime.integrations.registry_v2 import build_integration_registr
 pytestmark = pytest.mark.unit
 
 _FAKE_EMBEDDING_SLUG = "fake_embedding_test"
-
-
-@dataclass(frozen=True)
-class _FakeEmbeddingRuntime:
-    provider_id: str
 
 
 class _FakeEmbeddingIntegration(EmbeddingProviderIntegrationContract):
@@ -161,7 +156,7 @@ def test_integration_profile_embedding_provider_binding_resolution() -> None:
     )
     register_from_manifest(
         manifest,
-        lambda **_: _FakeEmbeddingRuntime(provider_id=_FAKE_EMBEDDING_SLUG),
+        _fake_embedding_factory,
         contract_specs=(_fake_embedding_contract_spec(),),
     )
 
@@ -172,24 +167,30 @@ def test_integration_profile_embedding_provider_binding_resolution() -> None:
     assert profile.slug_for_category(IntegrationCategory.EMBEDDING_PROVIDER) == _FAKE_EMBEDDING_SLUG
 
     resolved = resolve_from_profile(profile, IntegrationCategory.EMBEDDING_PROVIDER)
-    assert isinstance(resolved, _FakeEmbeddingRuntime)
+    assert isinstance(resolved, _FakeEmbeddingIntegration)
     assert resolved.provider_id == _FAKE_EMBEDDING_SLUG
 
 
 def test_integration_profile_embedding_provider_accepts_prebuilt_instance() -> None:
-    sentinel = object()
-    profile = IntegrationProfile(embedding_provider=sentinel)
-    assert profile.instance_for_category(IntegrationCategory.EMBEDDING_PROVIDER) is sentinel
+    integration = EmbeddingProviderIntegrationContract.for_provider(
+        provider_id="injected_embed",
+        display_name="Injected embed",
+    )
+    profile = IntegrationProfile(embedding_provider=integration)
+    assert profile.instance_for_category(IntegrationCategory.EMBEDDING_PROVIDER) is integration
     assert profile.slug_for_category(IntegrationCategory.EMBEDDING_PROVIDER) is None
 
 
 def test_integration_profile_rejects_unknown_embedding_slug() -> None:
-    with pytest.raises(ValidationError):
-        IntegrationProfile(embedding_provider="not_a_real_embedding_provider_xyz")
+    with pytest.raises(ValueError, match="Unknown integration slug"):
+        validate_integration_ref("embedding_provider", "not_a_real_embedding_provider_xyz")
 
 
 def test_integration_profile_rejects_wrong_slug_category() -> None:
+    from intergrax.integrations.registry.bootstrap import register_default_integrations
     from intergrax.integrations.registry.catalog_manifests import SQLITE
 
-    with pytest.raises(ValidationError):
-        IntegrationProfile(embedding_provider=SQLITE)
+    register_default_integrations()
+    profile = IntegrationProfile(embedding_provider=SQLITE)
+    with pytest.raises(ValueError, match="not valid for profile field"):
+        validate_integration_ref("embedding_provider", profile.embedding_provider)

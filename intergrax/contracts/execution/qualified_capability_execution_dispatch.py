@@ -194,7 +194,18 @@ class QualifiedCapabilityExecutionDispatchPort(Protocol):
     ) -> QualifiedCapabilityExecutionDispatchResult: ...
 
 
+@runtime_checkable
+class QualifiedCapabilityExecutionAsyncDispatchPort(Protocol):
+    """Async root launch — for callers already running on the event loop (UCA-6C-R6-R5.8-R2-H1)."""
+
+    async def dispatch_async(
+        self,
+        request: QualifiedCapabilityExecutionDispatchRequest,
+    ) -> QualifiedCapabilityExecutionDispatchResult: ...
+
+
 __all__ = [
+    "QualifiedCapabilityExecutionAsyncDispatchPort",
     "QualifiedCapabilityExecutionDispatchDisposition",
     "QualifiedCapabilityExecutionDispatchPort",
     "QualifiedCapabilityExecutionDispatchRequest",

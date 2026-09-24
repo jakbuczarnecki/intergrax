@@ -22,6 +22,11 @@ from intergrax.runtime.integrations.contracts import (
     derive_platform_integration_id,
 )
 from intergrax.runtime.integrations.observability import ObservabilityVendorIntegrationContract
+from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
+from intergrax.runtime.integrations.contract_metadata import (
+    DI_ONLY_CATEGORY_CONTRACT_REGISTRY,
+    contract_for_category,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -45,6 +50,12 @@ def _unique_layout_categories() -> frozenset[str]:
 
 # P2-002-B1: typed contract registered before first-party provider layout folders (B2).
 _REGISTRY_CATEGORIES_PENDING_LAYOUT: frozenset[str] = frozenset()
+
+
+def test_di_only_external_work_resolves_via_canonical_contract_for_category() -> None:
+    assert "external_work" not in PROVIDER_CATEGORY_CONTRACT_REGISTRY
+    assert contract_for_category("external_work") is ExternalWorkIntegration
+    assert DI_ONLY_CATEGORY_CONTRACT_REGISTRY["external_work"] is ExternalWorkIntegration
 
 
 def test_every_layout_category_has_contract_or_alias() -> None:

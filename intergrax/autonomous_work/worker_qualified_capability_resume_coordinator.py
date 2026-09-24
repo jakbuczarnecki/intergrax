@@ -5,14 +5,16 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 
 from intergrax.autonomous_work.execution_authority_admission import (
-    WorkerExecutionAdmissionService,
+    WorkerExecutionAdmissionPort,
     WorkerExecutionAuthorityDenied,
 )
 from intergrax.autonomous_work.worker_qualified_capability_resume_ports import (
     QualifiedCapabilityBindingPort,
+    WorkerQualifiedCapabilityAsyncExecutionPort,
     WorkerQualifiedCapabilityExecutionPort,
 )
 from intergrax.contracts.admitted_root_governance_identity import (
@@ -27,6 +29,7 @@ from intergrax.contracts.autonomous_work.worker_capability_recovery import (
 from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
     WorkerQualifiedCapabilityExecutionDisposition,
     WorkerQualifiedCapabilityExecutionRequest,
+    WorkerQualifiedCapabilityExecutionResult,
     WorkerQualifiedCapabilityResumeOutcome,
     WorkerQualifiedCapabilityResumeRequest,
     WorkerQualifiedCapabilityResumeResult,
@@ -38,11 +41,20 @@ from intergrax.contracts.capability_qualification.qualification_outcome import (
 from intergrax.contracts.capability_qualification.qualified_capability_binding import (
     QualifiedCapabilityBindingOutcome,
     QualifiedCapabilityBindingRequest,
+    QualifiedCapabilityBindingResult,
     derive_qualified_capability_binding_operation_id,
 )
 from intergrax.contracts.capability_qualification.qualified_subject import (
     qualified_capability_subject_from_result,
 )
+@dataclass(frozen=True, slots=True)
+class _QualifiedExecutionHandoff:
+    resume_id: str
+    execution_request_id: str
+    execution_request: WorkerQualifiedCapabilityExecutionRequest
+    provenance: WorkerCapabilityRecoveryProvenance
+    binding_result: QualifiedCapabilityBindingResult
+    timestamp: datetime
 
 
 class WorkerQualifiedCapabilityResumeCoordinator:
@@ -53,11 +65,13 @@ class WorkerQualifiedCapabilityResumeCoordinator:
         *,
         binding: QualifiedCapabilityBindingPort,
         execution: WorkerQualifiedCapabilityExecutionPort,
-        authority_admission: WorkerExecutionAdmissionService | None = None,
+        authority_admission: WorkerExecutionAdmissionPort | None = None,
+        async_execution: WorkerQualifiedCapabilityAsyncExecutionPort | None = None,
     ) -> None:
         self._binding = binding
         self._execution = execution
         self._authority_admission = authority_admission
+        self._async_execution = async_execution
 
     def resume(
         self,
@@ -65,6 +79,34 @@ class WorkerQualifiedCapabilityResumeCoordinator:
         *,
         decided_at: datetime | None = None,
     ) -> WorkerQualifiedCapabilityResumeResult:
+        handoff = self._prepare_execution_handoff(request, decided_at=decided_at)
+        if isinstance(handoff, WorkerQualifiedCapabilityResumeResult):
+            return handoff
+        execution_result = self._execution.execute(handoff.execution_request)
+        return self._map_execution_result(handoff, execution_result)
+
+    async def resume_async(
+        self,
+        request: WorkerQualifiedCapabilityResumeRequest,
+        *,
+        decided_at: datetime | None = None,
+    ) -> WorkerQualifiedCapabilityResumeResult:
+        if self._async_execution is None:
+            raise RuntimeError("async_execution adapter required for resume_async")
+        handoff = self._prepare_execution_handoff(request, decided_at=decided_at)
+        if isinstance(handoff, WorkerQualifiedCapabilityResumeResult):
+            return handoff
+        execution_result = await self._async_execution.execute_async(
+            handoff.execution_request,
+        )
+        return self._map_execution_result(handoff, execution_result)
+
+    def _prepare_execution_handoff(
+        self,
+        request: WorkerQualifiedCapabilityResumeRequest,
+        *,
+        decided_at: datetime | None,
+    ) -> WorkerQualifiedCapabilityResumeResult | _QualifiedExecutionHandoff:
         timestamp = decided_at or request.requested_at
         qualification = request.qualification_result
         resume_id = request.resume_operation_id
@@ -216,8 +258,25 @@ class WorkerQualifiedCapabilityResumeCoordinator:
             run_id=request.run_id,
             attempt_id=request.attempt_id,
         )
-        execution_result = self._execution.execute(execution_request)
+        return _QualifiedExecutionHandoff(
+            resume_id=resume_id,
+            execution_request_id=execution_request_id,
+            execution_request=execution_request,
+            provenance=provenance,
+            binding_result=binding_result,
+            timestamp=timestamp,
+        )
 
+    def _map_execution_result(
+        self,
+        handoff: _QualifiedExecutionHandoff,
+        execution_result: WorkerQualifiedCapabilityExecutionResult,
+    ) -> WorkerQualifiedCapabilityResumeResult:
+        resume_id = handoff.resume_id
+        provenance = handoff.provenance
+        binding_result = handoff.binding_result
+        timestamp = handoff.timestamp
+        execution_request_id = handoff.execution_request_id
         if (
             execution_result.disposition
             is WorkerQualifiedCapabilityExecutionDisposition.DISPATCHED

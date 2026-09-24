@@ -89,6 +89,9 @@ class _RecordingPrepareStore(SuspendedExecutionOperationStore):
     def load_active_for_continuation(self, continuation_id: str):
         raise NotImplementedError
 
+    def load_materialized_for_continuation(self, continuation_id: str):
+        raise NotImplementedError
+
     def load_active_for_logical_invocation(self, logical_invocation_fingerprint):
         raise NotImplementedError
 

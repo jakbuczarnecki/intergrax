@@ -10,9 +10,10 @@ from intergrax.integrations._shared.circuit_breaker import IntegrationCircuitBre
 from intergrax.rag.retrieval.retrieval_errors import RetrievalError, RetrievalErrorKind
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
+from tests.unit.rag.retrieval.retrieval_hit_fixtures import stub_retrieval_hit
 from intergrax.rag.retrievers.engine.retriever_engine import RetrieverEngine
 from intergrax.rag.retrievers.registry.retriever_registry import RetrieverRegistry
 from intergrax.rag.retrievers.resilience.vector_store_circuit_breaker import (
@@ -30,15 +31,14 @@ def _flaky_retriever_class(retriever_name: str, *, fail_times: int) -> Type[Base
         def name(cls) -> str:
             return retriever_name
 
-        def retrieve(self, query: RetrieverQuery) -> List[RetrieverCandidate]:
+        def retrieve(self, query: RetrieverQuery) -> List[RetrievalHit]:
             type(self)._calls += 1
             if type(self)._calls <= fail_times:
                 raise TimeoutError(f"{retriever_name} timeout")
             return [
-                RetrieverCandidate(
-                    id=f"{retriever_name}-1",
+                stub_retrieval_hit(
+                    document_id=f"{retriever_name}-1",
                     content="hit",
-                    metadata={},
                     score=0.8,
                 )
             ]

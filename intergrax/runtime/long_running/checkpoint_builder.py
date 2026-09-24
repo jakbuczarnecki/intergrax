@@ -18,6 +18,7 @@ from intergrax.contracts.execution_identity import (
     ExecutionId,
     RunId,
     require_active_execution_id,
+    require_active_execution_identity,
     validate_task_id,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
@@ -533,12 +534,71 @@ def reconcile_runtime_checkpoint_governance_pause_entries(task: Task) -> None:
     )
 
 
+def materialize_task_runtime_checkpoint_for_active_execution(
+    task: Task,
+) -> RuntimeCheckpoint:
+    """Build or validate canonical RuntimeCheckpoint on task under active EE identity."""
+    task_id = validate_task_id(task.task_id)
+    run_id, attempt_id = require_active_execution_identity()
+    existing = resolve_task_runtime_checkpoint(task)
+    if existing is not None:
+        existing.validate_canonical()
+        if existing.run_id != run_id or existing.attempt_id != attempt_id:
+            raise ValueError(
+                "task runtime checkpoint identity mismatch with active execution: "
+                f"run {existing.run_id!r}/{existing.attempt_id!r} "
+                f"!= active {run_id!r}/{attempt_id!r}"
+            )
+        existing.execution_tree.validate_for_task(task_id=task_id, run_id=run_id)
+        return existing
+    runtime = build_runtime_checkpoint(
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+    )
+    apply_runtime_checkpoint_to_task(task, runtime)
+    return runtime
+
+
+def mark_task_runtime_execution_tree_interrupted_for_pause(task: Task) -> None:
+    """Refresh active execution tree to INTERRUPTED before durable governance pause."""
+    runtime = resolve_task_runtime_checkpoint(task)
+    if runtime is None:
+        raise ValueError(
+            "governed durable pause requires canonical task runtime checkpoint",
+        )
+    run_id, attempt_id = require_active_execution_identity()
+    if runtime.run_id != run_id or runtime.attempt_id != attempt_id:
+        raise ValueError(
+            "task runtime checkpoint identity mismatch at pause boundary: "
+            f"run {runtime.run_id!r}/{runtime.attempt_id!r} "
+            f"!= active {run_id!r}/{attempt_id!r}"
+        )
+    recorder = ExecutionTreeRecorder.from_snapshot(runtime.execution_tree)
+    recorder.mark_running_interrupted()
+    refreshed = build_runtime_checkpoint(
+        task,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_tree=recorder.snapshot,
+    )
+    apply_runtime_checkpoint_to_task(task, refreshed)
+
+
 def sync_execution_tree_to_task(
     task: Task,
     recorder: ExecutionTreeRecorder,
 ) -> None:
+    run_id, attempt_id = require_active_execution_identity()
     existing = resolve_task_runtime_checkpoint(task)
     if existing is None:
+        runtime = build_runtime_checkpoint(
+            task,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            execution_tree=recorder.snapshot,
+        )
+        apply_runtime_checkpoint_to_task(task, runtime)
         return
     task.runtime.orchestration.runtime_checkpoint = existing.model_copy(
         update={"execution_tree": recorder.snapshot}

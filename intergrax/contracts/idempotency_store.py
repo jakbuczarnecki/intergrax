@@ -86,6 +86,15 @@ class ActiveInvocationClaimError(RuntimeError):
     """Another owner holds a valid active claim."""
 
 
+class PreEffectSuspendedWorkRecoveryAuthority(BaseModel):
+    """Suspended-work claim authority for pre-effect ledger recovery (W2)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    owner_id: str
+    fence: int
+
+
 def assert_operation_identity_compatible(
     stored: InvocationOperationIdentity | None,
     requested: InvocationOperationIdentity | None,
@@ -172,6 +181,35 @@ class IdempotencyStore(ABC):
         Raises ``StaleClaimError`` when fence or owner is superseded.
         """
         ...
+
+    @abstractmethod
+    def abandon_pre_effect_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        """
+        Remove an active STARTED claim when external effect is proven NOT_STARTED.
+
+        Raises ``StaleClaimError`` when fence or owner is superseded.
+        """
+
+    @abstractmethod
+    def reconcile_abandoned_pre_effect_not_started(
+        self,
+        tenant_id: str,
+        key: str,
+        operation_identity: InvocationOperationIdentity,
+        *,
+        recovery_authority: PreEffectSuspendedWorkRecoveryAuthority,
+    ) -> bool:
+        """
+        Clear a STARTED ledger row after process loss before external effect.
+
+        Caller must validate ``recovery_authority`` against the current suspended-work
+        claim. Returns True when a row was removed, False when no STARTED row existed.
+        """
 
     @abstractmethod
     def record_started(

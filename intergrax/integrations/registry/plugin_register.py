@@ -6,21 +6,23 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any
 
-from intergrax.integrations.contracts.base import IntegrationEntry, IntegrationFactory
+from intergrax.integrations.contracts.base import IntegrationEntry
+from intergrax.integrations.contracts.catalog_factory import (
+    IntegrationFactory,
+    IntegrationFactoryConfigValue,
+)
 from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.core.plugin import IntegrationPlugin, integration_manifest_for_plugin
 from intergrax.integrations.registry.catalog import register_integration
 from intergrax.integrations.registry.contract_spec import (
+    IntegrationContractSpec,
     manifest_category_values,
     typed_contract_categories,
     validate_contract_specs_against_manifest,
     validate_required_explicit_categories,
 )
-
-if TYPE_CHECKING:
-    from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
+from intergrax.runtime.integrations.contracts import PlatformIntegrationContract
 
 
 def _required_explicit_categories(manifest: IntegrationManifest) -> frozenset[str]:
@@ -86,9 +88,18 @@ def register_integration_plugin(
 ) -> IntegrationManifest:
     """Register catalog row from an :class:`IntegrationPlugin` implementation."""
 
-    def _factory(**kwargs: Any) -> Any:
+    def _factory(**kwargs: IntegrationFactoryConfigValue) -> PlatformIntegrationContract:
         return plugin.create_integration(**kwargs)
 
     manifest = integration_manifest_for_plugin(plugin)
-    contract_specs = getattr(plugin, "CONTRACT_SPECS", None)
-    return register_from_manifest(manifest, _factory, override=override, contract_specs=contract_specs)
+    resolved_contract_specs = (
+        contract_specs
+        if contract_specs is not None
+        else plugin.integration_contract_specs()
+    )
+    return register_from_manifest(
+        manifest,
+        _factory,
+        override=override,
+        contract_specs=resolved_contract_specs or None,
+    )

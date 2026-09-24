@@ -11,7 +11,7 @@ from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
@@ -29,7 +29,7 @@ class _StubRetriever(BaseRetriever):
     def name(cls) -> str:
         return "stub"
 
-    def retrieve(self, query: RetrieverQuery) -> List[RetrieverCandidate]:
+    def retrieve(self, query: RetrieverQuery) -> List[RetrievalHit]:
         return []
 
 
@@ -51,7 +51,7 @@ class _CapturingRetrieverManager(BaseRetrieverManager):
         metadata_filter=None,
         scope: VectorStoreScope | None = None,
         include_embeddings: bool = False,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         self.last_query = RetrieverQuery(
             query_text=query_text,
             query_embedding=query_embedding,

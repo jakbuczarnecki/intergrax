@@ -37,7 +37,18 @@ class WorkerQualifiedCapabilityExecutionPort(Protocol):
     ) -> WorkerQualifiedCapabilityExecutionResult: ...
 
 
+@runtime_checkable
+class WorkerQualifiedCapabilityAsyncExecutionPort(Protocol):
+    """Async production execution authority for qualified capabilities on the event loop."""
+
+    async def execute_async(
+        self,
+        request: WorkerQualifiedCapabilityExecutionRequest,
+    ) -> WorkerQualifiedCapabilityExecutionResult: ...
+
+
 __all__ = [
     "QualifiedCapabilityBindingPort",
+    "WorkerQualifiedCapabilityAsyncExecutionPort",
     "WorkerQualifiedCapabilityExecutionPort",
 ]

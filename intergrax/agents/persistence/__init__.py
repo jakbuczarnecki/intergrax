@@ -27,10 +27,9 @@ from intergrax.agents.persistence.declarative_tool_executor import (
     CallableDeclarativeToolInvoker,
     DeclarativeActionExecution,
     DeclarativeExecutionResult,
-    DeclarativeToolInvokeResult,
-    DeclarativeToolInvoker,
     execute_declarative_actions,
 )
+from intergrax.contracts.declarative_tool_invoke_result import DeclarativeToolInvokeResult
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
 
 __all__ = [
@@ -43,7 +42,6 @@ __all__ = [
     "DeclarativeActionExecution",
     "DeclarativeExecutionResult",
     "DeclarativeToolInvokeResult",
-    "DeclarativeToolInvoker",
     "SideEffectLedger",
     "build_compensation_idempotency_key",
     "enqueue_compensations_for_step_failure",

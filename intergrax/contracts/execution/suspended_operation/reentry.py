@@ -8,6 +8,9 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
+from intergrax.contracts.execution.suspended_operation.claim_authority import (
+    SuspendedOperationClaimAuthority,
+)
 from intergrax.contracts.execution_continuation import ExecutionContinuationIdentity
 from intergrax.tools.execution_models import ToolExecutionResult
 from pydantic import BaseModel
@@ -27,7 +30,7 @@ class ExecutionSuspendedWorkReentryDisposition(StrEnum):
 class ExecutionSuspendedWorkReentryRequest:
     continuation_id: str
     identity: ExecutionContinuationIdentity
-    claim_owner_id: str
+    claim_authority: SuspendedOperationClaimAuthority
 
 
 @dataclass(frozen=True, slots=True)

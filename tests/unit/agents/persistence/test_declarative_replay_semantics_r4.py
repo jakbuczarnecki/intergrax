@@ -386,10 +386,14 @@ async def test_r4_10_pcm_03_regression() -> None:
 
     invoker = CallableDeclarativeToolInvoker(_invoke)
     await invoker.invoke(
-        tool_id=claim.job.request.compensation_tool_id,
-        args=claim.job.request.args,
-        idempotency_key=claim.job.request.idempotency_key,
-    )
+            tenant_id=TENANT,
+            run_id=claim.job.run_id,
+            task_id=claim.job.task_id,
+            agent_id=claim.job.agent_id,
+            tool_id=claim.job.request.compensation_tool_id,
+            args=claim.job.request.args,
+            idempotency_key=claim.job.request.idempotency_key,
+        )
     time.sleep(1.2)
     assert store.claim_pending(TENANT, "worker-2", lease_seconds=300, limit=1) == []
     assert store.list_uncertain(TENANT)

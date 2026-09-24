@@ -4,11 +4,10 @@
 
 from __future__ import annotations
 
-import inspect
 import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Literal, Protocol, runtime_checkable
+from typing import Any, Literal
 from uuid import uuid4
 
 from intergrax.agents.persistence.idempotency_ledger_bridge import (
@@ -17,6 +16,10 @@ from intergrax.agents.persistence.idempotency_ledger_bridge import (
 )
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
 from intergrax.contracts.declarative_tool_invoke_result import DeclarativeToolInvokeResult
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
+)
+from intergrax.knowledge.contracts.validation import JsonObject
 from intergrax.contracts.idempotency_store import (
     ClaimOutcome,
     ClaimResult,
@@ -33,18 +36,6 @@ DeclarativeToolStatus = Literal[
     "replay_skipped",
     "skipped_no_invoker",
 ]
-
-
-@runtime_checkable
-class DeclarativeToolInvoker(Protocol):
-    async def invoke(
-        self,
-        *,
-        tool_id: str,
-        args: dict[str, Any],
-        idempotency_key: str | None,
-    ) -> DeclarativeToolInvokeResult:
-        ...
 
 
 @dataclass(frozen=True)
@@ -142,7 +133,7 @@ async def execute_declarative_actions(
     *,
     actions: list[dict[str, Any]],
     ledger: SideEffectLedger | None,
-    invoker: DeclarativeToolInvoker | None,
+    invoker: ExecutionBoundDeclarativeToolInvoker | None,
     idempotency_store: IdempotencyStore | None = None,
     tenant_id: str = "default",
     run_id: str = "",
@@ -260,8 +251,7 @@ async def execute_declarative_actions(
                 raise RuntimeError("Ledger inconsistency: ACQUIRED without claim.")
 
         started = time.perf_counter()
-        invoke_result = await _invoke_declarative_tool(
-            invoker,
+        invoke_result = await invoker.invoke(
             tenant_id=tenant_id,
             run_id=run_id,
             task_id=task_id,
@@ -309,60 +299,28 @@ async def execute_declarative_actions(
     return result
 
 
-def _declarative_invoker_requires_per_call_identity(invoker: DeclarativeToolInvoker) -> bool:
-    try:
-        sig = inspect.signature(invoker.invoke)
-    except (TypeError, ValueError):
-        return False
-    for name in ("tenant_id", "run_id", "task_id", "agent_id"):
-        param = sig.parameters.get(name)
-        if param is None or param.default is not inspect.Parameter.empty:
-            return False
-    return True
-
-
-async def _invoke_declarative_tool(
-    invoker: DeclarativeToolInvoker,
-    *,
-    tenant_id: str,
-    run_id: str,
-    task_id: str,
-    agent_id: str,
-    tool_id: str,
-    args: dict[str, Any],
-    idempotency_key: str | None,
-) -> DeclarativeToolInvokeResult:
-    if _declarative_invoker_requires_per_call_identity(invoker):
-        return await invoker.invoke(
-            tenant_id=tenant_id,
-            run_id=run_id,
-            task_id=task_id,
-            agent_id=agent_id,
-            tool_id=tool_id,
-            args=args,
-            idempotency_key=idempotency_key,
-        )
-    return await invoker.invoke(
-        tool_id=tool_id,
-        args=args,
-        idempotency_key=idempotency_key,
-    )
-
-
 @dataclass
 class CallableDeclarativeToolInvoker:
-    """Test and host adapter wrapping an async invoke callable."""
+    """Test adapter wrapping an execution-bound async invoke callable."""
 
     _invoke_fn: Callable[..., Awaitable[DeclarativeToolInvokeResult]]
 
     async def invoke(
         self,
         *,
+        tenant_id: str,
+        run_id: str,
+        task_id: str,
+        agent_id: str,
         tool_id: str,
-        args: dict[str, Any],
+        args: JsonObject,
         idempotency_key: str | None,
     ) -> DeclarativeToolInvokeResult:
         return await self._invoke_fn(
+            tenant_id=tenant_id,
+            run_id=run_id,
+            task_id=task_id,
+            agent_id=agent_id,
             tool_id=tool_id,
             args=args,
             idempotency_key=idempotency_key,

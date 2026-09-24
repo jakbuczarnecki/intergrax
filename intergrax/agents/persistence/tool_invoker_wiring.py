@@ -6,14 +6,16 @@ from __future__ import annotations
 
 from typing import Any
 
-from intergrax.agents.persistence.declarative_tool_executor import DeclarativeToolInvoker
+from intergrax.contracts.execution_bound_declarative_tool_invocation import (
+    ExecutionBoundDeclarativeToolInvoker,
+)
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.contracts.agent_run import AgentRunRequest
 
 
 def attach_declarative_tool_invoker(
     metadata: dict[str, Any],
-    invoker: DeclarativeToolInvoker | None,
+    invoker: ExecutionBoundDeclarativeToolInvoker | None,
 ) -> dict[str, Any]:
     wired = dict(metadata)
     if invoker is not None:
@@ -23,18 +25,20 @@ def attach_declarative_tool_invoker(
 
 def resolve_declarative_tool_invoker_from_metadata(
     metadata: dict[str, Any],
-) -> DeclarativeToolInvoker | None:
+) -> ExecutionBoundDeclarativeToolInvoker | None:
     candidate = metadata.get(AcpMetadataKey.DECLARATIVE_TOOL_INVOKER)
     if candidate is None:
         return None
-    if isinstance(candidate, DeclarativeToolInvoker):
+    if isinstance(candidate, ExecutionBoundDeclarativeToolInvoker):
         return candidate
-    raise TypeError("declarative tool invoker metadata must implement DeclarativeToolInvoker")
+    raise TypeError(
+        "declarative tool invoker metadata must implement ExecutionBoundDeclarativeToolInvoker",
+    )
 
 
 def inject_acp_tool_invoker_metadata(
     metadata: dict[str, Any],
-    invoker: DeclarativeToolInvoker | None,
+    invoker: ExecutionBoundDeclarativeToolInvoker | None,
     *,
     task_id: str,
     run_id: str,
@@ -49,7 +53,7 @@ def inject_acp_tool_invoker_metadata(
 
 def wire_acp_run_request_with_tool_invoker(
     request: AgentRunRequest,
-    invoker: DeclarativeToolInvoker | None,
+    invoker: ExecutionBoundDeclarativeToolInvoker | None,
 ) -> AgentRunRequest:
     if invoker is None:
         return request

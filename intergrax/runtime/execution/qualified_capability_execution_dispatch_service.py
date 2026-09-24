@@ -27,6 +27,10 @@ from intergrax.contracts.root_execution_operation import RootExecutionOperation
 from intergrax.runtime.execution.qualified_capability_execution_runtime_delegate import (
     QualifiedCapabilityExecutionRuntimeDelegate,
 )
+from intergrax.runtime.execution.canonical_dispatch_invocation_outcome import (
+    qualified_dispatch_result_for_invocation_failure,
+)
+from intergrax.contracts.execution_intake import CanonicalExecutionInvocationFailed
 from intergrax.tools._shared.async_dispatch import run_async
 
 
@@ -67,41 +71,92 @@ class QualifiedCapabilityExecutionDispatchService(
             existing = self._ledger.get(ledger_key)
             if existing is not None:
                 return existing.result
-
-            payload = QualifiedCapabilityExecutionIntakePayload(
-                execution_request_id=request.execution_request_id,
-                execution_target=request.execution_target,
-                tenant_id=request.tenant_id,
-                task_id=request.task_id,
-                worker_instance_id=request.worker_instance_id,
-                worker_need_id=request.worker_need_id,
-                resume_operation_id=request.resume_operation_id,
-                binding_operation_id=request.binding_operation_id,
-                qualification_request_id=request.qualification_request_id,
-                acquisition_request_id=request.acquisition_request_id,
-                qualified_subject_reference=request.qualified_subject_reference,
-                requested_at=request.requested_at,
-                admitted_governance_identity=request.admitted_governance_identity,
-                effective_authority_decision=request.effective_authority_decision,
-                collaborative_authority_scopes=request.collaborative_authority_scopes,
-            )
-            launch_result = run_async(
-                self._launcher.launch(
-                    RootExecutionLaunchRequest(
-                        admitted_governance_identity=request.admitted_governance_identity,
-                        root_execution_operation=RootExecutionOperation.ROOT_WORKER_DISPATCH,
-                        collaborative_authority_scopes=request.collaborative_authority_scopes,
-                        effective_authority_decision=request.effective_authority_decision,
-                        payload=payload,
-                        run_id=request.run_id,
-                        attempt_id=request.attempt_id,
-                        task_id=request.task_id,
+            payload = self._build_intake_payload(request)
+            try:
+                launch_result = run_async(
+                    self._launcher.launch(
+                        self._build_launch_request(request, payload),
                     ),
-                ),
-            )
+                )
+            except CanonicalExecutionInvocationFailed as exc:
+                result = qualified_dispatch_result_for_invocation_failure(
+                    exc,
+                    execution_request_id=request.execution_request_id,
+                )
+                self._ledger[ledger_key] = _IngressLedgerEntry(result=result)
+                return result
             result = _map_launch_result(request, launch_result)
             self._ledger[ledger_key] = _IngressLedgerEntry(result=result)
             return result
+
+    async def dispatch_async(
+        self,
+        request: QualifiedCapabilityExecutionDispatchRequest,
+    ) -> QualifiedCapabilityExecutionDispatchResult:
+        ledger_key = (request.tenant_id, request.execution_request_id)
+        with self._lock:
+            existing = self._ledger.get(ledger_key)
+            if existing is not None:
+                return existing.result
+        payload = self._build_intake_payload(request)
+        try:
+            launch_result = await self._launcher.launch(
+                self._build_launch_request(request, payload),
+            )
+        except CanonicalExecutionInvocationFailed as exc:
+            result = qualified_dispatch_result_for_invocation_failure(
+                exc,
+                execution_request_id=request.execution_request_id,
+            )
+        else:
+            result = _map_launch_result(request, launch_result)
+        with self._lock:
+            existing = self._ledger.get(ledger_key)
+            if existing is not None:
+                return existing.result
+            self._ledger[ledger_key] = _IngressLedgerEntry(result=result)
+            return result
+
+    def _build_intake_payload(
+        self,
+        request: QualifiedCapabilityExecutionDispatchRequest,
+    ) -> QualifiedCapabilityExecutionIntakePayload:
+        return QualifiedCapabilityExecutionIntakePayload(
+            execution_request_id=request.execution_request_id,
+            execution_target=request.execution_target,
+            tenant_id=request.tenant_id,
+            task_id=request.task_id,
+            worker_instance_id=request.worker_instance_id,
+            worker_need_id=request.worker_need_id,
+            resume_operation_id=request.resume_operation_id,
+            binding_operation_id=request.binding_operation_id,
+            qualification_request_id=request.qualification_request_id,
+            acquisition_request_id=request.acquisition_request_id,
+            qualified_subject_reference=request.qualified_subject_reference,
+            requested_at=request.requested_at,
+            admitted_governance_identity=request.admitted_governance_identity,
+            effective_authority_decision=request.effective_authority_decision,
+            collaborative_authority_scopes=request.collaborative_authority_scopes,
+        )
+
+    def _build_launch_request(
+        self,
+        request: QualifiedCapabilityExecutionDispatchRequest,
+        payload: QualifiedCapabilityExecutionIntakePayload,
+    ) -> RootExecutionLaunchRequest[
+        QualifiedCapabilityExecutionIntakePayload,
+        QualifiedCapabilityExecutionDelegateResult,
+    ]:
+        return RootExecutionLaunchRequest(
+            admitted_governance_identity=request.admitted_governance_identity,
+            root_execution_operation=RootExecutionOperation.ROOT_WORKER_DISPATCH,
+            collaborative_authority_scopes=request.collaborative_authority_scopes,
+            effective_authority_decision=request.effective_authority_decision,
+            payload=payload,
+            run_id=request.run_id,
+            attempt_id=request.attempt_id,
+            task_id=request.task_id,
+        )
 
 
 def _map_launch_result(

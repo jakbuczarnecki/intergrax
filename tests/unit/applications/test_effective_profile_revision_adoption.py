@@ -207,10 +207,10 @@ def test_harness_builder_supplies_revision_admission_dependency() -> None:
         for node in ast.walk(tree)
         if isinstance(node, ast.Call)
         and isinstance(node.func, ast.Name)
-        and node.func.id == "build_harness_environment_host_task_execution"
+        and node.func.id == "build_environment_host_task_execution"
     )
     keyword_names = {keyword.arg for keyword in build_call.keywords}
-    assert "pinning_dependencies" in keyword_names
+    assert "revision_admission" in keyword_names
 
 
 @pytest.mark.asyncio

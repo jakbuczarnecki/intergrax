@@ -19,6 +19,7 @@ from intergrax.contracts.idempotency_store import (
     InvocationClaim,
     InvocationOperationIdentity,
     InvocationStatus,
+    PreEffectSuspendedWorkRecoveryAuthority,
 )
 from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.contracts.persistence_topology import PersistenceTopology
@@ -202,6 +203,51 @@ class InMemoryIdempotencyStore(IdempotencyStore):
                 current,
                 entry.operation_identity,
             )
+
+    def abandon_pre_effect_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        composite_key = (tenant_id, key)
+        now = datetime.now(UTC)
+        with self._lock:
+            entry = self._store.get(composite_key)
+            if entry is None or entry.status != InvocationStatus.STARTED or entry.claim is None:
+                raise StaleClaimError(
+                    f"Cannot abandon key={key}: missing or invalid active claim.",
+                )
+            current = entry.claim
+            self._reject_stale_or_expired_claim(
+                key=key,
+                claim=claim,
+                current=current,
+                now=now,
+                operation="pre-effect abandon",
+            )
+            del self._store[composite_key]
+
+    def reconcile_abandoned_pre_effect_not_started(
+        self,
+        tenant_id: str,
+        key: str,
+        operation_identity: InvocationOperationIdentity,
+        *,
+        recovery_authority: PreEffectSuspendedWorkRecoveryAuthority,
+    ) -> bool:
+        del recovery_authority
+        composite_key = (tenant_id, key)
+        with self._lock:
+            entry = self._store.get(composite_key)
+            if entry is None or entry.status != InvocationStatus.STARTED:
+                return False
+            assert_operation_identity_compatible(
+                entry.operation_identity,
+                operation_identity,
+            )
+            del self._store[composite_key]
+            return True
 
     def record_started(
         self,

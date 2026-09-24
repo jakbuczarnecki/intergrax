@@ -5,16 +5,26 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass, field
 from enum import Enum
 from types import MappingProxyType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from intergrax.integrations.contracts.catalog_factory import IntegrationFactory
 from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.registry.runtime_binding import IntegrationRuntimeBindingSpec
 
-IntegrationContractFactory = Callable[..., Any]
+if TYPE_CHECKING:
+    from intergrax.runtime.integrations.contracts import (
+        PlatformIntegrationCapability,
+        PlatformIntegrationConfig,
+        PlatformIntegrationContract,
+        PlatformIntegrationSecurityPosture,
+    )
+
+# Same catalog materialization responsibility as ``IntegrationFactory`` (no parallel factory type).
+IntegrationContractFactory = IntegrationFactory
 
 # P2-003-B1: typed built-in data/persistence categories require provider-owned specs.
 B1_TYPED_CONTRACT_CATEGORIES: frozenset[str] = frozenset(
@@ -96,13 +106,13 @@ class IntegrationContractSpec:
     category: str
     provider_id: str
     integration_kind: str
-    contract_class: type[Any]
-    integration_class: type[Any]
+    contract_class: type[PlatformIntegrationContract]
+    integration_class: type[PlatformIntegrationContract]
+    security_posture: PlatformIntegrationSecurityPosture
     contract_factory: IntegrationContractFactory = field(compare=False, repr=False)
-    config_class: type[Any] | None = None
+    config_class: type[PlatformIntegrationConfig] | None = None
     display_name: str = ""
     capabilities: tuple[str, ...] = field(default_factory=tuple)
-    security_posture: Any = None
     supports_runtime_binding: bool = True
     supports_health_check: bool = False
     runtime_binding: IntegrationRuntimeBindingSpec | None = field(
@@ -121,13 +131,13 @@ def declare_integration_contract(
     *,
     category: str,
     provider_id: str,
-    integration_class: type[Any],
+    integration_class: type[PlatformIntegrationContract],
     contract_factory: IntegrationContractFactory,
     display_name: str,
-    config_class: type[Any],
-    capabilities: Iterable[str | Any],
-    security_posture: Any,
-    contract_class: type[Any] | None = None,
+    config_class: type[PlatformIntegrationConfig],
+    capabilities: Iterable[str | PlatformIntegrationCapability],
+    security_posture: PlatformIntegrationSecurityPosture,
+    contract_class: type[PlatformIntegrationContract] | None = None,
     integration_kind: str | None = None,
     supports_runtime_binding: bool = True,
     supports_health_check: bool | None = None,
@@ -176,11 +186,11 @@ def declare_integration_contract(
         integration_kind=resolved_integration_kind,
         contract_class=resolved_contract_class,
         integration_class=integration_class,
+        security_posture=security_posture,
         contract_factory=contract_factory,
         config_class=config_class,
         display_name=display_name,
         capabilities=capability_values,
-        security_posture=security_posture,
         supports_runtime_binding=supports_runtime_binding,
         supports_health_check=health_supported,
         runtime_binding=runtime_binding,

@@ -33,7 +33,7 @@ def apply_host_tool_invoker_to_runtime_context(
 ) -> None:
     """Overlay Tier-3 host catalog wiring onto agent stub ``RuntimeContext``."""
     from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
-        CatalogDeclarativeToolInvoker,
+        CatalogHostDeclarativeToolInvoker,
     )
     from intergrax.agents.persistence.tool_invoker_wiring import (
         resolve_declarative_tool_invoker_from_metadata,
@@ -41,7 +41,7 @@ def apply_host_tool_invoker_to_runtime_context(
     from intergrax.runtime.nexus.tools.catalog_dispatch import resolve_tool_registry
 
     invoker = resolve_declarative_tool_invoker_from_metadata(request_metadata)
-    if not isinstance(invoker, CatalogDeclarativeToolInvoker):
+    if not isinstance(invoker, CatalogHostDeclarativeToolInvoker):
         return
     tool_invoker = invoker.tool_invoker
     registry = resolve_tool_registry(tool_invoker)

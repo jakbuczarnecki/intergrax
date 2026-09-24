@@ -179,7 +179,7 @@ def test_p0_compensation_worker_routes_through_admitted_execution_port() -> None
 def test_p0_scenario_entry_uses_host_task_execution() -> None:
     source = _SCENARIO_BASELINE.read_text(encoding="utf-8")
     assert "async def execute_scenario_task" in source
-    assert "build_harness_environment_host_task_execution" in source
+    assert "build_environment_host_task_execution" in source
     assert "host_execution.execute" in source
 
 

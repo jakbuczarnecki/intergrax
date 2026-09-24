@@ -1,4 +1,5 @@
 # © Artur Czarnecki. All rights reserved.
+# Intergrax framework – proprietary and confidential.
 
 """Governed contractor strict production orchestration topology composition (GR-10-R13-R2)."""
 

@@ -7,7 +7,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING
+
+from intergrax.integrations.contracts.catalog_factory import IntegrationFactory
 
 if TYPE_CHECKING:
     from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
@@ -64,9 +66,6 @@ class IntegrationMetadata:
     status: IntegrationStatus = IntegrationStatus.STABLE
     env_prefix: str = ""
     requires_local_container: bool = False
-
-
-IntegrationFactory = Callable[..., Any]
 
 
 @dataclass(frozen=True)

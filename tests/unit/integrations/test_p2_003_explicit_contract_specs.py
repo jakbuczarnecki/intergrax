@@ -608,7 +608,11 @@ class _ExternalB1SqlPlugin:
         )
 
     @classmethod
-    def create_integration(cls, **kwargs: Any) -> Any:
+    def integration_contract_specs(cls) -> tuple[IntegrationContractSpec, ...]:
+        return ()
+
+    @classmethod
+    def create_integration(cls, **kwargs: object) -> RelationalStoreIntegrationContract:
         _ = kwargs
         return _external_b1_plugin_spec().contract_factory()
 

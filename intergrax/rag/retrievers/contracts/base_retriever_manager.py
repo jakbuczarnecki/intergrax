@@ -11,10 +11,16 @@ from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrievalHit,
     RetrieverQuery,
 )
+from intergrax.rag.retrievers.engine.retriever_execution import RetrieverExecutionMetadata
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 
 
 class BaseRetrieverManager:
+
+    @property
+    def last_execution(self) -> RetrieverExecutionMetadata | None:
+        """Optional execution metadata from the most recent retrieve call."""
+        return None
 
     @property
     def supports_scoped_retrieval(self) -> bool:

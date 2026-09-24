@@ -5,9 +5,14 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
+from intergrax.integrations.contracts.catalog_factory import IntegrationFactoryConfigValue
 from intergrax.integrations.contracts.manifest import IntegrationManifest
+
+if TYPE_CHECKING:
+    from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
+    from intergrax.runtime.integrations.contracts import PlatformIntegrationContract
 
 
 @runtime_checkable
@@ -24,7 +29,18 @@ class IntegrationPlugin(Protocol):
         """Catalog identity for this provider."""
 
     @classmethod
-    def create_integration(cls, **kwargs: Any) -> Any:
+    def integration_contract_specs(cls) -> tuple[IntegrationContractSpec, ...]:
+        """
+        Provider-owned contract declarations used when ``contract_specs`` is omitted
+        at registration time. Return ``()`` only for categories that do not require
+        typed contract specs.
+        """
+
+    @classmethod
+    def create_integration(
+        cls,
+        **kwargs: IntegrationFactoryConfigValue,
+    ) -> PlatformIntegrationContract:
         """Factory invoked by :func:`intergrax.integrations.registry.factory.resolve`."""
 
 

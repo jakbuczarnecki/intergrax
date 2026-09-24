@@ -148,7 +148,11 @@ from intergrax.applications._shared.harness_host_orchestration_topology_wiring i
     build_harness_host_orchestration_topology_wiring,
 )
 from intergrax.applications._shared.harness_host_task_execution_wiring import (
-    build_harness_environment_host_task_execution,
+    build_harness_host_task_execution_governance,
+    resolve_harness_effective_profile_revision_admission,
+)
+from intergrax.runtime.execution.environment_host_task_execution import (
+    build_environment_host_task_execution,
 )
 from intergrax.applications._shared.profile_resolution import (
     materialize_effective_profile_revision,
@@ -588,17 +592,23 @@ def build_harness_host_runtime(
             expected_active_revision_id=activation_baseline_revision_id,
         ),
     )
-    execution = build_harness_environment_host_task_execution(
+    harness_execution_governance = build_harness_host_task_execution_governance(
+        governance_evidence_recorder=orchestration_governance_evidence_recorder,
+    )
+    execution = build_environment_host_task_execution(
         nexus_loop,
         effective_environment,
-        pinning_dependencies=EffectiveProfileExecutionPinningDependencies(
-            revision_store=profile_persistence.revision_store,
-            pinning_store=profile_persistence.pinning_store,
-            active_store=profile_persistence.active_store,
-            scope=revision_scope,
+        revision_admission=resolve_harness_effective_profile_revision_admission(
+            EffectiveProfileExecutionPinningDependencies(
+                revision_store=profile_persistence.revision_store,
+                pinning_store=profile_persistence.pinning_store,
+                active_store=profile_persistence.active_store,
+                scope=revision_scope,
+            ),
         ),
         skill_host_wiring=build_host_skill_catalog_wiring_from_environment(env_wiring),
-        governance_evidence_recorder=orchestration_governance_evidence_recorder,
+        root_authority_admission=harness_execution_governance.root_authority_admission,
+        admit_root_governance_identity=harness_execution_governance.admit_root_governance_identity,
     )
     orchestration_topology_wiring: HarnessHostOrchestrationTopologyWiring | None = None
     if require_strict_orchestration_topology_reliability:

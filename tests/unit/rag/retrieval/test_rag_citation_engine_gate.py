@@ -16,9 +16,10 @@ from intergrax.rag.retrieval.retrieval_result import RetrievalChunk
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
+from tests.unit.rag.retrieval.retrieval_hit_fixtures import stub_retrieval_hit
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.vectorstore.contracts.vector_store import VectorStoreHit
 from intergrax.tools.providers.rag.contracts import RagRetrieveInput
@@ -54,18 +55,18 @@ class StubRetriever(BaseRetriever):
     def name(cls) -> str:
         return "stub"
 
-    def retrieve(self, query: RetrieverQuery) -> List[RetrieverCandidate]:
+    def retrieve(self, query: RetrieverQuery) -> List[RetrievalHit]:
         return [
-            RetrieverCandidate(
-                id="chunk-1",
+            stub_retrieval_hit(
+                document_id="chunk-1",
                 content="Contract clause 4.2 applies.",
+                score=0.92,
                 metadata={
                     "doc_id": "contract-2024",
                     "source": "contract.pdf",
                     "page": 12,
                     "url": "https://example.test/contract.pdf",
                 },
-                score=0.92,
             )
         ]
 
@@ -80,7 +81,7 @@ class StubRetrieverManager(BaseRetrieverManager):
         top_k: int = 5,
         metadata_filter=None,
         include_embeddings: bool = False,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         return StubRetriever().retrieve(
             RetrieverQuery(
                 query_text=query_text,

@@ -23,10 +23,8 @@ _SHARED_HOST_WIRING = (
 
 _CANONICAL_FACTORY_RESOLVERS = frozenset(
     {
-        "build_harness_environment_host_task_execution",
         "build_harness_host_runtime",
-        "build_lkw_host_task_execution",
-        "build_governed_contractor_host_task_execution",
+        "runtime.execution",
     },
 )
 
@@ -51,10 +49,6 @@ def _tier3_factory_paths() -> list[Path]:
             continue
         paths.append(path)
     return sorted(paths)
-
-
-def _application_execution_wiring_paths() -> list[Path]:
-    return sorted(_APPLICATIONS_ROOT.glob("*/host/execution_wiring.py"))
 
 
 def _platform_proof_scenario_modules() -> list[Path]:
@@ -91,7 +85,7 @@ def test_u1_ep02_scenario_task_uses_environment_host_execution() -> None:
     """EP-02: execute_scenario_task → harness environment host execution → host_execution.execute."""
     source = _SCENARIO_BASELINE.read_text(encoding="utf-8")
     assert "async def execute_scenario_task" in source
-    assert "build_harness_environment_host_task_execution" in source
+    assert "build_environment_host_task_execution" in source
     assert "host_execution.execute" in source
 
 
@@ -128,22 +122,22 @@ def test_u1_ep05_tier3_factories_resolve_canonical_host_execution_composition() 
     )
 
 
-def test_u1_application_execution_wiring_delegates_to_shared_host_task_execution() -> None:
-    """App-local execution_wiring modules must delegate to shared build_host_task_execution."""
-    for path in _application_execution_wiring_paths():
+def test_u1_ebh2f_r1_tier3_host_has_no_execution_wiring_nexus_coupling() -> None:
+    """Production Tier-3 hosts must not ship app-local Nexus-backed execution_wiring modules."""
+    for path in sorted(_APPLICATIONS_ROOT.glob("*/host/execution_wiring.py")):
         source = path.read_text(encoding="utf-8")
-        assert "build_host_task_execution" in source
-        assert "intergrax.applications._shared.host_task_execution_wiring" in source
+        assert "NexusLoop" not in source, (
+            f"{_rel_posix(path)} must not reference NexusLoop"
+        )
 
 
 def test_u1_harness_host_runtime_uses_environment_host_task_execution() -> None:
     """Harness host runtime (lab and harness apps) must not construct a parallel execution engine."""
     source = _HARNESS_HOST_RUNTIME.read_text(encoding="utf-8")
-    assert "build_harness_environment_host_task_execution" in source
+    assert "build_environment_host_task_execution" in source
     shared = _SHARED_HOST_WIRING.read_text(encoding="utf-8")
-    assert "def build_environment_host_task_execution" in shared
-    assert "build_host_task_execution" in shared
-    assert "intergrax.runtime.execution.nexus_host_execution" in shared
+    assert "NexusLoop" not in shared
+    assert "intergrax.runtime.execution.environment_host_task_execution" in shared
 
 
 def test_u1_production_application_tree_does_not_import_unified_task_runner() -> None:

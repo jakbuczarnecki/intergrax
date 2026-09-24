@@ -13,7 +13,7 @@ from intergrax.contracts.execution_identity import (
     validate_execution_id,
 )
 from intergrax.runtime.execution.facade import Execution as ExecutionFacade
-from intergrax.applications._shared.harness_host_task_execution_wiring import (
+from tests.fixtures.harness_host_task_execution import (
     build_harness_host_task_execution,
 )
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest

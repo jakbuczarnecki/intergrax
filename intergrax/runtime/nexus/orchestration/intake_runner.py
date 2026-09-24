@@ -32,7 +32,19 @@ from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
 from intergrax.runtime.execution.suspended_operation.authorized_resume_reentry import (
+    SuspendedOperationClaimAuthorityResumeTelemetry,
     resume_authorized_continuation_with_suspended_work_reentry,
+)
+from intergrax.runtime.execution.suspended_operation.claim_lifecycle import (
+    ExecutionSuspendedWorkClaimLifecycleCoordinator,
+)
+from intergrax.runtime.execution.suspended_operation.hitl_resume_claim_preparation import (
+    discard_prepared_suspended_work_resume_authority,
+    prepare_suspended_work_caller_authority_for_hitl_intake,
+)
+from intergrax.runtime.execution.suspended_operation.resume_authority_transport import (
+    ExecutionSuspendedWorkResumeAuthorityTransport,
+    ProductionSuspendedWorkAuthorityTelemetry,
 )
 from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
     InternalOrchestrationContinuation,
@@ -72,6 +84,15 @@ class NexusIntakeRunner:
     execution_identity: ActiveExecutionIdentity | None = None
     hitl_continuation: InternalOrchestrationContinuation | None = None
     task_checkpoint_store: TaskCheckpointPersistence | None = None
+    suspended_work_claim_lifecycle: (
+        ExecutionSuspendedWorkClaimLifecycleCoordinator | None
+    ) = None
+    suspended_work_resume_authority_transport: (
+        ExecutionSuspendedWorkResumeAuthorityTransport | None
+    ) = None
+    suspended_work_authority_telemetry: (
+        ProductionSuspendedWorkAuthorityTelemetry | None
+    ) = None
 
     async def run(
         self,
@@ -140,6 +161,10 @@ class NexusIntakeRunner:
                 )
             hitl_run_id, hitl_attempt_id = self.execution_identity.require()
         if verdict == HumanResponseVerdict.REJECT:
+            discard_prepared_suspended_work_resume_authority(
+                task,
+                transport=self.suspended_work_resume_authority_transport,
+            )
             hitl = require_internal_hitl_continuation(self.hitl_continuation)
             HumanPauseCoordinator.resolve_human_response_and_apply_canonical(
                 task,
@@ -172,6 +197,10 @@ class NexusIntakeRunner:
             clear_consumed_human_input(task)
             return IntakePhaseOutcome(early_result=result)
         if verdict == HumanResponseVerdict.ESCALATE:
+            discard_prepared_suspended_work_resume_authority(
+                task,
+                transport=self.suspended_work_resume_authority_transport,
+            )
             hitl = require_internal_hitl_continuation(self.hitl_continuation)
             HumanPauseCoordinator.resolve_human_response_and_apply_canonical(
                 task,
@@ -231,11 +260,20 @@ class NexusIntakeRunner:
             )
             resolution = task.runtime.governance.hitl_resolution
             assert resolution is not None
-            if task.runtime.governance.declarative_hitl_pending is not None:
+            pause_record = task.runtime.governance.pause_record
+            declarative_pending = task.runtime.governance.declarative_hitl_pending
+            if (
+                declarative_pending is not None
+                and pause_record is not None
+                and declarative_pending.pause_id == pause_record.pause_id
+            ):
                 DeclarativeHitlGrantCoordinator.create_grant_from_pending(task)
                 task.sync_metadata()
+            agent_pending = task.runtime.governance.agent_governance_hitl_pending
             if (
-                task.runtime.governance.agent_governance_hitl_pending is not None
+                agent_pending is not None
+                and pause_record is not None
+                and agent_pending.pause_id == pause_record.pause_id
                 and self.task_checkpoint_store is not None
             ):
                 AgentGovernanceHumanApprovalGrantCoordinator.persist_available_grant_from_human_approve(
@@ -247,14 +285,55 @@ class NexusIntakeRunner:
             if task.runtime.governance.human_request is not None:
                 GovernedContinuationGrantCoordinator.create_grant_from_approval(task)
                 task.sync_metadata()
+            prepare_suspended_work_caller_authority_for_hitl_intake(
+                task,
+                hitl=self.hitl_continuation,
+                lifecycle=self.suspended_work_claim_lifecycle,
+                transport=self.suspended_work_resume_authority_transport,
+                telemetry=self.suspended_work_authority_telemetry,
+            )
+            continuation_id_for_authority: str | None = None
+            human_request = task.runtime.governance.human_request
+            if human_request is not None:
+                governed = human_request.governed_continuation
+                if governed is not None:
+                    continuation_id_for_authority = governed.continuation_request_id
+                else:
+                    continuation_id_for_authority = f"gcr_hr_{human_request.request_id}"
+            claim_authority = None
+            if (
+                continuation_id_for_authority is not None
+                and self.suspended_work_resume_authority_transport is not None
+            ):
+                claim_authority = self.suspended_work_resume_authority_transport.take_for_continuation(
+                    continuation_id_for_authority,
+                )
+            resume_telemetry = SuspendedOperationClaimAuthorityResumeTelemetry()
+            if self.suspended_work_authority_telemetry is not None:
+                self.suspended_work_authority_telemetry.production_resume_attempts += 1
             resumed_continuation, reentry = (
                 resume_authorized_continuation_with_suspended_work_reentry(
                     task,
                     authorized,
                     capability=hitl,
                     reentry_coordinator=hitl.suspended_work_reentry_coordinator,
+                    claim_authority=claim_authority,
+                    authority_telemetry=resume_telemetry,
                 )
             )
+            if self.suspended_work_authority_telemetry is not None:
+                prod = self.suspended_work_authority_telemetry
+                prod.authority_refreshes_from_store += (
+                    resume_telemetry.authority_refreshes_from_store
+                )
+                if reentry is not None and reentry.tool_result is not None:
+                    prod.toolruntime_calls += 1
+                if (
+                    reentry is not None
+                    and reentry.disposition
+                    is ExecutionSuspendedWorkReentryDisposition.COMPLETED
+                ):
+                    prod.terminal_writes += 1
             if (
                 reentry is not None
                 and reentry.disposition

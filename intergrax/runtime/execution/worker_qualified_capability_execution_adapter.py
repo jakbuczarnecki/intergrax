@@ -62,7 +62,13 @@ class WorkerQualifiedCapabilityExecutionEngineAdapter:
             attempt_id=request.attempt_id,
         )
         dispatch_result = self._dispatch.dispatch(dispatch_request)
-        return _map_result(dispatch_result)
+        return map_qualified_dispatch_result(dispatch_result)
+
+
+def map_qualified_dispatch_result(
+    dispatch_result,
+) -> WorkerQualifiedCapabilityExecutionResult:
+    return _map_result(dispatch_result)
 
 
 def _map_result(
@@ -104,4 +110,5 @@ def _map_result(
 
 __all__ = [
     "WorkerQualifiedCapabilityExecutionEngineAdapter",
+    "map_qualified_dispatch_result",
 ]

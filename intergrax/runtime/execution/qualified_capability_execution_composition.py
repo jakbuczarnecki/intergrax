@@ -9,6 +9,9 @@ from intergrax.contracts.execution.execution_bound_capability_execution_intake i
     ExecutionBoundCapabilityExecutionDelegateResult,
     ExecutionBoundCapabilityExecutionIntakePayload,
 )
+from intergrax.contracts.execution.execution_terminal_outcome_by_execution_id import (
+    ExecutionTerminalOutcomeByExecutionIdStore,
+)
 from intergrax.contracts.execution.qualified_capability_execution_intake import (
     QualifiedCapabilityExecutionDelegateResult,
     QualifiedCapabilityExecutionIntakePayload,
@@ -35,6 +38,9 @@ from intergrax.runtime.execution.qualified_capability_execution_handlers import 
 from intergrax.runtime.execution.qualified_capability_execution_runtime_delegate import (
     QualifiedCapabilityExecutionRuntimeDelegate,
 )
+from intergrax.runtime.execution.governed_task_runtime_checkpoint_admission import (
+    QualifiedCapabilityRuntimeCheckpointMaterializationAdmission,
+)
 from intergrax.runtime.execution.runtime import ExecutionRuntime
 from intergrax.runtime.governance.execution_admission_composition import (
     build_default_root_execution_launcher,
@@ -45,6 +51,7 @@ def build_qualified_capability_execution_dispatch_service(
     *,
     handler_registry: QualifiedCapabilityExecutionBindingHandlerRegistry,
     runtime_policy_admission: RuntimeExecutionPolicyAdmissionPort,
+    terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None,
 ) -> tuple[
     QualifiedCapabilityExecutionDispatchService,
     QualifiedCapabilityExecutionRuntimeDelegate,
@@ -56,8 +63,14 @@ def build_qualified_capability_execution_dispatch_service(
     """Wire ingress dedup → root launcher → ExecutionRuntime delegate."""
     delegate = QualifiedCapabilityExecutionRuntimeDelegate(
         handler_registry=handler_registry,
+        terminal_outcome_store=terminal_outcome_store,
     )
-    runtime = ExecutionRuntime(delegate)
+    runtime = ExecutionRuntime(
+        delegate,
+        admission_hooks=(
+            QualifiedCapabilityRuntimeCheckpointMaterializationAdmission(),
+        ),
+    )
     intake = CanonicalExecutionRuntimeAdapter(runtime)
     launcher = build_default_root_execution_launcher(
         runtime_policy_admission=runtime_policy_admission,
