@@ -15,7 +15,6 @@ pytestmark = pytest.mark.unit
 
 def test_retrieval_adapter_isolated_preserves_native_and_user_fields() -> None:
     user_metadata = {
-        "workspace_id": "workspace-a",
         "source": "policy.md",
         "custom": {"label": "trusted"},
     }
@@ -23,7 +22,11 @@ def test_retrieval_adapter_isolated_preserves_native_and_user_fields() -> None:
         {
             "schema_version": 1,
             "identity": {"document_id": "document-a", "root_document_id": "document-a"},
-            "scope": {"tenant_id": "tenant-a", "namespace": "namespace-a"},
+            "scope": {
+                "tenant_id": "tenant-a",
+                "namespace": "namespace-a",
+                "workspace_id": "workspace-a",
+            },
             "content": "Native retrieval content.",
             "metadata": user_metadata,
             "provenance": {
@@ -45,7 +48,12 @@ def test_retrieval_adapter_isolated_preserves_native_and_user_fields() -> None:
 
     assert chunk.id == "document-a"
     assert chunk.text == "Native retrieval content."
-    assert chunk.scope == {"tenant_id": "tenant-a", "namespace": "namespace-a"}
+    assert chunk.scope == {
+        "tenant_id": "tenant-a",
+        "namespace": "namespace-a",
+        "workspace_id": "workspace-a",
+    }
+    assert chunk.scope.get("workspace_id") == "workspace-a"
     assert chunk.user_metadata == user_metadata
     assert chunk.metadata == user_metadata
     assert chunk.score == 0.88

@@ -145,6 +145,14 @@ def test_scoped_request_rejects_manager_without_scoped_contract() -> None:
     class _UnscopedManager:
         calls = 0
 
+        @property
+        def supports_scoped_retrieval(self) -> bool:
+            return False
+
+        @property
+        def last_execution(self):
+            return None
+
         def retrieve(
             self,
             query_text: str,
@@ -204,10 +212,16 @@ def test_supported_custom_manager_receives_exact_scope() -> None:
     )
 
     class _ScopedManager:
-        supports_scoped_retrieval = True
-
         def __init__(self) -> None:
             self.received_scope = None
+
+        @property
+        def supports_scoped_retrieval(self) -> bool:
+            return True
+
+        @property
+        def last_execution(self):
+            return None
 
         def retrieve(
             self,

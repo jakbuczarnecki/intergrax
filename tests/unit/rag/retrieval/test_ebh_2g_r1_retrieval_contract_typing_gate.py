@@ -117,3 +117,19 @@ def test_base_retriever_manager_defines_capability_contract_properties() -> None
     props = _class_property_names(tree, "BaseRetrieverManager")
     assert "supports_scoped_retrieval" in props
     assert "last_execution" in props
+
+
+_RETRIEVAL_SECURITY = _REPO_ROOT / "intergrax" / "runtime" / "architecture" / "retrieval_security.py"
+_RAG_POISONING_CALL = _REPO_ROOT / "intergrax" / "tools" / "providers" / "rag" / "service.py"
+
+
+def test_retrieval_poisoning_protocol_uses_read_only_properties() -> None:
+    props = _class_property_names(_parse(_RETRIEVAL_SECURITY), "RetrievalPoisoningInputChunk")
+    assert props == {"id", "text", "score", "source_ref"}
+
+
+def test_rag_poisoning_filter_uses_structural_wiring_without_cast() -> None:
+    source = _read(_RAG_POISONING_CALL)
+    assert "filter_retrieved_chunks_for_poisoning" in source
+    assert "cast(" not in source
+    assert "type: ignore" not in source
