@@ -37,6 +37,9 @@ from intergrax.contracts.execution.execution_terminal_outcome_by_execution_id im
     ExecutionTerminalOutcomeByExecutionIdDisposition,
     ExecutionTerminalOutcomeByExecutionIdStore,
 )
+from intergrax.contracts.execution.suspended_operation.descriptor import (
+    SuspendedOperationMaterializationState,
+)
 from intergrax.contracts.execution.suspended_operation.store import (
     SuspendedExecutionOperationStore,
 )
@@ -141,27 +144,53 @@ class ExecutionSuspendedWorkReentryCoordinator:
                 disposition=ExecutionSuspendedWorkReentryDisposition.REJECTED,
                 reason_detail="payload_digest_mismatch",
             )
+        if request.claim_owner_id != self.claim_owner_id:
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.REJECTED,
+                reason_detail="claim_owner_mismatch",
+            )
 
-        lease_expires = datetime.now(timezone.utc) + timedelta(
-            seconds=self.default_lease_seconds,
-        )
-        claim = self.store.claim(
-            suspended_operation_id=descriptor.suspended_operation_id,
-            expected_materialization_revision=descriptor.materialization_revision,
-            owner_id=self.claim_owner_id,
-            lease_expires_at=lease_expires,
-        )
-        if claim.outcome is not SuspendedOperationClaimOutcome.CLAIMED:
-            return ExecutionSuspendedWorkReentryResult(
-                disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
-                reason_detail=claim.outcome.value,
+        now = datetime.now(timezone.utc)
+        if (
+            descriptor.materialization_state
+            is SuspendedOperationMaterializationState.CLAIMED
+        ):
+            ownership = descriptor.claim_ownership
+            if ownership is None:
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail="claim_missing_descriptor",
+                )
+            if ownership.owner_id != self.claim_owner_id:
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail="stale_claim_owner",
+                )
+            if ownership.lease_expires_at <= now:
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail="claim_lease_expired",
+                )
+            claimed = descriptor
+        else:
+            lease_expires = now + timedelta(seconds=self.default_lease_seconds)
+            claim = self.store.claim(
+                suspended_operation_id=descriptor.suspended_operation_id,
+                expected_materialization_revision=descriptor.materialization_revision,
+                owner_id=self.claim_owner_id,
+                lease_expires_at=lease_expires,
             )
-        claimed = claim.descriptor
-        if claimed is None or claimed.claim_ownership is None:
-            return ExecutionSuspendedWorkReentryResult(
-                disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
-                reason_detail="claim_missing_descriptor",
-            )
+            if claim.outcome is not SuspendedOperationClaimOutcome.CLAIMED:
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail=claim.outcome.value,
+                )
+            claimed = claim.descriptor
+            if claimed is None or claimed.claim_ownership is None:
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail="claim_missing_descriptor",
+                )
 
         codec = self.codec_registry.resolve(
             SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
