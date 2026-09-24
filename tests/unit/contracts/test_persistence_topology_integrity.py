@@ -88,6 +88,19 @@ class _UndeclaredTopologyIdempotencyStore(IdempotencyStore):
         del tenant_id, key, claim
         raise NotImplementedError
 
+    def abandon_pre_effect_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        del tenant_id, key, claim
+        raise NotImplementedError
+
+    def reconcile_abandoned_pre_effect_not_started(self, *args, **kwargs):  # noqa: ANN002, ANN003
+        del args, kwargs
+        raise NotImplementedError
+
     def record_started(
         self,
         tenant_id: str,
@@ -151,6 +164,19 @@ class _BrandNameOnlyIdempotencyStore(IdempotencyStore):
         claim: InvocationClaim,
     ) -> None:
         del tenant_id, key, claim
+        raise NotImplementedError
+
+    def abandon_pre_effect_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        del tenant_id, key, claim
+        raise NotImplementedError
+
+    def reconcile_abandoned_pre_effect_not_started(self, *args, **kwargs):  # noqa: ANN002, ANN003
+        del args, kwargs
         raise NotImplementedError
 
     def record_started(

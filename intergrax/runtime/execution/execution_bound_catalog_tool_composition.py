@@ -53,6 +53,9 @@ from intergrax.runtime.nexus.tools.nexus_execution_bound_catalog_tool_invoker im
 from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
     build_production_runtime_tool_invoker,
 )
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
+)
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.sandbox.isolation_gate import SandboxAvailabilityProvider
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
@@ -100,6 +103,11 @@ def build_execution_bound_catalog_tool_composition(
     reentry_crash_injection: ExecutionSuspendedWorkReentryCrashInjectionPort | None = None,
     tool_runtime_effect_crash_injection: ToolRuntimeEffectCrashInjectionPort | None = None,
 ) -> ExecutionBoundCatalogToolComposition:
+    pre_effect_coordinator = (
+        IdempotencyPreEffectCoordinator(idempotency_store=idempotency_store)
+        if idempotency_store is not None
+        else None
+    )
     tool_invoker = build_production_runtime_tool_invoker(
         registry=registry,
         executor=tool_executor,
@@ -109,6 +117,7 @@ def build_execution_bound_catalog_tool_composition(
         meaningful_side_effect_authorization=meaningful_side_effect_authorization,
         scope_policy=scope_policy,
         idempotency_store=idempotency_store,
+        pre_effect_coordinator=pre_effect_coordinator,
         production_mode=production_mode,
         effect_crash_injection=tool_runtime_effect_crash_injection,
     )
@@ -177,6 +186,7 @@ def build_execution_bound_catalog_tool_composition(
             terminal_outcome_store=terminal_outcome_store,
             utc_clock=shared_utc_clock,
             crash_injection=reentry_crash_injection,
+            pre_effect_coordinator=pre_effect_coordinator,
         )
         continuation_aware_dependencies = ContinuationAwareCatalogToolHostDependencies(
             suspended_operation_store=suspended_store,

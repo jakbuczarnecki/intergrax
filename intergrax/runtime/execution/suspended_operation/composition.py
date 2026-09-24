@@ -48,6 +48,9 @@ from intergrax.tools.durable_invocation_wiring_binding_resolver import (
     DurableToolInvocationWiringBindingResolver,
 )
 from intergrax.tools.registry.read import ToolRegistryRead
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
+)
 
 
 class SuspendedOperationCompositionError(RuntimeError):
@@ -108,6 +111,7 @@ def wire_execution_suspended_work_reentry_coordinator(
     terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None,
     utc_clock: UtcClockPort | None = None,
     crash_injection: ExecutionSuspendedWorkReentryCrashInjectionPort | None = None,
+    pre_effect_coordinator: IdempotencyPreEffectCoordinator | None = None,
 ) -> ExecutionSuspendedWorkReentryCoordinator:
     resolved_utc_clock = utc_clock if utc_clock is not None else SystemUtcClock()
     coordinator_kwargs = {
@@ -125,6 +129,8 @@ def wire_execution_suspended_work_reentry_coordinator(
     }
     if crash_injection is not None:
         coordinator_kwargs["crash_injection"] = crash_injection
+    if pre_effect_coordinator is not None:
+        coordinator_kwargs["pre_effect_coordinator"] = pre_effect_coordinator
     return ExecutionSuspendedWorkReentryCoordinator(**coordinator_kwargs)
 
 

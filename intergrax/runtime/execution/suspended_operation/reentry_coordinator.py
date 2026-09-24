@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
 
 from intergrax.contracts.agent_governance_hitl import AgentGovernanceGrantLifecycleState
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
@@ -81,6 +81,12 @@ from intergrax.runtime.execution.suspended_operation.suspended_work_agent_govern
 from intergrax.runtime.execution.suspended_operation.crash_injection import (
     NoOpExecutionSuspendedWorkReentryCrashInjection,
 )
+from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
+    IdempotencyPreEffectCoordinator,
+)
+from intergrax.runtime.tools.operation_identity import (
+    compute_invocation_operation_identity,
+)
 from intergrax.runtime.nexus.tools.continuation_aware_catalog_tool_host import (
     ContinuationAwareCatalogToolHost,
 )
@@ -119,6 +125,7 @@ class ExecutionSuspendedWorkReentryCoordinator:
     )
     default_lease_seconds: int = 120
     utc_clock: UtcClockPort = field(default_factory=SystemUtcClock)
+    pre_effect_coordinator: IdempotencyPreEffectCoordinator | None = None
 
     def reenter_after_resume(
         self,
@@ -141,6 +148,7 @@ class ExecutionSuspendedWorkReentryCoordinator:
         if descriptor is None:
             reconciled = self._reconcile_consumed_without_terminal_outcome(
                 request=request,
+                task=task,
             )
             if reconciled is not None:
                 return reconciled
@@ -184,7 +192,7 @@ class ExecutionSuspendedWorkReentryCoordinator:
                 reason_detail="stale_pause_generation",
             )
 
-        now = datetime.now(timezone.utc)
+        now = self.utc_clock.now_utc()
         if (
             descriptor.materialization_state
             is SuspendedOperationMaterializationState.CLAIMED
@@ -332,6 +340,18 @@ class ExecutionSuspendedWorkReentryCoordinator:
                 )
             )
 
+        if self.pre_effect_coordinator is not None:
+            self.pre_effect_coordinator.reconcile_abandoned_pre_effect_before_retry(
+                tenant_id=payload.tenant_id,
+                key=payload.idempotency_key,
+                operation_identity=compute_invocation_operation_identity(
+                    payload.tool_id,
+                    payload.tool_input,
+                ),
+                suspended_work_owner_id=claim_ownership.owner_id,
+                suspended_work_fence=claim_ownership.fence,
+            )
+
         self.crash_injection.raise_if_scheduled(
             ExecutionSuspendedWorkReentryCrashCheckpoint.AFTER_CLAIM_BEFORE_TOOL_RUNTIME,
         )
@@ -417,6 +437,7 @@ class ExecutionSuspendedWorkReentryCoordinator:
         self,
         *,
         request: ExecutionSuspendedWorkReentryRequest,
+        task: Task | None,
     ) -> ExecutionSuspendedWorkReentryResult | None:
         materialized = self.store.load_materialized_for_continuation(
             request.continuation_id,
@@ -438,23 +459,54 @@ class ExecutionSuspendedWorkReentryCoordinator:
         recorded = self.terminal_outcome_store.get_recorded_disposition(
             request.identity.execution_id,
         )
-        if recorded is None:
-            self.terminal_outcome_store.record_terminal_disposition(
-                request.identity.execution_id,
-                ExecutionTerminalOutcomeByExecutionIdDisposition.SUCCEEDED,
-            )
-            return ExecutionSuspendedWorkReentryResult(
-                disposition=ExecutionSuspendedWorkReentryDisposition.COMPLETED,
-                reason_detail="consumed_terminal_reconciled",
-            )
         if recorded is ExecutionTerminalOutcomeByExecutionIdDisposition.SUCCEEDED:
             return ExecutionSuspendedWorkReentryResult(
                 disposition=ExecutionSuspendedWorkReentryDisposition.NOT_READY,
                 reason_detail="execution_already_terminal",
             )
+        if recorded is not None:
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                reason_detail="consumed_terminal_conflict",
+            )
+        codec = self.codec_registry.resolve(
+            SuspendedOperationKind.EXECUTION_BOUND_CATALOG_TOOL,
+            materialized.payload.payload_schema_version,
+        )
+        decoded_payload = codec.decode(materialized.payload)
+        if type(decoded_payload) is not ExecutionBoundCatalogToolOperationPayload:
+            return ExecutionSuspendedWorkReentryResult(
+                disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                reason_detail="unsupported_payload_type",
+            )
+        governance_task = task
+        if (
+            governance_task is None
+            and self.task_checkpoint_store is not None
+            and is_agent_governance_invocation_scope(materialized.invocation_scope_id)
+        ):
+            governance_task = Task(
+                tenant_id=decoded_payload.tenant_id,
+                user_id="reentry-reconcile",
+                message="consumed_lifecycle_reconcile",
+                task_id=decoded_payload.task_id,
+            )
+        if (
+            governance_task is not None
+            and self.task_checkpoint_store is not None
+            and is_agent_governance_invocation_scope(materialized.invocation_scope_id)
+        ):
+            AgentGovernanceHumanApprovalGrantCoordinator.terminalize_after_successful_consumption(
+                governance_task,
+                checkpoint_store=self.task_checkpoint_store,
+            )
+        self.terminal_outcome_store.record_terminal_disposition(
+            request.identity.execution_id,
+            ExecutionTerminalOutcomeByExecutionIdDisposition.SUCCEEDED,
+        )
         return ExecutionSuspendedWorkReentryResult(
-            disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
-            reason_detail="consumed_terminal_conflict",
+            disposition=ExecutionSuspendedWorkReentryDisposition.COMPLETED,
+            reason_detail="consumed_terminal_reconciled",
         )
 
     def _tool_contract(self, tool_id: str) -> ToolContract:

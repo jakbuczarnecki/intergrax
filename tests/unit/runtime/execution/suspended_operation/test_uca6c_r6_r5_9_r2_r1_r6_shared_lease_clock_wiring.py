@@ -323,6 +323,20 @@ def test_claim_lifecycle_wiring_uses_reentry_public_clock() -> None:
     assert "store._backing" not in source
 
 
+def test_reentry_coordinator_lease_uses_injected_clock_not_wall_clock() -> None:
+    reentry_path = (
+        _REPO_ROOT
+        / "intergrax"
+        / "runtime"
+        / "execution"
+        / "suspended_operation"
+        / "reentry_coordinator.py"
+    )
+    source = reentry_path.read_text(encoding="utf-8")
+    assert "datetime.now(timezone.utc)" not in source
+    assert "self.utc_clock.now_utc()" in source
+
+
 def test_no_new_private_cross_component_clock_access_in_production_scope() -> None:
     forbidden_patterns = (
         "store._utc_clock",

@@ -37,10 +37,7 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     reset_active_execution_identity,
 )
-from intergrax.contracts.idempotency_store import (
-    ActiveInvocationClaimError,
-    InvocationUncertaintyError,
-)
+from intergrax.contracts.idempotency_store import InvocationUncertaintyError
 from intergrax.runtime.execution.suspended_operation.crash_injection import (
     DeterministicExecutionSuspendedWorkReentryCrashInjection,
 )
@@ -362,17 +359,18 @@ def test_w2_crash_after_admission_before_backend(tmp_path) -> None:
             assert fixture.backend_a.calls == 0
             assert fixture.backend_b.calls == 0
             tool_crash.scheduled = None
-            with pytest.raises(ActiveInvocationClaimError):
-                _reenter(
-                    reentry_b,
-                    continuation_id=c3,
-                    identity=d3.identity,
-                    task=task,
-                    counters=fixture.counters,
-                    host="b",
-                    claim_authority=_claim_authority_for_coordinator(reentry_b, c3),
-                )
-            assert fixture.backend_b.calls == 0
+            result = _reenter(
+                reentry_b,
+                continuation_id=c3,
+                identity=d3.identity,
+                task=task,
+                counters=fixture.counters,
+                host="b",
+                claim_authority=_claim_authority_for_coordinator(reentry_b, c3),
+            )
+            assert result.disposition is ExecutionSuspendedWorkReentryDisposition.COMPLETED
+            assert fixture.backend_b.calls == 1
+            assert fixture.backend_a.calls == 0
         finally:
             reset_governed_execution_task(tokens[2])
             reset_active_execution_governance_identity(tokens[1])
@@ -585,10 +583,7 @@ def test_w5_crash_after_consume_before_terminal(tmp_path) -> None:
             claim_authority=_claim_authority_for_coordinator(co_b, c3),
         )
         assert result.disposition is ExecutionSuspendedWorkReentryDisposition.COMPLETED
-        assert result.reason_detail in {
-            "consumed_terminal_reconciled",
-            "consumed_terminal_idempotent",
-        }
+        assert result.reason_detail == "consumed_terminal_reconciled"
         assert counters.backend_logical_effects == 1
         assert (
             terminal_disposition(fixture.terminal_store, execution_id)

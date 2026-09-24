@@ -15,7 +15,9 @@ from intergrax.contracts.idempotency_store import (
     ClaimResult,
     IdempotencyStore,
     InvocationClaim,
+    InvocationOperationIdentity,
     InvocationUncertaintyError,
+    PreEffectSuspendedWorkRecoveryAuthority,
 )
 from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
@@ -167,6 +169,40 @@ class IdempotencyPreEffectCoordinator:
             claim_context.key,
             claim_context.claim,
             safe_failure,
+        )
+
+    def abandon_pre_effect_with_claim(
+        self,
+        *,
+        claim_context: PreEffectClaimContext,
+    ) -> None:
+        """Release an active claim when external effect is proven NOT_STARTED."""
+        self._store.abandon_pre_effect_with_claim(
+            claim_context.tenant_id,
+            claim_context.key,
+            claim_context.claim,
+        )
+
+    def reconcile_abandoned_pre_effect_before_retry(
+        self,
+        *,
+        tenant_id: str,
+        key: str,
+        operation_identity: InvocationOperationIdentity,
+        suspended_work_owner_id: str,
+        suspended_work_fence: int,
+    ) -> None:
+        """Clear orphaned STARTED ledger rows after pre-effect process loss (W2)."""
+        if not suspended_work_owner_id.strip():
+            raise RuntimeError("suspended_work_owner_id is required for pre-effect recovery.")
+        self._store.reconcile_abandoned_pre_effect_not_started(
+            tenant_id,
+            key,
+            operation_identity,
+            recovery_authority=PreEffectSuspendedWorkRecoveryAuthority(
+                owner_id=suspended_work_owner_id,
+                fence=suspended_work_fence,
+            ),
         )
 
     def _to_coordination_result(
