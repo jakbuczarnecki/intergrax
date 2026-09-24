@@ -39,6 +39,9 @@ from intergrax.contracts.execution.suspended_operation.reentry import (
     ExecutionSuspendedWorkReentryRequest,
     ExecutionSuspendedWorkReentryResult,
 )
+from intergrax.contracts.execution.suspended_operation.resume_authority_context import (
+    ExecutionSuspendedWorkResumeAuthorityContext,
+)
 from intergrax.contracts.execution.suspended_operation.store import (
     SuspendedExecutionOperationStore,
 )
@@ -49,6 +52,7 @@ __all__ = [
     "ExecutionSuspendedWorkReentryPort",
     "ExecutionSuspendedWorkReentryRequest",
     "ExecutionSuspendedWorkReentryResult",
+    "ExecutionSuspendedWorkResumeAuthorityContext",
     "SCHEMA_SUSPENDED_EXECUTION_OPERATION_DESCRIPTOR_V1",
     "SerializedSuspendedOperationEnvelope",
     "SuspendedExecutionOperationDescriptor",
