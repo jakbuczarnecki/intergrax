@@ -21,7 +21,7 @@ from intergrax.integrations.registry.plugin_register import register_from_manife
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
 from intergrax.runtime.integrations.categories.storage import VectorStoreIntegrationContract
-from intergrax.runtime.integrations.contract_metadata import IntegrationContractMetadataError
+from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
 from intergrax.runtime.integrations.contracts import PlatformIntegrationContract, PlatformIntegrationSecurityPosture
 from intergrax.runtime.integrations.contracts import PlatformIntegrationCapability
 
@@ -190,9 +190,55 @@ def test_prebuilt_base_only_platform_contract_fail_closed() -> None:
         profile.instance_for_category(IntegrationCategory.RELATIONAL_STORE)
 
 
-def test_external_work_prebuilt_canonical_accessor_requires_registry_contract() -> None:
+class _StubExternalWorkIntegration:
+    """Minimal structural stub for profile category-contract tests."""
+
+    def discover(self): ...
+
+    def create_work(self, request): ...
+
+    def get_work(self, correlation): ...
+
+    def get_quote(self, correlation): ...
+
+    def submit_quote_acceptance(
+        self,
+        correlation,
+        acceptance,
+        *,
+        idempotency_key: str,
+    ): ...
+
+    def cancel_work(self, correlation, *, idempotency_key: str, reason: str = ""): ...
+
+    def get_timeline(self, correlation, *, limit: int = 50): ...
+
+    def get_deliverables(self, correlation): ...
+
+    def get_evidence(self, correlation): ...
+
+
+def test_prebuilt_external_work_valid_contract_accepted() -> None:
+    stub = _StubExternalWorkIntegration()
+    assert isinstance(stub, ExternalWorkIntegration)
+    profile = IntegrationProfile(external_work=stub)
+    resolved = profile.instance_for_category(IntegrationCategory.EXTERNAL_WORK)
+    assert resolved is stub
+
+
+def test_prebuilt_external_work_plain_object_fail_closed() -> None:
     profile = IntegrationProfile(external_work=object())
-    with pytest.raises(IntegrationContractMetadataError):
+    with pytest.raises(TypeError, match="expected ExternalWorkIntegration"):
+        profile.instance_for_category(IntegrationCategory.EXTERNAL_WORK)
+
+
+def test_prebuilt_external_work_wrong_category_contract_fail_closed() -> None:
+    wrong = VectorStoreIntegrationContract.for_provider(
+        provider_id="wrong_vector",
+        display_name="Wrong vector",
+    )
+    profile = IntegrationProfile(external_work=wrong)
+    with pytest.raises(TypeError, match="expected ExternalWorkIntegration"):
         profile.instance_for_category(IntegrationCategory.EXTERNAL_WORK)
 
 

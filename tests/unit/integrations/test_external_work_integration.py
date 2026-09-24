@@ -452,8 +452,9 @@ def test_profile_binds_external_work_instance_without_catalog_slug() -> None:
     assert profile.external_work is not None
     assert profile.external_work.instance is fake
     assert profile.slug_for_category(IntegrationCategory.EXTERNAL_WORK) is None
-    with pytest.raises(IntegrationContractMetadataError):
-        profile.instance_for_category(IntegrationCategory.EXTERNAL_WORK)
+    resolved = profile.instance_for_category(IntegrationCategory.EXTERNAL_WORK)
+    assert resolved is fake
+    assert isinstance(resolved, ExternalWorkIntegration)
 
 
 @pytest.mark.unit

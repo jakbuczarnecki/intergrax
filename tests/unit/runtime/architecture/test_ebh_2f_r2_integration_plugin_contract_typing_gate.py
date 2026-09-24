@@ -20,6 +20,7 @@ _BASE_TYPES = _REPO_ROOT / "intergrax" / "integrations" / "contracts" / "base.py
 _RESOLVER = _REPO_ROOT / "intergrax" / "integrations" / "registry" / "factory.py"
 _CONTRACT_SPEC = _REPO_ROOT / "intergrax" / "integrations" / "registry" / "contract_spec.py"
 _INTEGRATION_PROFILE = _REPO_ROOT / "intergrax" / "integrations" / "contracts" / "integration_profile.py"
+_CONTRACT_METADATA = _REPO_ROOT / "intergrax" / "runtime" / "integrations" / "contract_metadata.py"
 
 
 def _read(path: Path) -> str:
@@ -96,3 +97,14 @@ def test_factory_materialization_validates_category_contract() -> None:
     assert "contract_for_category" in source
     assert "expected_contract" in source
     assert "expected a PlatformIntegrationContract" not in source
+
+
+def test_canonical_category_contract_resolver_supports_di_only_categories() -> None:
+    source = _read(_CONTRACT_METADATA)
+    assert "DI_ONLY_CATEGORY_CONTRACT_REGISTRY" in source
+    assert '"external_work"' in source
+    assert "PROVIDER_CATEGORY_CONTRACT_REGISTRY.get" in source
+    assert "DI_ONLY_CATEGORY_CONTRACT_REGISTRY.get" in source
+    profile_source = _read(_INTEGRATION_PROFILE)
+    assert "IntegrationCategory.EXTERNAL_WORK" not in profile_source
+    assert "contract_for_category" in profile_source
