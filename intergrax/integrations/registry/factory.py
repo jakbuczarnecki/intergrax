@@ -9,6 +9,7 @@ from typing import Any, Mapping, Optional
 
 from intergrax.integrations._shared.config import merge_config, read_integration_slug_from_env
 from intergrax.runtime.integrations.contract_metadata import CategoryIntegrationInstance
+from intergrax.runtime.integrations.contracts import PlatformIntegrationContract
 from intergrax.integrations.contracts.base import (
     IntegrationCategory,
     IntegrationCategoryMismatchError,
@@ -84,12 +85,36 @@ def resolve_slug(
     )
 
 
+def _require_platform_integration_contract(
+    value: object,
+    *,
+    slug: str,
+    category: IntegrationCategory,
+) -> PlatformIntegrationContract:
+    """Catalog factory materialization: registry-backed ``PlatformIntegrationContract`` only."""
+    from intergrax.runtime.integrations.contract_metadata import contract_for_category
+
+    if not isinstance(value, PlatformIntegrationContract):
+        raise TypeError(
+            f"Integration factory for slug {slug!r} (category {category.value!r}) "
+            f"returned {type(value).__name__}, expected PlatformIntegrationContract."
+        )
+    expected_contract = contract_for_category(category.value)
+    if not isinstance(value, expected_contract):
+        raise TypeError(
+            f"Integration factory for slug {slug!r} (category {category.value!r}) "
+            f"returned {type(value).__name__}, expected {expected_contract.__name__}."
+        )
+    return value
+
+
 def _require_category_integration_instance(
     value: object,
     *,
     slug: str,
     category: IntegrationCategory,
 ) -> CategoryIntegrationInstance:
+    """Profile pre-built path: registry-backed or DI-only category instances."""
     from intergrax.runtime.integrations.contract_metadata import contract_for_category
 
     expected_contract = contract_for_category(category.value)
@@ -107,7 +132,7 @@ def resolve(
     *,
     profile: Optional[IntegrationProfile] = None,
     config: Optional[Mapping[str, Any]] = None,
-) -> CategoryIntegrationInstance:
+) -> PlatformIntegrationContract:
     """
     Instantiate the provider for ``category``.
 
@@ -135,7 +160,7 @@ def resolve(
     else:
         materialized = entry.factory()
 
-    return _require_category_integration_instance(
+    return _require_platform_integration_contract(
         materialized,
         slug=resolved_slug,
         category=normalized,

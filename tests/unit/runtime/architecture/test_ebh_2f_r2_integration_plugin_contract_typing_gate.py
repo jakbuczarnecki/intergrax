@@ -72,8 +72,8 @@ def test_registry_v2_reuses_canonical_integration_factory_type() -> None:
 def test_canonical_resolver_has_no_any_semantic_result() -> None:
     source = _read(_RESOLVER)
     assert "-> Any" not in source
-    assert "CategoryIntegrationInstance" in source
-    assert "_require_platform_integration_contract" not in source
+    assert "_require_platform_integration_contract" in source
+    assert "_require_category_integration_instance" in source
 
 
 def test_contract_spec_factory_aliases_catalog_factory_without_any() -> None:
@@ -135,11 +135,39 @@ def test_instance_for_category_declares_category_integration_instance() -> None:
     assert "PlatformIntegrationContract" not in annotation
 
 
+def test_resolve_declares_platform_integration_contract_only() -> None:
+    tree = _parse(_RESOLVER)
+    annotation = _function_return_annotation(tree, "resolve")
+    assert annotation.strip() == "PlatformIntegrationContract"
+    assert "CategoryIntegrationInstance" not in annotation
+
+
 def test_resolve_from_profile_declares_category_integration_instance() -> None:
     tree = _parse(_RESOLVER)
     annotation = _function_return_annotation(tree, "resolve_from_profile")
-    assert "CategoryIntegrationInstance" in annotation
+    assert annotation.strip() == "CategoryIntegrationInstance"
     assert "PlatformIntegrationContract" not in annotation
+
+
+def test_integration_factory_aliases_platform_integration_contract_only() -> None:
+    tree = _parse(_CATALOG_FACTORY)
+    for node in tree.body:
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            if node.target.id == "IntegrationFactory":
+                assert node.value is not None
+                unparsed = ast.unparse(node.value)
+                assert "PlatformIntegrationContract" in unparsed
+                assert "CategoryIntegrationInstance" not in unparsed
+                return
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "IntegrationFactory":
+                    assert node.value is not None
+                    unparsed = ast.unparse(node.value)
+                    assert "PlatformIntegrationContract" in unparsed
+                    assert "CategoryIntegrationInstance" not in unparsed
+                    return
+    pytest.fail("IntegrationFactory alias not found in catalog_factory.py")
 
 
 def test_external_work_integration_not_subclass_of_platform_contract() -> None:
