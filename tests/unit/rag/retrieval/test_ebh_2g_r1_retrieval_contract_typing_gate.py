@@ -14,6 +14,10 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _RESOLVE = _REPO_ROOT / "intergrax" / "rag" / "retrieval" / "resolve.py"
 _RETRIEVAL_SERVICE = _REPO_ROOT / "intergrax" / "rag" / "retrieval" / "retrieval_service.py"
+_BASE_RETRIEVER_MANAGER = (
+    _REPO_ROOT / "intergrax" / "rag" / "retrievers" / "contracts" / "base_retriever_manager.py"
+)
+_FORBIDDEN_CAPABILITY_GETATTR_ATTRS = frozenset({"supports_scoped_retrieval", "last_execution"})
 
 
 def _read(path: Path) -> str:
@@ -67,3 +71,49 @@ def test_retrieval_service_imports_resolve_only_from_rag_retrieval() -> None:
     source = _read(_REPO_ROOT / "intergrax" / "tools" / "providers" / "rag" / "service.py")
     assert "resolve_retrieval_service" in source
     assert "from intergrax.rag.retrieval.resolve import resolve_retrieval_service" in source
+
+
+def _forbidden_capability_getattr_calls(tree: ast.Module) -> list[str]:
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name) or node.func.id != "getattr":
+            continue
+        if len(node.args) < 2:
+            continue
+        second = node.args[1]
+        if isinstance(second, ast.Constant) and isinstance(second.value, str):
+            if second.value in _FORBIDDEN_CAPABILITY_GETATTR_ATTRS:
+                violations.append(second.value)
+    return violations
+
+
+def _class_property_names(tree: ast.Module, class_name: str) -> set[str]:
+    names: set[str] = set()
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name != class_name:
+            continue
+        for item in node.body:
+            if isinstance(item, ast.FunctionDef):
+                for dec in item.decorator_list:
+                    if isinstance(dec, ast.Name) and dec.id == "property":
+                        names.add(item.name)
+    return names
+
+
+def test_retrieval_service_has_no_dynamic_capability_probing() -> None:
+    tree = _parse(_RETRIEVAL_SERVICE)
+    violations = _forbidden_capability_getattr_calls(tree)
+    assert violations == []
+    source = _read(_RETRIEVAL_SERVICE)
+    assert "hasattr(" not in source
+    assert ".supports_scoped_retrieval" in source
+    assert ".last_execution" in source
+
+
+def test_base_retriever_manager_defines_capability_contract_properties() -> None:
+    tree = _parse(_BASE_RETRIEVER_MANAGER)
+    props = _class_property_names(tree, "BaseRetrieverManager")
+    assert "supports_scoped_retrieval" in props
+    assert "last_execution" in props

@@ -24,7 +24,21 @@ from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseReranker
 from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate
 from intergrax.rag.routing.query_router import QueryRouter
 from intergrax.rag.tracking.metrics import record_retrieval
-from intergrax.rag.tracking.rag_spans import rag_span
+from intergrax.rag.tracking.rag_spans import SpanAttributeValue, rag_span
+
+
+def _tenant_id_for_observability(request: RetrievalRequest) -> Optional[str]:
+    if request.scope is None:
+        return None
+    return request.scope.tenant_id
+
+
+def _rag_retrieve_span_attributes(request: RetrievalRequest, query: str) -> dict[str, SpanAttributeValue]:
+    attributes: dict[str, SpanAttributeValue] = {"rag.query.length": len(query)}
+    tenant_id = _tenant_id_for_observability(request)
+    if tenant_id is not None:
+        attributes["rag.tenant_id"] = tenant_id
+    return attributes
 
 
 class RetrievalService:
@@ -59,9 +73,7 @@ class RetrievalService:
         query = (request.query or "").strip()
         with rag_span(
             "rag.retrieve",
-            attributes={
-                "rag.query.length": len(query),
-            },
+            attributes=_rag_retrieve_span_attributes(request, query),
         ):
             if not query:
                 trace = RetrievalTrace()
@@ -85,9 +97,7 @@ class RetrievalService:
         query = (request.query or "").strip()
         with rag_span(
             "rag.retrieve.single_pass",
-            attributes={
-                "rag.query.length": len(query),
-            },
+            attributes=_rag_retrieve_span_attributes(request, query),
         ):
             trace = RetrievalTrace()
             if not query:
@@ -105,8 +115,7 @@ class RetrievalService:
             prefetch_k = request.resolved_prefetch_k(self._profile.prefetch_top_k, final_k)
 
             t0 = time.perf_counter()
-            supports_scoped = getattr(self._retriever_manager, "supports_scoped_retrieval", False)
-            if request.scope is not None and supports_scoped is not True:
+            if request.scope is not None and not self._retriever_manager.supports_scoped_retrieval:
                 trace.retrieval_error_kind = "scoped_retrieval_unsupported"
                 trace.retrieval_latency_ms = (time.perf_counter() - t0) * 1000.0
                 return RetrievalResult(
@@ -216,7 +225,7 @@ class RetrievalService:
                 request=request,
                 trace=trace,
                 hits=len(chunks),
-                tenant_id=None,
+                tenant_id=_tenant_id_for_observability(request),
             )
             return result
 
@@ -225,7 +234,7 @@ def _apply_retriever_execution_trace(
     retriever_manager: BaseRetrieverManager,
     trace: RetrievalTrace,
 ) -> None:
-    execution = getattr(retriever_manager, "last_execution", None)
+    execution = retriever_manager.last_execution
     if execution is None:
         return
     trace.retriever_id = execution.used_retriever_id
@@ -265,7 +274,7 @@ def _record_retrieval_metrics(
     )
 
 
-def _require_retrieval_hit_candidates(candidates: Sequence[object]) -> None:
+def _require_retrieval_hit_candidates(candidates: Sequence[RetrievalHit]) -> None:
     if not all(isinstance(candidate, RetrievalHit) for candidate in candidates):
         raise TypeError("retriever must return RetrievalHit candidates")
 
