@@ -9,8 +9,14 @@ from datetime import UTC, datetime
 
 import pytest
 
+from intergrax.autonomous_work.document_store_worker_recovery_obstacle_capability_need_repository import (
+    DocumentStoreWorkerRecoveryObstacleCapabilityNeedRepository,
+)
 from intergrax.autonomous_work.in_memory_worker_recovery_obstacle_capability_need_repository import (
     InMemoryWorkerRecoveryObstacleCapabilityNeedRepository,
+)
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
 )
 from intergrax.autonomous_work.repository import AutonomousWorkEntityConflict
 from intergrax.autonomous_work.worker_capability_need_serialization import (
@@ -57,6 +63,22 @@ def test_need_conflict_fail_closed() -> None:
     mismatched = replace(need, recovery_decision_id="other")
     with pytest.raises(AutonomousWorkEntityConflict):
         repo.record_obstacle_capability_need(mismatched)
+
+
+def test_document_store_need_restart_visibility() -> None:
+    need = _sample_need()
+    backend = InMemoryDocumentStore()
+    host_a = DocumentStoreWorkerRecoveryObstacleCapabilityNeedRepository(backend)
+    host_a.record_obstacle_capability_need(need)
+    del host_a
+    host_b = DocumentStoreWorkerRecoveryObstacleCapabilityNeedRepository(backend)
+    assert (
+        host_b.get_obstacle_capability_need(
+            worker_instance_id=need.worker_instance_id,
+            obstacle_id=need.obstacle_id,
+        )
+        == need
+    )
 
 
 def test_need_idempotent_same_value() -> None:
