@@ -51,6 +51,10 @@ from intergrax.capability_qualification.qualified_capability_binding_service imp
 from intergrax.contracts.autonomous_work.lifecycle import WorkerLifecycleState
 from intergrax.contracts.autonomous_work.recovery_orchestration import (
     WorkerRecoveryOrchestrationDisposition,
+    derive_recovery_episode_id,
+)
+from intergrax.runtime.execution.continuation.durable_restart_identity_correlation import (
+    correlate_durable_restart_execution_identity,
 )
 from intergrax.contracts.execution.suspended_operation.descriptor import (
     SuspendedExecutionOperationDescriptor,
@@ -92,8 +96,14 @@ from intergrax.runtime.governance.active_governed_execution_task import (
 from intergrax.runtime.governance.runtime_execution_policy_admission import (
     AllowingRuntimeExecutionPolicyAdmission,
 )
-from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
-from intergrax.runtime.long_running.resume_planner import build_checkpoint_resume_task
+from intergrax.runtime.long_running.models import TaskCheckpoint
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
+from intergrax.runtime.long_running.resume_planner import (
+    build_checkpoint_resume_task,
+    execution_identity_from_checkpoint,
+)
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.active_task_registry_fulfillment_task_context_reader import (
     ActiveTaskRegistryFulfillmentTaskContextReader,
@@ -674,10 +684,32 @@ def _load_task_from_durable_checkpoint(
     checkpoint_store: TaskCheckpointPersistence,
     *,
     expected_task_id: str,
-) -> Task:
+) -> tuple[Task, TaskCheckpoint]:
     checkpoint = checkpoint_store.get_latest(expected_task_id, _TENANT)
     assert checkpoint is not None, "durable task checkpoint missing after Host A pause"
-    return build_checkpoint_resume_task(checkpoint)
+    return build_checkpoint_resume_task(checkpoint), checkpoint
+
+
+def _orch_request_from_durable_worker_recovery_episode(
+    bundle: AutonomousWorkRepositories,
+) -> object:
+    need = _aligned_worker_need()
+    decision = _recovery_decision(need)
+    episode_id = derive_recovery_episode_id(
+        worker_instance_id=_WORKER_ID,
+        obstacle_id=decision.obstacle_id,
+        recovery_decision_id=decision.decision_id,
+    )
+    episode_repo = bundle.worker_recovery_episode
+    episode = episode_repo.get(recovery_episode_id=episode_id)
+    assert episode is not None, "durable WorkerRecoveryEpisode missing after Host A"
+    assert episode.resume_target.run_id is not None, (
+        "durable resume target missing canonical run correlation"
+    )
+    return replace(
+        _orchestration_request(decision=decision),
+        resume_target=episode.resume_target,
+    )
 
 
 def _open_aw_bundle():
@@ -781,13 +813,11 @@ async def test_true_restart_worker_governed_host_abc(tmp_path: Path) -> None:
             seed_document_need=False,
         )
         assert id(host_b.service) != host_a_id
-        task_b = _load_task_from_durable_checkpoint(
+        task_b, checkpoint_b = _load_task_from_durable_checkpoint(
             host_b.checkpoint_store,
             expected_task_id=scalars.task_id,
         )
         assert str(task_b.task_id) == scalars.task_id
-        await ActiveTaskRegistry.register(task_b, scalars.run_id)
-        host_b.stack = replace(host_b.stack, task=task_b)
         pending = host_b.stack.hitl.port.get_pending(
             ExecutionContinuationLookup(continuation_id=scalars.continuation_id),
         )
@@ -801,7 +831,26 @@ async def test_true_restart_worker_governed_host_abc(tmp_path: Path) -> None:
         assert (
             str(descriptor_b.suspended_operation_id) == scalars.suspended_operation_id
         )
-        assert descriptor_b.identity.execution_id == scalars.execution_id
+        continuation_store = backends.continuation_state_persistence.load_state_store()
+        identity_b = correlate_durable_restart_execution_identity(
+            checkpoint=checkpoint_b,
+            continuation_store=continuation_store,
+            continuation_id=scalars.continuation_id,
+            suspended_descriptor=descriptor_b,
+        )
+        restored_run_id = identity_b.run_id
+        restored_attempt_id = identity_b.attempt_id
+        restored_execution_id = identity_b.execution_id
+        checkpoint_run_id, checkpoint_attempt_id = execution_identity_from_checkpoint(
+            checkpoint_b,
+        )
+        assert restored_run_id == checkpoint_run_id
+        assert restored_attempt_id == checkpoint_attempt_id
+        assert restored_run_id == scalars.run_id
+        assert restored_attempt_id == scalars.attempt_id
+        assert restored_execution_id == scalars.execution_id
+        await ActiveTaskRegistry.register(task_b, restored_run_id)
+        host_b.stack = replace(host_b.stack, task=task_b)
         gov_token_b = bind_active_execution_governance_identity(
             ActiveExecutionGovernanceIdentity(
                 tenant_id=_TENANT,
@@ -823,7 +872,7 @@ async def test_true_restart_worker_governed_host_abc(tmp_path: Path) -> None:
                 id_token = bind_active_execution_identity(
                     run_id=descriptor_b.identity.run_id,
                     attempt_id=descriptor_b.identity.attempt_id,
-                    execution_id=scalars.execution_id,
+                    execution_id=restored_execution_id,
                 )
                 try:
                     _approve_current_pause(
@@ -832,7 +881,7 @@ async def test_true_restart_worker_governed_host_abc(tmp_path: Path) -> None:
                         continuation_id=continuation_id,
                         run_id=descriptor_b.identity.run_id,
                         attempt_id=descriptor_b.identity.attempt_id,
-                        execution_id=scalars.execution_id,
+                        execution_id=restored_execution_id,
                         checkpoint_store=host_b.checkpoint_store,
                     )
                 finally:
@@ -844,7 +893,7 @@ async def test_true_restart_worker_governed_host_abc(tmp_path: Path) -> None:
         assert counters_b.backend == 1
         assert counters_b.fulfillment == 0
         assert counters_b.discovery == 0
-        terminal = host_b.outcome_reader.get_terminal_outcome(scalars.execution_id)
+        terminal = host_b.outcome_reader.get_terminal_outcome(restored_execution_id)
         assert terminal.disposition is CanonicalExecutionTerminalDisposition.SUCCEEDED
         _destroy_host(host_b)
         host_b = None
@@ -860,8 +909,10 @@ async def test_true_restart_worker_governed_host_abc(tmp_path: Path) -> None:
             host_label="c",
             seed_document_need=False,
         )
-        host_c.stack = replace(host_c.stack, run_id=scalars.run_id)
-        orch_request_c = _orch_request_for_stack(host_c.stack)
+        orch_request_c = _orch_request_from_durable_worker_recovery_episode(bundle)
+        host_c_run_id = orch_request_c.resume_target.run_id
+        assert host_c_run_id is not None
+        assert host_c_run_id == scalars.run_id
         gov_token_c = bind_active_execution_governance_identity(
             ActiveExecutionGovernanceIdentity(
                 tenant_id=_TENANT,

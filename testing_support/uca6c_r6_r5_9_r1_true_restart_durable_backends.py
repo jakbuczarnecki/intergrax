@@ -4,9 +4,8 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 from intergrax.autonomous_work.document_store_worker_recovery_obstacle_capability_need_repository import (
     DocumentStoreWorkerRecoveryObstacleCapabilityNeedRepository,
@@ -19,11 +18,12 @@ from intergrax.runtime.execution.continuation.composition import (
     reconnect_execution_engine_continuation_dependencies,
     wire_execution_engine_continuation_dependencies,
 )
+from intergrax.runtime.execution.continuation.durable_state_file import (
+    ExecutionContinuationDurableStateFilePersistence,
+)
 from intergrax.runtime.execution.continuation.persistence import (
     ExecutionContinuationDurableBacking,
     backing_execution_continuation_state_store,
-    execution_continuation_state_store_from_durable_export,
-    export_durable_continuation_state,
 )
 from intergrax.runtime.execution.document_store_execution_terminal_outcome_by_execution_id import (
     DocumentStoreExecutionTerminalOutcomeByExecutionIdStore,
@@ -33,8 +33,6 @@ from testing_support.uca6c_process_restart_durable_document_store import (
     ProcessRestartQualificationDocumentStore,
 )
 
-StructuredJsonObject = dict[str, Any]
-
 
 @dataclass
 class Uca6cTrueRestartDurableBackends:
@@ -42,18 +40,22 @@ class Uca6cTrueRestartDurableBackends:
 
     document_store: ProcessRestartQualificationDocumentStore
     continuation_backing: ExecutionContinuationDurableBacking
+    continuation_state_persistence: ExecutionContinuationDurableStateFilePersistence
     checkpoint_db_path: Path
     idempotency_db_path: Path
-    continuation_export: StructuredJsonObject | None = field(default=None)
     aw_schema_name: str | None = None
 
     @classmethod
     def create(cls, tmp_path: Path) -> Uca6cTrueRestartDurableBackends:
         root = tmp_path / "uca6c-r59-r1-restart"
         root.mkdir(parents=True, exist_ok=True)
+        continuation_path = root / "execution_continuation_durable_state.json"
         return cls(
             document_store=ProcessRestartQualificationDocumentStore(),
             continuation_backing=ExecutionContinuationDurableBacking(),
+            continuation_state_persistence=ExecutionContinuationDurableStateFilePersistence(
+                continuation_path,
+            ),
             checkpoint_db_path=root / "task_checkpoints.db",
             idempotency_db_path=root / "tool_idempotency.db",
         )
@@ -85,18 +87,16 @@ class Uca6cTrueRestartDurableBackends:
         return wire_execution_engine_continuation_dependencies(state_store=store)
 
     def seal_continuation_for_process_death(self) -> None:
-        self.continuation_export = export_durable_continuation_state(
+        self.continuation_state_persistence.persist_from_backing(
             self.continuation_backing,
         )
+        assert self.continuation_state_persistence.path.is_file()
+        self.continuation_backing = ExecutionContinuationDurableBacking()
 
     def host_b_continuation_dependencies(
         self,
     ) -> ExecutionEngineContinuationDependencies:
-        if self.continuation_export is None:
-            raise RuntimeError("continuation export missing before Host B composition")
-        store = execution_continuation_state_store_from_durable_export(
-            self.continuation_export,
-        )
+        store = self.continuation_state_persistence.load_state_store()
         return reconnect_execution_engine_continuation_dependencies(state_store=store)
 
 
