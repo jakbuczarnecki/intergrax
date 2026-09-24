@@ -200,12 +200,13 @@ class IntegrationProfile(BaseModel):
         instance = binding.instance
         if instance is None:
             return None
-        from intergrax.runtime.integrations.contracts import PlatformIntegrationContract
+        from intergrax.runtime.integrations.contract_metadata import contract_for_category
 
-        if not isinstance(instance, PlatformIntegrationContract):
+        expected_contract = contract_for_category(category.value)
+        if not isinstance(instance, expected_contract):
             raise TypeError(
                 f"Pre-built integration for category {category.value!r} is "
-                f"{type(instance).__name__}, expected PlatformIntegrationContract."
+                f"{type(instance).__name__}, expected {expected_contract.__name__}."
             )
         return instance
 

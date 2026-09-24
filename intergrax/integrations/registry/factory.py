@@ -90,10 +90,13 @@ def _require_platform_integration_contract(
     slug: str,
     category: IntegrationCategory,
 ) -> PlatformIntegrationContract:
-    if not isinstance(value, PlatformIntegrationContract):
+    from intergrax.runtime.integrations.contract_metadata import contract_for_category
+
+    expected_contract = contract_for_category(category.value)
+    if not isinstance(value, expected_contract):
         raise TypeError(
             f"Integration factory for slug {slug!r} (category {category.value!r}) "
-            f"returned {type(value).__name__}, expected a PlatformIntegrationContract."
+            f"returned {type(value).__name__}, expected {expected_contract.__name__}."
         )
     return value
 

@@ -19,6 +19,7 @@ _CATALOG_FACTORY = _REPO_ROOT / "intergrax" / "integrations" / "contracts" / "ca
 _BASE_TYPES = _REPO_ROOT / "intergrax" / "integrations" / "contracts" / "base.py"
 _RESOLVER = _REPO_ROOT / "intergrax" / "integrations" / "registry" / "factory.py"
 _CONTRACT_SPEC = _REPO_ROOT / "intergrax" / "integrations" / "registry" / "contract_spec.py"
+_INTEGRATION_PROFILE = _REPO_ROOT / "intergrax" / "integrations" / "contracts" / "integration_profile.py"
 
 
 def _read(path: Path) -> str:
@@ -79,3 +80,19 @@ def test_contract_spec_factory_aliases_catalog_factory_without_any() -> None:
     assert "IntegrationContractFactory = IntegrationFactory" in source
     assert "contract_class: type[PlatformIntegrationContract]" in source
     assert "security_posture: PlatformIntegrationSecurityPosture" in source
+
+
+def test_instance_for_category_uses_canonical_contract_for_category() -> None:
+    source = _read(_INTEGRATION_PROFILE)
+    assert "contract_for_category" in source
+    assert "isinstance(instance, expected_contract)" in source
+    assert "PROVIDER_CATEGORY_CONTRACT_REGISTRY" not in source
+    assert "if category ==" not in source
+    assert "expected PlatformIntegrationContract" not in source
+
+
+def test_factory_materialization_validates_category_contract() -> None:
+    source = _read(_RESOLVER)
+    assert "contract_for_category" in source
+    assert "expected_contract" in source
+    assert "expected a PlatformIntegrationContract" not in source
