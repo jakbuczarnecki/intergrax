@@ -96,6 +96,9 @@ from intergrax.runtime.governance.active_governed_execution_task import (
 from intergrax.runtime.governance.runtime_execution_policy_admission import (
     AllowingRuntimeExecutionPolicyAdmission,
 )
+from intergrax.runtime.long_running.checkpoint_resume_validation import (
+    root_execution_id_from_tree,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
@@ -774,10 +777,25 @@ async def test_true_restart_worker_governed_host_abc(tmp_path: Path) -> None:
                 host_a.stack.task,
                 host_a.stack.composition,
             )
+            checkpoint_a = host_a.checkpoint_store.get_latest(
+                str(_TASK_ID),
+                _TENANT,
+            )
+            assert checkpoint_a is not None
+            assert checkpoint_a.runtime is not None
+            cp_run_id, cp_attempt_id = execution_identity_from_checkpoint(
+                checkpoint_a,
+            )
+            cp_execution_id = root_execution_id_from_tree(
+                checkpoint_a.runtime.execution_tree,
+            )
+            assert cp_run_id == host_a.stack.run_id
+            assert cp_execution_id == execution_id
+            assert str(checkpoint_a.task_id) == str(_TASK_ID)
             scalars = _AssertionScalars(
                 task_id=str(_TASK_ID),
-                run_id=host_a.stack.run_id,
-                attempt_id=host_a.stack.attempt_id,
+                run_id=cp_run_id,
+                attempt_id=cp_attempt_id,
                 execution_id=execution_id,
                 continuation_id=continuation_id,
                 suspended_operation_id=str(descriptor.suspended_operation_id),
@@ -789,9 +807,8 @@ async def test_true_restart_worker_governed_host_abc(tmp_path: Path) -> None:
                 )
                 is not None
             )
-            assert (
-                host_a.checkpoint_store.get_latest(scalars.task_id, _TENANT) is not None
-            )
+            assert cp_execution_id == scalars.execution_id
+            assert cp_attempt_id == scalars.attempt_id
             backends.seal_continuation_for_process_death()
         finally:
             reset_active_execution_governance_identity(gov_token)
