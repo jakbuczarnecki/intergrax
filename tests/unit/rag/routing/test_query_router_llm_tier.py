@@ -17,9 +17,10 @@ from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
+from tests.unit.rag.retrieval.retrieval_hit_fixtures import stub_retrieval_hit
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.routing.llm_tier_classifier import parse_route_tier_response
 from intergrax.rag.routing.query_router import QueryRouter
@@ -56,18 +57,16 @@ class _TierTrackingRetrieverManager(BaseRetrieverManager):
         top_k: int = 5,
         metadata_filter=None,
         include_embeddings: bool = False,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         self.last_retriever_id = retriever_id
         return [
-            RetrieverCandidate(
-                id="c1",
+            stub_retrieval_hit(
+                document_id="c1",
                 content=f"answer for {query_text}",
-                metadata={},
-                score=0.9,
             )
         ]
 
-    def retrieve_query(self, query: RetrieverQuery, retriever_id: str) -> List[RetrieverCandidate]:
+    def retrieve_query(self, query: RetrieverQuery, retriever_id: str) -> List[RetrievalHit]:
         return self.retrieve(query.query_text, retriever_id=retriever_id, top_k=query.top_k)
 
 

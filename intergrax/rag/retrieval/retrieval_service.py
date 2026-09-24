@@ -4,11 +4,11 @@
 """Unified retrieval entry point for ``rag.retrieve``, Nexus, and diagnostics."""
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
 
 from dataclasses import replace
 import time
-from typing import Any, List, Optional
+from collections.abc import Sequence
+from typing import List, Optional
 
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 
@@ -20,7 +20,6 @@ from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk, RetrievalResult, RetrievalTrace
 from intergrax.rag.retrievers.contracts.base_retriever import RetrievalHit, retrieval_hit_to_chunk
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
-from intergrax.rag.retrievers.contracts.scoped_retrieval_capability import ScopedRetrievalCapability
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate
 from intergrax.rag.routing.query_router import QueryRouter
@@ -62,7 +61,6 @@ class RetrievalService:
             "rag.retrieve",
             attributes={
                 "rag.query.length": len(query),
-                "rag.tenant_id": attribute_access.optional(request, "tenant_id", None),
             },
         ):
             if not query:
@@ -89,7 +87,6 @@ class RetrievalService:
             "rag.retrieve.single_pass",
             attributes={
                 "rag.query.length": len(query),
-                "rag.tenant_id": attribute_access.optional(request, "tenant_id", None),
             },
         ):
             trace = RetrievalTrace()
@@ -108,10 +105,8 @@ class RetrievalService:
             prefetch_k = request.resolved_prefetch_k(self._profile.prefetch_top_k, final_k)
 
             t0 = time.perf_counter()
-            if request.scope is not None and not (
-                isinstance(self._retriever_manager, ScopedRetrievalCapability)
-                and self._retriever_manager.supports_scoped_retrieval is True
-            ):
+            supports_scoped = getattr(self._retriever_manager, "supports_scoped_retrieval", False)
+            if request.scope is not None and supports_scoped is not True:
                 trace.retrieval_error_kind = "scoped_retrieval_unsupported"
                 trace.retrieval_latency_ms = (time.perf_counter() - t0) * 1000.0
                 return RetrievalResult(
@@ -147,11 +142,11 @@ class RetrievalService:
             if not candidates:
                 return RetrievalResult(chunks=[], used=False, reason="no_hits", trace=trace)
 
+            _require_retrieval_hit_candidates(candidates)
+
             use_rerank = self._profile.enable_rerank and self._reranker_manager is not None
             trace.rerank_enabled = use_rerank
             if use_rerank and self._reranker_manager is not None:
-                if not all(isinstance(candidate, RetrievalHit) for candidate in candidates):
-                    raise TypeError("reranking requires native RetrievalHit candidates")
                 reranker_id = self._profile.reranker_id
                 trace.reranker_id = reranker_id
                 rerank_candidates = tuple(
@@ -183,7 +178,7 @@ class RetrievalService:
                 chunks = [retrieval_hit_to_chunk(hit) for hit in reranked_hits]
                 trace.candidates_after_rerank = len(chunks)
             else:
-                chunks = _candidates_to_chunks(candidates)
+                chunks = _retrieval_hits_to_chunks(candidates)
                 chunks = chunks[:final_k]
                 trace.candidates_after_rerank = len(chunks)
 
@@ -221,7 +216,7 @@ class RetrievalService:
                 request=request,
                 trace=trace,
                 hits=len(chunks),
-                tenant_id=attribute_access.optional(request, "tenant_id", None),
+                tenant_id=None,
             )
             return result
 
@@ -230,7 +225,7 @@ def _apply_retriever_execution_trace(
     retriever_manager: BaseRetrieverManager,
     trace: RetrievalTrace,
 ) -> None:
-    execution = attribute_access.optional(retriever_manager, "last_execution", None)
+    execution = getattr(retriever_manager, "last_execution", None)
     if execution is None:
         return
     trace.retriever_id = execution.used_retriever_id
@@ -270,24 +265,10 @@ def _record_retrieval_metrics(
     )
 
 
-def _candidates_to_chunks(candidates: List[Any]) -> List[RetrievalChunk]:
-    out: List[RetrievalChunk] = []
-    for c in candidates:
-        if isinstance(c, RetrievalHit):
-            out.append(retrieval_hit_to_chunk(c))
-            continue
-        text = (attribute_access.optional(c, "content", None) or "").strip()
-        if not text:
-            continue
-        metadata = dict(attribute_access.optional(c, "metadata", None) or {})
-        out.append(
-            RetrievalChunk(
-                id=str(attribute_access.optional(c, "id", "unknown")),
-                text=text,
-                score=float(attribute_access.optional(c, "score", 0.0) or 0.0),
-                rank=int(attribute_access.optional(c, "rank", 0) or 0),
-                user_metadata=dict(metadata),
-                metadata=metadata,
-            )
-        )
-    return out
+def _require_retrieval_hit_candidates(candidates: Sequence[object]) -> None:
+    if not all(isinstance(candidate, RetrievalHit) for candidate in candidates):
+        raise TypeError("retriever must return RetrievalHit candidates")
+
+
+def _retrieval_hits_to_chunks(candidates: Sequence[RetrievalHit]) -> list[RetrievalChunk]:
+    return [retrieval_hit_to_chunk(hit) for hit in candidates]

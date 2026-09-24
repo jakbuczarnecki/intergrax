@@ -244,7 +244,7 @@ def _apply_retrieval_poisoning_filter(
         )
         for chunk in chunks
     ]
-    filtered, warnings = filter_retrieved_chunks_for_poisoning(retrieved)
+    filtered, warnings = filter_retrieved_chunks_for_poisoning(tuple(retrieved))
     if len(filtered) == len(retrieved):
         return chunks, citations, "", warnings
 

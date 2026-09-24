@@ -84,6 +84,9 @@ def test_effective_retriever_deep_prefers_graph_rag_over_multiquery() -> None:
 
 
 class _TrackingRetrieverManager:
+    supports_scoped_retrieval = False
+    last_execution = None
+
     def __init__(self) -> None:
         self.last_retriever_id = ""
 

@@ -15,9 +15,10 @@ from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
+from tests.unit.rag.retrieval.retrieval_hit_fixtures import stub_retrieval_hit
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
@@ -54,13 +55,11 @@ class _StubRetriever(BaseRetriever):
     def name(cls) -> str:
         return "stub"
 
-    def retrieve(self, query: RetrieverQuery) -> List[RetrieverCandidate]:
+    def retrieve(self, query: RetrieverQuery) -> List[RetrievalHit]:
         return [
-            RetrieverCandidate(
-                id="c1",
+            stub_retrieval_hit(
+                document_id="c1",
                 content=f"answer for {query.query_text}",
-                metadata={},
-                score=0.9,
             )
         ]
 
@@ -75,7 +74,7 @@ class _StubRetrieverManager(BaseRetrieverManager):
         top_k: int = 5,
         metadata_filter=None,
         include_embeddings: bool = False,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         return _StubRetriever().retrieve(
             RetrieverQuery(
                 query_text=query_text,

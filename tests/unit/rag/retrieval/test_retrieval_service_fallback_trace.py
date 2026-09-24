@@ -11,9 +11,10 @@ from intergrax.rag.retrieval.retrieval_errors import RetrievalError, RetrievalEr
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.retrievers.contracts.base_retriever import (
-    RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
+from tests.unit.rag.retrieval.retrieval_hit_fixtures import stub_retrieval_hit
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.retrievers.engine.retriever_execution import RetrieverExecutionMetadata
 
@@ -22,12 +23,16 @@ pytestmark = pytest.mark.gate
 
 class _FallbackAwareManager(BaseRetrieverManager):
     def __init__(self) -> None:
-        self.last_execution = RetrieverExecutionMetadata(
+        self._execution = RetrieverExecutionMetadata(
             requested_retriever_id="fusion",
             used_retriever_id="hybrid",
             attempted_retriever_ids=["fusion", "hybrid"],
             fallback_applied=True,
         )
+
+    @property
+    def last_execution(self) -> RetrieverExecutionMetadata | None:
+        return self._execution
 
     def retrieve(
         self,
@@ -38,22 +43,20 @@ class _FallbackAwareManager(BaseRetrieverManager):
         top_k: int = 5,
         metadata_filter=None,
         include_embeddings: bool = False,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         return [
-            RetrieverCandidate(
-                id="c1",
+            stub_retrieval_hit(
                 content=f"answer for {query_text}",
-                metadata={},
-                score=0.9,
+                document_id="c1",
             )
         ]
 
-    def retrieve_query(self, query: RetrieverQuery, retriever_id: str) -> List[RetrieverCandidate]:
+    def retrieve_query(self, query: RetrieverQuery, retriever_id: str) -> List[RetrievalHit]:
         return self.retrieve(query.query_text, retriever_id=retriever_id, top_k=query.top_k)
 
 
 class _FailingManager(BaseRetrieverManager):
-    def retrieve(self, query_text: str, **kwargs: object) -> List[RetrieverCandidate]:
+    def retrieve(self, query_text: str, **kwargs: object) -> List[RetrievalHit]:
         raise RetrievalError(
             kind=RetrievalErrorKind.RETRIEVER_EXHAUSTED,
             message="all retrievers failed",
@@ -62,7 +65,7 @@ class _FailingManager(BaseRetrieverManager):
             retryable=False,
         )
 
-    def retrieve_query(self, query: RetrieverQuery, retriever_id: str) -> List[RetrieverCandidate]:
+    def retrieve_query(self, query: RetrieverQuery, retriever_id: str) -> List[RetrievalHit]:
         return self.retrieve(query.query_text, retriever_id=retriever_id)
 
 

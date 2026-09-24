@@ -23,39 +23,41 @@ def rag_rerank(ctx: ToolWiringContext, params: RagRerankInput) -> RagRerankOutpu
 
     candidates = tuple(
         RerankerCandidate(
-            document=KnowledgeDocument(
-                schema_version=1,
-                identity={
-                    "document_id": chunk.id or f"rag-tool-{index}",
-                    "root_document_id": chunk.id or f"rag-tool-{index}",
-                },
-                scope={"tenant_id": "rag_tool"},
-                content=chunk.text,
-                metadata={
-                    key: value
-                    for key, value in chunk.metadata.items()
-                    if value is not None
-                    and key
-                    not in {
-                        "schema_version",
-                        "document_id",
-                        "root_document_id",
-                        "parent_document_id",
-                        "tenant_id",
-                        "namespace",
-                        "source_kind",
-                        "source_id",
-                        "source_parent_id",
-                        "provider_id",
-                        "source_revision",
-                        "source_uri",
-                        "content_hash",
-                    }
-                },
-                provenance={
-                    "source_kind": "rag_tool",
-                    "source_id": chunk.id or f"rag-tool-{index}",
-                },
+            document=KnowledgeDocument.model_validate(
+                {
+                    "schema_version": 1,
+                    "identity": {
+                        "document_id": chunk.id or f"rag-tool-{index}",
+                        "root_document_id": chunk.id or f"rag-tool-{index}",
+                    },
+                    "scope": {"tenant_id": "rag_tool"},
+                    "content": chunk.text,
+                    "metadata": {
+                        key: value
+                        for key, value in chunk.metadata.items()
+                        if value is not None
+                        and key
+                        not in {
+                            "schema_version",
+                            "document_id",
+                            "root_document_id",
+                            "parent_document_id",
+                            "tenant_id",
+                            "namespace",
+                            "source_kind",
+                            "source_id",
+                            "source_parent_id",
+                            "provider_id",
+                            "source_revision",
+                            "source_uri",
+                            "content_hash",
+                        }
+                    },
+                    "provenance": {
+                        "source_kind": "rag_tool",
+                        "source_id": chunk.id or f"rag-tool-{index}",
+                    },
+                }
             ),
             original_score=chunk.score if chunk.score is not None else 0.0,
             original_rank=index,
@@ -71,7 +73,11 @@ def rag_rerank(ctx: ToolWiringContext, params: RagRerankInput) -> RagRerankOutpu
             text=item.candidate.document.content,
             score=item.rerank_score,
             rank=item.rank,
-            metadata=dict(item.candidate.document.metadata),
+            metadata={
+                key: value
+                for key, value in item.candidate.document.metadata.items()
+                if isinstance(value, (str, int, float, bool)) or value is None
+            },
         )
         for item in results
     ]

@@ -12,8 +12,10 @@ from intergrax.rag.retrieval.retrieval_service import RetrievalService
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,
     RetrieverCandidate,
+    RetrievalHit,
     RetrieverQuery,
 )
+from tests.unit.rag.retrieval.retrieval_hit_fixtures import stub_retrieval_hit
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.retrievers.registry.retriever_registry import RetrieverRegistry
 from intergrax.rag.routing.query_router import QueryRouter
@@ -26,13 +28,11 @@ class StubRetriever(BaseRetriever):
     def name(cls) -> str:
         return "stub"
 
-    def retrieve(self, query: RetrieverQuery) -> List[RetrieverCandidate]:
+    def retrieve(self, query: RetrieverQuery) -> List[RetrievalHit]:
         return [
-            RetrieverCandidate(
-                id="c1",
+            stub_retrieval_hit(
                 content=f"answer for {query.query_text}",
-                metadata={},
-                score=0.9,
+                document_id="c1",
             )
         ]
 
@@ -50,7 +50,7 @@ class StubRetrieverManager(BaseRetrieverManager):
         top_k: int = 5,
         metadata_filter=None,
         include_embeddings: bool = False,
-    ) -> List[RetrieverCandidate]:
+    ) -> List[RetrievalHit]:
         self.last_retriever_id = retriever_id
         return StubRetriever().retrieve(
             RetrieverQuery(
@@ -85,6 +85,38 @@ def test_retrieval_service_uses_profile_retriever() -> None:
     assert result.used is True
     assert result.chunks[0].text.startswith("answer for")
     assert manager.last_retriever_id == "hybrid"
+
+
+class _LegacyCandidateManager(BaseRetrieverManager):
+    def retrieve(
+        self,
+        query_text: str,
+        *,
+        retriever_id: str,
+        query_embedding: Sequence[float] | None = None,
+        top_k: int = 5,
+        metadata_filter=None,
+        include_embeddings: bool = False,
+    ) -> List[RetrievalHit]:
+        legacy = RetrieverCandidate(
+            id="legacy",
+            content="legacy",
+            metadata={},
+            score=0.5,
+        )
+        return [legacy]  # intentional runtime ABI violation for fail-closed coverage
+
+    def retrieve_query(self, query: RetrieverQuery, retriever_id: str) -> List[RetrievalHit]:
+        return self.retrieve(query.query_text, retriever_id=retriever_id, top_k=query.top_k)
+
+
+def test_retrieval_service_rejects_non_retrieval_hit_candidates() -> None:
+    service = RetrievalService(
+        retriever_manager=_LegacyCandidateManager(),
+        profile=RagProfile(enable_rerank=False, route_mode="off"),
+    )
+    with pytest.raises(TypeError, match="RetrievalHit"):
+        service.retrieve(RetrievalRequest(query="invalid candidate"))
 
 
 def test_recall_at_k_metric() -> None:

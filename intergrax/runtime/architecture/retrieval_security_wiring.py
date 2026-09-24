@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from intergrax.runtime.architecture.retrieval_security import (
     RetrievalDocumentSignal,
     RetrievalTrustLevel,
@@ -13,7 +15,7 @@ from intergrax.runtime.architecture.retrieval_security import RetrievalPoisoning
 
 
 def filter_retrieved_chunks_for_poisoning(
-    chunks: list[RetrievalPoisoningInputChunk],
+    chunks: Sequence[RetrievalPoisoningInputChunk],
     *,
     quarantine_threshold: float = 0.40,
     review_threshold: float = 0.70,
