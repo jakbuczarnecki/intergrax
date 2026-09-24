@@ -19,6 +19,11 @@ CategoryIntegrationContract: TypeAlias = (
     type[PlatformIntegrationContract] | type[ExternalWorkIntegration]
 )
 
+# Canonical materialized integration instance for any integration category (registry or DI-only).
+CategoryIntegrationInstance: TypeAlias = (
+    PlatformIntegrationContract | ExternalWorkIntegration
+)
+
 # Platform-defined contracts for categories bound via pre-built DI without a catalog provider package.
 # Registry-backed categories remain owned by PROVIDER_CATEGORY_CONTRACT_REGISTRY only.
 DI_ONLY_CATEGORY_CONTRACT_REGISTRY: dict[str, type[ExternalWorkIntegration]] = {
@@ -60,6 +65,7 @@ def contract_for_category(category: str) -> CategoryIntegrationContract:
 
 __all__ = [
     "CategoryIntegrationContract",
+    "CategoryIntegrationInstance",
     "DI_ONLY_CATEGORY_CONTRACT_REGISTRY",
     "IntegrationContractMetadataError",
     "contract_for_category",

@@ -72,7 +72,8 @@ def test_registry_v2_reuses_canonical_integration_factory_type() -> None:
 def test_canonical_resolver_has_no_any_semantic_result() -> None:
     source = _read(_RESOLVER)
     assert "-> Any" not in source
-    assert "PlatformIntegrationContract" in source
+    assert "CategoryIntegrationInstance" in source
+    assert "_require_platform_integration_contract" not in source
 
 
 def test_contract_spec_factory_aliases_catalog_factory_without_any() -> None:
@@ -105,6 +106,59 @@ def test_canonical_category_contract_resolver_supports_di_only_categories() -> N
     assert '"external_work"' in source
     assert "PROVIDER_CATEGORY_CONTRACT_REGISTRY.get" in source
     assert "DI_ONLY_CATEGORY_CONTRACT_REGISTRY.get" in source
+    assert "CategoryIntegrationInstance" in source
     profile_source = _read(_INTEGRATION_PROFILE)
     assert "IntegrationCategory.EXTERNAL_WORK" not in profile_source
     assert "contract_for_category" in profile_source
+
+
+def _function_return_annotation(module: ast.Module, name: str) -> str:
+    for node in module.body:
+        if isinstance(node, ast.FunctionDef) and node.name == name:
+            if node.returns is None:
+                return ""
+            return ast.unparse(node.returns)
+    for node in module.body:
+        if isinstance(node, ast.ClassDef):
+            for child in node.body:
+                if isinstance(child, ast.FunctionDef) and child.name == name:
+                    if child.returns is None:
+                        return ""
+                    return ast.unparse(child.returns)
+    pytest.fail(f"function {name!r} not found for return annotation gate")
+
+
+def test_instance_for_category_declares_category_integration_instance() -> None:
+    tree = _parse(_INTEGRATION_PROFILE)
+    annotation = _function_return_annotation(tree, "instance_for_category")
+    assert "CategoryIntegrationInstance" in annotation
+    assert "PlatformIntegrationContract" not in annotation
+
+
+def test_resolve_from_profile_declares_category_integration_instance() -> None:
+    tree = _parse(_RESOLVER)
+    annotation = _function_return_annotation(tree, "resolve_from_profile")
+    assert "CategoryIntegrationInstance" in annotation
+    assert "PlatformIntegrationContract" not in annotation
+
+
+def test_external_work_integration_not_subclass_of_platform_contract() -> None:
+    external_work_path = (
+        _REPO_ROOT / "intergrax" / "integrations" / "contracts" / "external_work.py"
+    )
+    source = _read(external_work_path)
+    assert "PlatformIntegrationContract" not in source
+
+
+def test_category_resolution_surfaces_pyright_clean() -> None:
+    import subprocess
+
+    targets = [str(_RESOLVER)]
+    result = subprocess.run(
+        ["uv", "run", "pyright", *targets],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

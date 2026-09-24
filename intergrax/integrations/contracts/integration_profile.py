@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Callable, ClassVar, Mapping, Optional
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 if TYPE_CHECKING:
-    from intergrax.runtime.integrations.contracts import PlatformIntegrationContract
+    from intergrax.runtime.integrations.contract_metadata import CategoryIntegrationInstance
 
 from intergrax.integrations.contracts.base import (
     PROFILE_FIELD_BY_CATEGORY,
@@ -190,7 +190,7 @@ class IntegrationProfile(BaseModel):
     def instance_for_category(
         self,
         category: IntegrationCategory,
-    ) -> PlatformIntegrationContract | None:
+    ) -> CategoryIntegrationInstance | None:
         field_name = PROFILE_FIELD_BY_CATEGORY.get(category.value)
         if field_name is None:
             return None

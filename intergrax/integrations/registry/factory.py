@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import Any, Mapping, Optional
 
 from intergrax.integrations._shared.config import merge_config, read_integration_slug_from_env
-from intergrax.runtime.integrations.contracts import PlatformIntegrationContract
+from intergrax.runtime.integrations.contract_metadata import CategoryIntegrationInstance
 from intergrax.integrations.contracts.base import (
     IntegrationCategory,
     IntegrationCategoryMismatchError,
@@ -84,12 +84,12 @@ def resolve_slug(
     )
 
 
-def _require_platform_integration_contract(
+def _require_category_integration_instance(
     value: object,
     *,
     slug: str,
     category: IntegrationCategory,
-) -> PlatformIntegrationContract:
+) -> CategoryIntegrationInstance:
     from intergrax.runtime.integrations.contract_metadata import contract_for_category
 
     expected_contract = contract_for_category(category.value)
@@ -107,7 +107,7 @@ def resolve(
     *,
     profile: Optional[IntegrationProfile] = None,
     config: Optional[Mapping[str, Any]] = None,
-) -> PlatformIntegrationContract:
+) -> CategoryIntegrationInstance:
     """
     Instantiate the provider for ``category``.
 
@@ -135,7 +135,7 @@ def resolve(
     else:
         materialized = entry.factory()
 
-    return _require_platform_integration_contract(
+    return _require_category_integration_instance(
         materialized,
         slug=resolved_slug,
         category=normalized,
@@ -147,12 +147,12 @@ def resolve_from_profile(
     category: str | IntegrationCategory,
     *,
     config: Optional[Mapping[str, Any]] = None,
-) -> PlatformIntegrationContract:
+) -> CategoryIntegrationInstance:
     normalized = normalize_category(category)
     instance = profile.instance_for_category(normalized)
     if instance is not None:
         slug = profile.slug_for_category(normalized) or normalized.value
-        return _require_platform_integration_contract(
+        return _require_category_integration_instance(
             instance,
             slug=slug,
             category=normalized,
