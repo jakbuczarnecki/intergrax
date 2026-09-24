@@ -44,6 +44,9 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _HOST_TASK = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_task.py"
 _NEXUS_HOST = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "nexus_host_execution.py"
 _HOST_WIRING = _REPO_ROOT / "intergrax" / "applications" / "_shared" / "host_task_execution_wiring.py"
+_ENV_HOST = (
+    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "environment_host_task_execution.py"
+)
 _INFERENCE = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "inference.py"
 _INFERENCE_EXEC = (
     _REPO_ROOT / "tests" / "unit" / "runtime" / "execution" / "test_inference_executor.py"
@@ -134,7 +137,10 @@ def test_gr10_nexus_host_execution_requires_root_admission_parameter() -> None:
 
 
 def test_gr10_host_wiring_requires_explicit_root_admission_parameters() -> None:
-    source = _HOST_WIRING.read_text(encoding="utf-8-sig")
+    shared = _HOST_WIRING.read_text(encoding="utf-8-sig")
+    assert "NexusLoop" not in shared
+    assert "intergrax.runtime.execution.environment_host_task_execution" in shared
+    source = _ENV_HOST.read_text(encoding="utf-8-sig")
     assert "RootExecutionAuthorityAdmissionPort" in source
     assert "admit_root_governance_identity" in source
     assert "admit_harness_root_governance_identity" not in source
@@ -178,7 +184,7 @@ def test_gr10_inference_executor_requires_active_identity_no_direct_bypass_token
 
 
 def test_gr10_host_execution_wiring_no_service_locator() -> None:
-    for path in (_HOST_TASK, _HOST_WIRING, _NEXUS_HOST):
+    for path in (_HOST_TASK, _HOST_WIRING, _ENV_HOST, _NEXUS_HOST):
         source = path.read_text(encoding="utf-8-sig")
         for forbidden in _FORBIDDEN_SERVICE_LOCATOR_NAMES:
             assert forbidden not in source

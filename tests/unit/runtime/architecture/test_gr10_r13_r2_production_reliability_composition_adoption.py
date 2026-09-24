@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from applications.governed_contractor_application.host.orchestration_topology_production_composition import (
+from intergrax.applications._shared.governed_contractor_orchestration_topology_production import (
     build_governed_contractor_production_orchestration_topology_submission_port,
 )
 from applications.governed_contractor_application.host.stores import (
@@ -110,10 +110,10 @@ _RUNTIME_COMPOSITION = (
 )
 _GOVERNED_COMPOSITION = (
     _REPO_ROOT
+    / "intergrax"
     / "applications"
-    / "governed_contractor_application"
-    / "host"
-    / "orchestration_topology_production_composition.py"
+    / "_shared"
+    / "governed_contractor_orchestration_topology_production.py"
 )
 _SLOT_IDEMPOTENCY_KEY = "orchestration.graph_slot:slot:slot-a"
 

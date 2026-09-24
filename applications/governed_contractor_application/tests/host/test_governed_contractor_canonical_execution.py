@@ -22,11 +22,14 @@ from intergrax.runtime.execution.task_adapter import TaskExecutionInput
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
 from governed_contractor_application.host.environment_profile import (
     build_governed_contractor_environment_profile,
 )
-from governed_contractor_application.host.execution_wiring import (
-    build_governed_contractor_host_task_execution,
+from intergrax.applications._shared.harness_host_task_execution_wiring import (
+    build_harness_environment_host_task_execution,
 )
 from governed_contractor_application.host.factory import create_governed_contractor_backend_app
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
@@ -44,7 +47,7 @@ _PREFIX = "/v1/governed_contractor"
 
 def _build_service(nexus_loop: NexusLoop) -> GovernedContractorRunService:
     env = build_governed_contractor_environment_profile(GovernedContractorBackendSettings.from_env())
-    host_execution = build_governed_contractor_host_task_execution(nexus_loop, env)
+    host_execution = build_harness_environment_host_task_execution(nexus_loop, env)
     return GovernedContractorRunService.from_host_execution(
         host_execution,
         default_agent_id="external_contractor_adapter",
@@ -87,10 +90,10 @@ async def test_governed_contractor_root_uses_canonical_execution_facade() -> Non
     facade_calls = 0
     original_execute = ExecutionFacade.execute
 
-    async def _spy_execute(self, request, *, options):
+    async def _spy_execute(self, request, *, options, **kwargs):
         nonlocal facade_calls
         facade_calls += 1
-        return await original_execute(self, request, options=options)
+        return await original_execute(self, request, options=options, **kwargs)
 
     with patch.object(ExecutionFacade, "execute", _spy_execute):
         with patch(
@@ -101,6 +104,7 @@ async def test_governed_contractor_root_uses_canonical_execution_facade() -> Non
                 run_id=mint_run_id(),
                 state=TaskState.COMPLETED,
                 answer="ok",
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
             ),
         ):
             from governed_contractor_application.serving.schemas import GovernedContractorRunRequestV1
@@ -116,7 +120,8 @@ async def test_governed_contractor_root_uses_canonical_execution_facade() -> Non
     factory_source = (
         Path(__file__).resolve().parents[2] / "host" / "factory.py"
     ).read_text(encoding="utf-8")
-    assert "build_governed_contractor_host_task_execution" in factory_source
+    assert "runtime.execution" in factory_source
+    assert "build_governed_contractor_host_task_execution" not in factory_source
     assert "UnifiedTaskRunner" not in factory_source
 
 
@@ -131,10 +136,10 @@ def test_governed_contractor_http_root_uses_canonical_execution_facade(
     facade_calls = 0
     original_execute = ExecutionFacade.execute
 
-    async def _spy_execute(self, request, *, options):
+    async def _spy_execute(self, request, *, options, **kwargs):
         nonlocal facade_calls
         facade_calls += 1
-        return await original_execute(self, request, options=options)
+        return await original_execute(self, request, options=options, **kwargs)
 
     with patch.object(ExecutionFacade, "execute", _spy_execute):
         with patch(
@@ -145,6 +150,7 @@ def test_governed_contractor_http_root_uses_canonical_execution_facade(
                 run_id=mint_run_id(),
                 state=TaskState.COMPLETED,
                 answer="ok",
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
             ),
         ):
             client = TestClient(
@@ -177,6 +183,7 @@ async def test_governed_contractor_adapt_does_not_root_call_nexus_handle_task() 
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="ok",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         ),
     ):
         from governed_contractor_application.serving.schemas import GovernedContractorRunRequestV1
@@ -209,6 +216,7 @@ async def test_governed_contractor_adapt_reaches_strategy_router_with_agentic_ca
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="routed",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch.object(StrategyExecutionRouter, "execute", _capture_execute):
@@ -245,6 +253,7 @@ async def test_governed_contractor_root_execution_id_is_platform_owned() -> None
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="identity",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch.object(StrategyExecutionRouter, "execute", _capture_execute):
@@ -273,10 +282,10 @@ async def test_governed_contractor_request_produces_single_root_execution_invoca
     facade_calls = 0
     original_facade_execute = ExecutionFacade.execute
 
-    async def _count_facade_execute(self, request, *, options):
+    async def _count_facade_execute(self, request, *, options, **kwargs):
         nonlocal facade_calls
         facade_calls += 1
-        return await original_facade_execute(self, request, options=options)
+        return await original_facade_execute(self, request, options=options, **kwargs)
 
     async def _count_router_execute(
         self: StrategyExecutionRouter[TaskExecutionInput, TaskResult, TaskResult],
@@ -289,6 +298,7 @@ async def test_governed_contractor_request_produces_single_root_execution_invoca
             run_id=mint_run_id(),
             state=TaskState.COMPLETED,
             answer="one",
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
         )
 
     with patch.object(ExecutionFacade, "execute", _count_facade_execute):

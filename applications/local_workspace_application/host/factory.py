@@ -55,7 +55,6 @@ from local_workspace_application.host.settings import LocalWorkspaceBackendSetti
 from local_workspace_application.host.observability_wiring import (
     build_local_workspace_observability_plugins,
 )
-from local_workspace_application.host.execution_wiring import build_lkw_host_task_execution
 from local_workspace_application.host.host_runtime_composition import (
     LocalWorkspaceHostRuntimeComposition,
     build_local_workspace_harness_host_runtime,

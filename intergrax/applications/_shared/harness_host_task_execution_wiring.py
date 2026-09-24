@@ -14,12 +14,13 @@ from intergrax.applications._shared.harness_admitted_root_governance_identity im
 from intergrax.applications._shared.harness_root_execution_launch_wiring import (
     build_harness_root_execution_authority_admission,
 )
-from intergrax.applications._shared.host_task_execution_wiring import (
+from intergrax.runtime.execution.environment_host_task_execution import (
     build_environment_host_task_execution,
-    build_host_task_execution,
 )
+from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.applications._shared.profile_resolution.execution_admission import (
     EffectiveProfileExecutionPinningDependencies,
+    build_effective_profile_revision_admission,
 )
 from intergrax.agents.persistence.skill_host_wiring import HostSkillCatalogWiring
 from intergrax.runtime.execution.host_task import HostTaskExecution
@@ -64,10 +65,15 @@ def build_harness_environment_host_task_execution(
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
 ) -> HostTaskExecution:
     """Build harness host task execution from environment orchestration profile."""
+    revision_admission = None
+    if pinning_dependencies is not None:
+        revision_admission = build_effective_profile_revision_admission(
+            pinning_dependencies,
+        )
     return build_environment_host_task_execution(
         nexus_loop,
         env,
-        pinning_dependencies=pinning_dependencies,
+        revision_admission=revision_admission,
         skill_host_wiring=skill_host_wiring,
         root_authority_admission=build_harness_root_execution_authority_admission(
             governance_evidence_recorder=governance_evidence_recorder,

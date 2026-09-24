@@ -35,7 +35,9 @@ _ALLOWED_RAW_NEXUS_IMPORTERS = frozenset(
         "intergrax/applications/_shared/harness_host_composition.py",
         "intergrax/applications/_shared/harness_host_runtime.py",
         "intergrax/applications/_shared/nexus_factory.py",
-        "intergrax/applications/_shared/host_task_execution_wiring.py",
+        "intergrax/applications/_shared/governed_contractor_orchestration_topology_production.py",
+        "intergrax/applications/_shared/harness_host_task_execution_wiring.py",
+        "intergrax/applications/_shared/harness_host_orchestration_topology_wiring.py",
         "intergrax/applications/_shared/platform_wiring.py",
         "intergrax/applications/_shared/plugin_bootstrap.py",
         "intergrax/applications/_shared/security_wiring.py",
@@ -194,6 +196,30 @@ def test_npsc42_harness_host_runtime_uses_internal_composition_field() -> None:
     source = _RUNTIME_PATH.read_text(encoding="utf-8-sig")
     assert "_internal_composition: HarnessHostInternalComposition" in source
     assert "_legacy_composition" not in source
+
+
+@pytest.mark.gate
+def test_npsc42_ebh2f_r1_tier3_host_modules_forbid_raw_nexus_loop_import() -> None:
+    violations: list[str] = []
+    for host_root in _TIER3_HOST_ROOTS:
+        for path in host_root.rglob("*.py"):
+            if "docker" in path.parts or "runtime-context" in path.parts:
+                continue
+            if "from intergrax.runtime.nexus.nexus_loop import NexusLoop" in path.read_text(
+                encoding="utf-8-sig",
+            ):
+                violations.append(_relative(path))
+    assert violations == [], (
+        "Tier-3 host modules must not import NexusLoop:\n" + "\n".join(violations)
+    )
+
+
+@pytest.mark.gate
+def test_npsc42_ebh2f_r1_shared_host_task_execution_wiring_has_no_nexus_loop() -> None:
+    path = _SHARED_ROOT / "host_task_execution_wiring.py"
+    source = path.read_text(encoding="utf-8-sig")
+    assert "NexusLoop" not in source
+    assert "intergrax.runtime.nexus.nexus_loop" not in source
 
 
 @pytest.mark.gate
