@@ -15,7 +15,10 @@ from intergrax.collaborative_work.materialization_factory import (
     CollaborativeWorkPersistenceFactory,
 )
 from intergrax.integrations._shared.conformance import assert_relational_store
-from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.base import (
+    IntegrationCategory,
+    IntegrationConfigurationError,
+)
 from intergrax.integrations.providers.relational_store.sqlite.adapter import (
     _SQLiteRelationalStore,
 )
@@ -182,6 +185,36 @@ def test_sqlite_bound_materializer_conforms_to_cw_persistence_factory(
         )
     )
     assert isinstance(materializer, CollaborativeWorkPersistenceFactory)
+
+
+def test_sqlite_bind_collaborative_work_materialization_path_options_fail_closed(
+    tmp_path: Path,
+) -> None:
+    bind = create_sqlite_relational_store.bind_collaborative_work_materialization
+
+    str_materializer = bind({"data_dir": str(tmp_path)})
+    assert isinstance(str_materializer, CollaborativeWorkPersistenceFactory)
+
+    path_materializer = bind({"data_dir": tmp_path})
+    assert isinstance(path_materializer, CollaborativeWorkPersistenceFactory)
+
+    class _PathLikeStr:
+        def __fspath__(self) -> str:
+            return str(tmp_path)
+
+    path_like_materializer = bind({"data_dir": _PathLikeStr()})
+    assert isinstance(path_like_materializer, CollaborativeWorkPersistenceFactory)
+
+    class _SneakyPathStr:
+        def __str__(self) -> str:
+            return str(tmp_path / "via-str")
+
+    with pytest.raises(IntegrationConfigurationError):
+        bind({"data_dir": _SneakyPathStr()})
+    with pytest.raises(IntegrationConfigurationError):
+        bind({"data_dir": 42})
+    with pytest.raises(IntegrationConfigurationError):
+        bind({"relational_db": object()})
 
 
 def test_sqlite_bundle_has_no_module_level_cw_persistence_import() -> None:

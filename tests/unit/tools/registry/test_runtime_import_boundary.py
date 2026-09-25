@@ -39,19 +39,6 @@ _LIGHTWEIGHT_EXPORTS = frozenset(
     }
 )
 
-_COMPOSITION_ROOT_SYMBOLS = frozenset(
-    {
-        "ToolWiringContext",
-        "build_registry_from_profile",
-        "enabled_tool_ids_for_profile",
-        "register_default_tools",
-        "reset_default_tools_bootstrap",
-        "bootstrap_catalogs",
-        "register_tool_catalog",
-        "register_tool_plugin",
-    }
-)
-
 
 def _run_import_subprocess(statement: str) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
@@ -127,8 +114,13 @@ def test_production_code_does_not_import_composition_from_registry_root() -> Non
                 continue
             for alias in node.names:
                 name = alias.name
-                if name in _COMPOSITION_ROOT_SYMBOLS:
-                    rel = path.relative_to(_REPO_ROOT)
+                rel = path.relative_to(_REPO_ROOT)
+                if name == "*":
+                    violations.append(
+                        f"{rel}:{node.lineno} wildcard import from registry root"
+                    )
+                    continue
+                if name not in _LIGHTWEIGHT_EXPORTS:
                     violations.append(
                         f"{rel}:{node.lineno} imports {name} from registry root"
                     )

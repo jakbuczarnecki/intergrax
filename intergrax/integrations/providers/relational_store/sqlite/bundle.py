@@ -10,6 +10,7 @@ Runtime persistence (trace, events, checkpoints, memory, session, …) is compos
 
 from __future__ import annotations
 
+import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -48,6 +49,19 @@ def resolve_sqlite_config(**overrides: object) -> SQLiteIntegrationConfig:
     return SQLiteIntegrationConfig.from_env(**overrides)
 
 
+def _configuration_path_from_options(value: object, *, field_name: str) -> Path:
+    if isinstance(value, Path):
+        return value
+    if isinstance(value, str):
+        return Path(value)
+    if isinstance(value, os.PathLike):
+        return Path(value)
+    raise IntegrationConfigurationError(
+        f"SQLite {field_name} must be a path (str, Path, or path-like), "
+        f"got {type(value).__name__}",
+    )
+
+
 def _build_paths(
     *,
     data_dir: Path | str | None = None,
@@ -74,14 +88,15 @@ def _sqlite_materialization_paths_from_options(
     elif isinstance(data_dir_raw, (Path, str)):
         build_data_dir = data_dir_raw
     else:
-        build_data_dir = Path(str(data_dir_raw))
+        build_data_dir = _configuration_path_from_options(
+            data_dir_raw,
+            field_name="data_dir",
+        )
     if relational_db_raw is not None:
-        if isinstance(relational_db_raw, Path):
-            overrides["relational_db"] = relational_db_raw
-        elif isinstance(relational_db_raw, str):
-            overrides["relational_db"] = Path(relational_db_raw)
-        else:
-            overrides["relational_db"] = Path(str(relational_db_raw))
+        overrides["relational_db"] = _configuration_path_from_options(
+            relational_db_raw,
+            field_name="relational_db",
+        )
     _, paths = _build_paths(data_dir=build_data_dir, **overrides)
     return paths
 
