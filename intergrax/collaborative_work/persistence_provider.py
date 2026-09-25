@@ -10,9 +10,14 @@ from intergrax.collaborative_work.materialization_factory import (
     CollaborativeWorkMaterializationBinder,
     CollaborativeWorkPersistenceFactory,
 )
-from intergrax.collaborative_work.persistence import CollaborativeWorkMaterializedRepositories
+from intergrax.collaborative_work.persistence import (
+    CollaborativeWorkMaterializedRepositories,
+)
 from intergrax.integrations._shared.config import merge_config
-from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
+from intergrax.integrations.contracts.base import (
+    IntegrationCategory,
+    IntegrationConfigurationError,
+)
 from intergrax.integrations.registry.catalog import get_entry
 from intergrax.integrations.registry.factory import resolve_slug
 from intergrax.integrations.registry.profile import IntegrationProfile
@@ -26,6 +31,7 @@ class CollaborativeWorkPersistenceProvider(Protocol):
         self,
     ) -> CollaborativeWorkMaterializedRepositories:
         """Construct the authoritative Collaborative Work repository bundle."""
+        ...
 
 
 def resolve_collaborative_work_repositories(

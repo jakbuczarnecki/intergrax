@@ -5,16 +5,25 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, Protocol, Sequence, runtime_checkable
 
-from pydantic import PrivateAttr
+from pydantic import Field, PrivateAttr
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.runtime.integrations.categories.data import (
     RelationalStoreIntegrationContract,
 )
-from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
+from intergrax.runtime.integrations.categories._base import (
+    CategoryIntegrationConfig,
+    _CONNECT_READ_WRITE_HEALTH,
+    category_for_provider,
+)
+from intergrax.runtime.integrations.contracts import (
+    PlatformIntegrationCapability,
+    PlatformIntegrationKind,
+)
 
 if TYPE_CHECKING:
     from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
@@ -33,16 +42,37 @@ class SqliteRelationalStoreClient(RelationalStore, Protocol):
     """SQLite relational store client with filesystem path."""
 
     @property
-    def db_path(self) -> str: ...
+    def db_path(self) -> Path: ...
 
 
 class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
     """Single public Sqlite relational store entrypoint for catalog and contract wiring."""
 
-    config: SqliteRelationalStoreIntegrationConfig = (
-        SqliteRelationalStoreIntegrationConfig()
+    config: CategoryIntegrationConfig = Field(
+        default_factory=SqliteRelationalStoreIntegrationConfig
     )
     _client: SqliteRelationalStoreClient | None = PrivateAttr(default=None)
+
+    @classmethod
+    def for_provider(
+        cls,
+        *,
+        provider_id: str,
+        capabilities: tuple[PlatformIntegrationCapability, ...] | None = None,
+        display_name: str | None = None,
+        version: str | None = None,
+        config: CategoryIntegrationConfig | None = None,
+    ) -> SqliteRelationalStoreIntegration:
+        return category_for_provider(
+            cls,
+            provider_id=provider_id,
+            integration_kind=PlatformIntegrationKind.RELATIONAL_STORE.value,
+            default_capabilities=_CONNECT_READ_WRITE_HEALTH,
+            capabilities=capabilities,
+            display_name=display_name,
+            version=version,
+            config=config,
+        )
 
     def connect(self) -> None:
         self._require_client().connect()
@@ -59,7 +89,7 @@ class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
         self._require_client().close()
 
     @property
-    def db_path(self):
+    def db_path(self) -> Path:
         return self._require_client().db_path
 
     def _require_client(self) -> SqliteRelationalStoreClient:
@@ -96,6 +126,3 @@ class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
             "Work persistence materialization; use IntegrationProfile relational_store "
             "slug resolution instead."
         )
-
-
-RelationalStore.register(SqliteRelationalStoreIntegration)
