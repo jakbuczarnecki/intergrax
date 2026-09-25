@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -65,7 +65,7 @@ class SuspendedExecutionOperationDescriptor(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _migrate_legacy_authority_scope(cls, data: Any) -> Any:
+    def _migrate_legacy_authority_scope(cls, data: object) -> object:
         if not isinstance(data, dict):
             return data
         if data.get("authority_scope") is not None:

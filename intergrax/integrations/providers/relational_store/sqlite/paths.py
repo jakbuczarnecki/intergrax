@@ -8,8 +8,16 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from intergrax.integrations.providers.relational_store.sqlite.config import DEFAULT_DATA_DIR, SQLiteIntegrationConfig
+# Keep in sync with sqlite.config.DEFAULT_DATA_DIR — do not import config here
+# (registry ↔ runtime.events.store import cycle).
+DEFAULT_DATA_DIR = Path("build")
+
+if TYPE_CHECKING:
+    from intergrax.integrations.providers.relational_store.sqlite.config import (
+        SQLiteIntegrationConfig,
+    )
 
 ENV_TRACE_DB = "INTERGRAX_TRACE_DB"
 ENV_RUNTIME_EVENTS_DB = "INTERGRAX_RUNTIME_EVENTS_DB"
@@ -74,7 +82,9 @@ def _resolve_path(
     return data_dir / default_name
 
 
-def resolve_sqlite_store_paths(config: SQLiteIntegrationConfig) -> SqliteStorePaths:
+def resolve_sqlite_store_paths(
+    config: SQLiteIntegrationConfig,
+) -> SqliteStorePaths:
     data_dir = Path(config.data_dir)
     data_dir.mkdir(parents=True, exist_ok=True)
 
@@ -150,6 +160,10 @@ def resolve_sqlite_store_paths(config: SQLiteIntegrationConfig) -> SqliteStorePa
 
 
 def _paths(**config_overrides: object) -> SqliteStorePaths:
+    from intergrax.integrations.providers.relational_store.sqlite.config import (
+        SQLiteIntegrationConfig,
+    )
+
     config = SQLiteIntegrationConfig.from_env(**config_overrides)
     return resolve_sqlite_store_paths(config)
 

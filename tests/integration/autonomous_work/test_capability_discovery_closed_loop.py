@@ -27,13 +27,20 @@ from tests.integration.autonomous_work.runtime_tool_invoker_work_stage_port impo
 from intergrax.capability_catalog import (
     AvailabilityPreservingGovernanceEvaluator,
     CapabilityCatalogEntry,
+    CapabilityCatalogSourceFailure,
     FederatedCapabilityCatalog,
     WorkStageCapabilityDiscoveryService,
 )
-from intergrax.capability_catalog.adapters.skill_governance import SkillProfileGovernanceEvaluator
-from intergrax.capability_catalog.adapters.tool_governance import ToolPolicyGovernanceEvaluator
+from intergrax.capability_catalog.adapters.skill_governance import (
+    SkillProfileGovernanceEvaluator,
+)
+from intergrax.capability_catalog.adapters.tool_governance import (
+    ToolPolicyGovernanceEvaluator,
+)
 from intergrax.capability_catalog.governed_candidate import GovernedCapabilityCandidate
-from intergrax.capability_catalog.work_stage_effective import WorkStageCapabilityDiscoveryEvidence
+from intergrax.capability_catalog.work_stage_effective import (
+    WorkStageCapabilityDiscoveryEvidence,
+)
 from intergrax.contracts.autonomous_work.capability_acquisition import (
     CapabilityAcquisitionDisposition,
 )
@@ -65,7 +72,10 @@ from intergrax.runtime.nexus.tools.registry_tool_executor import RegistryToolExe
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest
 from intergrax.tools.registry.runtime import ToolRegistry
-from testing_support.builder import build_runtime_state_for_tests, canonical_run_id_for_tests
+from testing_support.builder import (
+    build_runtime_state_for_tests,
+    canonical_run_id_for_tests,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -100,13 +110,17 @@ class _EmptyToolOutput(BaseModel):
 
 
 class _OkToolHandler:
-    def execute(self, request: ToolExecutionRequest[_EmptyToolInput]) -> _EmptyToolOutput:
+    def execute(
+        self, request: ToolExecutionRequest[_EmptyToolInput]
+    ) -> _EmptyToolOutput:
         _ = request
         return _EmptyToolOutput()
 
 
 class _FailingToolHandler:
-    def execute(self, request: ToolExecutionRequest[_EmptyToolInput]) -> _EmptyToolOutput:
+    def execute(
+        self, request: ToolExecutionRequest[_EmptyToolInput]
+    ) -> _EmptyToolOutput:
         _ = request
         raise RuntimeError("intentional tool failure")
 
@@ -115,7 +129,9 @@ class _FailOnceToolHandler:
     def __init__(self) -> None:
         self.calls = 0
 
-    def execute(self, request: ToolExecutionRequest[_EmptyToolInput]) -> _EmptyToolOutput:
+    def execute(
+        self, request: ToolExecutionRequest[_EmptyToolInput]
+    ) -> _EmptyToolOutput:
         _ = request
         self.calls += 1
         if self.calls == 1:
@@ -124,7 +140,9 @@ class _FailOnceToolHandler:
 
 
 class _StaticSource:
-    def __init__(self, source_id: str, entries: tuple[CapabilityCatalogEntry, ...]) -> None:
+    def __init__(
+        self, source_id: str, entries: tuple[CapabilityCatalogEntry, ...]
+    ) -> None:
         self._source_id = source_id
         self._entries = entries
         self.read_calls = 0
@@ -159,7 +177,7 @@ class _FailingSource:
         return "zzz.failing"
 
     def read_entries(self) -> tuple[CapabilityCatalogEntry, ...]:
-        raise RuntimeError("catalog backend unavailable")
+        raise CapabilityCatalogSourceFailure("catalog backend unavailable")
 
 
 def _entry(
@@ -242,7 +260,8 @@ def _availability(
     *entries: CapabilityCatalogEntry,
 ) -> CapabilityDiscoveryAvailabilityEvidence:
     keys = tuple(
-        CapabilityIdentityKey.from_discovery_identity(entry.identity) for entry in entries
+        CapabilityIdentityKey.from_discovery_identity(entry.identity)
+        for entry in entries
     )
     return CapabilityDiscoveryAvailabilityEvidence(
         host_available_keys=keys,
@@ -315,7 +334,9 @@ class _CountingToolExecution(WorkStageToolExecutionPort):
     inner: WorkStageToolExecutionPort
     calls: int = 0
 
-    def execute(self, request: WorkStageToolExecutionRequest) -> WorkStageToolExecutionResult:
+    def execute(
+        self, request: WorkStageToolExecutionRequest
+    ) -> WorkStageToolExecutionResult:
         self.calls += 1
         return self.inner.execute(request)
 
@@ -388,7 +409,9 @@ def _build_coordinator(
     inner = RuntimeToolInvokerWorkStagePort(invoker, state)
     counting = _CountingToolExecution(inner=inner)
     coordinator = WorkStageCapabilityDiscoveryLoopCoordinator(
-        discovery_service=WorkStageCapabilityDiscoveryService(governance_evaluators=_evaluators()),
+        discovery_service=WorkStageCapabilityDiscoveryService(
+            governance_evaluators=_evaluators()
+        ),
         federated_catalog=federated,
         context_provider=context_provider,
         tool_execution=counting,
@@ -413,8 +436,12 @@ def _semantic_outcome(
             (
                 item.iteration_index,
                 item.need.stage_reference,
-                item.selected_identity_key.logical_id if item.selected_identity_key else None,
-                item.selected_identity_key.source_id if item.selected_identity_key else None,
+                item.selected_identity_key.logical_id
+                if item.selected_identity_key
+                else None,
+                item.selected_identity_key.source_id
+                if item.selected_identity_key
+                else None,
                 item.domain_authority_kind,
                 (
                     item.execution_correlation.run_id,
@@ -441,8 +468,12 @@ def _semantic_outcome(
 
 
 def test_happy_closed_loop_two_iterations() -> None:
-    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
-    tool_b = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_PRIVATE_SOURCE)
+    tool_a = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE
+    )
+    tool_b = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_PRIVATE_SOURCE
+    )
     official = _StaticSource("official.catalog", (tool_a,))
     private = _StaticSource("enterprise.private.catalog", (tool_b,))
     federated = FederatedCapabilityCatalog((official, private))
@@ -461,7 +492,9 @@ def test_happy_closed_loop_two_iterations() -> None:
     context_provider = _IterationGovernanceProvider(
         availability=_availability(tool_a, tool_b),
         governance_by_iteration={
-            0: _governance_context(allowed_tool_ids=(_TOOL_A,), source=_OFFICIAL_SOURCE),
+            0: _governance_context(
+                allowed_tool_ids=(_TOOL_A,), source=_OFFICIAL_SOURCE
+            ),
             1: _governance_context(
                 allowed_tool_ids=(_TOOL_B,),
                 source=_PRIVATE_SOURCE,
@@ -485,22 +518,35 @@ def test_happy_closed_loop_two_iterations() -> None:
     assert private.read_calls == 2
     assert outcome.result.iterations[0].selected_identity_key is not None
     assert outcome.result.iterations[0].selected_identity_key.logical_id == _TOOL_A
-    assert outcome.result.iterations[0].selected_identity_key.source_id == "official.catalog"
+    assert (
+        outcome.result.iterations[0].selected_identity_key.source_id
+        == "official.catalog"
+    )
     assert outcome.result.iterations[1].selected_identity_key is not None
     assert outcome.result.iterations[1].selected_identity_key.logical_id == _TOOL_B
     assert outcome.result.iterations[1].selected_identity_key.source_id == (
         "enterprise.private.catalog"
     )
-    assert outcome.result.iterations[0].domain_authority_kind is WorkStageDomainAuthorityKind.TOOL
+    assert (
+        outcome.result.iterations[0].domain_authority_kind
+        is WorkStageDomainAuthorityKind.TOOL
+    )
     assert outcome.discovery_records[0] != outcome.discovery_records[1]
     assert outcome.result.iterations[0].observation is not None
     assert outcome.result.iterations[0].observation.next_need is not None
-    assert outcome.result.iterations[0].observation.next_need.stage_reference == "stage.summarize"
+    assert (
+        outcome.result.iterations[0].observation.next_need.stage_reference
+        == "stage.summarize"
+    )
 
 
 def test_governance_deny_mid_loop_prevents_second_execution() -> None:
-    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
-    tool_b = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_OFFICIAL_SOURCE)
+    tool_a = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE
+    )
+    tool_b = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_OFFICIAL_SOURCE
+    )
     source = _StaticSource("official.catalog", (tool_a, tool_b))
     federated = FederatedCapabilityCatalog((source,))
     registry = _tool_registry(_TOOL_A, _TOOL_B)
@@ -544,8 +590,12 @@ def test_governance_deny_mid_loop_prevents_second_execution() -> None:
 
 
 def test_observe_rediscover_determinism() -> None:
-    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
-    tool_b = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_OFFICIAL_SOURCE)
+    tool_a = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE
+    )
+    tool_b = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_OFFICIAL_SOURCE
+    )
     source = _StaticSource("official.catalog", (tool_a, tool_b))
     federated = FederatedCapabilityCatalog((source,))
     registry = _tool_registry(_TOOL_A, _TOOL_B)
@@ -584,12 +634,19 @@ def test_observe_rediscover_determinism() -> None:
 
 
 def test_fresh_catalog_state_after_execution() -> None:
-    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
-    mutable = _MutableSource("official.catalog", [_entry(
-        kind=CapabilityKind.TOOL,
-        logical_id=_TOOL_A,
-        source=_OFFICIAL_SOURCE,
-    )])
+    tool_a = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE
+    )
+    mutable = _MutableSource(
+        "official.catalog",
+        [
+            _entry(
+                kind=CapabilityKind.TOOL,
+                logical_id=_TOOL_A,
+                source=_OFFICIAL_SOURCE,
+            )
+        ],
+    )
     federated = FederatedCapabilityCatalog((mutable,))
     registry = _tool_registry(_TOOL_A)
     need_a = _need(
@@ -597,7 +654,9 @@ def test_fresh_catalog_state_after_execution() -> None:
         stage_objective="collect evidence",
         logical_ids=(_TOOL_A,),
     )
-    tool_b = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_OFFICIAL_SOURCE)
+    tool_b = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_OFFICIAL_SOURCE
+    )
     need_b = _need(
         stage_reference="stage.summarize",
         stage_objective="summarize evidence",
@@ -771,13 +830,19 @@ def test_no_match_is_not_unavailable() -> None:
             logical_ids=(_TOOL_A,),
         ),
     )
-    assert unavailable.result.disposition is WorkStageCapabilityLoopDisposition.UNAVAILABLE
+    assert (
+        unavailable.result.disposition is WorkStageCapabilityLoopDisposition.UNAVAILABLE
+    )
     assert outcome.result.disposition is not unavailable.result.disposition
 
 
 def test_no_registry_mutation_from_loop() -> None:
-    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
-    tool_b = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_OFFICIAL_SOURCE)
+    tool_a = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE
+    )
+    tool_b = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_OFFICIAL_SOURCE
+    )
     source = _StaticSource("official.catalog", (tool_a, tool_b))
     federated = FederatedCapabilityCatalog((source,))
     registry = _tool_registry(_TOOL_A, _TOOL_B)
@@ -808,7 +873,9 @@ def test_no_registry_mutation_from_loop() -> None:
 
 
 def test_skill_not_direct_execution_unit() -> None:
-    skill = _entry(kind=CapabilityKind.SKILL, logical_id=_SKILL_ONLY, source=_BUILTIN_SOURCE)
+    skill = _entry(
+        kind=CapabilityKind.SKILL, logical_id=_SKILL_ONLY, source=_BUILTIN_SOURCE
+    )
     source = _StaticSource("skills.catalog.builtin", (skill,))
     federated = FederatedCapabilityCatalog((source,))
     coordinator, counting = _build_coordinator(
@@ -849,11 +916,16 @@ def test_skill_not_direct_execution_unit() -> None:
     )
     assert outcome.result.disposition is WorkStageCapabilityLoopDisposition.BLOCKED
     assert counting.calls == 0
-    assert outcome.result.iterations[0].domain_authority_kind is WorkStageDomainAuthorityKind.SKILL
+    assert (
+        outcome.result.iterations[0].domain_authority_kind
+        is WorkStageDomainAuthorityKind.SKILL
+    )
 
 
 def test_max_iterations_exhaustion() -> None:
-    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
+    tool_a = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE
+    )
     source = _StaticSource("official.catalog", (tool_a,))
     federated = FederatedCapabilityCatalog((source,))
     need_a = _need(
@@ -910,7 +982,9 @@ def test_a4_recovery_never_self_executes() -> None:
         authority=_RequiresAuthorityChange(),
     )
     result = service.decide(acquisition_request())
-    assert result.disposition is CapabilityAcquisitionDisposition.AUTHORITY_CHANGE_REQUIRED
+    assert (
+        result.disposition is CapabilityAcquisitionDisposition.AUTHORITY_CHANGE_REQUIRED
+    )
     assert result.decision is not None
     assert result.decision.autonomy_level is WorkerAutonomyLevel.A4_AUTHORITY_CHANGE
     assert result.decision.selected_candidate is None
@@ -932,7 +1006,9 @@ def test_stage14_architecture_forbidden_abstractions() -> None:
         source = path.read_text(encoding="utf-8")
         tree = ast.parse(source)
         for name in forbidden:
-            assert name not in source, f"{path.name} must not define or reference {name}"
+            assert name not in source, (
+                f"{path.name} must not define or reference {name}"
+            )
         for private_attr in forbidden_private_attrs:
             assert private_attr not in source, (
                 f"{path.name} must not access private runtime attribute {private_attr}"
@@ -953,12 +1029,15 @@ def test_stage14_architecture_forbidden_abstractions() -> None:
         for module in imported:
             for forbidden_import in forbidden_imports:
                 assert not (
-                    module == forbidden_import or module.startswith(f"{forbidden_import}.")
+                    module == forbidden_import
+                    or module.startswith(f"{forbidden_import}.")
                 ), f"{path.name} imports forbidden installer dependency: {module}"
 
 
 def test_failed_terminal_execution_not_completed() -> None:
-    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
+    tool_a = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE
+    )
     source = _StaticSource("official.catalog", (tool_a,))
     federated = FederatedCapabilityCatalog((source,))
     registry = _tool_registry_with_handlers({_TOOL_A: _FailingToolHandler()})
@@ -981,7 +1060,9 @@ def test_failed_terminal_execution_not_completed() -> None:
     outcome = coordinator.run(need_a)
 
     assert outcome.result.disposition is WorkStageCapabilityLoopDisposition.ESCALATED
-    assert outcome.result.disposition is not WorkStageCapabilityLoopDisposition.COMPLETED
+    assert (
+        outcome.result.disposition is not WorkStageCapabilityLoopDisposition.COMPLETED
+    )
     assert len(outcome.result.iterations) == 1
     assert counting.calls == 1
     iteration = outcome.result.iterations[0]
@@ -991,8 +1072,12 @@ def test_failed_terminal_execution_not_completed() -> None:
 
 
 def test_failed_execution_then_rediscover() -> None:
-    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
-    tool_b = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_OFFICIAL_SOURCE)
+    tool_a = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE
+    )
+    tool_b = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_OFFICIAL_SOURCE
+    )
     source = _StaticSource("official.catalog", (tool_a, tool_b))
     federated = FederatedCapabilityCatalog((source,))
     registry = _tool_registry_with_handlers(
@@ -1033,7 +1118,9 @@ def test_failed_execution_then_rediscover() -> None:
 
 
 def test_run_id_mismatch_fails_before_tool_execution() -> None:
-    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
+    tool_a = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE
+    )
     source = _StaticSource("official.catalog", (tool_a,))
     federated = FederatedCapabilityCatalog((source,))
     registry = _tool_registry(_TOOL_A)
@@ -1047,7 +1134,9 @@ def test_run_id_mismatch_fails_before_tool_execution() -> None:
     counting = _CountingToolExecution(inner=inner)
     mismatched_run_id = canonical_run_id_for_tests("run-stage14-mismatch-seed")
     coordinator = WorkStageCapabilityDiscoveryLoopCoordinator(
-        discovery_service=WorkStageCapabilityDiscoveryService(governance_evaluators=_evaluators()),
+        discovery_service=WorkStageCapabilityDiscoveryService(
+            governance_evaluators=_evaluators()
+        ),
         federated_catalog=federated,
         context_provider=_IterationGovernanceProvider(
             availability=_availability(tool_a),
@@ -1068,11 +1157,15 @@ def test_run_id_mismatch_fails_before_tool_execution() -> None:
                 logical_ids=(_TOOL_A,),
             ),
         )
-    assert not any(event.step == "tool_invocation_start" for event in state.trace_events)
+    assert not any(
+        event.step == "tool_invocation_start" for event in state.trace_events
+    )
 
 
 def test_execution_correlation_matches_canonical_tool_path() -> None:
-    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
+    tool_a = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE
+    )
     source = _StaticSource("official.catalog", (tool_a,))
     federated = FederatedCapabilityCatalog((source,))
     registry = _tool_registry(_TOOL_A)
@@ -1098,12 +1191,19 @@ def test_execution_correlation_matches_canonical_tool_path() -> None:
     assert iteration.execution_correlation.tool_id == _TOOL_A
     assert iteration.execution_correlation.step_id == "0"
     assert iteration.execution_correlation.run_id == canonical_run_id_for_tests(_RUN_ID)
-    assert iteration.execution_correlation.tool_id == iteration.selected_identity_key.logical_id
+    assert (
+        iteration.execution_correlation.tool_id
+        == iteration.selected_identity_key.logical_id
+    )
 
 
 def test_happy_closed_loop_records_execution_correlation() -> None:
-    tool_a = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE)
-    tool_b = _entry(kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_PRIVATE_SOURCE)
+    tool_a = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_A, source=_OFFICIAL_SOURCE
+    )
+    tool_b = _entry(
+        kind=CapabilityKind.TOOL, logical_id=_TOOL_B, source=_PRIVATE_SOURCE
+    )
     official = _StaticSource("official.catalog", (tool_a,))
     private = _StaticSource("enterprise.private.catalog", (tool_b,))
     federated = FederatedCapabilityCatalog((official, private))
@@ -1125,7 +1225,9 @@ def test_happy_closed_loop_records_execution_correlation() -> None:
         context_provider=_IterationGovernanceProvider(
             availability=_availability(tool_a, tool_b),
             governance_by_iteration={
-                0: _governance_context(allowed_tool_ids=(_TOOL_A,), source=_OFFICIAL_SOURCE),
+                0: _governance_context(
+                    allowed_tool_ids=(_TOOL_A,), source=_OFFICIAL_SOURCE
+                ),
                 1: _governance_context(
                     allowed_tool_ids=(_TOOL_B,),
                     source=_PRIVATE_SOURCE,
@@ -1140,4 +1242,6 @@ def test_happy_closed_loop_records_execution_correlation() -> None:
     for index, iteration in enumerate(outcome.result.iterations):
         assert iteration.execution_correlation is not None
         assert iteration.execution_correlation.step_id == str(index)
-        assert iteration.execution_correlation.run_id == canonical_run_id_for_tests(_RUN_ID)
+        assert iteration.execution_correlation.run_id == canonical_run_id_for_tests(
+            _RUN_ID
+        )

@@ -34,7 +34,9 @@ from tests.integration.autonomous_work.conftest import (
     resolve_postgresql_config,
 )
 from tests.unit.autonomous_work import repository_contracts as contract_suite
-from tests.unit.autonomous_work import wake_up_receipt_repository_contracts as receipt_contracts
+from tests.unit.autonomous_work import (
+    wake_up_receipt_repository_contracts as receipt_contracts,
+)
 from tests.unit.autonomous_work.test_wake_up_service import _FixedClock
 
 pytestmark = [pytest.mark.integration, pytest.mark.network]
@@ -383,8 +385,12 @@ def test_postgresql_migration_v2_to_v3_atomicity_on_failure(
         )
         raise AutonomousWorkSchemaVersionError("controlled migration failure")
 
-    monkeypatch.setattr(PostgreSQLAutonomousWorkStore, "_migrate_v2_to_v3", failing_migration)
-    with pytest.raises(AutonomousWorkSchemaVersionError, match="controlled migration failure"):
+    monkeypatch.setattr(
+        PostgreSQLAutonomousWorkStore, "_migrate_v2_to_v3", failing_migration
+    )
+    with pytest.raises(
+        AutonomousWorkSchemaVersionError, match="controlled migration failure"
+    ):
         open_bundle(schema_name)
 
     config = resolve_postgresql_config()
@@ -413,11 +419,15 @@ def test_postgresql_migration_v2_to_v3_atomicity_on_failure(
 def test_postgresql_newer_schema_version_fails_closed(
     postgresql_autonomous_work_bundle: AutonomousWorkRepositories,
 ) -> None:
+    from intergrax.autonomous_work.postgresql_repository import (
+        AutonomousWorkSchemaVersionError,
+    )
+
     store = postgresql_autonomous_work_bundle.store
     with store.transaction() as conn:
         conn.execute(
             "UPDATE autonomous_work_schema_meta SET schema_version = %s WHERE id = 1",
-            (6,),
+            (99,),
         )
     schema_name = store.schema_name
     postgresql_autonomous_work_bundle.close()
@@ -459,7 +469,10 @@ def test_postgresql_wake_up_restart_duplicate(
             wake_up_receipt_repository=reopened.worker_wake_up_receipt,
             clock=_FixedClock(datetime(2026, 9, 3, 12, 1, tzinfo=UTC)),
         )
-        assert replay_service.accept(signal).disposition == WorkerWakeUpDisposition.DUPLICATE
+        assert (
+            replay_service.accept(signal).disposition
+            == WorkerWakeUpDisposition.DUPLICATE
+        )
     finally:
         reopened.close()
 
@@ -496,7 +509,9 @@ def test_postgresql_wake_up_restart_conflicting(
         wake_up_receipt_repository=postgresql_autonomous_work_bundle.worker_wake_up_receipt,
         clock=_FixedClock(datetime(2026, 9, 3, 12, 0, tzinfo=UTC)),
     )
-    assert service.accept(accepted_signal).disposition == WorkerWakeUpDisposition.ACCEPTED
+    assert (
+        service.accept(accepted_signal).disposition == WorkerWakeUpDisposition.ACCEPTED
+    )
     postgresql_autonomous_work_bundle.close()
 
     reopened = open_bundle(schema_name)
@@ -567,11 +582,14 @@ def test_postgresql_wake_up_multiprocess_identical_logical_signal(
 
     reopened = open_bundle(schema_name)
     try:
-        assert _wake_up_receipt_row_count(
-            reopened,
-            worker_instance_id=worker_instance_id,
-            wake_up_id=wake_up_id,
-        ) == 1
+        assert (
+            _wake_up_receipt_row_count(
+                reopened,
+                worker_instance_id=worker_instance_id,
+                wake_up_id=wake_up_id,
+            )
+            == 1
+        )
         stored = reopened.worker_wake_up_receipt.get(
             worker_instance_id=worker_instance_id,
             wake_up_id=wake_up_id,
@@ -626,11 +644,14 @@ def test_postgresql_wake_up_multiprocess_conflicting_logical_signal(
 
     reopened = open_bundle(schema_name)
     try:
-        assert _wake_up_receipt_row_count(
-            reopened,
-            worker_instance_id=worker_instance_id,
-            wake_up_id=wake_up_id,
-        ) == 1
+        assert (
+            _wake_up_receipt_row_count(
+                reopened,
+                worker_instance_id=worker_instance_id,
+                wake_up_id=wake_up_id,
+            )
+            == 1
+        )
         stored = reopened.worker_wake_up_receipt.get(
             worker_instance_id=worker_instance_id,
             wake_up_id=wake_up_id,
