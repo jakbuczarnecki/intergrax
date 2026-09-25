@@ -46,7 +46,7 @@ class SuspendedExecutionOperationDescriptor(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[SCHEMA_SUSPENDED_EXECUTION_OPERATION_DESCRIPTOR_V1] = (
+    schema_version: Literal["suspended_execution_operation_descriptor.v1"] = (
         SCHEMA_SUSPENDED_EXECUTION_OPERATION_DESCRIPTOR_V1
     )
     suspended_operation_id: str = Field(min_length=1)

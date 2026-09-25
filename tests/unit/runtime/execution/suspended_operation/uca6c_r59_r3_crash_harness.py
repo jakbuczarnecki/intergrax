@@ -517,8 +517,12 @@ def sync_hosts_after_restart(
     document_store_a: ConditionalDocumentStore | None = None,
     document_store_b: ConditionalDocumentStore | None = None,
 ) -> None:
-    backing_a = document_store_a if document_store_a is not None else fixture.document_store
-    backing_b = document_store_b if document_store_b is not None else fixture.document_store
+    backing_a = (
+        document_store_a if document_store_a is not None else fixture.document_store
+    )
+    backing_b = (
+        document_store_b if document_store_b is not None else fixture.document_store
+    )
     store_a = reconnect_document_store_suspended_operation_store(backing_a)
     store_b = reconnect_document_store_suspended_operation_store(backing_b)
     co_a = fixture.composition_a.suspended_work_reentry_coordinator
