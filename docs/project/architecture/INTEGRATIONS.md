@@ -574,6 +574,10 @@ Remediation tracked as **INTEGRATIONS-RUNTIME-BINDING-INTEGRITY** (findings 01â€
 
 ## Engineering canon
 
+### Package import boundary (EBH-2G-R1)
+
+Subsystem package roots (`intergrax.integrations`, `intergrax.integrations.contracts`) are **namespace boundaries**, not stable public SDK facades. Canonical symbols live on **explicit owner leaf modules** (for example `intergrax.integrations.contracts.base`, `intergrax.integrations.registry.profile`). Importing a contract must not bootstrap registry, resolver, or unrelated runtime composition. See [ADR-EBH-2G-R1-SUBSYSTEM-PACKAGE-ROOT-LEAF-IMPORT-BOUNDARY](../maintainers/architecture/ADR/ADR-EBH-2G-R1-SUBSYSTEM-PACKAGE-ROOT-LEAF-IMPORT-BOUNDARY.md).
+
 **Status:** Canonical architecture (domain pair 1:1)  
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)  
 **Plan (1:1):** [`plan/INTEGRATIONS.md`](../maintainers/plans/INTEGRATIONS.md)  

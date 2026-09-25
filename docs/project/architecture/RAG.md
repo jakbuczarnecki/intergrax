@@ -306,6 +306,10 @@ Older current-state passages in the architecture hub and pipeline satellite were
 
 ## Engineering canon
 
+### Package import boundary (EBH-2G-R1)
+
+RAG qualification and retrieval contracts depend on **lightweight integration contract imports** (leaf modules under `intergrax.integrations.contracts.*`). Subsystem package roots must not eager-bootstrap registry or tools wiring when those contracts are imported. See [ADR-EBH-2G-R1](../maintainers/architecture/ADR/ADR-EBH-2G-R1-SUBSYSTEM-PACKAGE-ROOT-LEAF-IMPORT-BOUNDARY.md).
+
 Authoritative technical specification (§1–§10). Public front section above; pipeline module map in the [satellite](satellites/RAG_pipelines_detail.md).
 
 ## 1. Canonical contracts and identity

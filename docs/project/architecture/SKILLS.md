@@ -446,6 +446,10 @@ Load **only** the satellite matching your task or cited §.
 
 ## Engineering canon
 
+### Package import boundary (EBH-2G-R1)
+
+`intergrax.skills` is a **namespace boundary**, not a stable SDK facade. Import manifests, registry, and resolver from owner leaf modules (for example `intergrax.skills.core.contracts`, `intergrax.skills.resolver`). Root import must not materialize `SkillResolver` or registry bootstrap. See [ADR-EBH-2G-R1](../maintainers/architecture/ADR/ADR-EBH-2G-R1-SUBSYSTEM-PACKAGE-ROOT-LEAF-IMPORT-BOUNDARY.md).
+
 ### Public invariant
 
 ```text

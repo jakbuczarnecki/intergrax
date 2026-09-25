@@ -611,6 +611,10 @@ Remediation: **TOOLS-GOVERNED-BOUNDARY-INTEGRITY** (01, 02, 03) and **TOOLS-SIDE
 
 ## Engineering canon
 
+### Package import boundary (EBH-2G-R1)
+
+`intergrax.tools` is a **namespace boundary**, not a stable SDK facade. Import registry, wiring, and contracts from owner leaf modules (for example `intergrax.tools.registry.wiring`, `intergrax.tools.core.contracts`). Root import must not register tools or build registries. See [ADR-EBH-2G-R1](../maintainers/architecture/ADR/ADR-EBH-2G-R1-SUBSYSTEM-PACKAGE-ROOT-LEAF-IMPORT-BOUNDARY.md).
+
 ### Four-layer stack
 
 ```text
@@ -648,13 +652,12 @@ ToolRegistry  ──►  RuntimeToolInvoker  ──►  Agent / CatalogToolPlann
 **Example - enable tools from catalog profile:**
 
 ```python
-from intergrax.tools.registry import (
-    ToolProfile,
-    ToolWiringContext,
-    build_registry_from_profile,
-    register_default_tools,
-)
-from intergrax.integrations import IntegrationProfile, register_default_integrations
+from intergrax.integrations.registry.bootstrap import register_default_integrations
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.tools.registry.bootstrap import register_default_tools
+from intergrax.tools.registry.factory import build_registry_from_profile
+from intergrax.tools.registry.profile import ToolProfile
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 register_default_integrations()
 register_default_tools()
