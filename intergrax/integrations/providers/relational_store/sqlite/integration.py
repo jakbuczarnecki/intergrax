@@ -11,7 +11,9 @@ from pydantic import PrivateAttr
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.relational_store import RelationalStore
-from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
+from intergrax.runtime.integrations.categories.data import (
+    RelationalStoreIntegrationContract,
+)
 from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 
 if TYPE_CHECKING:
@@ -35,16 +37,12 @@ class SqliteRelationalStoreClient(RelationalStore, Protocol):
 
 
 class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
-    """
-    Single public Sqlite relational store entrypoint.
+    """Single public Sqlite relational store entrypoint for catalog and contract wiring."""
 
-    Legacy catalog factory (create_sqlite_integration) owns catalog behavior; legacy factories use from_client().
-    """
-
-    config: SqliteRelationalStoreIntegrationConfig = SqliteRelationalStoreIntegrationConfig()
+    config: SqliteRelationalStoreIntegrationConfig = (
+        SqliteRelationalStoreIntegrationConfig()
+    )
     _client: SqliteRelationalStoreClient | None = PrivateAttr(default=None)
-    
-
 
     def connect(self) -> None:
         self._require_client().connect()
@@ -52,7 +50,9 @@ class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
     def execute(self, sql: str, params: Sequence[Any] = ()) -> None:
         self._require_client().execute(sql, params)
 
-    def fetch_all(self, sql: str, params: Sequence[Any] = ()) -> Sequence[Mapping[str, Any]]:
+    def fetch_all(
+        self, sql: str, params: Sequence[Any] = ()
+    ) -> Sequence[Mapping[str, Any]]:
         return self._require_client().fetch_all(sql, params)
 
     def close(self) -> None:
@@ -68,7 +68,6 @@ class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
                 f"{type(self).__name__} requires a catalog client for operations",
             )
         return self._client
-
 
     @classmethod
     def from_client(
@@ -89,11 +88,14 @@ class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
     def client(self) -> SqliteRelationalStoreClient | None:
         return self._client
 
-    def materialize_collaborative_work_repositories(self) -> CollaborativeWorkRepositories:
+    def materialize_collaborative_work_repositories(
+        self,
+    ) -> CollaborativeWorkRepositories:
         raise IntegrationConfigurationError(
             "Pre-built Sqlite relational store instances do not support Collaborative "
             "Work persistence materialization; use IntegrationProfile relational_store "
             "slug resolution instead."
         )
+
 
 RelationalStore.register(SqliteRelationalStoreIntegration)

@@ -7,13 +7,23 @@ SQLite relational-store integration — provider config, paths, and catalog regi
 Runtime persistence composition lives in ``intergrax.runtime.persistence.sqlite_composition``.
 """
 
-from intergrax.utils.lazy_export import export_from_bundle
 from intergrax.integrations.providers.relational_store.sqlite.adapter import (
     _SQLiteRelationalStore,
+)
+from intergrax.integrations.providers.relational_store.sqlite.bundle import (
+    create_sqlite_relational_store,
+    create_sqlite_relational_store_integration,
+    resolve_sqlite_config,
 )
 from intergrax.integrations.providers.relational_store.sqlite.config import (
     ENV_SQLITE_DATA_DIR,
     SQLiteIntegrationConfig,
+)
+from intergrax.integrations.providers.relational_store.sqlite.integration import (
+    SQLITE_RELATIONAL_STORE_PROVIDER_ID,
+    SqliteRelationalStoreClient,
+    SqliteRelationalStoreIntegration,
+    SqliteRelationalStoreIntegrationConfig,
 )
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_EXPERIMENTS_DB,
@@ -47,6 +57,11 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
     resolve_trace_db_path,
     resolve_user_profile_db_path,
 )
+from intergrax.integrations.providers.relational_store.sqlite.register import (
+    register_sqlite_integration,
+)
+
+SQLiteRelationalStore = _SQLiteRelationalStore
 
 __all__ = [
     "ENV_SQLITE_DATA_DIR",
@@ -70,7 +85,12 @@ __all__ = [
     "ENV_TASK_MEMORY_DB",
     "ENV_TRACE_DB",
     "ENV_USER_PROFILE_DB",
+    "SQLITE_RELATIONAL_STORE_PROVIDER_ID",
+    "SqliteRelationalStoreClient",
+    "SqliteRelationalStoreIntegration",
+    "SqliteRelationalStoreIntegrationConfig",
     "create_sqlite_relational_store",
+    "create_sqlite_relational_store_integration",
     "register_sqlite_integration",
     "resolve_experiments_db_path",
     "resolve_human_decisions_db_path",
@@ -85,49 +105,4 @@ __all__ = [
     "resolve_task_memory_db_path",
     "resolve_trace_db_path",
     "resolve_user_profile_db_path",
-    "create_sqlite_relational_store_integration",
 ]
-
-_BUNDLE_EXPORTS = frozenset(
-    {
-        "create_sqlite_relational_store",
-        "resolve_sqlite_config",
-        "register_sqlite_integration",
-        "create_sqlite_relational_store_integration",
-    }
-)
-
-
-_CONTRACT_INTEGRATION_EXPORTS = frozenset(
-    {
-        "SQLITE_RELATIONAL_STORE_PROVIDER_ID",
-        "SqliteRelationalStoreIntegration",
-        "SqliteRelationalStoreIntegrationConfig",
-        "SqliteRelationalStoreClient",
-    }
-)
-
-SQLiteRelationalStore = _SQLiteRelationalStore
-
-
-def __getattr__(name: str):
-    if name == "register_sqlite_integration":
-        from intergrax.integrations.providers.relational_store.sqlite.register import (
-            register_sqlite_integration,
-        )
-
-        return register_sqlite_integration
-    if name in _BUNDLE_EXPORTS:
-        from intergrax.integrations.providers.relational_store.sqlite import (
-            bundle as _bundle,
-        )
-
-        return export_from_bundle(_bundle, name, _BUNDLE_EXPORTS)
-    if name in _CONTRACT_INTEGRATION_EXPORTS:
-        from intergrax.integrations.providers.relational_store.sqlite import (
-            integration as _integration,
-        )
-
-        return export_from_bundle(_integration, name, _CONTRACT_INTEGRATION_EXPORTS)
-
-    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

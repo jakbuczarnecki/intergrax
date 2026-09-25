@@ -15,14 +15,12 @@ from pathlib import Path
 
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.experiments.persistence_contract import ExperimentPersistence
-from intergrax.integrations.providers.relational_store.sqlite.adapter import (
-    _SQLiteRelationalStore,
+from intergrax.integrations.contracts.relational_store import RelationalStore
+from intergrax.integrations.providers.relational_store.sqlite.bundle import (
+    create_sqlite_relational_store,
 )
 from intergrax.integrations.providers.relational_store.sqlite.config import (
     SQLiteIntegrationConfig,
-)
-from intergrax.integrations.providers.relational_store.sqlite.integration import (
-    SqliteRelationalStoreIntegration,
 )
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
     SqliteStorePaths,
@@ -61,7 +59,7 @@ class SQLiteRuntimePersistenceBundle:
 
     config: SQLiteIntegrationConfig
     paths: SqliteStorePaths
-    relational_store: SqliteRelationalStoreIntegration
+    relational_store: RelationalStore
     trace_store: RunTraceStore
     runtime_event_store: RuntimeEventPersistence
     task_checkpoint_store: TaskCheckpointPersistence
@@ -100,9 +98,7 @@ def create_sqlite_runtime_persistence(
     """Single entry point for SQLite runtime persistence composition."""
     config, paths = _build_paths(data_dir=data_dir, **config_overrides)
 
-    adapter = _SQLiteRelationalStore(paths.relational)
-    relational = SqliteRelationalStoreIntegration.from_client(adapter)
-    relational.connect()
+    relational = create_sqlite_relational_store(db_path=paths.relational)
 
     return SQLiteRuntimePersistenceBundle(
         config=config,

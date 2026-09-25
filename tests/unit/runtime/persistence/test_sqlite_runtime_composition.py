@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from intergrax.experiments.store import SQLiteExperimentStore
+from intergrax.integrations.contracts.relational_store import RelationalStore
 from intergrax.integrations.providers.relational_store.sqlite.integration import (
     SqliteRelationalStoreIntegration,
 )
@@ -49,6 +50,7 @@ def test_create_sqlite_runtime_persistence_uses_shared_data_dir(tmp_path: Path) 
     assert bundle.paths.trace == tmp_path / TRACE_DB_NAME
     assert bundle.paths.experiments == tmp_path / EXPERIMENTS_DB_NAME
 
+    assert isinstance(bundle.relational_store, RelationalStore)
     assert isinstance(bundle.relational_store, SqliteRelationalStoreIntegration)
     assert isinstance(bundle.trace_store, SQLiteRunTraceStore)
     assert isinstance(bundle.runtime_event_store, SQLiteRuntimeEventStore)
