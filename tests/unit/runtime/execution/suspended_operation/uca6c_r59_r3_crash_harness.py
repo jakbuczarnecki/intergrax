@@ -68,6 +68,7 @@ from tests.unit.autonomous_work.test_uca6c_r5_r2_strict_governance_composition i
     _strict_tool_wiring,
 )
 from tests.unit.autonomous_work.uca6c_r5_r2_strict_fixtures import (
+    uca6c_strict_r6_durable_wiring,
     uca6c_strict_worker_manifest,
     uca6c_strict_worker_registry,
 )
@@ -155,6 +156,7 @@ def build_crash_dual_host_fixture(
     fence_counters = ReentryFenceCounters()
     crash_counters = CrashWindowCounters()
     r6_kwargs = _strict_r6_kwargs(tmp_path)
+    test_bundle = uca6c_strict_r6_durable_wiring(tmp_path)
     terminal_backend = InMemoryDocumentStore()
     terminal_store = _counting_terminal_store(terminal_backend, fence_counters)
     idempotency = (
@@ -168,7 +170,7 @@ def build_crash_dual_host_fixture(
     ctx = _codecraft_context(
         tmp_path,
         craft_id,
-        sandbox_manager=r6_kwargs["sandbox_session_manager"],
+        sandbox_manager=test_bundle["sandbox_session_manager"],
     )
     tool_wiring = _strict_tool_wiring(ctx)
     bootstrap_uca6c_code_exec_catalog_tools(tool_wiring)
@@ -295,6 +297,7 @@ def build_r59_r4_durable_dual_host_fixture(
     else:
         durable_backends = Uca6cTrueRestartDurableBackends.create(tmp_path)
     r6_kwargs = _strict_r6_kwargs(tmp_path)
+    test_bundle = uca6c_strict_r6_durable_wiring(tmp_path)
     r6_kwargs["document_store"] = durable_backends.document_store
     checkpoint_store = durable_backends.fresh_checkpoint_store()
     r6_kwargs["task_checkpoint_store"] = checkpoint_store
@@ -309,7 +312,7 @@ def build_r59_r4_durable_dual_host_fixture(
     ctx = _codecraft_context(
         tmp_path,
         craft_id,
-        sandbox_manager=r6_kwargs["sandbox_session_manager"],
+        sandbox_manager=test_bundle["sandbox_session_manager"],
     )
     tool_wiring = _strict_tool_wiring(ctx)
     bootstrap_uca6c_code_exec_catalog_tools(tool_wiring)

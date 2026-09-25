@@ -106,6 +106,7 @@ from tests.unit.autonomous_work.test_uca6c_r5_r2_strict_governance_composition i
     _strict_tool_wiring,
 )
 from tests.unit.autonomous_work.uca6c_r5_r2_strict_fixtures import (
+    uca6c_strict_r6_durable_wiring,
     uca6c_strict_worker_manifest,
     uca6c_strict_worker_registry,
 )
@@ -255,13 +256,14 @@ def _build_host_composition(
 def _build_dual_host_fixture(tmp_path: Path) -> DualHostReentryFixture:
     counters = ReentryFenceCounters()
     r6_kwargs = _strict_r6_kwargs(tmp_path)
+    test_bundle = uca6c_strict_r6_durable_wiring(tmp_path)
     terminal_backend = InMemoryDocumentStore()
     terminal_store = _counting_terminal_store(terminal_backend, counters)
     craft_id = "craft-r59r2r1-reentry-fence"
     ctx = _codecraft_context(
         tmp_path,
         craft_id,
-        sandbox_manager=r6_kwargs["sandbox_session_manager"],
+        sandbox_manager=test_bundle["sandbox_session_manager"],
     )
     tool_wiring = _strict_tool_wiring(ctx)
     bootstrap_uca6c_code_exec_catalog_tools(tool_wiring)
