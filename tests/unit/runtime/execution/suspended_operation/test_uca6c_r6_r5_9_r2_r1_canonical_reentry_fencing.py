@@ -157,6 +157,8 @@ class DualHostReentryFixture:
     craft_id: str
     terminal_store: ExecutionTerminalOutcomeByExecutionIdStore
     counters: ReentryFenceCounters = field(default_factory=ReentryFenceCounters)
+    document_store_a: object | None = None
+    document_store_b: object | None = None
 
 
 def _counting_terminal_store(
@@ -325,8 +327,10 @@ def _build_dual_host_fixture(tmp_path: Path) -> DualHostReentryFixture:
 
 
 def _sync_host_stores(fixture: DualHostReentryFixture) -> None:
-    store_a = reconnect_document_store_suspended_operation_store(fixture.document_store)
-    store_b = reconnect_document_store_suspended_operation_store(fixture.document_store)
+    backing_a = fixture.document_store_a or fixture.document_store
+    backing_b = fixture.document_store_b or fixture.document_store
+    store_a = reconnect_document_store_suspended_operation_store(backing_a)
+    store_b = reconnect_document_store_suspended_operation_store(backing_b)
     co_a = fixture.composition_a.suspended_work_reentry_coordinator
     co_b = fixture.composition_b.suspended_work_reentry_coordinator
     assert co_a is not None and co_b is not None

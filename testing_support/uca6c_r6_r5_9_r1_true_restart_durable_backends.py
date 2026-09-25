@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
 from intergrax.autonomous_work.document_store_worker_recovery_obstacle_capability_need_repository import (
     DocumentStoreWorkerRecoveryObstacleCapabilityNeedRepository,
 )
@@ -38,7 +39,7 @@ from testing_support.uca6c_process_restart_durable_document_store import (
 class Uca6cTrueRestartDurableBackends:
     """External persistence simulated for Host A/B/C — only these objects are shared."""
 
-    document_store: ProcessRestartQualificationDocumentStore
+    document_store: ConditionalDocumentStore
     continuation_backing: ExecutionContinuationDurableBacking
     continuation_state_persistence: ExecutionContinuationDurableStateFilePersistence
     checkpoint_db_path: Path
@@ -59,6 +60,16 @@ class Uca6cTrueRestartDurableBackends:
             checkpoint_db_path=root / "task_checkpoints.db",
             idempotency_db_path=root / "tool_idempotency.db",
         )
+
+    @classmethod
+    def create_with_document_store(
+        cls,
+        tmp_path: Path,
+        document_store: ConditionalDocumentStore,
+    ) -> Uca6cTrueRestartDurableBackends:
+        backends = cls.create(tmp_path)
+        backends.document_store = document_store
+        return backends
 
     def fresh_terminal_outcome_store(
         self,

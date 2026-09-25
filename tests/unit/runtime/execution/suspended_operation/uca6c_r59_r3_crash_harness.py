@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
 
@@ -23,6 +24,7 @@ from intergrax.contracts.execution.execution_terminal_outcome_by_execution_id im
 from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
+from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
 from intergrax.runtime.codecraft.qualified_capability_execution_wiring import (
     build_codecraft_qualified_capability_execution_composition,
 )
@@ -103,6 +105,7 @@ class R59DurableCrashHarnessKit:
     durable_wiring_binding_resolver: object | None
     host_b_reentry_crash: ExecutionSuspendedWorkReentryCrashInjectionPort | None
     host_b_tool_crash: ToolRuntimeEffectCrashInjectionPort | None
+    fresh_document_store: Callable[[], ConditionalDocumentStore] | None = None
 
 
 @dataclass
@@ -269,6 +272,8 @@ def build_crash_dual_host_fixture(
 def build_r59_r4_durable_dual_host_fixture(
     tmp_path: Path,
     *,
+    document_store: ConditionalDocumentStore | None = None,
+    fresh_document_store: Callable[[], ConditionalDocumentStore] | None = None,
     host_a_reentry_crash: ExecutionSuspendedWorkReentryCrashInjectionPort | None = None,
     host_b_reentry_crash: ExecutionSuspendedWorkReentryCrashInjectionPort | None = None,
     host_a_tool_crash: ToolRuntimeEffectCrashInjectionPort | None = None,
@@ -282,7 +287,13 @@ def build_r59_r4_durable_dual_host_fixture(
     """Dual-host fixture with SQLite idempotency, checkpoint, and continuation durability."""
     fence_counters = ReentryFenceCounters()
     crash_counters = CrashWindowCounters()
-    durable_backends = Uca6cTrueRestartDurableBackends.create(tmp_path)
+    if document_store is not None:
+        durable_backends = Uca6cTrueRestartDurableBackends.create_with_document_store(
+            tmp_path,
+            document_store,
+        )
+    else:
+        durable_backends = Uca6cTrueRestartDurableBackends.create(tmp_path)
     r6_kwargs = _strict_r6_kwargs(tmp_path)
     r6_kwargs["document_store"] = durable_backends.document_store
     checkpoint_store = durable_backends.fresh_checkpoint_store()
@@ -417,6 +428,7 @@ def build_r59_r4_durable_dual_host_fixture(
         ),
         host_b_reentry_crash=host_b_reentry_crash,
         host_b_tool_crash=host_b_tool_crash,
+        fresh_document_store=fresh_document_store,
     )
     return fixture, crash_counters, shared_idempotency, kit
 
@@ -430,6 +442,25 @@ def seal_host_a_and_rebuild_host_b_process_equivalent(
     continuation_deps = kit.durable_backends.host_b_continuation_dependencies()
     idempotency = kit.durable_backends.fresh_idempotency_store()
     checkpoint_store = kit.durable_backends.fresh_checkpoint_store()
+    document_store_a = fixture.document_store
+    document_store_b = fixture.document_store
+    terminal_store_b = kit.terminal_store
+    if kit.fresh_document_store is not None:
+        host_a_store = fixture.document_store
+        document_store_a = kit.fresh_document_store()
+        document_store_b = kit.fresh_document_store()
+        close_host_a = getattr(host_a_store, "close", None)
+        if callable(close_host_a):
+            close_host_a()
+        terminal_store_b = _counting_terminal_store(
+            document_store_b,
+            fixture.counters,
+        )
+        kit.terminal_store = terminal_store_b
+        fixture.terminal_store = terminal_store_b
+        fixture.document_store = document_store_b
+        fixture.document_store_a = document_store_a
+        fixture.document_store_b = document_store_b
     guard_b = _RecordingGuard(allow=True)
     tool_wiring = kit.tool_wiring
     composition_b = build_execution_bound_catalog_tool_composition(
@@ -450,14 +481,14 @@ def seal_host_a_and_rebuild_host_b_process_equivalent(
         ),
         canonical_inner_execution_guard=guard_b,
         meaningful_side_effect_authorization=kit.shared_mse,
-        document_store=fixture.document_store,
+        document_store=document_store_b,
         continuation_dependencies=continuation_deps,
         reentry_claim_owner_id=OWNER_HOST_B_CRASH,
         durable_wiring_binding_resolver=kit.durable_wiring_binding_resolver,
         task_checkpoint_store=checkpoint_store,
         idempotency_store=idempotency,
         tool_executor=kit.shared_backend,
-        terminal_outcome_store=kit.terminal_store,
+        terminal_outcome_store=terminal_store_b,
         reentry_crash_injection=kit.host_b_reentry_crash,
         tool_runtime_effect_crash_injection=kit.host_b_tool_crash,
     )
@@ -470,12 +501,23 @@ def seal_host_a_and_rebuild_host_b_process_equivalent(
     fixture.hitl_b = hitl_b
     fixture.guard_b = guard_b
     fixture.checkpoint_store = checkpoint_store
-    sync_hosts_after_restart(fixture)
+    sync_hosts_after_restart(
+        fixture,
+        document_store_a=document_store_a,
+        document_store_b=document_store_b,
+    )
 
 
-def sync_hosts_after_restart(fixture: DualHostReentryFixture) -> None:
-    store_a = reconnect_document_store_suspended_operation_store(fixture.document_store)
-    store_b = reconnect_document_store_suspended_operation_store(fixture.document_store)
+def sync_hosts_after_restart(
+    fixture: DualHostReentryFixture,
+    *,
+    document_store_a: ConditionalDocumentStore | None = None,
+    document_store_b: ConditionalDocumentStore | None = None,
+) -> None:
+    backing_a = document_store_a if document_store_a is not None else fixture.document_store
+    backing_b = document_store_b if document_store_b is not None else fixture.document_store
+    store_a = reconnect_document_store_suspended_operation_store(backing_a)
+    store_b = reconnect_document_store_suspended_operation_store(backing_b)
     co_a = fixture.composition_a.suspended_work_reentry_coordinator
     co_b = fixture.composition_b.suspended_work_reentry_coordinator
     assert co_a is not None and co_b is not None
