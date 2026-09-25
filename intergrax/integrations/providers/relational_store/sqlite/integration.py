@@ -12,17 +12,9 @@ from pydantic import Field, PrivateAttr
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.relational_store import RelationalStore
+from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.categories.data import (
     RelationalStoreIntegrationContract,
-)
-from intergrax.runtime.integrations.categories._base import (
-    CategoryIntegrationConfig,
-    _CONNECT_READ_WRITE_HEALTH,
-    category_for_provider,
-)
-from intergrax.runtime.integrations.contracts import (
-    PlatformIntegrationCapability,
-    PlatformIntegrationKind,
 )
 
 if TYPE_CHECKING:
@@ -52,27 +44,6 @@ class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
         default_factory=SqliteRelationalStoreIntegrationConfig
     )
     _client: SqliteRelationalStoreClient | None = PrivateAttr(default=None)
-
-    @classmethod
-    def for_provider(
-        cls,
-        *,
-        provider_id: str,
-        capabilities: tuple[PlatformIntegrationCapability, ...] | None = None,
-        display_name: str | None = None,
-        version: str | None = None,
-        config: CategoryIntegrationConfig | None = None,
-    ) -> SqliteRelationalStoreIntegration:
-        return category_for_provider(
-            cls,
-            provider_id=provider_id,
-            integration_kind=PlatformIntegrationKind.RELATIONAL_STORE.value,
-            default_capabilities=_CONNECT_READ_WRITE_HEALTH,
-            capabilities=capabilities,
-            display_name=display_name,
-            version=version,
-            config=config,
-        )
 
     def connect(self) -> None:
         self._require_client().connect()

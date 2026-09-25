@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Self
 
 from pydantic import Field
 
@@ -47,7 +47,7 @@ class RelationalStoreIntegrationContract(PlatformIntegrationContract):
         display_name: str | None = None,
         version: str | None = None,
         config: CategoryIntegrationConfig | None = None,
-    ) -> RelationalStoreIntegrationContract:
+    ) -> Self:
         return category_for_provider(
             cls,
             provider_id=provider_id,
