@@ -10,7 +10,7 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.rag.profiles.tool_wiring_runtime_sync import (
@@ -52,7 +52,7 @@ def resolve_rag_profile_for_environment(
     base: RagProfile | None = None,
     integration_profile: IntegrationProfile | None = None,
 ) -> RagProfile | None:
-    """Apply GraphRAG presets: harness in-memory for lab, neo4j for product hosts."""
+    """Apply GraphRAG semantic presets; graph provider identity stays on IntegrationProfile."""
     if not env.context_profile.enable_rag:
         return None
     profile = base or production_rag_profile()
@@ -69,7 +69,6 @@ def resolve_rag_profile_for_environment(
                 graph_rag_enabled=prod.graph_rag_enabled,
                 graph_rag_hops=prod.graph_rag_hops,
                 graph_indexer_mode=prod.graph_indexer_mode,
-                graph_store_backend=prod.graph_store_backend,
             )
             wiring_error = validate_graph_rag_production_wiring(
                 profile,

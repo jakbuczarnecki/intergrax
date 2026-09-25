@@ -4,9 +4,6 @@ import pytest
 
 from intergrax.rag.graph.bootstrap.graph_store_bootstrap import create_rag_graph_store
 from intergrax.rag.graph.providers.cypher_rag_graph_store import CypherRagGraphStore
-from intergrax.rag.profiles.rag_profile import RagProfile
-
-
 class _FakeMemgraphIntegration:
     def __init__(self) -> None:
         self._nodes: dict[str, dict] = {}
@@ -59,10 +56,8 @@ class _FakeMemgraphIntegration:
 
 
 @pytest.mark.gate
-def test_memgraph_adapter_via_registry() -> None:
-    profile = RagProfile(graph_store_backend="memgraph", graph_rag_enabled=True)
+def test_memgraph_adapter_via_integration_contract() -> None:
     store = create_rag_graph_store(
-        profile=profile,
         integration_graph_store=_FakeMemgraphIntegration(),
         tenant_id="tenant-mg",
     )

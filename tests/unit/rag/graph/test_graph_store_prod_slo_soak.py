@@ -15,7 +15,7 @@ from intergrax.rag.graph.soak.prod_slo import (
     manifest_status_for_graph_slug,
     run_graph_store_soak,
 )
-from intergrax.rag.profiles.rag_profile import APPROVED_PRODUCTION_GRAPH_STORE_SLUGS, RagProfile
+from intergrax.rag.profiles.rag_profile import APPROVED_PRODUCTION_GRAPH_STORE_SLUGS
 
 
 class _FakeCypherIntegration:
@@ -118,9 +118,7 @@ def test_inmemory_graph_soak_passes() -> None:
 
 
 def test_cypher_adapter_graph_soak_passes() -> None:
-    profile = RagProfile(graph_store_backend="falkordb", graph_rag_enabled=True)
     store = create_rag_graph_store(
-        profile=profile,
         integration_graph_store=_FakeCypherIntegration(),
         tenant_id="soak-fk",
     )

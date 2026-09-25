@@ -20,8 +20,6 @@ ContextualEnrichMode = Literal["off", "on"]
 GraphIndexerMode = Literal["heuristic", "llm", "heuristic_then_llm", "community_report"]
 AgenticQueryMode = Literal["deterministic", "llm"]
 
-HARNESS_GRAPH_STORE_BACKEND = "inmemory"
-PRODUCTION_GRAPH_STORE_BACKEND = "neo4j"
 APPROVED_PRODUCTION_GRAPH_STORE_SLUGS: tuple[str, ...] = ("neo4j", "memgraph", "falkordb")
 
 
@@ -108,7 +106,6 @@ class RagProfile:
     graph_rag_hops: int = 1
     graph_rag_seed_top_k: int = 5
     graph_indexer_mode: GraphIndexerMode = "heuristic"
-    graph_store_backend: str = "inmemory"
 
     # Sparse encoding for native hybrid (Qdrant sparse vectors)
     sparse_encoder: str = "bm25_hash"
@@ -148,11 +145,11 @@ class RagProfile:
 
 def production_rag_profile() -> RagProfile:
     """
-    Harness / lab GraphRAG preset (AUDIT-IDEAL-14.1).
+    Harness / lab GraphRAG semantic preset (AUDIT-IDEAL-14.1).
 
-    Uses **in-memory** graph store — suitable for gate tests and lab hosts only.
-    Tier-3 product hosts MUST use ``production_graph_rag_profile()`` with
-    ``IntegrationProfile.graph_store=neo4j`` (M-RAG.33).
+    Without a configured ``IntegrationProfile.graph_store`` binding, RAG composition
+    uses the domain-local ``InMemoryGraphStore``. Tier-3 product hosts MUST pair
+    ``production_graph_rag_profile()`` with an approved Integration GRAPH_STORE binding.
     """
     return RagProfile(
         retriever_id="hybrid",
@@ -160,7 +157,6 @@ def production_rag_profile() -> RagProfile:
         graph_rag_enabled=True,
         graph_rag_hops=1,
         graph_indexer_mode="heuristic",
-        graph_store_backend=HARNESS_GRAPH_STORE_BACKEND,
         enable_rerank=True,
         route_mode="auto",
     )
@@ -168,10 +164,10 @@ def production_rag_profile() -> RagProfile:
 
 def production_graph_rag_profile() -> RagProfile:
     """
-    Tier-3 GraphRAG production preset — durable ``neo4j`` graph backend required.
+    Tier-3 GraphRAG production semantic preset.
 
-    Pair with ``IntegrationProfile.graph_store`` slug ``neo4j`` and
-    ``create_rag_graph_store(profile=..., integration_graph_store=...)``.
+    Product hosts require an approved ``IntegrationCategory.GRAPH_STORE`` binding;
+    provider identity is owned by ``IntegrationProfile``, not ``RagProfile``.
     """
     return RagProfile(
         retriever_id="hybrid",
@@ -179,16 +175,8 @@ def production_graph_rag_profile() -> RagProfile:
         graph_rag_enabled=True,
         graph_rag_hops=1,
         graph_indexer_mode="heuristic",
-        graph_store_backend=PRODUCTION_GRAPH_STORE_BACKEND,
         enable_rerank=True,
         route_mode="auto",
-    )
-
-
-def is_harness_graph_rag_profile(profile: RagProfile) -> bool:
-    return (
-        profile.graph_rag_enabled
-        and profile.graph_store_backend == HARNESS_GRAPH_STORE_BACKEND
     )
 
 
@@ -198,15 +186,15 @@ def validate_graph_rag_production_wiring(
     graph_store_slug: str | None,
 ) -> str | None:
     """
-    Return an error reason when GraphRAG is enabled on a product host without neo4j.
+    Return an error reason when GraphRAG is enabled on a product host without durable graph wiring.
 
     ``None`` means wiring is valid or GraphRAG is disabled.
     """
     if not profile.graph_rag_enabled:
         return None
-    if profile.graph_store_backend not in APPROVED_PRODUCTION_GRAPH_STORE_SLUGS:
-        return "graph_store_backend_not_approved_for_production"
-    if graph_store_slug is not None and graph_store_slug not in APPROVED_PRODUCTION_GRAPH_STORE_SLUGS:
+    if graph_store_slug is None:
+        return "integration_graph_store_missing"
+    if graph_store_slug not in APPROVED_PRODUCTION_GRAPH_STORE_SLUGS:
         return f"integration_graph_store_not_approved:{graph_store_slug}"
     return None
 
@@ -291,8 +279,6 @@ def rag_profile_from_env() -> RagProfile:
         graph_rag_enabled=_env_bool("INTERGRAX_RAG_GRAPH_ENABLED", False),
         graph_rag_hops=_env_int("INTERGRAX_RAG_GRAPH_HOPS", 1),
         graph_indexer_mode=graph_indexer_mode,
-        graph_store_backend=os.getenv("INTERGRAX_RAG_GRAPH_STORE", "inmemory").strip().lower()
-        or "inmemory",
         sparse_encoder=os.getenv("INTERGRAX_RAG_SPARSE_ENCODER", "bm25_hash").strip().lower()
         or "bm25_hash",
         agentic_query_mode=agentic_query_mode,

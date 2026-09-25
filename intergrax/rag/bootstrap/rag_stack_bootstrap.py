@@ -9,7 +9,9 @@ from dataclasses import dataclass
 from typing import Optional
 
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.contracts.graph_store import GraphStore as IntegrationGraphStore
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
+from intergrax.integrations.registry.factory import resolve_from_profile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.bootstrap.hierarchical_bootstrap import resolve_toc_vectorstore_for_profile
 from intergrax.rag.contextual.chunk_enricher import ContextualChunkEnricher
@@ -69,6 +71,10 @@ def create_default_rag_stack(
     graph_slug: Optional[str] = None
     if integration_profile is not None:
         graph_slug = integration_profile.slug_for_category(IntegrationCategory.GRAPH_STORE)
+        if graph_slug is None:
+            graph_binding = integration_profile.binding_for_field("graph_store")
+            if graph_binding is not None:
+                graph_slug = graph_binding.resolved_slug()
 
     assert_rag_profile_wiring(
         profile,
@@ -86,14 +92,23 @@ def create_default_rag_stack(
         embedding_manager = create_default_embedding_manager()
 
     if graph_store is None and profile.graph_rag_enabled:
-        integration_graph_store = None
+        integration_graph_store: IntegrationGraphStore | None = None
         if integration_profile is not None:
-            integration_graph_store = integration_profile.instance_for_category(
-                IntegrationCategory.GRAPH_STORE
-            )
+            graph_binding = integration_profile.binding_for_field("graph_store")
+            if graph_binding is not None:
+                resolved = resolve_from_profile(
+                    integration_profile,
+                    IntegrationCategory.GRAPH_STORE,
+                )
+                if not isinstance(resolved, IntegrationGraphStore):
+                    raise TypeError(
+                        "integration graph store must implement "
+                        f"GraphStore, got {type(resolved).__name__}"
+                    )
+                integration_graph_store = resolved
         graph_store = create_rag_graph_store(
-            profile=profile,
             integration_graph_store=integration_graph_store,
+            tenant_id=tenant_id,
         )
 
     toc_vectorstore_manager = resolve_toc_vectorstore_for_profile(
