@@ -17,7 +17,9 @@ from intergrax.rag.rerankers.contracts.reranker_types import (
 )
 
 
-def _validate_rerank_provider_results(results: object) -> Sequence[RerankerResult]:
+def _validate_rerank_provider_results(
+    results: Sequence[RerankerResult],
+) -> tuple[RerankerResult, ...]:
     if isinstance(results, (str, bytes)):
         raise TypeError("rerank provider returned an invalid result type")
     if not isinstance(results, Sequence):

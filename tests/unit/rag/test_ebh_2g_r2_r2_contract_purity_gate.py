@@ -246,6 +246,19 @@ def test_api_reranker_base_delegates_to_canonical_rerank_provider() -> None:
     assert _class_method_uses_name(_API_RERANKER_BASE, "_APIRerankerBase", "rerank", "provider")
 
 
+def test_validate_rerank_provider_results_preserves_typed_semantic_boundary() -> None:
+    params = _function_param_annotations(
+        _API_RERANKER_BASE,
+        "_validate_rerank_provider_results",
+    )
+    assert params.get("results") == "Sequence[RerankerResult]"
+    assert params.get("results") != "object"
+    assert (
+        _function_return_annotation(_API_RERANKER_BASE, "_validate_rerank_provider_results")
+        == "tuple[RerankerResult, ...]"
+    )
+
+
 def test_cohere_and_jina_wrappers_avoid_concrete_integration_providers() -> None:
     forbidden_prefix = "intergrax.integrations.providers.rerank_provider"
     for path in (_COHERE_RERANKER, _JINA_RERANKER):
