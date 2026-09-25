@@ -43,6 +43,20 @@ _SHARED_CONFIG_FORBIDDEN_MODULES: tuple[str, ...] = (
     "intergrax.runtime.integrations",
 )
 
+_KNOWN_SHARED_HEALTH_IMPORT_CYCLE_MARKERS: tuple[str, ...] = (
+    "partially initialized module",
+    "intergrax.runtime.integrations.observability",
+    "ObservabilityVendorIntegrationContract",
+)
+
+
+def _is_known_shared_health_import_cycle(stderr: str) -> bool:
+    normalized = stderr.lower()
+    return all(
+        marker.lower() in normalized
+        for marker in _KNOWN_SHARED_HEALTH_IMPORT_CYCLE_MARKERS
+    )
+
 
 def _manifest_path(slug: str) -> Path:
     return (
@@ -170,13 +184,41 @@ def test_rag_maint_01_shared_root_lazy_health_symbol_resolves() -> None:
         text=True,
     )
     if completed.returncode != 0:
-        stderr = completed.stderr
-        if "circular" in stderr.lower() or "import" in stderr.lower():
+        if _is_known_shared_health_import_cycle(completed.stderr):
             pytest.skip(
                 "TRACKED FREEZE DEBT: direct _shared.health deep cycle; "
                 "not exercised by metadata/config import path"
             )
     assert completed.returncode == 0, completed.stdout + completed.stderr
+
+
+def test_known_shared_health_import_cycle_matcher_positive() -> None:
+    stderr = (
+        "ImportError: cannot import name 'ObservabilityVendorIntegrationContract'\n"
+        "from partially initialized module\n"
+        "'intergrax.runtime.integrations.observability'\n"
+    )
+    assert _is_known_shared_health_import_cycle(stderr) is True
+
+
+def test_known_shared_health_import_cycle_matcher_negative_unrelated_import_error() -> None:
+    stderr = "ImportError: cannot import name Foo from package.bar\n"
+    assert _is_known_shared_health_import_cycle(stderr) is False
+
+
+def test_known_shared_health_import_cycle_matcher_negative_module_not_found() -> None:
+    stderr = "ModuleNotFoundError: No module named 'vendor_sdk'\n"
+    assert _is_known_shared_health_import_cycle(stderr) is False
+
+
+def test_known_shared_health_import_cycle_matcher_negative_generic_import_word() -> None:
+    stderr = "failed during import setup\n"
+    assert _is_known_shared_health_import_cycle(stderr) is False
+
+
+def test_known_shared_health_import_cycle_matcher_negative_partial_markers() -> None:
+    stderr = "partially initialized module\n"
+    assert _is_known_shared_health_import_cycle(stderr) is False
 
 
 def test_rag_maint_01_maturity_labels_script_executes() -> None:
