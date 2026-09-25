@@ -8,7 +8,8 @@ from typing import Optional
 
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.catalog import list_slugs
-from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
+from intergrax.integrations.contracts.ref import normalize_integration_binding
 from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 from intergrax.rag.embedding.embedding_manager import EmbeddingManager
@@ -62,7 +63,9 @@ def create_default_embedding_engine(
     )
 
     if integration_profile is None:
-        integration_profile = IntegrationProfile(embedding_provider=resolved_profile.provider)
+        integration_profile = IntegrationProfile(
+            embedding_provider=normalize_integration_binding(resolved_profile.provider),
+        )
 
     bound_provider = bind_embedding_provider(
         integration_profile=integration_profile,

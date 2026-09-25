@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import Literal, Protocol
+from typing import Protocol
 
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
@@ -18,9 +18,6 @@ from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIn
 from intergrax.rag.graph.indexer.llm_graph_indexer import LlmGraphIndexer
 from intergrax.rag.graph.indexer.plugin_registry import resolve_graph_indexer_plugin
 from intergrax.rag.profiles.rag_profile import RagProfile
-
-GraphIndexerMode = Literal["heuristic", "llm", "heuristic_then_llm", "community_report"]
-
 
 class GraphIndexer(Protocol):
     def index_documents(
@@ -44,7 +41,7 @@ def resolve_graph_indexer(
             raise ValueError(f"unknown_graph_indexer_plugin:{plugin_id}")
         return factory(store, profile, llm)
 
-    mode: GraphIndexerMode = profile.graph_indexer_mode  # type: ignore[attr-defined]
+    mode = profile.graph_indexer_mode
     if mode == "community_report":
         return CommunityReportGraphIndexer(store, llm)
     if mode == "llm" and llm is not None:

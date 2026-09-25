@@ -10,7 +10,7 @@ from typing import List, Optional
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.factory import resolve
-from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.integrations.core.slug import SlugInput, coerce_slug
 
 

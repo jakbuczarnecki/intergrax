@@ -17,7 +17,7 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.vector_store import VectorStore
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.factory import build_profile_from_env, resolve
-from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
@@ -56,11 +56,11 @@ def _resolve_tenant_id(
 
 def _profile_tenant_id(
     profile: IntegrationProfile,
-    slug: object | None,
+    slug: str | None,
 ) -> object | None:
     if slug is None:
         return None
-    return profile.options_for_slug(slug).get("tenant_id")  # type: ignore[arg-type]
+    return profile.options_for_slug(slug).get("tenant_id")
 
 
 def _validated_scope_part(value: object | None, *, source: str) -> str | None:
@@ -75,7 +75,7 @@ def _scope_from_integration_config(
     *,
     tenant_id: str | None,
     profile: IntegrationProfile,
-    slug: object | None,
+    slug: str | None,
     config_overrides: dict[str, object],
 ) -> VectorStoreScope | None:
     if tenant_id is None:
@@ -109,13 +109,9 @@ def create_vectorstore_from_integration(
     register_default_integrations()
     resolved_profile = profile or build_profile_from_env()
     slug = resolved_profile.slug_for_category(IntegrationCategory.VECTOR_STORE)
-    slug_enum = None
     configured_tenant_id: object | None = None
     if slug:
-        from intergrax.integrations.registry.slugs import coerce_slug
-
-        slug_enum = coerce_slug(slug)
-        configured_tenant_id = _profile_tenant_id(resolved_profile, slug_enum)
+        configured_tenant_id = _profile_tenant_id(resolved_profile, slug)
     resolved_tenant_id = _resolve_tenant_id(
         explicit_tenant_id=tenant_id,
         configured_tenant_id=configured_tenant_id,
@@ -126,9 +122,11 @@ def create_vectorstore_from_integration(
 
         if resolved_tenant_id is None:
             raise ValueError("in-memory vectorstore requires an explicit tenant_id")
-        return create_inmemory_vector_store(tenant_id=resolved_tenant_id)
+        inmemory_store = create_inmemory_vector_store(tenant_id=resolved_tenant_id)
+        assert isinstance(inmemory_store, VectorStore)
+        return inmemory_store
 
-    config = dict(resolved_profile.options_for_slug(slug_enum))
+    config = dict(resolved_profile.options_for_slug(slug))
     if resolved_tenant_id is not None:
         config["tenant_id"] = resolved_tenant_id
     config.update(config_overrides)
@@ -153,16 +151,9 @@ def create_vectorstore_manager(
     register_default_integrations()
     resolved_profile = profile or build_profile_from_env()
     slug = resolved_profile.slug_for_category(IntegrationCategory.VECTOR_STORE)
-    slug_enum = None
     configured_tenant_id: object | None = None
     if slug:
-        from intergrax.integrations.registry.slugs import coerce_slug
-
-        slug_enum = coerce_slug(slug)
-        configured_tenant_id = _profile_tenant_id(
-            resolved_profile,
-            slug_enum,
-        )
+        configured_tenant_id = _profile_tenant_id(resolved_profile, slug)
     resolved_tenant_id = _resolve_tenant_id(
         explicit_tenant_id=tenant_id,
         configured_tenant_id=configured_tenant_id,
@@ -176,7 +167,7 @@ def create_vectorstore_manager(
     scope = _scope_from_integration_config(
         tenant_id=resolved_tenant_id,
         profile=resolved_profile,
-        slug=slug_enum,
+        slug=slug,
         config_overrides=config_overrides,
     )
     return VectorstoreManager(store=store, scope=scope)

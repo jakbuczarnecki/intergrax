@@ -7,10 +7,11 @@ from __future__ import annotations
 
 from typing import Optional
 
-from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.vectorstore.bootstrap.integration_vectorstore import create_vectorstore_manager
 from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 
 def profile_uses_hierarchical_index(profile: RagProfile) -> bool:
@@ -33,11 +34,8 @@ def create_toc_vectorstore_manager(
 ) -> BaseVectorstoreManager:
     """Sibling vector store for TOC entries (separate collection when backend supports it)."""
     overrides: dict[str, object] = {}
-    if chunks_store is not None:
-        try:
-            names = list(chunks_store.list_collections())
-        except Exception:
-            names = []
+    if isinstance(chunks_store, VectorstoreManager):
+        names = list(chunks_store.list_collections())
         if names:
             overrides["collection_name"] = f"{names[0]}-toc"
     return create_vectorstore_manager(
