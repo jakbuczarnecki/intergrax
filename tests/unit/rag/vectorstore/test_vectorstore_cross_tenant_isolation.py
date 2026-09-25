@@ -8,6 +8,8 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Sequence
 
 import pytest
+import httpx
+from qdrant_client.http.exceptions import UnexpectedResponse
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.integrations.providers.vector_store.chroma.rag_store import ChromaConfig, ChromaVectorStore
 from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
@@ -48,7 +50,12 @@ class _FakeQdrantClient:
 
     def get_collection(self, collection_name: str) -> dict[str, str]:
         if collection_name not in self._collections:
-            raise RuntimeError("collection_not_found")
+            raise UnexpectedResponse(
+                status_code=404,
+                reason_phrase="Not Found",
+                content=b'{"status":{"error":"Not found: Collection"}}',
+                headers=httpx.Headers(),
+            )
         return {"name": collection_name}
 
     def create_collection(self, *, collection_name: str, vectors_config: Any = None, **_: Any) -> None:
@@ -190,7 +197,6 @@ class _FakeChromaClient:
         return self.collection
 
 
-_QDRANT_FAKE_CLIENT = _FakeQdrantClient()
 _CHROMA_FAKE_CLIENT = _FakeChromaClient()
 
 
@@ -215,7 +221,7 @@ def _factory_qdrant(tenant_id: str, collection_name: str) -> VectorStore:
     store = QdrantVectorStore(
         QdrantConfig(collection_name=collection_name, tenant_id=tenant_id),
     )
-    store._client = _QDRANT_FAKE_CLIENT  # type: ignore[attr-defined]
+    store._client = _FakeQdrantClient()  # type: ignore[attr-defined]
     return store
 
 

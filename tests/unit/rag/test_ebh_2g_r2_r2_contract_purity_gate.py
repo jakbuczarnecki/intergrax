@@ -22,6 +22,14 @@ _EMBEDDING_RESOLVER = _RAG_ROOT / "embedding" / "runtime" / "resolver.py"
 _QUERY_REFINER = _RAG_ROOT / "retrieval" / "query_refiner.py"
 _GRAPH_INDEXER_FACTORY = _RAG_ROOT / "graph" / "indexer" / "graph_indexer_factory.py"
 _RAG_PROFILE = _RAG_ROOT / "profiles" / "rag_profile.py"
+_RERANK_RESOLVER = _RAG_ROOT / "rerankers" / "integration" / "resolver.py"
+_API_RERANKER_BASE = _RAG_ROOT / "rerankers" / "providers" / "_api_reranker_base.py"
+_COHERE_RERANKER = _RAG_ROOT / "rerankers" / "providers" / "cohere_reranker.py"
+_JINA_RERANKER = _RAG_ROOT / "rerankers" / "providers" / "jina_reranker.py"
+_RERANKERS_ROOT = _RAG_ROOT / "rerankers"
+_CANONICAL_RERANK_PROVIDER = (
+    "intergrax.integrations.contracts.rerank_provider"
+)
 _GATE_TARGETS = (
     _INTEGRATION_VECTORSTORE,
     _EMBEDDING_RESOLVER,
@@ -161,3 +169,96 @@ def test_rag_profile_env_helpers_exist() -> None:
     assert "_env_query_expansion_mode" in names
     assert "_env_graph_indexer_mode" in names
     assert "_env_agentic_query_mode" in names
+
+
+def _function_return_annotation(path: Path, name: str) -> str | None:
+    tree = _parse(path)
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == name:
+            if node.returns is None:
+                return None
+            return ast.unparse(node.returns)
+    raise AssertionError(f"{name} not found in {path}")
+
+
+def _method_return_annotation(path: Path, class_name: str, method_name: str) -> str | None:
+    tree = _parse(path)
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == class_name:
+            for item in node.body:
+                if isinstance(item, ast.FunctionDef) and item.name == method_name:
+                    if item.returns is None:
+                        return None
+                    return ast.unparse(item.returns)
+    raise AssertionError(f"{class_name}.{method_name} not found in {path}")
+
+
+def _class_method_uses_name(path: Path, class_name: str, method_name: str, used_name: str) -> bool:
+    tree = _parse(path)
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == class_name:
+            for item in node.body:
+                if isinstance(item, ast.FunctionDef) and item.name == method_name:
+                    for sub in ast.walk(item):
+                        if isinstance(sub, ast.Name) and sub.id == used_name:
+                            return True
+                    return False
+    raise AssertionError(f"{class_name}.{method_name} not found in {path}")
+
+
+def _module_defines_class_named(path: Path, class_name: str) -> bool:
+    tree = _parse(path)
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == class_name:
+            return True
+    return False
+
+
+def test_rerank_resolver_is_typed_without_dynamic_probing() -> None:
+    source = _read(_RERANK_RESOLVER)
+    assert "hasattr" not in source
+    assert "getattr" not in source
+    assert "# type: ignore" not in source
+    assert _function_return_annotation(_RERANK_RESOLVER, "resolve_rerank_provider") == "RerankProvider"
+    modules = _import_module_names(_parse(_RERANK_RESOLVER))
+    assert _CANONICAL_RERANK_PROVIDER in modules
+
+
+def test_rerank_scores_removed_from_rag_rerankers() -> None:
+    violations: list[str] = []
+    for path in sorted(_RERANKERS_ROOT.rglob("*.py")):
+        tree = _parse(path)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and node.name == "rerank_scores":
+                violations.append(str(path.relative_to(_REPO_ROOT)))
+    assert not violations, "rerank_scores must not exist under intergrax/rag/rerankers: " + ", ".join(
+        violations
+    )
+
+
+def test_api_reranker_base_delegates_to_canonical_rerank_provider() -> None:
+    modules = _import_module_names(_parse(_API_RERANKER_BASE))
+    assert _CANONICAL_RERANK_PROVIDER in modules
+    assert (
+        _method_return_annotation(_API_RERANKER_BASE, "_APIRerankerBase", "_resolve_provider")
+        == "RerankProvider"
+    )
+    assert _class_method_uses_name(_API_RERANKER_BASE, "_APIRerankerBase", "rerank", "provider")
+
+
+def test_cohere_and_jina_wrappers_avoid_concrete_integration_providers() -> None:
+    forbidden_prefix = "intergrax.integrations.providers.rerank_provider"
+    for path in (_COHERE_RERANKER, _JINA_RERANKER):
+        modules = _import_module_names(_parse(path))
+        violations = [module for module in modules if module.startswith(forbidden_prefix)]
+        assert not violations, f"{path.name} must not import concrete integration providers: {violations}"
+
+
+def test_rag_rerankers_do_not_duplicate_rerank_provider_protocol() -> None:
+    owners: list[str] = []
+    for path in sorted(_RERANKERS_ROOT.rglob("*.py")):
+        if _module_defines_class_named(path, "RerankProvider"):
+            owners.append(str(path.relative_to(_REPO_ROOT)))
+    assert not owners, "RerankProvider Protocol must not be redefined under RAG rerankers: " + ", ".join(
+        owners
+    )

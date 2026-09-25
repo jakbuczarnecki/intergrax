@@ -18,9 +18,40 @@ from intergrax.rag.rerankers.contracts.reranker_types import (
     RerankerCandidate,
     RerankerResult,
 )
+from collections.abc import Sequence
 
 
 pytestmark = pytest.mark.unit
+
+
+class _FakeRerankProvider:
+
+    def name(self) -> str:
+        return "fake_api"
+
+    def rerank(
+        self,
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        *,
+        top_n: int | None = None,
+    ) -> Sequence[RerankerResult]:
+        scored = sorted(
+            enumerate(candidates),
+            key=lambda pair: float(pair[0]),
+            reverse=True,
+        )
+        if top_n is not None:
+            scored = scored[:top_n]
+        return tuple(
+            RerankerResult(
+                candidate=candidate,
+                rerank_score=float(index),
+                fusion_score=None,
+                rank=rank,
+            )
+            for rank, (index, candidate) in enumerate(scored)
+        )
 
 
 class FakeAPIReranker(_APIRerankerBase):
@@ -29,15 +60,8 @@ class FakeAPIReranker(_APIRerankerBase):
     def name(cls) -> str:
         return "fake_api"
 
-    def _score(self, query, texts):
-
-        # deterministic scoring for testing
-        scores = []
-
-        for i, _ in enumerate(texts):
-            scores.append(float(i))
-
-        return scores
+    def _resolve_provider(self):
+        return _FakeRerankProvider()
 
 
 def build_candidates(workspace_id: str | None = None):
