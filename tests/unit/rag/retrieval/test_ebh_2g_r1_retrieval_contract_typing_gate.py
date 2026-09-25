@@ -19,6 +19,8 @@ _RETRIEVAL_SERVICE = _REPO_ROOT / "intergrax" / "rag" / "retrieval" / "retrieval
 _BASE_RETRIEVER_MANAGER = (
     _REPO_ROOT / "intergrax" / "rag" / "retrievers" / "contracts" / "base_retriever_manager.py"
 )
+_RETRIEVER_MANAGER = _REPO_ROOT / "intergrax" / "rag" / "retrievers" / "retriever_manager.py"
+_CANONICAL_METADATA_FILTER_ANNOTATION = "MetadataFilter | None"
 _FORBIDDEN_CAPABILITY_GETATTR_ATTRS = frozenset({"supports_scoped_retrieval", "last_execution"})
 
 
@@ -91,6 +93,21 @@ def _forbidden_capability_getattr_calls(tree: ast.Module) -> list[str]:
     return violations
 
 
+def _retrieve_metadata_filter_annotation(tree: ast.Module, class_name: str) -> str | None:
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name != class_name:
+            continue
+        for item in node.body:
+            if not isinstance(item, ast.FunctionDef) or item.name != "retrieve":
+                continue
+            for arg in item.args.kwonlyargs:
+                if arg.arg == "metadata_filter":
+                    if arg.annotation is None:
+                        return None
+                    return ast.unparse(arg.annotation)
+    return None
+
+
 def _class_property_names(tree: ast.Module, class_name: str) -> set[str]:
     names: set[str] = set()
     for node in tree.body:
@@ -112,6 +129,17 @@ def test_retrieval_service_has_no_dynamic_capability_probing() -> None:
     assert "hasattr(" not in source
     assert ".supports_scoped_retrieval" in source
     assert ".last_execution" in source
+
+
+def test_retrieve_metadata_filter_is_canonical_typed_on_manager_boundaries() -> None:
+    for path, class_name in (
+        (_BASE_RETRIEVER_MANAGER, "BaseRetrieverManager"),
+        (_RETRIEVER_MANAGER, "RetrieverManager"),
+    ):
+        ann = _retrieve_metadata_filter_annotation(_parse(path), class_name)
+        assert ann == _CANONICAL_METADATA_FILTER_ANNOTATION, (
+            f"{class_name}.retrieve.metadata_filter must be {_CANONICAL_METADATA_FILTER_ANNOTATION}, got {ann!r}"
+        )
 
 
 def test_base_retriever_manager_defines_capability_contract_properties() -> None:
