@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import pytest
+from pydantic import ValidationError
 
 from intergrax.integrations.providers.layout import SLUG_CATEGORY
 from intergrax.runtime.integrations.categories import (
@@ -12,6 +13,10 @@ from intergrax.runtime.integrations.categories import (
     OBSERVABILITY_VENDOR_INTEGRATION_KIND,
     PROVIDER_CATEGORY_CONTRACT_REGISTRY,
     VectorStoreIntegrationContract,
+)
+from intergrax.runtime.integrations.categories.data import (
+    RELATIONAL_STORE_INTEGRATION_CONTRACT_SCHEMA,
+    RelationalStoreIntegrationContract,
 )
 from intergrax.runtime.integrations.document_store import DocumentStoreVendorIntegrationContract
 from intergrax.runtime.integrations.contracts import (
@@ -69,6 +74,55 @@ def test_every_layout_category_has_contract_or_alias() -> None:
 def test_every_category_contract_derives_from_platform_integration_contract() -> None:
     for contract_cls in PROVIDER_CATEGORY_CONTRACT_REGISTRY.values():
         assert issubclass(contract_cls, PlatformIntegrationContract)
+
+
+def test_relational_for_provider_without_explicit_integration_kind() -> None:
+    contract = RelationalStoreIntegrationContract.for_provider(provider_id="sqlite")
+    assert contract.provider_id == "sqlite"
+
+
+def test_relational_for_provider_default_integration_kind() -> None:
+    contract = RelationalStoreIntegrationContract.for_provider(provider_id="example")
+    assert contract.integration_kind == PlatformIntegrationKind.RELATIONAL_STORE.value
+
+
+def test_relational_for_provider_accepts_enum_integration_kind() -> None:
+    contract = RelationalStoreIntegrationContract.for_provider(
+        provider_id="example",
+        integration_kind=PlatformIntegrationKind.RELATIONAL_STORE,
+    )
+    assert contract.integration_kind == PlatformIntegrationKind.RELATIONAL_STORE.value
+
+
+def test_relational_for_provider_accepts_string_integration_kind() -> None:
+    contract = RelationalStoreIntegrationContract.for_provider(
+        provider_id="example",
+        integration_kind="relational_store",
+    )
+    assert contract.integration_kind == "relational_store"
+
+
+def test_relational_for_provider_rejects_foreign_integration_kind() -> None:
+    with pytest.raises(ValueError, match="integration_kind='relational_store'"):
+        RelationalStoreIntegrationContract.for_provider(
+            provider_id="example",
+            integration_kind="graph_store",
+        )
+
+
+def test_relational_default_schema_id() -> None:
+    contract = RelationalStoreIntegrationContract.for_provider(provider_id="example")
+    assert contract.schema_id == RELATIONAL_STORE_INTEGRATION_CONTRACT_SCHEMA
+
+
+def test_relational_rejects_invalid_schema_id() -> None:
+    with pytest.raises(ValidationError):
+        RelationalStoreIntegrationContract(
+            integration_id="example:relational_store",
+            provider_id="example",
+            integration_kind=PlatformIntegrationKind.RELATIONAL_STORE.value,
+            schema_id="graph_store_integration_contract.v1",
+        )
 
 
 def test_observability_backend_aligns_with_observability_vendor_contract() -> None:

@@ -11,7 +11,6 @@ from pydantic import Field
 
 from intergrax.runtime.integrations.categories._base import (
     CategoryIntegrationConfig,
-    _CONNECT_READ_HEALTH,
     _CONNECT_READ_WRITE_HEALTH,
     category_for_provider,
 )
@@ -21,7 +20,9 @@ from intergrax.runtime.integrations.contracts import (
     PlatformIntegrationKind,
 )
 
-RELATIONAL_STORE_INTEGRATION_CONTRACT_SCHEMA = "relational_store_integration_contract.v1"
+RELATIONAL_STORE_INTEGRATION_CONTRACT_SCHEMA = (
+    "relational_store_integration_contract.v1"
+)
 KEY_VALUE_CACHE_INTEGRATION_CONTRACT_SCHEMA = "key_value_cache_integration_contract.v1"
 GRAPH_STORE_INTEGRATION_CONTRACT_SCHEMA = "graph_store_integration_contract.v1"
 
@@ -29,8 +30,9 @@ GRAPH_STORE_INTEGRATION_CONTRACT_SCHEMA = "graph_store_integration_contract.v1"
 class RelationalStoreIntegrationContract(PlatformIntegrationContract):
     """Category contract for relational_store providers (sqlite, postgres, …)."""
 
-    schema_id: Literal["relational_store_integration_contract.v1"] = (
-        RELATIONAL_STORE_INTEGRATION_CONTRACT_SCHEMA
+    schema_id: str = Field(
+        default=RELATIONAL_STORE_INTEGRATION_CONTRACT_SCHEMA,
+        pattern=r"^relational_store_integration_contract\.v1$",
     )
     integration_kind: str = PlatformIntegrationKind.RELATIONAL_STORE.value
     capabilities: tuple[PlatformIntegrationCapability, ...] = Field(
@@ -43,15 +45,30 @@ class RelationalStoreIntegrationContract(PlatformIntegrationContract):
         cls,
         *,
         provider_id: str,
+        integration_kind: str | PlatformIntegrationKind = (
+            PlatformIntegrationKind.RELATIONAL_STORE
+        ),
         capabilities: tuple[PlatformIntegrationCapability, ...] | None = None,
         display_name: str | None = None,
         version: str | None = None,
         config: CategoryIntegrationConfig | None = None,
     ) -> Self:
+        kind_value = (
+            integration_kind.value
+            if isinstance(integration_kind, PlatformIntegrationKind)
+            else integration_kind
+        )
+        expected_kind = PlatformIntegrationKind.RELATIONAL_STORE.value
+        if kind_value != expected_kind:
+            msg = (
+                f"RelationalStoreIntegrationContract requires integration_kind="
+                f"{expected_kind!r}, got {kind_value!r}"
+            )
+            raise ValueError(msg)
         return category_for_provider(
             cls,
             provider_id=provider_id,
-            integration_kind=PlatformIntegrationKind.RELATIONAL_STORE.value,
+            integration_kind=kind_value,
             default_capabilities=_CONNECT_READ_WRITE_HEALTH,
             capabilities=capabilities,
             display_name=display_name,
@@ -97,7 +114,9 @@ class KeyValueCacheIntegrationContract(PlatformIntegrationContract):
 class GraphStoreIntegrationContract(PlatformIntegrationContract):
     """Category contract for graph_store providers (neo4j, memgraph, …)."""
 
-    schema_id: Literal["graph_store_integration_contract.v1"] = GRAPH_STORE_INTEGRATION_CONTRACT_SCHEMA
+    schema_id: Literal["graph_store_integration_contract.v1"] = (
+        GRAPH_STORE_INTEGRATION_CONTRACT_SCHEMA
+    )
     integration_kind: str = PlatformIntegrationKind.GRAPH_STORE.value
     capabilities: tuple[PlatformIntegrationCapability, ...] = Field(
         default_factory=lambda: _CONNECT_READ_WRITE_HEALTH
