@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 import ast
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -133,3 +135,28 @@ def test_rag_poisoning_filter_uses_structural_wiring_without_cast() -> None:
     assert "filter_retrieved_chunks_for_poisoning" in source
     assert "cast(" not in source
     assert "type: ignore" not in source
+
+
+def test_rag_guard_gate_tests_collect_without_rag_local_embeddings() -> None:
+    """RAG guard CI profile (dev-ci-rag) must not require optional HF stack at collection."""
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "tests/unit/rag/",
+            "tests/unit/tools/providers/rag/",
+            "-m",
+            "gate",
+            "--collect-only",
+            "-q",
+            "--tb=line",
+            "-p",
+            "no:xdist",
+        ],
+        cwd=_REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr or completed.stdout
