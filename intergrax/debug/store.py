@@ -14,7 +14,7 @@ from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
     TaskCheckpointReader,
 )
-from intergrax.integrations.providers.relational_store.sqlite import (
+from intergrax.runtime.persistence.sqlite_composition import (
     create_sqlite_task_checkpoint_store,
 )
 from intergrax.runtime.long_running.store import resolve_task_checkpoints_db_path
@@ -76,7 +76,9 @@ def open_runtime_event_persistence(
 
     Priority: explicit implementation > SQLite at db_path/env path.
     """
-    return resolve_runtime_event_persistence(db_path=db_path, implementation=implementation)
+    return resolve_runtime_event_persistence(
+        db_path=db_path, implementation=implementation
+    )
 
 
 def open_task_checkpoint_persistence(
@@ -108,7 +110,9 @@ def open_task_memory_persistence(
     implementation: TaskMemoryPersistence | None = None,
 ) -> TaskMemoryPersistence | None:
     """Resolve TaskMemory for debug / lab surfaces (explicit impl > sqlite path)."""
-    return resolve_task_memory_persistence(db_path=db_path, implementation=implementation)
+    return resolve_task_memory_persistence(
+        db_path=db_path, implementation=implementation
+    )
 
 
 def optional_task_checkpoint_reader(
@@ -117,4 +121,3 @@ def optional_task_checkpoint_reader(
     if store is None:
         return None
     return store
-

@@ -16,7 +16,7 @@ class _SQLiteRelationalStore:
     """
     Minimal ``RelationalStore`` over a single SQLite file.
 
-    Instantiate via ``create_sqlite_integration()`` — not directly from app code.
+    Instantiate via ``create_sqlite_relational_store()`` — not directly from app code.
     """
 
     def __init__(self, db_path: Path) -> None:
@@ -38,7 +38,9 @@ class _SQLiteRelationalStore:
         conn.execute(sql, params)
         conn.commit()
 
-    def fetch_all(self, sql: str, params: Sequence[Any] = ()) -> Sequence[Mapping[str, Any]]:
+    def fetch_all(
+        self, sql: str, params: Sequence[Any] = ()
+    ) -> Sequence[Mapping[str, Any]]:
         conn = self._require_connection()
         rows = conn.execute(sql, params).fetchall()
         return [dict(row) for row in rows]

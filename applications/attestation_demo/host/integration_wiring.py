@@ -7,8 +7,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.applications._shared.integration_wiring import (
+    bootstrap_application_integration_catalog,
+)
+from intergrax.integrations._shared.in_memory_document_store import (
+    InMemoryDocumentStore,
+)
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
@@ -36,11 +40,11 @@ def wire_attestation_demo_integrations(
         trace_store: RunTraceWriter = InMemoryRunTraceStore()
         trace_db_path = None
     else:
-        from intergrax.integrations.providers.relational_store.sqlite.bundle import (
-            create_sqlite_integration,
+        from intergrax.runtime.persistence.sqlite_composition import (
+            create_sqlite_runtime_persistence,
         )
 
-        sqlite_bundle = create_sqlite_integration(trace_db=db_path)
+        sqlite_bundle = create_sqlite_runtime_persistence(trace_db=db_path)
         trace_store = sqlite_bundle.trace_store  # type: ignore[assignment]
         trace_db_path = db_path
     return AttestationDemoIntegrationWiring(

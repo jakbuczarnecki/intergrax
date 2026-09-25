@@ -35,7 +35,9 @@ __all__ = [
 
 
 def open_human_decision_store(db_path: Path | None = None) -> SQLiteHumanDecisionStore:
-    from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_human_decision_store
+    from intergrax.runtime.persistence.sqlite_composition import (
+        create_sqlite_human_decision_store,
+    )
 
     if db_path is not None:
         return create_sqlite_human_decision_store(db_path=db_path)  # type: ignore[return-value]
@@ -108,7 +110,9 @@ class SQLiteHumanDecisionStore(HumanDecisionPersistence):
                     record.verdict.value,
                     record.response_text,
                     record.escalation_level,
-                    record.escalation_target.value if record.escalation_target else None,
+                    record.escalation_target.value
+                    if record.escalation_target
+                    else None,
                     record.agent_id,
                     record.run_id,
                     record.notes,
@@ -148,7 +152,9 @@ class SQLiteHumanDecisionStore(HumanDecisionPersistence):
             ).fetchall()
         return [self._row_to_record(row) for row in rows]
 
-    def get_decision(self, decision_id: str, tenant_id: str) -> Optional[HumanDecisionRecord]:
+    def get_decision(
+        self, decision_id: str, tenant_id: str
+    ) -> Optional[HumanDecisionRecord]:
         with self._connection() as conn:
             row = conn.execute(
                 """
@@ -199,4 +205,3 @@ class SQLiteHumanDecisionStore(HumanDecisionPersistence):
             notes=row["notes"],
             created_at_utc=row["created_at_utc"],
         )
-

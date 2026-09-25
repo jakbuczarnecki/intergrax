@@ -9,7 +9,7 @@ import json
 import sys
 from pathlib import Path
 
-from intergrax.integrations.providers.relational_store.sqlite.opens import (
+from intergrax.runtime.persistence.sqlite_opens import (
     open_organization_profile_store_at,
     open_task_memory_store_at,
 )
@@ -17,7 +17,9 @@ from intergrax.runtime.organization.organization_profile import (
     OrganizationIdentity,
     OrganizationProfile,
 )
-from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager
+from intergrax.runtime.organization.organization_profile_manager import (
+    OrganizationProfileManager,
+)
 from intergrax.runtime.task_memory.coordinator import TaskMemoryCoordinator
 
 

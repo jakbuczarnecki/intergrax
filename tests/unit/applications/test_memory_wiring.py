@@ -17,18 +17,28 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     MemoryProfile,
 )
-from intergrax.integrations.providers.relational_store.sqlite.bundle import create_sqlite_integration
+from intergrax.runtime.persistence.sqlite_composition import (
+    create_sqlite_runtime_persistence,
+)
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
+from intergrax.memory.stores.in_memory_user_profile_store import (
+    InMemoryUserProfileStore,
+)
 from intergrax.memory.memory_vector_errors import MemoryVectorBackendUnavailableError
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
-from intergrax.runtime.nexus.session.document_store_session_storage import DocumentStoreSessionStorage
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+from intergrax.runtime.nexus.session.document_store_session_storage import (
+    DocumentStoreSessionStorage,
+)
+from intergrax.runtime.nexus.session.in_memory_session_storage import (
+    InMemorySessionStorage,
+)
 from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
 from intergrax.runtime.organization.stores.sqlite_organization_profile_store import (
     SQLiteOrganizationProfileStore,
 )
-from tests.unit.integrations.providers.document_store.test_mongodb import _collection_factory
+from tests.unit.integrations.providers.document_store.test_mongodb import (
+    _collection_factory,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -51,7 +61,9 @@ def test_resolve_memory_platform_wiring_uses_sqlite_when_relational_store_sqlite
     assert isinstance(wiring.organization_profile_store, SQLiteOrganizationProfileStore)
 
 
-def test_resolve_memory_platform_wiring_falls_back_to_in_memory_without_sqlite() -> None:
+def test_resolve_memory_platform_wiring_falls_back_to_in_memory_without_sqlite() -> (
+    None
+):
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.wiring.inmem")
     env.integration_profile = IntegrationProfile()
 
@@ -64,10 +76,16 @@ def test_resolve_memory_platform_wiring_falls_back_to_in_memory_without_sqlite()
     assert wiring.organization_profile_store is None
 
 
-def test_resolve_memory_platform_wiring_uses_mongodb_document_store_for_user_ltm() -> None:
+def test_resolve_memory_platform_wiring_uses_mongodb_document_store_for_user_ltm() -> (
+    None
+):
     from intergrax.integrations.core.binding import IntegrationBinding
-    from intergrax.integrations.providers.document_store.mongodb.manifest import MANIFEST
-    from intergrax.memory.stores.document_store_user_profile_store import DocumentStoreUserProfileStore
+    from intergrax.integrations.providers.document_store.mongodb.manifest import (
+        MANIFEST,
+    )
+    from intergrax.memory.stores.document_store_user_profile_store import (
+        DocumentStoreUserProfileStore,
+    )
 
     factory, _ = _collection_factory()
     env = ApplicationEnvironmentProfile.product_defaults(profile_id="mem.wiring.mongo")
@@ -96,7 +114,7 @@ def test_resolve_memory_platform_wiring_uses_mongodb_document_store_for_user_ltm
 def test_build_session_manager_from_environment_respects_memory_profile_flags(
     tmp_path: Path,
 ) -> None:
-    create_sqlite_integration(data_dir=tmp_path)
+    create_sqlite_runtime_persistence(data_dir=tmp_path)
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="mem.session")
     env.memory_profile = MemoryProfile(
         enable_user_memory=True,
@@ -119,7 +137,7 @@ def test_build_session_manager_from_environment_respects_memory_profile_flags(
 def test_build_session_manager_skips_managers_when_memory_flags_disabled(
     tmp_path: Path,
 ) -> None:
-    create_sqlite_integration(data_dir=tmp_path)
+    create_sqlite_runtime_persistence(data_dir=tmp_path)
     env = ApplicationEnvironmentProfile.lab_defaults(profile_id="mem.session.off")
     env.memory_profile = MemoryProfile(
         enable_user_memory=False,

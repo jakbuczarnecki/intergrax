@@ -13,8 +13,13 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
     ENV_RUNTIME_EVENTS_DB,
     resolve_runtime_events_db_path,
 )
-from intergrax.runtime.events.persistence_contract import NullRuntimeEventPersistence, RuntimeEventPersistence
-from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
+from intergrax.runtime.events.persistence_contract import (
+    NullRuntimeEventPersistence,
+    RuntimeEventPersistence,
+)
+from intergrax.runtime.events.stores.sqlite_runtime_event_store import (
+    SQLiteRuntimeEventStore,
+)
 from intergrax.runtime.events.stores.validating_runtime_event_store import (
     ValidatingRuntimeEventPersistence,
 )
@@ -29,8 +34,8 @@ __all__ = [
 
 
 def open_runtime_event_store(db_path: Path | None = None) -> SQLiteRuntimeEventStore:
-    """Open SQLite runtime event store via ``integrations.providers.sqlite``."""
-    from intergrax.integrations.providers.relational_store.sqlite import (
+    """Open SQLite runtime event store via runtime persistence composition."""
+    from intergrax.runtime.persistence.sqlite_composition import (
         create_sqlite_runtime_event_store,
     )
 
@@ -52,7 +57,10 @@ def resolve_runtime_event_persistence(
     Pass ``implementation=None`` and omit path to disable persistence.
     """
     if implementation is not None:
-        if isinstance(implementation, (ValidatingRuntimeEventPersistence, NullRuntimeEventPersistence)):
+        if isinstance(
+            implementation,
+            (ValidatingRuntimeEventPersistence, NullRuntimeEventPersistence),
+        ):
             return implementation
         return ValidatingRuntimeEventPersistence(implementation)
     if db_path is None and not os.environ.get(ENV_RUNTIME_EVENTS_DB, "").strip():

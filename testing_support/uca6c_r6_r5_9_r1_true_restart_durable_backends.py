@@ -11,7 +11,7 @@ from intergrax.integrations.contracts.document_store import ConditionalDocumentS
 from intergrax.autonomous_work.document_store_worker_recovery_obstacle_capability_need_repository import (
     DocumentStoreWorkerRecoveryObstacleCapabilityNeedRepository,
 )
-from intergrax.integrations.providers.relational_store.sqlite.bundle import (
+from intergrax.runtime.persistence.sqlite_composition import (
     create_sqlite_idempotency_store,
 )
 from intergrax.runtime.execution.continuation.composition import (

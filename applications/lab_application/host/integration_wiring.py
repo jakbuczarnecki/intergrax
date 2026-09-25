@@ -11,21 +11,27 @@ from typing import Optional
 from intergrax.agents.persistence.checkpoint_wiring import open_agent_checkpoint_store
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.relational_store.sqlite.bundle import (
-    SQLiteIntegrationBundle,
-    create_sqlite_integration,
+from intergrax.runtime.persistence.sqlite_composition import (
+    SQLiteRuntimePersistenceBundle,
+    create_sqlite_runtime_persistence,
 )
-from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
+from intergrax.applications._shared.integration_wiring import (
+    bootstrap_application_integration_catalog,
+)
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
-from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
+from intergrax.runtime.events.stores.sqlite_runtime_event_store import (
+    SQLiteRuntimeEventStore,
+)
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
 from intergrax.runtime.interactions.factory import (
     InteractionSurface,
     create_interaction_adapter,
     resolve_interaction_settings,
 )
-from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.applications._shared.notification_wiring import (
     create_harness_notification_adapter,
@@ -33,7 +39,9 @@ from intergrax.applications._shared.notification_wiring import (
     open_host_delivery_ledger,
 )
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
-from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
+from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import (
+    DeliveryLedger,
+)
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
@@ -45,7 +53,7 @@ class LabIntegrationWiring:
     """Resolved integrations for the lab application factory."""
 
     profile: IntegrationProfile
-    sqlite_bundle: SQLiteIntegrationBundle
+    sqlite_bundle: SQLiteRuntimePersistenceBundle
     trace_store: RunTraceWriter
     runtime_event_store: RuntimeEventPersistence | None
     checkpoint_store: TaskCheckpointPersistence
@@ -107,7 +115,9 @@ def build_lab_integration_profile(
     )
 
 
-def create_lab_interaction_adapter(settings: LabApplicationSettings) -> InteractionAdapter:
+def create_lab_interaction_adapter(
+    settings: LabApplicationSettings,
+) -> InteractionAdapter:
     surface = settings.interaction_surface.strip().lower()
     return create_interaction_adapter(
         resolve_interaction_settings(surface=surface or InteractionSurface.AUTO.value)
@@ -145,7 +155,7 @@ def wire_lab_integrations(
         harness=harness,
         otel_enabled=resolved_otel,
     )
-    sqlite_bundle = create_sqlite_integration(**sqlite_overrides)
+    sqlite_bundle = create_sqlite_runtime_persistence(**sqlite_overrides)
 
     if db_path is None:
         trace_store: RunTraceWriter = InMemoryRunTraceStore()
@@ -175,14 +185,20 @@ def wire_lab_integrations(
     )
     interaction_adapter = create_lab_interaction_adapter(settings)
 
-    harness_notify_slug = profile.slug_for_category(IntegrationCategory.NOTIFICATION_CHANNEL)
-    default_notify = harness_notify_slug if harness and harness_notify_slug is not None else "log"
+    harness_notify_slug = profile.slug_for_category(
+        IntegrationCategory.NOTIFICATION_CHANNEL
+    )
+    default_notify = (
+        harness_notify_slug if harness and harness_notify_slug is not None else "log"
+    )
 
     agent_ckpt_path: Path | None = None
     if checkpoints_db_path is not None:
         agent_ckpt_path = checkpoints_db_path.parent / "agent_checkpoints.db"
     elif sqlite_bundle.paths.task_checkpoints is not None:
-        agent_ckpt_path = sqlite_bundle.paths.task_checkpoints.parent / "agent_checkpoints.db"
+        agent_ckpt_path = (
+            sqlite_bundle.paths.task_checkpoints.parent / "agent_checkpoints.db"
+        )
 
     return LabIntegrationWiring(
         profile=profile,

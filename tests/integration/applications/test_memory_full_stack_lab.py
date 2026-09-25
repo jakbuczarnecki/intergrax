@@ -23,8 +23,8 @@ from intergrax.applications._shared.runtime_config_bridge import (
 from intergrax.applications._shared.task_memory_wiring import (
     wire_task_memory_from_profile,
 )
-from intergrax.integrations.providers.relational_store.sqlite.bundle import (
-    create_sqlite_integration,
+from intergrax.runtime.persistence.sqlite_composition import (
+    create_sqlite_runtime_persistence,
 )
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from testing_support.builder import build_runtime_request_for_tests
@@ -103,7 +103,7 @@ def test_lab_profile_wires_task_session_and_profile_stores(tmp_path: Path) -> No
         "sqlite": {"data_dir": str(tmp_path)},
     }
 
-    bundle = create_sqlite_integration(data_dir=tmp_path)
+    bundle = create_sqlite_runtime_persistence(data_dir=tmp_path)
     task_wiring = wire_task_memory_from_profile(env, db_path=bundle.paths.task_memory)
     session_manager = build_session_manager_from_environment(
         env,

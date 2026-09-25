@@ -10,7 +10,9 @@ from typing import Optional
 
 from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.core.plugins.discovery import EP_MEMORY_STORES
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications._shared.memory_vector_wiring import (
     build_session_turn_index_store,
@@ -22,18 +24,26 @@ from intergrax.integrations.providers.document_store.mongodb.bundle import (
     MongoDBIntegrationBundle,
     create_mongodb_integration,
 )
-from intergrax.integrations.providers.relational_store.sqlite.bundle import (
-    SQLiteIntegrationBundle,
-    create_sqlite_integration,
+from intergrax.runtime.persistence.sqlite_composition import (
+    SQLiteRuntimePersistenceBundle,
+    create_sqlite_runtime_persistence,
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.memory.stores.document_store_user_profile_store import DocumentStoreUserProfileStore
-from intergrax.memory.stores.in_memory_user_profile_store import InMemoryUserProfileStore
+from intergrax.memory.stores.document_store_user_profile_store import (
+    DocumentStoreUserProfileStore,
+)
+from intergrax.memory.stores.in_memory_user_profile_store import (
+    InMemoryUserProfileStore,
+)
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.rag.bootstrap.rag_stack_bootstrap import RagStack
-from intergrax.runtime.nexus.session.document_store_session_storage import DocumentStoreSessionStorage
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
+from intergrax.runtime.nexus.session.document_store_session_storage import (
+    DocumentStoreSessionStorage,
+)
+from intergrax.runtime.nexus.session.in_memory_session_storage import (
+    InMemorySessionStorage,
+)
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.nexus.session.session_storage import SessionStorage
 from intergrax.memory.resolver import (
@@ -46,9 +56,15 @@ from intergrax.memory.resolver.discovery import (
     MemoryStorePluginCatalog,
     discover_classified_memory_store_plugins,
 )
-from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager
-from intergrax.runtime.organization.organization_profile_store import OrganizationProfileStore
-from intergrax.applications._shared.memory_control_wiring import build_default_memory_control_plane
+from intergrax.runtime.organization.organization_profile_manager import (
+    OrganizationProfileManager,
+)
+from intergrax.runtime.organization.organization_profile_store import (
+    OrganizationProfileStore,
+)
+from intergrax.applications._shared.memory_control_wiring import (
+    build_default_memory_control_plane,
+)
 from intergrax.memory.contracts.memory_control import MemoryControlPlane
 from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
 from intergrax.applications._shared.entity_graph_wiring import (
@@ -60,7 +76,9 @@ from intergrax.memory.contracts.entity_temporal_memory import (
 )
 from intergrax.memory.contracts.memory_observability import MemoryObservabilitySink
 from intergrax.memory.memory_diagnostic_emitter import MemoryDiagnosticEmitter
-from intergrax.memory.memory_security_governance_service import MemorySecurityGovernanceService
+from intergrax.memory.memory_security_governance_service import (
+    MemorySecurityGovernanceService,
+)
 from intergrax.applications._shared.entity_graph_wiring import (
     resolve_entity_temporal_memory_store,
 )
@@ -92,7 +110,9 @@ from intergrax.applications._shared.specialized_memory_wiring import (
     SpecializedMemoryCapabilities,
     resolve_specialized_memory_capabilities,
 )
-from intergrax.memory.contracts.long_horizon_memory import CanonicalMemorySourceAuthority
+from intergrax.memory.contracts.long_horizon_memory import (
+    CanonicalMemorySourceAuthority,
+)
 from intergrax.memory.stores.in_memory_long_horizon_memory_plugin import (
     InMemoryLongHorizonMemoryStorePlugin,
 )
@@ -116,13 +136,13 @@ class MemoryPlatformWiring:
     organization_profile_store: OrganizationProfileStore | None
     user_profile_store_identity: MemoryProviderIdentity | None = None
     user_profile_manager: UserProfileManager | None = None
-    sqlite_bundle: SQLiteIntegrationBundle | None = None
+    sqlite_bundle: SQLiteRuntimePersistenceBundle | None = None
     mongodb_bundle: MongoDBIntegrationBundle | None = None
     entity_temporal_memory_capability: EntityTemporalMemoryCapability | None = None
     entity_memory_indexer: EntityMemoryIndexer | None = None
     specialized_memory: SpecializedMemoryCapabilities = SpecializedMemoryCapabilities()
-    memory_store_plugin_load_report: DomainPluginLoadReport = DomainPluginLoadReport.empty(
-        EP_MEMORY_STORES
+    memory_store_plugin_load_report: DomainPluginLoadReport = (
+        DomainPluginLoadReport.empty(EP_MEMORY_STORES)
     )
     memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None
 
@@ -291,7 +311,9 @@ def _resolve_baseline_memory_platform_wiring(
         long_horizon_source_authority=long_horizon_source_authority,
     )
     if _sqlite_enabled(profile):
-        bundle = create_sqlite_integration(**_sqlite_integration_overrides(profile))
+        bundle = create_sqlite_runtime_persistence(
+            **_sqlite_integration_overrides(profile)
+        )
         return MemoryPlatformWiring(
             session_storage=bundle.session_storage,
             user_profile_store=bundle.user_profile_store,
@@ -307,7 +329,9 @@ def _resolve_baseline_memory_platform_wiring(
         )
 
     if _mongodb_enabled(profile):
-        mongo_bundle = create_mongodb_integration(**_mongodb_integration_overrides(profile))
+        mongo_bundle = create_mongodb_integration(
+            **_mongodb_integration_overrides(profile)
+        )
         document_store: DocumentStore = mongo_bundle.document_store.as_document_store()
         document_store_backing = _document_store_backing_provider_id(profile)
         org_store = None
@@ -391,7 +415,9 @@ def _apply_external_memory_store_overlay(
         updated = replace(
             updated,
             user_profile_store=user_profile_store,
-            user_profile_store_identity=plugin_user_profile_store_identity(user_plugin_id),
+            user_profile_store_identity=plugin_user_profile_store_identity(
+                user_plugin_id
+            ),
         )
     if session_plugin_id is not None:
         session_storage = materialize_session_storage(
@@ -413,8 +439,10 @@ def resolve_memory_platform_wiring(
     security_governance: MemorySecurityGovernanceService | None = None,
     memory_observability_sink: MemoryObservabilitySink | None = None,
     memory_diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
-    qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
-    durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
+    qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry
+    | None = None,
+    durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry
+    | None = None,
     governance_source_authority: CanonicalMemoryGovernanceSourceAuthority | None = None,
     long_horizon_source_authority: CanonicalMemorySourceAuthority | None = None,
 ) -> MemoryPlatformWiring:
@@ -428,7 +456,11 @@ def resolve_memory_platform_wiring(
     4. Explicit external Memory store plugin ids overlay their owned slots only.
     """
     profile = integration_profile or env.integration_profile
-    discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
+    discover = (
+        discover_plugins_enabled()
+        if discover_entry_points is None
+        else discover_entry_points
+    )
     memory_store_plugin_catalog: MemoryStorePluginCatalog | None = None
     if _memory_store_plugin_catalog_required(env):
         memory_store_plugin_catalog = _compose_memory_store_plugin_catalog(
@@ -480,14 +512,20 @@ def build_session_manager_from_environment(
     memory_wiring: MemoryPlatformWiring | None = None,
     rag_stack: RagStack | None = None,
     memory_control_plane: MemoryControlPlane | None = None,
-    qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry | None = None,
-    durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry | None = None,
+    qualification_evidence_registry: MemoryProviderQualificationEvidenceRegistry
+    | None = None,
+    durability_evidence_registry: MemoryProviderDurabilityEvidenceRegistry
+    | None = None,
     session_turn_index_store: SessionTurnIndexStore | None = None,
     session_turn_index_store_identity: MemoryProviderIdentity | None = None,
     discover_entry_points: bool | None = None,
 ) -> SessionManager:
     """Construct ``SessionManager`` with profile managers driven by ``MemoryProfile``."""
-    discover = discover_plugins_enabled() if discover_entry_points is None else discover_entry_points
+    discover = (
+        discover_plugins_enabled()
+        if discover_entry_points is None
+        else discover_entry_points
+    )
     wiring = memory_wiring or resolve_memory_platform_wiring(
         env,
         integration_profile=integration_profile,
@@ -519,7 +557,10 @@ def build_session_manager_from_environment(
         )
 
     org_manager: Optional[OrganizationProfileManager] = None
-    if memory_profile.enable_org_memory and wiring.organization_profile_store is not None:
+    if (
+        memory_profile.enable_org_memory
+        and wiring.organization_profile_store is not None
+    ):
         from intergrax.memory.org_memory_scope import ORG_MEMORY_SCOPES
 
         _ = ORG_MEMORY_SCOPES  # org memory 2.5 scope catalog (AUDIT-IDEAL-15.1)

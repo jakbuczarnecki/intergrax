@@ -27,7 +27,7 @@ def resolve_experiment_persistence(
     if experiment_store is not None:
         return experiment_store
 
-    from intergrax.integrations.providers.relational_store.sqlite import (
+    from intergrax.runtime.persistence.sqlite_composition import (
         create_sqlite_experiment_store,
     )
 
