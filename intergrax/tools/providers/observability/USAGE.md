@@ -15,7 +15,10 @@
 ```python
 from intergrax.integrations.registry.bootstrap import register_default_integrations
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.tools.registry import ToolProfile, ToolWiringContext, build_registry_from_profile, register_default_tools
+from intergrax.tools.contracts.tool_profile import ToolProfile
+from intergrax.tools.registry.bootstrap import register_default_tools
+from intergrax.tools.registry.factory import build_registry_from_profile
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 register_default_integrations()
 register_default_tools()
@@ -39,7 +42,7 @@ When `IntegrationProfile.harness_lab()` sets `observability_backend=sentry` and 
 
 ```python
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.tools.registry import ToolWiringContext
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 ctx = ToolWiringContext.from_integration_profile(IntegrationProfile.harness_lab())
 # errors.capture → Sentry; observability.query_traces → LangSmith

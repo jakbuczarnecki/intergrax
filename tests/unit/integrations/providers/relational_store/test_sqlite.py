@@ -5,10 +5,15 @@
 
 from __future__ import annotations
 
+import ast
 from pathlib import Path
 
 import pytest
 
+from intergrax.collaborative_work.materialization_factory import (
+    CollaborativeWorkMaterializationBinder,
+    CollaborativeWorkPersistenceFactory,
+)
 from intergrax.integrations._shared.conformance import assert_relational_store
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.providers.relational_store.sqlite.adapter import (
@@ -35,6 +40,74 @@ from intergrax.integrations.registry.factory import resolve
 from intergrax.integrations.registry.profile import IntegrationProfile
 
 pytestmark = pytest.mark.unit
+
+_BUNDLE_PATH = (
+    Path(__file__).resolve().parents[5]
+    / "intergrax"
+    / "integrations"
+    / "providers"
+    / "relational_store"
+    / "sqlite"
+    / "bundle.py"
+)
+
+
+def _bundle_module_level_imports(module: str) -> list[int]:
+    tree = ast.parse(
+        _BUNDLE_PATH.read_text(encoding="utf-8"), filename=str(_BUNDLE_PATH)
+    )
+    lines: list[int] = []
+
+    def _scan_body(body: list[ast.stmt]) -> None:
+        for node in body:
+            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            if isinstance(node, ast.If) and isinstance(node.test, ast.Name):
+                if node.test.id == "TYPE_CHECKING":
+                    continue
+            if isinstance(node, ast.Import):
+                for alias in node.names:
+                    if alias.name == module or alias.name.startswith(f"{module}."):
+                        lines.append(node.lineno)
+            elif isinstance(node, ast.ImportFrom):
+                if node.module == module or (
+                    node.module is not None and node.module.startswith(f"{module}.")
+                ):
+                    lines.append(node.lineno)
+            elif isinstance(node, ast.ClassDef):
+                _scan_body(node.body)
+
+    _scan_body(tree.body)
+    return lines
+
+
+def _public_method_return_annotations() -> list[str]:
+    tree = ast.parse(
+        _BUNDLE_PATH.read_text(encoding="utf-8"), filename=str(_BUNDLE_PATH)
+    )
+    missing: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        if (
+            node.name.startswith("_")
+            and node.name != "_sqlite_materialization_paths_from_options"
+        ):
+            continue
+        if node.name not in {
+            "materialize_collaborative_work_repositories",
+            "bind_collaborative_work_materialization",
+            "_sqlite_materialization_paths_from_options",
+        }:
+            continue
+        if node.returns is None:
+            missing.append(node.name)
+        elif isinstance(node.returns, ast.Name) and node.returns.id in {
+            "Any",
+            "object",
+        }:
+            missing.append(f"{node.name}:returns={node.returns.id}")
+    return missing
 
 
 @pytest.fixture(autouse=True)
@@ -92,3 +165,30 @@ def test_create_sqlite_relational_store_catalog_factory(tmp_path: Path) -> None:
     store = create_sqlite_relational_store(data_dir=tmp_path)
     assert_relational_store(store)
     assert store.db_path == tmp_path / RELATIONAL_DB_NAME
+
+
+def test_sqlite_factory_structurally_conforms_to_cw_materialization_binder() -> None:
+    assert isinstance(
+        create_sqlite_relational_store, CollaborativeWorkMaterializationBinder
+    )
+
+
+def test_sqlite_bound_materializer_conforms_to_cw_persistence_factory(
+    tmp_path: Path,
+) -> None:
+    materializer = (
+        create_sqlite_relational_store.bind_collaborative_work_materialization(
+            {"data_dir": str(tmp_path)},
+        )
+    )
+    assert isinstance(materializer, CollaborativeWorkPersistenceFactory)
+
+
+def test_sqlite_bundle_has_no_module_level_cw_persistence_import() -> None:
+    lines = _bundle_module_level_imports("intergrax.collaborative_work.persistence")
+    assert not lines, f"module-level CW persistence imports at lines: {lines}"
+
+
+def test_sqlite_bundle_collaborative_work_seam_return_annotations() -> None:
+    missing = _public_method_return_annotations()
+    assert not missing, f"missing or weak return annotations: {missing}"

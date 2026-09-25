@@ -13,7 +13,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.sqlite.adapter import (
@@ -33,6 +33,15 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
     ensure_parent_dirs,
     resolve_sqlite_store_paths,
 )
+
+if TYPE_CHECKING:
+    from intergrax.collaborative_work.materialization_factory import (
+        CollaborativeWorkMaterializationBinder,
+        CollaborativeWorkPersistenceFactory,
+    )
+    from intergrax.collaborative_work.persistence import (
+        CollaborativeWorkMaterializedRepositories,
+    )
 
 
 def resolve_sqlite_config(**overrides: object) -> SQLiteIntegrationConfig:
@@ -54,14 +63,26 @@ def _build_paths(
 
 
 def _sqlite_materialization_paths_from_options(
-    options: Mapping[str, Any],
+    options: Mapping[str, object],
 ) -> SqliteStorePaths:
     overrides: dict[str, object] = dict(options)
-    data_dir = overrides.pop("data_dir", None)
-    relational_db = overrides.pop("relational_db", None)
-    if relational_db is not None:
-        overrides["relational_db"] = Path(relational_db)
-    _, paths = _build_paths(data_dir=data_dir, **overrides)
+    data_dir_raw = overrides.pop("data_dir", None)
+    relational_db_raw = overrides.pop("relational_db", None)
+    build_data_dir: Path | str | None
+    if data_dir_raw is None:
+        build_data_dir = None
+    elif isinstance(data_dir_raw, (Path, str)):
+        build_data_dir = data_dir_raw
+    else:
+        build_data_dir = Path(str(data_dir_raw))
+    if relational_db_raw is not None:
+        if isinstance(relational_db_raw, Path):
+            overrides["relational_db"] = relational_db_raw
+        elif isinstance(relational_db_raw, str):
+            overrides["relational_db"] = Path(relational_db_raw)
+        else:
+            overrides["relational_db"] = Path(str(relational_db_raw))
+    _, paths = _build_paths(data_dir=build_data_dir, **overrides)
     return paths
 
 
@@ -71,7 +92,7 @@ class _SQLiteCollaborativeWorkMaterializer:
 
     def materialize_collaborative_work_repositories(
         self,
-    ):
+    ) -> CollaborativeWorkMaterializedRepositories:
         from intergrax.collaborative_work.persistence import (
             open_sqlite_collaborative_work_repositories,
         )
@@ -100,13 +121,16 @@ class SQLiteRelationalStoreFactory:
 
     def bind_collaborative_work_materialization(
         self,
-        options: Mapping[str, Any],
-    ):
+        options: Mapping[str, object],
+    ) -> CollaborativeWorkPersistenceFactory:
         paths = _sqlite_materialization_paths_from_options(options)
         return _SQLiteCollaborativeWorkMaterializer(paths)
 
 
 create_sqlite_relational_store = SQLiteRelationalStoreFactory()
+
+if TYPE_CHECKING:
+    _collaborative_work_materialization_binder: CollaborativeWorkMaterializationBinder = create_sqlite_relational_store
 
 
 def create_sqlite_relational_store_integration(
