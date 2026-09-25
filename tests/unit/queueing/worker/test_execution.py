@@ -230,6 +230,18 @@ class LegacyOnlyIdempotencyStore(IdempotencyStore):
         del args, kwargs
         return False
 
+    def external_effect_may_have_started(self, tenant_id: str, key: str) -> bool:
+        del tenant_id, key
+        return False
+
+    def admit_external_effect_may_have_started_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        del tenant_id, key, claim
+
     def record_started(
         self,
         tenant_id: str,

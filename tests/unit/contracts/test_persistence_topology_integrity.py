@@ -101,6 +101,19 @@ class _UndeclaredTopologyIdempotencyStore(IdempotencyStore):
         del args, kwargs
         raise NotImplementedError
 
+    def external_effect_may_have_started(self, tenant_id: str, key: str) -> bool:
+        del tenant_id, key
+        raise NotImplementedError
+
+    def admit_external_effect_may_have_started_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        del tenant_id, key, claim
+        raise NotImplementedError
+
     def record_started(
         self,
         tenant_id: str,
@@ -167,6 +180,19 @@ class _BrandNameOnlyIdempotencyStore(IdempotencyStore):
         raise NotImplementedError
 
     def abandon_pre_effect_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        del tenant_id, key, claim
+        raise NotImplementedError
+
+    def external_effect_may_have_started(self, tenant_id: str, key: str) -> bool:
+        del tenant_id, key
+        raise NotImplementedError
+
+    def admit_external_effect_may_have_started_with_claim(
         self,
         tenant_id: str,
         key: str,

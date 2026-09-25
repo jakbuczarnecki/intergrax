@@ -8,6 +8,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List, Sequence, Set
 
+from intergrax.integrations.contracts.graph_store import GraphStore as IntegrationGraphStore
 from intergrax.distributed.source_operation import (
     SOURCE_PUBLICATION_GENERATION_METADATA_KEY,
     SourceOperationCoordinator,
@@ -23,8 +24,6 @@ from intergrax.rag.graph.generation_visibility import (
     cypher_node_visible,
     visibility_query_params,
 )
-from intergrax.utils import attribute_access
-
 _ENTITY_LABEL = "RagEntity"
 _CHUNK_LABEL = "RagChunk"
 
@@ -34,7 +33,7 @@ class CypherRagGraphStore(GraphStore):
 
     def __init__(
         self,
-        integration_store: Any,
+        integration_store: IntegrationGraphStore,
         *,
         tenant_id: str | None = None,
         namespace: str | None = None,
@@ -75,10 +74,7 @@ class CypherRagGraphStore(GraphStore):
 
     def _run(self, statement: str, parameters: Dict[str, Any]) -> List[Dict[str, Any]]:
         result = self._store.run_query(statement, parameters=parameters)
-        records = attribute_access.optional(result, "records", None)
-        if records is None:
-            raise RuntimeError("graph query returned malformed result")
-        return [dict(record) for record in records]
+        return [dict(record) for record in result.records]
 
     def _scope_for_metadata(
         self,

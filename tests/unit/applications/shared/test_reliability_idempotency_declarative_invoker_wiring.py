@@ -21,7 +21,9 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest
-from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext
+from intergrax.tools.contracts.tool_profile import ToolProfile
+from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from testing_support.builder import (
     build_runtime_state_for_tests,
@@ -44,7 +46,9 @@ _RUN_ID = canonical_run_id_for_tests(_RUN_SEED)
 
 
 def _calls_missing_idempotency_keyword(source_path: Path) -> list[int]:
-    tree = ast.parse(source_path.read_text(encoding="utf-8-sig"), filename=str(source_path))
+    tree = ast.parse(
+        source_path.read_text(encoding="utf-8-sig"), filename=str(source_path)
+    )
     missing_lines: list[int] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
@@ -63,7 +67,9 @@ def _calls_missing_idempotency_keyword(source_path: Path) -> list[int]:
     return missing_lines
 
 
-def test_canonical_application_compositions_forward_idempotency_store_to_declarative_invoker() -> None:
+def test_canonical_application_compositions_forward_idempotency_store_to_declarative_invoker() -> (
+    None
+):
     violations: list[str] = []
     for path in _CANONICAL_DECLARATIVE_INVOKER_COMPOSITION:
         assert path.is_file(), f"missing composition root: {path}"
@@ -105,7 +111,9 @@ def _state_with_enforce_allow() -> object:
     return state
 
 
-def test_declarative_invoker_uses_wired_idempotency_store_for_side_effect_dedupe() -> None:
+def test_declarative_invoker_uses_wired_idempotency_store_for_side_effect_dedupe() -> (
+    None
+):
     """Observable: duplicate invocation with same idempotency key executes effect once."""
     registry = ToolRegistry()
     handler = _CountingHandler()
@@ -150,7 +158,9 @@ def test_declarative_invoker_uses_wired_idempotency_store_for_side_effect_dedupe
     assert handler.calls == 1
 
 
-def test_declarative_invoker_without_store_fails_closed_when_idempotency_key_present() -> None:
+def test_declarative_invoker_without_store_fails_closed_when_idempotency_key_present() -> (
+    None
+):
     registry = ToolRegistry()
     handler = _CountingHandler()
     registry.register(

@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -46,7 +46,7 @@ class SuspendedExecutionOperationDescriptor(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal[SCHEMA_SUSPENDED_EXECUTION_OPERATION_DESCRIPTOR_V1] = (
+    schema_version: Literal["suspended_execution_operation_descriptor.v1"] = (
         SCHEMA_SUSPENDED_EXECUTION_OPERATION_DESCRIPTOR_V1
     )
     suspended_operation_id: str = Field(min_length=1)
@@ -65,7 +65,7 @@ class SuspendedExecutionOperationDescriptor(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _migrate_legacy_authority_scope(cls, data: Any) -> Any:
+    def _migrate_legacy_authority_scope(cls, data: object) -> object:
         if not isinstance(data, dict):
             return data
         if data.get("authority_scope") is not None:

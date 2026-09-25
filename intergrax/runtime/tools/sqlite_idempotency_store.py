@@ -22,6 +22,7 @@ from intergrax.contracts.idempotency_store import (
     InvocationOperationIdentity,
     InvocationStatus,
     PreEffectSuspendedWorkRecoveryAuthority,
+    validate_pre_effect_recovery_authority,
 )
 from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.contracts.persistence_topology import PersistenceTopology
@@ -65,23 +66,37 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                 """
             )
             columns = {
-                row[1] for row in conn.execute("PRAGMA table_info(idempotency_ledger)").fetchall()
+                row[1]
+                for row in conn.execute(
+                    "PRAGMA table_info(idempotency_ledger)"
+                ).fetchall()
             }
             if "result_blob" not in columns:
-                conn.execute("ALTER TABLE idempotency_ledger ADD COLUMN result_blob TEXT")
+                conn.execute(
+                    "ALTER TABLE idempotency_ledger ADD COLUMN result_blob TEXT"
+                )
             if "owner_id" not in columns:
                 conn.execute("ALTER TABLE idempotency_ledger ADD COLUMN owner_id TEXT")
             if "lease_expires_at" not in columns:
-                conn.execute("ALTER TABLE idempotency_ledger ADD COLUMN lease_expires_at TEXT")
+                conn.execute(
+                    "ALTER TABLE idempotency_ledger ADD COLUMN lease_expires_at TEXT"
+                )
             if "fence" not in columns:
                 conn.execute(
                     "ALTER TABLE idempotency_ledger ADD COLUMN fence INTEGER NOT NULL DEFAULT 0",
                 )
             if "operation_tool_id" not in columns:
-                conn.execute("ALTER TABLE idempotency_ledger ADD COLUMN operation_tool_id TEXT")
+                conn.execute(
+                    "ALTER TABLE idempotency_ledger ADD COLUMN operation_tool_id TEXT"
+                )
             if "operation_fingerprint" not in columns:
                 conn.execute(
                     "ALTER TABLE idempotency_ledger ADD COLUMN operation_fingerprint TEXT",
+                )
+            if "external_effect_may_have_started" not in columns:
+                conn.execute(
+                    "ALTER TABLE idempotency_ledger "
+                    "ADD COLUMN external_effect_may_have_started INTEGER NOT NULL DEFAULT 0",
                 )
 
     def _row_to_claim(self, row: sqlite3.Row) -> InvocationClaim | None:
@@ -189,7 +204,9 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                 )
                 result_blob = row["result_blob"]
                 if result_blob is None:
-                    raise RuntimeError("Ledger inconsistency: COMPLETED without result_blob.")
+                    raise RuntimeError(
+                        "Ledger inconsistency: COMPLETED without result_blob."
+                    )
                 completed = pickle.loads(base64.b64decode(result_blob.encode("ascii")))
                 conn.commit()
                 return ClaimResult(
@@ -203,7 +220,9 @@ class SQLiteIdempotencyStore(IdempotencyStore):
 
             stored_claim = self._row_to_claim(row)
             if stored_claim is None:
-                raise RuntimeError(f"Ledger inconsistency: STARTED without ownership for key={key}")
+                raise RuntimeError(
+                    f"Ledger inconsistency: STARTED without ownership for key={key}"
+                )
 
             if stored_claim.lease_expires_at > now:
                 if stored_claim.owner_id == owner_id:
@@ -212,7 +231,9 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                         operation_identity,
                     )
                     conn.commit()
-                    return ClaimResult(outcome=ClaimOutcome.ACQUIRED, claim=stored_claim)
+                    return ClaimResult(
+                        outcome=ClaimOutcome.ACQUIRED, claim=stored_claim
+                    )
                 conn.commit()
                 return ClaimResult(outcome=ClaimOutcome.BLOCKED_ACTIVE)
 
@@ -328,6 +349,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                   AND owner_id = ?
                   AND fence = ?
                   AND lease_expires_at > ?
+                  AND external_effect_may_have_started = 0
                 """,
                 (
                     tenant_id,
@@ -345,6 +367,83 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                 )
             conn.commit()
 
+    def external_effect_may_have_started(
+        self,
+        tenant_id: str,
+        key: str,
+    ) -> bool:
+        with self._connect() as conn:
+            row = conn.execute(
+                """
+                SELECT external_effect_may_have_started
+                FROM idempotency_ledger
+                WHERE tenant_id = ? AND key = ?
+                """,
+                (tenant_id, key),
+            ).fetchone()
+        if row is None:
+            return False
+        return bool(row["external_effect_may_have_started"])
+
+    def admit_external_effect_may_have_started_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        now = datetime.now(UTC)
+        with self._connect() as conn:
+            conn.execute("BEGIN IMMEDIATE")
+            updated = conn.execute(
+                """
+                UPDATE idempotency_ledger
+                SET external_effect_may_have_started = 1
+                WHERE tenant_id = ? AND key = ?
+                  AND status = ?
+                  AND owner_id = ?
+                  AND fence = ?
+                  AND lease_expires_at > ?
+                  AND external_effect_may_have_started = 0
+                """,
+                (
+                    tenant_id,
+                    key,
+                    InvocationStatus.STARTED.value,
+                    claim.owner_id,
+                    claim.fence,
+                    now.isoformat(),
+                ),
+            )
+            if updated.rowcount == 1:
+                conn.commit()
+                return
+            row = conn.execute(
+                """
+                SELECT external_effect_may_have_started, owner_id, fence, lease_expires_at
+                FROM idempotency_ledger
+                WHERE tenant_id = ? AND key = ? AND status = ?
+                """,
+                (tenant_id, key, InvocationStatus.STARTED.value),
+            ).fetchone()
+            conn.rollback()
+            if row is None:
+                raise StaleClaimError(
+                    f"Cannot admit effect for key={key}: missing active claim.",
+                )
+            if (
+                row["owner_id"] != claim.owner_id
+                or int(row["fence"]) != claim.fence
+                or datetime.fromisoformat(row["lease_expires_at"]) <= now
+            ):
+                raise StaleClaimError(
+                    f"Stale effect admission rejected for key={key} fence={claim.fence}.",
+                )
+            if bool(row["external_effect_may_have_started"]):
+                return
+            raise StaleClaimError(
+                f"Stale effect admission rejected for key={key} fence={claim.fence}.",
+            )
+
     def reconcile_abandoned_pre_effect_not_started(
         self,
         tenant_id: str,
@@ -353,18 +452,25 @@ class SQLiteIdempotencyStore(IdempotencyStore):
         *,
         recovery_authority: PreEffectSuspendedWorkRecoveryAuthority,
     ) -> bool:
-        del recovery_authority
+        validate_pre_effect_recovery_authority(recovery_authority)
         with self._connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
                 """
-                SELECT status, operation_tool_id, operation_fingerprint
+                SELECT status, operation_tool_id, operation_fingerprint,
+                       external_effect_may_have_started
                 FROM idempotency_ledger
                 WHERE tenant_id = ? AND key = ?
                 """,
                 (tenant_id, key),
             ).fetchone()
-            if row is None or InvocationStatus(row["status"]) is not InvocationStatus.STARTED:
+            if (
+                row is None
+                or InvocationStatus(row["status"]) is not InvocationStatus.STARTED
+            ):
+                conn.commit()
+                return False
+            if bool(row["external_effect_may_have_started"]):
                 conn.commit()
                 return False
             assert_operation_identity_compatible(
@@ -375,6 +481,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                 """
                 DELETE FROM idempotency_ledger
                 WHERE tenant_id = ? AND key = ? AND status = ?
+                  AND external_effect_may_have_started = 0
                 """,
                 (tenant_id, key, InvocationStatus.STARTED.value),
             )

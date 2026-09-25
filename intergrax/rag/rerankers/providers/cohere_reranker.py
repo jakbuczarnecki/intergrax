@@ -4,9 +4,10 @@
 from __future__ import annotations
 
 import os
-from typing import List, Optional
+from typing import Optional
 
-from intergrax.rag.rerankers.integration.resolver import rerank_scores
+from intergrax.integrations.contracts.rerank_provider import RerankProvider
+from intergrax.rag.rerankers.integration.resolver import resolve_rerank_provider
 from intergrax.rag.rerankers.providers._api_reranker_base import _APIRerankerBase
 
 
@@ -29,15 +30,9 @@ class CohereReranker(_APIRerankerBase):
     def name(cls) -> str:
         return "cohere"
 
-    def _score(
-        self,
-        query: str,
-        texts: List[str],
-    ) -> List[float]:
-        return rerank_scores(
+    def _resolve_provider(self) -> RerankProvider:
+        return resolve_rerank_provider(
             "cohere_rerank",
-            query,
-            texts,
-            top_n=self._top_n,
             model=self._model,
+            top_n=self._top_n,
         )

@@ -12,7 +12,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
+from intergrax.applications._shared.nexus_factory import (
+    build_nexus_loop_from_environment,
+)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     OrchestrationProfile,
@@ -25,7 +27,7 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     reset_active_execution_identity,
 )
-from intergrax.integrations.providers.relational_store.sqlite import (
+from intergrax.runtime.persistence.sqlite_composition import (
     create_sqlite_task_checkpoint_store,
 )
 from intergrax.runtime.long_running.checkpoint_builder import build_task_checkpoint
@@ -49,7 +51,10 @@ from intergrax.runtime.nexus.orchestration.long_running_bridge import (
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
 from intergrax.runtime.task.task import Task, TaskState
-from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
+from intergrax.runtime.task.task_contract import (
+    TaskExecutionOptions,
+    TaskLongRunningOptions,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
@@ -156,9 +161,7 @@ class _FakeCheckpointStore(TaskCheckpointPersistence):
         self.saved.append(stored)
         self._by_id[stored.checkpoint_id] = stored
         self._latest[stream_key] = stored
-        self._by_token[
-            (stored.task_id, stored.tenant_id, stored.resume_token)
-        ] = stored
+        self._by_token[(stored.task_id, stored.tenant_id, stored.resume_token)] = stored
         return stored
 
 
@@ -282,7 +285,9 @@ def test_a6_worker_bootstrap_contract_accepts_fake_port() -> None:
     assert "SQLiteTaskCheckpointStore" not in source
     assert "TaskCheckpointPersistence" in source
 
-    celery = pytest.importorskip("celery", reason="celery optional for runtime bootstrap proof")
+    celery = pytest.importorskip(
+        "celery", reason="celery optional for runtime bootstrap proof"
+    )
     del celery
     from testing_support.admitted_root_governance_identity import (
         lab_admitted_root_governance_identity_for_task,
@@ -324,7 +329,9 @@ def test_a7_shared_nexus_factory_accepts_fake_port() -> None:
     fake = _FakeCheckpointStore()
     env = ApplicationEnvironmentProfile.lab_defaults().model_copy(
         update={
-            "reliability_profile": ReliabilityProfile(long_running_scheduler_enabled=True),
+            "reliability_profile": ReliabilityProfile(
+                long_running_scheduler_enabled=True
+            ),
             "orchestration_profile": OrchestrationProfile(long_running_enabled=True),
         }
     )
@@ -337,7 +344,9 @@ def test_a7_shared_nexus_factory_accepts_fake_port() -> None:
 
 
 def test_r1_1_long_running_bridge_has_no_sqlite_checkpoint_import() -> None:
-    bridge_path = _REPO_ROOT / "intergrax/runtime/nexus/orchestration/long_running_bridge.py"
+    bridge_path = (
+        _REPO_ROOT / "intergrax/runtime/nexus/orchestration/long_running_bridge.py"
+    )
     source = bridge_path.read_text(encoding="utf-8")
     assert "SQLiteTaskCheckpointStore" not in source
     assert "runtime.long_running.store" not in source

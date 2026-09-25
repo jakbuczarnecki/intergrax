@@ -19,10 +19,14 @@ from intergrax.contracts.idempotency_store import (
     InvocationUncertaintyError,
     PreEffectSuspendedWorkRecoveryAuthority,
 )
-from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import RuntimeStateContract
+from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import (
+    RuntimeStateContract,
+)
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
-from intergrax.runtime.tools.operation_identity import compute_invocation_operation_identity
+from intergrax.runtime.tools.operation_identity import (
+    compute_invocation_operation_identity,
+)
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import (
     ToolEffectCertainty,
@@ -97,7 +101,9 @@ class IdempotencyPreEffectCoordinator:
         tenant_id = state.tenant_id
         key = request.idempotency_key
         if key is None:
-            raise RuntimeError("Idempotency key is required for side-effect coordination.")
+            raise RuntimeError(
+                "Idempotency key is required for side-effect coordination."
+            )
         owner_id = f"invoker-{uuid4().hex}"
         operation_identity = compute_invocation_operation_identity(
             request.tool_id,
@@ -183,6 +189,18 @@ class IdempotencyPreEffectCoordinator:
             claim_context.claim,
         )
 
+    def admit_external_effect_may_have_started(
+        self,
+        *,
+        claim_context: PreEffectClaimContext,
+    ) -> None:
+        """Durable transition immediately before physical backend effect may start."""
+        self._store.admit_external_effect_may_have_started_with_claim(
+            claim_context.tenant_id,
+            claim_context.key,
+            claim_context.claim,
+        )
+
     def reconcile_abandoned_pre_effect_before_retry(
         self,
         *,
@@ -194,7 +212,9 @@ class IdempotencyPreEffectCoordinator:
     ) -> None:
         """Clear orphaned STARTED ledger rows after pre-effect process loss (W2)."""
         if not suspended_work_owner_id.strip():
-            raise RuntimeError("suspended_work_owner_id is required for pre-effect recovery.")
+            raise RuntimeError(
+                "suspended_work_owner_id is required for pre-effect recovery."
+            )
         self._store.reconcile_abandoned_pre_effect_not_started(
             tenant_id,
             key,
@@ -238,6 +258,11 @@ class IdempotencyPreEffectCoordinator:
             )
 
         if claim_result.outcome == ClaimOutcome.BLOCKED_ACTIVE:
+            if self._store.external_effect_may_have_started(tenant_id, key):
+                raise InvocationUncertaintyError(
+                    f"Invocation outcome uncertain for key={key}. "
+                    "External effect may have started; reconciliation required.",
+                )
             raise ActiveInvocationClaimError(
                 f"Invocation already claimed for key={key}. "
                 "Blocking concurrent execution.",

@@ -23,7 +23,10 @@ Vendor-specific operations on **OpenAI managed** vector stores. Not interchangea
 ## Example
 
 ```python
-from intergrax.tools.registry import ToolProfile, ToolWiringContext, build_registry_from_profile, register_default_tools
+from intergrax.tools.contracts.tool_profile import ToolProfile
+from intergrax.tools.registry.bootstrap import register_default_tools
+from intergrax.tools.registry.factory import build_registry_from_profile
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 register_default_tools()
 ctx = ToolWiringContext(

@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence
-from typing import List
 
+from intergrax.integrations.contracts.rerank_provider import RerankProvider
 from intergrax.rag.rerankers.contracts.base_reranker import BaseReranker
 from intergrax.rag.rerankers.contracts.reranker_types import (
     validate_candidates,
@@ -15,6 +15,21 @@ from intergrax.rag.rerankers.contracts.reranker_types import (
     RerankerCandidate,
     RerankerResult,
 )
+
+
+def _validate_rerank_provider_results(
+    results: Sequence[RerankerResult],
+) -> tuple[RerankerResult, ...]:
+    if isinstance(results, (str, bytes)):
+        raise TypeError("rerank provider returned an invalid result type")
+    if not isinstance(results, Sequence):
+        raise TypeError("rerank provider returned an invalid result type")
+    validated: list[RerankerResult] = []
+    for item in results:
+        if not isinstance(item, RerankerResult):
+            raise TypeError("rerank provider returned a non-RerankerResult entry")
+        validated.append(item)
+    return tuple(validated)
 
 
 class _APIRerankerBase(BaseReranker, ABC):
@@ -34,30 +49,10 @@ class _APIRerankerBase(BaseReranker, ABC):
         if not query.strip():
             return ()
 
-        normalized = candidates
-        texts: List[str] = [c.document.content for c in normalized]
-
-        scores = self._score(query, texts)
-        if len(scores) != len(normalized):
-            raise ValueError("reranker returned an invalid score shape")
-
-        scored = list(zip(normalized, scores))
-        scored.sort(key=lambda item: float(item[1]), reverse=True)
-        selected = scored[:limit] if limit is not None else scored
-        return tuple(
-            RerankerResult(
-                candidate=candidate,
-                rerank_score=score,
-                fusion_score=None,
-                rank=rank,
-            )
-            for rank, (candidate, score) in enumerate(selected)
-        )
+        provider = self._resolve_provider()
+        results = provider.rerank(query, candidates, top_n=limit)
+        return _validate_rerank_provider_results(results)
 
     @abstractmethod
-    def _score(
-        self,
-        query: str,
-        texts: List[str],
-    ) -> List[float]:
+    def _resolve_provider(self) -> RerankProvider:
         ...

@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.integrations.providers.relational_store.sqlite.opens import (
+from intergrax.runtime.persistence.sqlite_opens import (
     open_organization_profile_store_at,
 )
 from intergrax.runtime.nexus.session.chat_session import ChatSession
@@ -17,7 +17,9 @@ from intergrax.runtime.organization.organization_profile import (
     OrganizationIdentity,
     OrganizationProfile,
 )
-from intergrax.runtime.organization.organization_profile_manager import OrganizationProfileManager
+from intergrax.runtime.organization.organization_profile_manager import (
+    OrganizationProfileManager,
+)
 from tests.integration.memory.e2e.mem_final_audit_5g_sqlite_restart_support import (
     parse_worker_json,
     run_restart_worker,
@@ -123,7 +125,9 @@ async def test_organization_isolation_after_restart(tmp_path) -> None:
 
 
 @pytest.mark.unit
-async def test_organization_close_is_idempotent_and_use_after_close_fails(tmp_path) -> None:
+async def test_organization_close_is_idempotent_and_use_after_close_fails(
+    tmp_path,
+) -> None:
     store = open_organization_profile_store_at(tmp_path / "close.db")
     store.close()
     store.close()

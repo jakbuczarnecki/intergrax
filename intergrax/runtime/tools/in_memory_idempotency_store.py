@@ -20,6 +20,7 @@ from intergrax.contracts.idempotency_store import (
     InvocationOperationIdentity,
     InvocationStatus,
     PreEffectSuspendedWorkRecoveryAuthority,
+    validate_pre_effect_recovery_authority,
 )
 from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.contracts.persistence_topology import PersistenceTopology
@@ -27,7 +28,13 @@ from intergrax.tools.execution_models import ToolExecutionResult
 
 
 class _LedgerEntry:
-    __slots__ = ("status", "result", "claim", "operation_identity")
+    __slots__ = (
+        "status",
+        "result",
+        "claim",
+        "operation_identity",
+        "external_effect_may_have_started",
+    )
 
     def __init__(
         self,
@@ -35,11 +42,14 @@ class _LedgerEntry:
         result: Optional[ToolExecutionResult[BaseModel]],
         claim: InvocationClaim | None,
         operation_identity: InvocationOperationIdentity | None,
+        *,
+        external_effect_may_have_started: bool = False,
     ) -> None:
         self.status = status
         self.result = result
         self.claim = claim
         self.operation_identity = operation_identity
+        self.external_effect_may_have_started = external_effect_may_have_started
 
 
 class InMemoryIdempotencyStore(IdempotencyStore):
@@ -157,7 +167,11 @@ class InMemoryIdempotencyStore(IdempotencyStore):
         now = datetime.now(UTC)
         with self._lock:
             entry = self._store.get(composite_key)
-            if entry is None or entry.status != InvocationStatus.STARTED or entry.claim is None:
+            if (
+                entry is None
+                or entry.status != InvocationStatus.STARTED
+                or entry.claim is None
+            ):
                 raise StaleClaimError(
                     f"Cannot complete key={key}: missing or invalid active claim.",
                 )
@@ -185,7 +199,11 @@ class InMemoryIdempotencyStore(IdempotencyStore):
         composite_key = (tenant_id, key)
         with self._lock:
             entry = self._store.get(composite_key)
-            if entry is None or entry.status != InvocationStatus.STARTED or entry.claim is None:
+            if (
+                entry is None
+                or entry.status != InvocationStatus.STARTED
+                or entry.claim is None
+            ):
                 raise StaleClaimError(
                     f"Cannot mark uncertain key={key}: missing or invalid active claim.",
                 )
@@ -214,7 +232,11 @@ class InMemoryIdempotencyStore(IdempotencyStore):
         now = datetime.now(UTC)
         with self._lock:
             entry = self._store.get(composite_key)
-            if entry is None or entry.status != InvocationStatus.STARTED or entry.claim is None:
+            if (
+                entry is None
+                or entry.status != InvocationStatus.STARTED
+                or entry.claim is None
+            ):
                 raise StaleClaimError(
                     f"Cannot abandon key={key}: missing or invalid active claim.",
                 )
@@ -226,7 +248,59 @@ class InMemoryIdempotencyStore(IdempotencyStore):
                 now=now,
                 operation="pre-effect abandon",
             )
+            if entry.external_effect_may_have_started:
+                raise StaleClaimError(
+                    f"Cannot abandon key={key}: external effect admission already durable.",
+                )
             del self._store[composite_key]
+
+    def external_effect_may_have_started(
+        self,
+        tenant_id: str,
+        key: str,
+    ) -> bool:
+        composite_key = (tenant_id, key)
+        with self._lock:
+            entry = self._store.get(composite_key)
+            if entry is None:
+                return False
+            return entry.external_effect_may_have_started
+
+    def admit_external_effect_may_have_started_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        composite_key = (tenant_id, key)
+        now = datetime.now(UTC)
+        with self._lock:
+            entry = self._store.get(composite_key)
+            if (
+                entry is None
+                or entry.status != InvocationStatus.STARTED
+                or entry.claim is None
+            ):
+                raise StaleClaimError(
+                    f"Cannot admit effect for key={key}: missing or invalid active claim.",
+                )
+            current = entry.claim
+            self._reject_stale_or_expired_claim(
+                key=key,
+                claim=claim,
+                current=current,
+                now=now,
+                operation="effect admission",
+            )
+            if entry.external_effect_may_have_started:
+                return
+            self._store[composite_key] = _LedgerEntry(
+                InvocationStatus.STARTED,
+                None,
+                current,
+                entry.operation_identity,
+                external_effect_may_have_started=True,
+            )
 
     def reconcile_abandoned_pre_effect_not_started(
         self,
@@ -236,11 +310,13 @@ class InMemoryIdempotencyStore(IdempotencyStore):
         *,
         recovery_authority: PreEffectSuspendedWorkRecoveryAuthority,
     ) -> bool:
-        del recovery_authority
+        validate_pre_effect_recovery_authority(recovery_authority)
         composite_key = (tenant_id, key)
         with self._lock:
             entry = self._store.get(composite_key)
             if entry is None or entry.status != InvocationStatus.STARTED:
+                return False
+            if entry.external_effect_may_have_started:
                 return False
             assert_operation_identity_compatible(
                 entry.operation_identity,
@@ -278,7 +354,11 @@ class InMemoryIdempotencyStore(IdempotencyStore):
         composite_key = (tenant_id, key)
         with self._lock:
             entry = self._store.get(composite_key)
-            if entry is None or entry.status != InvocationStatus.STARTED or entry.claim is None:
+            if (
+                entry is None
+                or entry.status != InvocationStatus.STARTED
+                or entry.claim is None
+            ):
                 raise RuntimeError("Cannot mark completed without STARTED state.")
             self._store[composite_key] = _LedgerEntry(
                 InvocationStatus.COMPLETED,

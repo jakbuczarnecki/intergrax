@@ -15,9 +15,6 @@ from intergrax.integrations.registry.bootstrap import register_default_integrati
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.rag.profiles.rag_profile import (
     APPROVED_PRODUCTION_GRAPH_STORE_SLUGS,
-    HARNESS_GRAPH_STORE_BACKEND,
-    PRODUCTION_GRAPH_STORE_BACKEND,
-    is_harness_graph_rag_profile,
     production_graph_rag_profile,
     production_rag_profile,
     validate_graph_rag_production_wiring,
@@ -31,17 +28,15 @@ def _register_integrations() -> None:
     register_default_integrations(override=True)
 
 
-def test_production_rag_profile_is_harness_inmemory_graph() -> None:
+def test_production_rag_profile_enables_harness_graph_rag_semantics() -> None:
     profile = production_rag_profile()
-    assert is_harness_graph_rag_profile(profile) is True
-    assert profile.graph_store_backend == HARNESS_GRAPH_STORE_BACKEND
+    assert profile.graph_rag_enabled is True
 
 
-def test_production_graph_rag_profile_requires_neo4j_backend() -> None:
+def test_production_graph_rag_profile_semantic_preset_only() -> None:
     profile = production_graph_rag_profile()
     assert profile.graph_rag_enabled is True
-    assert profile.graph_store_backend == PRODUCTION_GRAPH_STORE_BACKEND
-    assert is_harness_graph_rag_profile(profile) is False
+    assert not hasattr(profile, "graph_store_backend")
 
 
 def test_validate_graph_rag_production_wiring_accepts_neo4j() -> None:
@@ -61,13 +56,13 @@ def test_validate_graph_rag_production_wiring_accepts_falkordb() -> None:
     assert validate_graph_rag_production_wiring(profile, graph_store_slug="falkordb") is None
 
 
-def test_validate_graph_rag_production_wiring_rejects_inmemory_backend() -> None:
-    profile = production_rag_profile()
-    reason = validate_graph_rag_production_wiring(profile, graph_store_slug="neo4j")
-    assert reason == "graph_store_backend_not_approved_for_production"
+def test_validate_graph_rag_production_wiring_rejects_missing_integration_slug() -> None:
+    profile = production_graph_rag_profile()
+    reason = validate_graph_rag_production_wiring(profile, graph_store_slug=None)
+    assert reason == "integration_graph_store_missing"
 
 
-def test_product_environment_resolves_neo4j_graph_rag_profile() -> None:
+def test_product_environment_resolves_graph_rag_semantics_with_neo4j_integration() -> None:
     env = ApplicationEnvironmentProfile.product_defaults().model_copy(
         update={"context_profile": ContextProfile(enable_rag=True)},
     )
@@ -80,7 +75,7 @@ def test_product_environment_resolves_neo4j_graph_rag_profile() -> None:
         ),
     )
     assert profile is not None
-    assert profile.graph_store_backend == PRODUCTION_GRAPH_STORE_BACKEND
+    assert profile.graph_rag_enabled is True
 
 
 def test_validate_graph_rag_production_wiring_rejects_unapproved_integration_slug() -> None:
@@ -102,7 +97,7 @@ def test_product_environment_without_graph_store_keeps_vector_only_rag() -> None
     assert profile.graph_rag_enabled is False
 
 
-def test_product_environment_resolves_falkordb_graph_rag_profile() -> None:
+def test_product_environment_resolves_graph_rag_with_falkordb_integration() -> None:
     env = ApplicationEnvironmentProfile.product_defaults().model_copy(
         update={"context_profile": ContextProfile(enable_rag=True)},
     )
@@ -113,4 +108,4 @@ def test_product_environment_resolves_falkordb_graph_rag_profile() -> None:
         ),
     )
     assert profile is not None
-    assert profile.graph_store_backend == PRODUCTION_GRAPH_STORE_BACKEND
+    assert profile.graph_rag_enabled is True

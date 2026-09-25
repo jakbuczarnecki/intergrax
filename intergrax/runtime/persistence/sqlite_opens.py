@@ -1,25 +1,27 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""
-Low-level SQLite store openers — internal to the sqlite integration package.
-
-Only this module and tests of implementation classes may construct SQLite backends
-directly. All composition roots use ``bundle.create_sqlite_*`` factories.
-"""
+"""Low-level SQLite store openers — runtime/platform composition only."""
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
+from intergrax.experiments.store import SQLiteExperimentStore
+from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
+from intergrax.runtime.events.stores.sqlite_runtime_event_store import (
+    SQLiteRuntimeEventStore,
+)
+from intergrax.runtime.human.store import SQLiteHumanDecisionStore
+from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
 from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
-from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from intergrax.runtime.organization.stores.sqlite_organization_profile_store import (
     SQLiteOrganizationProfileStore,
 )
-from intergrax.runtime.task_memory.stores.sqlite_task_memory_store import SQLiteTaskMemoryStore
+from intergrax.runtime.task_memory.stores.sqlite_task_memory_store import (
+    SQLiteTaskMemoryStore,
+)
 from intergrax.runtime.tools.sqlite_idempotency_store import SQLiteIdempotencyStore
 
 
@@ -36,15 +38,11 @@ def open_runtime_event_store_at(path: Path) -> SQLiteRuntimeEventStore:
     return SQLiteRuntimeEventStore(db_path=_ensure_parent(path))
 
 
-def open_task_checkpoint_store_at(path: Path):
-    from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
-
+def open_task_checkpoint_store_at(path: Path) -> SQLiteTaskCheckpointStore:
     return SQLiteTaskCheckpointStore(db_path=_ensure_parent(path))
 
 
-def open_human_decision_store_at(path: Path):
-    from intergrax.runtime.human.store import SQLiteHumanDecisionStore
-
+def open_human_decision_store_at(path: Path) -> SQLiteHumanDecisionStore:
     return SQLiteHumanDecisionStore(db_path=_ensure_parent(path))
 
 
@@ -52,9 +50,7 @@ def open_task_memory_store_at(path: Path) -> SQLiteTaskMemoryStore:
     return SQLiteTaskMemoryStore(db_path=_ensure_parent(path))
 
 
-def open_experiment_store_at(path: Path):
-    from intergrax.experiments.store import SQLiteExperimentStore
-
+def open_experiment_store_at(path: Path) -> SQLiteExperimentStore:
     return SQLiteExperimentStore(db_path=_ensure_parent(path))
 
 
@@ -75,6 +71,8 @@ def open_user_profile_store_at(path: Path) -> SQLiteUserProfileStore:
 
 
 def open_delivery_ledger_at(path: Path):
-    from intergrax.runtime.notifications.deliveries.sqlite_delivery_ledger import SQLiteDeliveryLedger
+    from intergrax.runtime.notifications.deliveries.sqlite_delivery_ledger import (
+        SQLiteDeliveryLedger,
+    )
 
     return SQLiteDeliveryLedger(db_path=_ensure_parent(path))

@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.integrations.providers.relational_store.sqlite.opens import open_task_memory_store_at
+from intergrax.runtime.persistence.sqlite_opens import open_task_memory_store_at
 from intergrax.runtime.task_memory.coordinator import TaskMemoryCoordinator
 from intergrax.runtime.task_memory.store import open_task_memory_store
 from tests.integration.memory.e2e.mem_final_audit_5g_sqlite_restart_support import (
@@ -223,7 +223,9 @@ def test_task_wrong_db_path_does_not_read_peer_data(tmp_path: Path) -> None:
 @pytest.mark.unit
 def test_task_failed_update_preserves_committed_state(tmp_path: Path) -> None:
     if sys.platform == "win32":
-        pytest.skip("read-only chmod semantics are not reliable on Windows for this proof")
+        pytest.skip(
+            "read-only chmod semantics are not reliable on Windows for this proof"
+        )
     db_path = tmp_path / "failed.db"
     _write(db_path, tenant_id="tenant-a", task_id="task-1", value=_VALUE_V1)
     os.chmod(db_path, stat.S_IREAD)

@@ -26,9 +26,13 @@ pytestmark = pytest.mark.unit
 
 
 def test_create_vectorstore_from_integration_falls_back_to_inmemory() -> None:
-    store = create_vectorstore_from_integration(profile=IntegrationProfile())
+    store = create_vectorstore_from_integration(
+        profile=IntegrationProfile(),
+        tenant_id="tenant-test",
+    )
     assert isinstance(store, InmemoryVectorStoreIntegration)
     assert isinstance(store.rag_store, InMemoryVectorStore)
+    assert store.rag_store.list_collections() == ["inmemory:tenant-test"]
 
 
 def test_inmemory_integration_delegates_source_record_lookup() -> None:

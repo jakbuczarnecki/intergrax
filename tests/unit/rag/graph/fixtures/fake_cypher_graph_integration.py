@@ -6,6 +6,9 @@ from __future__ import annotations
 
 
 class FakeCypherGraphIntegration:
+    def get_node(self, node_id: str) -> None:
+        return None
+
     def run_query(self, statement: str, *, parameters: dict | None = None) -> object:
         from intergrax.integrations.contracts.graph_store import GraphQueryResult
 

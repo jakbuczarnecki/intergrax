@@ -9,7 +9,7 @@ from pathlib import Path
 
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.contracts.persistence_topology import PersistenceTopology
-from intergrax.integrations.providers.relational_store.sqlite.bundle import (
+from intergrax.runtime.persistence.sqlite_composition import (
     create_sqlite_idempotency_store,
 )
 from intergrax.integrations.providers.relational_store.sqlite.paths import (

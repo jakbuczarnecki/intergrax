@@ -9,11 +9,13 @@ from pathlib import Path
 from typing import Optional
 
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.providers.relational_store.sqlite.bundle import (
-    SQLiteIntegrationBundle,
-    create_sqlite_integration,
+from intergrax.runtime.persistence.sqlite_composition import (
+    SQLiteRuntimePersistenceBundle,
+    create_sqlite_runtime_persistence,
 )
-from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
+from intergrax.applications._shared.integration_wiring import (
+    bootstrap_application_integration_catalog,
+)
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
@@ -22,13 +24,17 @@ from intergrax.runtime.interactions.factory import (
     create_interaction_adapter,
     resolve_interaction_settings,
 )
-from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
 from intergrax.applications._shared.notification_wiring import (
     create_resilient_notification_adapter,
     open_host_delivery_ledger,
 )
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
-from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
+from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import (
+    DeliveryLedger,
+)
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from poc_template_application.host.settings import PocTemplateApplicationSettings
@@ -37,7 +43,7 @@ from poc_template_application.host.settings import PocTemplateApplicationSetting
 @dataclass(frozen=True)
 class PocTemplateIntegrationWiring:
     profile: IntegrationProfile
-    sqlite_bundle: SQLiteIntegrationBundle
+    sqlite_bundle: SQLiteRuntimePersistenceBundle
     trace_store: RunTraceWriter
     runtime_event_store: RuntimeEventPersistence | None
     checkpoint_store: TaskCheckpointPersistence
@@ -98,7 +104,7 @@ def wire_poc_template_integrations(
         profile = profile.model_copy(
             update={"options": {"sqlite": dict(sqlite_overrides)}}
         )
-    sqlite_bundle = create_sqlite_integration(**sqlite_overrides)
+    sqlite_bundle = create_sqlite_runtime_persistence(**sqlite_overrides)
     if db_path is None:
         trace_store: RunTraceWriter = InMemoryRunTraceStore()
         trace_db_path = None
@@ -106,7 +112,9 @@ def wire_poc_template_integrations(
         trace_store = sqlite_bundle.trace_store  # type: ignore[assignment]
         trace_db_path = db_path
     runtime_event_store = (
-        sqlite_bundle.runtime_event_store if runtime_events_db_path is not None else None
+        sqlite_bundle.runtime_event_store
+        if runtime_events_db_path is not None
+        else None
     )
     delivery_ledger = open_host_delivery_ledger(
         db_path=db_path,

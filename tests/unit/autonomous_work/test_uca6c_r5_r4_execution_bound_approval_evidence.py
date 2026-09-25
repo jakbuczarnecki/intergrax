@@ -102,6 +102,7 @@ def _strict_catalog_invoker(tmp_path: Path) -> NexusExecutionBoundCatalogToolInv
         document_store=r6["document_store"],
         continuation_dependencies=r6["continuation_dependencies"],
         durable_wiring_binding_resolver=r6["durable_wiring_binding_resolver"],
+        task_checkpoint_store=r6["task_checkpoint_store"],
     )
     assert isinstance(invoker, NexusExecutionBoundCatalogToolInvoker)
     return invoker

@@ -13,14 +13,48 @@ from intergrax.integrations.providers.rerank_provider.cohere_rerank import opens
 from intergrax.integrations.providers.rerank_provider.jina_rerank import opens as jina_opens
 from intergrax.rag.retrievers.contracts.base_retriever import RetrievalHit
 
-from intergrax.rag.rerankers.providers._api_reranker_base import _APIRerankerBase
+from intergrax.rag.rerankers.providers._api_reranker_base import (
+    _APIRerankerBase,
+    _validate_rerank_provider_results,
+)
 from intergrax.rag.rerankers.contracts.reranker_types import (
     RerankerCandidate,
     RerankerResult,
 )
+from collections.abc import Sequence
 
 
 pytestmark = pytest.mark.unit
+
+
+class _FakeRerankProvider:
+
+    def name(self) -> str:
+        return "fake_api"
+
+    def rerank(
+        self,
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        *,
+        top_n: int | None = None,
+    ) -> Sequence[RerankerResult]:
+        scored = sorted(
+            enumerate(candidates),
+            key=lambda pair: float(pair[0]),
+            reverse=True,
+        )
+        if top_n is not None:
+            scored = scored[:top_n]
+        return tuple(
+            RerankerResult(
+                candidate=candidate,
+                rerank_score=float(index),
+                fusion_score=None,
+                rank=rank,
+            )
+            for rank, (index, candidate) in enumerate(scored)
+        )
 
 
 class FakeAPIReranker(_APIRerankerBase):
@@ -29,15 +63,8 @@ class FakeAPIReranker(_APIRerankerBase):
     def name(cls) -> str:
         return "fake_api"
 
-    def _score(self, query, texts):
-
-        # deterministic scoring for testing
-        scores = []
-
-        for i, _ in enumerate(texts):
-            scores.append(float(i))
-
-        return scores
+    def _resolve_provider(self):
+        return _FakeRerankProvider()
 
 
 def build_candidates(workspace_id: str | None = None):
@@ -62,6 +89,90 @@ def build_candidates(workspace_id: str | None = None):
         )
         for rank, key in enumerate(("a", "b", "c"))
     ]
+
+
+def test_validate_rerank_provider_results_rejects_non_sequence() -> None:
+    with pytest.raises(TypeError, match="invalid result type"):
+        _validate_rerank_provider_results("invalid")  # type: ignore[arg-type]
+
+
+def test_validate_rerank_provider_results_rejects_non_reranker_result_entries() -> None:
+    with pytest.raises(TypeError, match="non-RerankerResult"):
+        _validate_rerank_provider_results([object()])  # type: ignore[list-item]
+
+
+def test_validate_rerank_provider_results_returns_tuple_of_valid_results() -> None:
+    candidate = build_candidates()[0]
+    valid = (
+        RerankerResult(
+            candidate=candidate,
+            rerank_score=0.9,
+            fusion_score=None,
+            rank=0,
+        ),
+    )
+    out = _validate_rerank_provider_results(valid)
+    assert isinstance(out, tuple)
+    assert out == valid
+    assert out[0] is valid[0]
+
+
+class _InvalidStringRerankProvider:
+    def name(self) -> str:
+        return "invalid_string"
+
+    def rerank(
+        self,
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        *,
+        top_n: int | None = None,
+    ) -> Sequence[RerankerResult]:
+        return "invalid"  # type: ignore[return-value]
+
+
+class _InvalidEntryRerankProvider:
+    def name(self) -> str:
+        return "invalid_entry"
+
+    def rerank(
+        self,
+        query: str,
+        candidates: Sequence[RerankerCandidate],
+        *,
+        top_n: int | None = None,
+    ) -> Sequence[RerankerResult]:
+        return [object()]  # type: ignore[list-item, return-value]
+
+
+class _InvalidStringAPIReranker(_APIRerankerBase):
+    @classmethod
+    def name(cls) -> str:
+        return "invalid_string"
+
+    def _resolve_provider(self):
+        return _InvalidStringRerankProvider()
+
+
+class _InvalidEntryAPIReranker(_APIRerankerBase):
+    @classmethod
+    def name(cls) -> str:
+        return "invalid_entry"
+
+    def _resolve_provider(self):
+        return _InvalidEntryRerankProvider()
+
+
+def test_rerank_fail_closed_on_invalid_provider_result_type() -> None:
+    reranker = _InvalidStringAPIReranker()
+    with pytest.raises(TypeError, match="invalid result type"):
+        reranker.rerank(query="test", candidates=build_candidates())
+
+
+def test_rerank_fail_closed_on_invalid_provider_result_entry() -> None:
+    reranker = _InvalidEntryAPIReranker()
+    with pytest.raises(TypeError, match="non-RerankerResult"):
+        reranker.rerank(query="test", candidates=build_candidates())
 
 
 def test_rerank_returns_sorted_results():

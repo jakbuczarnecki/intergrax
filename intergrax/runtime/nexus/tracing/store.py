@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from intergrax.integrations.providers.relational_store.sqlite import create_sqlite_trace_store
+from intergrax.runtime.persistence.sqlite_composition import create_sqlite_trace_store
 from intergrax.integrations.providers.relational_store.sqlite.paths import (
     DEFAULT_TRACE_DB,
     ENV_TRACE_DB,
@@ -24,7 +24,7 @@ __all__ = [
 
 
 def open_run_trace_store(db_path: Path | None = None) -> SQLiteRunTraceStore:
-    """Open SQLite run trace store via ``integrations.providers.sqlite``."""
+    """Open SQLite run trace store via runtime persistence composition."""
     if db_path is not None:
         return create_sqlite_trace_store(db_path=db_path)  # type: ignore[return-value]
     return create_sqlite_trace_store()  # type: ignore[return-value]

@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 
 from intergrax.contracts.persisted_run_trace import persisted_trace_event_to_wire
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
-from intergrax.integrations.providers.relational_store.sqlite import (
+from intergrax.runtime.persistence.sqlite_composition import (
     create_sqlite_trace_store,
 )
 from intergrax.experiments.composition import resolve_experiment_persistence

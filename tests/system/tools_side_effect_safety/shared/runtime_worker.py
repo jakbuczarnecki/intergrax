@@ -78,7 +78,7 @@ def _build_idempotency_store():
     db_path = os.environ.get("SQLITE_DB_PATH", "/data/idempotency.db")
     from pathlib import Path
 
-    from intergrax.integrations.providers.relational_store.sqlite.bundle import (
+    from intergrax.runtime.persistence.sqlite_composition import (
         create_sqlite_idempotency_store,
     )
 
@@ -114,7 +114,9 @@ def _register_tools(registry: ToolRegistry, worker_source: str) -> None:
             retry_policy=ToolRetryPolicy(max_attempts=1, backoff_ms=0),
             timeout_ms=5_000,
         ),
-        handler=ChargeHandler(effect_service_url=effect_url, worker_source=worker_source),
+        handler=ChargeHandler(
+            effect_service_url=effect_url, worker_source=worker_source
+        ),
     )
     registry.register(
         contract=ToolContract(
@@ -156,7 +158,9 @@ def _register_tools(registry: ToolRegistry, worker_source: str) -> None:
             retry_policy=ToolRetryPolicy(max_attempts=1, backoff_ms=0),
             timeout_ms=5_000,
         ),
-        handler=BadOutputHandler(effect_service_url=effect_url, worker_source=worker_source),
+        handler=BadOutputHandler(
+            effect_service_url=effect_url, worker_source=worker_source
+        ),
     )
     registry.register(
         contract=ToolContract(
@@ -191,7 +195,9 @@ def _policy_bundle(*, action: str, tool_id: str, rule_id: str) -> object:
     return wire_policy_bundle(env)
 
 
-def _hitl_grant(*, bundle: object, key: str, run_id: str, task_id: str, tool_id: str, rule_id: str) -> DeclarativeHitlApprovalGrant:
+def _hitl_grant(
+    *, bundle: object, key: str, run_id: str, task_id: str, tool_id: str, rule_id: str
+) -> DeclarativeHitlApprovalGrant:
     provenance = bundle.declarative_policy_runtime.provenance.rules_digest_sha256
     return DeclarativeHitlApprovalGrant(
         grant_id=f"grant-{key}",
@@ -228,7 +234,9 @@ class RuntimeWorkerApp:
         self.app = FastAPI(title=f"Proof Runtime Worker ({self.worker_source})")
         self.app.get("/health")(self.health)
         self.app.post("/invoke", response_model=InvokeResponse)(self.invoke)
-        self.app.get("/ledger/{tenant_id}/{key}", response_model=LedgerQueryResponse)(self.ledger)
+        self.app.get("/ledger/{tenant_id}/{key}", response_model=LedgerQueryResponse)(
+            self.ledger
+        )
 
     def health(self) -> dict[str, str]:
         return {"status": "ok", "worker": self.worker_source}
@@ -295,7 +303,9 @@ class RuntimeWorkerApp:
             )
 
         try:
-            result = self.invoker.invoke(state=state, agent_id="proof-agent", request=request)
+            result = self.invoker.invoke(
+                state=state, agent_id="proof-agent", request=request
+            )
         except IdempotencyOperationConflictError as exc:
             return InvokeResponse(
                 success=False,

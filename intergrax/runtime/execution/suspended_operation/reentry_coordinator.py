@@ -7,6 +7,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import timedelta
 
+from intergrax.contracts.agent_governance_grant_lifecycle_port import (
+    AgentGovernanceGrantLifecycleMutationResult,
+    AgentGovernanceGrantLifecycleOutcome,
+)
 from intergrax.contracts.agent_governance_hitl import AgentGovernanceGrantLifecycleState
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.contracts.execution_continuation import (
@@ -406,10 +410,16 @@ class ExecutionSuspendedWorkReentryCoordinator:
                 and self.task_checkpoint_store is not None
                 and is_agent_governance_invocation_scope(claimed.invocation_scope_id)
             ):
-                AgentGovernanceHumanApprovalGrantCoordinator.terminalize_after_successful_consumption(
+                governance_result = AgentGovernanceHumanApprovalGrantCoordinator.terminalize_after_successful_consumption(
                     task,
                     checkpoint_store=self.task_checkpoint_store,
                 )
+                if not _governance_terminalization_succeeded(governance_result):
+                    return ExecutionSuspendedWorkReentryResult(
+                        disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                        reason_detail="governance_terminalization_failed",
+                        tool_result=tool_result,
+                    )
             if self.terminal_outcome_store is not None:
                 self.terminal_outcome_store.record_terminal_disposition(
                     request.identity.execution_id,
@@ -485,21 +495,38 @@ class ExecutionSuspendedWorkReentryCoordinator:
             and self.task_checkpoint_store is not None
             and is_agent_governance_invocation_scope(materialized.invocation_scope_id)
         ):
-            governance_task = Task(
-                tenant_id=decoded_payload.tenant_id,
-                user_id="reentry-reconcile",
-                message="consumed_lifecycle_reconcile",
+            governance_task = _load_task_from_durable_checkpoint(
                 task_id=decoded_payload.task_id,
+                tenant_id=decoded_payload.tenant_id,
+                checkpoint_store=self.task_checkpoint_store,
             )
+            if governance_task is None:
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail="governance_checkpoint_missing",
+                )
         if (
             governance_task is not None
             and self.task_checkpoint_store is not None
             and is_agent_governance_invocation_scope(materialized.invocation_scope_id)
         ):
-            AgentGovernanceHumanApprovalGrantCoordinator.terminalize_after_successful_consumption(
+            grant = (
+                governance_task.runtime.governance.agent_governance_human_approval_grant
+            )
+            if grant is None:
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail="governance_grant_missing",
+                )
+            governance_result = AgentGovernanceHumanApprovalGrantCoordinator.terminalize_after_successful_consumption(
                 governance_task,
                 checkpoint_store=self.task_checkpoint_store,
             )
+            if not _governance_terminalization_succeeded(governance_result):
+                return ExecutionSuspendedWorkReentryResult(
+                    disposition=ExecutionSuspendedWorkReentryDisposition.FAILED,
+                    reason_detail="governance_terminalization_failed",
+                )
         self.terminal_outcome_store.record_terminal_disposition(
             request.identity.execution_id,
             ExecutionTerminalOutcomeByExecutionIdDisposition.SUCCEEDED,
@@ -511,6 +538,32 @@ class ExecutionSuspendedWorkReentryCoordinator:
 
     def _tool_contract(self, tool_id: str) -> ToolContract:
         return self.tool_registry.get(tool_id).contract
+
+
+def _load_task_from_durable_checkpoint(
+    *,
+    task_id: object,
+    tenant_id: str,
+    checkpoint_store: TaskCheckpointPersistence,
+) -> Task | None:
+    checkpoint = checkpoint_store.get_latest(str(task_id), tenant_id)
+    if checkpoint is None:
+        return None
+    return Task.model_validate(checkpoint.task_snapshot)
+
+
+def _governance_terminalization_succeeded(
+    result: AgentGovernanceGrantLifecycleMutationResult,
+) -> bool:
+    outcome = result.outcome
+    if outcome is AgentGovernanceGrantLifecycleOutcome.APPLIED:
+        return True
+    if outcome is not AgentGovernanceGrantLifecycleOutcome.INVALID_STATE:
+        return False
+    record = result.record
+    if record is None:
+        return False
+    return record.lifecycle_state is AgentGovernanceGrantLifecycleState.TERMINAL
 
 
 def _reconcile_task_projection_for_resumed_suspended_reentry(

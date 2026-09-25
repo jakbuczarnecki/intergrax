@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from typing import List, Sequence
 
+import numpy as np
+from numpy.typing import NDArray
+
 from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrievalHit,
     RetrieverQuery,
@@ -14,6 +17,7 @@ from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrie
 from intergrax.rag.retrievers.engine.retriever_execution import RetrieverExecutionMetadata
 from intergrax.rag.retrievers.pipeline.retriever_pipeline import RetrieverPipeline
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
+from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 
 
 class RetrieverManager(BaseRetrieverManager):
@@ -46,9 +50,9 @@ class RetrieverManager(BaseRetrieverManager):
         query_text: str,
         *,
         retriever_id: str,
-        query_embedding: Sequence[float] | None = None,
+        query_embedding: NDArray[np.float32] | Sequence[float] | None = None,
         top_k: int = 5,
-        metadata_filter=None,
+        metadata_filter: MetadataFilter | None = None,
         scope: VectorStoreScope | None = None,
         include_embeddings: bool = False,
     ) -> List[RetrievalHit]:

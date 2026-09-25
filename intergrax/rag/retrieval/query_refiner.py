@@ -5,15 +5,12 @@
 
 from __future__ import annotations
 
-from typing import Literal, Optional, Protocol
+from typing import Optional, Protocol
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_result import RetrievalResult
-
-AgenticQueryMode = Literal["deterministic", "llm"]
-
 
 class QueryRefiner(Protocol):
     def refine(self, query: str, result: RetrievalResult) -> str: ...
@@ -60,7 +57,7 @@ def resolve_query_refiner(
     *,
     llm: Optional[LLMAdapter] = None,
 ) -> QueryRefiner:
-    mode: AgenticQueryMode = profile.agentic_query_mode  # type: ignore[attr-defined]
+    mode = profile.agentic_query_mode
     if mode == "llm" and llm is not None:
         return LlmQueryRefiner(llm)
     return DeterministicQueryRefiner()

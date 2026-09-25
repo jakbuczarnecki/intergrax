@@ -73,7 +73,8 @@ from intergrax.runtime.policy.side_effect_authorization_errors import (
 from intergrax.runtime.wiring.harness_governance import create_lab_allow_governance_service
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
-from intergrax.tools.registry import ToolProfile, ToolWiringContext
+from intergrax.tools.registry import ToolProfile
+from intergrax.tools.registry.wiring import ToolWiringContext
 from testing_support.builder import (
     FakeLLMAdapter,
     build_runtime_state_for_tests,

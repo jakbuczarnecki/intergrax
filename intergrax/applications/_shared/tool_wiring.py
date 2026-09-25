@@ -8,14 +8,18 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.core.catalog_bootstrap import CatalogBootstrapResult, bootstrap_catalogs
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.tools.providers.websearch.executor_contract import WebSearchQueryExecutor
-from intergrax.tools.registry import ToolProfile, ToolRegistry, ToolWiringContext, build_registry_from_profile
+from intergrax.tools.registry import ToolProfile, ToolRegistry
+from intergrax.tools.registry.factory import build_registry_from_profile
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 
 @dataclass(frozen=True)
@@ -84,7 +88,9 @@ def build_application_tool_wiring(
     ``ToolWiringContext`` from integrations + runtime managers, then enable tools via
     ``ToolProfile``.
     """
-    tool_bundle_ids = tuple(profile.enabled_bundles) if profile.enabled_bundles else None
+    tool_bundle_ids = (
+        tuple(profile.enabled_bundles) if profile.enabled_bundles else None
+    )
     if catalog_bootstrap is None:
         bootstrap_catalogs(
             register_shipped=True,

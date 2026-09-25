@@ -5,8 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Any
-
+from intergrax.integrations.contracts.graph_store import GraphStore as IntegrationGraphStore
 from intergrax.rag.graph.providers.cypher_rag_graph_store import CypherRagGraphStore
 
 
@@ -15,7 +14,7 @@ class Neo4jRagGraphStore(CypherRagGraphStore):
 
     def __init__(
         self,
-        integration_store: Any,
+        integration_store: IntegrationGraphStore,
         *,
         tenant_id: str | None = None,
     ) -> None:

@@ -17,7 +17,6 @@ from intergrax.applications._shared.uca6c_codecraft_qualified_execution_composit
 )
 from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.contracts.codecraft.bound_capability_execution import (
-    CodeCraftBoundCapabilityExecutionOutcome,
     CodeCraftBoundCapabilityExecutionRequest,
 )
 from intergrax.contracts.collaborative_work import (
@@ -95,8 +94,15 @@ from tests.unit.runtime.nexus.tools.test_gr10_r8_orchestration_inner_guard impor
 pytestmark = pytest.mark.unit
 
 
+def _strict_r6_production_kwargs(bundle: dict[str, object]) -> dict[str, object]:
+    """Production composition kwargs only — excludes test-only sandbox_session_manager."""
+    return {
+        key: value for key, value in bundle.items() if key != "sandbox_session_manager"
+    }
+
+
 def _strict_r6_kwargs(tmp_path: Path) -> dict[str, object]:
-    return uca6c_strict_r6_durable_wiring(tmp_path)
+    return _strict_r6_production_kwargs(uca6c_strict_r6_durable_wiring(tmp_path))
 
 
 _COMPOSITION_PATH = Path(
@@ -400,25 +406,27 @@ def test_strict_production_success_via_high_level_builder(tmp_path: Path) -> Non
             principal_id="principal-uca6c",
         ),
     )
+    task = Task(tenant_id=_TENANT, user_id="u1", message="x", task_id=_TASK_ID)
+    task_token = bind_governed_execution_task(task)
     try:
-        result = port.execute(
-            CodeCraftBoundCapabilityExecutionRequest(
-                craft_id=craft_id,
-                tenant_id=_TENANT,
-                task_id=_TASK_ID,
-                run_id=None,
-                execution_id=execution_id,
-                execution_request_id=execution_request_id,
-            ),
-        )
+        with pytest.raises(ExecutionSuspendedWorkPauseRequired) as exc_info:
+            port.execute(
+                CodeCraftBoundCapabilityExecutionRequest(
+                    craft_id=craft_id,
+                    tenant_id=_TENANT,
+                    task_id=_TASK_ID,
+                    run_id=None,
+                    execution_id=execution_id,
+                    execution_request_id=execution_request_id,
+                ),
+            )
     finally:
+        reset_governed_execution_task(task_token)
         reset_active_execution_governance_identity(gov_token)
         reset_active_execution_identity(id_token)
-    assert result.outcome is CodeCraftBoundCapabilityExecutionOutcome.SUCCEEDED
-    assert inner_guard.calls >= 1
-    assert mse.calls == 1
-    assert "tool_invocation_start" in catalog.last_invocation_trace_steps
-    assert "tool_invocation_end" in catalog.last_invocation_trace_steps
+    pause_exc = exc_info.value
+    assert pause_exc.agent_governance_pause is not None
+    assert mse.calls == 0
 
 
 def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
@@ -476,19 +484,35 @@ def test_strict_mse_deny_blocks_before_success(tmp_path: Path) -> None:
             principal_id="principal-uca6c",
         ),
     )
+    task = Task(tenant_id=_TENANT, user_id="u1", message="x", task_id=_TASK_ID)
+    task_token = bind_governed_execution_task(task)
+    from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
+
+    original_governance = RuntimeToolInvoker._require_agent_runtime_governance
+
+    def _skip_agent_runtime_governance(self, **_kwargs: object) -> None:
+        return None
+
+    RuntimeToolInvoker._require_agent_runtime_governance = (
+        _skip_agent_runtime_governance
+    )
     try:
-        with pytest.raises(ToolGovernanceDeniedError):
-            port.execute(
-                CodeCraftBoundCapabilityExecutionRequest(
-                    craft_id=craft_id,
-                    tenant_id=_TENANT,
-                    task_id=_TASK_ID,
-                    run_id=None,
-                    execution_id=execution_id,
-                    execution_request_id=execution_request_id,
-                ),
-            )
+        try:
+            with pytest.raises(ToolGovernanceDeniedError):
+                port.execute(
+                    CodeCraftBoundCapabilityExecutionRequest(
+                        craft_id=craft_id,
+                        tenant_id=_TENANT,
+                        task_id=_TASK_ID,
+                        run_id=None,
+                        execution_id=execution_id,
+                        execution_request_id=execution_request_id,
+                    ),
+                )
+        finally:
+            RuntimeToolInvoker._require_agent_runtime_governance = original_governance
     finally:
+        reset_governed_execution_task(task_token)
         reset_active_execution_governance_identity(gov_token)
         reset_active_execution_identity(id_token)
     assert mse.calls == 1
@@ -582,7 +606,10 @@ def test_strict_high_risk_without_approval_evidence_requires_governance_approval
         canonical_inner_execution_guard=_RecordingGuard(allow=True),
         document_store=r6_kwargs["document_store"],
         continuation_dependencies=r6_kwargs["continuation_dependencies"],
-        durable_wiring_binding_resolver=r6_kwargs.get("durable_wiring_binding_resolver"),
+        durable_wiring_binding_resolver=r6_kwargs.get(
+            "durable_wiring_binding_resolver"
+        ),
+        task_checkpoint_store=r6_kwargs["task_checkpoint_store"],
     )
     port = handler._execution_port
     assert isinstance(port, WiringCodeCraftBoundCapabilityExecution)

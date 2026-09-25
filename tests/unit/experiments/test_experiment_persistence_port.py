@@ -15,7 +15,7 @@ from intergrax.experiments.models import (
 from intergrax.experiments.persistence_contract import ExperimentPersistence
 from intergrax.experiments.store import SQLiteExperimentStore
 from intergrax.experiments.workflow import ExperimentSession
-from intergrax.integrations.providers.relational_store.sqlite import (
+from intergrax.runtime.persistence.sqlite_composition import (
     create_sqlite_experiment_store,
 )
 
@@ -125,7 +125,9 @@ def test_experiment_session_uses_fake_store_without_sqlite():
         ExperimentDecision.KEEP,
         notes="port proof",
     )
-    assert fake.decision_calls == [(record.experiment_id, ExperimentDecision.KEEP, "port proof")]
+    assert fake.decision_calls == [
+        (record.experiment_id, ExperimentDecision.KEEP, "port proof")
+    ]
     assert decided.decision == ExperimentDecision.KEEP
 
 

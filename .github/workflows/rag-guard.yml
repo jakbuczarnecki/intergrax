@@ -9,8 +9,10 @@ on:
       - "intergrax/rag/**"
       - "intergrax/tools/providers/rag/**"
       - "intergrax/integrations/providers/vector_store/**"
+      - "intergrax/integrations/providers/embedding_provider/**"
       - "intergrax/integrations/providers/document_parser/**"
       - "intergrax/integrations/providers/rerank_provider/**"
+      - "intergrax/integrations/providers/graph_store/**"
       - "tests/unit/rag/**"
       - "tests/fixtures/rag_golden/**"
 

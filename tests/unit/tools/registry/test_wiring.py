@@ -3,7 +3,8 @@
 
 import pytest
 
-from intergrax.integrations import IntegrationProfile, register_default_integrations
+from intergrax.integrations.registry.bootstrap import register_default_integrations
+from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.integrations.registry.bootstrap import reset_default_integrations_state
 from intergrax.integrations.registry.catalog import clear_catalog as clear_integration_catalog
 from intergrax.tools.registry.wiring import ToolWiringContext

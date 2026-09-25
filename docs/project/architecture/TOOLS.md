@@ -611,6 +611,24 @@ Remediation: **TOOLS-GOVERNED-BOUNDARY-INTEGRITY** (01, 02, 03) and **TOOLS-SIDE
 
 ## Engineering canon
 
+### Package import boundary (EBH-2G-R1)
+
+`intergrax.tools` is a **namespace boundary**, not a stable SDK facade. Import registry, wiring, and contracts from owner leaf modules (for example `intergrax.tools.registry.wiring`, `intergrax.tools.core.contracts`). Root import must not register tools or build registries. See [ADR-EBH-2G-R1](../maintainers/architecture/ADR/ADR-EBH-2G-R1-SUBSYSTEM-PACKAGE-ROOT-LEAF-IMPORT-BOUNDARY.md).
+
+**`intergrax.tools.registry`** is a **lightweight runtime-facing package boundary** only (`RegisteredTool`, `ToolProfile`, `ToolRegistry`, `ToolRegistryRead`, `default_lab_tool_profile`). **Composition APIs** (`ToolWiringContext`, `build_registry_from_profile`, `register_default_tools`, catalog/bootstrap/factory helpers) must be imported from explicit leaf modules:
+
+| Symbol | Canonical import |
+|--------|------------------|
+| `ToolProfile`, `default_lab_tool_profile` | `intergrax.tools.contracts.tool_profile` |
+| `ToolRegistry`, `RegisteredTool` | `intergrax.tools.registry.runtime` |
+| `ToolRegistryRead` | `intergrax.tools.registry.read` |
+| `ToolWiringContext` | `intergrax.tools.registry.wiring` |
+| `build_registry_from_profile`, `enabled_tool_ids_for_profile` | `intergrax.tools.registry.factory` |
+| `register_default_tools`, `reset_default_tools_bootstrap` | `intergrax.tools.registry.bootstrap` |
+| Catalog registration APIs | `intergrax.tools.registry.catalog` |
+
+Convenience: `from intergrax.tools.registry import ToolProfile, ToolRegistry` remains valid for runtime-only wiring; composition examples should prefer leaf imports above.
+
 ### Four-layer stack
 
 ```text
@@ -648,13 +666,12 @@ ToolRegistry  ──►  RuntimeToolInvoker  ──►  Agent / CatalogToolPlann
 **Example - enable tools from catalog profile:**
 
 ```python
-from intergrax.tools.registry import (
-    ToolProfile,
-    ToolWiringContext,
-    build_registry_from_profile,
-    register_default_tools,
-)
-from intergrax.integrations import IntegrationProfile, register_default_integrations
+from intergrax.integrations.registry.bootstrap import register_default_integrations
+from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.tools.registry.bootstrap import register_default_tools
+from intergrax.tools.registry.factory import build_registry_from_profile
+from intergrax.tools.registry.profile import ToolProfile
+from intergrax.tools.registry.wiring import ToolWiringContext
 
 register_default_integrations()
 register_default_tools()
@@ -679,7 +696,7 @@ Runtime tool engine (Phase O **Done** · **T-EXPAND Done** · **T14–T17 Done**
 | `ToolHandler` / `ToolExecutor` | `intergrax/tools/tool_executor.py` | **Done** |
 | `ToolExecutionRequest` / `ToolExecutionResult` | `intergrax/tools/execution_models.py` | **Done** |
 | `ToolProvider` protocol | `intergrax/tools/core/provider.py` | **Done** - accepts optional `ToolWiringContext` |
-| `ToolCatalog` / `ToolProfile` / `ToolWiringContext` | `intergrax/tools/registry` | **Done** - Phase O.2; typed integration slots + `TaskMemoryViewBinding` / `shadow_workspace` (T-EXPAND) |
+| `ToolCatalog` / `ToolProfile` / `ToolWiringContext` | `intergrax/tools/registry/catalog.py`, `intergrax/tools/contracts/tool_profile.py`, `intergrax/tools/registry/wiring.py` | **Done** - Phase O.2; typed integration slots + `TaskMemoryViewBinding` / `shadow_workspace` (T-EXPAND) |
 | `ToolInvocationWiringResolver` | `intergrax/tools/invocation_wiring.py` | **Done** (TOOL-ENG-RX) - per-call overlay merged at invoker; static registration wiring preserved |
 | `runtime_bound_catalog` | `intergrax/runtime/nexus/tools/runtime_bound_catalog.py` | **Done** - runtime-bound **tool id** classification only (physical dispatch via invoker) |
 | `register_default_tools()` / `build_registry_from_profile()` | `intergrax/tools/registry/bootstrap.py`, `factory.py` | **Done** |

@@ -11,7 +11,9 @@ from intergrax.integrations.contracts.base import (
     IntegrationCategoryMismatchError,
 )
 from intergrax.integrations.registry.catalog import get_entry
-from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
+from intergrax.integrations.contracts.ref import normalize_integration_binding
+from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
 from intergrax.rag.embedding.contracts.runtime_binding import (
     EmbeddingProviderConfigurationError,
@@ -80,7 +82,7 @@ def resolve_embedding_provider_slug(
     return validate_embedding_provider_slug(default_embedding_provider_slug())
 
 
-def _embedding_contract_spec(slug: str):
+def _embedding_contract_spec(slug: str) -> IntegrationContractSpec:
     entry = get_entry(slug)
     if _EMBEDDING_CATEGORY not in entry.categories:
         raise IntegrationCategoryMismatchError(slug, _EMBEDDING_CATEGORY.value)
@@ -92,7 +94,10 @@ def _embedding_contract_spec(slug: str):
     return specs[0]
 
 
-def _embedding_runtime_binder(slug: str, spec) -> EmbeddingProviderRuntimeBinder:
+def _embedding_runtime_binder(
+    slug: str,
+    spec: IntegrationContractSpec,
+) -> EmbeddingProviderRuntimeBinder:
     runtime_binding = spec.runtime_binding
     if runtime_binding is None:
         raise EmbeddingProviderRuntimeBindingError(
@@ -128,7 +133,9 @@ def bind_embedding_provider(
     if embedding_profile is not None:
         resolved_model = embedding_profile.model
 
-    profile = integration_profile or IntegrationProfile(embedding_provider=resolved_slug)
+    profile = integration_profile or IntegrationProfile(
+        embedding_provider=normalize_integration_binding(resolved_slug),
+    )
     integration_options = profile.options_for_slug(resolved_slug)
 
     spec = _embedding_contract_spec(resolved_slug)

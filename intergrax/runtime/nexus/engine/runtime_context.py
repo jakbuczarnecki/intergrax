@@ -8,25 +8,34 @@ from pathlib import Path
 from typing import List, Optional
 from typing import TYPE_CHECKING
 import uuid
-from intergrax.distributed.contracts.execution_semaphore import DistributedExecutionSemaphore
+from intergrax.distributed.contracts.execution_semaphore import (
+    DistributedExecutionSemaphore,
+)
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
 from intergrax.runtime.nexus.artifacts.models import Artifact, ArtifactRef
 from intergrax.runtime.nexus.artifacts.store_base import ArtifactStore
-from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import LLMUsageRunRecord
+from intergrax.runtime.nexus.engine.contracts.llm_usage_run_record import (
+    LLMUsageRunRecord,
+)
 from intergrax.runtime.nexus.tools import RegistryToolExecutor
 from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
     build_production_runtime_tool_invoker,
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.runtime.persistence.integration_profile_wiring import open_trace_store_from_profile
+from intergrax.runtime.persistence.integration_profile_wiring import (
+    open_trace_store_from_profile,
+)
 from intergrax.runtime.nexus.tracing.trace_models import TraceComponent
 from intergrax.runtime.replay.service import ReplayService
 from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
     IdempotencyPreEffectCoordinator,
 )
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
-from intergrax.tools.registry import ToolRegistry, ToolWiringContext, build_registry_from_profile
+from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.registry.factory import build_registry_from_profile
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.tools.registry.read import ToolRegistryRead
+
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     from intergrax.runtime.nexus.config import RuntimeConfig
@@ -35,22 +44,36 @@ from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.utils.time_provider import SystemTimeProvider
 from intergrax.runtime.nexus.context.context_builder import ContextBuilder
 from intergrax.runtime.nexus.context.engine_history_layer import HistoryLayer
-from intergrax.runtime.nexus.ingestion.ingestion_service import AttachmentIngestionService
-from intergrax.runtime.nexus.prompts.rag_prompt_builder import DefaultRagPromptBuilder, RagPromptBuilder
-from intergrax.runtime.nexus.prompts.user_longterm_memory_prompt_builder import DefaultUserLongTermMemoryPromptBuilder, UserLongTermMemoryPromptBuilder
-from intergrax.runtime.nexus.prompts.websearch_prompt_builder import DefaultWebSearchPromptBuilder, WebSearchPromptBuilder
+from intergrax.runtime.nexus.ingestion.ingestion_service import (
+    AttachmentIngestionService,
+)
+from intergrax.runtime.nexus.prompts.rag_prompt_builder import (
+    DefaultRagPromptBuilder,
+    RagPromptBuilder,
+)
+from intergrax.runtime.nexus.prompts.user_longterm_memory_prompt_builder import (
+    DefaultUserLongTermMemoryPromptBuilder,
+    UserLongTermMemoryPromptBuilder,
+)
+from intergrax.runtime.nexus.prompts.websearch_prompt_builder import (
+    DefaultWebSearchPromptBuilder,
+    WebSearchPromptBuilder,
+)
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
 
-def _enrich_tool_wiring_context(wiring_ctx: ToolWiringContext, config: "RuntimeConfig") -> ToolWiringContext:
+def _enrich_tool_wiring_context(
+    wiring_ctx: ToolWiringContext, config: "RuntimeConfig"
+) -> ToolWiringContext:
     """Fill catalog tool dependencies from RuntimeConfig when Tier-3 omitted explicit wiring."""
     from dataclasses import replace
 
     return replace(
         wiring_ctx,
-        vectorstore_manager=wiring_ctx.vectorstore_manager or config.vectorstore_manager,
+        vectorstore_manager=wiring_ctx.vectorstore_manager
+        or config.vectorstore_manager,
         embedding_manager=wiring_ctx.embedding_manager or config.embedding_manager,
         websearch_executor=wiring_ctx.websearch_executor or config.websearch_executor,
     )
@@ -69,7 +92,7 @@ class RuntimeContext:
     IMPORTANT:
     - per-request flags/results belong to RuntimeState, not here.
     """
-    
+
     config: "RuntimeConfig"
     session_manager: SessionManager
 
@@ -79,7 +102,9 @@ class RuntimeContext:
     context_builder: Optional[ContextBuilder] = None
 
     rag_prompt_builder: Optional[RagPromptBuilder] = None
-    user_longterm_memory_prompt_builder: Optional[UserLongTermMemoryPromptBuilder] = None
+    user_longterm_memory_prompt_builder: Optional[UserLongTermMemoryPromptBuilder] = (
+        None
+    )
 
     websearch_executor: Optional[WebSearchExecutor] = None
     websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None
@@ -93,7 +118,7 @@ class RuntimeContext:
     trace_writer: Optional[RunTraceWriter] = None
     governance_service: Optional["GovernanceService"] = None
     prompt_registry: Optional[YamlPromptRegistry] = None
-    
+
     artifact_store: Optional[ArtifactStore] = None
 
     execution_semaphore: Optional[DistributedExecutionSemaphore] = None
@@ -113,13 +138,11 @@ class RuntimeContext:
     async def get_llm_usage_runs(self) -> list[LLMUsageRunRecord]:
         async with self.llm_usage_lock:
             return list(self.llm_usage_runs)
-            
 
     async def clear_llm_usage_runs(self) -> None:
         async with self.llm_usage_lock:
             self.llm_usage_runs.clear()
-            self.llm_usage_run_seq = 0 
-
+            self.llm_usage_run_seq = 0
 
     async def print_usage_runs(self):
         runs = await self.get_llm_usage_runs()
@@ -184,7 +207,6 @@ class RuntimeContext:
             print("=" * 100)
             print(r.pretty())
 
-
     def create_artifact(
         self,
         *,
@@ -236,8 +258,6 @@ class RuntimeContext:
 
         return ref
 
-
-
     @classmethod
     def build(
         cls,
@@ -247,7 +267,9 @@ class RuntimeContext:
         ingestion_service: Optional[AttachmentIngestionService] = None,
         context_builder: Optional[ContextBuilder] = None,
         rag_prompt_builder: Optional[RagPromptBuilder] = None,
-        user_longterm_memory_prompt_builder: Optional[UserLongTermMemoryPromptBuilder] = None,
+        user_longterm_memory_prompt_builder: Optional[
+            UserLongTermMemoryPromptBuilder
+        ] = None,
         websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None,
         prompt_registry: Optional[YamlPromptRegistry] = None,
         governance_service: Optional["GovernanceService"] = None,
@@ -288,7 +310,8 @@ class RuntimeContext:
 
         # Resolve RAG prompt builder
         resolved_rag_prompt_builder: RagPromptBuilder = (
-            rag_prompt_builder or DefaultRagPromptBuilder(
+            rag_prompt_builder
+            or DefaultRagPromptBuilder(
                 config=config,
                 prompt_registry=prompt_registry,
             )
@@ -355,7 +378,9 @@ class RuntimeContext:
                 idempotency_store=config.idempotency_store,
             )
 
-        from intergrax.runtime.sandbox.isolation_gate import sandbox_availability_provider
+        from intergrax.runtime.sandbox.isolation_gate import (
+            sandbox_availability_provider,
+        )
 
         base_invoker = build_production_runtime_tool_invoker(
             registry=registry,
@@ -369,7 +394,9 @@ class RuntimeContext:
             production_mode=config.production_mode,
         )
 
-        from intergrax.runtime.nexus.tools.planner_bootstrap import wire_catalog_tool_planner_if_enabled
+        from intergrax.runtime.nexus.tools.planner_bootstrap import (
+            wire_catalog_tool_planner_if_enabled,
+        )
 
         wire_catalog_tool_planner_if_enabled(
             config,
@@ -384,10 +411,8 @@ class RuntimeContext:
                 "agent_runtime_governance is required when production_mode=True."
             )
         if config.production_mode and governance_service is None:
-            raise ValueError(
-                "GovernanceService is required when production_mode=True."
-            )
-        
+            raise ValueError("GovernanceService is required when production_mode=True.")
+
         trace_writer: Optional[RunTraceWriter] = None
         if config.production_mode:
             if config.trace_db_path is None:
@@ -400,7 +425,7 @@ class RuntimeContext:
 
         if ingestion_service is not None and trace_writer is not None:
             ingestion_service.bind_trace_writer(trace_writer)
-        
+
         return cls(
             config=config,
             session_manager=session_manager,

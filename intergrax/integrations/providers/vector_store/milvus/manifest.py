@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationStatus
-from intergrax.integrations.core.manifest import IntegrationManifest
+from intergrax.integrations.contracts.manifest import IntegrationManifest
 
 MANIFEST = IntegrationManifest(
     slug="milvus",

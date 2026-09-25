@@ -35,11 +35,14 @@ from intergrax.integrations.contracts.secrets_store import SecretsStore
 from intergrax.integrations.contracts.security_scanner import SecurityScannerBackend
 from intergrax.integrations.contracts.speech_provider import SpeechProviderBackend
 from intergrax.integrations.contracts.wiki_knowledge import WikiKnowledge
-from intergrax.integrations.contracts.workflow_orchestrator import WorkflowOrchestratorBackend
-from intergrax.contracts.execution_environment_isolation import ProfileSandboxIsolationSource
+from intergrax.integrations.contracts.workflow_orchestrator import (
+    WorkflowOrchestratorBackend,
+)
+from intergrax.contracts.execution_environment_isolation import (
+    ProfileSandboxIsolationSource,
+)
 from intergrax.model_inference.media_boundary import RemoteMediaEgressPolicy
 from intergrax.runtime.workspace.execution_port import WorkspaceExecutionPort
-from intergrax.integrations.registry.factory import resolve_from_profile
 from intergrax.tools.registry.runtime_bindings import (
     AgentRegistryBinding,
     HumanDecisionStoreBinding,
@@ -72,7 +75,9 @@ class ToolWiringContext:
     wiki_knowledge: WikiKnowledge | None = None
     notification_channel: NotificationChannel | None = None
     observability_backend: ObservabilityBackend | None = None
-    observability_backends: dict[str, ObservabilityBackend] = field(default_factory=dict)
+    observability_backends: dict[str, ObservabilityBackend] = field(
+        default_factory=dict
+    )
     object_storage: ObjectStorage | None = None
     relational_store: RelationalStore | None = None
     document_store: DocumentStore | None = None
@@ -151,7 +156,10 @@ class ToolWiringContext:
             UnknownIntegrationError,
         )
         from intergrax.integrations.registry.catalog import get_entry
-        from intergrax.integrations.registry.factory import resolve
+        from intergrax.integrations.registry.factory import (
+            resolve,
+            resolve_from_profile,
+        )
 
         def _optional(category: IntegrationCategory) -> Any | None:
             instance = profile.instance_for_category(category)

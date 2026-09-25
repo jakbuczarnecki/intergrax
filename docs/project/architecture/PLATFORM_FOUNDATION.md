@@ -297,6 +297,8 @@ Tier-3 Applications  →  Tier-2 Agents  →  Tier-1 Nexus  →  Tier-0 Platform
 - Tier-1 MUST NOT import concrete agents or applications.
 - Tier-2 MUST NOT import applications.
 
+**Subsystem package roots (EBH-2G-R1):** Tier-0 Integrations, Integration Contracts, Skills, and Tools package roots are **namespace boundaries**, not stable public SDK facades. Canonical API ownership belongs to explicit leaf modules; importing contracts must not trigger runtime composition or registry bootstrap. [ADR-EBH-2G-R1](../maintainers/architecture/ADR/ADR-EBH-2G-R1-SUBSYSTEM-PACKAGE-ROOT-LEAF-IMPORT-BOUNDARY.md).
+
 **Cross-layer invariants (canonical):** [`guides/SYSTEM_INVARIANTS.md`](../technical/guides/SYSTEM_INVARIANTS.md#cross-layer-system-invariants) (P2-ARCH-01) - MUST/MUST NOT rules across all tiers; `SYS-INV-*` index links to this §5 and domain pairs.
 
 **Enforcement (FAUDIT-TIER, 2026-06-06 · extended 2026-06-27):** Lower layers (`intergrax/agents`, `intergrax/runtime`, `intergrax/contracts`, `agents`, …) MUST NOT import `intergrax.applications` or `applications`. Tier-3 manifest metadata for harness capability-graph seeding lives in `intergrax/applications/reference/harness_manifest_catalog.py`; runtime uses neutral `ApplicationCapabilityCatalogEntry` (`intergrax/contracts/capability_graph_catalog.py`) via `intergrax/runtime/architecture/harness_capability_catalog.py`. Application hosts map Tier-3 profiles/bindings to neutral contracts in `intergrax/applications/_shared/runtime_boundary_adapters.py`.

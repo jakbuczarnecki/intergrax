@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
-
-pytestmark = pytest.mark.unit
+pytestmark = [pytest.mark.unit, pytest.mark.external_provider]
 
 
 def test_hf_execution_snapshot_reports_configured_state() -> None:
+    from intergrax.rag.embedding.providers.hf_embedding_provider import HFEmbeddingProvider
+
     provider = HFEmbeddingProvider(
         model_name="test-model",
         device="cuda",

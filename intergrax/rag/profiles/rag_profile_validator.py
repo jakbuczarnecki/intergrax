@@ -7,8 +7,8 @@ from __future__ import annotations
 
 from typing import Optional
 
-from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.utils import attribute_access
+from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.rag.profiles.rag_profile import (
     APPROVED_PRODUCTION_GRAPH_STORE_SLUGS,
     RagProfile,
@@ -82,7 +82,7 @@ def validate_rag_profile_wiring(
     if profile.graph_indexer_mode in {"llm", "heuristic_then_llm", "community_report"} and not llm_available:
         _add("warn", f"graph_indexer_mode_{profile.graph_indexer_mode}_works_best_with_llm")
 
-    if profile.graph_rag_enabled and profile.graph_store_backend == "inmemory":
+    if profile.graph_rag_enabled and graph_store_slug is None:
         _add("warn", "graph_rag_inmemory_harness_only")
 
     if profile.uses_hierarchical_index() and not profile.hierarchical_index_enabled:
@@ -90,11 +90,11 @@ def validate_rag_profile_wiring(
 
     graph_slug = graph_store_slug
     if integration_profile is not None and graph_slug is None:
-        from intergrax.integrations.contracts.base import IntegrationCategory
-
-        instance = integration_profile.instance_for_category(IntegrationCategory.GRAPH_STORE)
-        if instance is not None:
-            graph_slug = attribute_access.optional(instance, "slug", None)
+        graph_slug = integration_profile.slug_for_category(IntegrationCategory.GRAPH_STORE)
+        if graph_slug is None:
+            graph_binding = integration_profile.binding_for_field("graph_store")
+            if graph_binding is not None:
+                graph_slug = graph_binding.resolved_slug()
 
     if production_host:
         graph_error = validate_graph_rag_production_wiring(profile, graph_store_slug=graph_slug)
@@ -103,10 +103,10 @@ def validate_rag_profile_wiring(
 
     if (
         profile.graph_rag_enabled
-        and profile.graph_store_backend not in APPROVED_PRODUCTION_GRAPH_STORE_SLUGS
-        and profile.graph_store_backend != "inmemory"
+        and graph_slug is not None
+        and graph_slug not in APPROVED_PRODUCTION_GRAPH_STORE_SLUGS
     ):
-        _add("warn", f"graph_store_backend_not_in_prod_list:{profile.graph_store_backend}")
+        _add("warn", f"integration_graph_store_not_in_prod_list:{graph_slug}")
 
     if profile.sync_ingest_max_bytes <= 0:
         _add("warn", "sync_ingest_max_bytes_disabled_unbounded_sync_path")

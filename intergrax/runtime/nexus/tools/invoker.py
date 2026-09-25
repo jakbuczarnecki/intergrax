@@ -16,7 +16,9 @@ if TYPE_CHECKING:
     from intergrax.contracts.execution.crash_injection import (
         ToolRuntimeEffectCrashInjectionPort,
     )
-    from intergrax.contracts.canonical_inner_governance import CanonicalInnerExecutionGuardPort
+    from intergrax.contracts.canonical_inner_governance import (
+        CanonicalInnerExecutionGuardPort,
+    )
     from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
     from intergrax.contracts.meaningful_side_effect_authorization import (
         MeaningfulSideEffectAuthorizationPort,
@@ -37,7 +39,11 @@ from intergrax.runtime.policy.side_effect_authorization_errors import (
     SideEffectAuthorizationFailureReason,
 )
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
-from intergrax.runtime.nexus.tracing.tools.tool_invocation import ToolInvocationEndDiagV1, ToolInvocationErrorDiagV1, ToolInvocationStartDiagV1
+from intergrax.runtime.nexus.tracing.tools.tool_invocation import (
+    ToolInvocationEndDiagV1,
+    ToolInvocationErrorDiagV1,
+    ToolInvocationStartDiagV1,
+)
 from intergrax.runtime.observability.modality_tool_trace import (
     consume_modality_metrics_for_tool,
     modality_metrics_dict,
@@ -47,7 +53,9 @@ from intergrax.runtime.policy.policy_trace_diagnostics import (
     DeclarativePolicyEvaluationDiagV1,
     MeaningfulSideEffectAuthorizationRequiredDiagV1,
 )
-from intergrax.runtime.policy.declarative_enforcer import resolve_declarative_policy_enforcer
+from intergrax.runtime.policy.declarative_enforcer import (
+    resolve_declarative_policy_enforcer,
+)
 from intergrax.runtime.policy.declarative_tool_authorization_gate import (
     require_meaningful_side_effect_authorization,
 )
@@ -178,13 +186,15 @@ class RuntimeToolInvoker:
         dependency_attempt_boundary: DependencyAttemptExecutionBoundary | None = None,
         external_operation_store: ExternalOperationStateStore | None = None,
         external_operation_owner: ProcessLocalExternalOperationOwner | None = None,
-        external_operation_cancellation_port: ExternalOperationCancellationPort | None = None,
+        external_operation_cancellation_port: ExternalOperationCancellationPort
+        | None = None,
         invocation_wiring_resolver: ToolInvocationWiringResolver | None = None,
         effect_crash_injection: Optional["ToolRuntimeEffectCrashInjectionPort"] = None,
     ) -> None:
         from intergrax.runtime.nexus.tools.tool_operation_termination import (
             ToolExecutorTerminationPort,
         )
+
         self._registry = registry
         self._executor = executor
         self._scope_policy = scope_policy
@@ -192,15 +202,21 @@ class RuntimeToolInvoker:
         self._sandbox_availability = sandbox_availability
         self._agent_runtime_governance = agent_runtime_governance
         self._inner_execution_guard = inner_execution_guard
-        self._meaningful_side_effect_authorization = meaningful_side_effect_authorization
+        self._meaningful_side_effect_authorization = (
+            meaningful_side_effect_authorization
+        )
         self._dependency_attempt_boundary = dependency_attempt_boundary
         self._external_operation_store = external_operation_store
         if external_operation_store is not None and external_operation_owner is None:
             external_operation_owner = ProcessLocalExternalOperationOwner.mint()
         self._external_operation_owner = external_operation_owner
-        self._external_operation_cancellation_port = external_operation_cancellation_port
+        self._external_operation_cancellation_port = (
+            external_operation_cancellation_port
+        )
         self._tool_termination_port = (
-            ToolExecutorTerminationPort() if external_operation_store is not None else None
+            ToolExecutorTerminationPort()
+            if external_operation_store is not None
+            else None
         )
         # Shared pool for timeout-isolated tool execution; default worker count
         # preserves concurrent independent invocations (not max_workers=1).
@@ -324,7 +340,9 @@ class RuntimeToolInvoker:
                 return replay
             claim_context = coordination.claim_context
             if claim_context is None:
-                raise RuntimeError("Ledger inconsistency: ACQUIRED without claim context.")
+                raise RuntimeError(
+                    "Ledger inconsistency: ACQUIRED without claim context."
+                )
 
         if claim_context is not None:
             coordinator = self._pre_effect_coordinator
@@ -343,6 +361,7 @@ class RuntimeToolInvoker:
                     contract=contract,
                     request=request,
                     boundary=boundary,
+                    pre_effect_claim=claim_context,
                 )
             except SimulatedHostProcessLostError:
                 if boundary.may_have_started:
@@ -475,7 +494,9 @@ class RuntimeToolInvoker:
         guard = self._inner_execution_guard
         if guard is None:
             if state.context.config.production_mode:
-                from intergrax.runtime.agent_governance.errors import ToolGovernanceDeniedError
+                from intergrax.runtime.agent_governance.errors import (
+                    ToolGovernanceDeniedError,
+                )
 
                 capability = contract.category.strip() or contract.tool_id
                 raise ToolGovernanceDeniedError(
@@ -494,7 +515,10 @@ class RuntimeToolInvoker:
         from intergrax.runtime.nexus.tools.tool_invocation_inner_governance import (
             build_tool_invocation_inner_governance_request,
         )
-        from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+        from intergrax.runtime.nexus.tracing.trace_models import (
+            TraceComponent,
+            TraceLevel,
+        )
         from intergrax.runtime.nexus.tracing.tools.tool_invocation import (
             ToolInvocationErrorDiagV1,
         )
@@ -521,7 +545,9 @@ class RuntimeToolInvoker:
                     error_message=exc.reason,
                 ),
             )
-            from intergrax.runtime.agent_governance.errors import ToolGovernanceDeniedError
+            from intergrax.runtime.agent_governance.errors import (
+                ToolGovernanceDeniedError,
+            )
 
             capability = contract.category.strip() or contract.tool_id
             raise ToolGovernanceDeniedError(
@@ -588,9 +614,14 @@ class RuntimeToolInvoker:
             else:
                 availability = self._sandbox_availability()
             invocation_context = request.invocation_context
-            if invocation_context is not None and invocation_context.wiring_resolver is not None:
+            if (
+                invocation_context is not None
+                and invocation_context.wiring_resolver is not None
+            ):
                 registered = self._registry.get(request.tool_id)
-                registration_view = registration_wiring_view_for_handler(registered.handler)
+                registration_view = registration_wiring_view_for_handler(
+                    registered.handler
+                )
                 raw_invocation = invocation_context.wiring_resolver.resolve(
                     tool_id=request.tool_id,
                     invocation_context=invocation_context,
@@ -670,7 +701,9 @@ class RuntimeToolInvoker:
                 invocation_scope_id=request.declarative_hitl_invocation_scope_id,
                 approval_grant=state.declarative_hitl_grant,
             )
-            decision = declarative_enforcer.evaluate_tool_invocation(context=policy_context)
+            decision = declarative_enforcer.evaluate_tool_invocation(
+                context=policy_context
+            )
             state.trace_event(
                 component=TraceComponent.TOOLS,
                 step="declarative_policy_evaluation",
@@ -742,16 +775,22 @@ class RuntimeToolInvoker:
         from intergrax.runtime.nexus.tools.tool_invocation_meaningful_side_effect import (
             build_tool_invocation_meaningful_side_effect_enforcement_request,
         )
-        from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+        from intergrax.runtime.nexus.tracing.trace_models import (
+            TraceComponent,
+            TraceLevel,
+        )
         from intergrax.runtime.nexus.tracing.tools.tool_invocation import (
             ToolInvocationErrorDiagV1,
         )
         from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
-        enforcement_request = build_tool_invocation_meaningful_side_effect_enforcement_request(
-            state=state,
-            agent_id=agent_id,
-            contract=contract,
-            request=request,
+
+        enforcement_request = (
+            build_tool_invocation_meaningful_side_effect_enforcement_request(
+                state=state,
+                agent_id=agent_id,
+                contract=contract,
+                request=request,
+            )
         )
         from intergrax.contracts.meaningful_side_effect_authorization import (
             MeaningfulSideEffectAuthorizationResult,
@@ -816,7 +855,8 @@ class RuntimeToolInvoker:
                 agent_id=agent_id,
                 tool_id=request.tool_id,
                 capability=capability,
-                approval_id=decision.policy_rule_id or "meaningful_side_effect.require_human",
+                approval_id=decision.policy_rule_id
+                or "meaningful_side_effect.require_human",
                 reason=decision.reason,
                 policy_results=(),
                 governed_continuation_request=gate.governed_continuation_request,
@@ -859,7 +899,10 @@ class RuntimeToolInvoker:
             return
 
         from intergrax.runtime.agent_governance.errors import ToolGovernanceDeniedError
-        from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+        from intergrax.runtime.nexus.tracing.trace_models import (
+            TraceComponent,
+            TraceLevel,
+        )
         from intergrax.runtime.nexus.tracing.tools.tool_invocation import (
             ToolInvocationErrorDiagV1,
         )
@@ -907,7 +950,9 @@ class RuntimeToolInvoker:
         governance = self._agent_runtime_governance
         if governance is None:
             if state.context.config.production_mode:
-                from intergrax.runtime.agent_governance.errors import ToolGovernanceDeniedError
+                from intergrax.runtime.agent_governance.errors import (
+                    ToolGovernanceDeniedError,
+                )
 
                 capability = contract.category.strip() or contract.tool_id
                 raise ToolGovernanceDeniedError(
@@ -928,7 +973,10 @@ class RuntimeToolInvoker:
             ToolGovernanceApprovalRequiredError,
             ToolGovernanceDeniedError,
         )
-        from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+        from intergrax.runtime.nexus.tracing.trace_models import (
+            TraceComponent,
+            TraceLevel,
+        )
         from intergrax.runtime.nexus.tracing.tools.tool_invocation import (
             ToolInvocationErrorDiagV1,
         )
@@ -1077,6 +1125,7 @@ class RuntimeToolInvoker:
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
         boundary: _ExternalEffectBoundary | None = None,
+        pre_effect_claim: PreEffectClaimContext | None = None,
     ) -> ToolExecutionResult[BaseModel]:
         # 3) trace start (non-blocking after idempotency claim / replay resolution)
         self._emit_tool_invocation_start_non_blocking(
@@ -1092,6 +1141,7 @@ class RuntimeToolInvoker:
             contract=contract,
             request=request,
             boundary=boundary,
+            pre_effect_claim=pre_effect_claim,
         )
 
     def _execute_with_policy(
@@ -1102,6 +1152,7 @@ class RuntimeToolInvoker:
         contract: ToolContract,
         request: ToolExecutionRequest[BaseModel],
         boundary: _ExternalEffectBoundary | None = None,
+        pre_effect_claim: PreEffectClaimContext | None = None,
     ) -> ToolExecutionResult[BaseModel]:
         policy = contract.retry_policy
         attempts = self._effective_max_attempts(contract)
@@ -1128,8 +1179,8 @@ class RuntimeToolInvoker:
                     try:
                         cooperative_delay_seconds(
                             policy.backoff_ms / 1000.0,
-                            should_abort=lambda: self._cooperative_cancellation_requested(
-                                state
+                            should_abort=lambda: (
+                                self._cooperative_cancellation_requested(state)
                             ),
                         )
                     except CooperativeCancellationAbort:
@@ -1154,6 +1205,7 @@ class RuntimeToolInvoker:
                     request,
                     effect_boundary=boundary,
                     physical_attempt_sequence=attempt,
+                    pre_effect_claim=pre_effect_claim,
                 )
                 out = self._validate_output(contract.output_schema, raw_out)
                 duration_ms = max(0, int((time.perf_counter() - start_perf) * 1000))
@@ -1207,7 +1259,9 @@ class RuntimeToolInvoker:
                         error_message=msg,
                     ),
                 )
-                result = ToolExecutionResult.fail(RuntimeErrorCode.VALIDATION_ERROR, msg)
+                result = ToolExecutionResult.fail(
+                    RuntimeErrorCode.VALIDATION_ERROR, msg
+                )
                 self._emit_boundary_event(
                     state=state,
                     agent_id=agent_id,
@@ -1339,7 +1393,9 @@ class RuntimeToolInvoker:
                 result=result,
             )
             return result
-        result = ToolExecutionResult.fail(RuntimeErrorCode.TOOL_ERROR, "Tool execution failed.")
+        result = ToolExecutionResult.fail(
+            RuntimeErrorCode.TOOL_ERROR, "Tool execution failed."
+        )
         self._emit_boundary_event(
             state=state,
             agent_id=agent_id,
@@ -1468,7 +1524,9 @@ class RuntimeToolInvoker:
         request: ToolExecutionRequest[BaseModel],
         result: ToolExecutionResult[BaseModel],
     ) -> None:
-        from intergrax.runtime.attestation.boundary_emitter import ExecutionBoundaryEmitter
+        from intergrax.runtime.attestation.boundary_emitter import (
+            ExecutionBoundaryEmitter,
+        )
 
         try:
             ExecutionBoundaryEmitter.maybe_emit(
@@ -1554,8 +1612,30 @@ class RuntimeToolInvoker:
             contract.invocation_wiring_requirements,
             effective_invocation,
         )
-        effective = merge_invocation_into_handler_context(registration_wiring, invocation)
+        effective = merge_invocation_into_handler_context(
+            registration_wiring, invocation
+        )
         return replace(request, effective_wiring=effective)
+
+    def _record_durable_effect_admission_before_submit(
+        self,
+        *,
+        pre_effect_claim: PreEffectClaimContext | None,
+        effect_boundary: _ExternalEffectBoundary | None,
+        physical_attempt_sequence: int,
+    ) -> None:
+        if physical_attempt_sequence != 1 or pre_effect_claim is None:
+            return
+        coordinator = self._pre_effect_coordinator
+        if coordinator is None:
+            raise RuntimeError(
+                "Pre-effect claim requires coordinator for durable effect admission.",
+            )
+        coordinator.admit_external_effect_may_have_started(
+            claim_context=pre_effect_claim,
+        )
+        if effect_boundary is not None:
+            effect_boundary.may_have_started = True
 
     def _execute_once(
         self,
@@ -1565,6 +1645,7 @@ class RuntimeToolInvoker:
         *,
         effect_boundary: _ExternalEffectBoundary | None = None,
         physical_attempt_sequence: int = 1,
+        pre_effect_claim: PreEffectClaimContext | None = None,
     ) -> BaseModel:
         request = self._apply_invocation_wiring(contract=contract, request=request)
         timeout_s = contract.timeout_ms / 1000.0
@@ -1577,12 +1658,18 @@ class RuntimeToolInvoker:
         ext_op.before_physical_submit()
 
         if dep_boundary is None:
+            self._record_durable_effect_admission_before_submit(
+                pre_effect_claim=pre_effect_claim,
+                effect_boundary=effect_boundary,
+                physical_attempt_sequence=physical_attempt_sequence,
+            )
             ext_op.mark_running()
             future = self._execution_pool.submit(self._executor.execute, request)
-            if self._tool_termination_port is not None and ext_op.operation_id is not None:
+            if (
+                self._tool_termination_port is not None
+                and ext_op.operation_id is not None
+            ):
                 self._tool_termination_port.bind_future(ext_op.operation_id, future)
-            if effect_boundary is not None:
-                effect_boundary.may_have_started = True
             try:
                 return future.result(timeout=timeout_s)
             except FuturesTimeoutError:
@@ -1598,7 +1685,10 @@ class RuntimeToolInvoker:
             else:
                 ext_op.mark_succeeded()
             finally:
-                if self._tool_termination_port is not None and ext_op.operation_id is not None:
+                if (
+                    self._tool_termination_port is not None
+                    and ext_op.operation_id is not None
+                ):
                     self._tool_termination_port.unbind_future(ext_op.operation_id)
 
         admission_request = DependencyConcurrencyAdmissionRequest(
@@ -1610,9 +1700,17 @@ class RuntimeToolInvoker:
         )
         attempt_handle = dep_boundary.acquire(admission_request)
         try:
+            self._record_durable_effect_admission_before_submit(
+                pre_effect_claim=pre_effect_claim,
+                effect_boundary=effect_boundary,
+                physical_attempt_sequence=physical_attempt_sequence,
+            )
             ext_op.mark_running()
             future = self._execution_pool.submit(self._executor.execute, request)
-            if self._tool_termination_port is not None and ext_op.operation_id is not None:
+            if (
+                self._tool_termination_port is not None
+                and ext_op.operation_id is not None
+            ):
                 self._tool_termination_port.bind_future(ext_op.operation_id, future)
         except BaseException:
             ext_op.mark_failed()
@@ -1623,8 +1721,6 @@ class RuntimeToolInvoker:
             attempt_handle,
             cast(ConcurrentFuture[object], future),
         )
-        if effect_boundary is not None:
-            effect_boundary.may_have_started = True
 
         try:
             result = future.result(timeout=timeout_s)
@@ -1651,7 +1747,10 @@ class RuntimeToolInvoker:
             dep_boundary.complete_attached(attempt_handle)
             return result
         finally:
-            if self._tool_termination_port is not None and ext_op.operation_id is not None:
+            if (
+                self._tool_termination_port is not None
+                and ext_op.operation_id is not None
+            ):
                 self._tool_termination_port.unbind_future(ext_op.operation_id)
 
     @staticmethod
@@ -1661,7 +1760,6 @@ class RuntimeToolInvoker:
             if isinstance(exc, exc_type):
                 return cast(RuntimeErrorCode, code)
         return RuntimeErrorCode.TOOL_ERROR
-
 
     @staticmethod
     def _validate_output(schema: Type[BaseModel], raw_out: BaseModel) -> BaseModel:
@@ -1676,7 +1774,6 @@ class RuntimeToolInvoker:
                 f"Expected {schema.__name__}, got {type(raw_out).__name__}."
             )
         return raw_out
-
 
     @staticmethod
     def _preview_output(out: BaseModel, *, limit: int = 300) -> str:

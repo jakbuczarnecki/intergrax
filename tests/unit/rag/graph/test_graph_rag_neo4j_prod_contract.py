@@ -11,8 +11,7 @@ from intergrax.integrations.providers.vector_store.inmemory.rag_store import (
 )
 from intergrax.rag.graph.bootstrap.graph_store_bootstrap import create_rag_graph_store
 from intergrax.rag.graph.indexer.heuristic_graph_indexer import HeuristicGraphIndexer
-from intergrax.rag.graph.providers.neo4j_rag_graph_store import Neo4jRagGraphStore
-from intergrax.rag.profiles.rag_profile import production_graph_rag_profile
+from intergrax.rag.graph.providers.cypher_rag_graph_store import CypherRagGraphStore
 from intergrax.rag.retrievers.contracts.base_retriever import RetrieverQuery
 from intergrax.rag.retrievers.providers.graph_rag_retriever import GraphRagRetriever
 from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
@@ -107,10 +106,9 @@ class _Emb:
 def test_create_rag_graph_store_uses_neo4j_integration_instance() -> None:
     integration = _FakeNeo4jIntegrationGraphStore()
     store = create_rag_graph_store(
-        profile=production_graph_rag_profile(),
         integration_graph_store=integration,
     )
-    assert isinstance(store, Neo4jRagGraphStore)
+    assert isinstance(store, CypherRagGraphStore)
 
 
 def test_graph_rag_retrieve_through_neo4j_prod_profile() -> None:
@@ -122,7 +120,6 @@ def test_graph_rag_retrieve_through_neo4j_prod_profile() -> None:
     vector.add_documents([doc], [[0.1, 0.2, 0.3]], ids=["chunk-legal-1"])
 
     graph = create_rag_graph_store(
-        profile=production_graph_rag_profile(),
         integration_graph_store=_FakeNeo4jIntegrationGraphStore(),
     )
     HeuristicGraphIndexer(graph).index_documents([doc], chunk_ids=["chunk-legal-1"])

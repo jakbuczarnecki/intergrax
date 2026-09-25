@@ -31,7 +31,7 @@ from intergrax.rag.rerankers.providers.embedding_cosine_reranker import (
 )
 
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 
 
 def _register_entry_point_rerankers(

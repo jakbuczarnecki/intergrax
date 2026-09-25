@@ -63,14 +63,14 @@ def _write(path: Path, content: str, *, force: bool) -> None:
     path.write_text(content, encoding="utf-8")
 
 
-def _manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+def _manifest_py(
+    names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
+) -> str:
     pkg = names.pkg
     short = names.short
     route_prefix = names.route_prefix
     env_prefix_value = names.env_prefix
-    agent_imports = "\n".join(
-        f"from {s.module} import {s.class_name}" for s in specs
-    )
+    agent_imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
     mounts = []
     for s in specs:
         caps = ", ".join(repr(c) for c in s.capabilities)
@@ -114,16 +114,16 @@ def _manifest_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
     return body.replace("# __AGENT_IMPORTS__", agent_imports)
 
 
-def _agent_builders_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
+def _agent_builders_py(
+    names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
+) -> str:
     builders_const = names.builders_const
-    agent_imports = "\n".join(
-        f"from {s.module} import {s.class_name}" for s in specs
-    )
+    agent_imports = "\n".join(f"from {s.module} import {s.class_name}" for s in specs)
     entries = "\n".join(
         f"        {s.class_name}: _zero_arg_factory({s.class_name})," for s in specs
     )
     body = dedent(
-        f'''\
+        f"""\
         # © Artur Czarnecki. All rights reserved.
 
         from __future__ import annotations
@@ -147,11 +147,10 @@ def _agent_builders_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgen
         {builders_const}: dict[type[Agent], AgentFactory] = {{
         # __BUILDER_ENTRIES__
         }}
-        '''
+        """
     )
-    return (
-        body.replace("# __AGENT_IMPORTS__", agent_imports)
-        .replace("# __BUILDER_ENTRIES__", entries)
+    return body.replace("# __AGENT_IMPORTS__", agent_imports).replace(
+        "# __BUILDER_ENTRIES__", entries
     )
 
 
@@ -329,9 +328,9 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
         from typing import Optional
 
         from intergrax.integrations.contracts.base import IntegrationCategory
-        from intergrax.integrations.providers.relational_store.sqlite.bundle import (
-            SQLiteIntegrationBundle,
-            create_sqlite_integration,
+        from intergrax.runtime.persistence.sqlite_composition import (
+            SQLiteRuntimePersistenceBundle,
+            create_sqlite_runtime_persistence,
         )
         from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
         from intergrax.integrations.registry.profile import IntegrationProfile
@@ -357,7 +356,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
         @dataclass(frozen=True)
         class {pascal}IntegrationWiring:
             profile: IntegrationProfile
-            sqlite_bundle: SQLiteIntegrationBundle
+            sqlite_bundle: SQLiteRuntimePersistenceBundle
             trace_store: RunTraceWriter
             runtime_event_store: RuntimeEventPersistence | None
             checkpoint_store: TaskCheckpointPersistence
@@ -418,7 +417,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
                 profile = profile.model_copy(
                     update={{"options": {{"sqlite": dict(sqlite_overrides)}}}}
                 )
-            sqlite_bundle = create_sqlite_integration(**sqlite_overrides)
+            sqlite_bundle = create_sqlite_runtime_persistence(**sqlite_overrides)
             if db_path is None:
                 trace_store: RunTraceWriter = InMemoryRunTraceStore()
                 trace_db_path = None
@@ -703,18 +702,26 @@ def _main_py(names: ScaffoldApplicationNames) -> str:
 
 
 def _serving_router_py(names: ScaffoldApplicationNames) -> str:
-    from intergrax.scaffold.canonical_host_templates import render_canonical_lab_serving_router_py
+    from intergrax.scaffold.canonical_host_templates import (
+        render_canonical_lab_serving_router_py,
+    )
 
     return render_canonical_lab_serving_router_py(names)
 
 
-def _mcp_server_py(names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]) -> str:
-    from intergrax.scaffold.canonical_host_templates import render_canonical_mcp_server_py
+def _mcp_server_py(
+    names: ScaffoldApplicationNames, specs: list[ScaffoldAgentSpec]
+) -> str:
+    from intergrax.scaffold.canonical_host_templates import (
+        render_canonical_mcp_server_py,
+    )
 
     return render_canonical_mcp_server_py(names, specs)
 
 
-def _env_example(env_prefix: str, route_prefix: str, port: int, specs: list[ScaffoldAgentSpec]) -> str:
+def _env_example(
+    env_prefix: str, route_prefix: str, port: int, specs: list[ScaffoldAgentSpec]
+) -> str:
     caps = specs[0].capabilities[0] if specs and specs[0].capabilities else "echo.basic"
     return render_application_env_example(
         env_prefix=env_prefix,
@@ -906,9 +913,17 @@ def _create_lab_application(
 
     _write(target / "host" / "__init__.py", "", force=force)
     _write(target / "host" / "settings.py", _settings_py(names), force=force)
-    _write(target / "host" / "agent_builders.py", _agent_builders_py(names, specs), force=force)
+    _write(
+        target / "host" / "agent_builders.py",
+        _agent_builders_py(names, specs),
+        force=force,
+    )
     _write(target / "host" / "wiring.py", _wiring_py(names), force=force)
-    _write(target / "host" / "environment_profile.py", _environment_profile_py(names), force=force)
+    _write(
+        target / "host" / "environment_profile.py",
+        _environment_profile_py(names),
+        force=force,
+    )
     _write(target / "host" / "policy" / "rules" / ".gitkeep", "", force=force)
     _write(target / "extensions" / "__init__.py", "", force=force)
     _write(target / "extensions" / "README.md", extensions_readme(names), force=force)
@@ -918,7 +933,11 @@ def _create_lab_application(
         force=force,
     )
     if full_scaffold:
-        _write(target / "host" / "integration_wiring.py", _integration_wiring_py(names), force=force)
+        _write(
+            target / "host" / "integration_wiring.py",
+            _integration_wiring_py(names),
+            force=force,
+        )
         _write(target / "host" / "tool_wiring.py", _tool_wiring_py(names), force=force)
     factory_src = _factory_minimal_py if minimal else _factory_py
     _write(target / "host" / "factory.py", factory_src(names), force=force)
@@ -926,7 +945,11 @@ def _create_lab_application(
 
     if not minimal:
         _write(target / "serving" / "__init__.py", "", force=force)
-        _write(target / "serving" / "fastapi_router.py", _serving_router_py(names), force=force)
+        _write(
+            target / "serving" / "fastapi_router.py",
+            _serving_router_py(names),
+            force=force,
+        )
         _write(target / "mcp" / "__init__.py", "", force=force)
         _write(target / "mcp" / "server.py", _mcp_server_py(names, specs), force=force)
 
@@ -1066,9 +1089,21 @@ def _create_product_application(
     if product_wiring.is_file():
         product_wiring.unlink()
     _write(target / "host" / "settings.py", product_tpl.settings_py(names), force=force)
-    _write(target / "host" / "agent_builders.py", product_tpl.agent_builders_py(names, specs), force=force)
-    _write(target / "host" / "agent_factories.py", product_tpl.agent_factories_py(names, specs), force=force)
-    _write(target / "host" / "environment_profile.py", product_tpl.environment_profile_py(names), force=force)
+    _write(
+        target / "host" / "agent_builders.py",
+        product_tpl.agent_builders_py(names, specs),
+        force=force,
+    )
+    _write(
+        target / "host" / "agent_factories.py",
+        product_tpl.agent_factories_py(names, specs),
+        force=force,
+    )
+    _write(
+        target / "host" / "environment_profile.py",
+        product_tpl.environment_profile_py(names),
+        force=force,
+    )
     _write(
         target / "host" / "host_runtime_composition.py",
         product_tpl.host_runtime_composition_py(names),
@@ -1087,17 +1122,35 @@ def _create_product_application(
         local_prefix_echo_plugin_py(names),
         force=force,
     )
-    _write(target / "host" / "integration_wiring.py", product_tpl.integration_wiring_py(names), force=force)
-    _write(target / "host" / "tool_wiring.py", product_tpl.tool_wiring_py(names), force=force)
+    _write(
+        target / "host" / "integration_wiring.py",
+        product_tpl.integration_wiring_py(names),
+        force=force,
+    )
+    _write(
+        target / "host" / "tool_wiring.py",
+        product_tpl.tool_wiring_py(names),
+        force=force,
+    )
     _write(target / "host" / "factory.py", product_tpl.factory_py(names), force=force)
     _write(target / "host" / "main.py", product_tpl.main_py(names), force=force)
 
     _write(target / "serving" / "__init__.py", "", force=force)
-    _write(target / "serving" / "schemas.py", product_tpl.schemas_py(names), force=force)
-    _write(target / "serving" / "fastapi_router.py", product_tpl.serving_router_py(names, specs), force=force)
+    _write(
+        target / "serving" / "schemas.py", product_tpl.schemas_py(names), force=force
+    )
+    _write(
+        target / "serving" / "fastapi_router.py",
+        product_tpl.serving_router_py(names, specs),
+        force=force,
+    )
 
     _write(target / "mcp" / "__init__.py", "", force=force)
-    _write(target / "mcp" / "server.py", product_tpl.mcp_server_py(names, specs), force=force)
+    _write(
+        target / "mcp" / "server.py",
+        product_tpl.mcp_server_py(names, specs),
+        force=force,
+    )
 
     _write(target / names.tests_pkg / "__init__.py", "", force=force)
     _write(
@@ -1173,7 +1226,9 @@ def create_application(
     minimal: bool = False,
 ) -> Path:
     if profile not in _PROFILES:
-        raise ValueError(f"Unsupported profile {profile!r}; choose: {', '.join(_PROFILES)}")
+        raise ValueError(
+            f"Unsupported profile {profile!r}; choose: {', '.join(_PROFILES)}"
+        )
 
     names = ScaffoldApplicationNames.resolve(
         name,
@@ -1217,7 +1272,9 @@ def register_parser(sub: argparse._SubParsersAction) -> None:
         "new-application",
         help="Create applications/<name>_application/ (lab or product profile, Tier-3)",
     )
-    parser.add_argument("name", help="Application name (e.g. my_lab → my_lab_application)")
+    parser.add_argument(
+        "name", help="Application name (e.g. my_lab → my_lab_application)"
+    )
     parser.add_argument(
         "--agents",
         default="echo",
@@ -1293,7 +1350,9 @@ def run_new_application(args: argparse.Namespace) -> int:
     mode = "minimal" if args.minimal else args.profile
     print(f"Created Tier-3 application at {path}  (profile={mode})")
     print(f"  Package: {names.pkg}  (app_id={names.short!r}, env={names.env_prefix})")
-    print(f"  Start:  uv run uvicorn {names.pkg}.host.main:app --host 127.0.0.1 --port {names.port}")
+    print(
+        f"  Start:  uv run uvicorn {names.pkg}.host.main:app --host 127.0.0.1 --port {names.port}"
+    )
     print(f"  Test:   uv run pytest {path / names.tests_pkg} -q")
     if args.profile == "product":
         print(f"  Health: GET http://127.0.0.1:{names.port}/health")

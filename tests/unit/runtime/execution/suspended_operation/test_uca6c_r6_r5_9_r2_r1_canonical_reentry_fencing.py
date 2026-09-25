@@ -106,6 +106,7 @@ from tests.unit.autonomous_work.test_uca6c_r5_r2_strict_governance_composition i
     _strict_tool_wiring,
 )
 from tests.unit.autonomous_work.uca6c_r5_r2_strict_fixtures import (
+    uca6c_strict_r6_durable_wiring,
     uca6c_strict_worker_manifest,
     uca6c_strict_worker_registry,
 )
@@ -157,6 +158,8 @@ class DualHostReentryFixture:
     craft_id: str
     terminal_store: ExecutionTerminalOutcomeByExecutionIdStore
     counters: ReentryFenceCounters = field(default_factory=ReentryFenceCounters)
+    document_store_a: object | None = None
+    document_store_b: object | None = None
 
 
 def _counting_terminal_store(
@@ -253,13 +256,14 @@ def _build_host_composition(
 def _build_dual_host_fixture(tmp_path: Path) -> DualHostReentryFixture:
     counters = ReentryFenceCounters()
     r6_kwargs = _strict_r6_kwargs(tmp_path)
+    test_bundle = uca6c_strict_r6_durable_wiring(tmp_path)
     terminal_backend = InMemoryDocumentStore()
     terminal_store = _counting_terminal_store(terminal_backend, counters)
     craft_id = "craft-r59r2r1-reentry-fence"
     ctx = _codecraft_context(
         tmp_path,
         craft_id,
-        sandbox_manager=r6_kwargs["sandbox_session_manager"],
+        sandbox_manager=test_bundle["sandbox_session_manager"],
     )
     tool_wiring = _strict_tool_wiring(ctx)
     bootstrap_uca6c_code_exec_catalog_tools(tool_wiring)
@@ -325,8 +329,10 @@ def _build_dual_host_fixture(tmp_path: Path) -> DualHostReentryFixture:
 
 
 def _sync_host_stores(fixture: DualHostReentryFixture) -> None:
-    store_a = reconnect_document_store_suspended_operation_store(fixture.document_store)
-    store_b = reconnect_document_store_suspended_operation_store(fixture.document_store)
+    backing_a = fixture.document_store_a or fixture.document_store
+    backing_b = fixture.document_store_b or fixture.document_store
+    store_a = reconnect_document_store_suspended_operation_store(backing_a)
+    store_b = reconnect_document_store_suspended_operation_store(backing_b)
     co_a = fixture.composition_a.suspended_work_reentry_coordinator
     co_b = fixture.composition_b.suspended_work_reentry_coordinator
     assert co_a is not None and co_b is not None

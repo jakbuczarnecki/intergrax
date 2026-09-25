@@ -27,6 +27,7 @@ from intergrax.contracts.idempotency_store import (
     InvocationOperationIdentity,
     InvocationStatus,
     PreEffectSuspendedWorkRecoveryAuthority,
+    validate_pre_effect_recovery_authority,
 )
 from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.contracts.persistence_topology import PersistenceTopology
@@ -84,7 +85,8 @@ class RedisIdempotencyStore(IdempotencyStore):
                     "lease_expires_at", ARGV[2],
                     "fence", "1",
                     "operation_tool_id", op_tool,
-                    "operation_fingerprint", op_fp)
+                    "operation_fingerprint", op_fp,
+                    "external_effect_may_have_started", "0")
                 return {"1", ARGV[1], ARGV[2], "1", ""}
             end
 
@@ -219,7 +221,38 @@ class RedisIdempotencyStore(IdempotencyStore):
             if not lease_expires_at or lease_expires_at <= ARGV[3] then
                 return 2
             end
+            local admitted = redis.call("HGET", KEYS[1], "external_effect_may_have_started") or "0"
+            if admitted ~= "0" then
+                return 2
+            end
             redis.call("DEL", KEYS[1])
+            return 1
+            """
+        )
+
+        self._admit_external_effect_script = self._redis.register_script(
+            """
+            if redis.call("EXISTS", KEYS[1]) == 0 then
+                return 0
+            end
+            local status = redis.call("HGET", KEYS[1], "status")
+            if status ~= "started" then
+                return 2
+            end
+            local owner_id = redis.call("HGET", KEYS[1], "owner_id")
+            local fence = redis.call("HGET", KEYS[1], "fence")
+            local lease_expires_at = redis.call("HGET", KEYS[1], "lease_expires_at")
+            if owner_id ~= ARGV[1] or fence ~= ARGV[2] then
+                return 2
+            end
+            if not lease_expires_at or lease_expires_at <= ARGV[3] then
+                return 2
+            end
+            local admitted = redis.call("HGET", KEYS[1], "external_effect_may_have_started") or "0"
+            if admitted ~= "0" then
+                return 1
+            end
+            redis.call("HSET", KEYS[1], "external_effect_may_have_started", "1")
             return 1
             """
         )
@@ -237,6 +270,13 @@ class RedisIdempotencyStore(IdempotencyStore):
             local stored_fp = redis.call("HGET", KEYS[1], "operation_fingerprint") or ""
             if stored_tool ~= ARGV[1] or stored_fp ~= ARGV[2] then
                 return 2
+            end
+            if ARGV[3] == "" or ARGV[4] == "" then
+                return 4
+            end
+            local admitted = redis.call("HGET", KEYS[1], "external_effect_may_have_started") or "0"
+            if admitted ~= "0" then
+                return 0
             end
             redis.call("DEL", KEYS[1])
             return 1
@@ -272,7 +312,6 @@ class RedisIdempotencyStore(IdempotencyStore):
             operation_identity.tool_id,
             operation_identity.operation_fingerprint,
         )
-
 
     def claim(
         self,
@@ -333,7 +372,9 @@ class RedisIdempotencyStore(IdempotencyStore):
     ) -> None:
         ledger_key = self._ledger_key(tenant_id, key)
         serialized = self._serialize_result(result)
-        ttl_arg = str(completed_ttl_seconds) if completed_ttl_seconds is not None else ""
+        ttl_arg = (
+            str(completed_ttl_seconds) if completed_ttl_seconds is not None else ""
+        )
         now_arg = datetime.now(UTC).isoformat()
         script_result = self._complete_with_claim_script(
             keys=[ledger_key],
@@ -378,6 +419,34 @@ class RedisIdempotencyStore(IdempotencyStore):
                 f"Stale pre-effect abandon rejected for key={key} fence={claim.fence}.",
             )
 
+    def external_effect_may_have_started(
+        self,
+        tenant_id: str,
+        key: str,
+    ) -> bool:
+        ledger_key = self._ledger_key(tenant_id, key)
+        raw = self._redis.hget(ledger_key, "external_effect_may_have_started")
+        if raw is None:
+            return False
+        return self._decode(raw) == "1"
+
+    def admit_external_effect_may_have_started_with_claim(
+        self,
+        tenant_id: str,
+        key: str,
+        claim: InvocationClaim,
+    ) -> None:
+        ledger_key = self._ledger_key(tenant_id, key)
+        now_arg = datetime.now(UTC).isoformat()
+        script_result = self._admit_external_effect_script(
+            keys=[ledger_key],
+            args=[claim.owner_id, str(claim.fence), now_arg],
+        )
+        if script_result != 1:
+            raise StaleClaimError(
+                f"Stale effect admission rejected for key={key} fence={claim.fence}.",
+            )
+
     def reconcile_abandoned_pre_effect_not_started(
         self,
         tenant_id: str,
@@ -386,18 +455,24 @@ class RedisIdempotencyStore(IdempotencyStore):
         *,
         recovery_authority: PreEffectSuspendedWorkRecoveryAuthority,
     ) -> bool:
-        del recovery_authority
+        validate_pre_effect_recovery_authority(recovery_authority)
         ledger_key = self._ledger_key(tenant_id, key)
         script_result = self._reconcile_abandoned_pre_effect_script(
             keys=[ledger_key],
             args=[
                 operation_identity.tool_id,
                 operation_identity.operation_fingerprint,
+                recovery_authority.owner_id,
+                str(recovery_authority.fence),
             ],
         )
         if script_result == 2:
             raise IdempotencyOperationConflictError(
                 "Idempotency key is bound to a different logical operation.",
+            )
+        if script_result == 4:
+            raise ValueError(
+                "recovery_authority correlation is required for pre-effect recovery."
             )
         return script_result == 1
 
