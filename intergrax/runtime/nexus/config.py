@@ -15,14 +15,18 @@ from intergrax.runtime.nexus.config_types import (
 )
 
 if TYPE_CHECKING:
-    from intergrax.contracts.canonical_inner_governance import CanonicalInnerExecutionGuardPort
+    from intergrax.contracts.canonical_inner_governance import (
+        CanonicalInnerExecutionGuardPort,
+    )
     from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
     from intergrax.contracts.meaningful_side_effect_authorization import (
         MeaningfulSideEffectAuthorizationPort,
     )
     from intergrax.context.protocols import ContextEngine
     from intergrax.runtime.execution.authority.policy import ExecutionAuthorityPolicy
-    from intergrax.runtime.execution.budget.policy import ExecutionBudgetAllocationPolicy
+    from intergrax.runtime.execution.budget.policy import (
+        ExecutionBudgetAllocationPolicy,
+    )
     from intergrax.integrations.registry.profile import IntegrationProfile
     from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
     from intergrax.runtime.events.event_bus import RuntimeEventBus
@@ -32,11 +36,15 @@ if TYPE_CHECKING:
         ApplicationSecurityProfile,
         EvaluationProfile,
     )
-    from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
+    from intergrax.runtime.architecture.online_evaluation_registry import (
+        OnlineEvaluationRegistry,
+    )
     from intergrax.runtime.adaptive.signal_collector import SignalCollector
     from intergrax.runtime.adaptive.profile_resolution import ResolvedProfileVersions
     from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
-    from intergrax.runtime.attestation.settings import ExecutionBoundaryExportRuntimeSettings
+    from intergrax.runtime.attestation.settings import (
+        ExecutionBoundaryExportRuntimeSettings,
+    )
 
 from intergrax.rag.profiles.runtime_rag_sync import sync_rag_profile_from_runtime_config
 from intergrax.runtime.nexus.config_sections import (
@@ -49,12 +57,18 @@ from intergrax.runtime.nexus.config_sections import (
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.routing.context_bridge import LLMRoutingRuntimeSnapshot
 from intergrax.llm_adapters.routing.contracts import RoutingContext
-from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.embedding.contracts.base_embedding_manager import (
+    BaseEmbeddingManager,
+)
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
-from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
+from intergrax.rag.retrievers.contracts.base_retriever_manager import (
+    BaseRetrieverManager,
+)
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
-from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import (
+    BaseVectorstoreManager,
+)
 from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy, RunBudget
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.policies.runtime_policies import RuntimePolicies
@@ -66,7 +80,8 @@ from intergrax.tools.core.provider import ToolProvider
 from intergrax.skills.execution_binding import SkillExecutionPinningStore
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.skills.registry.runtime import SkillRegistry
-from intergrax.tools.registry import ToolProfile, ToolWiringContext, build_registry_from_profile
+from intergrax.tools.registry import ToolProfile
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.tools.registry.read import ToolRegistryRead
 from intergrax.runtime.nexus.tools.tool_chain_spec import ToolChainSpec
 from intergrax.runtime.nexus.tools.tool_engine_hook import ToolEngineHook
@@ -120,7 +135,6 @@ class RuntimeConfig:
 
     # Enables real-time web search as an additional context layer.
     enable_websearch: bool = True
-    
 
     # ------------------------------------------------------------------
     # MULTI-TENANCY
@@ -144,7 +158,6 @@ class RuntimeConfig:
     # Optional semantic score threshold for filtering low-quality hits.
     rag_score_threshold: Optional[float] = None
 
-
     # ------------------------------------------------------------------
     # LONG-TERM MEMORY (USER) RETRIEVAL CONFIGURATION
     # ------------------------------------------------------------------
@@ -157,7 +170,6 @@ class RuntimeConfig:
 
     # Optional semantic score threshold for filtering low-quality long-term hits.
     longterm_score_threshold: Optional[float] = None
-
 
     # ------------------------------------------------------------------
     # WEB SEARCH CONFIGURATION
@@ -210,7 +222,9 @@ class RuntimeConfig:
     execution_authority_policy_id: Optional[str] = None
 
     # Instance override — takes precedence over execution_budget_allocation_policy_id (UE-8B1).
-    execution_budget_allocation_policy: Optional["ExecutionBudgetAllocationPolicy"] = None
+    execution_budget_allocation_policy: Optional["ExecutionBudgetAllocationPolicy"] = (
+        None
+    )
     # Entry-point plugin id from intergrax.execution_budget_allocation_policies (UE-8B1).
     execution_budget_allocation_policy_id: Optional[str] = None
 
@@ -264,7 +278,7 @@ class RuntimeConfig:
     tool_invoker: Optional[RuntimeToolInvoker] = None
 
     idempotency_store: Optional[IdempotencyStore] = None
-    
+
     tool_providers: Sequence[ToolProvider] = ()
 
     tool_profile: Optional[ToolProfile] = None
@@ -281,7 +295,7 @@ class RuntimeConfig:
 
     modality_profile: Optional[ModalityProfile] = None
 
-     # Optional capability-level tool authorization policy.
+    # Optional capability-level tool authorization policy.
     # If None → all tools are allowed (backward compatible behavior).
     tool_scope_policy: Optional["ToolScopePolicy"] = None
 
@@ -326,14 +340,11 @@ class RuntimeConfig:
     execution_boundary_export: Optional["ExecutionBoundaryExportRuntimeSettings"] = None
     boundary_event_buffer: Optional["BoundaryEventBuffer"] = None
 
-
-
     # ------------------------------------------------------------------
     # DIAGNOSTICS
     # ------------------------------------------------------------------
     enable_llm_usage_collection: bool = True
     llm_usage_tracker: Optional["LLMUsageTracker"] = None
-
 
     # ------------------------------------------------------------------
     # RUNTIME POLICIES
@@ -358,14 +369,13 @@ class RuntimeConfig:
 
     hitl_default_message: Optional[str] = None
 
-
     # ------------------------------------------------------------------
     # BUDGET CONTROL
     # ------------------------------------------------------------------
 
     run_budget: Optional[RunBudget] = None
     budget_policy: Optional[BudgetPolicy] = None
-    
+
     # ------------------------------------------------------------------
     # TRACING
     # ------------------------------------------------------------------
@@ -380,7 +390,6 @@ class RuntimeConfig:
 
     # Tier-3 composed policy (Phase R-Policy); set via applications runtime_config_bridge.
     policy_bundle: Optional["RuntimePolicyBundle"] = None
-
 
     # ------------------------------------------------------------------
     # ENVIRONMENT
@@ -479,14 +488,13 @@ class RuntimeConfig:
         if self.runtime_timeout_ms is not None:
             if not isinstance(self.runtime_timeout_ms, int):
                 raise TypeError("runtime_timeout_ms must be an int or None.")
-            
-            if self.runtime_timeout_ms<=0:
+
+            if self.runtime_timeout_ms <= 0:
                 raise ValueError("runtime_timeout_ms must be > 0 when provided.")
-            
-        
+
         if not isinstance(self.max_run_retries, int):
             raise TypeError("max_run_retries must be an int.")
-        
+
         if self.max_run_retries < 0:
             raise ValueError("max_run_retries must be >= 0.")
 
@@ -495,8 +503,9 @@ class RuntimeConfig:
 
         for code in self.retry_run_on:
             if not isinstance(code, RuntimeErrorCode):
-                raise TypeError("retry_run_on must contain RuntimeErrorCode items only.")
-
+                raise TypeError(
+                    "retry_run_on must contain RuntimeErrorCode items only."
+                )
 
         if self.enable_rag:
             if self.embedding_manager is None or self.vectorstore_manager is None:
@@ -504,20 +513,21 @@ class RuntimeConfig:
                     "enable_rag=True requires embedding_manager and vectorstore_manager."
                 )
             self.ensure_rag_profile()
-            
+
         if self.run_budget is not None:
             if not isinstance(self.run_budget, RunBudget):
                 raise TypeError("run_budget must be RunBudget or None.")
             self.run_budget.validate()
 
             if self.budget_policy is None:
-                raise ValueError("budget_policy must be provided when run_budget is set.")
+                raise ValueError(
+                    "budget_policy must be provided when run_budget is set."
+                )
 
         if self.budget_policy is not None:
             if not isinstance(self.budget_policy, BudgetPolicy):
                 raise TypeError("budget_policy must be BudgetPolicy or None.")
-        
-        
+
         if self.execution_slot_warn_threshold_ms is not None:
             if not isinstance(self.execution_slot_warn_threshold_ms, int):
                 raise TypeError("execution_slot_warn_threshold_ms must be int or None.")
@@ -531,6 +541,10 @@ class RuntimeConfig:
 
         if self.max_identical_tool_call_repeats is not None:
             if not isinstance(self.max_identical_tool_call_repeats, int):
-                raise TypeError("max_identical_tool_call_repeats must be an int or None.")
+                raise TypeError(
+                    "max_identical_tool_call_repeats must be an int or None."
+                )
             if self.max_identical_tool_call_repeats < 1:
-                raise ValueError("max_identical_tool_call_repeats must be >= 1 when provided.")
+                raise ValueError(
+                    "max_identical_tool_call_repeats must be >= 1 when provided."
+                )

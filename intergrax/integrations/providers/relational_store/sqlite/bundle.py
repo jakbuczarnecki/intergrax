@@ -15,13 +15,6 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from intergrax.collaborative_work.materialization_factory import (
-    CollaborativeWorkMaterializationBinder,
-    CollaborativeWorkPersistenceFactory,
-)
-from intergrax.collaborative_work.persistence import (
-    CollaborativeWorkMaterializedRepositories,
-)
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.providers.relational_store.sqlite.adapter import (
     _SQLiteRelationalStore,
@@ -78,7 +71,7 @@ class _SQLiteCollaborativeWorkMaterializer:
 
     def materialize_collaborative_work_repositories(
         self,
-    ) -> CollaborativeWorkMaterializedRepositories:
+    ):
         from intergrax.collaborative_work.persistence import (
             open_sqlite_collaborative_work_repositories,
         )
@@ -108,14 +101,12 @@ class SQLiteRelationalStoreFactory:
     def bind_collaborative_work_materialization(
         self,
         options: Mapping[str, Any],
-    ) -> CollaborativeWorkPersistenceFactory:
+    ):
         paths = _sqlite_materialization_paths_from_options(options)
         return _SQLiteCollaborativeWorkMaterializer(paths)
 
 
-create_sqlite_relational_store: (
-    SQLiteRelationalStoreFactory & CollaborativeWorkMaterializationBinder
-) = SQLiteRelationalStoreFactory()
+create_sqlite_relational_store = SQLiteRelationalStoreFactory()
 
 
 def create_sqlite_relational_store_integration(

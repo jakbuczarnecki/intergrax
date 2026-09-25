@@ -10,12 +10,18 @@ from typing import FrozenSet, Optional
 
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.embedding.contracts.base_embedding_manager import (
+    BaseEmbeddingManager,
+)
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
-from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
+from intergrax.rag.retrievers.contracts.base_retriever_manager import (
+    BaseRetrieverManager,
+)
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
-from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import (
+    BaseVectorstoreManager,
+)
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.runtime.nexus.policies.runtime_policies import RuntimePolicies
 from intergrax.runtime.nexus.tools.invoker import RuntimeToolInvoker
@@ -23,13 +29,18 @@ from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.runtime.modality.modality_profile import ModalityProfile
 from intergrax.runtime.tools.scope_policy import ToolScopePolicy
 from intergrax.tools.core.provider import ToolProvider
-from intergrax.tools.registry import ToolProfile, ToolWiringContext
+from intergrax.tools.registry import ToolProfile
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.tools.registry.read import ToolRegistryRead
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.websearch.service.websearch_config import WebSearchConfig
 from intergrax.websearch.service.websearch_executor import WebSearchExecutor
 
-from intergrax.runtime.nexus.config_types import ToolChoiceMode, ToolSelectionMode, ToolsContextScope
+from intergrax.runtime.nexus.config_types import (
+    ToolChoiceMode,
+    ToolSelectionMode,
+    ToolsContextScope,
+)
 
 
 @dataclass

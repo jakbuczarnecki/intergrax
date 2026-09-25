@@ -20,7 +20,9 @@ from intergrax.runtime.nexus.tools.tool_planning_policy import NativeToolChoice
 from intergrax.runtime.nexus.tools.tool_planner_protocol import ToolPlannerProtocol
 from intergrax.runtime.nexus.tools.tool_planner_trackable import ToolPlannerTrackable
 from intergrax.runtime.nexus.tools.tool_planning_service import ToolPlanningService
-from intergrax.tools.registry import ToolRegistry, ToolWiringContext, build_registry_from_profile
+from intergrax.tools.registry import ToolRegistry
+from intergrax.tools.registry.factory import build_registry_from_profile
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.tools.registry.profile import ToolProfile
 from intergrax.tools.core.tool_plan_decision import ToolPlanDecision
 
@@ -54,7 +56,9 @@ class CatalogToolPlanner(ToolPlannerTrackable):
         planner_prompt_id: str = "tools_agent_planner",
         investigation_prompt_id: str = "tools_investigation_policy",
     ) -> CatalogToolPlanner:
-        from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
+        from intergrax.runtime.nexus.tools.tool_planning_config import (
+            ToolPlanningConfig,
+        )
 
         config = ToolPlanningConfig.default(
             planner_prompt_id=planner_prompt_id,

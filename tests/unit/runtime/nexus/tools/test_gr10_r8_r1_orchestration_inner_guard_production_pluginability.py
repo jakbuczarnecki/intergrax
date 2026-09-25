@@ -66,7 +66,8 @@ from intergrax.runtime.wiring.agent_runtime_governance_factory import (
 from intergrax.runtime.wiring.harness_governance import create_lab_allow_governance_service
 from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
-from intergrax.tools.registry import ToolProfile, ToolWiringContext
+from intergrax.tools.registry import ToolProfile
+from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
 from testing_support.builder import (
     FakeLLMAdapter,

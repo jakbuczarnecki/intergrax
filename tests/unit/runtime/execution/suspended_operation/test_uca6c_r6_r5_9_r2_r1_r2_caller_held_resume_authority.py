@@ -8,7 +8,6 @@ from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Iterator
-from unittest.mock import patch
 
 import pytest
 
@@ -594,11 +593,7 @@ def test_expired_lease_with_current_authority_canonical_resume(tmp_path: Path) -
             )
             expired_now = datetime.now(UTC) + timedelta(hours=2)
             _sync_host_stores(fixture)
-            with patch(
-                "intergrax.runtime.execution.suspended_operation.reentry_coordinator.datetime",
-            ) as mock_dt:
-                mock_dt.now.return_value = expired_now
-                mock_dt.side_effect = lambda *args, **kwargs: datetime(*args, **kwargs)
+            with advance_lease_clock(expired_now):
                 _, result = _canonical_resume_reentry(
                     task,
                     hitl=fixture.hitl_b,
