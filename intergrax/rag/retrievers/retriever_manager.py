@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from typing import List, Sequence
 
+import numpy as np
+from numpy.typing import NDArray
+
 from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrievalHit,
     RetrieverQuery,
@@ -47,7 +50,7 @@ class RetrieverManager(BaseRetrieverManager):
         query_text: str,
         *,
         retriever_id: str,
-        query_embedding: Sequence[float] | None = None,
+        query_embedding: NDArray[np.float32] | Sequence[float] | None = None,
         top_k: int = 5,
         metadata_filter: MetadataFilter | None = None,
         scope: VectorStoreScope | None = None,

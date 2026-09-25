@@ -20,7 +20,12 @@ _BASE_RETRIEVER_MANAGER = (
     _REPO_ROOT / "intergrax" / "rag" / "retrievers" / "contracts" / "base_retriever_manager.py"
 )
 _RETRIEVER_MANAGER = _REPO_ROOT / "intergrax" / "rag" / "retrievers" / "retriever_manager.py"
+_BASE_RETRIEVER = _REPO_ROOT / "intergrax" / "rag" / "retrievers" / "contracts" / "base_retriever.py"
+_RETRIEVER_PIPELINE = (
+    _REPO_ROOT / "intergrax" / "rag" / "retrievers" / "pipeline" / "retriever_pipeline.py"
+)
 _CANONICAL_METADATA_FILTER_ANNOTATION = "MetadataFilter | None"
+_CANONICAL_QUERY_EMBEDDING_ANNOTATION = "NDArray[np.float32] | Sequence[float] | None"
 _FORBIDDEN_CAPABILITY_GETATTR_ATTRS = frozenset({"supports_scoped_retrieval", "last_execution"})
 
 
@@ -108,6 +113,36 @@ def _retrieve_metadata_filter_annotation(tree: ast.Module, class_name: str) -> s
     return None
 
 
+def _retrieve_query_embedding_annotation(tree: ast.Module, class_name: str) -> str | None:
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name != class_name:
+            continue
+        for item in node.body:
+            if not isinstance(item, ast.FunctionDef) or item.name != "retrieve":
+                continue
+            for arg in item.args.kwonlyargs:
+                if arg.arg == "query_embedding":
+                    if arg.annotation is None:
+                        return None
+                    return ast.unparse(arg.annotation)
+    return None
+
+
+def _retriever_query_embedding_annotation(tree: ast.Module) -> str | None:
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef) or node.name != "RetrieverQuery":
+            continue
+        for item in node.body:
+            if not isinstance(item, ast.AnnAssign) or not isinstance(item.target, ast.Name):
+                continue
+            if item.target.id != "query_embedding":
+                continue
+            if item.annotation is None:
+                return None
+            return ast.unparse(item.annotation)
+    return None
+
+
 def _class_property_names(tree: ast.Module, class_name: str) -> set[str]:
     names: set[str] = set()
     for node in tree.body:
@@ -139,6 +174,22 @@ def test_retrieve_metadata_filter_is_canonical_typed_on_manager_boundaries() -> 
         ann = _retrieve_metadata_filter_annotation(_parse(path), class_name)
         assert ann == _CANONICAL_METADATA_FILTER_ANNOTATION, (
             f"{class_name}.retrieve.metadata_filter must be {_CANONICAL_METADATA_FILTER_ANNOTATION}, got {ann!r}"
+        )
+
+
+def test_query_embedding_is_canonical_typed_on_retrieval_boundaries() -> None:
+    rq_ann = _retriever_query_embedding_annotation(_parse(_BASE_RETRIEVER))
+    assert rq_ann == _CANONICAL_QUERY_EMBEDDING_ANNOTATION, (
+        f"RetrieverQuery.query_embedding must be {_CANONICAL_QUERY_EMBEDDING_ANNOTATION}, got {rq_ann!r}"
+    )
+    for path, class_name in (
+        (_BASE_RETRIEVER_MANAGER, "BaseRetrieverManager"),
+        (_RETRIEVER_MANAGER, "RetrieverManager"),
+        (_RETRIEVER_PIPELINE, "RetrieverPipeline"),
+    ):
+        ann = _retrieve_query_embedding_annotation(_parse(path), class_name)
+        assert ann == _CANONICAL_QUERY_EMBEDDING_ANNOTATION, (
+            f"{class_name}.retrieve.query_embedding must be {_CANONICAL_QUERY_EMBEDDING_ANNOTATION}, got {ann!r}"
         )
 
 

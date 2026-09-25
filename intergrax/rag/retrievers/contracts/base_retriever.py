@@ -42,7 +42,7 @@ class RetrieverQuery:
     query_text: str
 
     # optional precomputed embedding
-    query_embedding: Sequence[float] | None
+    query_embedding: NDArray[np.float32] | Sequence[float] | None
 
     # number of results requested
     top_k: int
