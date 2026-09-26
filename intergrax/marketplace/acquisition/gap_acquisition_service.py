@@ -47,6 +47,12 @@ from intergrax.contracts.tools.marketplace_handoff_reference import (
     derive_marketplace_gap_tool_handoff_id,
     marketplace_domain_handoff_reference,
 )
+from intergrax.contracts.tools.marketplace_qualified_tool_stage_context import (
+    MarketplaceQualifiedToolStageContextAssociationConflictError,
+    MarketplaceQualifiedToolStageContextAssociationIntegrityError,
+    MarketplaceQualifiedToolStageContextAssociationUnavailableError,
+    MarketplaceQualifiedToolStageContextRecorder,
+)
 from intergrax.marketplace.acquisition.query_normalization import (
     discovery_query_for_machine_acquisition,
     effective_query_text,
@@ -82,16 +88,6 @@ MARKETPLACE_GAP_SELECTION_ID_PREFIX = "marketplace-gap-selection:"
 def marketplace_gap_selection_id(operation_id: str) -> str:
     normalized = require_non_empty_text(operation_id, label="operation_id")
     return f"{MARKETPLACE_GAP_SELECTION_ID_PREFIX}{normalized}"
-
-
-def marketplace_gap_operation_id_from_selection_id(selection_id: str) -> str:
-    normalized = require_non_empty_text(selection_id, label="selection_id")
-    if not normalized.startswith(MARKETPLACE_GAP_SELECTION_ID_PREFIX):
-        raise ValueError(
-            "selection_id is not a marketplace gap acquisition selection identifier",
-        )
-    operation_id = normalized[len(MARKETPLACE_GAP_SELECTION_ID_PREFIX) :]
-    return require_non_empty_text(operation_id, label="operation_id")
 
 
 def _selection_id(operation_id: str) -> str:
@@ -150,6 +146,9 @@ class MarketplaceGapAcquisitionService(MarketplaceGapAcquisitionPort):
     diagnostic_observer: MarketplaceDiagnosticObserver | None = None
     observer_failure_policy: MarketplaceObserverFailurePolicy = (
         MarketplaceObserverFailurePolicy.BEST_EFFORT
+    )
+    tool_stage_context_recorder: MarketplaceQualifiedToolStageContextRecorder | None = (
+        None
     )
 
     def acquire_from_gap(
@@ -240,6 +239,37 @@ class MarketplaceGapAcquisitionService(MarketplaceGapAcquisitionPort):
                 tenant_id=tenant_id,
                 operation_id=request.operation_id,
             )
+            if self.tool_stage_context_recorder is not None:
+                try:
+                    self.tool_stage_context_recorder.record_tool_handoff_context(
+                        handoff_id=handoff_id,
+                        tenant_id=tenant_id,
+                        acquisition_request_id=request.operation_id,
+                    )
+                except MarketplaceQualifiedToolStageContextAssociationConflictError as exc:
+                    return MarketplaceGapAcquisitionResult(
+                        operation_id=request.operation_id,
+                        gap_id=request.gap_id,
+                        outcome=MarketplaceGapAcquisitionOutcome.BLOCKED,
+                        marketplace_listing_correlation_id=listing_correlation_id,
+                        reason_detail=str(exc),
+                    )
+                except MarketplaceQualifiedToolStageContextAssociationUnavailableError as exc:
+                    return MarketplaceGapAcquisitionResult(
+                        operation_id=request.operation_id,
+                        gap_id=request.gap_id,
+                        outcome=MarketplaceGapAcquisitionOutcome.UNAVAILABLE,
+                        marketplace_listing_correlation_id=listing_correlation_id,
+                        reason_detail=str(exc),
+                    )
+                except MarketplaceQualifiedToolStageContextAssociationIntegrityError as exc:
+                    return MarketplaceGapAcquisitionResult(
+                        operation_id=request.operation_id,
+                        gap_id=request.gap_id,
+                        outcome=MarketplaceGapAcquisitionOutcome.FAILED,
+                        marketplace_listing_correlation_id=listing_correlation_id,
+                        reason_detail=str(exc),
+                    )
         else:
             handoff_id = _handoff_id(request.operation_id)
         try:
@@ -327,6 +357,5 @@ class MarketplaceGapAcquisitionService(MarketplaceGapAcquisitionPort):
 __all__ = [
     "MARKETPLACE_GAP_SELECTION_ID_PREFIX",
     "MarketplaceGapAcquisitionService",
-    "marketplace_gap_operation_id_from_selection_id",
     "marketplace_gap_selection_id",
 ]

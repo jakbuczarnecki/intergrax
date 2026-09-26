@@ -105,6 +105,21 @@ class MarketplaceQualifiedToolStageContextResolverNotSupportedError(
 
 
 @runtime_checkable
+class MarketplaceQualifiedToolStageContextRecorder(Protocol):
+    """Record authoritative acquisition context before Tool handoff delivery."""
+
+    def record_tool_handoff_context(
+        self,
+        *,
+        handoff_id: str,
+        tenant_id: str,
+        acquisition_request_id: str,
+    ) -> MarketplaceQualifiedToolStageContextAssociationWriteResult:
+        """Persist immutable handoff context; conflict when identity collides."""
+        ...
+
+
+@runtime_checkable
 class MarketplaceQualifiedToolStageContextAssociationRepository(Protocol):
     """Durable handoff→tenant context association (handoff_id is globally distinct)."""
 
@@ -143,6 +158,7 @@ __all__ = [
     "MarketplaceQualifiedToolStageContextAssociationConflictError",
     "MarketplaceQualifiedToolStageContextAssociationIntegrityError",
     "MarketplaceQualifiedToolStageContextAssociationRepository",
+    "MarketplaceQualifiedToolStageContextRecorder",
     "MarketplaceQualifiedToolStageContextAssociationUnavailableError",
     "MarketplaceQualifiedToolStageContextAssociationWriteOutcome",
     "MarketplaceQualifiedToolStageContextAssociationWriteResult",

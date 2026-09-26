@@ -78,8 +78,6 @@ class MarketplaceToolCapabilityQualificationProvider:
             return False
         if evidence.artifact_reference is not None:
             return False
-        if evidence.evidence_ref is not None:
-            return False
         return True
 
     def qualify(

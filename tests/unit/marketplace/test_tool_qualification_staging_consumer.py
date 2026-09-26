@@ -41,6 +41,9 @@ from intergrax.integrations._shared.in_memory_document_store import (
 from intergrax.contracts.tools.marketplace_handoff_reference import (
     derive_marketplace_gap_tool_handoff_id,
 )
+from intergrax.contracts.tools.marketplace_qualified_tool_stage_context import (
+    MarketplaceQualifiedToolStageContext,
+)
 from intergrax.marketplace.acquisition.gap_acquisition_service import (
     marketplace_gap_selection_id,
 )
@@ -147,6 +150,22 @@ def _envelope(
     )
 
 
+def _prime_association(
+    association: DocumentStoreMarketplaceQualifiedToolStageContextAssociationRepository,
+    envelope: CapabilityHandoffEnvelope,
+    *,
+    operation_id: str,
+) -> None:
+    tenant_id = envelope.tenant_id or "tenant-1"
+    association.record(
+        MarketplaceQualifiedToolStageContext(
+            handoff_id=envelope.handoff_id,
+            tenant_id=tenant_id,
+            acquisition_request_id=operation_id,
+        ),
+    )
+
+
 def _consumer() -> tuple[
     ToolQualificationStagingConsumer,
     MarketplaceQualifiedToolStageRepository,
@@ -163,6 +182,7 @@ def _consumer() -> tuple[
 def test_tool_envelope_persists_stage() -> None:
     consumer, repo, assoc = _consumer()
     envelope = _envelope()
+    _prime_association(assoc, envelope, operation_id="op-consumer-1")
     consumer.consume(envelope)
     loaded = repo.get(tenant_id="tenant-1", handoff_id=envelope.handoff_id)
     assert loaded is not None
@@ -171,9 +191,10 @@ def test_tool_envelope_persists_stage() -> None:
 
 
 def test_selected_release_copied_exactly() -> None:
-    consumer, repo, _assoc = _consumer()
+    consumer, repo, assoc = _consumer()
     release = _tool_release("3.4.5")
     envelope = _envelope(release)
+    _prime_association(assoc, envelope, operation_id="op-consumer-1")
     consumer.consume(envelope)
     loaded = repo.get(tenant_id="tenant-1", handoff_id=envelope.handoff_id)
     assert loaded is not None
@@ -181,8 +202,9 @@ def test_selected_release_copied_exactly() -> None:
 
 
 def test_tenant_correlation_selection_preserved() -> None:
-    consumer, repo, _assoc = _consumer()
+    consumer, repo, assoc = _consumer()
     envelope = _envelope()
+    _prime_association(assoc, envelope, operation_id="op-consumer-1")
     consumer.consume(envelope)
     loaded = repo.get(tenant_id="tenant-1", handoff_id=envelope.handoff_id)
     assert loaded is not None
@@ -192,8 +214,9 @@ def test_tenant_correlation_selection_preserved() -> None:
 
 
 def test_duplicate_identical_envelope_is_safe() -> None:
-    consumer, repo, _assoc = _consumer()
+    consumer, repo, assoc = _consumer()
     envelope = _envelope()
+    _prime_association(assoc, envelope, operation_id="op-consumer-1")
     consumer.consume(envelope)
     consumer.consume(envelope)
     loaded = repo.get(tenant_id="tenant-1", handoff_id=envelope.handoff_id)
@@ -201,10 +224,14 @@ def test_duplicate_identical_envelope_is_safe() -> None:
 
 
 def test_conflicting_stage_is_blocked() -> None:
-    consumer, _repo, _assoc = _consumer()
-    consumer.consume(_envelope(_tool_release("1.0.0")))
+    consumer, _repo, assoc = _consumer()
+    first = _envelope(_tool_release("1.0.0"))
+    second = _envelope(_tool_release("2.0.0"))
+    _prime_association(assoc, first, operation_id="op-consumer-1")
+    _prime_association(assoc, second, operation_id="op-consumer-1")
+    consumer.consume(first)
     with pytest.raises(CapabilityHandoffConsumerError) as exc_info:
-        consumer.consume(_envelope(_tool_release("2.0.0")))
+        consumer.consume(second)
     assert exc_info.value.disposition is CapabilityHandoffConsumerFailureDisposition.BLOCKED
 
 
@@ -262,7 +289,11 @@ def test_repository_unavailable_maps_to_unavailable() -> None:
             raise NotImplementedError
 
         def get_by_handoff_id(self, handoff_id: str):
-            return None
+            return MarketplaceQualifiedToolStageContext(
+                handoff_id=handoff_id,
+                tenant_id="tenant-1",
+                acquisition_request_id="op-consumer-1",
+            )
 
     consumer = ToolQualificationStagingConsumer(_UnavailableRepo(), _UnavailableAssoc())
     with pytest.raises(CapabilityHandoffConsumerError) as exc_info:
@@ -291,12 +322,23 @@ def test_repository_integrity_failure_maps_to_failed() -> None:
             raise NotImplementedError
 
         def get_by_handoff_id(self, handoff_id: str):
-            return None
+            return MarketplaceQualifiedToolStageContext(
+                handoff_id=handoff_id,
+                tenant_id="tenant-1",
+                acquisition_request_id="op-consumer-1",
+            )
 
     consumer = ToolQualificationStagingConsumer(_IntegrityRepo(), _NoopAssoc())
     with pytest.raises(CapabilityHandoffConsumerError) as exc_info:
         consumer.consume(_envelope())
     assert exc_info.value.disposition is CapabilityHandoffConsumerFailureDisposition.FAILED
+
+
+def test_missing_handoff_context_is_blocked() -> None:
+    consumer, _repo, _assoc = _consumer()
+    with pytest.raises(CapabilityHandoffConsumerError) as exc_info:
+        consumer.consume(_envelope())
+    assert exc_info.value.disposition is CapabilityHandoffConsumerFailureDisposition.BLOCKED
 
 
 def test_consumer_has_stable_consumer_id() -> None:
@@ -309,6 +351,7 @@ def test_consumer_has_no_activation_or_execution_dependencies() -> None:
         "intergrax/marketplace/handoff/adapters/tool_qualification_staging_consumer.py",
     )
     source = path.read_text(encoding="utf-8")
+    assert "intergrax.marketplace.acquisition" not in source
     forbidden = (
         "ToolRegistry",
         "ToolRuntime",

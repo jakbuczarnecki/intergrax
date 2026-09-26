@@ -17,9 +17,6 @@ from intergrax.contracts.marketplace.handoff_traceability import (
     CapabilityHandoffConsumerTarget,
     CapabilityHandoffEnvelope,
 )
-from intergrax.contracts.tools.marketplace_handoff_reference import (
-    derive_marketplace_gap_tool_handoff_id,
-)
 from intergrax.contracts.tools.marketplace_qualified_capability import (
     MarketplaceQualifiedToolStage,
     MarketplaceQualifiedToolStageConflictError,
@@ -28,14 +25,7 @@ from intergrax.contracts.tools.marketplace_qualified_capability import (
     MarketplaceQualifiedToolStageUnavailableError,
 )
 from intergrax.contracts.tools.marketplace_qualified_tool_stage_context import (
-    MarketplaceQualifiedToolStageContext,
-    MarketplaceQualifiedToolStageContextAssociationConflictError,
-    MarketplaceQualifiedToolStageContextAssociationIntegrityError,
     MarketplaceQualifiedToolStageContextAssociationRepository,
-    MarketplaceQualifiedToolStageContextAssociationUnavailableError,
-)
-from intergrax.marketplace.acquisition.gap_acquisition_service import (
-    marketplace_gap_operation_id_from_selection_id,
 )
 
 TOOL_QUALIFICATION_STAGING_CONSUMER_ID: Final = "tool.qualification_staging.v1"
@@ -103,23 +93,16 @@ class ToolQualificationStagingConsumer:
                 "tool qualification staging requires TOOL capability release",
                 disposition=CapabilityHandoffConsumerFailureDisposition.BLOCKED,
             )
-        try:
-            acquisition_request_id = marketplace_gap_operation_id_from_selection_id(
-                envelope.selection_id,
-            )
-        except (TypeError, ValueError) as exc:
-            raise CapabilityHandoffConsumerError(
-                str(exc),
-                disposition=CapabilityHandoffConsumerFailureDisposition.BLOCKED,
-            ) from exc
 
-        expected_handoff_id = derive_marketplace_gap_tool_handoff_id(
-            tenant_id=normalized_tenant,
-            operation_id=acquisition_request_id,
-        )
-        if envelope.handoff_id != expected_handoff_id:
+        association = self._association_repository.get_by_handoff_id(envelope.handoff_id)
+        if association is None:
             raise CapabilityHandoffConsumerError(
-                "handoff_id does not match tenant-bound marketplace gap tool identity",
+                "tool qualification staging requires pre-recorded handoff context",
+                disposition=CapabilityHandoffConsumerFailureDisposition.BLOCKED,
+            )
+        if association.tenant_id != normalized_tenant:
+            raise CapabilityHandoffConsumerError(
+                "handoff context tenant does not match envelope tenant",
                 disposition=CapabilityHandoffConsumerFailureDisposition.FAILED,
             )
 
@@ -144,29 +127,6 @@ class ToolQualificationStagingConsumer:
                 disposition=CapabilityHandoffConsumerFailureDisposition.UNAVAILABLE,
             ) from exc
         except MarketplaceQualifiedToolStageIntegrityError as exc:
-            raise CapabilityHandoffConsumerError(
-                str(exc),
-                disposition=CapabilityHandoffConsumerFailureDisposition.FAILED,
-            ) from exc
-
-        association = MarketplaceQualifiedToolStageContext(
-            handoff_id=envelope.handoff_id,
-            tenant_id=normalized_tenant,
-            acquisition_request_id=acquisition_request_id,
-        )
-        try:
-            self._association_repository.record(association)
-        except MarketplaceQualifiedToolStageContextAssociationConflictError as exc:
-            raise CapabilityHandoffConsumerError(
-                str(exc),
-                disposition=CapabilityHandoffConsumerFailureDisposition.BLOCKED,
-            ) from exc
-        except MarketplaceQualifiedToolStageContextAssociationUnavailableError as exc:
-            raise CapabilityHandoffConsumerError(
-                str(exc),
-                disposition=CapabilityHandoffConsumerFailureDisposition.UNAVAILABLE,
-            ) from exc
-        except MarketplaceQualifiedToolStageContextAssociationIntegrityError as exc:
             raise CapabilityHandoffConsumerError(
                 str(exc),
                 disposition=CapabilityHandoffConsumerFailureDisposition.FAILED,

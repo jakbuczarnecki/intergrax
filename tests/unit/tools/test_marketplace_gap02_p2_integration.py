@@ -19,17 +19,12 @@ from intergrax.capability_qualification.qualification_service import (
 from intergrax.capability_qualification.qualified_capability_binding_service import (
     QualifiedCapabilityBindingService,
 )
-from intergrax.contracts.capability_acquisition.acquisition_evidence import (
-    CapabilityAcquisitionEvidence,
-)
 from intergrax.contracts.capability_acquisition.acquisition_outcome import (
     CapabilityAcquisitionOutcome,
 )
-from intergrax.contracts.capability_acquisition.acquisition_reason_code import (
-    CapabilityAcquisitionReasonCode,
-)
-from intergrax.contracts.capability_acquisition.acquisition_result import (
-    CapabilityAcquisitionResult,
+from intergrax.contracts.capability_acquisition.acquisition_request import (
+    CapabilityAcquisitionRequest,
+    derive_capability_acquisition_request_id,
 )
 from intergrax.contracts.capability_catalog import (
     CapabilityDiscoveryQuery,
@@ -40,6 +35,13 @@ from intergrax.contracts.capability_catalog import (
     CapabilityNeed,
     CapabilitySourceIdentity,
     CapabilitySourceKind,
+)
+from intergrax.contracts.capability_catalog.capability_gap import CapabilityGap
+from intergrax.contracts.capability_catalog.discovery_completion import (
+    build_discovery_completion,
+)
+from intergrax.contracts.capability_catalog.federation import (
+    CapabilityCatalogFederationCompleteness,
 )
 from intergrax.contracts.capability_qualification.qualified_capability_binding import (
     QualifiedCapabilityBindingOutcome,
@@ -59,10 +61,6 @@ from intergrax.contracts.capability_qualification.qualification_request import (
 )
 from intergrax.contracts.execution_identity import TaskId
 from intergrax.contracts.marketplace import MarketplaceListingRecord, MarketplaceQueryContext
-from intergrax.contracts.marketplace.gap_acquisition import (
-    MarketplaceGapAcquisitionOutcome,
-    MarketplaceGapAcquisitionRequest,
-)
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.marketplace import (
     MarketplaceCapabilityCatalogSource,
@@ -70,9 +68,10 @@ from intergrax.marketplace import (
     MarketplaceDiscoveryService,
     MarketplaceRecommendationService,
 )
-from intergrax.marketplace.acquisition import MarketplaceGapAcquisitionService
-from intergrax.marketplace.acquisition.uca_acquisition_strategy import (
+from intergrax.marketplace.acquisition import (
     MARKETPLACE_GAP_ACQUISITION_STRATEGY_ID,
+    MarketplaceGapAcquisitionService,
+    MarketplaceGapCapabilityAcquisitionStrategy,
 )
 from intergrax.marketplace.handoff.adapters.tool_qualification_staging_consumer import (
     ToolQualificationStagingConsumer,
@@ -95,6 +94,9 @@ from intergrax.tools.marketplace_qualified_capability_staging import (
 from intergrax.tools.marketplace_qualified_tool_stage_context_association import (
     DocumentStoreMarketplaceQualifiedToolStageContextAssociationRepository,
 )
+from intergrax.tools.marketplace_qualified_tool_stage_context_recorder import (
+    MarketplaceQualifiedToolStageContextRecorderImpl,
+)
 from intergrax.tools.marketplace_qualified_tool_stage_context_resolver import (
     MarketplaceQualifiedToolStageContextResolverImpl,
 )
@@ -113,6 +115,16 @@ def _discovery_query() -> CapabilityDiscoveryQuery:
     return CapabilityDiscoveryQuery(
         scope=CapabilityDiscoveryScope(mode=CapabilityDiscoveryScopeMode.GLOBAL),
     )
+
+
+def _capability_gap() -> CapabilityGap:
+    completion = build_discovery_completion(
+        need_id="need-1",
+        discovery_correlation_id="corr",
+        federation_completeness=CapabilityCatalogFederationCompleteness.COMPLETE,
+        created_at=_NOW,
+    )
+    return CapabilityGap.from_discovery_completion(completion)
 
 
 def _gap_service(
@@ -139,6 +151,7 @@ def _gap_service(
     assoc_repo = DocumentStoreMarketplaceQualifiedToolStageContextAssociationRepository(
         store,
     )
+    recorder = MarketplaceQualifiedToolStageContextRecorderImpl(assoc_repo)
     consumer = ToolQualificationStagingConsumer(stage_repo, assoc_repo)
     delivery = CapabilityHandoffDeliveryService(
         consumer=consumer,
@@ -159,41 +172,42 @@ def _gap_service(
         governance_context=CapabilityGovernanceContext(),
         recommendation_service=MarketplaceRecommendationService.with_defaults(),
         handoff_orchestrator=orchestrator,
+        tool_stage_context_recorder=recorder,
     )
     return gap_service, store
 
 
-def _run_tenant_flow(tenant_id: str, acquisition_id: str) -> None:
+def _run_tenant_flow(tenant_id: str, *, request_nonce: str) -> None:
     gap_service, store = _gap_service(tenant_id)
-    gap_result = gap_service.acquire_from_gap(
-        MarketplaceGapAcquisitionRequest(
-            operation_id=acquisition_id,
-            gap_id="capability-gap:need-1:corr",
-            canonical_discovery_correlation_id="corr",
-            capability_need=CapabilityNeed(
-                need_id="need-1",
-                kinds=(CapabilityKind.TOOL,),
-                intent_summary="tool",
-            ),
-            discovery_query=_discovery_query(),
-            marketplace_query_context=MarketplaceQueryContext(tenant_id=tenant_id),
-        ),
+    strategy = MarketplaceGapCapabilityAcquisitionStrategy(
+        gap_service,
+        marketplace_query_context=MarketplaceQueryContext(tenant_id=tenant_id),
     )
-    assert gap_result.outcome is MarketplaceGapAcquisitionOutcome.SUCCEEDED
-    assert gap_result.domain_handoff_reference is not None
-
-    acquisition = CapabilityAcquisitionResult(
+    gap = _capability_gap()
+    need = CapabilityNeed(
+        need_id="need-1",
+        kinds=(CapabilityKind.TOOL,),
+        intent_summary="tool",
+    )
+    acquisition_id = derive_capability_acquisition_request_id(
+        gap_id=gap.gap_id,
+        request_nonce=request_nonce,
+    )
+    acq_request = CapabilityAcquisitionRequest(
         request_id=acquisition_id,
-        gap_id="capability-gap:need-1:corr",
-        strategy_id=MARKETPLACE_GAP_ACQUISITION_STRATEGY_ID,
-        outcome=CapabilityAcquisitionOutcome.SUCCEEDED,
-        reason_code=CapabilityAcquisitionReasonCode.NONE,
-        started_at=_NOW,
-        completed_at=_NOW,
-        evidence=CapabilityAcquisitionEvidence(
-            domain_handoff_reference=gap_result.domain_handoff_reference,
-        ),
+        request_nonce=request_nonce,
+        capability_gap=gap,
+        capability_need=need,
+        requested_at=_NOW,
     )
+    acquisition = strategy.acquire(acq_request)
+    assert acquisition.outcome is CapabilityAcquisitionOutcome.SUCCEEDED
+    assert acquisition.strategy_id == MARKETPLACE_GAP_ACQUISITION_STRATEGY_ID
+    assert acquisition.evidence is not None
+    assert acquisition.evidence.domain_handoff_reference is not None
+    assert acquisition.evidence.evidence_ref is not None
+    assert acquisition.evidence.artifact_reference is None
+
     qual_request = CapabilityQualificationRequest(
         qualification_request_id=derive_capability_qualification_request_id(
             acquisition_request_id=acquisition_id,
@@ -259,13 +273,13 @@ def _run_tenant_flow(tenant_id: str, acquisition_id: str) -> None:
 
 
 def test_p2_integration_single_tenant() -> None:
-    _run_tenant_flow("tenant-a", "acq-integration-1")
+    _run_tenant_flow("tenant-a", request_nonce="nonce-integration-1")
 
 
 def test_multi_tenant_same_acquisition_id() -> None:
-    acquisition_id = "shared-acquisition-id"
-    _run_tenant_flow("tenant-a", acquisition_id)
-    _run_tenant_flow("tenant-b", acquisition_id)
+    shared_nonce = "shared-acquisition-nonce"
+    _run_tenant_flow("tenant-a", request_nonce=shared_nonce)
+    _run_tenant_flow("tenant-b", request_nonce=shared_nonce)
 
 
 def test_integration_modules_have_no_execution_activation() -> None:

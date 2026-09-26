@@ -142,6 +142,7 @@ def _qualification_request(
     domain_ref: str,
     strategy_id: str = _STRATEGY,
     artifact_reference: str | None = None,
+    evidence_ref: str | None = None,
 ) -> CapabilityQualificationRequest:
     acquisition = CapabilityAcquisitionResult(
         request_id=acquisition_id,
@@ -154,6 +155,7 @@ def _qualification_request(
         evidence=CapabilityAcquisitionEvidence(
             domain_handoff_reference=domain_ref,
             artifact_reference=artifact_reference,
+            evidence_ref=evidence_ref,
         ),
     )
     return CapabilityQualificationRequest(
@@ -215,6 +217,18 @@ def test_wrong_strategy_not_supported() -> None:
         strategy_id="other.strategy",
     )
     assert provider.supports(request) is False
+
+
+def test_canonical_evidence_ref_supported_and_qualified() -> None:
+    provider, acquisition_id, domain_ref = _stack()
+    request = _qualification_request(
+        acquisition_id=acquisition_id,
+        domain_ref=domain_ref,
+        evidence_ref="marketplace-gap-listing:corr",
+    )
+    assert provider.supports(request) is True
+    result = provider.qualify(request)
+    assert result.outcome is CapabilityQualificationOutcome.QUALIFIED
 
 
 def test_artifact_only_not_supported() -> None:
