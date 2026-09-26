@@ -39,9 +39,12 @@ from intergrax.contracts.tools.qualified_marketplace_tool_execution_intent impor
     QualifiedMarketplaceToolExecutionIntentWriteOutcome,
 )
 from intergrax.marketplace.acquisition import MARKETPLACE_GAP_ACQUISITION_STRATEGY_ID
+from intergrax.contracts.tools.qualified_marketplace_tool_operation_selection import (
+    QualifiedMarketplaceToolOperationSelectionOutcome,
+    QualifiedMarketplaceToolOperationSelector,
+)
 from intergrax.tools.qualified_marketplace_tool_operation_selector import (
     DefaultQualifiedMarketplaceToolOperationSelector,
-    QualifiedMarketplaceToolOperationSelectionOutcome,
 )
 
 
@@ -73,7 +76,7 @@ class MarketplaceQualifiedToolExecutionIntentPreparation:
         intent_repository: QualifiedMarketplaceToolExecutionIntentRepository,
         stage_repository: MarketplaceQualifiedToolStageRepository,
         context_resolver: MarketplaceQualifiedToolStageContextResolver,
-        operation_selector: DefaultQualifiedMarketplaceToolOperationSelector | None = None,
+        operation_selector: QualifiedMarketplaceToolOperationSelector | None = None,
     ) -> None:
         self._intent_repository = intent_repository
         self._stage_repository = stage_repository

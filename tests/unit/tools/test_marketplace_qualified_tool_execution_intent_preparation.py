@@ -11,6 +11,9 @@ from intergrax.contracts.autonomous_work.capability_acquisition import (
     CapabilityNeedKind,
     WorkerCapabilityNeed,
 )
+from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
+    derive_qualified_capability_execution_request_id,
+)
 from intergrax.contracts.autonomous_work.ids import WorkerInstanceId
 from intergrax.contracts.capability_qualification.qualified_capability_binding import (
     derive_qualified_capability_binding_operation_id,
@@ -353,3 +356,63 @@ def test_repository_conflict() -> None:
         ),
     )
     assert result.outcome is QualifiedCapabilityExecutionIntentPreparationOutcome.CONFLICT
+
+
+class _CustomSelector:
+    """Structural plugin — does not inherit from default selector."""
+
+    def select(
+        self,
+        *,
+        required_operations: tuple[str, ...],
+        stage: MarketplaceQualifiedToolStage,
+        qualified_subject_reference: str,
+        handoff_id: str,
+    ):
+        from intergrax.contracts.tools.qualified_marketplace_tool_operation_selection import (
+            QualifiedMarketplaceToolOperationSelectionOutcome,
+            QualifiedMarketplaceToolOperationSelectionResult,
+        )
+
+        return QualifiedMarketplaceToolOperationSelectionResult(
+            outcome=QualifiedMarketplaceToolOperationSelectionOutcome.SELECTED,
+            selected_operation="custom-op",
+        )
+
+
+def test_custom_operation_selector_pluginable() -> None:
+    preparation, acquisition_id, domain_ref, stage_repo, resolver = _stack()
+    store = InMemoryDocumentStore()
+    intent_repo = DocumentStoreQualifiedMarketplaceToolExecutionIntentRepository(store)
+    preparation = MarketplaceQualifiedToolExecutionIntentPreparation(
+        intent_repository=intent_repo,
+        stage_repository=stage_repo,
+        context_resolver=resolver,
+        operation_selector=_CustomSelector(),
+    )
+    result = preparation.prepare(
+        _request(
+            preparation=preparation,
+            acquisition_id=acquisition_id,
+            domain_ref=domain_ref,
+        ),
+    )
+    assert result.outcome is QualifiedCapabilityExecutionIntentPreparationOutcome.CREATED
+    qualification = _qualification(acquisition_id, domain_ref)
+    subject_ref = derive_qualified_subject_reference(
+        qualification_request_id=qualification.qualification_request_id,
+        subject_kind=QualifiedCapabilitySubjectKind.DOMAIN_HANDOFF_REFERENCE,
+        subject_reference=domain_ref,
+    )
+    resume_id = "resume-prep"
+    binding_id = derive_qualified_capability_binding_operation_id(
+        resume_operation_id=resume_id,
+        qualified_subject_reference=subject_ref,
+    )
+    execution_request_id = derive_qualified_capability_execution_request_id(
+        resume_operation_id=resume_id,
+        binding_operation_id=binding_id,
+    )
+    recorded = intent_repo.get(execution_request_id=execution_request_id)
+    assert recorded is not None
+    assert recorded.selected_operation == "custom-op"

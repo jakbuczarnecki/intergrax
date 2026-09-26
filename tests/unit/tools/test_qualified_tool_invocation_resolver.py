@@ -42,3 +42,22 @@ def test_resolve_maps_canonical_fields() -> None:
     assert request.correlation_request_id == "execution-id-1"
     assert request.idempotency_key == "qmte:exec-req-1:invoke"
     assert isinstance(request.input, _Material)
+
+
+def test_default_idempotency_uses_normalized_selected_operation_semantic_intent() -> None:
+    resolver = DefaultQualifiedToolInvocationResolver()
+    request = resolver.resolve(
+        activated_tool_id="tool-1",
+        selected_operation="invoke",
+        material=_Material(value="x"),
+        tenant_id="tenant-a",
+        task_id=TaskId("task_00000000000000000000000000000001"),
+        run_id="run-1",
+        agent_id="agent-caller",
+        step_id="qmte:exec-req-2",
+        execution_request_id="exec-req-2",
+        correlation_request_id=None,
+        idempotency_key=None,
+    )
+    assert request.idempotency_key == "qmte:exec-req-2:invoke"
+    assert request.tool_id == "tool-1"

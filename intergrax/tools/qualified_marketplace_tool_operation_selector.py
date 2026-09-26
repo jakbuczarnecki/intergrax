@@ -1,46 +1,24 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Marketplace qualified Tool operation selection policy (S24-GAP-02-P3)."""
+"""Default Marketplace qualified Tool operation selector (S24-GAP-02-P3)."""
 
 from __future__ import annotations
-
-from dataclasses import dataclass
-from enum import StrEnum
-from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.tools.marketplace_qualified_capability import (
     MarketplaceQualifiedToolStage,
 )
+from intergrax.contracts.tools.qualified_marketplace_tool_operation_selection import (
+    QualifiedMarketplaceToolOperationSelectionOutcome,
+    QualifiedMarketplaceToolOperationSelectionPolicy,
+    QualifiedMarketplaceToolOperationSelectionResult,
+    QualifiedMarketplaceToolOperationSelector,
+)
 
 
-class QualifiedMarketplaceToolOperationSelectionOutcome(StrEnum):
-    SELECTED = "selected"
-    INVALID_OPERATION = "invalid_operation"
-
-
-@dataclass(frozen=True, slots=True)
-class QualifiedMarketplaceToolOperationSelectionResult:
-    outcome: QualifiedMarketplaceToolOperationSelectionOutcome
-    selected_operation: str = ""
-    reason_detail: str = ""
-
-
-@runtime_checkable
-class QualifiedMarketplaceToolOperationSelectionPolicy(Protocol):
-    """Optional host policy when need declares multiple required operations."""
-
-    def select(
-        self,
-        *,
-        required_operations: tuple[str, ...],
-        stage: MarketplaceQualifiedToolStage,
-        qualified_subject_reference: str,
-        handoff_id: str,
-    ) -> QualifiedMarketplaceToolOperationSelectionResult: ...
-
-
-class DefaultQualifiedMarketplaceToolOperationSelector:
+class DefaultQualifiedMarketplaceToolOperationSelector(
+    QualifiedMarketplaceToolOperationSelector,
+):
     """Fail closed on 0 or >1 operations unless explicit policy is injected."""
 
     def __init__(
@@ -95,12 +73,6 @@ class DefaultQualifiedMarketplaceToolOperationSelector:
         return policy_result
 
 
-QualifiedMarketplaceToolOperationSelector = DefaultQualifiedMarketplaceToolOperationSelector
-
 __all__ = [
     "DefaultQualifiedMarketplaceToolOperationSelector",
-    "QualifiedMarketplaceToolOperationSelectionOutcome",
-    "QualifiedMarketplaceToolOperationSelectionPolicy",
-    "QualifiedMarketplaceToolOperationSelectionResult",
-    "QualifiedMarketplaceToolOperationSelector",
 ]

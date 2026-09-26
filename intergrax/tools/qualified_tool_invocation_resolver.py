@@ -32,7 +32,12 @@ class DefaultQualifiedToolInvocationResolver:
         correlation_request_id: str | None,
         idempotency_key: str | None,
     ) -> ExecutionBoundCatalogToolInvokeRequest:
-        _ = selected_operation
+        # Atomic runtime callable is selected by activated_tool_id; selected_operation
+        # remains semantic execution intent, not a ToolRuntime sub-operation selector.
+        cleaned_operation = require_non_empty_text(
+            selected_operation,
+            label="selected_operation",
+        )
         cleaned_tool = require_non_empty_text(activated_tool_id, label="activated_tool_id")
         cleaned_tenant = require_non_empty_text(tenant_id, label="tenant_id")
         cleaned_run = require_non_empty_text(run_id, label="run_id")
@@ -45,7 +50,7 @@ class DefaultQualifiedToolInvocationResolver:
         if not isinstance(material, BaseModel):
             raise TypeError("material must be BaseModel")
         resolved_idempotency = idempotency_key or (
-            f"qmte:{cleaned_execution_request}:{selected_operation}"
+            f"qmte:{cleaned_execution_request}:{cleaned_operation}"
         )
         return ExecutionBoundCatalogToolInvokeRequest(
             tool_id=cleaned_tool,
