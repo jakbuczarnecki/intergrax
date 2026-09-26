@@ -915,14 +915,34 @@ Binding/resume may complete without EE execution; intent may remain **orphan** a
 
 #### 25.2.4 Pre-resume intent failure → `WorkerCapabilityFulfillmentDisposition`
 
-When `intent_preparation` is configured and the provider returns a failure outcome (not `NOT_APPLICABLE`) for a Marketplace qualified Tool subject, fulfillment **MUST NOT** invoke `self._resume.resume` / `resume_async`.
+Execution-intent preparation runs **after** Discovery → Acquisition → Qualification (`QUALIFIED`) and **before** Binding / Resume → EE. Applicable preparation failures are **pre-execution fail-closed** conditions — **not** discovery failures. **MUST NOT** map preparation outcomes to `DISCOVERY_UNAVAILABLE` or `DISCOVERY_CONFLICT` (discovery already completed).
 
-| Preparation failure | `WorkerCapabilityFulfillmentDisposition` |
-| ------------------- | ---------------------------------------- |
-| `UNAVAILABLE` | `DISCOVERY_UNAVAILABLE` |
-| `CONFLICT` | `DISCOVERY_CONFLICT` |
+When `intent_preparation` is configured, map outcomes as follows:
+
+| Intent preparation outcome | `WorkerCapabilityFulfillmentDisposition` |
+| -------------------------- | ---------------------------------------- |
+| `NOT_APPLICABLE` | Continue existing resume path (CodeCraft / non-Marketplace — no preparation-failure disposition) |
+| `CREATED` | Continue — proceed to `self._resume.resume(...)` / `resume_async` |
+| `ALREADY_RECORDED_IDENTICAL` | Continue |
+| `UNAVAILABLE` | `FAIL_CLOSED` |
+| `CONFLICT` | `FAIL_CLOSED` |
 | `INTEGRITY_FAILURE` | `FAIL_CLOSED` |
 | `INVALID_OPERATION` | `FAIL_CLOSED` |
+
+**Hard invariant:** Any applicable Marketplace Tool intent preparation failure → `self._resume.resume` / `resume_async` **MUST NOT** be called → fulfillment **`FAIL_CLOSED`**.
+
+**Internal diagnostics (retained):** Typed preparation result **continues** to expose `UNAVAILABLE`, `CONFLICT`, `INTEGRITY_FAILURE`, `INVALID_OPERATION` for logs, metrics, tests, and audit evidence. Public consumer disposition remains `FAIL_CLOSED` until the platform owns dedicated execution-preparation vocabulary.
+
+**Audit observability (frozen):**
+
+```text
+qualification = success
+intent preparation = unavailable | conflict | invalid (typed outcome)
+fulfillment = fail_closed
+execution admission = not attempted
+```
+
+Never report `discovery = conflict` (or discovery-unavailable) when discovery already completed.
 
 No new global fulfillment disposition enum members for P3.
 
@@ -1168,13 +1188,22 @@ MarketplaceToolQualifiedCapabilityExecutionHandler
 1. Coordinator without `intent_preparation` → existing paths unchanged
 2. Non-Marketplace qualified subject → preparation `NOT_APPLICABLE`; resume proceeds
 3. Marketplace Tool → intent recorded **before** `resume()` call
-4. Intent `CONFLICT` → `resume()` **not** called
-5. Intent `UNAVAILABLE` → `resume()` **not** called
+4. Intent `CONFLICT` → `resume()` **not** called; `fulfillment.disposition == FAIL_CLOSED`
+5. Intent `UNAVAILABLE` → `resume()` **not** called; `fulfillment.disposition == FAIL_CLOSED`
 6. `selected_operation` copied exactly from selector into durable intent
 7. Predicted pre-resume `execution_request_id` == resume coordinator `execution_request_id`
 8. `_fulfill_qualified` vs `_fulfill_qualified_async` — identical execution identity
 9. CodeCraft qualified path regression unchanged
 10. No field changes on frozen EE/resume dispatch request types
+
+**Intent preparation failure semantics (required before CERT)**
+
+| Scenario | Setup | Assert |
+| -------- | ----- | ------ |
+| Intent repository unavailable | `preparation = UNAVAILABLE` | `fulfillment.disposition == FAIL_CLOSED`; `resume.calls == 0` |
+| Intent conflict | `preparation = CONFLICT` | `fulfillment.disposition == FAIL_CLOSED`; `resume.calls == 0` |
+| Invalid operation | `preparation = INVALID_OPERATION` | `fulfillment.disposition == FAIL_CLOSED`; `resume.calls == 0` |
+| Non-applicable | `preparation = NOT_APPLICABLE` | Existing CodeCraft / non-Marketplace path continues unchanged |
 
 ### 25.18 Contract purity (P3-P0 confirmation)
 
