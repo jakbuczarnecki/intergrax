@@ -18,15 +18,18 @@ from intergrax.runtime.integrations.categories.data import (
     RELATIONAL_STORE_INTEGRATION_CONTRACT_SCHEMA,
     RelationalStoreIntegrationContract,
 )
-from intergrax.runtime.integrations.document_store import DocumentStoreVendorIntegrationContract
+from intergrax.runtime.integrations.document_store import (
+    DocumentStoreVendorIntegrationContract,
+)
 from intergrax.runtime.integrations.contracts import (
-    PlatformIntegrationCapability,
     PlatformIntegrationConfig,
     PlatformIntegrationContract,
     PlatformIntegrationKind,
     derive_platform_integration_id,
 )
-from intergrax.runtime.integrations.observability import ObservabilityVendorIntegrationContract
+from intergrax.runtime.integrations.observability import (
+    ObservabilityVendorIntegrationContract,
+)
 from intergrax.integrations.contracts.external_work import ExternalWorkIntegration
 from intergrax.runtime.integrations.contract_metadata import (
     DI_ONLY_CATEGORY_CONTRACT_REGISTRY,
@@ -60,7 +63,9 @@ _REGISTRY_CATEGORIES_PENDING_LAYOUT: frozenset[str] = frozenset()
 def test_di_only_external_work_resolves_via_canonical_contract_for_category() -> None:
     assert "external_work" not in PROVIDER_CATEGORY_CONTRACT_REGISTRY
     assert contract_for_category("external_work") is ExternalWorkIntegration
-    assert DI_ONLY_CATEGORY_CONTRACT_REGISTRY["external_work"] is ExternalWorkIntegration
+    assert (
+        DI_ONLY_CATEGORY_CONTRACT_REGISTRY["external_work"] is ExternalWorkIntegration
+    )
 
 
 def test_every_layout_category_has_contract_or_alias() -> None:
@@ -103,8 +108,18 @@ def test_relational_for_provider_accepts_string_integration_kind() -> None:
 
 
 def test_relational_for_provider_rejects_foreign_integration_kind() -> None:
-    with pytest.raises(ValueError, match="integration_kind='relational_store'"):
+    with pytest.raises(ValidationError):
         RelationalStoreIntegrationContract.for_provider(
+            provider_id="example",
+            integration_kind="graph_store",
+        )
+
+
+def test_relational_direct_construction_rejects_foreign_integration_kind() -> None:
+    """RC-08: direct construction must fail-closed on wrong integration_kind."""
+    with pytest.raises(ValidationError):
+        RelationalStoreIntegrationContract(
+            integration_id="example:graph_store",
             provider_id="example",
             integration_kind="graph_store",
         )
@@ -129,10 +144,18 @@ def test_observability_backend_aligns_with_observability_vendor_contract() -> No
     contract_cls = PROVIDER_CATEGORY_CONTRACT_REGISTRY[OBSERVABILITY_BACKEND_CATEGORY]
 
     assert contract_cls is ObservabilityVendorIntegrationContract
-    assert OBSERVABILITY_BACKEND_CATEGORY == PlatformIntegrationKind.OBSERVABILITY_BACKEND.value
-    assert OBSERVABILITY_VENDOR_INTEGRATION_KIND == PlatformIntegrationKind.OBSERVABILITY_VENDOR.value
+    assert (
+        OBSERVABILITY_BACKEND_CATEGORY
+        == PlatformIntegrationKind.OBSERVABILITY_BACKEND.value
+    )
+    assert (
+        OBSERVABILITY_VENDOR_INTEGRATION_KIND
+        == PlatformIntegrationKind.OBSERVABILITY_VENDOR.value
+    )
 
-    contract = ObservabilityVendorIntegrationContract.for_provider(provider_id="langfuse")
+    contract = ObservabilityVendorIntegrationContract.for_provider(
+        provider_id="langfuse"
+    )
     assert contract.integration_kind == OBSERVABILITY_VENDOR_INTEGRATION_KIND
     assert contract.integration_kind != OBSERVABILITY_BACKEND_CATEGORY
 
@@ -157,7 +180,10 @@ def test_category_contracts_use_matching_integration_kind() -> None:
             continue
         if contract_cls is DocumentStoreVendorIntegrationContract:
             contract = contract_cls.for_provider(provider_id="mongodb")
-            assert contract.integration_kind == PlatformIntegrationKind.DOCUMENT_STORE.value
+            assert (
+                contract.integration_kind
+                == PlatformIntegrationKind.DOCUMENT_STORE.value
+            )
             continue
         contract = contract_cls.for_provider(provider_id=f"example_{category}")
         assert contract.integration_kind == category
@@ -175,7 +201,9 @@ def test_category_contract_public_view_does_not_expose_secrets() -> None:
         api_key="super-secret-key",
         token="raw-token",
     )
-    contract = VectorStoreIntegrationContract.for_provider(provider_id="pinecone", config=config)
+    contract = VectorStoreIntegrationContract.for_provider(
+        provider_id="pinecone", config=config
+    )
     public_view = contract.public_view()
     serialized = json.dumps(public_view)
 
@@ -186,8 +214,12 @@ def test_category_contract_public_view_does_not_expose_secrets() -> None:
 
 
 def test_same_provider_id_distinct_integration_ids_across_categories() -> None:
-    observability = ObservabilityVendorIntegrationContract.for_provider(provider_id="elasticsearch")
-    vector_store = VectorStoreIntegrationContract.for_provider(provider_id="elasticsearch")
+    observability = ObservabilityVendorIntegrationContract.for_provider(
+        provider_id="elasticsearch"
+    )
+    vector_store = VectorStoreIntegrationContract.for_provider(
+        provider_id="elasticsearch"
+    )
 
     assert observability.provider_id == vector_store.provider_id == "elasticsearch"
     assert observability.integration_id == derive_platform_integration_id(
@@ -217,7 +249,9 @@ def test_no_vendor_sdk_imports_in_category_modules() -> None:
 
     import intergrax.runtime.integrations.categories as categories_pkg
 
-    for module_info in pkgutil.iter_modules(categories_pkg.__path__, categories_pkg.__name__ + "."):
+    for module_info in pkgutil.iter_modules(
+        categories_pkg.__path__, categories_pkg.__name__ + "."
+    ):
         module = importlib.import_module(module_info.name)
         module_path = module.__file__
         if module_path is None or not module_path.endswith(".py"):

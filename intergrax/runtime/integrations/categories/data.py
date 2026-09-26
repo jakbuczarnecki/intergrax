@@ -34,7 +34,10 @@ class RelationalStoreIntegrationContract(PlatformIntegrationContract):
         default=RELATIONAL_STORE_INTEGRATION_CONTRACT_SCHEMA,
         pattern=r"^relational_store_integration_contract\.v1$",
     )
-    integration_kind: str = PlatformIntegrationKind.RELATIONAL_STORE.value
+    integration_kind: str = Field(
+        default=PlatformIntegrationKind.RELATIONAL_STORE.value,
+        pattern=r"^relational_store$",
+    )
     capabilities: tuple[PlatformIntegrationCapability, ...] = Field(
         default_factory=lambda: _CONNECT_READ_WRITE_HEALTH
     )
@@ -58,13 +61,6 @@ class RelationalStoreIntegrationContract(PlatformIntegrationContract):
             if isinstance(integration_kind, PlatformIntegrationKind)
             else integration_kind
         )
-        expected_kind = PlatformIntegrationKind.RELATIONAL_STORE.value
-        if kind_value != expected_kind:
-            msg = (
-                f"RelationalStoreIntegrationContract requires integration_kind="
-                f"{expected_kind!r}, got {kind_value!r}"
-            )
-            raise ValueError(msg)
         return category_for_provider(
             cls,
             provider_id=provider_id,
