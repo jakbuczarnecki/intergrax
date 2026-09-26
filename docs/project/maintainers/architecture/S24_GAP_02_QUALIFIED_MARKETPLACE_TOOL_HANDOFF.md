@@ -4,14 +4,14 @@
 
 | Field | Value |
 | ----- | ----- |
-| **Task** | `S24-GAP-02-P0` (architecture lock) · `S24-GAP-02-P0-R1` (typed invocation material boundary correction) · **`S24-GAP-02-P2-P0`** (tenant-safe qualification subject resolution) |
+| **Task** | `S24-GAP-02-P0` (architecture lock) · `S24-GAP-02-P0-R1` (typed invocation material boundary correction) · **`S24-GAP-02-P2-P0`** (tenant-safe qualification subject resolution) · **`S24-GAP-02-P2-P0-R1`** (tenant-distinct Marketplace handoff identity correction) |
 | **Pre-audit baseline** | `4958c7e4bae6d18308426c6dc70d6595d67a4d5f` |
-| **Lock audit HEAD** | `d28b6f81cd721ca0ab2bbac002a78421073b9735` (P0) · **P0-R1** updates invocation boundary only · **P2-P0** tenant resolution lock (see §23) |
-| **P2-P0 session HEAD** | `693cdde5286a4ec0ff4e52a478ec495b0dc7e67c` (`development`; operator pin `8c251fcd…` superseded by later `development` — unrelated working-tree edits only outside GAP-02 scope) |
+| **Lock audit HEAD** | `d28b6f81cd721ca0ab2bbac002a78421073b9735` (P0) · **P0-R1** invocation boundary · **P2-P0** tenant resolution · **P2-P0-R1** handoff identity + association model (see §23) |
+| **P2-P0-R1 session HEAD** | Record at commit time (`development`) |
 | **Branch** | `development` (`HEAD == origin/development` at lock time) |
 | **Diff since pre-audit** | Qualification harness / roadmap docs only — **no** Marketplace handoff, UCA, ToolRuntime, or EE production changes |
-| **Artifact role** | Closed-world design record before `S24-GAP-02-P1` implementation; **P2-P0** extends lock before `S24-GAP-02-P2` providers |
-| **Status** | **ARCHITECTURE LOCKED — Class A extension path** · **P2 tenant resolution: Class A/B (§23)** |
+| **Artifact role** | Closed-world design record before `S24-GAP-02-P1` implementation; **P2-P0 / P2-P0-R1** extend lock before `S24-GAP-02-P2` providers |
+| **Status** | **ARCHITECTURE LOCKED — Class A extension path (P0–P1)** · **P2 tenant resolution + handoff identity: Class B (§23)** |
 
 ---
 
@@ -110,7 +110,7 @@ domain_handoff_reference = handoff://<handoff_id>
 Capability Qualification
     ↓
 MarketplaceToolCapabilityQualificationProvider
-    reads staged record by handoff_id
+    resolves tenant via context resolver → staged record (tenant_id + handoff_id)
     ↓
 QUALIFIED (evidence preserves domain_handoff_reference)
     ↓
@@ -182,29 +182,97 @@ Conceptual operations:
 
 **Consumer:** `tool_qualification_staging_consumer.py` under `intergrax/marketplace/handoff/adapters/` implements `CapabilityHandoffConsumer`, writes stage only, does not call `DynamicToolAcquisitionPort`.
 
-**Handoff ID parsing:** `domain_handoff_reference` prefix `handoff://` from `gap_acquisition_service._domain_handoff_reference` — strip prefix to obtain `handoff_id` for repository lookup (no UCA contract change).
+**Handoff ID parsing:** `domain_handoff_reference` prefix `handoff://` from gap acquisition — strip prefix to obtain `handoff_id`. **P2+** Marketplace gap production ids use **v2** tenant-distinct derivation (§23); qualification resolves tenant via context association + integrity checks before P1 `get(tenant_id, handoff_id)` (no UCA contract change).
 
 **Repository read (P1 actual SPI):** `MarketplaceQualifiedToolStageRepository.get(tenant_id=…, handoff_id=…)` — tenant scope is mandatory; global `get_by_handoff_id` is forbidden.
 
 ---
 
-## P2 Tenant-Safe Qualification Subject Resolution
+## 23. P2 Tenant-Safe Qualification Subject Resolution
 
-**Task:** `S24-GAP-02-P2-P0` · **Status:** **LOCKED** · **Verdict:** **Class A/B — new Tool-domain context resolver required; NO UCA reopen**
+**Task:** `S24-GAP-02-P2-P0` · **`S24-GAP-02-P2-P0-R1`** · **Status:** **LOCKED** · **Verdict:** **Class B — tenant-distinct handoff identity + Tool-domain context resolver; NO UCA reopen**
 
 ### Problem (post-P1)
 
-P1 introduced tenant-scoped durable staging (`MarketplaceQualifiedToolStage.tenant_id` + partitioned `ConditionalDocumentStore`). Frozen UCA-4 qualification dispatch still exposes only `domain_handoff_reference` (via nested `CapabilityAcquisitionResult` / evidence) and coordination ids — **no `tenant_id`**. A qualification provider cannot call `repository.get(tenant_id, handoff_id)` safely without a **durable, tenant-known association** created when the tenant is authoritative (handoff delivery / staging), not by inferring tenant from AW private state or a global handoff scan.
+P1 introduced tenant-scoped durable staging (`MarketplaceQualifiedToolStage.tenant_id` + partitioned `ConditionalDocumentStore`). Frozen UCA-4 qualification dispatch still exposes only `domain_handoff_reference` (via nested `CapabilityAcquisitionResult` / evidence) and coordination ids — **no `tenant_id`**. A qualification provider cannot call `repository.get(tenant_id, handoff_id)` safely without a **durable, tenant-known association** created when the tenant is authoritative (handoff delivery / staging), not by inferring tenant from AW private state or a global stage scan.
 
-### P2-P0 audit — Q1–Q5
+### Root cause corrected (P2-P0-R1)
+
+P2-P0 correctly forbade **global** `get_by_handoff_id` on the P1 stage repository and rejected inferring tenant from UCA ids alone. It **incorrectly** proposed a **global association primary key** on `acquisition_request_id` with **CONFLICT** when two tenants share the same acquisition id. That models a **non-existent global uniqueness** invariant: `derive_capability_acquisition_request_id` has **no** tenant dimension, so multi-tenant qualification must **not** require tenant-independent acquisition-id exclusivity.
+
+**Approved fix:** **tenant-aware deterministic opaque Marketplace handoff identity** (`marketplace-gap-handoff:v2:…`) so the same `operation_id` under different tenants yields **different** `handoff_id` values; association lookup is by **tenant-distinct** `handoff_id`, not by acquisition id alone.
+
+### P2-P0 audit — Q1–Q5 (unchanged facts; R1 updates Q4)
 
 | Q | Verdict | Evidence |
 | - | ------- | -------- |
 | **Q1 — Canonical tenant source on production qualification path?** | **NO** (for `CapabilityQualificationProvider.qualify(CapabilityQualificationRequest)`) | `CapabilityQualificationRequest` (`intergrax/contracts/capability_qualification/qualification_request.py`) has no `tenant_id`. `CapabilityAcquisitionRequest`, `CapabilityAcquisitionResult`, `CapabilityAcquisitionEvidence` likewise omit tenant. `WorkerCapabilityNeed` / `WorkerCapabilityAcquisitionRequest` (`intergrax/contracts/autonomous_work/capability_acquisition.py`) carry `worker_instance_id` but not tenant. `WorkerCapabilityRecoveryCoordinator` builds `CapabilityQualificationRequest` from acquisition result only (`intergrax/autonomous_work/worker_capability_recovery_coordinator.py`). **Tenant is typed and validated only at Marketplace handoff staging:** `CapabilityHandoffEnvelope.tenant_id` → `ToolQualificationStagingConsumer` (`intergrax/marketplace/handoff/adapters/tool_qualification_staging_consumer.py`). That tenant is **not** on the frozen qualification request surface. |
-| **Q2 — Acquisition / handoff identity globally tenant-unique?** | **NO** | `derive_capability_acquisition_request_id(gap_id, request_nonce)` (`intergrax/contracts/capability_acquisition/acquisition_request.py`) has no tenant dimension. `handoff_id = marketplace-gap-handoff:{operation_id}` with `operation_id == CapabilityAcquisitionRequest.request_id` (`intergrax/marketplace/acquisition/gap_acquisition_service.py`) is naming convention only — **not** a public cross-tenant uniqueness invariant. P1 persistence **allows** the same `handoff_id` row key under **different** tenant partitions (`intergrax/tools/marketplace_qualified_capability_staging.py`: partition `…:{tenant_id}`, row `handoff_id`). |
-| **Q3 — Production-safe `identity → tenant_id` resolver port on UCA ids?** | **NO** | No protocol maps `worker_need_id`, `recovery_decision_id`, `acquisition_request_id`, or `qualification_request_id` → `tenant_id` for qualification. AW `WorkerPrincipalBindingRepository` + episode context (`intergrax/autonomous_work/worker_recovery_capability_fulfillment_episode_context_provider.py`) resolve tenant for **fulfillment episode** via task + binding — **not** exposed to `CapabilityQualificationProvider`, and MUST NOT be parsed as a qualification-core bypass. |
-| **Q4 — Class A/B without frozen `CapabilityQualificationRequest` change?** | **CLASS A/B candidate — YES** | Tool-domain **durable context association** at staging (tenant known) + **resolver SPI** consumed by `MarketplaceToolCapabilityQualificationProvider`. Qualification core remains a registry consumer; owner is Tool / Marketplace→Tool handoff boundary. |
-| **Q5 — Requires `tenant_id` on frozen UCA contracts?** | **NO — not required for correct design** | Tenant scope is carried in Tool-owned association + existing staged record; UCA evidence shape unchanged. **Not Class C.** |
+| **Q2 — Acquisition / handoff identity globally tenant-unique?** | **NO** (UCA ids) · **YES** (after v2 handoff derivation) | `derive_capability_acquisition_request_id(gap_id, request_nonce)` has no tenant dimension. Legacy `handoff_id = marketplace-gap-handoff:{operation_id}` is **not** tenant-distinct. **P2 implementation** MUST emit/consume **v2** handoff ids via `derive_marketplace_gap_handoff_id(tenant_id, operation_id)` (below). P1 `get(tenant_id, handoff_id)` remains mandatory; **no** global stage lookup. |
+| **Q3 — Production-safe `identity → tenant_id` resolver port on UCA ids?** | **NO** | No protocol maps `worker_need_id`, `recovery_decision_id`, `acquisition_request_id`, or `qualification_request_id` → `tenant_id` for qualification. AW episode context resolves tenant for fulfillment — **not** exposed to `CapabilityQualificationProvider`, and MUST NOT be parsed as a qualification-core bypass. |
+| **Q4 — Class B without frozen `CapabilityQualificationRequest` change?** | **CLASS B — YES** | New Tool-domain contracts/providers plus **production handoff-id generation change** (tenant-bound v2 identity) without frozen UCA contract mutation. Conservative **Class B** gates for the full P2 track. |
+| **Q5 — Requires `tenant_id` on frozen UCA contracts?** | **NO — not required for correct design** | Tenant scope is carried in Tool-owned association + staged record; UCA evidence shape unchanged (`handoff://<handoff_id>` only). **Not Class C.** |
+
+### Tenant source (frozen)
+
+Canonical tenant at staging:
+
+```text
+MarketplaceQueryContext.tenant_id
+    → CapabilityHandoffEnvelope.tenant_id
+```
+
+Envelope already validates `envelope.tenant_id == discovery_trace.marketplace_query_context.tenant_id`. **Do not** resolve tenant via AW private state.
+
+### Marketplace gap handoff identity (frozen — P2-P0-R1)
+
+Conceptual helper (Tool/Marketplace implementation; contracts may expose as pure function):
+
+```text
+derive_marketplace_gap_handoff_id(
+    *,
+    tenant_id: str,
+    operation_id: str,
+) -> str
+```
+
+Semantics: deterministic; opaque; tenant-bound; stable across retries; **no** Python `hash()`; **no** random UUID; **no** raw tenant leakage in the final id.
+
+Canonical derivation:
+
+```text
+domain_separator = "intergrax.marketplace-gap-handoff.v2"
+
+digest = SHA-256(
+    UTF8(
+        domain_separator
+        + "\0"
+        + tenant_id
+        + "\0"
+        + operation_id
+    )
+)
+
+handoff_id = "marketplace-gap-handoff:v2:" + lowercase_hex(digest)
+```
+
+If the repo already exposes a stable SHA-256 helper with identical properties, P2 implementation MAY reuse it — **no** new crypto abstraction without need.
+
+**Invariants:**
+
+```text
+same tenant_id + same operation_id → same handoff_id   (idempotent retry)
+same operation_id + different tenant_id → different handoff_id
+```
+
+`operation_id` on the Marketplace gap path equals `CapabilityAcquisitionRequest.request_id` / acquisition `request_id` used in qualification cross-checks.
+
+**Domain reference (unchanged UCA evidence):**
+
+```text
+domain_handoff_reference = handoff://<handoff_id>
+```
+
+Forbidden on frozen acquisition evidence: `tenant_id` query params, extra metadata fields, or raw tenant embedded in the public URI.
 
 ### Approved solution shape (frozen for P2)
 
@@ -212,10 +280,11 @@ P1 introduced tenant-scoped durable staging (`MarketplaceQualifiedToolStage.tena
 CapabilityHandoffEnvelope (tenant_id known, validated)
     ↓
 ToolQualificationStagingConsumer
+    handoff_id = derive_marketplace_gap_handoff_id(tenant_id, operation_id)
     ↓
 MarketplaceQualifiedToolStageRepository.stage (tenant partition)
     +
-MarketplaceQualifiedToolStageContextAssociationRepository.record (NEW — same moment)
+MarketplaceQualifiedToolStageContextAssociationRepository.record (same consumer flow)
     ↓
 domain_handoff_reference = handoff://<handoff_id>
     ↓
@@ -225,22 +294,32 @@ MarketplaceToolCapabilityQualificationProvider
     ↓
 parse domain_handoff_reference (Tool-domain strict helper)
     ↓
-MarketplaceQualifiedToolStageContextResolver (NEW)
-    lookup by acquisition_request_id (+ integrity checks)
+MarketplaceQualifiedToolStageContextResolver
+    get_by_handoff_id(handoff_id)  # allowed: handoff_id is tenant-distinct by construction
     ↓
 MarketplaceQualifiedToolStageContext { tenant_id, handoff_id, acquisition_request_id }
+    ↓
+integrity: acquisition_request_id + re-derive handoff_id
     ↓
 MarketplaceQualifiedToolStageRepository.get(tenant_id=…, handoff_id=…)
 ```
 
 **Hard rules:**
 
-- **Forbidden:** `get_by_handoff_id` global lookup; weakening P1 tenant-scoped repository; guessing `tenant_id` from `gap_id` / `correlation_id` / AW stores; mutating frozen UCA evidence or qualification request semantics.
-- **Association write timing:** only when `tenant_id` is authoritative on the envelope (same transaction / same consumer invocation as `stage`, fail-closed on partial failure policy defined in P2 implementation).
-- **Association keys (minimum):** primary durable key = `acquisition_request_id` (equals Marketplace `operation_id` embedded in `handoff_id` for gap acquisition). Optional secondary index by `qualification_request_id` only if P2 records it at association time from a later event — **default: resolve via `acquisition_request_id` + handoff parse cross-check** (see below).
-- **Parsing:** one Tool-domain utility — strict `handoff://<handoff_id>` only; for Marketplace gap path validate `handoff_id == marketplace-gap-handoff:{acquisition_request_id}` when `strategy_id == marketplace.gap_acquisition.v1` (fail-closed on mismatch). No duplicated `split(":")` magic in providers.
+- **Forbidden:** global P1 stage `get_by_handoff_id`; weakening P1 `get(tenant_id, handoff_id)`; primary association keyed only by `acquisition_request_id`; global acquisition-id exclusivity across tenants; guessing `tenant_id` from `gap_id` / `correlation_id` / AW stores; mutating frozen UCA evidence or qualification request semantics.
+- **Allowed:** `ContextAssociationRepository.get_by_handoff_id(handoff_id)` **only** because v2 `handoff_id` is cryptographically tenant-distinct — this is **not** P1 global stage lookup.
+- **Association write timing:** same handoff consumer invocation as `stage`, from the same authoritative envelope facts; fail-closed partial-write policy below (not a single cross-store transaction unless platform contract guarantees one).
 
 ### New contracts (conceptual SPI — P2 implement)
+
+**Association (immutable, typed):**
+
+```text
+MarketplaceQualifiedToolStageContextAssociation
+  handoff_id          # primary durable lookup identity
+  tenant_id
+  acquisition_request_id
+```
 
 **Context (immutable, typed):**
 
@@ -257,59 +336,116 @@ MarketplaceQualifiedToolStageContext
 MarketplaceQualifiedToolStageContextResolver
   resolve_for_qualification(
     *,
-    acquisition_request_id,
     domain_handoff_reference,
+    acquisition_request_id,
     strategy_id,
   ) -> MarketplaceQualifiedToolStageContext
 ```
 
-Semantics: fail-closed (`NOT_FOUND`, `CONFLICT`, `AMBIGUOUS`, `INTEGRITY`) — never return a context without validating handoff reference ↔ acquisition id ↔ stored association.
+**Resolver flow (mandatory):**
+
+```text
+CapabilityQualificationRequest
+    → domain_handoff_reference
+    → strict parse → handoff_id
+    → ContextAssociationRepository.get_by_handoff_id(handoff_id)
+    → ctx { tenant_id, handoff_id, acquisition_request_id }
+    → verify: ctx.acquisition_request_id == request.acquisition_request_id
+    → verify: handoff_id == derive_marketplace_gap_handoff_id(ctx.tenant_id, request.acquisition_request_id)
+    → MarketplaceQualifiedToolStageRepository.get(tenant_id=ctx.tenant_id, handoff_id=ctx.handoff_id)
+```
+
+Any mismatch → **INTEGRITY** / **FAIL CLOSED**.
 
 **Association repository (write at staging, read at qualification):**
 
 ```text
 MarketplaceQualifiedToolStageContextAssociationRepository
   record(association) -> WriteResult   # idempotent identical replay
-  get_by_acquisition_request_id(acquisition_request_id) -> association | None
+  get_by_handoff_id(handoff_id) -> association | None
 ```
 
-Persistence: **reuse `ConditionalDocumentStore`** (or same backend-neutral pattern as P1 staging) — **not** process-local dict/singleton. Partition/key design MUST make conflicting replay (same `acquisition_request_id`, different `tenant_id` or `handoff_id`) **fail-closed** (`ConflictError`).
+Persistence: **reuse `ConditionalDocumentStore`** (or same backend-neutral pattern as P1 staging) — **not** process-local dict/singleton. Same `handoff_id` with different immutable association payload → **CONFLICT** (no silent repair).
 
-**Owner:** **Tool domain** (contracts under `intergrax/contracts/tools/`, implementations under `intergrax/tools/`, staging consumer extended under `intergrax/marketplace/handoff/adapters/`). **Not** Capability Qualification core, AW coordinator, EE, or scenario proof.
+**Parsing:** one Tool-domain utility — strict `handoff://<handoff_id>` only; integrity via resolver re-derivation + acquisition id cross-check (no duplicated ad-hoc `split(":")` in providers).
 
-### Identity collision model (mandatory)
+**Owner:** **Tool domain** (contracts under `intergrax/contracts/tools/`, implementations under `intergrax/tools/`, staging consumer + minimal Marketplace gap handoff id touch). **Not** Capability Qualification core, AW coordinator, EE, or scenario proof.
+
+### Identity collision model (mandatory — P2-P0-R1)
 
 | Case | Expected behavior |
 | ---- | ----------------- |
-| Same `handoff_id`, different `tenant_id` | Staging: separate partitions (allowed). Qualification: resolver returns exactly one association per `acquisition_request_id`; conflicting association write → **CONFLICT**; lookup cannot merge tenants. |
-| Same `acquisition_request_id`, different `tenant_id` | Association `record` → **CONFLICT** (no silent overwrite). Qualification → **FAIL_CLOSED**. |
-| Same `qualification_request_id`, different `tenant_id` | Qualification ids derive from acquisition id + nonce only — no tenant dimension. Resolver does not use qualification id as primary tenant key; integrity enforced via acquisition association + handoff parse. |
-| Same `handoff_id`, different `selected_release` | Staging `MarketplaceQualifiedToolStageConflictError` (P1); association must not mask stage conflict. |
-| Parsed `domain_handoff_reference` ≠ association `handoff_id` | Resolver **INTEGRITY** — fail-closed. |
-| `acquisition_request_id` ≠ embedded Marketplace operation id in `handoff_id` | Resolver **INTEGRITY** — fail-closed for marketplace strategy. |
+| Same `acquisition_request_id`, **different** `tenant_id` | **Different** v2 `handoff_id` each; **independent** stage + association; **NO CONFLICT**; both tenants may qualify their own stage |
+| Same `tenant_id` + same `acquisition_request_id` | **Same** `handoff_id`; idempotent replay on stage + association |
+| `handoff_id` ≠ `derive_marketplace_gap_handoff_id(tenant_id, acquisition_request_id)` | **INTEGRITY FAIL** (corrupt association or reference) |
+| Same `handoff_id`, different association payload (`tenant_id` / `acquisition_request_id`) | **CONFLICT** |
+| Same raw `handoff_id` across tenants (v2) | Should be **impossible** for correctly generated ids except cryptographic collision; still run **full integrity validation** on stored association |
+| Same `handoff_id`, different `selected_release` | Staging `MarketplaceQualifiedToolStageConflictError` (P1); association must not mask stage conflict |
+| Parsed `domain_handoff_reference` ≠ association `handoff_id` | Resolver **INTEGRITY** — fail-closed |
+| Tenant A resolves tenant B stage | **FAIL CLOSED** — wrong partition / integrity / tenant mismatch on `get(tenant_id, handoff_id)` |
 
-**Security invariant (unchanged):** Tenant A handoff X MUST NEVER resolve Tenant B handoff X — enforced by **tenant-scoped stage partition** + **association binding acquisition_request_id → single tenant_id** + **no global handoff lookup**.
+**Security invariant:** Tenant A MUST NEVER read Tenant B staged release — **tenant-scoped stage partition** + **tenant-distinct handoff_id** + **association integrity checks** + **no** global acquisition-id lock.
+
+### Partial failure and retry (staging consumer — frozen)
+
+Platform MUST NOT claim atomicity across two document-store writes unless the storage contract provides it.
+
+**Qualification invariant:**
+
+```text
+qualification MUST NOT succeed unless BOTH
+  staged MarketplaceQualifiedToolStage exists
+  AND matching context association exists
+```
+
+| Partial state | Disposition |
+| ------------- | ----------- |
+| Stage created; association write failed | Consumer **FAILED / UNAVAILABLE**; retry may `ALREADY_STAGED_IDENTICAL` + create association and complete delivery |
+| Association exists; stage missing | Qualification **FAIL CLOSED**; consumer retry must recreate missing stage |
+| Either record conflicts on immutable fields | **BLOCKED / INTEGRITY** — never silent repair |
+
+Idempotent replay MUST safely complete partially finished writes.
 
 ### Qualification provider expectation (P2 — after this lock)
 
-`MarketplaceToolCapabilityQualificationProvider` MUST:
+`MarketplaceToolCapabilityQualificationProvider` receives **no** direct `tenant_id`. It MUST:
 
 1. Gate `supports()` on strategy / `DOMAIN_HANDOFF_REFERENCE` technical compatibility.
 2. Read exact `domain_handoff_reference` from acquisition evidence (unchanged UCA shape).
-3. Call `MarketplaceQualifiedToolStageContextResolver` (not inline tenant guess).
+3. Call `MarketplaceQualifiedToolStageContextResolver` (not inline tenant guess; **no** global stage scan; **no** AW lookup).
 4. Load `repository.get(tenant_id=ctx.tenant_id, handoff_id=ctx.handoff_id)`.
 5. Validate staged TOOL release vs evidence; emit `CapabilityQualificationEvidence` preserving **exact** `domain_handoff_reference`.
 6. Never activate Tool, bind, execute, or mint authority.
 
-Binding provider (`MarketplaceToolQualifiedCapabilityBindingProvider`) continues to use qualified subject + same resolver/context pattern for tenant-safe stage reads (P2).
+**Binding provider:** `MarketplaceToolQualifiedCapabilityBindingProvider` MAY use the same `domain_handoff_reference` → context resolver → exact staged release path; still **NO** Tool activation, **NO** ToolRegistry mutation, **NO** execution during bind.
 
-### P2-P0 classification
+### P2-P0-R1 classification
 
 | Item | Value |
 | ---- | ----- |
-| **P2 tenant resolution** | **NEW TOOL-DOMAIN CONTEXT RESOLVER REQUIRED** |
-| **Class** | **A/B** (new Tool contracts + durable association; frozen UCA untouched) |
+| **P2 tenant resolution + handoff identity** | **NEW TOOL-DOMAIN CONTEXT RESOLVER + v2 TENANT-DISTINCT HANDOFF ID** |
+| **Class** | **B** (new Tool contracts/providers; production handoff-id generation change; frozen UCA untouched) |
 | **UCA reopen** | **NO** |
+
+Rationale: extension-shaped Tool-domain surface, but P2 implementation changes existing Marketplace gap handoff-id generation to remove multi-tenant identity defect without altering frozen UCA contracts, ownership, or authority — **Class B** gates apply to the full P2 track.
+
+### P2 implementation test gates (frozen minimum — 15)
+
+1. Same tenant + same acquisition → same handoff id.
+2. Different tenant + same acquisition → different handoff id.
+3. Deterministic across process restart.
+4. Tenant id not visible in generated handoff id.
+5. Association identical replay idempotent.
+6. Same handoff id + different association → conflict.
+7. Resolver validates acquisition id against association.
+8. Resolver re-derives handoff id and checks integrity.
+9. Corrupted tenant association → fail closed.
+10. Association exists / stage missing → qualification fails.
+11. Stage exists / association missing → qualification fails.
+12. Two tenants using same acquisition id both qualify their own stage without conflict.
+13. Tenant A cannot resolve tenant B stage.
+14. UCA evidence schema unchanged.
+15. No Tool activation before qualification success.
 
 ---
 
@@ -558,8 +694,8 @@ Rationale: new Tool-domain providers, staging repository, material provider, and
 ### Contracts
 
 - `intergrax/contracts/tools/marketplace_qualified_capability.py` — stage model + repository protocol (**P1 done**)
-- `intergrax/contracts/tools/marketplace_qualified_tool_stage_context.py` — **P2 (P2-P0 lock):** `MarketplaceQualifiedToolStageContext`, association model, `MarketplaceQualifiedToolStageContextResolver`, `MarketplaceQualifiedToolStageContextAssociationRepository`
-- `intergrax/contracts/tools/marketplace_handoff_reference.py` — **P2:** strict `handoff://` parse + Marketplace gap `handoff_id` ↔ `acquisition_request_id` integrity helper
+- `intergrax/contracts/tools/marketplace_qualified_tool_stage_context.py` — **P2 (P2-P0-R1 lock):** `MarketplaceQualifiedToolStageContext`, `MarketplaceQualifiedToolStageContextAssociation`, `MarketplaceQualifiedToolStageContextResolver`, `MarketplaceQualifiedToolStageContextAssociationRepository`
+- `intergrax/contracts/tools/marketplace_handoff_reference.py` — **P2:** strict `handoff://` parse + `derive_marketplace_gap_handoff_id` + integrity helpers (no raw tenant in URI)
 - `intergrax/contracts/tools/qualified_tool_invocation.py` — typed invocation material contract + `QualifiedToolInvocationMaterialProvider` protocol + `QualifiedToolInvocationResolver` protocol (Verdict B; split leaf modules if conventions require)
 
 ### Tool domain
@@ -573,11 +709,12 @@ Rationale: new Tool-domain providers, staging repository, material provider, and
 
 ### Marketplace adapter
 
-- `intergrax/marketplace/handoff/adapters/tool_qualification_staging_consumer.py` (**P1 done**; **P2:** record context association alongside `stage`)
+- `intergrax/marketplace/handoff/adapters/tool_qualification_staging_consumer.py` (**P1 done**; **P2:** record context association alongside `stage`; same envelope-authoritative `tenant_id` + v2 `handoff_id`)
+- **Minimal Marketplace touch (P2):** `intergrax/marketplace/acquisition/gap_acquisition_service.py` (or shared helper consumed there) — emit `derive_marketplace_gap_handoff_id` using envelope/query-context `tenant_id`; **no** UCA contract change
 
 ### Tests (P2)
 
-- `tests/unit/tools/test_marketplace_qualified_tool_stage_context.py` — collision, idempotent replay, parse integrity, cross-tenant isolation
+- `tests/unit/tools/test_marketplace_qualified_tool_stage_context.py` — §23 fifteen gates: tenant-distinct id, collision, idempotent replay, parse + re-derive integrity, cross-tenant isolation, partial-write qualification failures
 - `tests/unit/tools/test_marketplace_qualified_capability_qualification_provider.py` — resolver + repository integration (mocked ports)
 - `tests/unit/tools/test_marketplace_qualified_capability_binding_provider.py` — tenant-safe bind path
 - Extend `tests/unit/marketplace/test_uca5_marketplace_acquisition_strategy.py` only if needed for staging+association wiring smoke (no UCA semantic change)
