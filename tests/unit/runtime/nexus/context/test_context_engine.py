@@ -32,6 +32,9 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from intergrax.runtime.nexus.context.assembly_runtime_deps import (
+    build_context_assembly_runtime_dependencies,
+)
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -71,8 +74,14 @@ async def test_default_engine_assembles_with_compiler_and_preflight() -> None:
         assembly_options=TaskContextAssemblyOptions(),
     )
     messages = [ChatMessage(role="user", content="short prompt")]
+    runtime = build_context_assembly_runtime_dependencies(
+        runtime_config=config,
+        messages=messages,
+        max_output_tokens=64,
+    )
     provider_ctx = ContextProviderContext(
         engine_id="default",
+        runtime=runtime,
         handles={
             "runtime_config": config,
             "messages": messages,
@@ -165,11 +174,21 @@ async def test_engine_emits_candidate_bus_events() -> None:
             assembly_options=TaskContextAssemblyOptions(),
             graph_node_id="node-1",
         )
+        messages = [ChatMessage(role="user", content="short prompt")]
+        runtime = build_context_assembly_runtime_dependencies(
+            runtime_config=config,
+            messages=messages,
+            max_output_tokens=64,
+            event_bus=bus,
+            node_id="node-1",
+            agent_id="agent-1",
+        )
         provider_ctx = ContextProviderContext(
             engine_id="default",
+            runtime=runtime,
             handles={
                 "runtime_config": config,
-                "messages": [ChatMessage(role="user", content="short prompt")],
+                "messages": messages,
                 "max_output_tokens": 64,
                 "event_bus": bus,
                 "node_id": "node-1",
@@ -208,11 +227,17 @@ async def test_engine_merges_workspace_fragments_into_window() -> None:
         budget_policy=ContextBudgetSnapshot(max_tokens_estimate=500),
         assembly_options=TaskContextAssemblyOptions(),
     )
+    messages = [ChatMessage(role="user", content="fix the handler")]
+    runtime = build_context_assembly_runtime_dependencies(
+        runtime_config=config,
+        messages=messages,
+    )
     provider_ctx = ContextProviderContext(
         engine_id="codebase",
+        runtime=runtime,
         handles={
             "runtime_config": config,
-            "messages": [ChatMessage(role="user", content="fix the handler")],
+            "messages": messages,
             "workspace_files": {"handler.py": "def handle():\n    return 42\n"},
             "workspace_max_chunks": 4,
         },

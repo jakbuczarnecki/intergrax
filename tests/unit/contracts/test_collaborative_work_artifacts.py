@@ -499,6 +499,7 @@ def test_optimization_artifact_reference_shape_differs() -> None:
         artifact_lookup_key_hash="hash-lookup",
         artifact_content_hash="hash-content",
         artifact_type=OptimizationArtifactType.MESSAGE_SEQUENCE,
+        context_scope_id="scope-1",
     )
     artifact = _work_artifact()
     assert type(reference) is not type(artifact)

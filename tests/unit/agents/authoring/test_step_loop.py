@@ -50,6 +50,7 @@ async def test_three_step_session_loop() -> None:
         )
         kernel_ctx = StepKernelContext(
             agent_id="counter",
+            principal_id="test-principal",
             run_id=run_id,
             task_id=task_id,
             policy_engine=PolicyEngine(),

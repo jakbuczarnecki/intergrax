@@ -82,7 +82,9 @@ def test_contracts_package_init_does_not_import_runtime() -> None:
 
 def test_runtime_answer_mapping_lives_outside_contracts() -> None:
     assert not (_REPO_ROOT / "intergrax" / "contracts" / "runtime_mapping.py").exists()
-    mapping = _REPO_ROOT / "intergrax" / "agents" / "runtime_answer_mapping.py"
+    mapping = (
+        _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "agents" / "runtime_answer_mapping.py"
+    )
     assert mapping.is_file()
     source = mapping.read_text(encoding="utf-8")
     assert "RuntimeAnswer" in source
