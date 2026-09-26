@@ -148,6 +148,14 @@ def _normalize_port(raw_port: int | str | None, *, scheme: NetworkEgressScheme) 
     return port
 
 
+def _normalize_network_egress_scheme(value: str) -> NetworkEgressScheme:
+    if value == "http":
+        return "http"
+    if value == "https":
+        return "https"
+    raise NetworkEgressScopeError(f"unsupported scheme: {value}")
+
+
 def parse_network_egress_host(value: object) -> NetworkEgressHost:
     """Parse and canonicalize one typed host scope entry."""
     if isinstance(value, NetworkEgressHost):
@@ -174,9 +182,7 @@ def parse_network_egress_host(value: object) -> NetworkEgressHost:
     else:
         raise NetworkEgressScopeError(f"unsupported host scope type: {type(value)!r}")
 
-    if scheme_raw not in ("http", "https"):
-        raise NetworkEgressScopeError(f"unsupported scheme: {scheme_raw}")
-    scheme: NetworkEgressScheme = scheme_raw  # type: ignore[assignment]
+    scheme = _normalize_network_egress_scheme(scheme_raw)
     hostname = _normalize_hostname(hostname_raw)
     _reject_disallowed_hostname(hostname)
     port = _normalize_port(port_raw, scheme=scheme)

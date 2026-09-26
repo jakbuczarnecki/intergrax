@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Literal, Mapping, TypeAlias, cast
+from typing import Literal, Mapping, TypeAlias
 
 from pydantic import BaseModel, ConfigDict
 
@@ -15,7 +15,12 @@ ObservabilityAttributeValue: TypeAlias = str | int | float | bool | None | list[
 
 _RESERVED_ATTRIBUTE_FIELDS: frozenset[str] = frozenset({"schema_version", "namespace"})
 
-_UNSAFE = object()
+
+class _UnsafeObservabilityAttributeValue:
+    __slots__ = ()
+
+
+_UNSAFE = _UnsafeObservabilityAttributeValue()
 
 
 def observability_attribute_key(namespace: str, field_name: str) -> str:
@@ -23,7 +28,9 @@ def observability_attribute_key(namespace: str, field_name: str) -> str:
     return f"{namespace}.{field_name}"
 
 
-def _coerce_safe_attribute_value(value: object) -> ObservabilityAttributeValue | object:
+def _coerce_safe_attribute_value(
+    value: object,
+) -> ObservabilityAttributeValue | _UnsafeObservabilityAttributeValue:
     if value is None:
         return None
     if isinstance(value, bool):
@@ -63,12 +70,9 @@ class ApplicationObservabilityAttributes(BaseModel):
             if field_name in _RESERVED_ATTRIBUTE_FIELDS:
                 continue
             safe_value = _coerce_safe_attribute_value(value)
-            if safe_value is _UNSAFE:
+            if isinstance(safe_value, _UnsafeObservabilityAttributeValue):
                 continue
-            exported[observability_attribute_key(self.namespace, field_name)] = cast(
-                ObservabilityAttributeValue,
-                safe_value,
-            )
+            exported[observability_attribute_key(self.namespace, field_name)] = safe_value
 
         exported[observability_attribute_key(self.namespace, "namespace")] = (
             self.namespace
@@ -89,9 +93,9 @@ def coerce_observability_attribute_mapping(
         if not isinstance(key, str) or not key:
             continue
         safe = _coerce_safe_attribute_value(value)
-        if safe is _UNSAFE:
+        if isinstance(safe, _UnsafeObservabilityAttributeValue):
             continue
-        exported[key] = cast(ObservabilityAttributeValue, safe)
+        exported[key] = safe
     return exported
 
 

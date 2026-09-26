@@ -13,46 +13,31 @@ from testing_support.architecture.public_contract_boundary.discovery import (
     discover_public_contract_source_files,
     path_to_module_name,
 )
+from testing_support.architecture.public_contract_boundary.debt_validation import (
+    validate_csp_debt_registry,
+)
+from testing_support.architecture.public_contract_boundary.models import (
+    ContractSurfacePurityDebtEntry,
+    ContractSurfacePurityGateResult,
+    RemovalStage,
+)
 
 _TYPE_IGNORE_RE = re.compile(r"#\s*type:\s*ignore\b")
 _MUTABLE_REGISTRY_FIELD_NAMES = frozenset(
     {"_services", "_registry", "_cache", "_state"},
 )
-@dataclass(frozen=True, slots=True)
-class ContractSurfacePurityDebtEntry:
-    finding_id: str
-    source_path: str
-    line: int
-    rule_id: str
 
-
-# Pre-existing transport / decorator typing debt — removal tracked outside EBH-2I.
-CONTRACT_SURFACE_PURITY_DEBT: tuple[ContractSurfacePurityDebtEntry, ...] = (
-    ContractSurfacePurityDebtEntry(
-        finding_id="D-CSP-01",
-        source_path="intergrax/contracts/sandbox_network_egress.py",
-        line=179,
-        rule_id="architecture_masking_type_ignore",
-    ),
-    ContractSurfacePurityDebtEntry(
-        finding_id="D-CSP-02",
-        source_path="intergrax/contracts/delegated_correlation_query_index_backfill.py",
-        line=42,
-        rule_id="architecture_masking_type_ignore",
-    ),
-    ContractSurfacePurityDebtEntry(
-        finding_id="D-CSP-03",
-        source_path="intergrax/contracts/application_observability_attributes.py",
-        line=68,
-        rule_id="architecture_masking_cast",
-    ),
-    ContractSurfacePurityDebtEntry(
-        finding_id="D-CSP-04",
-        source_path="intergrax/contracts/application_observability_attributes.py",
-        line=94,
-        rule_id="architecture_masking_cast",
-    ),
+_CSP_DEBT_EXPIRED_STAGES = frozenset(
+    {
+        RemovalStage.EBH_2E,
+        RemovalStage.EBH_2F,
+        RemovalStage.EBH_2G,
+        RemovalStage.EBH_2H,
+    },
 )
+
+# Governed temporary exceptions only — prefer empty registry.
+CONTRACT_SURFACE_PURITY_DEBT: tuple[ContractSurfacePurityDebtEntry, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -322,17 +307,99 @@ def _violations_for_source(
     return violations
 
 
+def _find_stale_csp_debt(
+    violations: list[ContractSurfacePurityViolation],
+    debt_entries: tuple[ContractSurfacePurityDebtEntry, ...],
+) -> tuple[ContractSurfacePurityDebtEntry, ...]:
+    stale: list[ContractSurfacePurityDebtEntry] = []
+    for entry in debt_entries:
+        has_match = any(_debt_covers(violation, entry) for violation in violations)
+        if not has_match:
+            stale.append(entry)
+    return tuple(sorted(stale, key=lambda item: item.finding_id))
+
+
+def _find_expired_csp_debt(
+    debt_entries: tuple[ContractSurfacePurityDebtEntry, ...],
+) -> tuple[ContractSurfacePurityDebtEntry, ...]:
+    expired = [
+        entry
+        for entry in debt_entries
+        if entry.removal_stage in _CSP_DEBT_EXPIRED_STAGES
+    ]
+    return tuple(sorted(expired, key=lambda item: item.finding_id))
+
+
+def format_contract_surface_purity_failure(
+    result: ContractSurfacePurityGateResult,
+) -> str:
+    lines: list[str] = []
+    if result.registry_validation_errors:
+        lines.append("Contract surface purity registry validation errors:")
+        for error in result.registry_validation_errors:
+            lines.append(f"  - {error}")
+    if result.unregistered_violations:
+        lines.append("Unregistered contract surface purity violations:")
+        for violation in result.unregistered_violations:
+            lines.append(f"  - {violation.as_message()}")
+    if result.stale_debt_entries:
+        lines.append("Stale CSP debt entries (violation no longer present):")
+        for entry in result.stale_debt_entries:
+            lines.append(
+                f"  - {entry.finding_id}: {entry.source_path}:{entry.line} "
+                f"rule={entry.rule_id} stage={entry.removal_stage.value}",
+            )
+    if result.expired_debt_entries:
+        lines.append("Expired CSP debt entries (closing stage already closed):")
+        for entry in result.expired_debt_entries:
+            lines.append(
+                f"  - {entry.finding_id}: stage={entry.removal_stage.value} "
+                f"path={entry.source_path}:{entry.line}",
+            )
+    return "\n".join(lines)
+
+
+def _build_csp_gate_result(
+    violations: list[ContractSurfacePurityViolation],
+    debt_entries: tuple[ContractSurfacePurityDebtEntry, ...],
+) -> ContractSurfacePurityGateResult:
+    unregistered = [
+        violation
+        for violation in violations
+        if not any(_debt_covers(violation, entry) for entry in debt_entries)
+    ]
+    unregistered.sort(key=lambda item: (item.source_path, item.line, item.rule_id))
+    stale = _find_stale_csp_debt(violations, debt_entries)
+    expired = _find_expired_csp_debt(debt_entries)
+    return ContractSurfacePurityGateResult(
+        unregistered_violations=tuple(unregistered),
+        stale_debt_entries=stale,
+        expired_debt_entries=expired,
+        registry_validation_errors=(),
+    )
+
+
 def evaluate_contract_surface_purity(
     repo_root: Path,
     *,
     paths: tuple[Path, ...] | None = None,
     debt_entries: tuple[ContractSurfacePurityDebtEntry, ...] | None = None,
-) -> tuple[ContractSurfacePurityViolation, ...]:
-    intergrax_root = repo_root / "intergrax"
-    target_paths = paths if paths is not None else discover_public_contract_source_files(repo_root)
+) -> ContractSurfacePurityGateResult:
     registry = debt_entries if debt_entries is not None else CONTRACT_SURFACE_PURITY_DEBT
-    violations: list[ContractSurfacePurityViolation] = []
+    registry_errors = validate_csp_debt_registry(registry)
+    if registry_errors:
+        return ContractSurfacePurityGateResult(
+            unregistered_violations=(),
+            stale_debt_entries=(),
+            expired_debt_entries=(),
+            registry_validation_errors=registry_errors,
+        )
 
+    intergrax_root = repo_root / "intergrax"
+    target_paths = (
+        paths if paths is not None else discover_public_contract_source_files(repo_root)
+    )
+    violations: list[ContractSurfacePurityViolation] = []
     for path in target_paths:
         if not path.is_file():
             continue
@@ -349,14 +416,33 @@ def evaluate_contract_surface_purity(
                 source_module=source_module,
             ),
         )
+    return _build_csp_gate_result(violations, registry)
 
-    unregistered = [
-        violation
-        for violation in violations
-        if not any(_debt_covers(violation, entry) for entry in registry)
-    ]
-    unregistered.sort(key=lambda item: (item.source_path, item.line, item.rule_id))
-    return tuple(unregistered)
+
+def evaluate_contract_surface_purity_gate_on_source(
+    *,
+    source: str,
+    source_path: str = "intergrax/snippet/contracts/snippet.py",
+    source_module: str = "intergrax.snippet.contracts.snippet",
+    debt_entries: tuple[ContractSurfacePurityDebtEntry, ...] | None = None,
+) -> ContractSurfacePurityGateResult:
+    registry = debt_entries if debt_entries is not None else CONTRACT_SURFACE_PURITY_DEBT
+    registry_errors = validate_csp_debt_registry(registry)
+    if registry_errors:
+        return ContractSurfacePurityGateResult(
+            unregistered_violations=(),
+            stale_debt_entries=(),
+            expired_debt_entries=(),
+            registry_validation_errors=registry_errors,
+        )
+    violations = list(
+        _violations_for_source(
+            source=source,
+            rel_path=source_path,
+            source_module=source_module,
+        ),
+    )
+    return _build_csp_gate_result(violations, registry)
 
 
 def evaluate_contract_surface_purity_on_source(

@@ -4,10 +4,11 @@
 
 from testing_support.architecture.public_contract_boundary.contract_surface_purity import (
     CONTRACT_SURFACE_PURITY_DEBT,
-    ContractSurfacePurityDebtEntry,
     ContractSurfacePurityViolation,
     evaluate_contract_surface_purity,
+    evaluate_contract_surface_purity_gate_on_source,
     evaluate_contract_surface_purity_on_source,
+    format_contract_surface_purity_failure,
 )
 from testing_support.architecture.public_contract_boundary.evaluation import (
     evaluate_public_contract_dependency_boundary,
@@ -16,6 +17,8 @@ from testing_support.architecture.public_contract_boundary.evaluation import (
 from testing_support.architecture.public_contract_boundary.models import (
     ContractDependencyDebtEntry,
     ContractDependencyViolation,
+    ContractSurfacePurityDebtEntry,
+    ContractSurfacePurityGateResult,
     DependencyRuleId,
     PublicContractBoundaryGateResult,
     RemovalStage,
@@ -31,6 +34,7 @@ __all__ = (
     "ContractDependencyDebtEntry",
     "ContractDependencyViolation",
     "ContractSurfacePurityDebtEntry",
+    "ContractSurfacePurityGateResult",
     "ContractSurfacePurityViolation",
     "DependencyRuleId",
     "PublicContractBoundaryGateResult",
@@ -38,7 +42,9 @@ __all__ = (
     "SUPPLEMENTAL_PUBLIC_CONTRACT_SURFACES",
     "SupplementalPublicContractSurface",
     "evaluate_contract_surface_purity",
+    "evaluate_contract_surface_purity_gate_on_source",
     "evaluate_contract_surface_purity_on_source",
     "evaluate_public_contract_dependency_boundary",
+    "format_contract_surface_purity_failure",
     "format_gate_failure",
 )

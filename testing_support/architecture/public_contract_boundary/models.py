@@ -6,6 +6,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from testing_support.architecture.public_contract_boundary.contract_surface_purity import (
+        ContractSurfacePurityViolation,
+    )
 
 
 class DependencyRuleId(str, Enum):
@@ -25,6 +31,34 @@ class RemovalStage(str, Enum):
     EBH_2H = "EBH-2H"
     EBH_2I = "EBH-2I"
     EBH_3 = "EBH-3"
+    QUAL_X = "QUAL-X"
+
+
+@dataclass(frozen=True, slots=True)
+class ContractSurfacePurityDebtEntry:
+    finding_id: str
+    source_path: str
+    line: int
+    rule_id: str
+    removal_stage: RemovalStage
+    rationale: str
+
+
+@dataclass(frozen=True, slots=True)
+class ContractSurfacePurityGateResult:
+    unregistered_violations: tuple[ContractSurfacePurityViolation, ...]
+    stale_debt_entries: tuple[ContractSurfacePurityDebtEntry, ...]
+    expired_debt_entries: tuple[ContractSurfacePurityDebtEntry, ...]
+    registry_validation_errors: tuple[str, ...] = ()
+
+    @property
+    def passed(self) -> bool:
+        return (
+            not self.unregistered_violations
+            and not self.stale_debt_entries
+            and not self.expired_debt_entries
+            and not self.registry_validation_errors
+        )
 
 
 @dataclass(frozen=True, slots=True)
