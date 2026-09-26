@@ -27,6 +27,9 @@ from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.tools.providers.sandbox.bundle import CODE_EXEC_TOOL_ID
+from testing_support.dependency_concurrency_admission_config import (
+    tool_dependency_concurrency_admission_configuration,
+)
 
 _UCA6C_WORKER_ID = "worker-uca6c-qualified"
 _UCA6C_ECHO_ONLY_WORKER_ID = "worker-uca6c-echo-only"
@@ -66,11 +69,23 @@ class Uca6cEchoOnlyWorkerAgent(EchoAgent):
         )
 
 
+def uca6c_strict_tool_dependency_admission_config():
+    return tool_dependency_concurrency_admission_configuration(
+        CODE_EXEC_TOOL_ID,
+        max_concurrent_calls=2,
+    )
+
+
 def uca6c_strict_sandbox_env_profile() -> ApplicationEnvironmentProfile:
     profile = ApplicationEnvironmentProfile.lab_defaults(
         profile_id="uca6c-r5-r2-strict"
     )
     profile = profile.model_copy(update={"execution_mode": ExecutionMode.STRICT})
+    reliability = profile.reliability_profile.model_copy(
+        update={
+            "dependency_concurrency_admission": uca6c_strict_tool_dependency_admission_config(),
+        },
+    )
     return profile.model_copy(
         update={
             "isolation": IsolationBundle(
@@ -80,6 +95,7 @@ def uca6c_strict_sandbox_env_profile() -> ApplicationEnvironmentProfile:
                 inline_rules=[],
                 policy_enforcement_mode=PolicyEnforcementMode.ENFORCE,
             ),
+            "reliability_profile": reliability,
         },
     )
 

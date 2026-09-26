@@ -155,6 +155,9 @@ def build_execution_bound_catalog_tool_invoker_for_qualified_capability(
         reentry_claim_owner_id=f"uca6c:{caller_agent_id.strip()}",
         durable_wiring_binding_resolver=binding_resolver,
         task_checkpoint_store=task_checkpoint_store,
+        dependency_concurrency_admission=(
+            environment.reliability_profile.dependency_concurrency_admission
+        ),
     )
     return composition.invoker
 

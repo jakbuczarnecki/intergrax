@@ -13,6 +13,12 @@ from pydantic import BaseModel
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_from_tool_wiring,
 )
+from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (
+    materialize_tool_dependency_attempt_boundary,
+)
+from testing_support.dependency_concurrency_admission_config import (
+    tool_dependency_concurrency_admission_configuration,
+)
 from intergrax.applications._shared.tool_wiring import ApplicationToolWiring
 from intergrax.contracts.agent_runtime_governance import CapabilityGrant
 from intergrax.contracts.canonical_inner_governance import (
@@ -172,19 +178,35 @@ def test_gr10_r8_r1_runtime_config_exposes_guard_port_without_concrete_import() 
     assert "DefaultCanonicalInnerExecutionGuard" not in source
 
 
+def _probe_tool_admission_boundary():
+    contract = _contract()
+    return materialize_tool_dependency_attempt_boundary(
+        tool_dependency_concurrency_admission_configuration(
+            contract.tool_id,
+            max_concurrent_calls=2,
+        ),
+        production_mode=True,
+    )
+
+
 def test_gr10_r8_r1_runtime_context_custom_guard_end_to_end() -> None:
     custom = _CustomProductionGuard()
+    contract = _contract()
     config = RuntimeConfig(
         llm_adapter=FakeLLMAdapter(),
         enable_rag=False,
         enable_websearch=False,
         production_mode=True,
         trace_db_path="/tmp/trace.db",
-        tool_registry=FakeRegistry(_contract()),
+        tool_registry=FakeRegistry(contract),
         agent_runtime_governance=_allow_all_governance(),
         canonical_inner_execution_guard=custom,
         meaningful_side_effect_authorization=_RecordingMseBoundary(
             action=PolicyAction.ALLOW,
+        ),
+        dependency_concurrency_admission=tool_dependency_concurrency_admission_configuration(
+            contract.tool_id,
+            max_concurrent_calls=2,
         ),
     )
     ctx = RuntimeContext.build(
@@ -204,18 +226,23 @@ def test_gr10_r8_r1_runtime_context_custom_guard_end_to_end() -> None:
 
 
 def test_gr10_r8_r1_runtime_context_default_guard_when_custom_absent() -> None:
+    contract = _contract()
     config = RuntimeConfig(
         llm_adapter=FakeLLMAdapter(),
         enable_rag=False,
         enable_websearch=False,
         production_mode=True,
         trace_db_path="/tmp/trace.db",
-        tool_registry=FakeRegistry(_contract()),
+        tool_registry=FakeRegistry(contract),
         agent_runtime_governance=build_agent_runtime_governance_boundary(
             capability_grants=default_lab_capability_grants("test-tenant"),
         ),
         meaningful_side_effect_authorization=_RecordingMseBoundary(
             action=PolicyAction.ALLOW,
+        ),
+        dependency_concurrency_admission=tool_dependency_concurrency_admission_configuration(
+            contract.tool_id,
+            max_concurrent_calls=2,
         ),
     )
     ctx = RuntimeContext.build(
@@ -242,6 +269,7 @@ def test_gr10_r8_r1_declarative_wiring_custom_guard_end_to_end() -> None:
         meaningful_side_effect_authorization=_RecordingMseBoundary(
             action=PolicyAction.ALLOW,
         ),
+        dependency_attempt_boundary=_probe_tool_admission_boundary(),
         production_mode=True,
     )
     assert catalog is not None

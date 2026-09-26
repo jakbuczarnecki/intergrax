@@ -390,12 +390,28 @@ def test_gr10_r9_production_composition_missing_mse_port_fail_closed() -> None:
 
 
 def test_gr10_r9_production_composition_custom_mse_port_wired() -> None:
+    from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (
+        materialize_tool_dependency_attempt_boundary,
+    )
+    from testing_support.dependency_concurrency_admission_config import (
+        tool_dependency_concurrency_admission_configuration,
+    )
+
     custom = _RecordingMseBoundary(allow=True)
+    contract = _side_effect_contract()
+    boundary = materialize_tool_dependency_attempt_boundary(
+        tool_dependency_concurrency_admission_configuration(
+            contract.tool_id,
+            max_concurrent_calls=2,
+        ),
+        production_mode=True,
+    )
     invoker = build_production_runtime_tool_invoker(
-        registry=FakeRegistry(_side_effect_contract()),
+        registry=FakeRegistry(contract),
         executor=_CountingExecutor(),
         agent_runtime_governance=_allow_all_governance(),
         meaningful_side_effect_authorization=custom,
+        dependency_attempt_boundary=boundary,
         production_mode=True,
     )
     assert invoker._meaningful_side_effect_authorization is custom  # noqa: SLF001

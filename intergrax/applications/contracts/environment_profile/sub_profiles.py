@@ -27,6 +27,9 @@ from intergrax.contracts.agent_budget import BudgetReactionProfile
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.sandbox_profile import SandboxProfile
 from intergrax.contracts.attempt_lifecycle import AttemptLifecyclePersistenceProvider
+from intergrax.contracts.dependency_concurrency_admission import (
+    DependencyConcurrencyAdmissionConfiguration,
+)
 from intergrax.contracts.execution_lineage import ExecutionLineagePersistenceProvider
 from intergrax.contracts.delegated_invocation_correlation import (
     DelegatedInvocationCorrelationDurabilityMode,
@@ -239,6 +242,9 @@ class ReliabilityProfile(BaseModel):
         ExecutionLineagePersistenceProvider | None
     ) = None
     delegated_invocation_correlation_durability: DelegatedInvocationCorrelationDurabilityMode = DelegatedInvocationCorrelationDurabilityMode.DISABLED
+    dependency_concurrency_admission: DependencyConcurrencyAdmissionConfiguration | None = (
+        None
+    )
 
 
 class EventSubscriptionSpec(BaseModel):

@@ -13,6 +13,7 @@ import pytest
 from pydantic import ValidationError
 
 from intergrax.contracts.dependency_concurrency_admission import (
+    DependencyConcurrencyAdmissionConfiguration,
     DependencyConcurrencyAdmissionError,
     DependencyConcurrencyAdmissionPort,
     DependencyConcurrencyAdmissionRequest,
@@ -23,6 +24,7 @@ from intergrax.contracts.dependency_concurrency_admission import (
     DependencyConcurrencyOverloadMode,
     DependencyConcurrencyPermit,
     DependencyConcurrencyPolicy,
+    DependencyConcurrencyPolicyBinding,
     DependencyConcurrencyPolicyMissingError,
 )
 
@@ -175,6 +177,45 @@ def test_w2_contract_does_not_import_w1_capacity_modules() -> None:
             assert name != bad and not name.startswith(f"{bad}."), (
                 f"forbidden import {name} in dependency concurrency contract"
             )
+
+
+def test_admission_configuration_accepts_valid_tool_binding() -> None:
+    identity = DependencyConcurrencyIdentity(
+        kind=DependencyConcurrencyKind.TOOL,
+        value="search",
+    )
+    policy = DependencyConcurrencyPolicy(
+        max_concurrent_calls=2,
+        overload_mode=DependencyConcurrencyOverloadMode.REJECT,
+    )
+    config = DependencyConcurrencyAdmissionConfiguration(
+        bindings=(DependencyConcurrencyPolicyBinding(identity=identity, policy=policy),),
+    )
+    assert len(config.bindings) == 1
+
+
+def test_admission_configuration_rejects_duplicate_identity() -> None:
+    identity = DependencyConcurrencyIdentity(
+        kind=DependencyConcurrencyKind.TOOL,
+        value="search",
+    )
+    policy = DependencyConcurrencyPolicy(
+        max_concurrent_calls=1,
+        overload_mode=DependencyConcurrencyOverloadMode.REJECT,
+    )
+    with pytest.raises(ValidationError, match="duplicate"):
+        DependencyConcurrencyAdmissionConfiguration(
+            bindings=(
+                DependencyConcurrencyPolicyBinding(identity=identity, policy=policy),
+                DependencyConcurrencyPolicyBinding(identity=identity, policy=policy),
+            ),
+        )
+
+
+def test_admission_configuration_has_no_implicit_capacity_default() -> None:
+    empty = DependencyConcurrencyAdmissionConfiguration()
+    assert empty.bindings == ()
+    assert "max_concurrent_calls" not in DependencyConcurrencyAdmissionConfiguration.model_fields
 
 
 def test_module_docstring_states_non_goals() -> None:

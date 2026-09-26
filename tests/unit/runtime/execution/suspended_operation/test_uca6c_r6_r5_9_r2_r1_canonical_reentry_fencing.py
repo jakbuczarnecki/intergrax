@@ -107,6 +107,7 @@ from tests.unit.autonomous_work.test_uca6c_r5_r2_strict_governance_composition i
 )
 from tests.unit.autonomous_work.uca6c_r5_r2_strict_fixtures import (
     uca6c_strict_r6_durable_wiring,
+    uca6c_strict_tool_dependency_admission_config,
     uca6c_strict_worker_manifest,
     uca6c_strict_worker_registry,
 )
@@ -221,6 +222,7 @@ def _build_host_composition(
         caller_agent_id="worker-uca6c-qualified",
         sandbox_availability=sandbox_availability_provider(tool_wiring.wiring_context),
         production_mode=True,
+        dependency_concurrency_admission=uca6c_strict_tool_dependency_admission_config(),
         scope_policy=StaticToolScopePolicy(allowed_tools={CODE_EXEC_TOOL_ID}),
         agent_runtime_governance=build_agent_runtime_governance_boundary(
             capability_grants=capability_grants_from_application_manifest(

@@ -123,6 +123,39 @@ class DependencyConcurrencyPolicy(BaseModel):
         return self
 
 
+class DependencyConcurrencyPolicyBinding(BaseModel):
+    """One typed dependency identity bound to an explicit concurrency policy."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    identity: DependencyConcurrencyIdentity
+    policy: DependencyConcurrencyPolicy
+
+    @model_validator(mode="after")
+    def _validate_identity_type(self) -> DependencyConcurrencyPolicyBinding:
+        if type(self.identity) is not DependencyConcurrencyIdentity:
+            raise TypeError("identity must be DependencyConcurrencyIdentity")
+        return self
+
+
+class DependencyConcurrencyAdmissionConfiguration(BaseModel):
+    """Declarative dependency-concurrency admission bindings (no implicit capacity)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True, arbitrary_types_allowed=True)
+
+    bindings: tuple[DependencyConcurrencyPolicyBinding, ...] = ()
+
+    @model_validator(mode="after")
+    def _reject_duplicate_identity(self) -> DependencyConcurrencyAdmissionConfiguration:
+        seen: set[tuple[DependencyConcurrencyKind, str]] = set()
+        for binding in self.bindings:
+            key = (binding.identity.kind, binding.identity.value)
+            if key in seen:
+                raise ValueError("duplicate dependency concurrency identity in configuration")
+            seen.add(key)
+        return self
+
+
 @runtime_checkable
 class DependencyConcurrencyPermit(Protocol):
     """Held slot for one in-flight external dependency attempt; release exactly once."""

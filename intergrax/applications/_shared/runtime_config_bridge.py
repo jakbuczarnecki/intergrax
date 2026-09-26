@@ -177,6 +177,9 @@ def materialize_runtime_config(
         env,
         idempotency_store=reliability_wiring.idempotency_store,
     )
+    config.dependency_concurrency_admission = (
+        env.reliability_profile.dependency_concurrency_admission
+    )
     apply_context_profiles_from_environment(config, env)
     from intergrax.applications._shared.context_wiring import apply_context_engine_to_runtime_config
 

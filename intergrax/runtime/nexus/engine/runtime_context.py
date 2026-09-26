@@ -382,6 +382,14 @@ class RuntimeContext:
             sandbox_availability_provider,
         )
 
+        from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (
+            materialize_tool_dependency_attempt_boundary,
+        )
+
+        dependency_boundary = materialize_tool_dependency_attempt_boundary(
+            config.dependency_concurrency_admission,
+            production_mode=config.production_mode,
+        )
         base_invoker = build_production_runtime_tool_invoker(
             registry=registry,
             executor=executor,
@@ -391,6 +399,7 @@ class RuntimeContext:
             agent_runtime_governance=config.agent_runtime_governance,
             inner_execution_guard=config.canonical_inner_execution_guard,
             meaningful_side_effect_authorization=config.meaningful_side_effect_authorization,
+            dependency_attempt_boundary=dependency_boundary,
             production_mode=config.production_mode,
         )
 

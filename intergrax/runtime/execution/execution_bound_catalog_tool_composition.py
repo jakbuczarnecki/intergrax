@@ -16,8 +16,14 @@ from intergrax.contracts.execution.execution_terminal_outcome_by_execution_id im
 from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvoker,
 )
+from intergrax.contracts.dependency_concurrency_admission import (
+    DependencyConcurrencyAdmissionConfiguration,
+)
 from intergrax.contracts.meaningful_side_effect_authorization import (
     MeaningfulSideEffectAuthorizationPort,
+)
+from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (
+    materialize_tool_dependency_attempt_boundary,
 )
 from intergrax.contracts.execution_deadline.clock import UtcClockPort
 from intergrax.integrations.contracts.document_store import ConditionalDocumentStore
@@ -102,7 +108,12 @@ def build_execution_bound_catalog_tool_composition(
     utc_clock: UtcClockPort | None = None,
     reentry_crash_injection: ExecutionSuspendedWorkReentryCrashInjectionPort | None = None,
     tool_runtime_effect_crash_injection: ToolRuntimeEffectCrashInjectionPort | None = None,
+    dependency_concurrency_admission: DependencyConcurrencyAdmissionConfiguration | None = None,
 ) -> ExecutionBoundCatalogToolComposition:
+    dependency_boundary = materialize_tool_dependency_attempt_boundary(
+        dependency_concurrency_admission,
+        production_mode=production_mode,
+    )
     pre_effect_coordinator = (
         IdempotencyPreEffectCoordinator(idempotency_store=idempotency_store)
         if idempotency_store is not None
@@ -120,6 +131,7 @@ def build_execution_bound_catalog_tool_composition(
         pre_effect_coordinator=pre_effect_coordinator,
         production_mode=production_mode,
         effect_crash_injection=tool_runtime_effect_crash_injection,
+        dependency_attempt_boundary=dependency_boundary,
     )
     shared_utc_clock = utc_clock if utc_clock is not None else SystemUtcClock()
     suspended_store = wire_suspended_execution_operation_store(

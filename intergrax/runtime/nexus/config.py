@@ -15,6 +15,9 @@ from intergrax.runtime.nexus.config_types import (
 )
 
 if TYPE_CHECKING:
+    from intergrax.contracts.dependency_concurrency_admission import (
+        DependencyConcurrencyAdmissionConfiguration,
+    )
     from intergrax.contracts.canonical_inner_governance import (
         CanonicalInnerExecutionGuardPort,
     )
@@ -308,6 +311,10 @@ class RuntimeConfig:
     # GR-10-R9 orchestration MSE boundary (optional override; composition default when None).
     meaningful_side_effect_authorization: Optional[
         "MeaningfulSideEffectAuthorizationPort"
+    ] = None
+
+    dependency_concurrency_admission: Optional[
+        "DependencyConcurrencyAdmissionConfiguration"
     ] = None
 
     # Memory toggles
