@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Marketplace handoff consumer that stages exact Tool releases for qualification (S24-GAP-02-P1)."""
+"""Marketplace handoff consumer that stages exact Tool releases for qualification (S24-GAP-02-P1/P2)."""
 
 from __future__ import annotations
 
@@ -17,12 +17,25 @@ from intergrax.contracts.marketplace.handoff_traceability import (
     CapabilityHandoffConsumerTarget,
     CapabilityHandoffEnvelope,
 )
+from intergrax.contracts.tools.marketplace_handoff_reference import (
+    derive_marketplace_gap_tool_handoff_id,
+)
 from intergrax.contracts.tools.marketplace_qualified_capability import (
     MarketplaceQualifiedToolStage,
     MarketplaceQualifiedToolStageConflictError,
     MarketplaceQualifiedToolStageIntegrityError,
     MarketplaceQualifiedToolStageRepository,
     MarketplaceQualifiedToolStageUnavailableError,
+)
+from intergrax.contracts.tools.marketplace_qualified_tool_stage_context import (
+    MarketplaceQualifiedToolStageContext,
+    MarketplaceQualifiedToolStageContextAssociationConflictError,
+    MarketplaceQualifiedToolStageContextAssociationIntegrityError,
+    MarketplaceQualifiedToolStageContextAssociationRepository,
+    MarketplaceQualifiedToolStageContextAssociationUnavailableError,
+)
+from intergrax.marketplace.acquisition.gap_acquisition_service import (
+    marketplace_gap_operation_id_from_selection_id,
 )
 
 TOOL_QUALIFICATION_STAGING_CONSUMER_ID: Final = "tool.qualification_staging.v1"
@@ -50,8 +63,13 @@ def _stage_from_envelope(
 class ToolQualificationStagingConsumer:
     """Projects marketplace handoff envelopes into Tool-owned durable staging."""
 
-    def __init__(self, repository: MarketplaceQualifiedToolStageRepository) -> None:
+    def __init__(
+        self,
+        repository: MarketplaceQualifiedToolStageRepository,
+        association_repository: MarketplaceQualifiedToolStageContextAssociationRepository,
+    ) -> None:
         self._repository = repository
+        self._association_repository = association_repository
 
     @property
     def consumer_id(self) -> str:
@@ -74,7 +92,7 @@ class ToolQualificationStagingConsumer:
                 disposition=CapabilityHandoffConsumerFailureDisposition.BLOCKED,
             )
         try:
-            require_non_empty_text(envelope.tenant_id, label="tenant_id")
+            normalized_tenant = require_non_empty_text(envelope.tenant_id, label="tenant_id")
         except (TypeError, ValueError) as exc:
             raise CapabilityHandoffConsumerError(
                 str(exc),
@@ -86,12 +104,33 @@ class ToolQualificationStagingConsumer:
                 disposition=CapabilityHandoffConsumerFailureDisposition.BLOCKED,
             )
         try:
+            acquisition_request_id = marketplace_gap_operation_id_from_selection_id(
+                envelope.selection_id,
+            )
+        except (TypeError, ValueError) as exc:
+            raise CapabilityHandoffConsumerError(
+                str(exc),
+                disposition=CapabilityHandoffConsumerFailureDisposition.BLOCKED,
+            ) from exc
+
+        expected_handoff_id = derive_marketplace_gap_tool_handoff_id(
+            tenant_id=normalized_tenant,
+            operation_id=acquisition_request_id,
+        )
+        if envelope.handoff_id != expected_handoff_id:
+            raise CapabilityHandoffConsumerError(
+                "handoff_id does not match tenant-bound marketplace gap tool identity",
+                disposition=CapabilityHandoffConsumerFailureDisposition.FAILED,
+            )
+
+        try:
             stage = _stage_from_envelope(envelope)
         except (TypeError, ValueError, ValidationError) as exc:
             raise CapabilityHandoffConsumerError(
                 str(exc),
                 disposition=CapabilityHandoffConsumerFailureDisposition.BLOCKED,
             ) from exc
+
         try:
             self._repository.stage(stage)
         except MarketplaceQualifiedToolStageConflictError as exc:
@@ -105,6 +144,29 @@ class ToolQualificationStagingConsumer:
                 disposition=CapabilityHandoffConsumerFailureDisposition.UNAVAILABLE,
             ) from exc
         except MarketplaceQualifiedToolStageIntegrityError as exc:
+            raise CapabilityHandoffConsumerError(
+                str(exc),
+                disposition=CapabilityHandoffConsumerFailureDisposition.FAILED,
+            ) from exc
+
+        association = MarketplaceQualifiedToolStageContext(
+            handoff_id=envelope.handoff_id,
+            tenant_id=normalized_tenant,
+            acquisition_request_id=acquisition_request_id,
+        )
+        try:
+            self._association_repository.record(association)
+        except MarketplaceQualifiedToolStageContextAssociationConflictError as exc:
+            raise CapabilityHandoffConsumerError(
+                str(exc),
+                disposition=CapabilityHandoffConsumerFailureDisposition.BLOCKED,
+            ) from exc
+        except MarketplaceQualifiedToolStageContextAssociationUnavailableError as exc:
+            raise CapabilityHandoffConsumerError(
+                str(exc),
+                disposition=CapabilityHandoffConsumerFailureDisposition.UNAVAILABLE,
+            ) from exc
+        except MarketplaceQualifiedToolStageContextAssociationIntegrityError as exc:
             raise CapabilityHandoffConsumerError(
                 str(exc),
                 disposition=CapabilityHandoffConsumerFailureDisposition.FAILED,

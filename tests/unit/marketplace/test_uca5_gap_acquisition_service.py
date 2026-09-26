@@ -42,6 +42,10 @@ from intergrax.marketplace import (
     MarketplaceDiscoveryService,
     MarketplaceRecommendationService,
 )
+from intergrax.contracts.tools.marketplace_handoff_reference import (
+    derive_marketplace_gap_tool_handoff_id,
+    marketplace_domain_handoff_reference,
+)
 from intergrax.marketplace.acquisition import (
     MachineCapabilityAcquisitionService,
     MarketplaceGapAcquisitionService,
@@ -139,12 +143,93 @@ def test_gap_service_handoff_success_produces_domain_reference() -> None:
             intent_summary="tool",
         ),
         discovery_query=_discovery_query(),
-        marketplace_query_context=MarketplaceQueryContext(),
+        marketplace_query_context=MarketplaceQueryContext(tenant_id="tenant-uca5"),
     )
     result = gap_service.acquire_from_gap(request)
     assert result.outcome is MarketplaceGapAcquisitionOutcome.SUCCEEDED
     assert result.domain_handoff_reference is not None
-    assert result.domain_handoff_reference.startswith("handoff://")
+    expected = marketplace_domain_handoff_reference(
+        derive_marketplace_gap_tool_handoff_id(
+            tenant_id="tenant-uca5",
+            operation_id="op-uca5-success",
+        ),
+    )
+    assert result.domain_handoff_reference == expected
+
+
+def test_tool_gap_without_tenant_is_blocked() -> None:
+    gap_service, _machine, _consumer = _build_services()
+    request = MarketplaceGapAcquisitionRequest(
+        operation_id="op-no-tenant",
+        gap_id="capability-gap:need-1:canonical-corr",
+        canonical_discovery_correlation_id="canonical-corr",
+        capability_need=CapabilityNeed(
+            need_id="need-1",
+            kinds=(CapabilityKind.TOOL,),
+            intent_summary="tool",
+        ),
+        discovery_query=_discovery_query(),
+        marketplace_query_context=MarketplaceQueryContext(),
+    )
+    result = gap_service.acquire_from_gap(request)
+    assert result.outcome is MarketplaceGapAcquisitionOutcome.BLOCKED
+    assert "tenant_id required" in (result.reason_detail or "")
+
+
+def test_tool_v2_handoff_idempotent_for_same_tenant_operation() -> None:
+    gap_service, _machine, _consumer = _build_services()
+    tenant_id = "tenant-retry"
+    operation_id = "op-retry"
+    kwargs = {
+        "operation_id": operation_id,
+        "gap_id": "capability-gap:need-1:canonical-corr",
+        "canonical_discovery_correlation_id": "canonical-corr",
+        "capability_need": CapabilityNeed(
+            need_id="need-1",
+            kinds=(CapabilityKind.TOOL,),
+            intent_summary="tool",
+        ),
+        "discovery_query": _discovery_query(),
+        "marketplace_query_context": MarketplaceQueryContext(tenant_id=tenant_id),
+    }
+    result = gap_service.acquire_from_gap(MarketplaceGapAcquisitionRequest(**kwargs))
+    assert result.outcome is MarketplaceGapAcquisitionOutcome.SUCCEEDED
+    expected = marketplace_domain_handoff_reference(
+        derive_marketplace_gap_tool_handoff_id(
+            tenant_id=tenant_id,
+            operation_id=operation_id,
+        ),
+    )
+    assert result.domain_handoff_reference == expected
+
+
+def test_two_tenants_same_operation_get_different_handoff_ids() -> None:
+    gap_service, _machine, _consumer = _build_services()
+    operation_id = "shared-operation"
+    base = {
+        "operation_id": operation_id,
+        "gap_id": "capability-gap:need-1:canonical-corr",
+        "canonical_discovery_correlation_id": "canonical-corr",
+        "capability_need": CapabilityNeed(
+            need_id="need-1",
+            kinds=(CapabilityKind.TOOL,),
+            intent_summary="tool",
+        ),
+        "discovery_query": _discovery_query(),
+    }
+    result_a = gap_service.acquire_from_gap(
+        MarketplaceGapAcquisitionRequest(
+            **base,
+            marketplace_query_context=MarketplaceQueryContext(tenant_id="tenant-a"),
+        ),
+    )
+    result_b = gap_service.acquire_from_gap(
+        MarketplaceGapAcquisitionRequest(
+            **base,
+            marketplace_query_context=MarketplaceQueryContext(tenant_id="tenant-b"),
+        ),
+    )
+    assert result_a.domain_handoff_reference != result_b.domain_handoff_reference
 
 
 def test_select_and_handoff_runs_listing_pipeline_once(

@@ -38,12 +38,21 @@ from intergrax.contracts.tools.marketplace_qualified_capability import (
 from intergrax.integrations._shared.in_memory_document_store import (
     InMemoryDocumentStore,
 )
+from intergrax.contracts.tools.marketplace_handoff_reference import (
+    derive_marketplace_gap_tool_handoff_id,
+)
+from intergrax.marketplace.acquisition.gap_acquisition_service import (
+    marketplace_gap_selection_id,
+)
 from intergrax.marketplace.handoff.adapters.tool_qualification_staging_consumer import (
     TOOL_QUALIFICATION_STAGING_CONSUMER_ID,
     ToolQualificationStagingConsumer,
 )
 from intergrax.tools.marketplace_qualified_capability_staging import (
     DocumentStoreMarketplaceQualifiedToolStageRepository,
+)
+from intergrax.tools.marketplace_qualified_tool_stage_context_association import (
+    DocumentStoreMarketplaceQualifiedToolStageContextAssociationRepository,
 )
 
 pytestmark = pytest.mark.unit
@@ -95,9 +104,13 @@ def _trace(tenant_id: str = "tenant-1") -> CapabilityDiscoveryTraceFacts:
     )
 
 
-def _selection(release: CapabilityReleaseIdentity) -> CapabilityMarketplaceExplicitSelection:
+def _selection(
+    release: CapabilityReleaseIdentity,
+    *,
+    operation_id: str = "op-consumer-1",
+) -> CapabilityMarketplaceExplicitSelection:
     return CapabilityMarketplaceExplicitSelection(
-        selection_id="selection-1",
+        selection_id=marketplace_gap_selection_id(operation_id),
         discovery_correlation_id="discovery-1",
         selected_release=release,
         selector_id="selector-1",
@@ -108,72 +121,87 @@ def _envelope(
     release: CapabilityReleaseIdentity | None = None,
     *,
     tenant_id: str | None = "tenant-1",
+    operation_id: str = "op-consumer-1",
     consumer_target: CapabilityHandoffConsumerTarget = (
         CapabilityHandoffConsumerTarget.TOOL_DOMAIN
     ),
 ) -> CapabilityHandoffEnvelope:
     release = release or _tool_release()
+    normalized_tenant = tenant_id or "tenant-1"
+    handoff_id = derive_marketplace_gap_tool_handoff_id(
+        tenant_id=normalized_tenant,
+        operation_id=operation_id,
+    )
+    selection = _selection(release, operation_id=operation_id)
     return CapabilityHandoffEnvelope(
-        handoff_id="handoff-1",
+        handoff_id=handoff_id,
         tenant_id=tenant_id,
         selected_release=release,
         discovery_correlation_id="discovery-1",
-        selection_id="selection-1",
+        selection_id=selection.selection_id,
         consumer_target=consumer_target,
         downstream_consumer_id=TOOL_QUALIFICATION_STAGING_CONSUMER_ID,
-        discovery_trace=_trace(tenant_id or "tenant-1"),
-        explicit_selection=_selection(release),
+        discovery_trace=_trace(normalized_tenant),
+        explicit_selection=selection,
         recorded_at=datetime(2026, 3, 26, 12, 0, tzinfo=timezone.utc),
     )
 
 
-def _consumer() -> tuple[ToolQualificationStagingConsumer, MarketplaceQualifiedToolStageRepository]:
+def _consumer() -> tuple[
+    ToolQualificationStagingConsumer,
+    MarketplaceQualifiedToolStageRepository,
+    DocumentStoreMarketplaceQualifiedToolStageContextAssociationRepository,
+]:
     store = InMemoryDocumentStore()
     repository = DocumentStoreMarketplaceQualifiedToolStageRepository(store)
-    return ToolQualificationStagingConsumer(repository), repository
+    association = DocumentStoreMarketplaceQualifiedToolStageContextAssociationRepository(
+        store,
+    )
+    return ToolQualificationStagingConsumer(repository, association), repository, association
 
 
 def test_tool_envelope_persists_stage() -> None:
-    consumer, repo = _consumer()
+    consumer, repo, assoc = _consumer()
     envelope = _envelope()
     consumer.consume(envelope)
-    loaded = repo.get(tenant_id="tenant-1", handoff_id="handoff-1")
+    loaded = repo.get(tenant_id="tenant-1", handoff_id=envelope.handoff_id)
     assert loaded is not None
     assert loaded.handoff_id == envelope.handoff_id
+    assert assoc.get_by_handoff_id(envelope.handoff_id) is not None
 
 
 def test_selected_release_copied_exactly() -> None:
-    consumer, repo = _consumer()
+    consumer, repo, _assoc = _consumer()
     release = _tool_release("3.4.5")
     envelope = _envelope(release)
     consumer.consume(envelope)
-    loaded = repo.get(tenant_id="tenant-1", handoff_id="handoff-1")
+    loaded = repo.get(tenant_id="tenant-1", handoff_id=envelope.handoff_id)
     assert loaded is not None
     assert loaded.selected_release == release
 
 
 def test_tenant_correlation_selection_preserved() -> None:
-    consumer, repo = _consumer()
+    consumer, repo, _assoc = _consumer()
     envelope = _envelope()
     consumer.consume(envelope)
-    loaded = repo.get(tenant_id="tenant-1", handoff_id="handoff-1")
+    loaded = repo.get(tenant_id="tenant-1", handoff_id=envelope.handoff_id)
     assert loaded is not None
     assert loaded.tenant_id == "tenant-1"
     assert loaded.discovery_correlation_id == "discovery-1"
-    assert loaded.selection_id == "selection-1"
+    assert loaded.selection_id == envelope.selection_id
 
 
 def test_duplicate_identical_envelope_is_safe() -> None:
-    consumer, repo = _consumer()
+    consumer, repo, _assoc = _consumer()
     envelope = _envelope()
     consumer.consume(envelope)
     consumer.consume(envelope)
-    loaded = repo.get(tenant_id="tenant-1", handoff_id="handoff-1")
+    loaded = repo.get(tenant_id="tenant-1", handoff_id=envelope.handoff_id)
     assert loaded is not None
 
 
 def test_conflicting_stage_is_blocked() -> None:
-    consumer, _repo = _consumer()
+    consumer, _repo, _assoc = _consumer()
     consumer.consume(_envelope(_tool_release("1.0.0")))
     with pytest.raises(CapabilityHandoffConsumerError) as exc_info:
         consumer.consume(_envelope(_tool_release("2.0.0")))
@@ -181,14 +209,15 @@ def test_conflicting_stage_is_blocked() -> None:
 
 
 def test_missing_tenant_is_blocked() -> None:
-    consumer, _repo = _consumer()
+    consumer, _repo, _assoc = _consumer()
     release = _tool_release()
+    selection = _selection(release)
     envelope = CapabilityHandoffEnvelope(
         handoff_id="handoff-1",
         tenant_id=None,
         selected_release=release,
         discovery_correlation_id="discovery-1",
-        selection_id="selection-1",
+        selection_id=selection.selection_id,
         consumer_target=CapabilityHandoffConsumerTarget.TOOL_DOMAIN,
         downstream_consumer_id=TOOL_QUALIFICATION_STAGING_CONSUMER_ID,
         discovery_trace=CapabilityDiscoveryTraceFacts(
@@ -197,7 +226,7 @@ def test_missing_tenant_is_blocked() -> None:
             visible_candidate_count=1,
             governed_admissible_count=1,
         ),
-        explicit_selection=_selection(release),
+        explicit_selection=selection,
         recorded_at=datetime(2026, 3, 26, 12, 0, tzinfo=timezone.utc),
     )
     with pytest.raises(CapabilityHandoffConsumerError) as exc_info:
@@ -206,7 +235,7 @@ def test_missing_tenant_is_blocked() -> None:
 
 
 def test_non_tool_envelope_is_blocked() -> None:
-    consumer, _repo = _consumer()
+    consumer, _repo, _assoc = _consumer()
     with pytest.raises(CapabilityHandoffConsumerError) as exc_info:
         consumer.consume(_envelope(_agent_release()))
     assert exc_info.value.disposition is CapabilityHandoffConsumerFailureDisposition.BLOCKED
@@ -228,7 +257,14 @@ def test_repository_unavailable_maps_to_unavailable() -> None:
         ) -> MarketplaceQualifiedToolStage | None:
             return None
 
-    consumer = ToolQualificationStagingConsumer(_UnavailableRepo())
+    class _UnavailableAssoc:
+        def record(self, association):
+            raise NotImplementedError
+
+        def get_by_handoff_id(self, handoff_id: str):
+            return None
+
+    consumer = ToolQualificationStagingConsumer(_UnavailableRepo(), _UnavailableAssoc())
     with pytest.raises(CapabilityHandoffConsumerError) as exc_info:
         consumer.consume(_envelope())
     assert exc_info.value.disposition is CapabilityHandoffConsumerFailureDisposition.UNAVAILABLE
@@ -250,14 +286,21 @@ def test_repository_integrity_failure_maps_to_failed() -> None:
         ) -> MarketplaceQualifiedToolStage | None:
             return None
 
-    consumer = ToolQualificationStagingConsumer(_IntegrityRepo())
+    class _NoopAssoc:
+        def record(self, association):
+            raise NotImplementedError
+
+        def get_by_handoff_id(self, handoff_id: str):
+            return None
+
+    consumer = ToolQualificationStagingConsumer(_IntegrityRepo(), _NoopAssoc())
     with pytest.raises(CapabilityHandoffConsumerError) as exc_info:
         consumer.consume(_envelope())
     assert exc_info.value.disposition is CapabilityHandoffConsumerFailureDisposition.FAILED
 
 
 def test_consumer_has_stable_consumer_id() -> None:
-    consumer, _repo = _consumer()
+    consumer, _repo, _assoc = _consumer()
     assert consumer.consumer_id == TOOL_QUALIFICATION_STAGING_CONSUMER_ID
 
 
