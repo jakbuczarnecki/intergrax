@@ -43,38 +43,58 @@ class SessionTurnIndexEmbeddingPort(Protocol):
 
 @runtime_checkable
 class SessionTurnIndexVectorScope(Protocol):
-    """Vector query scope for session turn index backends."""
+    """Vector query scope for session turn index backends (read-only data view)."""
 
-    tenant_id: str
-    namespace: str | None
-    workspace_id: str | None
+    @property
+    def tenant_id(self) -> str: ...
+
+    @property
+    def namespace(self) -> str | None: ...
+
+    @property
+    def workspace_id(self) -> str | None: ...
 
 
 @runtime_checkable
 class SessionTurnIndexMetadataFilter(Protocol):
-    """Metadata filter passed to vector query backends."""
+    """Metadata filter passed to vector query backends (read-only data view)."""
 
-    conditions: Mapping[str, str | int | float]
+    @property
+    def conditions(self) -> Mapping[str, str | int | float]: ...
 
 
 @runtime_checkable
 class SessionTurnIndexVectorQueryHit(Protocol):
-    """One raw vector query hit before session turn normalization."""
+    """One raw vector query hit before session turn normalization (read-only data view)."""
 
-    similarity_score: float
-    document_content: str
-    document_id: str
-    document_metadata: Mapping[str, str | int | float]
+    @property
+    def similarity_score(self) -> float: ...
+
+    @property
+    def document_content(self) -> str: ...
+
+    @property
+    def document_id(self) -> str: ...
+
+    @property
+    def document_metadata(self) -> Mapping[str, str | int | float]: ...
 
 
 @runtime_checkable
 class SessionTurnIndexVectorUpsertRecord(Protocol):
-    """One vector upsert row for session turn indexing."""
+    """One vector upsert row for session turn indexing (read-only data view)."""
 
-    vector_id: str
-    document_content: str
-    document_metadata: Mapping[str, str | int | float]
-    embedding: Sequence[float]
+    @property
+    def vector_id(self) -> str: ...
+
+    @property
+    def document_content(self) -> str: ...
+
+    @property
+    def document_metadata(self) -> Mapping[str, str | int | float]: ...
+
+    @property
+    def embedding(self) -> Sequence[float]: ...
 
 
 @runtime_checkable

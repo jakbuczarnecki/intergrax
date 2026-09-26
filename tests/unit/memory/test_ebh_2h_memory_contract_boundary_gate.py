@@ -54,6 +54,10 @@ _MEMORY_RAG_COMPOSITION_FILES = (
 
 _MEMORY_VECTOR_WIRING = _REPO_ROOT / "intergrax" / "applications" / "_shared" / "memory_vector_wiring.py"
 _USER_PROFILE_MANAGER = _REPO_ROOT / "intergrax" / "memory" / "user_profile_manager.py"
+_SESSION_TURN_INDEX_SERVICE = _REPO_ROOT / "intergrax" / "memory" / "session_turn_index_service.py"
+_SESSION_TURN_INDEX_CONTRACTS = (
+    _REPO_ROOT / "intergrax" / "memory" / "contracts" / "session_turn_index.py"
+)
 
 
 def _read(path: Path) -> str:
@@ -205,3 +209,62 @@ def test_resolve_rag_stack_runtime_annotations_match_canonical_types() -> None:
     sig = inspect.signature(mod.resolve_rag_stack_for_memory_wiring)
     assert sig.parameters["integration_profile"].annotation is not inspect._empty
     assert sig.parameters["llm_adapter"].annotation is not inspect._empty
+
+
+def _protocol_class_property_names(tree: ast.Module, class_name: str) -> set[str]:
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == class_name:
+            props: set[str] = set()
+            for item in node.body:
+                if not isinstance(item, ast.FunctionDef):
+                    continue
+                if len(item.decorator_list):
+                    if any(
+                        isinstance(dec, ast.Name) and dec.id == "property"
+                        for dec in item.decorator_list
+                    ):
+                        props.add(item.name)
+            return props
+    raise AssertionError(f"class {class_name!r} not found")
+
+
+def test_session_turn_index_vector_contracts_expose_readonly_properties() -> None:
+    tree = _parse(_SESSION_TURN_INDEX_CONTRACTS)
+    scope_props = _protocol_class_property_names(tree, "SessionTurnIndexVectorScope")
+    assert scope_props == {"tenant_id", "namespace", "workspace_id"}
+    filter_props = _protocol_class_property_names(tree, "SessionTurnIndexMetadataFilter")
+    assert filter_props == {"conditions"}
+    upsert_props = _protocol_class_property_names(tree, "SessionTurnIndexVectorUpsertRecord")
+    assert upsert_props == {
+        "vector_id",
+        "document_content",
+        "document_metadata",
+        "embedding",
+    }
+
+
+def test_session_turn_index_service_has_no_type_ignore_or_cast_workaround() -> None:
+    source = _read(_SESSION_TURN_INDEX_SERVICE)
+    assert "# type: ignore" not in source
+    assert "cast(" not in source
+
+
+def test_session_turn_index_service_uses_validated_message_role() -> None:
+    source = _read(_SESSION_TURN_INDEX_SERVICE)
+    assert "_normalize_message_role" in source
+    assert 'role=str(meta.get("role")' not in source.replace(" ", "")
+
+
+def test_session_turn_index_service_depends_on_memory_ports_not_concrete_rag() -> None:
+    tree = _parse(_SESSION_TURN_INDEX_SERVICE)
+    modules = _import_module_names(tree)
+    rag_concrete = (
+        "intergrax.rag.embedding.embedding_manager",
+        "intergrax.rag.vectorstore.vectorstore_manager",
+    )
+    violations = [m for m in modules if m in rag_concrete]
+    assert not violations, (
+        "session turn index service must not import concrete RAG managers: "
+        + ", ".join(violations)
+    )
+    assert "intergrax.memory.contracts.session_turn_index" in modules

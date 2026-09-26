@@ -305,7 +305,7 @@ class DefaultEntityMemoryIndexer:
             entity_memory_entity_id_for_entry(scope, memory_id) if memory_id else None
         )
         try:
-            if memory_id:
+            if memory_id and memory_entity_id is not None:
                 existing = self._store.get_entity(scope, memory_entity_id)
                 if existing is not None:
                     enforce_specialized_memory_mutation(

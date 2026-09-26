@@ -9,7 +9,7 @@ from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from intergrax.llm.messages import ChatMessage
+from intergrax.llm.messages import ChatMessage, MessageRole
 from intergrax.memory.contracts.session_turn_index import (
     SessionTurnIndexEmbeddingPort,
     SessionTurnIndexHit,
@@ -24,6 +24,18 @@ from intergrax.memory.memory_vector_namespace import (
     resolve_memory_index_collection,
 )
 from intergrax.memory.memory_vector_errors import MemoryTenantScopeViolationError
+
+
+def _normalize_message_role(value: object) -> MessageRole:
+    if value == "system":
+        return "system"
+    if value == "assistant":
+        return "assistant"
+    if value == "tool":
+        return "tool"
+    if value == "user":
+        return "user"
+    return "user"
 
 
 def _sanitize_metadata(meta: dict[str, Any]) -> dict[str, Any]:
@@ -214,7 +226,7 @@ class VectorSessionTurnIndexStore(SessionTurnIndexStore):
             entry_id = hit.document_id
             session_id_value = str(meta.get("session_id") or "")
             user_id_value = str(meta.get("user_id") or "") or None
-            role = str(meta.get("role") or "user")
+            role = _normalize_message_role(meta.get("role"))
             hits.append(
                 SessionTurnIndexHit(
                     entry_id=entry_id,
