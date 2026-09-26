@@ -29,7 +29,8 @@ Most execution-plane limits are **per host process**:
 - `asyncio.Semaphore` for `max_parallel_nodes` / `max_inflight_nodes` on `GraphExecutor` (instance-scoped `_inflight_semaphore`).
 - `ActiveTaskRegistry` (`_LOCK`, in-memory maps) — mid-run cancel lookup; not cross-worker.
 - `IntegrationCircuitBreaker` / registry — in-process state per integration slug.
-- `DeclarativeToolInvoker._execution_pool` — `ThreadPoolExecutor()` with no explicit `max_workers` (stdlib default **bounded** worker concurrency); Integrax does not define a platform-owned capacity/admission contract; overload can accumulate pending work in the executor's internal queue; one **shared** pool per invoker across tool calls (noisy-neighbor risk between tools).
+- **Historical W2 baseline — `DeclarativeToolInvoker._execution_pool`:** `ThreadPoolExecutor()` with no explicit `max_workers` (stdlib default **bounded** worker concurrency); no platform-owned typed dependency admission on that legacy path; overload can accumulate pending work in the executor's internal queue; one **shared** pool per invoker across tool calls (noisy-neighbor risk between tools).
+- **Current W4-R1 strict production — `RuntimeToolInvoker`:** typed `DependencyConcurrencyAdmissionPort` via `DependencyAttemptExecutionBoundary`; admission **acquire before** pool `submit`; missing strict-production policy/boundary **fails closed** (no unlimited fallback). Lab / non-production composition may omit admission per composition mode.
 - `ConcurrentExecutionWork` — execution-owned bounded worker pool via required `ConcurrentExecutionWorkPolicy` (no platform default; independent from fan-out 64; see W1-B qualification).
 
 ### Cross-process / durable
@@ -63,11 +64,12 @@ Each child: new `ExecutionId`, ledger grant, boundary invoke. No global counter 
 | Fan-out submission | Reject at validation (invalid request) | `validate_fan_out_request` |
 | Root execution admission | Optional typed port on `ExecutionRuntime` (`ExecutionCapacityAdmissionPort`); default `None` preserves legacy callers | `execution_capacity_admission.py` + `local_execution_capacity_admission.py` |
 | Recovery start admission (W3-C) | Optional `RecoveryAdmissionPort` on TASK_RESUME / partial topology / **DECISION_DURABLE** entry; start-only permit; orthogonal to W1 | `recovery_admission.py` + `local_recovery_admission.py` + `decision_durable_recovery_handoff` |
-| Tool invoker | Bounded default workers; implicit pending-work queue (no admission shed); blocking wait on shared pool | `invoker.py` `_execution_pool` |
+| Tool invoker (strict production `RuntimeToolInvoker`) | Typed dependency admission (REJECT / WAIT_WITH_TIMEOUT); acquire before executor submit; missing policy fails closed; executor queue only for admitted work | `invoker.py` + `dependency_attempt_execution_boundary.py` + W4-R1 composition |
+| Tool invoker (legacy / lab `DeclarativeToolInvoker` or non-production omit) | Historical W2 baseline: bounded default workers; implicit pending-work queue; blocking wait on shared pool | `DeclarativeToolInvoker` `_execution_pool` |
 | Event bus | `create_task` on publish | `event_bus.py` |
 | Observability event delivery (W5-A/B) | `BoundedEventSink` + priority overflow; bus optional `event_sink` | `event_delivery/` + `event_bus.py` |
 
-Enterprise gap: overload without configured caps tends toward **unbounded task creation** and implicit OS/thread-pool queues rather than reject/shed at execution admission.
+Enterprise gap (non–strict-production paths): overload without configured graph/root caps or without W4-R1 tool admission still tends toward **unbounded task creation** and implicit OS/thread-pool queues rather than reject/shed at execution admission. **Strict production ToolRuntime** (W4-R1) is excluded from the implicit tool-queue gap when admission is materialized.
 
 ## W5-B — Event delivery ownership model
 
@@ -340,9 +342,10 @@ Do not treat `asyncio.Lock` / `Semaphore` on GraphExecutor as protecting resourc
 ## W2-A ownership evidence (inventory)
 
 - **Integration circuit breaker:** `IntegrationCircuitBreaker` + slug registry — **owner:** integrations `_shared`; **production wiring:** Tier-3 health/bootstrap (`health_check_all`) and config from `wire_application_reliability`; **not** on Nexus `RuntimeToolInvoker` path. RAG retrieve uses wrapper on real calls.
-- **Tool execution:** `RuntimeToolInvoker` — **owner:** Nexus tools; single shared `ThreadPoolExecutor()` per invoker; timeout + contract-level retry; **no** per-`tool_id` concurrency port.
+- **Tool execution:** `RuntimeToolInvoker` — **owner:** Nexus tools; single shared `ThreadPoolExecutor()` per invoker; timeout + contract-level retry. **Historical W2 baseline:** no typed admission port. **Current W4-R1 strict production:** mandatory `DependencyAttemptExecutionBoundary` + typed tool dependency admission before pool submit; per-`tool_id` identity via `DependencyConcurrencyIdentity` (not a second bulkhead family).
 - **Provider calls:** `LLMAdapter._execute` → `execute_with_resilience` — **owner:** llm_adapters; per-physical-attempt retry budget + `ProviderRateLimitPort` (process-local default) + optional RPM/CB/retry via `LLMCallConfig`; in-flight concurrency via W2-B3 admission boundary (orthogonal to W2-C throughput/retry caps).
 - **Tenant:** `tenant_id` on runtime request, idempotency, capacity request metadata — **no** per-tenant root slot partitioning (`LocalExecutionCapacityAdmission` ignores tenant).
+- **W4-R1 (accepted, current strict production ToolRuntime):** `ReliabilityProfile` → typed `DependencyConcurrencyAdmissionConfiguration` → sanctioned materializer → `DependencyConcurrencyAdmissionPort` → `DependencyAttemptExecutionBoundary` → `RuntimeToolInvoker` with **acquire before** `ThreadPoolExecutor.submit`; strict production fails closed without tool admission (`HARNESS-W4-R1` @ `cde779f149cc8696fb5c1fd86c29083ffd90f1bd`). Qualification: `tests/unit/runtime/architecture/test_harness_w4_r1_production_tool_boundedness_gate.py`, `tests/unit/runtime/nexus/tools/test_harness_w4_r1_production_tool_admission_behavior.py`, `tests/unit/runtime/resilience/test_dependency_attempt_boundary_composition.py`.
 - **W2-ADR (Accepted):** `DependencyConcurrencyAdmissionPort` at external boundaries — acquire → one external attempt → release; typed `DependencyConcurrencyIdentity` (`TOOL`, `LLM_PROVIDER`, `INTEGRATION`, `RETRIEVER`); orthogonal to W1 root admission, W1-B concurrent work, circuit breakers, rate limits, retry, tenant fairness. Tool seam: before shared executor enqueue; provider seam: inside physical attempt after W2-C gates. **W2 Final qualified** — see final qualification doc; no new managers/schedulers.
 
 ## W2 Final — composition (qualified)
