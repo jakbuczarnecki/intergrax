@@ -85,9 +85,9 @@ def _h01(test_name: str) -> str:
     return _nid("tests/qualification/harness_01/test_harness_01_gates.py", test_name)
 
 
-def _u3(test_name: str) -> str:
+def _tool_eng_rx(test_name: str) -> str:
     return _nid(
-        "tests/unit/runtime/architecture/test_platform_execution_unification_u3_agent_plugin_execution_closure.py",
+        "tests/unit/runtime/tools/test_tool_eng_rx_invocation_wiring.py",
         test_name,
     )
 
@@ -206,7 +206,12 @@ HARNESS_01_EXECUTION_MATRIX: tuple[Harness01ExecutionRow, ...] = (
         "ToolResponse + gateway trace step",
         "Catalog / capability tools",
         "CANONICAL",
-        (_ref(_u3("test_u3_uaep_tool_path_uses_runtime_tool_gateway_not_local_invoker"), "STATIC_BOUNDARY"),),
+        (
+            _ref(
+                _tool_eng_rx("test_rx_static_gate_uaep_gateway_no_sandbox_execute"),
+                "STATIC_BOUNDARY",
+            ),
+        ),
     ),
     Harness01ExecutionRow(
         "execution.application_owned_tools",
@@ -404,14 +409,12 @@ HARNESS_01_ZERO_BYPASS_FINDINGS: tuple[Harness01FindingRow, ...] = (
 
 HARNESS_01_AUTHORIZED_RUNTIME_TOOL_INVOKER_CALLSITE_FILES: frozenset[str] = frozenset(
     {
-        "intergrax/contracts/execution/crash_injection.py",
         "intergrax/runtime/nexus/tools/catalog_context.py",
-        "intergrax/runtime/nexus/tools/continuation_aware_catalog_tool_host.py",
         "intergrax/runtime/nexus/tools/catalog_dispatch.py",
-        "intergrax/runtime/nexus/tools/nexus_execution_bound_catalog_tool_invoker.py",
-        "intergrax/runtime/nexus/tools/tool_loop.py",
-        "intergrax/runtime/nexus/tools/patterns/deterministic_chain.py",
         "intergrax/runtime/nexus/tools/continuation_aware_catalog_tool_host.py",
+        "intergrax/runtime/nexus/tools/nexus_execution_bound_catalog_tool_invoker.py",
+        "intergrax/runtime/nexus/tools/patterns/deterministic_chain.py",
+        "intergrax/runtime/nexus/tools/tool_loop.py",
     }
 )
 

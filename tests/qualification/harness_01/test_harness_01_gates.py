@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 import ast
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -24,9 +26,9 @@ from tests.qualification.harness_01.catalog import (
 )
 from tests.qualification.harness_01.evidence_manifest import HARNESS_01_EVIDENCE_EXECUTION_BATCHES as _BATCHES
 from tests.qualification.harness_01.invoker_callsite_detector import (
+    _callsites_in_function,
     collect_governed_invoker_callsites,
     file_references_runtime_tool_invoker,
-    is_governed_runtime_tool_invoker_invoke_call,
 )
 from tests.qualification.harness_01.nexus_boundary_detector import (
     collect_nexus_private_member_access_violations,
@@ -193,14 +195,17 @@ def test_harness_01_independent_zero_bypass_gate_registry_is_complete() -> None:
 
 def test_harness_01_runtime_tool_invoker_callsites_are_authorized_internal() -> None:
     hits = _collect_production_governed_invoker_callsites()
-    violations: list[str] = []
-    for rel, lines in sorted(hits.items()):
-        if rel in HARNESS_01_AUTHORIZED_RUNTIME_TOOL_INVOKER_CALLSITE_FILES:
-            continue
-        violations.append(f"{rel}:{lines}")
-    assert violations == [], (
+    actual = frozenset(hits.keys())
+    authorized = HARNESS_01_AUTHORIZED_RUNTIME_TOOL_INVOKER_CALLSITE_FILES
+    unauthorized = sorted(actual - authorized)
+    stale = sorted(authorized - actual)
+    assert unauthorized == [], (
         "RuntimeToolInvoker.invoke production callsites outside canonical nexus tool stack:\n"
-        + "\n".join(violations)
+        + "\n".join(f"{rel}:{hits[rel]}" for rel in unauthorized)
+    )
+    assert stale == [], (
+        "Stale authorized RuntimeToolInvoker callsite inventory rows (not actual governed callsites):\n"
+        + "\n".join(stale)
     )
 
 
@@ -283,10 +288,9 @@ def test_harness_01_tool_budget_record_precedes_invoker_invoke() -> None:
             func = stmt.value.func
             if isinstance(func, ast.Name) and func.id == "record_tool_call_and_enforce":
                 record_line = stmt.lineno
-        if isinstance(stmt, ast.Try):
-            for inner in ast.walk(stmt):
-                if isinstance(inner, ast.Call) and is_governed_runtime_tool_invoker_invoke_call(inner):
-                    invoke_line = inner.lineno
+    finish_invokes = _callsites_in_function(finish_defs[0], class_rti_fields=frozenset())
+    if finish_invokes:
+        invoke_line = finish_invokes[0].line
     assert record_line is not None, "record_tool_call_and_enforce must run in finish helper"
     assert invoke_line is not None, "invoker.invoke must run in finish helper"
     assert record_line < invoke_line, "budget record must precede physical invoker.invoke"
@@ -364,18 +368,39 @@ def test_harness_01_evidence_manifest_batches_are_unique_and_present() -> None:
         assert target.exists(), f"evidence batch target missing: {batch.pytest_target}"
 
 
-def test_harness_01_governed_invoker_detector_synthetic_receiver_forms() -> None:
-    cases = (
-        "invoker.invoke(state=state, request=req)",
-        "runtime_invoker.invoke(state=state, request=req)",
-        "self._invoker.invoke(state=state, request=req)",
-        "ctx.tool_invoker.invoke(state=state, request=req)",
-        "foo.bar._invoker.invoke(state=state, request=req)",
+def test_harness_01_governed_invoker_detector_d1_typed_invoker_name() -> None:
+    snippet = (
+        "def _run(invoker: RuntimeToolInvoker, state, request):\n"
+        "    invoker.invoke(state=state, request=request)\n"
     )
-    for snippet in cases:
-        wrapped = f"def _run():\n    {snippet}\n"
-        hits = collect_governed_invoker_callsites(wrapped)
-        assert hits, f"detector must recognize governed invoke for: {snippet!r}"
+    assert collect_governed_invoker_callsites(snippet)
+
+
+def test_harness_01_governed_invoker_detector_d2_typed_executor_alias() -> None:
+    snippet = (
+        "def _run(executor: RuntimeToolInvoker, state, request):\n"
+        "    executor.invoke(state=state, request=request)\n"
+    )
+    assert collect_governed_invoker_callsites(snippet)
+
+
+def test_harness_01_governed_invoker_detector_d4_unrelated_port_invoke_not_detected() -> None:
+    snippet = (
+        "class Port:\n"
+        "    def invoke(self, state, request):\n"
+        "        return None\n"
+        "def _run(port: Port, state, request):\n"
+        "    port.invoke(state=state, request=request)\n"
+    )
+    assert collect_governed_invoker_callsites(snippet) == []
+
+
+def test_harness_01_governed_invoker_detector_naming_only_receiver_not_detected() -> None:
+    snippet = (
+        "def _run():\n"
+        "    invoker.invoke(state=state, request=req)\n"
+    )
+    assert collect_governed_invoker_callsites(snippet) == []
 
 
 def test_harness_01_governed_invoker_detector_ignores_declarative_port_shape() -> None:
@@ -387,7 +412,7 @@ def test_harness_01_governed_invoker_detector_ignores_declarative_port_shape() -
     assert hits == []
 
 
-def test_harness_01_governed_invoker_detector_ignores_catalog_host_delegate() -> None:
+def test_harness_01_governed_invoker_detector_d3_ignores_catalog_host_delegate() -> None:
     snippet = (
         "class Reentry:\n"
         "    def run(self, state, request, grant, task, claimed):\n"
@@ -403,11 +428,18 @@ def test_harness_01_synthetic_stale_runtime_tool_invoker_reference_row_would_fai
     assert sorted(allowlist - discovered) == [stale_row]
 
 
-def test_harness_01_synthetic_unauthorized_callsite_would_fail_allowlist() -> None:
+def test_harness_01_synthetic_stale_authorized_callsite_inventory_would_fail() -> None:
+    actual = frozenset({"intergrax/runtime/nexus/tools/tool_loop.py"})
+    stale_row = "intergrax/contracts/execution/crash_injection.py"
+    authorized = actual | {stale_row}
+    assert sorted(authorized - actual) == [stale_row]
+
+
+def test_harness_01_synthetic_d5_unauthorized_callsite_would_fail_allowlist() -> None:
     synthetic = (
         "class Bypass:\n"
-        "    def run(self, state, req, inv):\n"
-        "        return self._invoker.invoke(state=state, request=req)\n"
+        "    def run(self, state, req, executor: RuntimeToolInvoker):\n"
+        "        return executor.invoke(state=state, request=req)\n"
     )
     hits = collect_governed_invoker_callsites(synthetic)
     assert hits
@@ -430,15 +462,31 @@ def test_harness_01_production_agent_scope_is_non_empty() -> None:
 def test_harness_01_synthetic_application_host_invoker_bypass_would_fail_allowlist() -> None:
     synthetic = (
         "class Host:\n"
-        "    def __init__(self, invoker):\n"
-        "        self._invoker = invoker\n"
-        "    def execute(self, state, request):\n"
-        "        return self._invoker.invoke(state=state, request=request)\n"
+        "    def execute(self, state, request, executor: RuntimeToolInvoker):\n"
+        "        return executor.invoke(state=state, request=request)\n"
     )
     hits = collect_governed_invoker_callsites(synthetic)
     assert hits
     rel = "applications/foo/host/bypass.py"
     assert rel not in HARNESS_01_AUTHORIZED_RUNTIME_TOOL_INVOKER_CALLSITE_FILES
+
+
+def test_harness_01_mapped_uaep_tool_capability_evidence_replays_green() -> None:
+    node_ids = [
+        ref.pytest_node_id
+        for row in HARNESS_01_EXECUTION_MATRIX
+        if row.flow_id == "execution.uaep_tool_capability"
+        for ref in row.proof
+    ]
+    assert node_ids, "execution.uaep_tool_capability must map replayable evidence"
+    proc = subprocess.run(
+        [sys.executable, "-m", "pytest", *node_ids, "-q", "--tb=line", "-p", "no:xdist"],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stdout + proc.stderr
 
 
 def test_harness_01_nexus_internal_only_invariant_is_documented() -> None:
