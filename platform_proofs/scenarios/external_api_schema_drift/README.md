@@ -3,7 +3,7 @@
 > **What happens when a critical external integration stops honoring its contract after a long-running fulfillment process has already created real-world commitments?**
 
 > [!NOTE]
-> **Scenario status:** DESIGN / NOT YET ACCEPTED — awaiting human Scenario Quality Gate; no executable proof, evidence, or report exists yet.
+> **Scenario design:** ACCEPTED FOR IMPLEMENTATION · **Intergrax Fit:** COMPLETED · **Platform gaps:** CONFIRMED / resolution pending · **Implementation:** NOT INITIALIZED · **Proof/evidence:** NOT YET AVAILABLE
 
 ## Abstract
 
@@ -22,7 +22,7 @@ This scenario asks whether an autonomous fulfillment application can recover **c
 | **Trap** | Treat every API failure as “build or buy a new adapter” |
 | **Decision risk** | Wrong recovery duplicates side effects, breaches compliance, or expands authority |
 | **Scenario outcome** | RESOLVED or UNRESOLVED (BLOCKED) per variant |
-| **Status** | DESIGN / NOT YET ACCEPTED |
+| **Status** | ACCEPTED FOR IMPLEMENTATION (FIT completed; init blocked by platform gaps) |
 | **Proof class** | SCENARIO |
 
 ## Visual proof story
