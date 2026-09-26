@@ -9,8 +9,6 @@ import sqlite3
 from pathlib import Path
 from typing import Any, Mapping, Optional, Sequence
 
-from intergrax.integrations.contracts.relational_store import RelationalStore
-
 
 class _SQLiteRelationalStore:
     """

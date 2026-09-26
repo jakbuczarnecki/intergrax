@@ -17,9 +17,9 @@ from intergrax.memory.contracts.memory_lifecycle import (
 from intergrax.memory.memory_temporal import filter_active_memory_entries
 from intergrax.memory.memory_vector_namespace import LTM_INDEX_DOMAIN, resolve_memory_index_collection
 from intergrax.memory.user_profile_memory import MemoryKind, UserProfileMemoryEntry
-from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import MetadataFilter, VectorStoreRecord, VectorStoreScope
-from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
 
 __all__ = ["UserProfileLtmVectorProjection", "LTM_VECTOR_PROJECTION_ID"]
 
@@ -30,8 +30,8 @@ class UserProfileLtmVectorProjection:
     def __init__(
         self,
         *,
-        embedding_manager: EmbeddingManager,
-        vectorstore_manager: VectorstoreManager,
+        embedding_manager: BaseEmbeddingManager,
+        vectorstore_manager: BaseVectorstoreManager,
         tenant_id: str,
         vector_index_namespace: str | None,
         workspace_id: str | None,

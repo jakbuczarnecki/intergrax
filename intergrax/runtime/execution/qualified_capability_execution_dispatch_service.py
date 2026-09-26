@@ -143,10 +143,7 @@ class QualifiedCapabilityExecutionDispatchService(
         self,
         request: QualifiedCapabilityExecutionDispatchRequest,
         payload: QualifiedCapabilityExecutionIntakePayload,
-    ) -> RootExecutionLaunchRequest[
-        QualifiedCapabilityExecutionIntakePayload,
-        QualifiedCapabilityExecutionDelegateResult,
-    ]:
+    ) -> RootExecutionLaunchRequest[QualifiedCapabilityExecutionIntakePayload]:
         return RootExecutionLaunchRequest(
             admitted_governance_identity=request.admitted_governance_identity,
             root_execution_operation=RootExecutionOperation.ROOT_WORKER_DISPATCH,

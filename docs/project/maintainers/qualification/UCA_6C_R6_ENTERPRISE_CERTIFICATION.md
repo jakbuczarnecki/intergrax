@@ -4,38 +4,56 @@
 
 | Field | Value |
 | ----- | ----- |
-| **Task** | UCA-6C-R6-CERT-RERUN — Enterprise Certification Rerun |
-| **Date** | 2026-09-25 (operator session, UTC+2) |
+| **Task** | UCA-6C-R6-CERT-RERUN-3 |
+| **Date** | 2026-09-26 (operator session, UTC+2) |
 | **Branch** | `development` |
-| **CERTIFIED_UCA_CODE_BASELINE** | `e01f169e7a544db15bb2ad62560c6996bf4163a1` |
-| **AUDIT_HEAD** | `e01f169e7a544db15bb2ad62560c6996bf4163a1` |
-| **Artifact parent code baseline** | `e01f169e7a544db15bb2ad62560c6996bf4163a1` (evidence collected at this SHA; docs-only commit follows) |
-| **Worktree state before evidence write** | clean tracked tree; `START_HEAD == origin/development == CERTIFIED_UCA_CODE_BASELINE` |
+| **CERTIFIED_UCA_CODE_BASELINE** | `a38f70bc878a4e61807ce93cb0bfa600fdaca168` |
+| **AUDIT_HEAD** | `a38f70bc878a4e61807ce93cb0bfa600fdaca168` |
+| **FINAL_EVIDENCE_COMMIT** | *(recorded after docs-only commit; see §3)* |
 
-**Method:** read-only certification — static audit of §14 surfaces, targeted Ruff/Pyright, bounded pytest matrix (sequential `uv run pytest`), fresh-process import proofs. **Production mutation = 0**, **test mutation = 0** during evidence collection.
+**Separation:** `CERTIFIED_UCA_CODE_BASELINE` is the audited **code** SHA. The evidence/documentation commit that replaces this file is a **docs-only** commit on the same branch and does not change the certified code baseline.
+
+**Method:** read-only certification — bounded architecture review (§14 read scope), negative searches, sequential bounded pytest (T1–T8), fresh-process import proofs (T8), bounded Pyright and Ruff on certified seams. **Production mutation = 0**, **test mutation = 0**, **config mutation = 0** during evidence collection.
 
 ## 2. Scope
 
-This artifact records enterprise certification of **Governed Capability Acquisition (UCA-6C R6)** on the certified code baseline. It does **not** implement features, refactor production, or perform Architecture Freeze. Certification verifies ownership, contracts, governance sequencing, durable restart/reentry, SQLite/CW seams, and Tool Registry boundaries via tests and bounded static review.
+Enterprise certification of **Governed Capability Acquisition (UCA-6C R6)** at the certified code baseline. Verifies exactly-one ownership, hard layer boundaries, contract-first acquisition, canonical Execution and HITL, durable restart/reentry, fencing/idempotency, SQLite/CW typed seam, Tool Registry boundary, and fail-closed relational category semantics. Does **not** perform Architecture Freeze, R7 scenario work, or full-platform Integrations migration proof.
 
-## 3. Baseline drift
+**Explicitly not claimed:** all Integrations migration tests green (`test_provider_category_contract_migration.py` not in scope).
 
-| Commit | Scope | UCA impact | Classification |
-| ------ | ----- | ---------- | -------------- |
-| — | — | — | **No drift** — `START_HEAD`, `origin/development`, and `CERTIFIED_UCA_CODE_BASELINE` are identical (`e01f169e7a544db15bb2ad62560c6996bf4163a1`). |
+## 3. Certified baseline
 
-**Recorded pre-flight:** `BRANCH=development`, `WORKTREE_STATE=clean`, `STASH_STATE=9 stashes present (untouched)`.
+| Check | Result |
+| ----- | ------ |
+| `BRANCH` | `development` |
+| `HEAD` | `a38f70bc878a4e61807ce93cb0bfa600fdaca168` |
+| `origin/development` | `a38f70bc878a4e61807ce93cb0bfa600fdaca168` |
+| Tracked worktree at audit start | **clean** |
+| Baseline drift | **none** |
 
-## 4. Authoritative architecture
+Replaces prior certification candidates: `e01f169e…`, `ba7bb571…`, `c471a338…` as the **final** UCA R6 code baseline for this certification cycle.
 
-Primary references (authority for certified flow):
+## 4. Baseline lineage / remediation history
+
+| Commit | Role | Classification |
+| ------ | ---- | -------------- |
+| `69e4a698b…` | Historical certification artifact (`docs(uca): certify governed capability acquisition r6`) | **SUPERSEDED / NOT FINAL ACCEPTED CERTIFICATION** — later independent audit found certified-seam static blockers, subsequently remediated and re-certified here |
+| `7f609cf20d5645e2703dd2da4081c9eaf41c4b04` | Certified-seam static blocker remediation | **UCA code remediation** |
+| `ba7bb5719b1ee518dba00e6f18894d5ea85f9cdb` | Restore canonical relational provider typing | **UCA code remediation** |
+| `c471a33879b4d69a0bc07ea7a0ae5496b097df0c` | Close relational category contract blockers | **UCA code remediation** |
+| `a38f70bc878a4e61807ce93cb0bfa600fdaca168` | Enforce relational category invariant | **UCA code remediation (CERTIFIED_UCA_CODE_BASELINE)** |
+| `33175f8e6`, `29c721356` | EBH enterprise documentation sync | **OUT-OF-SCOPE PARALLEL DOCUMENTATION CHANGE** (no UCA code/test surface change) |
+| `29a270072` | Env example UTF-8 normalization | **OUT-OF-SCOPE** (config example; not UCA certified seam) |
+
+## 5. Authoritative architecture
 
 1. `docs/project/maintainers/architecture/UCA_6C_CANONICAL_HITL_BOUNDARY_RECONCILIATION.md`
 2. `docs/project/technical/adr/entries/2026-09-23/ADR-UCA-6C-AGENT-GOVERNANCE-CANONICAL-HITL-RECONCILIATION.md`
 3. `docs/project/technical/adr/entries/2026-09-22/ADR-UCA-6C-EXECUTION-CONTINUATION-INTEGRATION.md`
 4. `docs/project/technical/adr/entries/2026-09-22/ADR-UCA-6C-DURABLE-SUSPENDED-OPERATION-REENTRY.md`
+5. `docs/project/maintainers/architecture/EXECUTION_ENGINE_OWNERSHIP_MODEL.md`
 
-## 5. Canonical flow
+## 6. Canonical UCA flow
 
 ```text
 Worker recovery
@@ -56,7 +74,7 @@ Execution Engine admission
     ↓
 Execution Engine owns lifecycle
     ↓
-ExecutionIdentityAuthority owns ExecutionId
+ExecutionIdentityAuthority owns identity
     ↓
 bound capability execution
     ↓
@@ -66,246 +84,272 @@ exact tool invocation
     ↓
 Governance authorities
     ↓
-canonical Execution-owned HITL when required
+canonical Execution-owned HITL
     ↓
 durable suspended-operation reentry
     ↓
 same protected operation continues
 ```
 
-## 6. Enterprise owner matrix
+No parallel ownership path evidenced by T3 architecture gates and UCA unit corpus.
 
-| Concern | Canonical owner | Duplicate found? | Result |
-| ------- | ----------------- | ---------------- | ------ |
-| Need | Consumer | No | PASS |
-| Capability discovery | Capability Catalog | No | PASS |
-| Marketplace recommendation | Marketplace | No | PASS |
-| Acquisition coordination | Capability Acquisition | No | PASS |
-| Capability qualification | Capability Qualification | No | PASS |
-| Provider/environment qualification | Core Qualification | No | PASS |
-| Binding | Qualification / domain handoff | No | PASS |
-| Worker responsibility recovery | Autonomous Work | No | PASS |
-| Execution lifecycle | Execution Engine | No | PASS |
-| Execution identity | ExecutionIdentityAuthority | No | PASS |
-| Tool invocation | Tools / ToolRuntime | No | PASS |
-| Governance decision | Governance | No | PASS |
-| Agent Governance approval | Agent Runtime Governance | No | PASS |
-| Declarative HITL authority | Declarative Policy | No | PASS |
-| Meaningful Side Effect authority | MSE Governance | No | PASS |
-| Human pause/resume lifecycle | ExecutionContinuationPort | No | PASS |
-| Suspended invocation payload | SuspendedExecutionOperationStore | No | PASS |
-| Code synthesis | CodeCraft | No | PASS |
-| Sandbox execution | Sandbox | No | PASS |
-| Nexus orchestration | Execution Engine internal only | No public UCA dependency | PASS |
-| SQLite provider mechanics | SQLite integration provider | No | PASS |
-| Runtime SQLite composition | `runtime/persistence` | No | PASS |
-| CW materialization contracts | Collaborative Work | No | PASS |
-| Tool Registry runtime-safe root | Tools subsystem | No | PASS |
-| Tool Registry composition | explicit `registry.wiring` / `factory` / `bootstrap` / `catalog` leaf modules | No root composition re-export | PASS |
+## 7. Enterprise owner matrix
 
-**Static evidence:** `tests/unit/runtime/architecture/test_ee_a1_execution_engine_ownership_certification_gate.py`, `test_uca6c_r6_architecture_gates.py`, `test_platform_execution_unification_u5_final_zero_bypass.py`, acquisition/qualification unit corpus; no `governance_approval_evidence` in `intergrax/autonomous_work` or `intergrax/capability_acquisition` (grep at audit HEAD).
+| Concern | Canonical owner | Duplicate semantic owner? | Alternate path? | Bypass? | Result |
+| ------- | ----------------- | ------------------------- | --------------- | ------- | ------ |
+| Need | Consumer | No | No | No | PASS |
+| Capability discovery | Capability Catalog | No | No | No | PASS |
+| Marketplace recommendation | Marketplace | No | No | No | PASS |
+| Acquisition coordination | Capability Acquisition | No | No | No | PASS |
+| Capability qualification | Capability Qualification | No | No | No | PASS |
+| Provider/environment qualification | Core Qualification | No | No | No | PASS |
+| Binding | Qualification / domain handoff | No | No | No | PASS |
+| Worker responsibility recovery | Autonomous Work | No | No | No | PASS |
+| Execution lifecycle | Execution Engine | No | No | No | PASS |
+| Execution identity | ExecutionIdentityAuthority | No | No | No | PASS |
+| Tool invocation | ToolRuntime | No | No | No | PASS |
+| Governance decision | Governance | No | No | No | PASS |
+| Agent Governance approval | Agent Runtime Governance | No | No | No | PASS |
+| Declarative HITL | Declarative Policy | No | No | No | PASS |
+| Meaningful Side Effect authority | MSE Governance | No | No | No | PASS |
+| Human pause/resume lifecycle | ExecutionContinuationPort | No | No | No | PASS |
+| Suspended invocation payload | SuspendedExecutionOperationStore | No | No | No | PASS |
+| Code synthesis | CodeCraft | No | No | No | PASS |
+| Sandbox execution | Sandbox | No | No | No | PASS |
+| Nexus orchestration | Execution Engine internal only | No | No public UCA dependency | No | PASS |
+| Relational category semantics | `RelationalStoreIntegrationContract` | No | No | No | PASS |
+| SQLite provider mechanics | SQLite integration provider | No | No | No | PASS |
+| Runtime SQLite composition | `runtime/persistence` | No | No | No | PASS |
+| CW persistence materialization contract | Collaborative Work | No | No | No | PASS |
+| Tool Registry runtime-safe root | Tools subsystem | No | No | No | PASS |
+| Tool Registry composition | explicit registry leaf modules | No root re-export | No | PASS |
 
-## 7. GCF invariants
+## 8. GCF invariants
 
 | Invariant | Result | Evidence |
 | --------- | ------ | -------- |
-| GCF-INV-001 coordination != ownership | PASS | Architecture gates + `test_uca6c_r6_continuation_single_owner.py` |
-| GCF-INV-002 qualification != authorization | PASS | `test_uca6c_r6_r5_7_sequential_authority_generations.py`, architecture pause gates |
-| GCF-INV-003 acquisition != lifecycle | PASS | `acquisition_service.py` coordination surface; EE ownership gate |
-| GCF-INV-004 binding != execution | PASS | `test_uca6c_worker_qualified_capability_resume.py`, binding/execution unit tests |
-| GCF-INV-005 capability growth != authority growth | PASS | `test_uca6c_r6_tigae_negative_gates.py` |
-| GCF-INV-006 no second HITL | PASS | `test_uca6c_r6_r5_6_h1_reentry_hardening.py`, agent governance pause gates |
-| GCF-INV-007 no second Execution Engine | PASS | `test_ee_a1_execution_engine_ownership_certification_gate.py` |
-| GCF-INV-008 no public Nexus dependency | PASS | No Nexus imports under `intergrax/contracts/autonomous_work` or `capability_acquisition` (grep) |
-| GCF-INV-009 ToolRuntime mandatory | PASS | `test_uca6c_r5_canonical_tool_runtime.py` |
-| GCF-INV-010 true gap after complete discovery | PASS | `test_uca6c_r6_r5_9_durable_obstacle_capability_need.py`, catalog discovery tests |
+| GCF-INV-001 Coordination != Ownership | PASS | T3 + `test_uca6c_r6_architecture_gates.py` |
+| GCF-INV-002 Qualification != Authorization | PASS | T1-B sequential authority / governance tests |
+| GCF-INV-003 Acquisition != Execution lifecycle | PASS | T3 EE ownership; acquisition coordination surfaces |
+| GCF-INV-004 Binding != Execution | PASS | T1 worker resume / binding tests |
+| GCF-INV-005 Capability growth != Authority growth | PASS | T1-A negative gates |
+| GCF-INV-006 No second HITL | PASS | T1-B HITL hardening; T3 |
+| GCF-INV-007 No second Execution Engine | PASS | `test_ee_a1_execution_engine_ownership_certification_gate.py` |
+| GCF-INV-008 No public Nexus dependency | PASS | Architecture gates; bounded UCA contract packages |
+| GCF-INV-009 ToolRuntime mandatory | PASS | T1-C / canonical tool runtime tests |
+| GCF-INV-010 True capability gap only after canonical discovery | PASS | T1-A discovery / durable obstacle tests |
 
-## 8. Certification invariants C-01–C-20
+## 9. Certification invariants C-01–C-20
 
 | ID | Result | Evidence |
 | -- | ------ | -------- |
-| C-01 Discovery ownership | PASS | `catalog_canonical_discovery_service.py` + AW discovery unit tests |
-| C-02 Acquisition coordination only | PASS | `acquisition_service.py` / registry; no lifecycle in acquisition package |
-| C-03 Contract-first acquisition | PASS | Typed ports in contracts; strategy policy module |
-| C-04 Qualification boundary | PASS | Qualification vs governance tests in AW + execution corpus |
-| C-05 Binding != Execution | PASS | `qualified_capability_binding_service.py` + worker resume tests |
-| C-06 Execution ownership | PASS | T3 EE ownership + dispatch adapter tests |
-| C-07 Worker recovery != Execution resume | PASS | `test_uca6c_r_production_resume.py`, continuation single-owner |
-| C-08 No pre-approval transport | PASS | grep: no `governance_approval_evidence` in AW/UCA acquisition paths |
-| C-09 Authority separation | PASS | Sequential authority + agent/declarative/MSE tests |
-| C-10 Sequential authority behavior | PASS | `test_uca6c_r6_r5_7_r2_sequential_authority_closure.py` |
-| C-11 Single ExecutionContinuationPort | PASS | `test_uca6c_r6_continuation_single_owner.py` |
-| C-12 Single SuspendedExecutionOperationStore | PASS | suspended_operation test family (T1-B) |
-| C-13 Durable restart | PASS | `test_uca6c_durable_restart_identity_correlation.py`, restart E2E tests |
-| C-14 Multi-host safety | PASS | `test_uca6c_r6_r5_9_r2_multi_host_fencing.py`, reclaim transport tests |
-| C-15 Crash windows | PASS | `test_uca6c_r6_r5_9_r3_crash_windows.py` |
-| C-16 Canonical idempotency | PASS | durable terminal outcome + distributed recovery E2E |
-| C-17 SQLite composition boundary | PASS | T4 + `sqlite_composition.py` / provider bundle gates |
-| C-18 Tool Registry root boundary | PASS | T5 + `tools/registry/__init__.py` exact `__all__` |
-| C-19 SQLite/CW typed contract seam | PASS | T4, T6, `test_persistence_provider_binding.py` |
-| C-20 SQLite invalid config fail-closed | PASS | T4; grep: no `Path(str(` in sqlite provider tree |
+| C-01 Discovery ownership | PASS | T1-A catalog/discovery |
+| C-02 Acquisition coordination only | PASS | T1-A acquisition; no EE lifecycle in acquisition |
+| C-03 Contract-first acquisition | PASS | contracts + strategy policy modules |
+| C-04 Qualification boundary | PASS | T1 qualification vs governance |
+| C-05 Binding != Execution | PASS | T1 binding / resume |
+| C-06 Execution ownership | PASS | T3 |
+| C-07 Worker recovery != Execution resume | PASS | T1 continuation / resume family |
+| C-08 No pre-approval transport | PASS | grep: no `governance_approval_evidence` in AW / capability_acquisition |
+| C-09 Authority separation | PASS | T1-B governance sequencing |
+| C-10 Sequential authority behavior | PASS | T1-B sequential authority closure |
+| C-11 Single ExecutionContinuationPort | PASS | T1 continuation single-owner |
+| C-12 Single SuspendedExecutionOperationStore | PASS | T1-B suspended operation tests |
+| C-13 Durable restart | PASS | T1 restart / identity correlation |
+| C-14 Multi-host safety | PASS | T1 multi-host fencing |
+| C-15 Crash windows | PASS | T1 crash window module |
+| C-16 Canonical idempotency | PASS | T1 durable terminal / recovery E2E |
+| C-17 SQLite composition boundary | PASS | T4 + `sqlite_composition.py` |
+| C-18 Tool Registry root boundary | PASS | T5 + T8 |
+| C-19 SQLite/CW typed contract seam | PASS | T4, T6, T7 |
+| C-20 SQLite invalid config fail-closed | PASS | T4; relational fail-closed in T7 |
 
-## 9. Proof-family matrix
+## 10. Proof-family matrix
 
-| Proof family | Result | Evidence |
-| ------------ | ------ | -------- |
-| Discovery | PASS | T1-A catalog/discovery tests |
-| Acquisition | PASS | AW R2/R3 tests + acquisition surfaces |
-| Qualification | PASS | binding service + qualification contracts |
-| Binding | PASS | worker qualified capability resume tests |
-| Execution admission | PASS | execution intake/dispatch tests |
+| Proof family | Result | Primary evidence |
+| ------------ | ------ | ---------------- |
+| Discovery / gap | PASS | T1-A |
+| Acquisition / qualification / binding | PASS | T1-A, T1-B |
+| Execution admission / lifecycle | PASS | T1-B, T3 |
 | Execution identity | PASS | T3 `test_ee_a2_identity_authority_certification.py` |
-| Agent Governance | PASS | agent governance pause/resume tests |
-| Declarative HITL | PASS | sequential authority + HITL hardening tests |
-| MSE governance | PASS | strict governance composition tests |
-| Sequential authorities | PASS | T1-B sequential authority modules |
-| Worker E2E | PASS | worker governed execution E2E family |
-| Restart | PASS | restart handoff + true restart E2E |
-| Reentry | PASS | canonical reentry fencing tests |
-| Multi-host | PASS | multi-host fencing + cross-host transport |
-| Fencing | PASS | claim authority propagation tests |
-| Crash windows | PASS | crash window module |
-| Idempotency | PASS | durable terminal + recovery E2E |
-| SQLite runtime composition | PASS | T4 runtime persistence tests |
-| SQLite/CW typed provider seam | PASS | T6 + T4 |
-| Tool Registry import boundary | PASS | T5 + T8 cold import |
+| Governance / HITL / sequential authority | PASS | T1-B |
+| Worker E2E / restart / reentry | PASS | T1 |
+| Multi-host / fencing / crash / idempotency | PASS | T1-B |
+| SQLite provider + runtime composition | PASS | T4 |
+| Relational category contract (RC-01–RC-08) | PASS | T7 |
+| CW persistence / materialization | PASS | T6 |
+| Tool Registry import boundary | PASS | T5, T8 |
 
-## 10. Test inventory
+## 11. Dynamic test inventory
 
-| Category | Count |
-| -------- | ----: |
-| Tracked UCA unit files (`test_uca6c*.py`) | **48** |
-| Tracked UCA integration files | **0** |
+Measured from tracked files at `CERTIFIED_UCA_CODE_BASELINE` (`git ls-files`, pattern `test_uca6c*.py`):
 
-**Grouping (files must sum to 48):**
-
-| Group | Files |
-| ----- | ----: |
-| T1-A `tests/unit/autonomous_work/**/test_uca6c*.py` | 19 |
-| T1-B `tests/unit/runtime/execution/**/test_uca6c*.py` | 20 |
-| T1-C `tests/unit/runtime/nexus/**` + `tests/unit/tools/**` | 4 (+ 0 tools) |
+| Bucket | Files |
+| ------ | ----: |
+| **All tracked UCA unit** | **48** |
+| T1-A `tests/unit/autonomous_work/*` | 20 |
+| T1-B `tests/unit/runtime/execution/*` | 19 |
+| T1-C `tests/unit/runtime/nexus/*` + `tests/unit/tools/*` | 4 |
 | T1-D remainder | 5 |
+| **Partition check** T1-A+B+C+D == all | **True** |
+| Tracked UCA integration (`tests/integration`) | **0** |
 
-## 11. Test results
+## 12. Test results T1–T8
 
 | Phase | Files / scope | Passed | Failed | Skipped | Result |
 | ----- | ------------- | -----: | -----: | ------: | ------ |
-| T1-A | 19 files | 122 | 0 | 1 | PASS |
-| T1-B | 20 files | 114 | 0 | 0 | PASS |
+| T1-A | 20 files | 122 | 0 | 1 | PASS |
+| T1-B | 19 files | 114 | 0 | 0 | PASS |
 | T1-C | 4 files | 26 | 0 | 0 | PASS |
 | T1-D | 5 files | 29 | 0 | 0 | PASS |
-| T2 | — | — | — | — | **NO TRACKED `test_uca6c*` INTEGRATION FILES** |
-| T3 | 4 gate modules | 49 | 0 | 0 | PASS |
-| T4 | 4 SQLite modules | 18 | 0 | 0 | PASS |
-| T5-a | `test_runtime_import_boundary.py` | 5 | 0 | 0 | PASS |
-| T5-b | `tests/unit/tools/registry/` | 25 | 0 | 0 | PASS |
+| T2 | — | — | — | — | **NO TRACKED UCA INTEGRATION FILES** |
+| T3 | 4 required gate modules | 32 | 0 | 0 | PASS |
+| T4 | 3 SQLite seam modules | 16 | 0 | 0 | PASS |
+| T5 | `tests/unit/tools/registry/` (incl. `test_runtime_import_boundary.py`) | 25 | 0 | 0 | PASS |
 | T6 | `test_persistence_provider_binding.py` | 24 | 0 | 0 | PASS |
-| T8 | 2 fresh `uv run python -c` imports | 2 | 0 | 0 | PASS |
+| T7 | `test_provider_category_contracts.py` | 19 | 0 | 0 | PASS |
+| T8 | 2 sequential `uv run python -c` imports | 2 | 0 | 0 | PASS |
 
-**Skip classification (T1-A):** PostgreSQL Autonomous Work store unavailable — optional backend; not sole evidence for any critical invariant (§31).
+**T1-A skip (NON-BLOCKING SKIP):** `tests/integration/autonomous_work/conftest.py:71` — PostgreSQL backend unavailable. Optional integration backend; not the sole proof of any C-01–C-20 or GCF invariant; expected when PG is not configured.
 
-**Repro commands (sequential, from repo root):**
+**T2:** `integrationUca.Count == 0` — reported as required; not a failure.
 
-```powershell
-$t1a = git ls-files ":(glob)tests/unit/autonomous_work/**/test_uca6c*.py"
-uv run pytest $t1a -q
-# … analogous lists for T1-B, T1-C, T1-D per §18
-```
+## 13. Former blockers B1–B12
 
-Session logs: `.tmp/session/uca-6c-r6-cert-rerun/T1-A.log` … `T6.log`, `T3.log`, `T4.log`, `T5-a.log`, `T5-b.log`.
+| ID | Status | Evidence |
+| -- | ------ | -------- |
+| B1 Clock / stale datetime patch | **CLOSED** | T1-B caller-held resume authority tests |
+| B2 Tool Registry import/collection cycle | **CLOSED** | T5, T8, T1-C |
+| B3 SQLite/CW typing regression | **CLOSED** | T4, T6; Pyright 0 on CW/SQLite certified symbols |
+| B4 Permissive SQLite path coercion | **CLOSED** | grep `Path(str(` → 0 in sqlite provider; T4 |
+| B5 Weak Tool Registry boundary | **CLOSED** | T5 `test_runtime_import_boundary.py` |
+| B6 CW Protocol missing bodies | **CLOSED** | T6; Pyright clean on CW Protocols |
+| B7 SQLite db_path str/Path mismatch | **CLOSED** | `SqliteRelationalStoreClient.db_path -> Path`; T4 |
+| B8 RootExecutionLaunchRequest generic arity | **CLOSED** | Pyright clean on dispatch + `root_execution_launch.py`; T3 |
+| B9 SQLite-local for_provider / private category dependency | **CLOSED** | grep sqlite tree: 0 `_CONNECT_READ_WRITE_HEALTH` / `category_for_provider` imports |
+| B10 Relational schema_id hierarchy incompatibility | **CLOSED** | T7 RC proofs; Pyright clean on `RelationalStoreIntegrationContract` |
+| B11 Relational for_provider hierarchy incompatibility | **CLOSED** | T7; typed `for_provider -> Self` |
+| B12 Relational integration_kind direct-construction bypass | **CLOSED** | T7 foreign-kind rejection tests |
 
-## 12. Former blocker closure
+## 14. Static typing results (certified seam Pyright)
 
-| Blocker | Status | Evidence |
-| ------- | ------ | -------- |
-| B1 Clock / stale datetime patch | **CLOSED** | `test_uca6c_r6_r5_9_r2_r1_r2_caller_held_resume_authority.py` in **T1-B** (PASS) |
-| B2 ToolRegistry circular import | **CLOSED** | T5 + T8; T1-C Nexus UCA tests collect+PASS |
-| B3 SQLite/CW typing regression | **CLOSED** | T4 + T6; CW binder contracts |
-| B4 Permissive SQLite path coercion | **CLOSED** | T4; no `Path(str(` in sqlite provider |
-| B5 Weak Tool Registry denylist | **CLOSED** | `test_runtime_import_boundary.py` + full `tests/unit/tools/registry/` |
+**Command:** bounded `uv run pyright` on §26 file list at `AUDIT_HEAD`.
 
-## 13. Static quality
+**Certified symbols (zero diagnostics required):** `RelationalStoreIntegrationContract` (`schema_id`, `integration_kind`, `for_provider`); SQLite `db_path` / integration / bundle / runtime composition; CW `CollaborativeWorkPersistenceFactory`, `CollaborativeWorkMaterializationBinder`, `CollaborativeWorkPersistenceProvider`; `RootExecutionLaunchRequest`; `QualifiedCapabilityExecutionDispatchService._build_launch_request`.
 
-**Ruff** (`ruff check` + `ruff format --check` on §14 surfaces only):
+**Result:** **0 diagnostics** on certified UCA relational/SQLite/CW/Execution symbols.
 
-| Observation | Classification |
-| ----------- | -------------- |
-| E402 late imports in `worker_recovery_governed_fulfillment_composition.py` (intentional deferred import block) | NON-BLOCKING OBSERVATION |
-| Format drift would affect 3 certified-surface files (no semantic change) | NON-BLOCKING OBSERVATION |
+## 15. Exact Pyright finding classification
 
-**Pyright** (same §14 file set):
+| Location | Diagnostic | Symbol | Classification |
+| -------- | ---------- | ------ | -------------- |
+| `data.py:79` | reportIncompatibleVariableOverride | `KeyValueCacheIntegrationContract.schema_id` | **OUT-OF-SCOPE STATIC DEBT** |
+| `data.py:89` | reportIncompatibleMethodOverride | `KeyValueCacheIntegrationContract.for_provider` | **OUT-OF-SCOPE STATIC DEBT** |
+| `data.py:113` | reportIncompatibleVariableOverride | `GraphStoreIntegrationContract.schema_id` | **OUT-OF-SCOPE STATIC DEBT** |
+| `data.py:123` | reportIncompatibleMethodOverride | `GraphStoreIntegrationContract.for_provider` | **OUT-OF-SCOPE STATIC DEBT** |
 
-| Observation | Classification |
-| ----------- | -------------- |
-| Protocol stub bodies in `collaborative_work/materialization_factory.py` / `persistence_provider.py` (`...` ellipsis — reportReturnType) | NON-BLOCKING OBSERVATION |
-| Internal sqlite `bundle.py` client protocol variance (`Path` vs `str`) | NON-BLOCKING OBSERVATION |
-| `RootExecutionLaunchRequest` generic arity in `qualified_capability_execution_dispatch_service.py` | NON-BLOCKING OBSERVATION |
+**OUT-OF-SCOPE STATIC DEBT disclosure:** These diagnostics belong to non-UCA Integration categories and are not used by the certified relational/SQLite/CW UCA seam. They do not establish global Integrations static cleanliness and must not be represented as fixed by this certification.
 
-No static finding classified as certified-seam **BLOCKER** (behavior proven by T3/T4/T6 gates).
+No other Pyright diagnostics on the bounded file set. **Certified Pyright blocker count = 0.**
 
-## 14. Findings
+## 16. Ruff classification
 
-### BLOCKER
+| Command | Result |
+| ------- | ------ |
+| `ruff check` (§29 file list) | **All checks passed** |
+| `ruff format --check` | Would reformat `intergrax/contracts/root_execution_launch.py`, `intergrax/runtime/integrations/contracts.py` |
 
-NONE
+**NON-BLOCKING PRE-EXISTING QUALITY OBSERVATION:** format drift on two files only; no semantic/layer/import finding. No Ruff blocker on certified seams.
 
-### NON-BLOCKING OBSERVATION
+## 17. Negative architecture checks (bounded)
 
-- Ruff E402/format on deferred-import composition module and minor format drift on two other §14 files (pre-existing on baseline).
-- Targeted Pyright reportReturnType/reportArgumentType on CW protocol stubs and sqlite internal typing (pre-existing; gates green).
+| Check | Result |
+| ----- | ------ |
+| Second Execution Engine | **absent** (T3) |
+| Second HITL | **absent** (T1-B, T3) |
+| Direct tool invocation bypass | **absent** (T3 zero-bypass gate) |
+| AW-owned Execution lifecycle | **absent** |
+| Capability Acquisition-owned execution | **absent** |
+| Capability Qualification-owned authorization | **absent** |
+| Pre-approval transport | **absent** (grep AW/UCA acquisition) |
+| Public Nexus dependency (UCA surfaces) | **absent** |
+| Duplicate ExecutionContinuationPort | **absent** |
+| Duplicate SuspendedExecutionOperationStore | **absent** |
+| SQLite-owned runtime composition | **absent** (T4) |
+| CW-owned provider selection | **absent** (T6 handoff) |
+| Tool Registry root composition export | **absent** (T5, T8) |
+| Private category helper leakage into SQLite provider | **absent** (grep) |
 
-### OUT-OF-SCOPE PARALLEL CHANGE
+## 18. Out-of-scope debt
 
-NONE (no commits between certified baseline and audit HEAD).
+- **Integrations migration:** `tests/unit/integrations/providers/test_provider_category_contract_migration.py` — not executed; not UCA PASS/FAIL input.
+- **Pyright:** four KeyValueCache/GraphStore override diagnostics (§15).
+- **Ruff format:** two certified-surface files (§16).
 
-## 15. Exit criteria EC-01–EC-36
+## 19. Out-of-scope parallel documentation changes
 
-| ID | Result |
-| -- | ------ |
-| EC-01 Baseline drift clean | PASS |
-| EC-02 Single Discovery owner | PASS |
-| EC-03 Acquisition coordination-only | PASS |
-| EC-04 Qualification boundary | PASS |
-| EC-05 Binding != Execution | PASS |
-| EC-06 Single EE lifecycle owner | PASS |
-| EC-07 Single ExecutionIdentityAuthority | PASS |
-| EC-08 Worker recovery != execution resume | PASS |
-| EC-09 No AW/UCA pre-approval | PASS |
-| EC-10 Agent / Declarative / MSE separate | PASS |
-| EC-11 No universal approval grant | PASS |
-| EC-12 Single ExecutionContinuationPort | PASS |
-| EC-13 Single SuspendedExecutionOperationStore | PASS |
-| EC-14 ToolRuntime mandatory | PASS |
-| EC-15 Nexus internal | PASS |
-| EC-16 Durable restart proof | PASS |
-| EC-17 Multi-host/fencing proof | PASS |
-| EC-18 Crash-window proof | PASS |
-| EC-19 Canonical idempotency proof | PASS |
-| EC-20 SQLite runtime-composition boundary | PASS |
-| EC-21 Strong public semantic typing | PASS |
-| EC-22 No reflection bypass on certified seams | PASS |
-| EC-23 Contract-first pluginability | PASS |
-| EC-24 Mandatory test matrix | PASS |
-| EC-25 Targeted static quality acceptable | PASS |
-| EC-26 Production diff during CERT = 0 | PASS |
-| EC-27 Test diff during CERT = 0 | PASS |
-| EC-28 Reproducible evidence | PASS |
-| EC-29 Tool Registry lightweight invariant | PASS |
-| EC-30 No wildcard/non-lightweight root imports | PASS |
-| EC-31 SQLite factory/materializer CW contracts | PASS |
-| EC-32 Invalid SQLite path fail-closed | PASS |
-| EC-33 No ToolRegistry/Nexus collection blocker | PASS |
-| EC-34 No clock test blocker | PASS |
-| EC-35 Sole tracked CERT change is this artifact | PASS (pending commit) |
-| EC-36 Final status eligible for freeze track | PASS |
+Commits `33175f8e6`, `29c721356` (EBH documentation sync) between remediation commits — **OUT-OF-SCOPE PARALLEL DOCUMENTATION CHANGE** relative to UCA code baseline.
 
-## 16. Final verdict
+## 20. Architecture checkpoint (18×)
+
+| # | Question | Answer |
+| - | -------- | ------ |
+| 1 | Capability Acquisition coordinates only? | **YES** |
+| 2 | Qualification separated from Authorization? | **YES** |
+| 3 | Binding separated from Execution? | **YES** |
+| 4 | Execution Engine sole lifecycle owner? | **YES** |
+| 5 | ExecutionIdentityAuthority sole identity owner? | **YES** |
+| 6 | ToolRuntime mandatory boundary? | **YES** |
+| 7 | No second HITL? | **YES** |
+| 8 | Durable resume continues same operation? | **YES** |
+| 9 | Restart/fencing/multi-host still proven? | **YES** |
+| 10 | SQLite does not own runtime composition? | **YES** |
+| 11 | CW consumes typed contracts? | **YES** |
+| 12 | Tool Registry root lightweight? | **YES** |
+| 13 | SQLite does not use private category helpers locally? | **YES** |
+| 14 | Relational category invariant fail-closed? | **YES** |
+| 15 | Relational schema invariant fail-closed? | **YES** |
+| 16 | No duplicate semantic owner? | **YES** |
+| 17 | No architecture bypass? | **YES** |
+| 18 | Certified seams strongly typed? | **YES** |
+
+## 21. Exit criteria
+
+All required gates at audit HEAD:
+
+- GCF-INV-001–010 = PASS
+- C-01–C-20 = PASS
+- T1 = PASS (1 non-blocking skip)
+- T2 = NO TRACKED FILES (acceptable)
+- T3–T8 = PASS
+- B1–B12 = CLOSED
+- Certified Pyright blockers = 0
+- Certified Ruff blockers = 0
+- Architecture checkpoint = 18× YES
+- Production / test / config mutation during CERT = 0
+
+## 22. Final verdict
 
 ```text
 UCA-6C R6 ENTERPRISE CERTIFICATION = PASS
-R6-FREEZE ELIGIBILITY = YES
-ARCHITECTURE FROZEN = NO
+
+CERTIFIED_UCA_CODE_BASELINE =
+a38f70bc878a4e61807ce93cb0bfa600fdaca168
+
 BLOCKER COUNT = 0
+
+R6-FREEZE ELIGIBILITY = YES
+
+ARCHITECTURE FROZEN = NO
+
+NEXT REQUIRED STEP =
+INDEPENDENT GITHUB AUDIT OF UCA-6C-R6-CERT-RERUN-3
 ```
 
-Architecture checkpoint (§29): all items affirmed **YES** with bounded evidence above; none **UNKNOWN**.
+---
+
+**Historical certification attempt:** `69e4a698b…`
+**Status:** SUPERSEDED / INVALID AS FINAL CERTIFICATION
+**Reason:** later independent audit found certified-seam static blockers, which were subsequently remediated and re-certified at `a38f70bc…`.
+
+**GITHUB AUDIT REQUIRED:** The final certification document, exact certified code baseline, evidence commit, test results, static finding classification, ownership matrix, architecture invariants, and all certified seams must be independently audited against the code stored on GitHub. This artifact does not constitute final acceptance. R6-FREEZE must not begin until the exact GitHub evidence commit for UCA-6C-R6-CERT-RERUN-3 has been independently accepted.

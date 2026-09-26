@@ -5,16 +5,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, Protocol, Sequence, runtime_checkable
 
-from pydantic import PrivateAttr
+from pydantic import Field, PrivateAttr
 
 from intergrax.integrations.contracts.base import IntegrationConfigurationError
 from intergrax.integrations.contracts.relational_store import RelationalStore
+from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 from intergrax.runtime.integrations.categories.data import (
     RelationalStoreIntegrationContract,
 )
-from intergrax.runtime.integrations.categories._base import CategoryIntegrationConfig
 
 if TYPE_CHECKING:
     from intergrax.collaborative_work.persistence import CollaborativeWorkRepositories
@@ -33,14 +34,14 @@ class SqliteRelationalStoreClient(RelationalStore, Protocol):
     """SQLite relational store client with filesystem path."""
 
     @property
-    def db_path(self) -> str: ...
+    def db_path(self) -> Path: ...
 
 
 class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
     """Single public Sqlite relational store entrypoint for catalog and contract wiring."""
 
-    config: SqliteRelationalStoreIntegrationConfig = (
-        SqliteRelationalStoreIntegrationConfig()
+    config: CategoryIntegrationConfig = Field(
+        default_factory=SqliteRelationalStoreIntegrationConfig
     )
     _client: SqliteRelationalStoreClient | None = PrivateAttr(default=None)
 
@@ -59,7 +60,7 @@ class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
         self._require_client().close()
 
     @property
-    def db_path(self):
+    def db_path(self) -> Path:
         return self._require_client().db_path
 
     def _require_client(self) -> SqliteRelationalStoreClient:
@@ -96,6 +97,3 @@ class SqliteRelationalStoreIntegration(RelationalStoreIntegrationContract):
             "Work persistence materialization; use IntegrationProfile relational_store "
             "slug resolution instead."
         )
-
-
-RelationalStore.register(SqliteRelationalStoreIntegration)

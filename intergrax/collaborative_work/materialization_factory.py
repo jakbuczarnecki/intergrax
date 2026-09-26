@@ -21,6 +21,7 @@ class CollaborativeWorkPersistenceFactory(Protocol):
         self,
     ) -> CollaborativeWorkMaterializedRepositories:
         """Materialize the authoritative Collaborative Work repository bundle."""
+        ...
 
 
 @runtime_checkable
@@ -32,3 +33,4 @@ class CollaborativeWorkMaterializationBinder(Protocol):
         options: Mapping[str, object],
     ) -> CollaborativeWorkPersistenceFactory:
         """Return a provider-configured materializer for Collaborative Work persistence."""
+        ...
