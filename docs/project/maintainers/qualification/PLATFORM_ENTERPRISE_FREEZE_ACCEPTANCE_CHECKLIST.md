@@ -137,6 +137,9 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 | FRZ-REC-05 | Recovery / durability | fork semantics explicit | STATE-X | OPEN | — |
 | FRZ-REC-06 | Recovery / durability | partial persistence fails closed where required | STATE-X | OPEN | — |
 | FRZ-REC-07 | Recovery / durability | external operation uncertainty modeled | STATE-X | OPEN | — |
+| FRZ-REC-08 | Recovery / durability | backup/restore responsibility and supported semantics explicit | STATE-X | OPEN | `N/A — WITH EVIDENCE` only when responsibility lies outside the platform. |
+| FRZ-REC-09 | Recovery / durability | restore preserves canonical identity, authority, tenant isolation and exactly-one truth | STATE-X | OPEN | — |
+| FRZ-REC-10 | Recovery / durability | partial/corrupt durable state is detected and cannot silently become accepted canonical truth | STATE-X | OPEN | — |
 | FRZ-CMP-01 | Compatibility / evolution | frozen contracts inventory exists | COMPAT-X | OPEN | — |
 | FRZ-CMP-02 | Compatibility / evolution | versioning policy exists | COMPAT-X | OPEN | — |
 | FRZ-CMP-03 | Compatibility / evolution | persisted schemas versioned | COMPAT-X | OPEN | — |
@@ -152,6 +155,9 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 | FRZ-SEC-05 | Security / isolation | sandbox/isolation boundaries qualified | CTRL-X, PROD-Q | OPEN | — |
 | FRZ-SEC-06 | Security / isolation | provider/plugin trust qualified | CTRL-X, PROD-Q | OPEN | — |
 | FRZ-SEC-07 | Security / isolation | security claim bounded by explicit threat model/evidence | CTRL-X, PROD-Q | OPEN | — |
+| FRZ-SEC-08 | Security / isolation | sensitive/tenant data propagation across platform/provider boundaries is explicit and qualified | CTRL-X, PROD-Q | OPEN | — |
+| FRZ-SEC-09 | Security / isolation | retention / deletion / redaction responsibility is explicit for platform-owned durable or sensitive data | CTRL-X, PROD-Q | OPEN | — |
+| FRZ-SEC-10 | Security / isolation | platform vs infrastructure responsibility for encryption/data residency/provider exposure is explicit and evidence-backed | CTRL-X, PROD-Q | OPEN | `N/A — WITH EVIDENCE` only when the platform is not owner of the concern. |
 | FRZ-REL-01 | Reliability | timeout ownership explicit | CTRL-X, PROD-Q | OPEN | — |
 | FRZ-REL-02 | Reliability | retry ownership explicit | CTRL-X, PROD-Q | OPEN | — |
 | FRZ-REL-03 | Reliability | idempotency ownership explicit | CTRL-X, PROD-Q | OPEN | — |
@@ -159,6 +165,10 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 | FRZ-REL-05 | Reliability | external operation termination semantics explicit | CTRL-X, PROD-Q | OPEN | — |
 | FRZ-REL-06 | Reliability | provider failure typed | CTRL-X, PROD-Q | OPEN | — |
 | FRZ-REL-07 | Reliability | no hidden infinite retry/fallback | CTRL-X, PROD-Q | OPEN | — |
+| FRZ-REL-08 | Reliability | bounded concurrency and work-admission semantics explicit | HARNESS-W4, CTRL-X, PROD-Q | OPEN | — |
+| FRZ-REL-09 | Reliability | queue/backpressure and overload behavior explicit | HARNESS-W4, CTRL-X, PROD-Q | OPEN | — |
+| FRZ-REL-10 | Reliability | resource saturation/exhaustion has deterministic reject/degrade/fail-closed behavior | HARNESS-W4, CTRL-X, PROD-Q | OPEN | — |
+| FRZ-REL-11 | Reliability | provider throttling/rate-limit handling cannot create unbounded retry/fallback or bypass | HARNESS-W4, CTRL-X, PROD-Q | OPEN | — |
 | FRZ-CTL-01 | Cross-cutting control planes | Security: one owner; one canonical boundary; no peer execution/governance authority; typed contracts; regression protection | CTRL-X | OPEN | — |
 | FRZ-CTL-02 | Cross-cutting control planes | Reliability: one owner; one canonical boundary; no peer execution/governance authority; typed contracts; regression protection | CTRL-X | OPEN | — |
 | FRZ-CTL-03 | Cross-cutting control planes | Cost/Budget: one owner; one canonical boundary; no peer execution/governance authority; typed contracts; regression protection | CTRL-X | OPEN | — |
@@ -179,6 +189,10 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 | FRZ-PRD-06 | Production qualification | degraded behavior explicit | PROD-Q | OPEN | — |
 | FRZ-PRD-07 | Production qualification | strict vs lab semantics separated | PROD-Q | OPEN | — |
 | FRZ-PRD-08 | Production qualification | production-only bypass count = 0 | PROD-Q | OPEN | — |
+| FRZ-PRD-09 | Production qualification | production health/readiness/degraded-state semantics qualified | PROD-Q | OPEN | — |
+| FRZ-PRD-10 | Production qualification | terminal and critical production failures are operator-visible and actionable | PROD-Q | OPEN | — |
+| FRZ-PRD-11 | Production qualification | production capacity/overload behavior is qualified and bounded | PROD-Q | OPEN | Cross-reference Security/Reliability evidence from `CTRL-X`, `HARNESS-W4` where applicable; no duplicate semantic criteria. |
+| FRZ-PRD-12 | Production qualification | critical operational recovery responsibility/procedure is explicit | PROD-Q | OPEN | Cross-reference `STATE-X` recovery evidence where applicable; no duplicate semantic criteria. |
 | FRZ-REG-01 | Regression / qualification infrastructure | every frozen invariant has evidence protection | QUAL-X | OPEN | — |
 | FRZ-REG-02 | Regression / qualification infrastructure | every corrected blocker has regression gate | QUAL-X | OPEN | **EBH-2I** (`4958c7e4…`): `test_ebh_2i_final_rescan_gate.py` mechanical gates (parent scope; not global PASS). `test_ebh_2f_r2_integration_plugin_contract_typing_gate.py` — 14 historical R2 invariants + `resolve_typed` overload/impl AST + embedded pyright. |
 | FRZ-REG-03 | Regression / qualification infrastructure | negative tests prove gates detect violations | QUAL-X | OPEN | **EBH-2I** (`4958c7e4…`): CSP + dependency negative proofs in `test_ebh_2i_final_rescan_gate.py` (parent scope). **HARNESS-QINF-01** (pending independent closure): harness inventory stale/unclassified negative proofs in `test_harness_01_gates.py`. |
@@ -267,10 +281,13 @@ This log records independently audited evidence contributions without upgrading 
 
 Completeness detector: every FRZ family must have at least one primary closing stage. If a family lacks a stage owner, the program is incomplete.
 
+**Final current-HEAD recertification:** no fundamental `FRZ` family PASS may rely solely on historical `EBH-2*` local-hardening SHA evidence if later mandatory stages could have changed its surface. **TYP / BND / OWN / CTR / PLG:** primary hardening = `EBH-2*`; final current-HEAD recertification = `EBH-6` / `EBH-7`. Other families keep their primary owners below; final whole-platform recertification = `EBH-6` / `EBH-7`.
+
 | Stage | Primary FRZ families |
 | --- | --- |
 | EBH-2* | BND, OWN, CTR, TYP, PLG |
 | HARNESS-* | HRN, EXE, GOV, OBS |
+| HARNESS-W4 | REL (bounded concurrency, overload, backpressure, saturation, provider throttling, bounded retry/fallback) |
 | GOV-X1 / GOV-X2 | GOV, EXE, TRC |
 | EBH-3 | BND, OWN, CTR |
 | EBH-4 | BND, CTR, EXE, GOV |
@@ -304,7 +321,7 @@ Completeness detector: every FRZ family must have at least one primary closing s
 | REC | STATE-X |
 | CMP | COMPAT-X |
 | SEC | CTRL-X, PROD-Q |
-| REL | CTRL-X, PROD-Q |
+| REL | HARNESS-W4, CTRL-X, PROD-Q |
 | CTL | CTRL-X |
 | PRD | PROD-Q |
 | REG | QUAL-X |
