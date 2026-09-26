@@ -10,7 +10,7 @@
 | CODE_BASELINE_SHA | `f38e455ccc391dad9a6a64d7867a33cfc5c9b21d` |
 | P3 accepted SHA | `e8b51e2a1a80eec3b62d64a179ec5e9e0856c04a` |
 | HEAD at cert start | `007a3dcaa5d1245342d2f5face331b56b70f7e6f` (docs-only drift vs baseline) |
-| CERT_EVIDENCE_SHA | `35e1ad6926885bc1a5972e7395e18fc1bca84db0` |
+| CERT_EVIDENCE_SHA | `3b30b9583a62642a21881daf84e8596d9111896d` |
 
 ## Scope
 
