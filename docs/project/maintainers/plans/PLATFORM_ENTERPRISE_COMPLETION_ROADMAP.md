@@ -26,7 +26,7 @@ Primary companion sources:
 
 DeepSeek/external audit findings may motivate work, but repository code, canonical contracts, architecture documents and independently audited GitHub commits are the authority for closure.
 
-**Whole-program goal:** reach a **formally freezable enterprise architecture** with evidence-backed certainty—before scenario work—on boundaries, ownership, contracts, typing, pluginability, Governance, Execution, Observability, Traceability, Persistence, Compatibility, Production qualification and regression protection. After `ARCH-FREEZE`, fundamental architecture is frozen; scenarios must not be used to discover known fundamental architecture gaps.
+**Whole-program goal:** reach a **formally freezable enterprise architecture** with evidence-backed certainty—before scenario work—on boundaries, ownership, contracts, typing, pluginability, Governance, Execution, Observability, Traceability, Persistence, Compatibility, Production qualification and regression protection; then **preserve** that enterprise quality during future scenario-driven evolution through a continuously diagnosable, executable full-platform audit. After `ARCH-FREEZE`, fundamental architecture is frozen; scenarios must not be used to discover known fundamental architecture gaps. Enterprise architecture quality must remain **continuously auditable on demand** after freeze (baseline comparison, drift classification, actionable reports).
 
 ---
 
@@ -111,6 +111,7 @@ Minimum planned linkage:
 | EBH-5 | PLG, RPL |
 | EBH-6 | all applicable architecture families |
 | EBH-7 | all enterprise families |
+| ENT-AUDIT-X | all enterprise families as audit coverage + REG + FRZ + DEBT + DOC (cross-family executable audit evidence; not necessarily primary semantic closer per family) |
 | ARCH-FREEZE | FRZ, DEBT, DOC + all remaining |
 
 ### 2.1 Required instruction header
@@ -211,12 +212,73 @@ If a new blocker is discovered:
 | **TRACE-X** | End-to-End Traceability & Evidence Certification | Prove end-to-end **causal traceability** forward: transport identity → runtime identity → execution → task → child execution → strategy → agent → model/context decision → tool call → governance decision → side-effect authorization → provider invocation → external effect → runtime evidence/events → diagnostics → terminal outcome; and **reverse reconstruction**: effect/failure/diagnostic → execution → authority → policy/profile revision → provider → contract/version → causal parent. Mandatory coverage includes `ExecutionId`, `RunId`, `TaskId`, parent/child causality, provider/delegation/tool invocation correlation, model/context attribution, profile/policy revision attribution, side-effect authorization evidence, restart/resume continuity, terminal outcome evidence, diagnostic provenance, evidence version attribution, configured vs effective provenance. | [ ] PLANNED / MANDATORY |
 | COMPAT-X | Contract, Schema & Evolution Certification | Identify frozen public/stable vs internal contracts and certify versioning/evolution rules for APIs, events, persisted schemas, plugin/provider contracts and serialization. Verify backward/forward compatibility policy, migrations, deprecation/removal rules and no compatibility shim becoming a permanent parallel authority. | [ ] PLANNED / MANDATORY |
 | PROD-Q | Platform Production Qualification | Prove production readiness rather than harness/lab maturity: provider/plugin admission and qualification, startup/shutdown/resource lifecycle, strict-vs-lab mode separation, unsupported configuration handling, production bypass prevention, secrets/tenant isolation, degraded operation and fail-closed materialization. Historical `implementation complete` or harness qualification is not sufficient. | [ ] PLANNED / MANDATORY |
-| **QUAL-X** | Enterprise Qualification & Regression Infrastructure Certification | Certify the **mechanical protection system** for frozen architecture—not only platform behavior. Verify: every frozen invariant has qualification evidence; corrected blockers have regression gates; architecture gates scan current closed-world surface; allowlists minimal and evidence-backed; stale inventories = 0; negative tests detect violations; critical invariants not docs-only; qualification tests deterministic; clean-checkout reproducibility; environment failure cannot auto-classify as architecture PASS; flaky tests cannot be freeze evidence; tests cannot assert names/other tests instead of invariants; qualification records match current code; mandatory architecture suite runnable as one defined freeze-oriented qualification set. | [ ] PLANNED / MANDATORY |
+| **QUAL-X** | Enterprise Qualification & Regression Infrastructure Certification | Answers: *Are qualification/regression mechanisms that protect frozen architecture complete, credible, deterministic and correctly built?* Certifies architecture gates, regression gates, negative tests, allowlists, inventories, deterministic qualification, clean-checkout reproducibility, environment failure classification, and protection of frozen invariants—not a substitute for a full-platform enterprise audit (`ENT-AUDIT-X`). Verify: every frozen invariant has qualification evidence; corrected blockers have regression gates; architecture gates scan current closed-world surface; allowlists minimal and evidence-backed; stale inventories = 0; negative tests detect violations; critical invariants not docs-only; qualification tests deterministic; clean-checkout reproducibility; environment failure cannot auto-classify as architecture PASS; flaky tests cannot be freeze evidence; tests cannot assert names/other tests instead of invariants; qualification records match current code; mandatory architecture suite runnable as one defined freeze-oriented qualification set. | [ ] PLANNED / MANDATORY |
 | EBH-5 | Replaceability & E2E Certification | Practical E2E proof that key providers, strategies and implementations can be replaced through platform contracts without modifying core mechanisms; verify real pluginability rather than test-only monkeypatching. | [ ] PLANNED |
 | EBH-6 | Final Architecture Recertification | Full cross-platform recertification after all local, Harness, Governance, control-plane, state, compatibility and production-qualification work: boundaries, ownership, communication, composition, evidence, fail-closed behavior, typing and regression protection. | [ ] PLANNED |
 | **EBH-7** | Comprehensive Platform Enterprise Architecture Certification | Ostateczna certyfikacja całej Integrax jako jednej platformy enterprise: hard boundaries, exactly-one ownership, canonical contracts, pluginability/replaceability, zero bypassów, zero duplicated mechanisms, correct Governance/Execution separation and validated E2E behavior. | **[ ] FINAL / MANDATORY** |
-| **ARCH-FREEZE** | Architecture Freeze Certification | Formalny freeze gate po EBH-7. Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0. Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification). | **[ ] FINAL / MANDATORY** |
-| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formalny Go/No-Go do przejścia z hardeningu platformy do pełnej koncentracji na scenariuszach. **Remains BLOCKED while `ARCH-FREEZE` ≠ CLOSED.** Scenarios must not compensate for unfrozen architecture gaps. Gate CLOSED only when all mandatory rows above—including `ARCH-FREEZE`—are CLOSED with independent SHA evidence and no known enterprise blocker. | **[ ] BLOCKED** |
+| **ENT-AUDIT-X** | Continuous Enterprise Architecture Audit System | Build and independently certify a **durable, executable full-platform enterprise audit system** before `ARCH-FREEZE` (after final enterprise certification, not before). Answers: *Run the whole platform as one audit—does current state still satisfy enterprise invariants, where is drift, and what was violated?* Reuses existing qualification/gates instead of duplicating them; adds cross-cutting static/structural checks; one actionable report; baseline vs accepted enterprise baseline; remains in use after scenario development begins. **Not** an alias of `QUAL-X`. Full scope, architecture, modes, reporting and post-freeze policy: §3.1. | **[ ] FINAL / MANDATORY** |
+| **ARCH-FREEZE** | Architecture Freeze Certification | Formalny freeze gate po **`ENT-AUDIT-X`** (requires `EBH-7` and **`ENT-AUDIT-X` = CLOSED**). Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0; **`ENT-AUDIT-X` independently CLOSED**; **exact-freeze-SHA enterprise audit:** enterprise audit completed = yes; audit internal failure = 0; new enterprise violations = 0; unclassified findings = 0; expired debt = 0; unresolved enterprise BLOCKER findings = 0; **enterprise audit baseline SHA recorded** (reference for post-freeze scenario development). Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification + scenario-wave drift audit per §3.1). | **[ ] FINAL / MANDATORY** |
+| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formalny Go/No-Go do przejścia z hardeningu platformy do pełnej koncentracji na scenariuszach. **Remains BLOCKED while `ARCH-FREEZE` ≠ CLOSED.** `ARCH-FREEZE` = CLOSED alone is **insufficient**: also requires **`ENT-AUDIT-X` = CLOSED**, **canonical enterprise audit baseline exists**, and **freeze-SHA enterprise audit = PASS**. Scenarios must not compensate for unfrozen architecture gaps. Gate CLOSED only when all mandatory rows above—including `ARCH-FREEZE` and audit baseline evidence—are CLOSED with independent SHA evidence and no known enterprise blocker. | **[ ] BLOCKED** |
+
+### 3.1 `ENT-AUDIT-X` — Continuous Enterprise Architecture Audit System
+
+**Responsibility split (`QUAL-X` vs `ENT-AUDIT-X`):**
+
+| Stage | Question |
+|---|---|
+| **QUAL-X** | Are qualification/regression mechanisms that protect frozen architecture complete, credible, deterministic and correctly built? |
+| **ENT-AUDIT-X** | Run the whole platform as one audit: does current platform still satisfy enterprise invariants, where exactly is drift, and what was violated? |
+
+**Stage purpose:** build and certify a persistent, executable system that (1) can run on any future HEAD/SHA; (2) analyzes the whole platform against frozen enterprise invariants; (3) orchestrates existing qualification/gates rather than duplicating them; (4) performs its own cross-cutting static/structural checks; (5) emits one actionable report; (6) compares current state to the accepted enterprise baseline; (7) remains required after scenario development starts.
+
+**Forbidden design:** one giant ad-hoc regex script. The implementation must be a **modular framework**:
+
+```text
+EnterpriseAuditRunner
+        ↓
+AuditCheck[]
+        ↓
+AuditFinding[]
+        ↓
+AuditReport
+```
+
+Conceptual platform contracts (exact names not frozen by this docs task): `AuditCheck`, `AuditScope`, `AuditFinding`, `AuditSeverity`, `AuditEvidence`, `AuditCategory`, `AuditResult`, `AuditReport`.
+
+**Minimum audit coverage (whole platform):**
+
+- **Architecture / boundaries** — hard layer boundaries; reverse dependencies; forbidden cross-layer dependencies; concrete implementation leakage; heavy import leakage; import cycles; metadata/config imports causing runtime materialization.
+- **Ownership** — exactly-one semantic owner; exactly-one canonical contract; exactly-one sanctioned composition owner; shadow authorities; duplicated responsibilities.
+- **Contracts / abstraction** — contracts over implementations; public/private contract purity; narrow responsibility; implementation inside semantic contract; concrete vendor/runtime in contracts.
+- **Strong typing** — semantic `Any`; generic `object`; pseudo-contract dicts; unsafe `cast`; `type: ignore` masking architecture mismatch; string-dispatch replacing typed contracts.
+- **Dynamic behavior** — reflection; `getattr`/`hasattr` semantic dispatch; dynamic probing; dynamic import as substitute for explicit plugin contract; compatibility dispatch as second mechanism.
+- **Duplication** — duplicate factories, registries, resolvers, validators, dispatchers, semantic contracts; alternate execution/composition paths.
+- **Pluginability / replaceability** — provider/strategy behind platform contract; sanctioned discovery/selection/materialization owner; no consumer patch to replace implementation; runtime extension cannot self-expand authority.
+- **Governance** — Governance ≠ Execution; proposal ≠ permission ≠ execution; authority narrowing; child authority ⊆ parent; fresh authorization where required; absence of HITL ≠ approval; no governance bypass.
+- **Execution** — exactly-one execution authority; no alternate scheduler/worker execution owner; canonical execution identity; no peer execution authority from subsystems.
+- **Observability / diagnostics** — Observability/Diagnostics = platform evidence/diagnostic spine; Observability ≠ execution truth authority; Diagnostics ≠ execution truth authority; canonical event/evidence spine; correlation propagation; diagnostic provenance; terminal state visibility; side-effect observability; no observability-created permission/authority; no diagnostics-created business truth.
+- **State / persistence** — exactly-one semantic truth owner; duplicate semantic stores; recovery/replay/resume divergence; stale-state acceptance; configured/effective/persisted distinction.
+- **Compatibility** — active legacy path as second mechanism; compatibility shim as permanent authority; expired deprecations; stale compatibility surface.
+- **Qualification / debt** — stale allowlists/inventories; expired debt; missing regression protection; critical invariant protected only by docs; environment/test issue incorrectly treated as PASS.
+- **Documentation drift** — canonical docs vs code; ownership manifest drift; dependency/layer manifest drift; composition manifest drift; frozen contract manifest drift.
+
+**Execution modes (conceptual; exact CLI is implementation detail):** `FAST` (cheap development check), `FULL` (complete current-platform audit), `FREEZE` (maximal pre-freeze audit), `CHANGED-SINCE <baseline>` (architectural drift since accepted baseline).
+
+**Baseline / drift (mandatory):** compare **accepted enterprise baseline SHA** vs **current SHA**; classify findings as `NEW`, `RESOLVED`, `UNCHANGED`, `REGRESSED` (or equivalent typed classification). Example conceptual summary: baseline SHA, current SHA, counts of new/resolved/regressed/unchanged violations.
+
+**Reports (mandatory):** machine-readable + human-readable (recommended JSON + Markdown). Each finding must be actionable in a follow-on engineering session: finding ID, category, severity, source/path, violated invariant, current evidence, expected invariant, related FRZ criteria, baseline status, suggested remediation class / likely owner. Auditor diagnoses; engineering remediates (no requirement for automatic code fixes).
+
+**Severity (explicit):** e.g. `BLOCKER`, `ERROR`, `WARNING`, `INFO`, `TRACKED_DEBT`, `ENVIRONMENT` (exact enum at implementation). Must distinguish architecture violation vs qualification/environment issue vs accepted tracked debt.
+
+**Shell/CI exit states (deterministic; exact numbers may vary):** `0` = enterprise audit clean; `1` = enterprise violation found; `2` = qualification/environment incomplete; `3` = audit system internal failure.
+
+**Post-`ARCH-FREEZE` scenario-development policy (non-negotiable):** scenario-driven development may continue, but every **meaningful scenario development wave** that changes frozen-platform surfaces (contracts, ownership, boundaries, composition, execution, governance, state, traceability, provider/plugin mechanisms, control planes—not trivial docs-only edits) must be followed by enterprise drift audit against the last accepted baseline:
+
+```text
+scenario wave → enterprise audit → new frozen-invariant violations?
+    ├── yes → remediation before proceeding
+    └── no  → accepted new baseline/evidence
+```
 
 ---
 
@@ -288,7 +350,8 @@ Update this section only after independent exact-SHA audit.
 | COMPAT-X | — | PLANNED / MANDATORY — contract/schema/event/plugin evolution certification before freeze. |
 | PROD-Q | — | PLANNED / MANDATORY — explicit production qualification before final enterprise certification; includes ensuring the SQLite bootstrap finding cannot mask production startup correctness. |
 | QUAL-X | — | PLANNED / MANDATORY — qualification/regression infrastructure certification (`PROD-Q` → `QUAL-X` → `EBH-5`); `R1-SQLITE-ENV-01` is an explicit evidence item for `FRZ-REG-08` and cannot be treated as a false PASS. |
-| ARCH-FREEZE | — | FINAL / MANDATORY — formal architecture freeze gate; requires checklist complete per mechanical entry requirements in §3. |
+| ENT-AUDIT-X | — | FINAL / MANDATORY — Build and independently certify the reusable full-platform enterprise architecture audit system before ARCH-FREEZE; exact-SHA implementation, coverage, baseline/drift and reporting evidence required. |
+| ARCH-FREEZE | — | FINAL / MANDATORY — formal architecture freeze gate after `ENT-AUDIT-X`; requires checklist complete per mechanical entry requirements in §3 including freeze-SHA enterprise audit PASS and recorded audit baseline. |
 | remaining mandatory stages | — | Fill on closure. |
 
 ---
@@ -326,5 +389,10 @@ Bring the whole Integrax platform to a fully, independently recertified and form
 - production qualification proven independently from harness/lab maturity;
 - qualification/regression infrastructure certified (`QUAL-X`);
 - final enterprise closure through `EBH-7`;
-- formal `ARCH-FREEZE` (checklist-complete) before `SCENARIO-GATE`;
-- after freeze, any change to a frozen contract/boundary/ownership rule requires ADR, architecture review, explicit freeze exception and targeted recertification.
+- reusable full-platform enterprise audit system certified before freeze (`ENT-AUDIT-X`);
+- exact-SHA enterprise audit baseline recorded at `ARCH-FREEZE`;
+- actionable enterprise drift report available on demand;
+- formal `ARCH-FREEZE` (checklist-complete, green freeze-SHA enterprise audit) before `SCENARIO-GATE`;
+- scenario-driven platform evolution continuously audited against the accepted baseline;
+- new violations of frozen invariants remediated before accepting further platform evolution;
+- after freeze, any change to a frozen contract/boundary/ownership rule requires ADR, architecture review, explicit freeze exception, targeted recertification and scenario-wave drift audit where applicable.

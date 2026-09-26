@@ -219,6 +219,19 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 | FRZ-FRZ-08 | Freeze mechanics | composition manifest frozen | ARCH-FREEZE | OPEN | — |
 | FRZ-FRZ-09 | Freeze mechanics | non-blocking debt register frozen | ARCH-FREEZE | OPEN | — |
 | FRZ-FRZ-10 | Freeze mechanics | post-freeze change policy active | ARCH-FREEZE | OPEN | — |
+| FRZ-FRZ-11 | Freeze mechanics | ENT-AUDIT-X independently CLOSED | ARCH-FREEZE | OPEN | — |
+| FRZ-FRZ-12 | Freeze mechanics | full enterprise audit green on exact freeze SHA | ARCH-FREEZE | OPEN | — |
+| FRZ-FRZ-13 | Freeze mechanics | canonical post-freeze audit baseline recorded | ARCH-FREEZE | OPEN | — |
+| FRZ-AUD-01 | Continuous enterprise audit | full-platform enterprise audit runner exists | ENT-AUDIT-X | OPEN | — |
+| FRZ-AUD-02 | Continuous enterprise audit | audit checks are modular and contract-driven, not one monolithic ad-hoc script | ENT-AUDIT-X | OPEN | — |
+| FRZ-AUD-03 | Continuous enterprise audit | audit coverage maps frozen enterprise invariants / FRZ families | ENT-AUDIT-X | OPEN | — |
+| FRZ-AUD-04 | Continuous enterprise audit | actionable machine-readable and human-readable reports generated | ENT-AUDIT-X | OPEN | — |
+| FRZ-AUD-05 | Continuous enterprise audit | every report is attributable to exact repository SHA | ENT-AUDIT-X | OPEN | — |
+| FRZ-AUD-06 | Continuous enterprise audit | baseline-vs-current drift comparison exists | ENT-AUDIT-X | OPEN | — |
+| FRZ-AUD-07 | Continuous enterprise audit | new/resolved/regressed/unchanged findings distinguished | ENT-AUDIT-X | OPEN | — |
+| FRZ-AUD-08 | Continuous enterprise audit | audit result has deterministic machine-readable exit status | ENT-AUDIT-X | OPEN | — |
+| FRZ-AUD-09 | Continuous enterprise audit | full/freeze/changed-since audit modes or equivalent exist | ENT-AUDIT-X | OPEN | — |
+| FRZ-AUD-10 | Continuous enterprise audit | post-freeze scenario-wave enterprise audit policy is enforceable | ENT-AUDIT-X | OPEN | — |
 
 ---
 
@@ -270,6 +283,7 @@ Completeness detector: every FRZ family must have at least one primary closing s
 | EBH-5 | PLG, RPL |
 | EBH-6 | all applicable architecture families |
 | EBH-7 | all enterprise families |
+| ENT-AUDIT-X | AUD + executable evidence across all enterprise families |
 | ARCH-FREEZE | FRZ, DEBT, DOC + all remaining |
 
 ### FRZ family → stage owners
@@ -298,6 +312,7 @@ Completeness detector: every FRZ family must have at least one primary closing s
 | DOC | EBH-6, ARCH-FREEZE |
 | DEBT | ARCH-FREEZE |
 | FRZ | ARCH-FREEZE |
+| AUD | ENT-AUDIT-X |
 
 ---
 
