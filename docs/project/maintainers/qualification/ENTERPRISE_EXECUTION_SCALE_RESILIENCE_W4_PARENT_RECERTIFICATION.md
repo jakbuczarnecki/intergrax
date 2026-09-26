@@ -1,11 +1,12 @@
 # Enterprise Execution Scale & Resilience — W4 Parent Recertification (current-HEAD)
 
-**Task:** HARNESS-W4-PARENT-RECERT  
+**Task:** HARNESS-W4-PARENT-RECERT + **HARNESS-W4-FINAL-CONSOLIDATION**  
 **Stage:** HARNESS-W4 — Scale / Resilience / Cancellation recertification  
-**Document status:** **READY FOR AUDIT** (evidence package) — **parent conclusion: BLOCKED**  
-**Audited HEAD (start):** `20bc4668f4a88ad7ff8d590d643eaf35c710586b`  
-**Branch:** `development` (`HEAD == origin/development` at task start)  
-**Cursor agent:** parent recertification + architecture drift reconciliation only (no production code changes)
+**Document status:** **READY FOR AUDIT**  
+**Parent recommendation:** **HARNESS-W4 = READY FOR AUDIT** (not CLOSED)  
+**Audited HEAD (consolidation replay):** `e8b51e2a1a80eec3b62d64a179ec5e9e0856c04a` (pre-consolidation commit; consolidation commit follows on `development`)  
+**Branch:** `development`  
+**Cursor agent:** qualification lifecycle consolidation + parent evidence update (test-only fix; no production code changes)
 
 ---
 
@@ -26,7 +27,7 @@ Cancellation; external-operation termination; provider cancellation boundaries; 
 | W4-A / W4-C / W4-D inventories | qualification docs | Cancellation / distributed / provider matrices |
 | W2 Final | `ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W2_FINAL_QUALIFICATION.md` | Dependency admission + W2-C composition |
 
-Delta after R1 to audited HEAD: operator pre-audit — unrelated to W4 production boundedness; spot-check paths under task §3 — no material W4 semantic change identified.
+Delta after R1 to consolidation baseline: local commit `e8b51e2…` touches marketplace qualified-tool gates only — **not** W4 resilience / admission production semantics under §3 precondition paths.
 
 ---
 
@@ -37,7 +38,7 @@ Delta after R1 to audited HEAD: operator pre-audit — unrelated to W4 productio
 | root execution capacity | `ExecutionRuntime` | `ExecutionCapacityAdmissionPort` | `local_execution_capacity_admission.py` | Application / execution wiring | W1-A tests, W0 guardrails | PASS (replay) | process-local; not distributed |
 | graph concurrency | `GraphExecutor` | host profile caps + semaphores | `graph_executor.py` | Nexus composition | W1, P0 inventory | PASS | unbounded if caps None (non-STRICT) |
 | fan-out bounds | Nexus fan-out | platform constants | `bounded_multi_agent_fanout.py` | Orchestration | NPSC-5B gate | PASS | platform-hard 256/64 |
-| tool dependency concurrency | `RuntimeToolInvoker` | `DependencyConcurrencyAdmissionPort` + config | `DependencyAttemptExecutionBoundary`, `invoker.py` | `runtime_tool_invoker_composition.py`, R1 materializer | W4-R1, W2-B2 tests | PASS (mechanism) | **BLOCKER:** batch qualification orphan-thread proof |
+| tool dependency concurrency | `RuntimeToolInvoker` | `DependencyConcurrencyAdmissionPort` + config | `DependencyAttemptExecutionBoundary`, `invoker.py` | `runtime_tool_invoker_composition.py`, R1 materializer | W4-R1, W2-B2 tests | PASS | batch orphan proof **green** post-consolidation |
 | LLM provider dependency concurrency | `LLMAdapter` seam | same admission family | `DependencyAttemptExecutionBoundary` on provider path | llm adapter wiring | W2-B3 tests | PASS | process-local |
 | retry budget | W2-C stack | `RetryBudgetPort` | `execute_with_resilience` | llm_adapters | W2-C tests | PASS | — |
 | provider local rate limit | W2-C | `ProviderRateLimitPort` | `local_provider_rate_limit.py` | llm_adapters | W2-C, distributed RL tests | PASS | — |
@@ -49,9 +50,9 @@ Delta after R1 to audited HEAD: operator pre-audit — unrelated to W4 productio
 | external-operation cancellation intent | durable external ops | W4-C contracts + CAS | external operation store | recovery / execution | W4-C T2 | PASS | — |
 | physical provider termination | adapters | `ExternalOperationTerminationPort` | provider `cancellation.py` | adapter bind | W4-D T3 | PASS | capability explicit |
 | tool physical termination | tool boundary | `ToolExecutorTerminationPort` | `tool_operation_termination.py` | Nexus tools | W4-D | PASS | — |
-| detached worker lifecycle | admission boundary | attempt phases DETACHED | `dependency_attempt_execution_boundary.py` | invoker + provider | boundary tests | PASS (isolated) | see blocker |
+| detached worker lifecycle | admission boundary | attempt phases DETACHED | `dependency_attempt_execution_boundary.py` | invoker + provider | boundary tests | PASS | cross-test leak closed |
 | stream termination | provider adapters | stream registry | `provider_stream_transport_registry.py` | adapters | W4-D | PASS | no logical CANCELLED mint on close alone |
-| resource shutdown/drain | invoker + boundary | shutdown hooks | `begin_shutdown` / `drain_and_close` | composition lifecycle | W2-R6 harness | PASS (functional) | orphan-thread batch gap |
+| resource shutdown/drain | invoker + boundary | shutdown hooks | `begin_shutdown` / `drain_and_close` | composition lifecycle | W2-R6 harness | PASS (functional) | — |
 
 ---
 
@@ -74,15 +75,15 @@ shutdown: invoker transfers/closes boundary; pool drain before boundary close in
 
 ---
 
-## 5. Test replay (current-HEAD)
+## 5. Test replay (consolidation HEAD `e8b51e2…` + lifecycle fix)
 
-All commands: `uv run pytest -p no:xdist …` from repo root. Logs: `.tmp/session/HARNESS-W4-PARENT-RECERT/`.
+All commands: `uv run --frozen pytest -p no:xdist …` from repo root. Logs: `.tmp/session/HARNESS-W4-FINAL-CONSOLIDATION/`.
 
 | Wave | Command / paths | Result |
 |------|-----------------|--------|
 | T1 | `test_enterprise_scale_resilience_w4_a_cancellation_qualification.py` | **6 passed** |
-| T2 | `test_enterprise_scale_resilience_w4_c_distributed_cancellation_qualification.py` | **17 passed** (in batch with T3) |
-| T3 | `test_enterprise_scale_resilience_w4_d_provider_cancellation.py` | **6 passed** (23 total with T2) |
+| T2 | `test_enterprise_scale_resilience_w4_c_distributed_cancellation_qualification.py` | **15 passed** |
+| T3 | `test_enterprise_scale_resilience_w4_d_provider_cancellation.py` | **8 passed** |
 | T4 | R1 gate + admission behavior + boundary composition | **12 passed** |
 | T5 | dependency admission suite (4 files) | **69 passed** |
 | T6 | W2-C retry/rate (4 files) | **12 passed**, 100 warnings (see §8) |
@@ -90,9 +91,10 @@ All commands: `uv run pytest -p no:xdist …` from repo root. Logs: `.tmp/sessio
 | T8 | harness W2-R6 r1/r2/r3 | **18 passed** |
 | T9 | W0/W1/P0/NPSC-5B anchors (5 files) | **58 passed** |
 | T10 | `test_no_orphan_thread_after_close` ×10 sequential | **10/10 PASS** (isolated node) |
-| T11 | combined parent batch (all parent-critical paths, single session) | **200 passed, 1 failed** — `test_no_orphan_thread_after_close` |
+| T11-A | combined parent batch (23 files, single session) | **201 passed, 0 failed** |
+| T11-B | second full-session confirmation | **201 passed, 0 failed** |
 
-**Deterministic repro (same session):** run T4 composition tests then orphan node → **FAIL** (orphan `dependency-admission-boundary` thread from `test_materialize_strict_production_with_tool_binding_succeeds` without `boundary.close()`).
+**Causal repro (post-fix):** composition file then `test_no_orphan_thread_after_close` in one session → **PASS** (6 tests).
 
 ---
 
@@ -129,7 +131,7 @@ Mechanisms revalidated green on isolated waves (T4–T9). Queue/backpressure cla
 
 Provider throttling P1–P7: satisfied by W2-C replay (T6) — rate-limit not infinite retry; CB isolation; capped Retry-After tests present.
 
-W2-C thread warnings: **TRACKED FREEZE DEBT (QUAL-X)** — Case A: `test_retry_storm_caps_provider_calls` uses 100 threads raising `LLMRateLimitError` / `ProviderRateLimitExceededError`; pytest `PytestUnhandledThreadExceptionWarning` in worker threads; assertion `provider_calls["n"] <= 12` **PASS** — bounded physical calls proven; warnings are harness artifact, not production leak.
+W2-C thread warnings: **TRACKED FREEZE DEBT (QUAL-X)** — `test_retry_storm_caps_provider_calls`: worker threads raise `LLMRateLimitError` after rate-limit rejection; pytest `PytestUnhandledThreadExceptionWarning` (100 warnings in T6/T11); bounded-call assertion `provider_calls["n"] <= 12` **PASS**. Not a W4 batch blocker; local catch of expected rate-limit exception left for QUAL-X hygiene pass.
 
 ---
 
@@ -161,26 +163,46 @@ All listed FRZ-REL-04..11, FRZ-REG-02/06/09: **status = OPEN** for freeze checkl
 
 ## 13. Unresolved findings
 
-| ID | Classification | Description | Proposed child |
-|----|----------------|-------------|----------------|
-| W4-PARENT-01 | **IN-SCOPE BLOCKER** | Parent batch T11 fails `test_no_orphan_thread_after_close` after R1 composition test leaves live `dependency-admission-boundary` thread; isolated 10/10 PASS but combined-session proof required by E31 fails | **HARNESS-W4-QUAL-ORPHAN-BOUNDARY-LIFECYCLE** — close materialized boundaries in qualification tests and/or scope orphan assertion to instance-owned thread; re-run T11 |
+| ID | Classification | Description |
+|----|----------------|-------------|
+| — | — | **IN-SCOPE BLOCKER = 0** after HARNESS-W4-FINAL-CONSOLIDATION |
+
+**Former W4-PARENT-01:** closed — `test_materialize_strict_production_with_tool_binding_succeeds` now calls `boundary.close()`; T11-A/T11-B green.
 
 ---
 
 ## 14. Architecture document drift
 
-`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md` updated (same commit): historical W2 baseline vs current W4-R1 strict production ToolRuntime; backpressure table split; enterprise gap qualified.
+`ENTERPRISE_EXECUTION_SCALE_RESILIENCE_ARCHITECTURE.md` reconciled at `0cc5f741…`; **not modified** in consolidation (no factual drift found).
 
 ---
 
-## 15. Recommended parent status
+## 15. HARNESS-W4-FINAL-CONSOLIDATION
+
+**Closed-world lifecycle inventory (T1–T11 parent scope — direct `DependencyAttemptExecutionBoundary` / `materialize_tool_dependency_attempt_boundary` / executor / thread creation):**
+
+| File | Test / fixture | Resource | Owner | Pre-state | Action |
+|------|----------------|----------|-------|-----------|--------|
+| `test_dependency_attempt_boundary_composition.py` | `test_materialize_strict_production_with_tool_binding_succeeds` | `DependencyAttemptExecutionBoundary` via materializer | test | no `close()` | **FIX** — `boundary.close()` |
+| `test_dependency_attempt_execution_boundary.py` | module fixtures / tests | boundary, pools, threads | test / fixture | `close()` in fixture or test | no change |
+| `test_harness_w4_r1_production_tool_admission_behavior.py` | `_production_invoker` + tests | boundary via invoker | `invoker.close()` | teardown present | no change |
+| `test_runtime_tool_invoker_dependency_admission.py` | `_harness` | boundary + invoker | `harness.close()` | teardown present | no change |
+| `test_harness_w4_r1_*` / W4-A/C/D / W2-C / W2 final / W2-R6 / W0-W1 | — | no orphan boundary materialization without owner | — | — | no change |
+
+**Remediation:** single line `boundary.close()` after successful materialization assertion (qualification hygiene only).
+
+**Proof:** primary composition file green; causal sequence green; orphan node 10/10; T11-A and T11-B each **201 passed, 0 failed**.
+
+**Production changes:** none.
+
+---
+
+## 16. Recommended parent status
 
 ```text
-HARNESS-W4-PARENT-RECERT = BLOCKED (E31 / orphan-thread batch proof)
-HARNESS-W4 = BLOCKED
-CHILD = HARNESS-W4-QUAL-ORPHAN-BOUNDARY-LIFECYCLE
+HARNESS-W4-FINAL-CONSOLIDATION = READY FOR AUDIT
+HARNESS-W4 = READY FOR AUDIT (recommendation — independent exact-SHA audit required before CLOSED)
+NEXT (after audit): atomic roadmap + freeze checklist sync; then HARNESS-W5 only
 ```
 
-Do **not** begin HARNESS-W5. Do **not** mark this document or HARNESS-W4 CLOSED.
-
-After child green: re-run T10 + T11, independent audit may set **READY FOR AUDIT**.
+Do **not** mark HARNESS-W4 **CLOSED** from this document alone.

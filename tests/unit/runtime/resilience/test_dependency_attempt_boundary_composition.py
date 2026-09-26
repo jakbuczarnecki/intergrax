@@ -85,6 +85,7 @@ def test_materialize_strict_production_with_tool_binding_succeeds() -> None:
         production_mode=True,
     )
     assert boundary is not None
+    boundary.close()
 
 
 def test_build_production_runtime_tool_invoker_rejects_missing_boundary() -> None:
