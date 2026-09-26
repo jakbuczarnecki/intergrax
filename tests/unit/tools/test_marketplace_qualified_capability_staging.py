@@ -271,12 +271,14 @@ def test_concurrent_conflicting_stage_one_wins_other_conflicts() -> None:
     repo = DocumentStoreMarketplaceQualifiedToolStageRepository(store)
     first = _stage(release=_tool_release(version_label="1.0.0"))
     second = _stage(release=_tool_release(version_label="9.9.9"))
-    outcomes: list[MarketplaceQualifiedToolStageWriteOutcome] = []
+    created: list[MarketplaceQualifiedToolStage] = []
     conflicts: list[MarketplaceQualifiedToolStageConflictError] = []
 
     def _attempt(record: MarketplaceQualifiedToolStage) -> None:
         try:
-            outcomes.append(repo.stage(record).outcome)
+            result = repo.stage(record)
+            assert result.outcome is MarketplaceQualifiedToolStageWriteOutcome.CREATED
+            created.append(record)
         except MarketplaceQualifiedToolStageConflictError as exc:
             conflicts.append(exc)
 
@@ -288,8 +290,7 @@ def test_concurrent_conflicting_stage_one_wins_other_conflicts() -> None:
         thread.start()
     for thread in threads:
         thread.join()
-    assert len(outcomes) == 1
-    assert outcomes[0] is MarketplaceQualifiedToolStageWriteOutcome.CREATED
+    assert len(created) == 1
     assert len(conflicts) == 1
     stored = repo.get(tenant_id=first.tenant_id, handoff_id=first.handoff_id)
-    assert stored == first
+    assert stored == created[0]
