@@ -351,3 +351,15 @@ No additional semantic owner required beyond this ADR. If R1 discovers payload i
 | **IN-SCOPE BLOCKER count** | **1** (OBS-EXPORT-TRANSPORT-CONTRACT-D1 — manifests as 3 code sites + protocol) |
 | **TRACKED FREEZE DEBT** | W5-H historical PASS; pyright `__all__` warning |
 | **ENVIRONMENT/TEST** | 1 distributed harness test failure (schema phase on fixture) |
+
+---
+
+## R1 implementation (HARNESS-W5-R1)
+
+| Item | Value |
+|------|--------|
+| **Decision** | Option A unchanged — not redesigned |
+| **OBS-EXPORT-TRANSPORT-CONTRACT-D1** | Removed in R1 (`OtlpTransportPort.export(ObservabilityExportPayload)`) |
+| **HARNESS-W5-R1** | **IMPLEMENTED — READY FOR AUDIT** (independent SHA acceptance required) |
+| **Regression gate** | `tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py` |
+| **Parent record** | `docs/project/maintainers/qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_PARENT_RECERTIFICATION.md` |

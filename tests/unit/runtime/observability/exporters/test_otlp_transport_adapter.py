@@ -12,8 +12,13 @@ import pytest
 from intergrax.applications._shared.runtime_event_delivery_wiring import (
     resolve_application_runtime_event_delivery_wiring,
 )
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.contracts.event_delivery import EventDeliveryPolicy
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
+from intergrax.contracts.event_delivery import (
+    EventDeliveryPolicy,
+    ObservabilityExportPayload,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.observability_export import (
     ConfigurationError,
@@ -49,7 +54,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 def _event() -> RuntimeEvent:
     return RuntimeEvent(
         event_type=RuntimeEventType.TASK_PROGRESS,
-        phase=ExecutionPhase.COMPLETION,
+        phase=ExecutionPhase.STEP_EXECUTION,
         event_kind="qualification.w5e",
         **runtime_event_test_identity(),
     )
@@ -68,7 +73,9 @@ def _event() -> RuntimeEvent:
         ),
     ],
 )
-def test_factory_selection(profile: ObservabilityExportProfile, expected_type: type) -> None:
+def test_factory_selection(
+    profile: ObservabilityExportProfile, expected_type: type
+) -> None:
     sink = ObservabilityExportSinkFactory().create(profile)
     assert isinstance(sink, expected_type)
 
@@ -118,8 +125,8 @@ def test_flush_before_close_on_transport() -> None:
 @pytest.mark.asyncio
 async def test_transport_failure_isolated_from_runtime_export_bridge() -> None:
     class FailingTransport(OtlpTransportPort):
-        def export(self, event: object) -> None:
-            _ = event
+        def export(self, payload: ObservabilityExportPayload) -> None:
+            _ = payload
             raise OtlpTransportError("simulated otlp outage")
 
         def flush(self) -> None:
@@ -156,7 +163,9 @@ async def test_transport_failure_isolated_from_runtime_export_bridge() -> None:
         ("http://collector", -1.0),
     ],
 )
-def test_configuration_validation_rejects_invalid(endpoint: str, timeout: float) -> None:
+def test_configuration_validation_rejects_invalid(
+    endpoint: str, timeout: float
+) -> None:
     config = OtlpExportConfiguration(
         endpoint=endpoint,
         protocol=OtlpProtocol.HTTP_PROTOBUF,

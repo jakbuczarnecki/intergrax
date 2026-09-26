@@ -5,12 +5,12 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.event_delivery import ObservabilityExportPayload
 from intergrax.contracts.observability_export import (
     OtlpExportConfiguration,
     OtlpTransportError,
     OtlpTransportPort,
 )
-from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.observability.exporters.distributed.distributed_configuration import (
     DistributedTransportConfiguration,
     validate_distributed_transport_configuration,
@@ -22,13 +22,15 @@ from intergrax.runtime.observability.exporters.distributed.errors import (
 
 class CollectorTransport(OtlpTransportPort):
     """
-    Maps ``RuntimeEvent`` → serialized telemetry → external OTLP collector.
+    Delegates ``ObservabilityExportPayload`` to inner OTLP transport at collector boundary.
 
     No queue, retry loop, circuit breaker, rate limit, or worker threads.
     """
 
     def __init__(self, config: DistributedTransportConfiguration) -> None:
-        from intergrax.runtime.observability.exporters.otlp.otlp_transport import OtlpTransport
+        from intergrax.runtime.observability.exporters.otlp.otlp_transport import (
+            OtlpTransport,
+        )
 
         validated = validate_distributed_transport_configuration(config)
         self._config = validated
@@ -41,9 +43,9 @@ class CollectorTransport(OtlpTransportPort):
             service_name=validated.service_name,
         )
 
-    def export(self, event: object) -> None:
+    def export(self, payload: ObservabilityExportPayload) -> None:
         try:
-            self._inner.export(event)
+            self._inner.export(payload)
         except OtlpTransportError as exc:
             raise DistributedTransportError(str(exc)) from exc
 
