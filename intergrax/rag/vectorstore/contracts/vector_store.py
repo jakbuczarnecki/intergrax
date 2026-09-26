@@ -3,7 +3,7 @@
 # Use, modification, or distribution without written permission is prohibited.
 
 from __future__ import annotations
-from intergrax.utils import attribute_access
+from intergrax.contracts import vendor_attribute_access as attribute_access
 
 from abc import ABC, abstractmethod
 from collections.abc import Sequence

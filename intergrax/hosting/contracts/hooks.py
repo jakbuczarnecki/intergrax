@@ -18,7 +18,7 @@ from intergrax.hosting.contracts.public_data import (
     validate_bounded_priority,
     validate_positive_bounded_seconds,
 )
-from intergrax.utils import attribute_access
+from intergrax.contracts import vendor_attribute_access as attribute_access
 
 if TYPE_CHECKING:
     from intergrax.hosting.contracts.context import HostedApplicationContext

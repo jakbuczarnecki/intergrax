@@ -12,7 +12,7 @@ from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from intergrax.runtime.sandbox.network_egress import NetworkEgressAllowlist
+from intergrax.contracts.sandbox_network_egress import NetworkEgressAllowlist
 
 
 class CredentialResolutionMode(StrEnum):

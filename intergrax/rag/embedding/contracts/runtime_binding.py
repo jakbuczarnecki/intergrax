@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
 from intergrax.rag.embedding.contracts.embedding_provider import EmbeddingProvider
-from intergrax.rag.embedding.registry.execution_config import EmbeddingProviderExecutionConfig
+from intergrax.rag.embedding.contracts.execution_config import EmbeddingProviderExecutionConfig
 
 
 class EmbeddingProviderConfigurationError(ValueError):

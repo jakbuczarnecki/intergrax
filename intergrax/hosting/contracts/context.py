@@ -25,7 +25,7 @@ from intergrax.hosting.contracts.public_data import (
     normalize_public_json_mapping,
     validate_instance_id,
 )
-from intergrax.hosting.services import HostedApplicationServiceRegistry
+from intergrax.hosting.contracts.service_registry import HostedApplicationServiceRegistry
 
 _PROFILE_DIGEST_RE = re.compile(r"^sha256:[0-9a-f]{64}$")
 

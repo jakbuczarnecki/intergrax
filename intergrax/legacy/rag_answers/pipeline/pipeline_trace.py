@@ -5,20 +5,10 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
 
+from intergrax.legacy.rag_answers.contracts.pipeline_trace import PipelineTrace
 
-@dataclass
-class PipelineTrace:
-
-    retrieval_latency_ms: float | None = None
-    rerank_latency_ms: float | None = None
-    context_latency_ms: float | None = None
-    prompt_latency_ms: float | None = None
-    llm_latency_ms: float | None = None
-
-    retrieved_candidates: int | None = None
-    reranked_candidates: int | None = None
+__all__ = ["PipelineTrace", "StepTimer"]
 
 
 class StepTimer:

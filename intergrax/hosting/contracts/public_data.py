@@ -16,7 +16,7 @@ from typing import Any
 from pydantic import JsonValue
 from pydantic.types import SecretBytes, SecretStr
 
-from intergrax.utils import attribute_access
+from intergrax.contracts import vendor_attribute_access as attribute_access
 
 _BOUNDED_IDENTIFIER_MAX_LENGTH = 256
 _INSTANCE_ID_MAX_LENGTH = 128

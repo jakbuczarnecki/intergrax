@@ -1,17 +1,9 @@
 # © Artur Czarnecki. All rights reserved.
-# Intergrax framework – proprietary and confidential.
+# Integrax framework – proprietary and confidential.
 # Use, modification, or distribution without written permission is prohibited.
 
-"""Provider execution tuning — separate from semantic embedding identity."""
+"""Compatibility re-export — canonical owner is ``embedding.contracts.execution_config``."""
 
-from __future__ import annotations
+from intergrax.rag.embedding.contracts.execution_config import EmbeddingProviderExecutionConfig
 
-from dataclasses import dataclass
-
-
-@dataclass(frozen=True, slots=True)
-class EmbeddingProviderExecutionConfig:
-    """Runtime execution settings for embedding providers (not artifact identity)."""
-
-    device: str | None = None
-    batch_size: int | None = None
+__all__ = ["EmbeddingProviderExecutionConfig"]

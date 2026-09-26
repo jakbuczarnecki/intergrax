@@ -1,14 +1,14 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Outbound notification contract — re-exports runtime adapter (§7.1.2, Phase M.2)."""
+"""Outbound notification contract (integration catalog surface)."""
 
 from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
 from intergrax.integrations.contracts.base import HealthStatus
-from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
+from intergrax.integrations.contracts.notification_adapter import NotificationAdapter
 
 
 @runtime_checkable

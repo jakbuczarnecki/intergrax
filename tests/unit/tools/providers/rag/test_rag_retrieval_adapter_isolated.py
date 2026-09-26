@@ -5,10 +5,8 @@ from __future__ import annotations
 import pytest
 
 from intergrax.knowledge.contracts import KnowledgeDocument
-from intergrax.rag.retrievers.contracts.base_retriever import (
-    RetrievalHit,
-    retrieval_hit_to_chunk,
-)
+from intergrax.rag.retrieval.hit_chunk_adapter import retrieval_hit_to_chunk
+from intergrax.rag.retrievers.contracts.base_retriever import RetrievalHit
 
 pytestmark = pytest.mark.unit
 

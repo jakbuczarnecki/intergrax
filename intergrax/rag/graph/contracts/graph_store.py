@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 import hashlib
 from typing import TYPE_CHECKING, Dict, List, Sequence, Set
 
-from intergrax.utils import attribute_access
+from intergrax.contracts import vendor_attribute_access as attribute_access
 
 if TYPE_CHECKING:
     from intergrax.distributed.source_operation import SourceOperationCoordinator

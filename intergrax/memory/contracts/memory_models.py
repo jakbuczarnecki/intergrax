@@ -9,7 +9,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional, Tuple
 
-from intergrax.globals.settings import GLOBAL_SETTINGS
 from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryProvenance,
     MemoryRecordGovernance,
@@ -17,7 +16,7 @@ from intergrax.memory.contracts.enterprise_memory_record import (
     MemoryRecordTrust,
     validate_memory_record_invariants,
 )
-from intergrax.utils.time_provider import SystemTimeProvider
+from intergrax.memory.contracts.clock import utc_now
 
 __all__ = [
     "EnterpriseMemoryRecord",
@@ -76,7 +75,7 @@ class UserProfileMemoryEntry:
     title: Optional[str] = None
     importance: MemoryImportance = MemoryImportance.MEDIUM
     created_at: str = field(
-        default_factory=lambda: SystemTimeProvider.utc_now().isoformat()
+        default_factory=lambda: utc_now().isoformat()
     )
     updated_at: Optional[str] = None
     provenance: MemoryProvenance = field(default_factory=MemoryProvenance)
@@ -108,7 +107,7 @@ class UserProfileMemoryEntry:
     def bump_revision_for_semantic_change(self) -> None:
         """Increment revision after a persisted semantic mutation."""
         self.revision += 1
-        self.updated_at = SystemTimeProvider.utc_now().isoformat()
+        self.updated_at = utc_now().isoformat()
         validate_memory_record_invariants(
             memory_id=self.entry_id,
             revision=self.revision,
@@ -131,9 +130,9 @@ class UserIdentity:
     display_name: Optional[str] = None
     role: Optional[str] = None
     domain_expertise: Optional[str] = None
-    language: Optional[str] = GLOBAL_SETTINGS.default_language
-    locale: Optional[str] = GLOBAL_SETTINGS.default_locale
-    timezone: Optional[str] = GLOBAL_SETTINGS.default_timezone
+    language: Optional[str] = None
+    locale: Optional[str] = None
+    timezone: Optional[str] = None
 
 
 @dataclass

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import Protocol, Sequence, runtime_checkable
 
-from intergrax.websearch.schemas.search_hit import SearchHit
+from intergrax.integrations.contracts.search_hit import SearchHit
 
 
 @runtime_checkable

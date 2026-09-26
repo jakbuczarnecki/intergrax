@@ -18,7 +18,8 @@ from intergrax.rag.retrieval.citation import citations_from_chunks
 from intergrax.rag.retrieval.retrieval_errors import RetrievalError
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 from intergrax.rag.retrieval.retrieval_result import RetrievalChunk, RetrievalResult, RetrievalTrace
-from intergrax.rag.retrievers.contracts.base_retriever import RetrievalHit, retrieval_hit_to_chunk
+from intergrax.rag.retrieval.hit_chunk_adapter import retrieval_hit_to_chunk
+from intergrax.rag.retrievers.contracts.base_retriever import RetrievalHit
 from intergrax.rag.retrievers.contracts.base_retriever_manager import BaseRetrieverManager
 from intergrax.rag.rerankers.contracts.base_reranker_manager import BaseRerankerManager
 from intergrax.rag.rerankers.contracts.reranker_types import RerankerCandidate

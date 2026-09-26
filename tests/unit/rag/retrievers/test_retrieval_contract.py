@@ -8,10 +8,10 @@ import numpy as np
 import pytest
 
 from intergrax.knowledge.contracts import KnowledgeDocument
+from intergrax.rag.retrieval.hit_chunk_adapter import retrieval_hit_to_chunk
 from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrievalHit,
     RetrievalResult,
-    retrieval_hit_to_chunk,
 )
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreHit
 

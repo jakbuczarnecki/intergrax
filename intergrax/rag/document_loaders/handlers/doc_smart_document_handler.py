@@ -9,7 +9,7 @@ from typing import List
 
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG, DoclingMode
 from intergrax.rag.document_loaders.contracts.base_document_handler import (
-    BaseDocumentHandler,
+    PipelineDocumentHandler,
 )
 from intergrax.rag.document_loaders.contracts.base_document_parser import (
     BaseDocumentParser,
@@ -18,7 +18,7 @@ from intergrax.rag.document_loaders.parsers.doc_smart_parser import EXTRACTION_S
 from intergrax.rag.document_loaders.parsers.docling_local_parser import DoclingLocalParser
 from intergrax.rag.document_loaders.parsers.docling_server_parser import DoclingServerParser
 
-class DocSmartDocumentHandler(BaseDocumentHandler):
+class DocSmartDocumentHandler(PipelineDocumentHandler):
 
     def __init__(self, extraction_strategy: EXTRACTION_STRATEGY = "auto") -> None:
         self._extraction_strategy = extraction_strategy

@@ -7,12 +7,12 @@ from __future__ import annotations
 from typing import List
 
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
-from intergrax.rag.document_loaders.contracts.base_document_handler import BaseDocumentHandler
+from intergrax.rag.document_loaders.pipeline.document_handler_loading import PipelineDocumentHandler
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.parsers.text_smart_parser import TextLoaderParser
 
 
-class TextSmartDocumentHandler(BaseDocumentHandler):
+class TextSmartDocumentHandler(PipelineDocumentHandler):
 
     def supports(self, source: str) -> bool:
 

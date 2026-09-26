@@ -18,8 +18,8 @@ from intergrax.knowledge.contracts.document import dump_knowledge_document
 from intergrax.rag.document_loaders.compat.legacy_runtime_document import (
     get_parser_native_handle,
 )
-from intergrax.rag.document_loaders.contracts.base_document_handler import (
-    BaseDocumentHandler,
+from intergrax.rag.document_loaders.contracts.base_document_handler import BaseDocumentHandler
+from intergrax.rag.document_loaders.pipeline.document_handler_loading import (
     _fragment_to_knowledge_document,
     _resolve_source_kind,
 )
