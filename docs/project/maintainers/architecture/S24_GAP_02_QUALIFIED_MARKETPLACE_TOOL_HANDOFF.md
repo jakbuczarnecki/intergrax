@@ -4,10 +4,11 @@
 
 | Field | Value |
 | ----- | ----- |
-| **Task** | `S24-GAP-02-P0` (architecture lock) · `S24-GAP-02-P0-R1` (typed invocation material boundary correction) · **`S24-GAP-02-P2-P0`** (tenant-safe qualification subject resolution) · **`S24-GAP-02-P2-P0-R1`** (tenant-distinct Marketplace handoff identity correction) · **`S24-GAP-02-P3-P0`** (canonical invocation intent propagation) |
+| **Task** | `S24-GAP-02-P0` (architecture lock) · `S24-GAP-02-P0-R1` (typed invocation material boundary correction) · **`S24-GAP-02-P2-P0`** (tenant-safe qualification subject resolution) · **`S24-GAP-02-P2-P0-R1`** (tenant-distinct Marketplace handoff identity correction) · **`S24-GAP-02-P3-P0`** (canonical invocation intent propagation) · **`S24-GAP-02-P3-P0-R1`** (deterministic pre-EE tool execution intent recording correction) |
 | **Pre-audit baseline** | `4958c7e4bae6d18308426c6dc70d6595d67a4d5f` |
-| **Lock audit HEAD** | `d28b6f81cd721ca0ab2bbac002a78421073b9735` (P0) · **P0-R1** invocation boundary · **P2-P0** tenant resolution · **P2-P0-R1** handoff identity + association model (see §23) · **P3-P0** invocation intent (see §25) |
-| **P3-P0 session HEAD** | `1b7f7dd811dc0b548470bf7c372c48fabdbcadd7` (`development` == `origin/development`) |
+| **Lock audit HEAD** | `d28b6f81cd721ca0ab2bbac002a78421073b9735` (P0) · **P0-R1** invocation boundary · **P2-P0** tenant resolution · **P2-P0-R1** handoff identity + association model (see §23) · **P3-P0** invocation intent (see §25) · **P3-P0-R1** pre-EE intent hook (see §25.2) |
+| **P3-P0 session HEAD** | `d3a85c83910c858a78fc8b243cd42b73e3491f29` (P3-P0 lock commit) |
+| **P3-P0-R1 audit baseline** | `d3a85c83910c858a78fc8b243cd42b73e3491f29` — code evidence from **committed** `development` at correction time (local WIP under `intergrax/runtime/execution/**` is not architecture evidence) |
 | **Branch** | `development` |
 | **Diff since pre-audit** | Qualification harness / roadmap docs only — **no** Marketplace handoff, UCA, ToolRuntime, or EE production changes (P3-P0: **docs only**) |
 | **Artifact role** | Closed-world design record before `S24-GAP-02-P1` implementation; **P2-P0 / P2-P0-R1** extend lock before `S24-GAP-02-P2` providers; **P3-P0** extends lock before `S24-GAP-02-P3` execution handler |
@@ -803,22 +804,23 @@ Ordering evidence: staging consumer runs in Marketplace delivery before UCA retu
 
 ---
 
-## 25. P3 Canonical Invocation Intent Propagation (`S24-GAP-02-P3-P0`)
+## 25. P3 Canonical Invocation Intent Propagation (`S24-GAP-02-P3-P0` · `S24-GAP-02-P3-P0-R1`)
 
 **Scope:** architecture lock only — **no** P3 production/tests in this step.
 
-**Session evidence:** audit performed at `1b7f7dd811dc0b548470bf7c372c48fabdbcadd7`. Uncommitted working-tree drift under `intergrax/runtime/execution/**` was present at lock time; conclusions below cite **committed** symbols at that HEAD (not local WIP).
+**Session evidence:** **P3-P0** at `d3a85c83910c858a78fc8b243cd42b73e3491f29`; **P3-P0-R1** corrects §25.2 pre-EE hook against the same committed AW/contract symbols. Uncommitted working-tree drift under `intergrax/runtime/execution/**` is not architecture evidence.
 
 ### 25.1 Required verdict
 
 ```text
-P3 INVOCATION INTENT
-= NEW TYPED DURABLE TOOL EXECUTION INTENT REQUIRED
+S24-GAP-02-P3
+CLASS B
 
-CLASS A/B
-NO UCA REOPEN
-NO EE REOPEN
+UCA REOPEN = NO
+EE REOPEN = NO
 ```
+
+**P3 invocation intent:** new typed durable Tool execution intent + Tool-domain contracts/repository/provider/handler (extension). **AW:** optional `QualifiedCapabilityExecutionIntentPreparationPort` on `WorkerCapabilityFulfillmentCoordinator` (composition). **Frozen:** `WorkerQualifiedCapabilityResumeRequest`, `WorkerQualifiedCapabilityExecutionRequest`, `QualifiedCapabilityExecutionIntakePayload`, `BoundCapabilityExecutionDispatchRequest`, EE lifecycle, execution identity ownership, qualification/binding semantics — unchanged unless **Class C** triggers fire (§25.2.6).
 
 Rationale: `BoundCapabilityExecutionDispatchRequest` correctly stays minimal; `QualifiedCapabilityExecutionIntakePayload` / `WorkerQualifiedCapabilityExecutionRequest` already carry `worker_need_id` but the binding handler SPI does **not**. There is **no** public `worker_need_id → WorkerCapabilityNeed` read port. Handler restart cannot rely on in-memory AW state or forbidden string parsing of `worker_need_id`. A Tool-owned durable sidecar keyed by `execution_request_id` is required without changing frozen EE dispatch semantics.
 
@@ -832,11 +834,122 @@ Rationale: `BoundCapabilityExecutionDispatchRequest` correctly stays minimal; `Q
 | EE intake (full provenance) | `intergrax/runtime/execution/qualified_capability_execution_dispatch_service.py` | `_build_intake_payload` → `QualifiedCapabilityExecutionIntakePayload` | EE ingress | **Not present** — only `worker_need_id` |
 | Handler SPI | `intergrax/runtime/execution/qualified_capability_execution_runtime_delegate.py` | `QualifiedCapabilityExecutionRuntimeDelegate.execute` → `BoundCapabilityExecutionDispatchRequest` | EE | **Not present** |
 
-**Last production point with full typed need in memory on the Marketplace qualified resume path:** `WorkerCapabilityFulfillmentCoordinator._fulfill_qualified*` immediately before `WorkerQualifiedCapabilityResumeRequest` construction.
+**Last production point with full typed `WorkerCapabilityNeed` in memory (Marketplace qualified resume path):** `WorkerCapabilityFulfillmentCoordinator._fulfill_qualified` / `_fulfill_qualified_async` — locals `need`, `qualification`, `worker_need_id`, `resume_operation_id` after `qualification.outcome == QUALIFIED` and **before** `self._resume.resume` / `resume_async`.
 
-**Last point before EE where `execution_request_id` is known:** `WorkerQualifiedCapabilityResumeCoordinator._prepare_execution_handoff` after `derive_qualified_capability_execution_request_id` and before `_execution.execute` / async equivalent.
+**Where EE first admits execution (unchanged):** `WorkerQualifiedCapabilityResumeCoordinator` → `_prepare_execution_handoff` → `derive_qualified_capability_execution_request_id` → `WorkerQualifiedCapabilityExecutionPort.execute`. Resume coordinator **re-derives** the same public ids; it does **not** receive full need on frozen resume types.
 
-**P3 write hook (frozen):** record invocation intent **after** `execution_request_id` is minted and **before** `WorkerQualifiedCapabilityExecutionPort.execute` admits to EE. Composition MUST supply the in-memory `WorkerCapabilityNeed` into the intent builder (fulfillment coordinator owns the need; resume coordinator does not carry it on `WorkerQualifiedCapabilityResumeRequest`).
+**P3 write hook (frozen — `S24-GAP-02-P3-P0-R1`):** file `intergrax/autonomous_work/worker_capability_fulfillment_coordinator.py`, methods `_fulfill_qualified` / `_fulfill_qualified_async`, **after** `QUALIFIED` and after `need`, `worker_need_id`, and `resume_operation_id` are available, **after** pre-EE canonical `execution_request_id` derivation (§25.2.1), call optional `QualifiedCapabilityExecutionIntentPreparationPort.prepare(...)`, then **before** `WorkerQualifiedCapabilityResumeRequest` construction and **before** `self._resume.resume(...)`. Full need meets canonical `execution_request_id` **here** — not via frozen resume/EE request fields.
+
+#### 25.2.1 Pre-EE canonical execution identity (single algorithm)
+
+Fulfillment coordinator MUST **reuse** the same public derivation functions as `WorkerQualifiedCapabilityResumeCoordinator` (`intergrax/autonomous_work/worker_qualified_capability_resume_coordinator.py`). **Forbidden:** local reimplementation of binding/execution id formulas.
+
+| Step | Public function | Module |
+| ---- | --------------- | ------ |
+| Qualified subject | `qualified_capability_subject_from_result(qualification)` | `intergrax/contracts/capability_qualification/qualified_subject.py` |
+| Binding operation id | `derive_qualified_capability_binding_operation_id(resume_operation_id=..., qualified_subject_reference=...)` | `intergrax/contracts/capability_qualification/qualified_capability_binding.py` |
+| Execution request id | `derive_qualified_capability_execution_request_id(resume_operation_id=..., binding_operation_id=...)` | `intergrax/contracts/autonomous_work/worker_qualified_capability_resume.py` |
+
+Frozen sequence in `_fulfill_qualified*` (conceptual):
+
+```text
+subject = qualified_capability_subject_from_result(qualification)
+binding_operation_id = derive_qualified_capability_binding_operation_id(
+    resume_operation_id=resume_operation_id,
+    qualified_subject_reference=subject.qualified_subject_reference,
+)
+execution_request_id = derive_qualified_capability_execution_request_id(
+    resume_operation_id=resume_operation_id,
+    binding_operation_id=binding_operation_id,
+)
+```
+
+Pre-EE derivation uses qualification facts only; binding may still fail later (`BLOCKED`, `UNAVAILABLE`, `FAILED`, `HITL`). The id is still deterministic for that qualified subject. Resume coordinator MUST produce **identical** `binding_operation_id` and `execution_request_id` when execution handoff proceeds (§25.2.7).
+
+#### 25.2.2 Generic intent preparation extension seam
+
+**Contract owner:** AW → Tool execution boundary (suggested: `intergrax/contracts/tools/qualified_capability_execution_intent_preparation.py` — final path/naming at implementation).
+
+**Implementation owner:** Tool domain (Marketplace qualified Tool provider + `QualifiedMarketplaceToolExecutionIntentRepository`).
+
+**Injection (frozen shape):**
+
+```text
+WorkerCapabilityFulfillmentCoordinator(
+    ...
+    intent_preparation: QualifiedCapabilityExecutionIntentPreparationPort | None = None,
+)
+```
+
+`prepare(...)` accepts **typed facts** — prefer **not** passing the whole `WorkerCapabilityFulfillmentRequest`. Minimum inputs include: `need`, `qualification_result`, `execution_request_id`, `tenant_id`, `task_id`, `worker_need_id`, `resume_operation_id`; optional `binding_operation_id`, `handoff_id`, correlation fields when needed for durable intent integrity.
+
+**Outcomes (conceptual):**
+
+| Outcome | AW behavior |
+| ------- | ----------- |
+| `NOT_APPLICABLE` | Non-Marketplace qualified capability kinds/providers — continue existing resume path (CodeCraft unchanged) |
+| Success (`CREATED` / `ALREADY_RECORDED_IDENTICAL`) | Proceed to `self._resume.resume(...)` |
+| `UNAVAILABLE`, `CONFLICT`, `INTEGRITY_FAILURE`, `INVALID_OPERATION` | **Fail closed** — **do not** call `resume()` on Marketplace qualified Tool path (§25.2.4) |
+
+Marketplace Tool provider (inside Tool domain, not AW):
+
+- Recognizes qualified subject for `marketplace.tool.qualified_binding.v1` (frozen kind string at implementation).
+- `need.required_operations` + staged Marketplace Tool → `QualifiedMarketplaceToolOperationSelector` → `selected_operation` (§25.4).
+- Persists `QualifiedMarketplaceToolExecutionIntent` (§25.7) — **does not** copy full `WorkerCapabilityNeed`.
+
+**Forbidden in `WorkerCapabilityFulfillmentCoordinator`:** Marketplace/Asterion branches; imports of `DocumentStoreQualifiedMarketplaceToolExecutionIntentRepository`, `DynamicToolAcquisitionService`, `ToolRuntime`, or other Tool-runtime implementations.
+
+#### 25.2.3 Orphan intent semantics and retention
+
+Recorded execution intent is **inert data** — not authority, not admission, not activation, not permission. A stored intent **cannot** start Tool execution. `MarketplaceToolQualifiedCapabilityExecutionHandler` may load intent **only** when EE delivers `BoundCapabilityExecutionDispatchRequest` with:
+
+```text
+intent.execution_request_id == dispatch.execution_request_id
+intent.tenant_id == dispatch.tenant_id
+intent.qualified_subject_reference == dispatch.execution_target.qualified_subject_reference
+```
+
+If intent carries `task_id`: `intent.task_id == dispatch.task_id`. Mismatch → handler disposition `FAILED` (§25.15).
+
+Binding/resume may complete without EE execution; intent may remain **orphan** audit evidence. **Retention (preferred):** immutable append/idempotent store under existing backing retention — same `ConditionalDocumentStore` pattern as `DocumentStoreMarketplaceQualifiedToolStageRepository` / stage association repos. **No** P3 delete-on-binding-failure; **no** new garbage-collector framework.
+
+#### 25.2.4 Pre-resume intent failure → `WorkerCapabilityFulfillmentDisposition`
+
+When `intent_preparation` is configured and the provider returns a failure outcome (not `NOT_APPLICABLE`) for a Marketplace qualified Tool subject, fulfillment **MUST NOT** invoke `self._resume.resume` / `resume_async`.
+
+| Preparation failure | `WorkerCapabilityFulfillmentDisposition` |
+| ------------------- | ---------------------------------------- |
+| `UNAVAILABLE` | `DISCOVERY_UNAVAILABLE` |
+| `CONFLICT` | `DISCOVERY_CONFLICT` |
+| `INTEGRITY_FAILURE` | `FAIL_CLOSED` |
+| `INVALID_OPERATION` | `FAIL_CLOSED` |
+
+No new global fulfillment disposition enum members for P3.
+
+#### 25.2.5 `WorkerQualifiedCapabilityResumeCoordinator` unchanged
+
+Hard requirement: **no** new fields on resume coordinator; **no** full-need dependency. Production semantics unchanged — coordinator continues to derive `subject`, `binding_operation_id`, `execution_request_id` via the same public functions during binding/execution handoff. Later re-derivation is the end-to-end integrity check (§25.2.7).
+
+#### 25.2.6 Class C reopen triggers
+
+**STOP** — classify **CLASS C CANDIDATE · ARCHITECTURE REOPEN** if implementation requires:
+
+- Field addition/change on `WorkerQualifiedCapabilityResumeRequest`, `WorkerQualifiedCapabilityExecutionRequest`, `QualifiedCapabilityExecutionIntakePayload`, or `BoundCapabilityExecutionDispatchRequest`;
+- EE lifecycle change, execution identity ownership change, or qualification/binding semantic change.
+
+#### 25.2.7 P3 execution identity test invariant (future implementation)
+
+```text
+execution_request_id predicted in WorkerCapabilityFulfillmentCoordinator (pre-resume)
+==
+execution_request_id derived in WorkerQualifiedCapabilityResumeCoordinator execution handoff
+==
+execution_request_id on BoundCapabilityExecutionDispatchRequest at EE handler
+```
+
+#### 25.2.8 Sync and async qualified fulfillment
+
+Identical pre-EE preparation semantics in `_fulfill_qualified` and `_fulfill_qualified_async`. Intent `record` may remain synchronous when the repository contract is synchronous and the coordinator follows existing sync/async split. If intent persistence requires a new async-only repository API → **architecture STOP** (separate design).
 
 ### 25.3 Q2 — public read by `worker_need_id`
 
@@ -1001,30 +1114,32 @@ Canonical handler port: `ExecutionBoundCatalogToolInvoker` (`intergrax/contracts
 ### 25.16 Updated P3 execution flow
 
 ```text
-WorkerCapabilityNeed (AW — in memory at fulfillment)
-    → Tool-domain operation selector (fail closed if >1 without policy)
-    → QualifiedMarketplaceToolExecutionIntent
-    → durable intent repository (record before EE)
+WorkerCapabilityFulfillmentCoordinator
+    has full WorkerCapabilityNeed (in memory)
+    → derive resume_operation_id
+    → qualified_capability_subject_from_result(qualification)
+    → derive binding_operation_id (canonical public function)
+    → derive execution_request_id (canonical public function)
+    → QualifiedCapabilityExecutionIntentPreparationPort (optional; Tool provider for Marketplace)
+        → QualifiedMarketplaceToolOperationSelector
+        → durable QualifiedMarketplaceToolExecutionIntent (record before resume)
+    → existing self._resume.resume(...)  [frozen WorkerQualifiedCapabilityResumeRequest — no full need]
 WorkerQualifiedCapabilityResumeCoordinator
-    → WorkerQualifiedCapabilityExecutionEngineAdapter
-    → QualifiedCapabilityExecutionDispatchService (EE admission)
-QualifiedCapabilityExecutionRuntimeDelegate
-    → BoundCapabilityExecutionDispatchRequest (minimal)
+    → re-derives same binding_operation_id / execution_request_id (canonical public functions)
+    → EE admission
+QualifiedCapabilityExecutionDispatchService
+    → BoundCapabilityExecutionDispatchRequest (minimal — frozen)
 MarketplaceToolQualifiedCapabilityExecutionHandler
-    → load intent + stage
-    → DynamicToolAcquisitionPort (post-qualification activation)
-    → QualifiedToolInvocationMaterialProvider
-    → QualifiedToolInvocationResolver
-    → ExecutionBoundCatalogToolInvokeRequest
-    → ExecutionBoundCatalogToolInvoker
-    → QualifiedCapabilityExecutionDelegateResult
+    → intent lookup by execution_request_id + integrity checks (§25.2.3)
+    → stage + post-qualification activation + material + resolver + ToolRuntime
 ```
 
 ### 25.17 P3 implementation scope (post-lock)
 
 **Contracts**
 
-- `intergrax/contracts/tools/qualified_marketplace_tool_execution_intent.py`
+- `intergrax/contracts/tools/qualified_marketplace_tool_execution_intent.py` — `QualifiedMarketplaceToolExecutionIntent` minimum: `execution_request_id`, `tenant_id`, `qualified_subject_reference`, `selected_operation`, `worker_need_id`; optional `binding_operation_id`, `task_id`, `handoff_id` when needed for material/integrity
+- `intergrax/contracts/tools/qualified_capability_execution_intent_preparation.py` — `QualifiedCapabilityExecutionIntentPreparationPort` + typed preparation outcomes (`NOT_APPLICABLE`, success, failure vocabulary)
 - Extend `intergrax/contracts/tools/qualified_tool_invocation.py` (material + resolver + material request identity)
 - Optional: `qualified_marketplace_tool_operation_selection.py` if >1 operation policy is required before CERT
 
@@ -1032,18 +1147,34 @@ MarketplaceToolQualifiedCapabilityExecutionHandler
 
 - `intergrax/tools/qualified_marketplace_tool_execution_intent_repository.py`
 - `intergrax/tools/qualified_marketplace_tool_operation_selector.py`
+- Marketplace Tool `QualifiedCapabilityExecutionIntentPreparationPort` implementation (provider)
 - `intergrax/tools/marketplace_qualified_capability_execution_handler.py`
 - Composition: `intergrax/tools/marketplace_qualified_capability_execution_composition.py` (or application shared wiring sibling)
 
-**AW wiring (composition only — no frozen dataclass field changes)**
+**AW (minimal production touch — no frozen resume/EE request field changes)**
 
-- Inject intent recorder into resume/fulfillment composition so need + `execution_request_id` are available at §25.2 hook
+- `intergrax/autonomous_work/worker_capability_fulfillment_coordinator.py` — optional port call at §25.2 hook; pre-EE id derivation via public functions only
+- Fulfillment coordinator factory/composition sibling (inject `intent_preparation` provider)
+- **Not** `worker_qualified_capability_resume_coordinator.py` for production semantics (test instrumentation only if needed)
 
-**Tests**
+**Tests (P3 minimum)**
 
 - `tests/unit/tools/test_qualified_marketplace_tool_execution_intent.py`
 - `tests/unit/tools/test_marketplace_qualified_capability_execution_handler.py`
-- Extend binding/qualification tests only for intent ordering gates
+- Coordinator / composition tests for §25.2 hook and identity chain
+
+**Future P3 test gates (required before CERT)**
+
+1. Coordinator without `intent_preparation` → existing paths unchanged
+2. Non-Marketplace qualified subject → preparation `NOT_APPLICABLE`; resume proceeds
+3. Marketplace Tool → intent recorded **before** `resume()` call
+4. Intent `CONFLICT` → `resume()` **not** called
+5. Intent `UNAVAILABLE` → `resume()` **not** called
+6. `selected_operation` copied exactly from selector into durable intent
+7. Predicted pre-resume `execution_request_id` == resume coordinator `execution_request_id`
+8. `_fulfill_qualified` vs `_fulfill_qualified_async` — identical execution identity
+9. CodeCraft qualified path regression unchanged
+10. No field changes on frozen EE/resume dispatch request types
 
 ### 25.18 Contract purity (P3-P0 confirmation)
 
