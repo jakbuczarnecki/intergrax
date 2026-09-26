@@ -30,7 +30,7 @@ from intergrax.memory.memory_diagnostic_emitter import MemoryDiagnosticEmitter
 from intergrax.memory.user_profile_memory_lifecycle import UserProfileMemoryLifecycleCoordinator
 from intergrax.memory.memory_vector_namespace import LTM_INDEX_DOMAIN, resolve_memory_index_collection
 from intergrax.memory.user_profile_store import UserProfileStore
-from intergrax.rag.embedding.embedding_manager import EmbeddingManager
+from intergrax.rag.embedding.contracts.base_embedding_manager import BaseEmbeddingManager
 from intergrax.rag.profiles.rag_profile import RagProfile
 from intergrax.rag.retrieval.retrieval_request import RetrievalRequest
 
@@ -45,7 +45,7 @@ def _require_user_identity_match(identity: RequestIdentity, user_id: str) -> Req
 
 
 from intergrax.rag.retrieval.retrieval_service import RetrievalService
-from intergrax.rag.vectorstore.vectorstore_manager import VectorstoreManager
+from intergrax.rag.vectorstore.contracts.base_vectorstore_manager import BaseVectorstoreManager
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
     VectorStoreScope,
@@ -75,8 +75,8 @@ class UserProfileManager:
             self, 
             store: UserProfileStore,
             *,
-            embedding_manager: Optional[EmbeddingManager] = None,
-            vectorstore_manager: Optional[VectorstoreManager] = None,
+            embedding_manager: Optional[BaseEmbeddingManager] = None,
+            vectorstore_manager: Optional[BaseVectorstoreManager] = None,
             retrieval_service: Optional[RetrievalService] = None,
             rag_profile: Optional[RagProfile] = None,
             longterm_top_k: int = 6,
@@ -256,6 +256,9 @@ class UserProfileManager:
                 top_k=k,
                 score_threshold=thr,
             )
+
+        if self._embedding_manager is None or self._vectorstore_manager is None:
+            raise RuntimeError("long-term memory vector dependencies are not configured")
 
         # Embed query
         q_emb = self._embedding_manager.embed_texts([q])

@@ -4,8 +4,9 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import Optional
 
 from intergrax.core.plugins.admission import DomainPluginLoadReport
@@ -28,7 +29,7 @@ from intergrax.runtime.persistence.sqlite_composition import (
     SQLiteRuntimePersistenceBundle,
     create_sqlite_runtime_persistence,
 )
-from intergrax.integrations.registry.profile import IntegrationProfile
+from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.memory.stores.document_store_user_profile_store import (
     DocumentStoreUserProfileStore,
 )
@@ -311,8 +312,19 @@ def _resolve_baseline_memory_platform_wiring(
         long_horizon_source_authority=long_horizon_source_authority,
     )
     if _sqlite_enabled(profile):
+        sqlite_overrides = _sqlite_integration_overrides(profile)
+        raw_data_dir = sqlite_overrides.get("data_dir")
+        data_dir: Path | str | None = (
+            raw_data_dir if isinstance(raw_data_dir, (str, Path)) else None
+        )
+        sqlite_config = {
+            key: value
+            for key, value in sqlite_overrides.items()
+            if key != "data_dir"
+        }
         bundle = create_sqlite_runtime_persistence(
-            **_sqlite_integration_overrides(profile)
+            data_dir=data_dir,
+            **sqlite_config,
         )
         return MemoryPlatformWiring(
             session_storage=bundle.session_storage,
@@ -329,8 +341,28 @@ def _resolve_baseline_memory_platform_wiring(
         )
 
     if _mongodb_enabled(profile):
+        mongo_overrides = _mongodb_integration_overrides(profile)
+        raw_document_store = mongo_overrides.get("document_store")
+        document_store_override: DocumentStore | None = (
+            raw_document_store
+            if isinstance(raw_document_store, DocumentStore)
+            else None
+        )
+        raw_collection_factory = mongo_overrides.get("collection_factory")
+        collection_factory: Callable[[], object] | None = (
+            raw_collection_factory
+            if callable(raw_collection_factory)
+            else None
+        )
+        mongo_config = {
+            key: value
+            for key, value in mongo_overrides.items()
+            if key not in {"document_store", "collection_factory"}
+        }
         mongo_bundle = create_mongodb_integration(
-            **_mongodb_integration_overrides(profile)
+            document_store=document_store_override,
+            collection_factory=collection_factory,
+            **mongo_config,
         )
         document_store: DocumentStore = mongo_bundle.document_store.as_document_store()
         document_store_backing = _document_store_backing_provider_id(profile)

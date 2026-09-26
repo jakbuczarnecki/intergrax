@@ -13,6 +13,7 @@ from numpy.typing import NDArray
 from intergrax.knowledge.contracts import KnowledgeDocument
 from intergrax.rag.vectorstore.contracts.native_vectorstore import (
     MetadataFilter,
+    VectorStoreContractError,
     VectorStoreHit,
     VectorStoreRecord,
     VectorStoreScope,
@@ -103,6 +104,18 @@ class BaseVectorstoreManager(ABC):
     @abstractmethod
     def count(self, *, scope: VectorStoreScope | None = None) -> int:
         raise NotImplementedError
+
+    def list_vector_ids_by_metadata(
+        self,
+        *,
+        scope: VectorStoreScope | None = None,
+        metadata_filter: MetadataFilter | None = None,
+        limit: int = 10_000,
+    ) -> Sequence[str]:
+        """List persisted vector IDs within scope matching the metadata filter."""
+        raise VectorStoreContractError(
+            "provider does not support scoped metadata listing"
+        )
 
     def supports_native_hybrid_search(self) -> bool:
         """Return whether this manager can execute provider-native hybrid search."""
