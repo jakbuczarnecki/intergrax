@@ -11,7 +11,7 @@ Asterion Industrial Systems is executing a cross-border fulfillment for a €1.8
 
 Retrying the same call does not restore service. Restarting the workflow from the beginning risks duplicating reservations, fees, and compliance artifacts. Blindly patching JSON or generating a new adapter without qualification can execute the wrong business meaning. Quietly requesting broader credentials changes who the system is allowed to act as.
 
-This scenario asks whether an autonomous fulfillment application can recover **capability**—not theater—while preserving control of authority, qualification, governance, execution boundaries, and prior material business effects. The impressive part is not that the system generated an adapter. **The impressive part is that it knew when it should NOT generate one.**
+This scenario asks whether an autonomous fulfillment application can recover **capability**—not theater—while preserving control of authority, qualification, governance, execution boundaries, and prior material business effects. The impressive part is not that the system generated an adapter. **The impressive part is that it knew when it should NOT generate one.** And when the capability really is missing, **the system must prove the gap before it is allowed to acquire anything.**
 
 ## At a glance
 
@@ -55,7 +55,7 @@ The scenario requires distinguishing configuration, reuse, scoped adaptation, du
 
 ## What the proof claims
 
-When a required external integration becomes incompatible during an already-progressing business workflow, the application does not silently substitute behavior, broaden authority, execute an unqualified capability, or replay completed material effects. It resolves the need through canonical discovery, acquisition (only when justified), qualification, binding, and governed execution—or stops with an auditable BLOCKED/UNRESOLVED outcome.
+When a required external integration becomes incompatible during an already-progressing business workflow, the application does not silently substitute behavior, broaden authority, execute an unqualified capability, or replay completed material effects. It resolves the need through canonical discovery, **acquisition only for a proven true capability gap**, qualification, binding, and governed execution—or stops with an auditable BLOCKED/UNRESOLVED outcome. **Production-change and authority-change outcomes are escalation boundaries, not executable acquisition successes.**
 
 Full claim and contracts in [Scenario Specification § B](SCENARIO_SPEC.md#b-solution).
 
@@ -63,7 +63,8 @@ Full claim and contracts in [Scenario Specification § B](SCENARIO_SPEC.md#b-sol
 
 | PASS | FAIL |
 | --- | --- |
-| Per-variant correct disposition (reuse, configure, adapt, escalate, authority block, or no safe capability) with canonical evidence | Acquisition before discovery, wrong gap class, unqualified execution, authority growth, duplicated business effects, or proof-owned business decisions |
+| Per-variant correct disposition (reuse, configure, **canonical true-gap UCA success (C)**, scoped adaptation boundary, production/authority escalate, no safe capability, or H-routed evidence) with canonical evidence | Acquisition before discovery, true gap omitted, generic acquisition bypassed, **A3 treated as successful acquisition**, **A4 treated as authority grant**, unqualified execution, authority growth, duplicated business effects, or proof-owned business decisions |
+| **Variant C:** complete discovery proves `MISSING_CAPABILITY`; CapabilityGap; acquisition only for true gap; qualification; binding ≠ execute; Execution Engine + ExecutionIdentityAuthority + ToolRuntime; business responsibility continues | Production change executed directly by UCA/AW; authority widened by UCA/AW |
 | Prior material steps not replayed; ToolRuntime + Execution Engine boundaries preserved | Restart-from-step-1 replay, direct ToolRuntime bypass, fake application path |
 
 Full normative PASS/FAIL contract in [Scenario Specification § B](SCENARIO_SPEC.md#pass).
@@ -72,8 +73,9 @@ Full normative PASS/FAIL contract in [Scenario Specification § B](SCENARIO_SPEC
 
 | Outcome | Meaning |
 | --- | --- |
-| **RESOLVED** | Original business responsibility continues after lawful capability restoration (variants A–D as applicable) |
-| **UNRESOLVED** | BLOCKED terminal state with auditable rationale when safe capability or authority cannot be obtained (variants E–F; variant G may resolve or block depending on evidence) |
+| **RESOLVED** | Original business responsibility continues after lawful capability restoration — **A**, **B**, **C** (canonical true-gap UCA path); **D** only if future FIT proves a qualified canonical scoped-adaptation path |
+| **ESCALATED / UNRESOLVED** | **E** — durable production change required; current recovery cannot autonomously complete. **F** — authority change required; no autonomous authority growth. **G** — no safe capability / BLOCKED |
+| **H (routing)** | Semantic false compatibility detected; routes to whichever **A–G** outcome is justified by evidence — not a separate acquisition type |
 
 ## Latest verified run
 
