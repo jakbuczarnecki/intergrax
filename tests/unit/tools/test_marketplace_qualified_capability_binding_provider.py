@@ -102,7 +102,7 @@ def _binding_stack(
     *,
     tenant_id: str = "tenant-1",
     acquisition_id: str = "acq-bind",
-) -> tuple[MarketplaceToolQualifiedCapabilityBindingProvider, str, str]:
+) -> tuple[MarketplaceToolQualifiedCapabilityBindingProvider, str, str, InMemoryDocumentStore]:
     store = InMemoryDocumentStore()
     stage_repo = DocumentStoreMarketplaceQualifiedToolStageRepository(store)
     assoc_repo = DocumentStoreMarketplaceQualifiedToolStageContextAssociationRepository(
@@ -136,7 +136,12 @@ def _binding_stack(
             recorded_at=_NOW,
         ),
     )
-    return provider, acquisition_id, marketplace_domain_handoff_reference(handoff_id)
+    return (
+        provider,
+        acquisition_id,
+        marketplace_domain_handoff_reference(handoff_id),
+        store,
+    )
 
 
 def _subject(domain_ref: str, qualification_request_id: str = "qual-req-1") -> QualifiedCapabilitySubject:
@@ -180,7 +185,7 @@ def _qualification(
 
 
 def test_qualified_domain_handoff_bound() -> None:
-    provider, acquisition_id, domain_ref = _binding_stack()
+    provider, acquisition_id, domain_ref, _ = _binding_stack()
     subject = _subject(domain_ref)
     binding_id = derive_qualified_capability_binding_operation_id(
         resume_operation_id="resume-1",
@@ -214,7 +219,7 @@ def test_qualified_domain_handoff_bound() -> None:
 
 
 def test_tenant_mismatch_subject_mismatch() -> None:
-    provider, acquisition_id, domain_ref = _binding_stack(tenant_id="tenant-1")
+    provider, acquisition_id, domain_ref, _ = _binding_stack(tenant_id="tenant-1")
     subject = _subject(domain_ref)
     binding_id = derive_qualified_capability_binding_operation_id(
         resume_operation_id="resume-1",
@@ -300,7 +305,7 @@ def test_stage_integrity_maps_to_integrity_conflict() -> None:
 
 
 def test_repeated_identical_binding_same_target() -> None:
-    provider, acquisition_id, domain_ref = _binding_stack()
+    provider, acquisition_id, domain_ref, _ = _binding_stack()
     subject = _subject(domain_ref)
     binding_id = derive_qualified_capability_binding_operation_id(
         resume_operation_id="resume-1",

@@ -53,6 +53,20 @@ def execution_target_reference_for_marketplace_qualified_tool(handoff_id: str) -
     return f"{_EXECUTION_TARGET_PREFIX}{normalized}"
 
 
+def parse_marketplace_qualified_tool_execution_target_reference(
+    reference: str,
+) -> str | None:
+    from intergrax.contracts.capability_catalog._validation import require_non_empty_text
+
+    if not reference.startswith(_EXECUTION_TARGET_PREFIX):
+        return None
+    handoff_id = reference[len(_EXECUTION_TARGET_PREFIX) :]
+    try:
+        return require_non_empty_text(handoff_id, label="handoff_id")
+    except (TypeError, ValueError):
+        return None
+
+
 class MarketplaceToolQualifiedCapabilityBindingProvider:
     """Bind qualified Marketplace Tool handoffs to opaque execution targets — no activation."""
 
@@ -242,4 +256,5 @@ __all__ = [
     "MARKETPLACE_TOOL_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID",
     "MarketplaceToolQualifiedCapabilityBindingProvider",
     "execution_target_reference_for_marketplace_qualified_tool",
+    "parse_marketplace_qualified_tool_execution_target_reference",
 ]
