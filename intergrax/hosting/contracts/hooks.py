@@ -18,8 +18,6 @@ from intergrax.hosting.contracts.public_data import (
     validate_bounded_priority,
     validate_positive_bounded_seconds,
 )
-from intergrax.contracts import vendor_attribute_access as attribute_access
-
 if TYPE_CHECKING:
     from intergrax.hosting.contracts.context import HostedApplicationContext
 
@@ -182,7 +180,21 @@ class HostedApplicationHooks(BaseModel):
         return self
 
     def hooks_for_point(self, point: HostedApplicationHookPoint) -> tuple[HostedApplicationHook, ...]:
-        return attribute_access.optional(self, point.value)
+        if point is HostedApplicationHookPoint.BEFORE_START:
+            return self.before_start
+        if point is HostedApplicationHookPoint.BEFORE_READY:
+            return self.before_ready
+        if point is HostedApplicationHookPoint.BEFORE_STOP:
+            return self.before_stop
+        if point is HostedApplicationHookPoint.AFTER_START:
+            return self.after_start
+        if point is HostedApplicationHookPoint.AFTER_READY:
+            return self.after_ready
+        if point is HostedApplicationHookPoint.AFTER_STOP:
+            return self.after_stop
+        if point is HostedApplicationHookPoint.ON_FAILURE:
+            return self.on_failure
+        raise ValueError(f"unsupported hook point: {point}")
 
     def flattened_public_descriptors(self) -> tuple[HostedApplicationHookPublicDescriptor, ...]:
         descriptors: list[HostedApplicationHookPublicDescriptor] = []
