@@ -31,6 +31,7 @@ from intergrax.contracts.marketplace.handoff_traceability import (
     CapabilityHandoffConsumerTarget,
 )
 from intergrax.contracts.tools.marketplace_qualified_capability import (
+    MarketplaceQualifiedToolStageIntegrityError,
     MarketplaceQualifiedToolStageRepository,
     MarketplaceQualifiedToolStageUnavailableError,
 )
@@ -154,6 +155,13 @@ class MarketplaceToolCapabilityQualificationProvider:
                 request=request,
                 outcome=CapabilityQualificationOutcome.UNAVAILABLE,
                 reason_code=CapabilityQualificationReasonCode.PROVIDER_UNAVAILABLE,
+                started_at=started_at,
+            )
+        except MarketplaceQualifiedToolStageIntegrityError:
+            return _terminal(
+                request=request,
+                outcome=CapabilityQualificationOutcome.CONFLICT,
+                reason_code=CapabilityQualificationReasonCode.EVIDENCE_INCONSISTENT,
                 started_at=started_at,
             )
 

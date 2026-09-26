@@ -50,6 +50,7 @@ from intergrax.contracts.tools.marketplace_handoff_reference import (
 )
 from intergrax.contracts.tools.marketplace_qualified_capability import (
     MarketplaceQualifiedToolStage,
+    MarketplaceQualifiedToolStageIntegrityError,
 )
 from intergrax.contracts.tools.marketplace_qualified_tool_stage_context import (
     MarketplaceQualifiedToolStageContext,
@@ -236,6 +237,66 @@ def test_tenant_mismatch_subject_mismatch() -> None:
     result = provider.bind(request)
     assert result.outcome is QualifiedCapabilityBindingOutcome.CONFLICT
     assert result.reason_code is QualifiedCapabilityBindingReasonCode.SUBJECT_MISMATCH
+
+
+def test_stage_integrity_maps_to_integrity_conflict() -> None:
+    store = InMemoryDocumentStore()
+    assoc_repo = DocumentStoreMarketplaceQualifiedToolStageContextAssociationRepository(
+        store,
+    )
+    resolver = MarketplaceQualifiedToolStageContextResolverImpl(assoc_repo)
+    acquisition_id = "acq-bind-integrity"
+    handoff_id = derive_marketplace_gap_tool_handoff_id(
+        tenant_id="tenant-1",
+        operation_id=acquisition_id,
+    )
+    assoc_repo.record(
+        MarketplaceQualifiedToolStageContext(
+            handoff_id=handoff_id,
+            tenant_id="tenant-1",
+            acquisition_request_id=acquisition_id,
+        ),
+    )
+    domain_ref = marketplace_domain_handoff_reference(handoff_id)
+
+    class _IntegrityStageRepo:
+        def stage(self, record: MarketplaceQualifiedToolStage):
+            raise NotImplementedError
+
+        def get(
+            self,
+            *,
+            tenant_id: str,
+            handoff_id: str,
+        ) -> MarketplaceQualifiedToolStage | None:
+            raise MarketplaceQualifiedToolStageIntegrityError("corrupt stage")
+
+    provider = MarketplaceToolQualifiedCapabilityBindingProvider(
+        stage_repository=_IntegrityStageRepo(),
+        context_resolver=resolver,
+    )
+    subject = _subject(domain_ref)
+    binding_id = derive_qualified_capability_binding_operation_id(
+        resume_operation_id="resume-1",
+        qualified_subject_reference=subject.qualified_subject_reference,
+    )
+    request = QualifiedCapabilityBindingRequest(
+        binding_operation_id=binding_id,
+        resume_operation_id="resume-1",
+        qualified_subject=subject,
+        qualification_result=_qualification(
+            acquisition_id=acquisition_id,
+            domain_ref=domain_ref,
+        ),
+        worker_need_id="worker-need-1",
+        worker_instance_id="worker-1",
+        tenant_id="tenant-1",
+        task_id=_TASK_ID,
+        requested_at=_NOW,
+    )
+    result = provider.bind(request)
+    assert result.outcome is QualifiedCapabilityBindingOutcome.CONFLICT
+    assert result.reason_code is QualifiedCapabilityBindingReasonCode.INTEGRITY_CONFLICT
 
 
 def test_repeated_identical_binding_same_target() -> None:

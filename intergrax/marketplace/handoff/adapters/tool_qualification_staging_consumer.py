@@ -25,7 +25,9 @@ from intergrax.contracts.tools.marketplace_qualified_capability import (
     MarketplaceQualifiedToolStageUnavailableError,
 )
 from intergrax.contracts.tools.marketplace_qualified_tool_stage_context import (
+    MarketplaceQualifiedToolStageContextAssociationIntegrityError,
     MarketplaceQualifiedToolStageContextAssociationRepository,
+    MarketplaceQualifiedToolStageContextAssociationUnavailableError,
 )
 
 TOOL_QUALIFICATION_STAGING_CONSUMER_ID: Final = "tool.qualification_staging.v1"
@@ -94,7 +96,20 @@ class ToolQualificationStagingConsumer:
                 disposition=CapabilityHandoffConsumerFailureDisposition.BLOCKED,
             )
 
-        association = self._association_repository.get_by_handoff_id(envelope.handoff_id)
+        try:
+            association = self._association_repository.get_by_handoff_id(
+                envelope.handoff_id,
+            )
+        except MarketplaceQualifiedToolStageContextAssociationUnavailableError as exc:
+            raise CapabilityHandoffConsumerError(
+                str(exc),
+                disposition=CapabilityHandoffConsumerFailureDisposition.UNAVAILABLE,
+            ) from exc
+        except MarketplaceQualifiedToolStageContextAssociationIntegrityError as exc:
+            raise CapabilityHandoffConsumerError(
+                str(exc),
+                disposition=CapabilityHandoffConsumerFailureDisposition.FAILED,
+            ) from exc
         if association is None:
             raise CapabilityHandoffConsumerError(
                 "tool qualification staging requires pre-recorded handoff context",

@@ -43,6 +43,8 @@ from intergrax.contracts.tools.marketplace_handoff_reference import (
 )
 from intergrax.contracts.tools.marketplace_qualified_tool_stage_context import (
     MarketplaceQualifiedToolStageContext,
+    MarketplaceQualifiedToolStageContextAssociationIntegrityError,
+    MarketplaceQualifiedToolStageContextAssociationUnavailableError,
 )
 from intergrax.marketplace.acquisition.gap_acquisition_service import (
     marketplace_gap_selection_id,
@@ -329,6 +331,64 @@ def test_repository_integrity_failure_maps_to_failed() -> None:
             )
 
     consumer = ToolQualificationStagingConsumer(_IntegrityRepo(), _NoopAssoc())
+    with pytest.raises(CapabilityHandoffConsumerError) as exc_info:
+        consumer.consume(_envelope())
+    assert exc_info.value.disposition is CapabilityHandoffConsumerFailureDisposition.FAILED
+
+
+def test_association_backend_unavailable_maps_to_unavailable() -> None:
+    class _NoopRepo:
+        def stage(
+            self,
+            record: MarketplaceQualifiedToolStage,
+        ) -> MarketplaceQualifiedToolStageWriteResult:
+            raise NotImplementedError
+
+        def get(
+            self,
+            *,
+            tenant_id: str,
+            handoff_id: str,
+        ) -> MarketplaceQualifiedToolStage | None:
+            return None
+
+    class _UnavailableAssoc:
+        def record(self, association):
+            raise NotImplementedError
+
+        def get_by_handoff_id(self, handoff_id: str):
+            raise MarketplaceQualifiedToolStageContextAssociationUnavailableError("down")
+
+    consumer = ToolQualificationStagingConsumer(_NoopRepo(), _UnavailableAssoc())
+    with pytest.raises(CapabilityHandoffConsumerError) as exc_info:
+        consumer.consume(_envelope())
+    assert exc_info.value.disposition is CapabilityHandoffConsumerFailureDisposition.UNAVAILABLE
+
+
+def test_association_corrupted_maps_to_failed() -> None:
+    class _NoopRepo:
+        def stage(
+            self,
+            record: MarketplaceQualifiedToolStage,
+        ) -> MarketplaceQualifiedToolStageWriteResult:
+            raise NotImplementedError
+
+        def get(
+            self,
+            *,
+            tenant_id: str,
+            handoff_id: str,
+        ) -> MarketplaceQualifiedToolStage | None:
+            return None
+
+    class _IntegrityAssoc:
+        def record(self, association):
+            raise NotImplementedError
+
+        def get_by_handoff_id(self, handoff_id: str):
+            raise MarketplaceQualifiedToolStageContextAssociationIntegrityError("corrupt")
+
+    consumer = ToolQualificationStagingConsumer(_NoopRepo(), _IntegrityAssoc())
     with pytest.raises(CapabilityHandoffConsumerError) as exc_info:
         consumer.consume(_envelope())
     assert exc_info.value.disposition is CapabilityHandoffConsumerFailureDisposition.FAILED

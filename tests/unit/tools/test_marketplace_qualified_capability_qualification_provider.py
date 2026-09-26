@@ -32,6 +32,9 @@ from intergrax.contracts.capability_catalog import (
 from intergrax.contracts.capability_qualification.qualification_outcome import (
     CapabilityQualificationOutcome,
 )
+from intergrax.contracts.capability_qualification.qualification_reason_code import (
+    CapabilityQualificationReasonCode,
+)
 from intergrax.contracts.capability_qualification.qualification_request import (
     CapabilityQualificationRequest,
     derive_capability_qualification_request_id,
@@ -45,11 +48,15 @@ from intergrax.contracts.tools.marketplace_handoff_reference import (
 )
 from intergrax.contracts.tools.marketplace_qualified_capability import (
     MarketplaceQualifiedToolStage,
+    MarketplaceQualifiedToolStageIntegrityError,
 )
 from intergrax.contracts.tools.marketplace_qualified_tool_stage_context import (
     MarketplaceQualifiedToolStageContext,
 )
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.capability_qualification.qualification_service import (
+    CapabilityQualificationService,
+)
 from intergrax.tools.marketplace_qualified_capability_qualification_provider import (
     MarketplaceToolCapabilityQualificationProvider,
 )
@@ -207,6 +214,51 @@ def test_stage_missing_unavailable() -> None:
         _qualification_request(acquisition_id=acquisition_id, domain_ref=domain_ref),
     )
     assert result.outcome is CapabilityQualificationOutcome.UNAVAILABLE
+
+
+def test_stage_integrity_maps_to_conflict_via_qualification_service() -> None:
+    store = InMemoryDocumentStore()
+    assoc_repo = DocumentStoreMarketplaceQualifiedToolStageContextAssociationRepository(
+        store,
+    )
+    resolver = MarketplaceQualifiedToolStageContextResolverImpl(assoc_repo)
+    acquisition_id = "acq-stage-integrity"
+    handoff_id = derive_marketplace_gap_tool_handoff_id(
+        tenant_id="tenant-1",
+        operation_id=acquisition_id,
+    )
+    assoc_repo.record(
+        MarketplaceQualifiedToolStageContext(
+            handoff_id=handoff_id,
+            tenant_id="tenant-1",
+            acquisition_request_id=acquisition_id,
+        ),
+    )
+    domain_ref = marketplace_domain_handoff_reference(handoff_id)
+
+    class _IntegrityStageRepo:
+        def stage(self, record: MarketplaceQualifiedToolStage):
+            raise NotImplementedError
+
+        def get(
+            self,
+            *,
+            tenant_id: str,
+            handoff_id: str,
+        ) -> MarketplaceQualifiedToolStage | None:
+            raise MarketplaceQualifiedToolStageIntegrityError("corrupt stage")
+
+    provider = MarketplaceToolCapabilityQualificationProvider(
+        stage_repository=_IntegrityStageRepo(),
+        context_resolver=resolver,
+    )
+    service = CapabilityQualificationService((provider,))
+    decision = service.qualify(
+        _qualification_request(acquisition_id=acquisition_id, domain_ref=domain_ref),
+    )
+    result = decision.qualification_result
+    assert result.outcome is CapabilityQualificationOutcome.CONFLICT
+    assert result.reason_code is CapabilityQualificationReasonCode.EVIDENCE_INCONSISTENT
 
 
 def test_wrong_strategy_not_supported() -> None:
