@@ -207,9 +207,14 @@ def test_harness_01_runtime_tool_invoker_callsites_are_authorized_internal() -> 
 def test_harness_01_runtime_tool_invoker_reference_files_are_classified() -> None:
     refs = _collect_runtime_tool_invoker_reference_files()
     unclassified = sorted(refs - HARNESS_01_RUNTIME_TOOL_INVOKER_REFERENCE_ALLOWLIST)
+    stale = sorted(HARNESS_01_RUNTIME_TOOL_INVOKER_REFERENCE_ALLOWLIST - refs)
     assert unclassified == [], (
         "Production files referencing RuntimeToolInvoker must be explicitly classified:\n"
         + "\n".join(unclassified)
+    )
+    assert stale == [], (
+        "Stale RuntimeToolInvoker reference allowlist entries (no longer reference invoker):\n"
+        + "\n".join(stale)
     )
 
 
@@ -365,7 +370,7 @@ def test_harness_01_governed_invoker_detector_synthetic_receiver_forms() -> None
         "runtime_invoker.invoke(state=state, request=req)",
         "self._invoker.invoke(state=state, request=req)",
         "ctx.tool_invoker.invoke(state=state, request=req)",
-        "foo.bar.baz.invoke(state=state, request=req)",
+        "foo.bar._invoker.invoke(state=state, request=req)",
     )
     for snippet in cases:
         wrapped = f"def _run():\n    {snippet}\n"
@@ -380,6 +385,22 @@ def test_harness_01_governed_invoker_detector_ignores_declarative_port_shape() -
     )
     hits = collect_governed_invoker_callsites(snippet)
     assert hits == []
+
+
+def test_harness_01_governed_invoker_detector_ignores_catalog_host_delegate() -> None:
+    snippet = (
+        "class Reentry:\n"
+        "    def run(self, state, request, grant, task, claimed):\n"
+        "        return self.catalog_host.invoke(state=state, request=request)\n"
+    )
+    assert collect_governed_invoker_callsites(snippet) == []
+
+
+def test_harness_01_synthetic_stale_runtime_tool_invoker_reference_row_would_fail() -> None:
+    discovered = {"intergrax/runtime/nexus/tools/invoker.py"}
+    stale_row = "intergrax/synthetic/deleted_runtime_tool_invoker_reference.py"
+    allowlist = discovered | {stale_row}
+    assert sorted(allowlist - discovered) == [stale_row]
 
 
 def test_harness_01_synthetic_unauthorized_callsite_would_fail_allowlist() -> None:
@@ -565,10 +586,7 @@ def test_harness_01_layer_rules_reject_contract_and_public_nexus_imports() -> No
 
 
 def test_harness_01_application_host_nexus_importers_are_w6_debt_not_final_legal() -> None:
-    target = (
-        "applications/governed_contractor_application/host/"
-        "orchestration_topology_production_composition.py"
-    )
+    target = "applications/governed_contractor_application/host/integration_wiring.py"
     by_path = {row.path: row for row in HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS}
     row = by_path[target]
     assert row.owner_layer == "APPLICATION_HOST"

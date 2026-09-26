@@ -22,14 +22,26 @@ def receiver_expression(node: ast.expr) -> str:
     return "<expr>"
 
 
+def receiver_is_runtime_tool_invoker_target(receiver: ast.expr) -> bool:
+    """Physical ``RuntimeToolInvoker.invoke`` receivers use invoker-shaped attribute names."""
+    leaf = receiver_expression(receiver).rsplit(".", 1)[-1]
+    return leaf in {"invoker", "tool_invoker", "_invoker", "_tool_invoker"} or leaf.endswith(
+        "_invoker"
+    )
+
+
 def is_governed_runtime_tool_invoker_invoke_call(node: ast.Call) -> bool:
     """
-    Receiver-agnostic governed invoke shape:
+    Governed physical invoke shape:
 
-    ``*.invoke(state=..., request=..., ...)`` — distinct from declarative async ports.
+    ``<invoker>.invoke(state=..., request=..., ...)`` — excludes catalog host / port delegates.
     """
     func = node.func
-    if not (isinstance(func, ast.Attribute) and func.attr == "invoke"):
+    if not isinstance(func, ast.Attribute):
+        return False
+    if func.attr != "invoke":
+        return False
+    if not receiver_is_runtime_tool_invoker_target(func.value):
         return False
     keyword_names = {kw.arg for kw in node.keywords if kw.arg is not None}
     return "state" in keyword_names and "request" in keyword_names
@@ -40,10 +52,12 @@ def collect_governed_invoker_callsites(source: str, *, filename: str = "<memory>
     hits: list[GovernedInvokerCallsite] = []
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and is_governed_runtime_tool_invoker_invoke_call(node):
+            func_attr = node.func
+            assert isinstance(func_attr, ast.Attribute)
             hits.append(
                 GovernedInvokerCallsite(
                     line=node.lineno,
-                    receiver=receiver_expression(node.func.value),
+                    receiver=receiver_expression(func_attr.value),
                 )
             )
     return hits

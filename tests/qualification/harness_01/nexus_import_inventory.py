@@ -138,6 +138,10 @@ _EVIDENCE_TOPOLOGY = (
 _EVIDENCE_MATERIALIZER = (
     "tests/unit/architecture/test_ebh_2b_agent_nexus_contract_separation.py"
 )
+_EVIDENCE_SUSPENDED = (
+    "tests/unit/runtime/architecture/test_uca6c_r6_architecture_gates.py"
+    " (Execution-owned suspended-operation / reentry; Nexus-internal imports)"
+)
 
 
 def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
@@ -190,6 +194,14 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
                 "public Agent/UAEPAgent surfaces remain Nexus-free."
             )
             evidence = _EVIDENCE_MATERIALIZER
+        if "/suspended_operation/" in path:
+            reason = (
+                "Execution Engine suspended-operation implementation; "
+                "Nexus imports are implementation-private; "
+                "public Execution contracts remain Nexus-free; "
+                "RuntimeToolInvoker physical enforcement stays Nexus-owned."
+            )
+            evidence = _EVIDENCE_SUSPENDED
         return Harness01HigherLayerNexusImporter(
             path=path,
             owner_layer="EXECUTION_ENGINE",
@@ -243,6 +255,19 @@ def _rule_classify(path: str) -> Harness01HigherLayerNexusImporter:
             reason=(
                 "Non-EE runtime Nexus coupling tracked for HARNESS-01-R5-W5 — "
                 "Runtime Non-EE Boundary Convergence; not a final legal Nexus owner-zone."
+            ),
+            evidence=_EVIDENCE_EE,
+            boundary_status="DEBT",
+        )
+
+    if path.startswith("intergrax/runtime/persistence/"):
+        return Harness01HigherLayerNexusImporter(
+            path=path,
+            owner_layer="PLATFORM_RUNTIME",
+            classification="PLATFORM_RUNTIME_INTERNAL",
+            reason=(
+                "Runtime persistence/session composition coupling to Nexus-backed helpers; "
+                "tracked for STATE-X / runtime convergence — not a public Nexus API."
             ),
             evidence=_EVIDENCE_EE,
             boundary_status="DEBT",
@@ -375,12 +400,10 @@ _PATHS: tuple[str, ...] = (
     "applications/attestation_demo/host/integration_wiring.py",
     "applications/dispute_sim_application/host/factory.py",
     "applications/dispute_sim_application/host/integration_wiring.py",
-    "applications/governed_contractor_application/host/execution_wiring.py",
     "applications/governed_contractor_application/host/integration_wiring.py",
     "intergrax/applications/_shared/governed_contractor_orchestration_topology_production.py",
     "applications/lab_application/host/integration_wiring.py",
     "applications/legal_application/host/factory.py",
-    "applications/local_workspace_application/host/execution_wiring.py",
     "applications/local_workspace_application/host/integration_wiring.py",
     "applications/local_workspace_application/host/lkw_task_enricher.py",
     "applications/local_workspace_application/host/run_task_enricher.py",
@@ -445,7 +468,6 @@ _PATHS: tuple[str, ...] = (
     "intergrax/applications/_shared/security_wiring.py",
     "intergrax/applications/_shared/session_tool_wiring.py",
     "intergrax/applications/_shared/tool_engine_wiring.py",
-    "intergrax/applications/_shared/uca6c_codecraft_qualified_execution_composition.py",
     "intergrax/cli/mvp_evolution.py",
     "intergrax/debug/app.py",
     "intergrax/debug/formatters.py",
@@ -457,8 +479,6 @@ _PATHS: tuple[str, ...] = (
     "intergrax/eval/nexus_eval_runner.py",
     "intergrax/experiments/workflow.py",
     "intergrax/fastapi_core/runs/store_runtime.py",
-    "intergrax/integrations/providers/relational_store/sqlite/bundle.py",
-    "intergrax/integrations/providers/relational_store/sqlite/opens.py",
     "intergrax/lab/organization_worker.py",
     "intergrax/llm_adapters/providers/_openai_schema.py",
     "intergrax/llm_adapters/providers/openai_responses_adapter.py",
@@ -493,6 +513,8 @@ _PATHS: tuple[str, ...] = (
     "intergrax/runtime/execution/delegated_execution/context_projection.py",
     "intergrax/runtime/execution/delegated_execution/service.py",
     "intergrax/runtime/execution/delegated_subtask_child_port.py",
+    "intergrax/runtime/execution/environment_host_task_execution.py",
+    "intergrax/runtime/execution/execution_bound_catalog_tool_composition.py",
     "intergrax/runtime/execution/execution_work_port.py",
     "intergrax/runtime/execution/host_task.py",
     "intergrax/runtime/execution/nexus_host_execution.py",
@@ -502,6 +524,15 @@ _PATHS: tuple[str, ...] = (
     "intergrax/runtime/execution/orchestration_topology_production_composition.py",
     "intergrax/runtime/execution/orchestration_topology_submission.py",
     "intergrax/runtime/execution/runtime.py",
+    "intergrax/runtime/execution/suspended_operation/agent_governance_reentry_grant.py",
+    "intergrax/runtime/execution/suspended_operation/authority_sequential_pause.py",
+    "intergrax/runtime/execution/suspended_operation/authorized_resume_reentry.py",
+    "intergrax/runtime/execution/suspended_operation/claim_lifecycle_wiring.py",
+    "intergrax/runtime/execution/suspended_operation/composition.py",
+    "intergrax/runtime/execution/suspended_operation/governed_request.py",
+    "intergrax/runtime/execution/suspended_operation/hitl_resume_claim_preparation.py",
+    "intergrax/runtime/execution/suspended_operation/pause_required.py",
+    "intergrax/runtime/execution/suspended_operation/reentry_coordinator.py",
     "intergrax/runtime/hooks/tool_hooks.py",
     "intergrax/runtime/human/declarative_hitl_grant.py",
     "intergrax/runtime/human/governed_continuation_bridge.py",
@@ -515,6 +546,8 @@ _PATHS: tuple[str, ...] = (
     "intergrax/runtime/observability/modality_metrics.py",
     "intergrax/runtime/observability/qualification_runtime_trace.py",
     "intergrax/runtime/persistence/integration_profile_wiring.py",
+    "intergrax/runtime/persistence/sqlite_composition.py",
+    "intergrax/runtime/persistence/sqlite_opens.py",
     "intergrax/runtime/plugins/default_plugins.py",
     "intergrax/runtime/policy/compliance_profiles.py",
     "intergrax/runtime/policy/declarative_enforcer.py",
@@ -538,6 +571,7 @@ _PATHS: tuple[str, ...] = (
     "intergrax/runtime/wiring/attestation_runtime_bridge.py",
     "intergrax/runtime/wiring/context_runtime_bridge.py",
     "intergrax/runtime/wiring/llm_routing_runtime_bridge.py",
+    "intergrax/runtime/wiring/llm_usage_tracker_composition.py",
     "intergrax/runtime/wiring/policy_runtime_bridge.py",
     "intergrax/runtime/wiring/reliability_runtime_bridge.py",
     "intergrax/runtime/workspace/exec_ctx_isolation.py",
