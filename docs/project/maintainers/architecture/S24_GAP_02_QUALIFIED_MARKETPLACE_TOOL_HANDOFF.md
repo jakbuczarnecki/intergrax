@@ -4,9 +4,9 @@
 
 | Field | Value |
 | ----- | ----- |
-| **Task** | `S24-GAP-02-P0` (architecture lock — no implementation) |
+| **Task** | `S24-GAP-02-P0` (architecture lock) · `S24-GAP-02-P0-R1` (typed invocation material boundary correction) |
 | **Pre-audit baseline** | `4958c7e4bae6d18308426c6dc70d6595d67a4d5f` |
-| **Lock audit HEAD** | `38b1e1d115302cabb57b82bec66e1c73764c38ea` |
+| **Lock audit HEAD** | `d28b6f81cd721ca0ab2bbac002a78421073b9735` (P0) · **P0-R1** updates invocation boundary only |
 | **Branch** | `development` (`HEAD == origin/development` at lock time) |
 | **Diff since pre-audit** | Qualification harness / roadmap docs only — **no** Marketplace handoff, UCA, ToolRuntime, or EE production changes |
 | **Artifact role** | Closed-world design record before `S24-GAP-02-P1` implementation |
@@ -49,6 +49,8 @@ Marketplace and Tool domains already support discover → select → governed ha
 | Execution lifecycle | Execution Engine |
 | Execution identity | ExecutionIdentityAuthority |
 | Tool activation / materialization | Tool domain (post-qualification, in execution handler) |
+| Business Tool input material | Application / domain (`QualifiedToolInvocationMaterialProvider` implementation) |
+| Tool invoke request assembly | Tool domain (`QualifiedToolInvocationResolver`) |
 | Tool invocation | ToolRuntime (`RuntimeToolInvoker` / `ExecutionBoundCatalogToolInvoker`) |
 | Authority | Canonical Governance / Collaborative authority |
 | Business responsibility | Autonomous Work / application |
@@ -122,6 +124,8 @@ MarketplaceToolQualifiedCapabilityExecutionHandler
     (handler registry by binding_provider_id)
     ↓
 exact qualified Tool materialization / activation
+    ↓
+QualifiedToolInvocationMaterialProvider → typed invocation material (immutable contract / BaseModel)
     ↓
 QualifiedToolInvocationResolver → ExecutionBoundCatalogToolInvokeRequest
     ↓
@@ -226,31 +230,118 @@ Reference binding implementation pattern: `CodeCraftQualifiedCapabilityBindingPr
 
 **Answer (canonical production paths only):**
 
-1. **Execution admission** carries `task_id`, `worker_need_id`, and opaque `execution_target` in `WorkerQualifiedCapabilityExecutionRequest` (`intergrax/contracts/autonomous_work/worker_qualified_capability_resume.py`) — **not** tool operation or input payload.
+1. **Execution admission** carries `task_id`, `worker_need_id`, and opaque `execution_target` in `WorkerQualifiedCapabilityExecutionRequest` (`intergrax/contracts/autonomous_work/worker_qualified_capability_resume.py`) — **not** tool operation or business input payload.
 
-2. **Before runtime**, `GovernedTaskScopedQualifiedCapabilityExecutionDispatchService` resolves the live governed `Task` from `ActiveTaskRegistry` and binds it via `bind_governed_execution_task` (`intergrax/runtime/execution/governed_task_scoped_qualified_capability_execution_dispatch.py`).
+2. **Before runtime**, `GovernedTaskScopedQualifiedCapabilityExecutionDispatchService` resolves the live governed `Task` from `ActiveTaskRegistry` and binds it via `bind_governed_execution_task` (`intergrax/runtime/execution/governed_task_scoped_qualified_capability_execution_dispatch.py`). That binding is **runtime-internal** for governance/MSE admission — it is **not** a public Tool-contract input channel.
 
 3. **ToolRuntime invocation** requires a typed `ExecutionBoundCatalogToolInvokeRequest` (`tool_id`, `input: BaseModel`, `tenant_id`, `task_id`, `run_id`, `agent_id`, `step_id`, …) per `intergrax/contracts/execution_bound_catalog_tool_invocation.py`.
 
-4. **Reference qualified execution (CodeCraft):** `CodeCraftQualifiedCapabilityExecutionHandler` → `WiringCodeCraftBoundCapabilityExecution` builds `ExecutionBoundCatalogToolInvokeRequest` from **domain-owned session state** (craft code, sandbox wiring), not from fields on `WorkerQualifiedCapabilityExecutionRequest`. ToolRuntime still receives governed `Task` via `peek_governed_execution_task()` inside `RuntimeToolInvoker` / `NexusExecutionBoundCatalogToolInvoker` (`intergrax/runtime/nexus/tools/nexus_execution_bound_catalog_tool_invoker.py`, `intergrax/runtime/nexus/tools/invoker.py`).
+4. **Reference qualified execution (CodeCraft):** `CodeCraftQualifiedCapabilityExecutionHandler` → `WiringCodeCraftBoundCapabilityExecution` builds `ExecutionBoundCatalogToolInvokeRequest` from **domain-owned session state** (craft code, sandbox wiring), not from fields on `WorkerQualifiedCapabilityExecutionRequest` and **not** by parsing governed `Task.message` / `Task.context` / `Task.metadata`. ToolRuntime may still use `peek_governed_execution_task()` inside `RuntimeToolInvoker` / `NexusExecutionBoundCatalogToolInvoker` for admission only (`intergrax/runtime/nexus/tools/nexus_execution_bound_catalog_tool_invoker.py`, `intergrax/runtime/nexus/tools/invoker.py`).
 
-5. **Worker capability need (AW durable):** `WorkerCapabilityNeed.required_operations` (`intergrax/contracts/autonomous_work/capability_acquisition.py`) records required tool logical operations for discovery/gap context. Durable read: `WorkerRecoveryObstacleCapabilityNeedReadPort` (`intergrax/autonomous_work/worker_recovery_capability_fulfillment_episode_context_ports.py`). `worker_need_id` is derivable and encodes `worker_instance_id`, `obstacle_id`, and `recovery_decision_id` via `derive_worker_capability_need_id`.
+5. **Worker capability need (AW durable):** `WorkerCapabilityNeed.required_operations` (`intergrax/contracts/autonomous_work/capability_acquisition.py`) identifies the **required logical capability operation** for discovery/gap/execution routing — **not** business invocation arguments. Durable read: `WorkerRecoveryObstacleCapabilityNeedReadPort` (`intergrax/autonomous_work/worker_recovery_capability_fulfillment_episode_context_ports.py`). `worker_need_id` is derivable via `derive_worker_capability_need_id`. Fields `required_data_domains`, `required_resource_refs`, and `evidence_refs` may carry typed context/evidence for application logic; they MUST NOT be treated as automatic Tool `input` payload or parsed by a generic platform resolver.
 
-6. **Task payload:** governed `Task.message`, `Task.context`, and `Task.metadata` (`intergrax/runtime/task/task.py`) supply obstacle/work context for invocation materialization — consumed when ToolRuntime and MSE gates run under active governed task.
+6. **Business invocation inputs** are owned by application/domain/host. The platform MUST materialize them through a **replaceable typed provider** (see §11.1) — never by reading `Task.message`, `Task.context`, or `Task.metadata` (`Any`) as the public semantic contract for Tool arguments, and never via string/dict inspection, reflection, or scenario-specific platform conditionals.
 
-**Verdict: B — NEW TOOL-DOMAIN INPUT-RESOLUTION PORT NEEDED**
+**Verdict B — new Tool-domain invocation-resolution extension required, with a separate typed invocation-material provider boundary.**
 
-Existing data exists across governed `Task` + durable `WorkerCapabilityNeed` + staged `CapabilityReleaseIdentity`, but there is **no** reusable Tool-owned contract to produce `ExecutionBoundCatalogToolInvokeRequest` (or equivalent ToolRuntime material) without changing EE/UCA request types.
+Two concerns are intentionally split:
 
-**Approved port (new contract only):** `QualifiedToolInvocationResolver` in `intergrax/contracts/tools/qualified_tool_invocation.py`
+```text
+business invocation material  ≠  tool invocation resolution
+```
 
-Responsibilities (implementation in Tool domain, P3):
+Existing EE/UCA admission types, staged `CapabilityReleaseIdentity`, and durable `WorkerCapabilityNeed` supply **identity, operation selection, and correlation** — not a reusable, strongly typed business-input contract. Implementation requires **two** new Tool-domain contract surfaces (P3), without changing frozen UCA/EE request semantics.
 
-- Inputs: qualified staged release, active governed `Task`, resolved `WorkerCapabilityNeed` (from `worker_need_id` + read port), active execution identity (`run_id`, `step_id` policy)
-- Output: `ExecutionBoundCatalogToolInvokeRequest` (or narrow wrapper) for `ExecutionBoundCatalogToolInvoker`
-- Must not mint authority, own lifecycle, or mutate UCA/EE contracts
+### 11.1 Typed invocation material and resolver (frozen responsibilities)
 
-**Approved handler:** `MarketplaceToolQualifiedCapabilityExecutionHandler` under canonical `QualifiedCapabilityExecutionBindingHandler` registry — same pattern as `CodeCraftQualifiedCapabilityExecutionHandler` (`intergrax/runtime/codecraft/qualified_capability_execution_handler.py`).
+**Contract-layer purity (mandatory):**
+
+```text
+intergrax/contracts/tools/**
+MUST NOT import intergrax/runtime/**
+```
+
+New Tool contracts use only stable contract-layer types. If a design required a public contract importing runtime `Task`, that would be **STOP — architecture boundary violation**.
+
+**Strong typing chain (mandatory):**
+
+```text
+business/application state
+    → typed domain invocation model
+    → QualifiedToolInvocationMaterialProvider
+    → typed invocation material (immutable BaseModel — not dict[str, Any])
+    → QualifiedToolInvocationResolver
+    → concrete Tool input BaseModel inside ExecutionBoundCatalogToolInvokeRequest
+    → ToolRuntime
+```
+
+Forbidden at any public semantic boundary: `dict[str, Any]` as invocation payload; magic metadata keys; `getattr`/reflection routing; generic parsing of `Task.message`; platform scenario-specific branches.
+
+#### A. `QualifiedToolInvocationMaterialProvider` (application/domain-owned seam)
+
+**Location (contracts):** `intergrax/contracts/tools/qualified_tool_invocation.py` (or a sibling leaf module if repo conventions favor split files — responsibilities frozen either way).
+
+**Role:** Map **execution/business context identity** (correlation handles known to the handler/runtime adapter — e.g. `task_id`, `worker_need_id`, tenant, episode ids) to **typed invocation material** (immutable Pydantic `BaseModel` or equivalent frozen contract type).
+
+- Replaceable per scenario/application; platform does not interpret business payload.
+- MUST NOT return `dict[str, Any]` as the semantic contract.
+- MAY be implemented in application or domain modules; handler wires a concrete provider.
+
+Runtime `Task` MAY remain an **internal** source inside a runtime adapter that **calls** the provider — never as a dependency of `intergrax/contracts/tools/**`.
+
+```text
+Execution Runtime
+    → resolves active Task internally (governance only)
+    → application/domain QualifiedToolInvocationMaterialProvider
+    → typed invocation material
+    → QualifiedToolInvocationResolver
+```
+
+Not permitted:
+
+```text
+intergrax/contracts/tools → intergrax/runtime/task.Task
+resolver → task.metadata["..."]
+```
+
+#### B. `QualifiedToolInvocationResolver` (generic Tool-domain)
+
+**Location (contracts):** same module family as the material provider protocol.
+
+**Inputs (typed only):**
+
+- Exact qualified Tool identity / staged release (`CapabilityReleaseIdentity` or post-activation tool identity policy)
+- Selected **required operation** (from `WorkerCapabilityNeed.required_operations` + release capability contract — operation id only, not arguments)
+- **Typed invocation material** from the provider (immutable contract)
+- Execution identity fields required by ToolRuntime (`tenant_id`, `task_id`, `run_id`, `step_id`, `agent_id` policy per existing gateway)
+
+**Output:** `ExecutionBoundCatalogToolInvokeRequest` (or a typed intermediate contract if an existing layer boundary requires separation from the runtime gateway).
+
+**Resolver MUST NOT:** read arbitrary Task metadata; know Asterion or other scenario semantics; know Marketplace internals; mint authority; execute the Tool; activate ToolRegistry.
+
+**Approved handler:** `MarketplaceToolQualifiedCapabilityExecutionHandler` under canonical `QualifiedCapabilityExecutionBindingHandler` registry — same pattern as `CodeCraftQualifiedCapabilityExecutionHandler` (`intergrax/runtime/codecraft/qualified_capability_execution_handler.py`). Handler orchestrates: resolve release → post-qualification activation → **material provider** → **resolver** → ToolRuntime.
+
+### 11.2 P3 orchestration shape (frozen)
+
+```text
+Execution Engine
+    ↓
+MarketplaceToolQualifiedCapabilityExecutionHandler
+    ↓
+resolve exact qualified Tool release
+    ↓
+post-qualification activation / materialization
+    ↓
+QualifiedToolInvocationMaterialProvider
+    ↓
+typed invocation material
+    ↓
+QualifiedToolInvocationResolver
+    ↓
+ExecutionBoundCatalogToolInvokeRequest
+    ↓
+ToolRuntime
+```
 
 ---
 
@@ -259,10 +350,11 @@ Responsibilities (implementation in Tool domain, P3):
 | Material | Source | Owner |
 | -------- | ------ | ----- |
 | `tool_id` / exact release | Staged `CapabilityReleaseIdentity` + post-qualification activation | Tool domain |
-| Operation selection | `WorkerCapabilityNeed.required_operations` (+ release capability contract) | AW need store + Tool resolver |
-| Input arguments | Governed `Task` (+ need `evidence_refs` where applicable) | Task registry + Tool resolver |
+| Operation selection | `WorkerCapabilityNeed.required_operations` (+ release capability contract) | AW need store + resolver (operation id only) |
+| Business input arguments | `QualifiedToolInvocationMaterialProvider` → typed invocation material | Application / domain / host |
+| Concrete Tool `input` BaseModel | `QualifiedToolInvocationResolver` (maps material + operation → gateway request) | Tool domain |
 | `tenant_id`, `task_id`, `run_id`, `step_id` | Execution identity + dispatch request + EE context | Execution Engine |
-| Runtime admission / MSE | `RuntimeToolInvoker` with `peek_governed_execution_task()` | ToolRuntime / governance |
+| Runtime admission / MSE | `RuntimeToolInvoker` with `peek_governed_execution_task()` (runtime internal) | ToolRuntime / governance |
 
 ---
 
@@ -273,7 +365,7 @@ Responsibilities (implementation in Tool domain, P3):
 | ME-10 handoff admission (in-memory ref) | No | Not used for Tool qualification reads |
 | ME-10 trace evidence consumer | No | Observability only |
 | `MarketplaceQualifiedToolStageRepository` | **Must be pluggable durable** | **P1 implement** |
-| AW obstacle need repositories | Yes (PostgreSQL / document store adapters exist) | Reuse read port in resolver |
+| AW obstacle need repositories | Yes (PostgreSQL / document store adapters exist) | Reuse read port in **handler/runtime adapter** for operation selection; not for inferring Tool input |
 
 Qualification and binding MUST fail closed if staged record missing after restart.
 
@@ -293,7 +385,7 @@ Qualification and binding MUST fail closed if staged record missing after restar
 
 All paths fail closed. No silent fallback to direct Tool invoke, registry mutation, or Marketplace bridge acquisition.
 
-Authority flows only through admitted governance identity and collaborative authority on existing UCA resume/dispatch requests — Tool staging and resolver MUST NOT mint scopes.
+Authority flows only through admitted governance identity and collaborative authority on existing UCA resume/dispatch requests — Tool staging, invocation-material provider contracts, and resolver MUST NOT mint scopes.
 
 ---
 
@@ -325,11 +417,11 @@ Authority flows only through admitted governance identity and collaborative auth
 
 | Classification | **Class A — safe extension** |
 | -------------- | ------------------------------ |
-| Execution verdict | **B** — new Tool-domain `QualifiedToolInvocationResolver` contract only |
+| Execution verdict | **B** — typed `QualifiedToolInvocationMaterialProvider` + generic `QualifiedToolInvocationResolver` (Tool contracts); no runtime `Task` / `Any` public dependency |
 | UCA reopen | **NO** |
-| Class C triggers | None identified |
+| Class C triggers | None identified — model realizable without changing UCA contracts, EE request semantics, `QualifiedCapabilityBindingProvider`, or `QualifiedCapabilityExecutionTarget` |
 
-Rationale: new Tool-domain providers, staging repository, and resolver implement against frozen SPIs and registries; no frozen UCA/EE payload semantics change.
+Rationale: new Tool-domain providers, staging repository, material provider, and resolver implement against frozen SPIs and registries; no frozen UCA/EE payload semantics change; business inputs stay application-owned.
 
 ---
 
@@ -338,7 +430,7 @@ Rationale: new Tool-domain providers, staging repository, and resolver implement
 ### Contracts
 
 - `intergrax/contracts/tools/marketplace_qualified_capability.py` — stage model + repository protocol
-- `intergrax/contracts/tools/qualified_tool_invocation.py` — resolver protocol (Verdict B)
+- `intergrax/contracts/tools/qualified_tool_invocation.py` — typed invocation material contract + `QualifiedToolInvocationMaterialProvider` protocol + `QualifiedToolInvocationResolver` protocol (Verdict B; split leaf modules if conventions require)
 
 ### Tool domain
 
@@ -361,7 +453,7 @@ Leaf-module imports only; no package-root re-export unless an existing canonical
 
 ### Contract gates
 
-- Immutable typed staging; no `Any` semantic payload; no reflection routing; no private cross-class reads
+- Immutable typed staging; no `Any` semantic payload at Tool invocation boundaries; no reflection routing; no private cross-class reads; `intergrax/contracts/tools/**` MUST NOT import `intergrax/runtime/**`
 
 ### Acquisition gates
 
@@ -377,7 +469,7 @@ Leaf-module imports only; no package-root re-export unless an existing canonical
 
 ### Execution gates
 
-- Handler via `binding_provider_id`; activation only after `QUALIFIED`; digest/version preserved; ToolRuntime only; Tool execution count **0** before qualification success
+- Handler via `binding_provider_id`; activation only after `QUALIFIED`; digest/version preserved; ToolRuntime only; Tool execution count **0** before qualification success; invocation material via provider (typed BaseModel), not Task metadata parsing
 
 ### Regression gates
 
@@ -393,6 +485,8 @@ Leaf-module imports only; no package-root re-export unless an existing canonical
 | Q2 staging requirement stated | PASS |
 | Q3 provider gap + extension approved | PASS |
 | Q4 answered with canonical paths | PASS |
+| P0-R1: no public Tool contract dependency on runtime `Task` / `Any` invocation semantics | PASS |
+| P0-R1: typed invocation-material provider + generic resolver frozen | PASS |
 | Binding SPI sufficient | PASS |
 | No Class C / STOP condition | PASS |
 | Design record complete | PASS |
@@ -403,7 +497,7 @@ Leaf-module imports only; no package-root re-export unless an existing canonical
 
 ## 21. No-UCA-reopen conclusion
 
-GAP-02 closes via **Class A** Tool-domain extensions and one new Tool invocation resolver contract. No modification to frozen UCA resume types, binding SPI semantics, or Execution Engine ownership. **Implementation may proceed to P1 after independent audit of this commit.**
+GAP-02 closes via **Class A** Tool-domain extensions: staging, qualification/binding providers, **typed invocation-material provider**, and **generic invocation resolver** contracts. Public Tool contracts do not depend on runtime `Task` or `dict[str, Any]` invocation semantics. No modification to frozen UCA resume types, binding SPI semantics, or Execution Engine ownership. **Implementation may proceed to P1 after independent audit of this commit.**
 
 ---
 
