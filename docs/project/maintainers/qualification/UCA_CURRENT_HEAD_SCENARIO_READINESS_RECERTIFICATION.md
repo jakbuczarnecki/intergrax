@@ -314,3 +314,124 @@ SCENARIO #24 READY FOR IMPLEMENTATION = NO  (external GAP-01/03/04 remain open)
 ## Independent audit reminder
 
 Wynik `UCA-FINAL-AUDIT` oraz status `UCA = READY FOR SCENARIO CONSUMPTION` muszą zostać **niezależnie** zaudytowane na podstawie rzeczywistego evidence commitu, aktualnego kodu i testów na GitHub. Raport Cursor AI nie stanowi samodzielnej podstawy do przejścia do `UCA-SCENARIO-CONTRACT-GATE` ani do rozpoczęcia implementacji Scenario #24.
+
+---
+
+## UCA-FINAL-AUDIT-RERUN — Current-HEAD Re-certification (final)
+
+### Rerun metadata
+
+| Field | Value |
+| --- | --- |
+| **TASK** | `UCA-FINAL-AUDIT-RERUN` — Current-HEAD Re-certification After Async Resume Contract Closure |
+| **AUDIT_HEAD (UCA production / `origin/development`)** | `bd63e16994382f04ac4d3bd738eae22f99e3c2c2` |
+| **R1_PRODUCTION_SHA** | `c322455a479f7333f7f22ce415c1f97446d32cc9` |
+| **R1_EVIDENCE_SHA** | `bd63e16994382f04ac4d3bd738eae22f99e3c2c2` |
+| **START_HEAD (local workspace at rerun open)** | `2b12af1dc5029a223a0d32fffb6d4fc685ef4cd4` |
+| **`origin/development` at rerun** | `2b12af1dc5029a223a0d32fffb6d4fc685ef4cd4` (1 commit ahead of R1 evidence SHA) |
+| **EXECUTION_HEAD (pytest executed against)** | `2b12af1dc5029a223a0d32fffb6d4fc685ef4cd4` |
+| **Workspace HEAD before evidence commit** | `a4e7465901ad59f6b05f1af6da232a7bbeb9747c` (governance GR-11/12 qualification — no UCA production delta vs `bd63e169`) |
+| **production mutation (rerun session)** | **0** |
+| **test mutation (rerun session)** | **0** |
+| **Branch** | `development` |
+
+### Chronology (preserved)
+
+```text
+7c255e8a → parent audit rejected independently (async resume Protocol defect)
+c322455a → async contract remediation (CLASS B)
+bd63e169 → R1 evidence commit
+2b12af1  → post-evidence drift (applications test fixture) — not UCA semantics
+a4e74659 → governance GR-11/12 qualification (docs/tests only) — not UCA semantics
+current rerun → final readiness decision (this section)
+```
+
+### Post–`bd63e169` workspace drift
+
+| Commit | Files | UCA semantic impact | Class | Action |
+| --- | --- | --- | --- | --- |
+| `2b12af1dc` | `tests/unit/applications/scenario_runtime_test_support.py` (+13) | **None** — minimal production scenario test fixture (tool admission) | **OUT OF UCA SCOPE** | Documented; rerun continued |
+| `a4e746590` | Governance qualification docs/tests (`tests/qualification/governance/**`, enterprise roadmap) | **None** — zero delta under `intergrax/autonomous_work`, `intergrax/tools`, `intergrax/marketplace` vs `bd63e169` | **OUT OF UCA SCOPE** | Documented; UCA production semantics = `bd63e169` chain |
+
+**Class C at EXECUTION_HEAD:** **0**. **UCA REOPEN:** **NO**. **EE REOPEN:** **NO**.
+
+### R1 invariant (regression only)
+
+| Path | Resume seam | Result |
+| --- | --- | --- |
+| `fulfill()` | `WorkerQualifiedCapabilityResumePort.resume(...)` | **PASS** (`worker_capability_fulfillment_coordinator.py`) |
+| `fulfill_async()` | `WorkerQualifiedCapabilityResumePort.resume_async(...)` | **PASS** |
+| Protocol | `resume` + `resume_async`; single Protocol; no optional reflection seam | **PASS** |
+| `WorkerQualifiedCapabilityResumePort` vs `ExecutionContinuationPort` | Distinct types; no AW production import of continuation port | **PASS** |
+| Structural pluginability | Custom provider satisfies Protocol; sync-only does not; canonical coordinator satisfies | **PASS** (`test_uca_final_audit_r1_async_resume_contract.py`) |
+
+**`c322455a` classification (explicit):** **CLASS B** — Protocol declaration aligned with already-existing runtime async behavior; no owner/lifecycle/authority change.
+
+### R1 closure (static)
+
+| Check | Result |
+| --- | --- |
+| `resume_async` Pyright `reportAttributeAccessIssue` | **0** (scoped seam: **0 errors, 0 warnings**) |
+| Ruff (R1 seam + R1 test) | **PASS** |
+| New type suppressions on corrected seam | **0** |
+| Architectural `getattr`/`cast`/`# pyright: ignore` on R1 seam | **0** |
+
+### Test waves (rerun, sequential, no xdist)
+
+| Wave | Command | Passed | Failed | Skipped |
+| --- | --- | ---: | ---: | ---: |
+| R1-async | `tests/unit/autonomous_work/test_uca_final_audit_r1_async_resume_contract.py` | **6** | **0** | **0** |
+| GAP-02 R1 | `tests/unit/tools/test_marketplace_gap02_cert_r1_evidence.py -q` | **3** | **0** | **0** |
+| GAP-02 R2 | `tests/unit/tools/test_marketplace_gap02_full_certification.py -q` | **19** | **0** | **0** |
+| GAP-02 R3 | gap02 p2/p3 + `test_uca5_gap_acquisition_service.py` + handler gates | **26** | **0** | **0** |
+| GAP-02 R4 | `test_uca6c_r6_r5_8_r2_worker_governed_execution_e2e.py -q` | **3** | **0** | **0** |
+| T1-A | `tests/unit/autonomous_work/test_uca6c*.py` (git file list) | **122** | **0** | **1** |
+| T1-B | `tests/unit/runtime/execution/test_uca6c*.py` + `execution/**/test_uca6c*.py` | **114** | **0** | **0** |
+| T1-C | `tests/unit/runtime/nexus/**/test_uca6c*.py` | **26** | **0** | **0** |
+| T1-D | architecture (3) + human + long_running uca6c modules | **29** | **0** | **0** |
+| T3 | `test_uca6c_r6_architecture_gates.py`, pause gates, H1 coupling gate, `test_ee_a2_identity_authority_certification.py` | **32** | **0** | **0** |
+
+**T1-A skip:** PostgreSQL Autonomous Work integration backend unavailable (`conftest.py`) — **non-blocking**; classified as integration infra, not UCA contract defect (same as §12).
+
+**`test_uca6c*.py` inventory:** **48** tracked files (unchanged vs freeze).
+
+### Negative proofs (rerun)
+
+| Check | Observed |
+| --- | --- |
+| UCA-owned `ExecutionEngine(` construction | **0** (`intergrax/autonomous_work/**`) |
+| UCA-owned HITL lifecycle owner | **0** (outcome handoff only; T3/T1-B) |
+| Public `intergrax.runtime.nexus` on AW production seams | **0** |
+| GAP-02 handler direct Tool bypass | **0** (`catalog_tool_invoker.invoke` only) |
+| UCA root ExecutionId minting on acquisition seams | **0** |
+| `governance_approval_evidence` AW transport shortcut | **0** (production AW) |
+| Resume concrete-only coupling (no Protocol) | **0** |
+| Second async resume Protocol | **0** |
+
+### GCF-INV-001–010 (rerun)
+
+All **PASS** — evidence unchanged from §7; replayed via T1/T3 + GAP-02 waves + static checks above.
+
+### Blockers (rerun)
+
+| Counter | Value |
+| --- | ---: |
+| **UCA_SPECIFIC_BLOCKERS** | **0** |
+| **EXTERNAL_DEPENDENCY_BLOCKERS** | **3** (GAP-01, GAP-03, GAP-04) |
+
+### Final verdict (rerun)
+
+```text
+UCA-FINAL-AUDIT-RERUN = PASS
+UCA_SPECIFIC_BLOCKERS = 0
+UCA = READY FOR SCENARIO CONSUMPTION
+SCENARIO #24 READY FOR IMPLEMENTATION = NO
+```
+
+**Supersedes:** §18 blocked verdict for parent audit; R1 `resume_async` defect = **CLOSED**.
+
+**Next gated task:** `UCA-SCENARIO-CONTRACT-GATE` (after independent GitHub audit of evidence commit).
+
+### Independent audit reminder (rerun)
+
+Wynik `UCA-FINAL-AUDIT-RERUN` oraz status `UCA = READY FOR SCENARIO CONSUMPTION` muszą zostać **niezależnie** zaudytowane na podstawie rzeczywistego evidence commitu, aktualnego kodu i testów na GitHub. Raport Cursor AI nie stanowi samodzielnej podstawy do przejścia do `UCA-SCENARIO-CONTRACT-GATE` ani do rozpoczęcia implementacji Scenario #24.
