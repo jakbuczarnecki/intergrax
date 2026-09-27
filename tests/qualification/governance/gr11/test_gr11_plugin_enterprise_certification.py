@@ -19,6 +19,7 @@ from tests.qualification.governance.gr11.catalog import (
     GR11_QUALIFICATION_STATUS,
     GR11_WEAK_BOUNDARY_SCAN_MODULES,
     Gr11DynamicRegistrationApplicability,
+    Gr11ExtensionSurface,
     Gr11QualificationStatus,
     gr11_all_registered_proof_nodes,
     gr11_all_structural_replaceability_nodes,
@@ -162,54 +163,366 @@ def test_gr11_g06_structural_replaceability_nodes_collectable() -> None:
     assert not missing, missing
 
 
-def _contract_module_paths(row) -> set[Path]:
-    paths = {_REPO_ROOT / row.semantic_owner_module}
-    for segment in row.contract.split(";"):
-        segment = segment.strip()
-        if not segment.startswith("intergrax."):
+def _gr11_contract_segments(contract: str) -> tuple[str, ...]:
+    return tuple(segment.strip() for segment in contract.split(";") if segment.strip())
+
+
+def _gr11_contract_segment_symbol(segment: str) -> str:
+    return segment.rsplit(".", 1)[-1].split(" ")[0]
+
+
+def _gr11_contract_defining_module(segment: str) -> str | None:
+    segment = segment.strip()
+    if not segment.startswith("intergrax."):
+        return None
+    module_path = segment.rsplit(".", 1)[0].replace(".", "/") + ".py"
+    return module_path
+
+
+def _gr11_row_closed_world_modules(row: Gr11ExtensionSurface) -> tuple[str, ...]:
+    return tuple(
+        dict.fromkeys(
+            (
+                row.semantic_owner_module,
+                row.composition_owner_module,
+                *row.consumer_scan_modules,
+            )
+        )
+    )
+
+
+def _parse_module_ast(rel: str) -> ast.Module:
+    path = _REPO_ROOT / rel
+    return ast.parse(path.read_text(encoding="utf-8"), filename=str(rel))
+
+
+def _module_declares_contract_class(rel: str, symbol: str) -> bool:
+    tree = _parse_module_ast(rel)
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == symbol:
+            return True
+    return False
+
+
+def _annotation_references_name(node: ast.AST | None, name: str) -> bool:
+    if node is None:
+        return False
+    if isinstance(node, ast.Name) and node.id == name:
+        return True
+    if isinstance(node, ast.Attribute) and node.attr == name:
+        return True
+    if isinstance(node, ast.Subscript):
+        return _annotation_references_name(
+            node.value, name
+        ) or _annotation_references_name(node.slice, name)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
+        return _annotation_references_name(
+            node.left, name
+        ) or _annotation_references_name(node.right, name)
+    if isinstance(node, ast.Tuple):
+        return any(_annotation_references_name(elt, name) for elt in node.elts)
+    return False
+
+
+def _tree_references_name(tree: ast.AST, name: str) -> bool:
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Name) and node.id == name:
+            return True
+        if isinstance(node, ast.Attribute) and node.attr == name:
+            return True
+    return False
+
+
+def _composition_entry_functions(tree: ast.Module) -> tuple[ast.FunctionDef, ...]:
+    return tuple(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef)
+        and (node.name.startswith("build_") or node.name.startswith("wire_"))
+    )
+
+
+def _function_injects_contract_symbol(func: ast.FunctionDef, symbol: str) -> bool:
+    for arg in (*func.args.args, *func.args.kwonlyargs):
+        if _annotation_references_name(arg.annotation, symbol):
+            return True
+    return False
+
+
+def _function_composes_contract_symbol(func: ast.FunctionDef, symbol: str) -> bool:
+    if _annotation_references_name(func.returns, symbol):
+        return True
+    for node in ast.walk(func):
+        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+            if node.func.id == symbol:
+                return True
+    return False
+
+
+def _function_structurally_wires_symbol(func: ast.FunctionDef, symbol: str) -> bool:
+    if _function_injects_contract_symbol(func, symbol):
+        return True
+    if _function_composes_contract_symbol(func, symbol):
+        return True
+    return _tree_references_name(func, symbol)
+
+
+def _class_init_wires_symbol(class_def: ast.ClassDef, symbol: str) -> bool:
+    for item in class_def.body:
+        if not isinstance(item, ast.FunctionDef) or item.name != "__init__":
             continue
-        module = segment.rsplit(".", 1)[0].replace(".", "/") + ".py"
-        paths.add(_REPO_ROOT / module)
-    return paths
+        for arg in (*item.args.args, *item.args.kwonlyargs):
+            if _annotation_references_name(arg.annotation, symbol):
+                return True
+    return False
+
+
+def _annotation_root_name(node: ast.AST | None) -> str | None:
+    if node is None:
+        return None
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        return node.attr
+    if isinstance(node, ast.Subscript):
+        return _annotation_root_name(node.value)
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
+        return _annotation_root_name(node.left) or _annotation_root_name(node.right)
+    return None
+
+
+def _consumer_import_aliases(rel: str) -> frozenset[str]:
+    dotted = _composition_owner_dotted_module(rel)
+    aliases = {dotted}
+    if dotted.startswith("applications."):
+        aliases.add(dotted.removeprefix("applications."))
+    return frozenset(aliases)
+
+
+def _composition_delegate_imports(
+    row: Gr11ExtensionSurface,
+) -> dict[str, str]:
+    consumer_modules: dict[str, str] = {}
+    for rel in row.consumer_scan_modules:
+        for alias in _consumer_import_aliases(rel):
+            consumer_modules[alias] = rel
+    mapping: dict[str, str] = {}
+    tree = _parse_module_ast(row.composition_owner_module)
+    for node in tree.body:
+        if not isinstance(node, ast.ImportFrom) or not node.module:
+            continue
+        rel = consumer_modules.get(node.module)
+        if rel is None:
+            continue
+        for alias in node.names:
+            mapping[alias.asname or alias.name] = rel
+    return mapping
+
+
+def _wired_delegate_modules(row: Gr11ExtensionSurface) -> frozenset[str]:
+    delegates = _composition_delegate_imports(row)
+    if not delegates:
+        return frozenset()
+    tree = _parse_module_ast(row.composition_owner_module)
+    wired: set[str] = set()
+    for func in _composition_entry_functions(tree):
+        for arg in (*func.args.args, *func.args.kwonlyargs):
+            root = _annotation_root_name(arg.annotation)
+            if root and root in delegates:
+                wired.add(delegates[root])
+        for node in ast.walk(func):
+            if not isinstance(node, ast.Call):
+                continue
+            if isinstance(node.func, ast.Attribute) and isinstance(
+                node.func.value, ast.Name
+            ):
+                if node.func.value.id in delegates:
+                    wired.add(delegates[node.func.value.id])
+    return frozenset(wired)
+
+
+def _composition_owner_has_build_entrypoint(row: Gr11ExtensionSurface) -> bool:
+    tree = _parse_module_ast(row.composition_owner_module)
+    return bool(_composition_entry_functions(tree))
+
+
+def _defining_module_for_symbol(row: Gr11ExtensionSurface, symbol: str) -> str | None:
+    for segment in _gr11_contract_segments(row.contract):
+        if _gr11_contract_segment_symbol(segment) == symbol:
+            return _gr11_contract_defining_module(segment)
+    return None
+
+
+def _module_exposes_registry_resolution_seam(rel: str, symbol: str) -> bool:
+    tree = _parse_module_ast(rel)
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        for item in node.body:
+            if not isinstance(item, ast.FunctionDef):
+                continue
+            if item.name.startswith("_"):
+                continue
+            if _annotation_references_name(item.returns, symbol):
+                return True
+    return False
+
+
+def _composition_owner_direct_wires_symbol(
+    row: Gr11ExtensionSurface, symbol: str
+) -> bool:
+    tree = _parse_module_ast(row.composition_owner_module)
+    if _tree_references_name(tree, symbol):
+        return True
+    for func in _composition_entry_functions(tree):
+        if _function_structurally_wires_symbol(func, symbol):
+            return True
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and _class_init_wires_symbol(node, symbol):
+            return True
+        if isinstance(node, ast.FunctionDef) and _function_structurally_wires_symbol(
+            node, symbol
+        ):
+            return True
+    return False
+
+
+def _composition_owner_wires_symbol(row: Gr11ExtensionSurface, symbol: str) -> bool:
+    if _composition_owner_direct_wires_symbol(row, symbol):
+        return True
+    for rel in _wired_delegate_modules(row):
+        if _tree_references_name(_parse_module_ast(rel), symbol):
+            return True
+    defining_module = _defining_module_for_symbol(row, symbol)
+    if (
+        defining_module is not None
+        and defining_module.endswith("plugin_spi.py")
+        and _composition_owner_has_build_entrypoint(row)
+    ):
+        for rel in row.consumer_scan_modules:
+            if _module_exposes_registry_resolution_seam(rel, symbol):
+                return True
+    return False
+
+
+def _consumer_redeclares_contract_symbols(
+    row: Gr11ExtensionSurface,
+) -> list[str]:
+    violations: list[str] = []
+    for symbol in gr11_contract_symbols(row.contract):
+        for rel in row.consumer_scan_modules:
+            if _module_declares_contract_class(rel, symbol):
+                violations.append(f"{rel} redefines {symbol}")
+    return violations
+
+
+def _composition_owner_dotted_module(composition_owner_module: str) -> str:
+    return composition_owner_module.replace("/", ".").removesuffix(".py")
+
+
+def _imported_composition_owner_callables(
+    rel: str, composition_owner_module: str
+) -> frozenset[str]:
+    comp_aliases = _consumer_import_aliases(composition_owner_module)
+    names: set[str] = set()
+    tree = _parse_module_ast(rel)
+    for node in tree.body:
+        if not isinstance(node, ast.ImportFrom) or node.module not in comp_aliases:
+            continue
+        for alias in node.names:
+            names.add(alias.asname or alias.name)
+    return frozenset(names)
+
+
+def _function_calls_imported_callable(
+    func: ast.FunctionDef, imported_names: frozenset[str]
+) -> bool:
+    for node in ast.walk(func):
+        if not isinstance(node, ast.Call):
+            continue
+        if isinstance(node.func, ast.Name) and node.func.id in imported_names:
+            return True
+        if isinstance(node.func, ast.Attribute) and node.func.attr in imported_names:
+            return True
+    return False
+
+
+def _consumer_competing_composition_wiring(
+    row: Gr11ExtensionSurface,
+) -> list[str]:
+    violations: list[str] = []
+    symbols = gr11_contract_symbols(row.contract)
+    for rel in row.consumer_scan_modules:
+        tree = _parse_module_ast(rel)
+        delegated = _imported_composition_owner_callables(
+            rel, row.composition_owner_module
+        )
+        for func in _composition_entry_functions(tree):
+            wired_symbols = tuple(
+                symbol
+                for symbol in symbols
+                if _function_composes_contract_symbol(func, symbol)
+            )
+            if not wired_symbols:
+                continue
+            if _function_calls_imported_callable(func, delegated):
+                continue
+            for symbol in wired_symbols:
+                violations.append(
+                    f"{rel}::{func.name} competes as composition owner for {symbol}"
+                )
+    return violations
 
 
 def test_gr11_g07_semantic_owner_module_mechanically_unique_per_row() -> None:
     for row in GR11_EXTENSION_SURFACES:
-        paths = _contract_module_paths(row)
-        for path in paths:
-            assert path.is_file(), (row.capability_id, path)
-        combined = "\n".join(path.read_text(encoding="utf-8") for path in paths)
-        for symbol in gr11_contract_symbols(row.contract):
-            assert f"class {symbol}" in combined or f"class {symbol}(" in combined, (
+        closed = _gr11_row_closed_world_modules(row)
+        for rel in closed:
+            assert (_REPO_ROOT / rel).is_file(), (row.capability_id, rel)
+        for segment in _gr11_contract_segments(row.contract):
+            symbol = _gr11_contract_segment_symbol(segment)
+            defining_module = _gr11_contract_defining_module(segment)
+            assert defining_module is not None, (row.capability_id, segment)
+            assert (_REPO_ROOT / defining_module).is_file(), (
+                row.capability_id,
+                defining_module,
+            )
+            assert _module_declares_contract_class(defining_module, symbol), (
+                row.capability_id,
+                defining_module,
+                symbol,
+            )
+            redeclarations = tuple(
+                rel
+                for rel in closed
+                if rel != defining_module
+                and _module_declares_contract_class(rel, symbol)
+            )
+            assert redeclarations == (), (
                 row.capability_id,
                 symbol,
+                redeclarations,
             )
 
 
 def test_gr11_g08_sanctioned_composition_owner_module_wires_contract_per_row() -> None:
     for row in GR11_EXTENSION_SURFACES:
-        rel_paths = (row.composition_owner_module, *row.consumer_scan_modules)
-        sources: list[str] = []
-        for rel in dict.fromkeys(rel_paths):
-            path = _REPO_ROOT / rel
-            assert path.is_file(), (row.capability_id, rel)
-            sources.append(path.read_text(encoding="utf-8"))
-        combined = "\n".join(sources)
+        comp_path = _REPO_ROOT / row.composition_owner_module
+        assert comp_path.is_file(), (row.capability_id, row.composition_owner_module)
         for symbol in gr11_contract_symbols(row.contract):
-            assert symbol in combined, (row.capability_id, symbol)
+            assert _composition_owner_wires_symbol(row, symbol), (
+                row.capability_id,
+                row.composition_owner_module,
+                symbol,
+            )
+        competing = _consumer_competing_composition_wiring(row)
+        assert competing == [], (row.capability_id, competing)
 
 
 def test_gr11_g09_consumers_do_not_redeclare_contract_ports() -> None:
     violations: list[str] = []
     for row in GR11_EXTENSION_SURFACES:
-        for symbol in gr11_contract_symbols(row.contract):
-            for rel in row.consumer_scan_modules:
-                path = _REPO_ROOT / rel
-                assert path.is_file(), rel
-                tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-                for node in tree.body:
-                    if isinstance(node, ast.ClassDef) and node.name == symbol:
-                        violations.append(f"{rel} redefines {symbol}")
+        violations.extend(_consumer_redeclares_contract_symbols(row))
     assert violations == []
 
 

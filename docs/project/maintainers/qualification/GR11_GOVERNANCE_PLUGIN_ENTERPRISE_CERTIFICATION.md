@@ -36,6 +36,12 @@ Mechanical ownership per row:
 - `composition_owner_module` — sanctioned composition entrypoint
 - `consumer_scan_modules` — production consumers scanned for implementation branching and port redeclaration
 
+### Mechanical ownership evidence (GR-11-R2)
+
+**G07 (semantic uniqueness, closed world):** For each contract segment, AST proves the canonical `class` lives in the segment’s `intergrax.*` defining module; among `semantic_owner_module`, `composition_owner_module`, and `consumer_scan_modules` only that defining module may declare the symbol (G09 reuses the same consumer redeclaration scan).
+
+**G08 (composition ownership):** Positive proof uses **only** `composition_owner_module` plus **delegate modules** directly imported and wired from it (`build_*` / `wire_*` parameters or `.production()` on imported consumer types). A symbol appearing only in an unrelated consumer cannot satisfy the gate. Consumers do not **compose** the contract (`build_*` / `wire_*` returning or constructing the port) unless they delegate via calls imported from the declared composition owner. `plugin_spi` reconciliation symbols may additionally be evidenced by a `consumer_scan_modules` registry resolution return type when the composition owner exposes a `build_*` entrypoint.
+
 ## Closed-world inventory (9 rows)
 
 | ID | Contract | Semantic owner | Composition owner | Default impl |
@@ -131,6 +137,6 @@ No global FRZ PASS claimed.
 
 ## Recommended status
 
-`GR-11-R1 = READY FOR AUDIT` · `GR-11 = READY FOR AUDIT` · `GOV-X1 = CURRENT` · `GR-13 = BLOCKED` pending independent exact-SHA GR-11 audit/closure.
+`GR-11-R2 = READY FOR AUDIT` · `GR-11 = READY FOR AUDIT` · `GOV-X1 = CURRENT` · `GR-13 = BLOCKED` pending independent exact-SHA GR-11 audit/closure.
 
 **Not claimed:** GR-11 CLOSED · GOV-X1 CLOSED · Governance Plane enterprise CLOSED · FRZ-* global PASS.
