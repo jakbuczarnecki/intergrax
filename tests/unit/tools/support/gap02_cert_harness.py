@@ -23,8 +23,15 @@ from intergrax.autonomous_work.catalog_canonical_discovery_service import (
 from intergrax.autonomous_work.worker_capability_fulfillment_coordinator import (
     WorkerCapabilityFulfillmentCoordinator,
 )
+from intergrax.autonomous_work.worker_capability_need_projection import (
+    DefaultWorkerCapabilityNeedProjection,
+)
+from intergrax.autonomous_work.worker_capability_recovery_ports import (
+    CanonicalCapabilityDiscoveryRequest,
+)
 from intergrax.autonomous_work.worker_capability_recovery_coordinator import (
     WorkerCapabilityRecoveryCoordinator,
+    derive_worker_discovery_correlation_id,
 )
 from intergrax.autonomous_work.worker_qualified_capability_resume_coordinator import (
     WorkerQualifiedCapabilityResumeCoordinator,
@@ -49,6 +56,7 @@ from intergrax.contracts.autonomous_work.capability_acquisition import (
     CapabilityNeedKind,
     WorkerCapabilityAcquisitionRequest,
     WorkerCapabilityNeed,
+    derive_worker_capability_need_id,
 )
 from intergrax.contracts.autonomous_work.obstacle_recovery import (
     RecoveryDecisionReasonCode,
@@ -63,27 +71,47 @@ from intergrax.contracts.autonomous_work.profile_reference import (
 )
 from intergrax.contracts.autonomous_work.references import ProblemReference
 from intergrax.contracts.autonomous_work.worker_capability_fulfillment import (
+    WorkerCapabilityFulfillmentDisposition,
     WorkerCapabilityFulfillmentRequest,
 )
 from intergrax.contracts.autonomous_work.worker_capability_recovery import (
     WorkerCapabilityRecoveryOutcome,
     WorkerCapabilityRecoveryPhase,
+    WorkerCapabilityRecoveryProvenance,
 )
 from intergrax.contracts.capability_acquisition.acquisition_outcome import (
     CapabilityAcquisitionOutcome,
 )
+from intergrax.contracts.capability_acquisition.acquisition_request import (
+    CapabilityAcquisitionRequest,
+    derive_capability_acquisition_request_id,
+)
+from intergrax.contracts.capability_acquisition.acquisition_result import (
+    CapabilityAcquisitionResult,
+)
 from intergrax.contracts.capability_catalog import CapabilityGovernanceContext
+from intergrax.contracts.capability_catalog.capability_gap import CapabilityGap
 from intergrax.contracts.capability_catalog.discovery_completion import (
+    DiscoveryCompletion,
     DiscoveryCompletionOutcome,
 )
 from intergrax.contracts.capability_qualification.qualification_outcome import (
     CapabilityQualificationOutcome,
 )
-from intergrax.contracts.capability_qualification.qualification_request import (
-    CapabilityQualificationRequest,
+from intergrax.contracts.capability_qualification.qualified_capability_binding import (
+    QualifiedCapabilityBindingRequest,
+    QualifiedCapabilityBindingResult,
+    derive_qualified_capability_binding_operation_id,
 )
 from intergrax.contracts.capability_qualification.qualification_result import (
     CapabilityQualificationResult,
+)
+from intergrax.contracts.capability_qualification.qualification_request import (
+    CapabilityQualificationRequest,
+    derive_capability_qualification_request_id,
+)
+from intergrax.contracts.capability_qualification.qualified_subject import (
+    qualified_capability_subject_from_result,
 )
 from intergrax.contracts.execution_identity import TaskId
 from intergrax.contracts.marketplace import MarketplaceQueryContext
@@ -94,6 +122,13 @@ from intergrax.contracts.marketplace.gap_acquisition import (
 from intergrax.contracts.tools.marketplace_handoff_reference import (
     derive_marketplace_gap_tool_handoff_id,
     marketplace_domain_handoff_reference,
+)
+from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
+    WorkerQualifiedCapabilityResumeOutcome,
+    WorkerQualifiedCapabilityResumeRequest,
+    WorkerQualifiedCapabilityResumeResult,
+    derive_qualified_capability_execution_request_id,
+    derive_worker_capability_resume_operation_id,
 )
 from intergrax.contracts.tools.qualified_tool_invocation import (
     QualifiedToolInvocationMaterialOutcome,
@@ -272,6 +307,50 @@ class CountingGapAcquisitionPort:
 
 
 @dataclass
+class RecordingResumePort:
+    """Cert seam: records resume without dispatching EE or invoking ToolRuntime."""
+
+    calls: int = 0
+    last_request: WorkerQualifiedCapabilityResumeRequest | None = None
+
+    def resume(
+        self,
+        request: WorkerQualifiedCapabilityResumeRequest,
+        *,
+        decided_at: datetime | None = None,
+    ) -> WorkerQualifiedCapabilityResumeResult:
+        self.calls += 1
+        self.last_request = request
+        timestamp = decided_at or request.requested_at
+        return WorkerQualifiedCapabilityResumeResult(
+            outcome=WorkerQualifiedCapabilityResumeOutcome.EXECUTION_FAILED,
+            resume_operation_id=request.resume_operation_id,
+            provenance=request.provenance,
+            decided_at=timestamp,
+        )
+
+
+@dataclass
+class CountingBindingProvider:
+    inner: MarketplaceToolQualifiedCapabilityBindingProvider
+    calls: int = 0
+
+    @property
+    def provider_id(self) -> str:
+        return self.inner.provider_id
+
+    def supports(self, request: QualifiedCapabilityBindingRequest) -> bool:
+        return self.inner.supports(request)
+
+    def bind(
+        self,
+        request: QualifiedCapabilityBindingRequest,
+    ) -> QualifiedCapabilityBindingResult:
+        self.calls += 1
+        return self.inner.bind(request)
+
+
+@dataclass
 class CachedRecoveryPort:
     """Replays a prior canonical recovery outcome (restart / intent-resume proofs)."""
 
@@ -321,6 +400,7 @@ class Gap02CertTrace:
 class Gap02CertHarness:
     tenant_id: str
     store: InMemoryDocumentStore
+    host_profile_id: str
     gap_port: CountingGapAcquisitionPort
     recovery: WorkerCapabilityRecoveryCoordinator
     qualification_adapter: QualificationCoordinatorAdapter
@@ -328,6 +408,7 @@ class Gap02CertHarness:
     assoc_repo: DocumentStoreMarketplaceQualifiedToolStageContextAssociationRepository
     intent_repo: DocumentStoreQualifiedMarketplaceToolExecutionIntentRepository
     binding_provider: MarketplaceToolQualifiedCapabilityBindingProvider
+    counting_binding: CountingBindingProvider
     activation_resolver: QualifiedMarketplaceToolActivationResolver
     materializer: CountingMaterializer
     lifecycle: ToolHostLifecycleService
@@ -340,8 +421,10 @@ class Gap02CertHarness:
         *,
         store: InMemoryDocumentStore | None = None,
         assoc_repo: DocumentStoreMarketplaceQualifiedToolStageContextAssociationRepository | None = None,
+        host_profile_id: str | None = None,
     ) -> Gap02CertHarness:
         resolved_store = store or InMemoryDocumentStore()
+        resolved_host = host_profile_id or f"{_HOST}:{tenant_id}"
         listing = me14_default_listing_v1()
         source = MarketplaceCapabilityCatalogSource(
             source=ME14_CAPABILITY_SOURCE,
@@ -428,10 +511,11 @@ class Gap02CertHarness:
             stage_repository=stage_repo,
             context_resolver=resolver,
         )
+        counting_binding = CountingBindingProvider(inner=binding_provider)
         intent_repo = DocumentStoreQualifiedMarketplaceToolExecutionIntentRepository(
             resolved_store,
         )
-        lifecycle = ToolHostLifecycleService(host_profile_id=_HOST)
+        lifecycle = ToolHostLifecycleService(host_profile_id=resolved_host)
         catalog_provider = Me14ToolCatalogProvider()
         materializer = CountingMaterializer(
             lifecycle.registry,
@@ -447,11 +531,12 @@ class Gap02CertHarness:
         activation_resolver = QualifiedMarketplaceToolActivationResolver(
             activation_read=lifecycle,
             acquisition=acquisition_tools,
-            host_profile_id=_HOST,
+            host_profile_id=resolved_host,
         )
         return cls(
             tenant_id=tenant_id,
             store=resolved_store,
+            host_profile_id=resolved_host,
             gap_port=gap_port,
             recovery=recovery,
             qualification_adapter=qual_adapter,
@@ -459,9 +544,214 @@ class Gap02CertHarness:
             assoc_repo=resolved_assoc,
             intent_repo=intent_repo,
             binding_provider=binding_provider,
+            counting_binding=counting_binding,
             activation_resolver=activation_resolver,
             materializer=materializer,
             lifecycle=lifecycle,
+        )
+
+    def assert_no_tool_side_effects(self) -> None:
+        assert self.materializer.physical_activations == 0
+        assert len(self.lifecycle.registry.list()) == 0
+        assert self.invoker.calls == 0
+
+    def _acquisition_request_bundle(
+        self,
+        recovery_decision_id: str,
+    ) -> tuple[WorkerCapabilityAcquisitionRequest, datetime]:
+        need = self.worker_need(recovery_decision_id)
+        decision = self.recovery_decision(need)
+        return self.acquisition_request(need, decision), _NOW
+
+    def complete_true_gap_discovery(
+        self,
+        recovery_decision_id: str,
+    ) -> DiscoveryCompletion:
+        request, timestamp = self._acquisition_request_bundle(recovery_decision_id)
+        worker_need_id = derive_worker_capability_need_id(request.need)
+        canonical_need = DefaultWorkerCapabilityNeedProjection().project(request.need)
+        assert canonical_need.need_id is not None
+        correlation_id = derive_worker_discovery_correlation_id(worker_need_id)
+        recovery: WorkerCapabilityRecoveryCoordinator = self.recovery
+        return recovery._discovery.complete_discovery(  # noqa: SLF001
+            CanonicalCapabilityDiscoveryRequest(
+                capability_need=canonical_need,
+                worker_need=request.need,
+                discovery_correlation_id=correlation_id,
+                requested_at=timestamp,
+            ),
+        )
+
+    def acquire_marketplace_gap(
+        self,
+        recovery_decision_id: str,
+        completion: DiscoveryCompletion,
+    ) -> CapabilityAcquisitionResult:
+        request, timestamp = self._acquisition_request_bundle(recovery_decision_id)
+        gap = CapabilityGap.from_discovery_completion(completion)
+        request_nonce = f"{request.need.recovery_decision_id}:acquire"
+        acquisition_request = CapabilityAcquisitionRequest(
+            request_id=derive_capability_acquisition_request_id(
+                gap_id=gap.gap_id,
+                request_nonce=request_nonce,
+            ),
+            request_nonce=request_nonce,
+            capability_gap=gap,
+            capability_need=DefaultWorkerCapabilityNeedProjection().project(request.need),
+            correlation_id=derive_worker_discovery_correlation_id(
+                derive_worker_capability_need_id(request.need),
+            ),
+            causation_id=request.need.recovery_decision_id,
+            requested_at=timestamp,
+        )
+        recovery: WorkerCapabilityRecoveryCoordinator = self.recovery
+        return recovery._acquisition.acquire(acquisition_request)  # noqa: SLF001
+
+    def qualify_acquisition(
+        self,
+        recovery_decision_id: str,
+        acquisition_result: CapabilityAcquisitionResult,
+        *,
+        completion: DiscoveryCompletion,
+    ) -> CapabilityQualificationResult:
+        request, timestamp = self._acquisition_request_bundle(recovery_decision_id)
+        gap = CapabilityGap.from_discovery_completion(completion)
+        strategy_id = acquisition_result.strategy_id
+        assert strategy_id is not None
+        qual_nonce = "qual-1"
+        qual_request = CapabilityQualificationRequest(
+            qualification_request_id=derive_capability_qualification_request_id(
+                acquisition_request_id=acquisition_result.request_id,
+                qualification_nonce=qual_nonce,
+            ),
+            qualification_nonce=qual_nonce,
+            acquisition_request_id=acquisition_result.request_id,
+            gap_id=gap.gap_id,
+            strategy_id=strategy_id,
+            acquisition_result=acquisition_result,
+            correlation_id=acquisition_result.correlation_id,
+            causation_id=acquisition_result.causation_id,
+            requested_at=timestamp,
+        )
+        return self.qualification_adapter.qualify(qual_request)
+
+    def execution_request_id_for_recovery(
+        self,
+        recovery_outcome: WorkerCapabilityRecoveryOutcome,
+        *,
+        recovery_decision_id: str,
+    ) -> str:
+        qualification = recovery_outcome.qualification_result
+        assert qualification is not None
+        need = self.worker_need(recovery_decision_id)
+        resume_operation_id = derive_worker_capability_resume_operation_id(
+            recovery_decision_id=need.recovery_decision_id,
+            qualification_request_id=qualification.qualification_request_id,
+        )
+        subject = qualified_capability_subject_from_result(qualification)
+        assert subject is not None
+        binding_operation_id = derive_qualified_capability_binding_operation_id(
+            resume_operation_id=resume_operation_id,
+            qualified_subject_reference=subject.qualified_subject_reference,
+        )
+        return derive_qualified_capability_execution_request_id(
+            resume_operation_id=resume_operation_id,
+            binding_operation_id=binding_operation_id,
+        )
+
+    def fulfill_through_durable_intent_before_ee(
+        self,
+        recovery_outcome: WorkerCapabilityRecoveryOutcome,
+        *,
+        recovery_decision_id: str,
+        resume: RecordingResumePort | None = None,
+    ) -> tuple[RecordingResumePort, str]:
+        recording = resume or RecordingResumePort()
+        coordinator = self.build_fulfillment_coordinator(
+            recovery=CachedRecoveryPort(recovery_outcome),
+            resume=recording,
+        )
+        result = coordinator.fulfill(self.fulfillment_request(recovery_decision_id))
+        assert result.disposition is not WorkerCapabilityFulfillmentDisposition.EXECUTION_DISPATCHED
+        exec_id = self.execution_request_id_for_recovery(
+            recovery_outcome,
+            recovery_decision_id=recovery_decision_id,
+        )
+        assert self.intent_repo.get(execution_request_id=exec_id) is not None
+        assert recording.calls == 1
+        assert self.invoker.calls == 0
+        assert self.materializer.physical_activations == 0
+        return recording, exec_id
+
+    def bind_qualified_capability(
+        self,
+        recovery_outcome: WorkerCapabilityRecoveryOutcome,
+        *,
+        recovery_decision_id: str,
+    ) -> QualifiedCapabilityBindingResult:
+        qualification = recovery_outcome.qualification_result
+        assert qualification is not None
+        need = self.worker_need(recovery_decision_id)
+        resume_operation_id = derive_worker_capability_resume_operation_id(
+            recovery_decision_id=need.recovery_decision_id,
+            qualification_request_id=qualification.qualification_request_id,
+        )
+        subject = qualified_capability_subject_from_result(qualification)
+        assert subject is not None
+        binding_operation_id = derive_qualified_capability_binding_operation_id(
+            resume_operation_id=resume_operation_id,
+            qualified_subject_reference=subject.qualified_subject_reference,
+        )
+        binding_request = QualifiedCapabilityBindingRequest(
+            binding_operation_id=binding_operation_id,
+            resume_operation_id=resume_operation_id,
+            qualified_subject=subject,
+            qualification_result=qualification,
+            worker_need_id=derive_worker_capability_need_id(need),
+            worker_instance_id=str(_WORKER_ID),
+            tenant_id=self.tenant_id,
+            task_id=_TASK_ID,
+            correlation_id=qualification.correlation_id,
+            causation_id=qualification.causation_id,
+            requested_at=_NOW,
+        )
+        return self.counting_binding.bind(binding_request)
+
+    def recovery_outcome_from_staged(
+        self,
+        *,
+        recovery_decision_id: str,
+        completion: DiscoveryCompletion,
+        acquisition_result: CapabilityAcquisitionResult,
+        qualification_result: CapabilityQualificationResult,
+    ) -> WorkerCapabilityRecoveryOutcome:
+        need = self.worker_need(recovery_decision_id)
+        worker_need_id = derive_worker_capability_need_id(need)
+        canonical_need = DefaultWorkerCapabilityNeedProjection().project(need)
+        assert canonical_need.need_id is not None
+        gap = CapabilityGap.from_discovery_completion(completion)
+        qual_request_id = derive_capability_qualification_request_id(
+            acquisition_request_id=acquisition_result.request_id,
+            qualification_nonce="qual-1",
+        )
+        provenance = WorkerCapabilityRecoveryProvenance(
+            worker_need_id=worker_need_id,
+            canonical_need_id=canonical_need.need_id,
+            discovery_correlation_id=completion.discovery_correlation_id,
+            discovery_completion_outcome=completion.outcome.value,
+            gap_id=gap.gap_id,
+            acquisition_request_id=acquisition_result.request_id,
+            acquisition_strategy_id=acquisition_result.strategy_id,
+            qualification_request_id=qual_request_id,
+            evidence_refs=need.evidence_refs,
+        )
+        return WorkerCapabilityRecoveryOutcome(
+            phase=WorkerCapabilityRecoveryPhase.QUALIFICATION_COMPLETE,
+            provenance=provenance,
+            discovery_completion=completion,
+            acquisition_result=acquisition_result,
+            qualification_result=qualification_result,
+            decided_at=_NOW,
         )
 
     def worker_need(self, recovery_decision_id: str) -> WorkerCapabilityNeed:
@@ -584,6 +874,7 @@ class Gap02CertHarness:
         invoker: RecordingInvoker | None = None,
         *,
         recovery: WorkerCapabilityRecoveryCoordinator | CachedRecoveryPort | None = None,
+        resume: RecordingResumePort | WorkerQualifiedCapabilityResumeCoordinator | None = None,
     ) -> WorkerCapabilityFulfillmentCoordinator:
         resolved_invoker = invoker or self.invoker
         self.invoker = resolved_invoker
@@ -606,16 +897,21 @@ class Gap02CertHarness:
             runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
         )
         execution = WorkerQualifiedCapabilityExecutionEngineAdapter(dispatch=dispatch)
-        resume = WorkerQualifiedCapabilityResumeCoordinator(
-            binding=QualifiedCapabilityBindingService((self.binding_provider,)),
-            execution=execution,
-            authority_admission=build_worker_execution_admission_for_uca6c(
-                worker_instance_id=_WORKER_ID,
-                tenant_id=self.tenant_id,
-                workspace_id="workspace-gap02-cert",
-                principal_id="principal-gap02-cert",
-            ),
-        )
+        if resume is None:
+            resolved_resume: RecordingResumePort | WorkerQualifiedCapabilityResumeCoordinator = (
+                WorkerQualifiedCapabilityResumeCoordinator(
+                    binding=QualifiedCapabilityBindingService((self.counting_binding,)),
+                    execution=execution,
+                    authority_admission=build_worker_execution_admission_for_uca6c(
+                        worker_instance_id=_WORKER_ID,
+                        tenant_id=self.tenant_id,
+                        workspace_id="workspace-gap02-cert",
+                        principal_id="principal-gap02-cert",
+                    ),
+                )
+            )
+        else:
+            resolved_resume = resume
 
         @dataclass
         class _DirectReuse:
@@ -625,7 +921,7 @@ class Gap02CertHarness:
         resolved_recovery = recovery if recovery is not None else self.recovery
         return WorkerCapabilityFulfillmentCoordinator(
             recovery=resolved_recovery,
-            resume=resume,
+            resume=resolved_resume,
             direct_reuse=_DirectReuse(),
             intent_preparation=intent_preparation,
         )
@@ -635,6 +931,7 @@ class Gap02CertHarness:
         return Gap02CertHarness.build(
             self.tenant_id,
             store=self.store,
+            host_profile_id=self.host_profile_id,
             assoc_repo=DocumentStoreMarketplaceQualifiedToolStageContextAssociationRepository(
                 self.store,
             ),
@@ -642,11 +939,13 @@ class Gap02CertHarness:
 
 
 __all__ = [
+    "CountingBindingProvider",
     "CountingGapAcquisitionPort",
     "CountingMaterializer",
     "Gap02CertHarness",
     "Gap02CertTrace",
     "RecordingInvoker",
+    "RecordingResumePort",
     "_NOW",
     "_TASK_ID",
     "_WORKER_ID",

@@ -31,16 +31,21 @@ from intergrax.contracts.capability_catalog import (
 )
 from intergrax.contracts.capability_catalog.capability_gap import CapabilityGap
 from intergrax.contracts.capability_catalog.discovery_completion import (
+    DiscoveryCompletionOutcome,
     build_discovery_completion,
 )
-from intergrax.contracts.capability_catalog.federation import (
-    CapabilityCatalogFederationCompleteness,
+from intergrax.contracts.capability_qualification.qualification_outcome import (
+    CapabilityQualificationOutcome,
 )
 from intergrax.contracts.capability_qualification.qualified_capability_binding import (
+    QualifiedCapabilityBindingOutcome,
     derive_qualified_capability_binding_operation_id,
 )
 from intergrax.contracts.capability_qualification.qualified_subject import (
     qualified_capability_subject_from_result,
+)
+from intergrax.contracts.capability_catalog.federation import (
+    CapabilityCatalogFederationCompleteness,
 )
 from intergrax.contracts.marketplace import MarketplaceQueryContext
 from intergrax.contracts.tools.marketplace_handoff_reference import (
@@ -66,6 +71,7 @@ from testing_support.canonical_me14_echo_tool import (
     ME14_VERSION_V2,
 )
 from tests.unit.tools.support.gap02_cert_harness import (
+    CachedRecoveryPort,
     Gap02CertHarness,
     RecordingInvoker,
     _NOW,
@@ -114,11 +120,50 @@ def test_c1_success_true_gap_through_toolruntime() -> None:
 def test_c2_no_prequalification_activation_timeline() -> None:
     harness = Gap02CertHarness.build(_TENANT_A)
     recovery_id = "recovery:gap02:cert:c2"
-    assert harness.materializer.physical_activations == 0
-    assert len(harness.lifecycle.registry.list()) == 0
-    coordinator = harness.build_fulfillment_coordinator()
-    coordinator.fulfill(harness.fulfillment_request(recovery_id))
+    harness.assert_no_tool_side_effects()
+    completion = harness.complete_true_gap_discovery(recovery_id)
+    assert completion.outcome is DiscoveryCompletionOutcome.MISSING_CAPABILITY
+    harness.assert_no_tool_side_effects()
+    harness.assert_no_tool_side_effects()
+    acquisition = harness.acquire_marketplace_gap(recovery_id, completion)
+    assert acquisition.outcome is CapabilityAcquisitionOutcome.SUCCEEDED
+    harness.assert_no_tool_side_effects()
+    handoff_id = derive_marketplace_gap_tool_handoff_id(
+        tenant_id=_TENANT_A,
+        operation_id=acquisition.request_id,
+    )
+    assert harness.stage_repo.get(tenant_id=_TENANT_A, handoff_id=handoff_id) is not None
+    harness.assert_no_tool_side_effects()
+    qualification = harness.qualify_acquisition(
+        recovery_id,
+        acquisition,
+        completion=completion,
+    )
+    assert qualification.outcome is CapabilityQualificationOutcome.QUALIFIED
+    harness.assert_no_tool_side_effects()
+    outcome = harness.recovery_outcome_from_staged(
+        recovery_decision_id=recovery_id,
+        completion=completion,
+        acquisition_result=acquisition,
+        qualification_result=qualification,
+    )
+    binding = harness.bind_qualified_capability(outcome, recovery_decision_id=recovery_id)
+    assert binding.outcome is QualifiedCapabilityBindingOutcome.BOUND
+    harness.assert_no_tool_side_effects()
+    harness.fulfill_through_durable_intent_before_ee(
+        outcome,
+        recovery_decision_id=recovery_id,
+    )
+    harness.assert_no_tool_side_effects()
+    invoker = RecordingInvoker()
+    coordinator = harness.build_fulfillment_coordinator(
+        invoker,
+        recovery=CachedRecoveryPort(outcome),
+    )
+    dispatch = coordinator.fulfill(harness.fulfillment_request(recovery_id))
+    assert dispatch.disposition is WorkerCapabilityFulfillmentDisposition.EXECUTION_DISPATCHED
     assert harness.materializer.physical_activations == 1
+    assert invoker.calls == 1
 
 
 def test_c3_exact_release_reuse_two_executions() -> None:
@@ -190,19 +235,59 @@ def test_c4_active_different_release_conflict() -> None:
     assert invoker.calls == 1
 
 
-def test_c5_multitenant_same_acquisition_id() -> None:
+def test_c5_multitenant_shared_store_isolation_and_continuation() -> None:
     shared_recovery = "recovery:gap02:cert:shared-nonce"
-    ha = Gap02CertHarness.build(_TENANT_A)
-    hb = Gap02CertHarness.build(_TENANT_B)
-    _, ta = ha.run_true_gap_recovery(shared_recovery)
-    _, tb = hb.run_true_gap_recovery(shared_recovery)
-    assert ta.acquisition_request_id == tb.acquisition_request_id
-    assert ta.handoff_id != tb.handoff_id
+    shared_store = InMemoryDocumentStore()
+    ha = Gap02CertHarness.build(_TENANT_A, store=shared_store)
+    hb = Gap02CertHarness.build(_TENANT_B, store=shared_store)
+    assert ha.store is hb.store
+    outcome_a, trace_a = ha.run_true_gap_recovery(shared_recovery)
+    outcome_b, trace_b = hb.run_true_gap_recovery(shared_recovery)
+    assert trace_a.acquisition_request_id == trace_b.acquisition_request_id
+    assert trace_a.handoff_id != trace_b.handoff_id
+    assoc_a = ha.assoc_repo.get_by_handoff_id(handoff_id=trace_a.handoff_id)
+    assoc_b = hb.assoc_repo.get_by_handoff_id(handoff_id=trace_b.handoff_id)
+    assert assoc_a is not None and assoc_b is not None
+    assert assoc_a.tenant_id == _TENANT_A
+    assert assoc_b.tenant_id == _TENANT_B
+    assert assoc_a.acquisition_request_id == trace_a.acquisition_request_id
+    assert assoc_b.acquisition_request_id == trace_b.acquisition_request_id
+    assert assoc_a.handoff_id == trace_a.handoff_id
+    assert assoc_b.handoff_id == trace_b.handoff_id
+    stage_a = ha.stage_repo.get(tenant_id=_TENANT_A, handoff_id=trace_a.handoff_id)
+    stage_b = hb.stage_repo.get(tenant_id=_TENANT_B, handoff_id=trace_b.handoff_id)
+    assert stage_a is not None and stage_b is not None
+    assert ha.stage_repo.get(tenant_id=_TENANT_A, handoff_id=trace_b.handoff_id) is None
+    assert hb.stage_repo.get(tenant_id=_TENANT_B, handoff_id=trace_a.handoff_id) is None
+    invoker_a = RecordingInvoker()
+    invoker_b = RecordingInvoker()
+    result_a = ha.build_fulfillment_coordinator(
+        invoker_a,
+        recovery=CachedRecoveryPort(outcome_a),
+    ).fulfill(ha.fulfillment_request(shared_recovery))
+    result_b = hb.build_fulfillment_coordinator(
+        invoker_b,
+        recovery=CachedRecoveryPort(outcome_b),
+    ).fulfill(hb.fulfillment_request(shared_recovery))
+    assert result_a.disposition is WorkerCapabilityFulfillmentDisposition.EXECUTION_DISPATCHED
+    assert result_b.disposition is WorkerCapabilityFulfillmentDisposition.EXECUTION_DISPATCHED
+    exec_a = ha.execution_request_id_for_recovery(outcome_a, recovery_decision_id=shared_recovery)
+    exec_b = hb.execution_request_id_for_recovery(outcome_b, recovery_decision_id=shared_recovery)
+    intent_a = ha.intent_repo.get(execution_request_id=exec_a)
+    intent_b = hb.intent_repo.get(execution_request_id=exec_b)
+    assert intent_a is not None and intent_b is not None
+    assert intent_a.tenant_id == _TENANT_A
+    assert intent_b.tenant_id == _TENANT_B
+    assert invoker_a.calls == 1
+    assert invoker_b.calls == 1
+    assert invoker_a.last_request.tenant_id == _TENANT_A
+    assert invoker_b.last_request.tenant_id == _TENANT_B
 
 
 def test_c5_multitenant_adversarial_reads() -> None:
-    ha = Gap02CertHarness.build(_TENANT_A)
-    hb = Gap02CertHarness.build(_TENANT_B)
+    shared_store = InMemoryDocumentStore()
+    ha = Gap02CertHarness.build(_TENANT_A, store=shared_store)
+    hb = Gap02CertHarness.build(_TENANT_B, store=shared_store)
     _, ta = ha.run_true_gap_recovery("recovery:gap02:mt:a")
     _, tb = hb.run_true_gap_recovery("recovery:gap02:mt:b")
     assert ha.stage_repo.get(tenant_id=_TENANT_A, handoff_id=tb.handoff_id) is None
@@ -225,25 +310,40 @@ def test_c6_restart_after_staging() -> None:
     assert result.disposition is WorkerCapabilityFulfillmentDisposition.EXECUTION_DISPATCHED
 
 
-def test_c7_restart_after_intent() -> None:
-    from tests.unit.tools.support.gap02_cert_harness import CachedRecoveryPort
-
+def test_c7_restart_after_intent_before_ee() -> None:
     harness = Gap02CertHarness.build(_TENANT_A)
     recovery_id = "recovery:gap02:cert:c7"
-    coordinator = harness.build_fulfillment_coordinator()
-    first = coordinator.fulfill(harness.fulfillment_request(recovery_id))
-    assert first.disposition is WorkerCapabilityFulfillmentDisposition.EXECUTION_DISPATCHED
-    assert first.recovery_outcome is not None
-    exec_id = first.provenance.execution_request_id
-    assert exec_id is not None
-    assert harness.intent_repo.get(execution_request_id=exec_id) is not None
-    restarted = harness.reconstruct_tool_domain()
-    restarted_coordinator = restarted.build_fulfillment_coordinator(
-        RecordingInvoker(),
-        recovery=CachedRecoveryPort(first.recovery_outcome),
+    outcome, _trace = harness.run_true_gap_recovery(recovery_id)
+    acquire_before = harness.gap_port.acquire_calls
+    qual_before = harness.qualification_adapter.calls
+    binding_before = harness.counting_binding.calls
+    exec_id = harness.execution_request_id_for_recovery(
+        outcome,
+        recovery_decision_id=recovery_id,
     )
-    replay = restarted_coordinator.fulfill(restarted.fulfillment_request(recovery_id))
+    harness.fulfill_through_durable_intent_before_ee(
+        outcome,
+        recovery_decision_id=recovery_id,
+    )
+    assert harness.intent_repo.get(execution_request_id=exec_id) is not None
+    checkpoint_acquire = harness.gap_port.acquire_calls
+    checkpoint_qual = harness.qualification_adapter.calls
+    checkpoint_binding = harness.counting_binding.calls
+    restarted = harness.reconstruct_tool_domain()
+    restarted.gap_port.acquire_calls = checkpoint_acquire
+    invoker = RecordingInvoker()
+    replay = restarted.build_fulfillment_coordinator(
+        invoker,
+        recovery=CachedRecoveryPort(outcome),
+    ).fulfill(restarted.fulfillment_request(recovery_id))
     assert replay.disposition is WorkerCapabilityFulfillmentDisposition.EXECUTION_DISPATCHED
+    assert replay.provenance.execution_request_id == exec_id
+    assert restarted.gap_port.acquire_calls == checkpoint_acquire == acquire_before
+    assert restarted.qualification_adapter.calls == 0
+    assert checkpoint_qual == qual_before
+    assert restarted.counting_binding.calls == checkpoint_binding + 1
+    assert checkpoint_binding == binding_before
+    assert invoker.calls == 1
 
 
 def test_c9_association_store_unavailable() -> None:
@@ -334,9 +434,20 @@ def test_c18_provider_registry_deterministic_resolve() -> None:
         )
 
 
-def test_c17_codecraft_regression_wave_reference() -> None:
-    path = _REPO_ROOT / "tests/unit/autonomous_work/test_uca6c_r6_r5_8_r2_worker_governed_execution_e2e.py"
+_CODECRAFT_REGRESSION = (
+    "tests/unit/autonomous_work/test_uca6c_r6_r5_8_r2_worker_governed_execution_e2e.py"
+)
+
+
+def test_codecraft_regression_module_inventory() -> None:
+    path = _REPO_ROOT / _CODECRAFT_REGRESSION
     assert path.is_file()
+
+
+def test_c17_codecraft_regression_run() -> None:
+    target = _REPO_ROOT / _CODECRAFT_REGRESSION
+    exit_code = pytest.main([str(target), "-q", "--tb=short"])
+    assert exit_code == 0
 
 
 def test_c23_evidence_continuity_ids() -> None:
