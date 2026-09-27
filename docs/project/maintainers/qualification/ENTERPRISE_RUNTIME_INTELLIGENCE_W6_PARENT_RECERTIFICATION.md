@@ -23,7 +23,7 @@ No architecture redesign; no new owners or durable intelligence store.
 
 | Wave | Classification |
 |------|----------------|
-| W6-A ADR + inventory | STILL TRUE (status Proposed; §8 reconciliation added) |
+| W6-A ADR + inventory | STILL TRUE — historical W6-A status was Proposed; ADR independently Accepted at W6 closure @ `846af28cd8fb6889cece1e8807196014dc89cdfd` |
 | W6-B contracts | REMEDIATED IN R1 (typed outcomes + execution IDs) |
 | W6-C context + analyzer | STILL TRUE |
 | W6-D orchestration | STILL TRUE |
