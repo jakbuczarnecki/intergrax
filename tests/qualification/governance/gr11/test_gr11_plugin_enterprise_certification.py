@@ -18,6 +18,7 @@ from tests.qualification.governance.gr11.catalog import (
     GR11_IMPLEMENTATION_BRANCH_SCAN_MODULES,
     GR11_QUALIFICATION_STATUS,
     GR11_WEAK_BOUNDARY_SCAN_MODULES,
+    Gr11CanonicalCompositionBoundary,
     Gr11DynamicRegistrationApplicability,
     Gr11ExtensionSurface,
     Gr11QualificationStatus,
@@ -377,37 +378,84 @@ def _module_exposes_registry_resolution_seam(rel: str, symbol: str) -> bool:
     return False
 
 
-def _module_ast_structurally_wires_symbol(tree: ast.Module, symbol: str) -> bool:
+def _module_ast_structurally_wires_symbol(
+    tree: ast.Module,
+    symbol: str,
+    *,
+    boundary: Gr11CanonicalCompositionBoundary,
+) -> bool:
     for func in _composition_entry_functions(tree):
         if _function_structurally_wires_symbol(func, symbol):
             return True
-    for node in tree.body:
-        if isinstance(node, ast.ClassDef) and _class_structurally_wires_symbol(
-            node, symbol
-        ):
-            return True
-        if isinstance(node, ast.FunctionDef) and _function_structurally_wires_symbol(
-            node, symbol
-        ):
-            return True
+    for class_name in boundary.boundary_class_names:
+        for node in tree.body:
+            if isinstance(node, ast.ClassDef) and node.name == class_name:
+                if _class_structurally_wires_symbol(node, symbol):
+                    return True
+    for func_name in boundary.emitter_function_names:
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef) and node.name == func_name:
+                if _function_structurally_wires_symbol(node, symbol):
+                    return True
     return False
 
 
-def _module_structurally_wires_symbol(rel: str, symbol: str) -> bool:
-    return _module_ast_structurally_wires_symbol(_parse_module_ast(rel), symbol)
+def _module_ast_delegate_structurally_wires_symbol(
+    tree: ast.Module,
+    symbol: str,
+    *,
+    boundary: Gr11CanonicalCompositionBoundary,
+) -> bool:
+    for func in _composition_entry_functions(tree):
+        if _function_structurally_wires_symbol(func, symbol):
+            return True
+    for class_name in boundary.delegate_boundary_class_names:
+        for node in tree.body:
+            if isinstance(node, ast.ClassDef) and node.name == class_name:
+                if _class_structurally_wires_symbol(node, symbol):
+                    return True
+    return False
+
+
+def _module_structurally_wires_symbol(
+    rel: str,
+    symbol: str,
+    *,
+    boundary: Gr11CanonicalCompositionBoundary,
+) -> bool:
+    return _module_ast_structurally_wires_symbol(
+        _parse_module_ast(rel), symbol, boundary=boundary
+    )
+
+
+def _module_delegate_structurally_wires_symbol(
+    rel: str,
+    symbol: str,
+    *,
+    boundary: Gr11CanonicalCompositionBoundary,
+) -> bool:
+    return _module_ast_delegate_structurally_wires_symbol(
+        _parse_module_ast(rel), symbol, boundary=boundary
+    )
 
 
 def _composition_owner_direct_wires_symbol(
     row: Gr11ExtensionSurface, symbol: str
 ) -> bool:
-    return _module_structurally_wires_symbol(row.composition_owner_module, symbol)
+    return _module_structurally_wires_symbol(
+        row.composition_owner_module,
+        symbol,
+        boundary=row.canonical_composition_boundary,
+    )
 
 
 def _composition_owner_wires_symbol(row: Gr11ExtensionSurface, symbol: str) -> bool:
     if _composition_owner_direct_wires_symbol(row, symbol):
         return True
     for rel in _wired_delegate_modules(row):
-        if _module_structurally_wires_symbol(rel, symbol):
+        if _module_delegate_structurally_wires_symbol(
+            rel, symbol, boundary=row.canonical_composition_boundary
+        ):
             return True
     defining_module = _defining_module_for_symbol(row, symbol)
     if (
@@ -544,11 +592,56 @@ def build_host_runtime():
 """
     )
     assert _tree_references_name(incidental_module, symbol)
-    assert not _module_ast_structurally_wires_symbol(incidental_module, symbol)
+    assert not _module_ast_structurally_wires_symbol(
+        incidental_module, symbol, boundary=Gr11CanonicalCompositionBoundary()
+    )
     incidental_func = incidental_module.body[0]
     assert isinstance(incidental_func, ast.FunctionDef)
     assert _tree_references_name(incidental_func, symbol)
     assert not _function_structurally_wires_symbol(incidental_func, symbol)
+
+
+def test_gr11_g08_regression_arbitrary_helper_injection_not_canonical_composition() -> (
+    None
+):
+    symbol = "ExampleGovernancePort"
+    helper_module = ast.parse(
+        f"""
+def helper(port: {symbol}) -> None:
+    return None
+
+def build_host_runtime():
+    return None
+"""
+    )
+    helper_func = helper_module.body[0]
+    assert isinstance(helper_func, ast.FunctionDef)
+    assert _function_structurally_wires_symbol(helper_func, symbol)
+    assert not _module_ast_structurally_wires_symbol(
+        helper_module, symbol, boundary=Gr11CanonicalCompositionBoundary()
+    )
+
+
+def test_gr11_g08_regression_arbitrary_class_injection_not_canonical_composition() -> (
+    None
+):
+    symbol = "ExampleGovernancePort"
+    class_module = ast.parse(
+        f"""
+class UnrelatedHelper:
+    def __init__(self, port: {symbol}) -> None:
+        self._port = port
+
+def build_host_runtime():
+    return None
+"""
+    )
+    unrelated_class = class_module.body[0]
+    assert isinstance(unrelated_class, ast.ClassDef)
+    assert _class_structurally_wires_symbol(unrelated_class, symbol)
+    assert not _module_ast_structurally_wires_symbol(
+        class_module, symbol, boundary=Gr11CanonicalCompositionBoundary()
+    )
 
 
 def test_gr11_g09_consumers_do_not_redeclare_contract_ports() -> None:
