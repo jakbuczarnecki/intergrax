@@ -613,7 +613,7 @@ def test_gr12_a4_r3_r1_m20_future_operator_rule_explicit() -> None:
 
 
 def test_gr12_a4_r3_r1_ready_for_audit_ssot() -> None:
-    assert GR12_A4_R3_R1_TASK_STATUS == "READY FOR AUDIT"
+    assert GR12_A4_R3_R1_TASK_STATUS == "CLOSED"
     assert GR12_A4_R3_R1_QUALIFICATION_PROOF == GR12_MEMORY_R3_R1_QUALIFICATION_PROOF
     assert (_REPO_ROOT / GR12_A4_R3_R1_QUALIFICATION_PROOF).is_file()
     live = [

@@ -59,8 +59,8 @@ Unchanged platform intent: contract-first evaluation at named **Governance Evalu
 
 - **Governance Evidence (GR-8):** public contract **frozen** — [ADR-GR-8-001](../technical/adr/entries/2026-09-17/ADR-GR-8-001.md); spine **CANDIDATE CLOSED — PUBLIC CONTRACT FROZEN** (independent final audit before CLOSED); **evaluation-point adoption** (AGENT_DECISION, INTERRUPT, PRE_MODEL, TOOL*, PRE_OUTPUT, POST_RUN, CONTROL_PLANE_MUTATION, fresh post-human re-evaluation) remains **open** under **GR-10 / GR-13**.
 - **Strategy coverage (GR-10):** **FINAL CLOSED within formally defined GR-10 scope** (typed matrix §9 + `tests/qualification/governance/strategy/`; SSOT `GR10_*_FORMAL_CLOSURE` in `catalog.py`; **GR-10-R7** residual matrix requalification retained as qualification artifact). **INFERENCE:** **CLOSED** — PRE_MODEL **QUALIFIED** on `InferenceExecutor` structured path (**GR-10-R2-C1/R1** — [ADR-GR-10-001](../technical/adr/entries/2026-09-18/ADR-GR-10-001.md)); root admission **NOT_APPLICABLE** (**GR-10-R4**); Inner Governance **NOT_APPLICABLE** (**GR-10-R5**); Governance Evidence **QUALIFIED** (**GR-10-R6 / R6-R1**); remaining INFERENCE blockers **NONE**. **ORCHESTRATION:** **FINAL CLOSED** — R8–R15 qualification slices; per-GEP GR-8 fact adoption **DEFERRED_TO_GR13** where typed ([ADR-GR-10-003](../technical/adr/entries/2026-09-21/ADR-GR-10-003-gr10-gr13-governance-evidence-certification-scope.md)). **AGENTIC:** **FINAL CLOSED** — P-UAEP canonical ([ADR-GR-10-004](../technical/adr/entries/2026-09-21/ADR-GR-10-004-agentic-execution-model-uaep-canonical.md)); `acp.session.v1` explicit opt-in only; Governance Evidence capability **PARTIAL** (mandatory spine qualified; per-GEP facts **GR-13**). **Next governance milestone:** **GR-12** control-plane mutation (not GR-10 scope).
-- **Control-plane mutation (GR-12):** **READY FOR AUDIT** (GR-12-FINAL parent gate) — shared `ControlPlaneMutationAuthorizationBoundary` (CLA-04) spine **FINAL CLOSED** (A2); core surfaces **FINAL CLOSED** qualified (A3); residuals **QUALIFIED** (catalog, vector) or **NOT_APPLICABLE** (memory execution/background writes per ADR). **Not CLOSED** until independent exact-SHA audit; GOV_FINAL_4 scenario **CP** remains **GAP**. Not an extension of `MeaningfulSideEffectRequest`.
-- **Plugin enterprise certification (GR-11)** and **full proof matrix (GR-13)** open.
+- **Control-plane mutation (GR-12):** **CLOSED** — independent exact-SHA audit accepted @ `03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06` (semantic qualification baseline `b706c2c72a900575ec360b7f217c97a3656c71b9`). GOV_FINAL_4 scenario **CP** = **QUALIFIED** within GR-12 scope. Not an extension of `MeaningfulSideEffectRequest`.
+- **Plugin enterprise certification (GR-11):** **READY FOR AUDIT** (GOV-X1 child). **GR-13** open.
 - **Transitional Task/Nexus coupling** on some pause bridges — Execution owns lifecycle target; port integration incomplete on non-orchestration strategies.
 - **Human APPROVED ≠ Governance ALLOW** — fresh DENY still applies; resume requires scoped authorization (see HITL section).
 
@@ -76,11 +76,12 @@ A4 classification — CLOSED
 
 Catalog — QUALIFIED
 Vector — QUALIFIED
-Memory — NOT_APPLICABLE at GR-12 CP layer (ADR GR-12-A4-R3); R3-R1 READY FOR AUDIT
+Memory — NOT_APPLICABLE at GR-12 CP layer (ADR GR-12-A4-R3); R3-R1 CLOSED with GR-12
 
-GR-12 overall — READY FOR AUDIT (GR-12-FINAL)
-Next — independent exact-SHA audit and GOV-X1 closure evidence (not self-CLOSED)
-GOV_FINAL_4 CP candidate — READY FOR AUDIT (scenario CP row stays GAP until acceptance)
+GR-12 overall — CLOSED (independent audit @ 03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06)
+Semantic baseline — b706c2c72a900575ec360b7f217c97a3656c71b9
+GR-11 — READY FOR AUDIT (Governance plugin extensibility)
+GOV_FINAL_4 CP — QUALIFIED within GR-12 scope (historical session row was GAP)
 ```
 
 **Canonical control-plane model (unchanged target):** shared **CONTROL_PLANE_MUTATION** authority context → canonical **CLA-04** authorization boundary → **domain owner** executes its own mutation. No universal mutation executor, no global `GovernanceEngine`, no second permission engine.

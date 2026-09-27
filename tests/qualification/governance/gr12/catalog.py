@@ -108,13 +108,13 @@ GR12_A4_RESIDUAL_PATH_IDS: Final[tuple[str, ...]] = (
 )
 
 GR12_A4_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
-    task_name="Independent GR-12 exact-SHA audit and closure",
+    task_name="GR-11 Governance Plugin Enterprise Certification",
     exact_blocker=(
-        "GR-12-FINAL parent qualification evidence is READY FOR AUDIT; GOV_FINAL_4 "
-        "scenario CP remains GAP until independent exact-SHA acceptance."
+        "GR-12 independently accepted at 03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06; "
+        "next canonical GOV-X1 child is GR-11 READY FOR AUDIT."
     ),
     why_highest=(
-        "External audit is the only legal transition from READY FOR AUDIT to GR-12 CLOSED."
+        "Governance extensibility certification follows accepted control-plane closure."
     ),
 )
 
@@ -123,25 +123,28 @@ GR12_A4_R3_R1_QUALIFICATION_PROOF: Final[str] = (
     "test_gr12_a4_r3_r1_memory_specialized_governance_qualification.py"
 )
 
-GR12_A4_R3_R1_TASK_STATUS: Final[str] = "READY FOR AUDIT"
+GR12_A4_R3_R1_TASK_STATUS: Final[str] = "CLOSED"
 
-GR12_FINAL_PARENT_QUALIFICATION_STATUS: Final[str] = "READY FOR AUDIT"
+GR12_SEMANTIC_QUALIFICATION_BASELINE_SHA: Final[str] = (
+    "b706c2c72a900575ec360b7f217c97a3656c71b9"
+)
 
-GR12_GOV_FINAL_4_CP_QUALIFICATION_CANDIDATE_STATUS: Final[str] = "READY FOR AUDIT"
+GR12_INDEPENDENT_AUDIT_ACCEPTANCE_SHA: Final[str] = (
+    "03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06"
+)
+
+GR12_FINAL_PARENT_QUALIFICATION_STATUS: Final[str] = "CLOSED"
+
+GR12_GOV_FINAL_4_CP_QUALIFICATION_CANDIDATE_STATUS: Final[str] = "QUALIFIED"
 
 GR12_FINAL_QUALIFICATION_PROOF: Final[str] = (
     "tests/qualification/governance/gr12/test_gr12_final_control_plane_qualification.py"
 )
 
 GR12_FINAL_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
-    task_name="Independent GR-12 exact-SHA audit and GOV-X1 closure evidence",
-    exact_blocker=(
-        "GR-12-FINAL parent gate READY FOR AUDIT; GOV_FINAL_4 scenario CP remains GAP "
-        "until independent exact-SHA acceptance — no self-closure by implementation agent."
-    ),
-    why_highest=(
-        "Program honesty requires external audit before atomic GR-12 CLOSED and G3B row uplift."
-    ),
+    task_name="GR-11 Governance Plugin Enterprise Certification (GOV-X1-GR11-WAVE)",
+    exact_blocker="GR-12 CLOSED; GR-11 qualification bundle READY FOR AUDIT.",
+    why_highest="Next bounded GOV-X1 child after accepted GR-12-FINAL audit.",
 )
 
 GR12_FINAL_BLOCKED_COVERAGE_STATUSES: Final[frozenset[Gr12CoverageStatus]] = frozenset(

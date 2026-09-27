@@ -32,7 +32,9 @@ def _nid(path: str, test_name: str) -> str:
 
 _Q_AUTH = "tests/qualification/governance/test_governance_e2e_authorization.py"
 _GR2_LAUNCHER = "tests/unit/runtime/governance/test_gr2_r3_root_execution_launcher.py"
-_GR2_ADMISSION = "tests/unit/runtime/governance/test_runtime_execution_policy_admission.py"
+_GR2_ADMISSION = (
+    "tests/unit/runtime/governance/test_runtime_execution_policy_admission.py"
+)
 _GR2_GOV = "tests/unit/runtime/governance/test_gr2_execution_admission_governance.py"
 _GR3 = "tests/unit/runtime/governance/test_gr3_canonical_inner_enforcement.py"
 _PG_B = "tests/unit/runtime/policy/test_pg_fix_b_side_effect_policy_precedence.py"
@@ -43,20 +45,14 @@ _GR6_ACTION = "tests/unit/contracts/test_gr6_arch_canonical_action_identity.py"
 _MP4R7 = "tests/unit/mp4r7/test_enterprise_integration_qualification.py"
 _PG_C = "tests/unit/agents/external_contractor_adapter/test_pg_fix_c_scoped_approval_grant.py"
 _G5C2 = "tests/unit/runtime/human/test_g5c2b1_governed_continuation_grant.py"
-_GR7_A3 = (
-    "applications/governed_contractor_application/tests/host/test_gr7_a3_durable_provider_invocation.py"
-)
-_GR7_A4 = (
-    "applications/governed_contractor_application/tests/host/test_gr7_a4_unknown_host_state_separation.py"
-)
-_GR7_A6 = (
-    "applications/governed_contractor_application/tests/host/test_gr7_a6_provider_reconciliation.py"
-)
-_GR7_A7 = (
-    "applications/governed_contractor_application/tests/host/test_gr7_a7_provider_recovery.py"
-)
+_GR7_A3 = "applications/governed_contractor_application/tests/host/test_gr7_a3_durable_provider_invocation.py"
+_GR7_A4 = "applications/governed_contractor_application/tests/host/test_gr7_a4_unknown_host_state_separation.py"
+_GR7_A6 = "applications/governed_contractor_application/tests/host/test_gr7_a6_provider_reconciliation.py"
+_GR7_A7 = "applications/governed_contractor_application/tests/host/test_gr7_a7_provider_recovery.py"
 _MSE_POLICY = "tests/unit/runtime/policy/test_meaningful_side_effect_policy.py"
-_GR3_PLUGIN = "tests/unit/runtime/governance/test_gr3_r3_explicit_plugin_selection_semantics.py"
+_GR3_PLUGIN = (
+    "tests/unit/runtime/governance/test_gr3_r3_explicit_plugin_selection_semantics.py"
+)
 _GR2_PLUGIN = _GR2_LAUNCHER
 
 
@@ -68,7 +64,10 @@ GOV_FINAL_4_SCENARIO_CATALOG: tuple[GovFinal4ScenarioEvidence, ...] = (
         GovFinal4ScenarioResult.QUALIFIED,
         (
             _nid(_Q_AUTH, "test_scenario_a_root_admission_allow_single_intake"),
-            _nid(_GR2_LAUNCHER, "test_launcher_allow_runs_admission_and_intake_once[root.execution.agent]"),
+            _nid(
+                _GR2_LAUNCHER,
+                "test_launcher_allow_runs_admission_and_intake_once[root.execution.agent]",
+            ),
         ),
     ),
     GovFinal4ScenarioEvidence(
@@ -78,7 +77,9 @@ GOV_FINAL_4_SCENARIO_CATALOG: tuple[GovFinal4ScenarioEvidence, ...] = (
         GovFinal4ScenarioResult.QUALIFIED,
         (
             _nid(_Q_AUTH, "test_scenario_b_root_admission_deny_zero_intake"),
-            _nid(_GR2_LAUNCHER, "test_launcher_deny_skips_intake[root.execution.agent]"),
+            _nid(
+                _GR2_LAUNCHER, "test_launcher_deny_skips_intake[root.execution.agent]"
+            ),
         ),
     ),
     GovFinal4ScenarioEvidence(
@@ -126,7 +127,10 @@ GOV_FINAL_4_SCENARIO_CATALOG: tuple[GovFinal4ScenarioEvidence, ...] = (
         GovFinal4ScenarioResult.QUALIFIED,
         (
             _nid(_PG_B, "test_b1_historical_exploit_wildcard_allow_specific_deny"),
-            _nid(_PG_B, "test_b12_external_work_integration_broad_allow_cannot_bypass_specific_deny"),
+            _nid(
+                _PG_B,
+                "test_b12_external_work_integration_broad_allow_cannot_bypass_specific_deny",
+            ),
         ),
     ),
     GovFinal4ScenarioEvidence(
@@ -145,7 +149,11 @@ GOV_FINAL_4_SCENARIO_CATALOG: tuple[GovFinal4ScenarioEvidence, ...] = (
         "MSE NOT_REQUIRED without Decision material",
         "still passes Governance",
         GovFinal4ScenarioResult.QUALIFIED,
-        (_nid(_GR6_R1, "test_not_required_without_material_preserves_governance_allow"),),
+        (
+            _nid(
+                _GR6_R1, "test_not_required_without_material_preserves_governance_allow"
+            ),
+        ),
     ),
     GovFinal4ScenarioEvidence(
         "J",
@@ -162,7 +170,12 @@ GOV_FINAL_4_SCENARIO_CATALOG: tuple[GovFinal4ScenarioEvidence, ...] = (
         "REQUIRED Decision material missing",
         "DENY / fail closed",
         GovFinal4ScenarioResult.QUALIFIED,
-        (_nid(_GR6_R1, "test_direct_boundary_required_without_material_denies_no_effect"),),
+        (
+            _nid(
+                _GR6_R1,
+                "test_direct_boundary_required_without_material_denies_no_effect",
+            ),
+        ),
     ),
     GovFinal4ScenarioEvidence(
         "L",
@@ -180,7 +193,12 @@ GOV_FINAL_4_SCENARIO_CATALOG: tuple[GovFinal4ScenarioEvidence, ...] = (
         "Decision accepted + fresh Governance DENY",
         "0 effect",
         GovFinal4ScenarioResult.QUALIFIED,
-        (_nid(_MP4R7, "test_mp4r7_human_approve_governance_deny_prevents_continuation_and_operation"),),
+        (
+            _nid(
+                _MP4R7,
+                "test_mp4r7_human_approve_governance_deny_prevents_continuation_and_operation",
+            ),
+        ),
     ),
     GovFinal4ScenarioEvidence(
         "N",
@@ -202,7 +220,12 @@ GOV_FINAL_4_SCENARIO_CATALOG: tuple[GovFinal4ScenarioEvidence, ...] = (
         "Human APPROVED + fresh DENY",
         "no resume effect",
         GovFinal4ScenarioResult.QUALIFIED,
-        (_nid(_MP4R7, "test_mp4r7_human_approve_governance_deny_prevents_continuation_and_operation"),),
+        (
+            _nid(
+                _MP4R7,
+                "test_mp4r7_human_approve_governance_deny_prevents_continuation_and_operation",
+            ),
+        ),
     ),
     GovFinal4ScenarioEvidence(
         "Q",
@@ -274,7 +297,12 @@ GOV_FINAL_4_SCENARIO_CATALOG: tuple[GovFinal4ScenarioEvidence, ...] = (
         "Crash ambiguity (intent without outcome)",
         "fail-safe recovery path",
         GovFinal4ScenarioResult.PARTIAL,
-        (_nid(_GR7_A4, "test_crash_ambiguity_intent_without_outcome_not_explicit_unknown"),),
+        (
+            _nid(
+                _GR7_A4,
+                "test_crash_ambiguity_intent_without_outcome_not_explicit_unknown",
+            ),
+        ),
         notes="Host-qualified; not all strategies.",
     ),
     GovFinal4ScenarioEvidence(
@@ -300,17 +328,33 @@ GOV_FINAL_4_SCENARIO_CATALOG: tuple[GovFinal4ScenarioEvidence, ...] = (
         "external_work.* → canonical ops",
         GovFinal4ScenarioResult.QUALIFIED,
         (
-            _nid(_GR6_ACTION, "test_external_work_actions_are_valid_decision_execution_action_kinds"),
-            _nid(_GR6_ACTION, "test_decision_material_bound_action_matches_side_effect_action"),
+            _nid(
+                _GR6_ACTION,
+                "test_external_work_actions_are_valid_decision_execution_action_kinds",
+            ),
+            _nid(
+                _GR6_ACTION,
+                "test_decision_material_bound_action_matches_side_effect_action",
+            ),
         ),
     ),
     GovFinal4ScenarioEvidence(
         "CP",
         "Control-plane mutation",
-        "NOT QUALIFIED — GR-12 OPEN",
-        GovFinal4ScenarioResult.GAP,
-        (),
-        notes="NOT QUALIFIED — GR-12 OPEN per architecture SSOT.",
+        "CLA-04 governed domain mutations",
+        GovFinal4ScenarioResult.QUALIFIED,
+        (
+            "tests/qualification/governance/gr12/test_gr12_final_control_plane_qualification.py::"
+            "test_gr12_final_f02_applicable_rows_are_qualified",
+            "tests/unit/agent_distribution/test_agent_distribution_control_plane_governance.py::"
+            "test_ad1_activation_allow_commits_once",
+            "tests/unit/applications/test_catalog_hot_reload_governance.py::"
+            "test_chr_r1r1_4_explicit_principal_reaches_cla04_request",
+        ),
+        notes=(
+            "GR-12-FINAL independently accepted @ 03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06; "
+            "historical GOV-FINAL-4 session row was GAP until acceptance."
+        ),
     ),
 )
 
@@ -378,7 +422,11 @@ GOV_FINAL_4_FAILURE_CATALOG: tuple[GovFinal4FailureEvidence, ...] = (
 
 
 def scenario_ids_a_through_z() -> frozenset[str]:
-    return frozenset(entry.scenario_id for entry in GOV_FINAL_4_SCENARIO_CATALOG if entry.scenario_id.isalpha())
+    return frozenset(
+        entry.scenario_id
+        for entry in GOV_FINAL_4_SCENARIO_CATALOG
+        if entry.scenario_id.isalpha()
+    )
 
 
 def gov_final_4_scenario_evidence_pytest_node_ids() -> tuple[str, ...]:
@@ -392,7 +440,9 @@ def gov_final_4_scenario_evidence_pytest_node_ids() -> tuple[str, ...]:
 
 def gov_final_4_failure_evidence_pytest_node_ids() -> tuple[str, ...]:
     return tuple(
-        node_id for entry in GOV_FINAL_4_FAILURE_CATALOG for node_id in entry.pytest_node_ids
+        node_id
+        for entry in GOV_FINAL_4_FAILURE_CATALOG
+        for node_id in entry.pytest_node_ids
     )
 
 
@@ -410,4 +460,6 @@ def gov_final_4_unique_catalog_pytest_node_ids() -> tuple[str, ...]:
     return tuple(unique)
 
 
-GOV_FINAL_4_EVIDENCE_PYTEST_NODE_IDS: tuple[str, ...] = gov_final_4_unique_catalog_pytest_node_ids()
+GOV_FINAL_4_EVIDENCE_PYTEST_NODE_IDS: tuple[str, ...] = (
+    gov_final_4_unique_catalog_pytest_node_ids()
+)

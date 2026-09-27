@@ -148,14 +148,14 @@ def test_gr12_a4_gr10_remains_final_closed() -> None:
     assert "FINAL CLOSED" in GR10_OVERALL_FORMAL_CLOSURE.status
 
 
-def test_gr12_a4_next_bounded_task_is_independent_gr12_audit() -> None:
+def test_gr12_a4_next_bounded_task_is_gr11_after_gr12_closure() -> None:
     from tests.qualification.governance.gr12.catalog import (
         GR12_FINAL_PARENT_QUALIFICATION_STATUS,
     )
 
-    assert GR12_FINAL_PARENT_QUALIFICATION_STATUS == "READY FOR AUDIT"
-    assert "audit" in GR12_A4_NEXT_REMEDIATION.task_name.lower()
-    assert "READY FOR AUDIT" in GR12_A4_NEXT_REMEDIATION.exact_blocker
+    assert GR12_FINAL_PARENT_QUALIFICATION_STATUS == "CLOSED"
+    assert "GR-11" in GR12_A4_NEXT_REMEDIATION.task_name
+    assert "03dde6c" in GR12_A4_NEXT_REMEDIATION.exact_blocker
 
 
 def test_gr12_a4_catalog_ssot_qualified() -> None:

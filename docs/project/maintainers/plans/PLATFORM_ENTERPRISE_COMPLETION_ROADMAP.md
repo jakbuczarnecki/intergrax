@@ -411,6 +411,7 @@ Update this section only after independent exact-SHA audit.
 | S24-GAP-04-CERT | — | PLANNED / MANDATORY child — adversarial certification gate for **INT-EXTCOMP-X** parent closure. |
 | INT-CONFIG-REAL-X | — | PLANNED / MANDATORY — Scenario #24 GAP-01 CONFIGURE_EXISTING realization (Integrations). Precedes **CONFIG-X**. UCA must not implement GAP-01. |
 | AW-7C | — | PLANNED / MANDATORY — Scenario #24 GAP-03 scoped adaptive integration execution (Autonomous Work / Integrations). UCA must not implement GAP-03. |
+| GOV-X1-GR12 | `03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06` | GR-12-FINAL independent audit: 27 surfaces; 23 APPLICABLE+QUALIFIED; 4 NOT_APPLICABLE; uncatalogued consequential CP mutation = 0; dual permission authority = 0; catalog+vector qualified; memory N/A; final gate 24/24; full batch 139/139×2. GOV-X1 remains **CURRENT**. |
 | CTRL-X | — | PLANNED / MANDATORY — current-HEAD recertification of all cross-cutting control planes before freeze. |
 | STATE-X | — | PLANNED / MANDATORY — global persistence/state/recovery certification before freeze; includes resolution/classification of `R1-SQLITE-ENV-01` where persistence semantics apply. |
 | TRACE-X | — | PLANNED / MANDATORY — end-to-end traceability and evidence certification (`STATE-X` → `TRACE-X` → `CONFIG-X` → `COMPAT-X` → `PROD-Q`). |

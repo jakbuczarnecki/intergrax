@@ -36,8 +36,8 @@ def test_gr12_a4_r2_r1_vector_operator_qualified_ssot() -> None:
         GR12_FINAL_PARENT_QUALIFICATION_STATUS,
     )
 
-    assert GR12_FINAL_PARENT_QUALIFICATION_STATUS == "READY FOR AUDIT"
-    assert "audit" in GR12_A4_NEXT_REMEDIATION.task_name.lower()
+    assert GR12_FINAL_PARENT_QUALIFICATION_STATUS == "CLOSED"
+    assert "GR-11" in GR12_A4_NEXT_REMEDIATION.task_name
 
 
 def test_gr12_a4_r2_r1_execution_proof_nodes_bound_to_semantic_tests() -> None:

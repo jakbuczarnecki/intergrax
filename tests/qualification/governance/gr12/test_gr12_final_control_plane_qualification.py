@@ -10,6 +10,10 @@ from pathlib import Path
 
 import pytest
 
+from tests.qualification.governance.catalog import (
+    GOV_FINAL_4_SCENARIO_CATALOG,
+    GovFinal4ScenarioResult,
+)
 from tests.qualification.governance.gr12.a3_path_qualifications import (
     GR12_A3_CORE_PATH_PROOFS,
 )
@@ -231,19 +235,27 @@ def test_gr12_final_f24_catalogued_surfaces_match_bypass_inventory() -> None:
     assert missing_modules == []
 
 
-def test_gr12_final_f25_parent_status_ready_for_audit_not_self_closed() -> None:
-    assert GR12_FINAL_PARENT_QUALIFICATION_STATUS == "READY FOR AUDIT"
-    assert GR12_FINAL_PARENT_QUALIFICATION_STATUS not in _FORBIDDEN_PARENT_STATUSES
-    assert "CLOSED" not in GR12_FINAL_PARENT_QUALIFICATION_STATUS.upper()
+def test_gr12_final_f25_parent_status_closed_with_independent_audit_sha() -> None:
+    from tests.qualification.governance.gr12.catalog import (
+        GR12_INDEPENDENT_AUDIT_ACCEPTANCE_SHA,
+        GR12_SEMANTIC_QUALIFICATION_BASELINE_SHA,
+    )
+
+    assert GR12_FINAL_PARENT_QUALIFICATION_STATUS == "CLOSED"
+    assert GR12_SEMANTIC_QUALIFICATION_BASELINE_SHA == (
+        "b706c2c72a900575ec360b7f217c97a3656c71b9"
+    )
+    assert GR12_INDEPENDENT_AUDIT_ACCEPTANCE_SHA == (
+        "03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06"
+    )
     assert (_REPO_ROOT / GR12_FINAL_QUALIFICATION_PROOF).is_file()
 
 
-def test_gr12_final_gov_final_4_cp_candidate_ready_for_audit_row_stays_gap() -> None:
-    from tests.qualification.governance.catalog import GOV_FINAL_4_SCENARIO_CATALOG
-
-    assert GR12_GOV_FINAL_4_CP_QUALIFICATION_CANDIDATE_STATUS == "READY FOR AUDIT"
+def test_gr12_final_gov_final_4_cp_qualified_after_independent_audit() -> None:
+    assert GR12_GOV_FINAL_4_CP_QUALIFICATION_CANDIDATE_STATUS == "QUALIFIED"
     cp = next(row for row in GOV_FINAL_4_SCENARIO_CATALOG if row.scenario_id == "CP")
-    assert cp.result.name == "GAP"
+    assert cp.result is GovFinal4ScenarioResult.QUALIFIED
+    assert cp.primary_pytest_node_ids
 
 
 def test_gr12_final_representative_execution_proof_nodes_collect() -> None:

@@ -1,13 +1,12 @@
 # GR-12 Final Control-Plane Qualification
 
-**Status:** `READY FOR AUDIT`  
-**Task:** GR-12-FINAL (parent qualification under GOV-X1)  
-**AUDITED/IMPLEMENTED HEAD (session baseline):** `b706c2c72a900575ec360b7f217c97a3656c71b9` on `development`  
+**Status:** `CLOSED`
+**Independent audit acceptance SHA:** `03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06`
+**Semantic qualification baseline SHA:** `b706c2c72a900575ec360b7f217c97a3656c71b9`
+**Task:** GR-12-FINAL (parent qualification under GOV-X1)
 **SSOT inventory:** `tests/qualification/governance/gr12/catalog.py` (`GR12_CONTROL_PLANE_SURFACES`)  
 **Parent mechanical gate:** `tests/qualification/governance/gr12/test_gr12_final_control_plane_qualification.py`  
-**GOV_FINAL_4 scenario CP:** remains **GAP** (honesty gate); **candidate** status `READY FOR AUDIT` per `GR12_GOV_FINAL_4_CP_QUALIFICATION_CANDIDATE_STATUS`.
-
-Independent exact-SHA acceptance is required before `GR-12 = CLOSED` or uplifting G3B **CONTROL_PLANE_MUTATION** to **COVERED**.
+**GOV_FINAL_4 scenario CP:** **QUALIFIED** within GR-12 scope @ `03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06` (historical GOV-FINAL-4 session row preserved as **GAP**).
 
 ---
 
