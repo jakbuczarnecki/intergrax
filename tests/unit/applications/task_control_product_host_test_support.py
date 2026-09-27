@@ -12,7 +12,9 @@ from governed_contractor_application.host.environment_profile import (
 from governed_contractor_application.host.orchestration_decision_requirement_policy import (
     default_governed_contractor_harness_orchestration_decision_requirement_policy,
 )
-from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+from governed_contractor_application.host.settings import (
+    GovernedContractorBackendSettings,
+)
 from governed_contractor_application.manifest import build_governed_contractor_manifest
 from governed_contractor_application.tests.governed_contractor_ac3_projection import (
     build_governed_contractor_test_registry_projection,
@@ -42,6 +44,9 @@ from intergrax.collaborative_work.persistence import CollaborativeWorkRepositori
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
+from testing_support.dependency_concurrency_admission_config import (
+    tool_dependency_concurrency_admission_configuration,
+)
 
 
 class _InMemoryCollaborativeWorkStoreOwner:
@@ -49,7 +54,9 @@ class _InMemoryCollaborativeWorkStoreOwner:
         return None
 
 
-def in_memory_collaborative_work_repositories_for_tests() -> CollaborativeWorkRepositories:
+def in_memory_collaborative_work_repositories_for_tests() -> (
+    CollaborativeWorkRepositories
+):
     return CollaborativeWorkRepositories(
         membership=InMemoryWorkspaceMembershipRepository(),
         delegation=InMemoryAuthorityDelegationRepository(),
@@ -70,13 +77,30 @@ def durable_execution_continuation_state_store_for_tests() -> object:
 def build_task_control_product_harness_host_runtime(
     tmp_path: Path,
     *,
-    mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary | None = None,
+    mutation_authorization_boundary: ControlPlaneMutationAuthorizationBoundary
+    | None = None,
 ) -> HarnessHostRuntime:
     """Real ``build_harness_host_runtime`` path with legal strict PRODUCT prerequisites."""
     settings = GovernedContractorBackendSettings.from_env()
     manifest = build_governed_contractor_manifest()
-    base_env = manifest.environment or build_governed_contractor_environment_profile(settings)
+    base_env = manifest.environment or build_governed_contractor_environment_profile(
+        settings
+    )
     env = resolve_reference_production_strict_host_environment(base_env)
+    if env.reliability_profile.dependency_concurrency_admission is None:
+        env = env.model_copy(
+            update={
+                "reliability_profile": env.reliability_profile.model_copy(
+                    update={
+                        "dependency_concurrency_admission": (
+                            tool_dependency_concurrency_admission_configuration(
+                                "gr12-task-control-harness-tool",
+                            )
+                        ),
+                    },
+                ),
+            },
+        )
     manifest_for_runtime = manifest.model_copy(update={"environment": env})
     platform = build_reference_production_platform_persistence(
         db_path=tmp_path / "task-control-product-kv.db",

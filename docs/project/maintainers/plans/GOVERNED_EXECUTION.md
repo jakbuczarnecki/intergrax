@@ -207,9 +207,11 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-12-DOC-R1 | Canonical docs/status reconciliation | **CLOSED** |
 | GR-12-A4-R1-R1 | Catalog revision + ABA + explicit operator identity | **CLOSED** |
 | GR-12-A4-R1-R1-R1 | Catalog atomic registration + qualification closure | **CLOSED** |
-| GR-12-A4-R2 | Vector administration governance ADR | **NEXT** |
-| GR-12-A4-R3 | Specialized memory governance ADR | **AFTER VECTOR** |
-| GR-12 Final Qualification | Final control-plane certification | **AFTER RESIDUALS** |
+| GR-12-A4-R2 | Vector administration governance ADR | **CLOSED** |
+| GR-12-A4-R2-R1 | Governed vector operator qualification | **QUALIFIED / CLOSED** (evidence) |
+| GR-12-A4-R3 | Specialized memory governance ADR | **CLOSED** |
+| GR-12-A4-R3-R1 | Memory specialized governance qualification | **READY FOR AUDIT** |
+| GR-12 Final Qualification | Final control-plane certification | **NEXT** |
 | GR-10-R9-ADR1 | Canonical orchestration MSE authority contract | **CLOSED — CANONICAL MSE AUTHORITY CONTRACT APPROVED** — [ADR-GR-10-002](../../technical/adr/entries/2026-09-19/ADR-GR-10-002.md); `test_gr10_r9_adr1_mse_authority_contract.py`; independent GitHub audit required |
 | GR-10-R9 | ORCHESTRATION MSE production coverage | **CLOSED within GR-10 scope** — R9-R1/R2/R3 qualification slices |
 | GR-11 | Plugin & Enterprise Extensibility Certification | **OPEN** (after GR-12) |

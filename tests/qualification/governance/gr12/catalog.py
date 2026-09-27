@@ -108,16 +108,52 @@ GR12_A4_RESIDUAL_PATH_IDS: Final[tuple[str, ...]] = (
 )
 
 GR12_A4_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
-    task_name="GR-12-A4-R3-R1 — Memory Specialized Governance Qualification",
+    task_name="GR-12 Final Qualification",
     exact_blocker=(
-        "GR-12-A4-R3 ADR closed split architecture: production memory mutations are "
-        "execution/background domain writes under MemorySecurityGovernanceService; "
-        "enterprise qualification of invariants remains before final GR-12 close."
+        "GR-12-A4-R3-R1 memory specialized governance qualification evidence is "
+        "READY FOR AUDIT; final GR-12 control-plane certification and independent "
+        "exact-SHA acceptance remain before GR-12 CLOSED."
     ),
     why_highest=(
-        "Last residual GR-12 architecture decision (memory) is decided; bounded "
-        "qualification proves specialized authority invariants without CLA-04 on execution paths."
+        "Last bounded residual qualification slice (memory R3-R1) completes specialized "
+        "domain evidence; only final GR-12 qualification blocks program-level GR-12 closure."
     ),
+)
+
+GR12_A4_R3_R1_QUALIFICATION_PROOF: Final[str] = (
+    "tests/qualification/governance/gr12/"
+    "test_gr12_a4_r3_r1_memory_specialized_governance_qualification.py"
+)
+
+GR12_A4_R3_R1_TASK_STATUS: Final[str] = "READY FOR AUDIT"
+
+GR12_A4_R3_R1_EXECUTION_PROOF_NODES: Final[tuple[str, ...]] = (
+    "tests/unit/memory/test_mem_ent10_memory_security_governance.py::test_deny_write_zero_mutation",
+    "tests/unit/memory/test_mem_ent10_memory_security_governance.py::test_fail_closed_on_policy_exception",
+    "tests/unit/memory/test_mem_ent10_memory_security_governance.py::test_missing_strategy_set_fail_closed",
+    "tests/unit/memory/test_mem_ent10_memory_security_governance.py::test_custom_deny_authorization_still_deny",
+    "tests/unit/memory/test_mem_ent10_memory_security_governance.py::test_trust_escalation_blocked_on_write",
+    "tests/unit/memory/test_mem_ent10b_specialized_mutation_governance.py::test_entity_projection_deny_zero_mutation",
+    "tests/unit/memory/test_mem_ent10b_specialized_mutation_governance.py::test_entity_cross_scope_before_mutation",
+    "tests/unit/memory/test_mem_ent10b_specialized_mutation_governance.py::test_procedural_remember_deny",
+    "tests/unit/memory/test_mem_ent10b_specialized_mutation_governance.py::test_procedural_trust_escalation_denied",
+    "tests/unit/memory/test_mem_ent10b_specialized_mutation_governance.py::test_long_horizon_compaction_deny_batch_failure",
+    "tests/unit/memory/test_mem_ent10b_specialized_mutation_governance.py::test_policy_exception_fail_closed_entity",
+    "tests/unit/memory/test_mem_ent10b_specialized_mutation_governance.py::test_procedural_missing_canonical_source_zero_mutation",
+    "tests/unit/memory/test_mem_ent10b_specialized_mutation_governance.py::test_canonical_governance_revision_postcondition_mismatch",
+    "tests/unit/memory/test_mem_ent10b_specialized_mutation_governance.py::test_procedural_cross_scope_governance_source_denied_zero_mutation",
+    "tests/unit/memory/test_mem_ent10b_specialized_mutation_governance.py::test_shared_governance_instance_in_wiring",
+    "tests/unit/memory/test_mem_ent10b_specialized_mutation_governance.py::test_specialized_services_do_not_import_default_policies",
+    "tests/unit/memory/test_mem_ent12_observability.py::test_governance_deny_emits_without_successful_remember",
+    "tests/qualification/governance/gr12/"
+    "test_gr12_a4_r3_memory_specialized_governance_architecture_qualification.py::"
+    "test_gr12_a4_r3_memory_architecture_decision_closed_ssot",
+)
+
+GR12_MEMORY_FUTURE_LIVE_OPERATOR_RULE: Final[str] = (
+    "If live operator administrative memory mutation is introduced: architecture revisit "
+    "required; exactly one permission authority; never dual MemoryGovernanceDecision ALLOW "
+    "and CLA-04 ControlPlaneMutationDecision ALLOW as peer authorities."
 )
 
 GR12_A4_R2_R1_QUALIFICATION_PROOF: Final[str] = (
@@ -540,10 +576,8 @@ GR12_CONTROL_PLANE_SURFACES: tuple[Gr12ControlPlaneSurface, ...] = (
         applicability=Gr12Applicability.NOT_APPLICABLE,
         coverage=Gr12CoverageStatus.NOT_APPLICABLE,
         recommended_owner="memory domain",
-        future_remediation=(
-            "Revisit if live operator memory mutation API is introduced; "
-            "GR-12-A4-R3-R1 qualifies specialized governance invariants"
-        ),
+        future_remediation="Revisit if live operator memory mutation API is introduced",
+        qualification_proof="",
     ),
     Gr12ControlPlaneSurface(
         path_id="CP-MARKETPLACE-ACQUIRE",
