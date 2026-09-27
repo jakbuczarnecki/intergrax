@@ -2,7 +2,7 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **Proposed** — architecture + qualification only (W6-A); no production implementation |
+| **Status** | **Accepted — independently audited and implemented** @ `846af28cd8fb6889cece1e8807196014dc89cdfd` |
 | **Date** | 2026-09-12 |
 | **Baseline** | W6-A inventory on `development` @ `6b51617752c3fda544e1b4d2a29da5ba21c9ded7` |
 | **Related** | W1–W5 execution scale & resilience qualification · [`ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md`](../qualification/ENTERPRISE_RUNTIME_INTELLIGENCE_W6_A_QUALIFICATION.md) · [`ENTERPRISE_RUNTIME_INTELLIGENCE.md`](../../architecture/ENTERPRISE_RUNTIME_INTELLIGENCE.md) · [`DIAGNOSTICS.md`](../../architecture/DIAGNOSTICS.md) · [`ADR-PREDICTIVE-LAYER-AS-DIAGNOSTIC-CONSUMER.md`](ADR/ADR-PREDICTIVE-LAYER-AS-DIAGNOSTIC-CONSUMER.md) |
@@ -256,6 +256,7 @@ No production code until:
 | W6-C context builder + reference analyzer | Implemented |
 | W6-D orchestration | Implemented |
 | W6-E execution integration | Implemented |
-| HARNESS-W6-R1 | **IMPLEMENTED — READY FOR AUDIT** (typed outcome enums, canonical execution IDs, architecture regression gate) |
+| HARNESS-W6-R1 | **CLOSED** @ `846af28cd8fb6889cece1e8807196014dc89cdfd` (typed outcome enums, canonical execution IDs, architecture regression gate) |
+| HARNESS-W6 | **CLOSED** @ `846af28cd8fb6889cece1e8807196014dc89cdfd` (independent exact-SHA parent acceptance) |
 
-ADR **Status** remains **Proposed** until independent exact-SHA acceptance sync; historical W6-A wording is preserved above.
+**Final reconciliation:** W6-B implemented; W6-C implemented; W6-D implemented; W6-E implemented; W6-R1 independently accepted; HARNESS-W6 independently accepted. Historical W6-A **Proposed** wording in §1–§7 is preserved; ADR **Status** above reflects independent audit closure.

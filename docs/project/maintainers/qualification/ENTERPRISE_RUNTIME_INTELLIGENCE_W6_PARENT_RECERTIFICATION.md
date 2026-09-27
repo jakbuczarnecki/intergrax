@@ -2,9 +2,10 @@
 
 | Field | Value |
 |-------|-------|
-| **Document status** | **READY FOR AUDIT** |
+| **Document status** | **CLOSED — independent exact-SHA audit accepted** |
 | **Child task** | HARNESS-W6-R1 |
 | **Parent** | HARNESS-W6 |
+| **Audited implementation SHA** | `846af28cd8fb6889cece1e8807196014dc89cdfd` |
 | **Baseline HEAD** | Record at commit time of R1 delivery on `development` |
 | **Pre-audit reference** | `e0069dd3de52bca7106bc6dc6602163a8506ba73` (no W6 semantic delta before R1) |
 
@@ -75,8 +76,16 @@ All mapped FRZ rows remain **OPEN** globally; R1 contributes scoped evidence onl
 | TRACKED FREEZE DEBT | — |
 | ENVIRONMENT/TEST ISSUE | — |
 
+## Program state (post closure-sync)
+
+- **HARNESS-W5** = CLOSED  
+- **HARNESS-W6** = CLOSED @ `846af28cd8fb6889cece1e8807196014dc89cdfd`  
+- **HARNESS-W6-R1** = CLOSED @ `846af28cd8fb6889cece1e8807196014dc89cdfd`  
+- **GOV-X1** = CURRENT  
+- **SCENARIO-GATE** = BLOCKED  
+
+The closure-sync documentation commit is **not** the semantic W6 implementation SHA.
+
 ## Recommended state
 
-- **HARNESS-W6-R1** = READY FOR AUDIT  
-- **HARNESS-W6** = READY FOR AUDIT (pending independent exact-SHA acceptance)  
-- **Next after W6 closure:** GOV-X1
+- **Next mandatory parent:** GOV-X1 (implementation not started by W6 closure-sync)
