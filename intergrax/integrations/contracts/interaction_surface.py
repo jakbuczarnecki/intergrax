@@ -1,10 +1,31 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Inbound interaction contract — re-exports runtime adapter (§7.1.2, Phase M.2)."""
+"""Inbound interaction contract (integration catalog surface)."""
 
-from intergrax.runtime.interactions.adapter_contract import InteractionAdapter
+from __future__ import annotations
 
-InteractionSurface = InteractionAdapter
+from typing import Any, Protocol, runtime_checkable
 
-__all__ = ["InteractionAdapter", "InteractionSurface"]
+from intergrax.integrations.contracts.inbound_interaction import InboundInteraction
+
+
+@runtime_checkable
+class InteractionSurface(Protocol):
+    @property
+    def channel(self) -> str: ...
+
+    def can_handle(self, payload: dict[str, Any]) -> bool: ...
+
+    def to_inbound(
+        self,
+        payload: dict[str, Any],
+        *,
+        tenant_id: str,
+        user_id: str,
+    ) -> InboundInteraction: ...
+
+
+InteractionAdapter = InteractionSurface
+
+__all__ = ["InteractionAdapter", "InteractionSurface", "InboundInteraction"]

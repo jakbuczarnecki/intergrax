@@ -24,6 +24,7 @@ from intergrax.runtime.execution.execution_bound_catalog_tool_composition import
 from tests.unit.autonomous_work.uca6c_r5_r2_strict_fixtures import (
     uca6c_strict_r6_durable_wiring,
     uca6c_strict_sandbox_env_profile,
+    uca6c_strict_tool_dependency_admission_config,
     uca6c_strict_worker_manifest,
     uca6c_strict_worker_registry,
 )
@@ -109,6 +110,7 @@ def test_qce_composition_reuses_injected_continuation_bundle(tmp_path: Path) -> 
         caller_agent_id="worker-uca6c-qualified",
         sandbox_availability=availability,
         production_mode=True,
+        dependency_concurrency_admission=uca6c_strict_tool_dependency_admission_config(),
         scope_policy=StaticToolScopePolicy(allowed_tools={CODE_EXEC_TOOL_ID}),
         agent_runtime_governance=build_agent_runtime_governance_boundary(
             capability_grants=grants,

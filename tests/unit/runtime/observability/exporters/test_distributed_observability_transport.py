@@ -10,12 +10,19 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.harness_host_runtime import (
+    build_harness_host_runtime,
+)
 from intergrax.applications._shared.runtime_event_delivery_wiring import (
     resolve_application_runtime_event_delivery_wiring,
 )
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.contracts.event_delivery import EventDeliveryPolicy
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
+from intergrax.contracts.event_delivery import (
+    EventDeliveryPolicy,
+    ObservabilityExportPayload,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.observability_export import (
     ConfigurationError,
@@ -57,7 +64,7 @@ _SERVICE_NAME = "intergrax.distributed.qualification"
 def _event(kind_suffix: str = "") -> RuntimeEvent:
     return RuntimeEvent(
         event_type=RuntimeEventType.TASK_PROGRESS,
-        phase=ExecutionPhase.COMPLETION,
+        phase=ExecutionPhase.STEP_EXECUTION,
         event_kind=f"qualification.w5f{kind_suffix}",
         **runtime_event_test_identity(),
     )
@@ -89,7 +96,9 @@ def _local_env(profile_id: str) -> ApplicationEnvironmentProfile:
 
 
 def test_factory_selection_local_vs_distributed_transport() -> None:
-    local_wiring = resolve_application_runtime_event_delivery_wiring(_local_env("w5.f.local"))
+    local_wiring = resolve_application_runtime_event_delivery_wiring(
+        _local_env("w5.f.local")
+    )
     distributed_wiring = resolve_application_runtime_event_delivery_wiring(
         _distributed_env("w5.f.distributed"),
     )
@@ -115,8 +124,8 @@ def test_ten_wiring_instances_isolated_transports() -> None:
 @pytest.mark.asyncio
 async def test_collector_failure_isolated_from_runtime() -> None:
     class FailingCollector(OtlpTransportPort):
-        def export(self, event: object) -> None:
-            _ = event
+        def export(self, payload: ObservabilityExportPayload) -> None:
+            _ = payload
             raise DistributedTransportError("collector unavailable")
 
         def flush(self) -> None:
@@ -164,8 +173,8 @@ def test_collector_transport_flush_before_close() -> None:
 @pytest.mark.asyncio
 async def test_backpressure_remains_bounded_with_slow_export() -> None:
     class SlowTransport(OtlpTransportPort):
-        def export(self, event: object) -> None:
-            _ = event
+        def export(self, payload: ObservabilityExportPayload) -> None:
+            _ = payload
             time.sleep(0.05)
 
         def flush(self) -> None:
@@ -195,7 +204,9 @@ async def test_backpressure_remains_bounded_with_slow_export() -> None:
 
 
 @pytest.mark.asyncio
-async def test_harness_runtime_wires_distributed_transport_without_execution_coupling() -> None:
+async def test_harness_runtime_wires_distributed_transport_without_execution_coupling() -> (
+    None
+):
     settings = LabApplicationSettings.from_env()
     manifest = build_lab_manifest(settings)
     env = _distributed_env("w5.f.harness")

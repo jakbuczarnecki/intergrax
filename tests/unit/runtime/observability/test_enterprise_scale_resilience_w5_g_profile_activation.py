@@ -12,9 +12,16 @@ import pytest
 from intergrax.applications._shared.runtime_event_delivery_wiring import (
     resolve_application_runtime_event_delivery_wiring,
 )
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.environment_profile.bundles import GovernanceBundle
-from intergrax.contracts.event_delivery import EventDeliveryPolicy
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
+from intergrax.applications.contracts.environment_profile.bundles import (
+    GovernanceBundle,
+)
+from intergrax.contracts.event_delivery import (
+    EventDeliveryPolicy,
+    ObservabilityExportPayload,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.observability_export import (
     ConfigurationError,
@@ -58,7 +65,9 @@ def _enterprise_observability_env(profile_id: str) -> ApplicationEnvironmentProf
     )
     return env.model_copy(
         update={
-            "governance": env.governance.model_copy(update={"observability": observability}),
+            "governance": env.governance.model_copy(
+                update={"observability": observability}
+            ),
         },
     )
 
@@ -70,7 +79,7 @@ def _local_lab_env(profile_id: str) -> ApplicationEnvironmentProfile:
 def _event() -> RuntimeEvent:
     return RuntimeEvent(
         event_type=RuntimeEventType.TASK_PROGRESS,
-        phase=ExecutionPhase.COMPLETION,
+        phase=ExecutionPhase.STEP_EXECUTION,
         event_kind="qualification.w5g",
         task_id=mint_task_id(),
         run_id=mint_run_id(),
@@ -142,8 +151,8 @@ def test_shutdown_flush_before_transport_close() -> None:
 @pytest.mark.asyncio
 async def test_export_failure_isolated_from_execution_plane() -> None:
     class FailingTransport(OtlpTransportPort):
-        def export(self, event: object) -> None:
-            _ = event
+        def export(self, payload: ObservabilityExportPayload) -> None:
+            _ = payload
             raise OtlpTransportError("collector unavailable")
 
         def flush(self) -> None:

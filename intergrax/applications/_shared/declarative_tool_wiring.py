@@ -23,6 +23,12 @@ from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
 from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
     build_production_runtime_tool_invoker,
 )
+from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (
+    materialize_tool_dependency_attempt_boundary,
+)
+from intergrax.runtime.resilience.dependency_attempt_execution_boundary import (
+    DependencyAttemptExecutionBoundary,
+)
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.sandbox.isolation_gate import sandbox_availability_provider
 from intergrax.runtime.tools.idempotency_pre_effect_coordinator import (
@@ -46,6 +52,7 @@ def build_declarative_invoker_from_tool_wiring(
     agent_runtime_governance: AgentRuntimeGovernancePort | None = None,
     canonical_inner_execution_guard: CanonicalInnerExecutionGuardPort | None = None,
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None,
+    dependency_attempt_boundary: DependencyAttemptExecutionBoundary | None = None,
     production_mode: bool = False,
 ) -> CatalogDeclarativeToolInvoker | None:
     """Materialize catalog invoker when host tool profile enables catalog tools."""
@@ -68,6 +75,7 @@ def build_declarative_invoker_from_tool_wiring(
         agent_runtime_governance=agent_runtime_governance,
         inner_execution_guard=canonical_inner_execution_guard,
         meaningful_side_effect_authorization=meaningful_side_effect_authorization,
+        dependency_attempt_boundary=dependency_attempt_boundary,
         production_mode=production_mode,
     )
     return CatalogDeclarativeToolInvoker(
@@ -99,11 +107,16 @@ def build_declarative_invoker_for_application_host(
             agent_registry=agent_registry,
         )
         governance = build_agent_runtime_governance_boundary(capability_grants=grants)
+    dependency_boundary = materialize_tool_dependency_attempt_boundary(
+        environment.reliability_profile.dependency_concurrency_admission,
+        production_mode=production_mode,
+    )
     return build_declarative_invoker_from_tool_wiring(
         tool_wiring,
         idempotency_store=idempotency_store,
         agent_runtime_governance=governance,
         canonical_inner_execution_guard=canonical_inner_execution_guard,
         meaningful_side_effect_authorization=meaningful_side_effect_authorization,
+        dependency_attempt_boundary=dependency_boundary,
         production_mode=production_mode,
     )

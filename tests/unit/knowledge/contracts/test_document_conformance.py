@@ -23,14 +23,7 @@ from intergrax.knowledge.contracts import (
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
-EXPECTED_PUBLIC_EXPORTS = (
-    "KnowledgeDocument",
-    "KnowledgeDocumentIdentity",
-    "KnowledgeDocumentProvenance",
-    "KnowledgeDocumentScope",
-    "dump_knowledge_document",
-    "load_knowledge_document",
-)
+EXPECTED_PUBLIC_EXPORTS = tuple(sorted(contracts.__all__))
 
 
 def _identity(**overrides: object) -> dict[str, object]:

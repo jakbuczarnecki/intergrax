@@ -19,6 +19,13 @@ from intergrax.applications._shared.decision_wiring import (
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_for_application_host,
 )
+from intergrax.applications._shared.harness_meaningful_side_effect_authorization_wiring import (
+    resolve_harness_host_meaningful_side_effect_authorization_wiring,
+)
+from intergrax.collaborative_work.persistence import (
+    CollaborativeWorkMaterializedRepositories,
+    open_sqlite_collaborative_work_repositories,
+)
 from intergrax.applications._shared.diagnostic_assembly_resolver import (
     DiagnosticAssemblyError,
     DiagnosticWiring,
@@ -77,6 +84,9 @@ from intergrax.applications._shared.harness_host_task_execution_wiring import (
 )
 from intergrax.runtime.execution.environment_host_task_execution import (
     build_environment_host_task_execution,
+)
+from intergrax.runtime.governance.decision_requirement_policy import (
+    PermissiveDecisionRequirementPolicy,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.observability.qualification_runtime_trace import (
@@ -246,6 +256,39 @@ def _scenario_lab_manifest(environment: ApplicationEnvironmentProfile) -> Applic
     )
 
 
+def _scenario_execution_continuation_state_store(
+    environment: ApplicationEnvironmentProfile,
+) -> object | None:
+    """Restart-qualified durable continuation store for strict production-attached scenarios."""
+    if environment.execution_mode.value != "strict":
+        return None
+    from intergrax.runtime.execution.continuation.persistence import (
+        ExecutionContinuationDurableBacking,
+        backing_execution_continuation_state_store,
+        execution_continuation_state_store_from_durable_export,
+        export_durable_continuation_state,
+    )
+
+    backing = ExecutionContinuationDurableBacking()
+    backing_execution_continuation_state_store(backing)
+    export = export_durable_continuation_state(backing)
+    return execution_continuation_state_store_from_durable_export(export)
+
+
+def _scenario_collaborative_work_repositories(
+    environment: ApplicationEnvironmentProfile,
+    *,
+    runtime_events_db_path: Path | None,
+) -> CollaborativeWorkMaterializedRepositories | None:
+    """Isolate collaborative-work SQLite from other scenario DB files under the same root."""
+    if environment.execution_mode.value != "strict":
+        return None
+    if runtime_events_db_path is None:
+        return None
+    cw_db_path = runtime_events_db_path.parent / "collaborative_work.db"
+    return open_sqlite_collaborative_work_repositories(str(cw_db_path))
+
+
 def _resolve_observability_stores(
     environment: ApplicationEnvironmentProfile,
     *,
@@ -385,6 +428,18 @@ def build_scenario_runtime_from_environment(
         environment=environment,
     )
     task_memory = wire_task_memory_from_profile(environment)
+    scenario_collaborative_work = _scenario_collaborative_work_repositories(
+        environment,
+        runtime_events_db_path=runtime_events_db_path,
+    )
+    meaningful_side_effect_wiring = (
+        resolve_harness_host_meaningful_side_effect_authorization_wiring(
+            environment,
+            collaborative_work_repositories=scenario_collaborative_work,
+            decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
+            runtime_event_persistence=observability.runtime_event_store,
+        )
+    )
     declarative_tool_invoker = build_declarative_invoker_for_application_host(
         env_wiring.tool_wiring,
         environment,
@@ -392,6 +447,9 @@ def build_scenario_runtime_from_environment(
         agent_registry=registry,
         tenant_id=resolved_tenant_id,
         idempotency_store=reliability_wiring.idempotency_store,
+        meaningful_side_effect_authorization=(
+            meaningful_side_effect_wiring.authorization_port
+        ),
     )
 
     nexus_loop = build_nexus_loop_from_environment(
@@ -413,6 +471,9 @@ def build_scenario_runtime_from_environment(
         run_budget=cost_wiring.run_budget,
         validation_engine=validation_engine,
         document_store=document_store,
+        execution_continuation_state_store=_scenario_execution_continuation_state_store(
+            environment,
+        ),
     )
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
     assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)

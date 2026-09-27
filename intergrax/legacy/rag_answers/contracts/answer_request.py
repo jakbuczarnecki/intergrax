@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.rag.retrievers.registry.retriever_registry import DEFAULT_RETRIEVER_ID
+from intergrax.rag.retrievers.contracts.defaults import DEFAULT_RETRIEVER_ID
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 
 

@@ -79,16 +79,22 @@ def test_canonical_resolver_has_no_any_semantic_result() -> None:
 
 def test_contract_spec_factory_aliases_catalog_factory_without_any() -> None:
     source = _read(_CONTRACT_SPEC)
+    contracts_source = _read(
+        _REPO_ROOT / "intergrax" / "integrations" / "contracts" / "contract_spec.py"
+    )
     assert "Callable[..., Any]" not in source
     assert "IntegrationContractFactory = IntegrationFactory" in source
-    assert "contract_class: type[PlatformIntegrationContract]" in source
-    assert "security_posture: PlatformIntegrationSecurityPosture" in source
+    assert "contract_class: type[PlatformIntegrationContract]" in contracts_source
+    assert "security_posture: PlatformIntegrationSecurityPosture" in contracts_source
 
 
 def test_instance_for_category_uses_canonical_contract_for_category() -> None:
     source = _read(_INTEGRATION_PROFILE)
-    assert "contract_for_category" in source
-    assert "isinstance(instance, expected_contract)" in source
+    guard_source = _read(
+        _REPO_ROOT / "intergrax/integrations/contracts/prebuilt_category_guard.py"
+    )
+    assert "contract_for_category" in guard_source
+    assert "isinstance(instance, expected_contract)" in guard_source
     assert "PROVIDER_CATEGORY_CONTRACT_REGISTRY" not in source
     assert "if category ==" not in source
     assert "expected PlatformIntegrationContract" not in source
@@ -109,8 +115,11 @@ def test_canonical_category_contract_resolver_supports_di_only_categories() -> N
     assert "DI_ONLY_CATEGORY_CONTRACT_REGISTRY.get" in source
     assert "CategoryIntegrationInstance" in source
     profile_source = _read(_INTEGRATION_PROFILE)
+    guard_source = _read(
+        _REPO_ROOT / "intergrax/integrations/contracts/prebuilt_category_guard.py"
+    )
     assert "IntegrationCategory.EXTERNAL_WORK" not in profile_source
-    assert "contract_for_category" in profile_source
+    assert "contract_for_category" in guard_source
 
 
 def _is_overload_decorator(node: ast.expr) -> bool:

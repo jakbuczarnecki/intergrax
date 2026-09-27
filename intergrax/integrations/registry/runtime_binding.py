@@ -1,15 +1,8 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Generic runtime-binding extension metadata for integration contract specs."""
+"""Compatibility re-export — canonical owner is ``integrations.contracts.runtime_binding``."""
 
-from __future__ import annotations
-
-from abc import ABC
-
-
-class IntegrationRuntimeBindingSpec(ABC):
-    """Category-specific runtime binding descriptor attached to IntegrationContractSpec."""
-
+from intergrax.integrations.contracts.runtime_binding import IntegrationRuntimeBindingSpec
 
 __all__ = ["IntegrationRuntimeBindingSpec"]

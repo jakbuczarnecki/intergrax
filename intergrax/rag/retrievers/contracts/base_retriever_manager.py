@@ -14,7 +14,9 @@ from intergrax.rag.retrievers.contracts.base_retriever import (
     RetrievalHit,
     RetrieverQuery,
 )
-from intergrax.rag.retrievers.engine.retriever_execution import RetrieverExecutionMetadata
+from intergrax.rag.retrievers.contracts.retriever_execution_metadata import (
+    RetrieverExecutionMetadata,
+)
 from intergrax.rag.vectorstore.contracts.native_vectorstore import VectorStoreScope
 from intergrax.rag.vectorstore.contracts.vector_store import MetadataFilter
 

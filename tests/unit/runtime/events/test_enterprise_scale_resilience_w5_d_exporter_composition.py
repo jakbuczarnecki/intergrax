@@ -9,12 +9,19 @@ import time
 
 import pytest
 
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.harness_host_runtime import (
+    build_harness_host_runtime,
+)
 from intergrax.applications._shared.runtime_event_delivery_wiring import (
     resolve_application_runtime_event_delivery_wiring,
 )
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.contracts.event_delivery import EventDeliveryPolicy, ObservabilityExportPayload
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
+from intergrax.contracts.event_delivery import (
+    EventDeliveryPolicy,
+    ObservabilityExportPayload,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.observability_export import (
     ExportError,
@@ -57,7 +64,7 @@ def _bounded_env(
 def _event(kind_suffix: str = "") -> RuntimeEvent:
     return RuntimeEvent(
         event_type=RuntimeEventType.TASK_PROGRESS,
-        phase=ExecutionPhase.COMPLETION,
+        phase=ExecutionPhase.STEP_EXECUTION,
         event_kind=f"qualification.w5d{kind_suffix}",
         **runtime_event_test_identity(),
     )
@@ -71,7 +78,9 @@ def _event(kind_suffix: str = "") -> RuntimeEvent:
             NoopEventExportSink,
         ),
         (
-            ObservabilityExportProfile(enabled=True, exporter_kind=ExporterKind.RECORDING),
+            ObservabilityExportProfile(
+                enabled=True, exporter_kind=ExporterKind.RECORDING
+            ),
             RecordingEventExportSink,
         ),
         (
@@ -80,7 +89,9 @@ def _event(kind_suffix: str = "") -> RuntimeEvent:
         ),
     ],
 )
-def test_factory_selection(profile: ObservabilityExportProfile, expected_type: type) -> None:
+def test_factory_selection(
+    profile: ObservabilityExportProfile, expected_type: type
+) -> None:
     factory = ObservabilityExportSinkFactory()
     sink = factory.create(profile)
     assert isinstance(sink, expected_type)
@@ -90,7 +101,9 @@ def test_factory_instances_are_not_singletons() -> None:
     factory_a = ObservabilityExportSinkFactory()
     factory_b = ObservabilityExportSinkFactory()
     assert factory_a is not factory_b
-    profile = ObservabilityExportProfile(enabled=True, exporter_kind=ExporterKind.RECORDING)
+    profile = ObservabilityExportProfile(
+        enabled=True, exporter_kind=ExporterKind.RECORDING
+    )
     sink_a = factory_a.create(profile)
     sink_b = factory_b.create(profile)
     assert sink_a is not sink_b
@@ -102,7 +115,9 @@ def test_ten_runtime_instances_isolated_exporters() -> None:
     sinks: list[object] = []
     runtimes = []
     for index in range(10):
-        env = _bounded_env(profile_id=f"w5.d.iso.{index}", exporter_kind=ExporterKind.RECORDING)
+        env = _bounded_env(
+            profile_id=f"w5.d.iso.{index}", exporter_kind=ExporterKind.RECORDING
+        )
         runtime = build_harness_host_runtime(manifest, env, settings=settings)
         runtimes.append(runtime)
         delivery = runtime.env_wiring.event_delivery

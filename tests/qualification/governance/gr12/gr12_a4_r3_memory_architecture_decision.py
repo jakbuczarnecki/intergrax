@@ -120,8 +120,11 @@ GR12_MEMORY_FAIL_CLOSED_STRATEGY: Final[str] = (
     "enforce_specialized_memory_mutation raises MemoryGovernanceDenied → zero store write"
 )
 
-GR12_MEMORY_NEXT_BOUNDED_TASK: Final[str] = (
-    "GR-12-A4-R3-R1 — Memory Specialized Governance Qualification"
+GR12_MEMORY_NEXT_BOUNDED_TASK: Final[str] = "GR-12 Final Qualification"
+
+GR12_MEMORY_R3_R1_QUALIFICATION_PROOF: Final[str] = (
+    "tests/qualification/governance/gr12/"
+    "test_gr12_a4_r3_r1_memory_specialized_governance_qualification.py"
 )
 
 GR12_MEMORY_QUALIFICATION_PROOF: Final[str] = (

@@ -27,6 +27,7 @@ from testing_support.architecture.public_contract_boundary.models import (
 )
 from testing_support.architecture.public_contract_boundary.policy import (
     classify_intergrax_dependency,
+    is_allowed_compat_reexport,
 )
 from testing_support.architecture.public_contract_boundary.supplemental_surfaces import (
     SUPPLEMENTAL_PUBLIC_CONTRACT_SURFACES,
@@ -61,6 +62,8 @@ def _collect_violations(
         source_module = path_to_module_name(path, intergrax_root=intergrax_root)
         rel_path = path.relative_to(repo_root).as_posix()
         for extracted in extract_imports_from_file(path, intergrax_root=intergrax_root):
+            if is_allowed_compat_reexport(source_module, extracted.imported_module):
+                continue
             rule = classify_intergrax_dependency(extracted.imported_module)
             if rule is None:
                 continue

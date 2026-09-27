@@ -28,7 +28,7 @@ def test_gr12_a4_r2_r1_vector_operator_qualified_ssot() -> None:
     assert row.future_remediation == ""
     assert GR12_A4_R2_R1_QUALIFICATION_PROOF in row.qualification_proof
     assert "VectorIndexAdminService" in row.production_entrypoint
-    assert "GR-12-A4-R3" in GR12_A4_NEXT_REMEDIATION.task_name
+    assert "GR-12 Final Qualification" in GR12_A4_NEXT_REMEDIATION.task_name
 
 
 def test_gr12_a4_r2_r1_execution_proof_nodes_bound_to_semantic_tests() -> None:

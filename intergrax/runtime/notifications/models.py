@@ -1,19 +1,8 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Canonical notification message model (§18)."""
+"""Canonical notification message model (§18) — integration contract owner."""
 
-from __future__ import annotations
+from intergrax.integrations.contracts.notification_message import NotificationMessage
 
-from typing import Any, Dict
-
-from pydantic import BaseModel, Field
-
-
-class NotificationMessage(BaseModel):
-    channel: str
-    subject: str
-    body: str
-    task_id: str
-    tenant_id: str
-    metadata: Dict[str, Any] = Field(default_factory=dict)
+__all__ = ["NotificationMessage"]

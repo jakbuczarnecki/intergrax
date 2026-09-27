@@ -143,9 +143,9 @@ def test_gr12_a4_gr10_remains_final_closed() -> None:
     assert "FINAL CLOSED" in GR10_OVERALL_FORMAL_CLOSURE.status
 
 
-def test_gr12_a4_next_bounded_task_is_memory_r3_r1() -> None:
-    assert "GR-12-A4-R3-R1" in GR12_A4_NEXT_REMEDIATION.task_name
-    assert "memory" in GR12_A4_NEXT_REMEDIATION.exact_blocker.lower()
+def test_gr12_a4_next_bounded_task_is_gr12_final_qualification() -> None:
+    assert "GR-12 Final Qualification" in GR12_A4_NEXT_REMEDIATION.task_name
+    assert "r3-r1" in GR12_A4_NEXT_REMEDIATION.exact_blocker.lower()
 
 
 def test_gr12_a4_catalog_ssot_qualified() -> None:

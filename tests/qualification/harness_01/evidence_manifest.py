@@ -16,8 +16,8 @@ class Harness01EvidenceBatch:
 HARNESS_01_EVIDENCE_EXECUTION_BATCHES: tuple[Harness01EvidenceBatch, ...] = (
     Harness01EvidenceBatch("HARNESS gates", "tests/qualification/harness_01/"),
     Harness01EvidenceBatch(
-        "U3 agent plugin execution closure",
-        "tests/unit/runtime/architecture/test_platform_execution_unification_u3_agent_plugin_execution_closure.py",
+        "UAEP tool gateway static boundary (RX)",
+        "tests/unit/runtime/tools/test_tool_eng_rx_invocation_wiring.py",
     ),
     Harness01EvidenceBatch(
         "PLUG-02 public pattern bridge",

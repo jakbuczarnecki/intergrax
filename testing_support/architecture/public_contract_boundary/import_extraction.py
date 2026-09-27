@@ -47,13 +47,38 @@ def _resolve_relative_module(source_module: str, node: ast.ImportFrom) -> str | 
     return ".".join(base)
 
 
+def _is_type_checking_if(node: ast.If) -> bool:
+    test = node.test
+    if isinstance(test, ast.Name):
+        return test.id == "TYPE_CHECKING"
+    if isinstance(test, ast.Attribute):
+        return test.attr == "TYPE_CHECKING"
+    return False
+
+
+def _type_checking_import_lines(tree: ast.Module) -> frozenset[int]:
+    lines: set[int] = set()
+    for node in tree.body:
+        if not isinstance(node, ast.If) or not _is_type_checking_if(node):
+            continue
+        for child in ast.walk(node):
+            if isinstance(child, (ast.Import, ast.ImportFrom)):
+                lines.add(child.lineno)
+    return frozenset(lines)
+
+
 def collect_intergrax_imports(
     tree: ast.AST,
     *,
     source_module: str,
 ) -> list[ExtractedImport]:
+    if not isinstance(tree, ast.Module):
+        return []
+    type_checking_lines = _type_checking_import_lines(tree)
     imports: list[ExtractedImport] = []
-    for node in ast.walk(tree):
+    for node in tree.body:
+        if isinstance(node, ast.If) and _is_type_checking_if(node):
+            continue
         if isinstance(node, ast.Import):
             for alias in node.names:
                 if alias.name.startswith("intergrax."):
@@ -62,6 +87,8 @@ def collect_intergrax_imports(
                     )
             continue
         if not isinstance(node, ast.ImportFrom):
+            continue
+        if node.lineno in type_checking_lines:
             continue
         resolved = _resolve_relative_module(source_module, node)
         if resolved is None:

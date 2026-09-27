@@ -7,10 +7,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum, StrEnum
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
-if TYPE_CHECKING:
-    from intergrax.contracts.event_delivery import EventExportSinkPort
+from intergrax.contracts.event_delivery import (
+    EventExportSinkPort,
+    ObservabilityExportPayload,
+)
 
 
 class ExporterKind(StrEnum):
@@ -66,7 +68,7 @@ class OtlpTransportPort(Protocol):
 
     def export(
         self,
-        event: object,
+        payload: ObservabilityExportPayload,
     ) -> None: ...
 
     def flush(self) -> None: ...

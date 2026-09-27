@@ -7,12 +7,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING
-
 from intergrax.integrations.contracts.catalog_factory import IntegrationFactory
-
-if TYPE_CHECKING:
-    from intergrax.integrations.registry.contract_spec import IntegrationContractSpec
+from intergrax.integrations.contracts.contract_spec import IntegrationContractSpec
 
 
 class IntegrationStatus(str, Enum):

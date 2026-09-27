@@ -6,6 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.runtime_intelligence.context import (
@@ -19,9 +20,11 @@ from intergrax.contracts.runtime_intelligence.errors import (
 )
 from intergrax.contracts.runtime_intelligence.result import RuntimeIntelligenceResult
 
-ANALYZER_OUTCOME_OK = "ok"
-ANALYZER_OUTCOME_PLUGIN_UNAVAILABLE = "PLUGIN_UNAVAILABLE"
-ANALYZER_OUTCOME_INVALID_CONTEXT = "INVALID_CONTEXT"
+
+class RuntimeIntelligenceAnalyzerOutcomeCode(StrEnum):
+    OK = "ok"
+    PLUGIN_UNAVAILABLE = "PLUGIN_UNAVAILABLE"
+    INVALID_CONTEXT = "INVALID_CONTEXT"
 
 
 @runtime_checkable
@@ -44,7 +47,7 @@ class RuntimeIntelligenceAnalyzerOutcome:
     """Per-analyzer invocation record for orchestration audit — not execution truth."""
 
     analyzer_id: str
-    outcome: str
+    outcome: RuntimeIntelligenceAnalyzerOutcomeCode
     result: RuntimeIntelligenceResult | None = None
 
 
@@ -62,7 +65,7 @@ def run_runtime_intelligence_analyzer_isolated(
     except InvalidIntelligenceContextError:
         return RuntimeIntelligenceAnalyzerOutcome(
             analyzer_id=analyzer.analyzer_id,
-            outcome=ANALYZER_OUTCOME_INVALID_CONTEXT,
+            outcome=RuntimeIntelligenceAnalyzerOutcomeCode.INVALID_CONTEXT,
             result=None,
         )
     try:
@@ -70,33 +73,31 @@ def run_runtime_intelligence_analyzer_isolated(
     except AnalyzerExecutionError:
         return RuntimeIntelligenceAnalyzerOutcome(
             analyzer_id=analyzer.analyzer_id,
-            outcome=ANALYZER_OUTCOME_PLUGIN_UNAVAILABLE,
+            outcome=RuntimeIntelligenceAnalyzerOutcomeCode.PLUGIN_UNAVAILABLE,
             result=None,
         )
     except RuntimeIntelligenceError:
         return RuntimeIntelligenceAnalyzerOutcome(
             analyzer_id=analyzer.analyzer_id,
-            outcome=ANALYZER_OUTCOME_PLUGIN_UNAVAILABLE,
+            outcome=RuntimeIntelligenceAnalyzerOutcomeCode.PLUGIN_UNAVAILABLE,
             result=None,
         )
     if result.analyzer_id != analyzer.analyzer_id:
         return RuntimeIntelligenceAnalyzerOutcome(
             analyzer_id=analyzer.analyzer_id,
-            outcome=ANALYZER_OUTCOME_PLUGIN_UNAVAILABLE,
+            outcome=RuntimeIntelligenceAnalyzerOutcomeCode.PLUGIN_UNAVAILABLE,
             result=None,
         )
     return RuntimeIntelligenceAnalyzerOutcome(
         analyzer_id=analyzer.analyzer_id,
-        outcome=ANALYZER_OUTCOME_OK,
+        outcome=RuntimeIntelligenceAnalyzerOutcomeCode.OK,
         result=result,
     )
 
 
 __all__ = [
-    "ANALYZER_OUTCOME_INVALID_CONTEXT",
-    "ANALYZER_OUTCOME_OK",
-    "ANALYZER_OUTCOME_PLUGIN_UNAVAILABLE",
     "RuntimeIntelligenceAnalyzerOutcome",
+    "RuntimeIntelligenceAnalyzerOutcomeCode",
     "RuntimeIntelligenceAnalyzerPort",
     "run_runtime_intelligence_analyzer_isolated",
 ]

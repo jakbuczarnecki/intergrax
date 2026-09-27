@@ -13,8 +13,7 @@ from intergrax.memory.contracts.long_horizon_memory import LongHorizonMemoryStor
 from intergrax.memory.contracts.procedural_memory import ProcedureMemoryStore
 from intergrax.memory.contracts.session_turn_index import SessionTurnIndexStore
 
-if TYPE_CHECKING:
-    from intergrax.memory.user_profile_store import UserProfileStore
+from intergrax.memory.contracts.user_profile_store import UserProfileStore
 
 __all__ = [
     "MemoryProviderCapabilityKind",

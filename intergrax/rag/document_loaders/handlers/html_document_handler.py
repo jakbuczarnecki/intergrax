@@ -8,14 +8,14 @@ from typing import List
 
 
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG, DoclingMode
-from intergrax.rag.document_loaders.contracts.base_document_handler import BaseDocumentHandler
+from intergrax.rag.document_loaders.pipeline.document_handler_loading import PipelineDocumentHandler
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.parsers.docling_local_parser import DoclingLocalParser
 from intergrax.rag.document_loaders.parsers.docling_server_parser import DoclingServerParser
 from intergrax.rag.document_loaders.parsers.html_smart_parser import HtmlSmartParser
 
 
-class HtmlSmartDocumentHandler(BaseDocumentHandler):
+class HtmlSmartDocumentHandler(PipelineDocumentHandler):
 
     def supports(self, source: str) -> bool:
 

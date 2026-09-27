@@ -14,6 +14,7 @@ from intergrax.autonomous_work.worker_capability_fulfillment_ports import (
     WorkerQualifiedCapabilityResumePort,
 )
 from intergrax.contracts.autonomous_work.capability_acquisition import (
+    WorkerCapabilityNeed,
     derive_worker_capability_need_id,
 )
 from intergrax.contracts.autonomous_work.worker_capability_fulfillment import (
@@ -27,6 +28,7 @@ from intergrax.contracts.autonomous_work.worker_capability_recovery import (
 from intergrax.contracts.autonomous_work.worker_qualified_capability_resume import (
     WorkerQualifiedCapabilityResumeOutcome,
     WorkerQualifiedCapabilityResumeRequest,
+    derive_qualified_capability_execution_request_id,
     derive_worker_capability_resume_operation_id,
 )
 from intergrax.contracts.capability_acquisition.outcome import (
@@ -46,6 +48,20 @@ from intergrax.contracts.capability_catalog.discovery_completion import (
 from intergrax.contracts.capability_qualification.qualification_outcome import (
     CapabilityQualificationOutcome,
 )
+from intergrax.contracts.capability_qualification.qualification_result import (
+    CapabilityQualificationResult,
+)
+from intergrax.contracts.capability_qualification.qualified_capability_binding import (
+    derive_qualified_capability_binding_operation_id,
+)
+from intergrax.contracts.capability_qualification.qualified_subject import (
+    qualified_capability_subject_from_result,
+)
+from intergrax.contracts.tools.qualified_capability_execution_intent_preparation import (
+    QualifiedCapabilityExecutionIntentPreparationOutcome,
+    QualifiedCapabilityExecutionIntentPreparationPort,
+    QualifiedCapabilityExecutionIntentPreparationRequest,
+)
 
 
 class WorkerCapabilityFulfillmentCoordinator:
@@ -58,11 +74,13 @@ class WorkerCapabilityFulfillmentCoordinator:
         resume: WorkerQualifiedCapabilityResumePort,
         direct_reuse: WorkerCapabilityDirectReuseFulfillmentPort,
         realization: CapabilityRealizationCoordinatorPort | None = None,
+        intent_preparation: QualifiedCapabilityExecutionIntentPreparationPort | None = None,
     ) -> None:
         self._recovery = recovery
         self._resume = resume
         self._direct_reuse = direct_reuse
         self._realization = realization
+        self._intent_preparation = intent_preparation
 
     def fulfill(
         self,
@@ -292,6 +310,17 @@ class WorkerCapabilityFulfillmentCoordinator:
             recovery_decision_id=need.recovery_decision_id,
             qualification_request_id=qualification.qualification_request_id,
         )
+        preparation_block = self._prepare_execution_intent_if_configured(
+            request=request,
+            need=need,
+            qualification=qualification,
+            worker_need_id=worker_need_id,
+            resume_operation_id=resume_operation_id,
+            recovery=recovery,
+            decided_at=decided_at,
+        )
+        if preparation_block is not None:
+            return preparation_block
         resume_request = WorkerQualifiedCapabilityResumeRequest(
             worker_instance_id=request.worker_instance_id,
             worker_need_id=worker_need_id,
@@ -343,6 +372,17 @@ class WorkerCapabilityFulfillmentCoordinator:
             recovery_decision_id=need.recovery_decision_id,
             qualification_request_id=qualification.qualification_request_id,
         )
+        preparation_block = self._prepare_execution_intent_if_configured(
+            request=request,
+            need=need,
+            qualification=qualification,
+            worker_need_id=worker_need_id,
+            resume_operation_id=resume_operation_id,
+            recovery=recovery,
+            decided_at=decided_at,
+        )
+        if preparation_block is not None:
+            return preparation_block
         resume_request = WorkerQualifiedCapabilityResumeRequest(
             worker_instance_id=request.worker_instance_id,
             worker_need_id=worker_need_id,
@@ -365,6 +405,63 @@ class WorkerCapabilityFulfillmentCoordinator:
         return self._map_resume(
             recovery=recovery,
             resume_result=resume_result,
+            decided_at=decided_at,
+        )
+
+    def _prepare_execution_intent_if_configured(
+        self,
+        *,
+        request: WorkerCapabilityFulfillmentRequest,
+        need: WorkerCapabilityNeed,
+        qualification: CapabilityQualificationResult,
+        worker_need_id: str,
+        resume_operation_id: str,
+        recovery,
+        decided_at: datetime,
+    ) -> WorkerCapabilityFulfillmentResult | None:
+        if self._intent_preparation is None:
+            return None
+
+        subject = qualified_capability_subject_from_result(qualification)
+        if subject is None:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+                provenance=recovery.provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+
+        binding_operation_id = derive_qualified_capability_binding_operation_id(
+            resume_operation_id=resume_operation_id,
+            qualified_subject_reference=subject.qualified_subject_reference,
+        )
+        execution_request_id = derive_qualified_capability_execution_request_id(
+            resume_operation_id=resume_operation_id,
+            binding_operation_id=binding_operation_id,
+        )
+        preparation = self._intent_preparation.prepare(
+            QualifiedCapabilityExecutionIntentPreparationRequest(
+                need=need,
+                qualification_result=qualification,
+                execution_request_id=execution_request_id,
+                binding_operation_id=binding_operation_id,
+                resume_operation_id=resume_operation_id,
+                worker_need_id=worker_need_id,
+                tenant_id=request.tenant_id,
+                task_id=request.task_id,
+            ),
+        )
+        outcome = preparation.outcome
+        if outcome in {
+            QualifiedCapabilityExecutionIntentPreparationOutcome.NOT_APPLICABLE,
+            QualifiedCapabilityExecutionIntentPreparationOutcome.CREATED,
+            QualifiedCapabilityExecutionIntentPreparationOutcome.ALREADY_RECORDED_IDENTICAL,
+        }:
+            return None
+        return WorkerCapabilityFulfillmentResult(
+            disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+            provenance=recovery.provenance,
+            recovery_outcome=recovery,
             decided_at=decided_at,
         )
 

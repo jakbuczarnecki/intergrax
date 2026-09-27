@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Protocol, runtime_checkable
 
 from intergrax.integrations.contracts.base import HealthStatus, IntegrationError
-from intergrax.rag.vectorstore.config.vector_config import Metric
+from intergrax.integrations.contracts.vector_metric import Metric
 
 
 class VectorSearchCapability(str, Enum):

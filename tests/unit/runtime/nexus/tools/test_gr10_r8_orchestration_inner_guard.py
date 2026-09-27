@@ -260,10 +260,22 @@ def test_gr10_r8_production_composition_wires_default_guard() -> None:
         _RecordingMseBoundary,
     )
 
+    from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (
+        materialize_tool_dependency_attempt_boundary,
+    )
+    from testing_support.dependency_concurrency_admission_config import (
+        tool_dependency_concurrency_admission_configuration,
+    )
+
+    boundary = materialize_tool_dependency_attempt_boundary(
+        tool_dependency_concurrency_admission_configuration("probe.tool", max_concurrent_calls=2),
+        production_mode=True,
+    )
     invoker = build_production_runtime_tool_invoker(
         registry=registry,
         agent_runtime_governance=_allow_all_governance(),
         meaningful_side_effect_authorization=_RecordingMseBoundary(allow=True),
+        dependency_attempt_boundary=boundary,
         production_mode=True,
     )
     assert isinstance(invoker._inner_execution_guard, DefaultCanonicalInnerExecutionGuard)  # noqa: SLF001

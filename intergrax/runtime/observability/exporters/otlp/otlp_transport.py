@@ -7,11 +7,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from intergrax.contracts.event_delivery import ObservabilityExportPayload
 from intergrax.contracts.observability_export import (
     OtlpExportConfiguration,
     OtlpProtocol,
     OtlpTransportError,
     OtlpTransportPort,
+)
+from intergrax.runtime.observability.event_delivery.observability_export_payload_mapping import (
+    envelope_from_observability_export_payload,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.runtime.observability.export_boundary import (
@@ -32,7 +36,9 @@ _EXPORT_SCOPE_NAME = "intergrax.runtime.event_delivery"
 _DEFAULT_SERVICE_NAME = "intergrax"
 
 
-def _envelope_attributes(envelope: ObservabilityExportEnvelope) -> dict[str, str | int | bool]:
+def _envelope_attributes(
+    envelope: ObservabilityExportEnvelope,
+) -> dict[str, str | int | bool]:
     mapped: dict[str, str | int | bool] = {
         "intergrax.schema_version": envelope.schema_version,
         "intergrax.record_kind": envelope.record_kind.value,
@@ -86,9 +92,14 @@ def _log_record_from_envelope(envelope: ObservabilityExportEnvelope) -> LogRecor
     )
 
 
+def _log_record_from_payload(payload: ObservabilityExportPayload) -> LogRecord:
+    envelope = envelope_from_observability_export_payload(payload)
+    return _log_record_from_envelope(envelope)
+
+
 class OtlpTransport(OtlpTransportPort):
     """
-    Maps ``RuntimeEvent`` → OTLP log records → SDK exporter.
+    Maps ``ObservabilityExportPayload`` → OTLP log records → SDK exporter.
 
     No queue, retry, buffering, or circuit breaking — bounded delivery owns backpressure.
     """
@@ -134,17 +145,13 @@ class OtlpTransport(OtlpTransportPort):
         self._provider = provider
         self._exporter = exporter
 
-    def export(self, event: object) -> None:
+    def export(self, payload: ObservabilityExportPayload) -> None:
         if self._closed:
             return
         from opentelemetry.sdk._logs import LogData
         from opentelemetry.sdk._logs.export import LogExportResult
 
-        if isinstance(event, ObservabilityExportEnvelope):
-            envelope = event
-        else:
-            envelope = envelope_from_runtime_event(event)  # type: ignore[arg-type]
-        record = _log_record_from_envelope(envelope)
+        record = _log_record_from_payload(payload)
         try:
             result = self._exporter.export((LogData(record, self._scope),))
         except Exception as exc:

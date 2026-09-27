@@ -9,7 +9,7 @@ from typing import Dict, Iterable
 from intergrax.rag.retrievers.contracts.base_retriever import BaseRetriever
 
 
-DEFAULT_RETRIEVER_ID : str = "default"
+from intergrax.rag.retrievers.contracts.defaults import DEFAULT_RETRIEVER_ID
 
 class RetrieverRegistry:
     """

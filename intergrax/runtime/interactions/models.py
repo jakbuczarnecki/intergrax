@@ -5,28 +5,11 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-
-class InboundInteraction(BaseModel):
-    """
-    Normalized inbound envelope before ``Task`` materialization.
-
-    Parsers produce this; adapters map it to ``Task`` — keeping vendor logic
-    out of NexusLoop.
-    """
-
-    channel: str
-    tenant_id: str
-    user_id: str
-    message: str = ""
-    capability: Optional[str] = None
-    session_id: Optional[str] = None
-    interaction_id: Optional[str] = None
-    metadata: Dict[str, Any] = Field(default_factory=dict)
-    raw_payload: Dict[str, Any] = Field(default_factory=dict)
+from intergrax.integrations.contracts.inbound_interaction import InboundInteraction
 
 
 class InteractionIntakeResponse(BaseModel):
@@ -44,3 +27,6 @@ class InteractionIntakeResponse(BaseModel):
     run_id: Optional[str] = None
     resume_token: Optional[str] = None
     checkpoint_id: Optional[str] = None
+
+
+__all__ = ["InboundInteraction", "InteractionIntakeResponse"]

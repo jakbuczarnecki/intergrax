@@ -8,7 +8,9 @@ import asyncio
 
 import pytest
 
-from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
+from intergrax.applications._shared.harness_host_runtime import (
+    build_harness_host_runtime,
+)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
@@ -40,13 +42,15 @@ def _bounded_env(profile_id: str = "w5.c") -> ApplicationEnvironmentProfile:
 def _event(kind_suffix: str = "") -> RuntimeEvent:
     return RuntimeEvent(
         event_type=RuntimeEventType.TASK_PROGRESS,
-        phase=ExecutionPhase.COMPLETION,
+        phase=ExecutionPhase.STEP_EXECUTION,
         event_kind=f"qualification.w5c{kind_suffix}",
         **runtime_event_test_identity(),
     )
 
 
-def _wired_bus_with_recorder() -> tuple[RuntimeEventBus, RecordingEventExportSink, BoundedEventSink]:
+def _wired_bus_with_recorder() -> tuple[
+    RuntimeEventBus, RecordingEventExportSink, BoundedEventSink
+]:
     metrics = InternalDeliveryMetrics()
     recorder = RecordingEventExportSink()
     bridge = RuntimeEventExportSink(recorder, delivery_metrics=metrics)

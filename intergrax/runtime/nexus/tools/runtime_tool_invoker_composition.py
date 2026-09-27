@@ -86,6 +86,12 @@ def build_production_runtime_tool_invoker(
         raise ProductionRuntimeToolInvokerCompositionError(
             "meaningful_side_effect_authorization is required when production_mode=True",
         )
+    if production_mode and dependency_attempt_boundary is None:
+        raise ProductionRuntimeToolInvokerCompositionError(
+            "dependency_attempt_boundary is required when production_mode=True; "
+            "configure reliability_profile.dependency_concurrency_admission and "
+            "materialize admission before building the production tool invoker",
+        )
     resolved_executor = executor or RegistryToolExecutor(registry)
     coordinator = pre_effect_coordinator
     if coordinator is None and idempotency_store is not None:

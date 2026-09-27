@@ -73,7 +73,7 @@ def _gap_request(*, operation_id: str = "op-uca5r") -> MarketplaceGapAcquisition
             intent_summary="tool",
         ),
         discovery_query=_discovery_query(),
-        marketplace_query_context=MarketplaceQueryContext(),
+        marketplace_query_context=MarketplaceQueryContext(tenant_id="tenant-uca5r"),
     )
 
 

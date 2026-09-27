@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Scoped typed service registry for hosted application contexts."""
+"""Default hosted application service registry implementation."""
 
 from __future__ import annotations
 
@@ -9,28 +9,39 @@ from dataclasses import dataclass, field
 from typing import TypeVar
 
 from intergrax.hosting.contracts.public_data import stable_service_type_id
+from intergrax.hosting.contracts.service_registry import (
+    HostedApplicationServiceRegistryCompatibilityError,
+    HostedApplicationServiceRegistryDuplicateError,
+    HostedApplicationServiceRegistryError,
+    HostedApplicationServiceRegistryMissingError,
+    HostedApplicationServiceRegistryStateError,
+)
+
+__all__ = [
+    "HostedApplicationServiceRegistry",
+    "HostedApplicationServiceRegistryCompatibilityError",
+    "HostedApplicationServiceRegistryDuplicateError",
+    "HostedApplicationServiceRegistryError",
+    "HostedApplicationServiceRegistryMissingError",
+    "HostedApplicationServiceRegistryStateError",
+]
 
 T = TypeVar("T")
 
 
-class HostedApplicationServiceRegistryError(RuntimeError):
-    """Base error for hosted application service registry operations."""
-
-
-class HostedApplicationServiceRegistryDuplicateError(HostedApplicationServiceRegistryError):
-    """Raised when a duplicate service registration is attempted."""
-
-
-class HostedApplicationServiceRegistryStateError(HostedApplicationServiceRegistryError):
-    """Raised when registry state forbids an operation."""
-
-
-class HostedApplicationServiceRegistryCompatibilityError(HostedApplicationServiceRegistryError):
-    """Raised when a service is incompatible with its registration type."""
-
-
-class HostedApplicationServiceRegistryMissingError(HostedApplicationServiceRegistryError):
-    """Raised when a required service is not registered."""
+def _narrow_registered_service(service_type: type[T], service: object) -> T:
+    try:
+        compatible = isinstance(service, service_type)
+    except TypeError as exc:
+        raise HostedApplicationServiceRegistryCompatibilityError(
+            "runtime compatibility cannot be checked for the stored registration type "
+            f"({stable_service_type_id(service_type)})"
+        ) from exc
+    if not compatible:
+        raise HostedApplicationServiceRegistryCompatibilityError(
+            f"stored service is not compatible with {stable_service_type_id(service_type)}"
+        )
+    return service
 
 
 @dataclass
@@ -81,7 +92,9 @@ class HostedApplicationServiceRegistry:
         if self._closed:
             raise HostedApplicationServiceRegistryStateError("registry is closed")
         service = self._services.get(service_type)
-        return service  # type: ignore[return-value]
+        if service is None:
+            return None
+        return _narrow_registered_service(service_type, service)
 
     def require(self, service_type: type[T]) -> T:
         if self._closed:
@@ -91,7 +104,7 @@ class HostedApplicationServiceRegistry:
             raise HostedApplicationServiceRegistryMissingError(
                 f"required service missing: {stable_service_type_id(service_type)}"
             )
-        return service  # type: ignore[return-value]
+        return _narrow_registered_service(service_type, service)
 
     def contains(self, service_type: type[object]) -> bool:
         if self._closed:

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from intergrax.integrations.registry.runtime_binding import IntegrationRuntimeBindingSpec
+from intergrax.integrations.contracts.runtime_binding import IntegrationRuntimeBindingSpec
 from intergrax.rag.embedding.contracts.runtime_binding import EmbeddingProviderRuntimeBinder
 
 

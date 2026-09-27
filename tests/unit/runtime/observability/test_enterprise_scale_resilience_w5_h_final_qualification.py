@@ -12,9 +12,17 @@ import pytest
 from intergrax.applications._shared.runtime_event_delivery_wiring import (
     resolve_application_runtime_event_delivery_wiring,
 )
-from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.environment_profile.bundles import GovernanceBundle
-from intergrax.contracts.event_delivery import EventDeliveryPolicy, EventExportSinkPort, ObservabilityExportPayload
+from intergrax.applications.contracts.environment_profile import (
+    ApplicationEnvironmentProfile,
+)
+from intergrax.applications.contracts.environment_profile.bundles import (
+    GovernanceBundle,
+)
+from intergrax.contracts.event_delivery import (
+    EventDeliveryPolicy,
+    EventExportSinkPort,
+    ObservabilityExportPayload,
+)
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.observability_export import (
     ExporterKind,
@@ -53,7 +61,9 @@ def _enterprise_env(profile_id: str) -> ApplicationEnvironmentProfile:
     )
     return env.model_copy(
         update={
-            "governance": env.governance.model_copy(update={"observability": observability}),
+            "governance": env.governance.model_copy(
+                update={"observability": observability}
+            ),
         },
     )
 
@@ -61,7 +71,7 @@ def _enterprise_env(profile_id: str) -> ApplicationEnvironmentProfile:
 def _event() -> RuntimeEvent:
     return RuntimeEvent(
         event_type=RuntimeEventType.TASK_PROGRESS,
-        phase=ExecutionPhase.COMPLETION,
+        phase=ExecutionPhase.STEP_EXECUTION,
         event_kind="qualification.w5h",
         task_id=mint_task_id(),
         run_id=mint_run_id(),
@@ -71,7 +81,9 @@ def _event() -> RuntimeEvent:
 
 
 def test_enterprise_profile_wires_collector_transport() -> None:
-    wiring = resolve_application_runtime_event_delivery_wiring(_enterprise_env("w5.h.enterprise"))
+    wiring = resolve_application_runtime_event_delivery_wiring(
+        _enterprise_env("w5.h.enterprise")
+    )
     assert wiring.export_profile is not None
     assert wiring.export_profile.exporter_kind is ExporterKind.DISTRIBUTED_OTLP
     assert isinstance(wiring.otlp_transport, CollectorTransport)
@@ -97,8 +109,12 @@ def test_production_slo_regression_not_distributed_otlp() -> None:
 
 
 def test_runtime_instance_isolation_transports_and_sinks() -> None:
-    wiring_a = resolve_application_runtime_event_delivery_wiring(_enterprise_env("w5.h.iso.a"))
-    wiring_b = resolve_application_runtime_event_delivery_wiring(_enterprise_env("w5.h.iso.b"))
+    wiring_a = resolve_application_runtime_event_delivery_wiring(
+        _enterprise_env("w5.h.iso.a")
+    )
+    wiring_b = resolve_application_runtime_event_delivery_wiring(
+        _enterprise_env("w5.h.iso.b")
+    )
     assert wiring_a.otlp_transport is not wiring_b.otlp_transport
     assert wiring_a.event_export_sink is not wiring_b.event_export_sink
     assert wiring_a.bounded_sink is not wiring_b.bounded_sink
@@ -107,8 +123,8 @@ def test_runtime_instance_isolation_transports_and_sinks() -> None:
 @pytest.mark.asyncio
 async def test_failure_containment_otlp_transport_error() -> None:
     class FailingCollector(OtlpTransportPort):
-        def export(self, event: object) -> None:
-            _ = event
+        def export(self, payload: ObservabilityExportPayload) -> None:
+            _ = payload
             raise OtlpTransportError("collector unavailable")
 
         def flush(self) -> None:
@@ -144,8 +160,8 @@ async def test_backpressure_qualification_slow_exporter() -> None:
         def __init__(self) -> None:
             self._export_calls = 0
 
-        def export(self, event: object) -> None:
-            _ = event
+        def export(self, payload: ObservabilityExportPayload) -> None:
+            _ = payload
             self._export_calls += 1
             if self._export_calls == 1:
                 time.sleep(5.0)
@@ -182,6 +198,17 @@ class _LifecycleProbeExportSink(EventExportSinkPort):
 
     async def close(self) -> None:
         self.events.append("close")
+
+
+def test_otlp_transport_port_export_is_typed_observability_export_payload() -> None:
+    from typing import get_type_hints
+
+    from intergrax.runtime.observability.exporters.otlp.otlp_transport import (
+        OtlpTransport,
+    )
+
+    hints = get_type_hints(OtlpTransport.export)
+    assert hints["payload"] is ObservabilityExportPayload
 
 
 def test_lifecycle_ordering_flush_before_close() -> None:

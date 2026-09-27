@@ -12,9 +12,9 @@ from intergrax.rag.document_loaders.parsers.docling_local_parser import DoclingL
 from intergrax.rag.document_loaders.parsers.docling_server_parser import DoclingServerParser
 from intergrax.rag.document_loaders.parsers.excel_smart_parser import EXTRACTION_STRATEGY, ExcelSmartParser
 
-from intergrax.rag.document_loaders.contracts.base_document_handler import BaseDocumentHandler
+from intergrax.rag.document_loaders.pipeline.document_handler_loading import PipelineDocumentHandler
 
-class ExcelSmartDocumentHandler(BaseDocumentHandler):
+class ExcelSmartDocumentHandler(PipelineDocumentHandler):
 
     def __init__(
         self,

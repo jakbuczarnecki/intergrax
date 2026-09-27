@@ -8,9 +8,13 @@ from datetime import UTC, datetime
 
 import pytest
 
+from intergrax.contracts.execution_identity import (
+    validate_attempt_id,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.runtime_intelligence import (
-    ANALYZER_OUTCOME_OK,
-    ANALYZER_OUTCOME_PLUGIN_UNAVAILABLE,
+    RuntimeIntelligenceAnalyzerOutcomeCode,
     AnalyzerExecutionError,
     IntelligenceEvidence,
     IntelligenceEvidenceSourceKind,
@@ -34,6 +38,9 @@ from intergrax.runtime.runtime_intelligence import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _COLLECTED_AT = datetime(2026, 9, 12, 9, 0, tzinfo=UTC)
+_W6_TASK_ID = validate_task_id("task_00000000000000000000000000000001")
+_W6_RUN_ID = validate_run_id("run_00000000000000000000000000000001")
+_W6_ATTEMPT_ID = validate_attempt_id("attempt_00000000000000000000000000000001")
 
 
 def _fact_ref() -> RuntimeIntelligenceFactReference:
@@ -46,9 +53,9 @@ def _fact_ref() -> RuntimeIntelligenceFactReference:
 def _facts() -> RuntimeIntelligenceFacts:
     return RuntimeIntelligenceFacts(
         tenant_id="tenant-a",
-        task_id="task_00000000000000000000000000000001",
-        run_id="run_00000000000000000000000000000001",
-        attempt_id="attempt_00000000000000000000000000000001",
+        task_id=_W6_TASK_ID,
+        run_id=_W6_RUN_ID,
+        attempt_id=_W6_ATTEMPT_ID,
         fact_references=(_fact_ref(),),
         correlation_id="corr-w6d",
         collected_at=_COLLECTED_AT,
@@ -106,7 +113,10 @@ def test_multiple_analyzers_execute_and_aggregate() -> None:
         (first, second),
     )
     assert len(result.outcomes) == 2
-    assert all(outcome.outcome == ANALYZER_OUTCOME_OK for outcome in result.outcomes)
+    assert all(
+        outcome.outcome == RuntimeIntelligenceAnalyzerOutcomeCode.OK
+        for outcome in result.outcomes
+    )
     assert result.outcomes[0].result is not None
     assert result.outcomes[1].result is not None
     assert result.outcomes[0].result.analyzer_id == "plugin.alpha"
@@ -133,11 +143,17 @@ def test_failure_isolation_preserves_healthy_analyzer_results() -> None:
         context,
         (_ExplodingAnalyzer(), DeterministicRuntimeIntelligenceAnalyzer()),
     )
-    assert result.outcomes[0].outcome == ANALYZER_OUTCOME_PLUGIN_UNAVAILABLE
+    assert (
+        result.outcomes[0].outcome
+        == RuntimeIntelligenceAnalyzerOutcomeCode.PLUGIN_UNAVAILABLE
+    )
     assert result.outcomes[0].result is None
-    assert result.outcomes[1].outcome == ANALYZER_OUTCOME_OK
+    assert result.outcomes[1].outcome == RuntimeIntelligenceAnalyzerOutcomeCode.OK
     assert result.outcomes[1].result is not None
-    assert result.outcomes[1].result.analyzer_id == DeterministicRuntimeIntelligenceAnalyzer().analyzer_id
+    assert (
+        result.outcomes[1].result.analyzer_id
+        == DeterministicRuntimeIntelligenceAnalyzer().analyzer_id
+    )
 
 
 def test_empty_analyzer_collection_yields_no_outcomes() -> None:
@@ -169,8 +185,14 @@ def test_orchestrated_request_lifecycle_end_to_end() -> None:
     )
     assert response.context.tenant_id == "tenant-a"
     assert len(response.orchestration.outcomes) == 2
-    assert response.orchestration.outcomes[0].outcome == ANALYZER_OUTCOME_OK
-    assert response.orchestration.outcomes[1].outcome == ANALYZER_OUTCOME_OK
+    assert (
+        response.orchestration.outcomes[0].outcome
+        == RuntimeIntelligenceAnalyzerOutcomeCode.OK
+    )
+    assert (
+        response.orchestration.outcomes[1].outcome
+        == RuntimeIntelligenceAnalyzerOutcomeCode.OK
+    )
 
 
 def test_plugins_satisfy_port_without_orchestrator_branching() -> None:

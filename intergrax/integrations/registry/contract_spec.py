@@ -12,8 +12,15 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from intergrax.integrations.contracts.catalog_factory import IntegrationFactory
+from intergrax.integrations.contracts.contract_spec import (
+    IntegrationContractFactory,
+    IntegrationContractSpec,
+)
 from intergrax.integrations.core.manifest import IntegrationManifest
 from intergrax.integrations.registry.runtime_binding import IntegrationRuntimeBindingSpec
+
+# Architecture gate: registry surface keeps explicit alias to catalog factory typing.
+IntegrationContractFactory = IntegrationFactory
 
 if TYPE_CHECKING:
     from intergrax.runtime.integrations.contracts import (
@@ -22,9 +29,6 @@ if TYPE_CHECKING:
         PlatformIntegrationContract,
         PlatformIntegrationSecurityPosture,
     )
-
-# Same catalog materialization responsibility as ``IntegrationFactory`` (no parallel factory type).
-IntegrationContractFactory = IntegrationFactory
 
 # P2-003-B1: typed built-in data/persistence categories require provider-owned specs.
 B1_TYPED_CONTRACT_CATEGORIES: frozenset[str] = frozenset(
@@ -97,34 +101,6 @@ def typed_contract_categories() -> frozenset[str]:
 def required_explicit_contract_categories() -> frozenset[str]:
     """Backward-compatible alias for :func:`typed_contract_categories`."""
     return typed_contract_categories()
-
-
-@dataclass(frozen=True, repr=False)
-class IntegrationContractSpec:
-    """One canonical ``(provider_id, category)`` contract row stored on catalog entries."""
-
-    category: str
-    provider_id: str
-    integration_kind: str
-    contract_class: type[PlatformIntegrationContract]
-    integration_class: type[PlatformIntegrationContract]
-    security_posture: PlatformIntegrationSecurityPosture
-    contract_factory: IntegrationContractFactory = field(compare=False, repr=False)
-    config_class: type[PlatformIntegrationConfig] | None = None
-    display_name: str = ""
-    capabilities: tuple[str, ...] = field(default_factory=tuple)
-    supports_runtime_binding: bool = True
-    supports_health_check: bool = False
-    runtime_binding: IntegrationRuntimeBindingSpec | None = field(
-        default=None,
-        compare=False,
-        repr=False,
-    )
-    metadata: Mapping[str, object] = field(default_factory=dict, compare=False, repr=False)
-
-    def __post_init__(self) -> None:
-        object.__setattr__(self, "capabilities", tuple(str(capability) for capability in self.capabilities))
-        object.__setattr__(self, "metadata", MappingProxyType(dict(self.metadata)))
 
 
 def declare_integration_contract(

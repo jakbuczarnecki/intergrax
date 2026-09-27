@@ -39,7 +39,7 @@ class DelegatedCorrelationQueryIndexBackfillPage(BaseModel):
     updated_count: int = Field(ge=0)
     next_cursor: str | None = None
 
-    @computed_field  # type: ignore[prop-decorator]
+    @computed_field
     @property
     def has_more(self) -> bool:
         return self.next_cursor is not None

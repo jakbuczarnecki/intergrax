@@ -9,7 +9,7 @@ from typing import Optional
 
 from intergrax.knowledge.contracts import KnowledgeDocument
 
-from intergrax.legacy.rag_answers.pipeline.pipeline_trace import PipelineTrace
+from intergrax.legacy.rag_answers.contracts.pipeline_trace import PipelineTrace
 
 
 @dataclass(slots=True)

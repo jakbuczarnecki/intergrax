@@ -76,10 +76,10 @@ A4 classification — CLOSED
 
 Catalog — QUALIFIED
 Vector — QUALIFIED
-Memory — ADR_REQUIRED
+Memory — ADR CLOSED (GR-12-A4-R3); R3-R1 READY FOR AUDIT
 
 GR-12 overall — IN PROGRESS
-Next — Memory specialized qualification (GR-12-A4-R3-R1)
+Next — GR-12 Final Qualification (after independent R3-R1 audit)
 ```
 
 **Canonical control-plane model (unchanged target):** shared **CONTROL_PLANE_MUTATION** authority context → canonical **CLA-04** authorization boundary → **domain owner** executes its own mutation. No universal mutation executor, no global `GovernanceEngine`, no second permission engine.

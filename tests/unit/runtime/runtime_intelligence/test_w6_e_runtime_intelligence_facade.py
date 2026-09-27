@@ -8,9 +8,13 @@ from datetime import UTC, datetime
 
 import pytest
 
+from intergrax.contracts.execution_identity import (
+    validate_attempt_id,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.runtime_intelligence import (
-    ANALYZER_OUTCOME_OK,
-    ANALYZER_OUTCOME_PLUGIN_UNAVAILABLE,
+    RuntimeIntelligenceAnalyzerOutcomeCode,
     AnalyzerExecutionError,
     IntelligenceEvidence,
     IntelligenceEvidenceSourceKind,
@@ -37,6 +41,9 @@ from intergrax.runtime.runtime_intelligence import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _COLLECTED_AT = datetime(2026, 9, 12, 10, 0, tzinfo=UTC)
+_W6_TASK_ID = validate_task_id("task_00000000000000000000000000000001")
+_W6_RUN_ID = validate_run_id("run_00000000000000000000000000000001")
+_W6_ATTEMPT_ID = validate_attempt_id("attempt_00000000000000000000000000000001")
 
 
 def _fact_ref() -> RuntimeIntelligenceFactReference:
@@ -49,9 +56,9 @@ def _fact_ref() -> RuntimeIntelligenceFactReference:
 def _facts() -> RuntimeIntelligenceFacts:
     return RuntimeIntelligenceFacts(
         tenant_id="tenant-a",
-        task_id="task_00000000000000000000000000000001",
-        run_id="run_00000000000000000000000000000001",
-        attempt_id="attempt_00000000000000000000000000000001",
+        task_id=_W6_TASK_ID,
+        run_id=_W6_RUN_ID,
+        attempt_id=_W6_ATTEMPT_ID,
         fact_references=(_fact_ref(),),
         correlation_id="corr-w6e",
         collected_at=_COLLECTED_AT,
@@ -154,8 +161,14 @@ def test_facade_analyzer_ordering_is_explicit_and_deterministic() -> None:
     forward = facade.analyze_orchestrated(_facts(), (beta, alpha))
     reverse = facade.analyze_orchestrated(_facts(), (alpha, beta))
 
-    assert [o.analyzer_id for o in forward.orchestration.outcomes] == ["plugin.beta", "plugin.alpha"]
-    assert [o.analyzer_id for o in reverse.orchestration.outcomes] == ["plugin.alpha", "plugin.beta"]
+    assert [o.analyzer_id for o in forward.orchestration.outcomes] == [
+        "plugin.beta",
+        "plugin.alpha",
+    ]
+    assert [o.analyzer_id for o in reverse.orchestration.outcomes] == [
+        "plugin.alpha",
+        "plugin.beta",
+    ]
 
 
 def test_facade_failure_isolation_preserves_healthy_analyzer_results() -> None:
@@ -164,9 +177,11 @@ def test_facade_failure_isolation_preserves_healthy_analyzer_results() -> None:
         (_ExplodingAnalyzer(), DeterministicRuntimeIntelligenceAnalyzer()),
     )
     outcomes = response.orchestration.outcomes
-    assert outcomes[0].outcome == ANALYZER_OUTCOME_PLUGIN_UNAVAILABLE
+    assert (
+        outcomes[0].outcome == RuntimeIntelligenceAnalyzerOutcomeCode.PLUGIN_UNAVAILABLE
+    )
     assert outcomes[0].result is None
-    assert outcomes[1].outcome == ANALYZER_OUTCOME_OK
+    assert outcomes[1].outcome == RuntimeIntelligenceAnalyzerOutcomeCode.OK
     assert outcomes[1].result is not None
 
 

@@ -25,6 +25,7 @@ def _bindings_from_specs(specs: list[ScaffoldAgentSpec]) -> list[AgentBinding]:
         bindings.append(
             AgentBinding.deserialize(
                 import_path=f"{spec.module}.{spec.class_name}",
+                contract_id=spec.contract_id,
                 capabilities=list(spec.capabilities),
                 default=index == 0,
             ),

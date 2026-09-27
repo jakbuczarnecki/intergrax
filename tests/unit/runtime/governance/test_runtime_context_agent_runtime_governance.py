@@ -14,6 +14,9 @@ from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
     ProductionRuntimeToolInvokerCompositionError,
 )
+from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (
+    ToolDependencyAttemptBoundaryMaterializationError,
+)
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.runtime.wiring.agent_runtime_governance_factory import (
@@ -22,6 +25,9 @@ from intergrax.runtime.wiring.agent_runtime_governance_factory import (
 )
 from intergrax.runtime.wiring.harness_governance import create_lab_allow_governance_service
 from testing_support.builder import FakeLLMAdapter
+from testing_support.dependency_concurrency_admission_config import (
+    tool_dependency_concurrency_admission_configuration,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -38,8 +44,8 @@ def test_runtime_context_requires_agent_runtime_governance_in_production_mode() 
     governance_service = create_lab_allow_governance_service()
 
     with pytest.raises(
-        ProductionRuntimeToolInvokerCompositionError,
-        match="agent_runtime_governance is required",
+        ToolDependencyAttemptBoundaryMaterializationError,
+        match="dependency_concurrency_admission",
     ):
         RuntimeContext.build(
             config=config,
@@ -62,6 +68,10 @@ def test_runtime_context_requires_mse_port_in_production_mode() -> None:
         trace_db_path="/tmp/trace.db",
         agent_runtime_governance=build_agent_runtime_governance_boundary(
             capability_grants=default_lab_capability_grants("tenant-a"),
+        ),
+        dependency_concurrency_admission=tool_dependency_concurrency_admission_configuration(
+            "lab.probe.tool",
+            max_concurrent_calls=2,
         ),
     )
     session_manager = SessionManager(storage=InMemorySessionStorage())
@@ -87,6 +97,10 @@ def test_runtime_context_builds_when_agent_runtime_governance_present() -> None:
             capability_grants=default_lab_capability_grants("tenant-a"),
         ),
         meaningful_side_effect_authorization=_LabMsePort(),
+        dependency_concurrency_admission=tool_dependency_concurrency_admission_configuration(
+            "lab.probe.tool",
+            max_concurrent_calls=2,
+        ),
     )
     session_manager = SessionManager(storage=InMemorySessionStorage())
     ctx = RuntimeContext.build(

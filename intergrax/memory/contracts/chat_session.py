@@ -10,7 +10,7 @@ from enum import Enum
 from typing import Any
 
 from intergrax.llm.messages import AttachmentRef
-from intergrax.utils.time_provider import SystemTimeProvider
+from intergrax.memory.contracts.clock import utc_now
 
 
 class SessionStatus(str, Enum):
@@ -33,8 +33,8 @@ class ChatSession:
     tenant_id: str
     user_id: str | None = None
     workspace_id: str | None = None
-    created_at: datetime = field(default_factory=lambda: SystemTimeProvider.utc_now())
-    updated_at: datetime = field(default_factory=lambda: SystemTimeProvider.utc_now())
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
     attachments: list[AttachmentRef] = field(default_factory=list)
     status: SessionStatus = SessionStatus.OPEN
     closed_reason: SessionCloseReason | None = None
@@ -48,7 +48,7 @@ class ChatSession:
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def touch(self) -> None:
-        self.updated_at = SystemTimeProvider.utc_now()
+        self.updated_at = utc_now()
 
     @property
     def is_closed(self) -> bool:

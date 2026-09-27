@@ -11,10 +11,10 @@ from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDo
 from intergrax.rag.document_loaders.parsers.docling_local_parser import DoclingLocalParser
 from intergrax.rag.document_loaders.parsers.docling_server_parser import DoclingServerParser
 from intergrax.rag.document_loaders.parsers.pdf_smart_parser import PdfSmartParser
-from intergrax.rag.document_loaders.contracts.base_document_handler import BaseDocumentHandler
+from intergrax.rag.document_loaders.pipeline.document_handler_loading import PipelineDocumentHandler
 
 
-class PdfSmartDocumentHandler(BaseDocumentHandler):
+class PdfSmartDocumentHandler(PipelineDocumentHandler):
 
     def __init__(
         self,

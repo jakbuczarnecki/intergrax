@@ -8,12 +8,12 @@ from typing import List
 
 
 from intergrax.rag.document_loaders.config.document_loader_config import GLOBAL_DOCUMENT_LOADER_CONFIG
-from intergrax.rag.document_loaders.contracts.base_document_handler import BaseDocumentHandler
+from intergrax.rag.document_loaders.pipeline.document_handler_loading import PipelineDocumentHandler
 from intergrax.rag.document_loaders.contracts.base_document_parser import BaseDocumentParser
 from intergrax.rag.document_loaders.parsers.image_smart_parser import ImageSmartParser
 
 
-class ImageSmartDocumentHandler(BaseDocumentHandler):
+class ImageSmartDocumentHandler(PipelineDocumentHandler):
 
     def __init__(
         self,
