@@ -262,9 +262,7 @@ def _function_composes_contract_symbol(func: ast.FunctionDef, symbol: str) -> bo
 def _function_structurally_wires_symbol(func: ast.FunctionDef, symbol: str) -> bool:
     if _function_injects_contract_symbol(func, symbol):
         return True
-    if _function_composes_contract_symbol(func, symbol):
-        return True
-    return _tree_references_name(func, symbol)
+    return _function_composes_contract_symbol(func, symbol)
 
 
 def _class_init_wires_symbol(class_def: ast.ClassDef, symbol: str) -> bool:
@@ -274,6 +272,17 @@ def _class_init_wires_symbol(class_def: ast.ClassDef, symbol: str) -> bool:
         for arg in (*item.args.args, *item.args.kwonlyargs):
             if _annotation_references_name(arg.annotation, symbol):
                 return True
+    return False
+
+
+def _class_structurally_wires_symbol(class_def: ast.ClassDef, symbol: str) -> bool:
+    if _class_init_wires_symbol(class_def, symbol):
+        return True
+    for item in class_def.body:
+        if isinstance(item, ast.FunctionDef) and _function_structurally_wires_symbol(
+            item, symbol
+        ):
+            return True
     return False
 
 
@@ -368,17 +377,14 @@ def _module_exposes_registry_resolution_seam(rel: str, symbol: str) -> bool:
     return False
 
 
-def _composition_owner_direct_wires_symbol(
-    row: Gr11ExtensionSurface, symbol: str
-) -> bool:
-    tree = _parse_module_ast(row.composition_owner_module)
-    if _tree_references_name(tree, symbol):
-        return True
+def _module_ast_structurally_wires_symbol(tree: ast.Module, symbol: str) -> bool:
     for func in _composition_entry_functions(tree):
         if _function_structurally_wires_symbol(func, symbol):
             return True
     for node in tree.body:
-        if isinstance(node, ast.ClassDef) and _class_init_wires_symbol(node, symbol):
+        if isinstance(node, ast.ClassDef) and _class_structurally_wires_symbol(
+            node, symbol
+        ):
             return True
         if isinstance(node, ast.FunctionDef) and _function_structurally_wires_symbol(
             node, symbol
@@ -387,11 +393,21 @@ def _composition_owner_direct_wires_symbol(
     return False
 
 
+def _module_structurally_wires_symbol(rel: str, symbol: str) -> bool:
+    return _module_ast_structurally_wires_symbol(_parse_module_ast(rel), symbol)
+
+
+def _composition_owner_direct_wires_symbol(
+    row: Gr11ExtensionSurface, symbol: str
+) -> bool:
+    return _module_structurally_wires_symbol(row.composition_owner_module, symbol)
+
+
 def _composition_owner_wires_symbol(row: Gr11ExtensionSurface, symbol: str) -> bool:
     if _composition_owner_direct_wires_symbol(row, symbol):
         return True
     for rel in _wired_delegate_modules(row):
-        if _tree_references_name(_parse_module_ast(rel), symbol):
+        if _module_structurally_wires_symbol(rel, symbol):
             return True
     defining_module = _defining_module_for_symbol(row, symbol)
     if (
@@ -517,6 +533,22 @@ def test_gr11_g08_sanctioned_composition_owner_module_wires_contract_per_row() -
             )
         competing = _consumer_competing_composition_wiring(row)
         assert competing == [], (row.capability_id, competing)
+
+
+def test_gr11_g08_regression_incidental_contract_reference_not_wiring() -> None:
+    symbol = "ExampleGovernancePort"
+    incidental_module = ast.parse(
+        f"""
+def build_host_runtime():
+    _doc = {symbol}
+"""
+    )
+    assert _tree_references_name(incidental_module, symbol)
+    assert not _module_ast_structurally_wires_symbol(incidental_module, symbol)
+    incidental_func = incidental_module.body[0]
+    assert isinstance(incidental_func, ast.FunctionDef)
+    assert _tree_references_name(incidental_func, symbol)
+    assert not _function_structurally_wires_symbol(incidental_func, symbol)
 
 
 def test_gr11_g09_consumers_do_not_redeclare_contract_ports() -> None:
