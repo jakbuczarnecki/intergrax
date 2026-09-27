@@ -17,6 +17,8 @@
 
 Companion program tracker: [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md).
 
+**Scenario #24 / UCA handoff (platform ownership):** roadmap §1.1 and §3.0.1. **S24-GAP-02** stays UCA **CLOSED**; **GAP-04** → **INT-EXTCOMP-X**; **GAP-01** → **INT-CONFIG-REAL-X**; **GAP-03** → **AW-7C**. Scenario consumption requires cross-session return contract (SHA, owner, public contracts, classification, certification, IN-SCOPE BLOCKER = 0, **READY FOR SCENARIO CONSUMPTION**).
+
 ---
 
 ## Allowed statuses
@@ -298,6 +300,9 @@ Completeness detector: every FRZ family must have at least one primary closing s
 | HARNESS-* | HRN, EXE, GOV, OBS |
 | HARNESS-W4 | REL (bounded concurrency, overload, backpressure, saturation, provider throttling, bounded retry/fallback) |
 | GOV-X1 / GOV-X2 | GOV, EXE, TRC |
+| INT-EXTCOMP-X | CMP, CTR, TYP, PLG, TRC |
+| INT-CONFIG-REAL-X | CFG, CTR, PLG, RPL, GOV |
+| AW-7C | GOV, EXE, CTR, PLG, RPL |
 | EBH-3 | BND, OWN, CTR |
 | EBH-4 | BND, CTR, EXE, GOV |
 | CTRL-X | CTL, SEC, REL, OBS |
@@ -319,18 +324,18 @@ Completeness detector: every FRZ family must have at least one primary closing s
 | --- | --- |
 | BND | EBH-2*, EBH-3, EBH-4 |
 | OWN | EBH-2*, EBH-3 |
-| CTR | EBH-2*, EBH-3, EBH-4 |
-| TYP | EBH-2* |
-| PLG | EBH-2*, EBH-5 |
-| RPL | EBH-5 |
-| EXE | HARNESS-*, EBH-4, GOV-X* |
-| GOV | HARNESS-*, GOV-X* |
+| CTR | EBH-2*, EBH-3, EBH-4, INT-EXTCOMP-X, INT-CONFIG-REAL-X, AW-7C |
+| TYP | EBH-2*, INT-EXTCOMP-X |
+| PLG | EBH-2*, EBH-5, INT-EXTCOMP-X, INT-CONFIG-REAL-X, AW-7C |
+| RPL | EBH-5, INT-CONFIG-REAL-X, AW-7C |
+| EXE | HARNESS-*, EBH-4, GOV-X*, AW-7C |
+| GOV | HARNESS-*, GOV-X*, INT-CONFIG-REAL-X, AW-7C |
 | OBS | HARNESS-*, TRACE-X, CTRL-X |
-| TRC | TRACE-X, GOV-X* |
+| TRC | TRACE-X, GOV-X*, INT-EXTCOMP-X |
 | STA | STATE-X |
 | REC | STATE-X |
-| CMP | COMPAT-X |
-| CFG | CONFIG-X |
+| CMP | COMPAT-X, INT-EXTCOMP-X |
+| CFG | INT-CONFIG-REAL-X, CONFIG-X |
 | SEC | CTRL-X, PROD-Q |
 | REL | HARNESS-W4, CTRL-X, PROD-Q |
 | CTL | CTRL-X |
