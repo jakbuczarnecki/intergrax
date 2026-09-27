@@ -20,11 +20,27 @@
 
 **Authority (unchanged):** `docs/project/maintainers/architecture/GOVERNED_CAPABILITY_FULFILLMENT.md`; historical `UCA_6C_R6_ENTERPRISE_CERTIFICATION.md`; `S24_GAP_02_QUALIFIED_MARKETPLACE_TOOL_CERTIFICATION.md`; `INTEGRAX_POST_FREEZE_EVOLUTION_GOVERNANCE.md`.
 
-**Cursor session note:** Local pytest/ruff/pyright results below are **session evidence** for independent GitHub audit — not standalone certification.
+## UCA-FINAL-AUDIT-R1 — Async Resume Contract Closure (remediation)
+
+| Field | Value |
+| --- | --- |
+| **TASK** | `UCA-FINAL-AUDIT-R1` — Async Resume Contract Closure |
+| **PRIOR REJECTED HEAD (independent pre-audit)** | `7c255e8aed6352dd0b8c61cdf6b88a52c449d7b1` — `WorkerQualifiedCapabilityResumePort` declared `resume` only while `WorkerCapabilityFulfillmentCoordinator.fulfill_async()` required `resume_async` (contract-first defect) |
+| **REMEDIATION** | Extend canonical `WorkerQualifiedCapabilityResumePort` with `resume_async(...)` matching `WorkerQualifiedCapabilityResumeCoordinator` |
+| **CLASS** | **B** — public Protocol shape only; runtime semantics unchanged |
+| **UCA REOPEN** | **NO** |
+| **EE REOPEN** | **NO** |
+| **REMEDIATION_COMMIT** | `c322455a4` (`fix(uca): complete async resume contract`) |
+| **Supersedes** | §13 Pyright row below (prior `resume_async` `reportAttributeAccessIssue`); prior §18 readiness verdict at `184baba53` / `7c255e8a` chain **did not** close this seam |
+
+**Pyright (post-R1 seam):** `uv run pyright` on `worker_capability_fulfillment_ports.py`, `worker_capability_fulfillment_coordinator.py`, `worker_capability_fulfillment_composition.py`, `worker_qualified_capability_resume_coordinator.py`, `test_uca_final_audit_r1_async_resume_contract.py` → **0 errors** (`reportAttributeAccessIssue` on `resume_async` = **CLOSED**).
+
+**UCA-FINAL-AUDIT-R1 session verdict:** **PASS** (pending independent GitHub audit of remediation SHA).
+
+**UCA-FINAL-AUDIT (parent) / `UCA = READY FOR SCENARIO CONSUMPTION`:** remain **BLOCKED** until independent current-HEAD recertification on exact remediation commit — this section **does not** reinstate parent PASS from §18.
 
 ---
 
-## 1. Repository baseline
 
 ```text
 git rev-parse HEAD          = 184baba5381d804b9c785c9f99c0f7d1d8794513
@@ -226,7 +242,7 @@ Production path unchanged from `S24_GAP_02_QUALIFIED_MARKETPLACE_TOOL_CERTIFICAT
 | Tool | Scope | Result |
 | --- | --- | --- |
 | **Ruff** | `worker_capability_fulfillment_coordinator.py`, `gap_acquisition_service.py`, GAP-02 handler/binding/qualification providers | **PASS** |
-| **Pyright** | Same seams + intent preparation contract | **1** `reportAttributeAccessIssue` on `WorkerQualifiedCapabilityResumePort.resume_async` (Protocol surface vs async impl) — **typing seam only**; no runtime bypass; not classified UCA architecture blocker (analogous to historical out-of-scope Pyright debt) |
+| **Pyright** | UCA worker fulfillment + resume seam (post-R1) | **0 errors** on audited files; `WorkerQualifiedCapabilityResumePort.resume_async` **CLOSED** (supersedes prior single-error row) |
 | **Fresh import** | `import intergrax.tools.registry` | **PASS** |
 
 ---
@@ -284,13 +300,14 @@ Source: `platform_proofs/scenarios/external_api_schema_drift/SCENARIO_SPEC.md` (
 ## 18. Final verdict
 
 ```text
-UCA-FINAL-AUDIT = PASS
-UCA_SPECIFIC_BLOCKERS = 0
-UCA = READY FOR SCENARIO CONSUMPTION
+UCA-FINAL-AUDIT-R1 = PASS (session — await independent SHA audit)
+UCA-FINAL-AUDIT = BLOCKED BY R1 closure pending recertification
+UCA_SPECIFIC_BLOCKERS = 0 (typing seam remediated)
+UCA = READY FOR SCENARIO CONSUMPTION = NO (independent audit required)
 SCENARIO #24 READY FOR IMPLEMENTATION = NO  (external GAP-01/03/04 remain open)
 ```
 
-**Next gated task:** `UCA-SCENARIO-CONTRACT-GATE` (after independent evidence audit).
+**Next gated task:** `UCA-FINAL-AUDIT` current-HEAD recertification on remediation SHA, then `UCA-SCENARIO-CONTRACT-GATE`.
 
 ---
 
