@@ -14,20 +14,29 @@ from tests.qualification.governance.gr12.catalog import (
     Gr12Applicability,
     Gr12CoverageStatus,
 )
-from tests.qualification.governance.gr12.qualification_support import assert_proof_nodes_registered
+from tests.qualification.governance.gr12.qualification_support import (
+    assert_proof_nodes_registered,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def test_gr12_a4_r1_r1_catalog_hot_reload_qualified_ssot() -> None:
     row = next(
-        item for item in GR12_CONTROL_PLANE_SURFACES if item.path_id == "CP-PLUGIN-CATALOG-HOT-RELOAD"
+        item
+        for item in GR12_CONTROL_PLANE_SURFACES
+        if item.path_id == "CP-PLUGIN-CATALOG-HOT-RELOAD"
     )
     assert row.coverage is Gr12CoverageStatus.QUALIFIED
     assert row.applicability is Gr12Applicability.APPLICABLE
     assert row.future_remediation == ""
     assert GR12_A4_R1_R1_QUALIFICATION_PROOF in row.qualification_proof
-    assert "GR-12 Final Qualification" in GR12_A4_NEXT_REMEDIATION.task_name
+    from tests.qualification.governance.gr12.catalog import (
+        GR12_FINAL_PARENT_QUALIFICATION_STATUS,
+    )
+
+    assert GR12_FINAL_PARENT_QUALIFICATION_STATUS == "READY FOR AUDIT"
+    assert "audit" in GR12_A4_NEXT_REMEDIATION.task_name.lower()
 
 
 def test_gr12_a4_r1_r1_execution_proof_nodes_bound_to_semantic_tests() -> None:

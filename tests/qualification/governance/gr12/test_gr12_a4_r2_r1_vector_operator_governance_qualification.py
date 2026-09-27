@@ -14,21 +14,30 @@ from tests.qualification.governance.gr12.catalog import (
     Gr12Applicability,
     Gr12CoverageStatus,
 )
-from tests.qualification.governance.gr12.qualification_support import assert_proof_nodes_registered
+from tests.qualification.governance.gr12.qualification_support import (
+    assert_proof_nodes_registered,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 
 def test_gr12_a4_r2_r1_vector_operator_qualified_ssot() -> None:
     row = next(
-        item for item in GR12_CONTROL_PLANE_SURFACES if item.path_id == "CP-VECTOR-INDEX-ADMIN"
+        item
+        for item in GR12_CONTROL_PLANE_SURFACES
+        if item.path_id == "CP-VECTOR-INDEX-ADMIN"
     )
     assert row.coverage is Gr12CoverageStatus.QUALIFIED
     assert row.applicability is Gr12Applicability.APPLICABLE
     assert row.future_remediation == ""
     assert GR12_A4_R2_R1_QUALIFICATION_PROOF in row.qualification_proof
     assert "VectorIndexAdminService" in row.production_entrypoint
-    assert "GR-12 Final Qualification" in GR12_A4_NEXT_REMEDIATION.task_name
+    from tests.qualification.governance.gr12.catalog import (
+        GR12_FINAL_PARENT_QUALIFICATION_STATUS,
+    )
+
+    assert GR12_FINAL_PARENT_QUALIFICATION_STATUS == "READY FOR AUDIT"
+    assert "audit" in GR12_A4_NEXT_REMEDIATION.task_name.lower()
 
 
 def test_gr12_a4_r2_r1_execution_proof_nodes_bound_to_semantic_tests() -> None:
