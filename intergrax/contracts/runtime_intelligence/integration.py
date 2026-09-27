@@ -7,9 +7,22 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
-from intergrax.contracts.runtime_intelligence.analyzer import RuntimeIntelligenceAnalyzerOutcome
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    validate_attempt_id,
+    validate_execution_id,
+    validate_run_id,
+    validate_task_id,
+)
+from intergrax.contracts.runtime_intelligence.analyzer import (
+    RuntimeIntelligenceAnalyzerOutcome,
+)
 from intergrax.contracts.runtime_intelligence.context import (
     RuntimeIntelligenceContext,
     RuntimeIntelligenceFactReference,
@@ -19,9 +32,11 @@ from intergrax.contracts.runtime_intelligence.errors import (
     RuntimeIntelligenceError,
 )
 
-INTEGRATION_OUTCOME_OK = "ok"
-INTEGRATION_OUTCOME_INVALID_INPUT = "INVALID_INPUT"
-INTEGRATION_OUTCOME_UNAVAILABLE = "UNAVAILABLE"
+
+class RuntimeIntelligenceIntegrationOutcomeCode(StrEnum):
+    OK = "ok"
+    INVALID_INPUT = "INVALID_INPUT"
+    UNAVAILABLE = "UNAVAILABLE"
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,22 +48,28 @@ class RuntimeIntelligenceFactsInput:
     """
 
     tenant_id: str
-    task_id: str
-    run_id: str
+    task_id: TaskId
+    run_id: RunId
     fact_references: tuple[RuntimeIntelligenceFactReference, ...]
     correlation_id: str
     collected_at: datetime
-    attempt_id: str | None = None
-    execution_id: str | None = None
+    attempt_id: AttemptId | None = None
+    execution_id: ExecutionId | None = None
     context_label: str = ""
 
     def __post_init__(self) -> None:
         if not self.tenant_id.strip():
             raise ValueError("tenant_id must be non-empty")
-        if not self.task_id.strip():
-            raise ValueError("task_id must be non-empty")
-        if not self.run_id.strip():
-            raise ValueError("run_id must be non-empty")
+        object.__setattr__(self, "task_id", validate_task_id(self.task_id))
+        object.__setattr__(self, "run_id", validate_run_id(self.run_id))
+        if self.attempt_id is not None:
+            object.__setattr__(self, "attempt_id", validate_attempt_id(self.attempt_id))
+        if self.execution_id is not None:
+            object.__setattr__(
+                self,
+                "execution_id",
+                validate_execution_id(self.execution_id),
+            )
         if not self.correlation_id.strip():
             raise ValueError("correlation_id must be non-empty")
         if self.collected_at.tzinfo is None:
@@ -67,7 +88,7 @@ class RuntimeIntelligenceAdvisoryResponse:
 class RuntimeIntelligenceIntegrationOutcome:
     """Fail-soft integration boundary record — not execution truth."""
 
-    outcome: str
+    outcome: RuntimeIntelligenceIntegrationOutcomeCode
     advisory: RuntimeIntelligenceAdvisoryResponse | None = None
 
 
@@ -96,32 +117,30 @@ def invoke_runtime_intelligence_integration_isolated(
         advisory = port.analyze_advisory(facts)
     except InvalidIntelligenceContextError:
         return RuntimeIntelligenceIntegrationOutcome(
-            outcome=INTEGRATION_OUTCOME_INVALID_INPUT,
+            outcome=RuntimeIntelligenceIntegrationOutcomeCode.INVALID_INPUT,
             advisory=None,
         )
     except RuntimeIntelligenceError:
         return RuntimeIntelligenceIntegrationOutcome(
-            outcome=INTEGRATION_OUTCOME_UNAVAILABLE,
+            outcome=RuntimeIntelligenceIntegrationOutcomeCode.UNAVAILABLE,
             advisory=None,
         )
     except ValueError:
         return RuntimeIntelligenceIntegrationOutcome(
-            outcome=INTEGRATION_OUTCOME_INVALID_INPUT,
+            outcome=RuntimeIntelligenceIntegrationOutcomeCode.INVALID_INPUT,
             advisory=None,
         )
     return RuntimeIntelligenceIntegrationOutcome(
-        outcome=INTEGRATION_OUTCOME_OK,
+        outcome=RuntimeIntelligenceIntegrationOutcomeCode.OK,
         advisory=advisory,
     )
 
 
 __all__ = [
-    "INTEGRATION_OUTCOME_INVALID_INPUT",
-    "INTEGRATION_OUTCOME_OK",
-    "INTEGRATION_OUTCOME_UNAVAILABLE",
     "RuntimeIntelligenceAdvisoryResponse",
     "RuntimeIntelligenceFactsInput",
     "RuntimeIntelligenceIntegrationOutcome",
+    "RuntimeIntelligenceIntegrationOutcomeCode",
     "RuntimeIntelligenceRuntimeIntegrationPort",
     "invoke_runtime_intelligence_integration_isolated",
 ]

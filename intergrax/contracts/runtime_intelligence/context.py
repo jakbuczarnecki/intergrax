@@ -9,7 +9,19 @@ from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
 
-from intergrax.contracts.runtime_intelligence.errors import InvalidIntelligenceContextError
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    validate_attempt_id,
+    validate_execution_id,
+    validate_run_id,
+    validate_task_id,
+)
+from intergrax.contracts.runtime_intelligence.errors import (
+    InvalidIntelligenceContextError,
+)
 
 RUNTIME_INTELLIGENCE_CONTEXT_SCHEMA_VERSION = "runtime_intelligence_context.v1"
 
@@ -59,28 +71,38 @@ class RuntimeIntelligenceContext:
     """
 
     tenant_id: str
-    task_id: str
-    run_id: str
+    task_id: TaskId
+    run_id: RunId
     fact_references: tuple[RuntimeIntelligenceFactReference, ...]
     metadata: RuntimeIntelligenceContextMetadata
-    attempt_id: str | None = None
-    execution_id: str | None = None
+    attempt_id: AttemptId | None = None
+    execution_id: ExecutionId | None = None
 
     def __post_init__(self) -> None:
         if not self.tenant_id.strip():
             raise ValueError("tenant_id must be non-empty")
-        if not self.task_id.strip():
-            raise ValueError("task_id must be non-empty")
-        if not self.run_id.strip():
-            raise ValueError("run_id must be non-empty")
+        object.__setattr__(self, "task_id", validate_task_id(self.task_id))
+        object.__setattr__(self, "run_id", validate_run_id(self.run_id))
+        if self.attempt_id is not None:
+            object.__setattr__(self, "attempt_id", validate_attempt_id(self.attempt_id))
+        if self.execution_id is not None:
+            object.__setattr__(
+                self,
+                "execution_id",
+                validate_execution_id(self.execution_id),
+            )
 
 
 def validate_runtime_intelligence_context(context: RuntimeIntelligenceContext) -> None:
     """Raise InvalidIntelligenceContextError when the snapshot is unusable for analysis."""
     if not context.fact_references:
-        raise InvalidIntelligenceContextError("fact_references must be non-empty for analysis")
+        raise InvalidIntelligenceContextError(
+            "fact_references must be non-empty for analysis"
+        )
     if context.metadata.collected_at.tzinfo is None:
-        raise InvalidIntelligenceContextError("metadata.collected_at must be timezone-aware")
+        raise InvalidIntelligenceContextError(
+            "metadata.collected_at must be timezone-aware"
+        )
 
 
 __all__ = [

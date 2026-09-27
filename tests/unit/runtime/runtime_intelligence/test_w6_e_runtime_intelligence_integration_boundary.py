@@ -8,12 +8,15 @@ from datetime import UTC, datetime
 
 import pytest
 
+from intergrax.contracts.execution_identity import (
+    validate_attempt_id,
+    validate_run_id,
+    validate_task_id,
+)
 from intergrax.contracts.runtime_intelligence import (
-    ANALYZER_OUTCOME_OK,
-    ANALYZER_OUTCOME_PLUGIN_UNAVAILABLE,
-    INTEGRATION_OUTCOME_INVALID_INPUT,
-    INTEGRATION_OUTCOME_OK,
-    INTEGRATION_OUTCOME_UNAVAILABLE,
+    RuntimeIntelligenceAdvisoryResponse,
+    RuntimeIntelligenceAnalyzerOutcomeCode,
+    RuntimeIntelligenceIntegrationOutcomeCode,
     AnalyzerExecutionError,
     RuntimeIntelligenceContext,
     RuntimeIntelligenceFactKind,
@@ -36,6 +39,9 @@ from intergrax.runtime.runtime_intelligence import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _COLLECTED_AT = datetime(2026, 9, 12, 12, 0, tzinfo=UTC)
+_W6_TASK_ID = validate_task_id("task_00000000000000000000000000000001")
+_W6_RUN_ID = validate_run_id("run_00000000000000000000000000000001")
+_W6_ATTEMPT_ID = validate_attempt_id("attempt_00000000000000000000000000000001")
 
 
 def _fact_ref() -> RuntimeIntelligenceFactReference:
@@ -48,9 +54,9 @@ def _fact_ref() -> RuntimeIntelligenceFactReference:
 def _facts_input() -> RuntimeIntelligenceFactsInput:
     return RuntimeIntelligenceFactsInput(
         tenant_id="tenant-a",
-        task_id="task_00000000000000000000000000000001",
-        run_id="run_00000000000000000000000000000001",
-        attempt_id="attempt_00000000000000000000000000000001",
+        task_id=_W6_TASK_ID,
+        run_id=_W6_RUN_ID,
+        attempt_id=_W6_ATTEMPT_ID,
         fact_references=(_fact_ref(),),
         correlation_id="corr-w6e-boundary",
         collected_at=_COLLECTED_AT,
@@ -60,9 +66,9 @@ def _facts_input() -> RuntimeIntelligenceFactsInput:
 def _runtime_facts() -> RuntimeIntelligenceFacts:
     return RuntimeIntelligenceFacts(
         tenant_id="tenant-a",
-        task_id="task_00000000000000000000000000000001",
-        run_id="run_00000000000000000000000000000001",
-        attempt_id="attempt_00000000000000000000000000000001",
+        task_id=_W6_TASK_ID,
+        run_id=_W6_RUN_ID,
+        attempt_id=_W6_ATTEMPT_ID,
         fact_references=(_fact_ref(),),
         correlation_id="corr-w6e-boundary",
         collected_at=_COLLECTED_AT,
@@ -73,7 +79,7 @@ class _ExplodingPort:
     def analyze_advisory(
         self,
         facts: RuntimeIntelligenceFactsInput,
-    ) -> object:
+    ) -> RuntimeIntelligenceAdvisoryResponse:
         raise RuntimeIntelligenceError("simulated service failure")
 
 
@@ -89,14 +95,19 @@ def test_execution_runtime_can_invoke_intelligence_and_receive_advisory() -> Non
     service: RuntimeIntelligenceRuntimeIntegrationPort = RuntimeIntelligenceService()
     outcome = request_execution_runtime_intelligence_advisory(service, _runtime_facts())
     assert outcome is not None
-    assert outcome.outcome == INTEGRATION_OUTCOME_OK
+    assert outcome.outcome == RuntimeIntelligenceIntegrationOutcomeCode.OK
     assert outcome.advisory is not None
-    assert outcome.advisory.outcomes[0].outcome == ANALYZER_OUTCOME_OK
+    assert (
+        outcome.advisory.outcomes[0].outcome
+        == RuntimeIntelligenceAnalyzerOutcomeCode.OK
+    )
     assert outcome.advisory.outcomes[0].result is not None
 
 
 def test_unwired_port_returns_none_without_touching_execution() -> None:
-    assert request_execution_runtime_intelligence_advisory(None, _runtime_facts()) is None
+    assert (
+        request_execution_runtime_intelligence_advisory(None, _runtime_facts()) is None
+    )
 
 
 def test_integration_failure_isolation_does_not_raise_to_caller() -> None:
@@ -104,16 +115,19 @@ def test_integration_failure_isolation_does_not_raise_to_caller() -> None:
         _ExplodingPort(),
         _facts_input(),
     )
-    assert outcome.outcome == INTEGRATION_OUTCOME_UNAVAILABLE
+    assert outcome.outcome == RuntimeIntelligenceIntegrationOutcomeCode.UNAVAILABLE
     assert outcome.advisory is None
 
 
 def test_analyzer_failure_isolated_within_advisory_response() -> None:
     service = RuntimeIntelligenceService(analyzers=(_ExplodingAnalyzer(),))
     outcome = invoke_runtime_intelligence_integration_isolated(service, _facts_input())
-    assert outcome.outcome == INTEGRATION_OUTCOME_OK
+    assert outcome.outcome == RuntimeIntelligenceIntegrationOutcomeCode.OK
     assert outcome.advisory is not None
-    assert outcome.advisory.outcomes[0].outcome == ANALYZER_OUTCOME_PLUGIN_UNAVAILABLE
+    assert (
+        outcome.advisory.outcomes[0].outcome
+        == RuntimeIntelligenceAnalyzerOutcomeCode.PLUGIN_UNAVAILABLE
+    )
 
 
 def test_intelligence_port_has_no_execution_authority_surface() -> None:
@@ -143,9 +157,9 @@ def test_request_scoped_lifecycle_produces_independent_advisory() -> None:
     first = invoke_runtime_intelligence_integration_isolated(service, _facts_input())
     second_input = RuntimeIntelligenceFactsInput(
         tenant_id="tenant-a",
-        task_id="task_00000000000000000000000000000001",
-        run_id="run_00000000000000000000000000000001",
-        attempt_id="attempt_00000000000000000000000000000001",
+        task_id=_W6_TASK_ID,
+        run_id=_W6_RUN_ID,
+        attempt_id=_W6_ATTEMPT_ID,
         fact_references=(_fact_ref(),),
         correlation_id="corr-w6e-other",
         collected_at=_COLLECTED_AT,
@@ -161,8 +175,8 @@ def test_request_scoped_lifecycle_produces_independent_advisory() -> None:
 def test_invalid_facts_input_yields_invalid_outcome_not_exception() -> None:
     invalid = RuntimeIntelligenceFactsInput(
         tenant_id="tenant-a",
-        task_id="task_00000000000000000000000000000001",
-        run_id="run_00000000000000000000000000000001",
+        task_id=_W6_TASK_ID,
+        run_id=_W6_RUN_ID,
         fact_references=(),
         correlation_id="corr-invalid",
         collected_at=_COLLECTED_AT,
@@ -171,7 +185,29 @@ def test_invalid_facts_input_yields_invalid_outcome_not_exception() -> None:
         RuntimeIntelligenceService(),
         invalid,
     )
-    assert outcome.outcome == INTEGRATION_OUTCOME_INVALID_INPUT
+    assert outcome.outcome == RuntimeIntelligenceIntegrationOutcomeCode.INVALID_INPUT
+
+
+def test_missing_integration_does_not_imply_execution_permission() -> None:
+    outcome = request_execution_runtime_intelligence_advisory(None, _runtime_facts())
+    assert outcome is None
+    admitted_from_intelligence = (
+        outcome is not None
+        and outcome.outcome == RuntimeIntelligenceIntegrationOutcomeCode.OK
+    )
+    assert admitted_from_intelligence is False
+
+
+def test_integration_unavailable_does_not_imply_execution_permission() -> None:
+    outcome = invoke_runtime_intelligence_integration_isolated(
+        _ExplodingPort(),
+        _facts_input(),
+    )
+    assert outcome.outcome == RuntimeIntelligenceIntegrationOutcomeCode.UNAVAILABLE
+    may_execute_from_advisory = (
+        outcome.outcome == RuntimeIntelligenceIntegrationOutcomeCode.OK
+    )
+    assert may_execute_from_advisory is False
 
 
 def test_deterministic_analyzer_plugin_compatible_through_service() -> None:

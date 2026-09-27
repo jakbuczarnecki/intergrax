@@ -245,3 +245,17 @@ No production code until:
 3. Explicit wiring in composition root (no global singleton)
 
 **W6-A deliverable:** this ADR + qualification doc + architecture hub only.
+
+---
+
+## 8. Implementation reconciliation (current HEAD — not independent ADR closure)
+
+| Wave | State on `development` |
+|------|-------------------------|
+| W6-B contracts | Implemented (`intergrax/contracts/runtime_intelligence/`) |
+| W6-C context builder + reference analyzer | Implemented |
+| W6-D orchestration | Implemented |
+| W6-E execution integration | Implemented |
+| HARNESS-W6-R1 | **IMPLEMENTED — READY FOR AUDIT** (typed outcome enums, canonical execution IDs, architecture regression gate) |
+
+ADR **Status** remains **Proposed** until independent exact-SHA acceptance sync; historical W6-A wording is preserved above.
