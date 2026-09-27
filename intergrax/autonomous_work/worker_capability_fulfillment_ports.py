@@ -54,6 +54,13 @@ class WorkerQualifiedCapabilityResumePort(Protocol):
         decided_at: datetime | None = None,
     ) -> WorkerQualifiedCapabilityResumeResult: ...
 
+    async def resume_async(
+        self,
+        request: WorkerQualifiedCapabilityResumeRequest,
+        *,
+        decided_at: datetime | None = None,
+    ) -> WorkerQualifiedCapabilityResumeResult: ...
+
 
 @runtime_checkable
 class WorkerCapabilityFulfillmentPort(Protocol):
