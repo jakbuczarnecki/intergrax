@@ -2,7 +2,8 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | **Proposed** — architecture decision for HARNESS-W5-R1 (no production change in P0) |
+| **Status** | **Accepted** — independently audited and implemented by HARNESS-W5-R1 at `5a87046ba6b5dc46ffb3693417b4d2bf96a561c5` |
+| **OBS-EXPORT-TRANSPORT-CONTRACT-D1** | **CLOSED** at `5a87046ba6b5dc46ffb3693417b4d2bf96a561c5` (Option A) |
 | **Date** | 2026-09-26 |
 | **Task** | HARNESS-W5-P0 — Observability Transport Contract Decision & Closed-World Recertification Baseline |
 | **Parent** | HARNESS-W5 — Events / Observability delivery and export recertification |
@@ -360,6 +361,7 @@ No additional semantic owner required beyond this ADR. If R1 discovers payload i
 |------|--------|
 | **Decision** | Option A unchanged — not redesigned |
 | **OBS-EXPORT-TRANSPORT-CONTRACT-D1** | Removed in R1 (`OtlpTransportPort.export(ObservabilityExportPayload)`) |
-| **HARNESS-W5-R1** | **IMPLEMENTED — READY FOR AUDIT** (independent SHA acceptance required) |
+| **HARNESS-W5-R1** | **CLOSED** — independent exact-SHA audit accepted at `5a87046ba6b5dc46ffb3693417b4d2bf96a561c5` |
+| **OBS-EXPORT-TRANSPORT-CONTRACT-D1** | **CLOSED** at `5a87046ba6b5dc46ffb3693417b4d2bf96a561c5` |
 | **Regression gate** | `tests/unit/runtime/architecture/test_harness_w5_typed_observability_transport_gate.py` |
 | **Parent record** | `docs/project/maintainers/qualification/ENTERPRISE_EXECUTION_SCALE_RESILIENCE_W5_PARENT_RECERTIFICATION.md` |

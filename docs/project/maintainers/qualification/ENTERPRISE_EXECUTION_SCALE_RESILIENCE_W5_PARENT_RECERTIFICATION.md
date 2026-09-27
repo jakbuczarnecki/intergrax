@@ -1,19 +1,23 @@
 # Enterprise Execution Scale & Resilience — W5 Parent Recertification (HARNESS-W5-R1)
 
-**Status:** READY FOR AUDIT  
-**Task:** HARNESS-W5-R1 — Typed Observability Transport & Current-HEAD W5 Recertification  
-**Audited HEAD:** _(set at commit — see git rev-parse after push)_  
+**Status:** CLOSED — independent exact-SHA audit accepted
+**Task:** HARNESS-W5-R1 — Typed Observability Transport & Current-HEAD W5 Recertification
+**Audited implementation SHA:** `5a87046ba6b5dc46ffb3693417b4d2bf96a561c5`
 **P0 baseline:** `307a871c059f150a6b744e39135a737399467e88`  
 **Accepted architecture:** ADR Option A — `ADR_HARNESS_W5_OBSERVABILITY_TRANSPORT_CONTRACT.md`, semantic authority `ADR-OBS-005.md`
+
+**W5 implementation SHA:** `5a87046ba6b5dc46ffb3693417b4d2bf96a561c5`
+**Current closure-sync baseline (docs-only):** `41bfa6c40ea3b4a15e2c8ef3d432ef578bb82f1c` (at HARNESS-W5-CLOSURE-SYNC task start)
+**Post-W5 HEAD delta classification:** Marketplace/GAP-02 qualification and test evidence only (`S24_GAP_02_QUALIFIED_MARKETPLACE_TOOL_CERTIFICATION.md`, `tests/unit/tools/**`); **no W5 semantic file changes** — no post-closure W5 semantic drift.
 
 ## Canonical program state
 
 | Item | State |
 |------|--------|
 | HARNESS-W4 | CLOSED |
-| HARNESS-W5 | CURRENT → **READY FOR AUDIT** (recommendation) |
-| HARNESS-W5-R1 | **READY FOR AUDIT** |
-| HARNESS-W6 | PLANNED |
+| HARNESS-W5 | CLOSED |
+| HARNESS-W5-R1 | CLOSED |
+| HARNESS-W6 | CURRENT |
 | SCENARIO-GATE | BLOCKED |
 
 ## Transport topology
@@ -143,10 +147,12 @@ Supporting FRZ-CTR/TYP/PLG/RPL/EXE/GOV/REG: typed transport removes object seam 
 |----|----------------|
 | _(none)_ | IN-SCOPE BLOCKER = **0** |
 
-## Recommended status
+## Closure record
 
 ```text
-HARNESS-W5-R1 = READY FOR AUDIT
-HARNESS-W5 = READY FOR AUDIT (recommendation)
-NEXT: independent exact-SHA acceptance → roadmap/checklist sync → HARNESS-W6
+HARNESS-W5-P0 = CLOSED @ 307a871c059f150a6b744e39135a737399467e88
+HARNESS-W5-R1 = CLOSED @ 5a87046ba6b5dc46ffb3693417b4d2bf96a561c5
+HARNESS-W5 = CLOSED @ 5a87046ba6b5dc46ffb3693417b4d2bf96a561c5
+OBS-EXPORT-TRANSPORT-CONTRACT-D1 = CLOSED @ 5a87046ba6b5dc46ffb3693417b4d2bf96a561c5
+NEXT: HARNESS-W6 = CURRENT (roadmap/checklist SSOT); HARNESS-W5-CLOSURE-SYNC docs commit is not W5 implementation evidence.
 ```
