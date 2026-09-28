@@ -401,3 +401,35 @@ uv run pytest tests/integration/providers/sandbox_host/e2b/ -q
 **Known limitations:** domain filter is routing control per E2B docs (shared CDN/SNI caveats); UDP/QUIC not domain-filtered; DNS rebinding not verified; E2B may inject `8.8.8.8` DNS helper IP in raw `allowOut` (excluded from canonical enforced host evidence).
 
 **Nexus:** untouched — qualification harness has architecture gate `test_no_nexus_dependency`.
+
+---
+
+## 14. P0-3B — Provider-neutral reference substrate physical qualification (2026-09-28)
+
+**Architecture decision:** [`ADR_AW_7C_PROVIDER_NEUTRAL_PHYSICAL_SANDBOX_QUALIFICATION_BOUNDARY.md`](../architecture/ADR_AW_7C_PROVIDER_NEUTRAL_PHYSICAL_SANDBOX_QUALIFICATION_BOUNDARY.md)
+
+**Corrected model:**
+
+| Gate | Meaning |
+|------|---------|
+| **Capability qualification (AW-7C)** | Platform contract + **physical** kernel enforcement via qualification-only Linux reference substrate (`tests/integration/runtime/sandbox/reference_substrate/`). Traverses `HostedSandboxSession` → `ReferenceSandboxBackend` → network namespace + nftables/iptables. |
+| **Provider qualification (PROD-Q)** | Concrete E2B / Modal / Daytona production correctness — **mandatory before production activation** of that provider. |
+
+**E2B physical provider qualification:** **DEFERRED TO PROD-Q / NOT ESTABLISHED** for AW-7C closure. Historical P0-3A E2B harness attempts and skips remain valid historical evidence — not deleted.
+
+**Reference substrate physical qualification:** harness + ADR **implemented** @ baseline `a59744517b92847f55def1db22826d17d89ee155`. **Physical execution:** **BLOCKED — LOCAL PHYSICAL QUALIFICATION ENVIRONMENT UNAVAILABLE** (operator WSL2/Linux with root/CAP_NET_ADMIN required; session environment had no usable Linux distro with `python3`). **No mock PASS.** Status **not CLOSED** — independent exact-GitHub-SHA audit still required after physical run.
+
+**Shared harness extraction:** provider-neutral modules under `tests/integration/providers/sandbox_host/qualification/` (models, probes, runner, attestation correlation). E2B integration tests consume the shared harness unchanged semantically.
+
+**Threat-model boundary:** reference proof establishes kernel egress enforcement and redirect blocking on owned topology (`allowed.test` / `denied.test`). It does **not** claim public DNS rebinding, CDN churn, or external SaaS isolation — those remain provider qualification scope.
+
+**Tenant isolation audit (reference substrate only):** **N/A — WITH EVIDENCE** — synthetic qualification IDs only; no tenant provider selection, credentials, or persistence.
+
+**AW-7C-P0-3B verdict:**
+
+```text
+AW-7C-P0-3B: BLOCKED — LOCAL PHYSICAL QUALIFICATION ENVIRONMENT UNAVAILABLE (harness READY FOR AUDIT)
+AW-7C: BLOCKED BY PREREQUISITE (physical capability proof pending operator Linux/WSL2 run)
+```
+
+**Production Python changes:** **0** (qualification + documentation only).
