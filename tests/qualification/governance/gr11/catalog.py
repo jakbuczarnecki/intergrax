@@ -46,8 +46,9 @@ GR11_GR12_CONTROL_PLANE_AUDIT_SHA: Final[str] = (
 
 @dataclass(frozen=True, slots=True)
 class Gr11CanonicalCompositionBoundary:
-    """Per-row canonical composition shapes beyond generic ``build_*`` / ``wire_*`` entrypoints."""
+    """Per-row canonical composition shapes registered for G08 positive proof."""
 
+    entrypoint_function_names: tuple[str, ...] = ()
     boundary_class_names: tuple[str, ...] = ()
     emitter_function_names: tuple[str, ...] = ()
     delegate_boundary_class_names: tuple[str, ...] = ()
@@ -146,7 +147,15 @@ GR11_EXTENSION_SURFACES: Final[tuple[Gr11ExtensionSurface, ...]] = (
         "AllowingRuntimeExecutionPolicyAdmission / DenyingRuntimeExecutionPolicyAdmission",
         "intergrax/contracts/runtime_execution_policy_admission.py",
         "intergrax/runtime/governance/execution_admission_composition.py",
-        Gr11CanonicalCompositionBoundary(),
+        Gr11CanonicalCompositionBoundary(
+            entrypoint_function_names=(
+                "build_runtime_execution_policy_admission",
+                "build_fail_closed_runtime_execution_policy_admission",
+                "build_root_execution_authority_admission",
+                "build_root_execution_authority_admission_from_rules",
+                "build_default_root_execution_launcher",
+            ),
+        ),
         (
             "intergrax/runtime/governance/default_root_execution_launcher.py",
             "intergrax/runtime/governance/root_execution_authority_admission.py",
@@ -187,7 +196,15 @@ GR11_EXTENSION_SURFACES: Final[tuple[Gr11ExtensionSurface, ...]] = (
         "DefaultCanonicalInnerExecutionGuard",
         "intergrax/contracts/canonical_inner_governance.py",
         "intergrax/runtime/governance/meaningful_side_effect_authorization_composition.py",
-        Gr11CanonicalCompositionBoundary(),
+        Gr11CanonicalCompositionBoundary(
+            entrypoint_function_names=(
+                "build_canonical_inner_execution_guard",
+                "build_default_canonical_inner_execution_guard",
+                "build_meaningful_side_effect_authorization_boundary",
+                "build_default_wired_meaningful_side_effect_authorization_boundary",
+                "build_decision_governed_meaningful_side_effect_authorization_boundary",
+            ),
+        ),
         (
             "intergrax/runtime/governance/orchestration_meaningful_side_effect_composition.py",
             "intergrax/runtime/nexus/tools/runtime_tool_invoker_composition.py",
@@ -223,7 +240,13 @@ GR11_EXTENSION_SURFACES: Final[tuple[Gr11ExtensionSurface, ...]] = (
         "PermissiveDecisionRequirementPolicy / ConfiguredDecisionRequirementPolicy",
         "intergrax/contracts/decision_requirement_policy.py",
         "intergrax/runtime/governance/meaningful_side_effect_authorization_composition.py",
-        Gr11CanonicalCompositionBoundary(),
+        Gr11CanonicalCompositionBoundary(
+            entrypoint_function_names=(
+                "build_meaningful_side_effect_authorization_boundary",
+                "build_default_wired_meaningful_side_effect_authorization_boundary",
+                "build_decision_governed_meaningful_side_effect_authorization_boundary",
+            ),
+        ),
         ("intergrax/runtime/policy/meaningful_side_effect_authorization.py",),
         (_nid(_GR11_GR6, "test_custom_policy_without_subclassing_default"),),
         (
@@ -253,7 +276,12 @@ GR11_EXTENSION_SURFACES: Final[tuple[Gr11ExtensionSurface, ...]] = (
         "RuntimePolicyEngine default rule bundles",
         "intergrax/runtime/policy/runtime_policy_engine.py",
         "intergrax/runtime/governance/execution_admission_composition.py",
-        Gr11CanonicalCompositionBoundary(),
+        Gr11CanonicalCompositionBoundary(
+            entrypoint_function_names=(
+                "build_runtime_execution_policy_admission",
+                "build_root_execution_authority_admission_from_rules",
+            ),
+        ),
         (
             "intergrax/runtime/policy/meaningful_side_effect_authorization.py",
             "intergrax/runtime/governance/runtime_execution_policy_admission.py",
@@ -334,7 +362,11 @@ GR11_EXTENSION_SURFACES: Final[tuple[Gr11ExtensionSurface, ...]] = (
         "Governed execution continuation store implementations (Execution-owned)",
         "intergrax/contracts/execution_continuation.py",
         "intergrax/runtime/execution/suspended_operation/composition.py",
-        Gr11CanonicalCompositionBoundary(),
+        Gr11CanonicalCompositionBoundary(
+            entrypoint_function_names=(
+                "wire_execution_suspended_work_reentry_coordinator",
+            ),
+        ),
         (
             "intergrax/runtime/nexus/nexus_loop.py",
             "intergrax/runtime/policy/mse_hitl_effect_gate.py",
@@ -370,7 +402,11 @@ GR11_EXTENSION_SURFACES: Final[tuple[Gr11ExtensionSurface, ...]] = (
         "InMemoryProviderInvocationStore (host default)",
         "intergrax/contracts/provider_invocation_store.py",
         "applications/governed_contractor_application/host/production_external_work_composition.py",
-        Gr11CanonicalCompositionBoundary(),
+        Gr11CanonicalCompositionBoundary(
+            entrypoint_function_names=(
+                "build_governed_external_work_production_runtime",
+            ),
+        ),
         (
             "intergrax/runtime/governance/orchestration_consequential_effect_reliability_composition.py",
         ),
@@ -394,6 +430,9 @@ GR11_EXTENSION_SURFACES: Final[tuple[Gr11ExtensionSurface, ...]] = (
         "intergrax/contracts/enterprise_reliability/admission_boundary.py",
         "applications/governed_contractor_application/host/production_external_work_composition.py",
         Gr11CanonicalCompositionBoundary(
+            entrypoint_function_names=(
+                "build_governed_external_work_production_runtime",
+            ),
             delegate_boundary_class_names=(
                 "GovernedExternalWorkEnterpriseReliabilityBridge",
             ),

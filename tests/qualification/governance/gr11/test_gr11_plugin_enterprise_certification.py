@@ -243,6 +243,30 @@ def _composition_entry_functions(tree: ast.Module) -> tuple[ast.FunctionDef, ...
     )
 
 
+def _canonical_composition_entry_functions(
+    tree: ast.Module,
+    boundary: Gr11CanonicalCompositionBoundary,
+) -> tuple[ast.FunctionDef, ...]:
+    if not boundary.entrypoint_function_names:
+        return ()
+    registered = frozenset(boundary.entrypoint_function_names)
+    return tuple(
+        node
+        for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name in registered
+    )
+
+
+def _row_has_registered_canonical_composition_shape(row: Gr11ExtensionSurface) -> bool:
+    boundary = row.canonical_composition_boundary
+    return bool(
+        boundary.entrypoint_function_names
+        or boundary.boundary_class_names
+        or boundary.emitter_function_names
+        or boundary.delegate_boundary_class_names
+    )
+
+
 def _function_injects_contract_symbol(func: ast.FunctionDef, symbol: str) -> bool:
     for arg in (*func.args.args, *func.args.kwonlyargs):
         if _annotation_references_name(arg.annotation, symbol):
@@ -335,7 +359,9 @@ def _wired_delegate_modules(row: Gr11ExtensionSurface) -> frozenset[str]:
         return frozenset()
     tree = _parse_module_ast(row.composition_owner_module)
     wired: set[str] = set()
-    for func in _composition_entry_functions(tree):
+    for func in _canonical_composition_entry_functions(
+        tree, row.canonical_composition_boundary
+    ):
         for arg in (*func.args.args, *func.args.kwonlyargs):
             root = _annotation_root_name(arg.annotation)
             if root and root in delegates:
@@ -351,9 +377,10 @@ def _wired_delegate_modules(row: Gr11ExtensionSurface) -> frozenset[str]:
     return frozenset(wired)
 
 
-def _composition_owner_has_build_entrypoint(row: Gr11ExtensionSurface) -> bool:
-    tree = _parse_module_ast(row.composition_owner_module)
-    return bool(_composition_entry_functions(tree))
+def _composition_owner_has_canonical_composition_entrypoint(
+    row: Gr11ExtensionSurface,
+) -> bool:
+    return _row_has_registered_canonical_composition_shape(row)
 
 
 def _defining_module_for_symbol(row: Gr11ExtensionSurface, symbol: str) -> str | None:
@@ -384,7 +411,7 @@ def _module_ast_structurally_wires_symbol(
     *,
     boundary: Gr11CanonicalCompositionBoundary,
 ) -> bool:
-    for func in _composition_entry_functions(tree):
+    for func in _canonical_composition_entry_functions(tree, boundary):
         if _function_structurally_wires_symbol(func, symbol):
             return True
     for class_name in boundary.boundary_class_names:
@@ -406,7 +433,7 @@ def _module_ast_delegate_structurally_wires_symbol(
     *,
     boundary: Gr11CanonicalCompositionBoundary,
 ) -> bool:
-    for func in _composition_entry_functions(tree):
+    for func in _canonical_composition_entry_functions(tree, boundary):
         if _function_structurally_wires_symbol(func, symbol):
             return True
     for class_name in boundary.delegate_boundary_class_names:
@@ -461,7 +488,7 @@ def _composition_owner_wires_symbol(row: Gr11ExtensionSurface, symbol: str) -> b
     if (
         defining_module is not None
         and defining_module.endswith("plugin_spi.py")
-        and _composition_owner_has_build_entrypoint(row)
+        and _composition_owner_has_canonical_composition_entrypoint(row)
     ):
         for rel in row.consumer_scan_modules:
             if _module_exposes_registry_resolution_seam(rel, symbol):
@@ -569,6 +596,11 @@ def test_gr11_g07_semantic_owner_module_mechanically_unique_per_row() -> None:
             )
 
 
+def test_gr11_g08_each_row_registers_explicit_canonical_composition_shape() -> None:
+    for row in GR11_EXTENSION_SURFACES:
+        assert _row_has_registered_canonical_composition_shape(row), row.capability_id
+
+
 def test_gr11_g08_sanctioned_composition_owner_module_wires_contract_per_row() -> None:
     for row in GR11_EXTENSION_SURFACES:
         comp_path = _REPO_ROOT / row.composition_owner_module
@@ -641,6 +673,46 @@ def build_host_runtime():
     assert _class_structurally_wires_symbol(unrelated_class, symbol)
     assert not _module_ast_structurally_wires_symbol(
         class_module, symbol, boundary=Gr11CanonicalCompositionBoundary()
+    )
+
+
+def test_gr11_g08_regression_unrelated_build_wire_entrypoints_not_canonical_composition() -> (
+    None
+):
+    symbol = "ExampleGovernancePort"
+    boundary = Gr11CanonicalCompositionBoundary(
+        entrypoint_function_names=("build_host_runtime",),
+    )
+    unrelated_build_module = ast.parse(
+        f"""
+def build_unrelated_helper(port: {symbol}) -> None:
+    return None
+
+def build_host_runtime():
+    return None
+"""
+    )
+    unrelated_build = unrelated_build_module.body[0]
+    assert isinstance(unrelated_build, ast.FunctionDef)
+    assert _function_structurally_wires_symbol(unrelated_build, symbol)
+    assert not _module_ast_structurally_wires_symbol(
+        unrelated_build_module, symbol, boundary=boundary
+    )
+
+    unrelated_wire_module = ast.parse(
+        f"""
+def wire_unrelated_helper(port: {symbol}) -> None:
+    return None
+
+def build_host_runtime():
+    return None
+"""
+    )
+    unrelated_wire = unrelated_wire_module.body[0]
+    assert isinstance(unrelated_wire, ast.FunctionDef)
+    assert _function_structurally_wires_symbol(unrelated_wire, symbol)
+    assert not _module_ast_structurally_wires_symbol(
+        unrelated_wire_module, symbol, boundary=boundary
     )
 
 
