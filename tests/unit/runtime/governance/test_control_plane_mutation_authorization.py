@@ -11,10 +11,13 @@ import pytest
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import (
+    ControlPlaneMutationAuthorizationPort,
+    ControlPlaneMutationAuthorizationResult,
     ControlPlaneMutationRequest,
     ControlPlaneMutationRisk,
     GovernanceEvaluationPoint,
     control_plane_mutation_request_digest,
+    evidence_from_request_and_decision,
 )
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
@@ -43,7 +46,9 @@ class _FakeEvaluator:
         return self.decision
 
 
-def _principal(*, tenant_id: str = "tenant-a", user_id: str = "user-1") -> RequestIdentity:
+def _principal(
+    *, tenant_id: str = "tenant-a", user_id: str = "user-1"
+) -> RequestIdentity:
     return RequestIdentity(
         tenant_id=tenant_id,
         user_id=user_id,
@@ -235,9 +240,9 @@ def test_cp7_missing_mutation_identity_fail_closed() -> None:
 def test_cp8_revision_binding_produces_distinct_request_digest() -> None:
     first = _request(current_revision="5", target_revision="6")
     second = _request(current_revision="6", target_revision="7")
-    assert control_plane_mutation_request_digest(first) != control_plane_mutation_request_digest(
-        second
-    )
+    assert control_plane_mutation_request_digest(
+        first
+    ) != control_plane_mutation_request_digest(second)
 
 
 def test_cp9_risk_survives_boundary_roundtrip() -> None:
@@ -328,3 +333,81 @@ def test_cp16_evaluation_point_is_control_plane_mutation() -> None:
         result.evidence.evaluation_point
         is GovernanceEvaluationPoint.CONTROL_PLANE_MUTATION
     )
+
+
+class _RecordingAuthorizationPort:
+    """Test-only structural port implementation (I1-02)."""
+
+    def __init__(self) -> None:
+        self.requests: list[ControlPlaneMutationRequest] = []
+
+    def authorize(
+        self,
+        request: ControlPlaneMutationRequest,
+    ) -> ControlPlaneMutationAuthorizationResult:
+        self.requests.append(request)
+        digest = control_plane_mutation_request_digest(request)
+        decision = PolicyDecision(action=PolicyAction.ALLOW, reason="recorded")
+        evidence = evidence_from_request_and_decision(
+            request,
+            decision=decision,
+            request_digest=digest,
+        )
+        return ControlPlaneMutationAuthorizationResult(
+            permitted=True,
+            decision=decision,
+            evidence=evidence,
+        )
+
+
+class _InvalidAuthorizationPort:
+    """Missing ``authorize`` — must not satisfy the runtime Protocol."""
+
+    def evaluate(self, request: ControlPlaneMutationRequest) -> PolicyDecision:
+        return PolicyDecision(action=PolicyAction.DENY, reason="wrong_surface")
+
+
+def test_i1_01_boundary_satisfies_control_plane_authorization_port() -> None:
+    boundary = ControlPlaneMutationAuthorizationBoundary(evaluator=_FakeEvaluator())
+    assert isinstance(boundary, ControlPlaneMutationAuthorizationPort)
+
+
+def test_i1_02_external_structural_implementation_satisfies_port() -> None:
+    port = _RecordingAuthorizationPort()
+    assert isinstance(port, ControlPlaneMutationAuthorizationPort)
+    request = _request(principal=_principal(tenant_id="tenant-recording"))
+    result = port.authorize(request)
+    assert len(port.requests) == 1
+    assert result.permitted is True
+    assert result.evidence.tenant_id == "tenant-recording"
+
+
+def test_i1_03_invalid_structural_implementation_rejected() -> None:
+    assert not isinstance(
+        _InvalidAuthorizationPort(), ControlPlaneMutationAuthorizationPort
+    )
+
+
+def test_i1_04_allow_deny_semantics_unchanged_via_port_surface() -> None:
+    allow_boundary = ControlPlaneMutationAuthorizationBoundary(
+        evaluator=_FakeEvaluator(
+            decision=PolicyDecision(action=PolicyAction.ALLOW, reason="allowed")
+        )
+    )
+    deny_boundary = ControlPlaneMutationAuthorizationBoundary(
+        evaluator=_FakeEvaluator(
+            decision=PolicyDecision(action=PolicyAction.DENY, reason="denied")
+        )
+    )
+    assert isinstance(allow_boundary, ControlPlaneMutationAuthorizationPort)
+    assert isinstance(deny_boundary, ControlPlaneMutationAuthorizationPort)
+    assert allow_boundary.authorize(_request()).permitted is True
+    assert deny_boundary.authorize(_request()).permitted is False
+
+
+def test_i1_tenant_propagation_preserved_through_port() -> None:
+    boundary = ControlPlaneMutationAuthorizationBoundary(evaluator=_FakeEvaluator())
+    request = _request(principal=_principal(tenant_id="tenant-isolation-x"))
+    result = boundary.authorize(request)
+    assert request.principal.tenant_id == "tenant-isolation-x"
+    assert result.evidence.tenant_id == "tenant-isolation-x"
