@@ -115,6 +115,16 @@ def external_contract_compatibility_extensions(
     )
 
 
+def _require_matching_collection_and_assessment_expectations(
+    collection_request: ExternalContractEvidenceCollectionRequest,
+    assessment_request: ExternalContractCompatibilityAssessmentRequest,
+) -> None:
+    if collection_request.expectation != assessment_request.expectation:
+        raise ExternalContractCompatibilityExtensionsError(
+            "collection expectation does not match assessment expectation"
+        )
+
+
 def collect_external_contract_compatibility_evidence(
     extensions: ExternalContractCompatibilityExtensions,
     request: ExternalContractEvidenceCollectionRequest,
@@ -160,6 +170,9 @@ def assess_external_contract_compatibility(
     """
     Composition-root flow: collect typed evidence, then pure assess (no service I/O).
     """
+    _require_matching_collection_and_assessment_expectations(
+        collection_request, assessment_request
+    )
     collected = collect_external_contract_compatibility_evidence(
         extensions, collection_request
     )

@@ -591,40 +591,10 @@ class ExternalContractCompatibilityAssessmentRequest:
 
 @dataclass(frozen=True, slots=True)
 class ExternalContractExpectationKey:
-    tenant_id: str
-    provider_id: str
-    integration_kind: str
-    external_operation_id: str
-    expected_contract: ExternalContractPin
-    host_binding_ref: str | None = None
+    """Resolver lookup key: canonical subject identity plus expected contract pin."""
 
-    def __post_init__(self) -> None:
-        object.__setattr__(
-            self, "tenant_id", _require_non_empty_text(self.tenant_id, "tenant_id")
-        )
-        object.__setattr__(
-            self,
-            "provider_id",
-            _require_non_empty_text(self.provider_id, "provider_id"),
-        )
-        object.__setattr__(
-            self,
-            "integration_kind",
-            _require_non_empty_text(self.integration_kind, "integration_kind"),
-        )
-        object.__setattr__(
-            self,
-            "external_operation_id",
-            _require_non_empty_text(
-                self.external_operation_id, "external_operation_id"
-            ),
-        )
-        if self.host_binding_ref is not None:
-            object.__setattr__(
-                self,
-                "host_binding_ref",
-                _require_non_empty_text(self.host_binding_ref, "host_binding_ref"),
-            )
+    subject: ExternalContractCompatibilitySubject
+    expected_contract: ExternalContractPin
 
 
 @runtime_checkable
