@@ -24,7 +24,6 @@ from intergrax.contracts.control_plane_mutation import (
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.contracts.binding import IntegrationBinding
 from intergrax.integrations.contracts.existing_capability_configuration import (
     ConfiguredCapabilityBinding,
     ExistingCapabilityConfigurationRealizationError,
@@ -37,7 +36,6 @@ from intergrax.integrations.contracts.existing_capability_configuration import (
     RESOURCE_TYPE_INTEGRATION_CONFIGURATION,
     project_control_plane_mutation_request,
 )
-from intergrax.integrations.contracts.shipped_manifests import SQLITE
 from intergrax.integrations.existing_capability_configuration_facade import (
     ExistingCapabilityConfigurationRealizationFacade,
 )
@@ -130,8 +128,8 @@ def _target_for(
         tenant_id=request.tenant_id,
         integration_category=request.integration_category,
         provider_id=request.provider_id,
+        resource_scope=request.resource_scope,
         current_revision=request.current_revision,
-        binding=IntegrationBinding.from_manifest(SQLITE),
     )
 
 
@@ -160,6 +158,7 @@ class _StubStrategy:
     realize_calls: int = 0
     output_tenant: str | None = None
     output_provider: str | None = None
+    output_resource_scope: str | None = None
 
     @property
     def strategy_id(self) -> str:
@@ -180,14 +179,15 @@ class _StubStrategy:
         self.realize_calls += 1
         tenant = self.output_tenant or request.tenant_id
         provider = self.output_provider or request.provider_id
+        scope = self.output_resource_scope or request.resource_scope
         return ConfiguredCapabilityBinding(
             tenant_id=tenant,
             integration_category=request.integration_category,
             provider_id=provider,
+            resource_scope=scope,
             configuration_type=request.configuration.configuration_type,
             configuration_version=request.configuration.configuration_version,
             configuration_fingerprint=request.configuration_fingerprint,
-            configured_binding=existing_target.binding,
             realization_evidence_refs=("evidence://realized/1",),
         )
 
@@ -271,8 +271,11 @@ def test_p1_06_allow_matching_evidence_reaches_core() -> None:
     assert port.authorize_calls == 1
     assert resolver.calls == 1
     assert strategy.realize_calls == 1
-    assert result.tenant_id == request.tenant_id
-    assert result.configuration_fingerprint == request.configuration_fingerprint
+    assert result.configured_binding.tenant_id == request.tenant_id
+    assert (
+        result.configured_binding.configuration_fingerprint
+        == request.configuration_fingerprint
+    )
 
 
 def test_p1_07_deny_core_calls_zero() -> None:
@@ -395,8 +398,10 @@ def test_p1_15_exact_resolver_target_one_strategy_success() -> None:
     service = _service_with(resolver=resolver, strategies=(strategy,))
     evidence = _allow_evidence_for(request)
     result = service.realize_admitted(request, authorization_evidence=evidence)
-    assert result.provider_id == "sqlite"
-    assert result.realization_evidence_refs == ("evidence://realized/1",)
+    assert result.configured_binding.provider_id == "sqlite"
+    assert result.configured_binding.realization_evidence_refs == (
+        "evidence://realized/1",
+    )
 
 
 def test_p1_16_missing_target_fail_closed_no_strategy() -> None:
@@ -482,10 +487,11 @@ def test_p1_21_result_config_identity_continuity() -> None:
     service = _service_with(resolver=resolver, strategies=(strategy,))
     evidence = _allow_evidence_for(request)
     result = service.realize_admitted(request, authorization_evidence=evidence)
-    assert result.configuration_type == request.configuration.configuration_type
-    assert result.configuration_version == request.configuration.configuration_version
-    assert result.configuration_fingerprint == request.configuration_fingerprint
-    assert result.provider_id == request.provider_id
+    binding = result.configured_binding
+    assert binding.configuration_type == request.configuration.configuration_type
+    assert binding.configuration_version == request.configuration.configuration_version
+    assert binding.configuration_fingerprint == request.configuration_fingerprint
+    assert binding.provider_id == request.provider_id
 
 
 def test_p1_22_no_forbidden_imports_in_p1_modules() -> None:
@@ -517,8 +523,8 @@ def test_resolver_provider_mismatch_fail_closed() -> None:
         tenant_id=request.tenant_id,
         integration_category=request.integration_category,
         provider_id="postgres",
+        resource_scope=request.resource_scope,
         current_revision=request.current_revision,
-        binding=IntegrationBinding.from_manifest(SQLITE),
     )
     resolver = _RecordingResolver(target=wrong_target)
     service = _service_with(resolver=resolver, strategies=(_StubStrategy(),))
@@ -543,11 +549,15 @@ def test_strategy_replaceability_without_core_modification() -> None:
     )
     evidence = _allow_evidence_for(request)
     assert (
-        service_a.realize_admitted(request, authorization_evidence=evidence).provider_id
+        service_a.realize_admitted(
+            request, authorization_evidence=evidence
+        ).configured_binding.provider_id
         == "sqlite"
     )
     assert (
-        service_b.realize_admitted(request, authorization_evidence=evidence).provider_id
+        service_b.realize_admitted(
+            request, authorization_evidence=evidence
+        ).configured_binding.provider_id
         == "sqlite"
     )
 
@@ -559,6 +569,77 @@ def test_governance_projection_constants() -> None:
     assert projected.resource_type == RESOURCE_TYPE_INTEGRATION_CONFIGURATION
     assert projected.resource_id == request.provider_id
     assert projected.target_revision == request.configuration_fingerprint
+
+
+def test_resolver_target_tenant_mismatch_fail_before_strategy() -> None:
+    request = _request(tenant_id="tenant-a")
+    wrong_target = ExistingCapabilityIntegrationTarget(
+        tenant_id="tenant-b",
+        integration_category=request.integration_category,
+        provider_id=request.provider_id,
+        resource_scope=request.resource_scope,
+        current_revision=request.current_revision,
+    )
+    resolver = _RecordingResolver(target=wrong_target)
+    strategy = _StubStrategy()
+    service = _service_with(resolver=resolver, strategies=(strategy,))
+    with pytest.raises(ExistingCapabilityConfigurationRealizationError) as exc:
+        service.realize_admitted(
+            request, authorization_evidence=_allow_evidence_for(request)
+        )
+    assert (
+        exc.value.reason
+        is ExistingCapabilityConfigurationRealizationFailureReason.TENANT_MISMATCH
+    )
+    assert strategy.realize_calls == 0
+
+
+def test_resolver_target_resource_scope_mismatch_fail_before_strategy() -> None:
+    request = _request(resource_scope="scope-a")
+    wrong_target = ExistingCapabilityIntegrationTarget(
+        tenant_id=request.tenant_id,
+        integration_category=request.integration_category,
+        provider_id=request.provider_id,
+        resource_scope="scope-b",
+        current_revision=request.current_revision,
+    )
+    resolver = _RecordingResolver(target=wrong_target)
+    strategy = _StubStrategy()
+    service = _service_with(resolver=resolver, strategies=(strategy,))
+    with pytest.raises(ExistingCapabilityConfigurationRealizationError) as exc:
+        service.realize_admitted(
+            request, authorization_evidence=_allow_evidence_for(request)
+        )
+    assert (
+        exc.value.reason
+        is ExistingCapabilityConfigurationRealizationFailureReason.IDENTITY_MISMATCH
+    )
+    assert strategy.realize_calls == 0
+
+
+def test_strategy_result_resource_scope_mismatch_reject() -> None:
+    request = _request(resource_scope="scope-a")
+    resolver = _RecordingResolver(target=_target_for(request))
+    strategy = _StubStrategy(output_resource_scope="scope-b")
+    service = _service_with(resolver=resolver, strategies=(strategy,))
+    evidence = _allow_evidence_for(request)
+    with pytest.raises(ExistingCapabilityConfigurationRealizationError) as exc:
+        service.realize_admitted(request, authorization_evidence=evidence)
+    assert (
+        exc.value.reason
+        is ExistingCapabilityConfigurationRealizationFailureReason.IDENTITY_MISMATCH
+    )
+
+
+def test_p1_r1_production_surface_no_integration_binding_import() -> None:
+    forbidden_tokens = (
+        "intergrax.integrations.contracts.binding",
+        "IntegrationBinding",
+    )
+    for path in _PRODUCTION_PATHS:
+        source = path.read_text(encoding="utf-8")
+        for token in forbidden_tokens:
+            assert token not in source
 
 
 def test_facade_structurally_implements_authorization_port_injection() -> None:

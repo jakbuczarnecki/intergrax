@@ -16,6 +16,7 @@ from intergrax.integrations.contracts.existing_capability_configuration import (
     ExistingCapabilityConfigurationRealizationResult,
     ExistingCapabilityConfigurationRealizationStrategy,
     ExistingCapabilityIntegrationResolver,
+    ExistingCapabilityIntegrationTarget,
     validate_realization_request_invariants,
 )
 
@@ -58,31 +59,15 @@ class ExistingCapabilityConfigurationRealizationService:
         _verify_strategy_output_continuity(request, binding)
         return ExistingCapabilityConfigurationRealizationResult(
             request_id=request.request_id,
-            tenant_id=request.tenant_id,
-            integration_category=request.integration_category,
-            provider_id=request.provider_id,
-            configuration_type=binding.configuration_type,
-            configuration_version=binding.configuration_version,
-            configuration_fingerprint=binding.configuration_fingerprint,
-            configured_binding=binding.configured_binding,
+            configured_binding=binding,
             authorization_evidence=authorization_evidence,
-            realization_evidence_refs=binding.realization_evidence_refs,
         )
 
 
 def _verify_existing_target_continuity(
     request: ExistingCapabilityConfigurationRealizationRequest,
-    existing_target: object,
+    existing_target: ExistingCapabilityIntegrationTarget,
 ) -> None:
-    from intergrax.integrations.contracts.existing_capability_configuration import (
-        ExistingCapabilityIntegrationTarget,
-    )
-
-    if not isinstance(existing_target, ExistingCapabilityIntegrationTarget):
-        raise ExistingCapabilityConfigurationRealizationError(
-            ExistingCapabilityConfigurationRealizationFailureReason.TARGET_NOT_FOUND,
-            detail="resolver returned invalid target type",
-        )
     if existing_target.tenant_id != request.tenant_id:
         raise ExistingCapabilityConfigurationRealizationError(
             ExistingCapabilityConfigurationRealizationFailureReason.TENANT_MISMATCH,
@@ -98,6 +83,11 @@ def _verify_existing_target_continuity(
             ExistingCapabilityConfigurationRealizationFailureReason.IDENTITY_MISMATCH,
             detail="target category mismatch",
         )
+    if existing_target.resource_scope != request.resource_scope:
+        raise ExistingCapabilityConfigurationRealizationError(
+            ExistingCapabilityConfigurationRealizationFailureReason.IDENTITY_MISMATCH,
+            detail="target resource_scope mismatch",
+        )
     if existing_target.current_revision != request.current_revision:
         raise ExistingCapabilityConfigurationRealizationError(
             ExistingCapabilityConfigurationRealizationFailureReason.IDENTITY_MISMATCH,
@@ -107,17 +97,13 @@ def _verify_existing_target_continuity(
 
 def _select_and_realize(
     request: ExistingCapabilityConfigurationRealizationRequest,
-    existing_target: object,
+    existing_target: ExistingCapabilityIntegrationTarget,
     strategies: tuple[ExistingCapabilityConfigurationRealizationStrategy, ...],
 ) -> ConfiguredCapabilityBinding:
-    from intergrax.integrations.contracts.existing_capability_configuration import (
-        ExistingCapabilityIntegrationTarget,
-    )
-
-    target = existing_target
-    assert isinstance(target, ExistingCapabilityIntegrationTarget)
     matching = [
-        strategy for strategy in strategies if strategy.can_realize(request, target)
+        strategy
+        for strategy in strategies
+        if strategy.can_realize(request, existing_target)
     ]
     if not matching:
         raise ExistingCapabilityConfigurationRealizationError(
@@ -128,7 +114,7 @@ def _select_and_realize(
             ExistingCapabilityConfigurationRealizationFailureReason.STRATEGY_AMBIGUITY,
         )
     try:
-        return matching[0].realize(request, target)
+        return matching[0].realize(request, existing_target)
     except ExistingCapabilityConfigurationRealizationError:
         raise
     except Exception as exc:
@@ -151,6 +137,16 @@ def _verify_strategy_output_continuity(
         raise ExistingCapabilityConfigurationRealizationError(
             ExistingCapabilityConfigurationRealizationFailureReason.IDENTITY_MISMATCH,
             detail="strategy output provider mismatch",
+        )
+    if binding.integration_category != request.integration_category:
+        raise ExistingCapabilityConfigurationRealizationError(
+            ExistingCapabilityConfigurationRealizationFailureReason.IDENTITY_MISMATCH,
+            detail="strategy output category mismatch",
+        )
+    if binding.resource_scope != request.resource_scope:
+        raise ExistingCapabilityConfigurationRealizationError(
+            ExistingCapabilityConfigurationRealizationFailureReason.IDENTITY_MISMATCH,
+            detail="strategy output resource_scope mismatch",
         )
     if binding.configuration_fingerprint != request.configuration_fingerprint:
         raise ExistingCapabilityConfigurationRealizationError(

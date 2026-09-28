@@ -11,9 +11,11 @@ from pathlib import Path
 import pytest
 
 from intergrax.integrations.contracts.existing_capability_configuration import (
+    ConfiguredCapabilityBinding,
     ExistingCapabilityConfigurationRealizationError,
     ExistingCapabilityConfigurationRealizationFailureReason,
     ExistingCapabilityConfigurationRealizationRequest,
+    ExistingCapabilityConfigurationRealizationResult,
     ExistingCapabilityConfigurationRealizationStrategy,
     ExistingCapabilityIntegrationTarget,
     IntegrationConfigurationPayload,
@@ -23,8 +25,6 @@ from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
 from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRisk
-from intergrax.integrations.contracts.binding import IntegrationBinding
-from intergrax.integrations.contracts.shipped_manifests import SQLITE
 
 pytestmark = pytest.mark.unit
 
@@ -168,8 +168,16 @@ class _ExternalStrategy:
         self,
         request: ExistingCapabilityConfigurationRealizationRequest,
         existing_target: ExistingCapabilityIntegrationTarget,
-    ) -> object:
-        raise NotImplementedError
+    ) -> ConfiguredCapabilityBinding:
+        return ConfiguredCapabilityBinding(
+            tenant_id=request.tenant_id,
+            integration_category=request.integration_category,
+            provider_id=request.provider_id,
+            resource_scope=request.resource_scope,
+            configuration_type=request.configuration.configuration_type,
+            configuration_version=request.configuration.configuration_version,
+            configuration_fingerprint=request.configuration_fingerprint,
+        )
 
 
 def test_p1_05_external_strategy_structurally_satisfies_spi() -> None:
@@ -180,12 +188,91 @@ def test_p1_05_external_strategy_structurally_satisfies_spi() -> None:
 def test_request_validate_invariants_direct() -> None:
     request = _request()
     validate_realization_request_invariants(request)
-    binding = IntegrationBinding.from_manifest(SQLITE)
     target = ExistingCapabilityIntegrationTarget(
         tenant_id=request.tenant_id,
         integration_category=request.integration_category,
         provider_id=request.provider_id,
+        resource_scope=request.resource_scope,
         current_revision=request.current_revision,
-        binding=binding,
     )
     assert target.provider_id == "sqlite"
+
+
+_P1_PRODUCTION_PATHS = (
+    Path(__file__).resolve().parents[3]
+    / "intergrax/integrations/contracts/existing_capability_configuration.py",
+    Path(__file__).resolve().parents[3]
+    / "intergrax/integrations/existing_capability_configuration_service.py",
+    Path(__file__).resolve().parents[3]
+    / "intergrax/integrations/existing_capability_configuration_facade.py",
+)
+
+_FORBIDDEN_SEMANTIC_NAMES = frozenset(
+    {"Any", "Mapping", "MutableMapping", "IntegrationBinding"}
+)
+_FORBIDDEN_CALL_NAMES = frozenset({"getattr", "setattr", "hasattr"})
+
+
+def _annotation_names(node: ast.expr) -> set[str]:
+    names: set[str] = set()
+    if isinstance(node, ast.Name):
+        names.add(node.id)
+    elif isinstance(node, ast.Attribute):
+        names.add(node.attr)
+    elif isinstance(node, ast.Subscript):
+        names |= _annotation_names(node.value)
+        if isinstance(node.slice, ast.Tuple):
+            for elt in node.slice.elts:
+                names |= _annotation_names(elt)
+        else:
+            names |= _annotation_names(node.slice)
+    elif isinstance(node, ast.BinOp) and isinstance(node.op, ast.BitOr):
+        names |= _annotation_names(node.left)
+        names |= _annotation_names(node.right)
+    return names
+
+
+def test_p1_r1_no_integration_binding_on_p1_production_surface() -> None:
+    for path in _P1_PRODUCTION_PATHS:
+        source = path.read_text(encoding="utf-8")
+        assert "intergrax.integrations.contracts.binding" not in source
+        assert "IntegrationBinding" not in source
+
+
+def test_p1_r1_strong_typing_regression_gate_on_p1_production() -> None:
+    for path in _P1_PRODUCTION_PATHS:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name) and node.id in _FORBIDDEN_SEMANTIC_NAMES:
+                pytest.fail(f"{path.name}: forbidden name {node.id}")
+            if (
+                isinstance(node, ast.Attribute)
+                and node.attr in _FORBIDDEN_SEMANTIC_NAMES
+            ):
+                pytest.fail(f"{path.name}: forbidden attribute {node.attr}")
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
+                if node.func.id in _FORBIDDEN_CALL_NAMES:
+                    pytest.fail(f"{path.name}: forbidden call {node.func.id}")
+
+
+def _type_hint_tokens(type_hint: object) -> set[str]:
+    if isinstance(type_hint, str):
+        tree = ast.parse(type_hint, mode="eval")
+        return _annotation_names(tree.body)
+    if isinstance(type_hint, type):
+        return {type_hint.__name__}
+    return _annotation_names(type_hint)  # type: ignore[arg-type]
+
+
+def test_p1_r1_contract_dto_field_audit() -> None:
+    dto_types = (
+        ExistingCapabilityIntegrationTarget,
+        ConfiguredCapabilityBinding,
+        ExistingCapabilityConfigurationRealizationResult,
+    )
+    banned = frozenset({"IntegrationBinding", "Any", "object"})
+    for dto in dto_types:
+        for field in dto.__dataclass_fields__.values():
+            found = _type_hint_tokens(field.type) & banned
+            if found:
+                pytest.fail(f"{dto.__name__}.{field.name} exposes {found}")

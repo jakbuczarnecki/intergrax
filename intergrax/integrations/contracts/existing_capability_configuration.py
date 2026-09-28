@@ -18,7 +18,6 @@ from intergrax.contracts.control_plane_mutation import (
 )
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.integrations.contracts.base import IntegrationCategory
-from intergrax.integrations.contracts.binding import IntegrationBinding
 
 MUTATION_TYPE_INTEGRATION_CONFIGURATION_REALIZE_V1: Final = (
     "integration_configuration.realize.v1"
@@ -71,26 +70,26 @@ class IntegrationConfigurationPayload(Protocol):
 
 @dataclass(frozen=True)
 class ExistingCapabilityIntegrationTarget:
-    """Exact existing integration target resolved for one tenant scope."""
+    """Typed existing-capability identity resolved for one tenant scope."""
 
     tenant_id: str
     integration_category: IntegrationCategory
     provider_id: str
+    resource_scope: str
     current_revision: str
-    binding: IntegrationBinding
 
 
 @dataclass(frozen=True)
 class ConfiguredCapabilityBinding:
-    """Strategy output — configured binding material for generic continuity checks."""
+    """Strategy output — typed configured capability identity/reference."""
 
     tenant_id: str
     integration_category: IntegrationCategory
     provider_id: str
+    resource_scope: str
     configuration_type: str
     configuration_version: str
     configuration_fingerprint: str
-    configured_binding: IntegrationBinding
     realization_evidence_refs: tuple[str, ...] = ()
 
 
@@ -117,15 +116,8 @@ class ExistingCapabilityConfigurationRealizationRequest:
 @dataclass(frozen=True)
 class ExistingCapabilityConfigurationRealizationResult:
     request_id: str
-    tenant_id: str
-    integration_category: IntegrationCategory
-    provider_id: str
-    configuration_type: str
-    configuration_version: str
-    configuration_fingerprint: str
-    configured_binding: IntegrationBinding
+    configured_binding: ConfiguredCapabilityBinding
     authorization_evidence: ControlPlaneMutationAuthorizationEvidence
-    realization_evidence_refs: tuple[str, ...]
 
 
 @runtime_checkable
