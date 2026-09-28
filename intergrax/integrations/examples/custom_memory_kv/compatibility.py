@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from intergrax.integrations.contracts.external_contract_compatibility import (
     DimensionCompatibilityStatus,
@@ -15,6 +16,7 @@ from intergrax.integrations.contracts.external_contract_compatibility import (
     ExternalContractCompatibilityFinding,
     ExternalContractCompatibilityReasonCode,
     ExternalContractEvidenceAuthority,
+    ExternalContractCompatibilitySubject,
     ExternalContractEvidenceCollectionRequest,
     ExternalContractPin,
     ExternalContractSchemaEvidenceFact,
@@ -36,6 +38,8 @@ _SCHEMA_EVALUATOR_ID = "custom_memory_kv.schema.v1"
 class CustomMemoryKvContractObservation:
     """Typed provider-side probe result; not copied from platform expectation."""
 
+    subject: ExternalContractCompatibilitySubject
+    observed_at: datetime
     observed_contract: ExternalContractPin | None
     schema_ref: str | None
     schema_fingerprint: str | None
@@ -60,13 +64,15 @@ class CustomMemoryKvContractEvidenceProvider:
         observation = self._observation
         if not observation.evidence_refs:
             return ()
+        if observation.subject != request.subject:
+            return ()
         return (
             ExternalContractCompatibilityEvidence(
                 evidence_id=f"{_PROVIDER_EVIDENCE_PROVIDER_ID}:{observation.evidence_refs[0]}",
-                subject=request.subject,
+                subject=observation.subject,
                 observed_contract=observation.observed_contract,
                 dimension=ExternalContractCompatibilityDimension.SCHEMA,
-                observed_at=request.assessed_at,
+                observed_at=observation.observed_at,
                 authority=ExternalContractEvidenceAuthority.PROVIDER_ADAPTER,
                 evidence_refs=observation.evidence_refs,
                 fact=ExternalContractSchemaEvidenceFact(

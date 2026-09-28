@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import ast
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -52,7 +53,10 @@ from intergrax.integrations.external_contract_compatibility_extensions import (
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _TS = datetime(2026, 3, 1, 10, 0, 0, tzinfo=timezone.utc)
+_TS_OBSERVED_EARLIER = datetime(2026, 3, 1, 8, 0, 0, tzinfo=timezone.utc)
+_TS_ASSESSED_LATER = datetime(2026, 3, 1, 12, 0, 0, tzinfo=timezone.utc)
 _WINDOW = ExternalContractAssessmentWindow(max_age=timedelta(hours=24))
+_STALE_WINDOW = ExternalContractAssessmentWindow(max_age=timedelta(hours=1))
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _CONTRACT_REF = "integrations/custom_memory_kv/read"
 _CONTRACT_VERSION = "v1"
@@ -67,6 +71,19 @@ class _AcceptAllPolicy:
         window: ExternalContractAssessmentWindow,
     ) -> bool:
         return True
+
+
+class _MaxAgeEvidencePolicy:
+    def accepts(
+        self,
+        evidence: ExternalContractCompatibilityEvidence,
+        *,
+        assessed_at: datetime,
+        window: ExternalContractAssessmentWindow,
+    ) -> bool:
+        if window.max_age is None:
+            return True
+        return assessed_at - evidence.observed_at <= window.max_age
 
 
 def _subject(*, tenant_id: str = "tenant-a") -> ExternalContractCompatibilitySubject:
@@ -98,13 +115,32 @@ def _reference_expectation(
     )
 
 
-def _passing_schema_observation() -> CustomMemoryKvContractObservation:
+def _passing_schema_observation(
+    *,
+    subject: ExternalContractCompatibilitySubject | None = None,
+    observed_at: datetime = _TS,
+) -> CustomMemoryKvContractObservation:
     return CustomMemoryKvContractObservation(
+        subject=subject if subject is not None else _subject(),
+        observed_at=observed_at,
         observed_contract=ExternalContractPin(_CONTRACT_REF, _CONTRACT_VERSION),
         schema_ref="schema/custom_memory_kv/get",
         schema_fingerprint="fp-observed-abc",
         validation_status=SchemaValidationStatus.PASS,
         evidence_refs=("probe/custom_memory_kv/schema/1",),
+    )
+
+
+def _collection_request(
+    expectation: ExternalContractCompatibilityExpectation,
+    *,
+    assessed_at: datetime = _TS,
+    assessment_window: ExternalContractAssessmentWindow = _WINDOW,
+) -> ExternalContractEvidenceCollectionRequest:
+    return ExternalContractEvidenceCollectionRequest(
+        expectation=expectation,
+        assessed_at=assessed_at,
+        assessment_window=assessment_window,
     )
 
 
@@ -345,13 +381,15 @@ class _AlternateKvSchemaEvidenceProvider:
         request: ExternalContractEvidenceCollectionRequest,
     ) -> tuple[ExternalContractCompatibilityEvidence, ...]:
         observation = self._observation
+        if observation.subject != request.subject:
+            return ()
         return (
             ExternalContractCompatibilityEvidence(
                 evidence_id="ev-alt-schema",
-                subject=request.subject,
+                subject=observation.subject,
                 observed_contract=observation.observed_contract,
                 dimension=ExternalContractCompatibilityDimension.SCHEMA,
-                observed_at=request.assessed_at,
+                observed_at=observation.observed_at,
                 authority=ExternalContractEvidenceAuthority.PROVIDER_ADAPTER,
                 evidence_refs=observation.evidence_refs,
                 fact=ExternalContractSchemaEvidenceFact(
@@ -414,7 +452,9 @@ def test_p2r2_08_no_provider_domain_extension_authority_side_effects() -> None:
 def test_ten_r2_01_tenant_continuity() -> None:
     expectation = _reference_expectation(tenant_id="tenant-alpha")
     extensions = _composed_extensions(
-        schema_observation=_passing_schema_observation(),
+        schema_observation=_passing_schema_observation(
+            subject=_subject(tenant_id="tenant-alpha"),
+        ),
         semantic_probe=_ApplicationSemanticProbe(
             assertion_status=SemanticAssertionStatus.PASS,
             evidence_refs=("probe/application/cache-key/1",),
@@ -442,7 +482,9 @@ class _WrongTenantSchemaEvidenceProvider:
         request: ExternalContractEvidenceCollectionRequest,
     ) -> tuple[ExternalContractCompatibilityEvidence, ...]:
         wrong_subject = _subject(tenant_id="tenant-b")
-        observation = _passing_schema_observation()
+        observation = _passing_schema_observation(
+            subject=_subject(tenant_id="tenant-a")
+        )
         return (
             ExternalContractCompatibilityEvidence(
                 evidence_id="ev-wrong-tenant",
@@ -539,17 +581,159 @@ def test_ten_r2_03_wrong_tenant_domain_evidence_fails_closed() -> None:
 
 
 def test_ten_r2_04_adapter_never_invents_default_or_global_tenant() -> None:
-    observation = _passing_schema_observation()
-    provider = CustomMemoryKvContractEvidenceProvider(observation)
+    provider_factory = CustomMemoryKvContractEvidenceProvider
     for tenant_id in ("tenant-x", "tenant-y"):
+        subject = _subject(tenant_id=tenant_id)
+        observation = _passing_schema_observation(subject=subject)
+        provider = provider_factory(observation)
         expectation = _reference_expectation(tenant_id=tenant_id)
-        collected = provider.collect(
-            ExternalContractEvidenceCollectionRequest(
-                expectation=expectation, assessed_at=_TS
-            )
-        )
+        collected = provider.collect(_collection_request(expectation))
+        assert len(collected) == 1
+        assert collected[0].subject == subject
         assert collected[0].subject.tenant_id == tenant_id
         assert collected[0].subject.tenant_id not in ("default", "global", "system")
+
+
+def test_r2r1_01_matching_subject_emits_evidence_with_observation_provenance() -> None:
+    subject = _subject(tenant_id="tenant-a")
+    observation = _passing_schema_observation(subject=subject)
+    provider = CustomMemoryKvContractEvidenceProvider(observation)
+    expectation = _reference_expectation(tenant_id="tenant-a")
+    collected = provider.collect(_collection_request(expectation))
+    assert len(collected) == 1
+    assert collected[0].subject == observation.subject
+
+
+def test_r2r1_02_tenant_mismatch_emits_zero_evidence() -> None:
+    observation = _passing_schema_observation(subject=_subject(tenant_id="tenant-a"))
+    provider = CustomMemoryKvContractEvidenceProvider(observation)
+    expectation = _reference_expectation(tenant_id="tenant-b")
+    assert provider.collect(_collection_request(expectation)) == ()
+    extensions = external_contract_compatibility_extensions(
+        evidence_providers=(provider,),
+        evaluators=(CustomMemoryKvSchemaCompatibilityEvaluator(),),
+    )
+    expectation_schema_only = ExternalContractCompatibilityExpectation(
+        expectation_id="exp-tenant-mismatch",
+        subject=_subject(tenant_id="tenant-b"),
+        expected_contract=ExternalContractPin(_CONTRACT_REF, _CONTRACT_VERSION),
+        required_dimensions=frozenset({ExternalContractCompatibilityDimension.SCHEMA}),
+        schema_expectation_ref="schema/custom_memory_kv/get",
+        domain_extension_ref=None,
+    )
+    result = assess_external_contract_compatibility(
+        extensions,
+        evidence_policy=_AcceptAllPolicy(),
+        collection_request=_collection_request(expectation_schema_only),
+        assessment_request=ExternalContractCompatibilityAssessmentRequest(
+            assessment_id="assess-r2r1-02",
+            expectation=expectation_schema_only,
+            evidence=(),
+            assessed_at=_TS,
+            assessment_window=_WINDOW,
+        ),
+    )
+    assert result.outcome is ExternalContractCompatibilityOutcome.INSUFFICIENT_EVIDENCE
+
+
+def test_r2r1_03_operation_mismatch_emits_zero_evidence() -> None:
+    base = _subject(tenant_id="tenant-a")
+    observation_subject = ExternalContractCompatibilitySubject(
+        tenant_id=base.tenant_id,
+        integration_id=base.integration_id,
+        provider_id=base.provider_id,
+        integration_kind=base.integration_kind,
+        external_operation_id="kv.put",
+    )
+    observation = _passing_schema_observation(subject=observation_subject)
+    provider = CustomMemoryKvContractEvidenceProvider(observation)
+    expectation = _reference_expectation(tenant_id="tenant-a")
+    assert provider.collect(_collection_request(expectation)) == ()
+
+
+@pytest.mark.parametrize(
+    "mutate_subject",
+    (
+        lambda s: ExternalContractCompatibilitySubject(
+            tenant_id=s.tenant_id,
+            integration_id=f"{s.provider_id}:other_kind",
+            provider_id=s.provider_id,
+            integration_kind="other_kind",
+            external_operation_id=s.external_operation_id,
+        ),
+        lambda s: ExternalContractCompatibilitySubject(
+            tenant_id=s.tenant_id,
+            integration_id="other.provider:key_value_cache",
+            provider_id="other.provider",
+            integration_kind=s.integration_kind,
+            external_operation_id=s.external_operation_id,
+        ),
+    ),
+    ids=("integration_kind", "provider_id"),
+)
+def test_r2r1_04_provider_or_integration_mismatch_emits_zero_evidence(
+    mutate_subject: Callable[
+        [ExternalContractCompatibilitySubject], ExternalContractCompatibilitySubject
+    ],
+) -> None:
+    base = _subject(tenant_id="tenant-a")
+    observation = _passing_schema_observation(subject=mutate_subject(base))
+    provider = CustomMemoryKvContractEvidenceProvider(observation)
+    expectation = _reference_expectation(tenant_id="tenant-a")
+    assert provider.collect(_collection_request(expectation)) == ()
+
+
+def test_r2r1_05_observation_timestamp_preserved_not_assessment_time() -> None:
+    subject = _subject(tenant_id="tenant-a")
+    observation = _passing_schema_observation(
+        subject=subject,
+        observed_at=_TS_OBSERVED_EARLIER,
+    )
+    provider = CustomMemoryKvContractEvidenceProvider(observation)
+    expectation = _reference_expectation(tenant_id="tenant-a")
+    collected = provider.collect(
+        _collection_request(expectation, assessed_at=_TS_ASSESSED_LATER)
+    )
+    assert len(collected) == 1
+    assert collected[0].observed_at == _TS_OBSERVED_EARLIER
+    assert collected[0].observed_at != _TS_ASSESSED_LATER
+
+
+def test_r2r1_06_stale_observation_remains_stale_under_evidence_policy() -> None:
+    subject = _subject(tenant_id="tenant-a")
+    observation = _passing_schema_observation(
+        subject=subject,
+        observed_at=_TS_OBSERVED_EARLIER,
+    )
+    extensions = custom_memory_kv_compatibility_extensions(observation)
+    expectation = ExternalContractCompatibilityExpectation(
+        expectation_id="exp-stale-schema",
+        subject=subject,
+        expected_contract=ExternalContractPin(_CONTRACT_REF, _CONTRACT_VERSION),
+        required_dimensions=frozenset({ExternalContractCompatibilityDimension.SCHEMA}),
+        schema_expectation_ref="schema/custom_memory_kv/get",
+        domain_extension_ref=None,
+    )
+    collection_request = _collection_request(
+        expectation,
+        assessed_at=_TS_ASSESSED_LATER,
+        assessment_window=_STALE_WINDOW,
+    )
+    assessment_request = ExternalContractCompatibilityAssessmentRequest(
+        assessment_id="assess-r2r1-06",
+        expectation=expectation,
+        evidence=(),
+        assessed_at=_TS_ASSESSED_LATER,
+        assessment_window=_STALE_WINDOW,
+    )
+    result = assess_external_contract_compatibility(
+        extensions,
+        evidence_policy=_MaxAgeEvidencePolicy(),
+        collection_request=collection_request,
+        assessment_request=assessment_request,
+    )
+    assert result.outcome is ExternalContractCompatibilityOutcome.INSUFFICIENT_EVIDENCE
+    assert result.reason_code is ExternalContractCompatibilityReasonCode.STALE_EVIDENCE
 
 
 def test_architecture_regression_reference_extension_surface() -> None:
