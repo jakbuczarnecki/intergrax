@@ -4,15 +4,16 @@
 
 | Field | Value |
 | ----- | ----- |
-| **Task** | `INT-CONFIG-REAL-X-P0` + `INT-CONFIG-REAL-X-P0-R1` (architecture lock; children of `INT-CONFIG-REAL-X`) |
+| **Task** | `INT-CONFIG-REAL-X-P0` + `INT-CONFIG-REAL-X-P0-R1` + `INT-CONFIG-REAL-X-P0-R2` (architecture lock; children of `INT-CONFIG-REAL-X`) |
 | **Parent** | `INT-CONFIG-REAL-X` — Existing Capability Configuration Realization |
 | **Program baseline** | `234d3c03dce5708766f8e068afbd2ea496132002` (`development`) |
 | **Source** | Scenario #24 GAP-01 — `CONFIGURE_EXISTING` disposition |
 | **Canonical owner** | **Integrations** |
 | **Artifact role** | Closed-world design record before `INT-CONFIG-REAL-X-P1` |
 | **Production / tests** | **0** in P0 |
-| **P0-R1** | Configuration authorization evidence boundary closure (docs-only; production = 0) |
-| **Status** | **P0-R1: READY FOR INDEPENDENT ARCHITECTURE AUDIT** — P0 remains **BLOCKED** pending independent P0-R1 audit |
+| **P0-R1** | Configuration authorization evidence boundary closure (scope-binding; production = 0) |
+| **P0-R2** | Canonical Governance authorization invocation boundary closure (docs-only; production = 0) |
+| **Status** | **P0-R2: READY FOR INDEPENDENT ARCHITECTURE AUDIT** — **P0-R1:** accepted in substance; **BLOCKED BY R2** (provenance seam) — **P0:** **BLOCKED** pending independent P0-R2 audit + **P0-R2-I1** |
 
 **Scope:** lock reusable platform semantics for realizing **existing** integration/capability configuration under explicit tenant scope. P0 does **not** implement contracts, services, or qualification tests.
 
@@ -91,7 +92,7 @@ Exactly one owner per row.
 
 **UCA boundary:** UCA owns gap/acquisition/qualification flows; GAP-01 realization is **transferred** to platform Integrations (`INT-CONFIG-REAL-X`). UCA must not implement realization.
 
-**Governance boundary:** realization verifies typed **`ControlPlaneMutationAuthorizationEvidence`** scope continuity; it must **not** decide permission or call concrete Governance runtime.
+**Governance boundary:** permission is admitted only through **`ControlPlaneMutationAuthorizationPort.authorize(...)`** in the sanctioned realization path; lower layers may verify typed **`ControlPlaneMutationAuthorizationEvidence`** scope continuity only after port admission — they must **not** decide permission, construct authority from DTOs alone, or import concrete Governance runtime.
 
 **Execution boundary:** configured capability is handed to downstream consumers; Execution owns runnable work after Governance where required.
 
@@ -120,20 +121,19 @@ CONFIGURE_EXISTING disposition (upstream)
         ↓
 ExistingCapabilityConfigurationRealizationRequest (immutable typed)
         ↓
-[sanctioned host / platform composition]
+public production entry: governed realization façade / coordinator (P1; e.g. ExistingCapabilityConfigurationRealizationFacade)
         ↓
 project → ControlPlaneMutationRequest (deterministic; P1)
         ↓
-Governance: ControlPlaneMutationAuthorizationBoundary (composition-owned; not inside Integrations service)
+ControlPlaneMutationAuthorizationPort.authorize(request)   # injected; Governance semantics
         ↓
 ControlPlaneMutationAuthorizationResult (permitted + PolicyAction.ALLOW only)
         ↓
-ExistingCapabilityConfigurationRealizationService.realize(
-    request,
-    authorization_evidence=result.evidence,  # ControlPlaneMutationAuthorizationEvidence
-)
+require permitted == True and decision.action == PolicyAction.ALLOW
         ↓
-verify typed authorization evidence + exact scope (fail closed; strategy calls = 0 on failure)
+verify exact result.evidence scope (R1 checks; fail closed)
+        ↓
+pure realization core (internal; no permission decisions)
         ↓
 ExistingCapabilityConfigurationRealizationStrategy (platform SPI; composed)
         ↓
@@ -146,7 +146,11 @@ ExistingCapabilityConfigurationRealizationResult (tenant-scoped configured bindi
 later: effective composition (Integrations) → Governance (separate use paths) → Execution
 ```
 
-P0-R1 locks authorization semantics only; P1 implements projection, composition wiring, and service verification.
+**P0-R2 invariant:** `strategy` cannot become reachable without a call to the injected Governance **`ControlPlaneMutationAuthorizationPort`** in the same sanctioned operation path.
+
+**Forbidden public production path:** `service.realize(request, authorization_evidence=caller_constructed_evidence)` when that path can reach a strategy without canonical port invocation.
+
+P0-R1 locks evidence scope-binding; P0-R2 locks authorization invocation provenance; **P0-R2-I1** promotes the port in contracts/runtime; P1 implements façade, projection, composition wiring, and verification.
 
 **Forbidden shortcuts:** acquisition fallback, Marketplace fallback, global provider mutation, second catalog/resolver, ToolRuntime, direct business side effects.
 
@@ -227,7 +231,16 @@ Structural external implementation must be possible (P2 qualification).
 
 ## 11. Sanctioned composition (exactly one model)
 
-**Integrations pure service (locked):**
+**Two-layer realization (P0-R2 lock):**
+
+| Layer | Owner | Responsibility |
+| ----- | ----- | -------------- |
+| Governed realization façade / coordinator | Integrations orchestration (e.g. **`ExistingCapabilityConfigurationRealizationFacade`**) | project request → **`ControlPlaneMutationAuthorizationPort.authorize`** → validate result → call pure core |
+| Pure realization core | Integrations | validate target/config/state → select one strategy → realize; **no** permission decisions |
+
+**Exactly one authorization invocation owner** within configuration realization: the governed façade (or equivalent Integrations-owned orchestration seam). The strategy, provider, resolver, and pure core **must not** call Governance or hold an authorization port.
+
+**Pure core (locked; internal entry):**
 
 ```text
 ExistingCapabilityConfigurationRealizationService(
@@ -236,31 +249,37 @@ ExistingCapabilityConfigurationRealizationService(
 )
 ```
 
-The service **does not** call `ControlPlaneMutationAuthorizationBoundary` or any `intergrax/runtime/governance/**` implementation. It consumes only typed **`ControlPlaneMutationAuthorizationEvidence`** supplied by the composition owner.
+The pure core **does not** call `ControlPlaneMutationAuthorizationPort`, `ControlPlaneMutationAuthorizationBoundary`, or any `intergrax/runtime/governance/**` implementation. It may accept already-validated **`ControlPlaneMutationAuthorizationEvidence`** only on an **internal / non-authority** API for traceability and scope continuity — not as a second public production entry.
 
-**Sanctioned platform composition (authorization + realization; locked):**
+**Sanctioned public production composition (locked):**
 
 ```text
-host / sanctioned platform composition
+host / sanctioned platform composition wires:
+    authorization_port: ControlPlaneMutationAuthorizationPort   # concrete: ControlPlaneMutationAuthorizationBoundary
+    realization_facade: ExistingCapabilityConfigurationRealizationFacade(
+        authorization_port=authorization_port,
+        realization_core=...,
+    )
+    ↓
+facade.realize(realization_request)   # public production entry (P1 naming may vary; semantics locked)
     ↓
 build canonical ControlPlaneMutationRequest from realization request
     ↓
-Governance ControlPlaneMutationAuthorizationBoundary.authorize(request)
+authorization_port.authorize(governance_request)
     ↓
 ControlPlaneMutationAuthorizationResult
     ↓
 if result.permitted and result.decision.action == PolicyAction.ALLOW:
-    ExistingCapabilityConfigurationRealizationService.realize(
-        realization_request,
-        authorization_evidence=result.evidence,
-    )
+    verify exact result.evidence scope (R1)
+    ↓
+    realization_core.realize_internal(..., validated_evidence=result.evidence)   # internal only
 ```
 
 Exact method signatures deferred to P1 code conventions.
 
-Rationale: explicit DI, no second registry, no global singleton, no plugin-discovery authority duplication, structural replaceability; Governance authority stays composition-owned; Integrations remains testable with contract-only dependencies.
+Rationale: explicit DI on the **public Protocol**; no second registry; Governance semantic owner stays behind **`ControlPlaneMutationAuthorizationPort`**; Integrations depends on **`intergrax/contracts/control_plane_mutation.py`** only — not concrete runtime Governance.
 
-**Forbidden:** `ConfigurationStrategyRegistry`, `RealizationProviderRegistry`, tenant→strategy global maps, vendor switches, service locators, reflection discovery; Integrations production imports of `intergrax/runtime/governance/**`.
+**Forbidden:** `ConfigurationStrategyRegistry`, `RealizationProviderRegistry`, tenant→strategy global maps, vendor switches, service locators, reflection discovery; Integrations production imports of `intergrax/runtime/governance/**`; public **`realize(..., authorization_evidence=...)`** that bypasses port invocation.
 
 If `IntegrationPlugin` redesign is later required to host strategies: record **`STOP — ARCHITECTURE DECISION REQUIRED`** as a separate decision; P1 preferred path uses explicit composition **without** modifying plugin registration authority.
 
@@ -329,6 +348,8 @@ realization_request.tenant_id
 
 **Forbidden:** tenant A request → tenant B binding; missing tenant → global config; tenant-scoped config → global provider mutation; strategy rewrites tenant.
 
+**P0-R2:** tenant-scoped permission must be obtained through the **same** Governance port invocation that admits that exact realization operation. Preconstructed tenant-A evidence must not be passed into a tenant-B realization path. Missing authorization port → no global/default permission fallback.
+
 Configuration is scoped by tenant/context. No process-global provider configuration mutation.
 
 **P0 runtime verdict:** `N/A — WITH EVIDENCE` (no runtime change). Architecture must still answer roadmap §2.0.1 questions (see program tracker closure report).
@@ -363,6 +384,13 @@ Reuse **`intergrax/contracts/control_plane_mutation.py`** only — **no** config
 | `ControlPlaneMutationAuthorizationResult` | Composition owner outcome (`permitted`, `decision`, `evidence`) |
 | `ControlPlaneMutationPolicyEvaluator` | Governance policy evaluation (composition-injected) |
 | `control_plane_mutation_request_digest` | Canonical authorization-request identity binding |
+| `ControlPlaneMutationAuthorizationPort` | **Architecture target (P0-R2-I1):** public typed Protocol — `authorize(request) → ControlPlaneMutationAuthorizationResult`; **absent from contracts at R2 baseline** |
+
+**Semantic owner:** **`ControlPlaneMutationAuthorizationPort`** = **Governance** (permission, policy evaluation, ALLOW/DENY, HITL continuation, evidence production). **Contract home:** `intergrax/contracts` owns the public abstraction location, not policy semantics.
+
+**Canonical runtime implementation (locked):** **`ControlPlaneMutationAuthorizationBoundary`** in `intergrax/runtime/governance/control_plane_mutation_authorization.py` — the sole sanctioned concrete implementation mechanism introduced by this architecture wave; **P0-R2-I1** makes structural conformance mechanical.
+
+**Reference architecture pattern (not semantic equivalence):** **`MeaningfulSideEffectAuthorizationPort`** — public `@runtime_checkable` Protocol in `intergrax/contracts`, concrete Governance runtime behind it, consumers depend only on the Protocol. Configuration realization reuses this **pattern** only; **`ControlPlaneMutationAuthorizationPort`** and **`MeaningfulSideEffectAuthorizationPort`** remain **distinct** domain boundaries (no generic `AuthorizationPort` super-abstraction).
 
 **Forbidden new Integrations-owned authorization types** (examples): `ConfigurationRealizationAuthorizationEvidence`, `ConfigurationApprovalToken`, `ConfigurationGovernanceDecision`, `ConfigurationPermission`.
 
@@ -478,7 +506,7 @@ MODIFY
 
 Integrations must **not** start HITL workflows or convert continuation-required into permission.
 
-**Boundary:** composition owner obtains **`ControlPlaneMutationAuthorizationResult`** from Governance; pure realization service consumes **`ControlPlaneMutationAuthorizationEvidence`** only and verifies scope continuity.
+**Boundary (P0-R2):** the governed façade obtains **`ControlPlaneMutationAuthorizationResult`** via **`ControlPlaneMutationAuthorizationPort.authorize`**; the pure core receives **already-admitted** evidence on an internal API and verifies scope continuity. **`ControlPlaneMutationAuthorizationEvidence(...)`** and **`ControlPlaneMutationAuthorizationResult(...)`** construction prove **shape** only — **not** sanctioned producer provenance. **Typed evidence ≠ authority provenance.** Neither provenance nor scope checks alone are sufficient.
 
 ### 16.7 Integrations-side evidence verification (P1 minimum)
 
@@ -526,6 +554,106 @@ Sanctioned host: Governance boundary → typed result/evidence → Integrations 
 
 **Invariant:** `configured != authorized`; realization does not widen authority. **No second authorization contract.**
 
+### 16.11 P0-R2 — Authorization invocation boundary (provenance lock)
+
+**Audit finding (closed-world):** at architecture baseline, typed **`ControlPlaneMutationAuthorizationEvidence`** can validate tenant, resource, revision, digest, and policy action, but its **presence alone** does not mechanically prove canonical Governance performed authorization. **Scope integrity ≠ authority provenance.**
+
+**Pre-audit fact:** production contracts include `ControlPlaneMutationRequest`, `ControlPlaneMutationAuthorizationEvidence`, `ControlPlaneMutationAuthorizationResult`, `ControlPlaneMutationPolicyEvaluator`, and runtime **`ControlPlaneMutationAuthorizationBoundary`** — but **not** **`ControlPlaneMutationAuthorizationPort`**. R2 locks additive introduction in exactly one canonical module: **`intergrax/contracts/control_plane_mutation.py`** (preferred; request/result/evidence already live there). Do **not** split across a second module unless repository organization mandatorily requires it — **one** canonical definition.
+
+**Minimum port semantics (architecture target for P0-R2-I1):**
+
+```python
+@runtime_checkable
+class ControlPlaneMutationAuthorizationPort(Protocol):
+    def authorize(
+        self,
+        request: ControlPlaneMutationRequest,
+    ) -> ControlPlaneMutationAuthorizationResult:
+        ...
+```
+
+One responsibility: evaluate one typed control-plane mutation request through canonical Governance semantics and return one typed authorization result. No configuration-specific methods, vendor hooks, callbacks, `dict` metadata, `object`, or `Any`.
+
+**Authority provenance model:**
+
+```text
+permission provenance
+=
+successful call to injected ControlPlaneMutationAuthorizationPort
+for the exact projected mutation
+within the sanctioned realization operation
+```
+
+plus `result.permitted == True` and `result.decision.action == PolicyAction.ALLOW`, plus all R1 exact evidence checks (tenant, mutation type, resource type/id/scope, current/target revision, request digest, task/run identity where applicable).
+
+**No cryptographic token requirement in this architecture:** no signed evidence, JWT, MAC, signature authority, opaque capability token, or config authorization token for in-process admission — the enterprise invariant is **exactly one sanctioned call path** that invokes the Governance port before work.
+
+**Public API rule (P1):** future public capability entry = governed façade/coordinator (conceptually under **`ExistingCapabilityConfigurationRealizationPort`**). Sanctioned shape:
+
+```text
+public production entry
+→ authorization port
+→ pure realization core
+```
+
+Never: public production entry → raw evidence parameter → pure core. **Handcrafted evidence cannot admit realization** on a sanctioned public path.
+
+**Strategy boundary:** strategy receives only an already-admitted typed realization context. **Strategy does not receive Governance authority** (no authorization port, policy evaluator, Governance runtime boundary, or approval coordinator).
+
+**Dependency direction:**
+
+```text
+Integrations orchestration  →  ControlPlaneMutationAuthorizationPort (contracts)     ALLOWED
+runtime Governance          →  implements ControlPlaneMutationAuthorizationPort       ALLOWED
+
+Integrations                →  intergrax/runtime/governance/**                        FORBIDDEN
+contracts                   →  runtime/governance                                     FORBIDDEN
+Governance concrete impl    →  Integrations provider implementation                   FORBIDDEN
+```
+
+**Interaction with MSE:** **`ControlPlaneMutationAuthorizationPort`** governs **CONTROL_PLANE_MUTATION** configuration-state admission only. **`MeaningfulSideEffectAuthorizationPort`** governs consequential tool effects. Do **not** merge. Future provider business effects may separately require MSE or other boundaries.
+
+### 16.12 P0-R2 — Fail-closed authorization invocation matrix
+
+| Condition | Result |
+| --------- | ------ |
+| authorization port missing in production composition | fail closed / composition error |
+| authorization port raises or fails | no realization |
+| `result.permitted == False` | no realization |
+| result decision action != `PolicyAction.ALLOW` | no realization |
+| continuation required (`REQUIRE_HUMAN`, `ESCALATE`, `MODIFY`, `DENY`) | no realization |
+| evidence scope mismatch | no realization |
+| evidence digest mismatch | no realization |
+| caller supplies handcrafted ALLOW evidence without port invocation | no sanctioned realization path |
+| strategy attempts direct Governance call | architecture violation |
+| alternate public raw-evidence realization entry appears | architecture violation |
+
+### 16.13 P0-R2 — Implementation wave and sequencing
+
+**Mandatory child:** **`INT-CONFIG-REAL-X-P0-R2-I1` — Canonical Control-Plane Authorization Port Promotion**
+
+Strict future scope (not implemented in R2):
+
+1. add **`ControlPlaneMutationAuthorizationPort`** to public contracts;
+2. make existing **`ControlPlaneMutationAuthorizationBoundary`** structurally satisfy the Protocol;
+3. targeted contract/runtime tests;
+4. no Integrations realization implementation yet.
+
+**Required sequence (no scope mixing):**
+
+```text
+P0-R2 architecture decision (this document)
+→ P0-R2-I1 Governance public-port promotion
+→ P0 architecture closure / reconciliation
+→ P1 Integrations typed realization implementation
+```
+
+**P1 MUST NOT START BEFORE P0-R2-I1 INDEPENDENT ACCEPTANCE.**
+
+P1 must not simultaneously modify Governance public authorization contracts, build Integrations realization contracts, and build the realization service — different semantic owners.
+
+**R1 status:** **`INT-CONFIG-REAL-X-P0-R1`** = scope-binding design **accepted in substance**; cannot close parent until R2 provenance seam is resolved; preferred roadmap status **BLOCKED BY R2 / remediation dependency** — not independent final **CLOSED** until workflow permits post-R2 reconciliation.
+
 ---
 
 ## 17. Execution boundary
@@ -571,6 +699,10 @@ except strictly bounded configuration validation/materialization explicitly owne
 | `request_digest` mismatch | Fail closed |
 | `task_id` / `run_id` mismatch when present | Fail closed |
 | Malformed authorization evidence | Fail closed |
+| Authorization port missing at composition | Fail closed |
+| Port invocation failure | Fail closed — no realization |
+| Handcrafted evidence without port invocation on public path | No sanctioned path — fail closed |
+| Strategy or provider calls Governance | Architecture violation — fail closed |
 | Strategy attempts tenant/provider widening | Reject |
 | Provider realization failure | Explicit typed failure |
 
@@ -650,23 +782,24 @@ existing != configured != effective != authorized != executing
 
 **`INT-CONFIG-REAL-X-P1` — Typed Realization Contracts & Pure Service**
 
-After independent **P0-R1** acceptance, P1 may implement:
+After independent **P0-R2** acceptance and **P0-R2-I1** port promotion, P1 may implement:
 
 - `IntegrationConfigurationPayload`
 - `ExistingCapabilityConfigurationRealizationRequest` / `Result`
 - `ExistingCapabilityConfigurationRealizationStrategy`
-- `ExistingCapabilityConfigurationRealizationService` (pure; evidence parameter typed as `ControlPlaneMutationAuthorizationEvidence`)
+- governed realization façade depending on **`ControlPlaneMutationAuthorizationPort`** (public production entry)
+- `ExistingCapabilityConfigurationRealizationService` (pure core; internal evidence handoff typed as `ControlPlaneMutationAuthorizationEvidence` after façade admission)
 - typed existing-integration resolver port
 - deterministic projection to `ControlPlaneMutationRequest` + evidence verification using `control_plane_mutation_request_digest`
 
-Reuse (do **not** duplicate): `ControlPlaneMutationRequest`, `ControlPlaneMutationAuthorizationEvidence`, `control_plane_mutation_request_digest`.
+Reuse (do **not** duplicate): `ControlPlaneMutationRequest`, `ControlPlaneMutationAuthorizationEvidence`, `ControlPlaneMutationAuthorizationPort` (post-I1), `control_plane_mutation_request_digest`.
 
-- Fail-closed composition rules; no catalog mutation; **no** concrete Governance runtime calls inside Integrations service.
+- Fail-closed composition rules; no catalog mutation; **no** concrete Governance runtime imports in Integrations; **exactly one** port invocation owner in the façade.
 - Unit tests for generic service behavior only (no full provider rollout).
 
 If canonical Governance contracts cannot express realization without architecture change → **`STOP — ARCHITECTURE DECISION REQUIRED`**.
 
-Parent `INT-CONFIG-REAL-X` remains **BLOCKED** until P0 + P0-R1 architecture audits accept this document.
+Parent `INT-CONFIG-REAL-X` remains **BLOCKED** until P0 + P0-R1 (substance) + P0-R2 + P0-R2-I1 architecture audits accept this document.
 
 ---
 
@@ -683,7 +816,7 @@ Insert **`INT-CONFIG-REAL-X-P1A`** (Typed Integration Configuration Boundary Har
 
 ## 25. Certification / exit criteria (P0 document)
 
-P0 + P0-R1 complete when independent architecture audit accepts:
+P0 architecture evidence complete when independent audits accept:
 
 1. Ownership matrix and gap analysis;
 2. Typed request/payload/result/strategy/composition locks;
@@ -692,9 +825,10 @@ P0 + P0-R1 complete when independent architecture audit accepts:
 5. Tenant, Governance, Execution boundaries explicit;
 6. Fail-closed matrix and error families;
 7. Wave decomposition bounded;
-8. **P0-R1:** canonical `ControlPlaneMutation*` reuse; projection matrix; digest/revision binding; ALLOW-only realization; composition vs service boundary; no `runtime.governance` Integrations dependency; authorization fail-closed matrix.
+8. **P0-R1:** canonical `ControlPlaneMutation*` reuse; projection matrix; digest/revision binding; ALLOW-only realization; no `runtime.governance` Integrations dependency; authorization evidence fail-closed matrix;
+9. **P0-R2:** `ControlPlaneMutationAuthorizationPort` architecture lock; provenance vs scope; façade vs pure core; exactly-one port invocation; handcrafted evidence cannot admit public realization; **`ControlPlaneMutationAuthorizationBoundary`** as canonical implementation target; **P0-R2-I1** defined; I1 precedes P1.
 
-P0 / P0-R1 do **not** self-declare **CLOSED**.
+P0 / P0-R1 / P0-R2 do **not** self-declare **CLOSED**.
 
 ---
 
@@ -709,7 +843,7 @@ P0 defines evidence plan only — **no PASS**.
 | Strong typing | FRZ-TYP-01, FRZ-TYP-02, FRZ-TYP-03, FRZ-TYP-04, FRZ-TYP-06 | P1, P2, CERT |
 | Pluginability | FRZ-PLG-01, FRZ-PLG-02 | P2, CERT |
 | Replaceability | FRZ-RPL-01, FRZ-RPL-02 | P2, CERT |
-| Governance | FRZ-GOV-09 (no authority widening); authorization evidence continuity | P1, CERT, GOV-X2 |
+| Governance | FRZ-GOV-01, FRZ-GOV-02, FRZ-GOV-04, FRZ-GOV-07, FRZ-GOV-09, FRZ-GOV-10 (authorization port invocation + evidence before work; control-plane mutation governed) | P0-R2-I1, P1, CERT, GOV-X2 |
 | Traceability | FRZ-TRC-06, FRZ-TRC-07, FRZ-TRC-11 | P1, CERT, **TRACE-X** |
 | Tenant | FRZ-TEN-01, FRZ-TEN-02, FRZ-TEN-05, FRZ-TEN-09, FRZ-TEN-10, FRZ-TEN-11, FRZ-TEN-12 | P2, CERT, **TENANT-X** |
 
@@ -726,6 +860,7 @@ P0 defines evidence plan only — **no PASS**.
 - Tenantless configuration contract
 - Strategy changing tenant/provider
 - Integrations granting Governance permission
+- Public realization admitting caller-constructed authorization evidence without port invocation
 - Direct Execution/ToolRuntime invocation
 - Capability Acquisition / Marketplace fallback
 
