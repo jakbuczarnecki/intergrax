@@ -30,7 +30,9 @@ def _require_non_empty_text(value: object, label: str) -> str:
     return value
 
 
-def _require_unique_non_empty_refs(values: tuple[str, ...], label: str) -> tuple[str, ...]:
+def _require_unique_non_empty_refs(
+    values: tuple[str, ...], label: str
+) -> tuple[str, ...]:
     seen: set[str] = set()
     for item in values:
         text = _require_non_empty_text(item, f"{label} entry")
@@ -135,7 +137,9 @@ class ExternalContractCompatibilitySubject:
             _require_non_empty_text(self.integration_id, "integration_id"),
         )
         object.__setattr__(
-            self, "provider_id", _require_non_empty_text(self.provider_id, "provider_id")
+            self,
+            "provider_id",
+            _require_non_empty_text(self.provider_id, "provider_id"),
         )
         object.__setattr__(
             self,
@@ -145,7 +149,9 @@ class ExternalContractCompatibilitySubject:
         object.__setattr__(
             self,
             "external_operation_id",
-            _require_non_empty_text(self.external_operation_id, "external_operation_id"),
+            _require_non_empty_text(
+                self.external_operation_id, "external_operation_id"
+            ),
         )
         if self.host_binding_ref is not None:
             object.__setattr__(
@@ -179,7 +185,9 @@ class ExternalContractPin:
 
     def __post_init__(self) -> None:
         object.__setattr__(
-            self, "contract_ref", _require_non_empty_text(self.contract_ref, "contract_ref")
+            self,
+            "contract_ref",
+            _require_non_empty_text(self.contract_ref, "contract_ref"),
         )
         object.__setattr__(
             self,
@@ -287,7 +295,9 @@ class ExternalContractProtocolHeaderInvariantResult:
 
     def __post_init__(self) -> None:
         object.__setattr__(
-            self, "invariant_id", _require_non_empty_text(self.invariant_id, "invariant_id")
+            self,
+            "invariant_id",
+            _require_non_empty_text(self.invariant_id, "invariant_id"),
         )
         object.__setattr__(
             self,
@@ -304,7 +314,9 @@ class ExternalContractProtocolEvidenceFact:
     content_type: str | None
     validation_status: ProtocolValidationStatus
     violation_codes: tuple[str, ...] = ()
-    header_invariant_results: tuple[ExternalContractProtocolHeaderInvariantResult, ...] = ()
+    header_invariant_results: tuple[
+        ExternalContractProtocolHeaderInvariantResult, ...
+    ] = ()
 
     def __post_init__(self) -> None:
         if self.protocol_ref is not None:
@@ -331,7 +343,9 @@ class ExternalContractSemanticAssertionResult:
 
     def __post_init__(self) -> None:
         object.__setattr__(
-            self, "assertion_id", _require_non_empty_text(self.assertion_id, "assertion_id")
+            self,
+            "assertion_id",
+            _require_non_empty_text(self.assertion_id, "assertion_id"),
         )
         object.__setattr__(
             self,
@@ -372,10 +386,14 @@ class ExternalContractCompatibilityEvidence:
 
     def __post_init__(self) -> None:
         object.__setattr__(
-            self, "evidence_id", _require_non_empty_text(self.evidence_id, "evidence_id")
+            self,
+            "evidence_id",
+            _require_non_empty_text(self.evidence_id, "evidence_id"),
         )
         object.__setattr__(
-            self, "observed_at", _require_timezone_aware(self.observed_at, "observed_at")
+            self,
+            "observed_at",
+            _require_timezone_aware(self.observed_at, "observed_at"),
         )
         object.__setattr__(
             self,
@@ -384,7 +402,9 @@ class ExternalContractCompatibilityEvidence:
         )
         if self.dimension is ExternalContractCompatibilityDimension.SCHEMA:
             if type(self.fact) is not ExternalContractSchemaEvidenceFact:
-                raise TypeError("SCHEMA dimension requires ExternalContractSchemaEvidenceFact")
+                raise TypeError(
+                    "SCHEMA dimension requires ExternalContractSchemaEvidenceFact"
+                )
         elif self.dimension is ExternalContractCompatibilityDimension.PROTOCOL:
             if type(self.fact) is not ExternalContractProtocolEvidenceFact:
                 raise TypeError(
@@ -473,7 +493,9 @@ class ExternalContractCompatibilityFinding:
 
     def __post_init__(self) -> None:
         object.__setattr__(
-            self, "evaluator_id", _require_non_empty_text(self.evaluator_id, "evaluator_id")
+            self,
+            "evaluator_id",
+            _require_non_empty_text(self.evaluator_id, "evaluator_id"),
         )
         object.__setattr__(
             self,
@@ -485,7 +507,9 @@ class ExternalContractCompatibilityFinding:
                 raise ValueError("COMPATIBLE findings must use reason_code NONE")
         if self.status is not DimensionCompatibilityStatus.COMPATIBLE:
             if self.reason_code is ExternalContractCompatibilityReasonCode.NONE:
-                raise ValueError("non-COMPATIBLE findings must not use reason_code NONE")
+                raise ValueError(
+                    "non-COMPATIBLE findings must not use reason_code NONE"
+                )
 
 
 @dataclass(frozen=True, slots=True)
@@ -497,10 +521,14 @@ class ExternalContractCompatibilityEvaluationContext:
 
     def __post_init__(self) -> None:
         object.__setattr__(
-            self, "assessment_id", _require_non_empty_text(self.assessment_id, "assessment_id")
+            self,
+            "assessment_id",
+            _require_non_empty_text(self.assessment_id, "assessment_id"),
         )
         object.__setattr__(
-            self, "assessed_at", _require_timezone_aware(self.assessed_at, "assessed_at")
+            self,
+            "assessed_at",
+            _require_timezone_aware(self.assessed_at, "assessed_at"),
         )
 
 
@@ -509,12 +537,12 @@ class ExternalContractCompatibilityEvaluator(Protocol):
     """Pure evaluator SPI: no provider I/O, no mutation, no recovery actions."""
 
     @property
-    def evaluator_id(self) -> str:
-        ...
+    def evaluator_id(self) -> str: ...
 
     @property
-    def supported_dimensions(self) -> frozenset[ExternalContractCompatibilityDimension]:
-        ...
+    def supported_dimensions(
+        self,
+    ) -> frozenset[ExternalContractCompatibilityDimension]: ...
 
     def can_evaluate(
         self,
@@ -522,16 +550,14 @@ class ExternalContractCompatibilityEvaluator(Protocol):
         evidence: tuple[ExternalContractCompatibilityEvidence, ...],
         *,
         dimension: ExternalContractCompatibilityDimension,
-    ) -> bool:
-        ...
+    ) -> bool: ...
 
     def evaluate(
         self,
         expectation: ExternalContractCompatibilityExpectation,
         evidence: tuple[ExternalContractCompatibilityEvidence, ...],
         context: ExternalContractCompatibilityEvaluationContext,
-    ) -> tuple[ExternalContractCompatibilityFinding, ...]:
-        ...
+    ) -> tuple[ExternalContractCompatibilityFinding, ...]: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -545,10 +571,14 @@ class ExternalContractCompatibilityAssessmentRequest:
 
     def __post_init__(self) -> None:
         object.__setattr__(
-            self, "assessment_id", _require_non_empty_text(self.assessment_id, "assessment_id")
+            self,
+            "assessment_id",
+            _require_non_empty_text(self.assessment_id, "assessment_id"),
         )
         object.__setattr__(
-            self, "assessed_at", _require_timezone_aware(self.assessed_at, "assessed_at")
+            self,
+            "assessed_at",
+            _require_timezone_aware(self.assessed_at, "assessed_at"),
         )
         object.__setattr__(
             self,
@@ -557,6 +587,57 @@ class ExternalContractCompatibilityAssessmentRequest:
                 self.explicit_evaluator_ids, "explicit_evaluator_ids"
             ),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class ExternalContractExpectationKey:
+    """Resolver lookup key: canonical subject identity plus expected contract pin."""
+
+    subject: ExternalContractCompatibilitySubject
+    expected_contract: ExternalContractPin
+
+
+@runtime_checkable
+class ExternalContractCompatibilityExpectationResolver(Protocol):
+    """Optional composition extension: resolve expectations by typed key (no Catalog)."""
+
+    @property
+    def resolver_id(self) -> str: ...
+
+    def resolve(
+        self, key: ExternalContractExpectationKey
+    ) -> ExternalContractCompatibilityExpectation | None: ...
+
+
+@dataclass(frozen=True, slots=True)
+class ExternalContractEvidenceCollectionRequest:
+    expectation: ExternalContractCompatibilityExpectation
+    assessed_at: datetime
+    assessment_window: ExternalContractAssessmentWindow | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "assessed_at",
+            _require_timezone_aware(self.assessed_at, "assessed_at"),
+        )
+
+    @property
+    def subject(self) -> ExternalContractCompatibilitySubject:
+        return self.expectation.subject
+
+
+@runtime_checkable
+class ExternalContractEvidenceProvider(Protocol):
+    """Collect external/provider/domain facts before assessment (I/O allowed here only)."""
+
+    @property
+    def evidence_provider_id(self) -> str: ...
+
+    def collect(
+        self,
+        request: ExternalContractEvidenceCollectionRequest,
+    ) -> tuple[ExternalContractCompatibilityEvidence, ...]: ...
 
 
 @dataclass(frozen=True, slots=True)
@@ -572,7 +653,9 @@ class ExternalContractCompatibilityAssessment:
 
     def __post_init__(self) -> None:
         object.__setattr__(
-            self, "assessment_id", _require_non_empty_text(self.assessment_id, "assessment_id")
+            self,
+            "assessment_id",
+            _require_non_empty_text(self.assessment_id, "assessment_id"),
         )
         object.__setattr__(
             self,
@@ -585,5 +668,7 @@ class ExternalContractCompatibilityAssessment:
             _require_unique_non_empty_refs(self.evidence_refs, "evidence_refs"),
         )
         object.__setattr__(
-            self, "assessed_at", _require_timezone_aware(self.assessed_at, "assessed_at")
+            self,
+            "assessed_at",
+            _require_timezone_aware(self.assessed_at, "assessed_at"),
         )

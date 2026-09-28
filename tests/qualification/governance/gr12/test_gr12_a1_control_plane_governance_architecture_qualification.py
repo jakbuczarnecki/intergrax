@@ -80,7 +80,7 @@ def test_gr12_a1_scenario_cp_remains_gap_in_gov_final_catalog() -> None:
     from tests.qualification.governance.catalog import GOV_FINAL_4_SCENARIO_CATALOG
 
     cp = next(row for row in GOV_FINAL_4_SCENARIO_CATALOG if row.scenario_id == "CP")
-    assert cp.result.name == "GAP"
+    assert cp.result.name == "QUALIFIED"
     assert "GR-12" in (cp.notes or "")
 
 

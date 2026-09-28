@@ -57,7 +57,9 @@ class ToolInvocationPlan:
         )
 
     @classmethod
-    def from_tool_ids(cls, tool_ids: Sequence[str], *, use_tools: bool = False) -> ToolInvocationPlan:
+    def from_tool_ids(
+        cls, tool_ids: Sequence[str], *, use_tools: bool = False
+    ) -> ToolInvocationPlan:
         return cls(tool_ids=tuple(tool_ids), use_tools=use_tools).normalized()
 
 
@@ -69,7 +71,9 @@ def capability_payload_to_tool_ids(payload: Mapping[str, Any]) -> tuple[str, ...
     """
     raw_ids = payload.get("tool_ids")
     if isinstance(raw_ids, (list, tuple)) and raw_ids:
-        return tuple(dict.fromkeys(str(item).strip() for item in raw_ids if str(item).strip()))
+        return tuple(
+            dict.fromkeys(str(item).strip() for item in raw_ids if str(item).strip())
+        )
 
     ids: list[str] = []
     if bool(payload.get("use_rag", False)):
@@ -90,7 +94,9 @@ def _tool_inputs_from_payload(payload: Mapping[str, Any]) -> dict[str, dict[str,
     return parsed
 
 
-def tool_invocation_plan_from_capability_payload(payload: Mapping[str, Any]) -> ToolInvocationPlan:
+def tool_invocation_plan_from_capability_payload(
+    payload: Mapping[str, Any],
+) -> ToolInvocationPlan:
     """Build a normalized plan from gateway/capability payload."""
     plan = ToolInvocationPlan.from_tool_ids(
         capability_payload_to_tool_ids(payload),
@@ -122,8 +128,7 @@ class ToolPlanLike(Protocol):
     use_tools: bool
 
     @property
-    def tool_ids(self) -> Sequence[str]:
-        ...
+    def tool_ids(self) -> Sequence[str]: ...
 
 
 class ToolRuntime:
@@ -170,11 +175,16 @@ class ToolRuntime:
         from intergrax.runtime.nexus.policy.tool_policy_resolution_adapter import (
             resolve_allowed_tools_from_runtime_config,
         )
-        from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+        from intergrax.runtime.nexus.tracing.trace_models import (
+            TraceComponent,
+            TraceLevel,
+        )
 
         cfg = state.context.config
         incoming_plan = plan.normalized()
-        effective_allowed = resolve_allowed_tools_from_runtime_config(cfg, explicit=allowed_tools)
+        effective_allowed = resolve_allowed_tools_from_runtime_config(
+            cfg, explicit=allowed_tools
+        )
         has_authoritative_scope = (
             allowed_tools is not None
             or effective_allowed is not None
@@ -190,6 +200,21 @@ class ToolRuntime:
             allowed_tools=effective_allowed,
             state=state,
         )
+        from intergrax.runtime.governance.governance_policy_decision_evidence_recording import (
+            record_tool_plan_or_access_evidence,
+        )
+
+        record_tool_plan_or_access_evidence(
+            state.context.governance_evidence_recorder,
+            tenant_id=state.tenant_id,
+            workspace_id=state.tenant_id,
+            principal_id=state.request.user_id,
+            agent_id=state.request.agent_id,
+            requested_tool_count=len(incoming_plan.tool_ids),
+            allowed_tool_count=len(plan.tool_ids),
+            use_tools_requested=incoming_plan.use_tools,
+            use_tools_allowed=plan.use_tools,
+        )
         scope_policy = cfg.tool_scope_policy
         if scope_policy is not None:
             plan = ToolAccessPolicy.apply_scope_policy(
@@ -200,7 +225,9 @@ class ToolRuntime:
             )
         modality_profile = cfg.modality_profile
         if modality_profile is not None:
-            plan = ToolAccessPolicy.apply_modality_profile(plan, profile=modality_profile)
+            plan = ToolAccessPolicy.apply_modality_profile(
+                plan, profile=modality_profile
+            )
 
         await run_longterm_memory_context(state)
         await run_session_semantic_recall_context(state)
@@ -230,7 +257,9 @@ class ToolRuntime:
 
         if plan.use_tools or (incoming_plan.use_tools and authoritative_empty_scope):
             if cfg.tool_planner and cfg.tool_invoker and cfg.tools_mode != "off":
-                from intergrax.runtime.nexus.tools.catalog_dispatch import catalog_tool_ids
+                from intergrax.runtime.nexus.tools.catalog_dispatch import (
+                    catalog_tool_ids,
+                )
 
                 planner_constraints = catalog_tool_ids(plan.tool_ids)
                 previous_constraints = state.tool_planner_allowed_tool_ids
@@ -292,7 +321,9 @@ class ToolRuntime:
         )
 
         cfg = state.context.config
-        effective_allowed = resolve_allowed_tools_from_runtime_config(cfg, explicit=allowed_tools)
+        effective_allowed = resolve_allowed_tools_from_runtime_config(
+            cfg, explicit=allowed_tools
+        )
         gateway = RuntimeToolGateway.for_state(
             state,
             allowed_tools=effective_allowed,

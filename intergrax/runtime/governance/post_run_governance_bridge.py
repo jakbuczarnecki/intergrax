@@ -6,8 +6,18 @@ from __future__ import annotations
 
 from typing import Protocol, runtime_checkable
 
+from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernedExecutionEvaluationPoint,
+)
 from intergrax.logging import IntergraxLogging
 from intergrax.runtime.governance.execution_guard import GovernanceEvaluation
+from intergrax.runtime.governance.governance_evidence_recorder import (
+    GovernanceEvidenceRecorder,
+)
+from intergrax.runtime.governance.governance_policy_decision_evidence_recording import (
+    record_governance_policy_decision_evidence_for_active_identity,
+    runtime_policy_decision_from_post_run_evaluation,
+)
 
 
 @runtime_checkable
@@ -20,6 +30,7 @@ def invoke_post_run_governance(
     *,
     run_id: str,
     agent_id: str,
+    governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
 ) -> GovernanceEvaluation | None:
     """Invoke post-run governance when a service is configured for the run."""
     if governance_service is None:
@@ -27,6 +38,22 @@ def invoke_post_run_governance(
     if not (run_id or "").strip() or not (agent_id or "").strip():
         return None
     evaluation = governance_service.evaluate(run_id=run_id, agent_id=agent_id)
+    if evaluation is not None:
+        runtime_decision = runtime_policy_decision_from_post_run_evaluation(evaluation)
+        record_governance_policy_decision_evidence_for_active_identity(
+            governance_evidence_recorder,
+            evaluation_point=GovernedExecutionEvaluationPoint.POST_RUN,
+            decision=runtime_decision,
+            action="post_run_evaluation",
+            resource_type="run",
+            resource_scope=agent_id,
+            digest_payload={
+                "run_id": run_id,
+                "agent_id": agent_id,
+                "replay_decision": evaluation.decision.decision.value,
+            },
+            idempotency_prefix="post_run",
+        )
     IntergraxLogging.get_logger(__name__, component="governance").info(
         "Post-run governance invoked",
         extra={

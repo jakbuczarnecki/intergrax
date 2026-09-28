@@ -24,6 +24,9 @@ from intergrax.applications._shared.security_wiring import (
 from intergrax.applications._shared.context_wiring import (
     resolve_context_manager_from_environment,
 )
+from intergrax.runtime.governance.governance_evidence_recorder import (
+    GovernanceEvidenceRecorder,
+)
 from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
 from intergrax.applications._shared.host_execution_capacity_policy import (
     validate_strict_host_execution_capacity,
@@ -141,6 +144,7 @@ def build_nexus_loop_from_environment(
     execution_terminal_store: ExecutionTerminalStore | None = None,
     execution_lineage_persistence: ExecutionLineagePersistence | None = None,
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
+    governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
 ) -> NexusLoop:
     """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
     validate_strict_host_execution_capacity(env)
@@ -291,6 +295,7 @@ def build_nexus_loop_from_environment(
         # Lab/non-strict: None → NexusLoop lab in-memory default. Never invent
         # an implicit InMemory store inside this factory for production.
         execution_continuation_state_store=execution_continuation_state_store,
+        governance_evidence_recorder=governance_evidence_recorder,
     )
     resolved_security = security_wiring or wire_application_security(env)
     apply_application_security_wiring(loop, resolved_security, env=env)

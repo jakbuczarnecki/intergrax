@@ -28,6 +28,7 @@ from intergrax.integrations.contracts.external_contract_compatibility import (
     SchemaValidationStatus,
 )
 from intergrax.integrations.external_contract_compatibility_service import (
+    ExternalContractCompatibilityEvaluatorContractError,
     ExternalContractCompatibilityService,
     ExternalContractCompatibilityServiceError,
 )
@@ -91,19 +92,29 @@ def _expectation(
             ExternalContractCompatibilityDimension.SEMANTIC,
         }
     )
-    kwargs: dict[str, object] = {
-        "expectation_id": "exp-1",
-        "subject": subject or _subject(),
-        "expected_contract": ExternalContractPin("contract/ref", "v1"),
-        "required_dimensions": dims,
-    }
-    if ExternalContractCompatibilityDimension.SCHEMA in dims:
-        kwargs["schema_expectation_ref"] = "schema/exp"
-    if ExternalContractCompatibilityDimension.PROTOCOL in dims:
-        kwargs["protocol_expectation_ref"] = "protocol/exp"
-    if ExternalContractCompatibilityDimension.SEMANTIC in dims:
-        kwargs["semantic_expectation_refs"] = ("semantic/exp",)
-    return ExternalContractCompatibilityExpectation(**kwargs)  # type: ignore[arg-type]
+    subj = subject or _subject()
+    schema_ref: str | None = (
+        "schema/exp" if ExternalContractCompatibilityDimension.SCHEMA in dims else None
+    )
+    protocol_ref: str | None = (
+        "protocol/exp"
+        if ExternalContractCompatibilityDimension.PROTOCOL in dims
+        else None
+    )
+    semantic_refs: tuple[str, ...] = (
+        ("semantic/exp",)
+        if ExternalContractCompatibilityDimension.SEMANTIC in dims
+        else ()
+    )
+    return ExternalContractCompatibilityExpectation(
+        expectation_id="exp-1",
+        subject=subj,
+        expected_contract=ExternalContractPin("contract/ref", "v1"),
+        required_dimensions=dims,
+        schema_expectation_ref=schema_ref,
+        protocol_expectation_ref=protocol_ref,
+        semantic_expectation_refs=semantic_refs,
+    )
 
 
 def _schema_evidence(
@@ -173,6 +184,13 @@ class _ConfigurableEvaluator:
         self._handler = handler
         self._can_evaluate = can_evaluate
         self.evaluate_calls = 0
+        self.can_evaluate_calls = 0
+        self.last_can_evaluate_evidence: (
+            tuple[ExternalContractCompatibilityEvidence, ...] | None
+        ) = None
+        self.last_evaluate_evidence: (
+            tuple[ExternalContractCompatibilityEvidence, ...] | None
+        ) = None
 
     @property
     def evaluator_id(self) -> str:
@@ -189,6 +207,8 @@ class _ConfigurableEvaluator:
         *,
         dimension: ExternalContractCompatibilityDimension,
     ) -> bool:
+        self.can_evaluate_calls += 1
+        self.last_can_evaluate_evidence = evidence
         return self._can_evaluate
 
     def evaluate(
@@ -198,10 +218,13 @@ class _ConfigurableEvaluator:
         context: ExternalContractCompatibilityEvaluationContext,
     ) -> tuple[ExternalContractCompatibilityFinding, ...]:
         self.evaluate_calls += 1
+        self.last_evaluate_evidence = evidence
         return self._handler(expectation, evidence, context)
 
 
-def _service(*evaluators: _ConfigurableEvaluator) -> ExternalContractCompatibilityService:
+def _service(
+    *evaluators: _ConfigurableEvaluator,
+) -> ExternalContractCompatibilityService:
     return ExternalContractCompatibilityService(
         evaluators=evaluators,
         evidence_policy=_AcceptAllPolicy(),
@@ -247,7 +270,10 @@ def _status_evaluator(
         evidence: tuple[ExternalContractCompatibilityEvidence, ...],
         context: ExternalContractCompatibilityEvaluationContext,
     ) -> tuple[ExternalContractCompatibilityFinding, ...]:
-        if status is DimensionCompatibilityStatus.INSUFFICIENT_EVIDENCE and not evidence:
+        if (
+            status is DimensionCompatibilityStatus.INSUFFICIENT_EVIDENCE
+            and not evidence
+        ):
             return (
                 _finding(
                     dimension,
@@ -302,21 +328,81 @@ def test_compatible_all_dimensions() -> None:
         ),
     )
     service = _service(
-        _status_evaluator("schema.v1", ExternalContractCompatibilityDimension.SCHEMA, DimensionCompatibilityStatus.COMPATIBLE),
-        _status_evaluator("protocol.v1", ExternalContractCompatibilityDimension.PROTOCOL, DimensionCompatibilityStatus.COMPATIBLE),
-        _status_evaluator("semantic.v1", ExternalContractCompatibilityDimension.SEMANTIC, DimensionCompatibilityStatus.COMPATIBLE),
+        _status_evaluator(
+            "schema.v1",
+            ExternalContractCompatibilityDimension.SCHEMA,
+            DimensionCompatibilityStatus.COMPATIBLE,
+        ),
+        _status_evaluator(
+            "protocol.v1",
+            ExternalContractCompatibilityDimension.PROTOCOL,
+            DimensionCompatibilityStatus.COMPATIBLE,
+        ),
+        _status_evaluator(
+            "semantic.v1",
+            ExternalContractCompatibilityDimension.SEMANTIC,
+            DimensionCompatibilityStatus.COMPATIBLE,
+        ),
     )
     result = service.assess(_request(exp, ev))
     assert result.outcome is ExternalContractCompatibilityOutcome.COMPATIBLE
     assert result.reason_code is ExternalContractCompatibilityReasonCode.NONE
 
 
+def _protocol_evidence(
+    subject: ExternalContractCompatibilitySubject,
+) -> ExternalContractCompatibilityEvidence:
+    return ExternalContractCompatibilityEvidence(
+        evidence_id="ev-protocol",
+        subject=subject,
+        observed_contract=ExternalContractPin("contract/ref", "v2"),
+        dimension=ExternalContractCompatibilityDimension.PROTOCOL,
+        observed_at=_TS,
+        authority=ExternalContractEvidenceAuthority.PROVIDER_ADAPTER,
+        evidence_refs=("evidence/protocol",),
+        fact=ExternalContractProtocolEvidenceFact(
+            protocol_ref="p",
+            protocol_version="1",
+            method="GET",
+            content_type="application/json",
+            validation_status=ProtocolValidationStatus.PASS,
+        ),
+    )
+
+
+def _semantic_evidence(
+    subject: ExternalContractCompatibilitySubject,
+) -> ExternalContractCompatibilityEvidence:
+    return ExternalContractCompatibilityEvidence(
+        evidence_id="ev-semantic",
+        subject=subject,
+        observed_contract=None,
+        dimension=ExternalContractCompatibilityDimension.SEMANTIC,
+        observed_at=_TS,
+        authority=ExternalContractEvidenceAuthority.APPLICATION_INVARIANT,
+        evidence_refs=("evidence/semantic",),
+        fact=ExternalContractSemanticEvidenceFact(assertions=()),
+    )
+
+
 def test_variant_h_semantic_incompatible() -> None:
     exp = _expectation()
-    ev = (_schema_evidence(exp.subject),)
+    ev = (
+        _schema_evidence(exp.subject),
+        _protocol_evidence(exp.subject),
+        _semantic_evidence(exp.subject),
+    )
     service = _service(
-        _status_evaluator("schema.v1", ExternalContractCompatibilityDimension.SCHEMA, DimensionCompatibilityStatus.COMPATIBLE),
-        _status_evaluator("protocol.v1", ExternalContractCompatibilityDimension.PROTOCOL, DimensionCompatibilityStatus.COMPATIBLE),
+        _status_evaluator(
+            "schema.v1",
+            ExternalContractCompatibilityDimension.SCHEMA,
+            DimensionCompatibilityStatus.COMPATIBLE,
+        ),
+        _status_evaluator(
+            "protocol.v1",
+            ExternalContractCompatibilityDimension.PROTOCOL,
+            DimensionCompatibilityStatus.COMPATIBLE,
+        ),
         _status_evaluator(
             "semantic.v1",
             ExternalContractCompatibilityDimension.SEMANTIC,
@@ -348,7 +434,11 @@ def test_schema_insufficient_blocks_semantic_incompatible() -> None:
 def test_protocol_insufficient_blocks_semantic_incompatible() -> None:
     exp = _expectation()
     service = _service(
-        _status_evaluator("schema.v1", ExternalContractCompatibilityDimension.SCHEMA, DimensionCompatibilityStatus.COMPATIBLE),
+        _status_evaluator(
+            "schema.v1",
+            ExternalContractCompatibilityDimension.SCHEMA,
+            DimensionCompatibilityStatus.COMPATIBLE,
+        ),
         _status_evaluator(
             "protocol.v1",
             ExternalContractCompatibilityDimension.PROTOCOL,
@@ -385,7 +475,11 @@ def test_schema_precedence_over_protocol() -> None:
 def test_protocol_precedence_over_semantic() -> None:
     exp = _expectation()
     service = _service(
-        _status_evaluator("schema.v1", ExternalContractCompatibilityDimension.SCHEMA, DimensionCompatibilityStatus.COMPATIBLE),
+        _status_evaluator(
+            "schema.v1",
+            ExternalContractCompatibilityDimension.SCHEMA,
+            DimensionCompatibilityStatus.COMPATIBLE,
+        ),
         _status_evaluator(
             "protocol.v1",
             ExternalContractCompatibilityDimension.PROTOCOL,
@@ -397,7 +491,16 @@ def test_protocol_precedence_over_semantic() -> None:
             DimensionCompatibilityStatus.INCOMPATIBLE,
         ),
     )
-    result = service.assess(_request(exp, (_schema_evidence(exp.subject),)))
+    result = service.assess(
+        _request(
+            exp,
+            (
+                _schema_evidence(exp.subject),
+                _protocol_evidence(exp.subject),
+                _semantic_evidence(exp.subject),
+            ),
+        )
+    )
     assert result.outcome is ExternalContractCompatibilityOutcome.PROTOCOL_INCOMPATIBLE
 
 
@@ -411,31 +514,51 @@ def test_evidence_conflict() -> None:
         evidence: tuple[ExternalContractCompatibilityEvidence, ...],
         context: ExternalContractCompatibilityEvaluationContext,
     ) -> tuple[ExternalContractCompatibilityFinding, ...]:
+        ref_a = evidence[0].evidence_refs[0]
+        ref_b = evidence[1].evidence_refs[0]
         return (
             _finding(
                 ExternalContractCompatibilityDimension.SCHEMA,
                 DimensionCompatibilityStatus.COMPATIBLE,
                 reason=ExternalContractCompatibilityReasonCode.NONE,
                 evaluator_id="schema.v1",
-                ref="r1",
+                ref=ref_a,
             ),
             _finding(
                 ExternalContractCompatibilityDimension.SCHEMA,
                 DimensionCompatibilityStatus.INCOMPATIBLE,
                 reason=ExternalContractCompatibilityReasonCode.SCHEMA_MISMATCH,
                 evaluator_id="schema.v1",
-                ref="r2",
+                ref=ref_b,
             ),
         )
 
-    service = _service(_ConfigurableEvaluator("schema.v1", frozenset({ExternalContractCompatibilityDimension.SCHEMA}), handler))
-    result = service.assess(_request(exp, (_schema_evidence(exp.subject),)))
+    service = _service(
+        _ConfigurableEvaluator(
+            "schema.v1",
+            frozenset({ExternalContractCompatibilityDimension.SCHEMA}),
+            handler,
+        )
+    )
+    result = service.assess(
+        _request(
+            exp,
+            (
+                _schema_evidence(exp.subject, ref="r1", evidence_id="ev-1"),
+                _schema_evidence(exp.subject, ref="r2", evidence_id="ev-2"),
+            ),
+        )
+    )
     assert result.outcome is ExternalContractCompatibilityOutcome.INSUFFICIENT_EVIDENCE
-    assert result.reason_code is ExternalContractCompatibilityReasonCode.EVIDENCE_CONFLICT
+    assert (
+        result.reason_code is ExternalContractCompatibilityReasonCode.EVIDENCE_CONFLICT
+    )
 
 
 def test_llm_only_refusal() -> None:
-    exp = _expectation(required=frozenset({ExternalContractCompatibilityDimension.SCHEMA}))
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
     ev = (
         _schema_evidence(
             exp.subject,
@@ -460,7 +583,10 @@ def test_llm_only_refusal() -> None:
     service = _service(evaluator)
     result = service.assess(_request(exp, ev))
     assert result.outcome is ExternalContractCompatibilityOutcome.INSUFFICIENT_EVIDENCE
-    assert result.reason_code is ExternalContractCompatibilityReasonCode.MISSING_REQUIRED_EVIDENCE
+    assert (
+        result.reason_code
+        is ExternalContractCompatibilityReasonCode.MISSING_REQUIRED_EVIDENCE
+    )
 
 
 @pytest.mark.parametrize(
@@ -492,7 +618,9 @@ def test_identity_mismatch_wrong_subject(field: str, value: str) -> None:
     )
     service = _service(evaluator)
     result = service.assess(_request(exp, (_schema_evidence(wrong),)))
-    assert result.reason_code is ExternalContractCompatibilityReasonCode.IDENTITY_MISMATCH
+    assert (
+        result.reason_code is ExternalContractCompatibilityReasonCode.IDENTITY_MISMATCH
+    )
     assert evaluator.evaluate_calls == 0
 
 
@@ -514,7 +642,9 @@ def test_different_contract_version_still_evaluates() -> None:
 
 
 def test_stale_evidence() -> None:
-    exp = _expectation(required=frozenset({ExternalContractCompatibilityDimension.SCHEMA}))
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
     evaluator = _status_evaluator(
         "schema.v1",
         ExternalContractCompatibilityDimension.SCHEMA,
@@ -530,7 +660,9 @@ def test_stale_evidence() -> None:
 
 
 def test_missing_evidence() -> None:
-    exp = _expectation(required=frozenset({ExternalContractCompatibilityDimension.SCHEMA}))
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
     service = _service(
         _status_evaluator(
             "schema.v1",
@@ -539,18 +671,28 @@ def test_missing_evidence() -> None:
         )
     )
     result = service.assess(_request(exp, ()))
-    assert result.reason_code is ExternalContractCompatibilityReasonCode.MISSING_REQUIRED_EVIDENCE
+    assert (
+        result.reason_code
+        is ExternalContractCompatibilityReasonCode.MISSING_REQUIRED_EVIDENCE
+    )
 
 
 def test_unsupported_evaluator() -> None:
-    exp = _expectation(required=frozenset({ExternalContractCompatibilityDimension.SCHEMA}))
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
     service = _service()
-    result = service.assess(_request(exp, ()))
-    assert result.reason_code is ExternalContractCompatibilityReasonCode.UNSUPPORTED_EVALUATOR
+    result = service.assess(_request(exp, (_schema_evidence(exp.subject),)))
+    assert (
+        result.reason_code
+        is ExternalContractCompatibilityReasonCode.UNSUPPORTED_EVALUATOR
+    )
 
 
 def test_evaluator_ambiguity() -> None:
-    exp = _expectation(required=frozenset({ExternalContractCompatibilityDimension.SCHEMA}))
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
     e1 = _status_evaluator(
         "schema.a",
         ExternalContractCompatibilityDimension.SCHEMA,
@@ -563,13 +705,18 @@ def test_evaluator_ambiguity() -> None:
     )
     service = _service(e1, e2)
     result = service.assess(_request(exp, (_schema_evidence(exp.subject),)))
-    assert result.reason_code is ExternalContractCompatibilityReasonCode.EVALUATOR_AMBIGUITY
+    assert (
+        result.reason_code
+        is ExternalContractCompatibilityReasonCode.EVALUATOR_AMBIGUITY
+    )
     assert e1.evaluate_calls == 0
     assert e2.evaluate_calls == 0
 
 
 def test_explicit_evaluator_selection() -> None:
-    exp = _expectation(required=frozenset({ExternalContractCompatibilityDimension.SCHEMA}))
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
     chosen = _status_evaluator(
         "custom.schema.v1",
         ExternalContractCompatibilityDimension.SCHEMA,
@@ -594,7 +741,9 @@ def test_explicit_evaluator_selection() -> None:
 
 
 def test_unknown_explicit_evaluator() -> None:
-    exp = _expectation(required=frozenset({ExternalContractCompatibilityDimension.SCHEMA}))
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
     service = _service(
         _status_evaluator(
             "schema.v1",
@@ -605,7 +754,10 @@ def test_unknown_explicit_evaluator() -> None:
     result = service.assess(
         _request(exp, (), explicit_evaluator_ids=("missing.evaluator",))
     )
-    assert result.reason_code is ExternalContractCompatibilityReasonCode.UNSUPPORTED_EVALUATOR
+    assert (
+        result.reason_code
+        is ExternalContractCompatibilityReasonCode.UNSUPPORTED_EVALUATOR
+    )
 
 
 def test_duplicate_evaluator_id_at_construction() -> None:
@@ -647,18 +799,22 @@ class _ExternalPluginEvaluator:
         evidence: tuple[ExternalContractCompatibilityEvidence, ...],
         context: ExternalContractCompatibilityEvaluationContext,
     ) -> tuple[ExternalContractCompatibilityFinding, ...]:
+        ref = evidence[0].evidence_refs[0]
         return (
             _finding(
                 ExternalContractCompatibilityDimension.SCHEMA,
                 DimensionCompatibilityStatus.COMPATIBLE,
                 reason=ExternalContractCompatibilityReasonCode.NONE,
                 evaluator_id=self.evaluator_id,
+                ref=ref,
             ),
         )
 
 
 def test_structural_plugin_evaluator() -> None:
-    exp = _expectation(required=frozenset({ExternalContractCompatibilityDimension.SCHEMA}))
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
     service = ExternalContractCompatibilityService(
         evaluators=(_ExternalPluginEvaluator(),),
         evidence_policy=_AcceptAllPolicy(),
@@ -670,9 +826,21 @@ def test_structural_plugin_evaluator() -> None:
 def test_deterministic_finding_and_evidence_ref_order() -> None:
     exp = _expectation()
     service = _service(
-        _status_evaluator("schema.v1", ExternalContractCompatibilityDimension.SCHEMA, DimensionCompatibilityStatus.COMPATIBLE),
-        _status_evaluator("protocol.v1", ExternalContractCompatibilityDimension.PROTOCOL, DimensionCompatibilityStatus.COMPATIBLE),
-        _status_evaluator("semantic.v1", ExternalContractCompatibilityDimension.SEMANTIC, DimensionCompatibilityStatus.COMPATIBLE),
+        _status_evaluator(
+            "schema.v1",
+            ExternalContractCompatibilityDimension.SCHEMA,
+            DimensionCompatibilityStatus.COMPATIBLE,
+        ),
+        _status_evaluator(
+            "protocol.v1",
+            ExternalContractCompatibilityDimension.PROTOCOL,
+            DimensionCompatibilityStatus.COMPATIBLE,
+        ),
+        _status_evaluator(
+            "semantic.v1",
+            ExternalContractCompatibilityDimension.SEMANTIC,
+            DimensionCompatibilityStatus.COMPATIBLE,
+        ),
     )
     ev = (
         _schema_evidence(exp.subject, ref="ref-schema"),
@@ -711,3 +879,243 @@ def test_deterministic_finding_and_evidence_ref_order() -> None:
         ExternalContractCompatibilityDimension.SEMANTIC,
     ]
     assert list(result.evidence_refs) == ["ref-schema", "ref-protocol", "ref-semantic"]
+
+
+def test_no_fresh_authoritative_evidence_skips_evaluator() -> None:
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
+    evaluator = _status_evaluator(
+        "schema.v1",
+        ExternalContractCompatibilityDimension.SCHEMA,
+        DimensionCompatibilityStatus.COMPATIBLE,
+    )
+    service = _service(evaluator)
+    result = service.assess(_request(exp, ()))
+    assert result.outcome is ExternalContractCompatibilityOutcome.INSUFFICIENT_EVIDENCE
+    assert (
+        result.reason_code
+        is ExternalContractCompatibilityReasonCode.MISSING_REQUIRED_EVIDENCE
+    )
+    assert evaluator.evaluate_calls == 0
+    assert evaluator.can_evaluate_calls == 0
+
+
+def test_stale_authoritative_evidence_skips_evaluator() -> None:
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
+    evaluator = _status_evaluator(
+        "schema.v1",
+        ExternalContractCompatibilityDimension.SCHEMA,
+        DimensionCompatibilityStatus.COMPATIBLE,
+    )
+    service = ExternalContractCompatibilityService(
+        evaluators=(evaluator,),
+        evidence_policy=_RejectAllPolicy(),
+    )
+    result = service.assess(_request(exp, (_schema_evidence(exp.subject),)))
+    assert result.outcome is ExternalContractCompatibilityOutcome.INSUFFICIENT_EVIDENCE
+    assert result.reason_code is ExternalContractCompatibilityReasonCode.STALE_EVIDENCE
+    assert evaluator.evaluate_calls == 0
+    assert evaluator.can_evaluate_calls == 0
+
+
+def test_can_evaluate_receives_bounded_fresh_authoritative_evidence() -> None:
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
+    fresh_schema = _schema_evidence(
+        exp.subject, ref="fresh/schema", evidence_id="ev-fresh"
+    )
+    other_dimension = ExternalContractCompatibilityEvidence(
+        evidence_id="ev-protocol",
+        subject=exp.subject,
+        observed_contract=None,
+        dimension=ExternalContractCompatibilityDimension.PROTOCOL,
+        observed_at=_TS,
+        authority=ExternalContractEvidenceAuthority.PROVIDER_ADAPTER,
+        evidence_refs=("protocol/ref",),
+        fact=ExternalContractProtocolEvidenceFact(
+            protocol_ref="p",
+            protocol_version="1",
+            method="GET",
+            content_type="application/json",
+            validation_status=ProtocolValidationStatus.PASS,
+        ),
+    )
+    advisory_schema = _schema_evidence(
+        exp.subject,
+        authority=ExternalContractEvidenceAuthority.LLM_ADVISORY,
+        ref="advisory/schema",
+        evidence_id="ev-advisory",
+    )
+    evaluator = _status_evaluator(
+        "schema.v1",
+        ExternalContractCompatibilityDimension.SCHEMA,
+        DimensionCompatibilityStatus.COMPATIBLE,
+    )
+    service = _service(evaluator)
+    service.assess(_request(exp, (fresh_schema, other_dimension, advisory_schema)))
+    assert evaluator.last_can_evaluate_evidence == (fresh_schema,)
+
+
+def test_evaluate_receives_same_bounded_evidence_as_can_evaluate() -> None:
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
+    fresh_schema = _schema_evidence(
+        exp.subject, ref="fresh/schema", evidence_id="ev-fresh"
+    )
+    other_dimension = ExternalContractCompatibilityEvidence(
+        evidence_id="ev-protocol",
+        subject=exp.subject,
+        observed_contract=None,
+        dimension=ExternalContractCompatibilityDimension.PROTOCOL,
+        observed_at=_TS,
+        authority=ExternalContractEvidenceAuthority.PROVIDER_ADAPTER,
+        evidence_refs=("protocol/ref",),
+        fact=ExternalContractProtocolEvidenceFact(
+            protocol_ref="p",
+            protocol_version="1",
+            method="GET",
+            content_type="application/json",
+            validation_status=ProtocolValidationStatus.PASS,
+        ),
+    )
+    advisory_schema = _schema_evidence(
+        exp.subject,
+        authority=ExternalContractEvidenceAuthority.LLM_ADVISORY,
+        ref="advisory/schema",
+        evidence_id="ev-advisory",
+    )
+    evaluator = _status_evaluator(
+        "schema.v1",
+        ExternalContractCompatibilityDimension.SCHEMA,
+        DimensionCompatibilityStatus.COMPATIBLE,
+    )
+    service = _service(evaluator)
+    service.assess(_request(exp, (fresh_schema, other_dimension, advisory_schema)))
+    assert evaluator.last_evaluate_evidence == evaluator.last_can_evaluate_evidence
+    assert evaluator.last_evaluate_evidence == (fresh_schema,)
+
+
+def test_forged_finding_evidence_ref_rejected() -> None:
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
+    fresh = _schema_evidence(exp.subject, ref="fresh/ref")
+
+    def handler(
+        expectation: ExternalContractCompatibilityExpectation,
+        evidence: tuple[ExternalContractCompatibilityEvidence, ...],
+        context: ExternalContractCompatibilityEvaluationContext,
+    ) -> tuple[ExternalContractCompatibilityFinding, ...]:
+        return (
+            _finding(
+                ExternalContractCompatibilityDimension.SCHEMA,
+                DimensionCompatibilityStatus.COMPATIBLE,
+                reason=ExternalContractCompatibilityReasonCode.NONE,
+                evaluator_id="schema.v1",
+                ref="forged/ref",
+            ),
+        )
+
+    evaluator = _ConfigurableEvaluator(
+        "schema.v1",
+        frozenset({ExternalContractCompatibilityDimension.SCHEMA}),
+        handler,
+    )
+    service = _service(evaluator)
+    with pytest.raises(ExternalContractCompatibilityEvaluatorContractError):
+        service.assess(_request(exp, (fresh,)))
+
+
+@pytest.mark.parametrize(
+    "forged_ref",
+    ["stale/ref", "advisory/ref"],
+)
+def test_laundered_evidence_ref_rejected(forged_ref: str) -> None:
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
+    fresh = _schema_evidence(exp.subject, ref="fresh/ref", evidence_id="ev-fresh")
+    other_dimension_ref = ExternalContractCompatibilityEvidence(
+        evidence_id="ev-protocol",
+        subject=exp.subject,
+        observed_contract=None,
+        dimension=ExternalContractCompatibilityDimension.PROTOCOL,
+        observed_at=_TS,
+        authority=ExternalContractEvidenceAuthority.PROVIDER_ADAPTER,
+        evidence_refs=("stale/ref",),
+        fact=ExternalContractProtocolEvidenceFact(
+            protocol_ref="p",
+            protocol_version="1",
+            method="GET",
+            content_type="application/json",
+            validation_status=ProtocolValidationStatus.PASS,
+        ),
+    )
+    advisory_schema = _schema_evidence(
+        exp.subject,
+        authority=ExternalContractEvidenceAuthority.LLM_ADVISORY,
+        ref="advisory/ref",
+        evidence_id="ev-advisory",
+    )
+    extra = other_dimension_ref if forged_ref == "stale/ref" else advisory_schema
+
+    def handler(
+        expectation: ExternalContractCompatibilityExpectation,
+        evidence: tuple[ExternalContractCompatibilityEvidence, ...],
+        context: ExternalContractCompatibilityEvaluationContext,
+    ) -> tuple[ExternalContractCompatibilityFinding, ...]:
+        return (
+            _finding(
+                ExternalContractCompatibilityDimension.SCHEMA,
+                DimensionCompatibilityStatus.COMPATIBLE,
+                reason=ExternalContractCompatibilityReasonCode.NONE,
+                evaluator_id="schema.v1",
+                ref=forged_ref,
+            ),
+        )
+
+    evaluator = _ConfigurableEvaluator(
+        "schema.v1",
+        frozenset({ExternalContractCompatibilityDimension.SCHEMA}),
+        handler,
+    )
+    service = _service(evaluator)
+    with pytest.raises(ExternalContractCompatibilityEvaluatorContractError):
+        service.assess(_request(exp, (fresh, extra)))
+
+
+def test_legitimate_finding_evidence_ref_subset_accepted() -> None:
+    exp = _expectation(
+        required=frozenset({ExternalContractCompatibilityDimension.SCHEMA})
+    )
+    ev_a = _schema_evidence(exp.subject, ref="ref-a", evidence_id="ev-a")
+    ev_b = _schema_evidence(exp.subject, ref="ref-b", evidence_id="ev-b")
+
+    def handler(
+        expectation: ExternalContractCompatibilityExpectation,
+        evidence: tuple[ExternalContractCompatibilityEvidence, ...],
+        context: ExternalContractCompatibilityEvaluationContext,
+    ) -> tuple[ExternalContractCompatibilityFinding, ...]:
+        return (
+            _finding(
+                ExternalContractCompatibilityDimension.SCHEMA,
+                DimensionCompatibilityStatus.COMPATIBLE,
+                reason=ExternalContractCompatibilityReasonCode.NONE,
+                evaluator_id="schema.v1",
+                ref="ref-b",
+            ),
+        )
+
+    evaluator = _ConfigurableEvaluator(
+        "schema.v1",
+        frozenset({ExternalContractCompatibilityDimension.SCHEMA}),
+        handler,
+    )
+    service = _service(evaluator)
+    result = service.assess(_request(exp, (ev_a, ev_b)))
+    assert result.outcome is ExternalContractCompatibilityOutcome.COMPATIBLE

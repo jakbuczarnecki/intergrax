@@ -210,12 +210,12 @@ Full evidence rows and G-stage disposition: [`GOVERNANCE_ARCHITECTURE_REBASE_GAP
 | GR-12-A4-R2 | Vector administration governance ADR | **CLOSED** |
 | GR-12-A4-R2-R1 | Governed vector operator qualification | **QUALIFIED / CLOSED** (evidence) |
 | GR-12-A4-R3 | Specialized memory governance ADR | **CLOSED** |
-| GR-12-A4-R3-R1 | Memory specialized governance qualification | **READY FOR AUDIT** |
-| GR-12 Final Qualification | Final control-plane certification | **NEXT** |
+| GR-12-A4-R3-R1 | Memory specialized governance qualification | **CLOSED** (with GR-12 @ `03dde6c…`) |
+| GR-12 Final Qualification | Final control-plane certification | **CLOSED** @ `03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06` |
 | GR-10-R9-ADR1 | Canonical orchestration MSE authority contract | **CLOSED — CANONICAL MSE AUTHORITY CONTRACT APPROVED** — [ADR-GR-10-002](../../technical/adr/entries/2026-09-19/ADR-GR-10-002.md); `test_gr10_r9_adr1_mse_authority_contract.py`; independent GitHub audit required |
 | GR-10-R9 | ORCHESTRATION MSE production coverage | **CLOSED within GR-10 scope** — R9-R1/R2/R3 qualification slices |
-| GR-11 | Plugin & Enterprise Extensibility Certification | **OPEN** (after GR-12) |
-| GR-12 | Control-Plane Governance | **IN PROGRESS** — shared CLA-04 spine + core path qualification; residual qualification open (not **CLOSED**) |
+| GR-11 | Plugin & Enterprise Extensibility Certification | **READY FOR AUDIT** |
+| GR-12 | Control-Plane Governance | **CLOSED** (independent exact-SHA audit @ `03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06`) |
 | GR-13 | Full Governance Proof Matrix | **OPEN** (after GR-11) — includes `GR13_ORCHESTRATION_GOVERNANCE_EVIDENCE_DEFERRED` per [ADR-GR-10-003](../../technical/adr/entries/2026-09-21/ADR-GR-10-003-gr10-gr13-governance-evidence-certification-scope.md) (GR-10-R15-R1); evidence scope **not** folded into GR-12 |
 | GR-14 | Real Application Integration — LKW | **OPEN** |
 | GR-15 | Governance UX / Application Contract | **OPEN** |

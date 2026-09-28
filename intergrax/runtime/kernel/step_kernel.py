@@ -11,7 +11,10 @@ from datetime import datetime, timezone
 from typing import Any
 
 from intergrax.agents.authoring.side_effect_validation import validate_side_effect_mode
-from intergrax.agents.authoring.state_merge import extract_acp_state_blob, merge_session_state
+from intergrax.agents.authoring.state_merge import (
+    extract_acp_state_blob,
+    merge_session_state,
+)
 from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.contracts.agent_run_enums import (
     AgentRunErrorCode,
@@ -47,7 +50,9 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.agents.persistence.compensation_enqueue import (
     enqueue_compensations_for_step_failure,
 )
-from intergrax.agents.persistence.declarative_tool_executor import execute_declarative_actions
+from intergrax.agents.persistence.declarative_tool_executor import (
+    execute_declarative_actions,
+)
 from intergrax.contracts.execution_bound_declarative_tool_invocation import (
     ExecutionBoundDeclarativeToolInvoker,
 )
@@ -69,9 +74,20 @@ from intergrax.runtime.policy.org_enforcement import (
 )
 from intergrax.contracts.step_execution import StepExecutionRecord
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernedExecutionEvaluationPoint,
+)
+from intergrax.runtime.governance.governance_evidence_recorder import (
+    GovernanceEvidenceRecorder,
+)
+from intergrax.runtime.governance.governance_policy_decision_evidence_recording import (
+    record_governance_policy_decision_evidence,
+)
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
-from intergrax.runtime.attestation.settings import ExecutionBoundaryExportRuntimeSettings
+from intergrax.runtime.attestation.settings import (
+    ExecutionBoundaryExportRuntimeSettings,
+)
 
 EventEmitter = Callable[[RuntimeEvent], Awaitable[None]]
 CheckpointHook = Callable[[dict[str, Any], int], Awaitable[None]]
@@ -120,6 +136,7 @@ class StepKernelContext:
     routing_rule_evaluations: list[dict[str, Any]] = field(default_factory=list)
     execution_boundary_export: ExecutionBoundaryExportRuntimeSettings | None = None
     boundary_event_buffer: BoundaryEventBuffer | None = None
+    governance_evidence_recorder: GovernanceEvidenceRecorder | None = None
 
 
 def _missing_principal_decision(kernel_ctx: StepKernelContext) -> PolicyDecision | None:
@@ -134,10 +151,7 @@ def _missing_principal_decision(kernel_ctx: StepKernelContext) -> PolicyDecision
 
 def _missing_policy_engine_decision(kernel_ctx: StepKernelContext) -> PolicyDecision:
     """Fail closed unless dev/test explicitly opts into permissive missing-policy wiring."""
-    if (
-        not kernel_ctx.production_mode
-        and kernel_ctx.allow_permissive_missing_policy
-    ):
+    if not kernel_ctx.production_mode and kernel_ctx.allow_permissive_missing_policy:
         return PolicyDecision(
             action=PolicyAction.ALLOW,
             reason="permissive_missing_policy_engine",
@@ -205,7 +219,9 @@ class HarnessKernel:
             return await HarnessKernel._finish_step(kernel_ctx, step_ctx, record)
 
         policy_pre = HarnessKernel._policy_pre_check(outcome, step_ctx, kernel_ctx)
-        trace_events += await HarnessKernel._emit_policy(kernel_ctx, policy_pre, phase="pre")
+        trace_events += await HarnessKernel._emit_policy(
+            kernel_ctx, policy_pre, phase="pre"
+        )
         if is_budget_exceeded_outcome(outcome):
             record = StepExecutionRecord(
                 step_index=step_ctx.step_index,
@@ -255,7 +271,9 @@ class HarnessKernel:
         merge_result = merge_session_state(
             kernel_ctx.state_root,
             outcome.state_delta,
-            incoming_version=extract_acp_state_blob(kernel_ctx.state_root).get("_version"),
+            incoming_version=extract_acp_state_blob(kernel_ctx.state_root).get(
+                "_version"
+            ),
         )
         if merge_result.error_code is not None:
             record = StepExecutionRecord(
@@ -282,7 +300,9 @@ class HarnessKernel:
 
         kernel_ctx.state_root = merge_result.state
         step_ctx.state_snapshot = merge_result.state
-        state_version = int(extract_acp_state_blob(merge_result.state).get("_version", 0))
+        state_version = int(
+            extract_acp_state_blob(merge_result.state).get("_version", 0)
+        )
         tool_execution_diagnostics: dict[str, Any] | None = None
         step_action_args: dict[str, dict[str, Any]] = {}
 
@@ -340,7 +360,9 @@ class HarnessKernel:
                         "mode": "declarative",
                         "action_count": len(normalized_actions),
                         "replay_skipped": sum(
-                            1 for action in normalized_actions if action.get("replay_skipped")
+                            1
+                            for action in normalized_actions
+                            if action.get("replay_skipped")
                         ),
                     },
                 )
@@ -417,17 +439,42 @@ class HarnessKernel:
                             finished_at=_utc_now(),
                         ),
                     )
-                    return await HarnessKernel._finish_step(kernel_ctx, step_ctx, record)
+                    return await HarnessKernel._finish_step(
+                        kernel_ctx, step_ctx, record
+                    )
 
         policy_post = HarnessKernel._policy_post_check(outcome, step_ctx, kernel_ctx)
-        trace_events += await HarnessKernel._emit_policy(kernel_ctx, policy_post, phase="post")
+        if outcome.is_terminal and outcome.output is not None:
+            record_governance_policy_decision_evidence(
+                kernel_ctx.governance_evidence_recorder,
+                evaluation_point=GovernedExecutionEvaluationPoint.PRE_OUTPUT,
+                decision=policy_post,
+                tenant_id=kernel_ctx.tenant_id,
+                workspace_id=str(kernel_ctx.tenant_id),
+                principal_id=kernel_ctx.principal_id,
+                action="uaep_terminal_output",
+                resource_type="agent_output",
+                resource_scope=kernel_ctx.agent_id,
+                digest_payload={
+                    "task_id": kernel_ctx.task_id,
+                    "run_id": kernel_ctx.run_id,
+                    "agent_id": kernel_ctx.agent_id,
+                    "output_chars": len(str(outcome.output)),
+                    "policy_rule_id": policy_post.policy_rule_id or "",
+                },
+                idempotency_prefix="pre_output_agentic",
+            )
+        trace_events += await HarnessKernel._emit_policy(
+            kernel_ctx, policy_post, phase="post"
+        )
         if policy_post.action == PolicyAction.DENY:
-            compensation_diagnostics, compensation_events = (
-                await HarnessKernel._enqueue_step_failure_compensations(
-                    kernel_ctx=kernel_ctx,
-                    step_ctx=step_ctx,
-                    action_args=step_action_args or None,
-                )
+            (
+                compensation_diagnostics,
+                compensation_events,
+            ) = await HarnessKernel._enqueue_step_failure_compensations(
+                kernel_ctx=kernel_ctx,
+                step_ctx=step_ctx,
+                action_args=step_action_args or None,
             )
             trace_events += compensation_events
             failure_diagnostics: dict[str, Any] = {}
@@ -504,8 +551,9 @@ class HarnessKernel:
 
         should_checkpoint = kernel_ctx.checkpoint_every_step
         if kernel_ctx.reliability is not None:
-            should_checkpoint = should_checkpoint and kernel_ctx.reliability.should_checkpoint(
-                step_ctx.step_index
+            should_checkpoint = (
+                should_checkpoint
+                and kernel_ctx.reliability.should_checkpoint(step_ctx.step_index)
             )
         if should_checkpoint and kernel_ctx.checkpoint_hook is not None:
             await kernel_ctx.checkpoint_hook(kernel_ctx.state_root, step_ctx.step_index)
@@ -597,7 +645,9 @@ class HarnessKernel:
             merged_diagnostics.update(diagnostics)
 
         return AgentStepRecord(
-            step_id=str(step_ctx.metadata.get("step_id") or f"step-{step_ctx.step_index:04d}"),
+            step_id=str(
+                step_ctx.metadata.get("step_id") or f"step-{step_ctx.step_index:04d}"
+            ),
             step_index=step_ctx.step_index,
             finished_at=finished_at,
             status=status,
@@ -684,7 +734,9 @@ class HarnessKernel:
         )
 
     @staticmethod
-    def _budget_exceeded(step_ctx: AgentStepContext, kernel_ctx: StepKernelContext) -> bool:
+    def _budget_exceeded(
+        step_ctx: AgentStepContext, kernel_ctx: StepKernelContext
+    ) -> bool:
         if kernel_ctx.max_steps is None:
             return False
         return (step_ctx.step_index + 1) > kernel_ctx.max_steps
@@ -825,7 +877,9 @@ class HarnessKernel:
         record: StepExecutionRecord,
     ) -> StepExecutionRecord:
         await HarnessKernel._append_trace(kernel_ctx, step_ctx, record)
-        from intergrax.runtime.attestation.harness_boundary_emitter import HarnessBoundaryEmitter
+        from intergrax.runtime.attestation.harness_boundary_emitter import (
+            HarnessBoundaryEmitter,
+        )
 
         HarnessBoundaryEmitter.maybe_emit(
             kernel_ctx=kernel_ctx,
@@ -857,7 +911,9 @@ class HarnessKernel:
         step_record = record.step_record
         if kernel_ctx.routing_rule_evaluations:
             diagnostics = dict(step_record.diagnostics)
-            diagnostics["llm_routing_evaluations"] = list(kernel_ctx.routing_rule_evaluations)
+            diagnostics["llm_routing_evaluations"] = list(
+                kernel_ctx.routing_rule_evaluations
+            )
             step_record = step_record.model_copy(update={"diagnostics": diagnostics})
             kernel_ctx.routing_rule_evaluations.clear()
         kernel_ctx.run_trace.steps.append(step_record)

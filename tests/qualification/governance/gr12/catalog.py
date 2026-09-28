@@ -108,15 +108,13 @@ GR12_A4_RESIDUAL_PATH_IDS: Final[tuple[str, ...]] = (
 )
 
 GR12_A4_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
-    task_name="GR-12 Final Qualification",
+    task_name="GR-11 Governance Plugin Enterprise Certification",
     exact_blocker=(
-        "GR-12-A4-R3-R1 memory specialized governance qualification evidence is "
-        "READY FOR AUDIT; final GR-12 control-plane certification and independent "
-        "exact-SHA acceptance remain before GR-12 CLOSED."
+        "GR-12 independently accepted at 03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06; "
+        "next canonical GOV-X1 child is GR-11 READY FOR AUDIT."
     ),
     why_highest=(
-        "Last bounded residual qualification slice (memory R3-R1) completes specialized "
-        "domain evidence; only final GR-12 qualification blocks program-level GR-12 closure."
+        "Governance extensibility certification follows accepted control-plane closure."
     ),
 )
 
@@ -125,7 +123,95 @@ GR12_A4_R3_R1_QUALIFICATION_PROOF: Final[str] = (
     "test_gr12_a4_r3_r1_memory_specialized_governance_qualification.py"
 )
 
-GR12_A4_R3_R1_TASK_STATUS: Final[str] = "READY FOR AUDIT"
+GR12_A4_R3_R1_TASK_STATUS: Final[str] = "CLOSED"
+
+GR12_SEMANTIC_QUALIFICATION_BASELINE_SHA: Final[str] = (
+    "b706c2c72a900575ec360b7f217c97a3656c71b9"
+)
+
+GR12_INDEPENDENT_AUDIT_ACCEPTANCE_SHA: Final[str] = (
+    "03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06"
+)
+
+GR12_FINAL_PARENT_QUALIFICATION_STATUS: Final[str] = "CLOSED"
+
+GR12_GOV_FINAL_4_CP_QUALIFICATION_CANDIDATE_STATUS: Final[str] = "QUALIFIED"
+
+GR12_FINAL_QUALIFICATION_PROOF: Final[str] = (
+    "tests/qualification/governance/gr12/test_gr12_final_control_plane_qualification.py"
+)
+
+GR12_FINAL_NEXT_REMEDIATION: Gr12NextRemediation = Gr12NextRemediation(
+    task_name="GR-11 Governance Plugin Enterprise Certification (GOV-X1-GR11-WAVE)",
+    exact_blocker="GR-12 CLOSED; GR-11 qualification bundle READY FOR AUDIT.",
+    why_highest="Next bounded GOV-X1 child after accepted GR-12-FINAL audit.",
+)
+
+GR12_FINAL_BLOCKED_COVERAGE_STATUSES: Final[frozenset[Gr12CoverageStatus]] = frozenset(
+    {
+        Gr12CoverageStatus.GAP,
+        Gr12CoverageStatus.DISCOVERED,
+        Gr12CoverageStatus.WIRED_NOT_QUALIFIED,
+        Gr12CoverageStatus.ARCHITECTURE_DECISION_REQUIRED,
+        Gr12CoverageStatus.IMPLEMENTATION_REQUIRED,
+    }
+)
+
+GR12_FINAL_PLUGINABILITY_PROOF_NODES: Final[tuple[str, ...]] = (
+    "tests/qualification/governance/gr12/test_gr12_a2_mandatory_cla04_composition.py::"
+    "test_gr12_a2_r2_external_evaluator_wired_through_product_host_composition",
+    "tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::"
+    "test_ecp_gr12_r2_external_evaluator_receives_composition_probe_mutations",
+    "tests/unit/applications/test_vector_index_admin_governance.py::"
+    "test_vec_gov_9_external_evaluator_receives_cla04_request",
+    "tests/unit/applications/test_catalog_hot_reload_governance.py::"
+    "test_chr_r1r1_7_external_evaluator_still_receives_exact_request",
+)
+
+GR12_FINAL_TENANT_SCOPE_NEGATIVE_PROOF_NODES: Final[tuple[str, ...]] = (
+    "tests/unit/applications/test_vector_index_admin_governance.py::"
+    "test_vec_gov_17_tenant_mismatch_fail_closed",
+    "tests/unit/agent_distribution/test_agent_distribution_tenant_denial_remediation.py::"
+    "test_te1_wrong_tenant_install_blocked_before_lookup",
+    "tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::"
+    "test_ecp_cpm4_wrong_tenant_blocked_before_provider_mutation",
+)
+
+GR12_FINAL_STALE_REVISION_NEGATIVE_PROOF_NODES: Final[tuple[str, ...]] = (
+    "tests/unit/applications/test_vector_index_admin_governance.py::"
+    "test_vec_gov_8_stale_after_authorization",
+    "tests/unit/integrations/registry/test_catalog_revision_and_mutation.py::"
+    "test_rev7_aba_generations_increase_when_digest_returns",
+    "tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::"
+    "test_ecp_cpm8_stale_k8s_state_blocks_apply",
+)
+
+GR12_FINAL_HITL_NEGATIVE_PROOF_NODES: Final[tuple[str, ...]] = (
+    "tests/unit/applications/test_vector_index_admin_governance.py::"
+    "test_vec_gov_3_require_human",
+    "tests/unit/agent_distribution/test_agent_distribution_desired_state_remediation.py::"
+    "test_ads3_install_require_human_zero_mutations_preserves_scope",
+    "tests/unit/runtime/adaptive/test_ahi_control_plane_governance.py::"
+    "test_ahicpm3_apply_require_human_has_zero_effects",
+)
+
+GR12_FINAL_EVIDENCE_PROOF_NODES: Final[tuple[str, ...]] = (
+    "tests/unit/agent_distribution/test_agent_distribution_control_plane_governance.py::"
+    "test_ad1_activation_allow_commits_once",
+    "tests/unit/runtime/adaptive/test_ahi_control_plane_governance.py::"
+    "test_ahicpm1_apply_allow_executes_with_evidence",
+    "tests/unit/applications/test_catalog_hot_reload_governance.py::"
+    "test_chr1_allow_commits_once",
+    "tests/unit/applications/test_vector_index_admin_governance.py::"
+    "test_vec_gov_1_allow_create",
+)
+
+GR12_FINAL_BYPASS_REGRESSION_PROOF_NODES: Final[tuple[str, ...]] = (
+    "tests/unit/applications/test_catalog_hot_reload_bypass_inventory.py::"
+    "test_chr13_no_production_bypass_reload_callers",
+    "tests/unit/applications/test_catalog_hot_reload_bypass_inventory.py::"
+    "test_chr16_live_operator_catalog_mutation_paths_only_governed_reload",
+)
 
 GR12_A4_R3_R1_EXECUTION_PROOF_NODES: Final[tuple[str, ...]] = (
     "tests/unit/memory/test_mem_ent10_memory_security_governance.py::test_deny_write_zero_mutation",
@@ -205,6 +291,20 @@ GR12_A4_R1_R1_EXECUTION_PROOF_NODES: Final[tuple[str, ...]] = (
     "tests/unit/applications/test_catalog_hot_reload_governance.py::test_chr_r1r1_4_explicit_principal_reaches_cla04_request",
     "tests/unit/applications/test_catalog_hot_reload_governance.py::test_chr_r1r1_5_missing_principal_fails_closed",
     "tests/unit/applications/test_catalog_hot_reload_bypass_inventory.py::test_chr16_live_operator_catalog_mutation_paths_only_governed_reload",
+)
+
+GR12_FINAL_REPRESENTATIVE_EXECUTION_PROOF_NODES: Final[tuple[str, ...]] = (
+    "tests/unit/agent_distribution/test_agent_distribution_control_plane_governance.py::"
+    "test_ad1_activation_allow_commits_once",
+    "tests/unit/runtime/adaptive/test_ahi_control_plane_governance.py::"
+    "test_ahicpm1_apply_allow_executes_with_evidence",
+    "tests/unit/runtime/capacity/test_ecp_control_plane_governance.py::"
+    "test_ecp_cpm1_allow_k8s_exact_target_and_evidence",
+    "tests/unit/applications/test_task_control_governed_cancel.py::"
+    "test_taskcpm_c1_allow_matching_binding_requests_cancel_once",
+    GR12_A4_R1_R1_EXECUTION_PROOF_NODES[3],
+    GR12_A4_R2_R1_EXECUTION_PROOF_NODES[0],
+    GR12_A4_R3_R1_EXECUTION_PROOF_NODES[0],
 )
 
 GR12_A4_R1_QUALIFICATION_PROOF: Final[str] = GR12_A4_R1_R1_QUALIFICATION_PROOF

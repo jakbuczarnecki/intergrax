@@ -21,6 +21,9 @@ from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import AgentBinding, ApplicationManifest
 from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from testing_support.dependency_concurrency_admission_config import (
+    tool_dependency_concurrency_admission_configuration,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,6 +64,16 @@ def production_attached_environment(profile_id: str) -> ApplicationEnvironmentPr
     environment.orchestration_profile = environment.orchestration_profile.model_copy(
         update={"max_parallel_nodes": 4, "max_inflight_nodes": 4},
     )
+    if environment.reliability_profile.dependency_concurrency_admission is None:
+        environment.reliability_profile = environment.reliability_profile.model_copy(
+            update={
+                "dependency_concurrency_admission": (
+                    tool_dependency_concurrency_admission_configuration(
+                        "minimal-production-scenario-tool",
+                    )
+                ),
+            },
+        )
     return environment
 
 

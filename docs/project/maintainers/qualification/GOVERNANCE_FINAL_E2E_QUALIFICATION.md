@@ -60,7 +60,7 @@ Authoritative row list and pytest node IDs: `GOV_FINAL_4_SCENARIO_CATALOG` in `c
 | Z | Cross-tenant | fail closed | QUALIFIED |
 | RB | Resource binding mismatch | 0 effect | QUALIFIED |
 | POB | Provider operation binding SSOT | typed actions | QUALIFIED |
-| CP | Control-plane mutation | — | GAP (historical GOV-FINAL-4 session — see current GR-12 note above) |
+| CP | Control-plane mutation | CLA-04 governed mutations | **QUALIFIED** (current — GR-12-FINAL @ `03dde6c…`; historical session **GAP**) |
 
 ## Strategy qualification matrix
 
@@ -97,7 +97,18 @@ Honesty rule: **GAP** remains where no legal production entry point exists for *
 
 Full pytest mapping: `GOV_FINAL_4_FAILURE_CATALOG` in `catalog.py`.
 
-## Pluginability matrix
+### Current Governance pluginability (GR-11 — current HEAD)
+
+Authoritative SSOT: `tests/qualification/governance/gr11/catalog.py` (`GR11_EXTENSION_SURFACES`). Historical table below preserved.
+
+| Capability | Current result |
+| ---------- | -------------- |
+| Continuation | **QUALIFIED** |
+| Provider / Reliability collaborators | **QUALIFIED** (typed admission + reconciliation probes) |
+| ProviderInvocation store | **QUALIFIED** |
+| Reliability observer | **QUALIFIED** (`ProviderInvocationReliabilityEvidenceObserver`) |
+
+## Pluginability matrix (historical GOV-FINAL-4 baseline)
 
 | Capability | Contract | Default tested | Custom tested | Result |
 | ---------- | -------- | -------------: | ------------: | ------ |
@@ -117,7 +128,9 @@ Substitution rule: **contract + composition only** (no monkeypatch of private au
 | Slice | Status | Notes |
 | ----- | ------ | ----- |
 | GR-8 | **CLOSED** | Public contract frozen — ADR-GR-8-001; spine CANDIDATE CLOSED after GR-8-R1 independent audit |
-| GR-10 | **FINAL CLOSED** | Within formally defined GR-10 scope — SSOT `GR10_OVERALL_FORMAL_CLOSURE` (historical table above is audit snapshot) |
+| GR-10 | **FINAL CLOSED** | Within formally defined GR-10 scope — SSOT `GR10_OVERALL_FORMAL_CLOSURE` (historical GOV-FINAL-4 strategy matrix may still read **PARTIAL**; audit snapshot only) |
+| GR-12 | **CLOSED** | Independent audit @ `03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06` |
+| GR-11 | **READY FOR AUDIT** | `tests/qualification/governance/gr11/` |
 
 ## Remaining gaps
 
@@ -125,8 +138,8 @@ Substitution rule: **contract + composition only** (no monkeypatch of private au
 | -- | ------ |
 | GR-8 | **CLOSED** — see **Current qualification status** (historical runs may reference pre-R1 OPEN) |
 | GR-10 | **FINAL CLOSED** within formally defined scope — `tests/qualification/governance/strategy/` |
-| GR-11 | OPEN — plugin enterprise certification |
-| GR-12 | **IN PROGRESS** — core paths qualified; residual catalog / Vector / Memory + final qualification open (**not CLOSED**) |
+| GR-11 | **READY FOR AUDIT** — Governance plugin enterprise certification |
+| GR-12 | **CLOSED** — independent audit @ `03dde6c68a37ac0a8fe19cc5bcf683da8a3afc06` (27 surfaces; 23 APPLICABLE+QUALIFIED; 4 NOT_APPLICABLE) |
 | GR-13 | OPEN — full proof matrix superseded in part by GOV-FINAL-4 catalog |
 | GR-14–GR-16 | See [`GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md`](GOVERNANCE_ARCHITECTURE_REBASE_GAP_LEDGER.md) |
 

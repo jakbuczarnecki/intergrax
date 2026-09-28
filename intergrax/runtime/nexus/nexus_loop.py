@@ -23,6 +23,9 @@ from intergrax.contracts.execution_identity import (
 from intergrax.runtime.governance.active_execution_authority import (
     require_active_execution_authority,
 )
+from intergrax.runtime.governance.governance_evidence_recorder import (
+    GovernanceEvidenceRecorder,
+)
 from intergrax.runtime.governance.service import GovernanceService
 from intergrax.contracts.agent_execution_result import (
     AgentExecutionResult,
@@ -250,6 +253,7 @@ class NexusLoop:
         denied_planner_model_ids: tuple[str, ...] = (),
         planner_model_id: str | None = None,
         governance_service: GovernanceService | None = None,
+        governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
         terminal_diagnostic_trigger: TerminalExecutionDiagnosticPort | None = None,
         authority_policy: "ExecutionAuthorityPolicy | None" = None,
         budget_allocation_policy: "ExecutionBudgetAllocationPolicy | None" = None,
@@ -292,10 +296,12 @@ class NexusLoop:
         self._lifecycle_hooks = NexusLifecycleHookCoordinator(self._middleware)
         self._policy_engine = coerce_policy_engine(policy_engine)
         self._governance_service = governance_service
+        self._governance_evidence_recorder = governance_evidence_recorder
         self._terminal_diagnostic_trigger = terminal_diagnostic_trigger
         self._interrupt_handler = interrupt_handler or ExecutionInterruptHandler(
             policy_engine=self._policy_engine,
             allow_dynamic_replan=allow_dynamic_replan,
+            governance_evidence_recorder=governance_evidence_recorder,
         )
         self._shadow_manager = shadow_manager or ShadowWorkspaceManager()
         self._sandbox_manager = sandbox_manager or SandboxSessionManager()
@@ -528,6 +534,7 @@ class NexusLoop:
             planner_model_id=planner_model_id,
             execution_identity=self._execution_identity,
             hitl_continuation=self._hitl_continuation,
+            governance_evidence_recorder=self._governance_evidence_recorder,
         )
         self._hold_persisted_trace_finalize = False
         self._pending_deferred_persisted_trace_finalize = None
@@ -934,7 +941,10 @@ class NexusLoop:
         )
 
         answer, _pre_output_decision = apply_pre_output_policy(
-            self._policy_engine, task, answer=answer
+            self._policy_engine,
+            task,
+            answer=answer,
+            governance_evidence_recorder=self._governance_evidence_recorder,
         )
 
         resolution = self._commit_durable_terminal_authority(task)
@@ -978,6 +988,7 @@ class NexusLoop:
             self._governance_service,
             run_id=active_run_id,
             agent_id=task.agent_id or "",
+            governance_evidence_recorder=self._governance_evidence_recorder,
         )
         return result
 

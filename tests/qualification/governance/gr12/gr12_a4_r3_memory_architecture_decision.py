@@ -44,7 +44,9 @@ class Gr12MemoryGr12Applicability(StrEnum):
     """GR-12 control-plane applicability per mutation class (R3 split)."""
 
     NOT_APPLICABLE = "NOT_APPLICABLE"
-    APPLICABLE_WHEN_LIVE_OPERATOR_INTRODUCED = "APPLICABLE_WHEN_LIVE_OPERATOR_INTRODUCED"
+    APPLICABLE_WHEN_LIVE_OPERATOR_INTRODUCED = (
+        "APPLICABLE_WHEN_LIVE_OPERATOR_INTRODUCED"
+    )
 
 
 class Gr12MemoryMutationGovernanceBinding(StrEnum):
@@ -120,7 +122,7 @@ GR12_MEMORY_FAIL_CLOSED_STRATEGY: Final[str] = (
     "enforce_specialized_memory_mutation raises MemoryGovernanceDenied → zero store write"
 )
 
-GR12_MEMORY_NEXT_BOUNDED_TASK: Final[str] = "GR-12 Final Qualification"
+GR12_MEMORY_NEXT_BOUNDED_TASK: Final[str] = "Independent GR-12 exact-SHA audit"
 
 GR12_MEMORY_R3_R1_QUALIFICATION_PROOF: Final[str] = (
     "tests/qualification/governance/gr12/"
@@ -240,28 +242,26 @@ class Gr12A4R3MemoryArchitectureDecision:
     rejected_alternatives: tuple[str, ...]
 
 
-GR12_A4_R3_MEMORY_ARCHITECTURE_DECISION: Gr12A4R3MemoryArchitectureDecision = (
-    Gr12A4R3MemoryArchitectureDecision(
-        architecture_phase=Gr12MemoryArchitecturePhase.ARCHITECTURE_DECISION_CLOSED,
-        authority_model=Gr12MemoryAuthorityModel.SPECIALIZED_DOMAIN_AUTHORITY,
-        memory_native_authority=True,
-        cla04_applicability=Gr12MemoryCla04Applicability.NOT_APPLICABLE_CURRENT_PRODUCTION,
-        live_operator_surface_exists=False,
-        execution_write_gr12_applicability=Gr12Applicability.NOT_APPLICABLE,
-        background_mutation_gr12_applicability=Gr12Applicability.NOT_APPLICABLE,
-        operator_mutation_gr12_applicability=Gr12Applicability.NOT_APPLICABLE,
-        policy_port=GR12_MEMORY_POLICY_PORT,
-        identity_model=GR12_MEMORY_IDENTITY_MODEL,
-        evidence_model=GR12_MEMORY_EVIDENCE_MODEL,
-        toctou_strategy=GR12_MEMORY_TOCTOU_STRATEGY,
-        fail_closed_strategy=GR12_MEMORY_FAIL_CLOSED_STRATEGY,
-        cp_mem_catalog_applicability=Gr12Applicability.NOT_APPLICABLE,
-        cp_mem_catalog_coverage=Gr12CoverageStatus.NOT_APPLICABLE,
-        dual_independent_authority=False,
-        adr_path=GR12_A4_R3_MEMORY_ADR_PATH,
-        preferred_authority_flow=GR12_MEMORY_PREFERRED_AUTHORITY_FLOW,
-        next_bounded_task=GR12_MEMORY_NEXT_BOUNDED_TASK,
-        qualification_proof=GR12_MEMORY_QUALIFICATION_PROOF,
-        rejected_alternatives=GR12_MEMORY_REJECTED_ALTERNATIVES,
-    )
+GR12_A4_R3_MEMORY_ARCHITECTURE_DECISION: Gr12A4R3MemoryArchitectureDecision = Gr12A4R3MemoryArchitectureDecision(
+    architecture_phase=Gr12MemoryArchitecturePhase.ARCHITECTURE_DECISION_CLOSED,
+    authority_model=Gr12MemoryAuthorityModel.SPECIALIZED_DOMAIN_AUTHORITY,
+    memory_native_authority=True,
+    cla04_applicability=Gr12MemoryCla04Applicability.NOT_APPLICABLE_CURRENT_PRODUCTION,
+    live_operator_surface_exists=False,
+    execution_write_gr12_applicability=Gr12Applicability.NOT_APPLICABLE,
+    background_mutation_gr12_applicability=Gr12Applicability.NOT_APPLICABLE,
+    operator_mutation_gr12_applicability=Gr12Applicability.NOT_APPLICABLE,
+    policy_port=GR12_MEMORY_POLICY_PORT,
+    identity_model=GR12_MEMORY_IDENTITY_MODEL,
+    evidence_model=GR12_MEMORY_EVIDENCE_MODEL,
+    toctou_strategy=GR12_MEMORY_TOCTOU_STRATEGY,
+    fail_closed_strategy=GR12_MEMORY_FAIL_CLOSED_STRATEGY,
+    cp_mem_catalog_applicability=Gr12Applicability.NOT_APPLICABLE,
+    cp_mem_catalog_coverage=Gr12CoverageStatus.NOT_APPLICABLE,
+    dual_independent_authority=False,
+    adr_path=GR12_A4_R3_MEMORY_ADR_PATH,
+    preferred_authority_flow=GR12_MEMORY_PREFERRED_AUTHORITY_FLOW,
+    next_bounded_task=GR12_MEMORY_NEXT_BOUNDED_TASK,
+    qualification_proof=GR12_MEMORY_QUALIFICATION_PROOF,
+    rejected_alternatives=GR12_MEMORY_REJECTED_ALTERNATIVES,
 )

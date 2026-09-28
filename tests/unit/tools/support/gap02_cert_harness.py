@@ -329,6 +329,14 @@ class RecordingResumePort:
             decided_at=timestamp,
         )
 
+    async def resume_async(
+        self,
+        request: WorkerQualifiedCapabilityResumeRequest,
+        *,
+        decided_at: datetime | None = None,
+    ) -> WorkerQualifiedCapabilityResumeResult:
+        return self.resume(request, decided_at=decided_at)
+
 
 @dataclass
 class CountingBindingProvider:

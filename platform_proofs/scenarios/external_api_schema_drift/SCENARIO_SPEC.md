@@ -12,7 +12,7 @@ application_vs_proof_ownership: COMPLETED
 
 **Scenario:** External API / Schema Drift Mid-Execution  
 **Catalog:** #24 · `external_api_schema_drift`  
-**Status:** ACCEPTED FOR IMPLEMENTATION — Intergrax FIT completed; platform gaps confirmed; implementation not initialized.
+**Status:** ACCEPTED FOR IMPLEMENTATION — Intergrax FIT completed; **UCA scenario contract gate PASS** (`S24_UCA_SCENARIO_CONTRACT_GATE.md`); **S24-GAP-02 CLOSED**; GAP-01 / GAP-03 / GAP-04 open; implementation not initialized.
 
 [← Back to public Scenario page](README.md)
 
@@ -170,7 +170,7 @@ business step succeeds
 original fulfillment responsibility continues
 ```
 
-Acquisition implementation source (Marketplace, CodeCraft, another canonical strategy) is **TO VERIFY DURING FIT** — design does not assert which mechanism is available.
+**Acquisition source (platform policy, not scenario truth):** the scenario expresses typed capability need and consumes canonical recovery/UCA; it does **not** own acquisition-strategy selection. Certified platform supports canonical Marketplace qualified **Tool** acquisition on the true-gap path (`S24-GAP-02` **CLOSED** — `S24_GAP_02_QUALIFIED_MARKETPLACE_TOOL_CERTIFICATION.md`). Other canonical strategies (e.g. CodeCraft for `TOOL` artifacts) may remain available through platform policy and contracts; Variant C is **not** Marketplace-only and must not hard-code provider or strategy identity in application code.
 
 **Hard rules:**
 
@@ -413,7 +413,7 @@ On incompatibility, the application surfaces typed failure, preserves workflow c
 4. Application emits **capability need** and invokes **canonical discovery**.
 5. Discovery returns disposition: reuse, configure, gap, or explicit no catalog path.
 6. Disposition branch: A/B reuse or configure; D scoped adaptation boundary; E/F escalate without UCA bind/execute in this episode; G block; H route by evidence.
-7. **Variant C only:** complete discovery proves `MISSING_CAPABILITY` → CapabilityGap → UCA coordinates canonical acquisition (source TO VERIFY DURING FIT).
+7. **Variant C only:** complete discovery proves `MISSING_CAPABILITY` → CapabilityGap → Capability Acquisition coordinates acquisition per platform policy (scenario does not select Marketplace/CodeCraft or invoke acquisition strategies directly).
 8. Candidate undergoes **qualification** → QUALIFIED; provider/environment qualification if required.
 9. **Binding** produces executable capability reference; binding does not perform business operation.
 10. **Execution Engine** receives canonical execution request; **ExecutionIdentityAuthority** governs identity; **ToolRuntime** invokes provider.
@@ -514,7 +514,7 @@ FIT BASELINE = 2e1d42a8e5950c01f4102a4dd8f750879e226071
 FIT VERDICT = ACCEPTED ARCHITECTURE MAPS PARTIALLY TO CURRENT PLATFORM; BLOCKING REUSABLE PLATFORM GAPS CONFIRMED
 ```
 
-Accepted scenario architecture **maps partially** to the current platform. FIT is **not** “implementation ready.” Four confirmed reusable platform gaps block `init_scenario_implementation.py` until independently resolved (see § D).
+Accepted scenario architecture **maps partially** to the current platform. FIT is **not** “implementation ready.” **UCA is ready for scenario consumption** (`UCA_CURRENT_HEAD_SCENARIO_READINESS_RECERTIFICATION.md` @ audit head). **S24-GAP-02** is **CLOSED**; **three** open reusable platform gaps (**GAP-01, GAP-03, GAP-04**) still block `init_scenario_implementation.py` (see § D).
 
 Audit frame:
 
@@ -556,7 +556,7 @@ Implementation **MUST** preserve (no redesign in scenario):
 | Provider/environment qualification framework | Core Qualification | AVAILABLE framework | Scenario provider suite still implementation work |
 | Qualified binding SPI | Capability Qualification binding registry | AVAILABLE | Generic extension point exists |
 | CodeCraft artifact binding provider | CodeCraft runtime | AVAILABLE | ARTIFACT_REFERENCE path |
-| Marketplace/domain handoff binding | canonical binding owner | **MISSING** | Variant C cannot yet complete Marketplace acquired subject → execution |
+| Marketplace/domain handoff binding | Qualified Capability Binding + Marketplace handoff | **AVAILABLE** (`S24-GAP-02` **CLOSED**) | Variant C Marketplace qualified Tool path; scenario consumes contracts only |
 | Execution handoff | Worker qualified resume → Execution Engine | AVAILABLE | Canonical lifecycle |
 | Execution identity | ExecutionIdentityAuthority | AVAILABLE | No local mint |
 | Tool invocation | ToolRuntime | AVAILABLE | Mandatory |
@@ -564,7 +564,7 @@ Implementation **MUST** preserve (no redesign in scenario):
 | Variant A direct reuse | host available binding + EE dispatch | AVAILABLE | End-to-end |
 | Variant B configure existing decision | AW acquisition decision | PARTIAL | Classification exists |
 | Variant B configuration realization | platform-owned configuration/runtime binding | **MISSING** | Cannot yet safely enact CONFIGURE_EXISTING E2E |
-| Variant C generic true-gap UCA spine | Discovery → acquisition → qualification → binding → Execution | PARTIAL E2E | Core exists; Marketplace binding gap blocks preferred C shape |
+| Variant C generic true-gap UCA spine | Discovery → acquisition → qualification → binding → Execution | **AVAILABLE** (Marketplace Tool E2E) | `S24-GAP-02` closed; application must not bypass discovery/qualification/binding/EE/ToolRuntime |
 | Variant D A2 classification | AW | AVAILABLE | `SCOPED_ADAPTATION_CANDIDATE` exists |
 | Variant D A2 execution | canonical A2 adapter/service | **MISSING** | Cannot resolve D through scoped adaptation yet |
 | Variant E A3 | AW decision boundary | AVAILABLE AS ESCALATION | No direct bind/execute required |
@@ -611,33 +611,28 @@ The typed disposition exists. **Do not claim production E2E support.** Current r
 #### Variant C — TRUE GAP → CANONICAL UCA
 
 ```text
-FIT = PARTIAL
+FIT = AVAILABLE (canonical UCA spine + Marketplace qualified Tool E2E)
+UCA_SCENARIO_CONTRACT_GATE = PASS (see § F)
 ```
 
-Core spine is AVAILABLE:
+Certified spine (scenario consumes; does not own):
 
 ```text
 complete discovery
 → MISSING_CAPABILITY
 → CapabilityGap
-→ acquisition
-→ qualification
+→ Capability Acquisition (platform policy selects strategy)
+→ candidate / acquired subject
+→ Capability Qualification → QUALIFIED
+→ binding / domain handoff
+→ canonical execution request
+→ Execution Engine admission
+→ ExecutionIdentityAuthority
+→ ToolRuntime exact invocation
+→ business continuation
 ```
 
-Qualified resume/binding/execution SPI also exists. Preferred Scenario #24 enterprise path:
-
-```text
-true gap
-→ Marketplace governed replacement TOOL capability
-→ Capability Qualification
-→ qualified Marketplace/domain handoff binding
-→ Execution Engine
-→ ToolRuntime
-```
-
-Why Marketplace for flagship C: demonstrates generic UCA acquisition cleanly; replacement is a pre-existing governed capability; does not collapse C into generated adaptation; CodeCraft generation remains a possible acquisition source but must not substitute Variant D/A2 semantics.
-
-**Current blocker:** Marketplace acquisition returns `domain_handoff_reference` but no concrete production `QualifiedCapabilityBindingProvider` for `DOMAIN_HANDOFF_REFERENCE` was identified (`S24-GAP-02`). Do not invent one in scenario-local code.
+Flagship proof narrative may use Marketplace governed replacement **Tool** capability (GAP-02 certified path); CodeCraft remains an optional canonical acquisition source for `TOOL` artifacts and must not substitute Variant D/A2 semantics. **Scenario must not** call Marketplace or any acquisition strategy directly; **no** `if variant == "C": acquire()` dispatch in application code — variants are proof truth; the application reacts to platform/runtime facts only.
 
 #### Variant D — SCOPED_ADAPTATION_CANDIDATE
 
@@ -711,9 +706,12 @@ Future remediation must be: contract-first; no authority growth; no direct imple
 
 #### S24-GAP-02 — Qualified Marketplace Handoff Binding
 
-Marketplace true-gap acquisition can return `domain_handoff_reference`; Qualification can qualify `DOMAIN_HANDOFF_REFERENCE`; generic binding SPI exists—but current production binding implementation identified is CodeCraft artifact-specific.
+```text
+STATUS = CLOSED (UCA / Marketplace qualified Tool path)
+EVIDENCE = docs/project/maintainers/qualification/S24_GAP_02_QUALIFIED_MARKETPLACE_TOOL_CERTIFICATION.md
+```
 
-Need future reusable platform capability: qualified Marketplace/domain handoff → canonical executable binding target—without execution during binding, ToolRegistry shortcut before qualification, Marketplace owning execution, or AW interpreting marketplace internals.
+Production path: true gap → Marketplace gap acquisition strategy → staging → qualification → qualified binding → durable intent → worker fulfillment coordinator → Execution Engine → handler → ToolRuntime. Scenario #24 consumes this through public contracts only; no scenario-local binding provider or Marketplace shortcut.
 
 #### S24-GAP-03 — A2 Scoped Adaptive Integration Execution
 
@@ -750,7 +748,7 @@ UCA core spine, direct reuse (A), EE/identity/ToolRuntime/governance, side-effec
 
 ### Capability Gap
 
-Four **confirmed reusable** platform gaps: S24-GAP-01 through S24-GAP-04 (see § C).
+**Open** reusable platform gaps: **S24-GAP-01, S24-GAP-03, S24-GAP-04** (see § C). **S24-GAP-02 CLOSED** (does not block init alone).
 
 ### Decision
 
@@ -768,11 +766,11 @@ Scenario #24 is accepted as-is. Partial platform fit is recorded honestly; imple
 | --- | --- | --- | --- | --- |
 | Canonical discovery | Capability Catalog | Application invokes discovery | Contract consumer | AVAILABLE |
 | UCA coordination | Capability Acquisition | Variant C spine | Contract consumer | AVAILABLE |
-| Marketplace acquisition | Marketplace gap strategy | Variant C preferred source | Contract consumer | AVAILABLE (binding completion blocked — S24-GAP-02) |
+| Marketplace acquisition | Marketplace gap strategy | Variant C proof narrative (platform-owned) | Contract consumer | AVAILABLE (`S24-GAP-02` **CLOSED**) |
 | CodeCraft acquisition | CodeCraft UCA strategy | Optional C source | Contract consumer | AVAILABLE for TOOL |
 | Qualification | Capability Qualification | Pre-execution gate | Contract consumer | AVAILABLE |
 | CodeCraft binding | ARTIFACT_REFERENCE provider | Non-Marketplace binding path | Contract consumer | AVAILABLE |
-| Marketplace/domain handoff binding | QualifiedCapabilityBindingProvider | Variant C completion | Contract consumer | BLOCKED — pending S24-GAP-02 |
+| Marketplace/domain handoff binding | QualifiedCapabilityBindingProvider | Variant C completion | Contract consumer | AVAILABLE — `S24-GAP-02` **CLOSED** |
 | CONFIGURE_EXISTING realization | Platform configuration runtime | Variant B E2E | Contract consumer | BLOCKED — pending S24-GAP-01 |
 | A2 scoped execution | Canonical A2 execution port | Variant D | Contract consumer | BLOCKED — pending S24-GAP-03 |
 | Semantic compatibility | Integrations compatibility assessment | Variant H | Contract consumer | BLOCKED — pending S24-GAP-04 |
@@ -818,16 +816,17 @@ Scenario #24 is accepted as-is. Partial platform fit is recorded honestly; imple
 ```text
 GAP DECISION = NOT COMPLETED
 IMPLEMENTATION INITIALIZATION = BLOCKED
+UCA_SCENARIO_CONTRACT_GATE = PASS
 ```
 
-Four reusable platform gaps are confirmed and must receive independent architecture/gap resolution before scenario init:
+| Gap | Status | Blocks init |
+| --- | --- | --- |
+| **S24-GAP-02** — Qualified Marketplace Handoff Binding | **CLOSED** (UCA) | No |
+| **S24-GAP-01** — Existing Capability Configuration Realization | **OPEN** (Integrations / INT-CONFIG-REAL-X) | Yes |
+| **S24-GAP-03** — A2 Scoped Adaptive Integration Execution | **OPEN** (AW-7C) | Yes |
+| **S24-GAP-04** — External Contract Semantic Compatibility | **OPEN** (Integrations / INT-EXTCOMP-X) | Yes |
 
-1. **S24-GAP-01** — Existing Capability Configuration Realization
-2. **S24-GAP-02** — Qualified Marketplace Handoff Binding
-3. **S24-GAP-03** — A2 Scoped Adaptive Integration Execution
-4. **S24-GAP-04** — External Contract Semantic Compatibility
-
-`gap_decision: RESOLVED` is **not** set. `init_scenario_implementation.py` **MUST NOT** run until S24-GAP-01..04 are resolved, independently audited, and gap_decision becomes RESOLVED.
+`gap_decision: RESOLVED` is **not** set. `init_scenario_implementation.py` **MUST NOT** run until **S24-GAP-01, S24-GAP-03, and S24-GAP-04** are resolved, independently audited, and `gap_decision` becomes **RESOLVED**.
 
 ---
 
@@ -837,7 +836,7 @@ Four reusable platform gaps are confirmed and must receive independent architect
 
 ```text
 init_scenario_implementation.py MUST NOT run until
-S24-GAP-01..04 are resolved,
+S24-GAP-01, S24-GAP-03, and S24-GAP-04 are resolved,
 independently audited,
 and gap_decision becomes RESOLVED.
 ```
@@ -859,3 +858,50 @@ Future proof design plan (after gap resolution + implementation init):
 | **P10** | Report / evidence projection |
 
 Before implementation confirm: production-capable application exists; canonical path has no prohibited fake/test shortcuts; controlled providers use normal application contracts; real model boundary configured if AI behavior is material.
+
+---
+
+## F. UCA SCENARIO CONTRACT GATE
+
+```text
+TASK = UCA-SCENARIO-CONTRACT-GATE
+VERDICT = PASS
+EVIDENCE = docs/project/maintainers/qualification/S24_UCA_SCENARIO_CONTRACT_GATE.md
+UCA_READINESS = READY FOR SCENARIO CONSUMPTION (no UCA reopen)
+```
+
+Scenario #24 is a **consumer** of Governed Capability Fulfillment (UCA). It does **not** own catalog, discovery gap authority, acquisition strategy selection, qualification, binding, Execution Engine lifecycle, execution identity minting, ToolRuntime, or governance/HITL.
+
+### Scenario ↔ UCA contract matrix (normative)
+
+| Scenario fact / action | Canonical contract / owner | Scenario responsibility | Forbidden shortcut |
+| --- | --- | --- | --- |
+| Capability need | Application expresses typed need | Emit need + correlation; preserve business state | Scenario-local catalog or gap detection without discovery |
+| Discovery | Capability Catalog / canonical discovery | Invoke discovery; accept disposition | Provider error → `CapabilityGap` without complete discovery |
+| True gap | Catalog → `CapabilityGap` after `MISSING_CAPABILITY` | Consume gap outcome; never create gap locally | Open acquisition on A/B or before discovery completes |
+| Acquisition | Capability Acquisition (platform policy) | **None** — consume coordinator/recovery only | Direct `MarketplaceGapCapabilityAcquisitionStrategy` from application; hard-coded Marketplace/CodeCraft |
+| Qualification | Capability Qualification | **None** — wait for `QUALIFIED` | Execute candidate; scenario-local qualification |
+| Binding | Qualified Capability Binding / domain handoff | **None** — consume binding handle | Binding performs business op; scenario-local binding |
+| Execution admission | Execution Engine | Request canonical execution | Private execution loop; second EE |
+| Execution identity | ExecutionIdentityAuthority | **None** — use platform-issued identity | `execution_id = ...` minted in application |
+| Tool invocation | ToolRuntime | **None** — consume bound invocation | Direct HTTP/provider callable as canonical Tool execution |
+| Authority escalation | Governance / credential authority (variant F) | Surface `AUTHORITY_CHANGE_REQUIRED`; block | UCA/AW grants credentials, scope, principal, tenant |
+| Human continuation | EE / Governance canonical HITL | Escalate E/F per platform | Scenario-local HITL channel |
+| Business continuation | Application workflow | Resume same business obligation; no material replay | Restart workflow from step 1; UCA replays inventory/carrier/docs |
+
+### Variant ownership matrix (A–H)
+
+| Variant | Disposition | Owner | UCA used? | UCA boundary | External dependency |
+| --- | --- | --- | --- | --- | --- |
+| **A** | `USE_EXISTING` | Capability Catalog + host binding + EE | **No** | N/A — zero generic acquisition | — |
+| **B** | `CONFIGURE_EXISTING` | Integrations / **S24-GAP-01** | Consumer only if shared recovery invokes UCA | UCA must not realize configuration | **GAP-01 OPEN** |
+| **C** | TRUE GAP → UCA success | Discovery → Gap → Acquisition → Qualification → Binding → EE → EIA → ToolRuntime | **Yes** | Full certified chain only after complete discovery | **GAP-02 CLOSED** |
+| **D** | `SCOPED_ADAPTATION_CANDIDATE` | AW-7C / **S24-GAP-03** | **No** (not generic UCA) | D ≠ C; no UCA substitute for A2 | **GAP-03 OPEN** |
+| **E** | `PRODUCTION_CHANGE_REQUIRED` | AW escalation / A3 boundary | **No** bind/execute in episode | UCA must not generate durable production change | — |
+| **F** | `AUTHORITY_CHANGE_REQUIRED` | Governance / security authority | **No** | Capability growth ≠ authority growth | — |
+| **G** | `NO_SAFE_CAPABILITY` | Fail-closed recovery | **No** forced acquisition | Valid BLOCKED outcome | — |
+| **H** | Semantic false compatibility | **S24-GAP-04** / INT-EXTCOMP-X | Only if routed to true **C** | H ≠ acquisition type; no `SEMANTIC_INCOMPATIBLE` → auto gap | **GAP-04 OPEN** |
+
+### Proof vs application (variants)
+
+Proof configures variants A–H and holds evaluator truth. The application **must not** branch on proof variant labels or expected UCA outcomes. Invariants are evaluated proof-side only (`§ B` application vs proof ownership).
