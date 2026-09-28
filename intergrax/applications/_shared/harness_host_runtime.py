@@ -104,7 +104,9 @@ from intergrax.applications._shared.harness_control_plane_governance_wiring impo
     HarnessControlPlaneGovernance,
     build_harness_control_plane_governance,
 )
-from intergrax.collaborative_work.persistence import CollaborativeWorkMaterializedRepositories
+from intergrax.collaborative_work.persistence import (
+    CollaborativeWorkMaterializedRepositories,
+)
 from intergrax.applications._shared.harness_meaningful_side_effect_authorization_wiring import (
     resolve_harness_host_meaningful_side_effect_authorization_wiring,
 )
@@ -244,9 +246,9 @@ class HarnessHostRuntime:
     effective_profile_pinning_store: EffectiveProfileExecutionPinningStore | None = None
     effective_profile_active_store: ActiveEffectiveProfileRevisionStore | None = None
     skill_pinning_store: SkillExecutionPinningStore | None = None
-    _owned_collaborative_work_persistence: CollaborativeWorkMaterializedRepositories | None = (
-        None
-    )
+    _owned_collaborative_work_persistence: (
+        CollaborativeWorkMaterializedRepositories | None
+    ) = None
     _host_diagnostic_dependencies: HostDiagnosticReadDependencies | None = None
     orchestration_topology: HarnessHostOrchestrationTopologyWiring | None = None
 
@@ -298,7 +300,8 @@ def build_harness_host_runtime(
     runtime_policy_evaluator: MeaningfulSideEffectPolicyEvaluator | None = None,
     active_execution_task_scope: ActiveExecutionTaskScopePort | None = None,
     orchestration_decision_requirement_policy: DecisionRequirementPolicy | None = None,
-    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories | None = None,
+    collaborative_work_repositories: CollaborativeWorkMaterializedRepositories
+    | None = None,
     collaborative_work_integration_profile: IntegrationProfile | None = None,
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
     diagnostic_composition_overrides: DiagnosticCompositionOverrides | None = None,
@@ -458,18 +461,16 @@ def build_harness_host_runtime(
         if strict_governance_evidence_persistence is not None
         else None
     )
-    meaningful_side_effect_wiring = (
-        resolve_harness_host_meaningful_side_effect_authorization_wiring(
-            effective_environment,
-            explicit=meaningful_side_effect_authorization,
-            collaborative_work_repositories=collaborative_work_repositories,
-            collaborative_work_integration_profile=collaborative_work_integration_profile,
-            decision_requirement_policy=orchestration_decision_requirement_policy,
-            runtime_policy_evaluator=runtime_policy_evaluator,
-            active_execution_task_scope=active_execution_task_scope,
-            governance_evidence_persistence=strict_governance_evidence_persistence,
-            runtime_event_persistence=observability.runtime_event_store,
-        )
+    meaningful_side_effect_wiring = resolve_harness_host_meaningful_side_effect_authorization_wiring(
+        effective_environment,
+        explicit=meaningful_side_effect_authorization,
+        collaborative_work_repositories=collaborative_work_repositories,
+        collaborative_work_integration_profile=collaborative_work_integration_profile,
+        decision_requirement_policy=orchestration_decision_requirement_policy,
+        runtime_policy_evaluator=runtime_policy_evaluator,
+        active_execution_task_scope=active_execution_task_scope,
+        governance_evidence_persistence=strict_governance_evidence_persistence,
+        runtime_event_persistence=observability.runtime_event_store,
     )
     resolved_meaningful_side_effect_authorization = (
         meaningful_side_effect_wiring.authorization_port
@@ -493,6 +494,7 @@ def build_harness_host_runtime(
     nexus_loop = build_nexus_loop_from_environment(
         resolved_registry,
         env=effective_environment,
+        governance_evidence_recorder=orchestration_governance_evidence_recorder,
         trace_store=observability.trace_store,
         checkpoint_store=checkpoint_store,
         agent_checkpoint_store=resolved_agent_checkpoint_store,
@@ -671,7 +673,9 @@ def close_harness_host_runtime(runtime: HarnessHostRuntime) -> None:
     )
     host_diagnostic_dependencies = runtime.host_diagnostic_dependencies
     if host_diagnostic_dependencies is not None:
-        close_host_owned_diagnostic_persistence(host_diagnostic_dependencies.persistence)
+        close_host_owned_diagnostic_persistence(
+            host_diagnostic_dependencies.persistence
+        )
     owned_persistence = runtime._owned_collaborative_work_persistence
     if owned_persistence is not None:
         owned_persistence.close()

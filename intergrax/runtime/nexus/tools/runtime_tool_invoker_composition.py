@@ -5,11 +5,16 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-from intergrax.contracts.canonical_inner_governance import CanonicalInnerExecutionGuardPort
+from intergrax.contracts.canonical_inner_governance import (
+    CanonicalInnerExecutionGuardPort,
+)
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
+from intergrax.runtime.governance.governance_evidence_recorder import (
+    GovernanceEvidenceRecorder,
+)
 from intergrax.runtime.governance.meaningful_side_effect_authorization_composition import (
     build_default_canonical_inner_execution_guard,
 )
@@ -54,7 +59,8 @@ def build_production_runtime_tool_invoker(
     registry: ToolRegistryRead,
     executor: ToolExecutor | None = None,
     inner_execution_guard: CanonicalInnerExecutionGuardPort | None = None,
-    meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None = None,
+    meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort
+    | None = None,
     scope_policy: ToolScopePolicy | None = None,
     pre_effect_coordinator: IdempotencyPreEffectCoordinator | None = None,
     idempotency_store: IdempotencyStore | None = None,
@@ -63,10 +69,12 @@ def build_production_runtime_tool_invoker(
     dependency_attempt_boundary: DependencyAttemptExecutionBoundary | None = None,
     external_operation_store: ExternalOperationStateStore | None = None,
     external_operation_owner: ProcessLocalExternalOperationOwner | None = None,
-    external_operation_cancellation_port: ExternalOperationCancellationPort | None = None,
+    external_operation_cancellation_port: ExternalOperationCancellationPort
+    | None = None,
     invocation_wiring_resolver: ToolInvocationWiringResolver | None = None,
     production_mode: bool = False,
     effect_crash_injection: ToolRuntimeEffectCrashInjectionPort | None = None,
+    governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
 ) -> RuntimeToolInvoker:
     """Wire canonical inner guard + production-required governance before tool effects."""
     if production_mode and agent_runtime_governance is None:
@@ -95,7 +103,9 @@ def build_production_runtime_tool_invoker(
     resolved_executor = executor or RegistryToolExecutor(registry)
     coordinator = pre_effect_coordinator
     if coordinator is None and idempotency_store is not None:
-        coordinator = IdempotencyPreEffectCoordinator(idempotency_store=idempotency_store)
+        coordinator = IdempotencyPreEffectCoordinator(
+            idempotency_store=idempotency_store
+        )
     return RuntimeToolInvoker(
         registry=registry,
         executor=resolved_executor,
@@ -111,6 +121,7 @@ def build_production_runtime_tool_invoker(
         external_operation_cancellation_port=external_operation_cancellation_port,
         invocation_wiring_resolver=invocation_wiring_resolver,
         effect_crash_injection=effect_crash_injection,
+        governance_evidence_recorder=governance_evidence_recorder,
     )
 
 

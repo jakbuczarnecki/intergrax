@@ -39,6 +39,9 @@ from intergrax.tools.registry.read import ToolRegistryRead
 if TYPE_CHECKING:
     from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
     from intergrax.runtime.nexus.config import RuntimeConfig
+    from intergrax.runtime.governance.governance_evidence_recorder import (
+        GovernanceEvidenceRecorder,
+    )
     from intergrax.runtime.governance.service import GovernanceService
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
 from intergrax.utils.time_provider import SystemTimeProvider
@@ -117,6 +120,7 @@ class RuntimeContext:
 
     trace_writer: Optional[RunTraceWriter] = None
     governance_service: Optional["GovernanceService"] = None
+    governance_evidence_recorder: Optional["GovernanceEvidenceRecorder"] = None
     prompt_registry: Optional[YamlPromptRegistry] = None
 
     artifact_store: Optional[ArtifactStore] = None
@@ -273,6 +277,7 @@ class RuntimeContext:
         websearch_prompt_builder: Optional[WebSearchPromptBuilder] = None,
         prompt_registry: Optional[YamlPromptRegistry] = None,
         governance_service: Optional["GovernanceService"] = None,
+        governance_evidence_recorder: Optional["GovernanceEvidenceRecorder"] = None,
     ) -> "RuntimeContext":
         """
         Build a fully-resolved RuntimeContext using the same resolution rules as Runtime.__init__:
@@ -401,6 +406,7 @@ class RuntimeContext:
             meaningful_side_effect_authorization=config.meaningful_side_effect_authorization,
             dependency_attempt_boundary=dependency_boundary,
             production_mode=config.production_mode,
+            governance_evidence_recorder=governance_evidence_recorder,
         )
 
         from intergrax.runtime.nexus.tools.planner_bootstrap import (
@@ -448,5 +454,6 @@ class RuntimeContext:
             history_layer=resolved_history_layer,
             prompt_registry=prompt_registry,
             governance_service=governance_service,
+            governance_evidence_recorder=governance_evidence_recorder,
             trace_writer=trace_writer,
         )

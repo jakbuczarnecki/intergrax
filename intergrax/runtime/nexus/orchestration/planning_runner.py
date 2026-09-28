@@ -48,6 +48,15 @@ from intergrax.contracts.runtime_policy_context import (
 )
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.policy.policy_engine import PolicyEngine
+from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernedExecutionEvaluationPoint,
+)
+from intergrax.runtime.governance.governance_evidence_recorder import (
+    GovernanceEvidenceRecorder,
+)
+from intergrax.runtime.governance.governance_policy_decision_evidence_recording import (
+    record_governance_policy_decision_evidence,
+)
 from intergrax.runtime.policy.pre_model_policy_evaluation import (
     PreModelPolicyConfigurationError,
 )
@@ -85,6 +94,7 @@ class NexusPlanningRunner:
     planner_model_id: str | None = None
     execution_identity: ActiveExecutionIdentity | None = None
     hitl_continuation: InternalOrchestrationContinuation | None = None
+    governance_evidence_recorder: GovernanceEvidenceRecorder | None = None
 
     async def run(
         self,
@@ -248,6 +258,25 @@ class NexusPlanningRunner:
                     planner_model_id=self.planner_model_id or "",
                     denied_planner_model_ids=self.denied_planner_model_ids,
                 ),
+            )
+            record_governance_policy_decision_evidence(
+                self.governance_evidence_recorder,
+                evaluation_point=GovernedExecutionEvaluationPoint.PRE_MODEL,
+                decision=policy_decision,
+                tenant_id=governance_scope.tenant_id,
+                workspace_id=governance_scope.workspace_id,
+                principal_id=governance_scope.principal_id,
+                action="nexus_planning.pre_llm",
+                resource_type="llm_model",
+                resource_scope=self.planner_model_id or "",
+                digest_payload={
+                    "task_id": str(task.task_id),
+                    "tenant_id": governance_scope.tenant_id,
+                    "agent_id": task.agent_id or "",
+                    "phase": PreModelPhase.NEXUS_PLANNING.value,
+                    "policy_rule_id": policy_decision.policy_rule_id or "",
+                },
+                idempotency_prefix="pre_model_orchestration",
             )
             planning_policy_action = policy_decision.action.value
             if policy_decision.action is PolicyAction.DENY:

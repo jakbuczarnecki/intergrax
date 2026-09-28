@@ -296,14 +296,18 @@ GOV_FINAL_4_SCENARIO_CATALOG: tuple[GovFinal4ScenarioEvidence, ...] = (
         "Y",
         "Crash ambiguity (intent without outcome)",
         "fail-safe recovery path",
-        GovFinal4ScenarioResult.PARTIAL,
+        GovFinal4ScenarioResult.QUALIFIED,
         (
             _nid(
                 _GR7_A4,
                 "test_crash_ambiguity_intent_without_outcome_not_explicit_unknown",
             ),
+            _nid(
+                "applications/governed_contractor_application/tests/host/test_gr7_a7_r1_recovery_integrity.py",
+                "test_crash_ambiguity_forged_repeat_blocked",
+            ),
         ),
-        notes="Host-qualified; not all strategies.",
+        notes="GR-13 reconciliation: existing host recovery integrity evidence (no new recovery architecture).",
     ),
     GovFinal4ScenarioEvidence(
         "Z",

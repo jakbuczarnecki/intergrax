@@ -13,6 +13,9 @@ from typing import TYPE_CHECKING, Optional, Protocol, Type, cast, runtime_checka
 from pydantic import BaseModel
 
 if TYPE_CHECKING:
+    from intergrax.runtime.governance.governance_evidence_recorder import (
+        GovernanceEvidenceRecorder,
+    )
     from intergrax.contracts.execution.crash_injection import (
         ToolRuntimeEffectCrashInjectionPort,
     )
@@ -190,6 +193,7 @@ class RuntimeToolInvoker:
         | None = None,
         invocation_wiring_resolver: ToolInvocationWiringResolver | None = None,
         effect_crash_injection: Optional["ToolRuntimeEffectCrashInjectionPort"] = None,
+        governance_evidence_recorder: Optional["GovernanceEvidenceRecorder"] = None,
     ) -> None:
         from intergrax.runtime.nexus.tools.tool_operation_termination import (
             ToolExecutorTerminationPort,
@@ -225,6 +229,7 @@ class RuntimeToolInvoker:
         self._invocation_wiring_resolver = (
             invocation_wiring_resolver or DelegatingToolInvocationWiringResolver()
         )
+        self._governance_evidence_recorder = governance_evidence_recorder
         if effect_crash_injection is None:
             self._effect_crash_injection = NoOpToolRuntimeEffectCrashInjection()
         else:
@@ -703,6 +708,35 @@ class RuntimeToolInvoker:
             )
             decision = declarative_enforcer.evaluate_tool_invocation(
                 context=policy_context
+            )
+            from intergrax.contracts.governed_execution_governance_evidence import (
+                GovernedExecutionEvaluationPoint,
+            )
+            from intergrax.runtime.governance.governance_policy_decision_evidence_recording import (
+                record_governance_policy_decision_evidence_for_active_identity,
+                runtime_policy_decision_from_declarative_enforcement,
+            )
+
+            runtime_policy_decision = (
+                runtime_policy_decision_from_declarative_enforcement(
+                    decision,
+                )
+            )
+            record_governance_policy_decision_evidence_for_active_identity(
+                self._governance_evidence_recorder,
+                evaluation_point=GovernedExecutionEvaluationPoint.TOOL_INVOCATION_POLICY,
+                decision=runtime_policy_decision,
+                action=f"tool_invoke:{request.tool_id}",
+                resource_type="tool",
+                resource_scope=request.tool_id,
+                digest_payload={
+                    "tool_id": request.tool_id,
+                    "agent_id": agent_id,
+                    "task_id": task_id or "",
+                    "run_id": request.run_id or "",
+                    "declarative_action": decision.action.value,
+                },
+                idempotency_prefix="tool_invocation_policy",
             )
             state.trace_event(
                 component=TraceComponent.TOOLS,

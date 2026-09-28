@@ -8,7 +8,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Dict, Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from intergrax.contracts.agent_decision import (
     AgentDecision,
@@ -19,11 +19,27 @@ from intergrax.contracts.agent_decision import (
 )
 from intergrax.contracts.declarative_hitl import DeclarativeHitlPendingApproval
 from intergrax.contracts.execution_interrupt import ExecutionInterrupt, InterruptType
-from intergrax.contracts.runtime_policy import EnforcementLevel, PolicyAction, PolicyDecision
+from intergrax.contracts.execution_identity import (
+    RunId,
+    TaskId,
+    validate_run_id,
+    validate_task_id,
+)
+from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernedExecutionEvaluationPoint,
+)
+from intergrax.contracts.runtime_policy import (
+    EnforcementLevel,
+    PolicyAction,
+    PolicyDecision,
+)
 from intergrax.contracts.runtime_policy_context import AgentDecisionPolicyContext
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 
 if TYPE_CHECKING:
+    from intergrax.runtime.governance.governance_evidence_recorder import (
+        GovernanceEvidenceRecorder,
+    )
     from intergrax.runtime.policy.policy_engine import PolicyEngine
 
 INTERRUPT_COUNT_KEY = "interrupt_count"
@@ -82,15 +98,71 @@ class ExecutionInterruptHandler:
         policy_engine: PolicyEngine | RuntimePolicyEngine | None = None,
         *,
         allow_dynamic_replan: bool = False,
+        governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
     ) -> None:
         from intergrax.runtime.policy.policy_engine import coerce_policy_engine
 
         self._policy = coerce_policy_engine(policy_engine)
         self._allow_dynamic_replan = allow_dynamic_replan
+        self._governance_evidence_recorder = governance_evidence_recorder
 
     @property
     def policy_engine(self) -> PolicyEngine:
         return self._policy
+
+    def _record_resolution_evidence(
+        self,
+        *,
+        decision: AgentDecision,
+        policy: PolicyDecision,
+        interrupt: Optional[ExecutionInterrupt],
+        task_id: str,
+        run_id: str,
+        agent_id: str,
+        step_id: Optional[str],
+    ) -> None:
+        recorder = self._governance_evidence_recorder
+        if recorder is None or recorder.persistence is None:
+            return
+        from intergrax.runtime.governance.governance_policy_decision_evidence_recording import (
+            record_governance_policy_decision_evidence_for_active_identity,
+        )
+
+        evaluation_point = GovernedExecutionEvaluationPoint.AGENT_DECISION
+        if interrupt is not None or decision.type == AgentDecisionType.INTERRUPT:
+            evaluation_point = GovernedExecutionEvaluationPoint.INTERRUPT
+        resolved_task_id: TaskId | None = None
+        resolved_run_id: RunId | None = None
+        try:
+            resolved_task_id = validate_task_id(task_id)
+        except (TypeError, ValueError):
+            resolved_task_id = None
+        try:
+            resolved_run_id = validate_run_id(run_id)
+        except (TypeError, ValueError):
+            resolved_run_id = None
+        try:
+            record_governance_policy_decision_evidence_for_active_identity(
+                recorder,
+                evaluation_point=evaluation_point,
+                decision=policy,
+                action=f"agent_decision:{decision.type.value}",
+                resource_type="agent_decision",
+                resource_scope=agent_id,
+                digest_payload={
+                    "task_id": task_id,
+                    "run_id": run_id,
+                    "agent_id": agent_id,
+                    "step_id": step_id or "",
+                    "decision_type": decision.type.value,
+                    "policy_rule_id": policy.policy_rule_id or "",
+                },
+                idempotency_prefix=evaluation_point.value,
+                task_id=resolved_task_id,
+                run_id=resolved_run_id,
+            )
+        except RuntimeError:
+            return
 
     def resolve_decision(
         self,
@@ -161,6 +233,15 @@ class ExecutionInterruptHandler:
                 **human_request_fields_from_payload(decision.payload),
             )
 
+        self._record_resolution_evidence(
+            decision=decision,
+            policy=policy,
+            interrupt=interrupt,
+            task_id=task_id,
+            run_id=run_id,
+            agent_id=agent_id,
+            step_id=step_id,
+        )
         return GovernanceResolution(
             policy_decision=policy,
             agent_decision=decision,
@@ -185,13 +266,23 @@ class ExecutionInterruptHandler:
         human_request: Optional[HumanRequest] = None
         if policy.action == PolicyAction.REQUIRE_HUMAN:
             human_request = self._human_request_for_interrupt(interrupt)
+        agent_decision = AgentDecision(
+            type=decision_type,
+            reason=f"interrupt:{interrupt.interrupt_type.value}",
+            interrupt_id=interrupt.interrupt_id,
+        )
+        self._record_resolution_evidence(
+            decision=agent_decision,
+            policy=policy,
+            interrupt=interrupt,
+            task_id=interrupt.task_id,
+            run_id=interrupt.run_id,
+            agent_id=interrupt.source_agent_id,
+            step_id=interrupt.source_step_id,
+        )
         return GovernanceResolution(
             policy_decision=policy,
-            agent_decision=AgentDecision(
-                type=decision_type,
-                reason=f"interrupt:{interrupt.interrupt_type.value}",
-                interrupt_id=interrupt.interrupt_id,
-            ),
+            agent_decision=agent_decision,
             interrupt=interrupt,
             human_request=human_request,
         )
@@ -206,13 +297,18 @@ class ExecutionInterruptHandler:
                 reason="interrupt_budget_exceeded",
                 enforcement_level=EnforcementLevel.MANDATORY,
                 policy_rule_id="default.interrupt_budget",
-                audit_payload={"interrupt_count": count, "max_interrupts_per_run": max_interrupts},
+                audit_payload={
+                    "interrupt_count": count,
+                    "max_interrupts_per_run": max_interrupts,
+                },
             )
         return None
 
     @staticmethod
     def _increment_interrupt_count(policy_ctx: Dict[str, Any]) -> None:
-        policy_ctx[INTERRUPT_COUNT_KEY] = int(policy_ctx.get(INTERRUPT_COUNT_KEY, 0)) + 1
+        policy_ctx[INTERRUPT_COUNT_KEY] = (
+            int(policy_ctx.get(INTERRUPT_COUNT_KEY, 0)) + 1
+        )
 
     @staticmethod
     def _human_request_for_interrupt(interrupt: ExecutionInterrupt) -> HumanRequest:
@@ -259,6 +355,8 @@ class ExecutionInterruptHandler:
             task_id=task_id,
             run_id=run_id,
             blocking=blocking,
-            recommended_action=decision.payload.get("recommended_action", AgentDecisionType.REQUEST_HUMAN),
+            recommended_action=decision.payload.get(
+                "recommended_action", AgentDecisionType.REQUEST_HUMAN
+            ),
             metadata=dict(decision.payload),
         )
