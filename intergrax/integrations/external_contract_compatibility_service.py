@@ -6,8 +6,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from intergrax.integrations.contracts.external_contract_compatibility import (
+    ExternalContractAssessmentWindow,
+    ExternalContractCompatibilityExpectation,
     DimensionCompatibilityStatus,
     ExternalContractCompatibilityAssessment,
     ExternalContractCompatibilityAssessmentRequest,
@@ -27,13 +30,17 @@ _CANONICAL_DIMENSION_ORDER: tuple[ExternalContractCompatibilityDimension, ...] =
     ExternalContractCompatibilityDimension.SEMANTIC,
 )
 
-_DIMENSION_MISMATCH_REASON: dict[ExternalContractCompatibilityDimension, ExternalContractCompatibilityReasonCode] = {
+_DIMENSION_MISMATCH_REASON: dict[
+    ExternalContractCompatibilityDimension, ExternalContractCompatibilityReasonCode
+] = {
     ExternalContractCompatibilityDimension.SCHEMA: ExternalContractCompatibilityReasonCode.SCHEMA_MISMATCH,
     ExternalContractCompatibilityDimension.PROTOCOL: ExternalContractCompatibilityReasonCode.PROTOCOL_MISMATCH,
     ExternalContractCompatibilityDimension.SEMANTIC: ExternalContractCompatibilityReasonCode.SEMANTIC_MISMATCH,
 }
 
-_DIMENSION_INCOMPATIBLE_OUTCOME: dict[ExternalContractCompatibilityDimension, ExternalContractCompatibilityOutcome] = {
+_DIMENSION_INCOMPATIBLE_OUTCOME: dict[
+    ExternalContractCompatibilityDimension, ExternalContractCompatibilityOutcome
+] = {
     ExternalContractCompatibilityDimension.SCHEMA: ExternalContractCompatibilityOutcome.SCHEMA_INCOMPATIBLE,
     ExternalContractCompatibilityDimension.PROTOCOL: ExternalContractCompatibilityOutcome.PROTOCOL_INCOMPATIBLE,
     ExternalContractCompatibilityDimension.SEMANTIC: ExternalContractCompatibilityOutcome.SEMANTIC_INCOMPATIBLE,
@@ -44,7 +51,9 @@ def _require_evaluator_id(value: str) -> str:
     if type(value) is not str:
         raise TypeError("evaluator_id must be str")
     if not value or value != value.strip():
-        raise ExternalContractCompatibilityServiceError("evaluator_id must be non-empty trimmed text")
+        raise ExternalContractCompatibilityServiceError(
+            "evaluator_id must be non-empty trimmed text"
+        )
     return value
 
 
@@ -127,41 +136,48 @@ class ExternalContractCompatibilityService:
         for dimension in _CANONICAL_DIMENSION_ORDER:
             if dimension not in expectation.required_dimensions:
                 continue
-            selection = self._select_evaluator(request, dimension)
+
+            pre_filter = self._authoritative_dimension_evidence(
+                request.evidence, dimension
+            )
+            fresh = self._fresh_authoritative_dimension_evidence(
+                request.evidence,
+                dimension,
+                assessed_at=request.assessed_at,
+                assessment_window=request.assessment_window,
+            )
+
+            if not fresh:
+                insufficient_reason = (
+                    ExternalContractCompatibilityReasonCode.STALE_EVIDENCE
+                    if pre_filter
+                    else ExternalContractCompatibilityReasonCode.MISSING_REQUIRED_EVIDENCE
+                )
+                dimension_results[dimension] = _DimensionEvaluation(
+                    status=DimensionCompatibilityStatus.INSUFFICIENT_EVIDENCE,
+                    reason=insufficient_reason,
+                    findings=(),
+                    material_evidence_refs=(),
+                )
+                continue
+
+            selection = self._select_evaluator(
+                expectation=expectation,
+                evidence=fresh,
+                dimension=dimension,
+                explicit_evaluator_ids=request.explicit_evaluator_ids,
+            )
             if selection.error_reason is not None:
-                dim_eval = _DimensionEvaluation(
+                dimension_results[dimension] = _DimensionEvaluation(
                     status=DimensionCompatibilityStatus.INSUFFICIENT_EVIDENCE,
                     reason=selection.error_reason,
                     findings=(),
                     material_evidence_refs=(),
                 )
-                dimension_results[dimension] = dim_eval
                 continue
 
             evaluator = selection.evaluator
             assert evaluator is not None
-
-            pre_filter = self._authoritative_dimension_evidence(request.evidence, dimension)
-            fresh = tuple(
-                item
-                for item in pre_filter
-                if self._evidence_policy.accepts(
-                    item,
-                    assessed_at=request.assessed_at,
-                    window=request.assessment_window,
-                )
-            )
-            stale = bool(pre_filter) and not fresh
-
-            if stale:
-                dim_eval = _DimensionEvaluation(
-                    status=DimensionCompatibilityStatus.INSUFFICIENT_EVIDENCE,
-                    reason=ExternalContractCompatibilityReasonCode.STALE_EVIDENCE,
-                    findings=(),
-                    material_evidence_refs=(),
-                )
-                dimension_results[dimension] = dim_eval
-                continue
 
             context = ExternalContractCompatibilityEvaluationContext(
                 assessment_id=request.assessment_id,
@@ -171,7 +187,10 @@ class ExternalContractCompatibilityService:
             )
             raw_findings = evaluator.evaluate(expectation, fresh, context)
             validated_findings = self._validate_evaluator_findings(
-                evaluator, dimension, raw_findings
+                evaluator,
+                dimension,
+                raw_findings,
+                authoritative_evidence=fresh,
             )
             ordered_findings.extend(validated_findings)
             for ev in fresh:
@@ -179,18 +198,9 @@ class ExternalContractCompatibilityService:
                     if ref not in material_evidence_refs:
                         material_evidence_refs.append(ref)
 
-            normalized = self._normalize_dimension(validated_findings, dimension)
-            if (
-                normalized.status is DimensionCompatibilityStatus.INSUFFICIENT_EVIDENCE
-                and not fresh
-            ):
-                normalized = _DimensionEvaluation(
-                    status=DimensionCompatibilityStatus.INSUFFICIENT_EVIDENCE,
-                    reason=ExternalContractCompatibilityReasonCode.MISSING_REQUIRED_EVIDENCE,
-                    findings=validated_findings,
-                    material_evidence_refs=(),
-                )
-            dimension_results[dimension] = normalized
+            dimension_results[dimension] = self._normalize_dimension(
+                validated_findings, dimension
+            )
 
         outcome, top_reason = self._aggregate_outcome(
             expectation.required_dimensions, dimension_results
@@ -217,23 +227,43 @@ class ExternalContractCompatibilityService:
             if item.dimension is dimension and item.authority.is_authoritative
         )
 
+    def _fresh_authoritative_dimension_evidence(
+        self,
+        evidence: tuple[ExternalContractCompatibilityEvidence, ...],
+        dimension: ExternalContractCompatibilityDimension,
+        *,
+        assessed_at: datetime,
+        assessment_window: ExternalContractAssessmentWindow,
+    ) -> tuple[ExternalContractCompatibilityEvidence, ...]:
+        authoritative = self._authoritative_dimension_evidence(evidence, dimension)
+        return tuple(
+            item
+            for item in authoritative
+            if self._evidence_policy.accepts(
+                item,
+                assessed_at=assessed_at,
+                window=assessment_window,
+            )
+        )
+
     def _select_evaluator(
         self,
-        request: ExternalContractCompatibilityAssessmentRequest,
+        *,
+        expectation: ExternalContractCompatibilityExpectation,
+        evidence: tuple[ExternalContractCompatibilityEvidence, ...],
         dimension: ExternalContractCompatibilityDimension,
+        explicit_evaluator_ids: tuple[str, ...],
     ) -> _EvaluatorSelection:
         pool = self._evaluators
-        if request.explicit_evaluator_ids:
-            pool = tuple(
-                self._evaluator_index[eid] for eid in request.explicit_evaluator_ids
-            )
+        if explicit_evaluator_ids:
+            pool = tuple(self._evaluator_index[eid] for eid in explicit_evaluator_ids)
         candidates: list[ExternalContractCompatibilityEvaluator] = []
         for evaluator in pool:
             if dimension not in evaluator.supported_dimensions:
                 continue
             if evaluator.can_evaluate(
-                request.expectation,
-                request.evidence,
+                expectation,
+                evidence,
                 dimension=dimension,
             ):
                 candidates.append(evaluator)
@@ -254,8 +284,15 @@ class ExternalContractCompatibilityService:
         evaluator: ExternalContractCompatibilityEvaluator,
         dimension: ExternalContractCompatibilityDimension,
         findings: tuple[ExternalContractCompatibilityFinding, ...],
+        *,
+        authoritative_evidence: tuple[ExternalContractCompatibilityEvidence, ...],
     ) -> tuple[ExternalContractCompatibilityFinding, ...]:
         evaluator_id = evaluator.evaluator_id
+        allowed_refs = frozenset(
+            ref
+            for evidence_item in authoritative_evidence
+            for ref in evidence_item.evidence_refs
+        )
         for finding in findings:
             if finding.dimension is not dimension:
                 raise ExternalContractCompatibilityEvaluatorContractError(
@@ -265,6 +302,10 @@ class ExternalContractCompatibilityService:
                 raise ExternalContractCompatibilityEvaluatorContractError(
                     "finding.evaluator_id must match selected evaluator"
                 )
+            if not frozenset(finding.evidence_refs).issubset(allowed_refs):
+                raise ExternalContractCompatibilityEvaluatorContractError(
+                    "finding.evidence_refs must reference only evidence supplied to evaluator"
+                )
         return findings
 
     def _normalize_dimension(
@@ -272,9 +313,7 @@ class ExternalContractCompatibilityService:
         findings: tuple[ExternalContractCompatibilityFinding, ...],
         dimension: ExternalContractCompatibilityDimension,
     ) -> _DimensionEvaluation:
-        material = tuple(
-            f for f in findings if f.source_authority.is_authoritative
-        )
+        material = tuple(f for f in findings if f.source_authority.is_authoritative)
         if not material:
             return _DimensionEvaluation(
                 status=DimensionCompatibilityStatus.INSUFFICIENT_EVIDENCE,
@@ -303,7 +342,10 @@ class ExternalContractCompatibilityService:
         if DimensionCompatibilityStatus.INSUFFICIENT_EVIDENCE in statuses:
             reason = ExternalContractCompatibilityReasonCode.MISSING_REQUIRED_EVIDENCE
             for finding in material:
-                if finding.reason_code is not ExternalContractCompatibilityReasonCode.NONE:
+                if (
+                    finding.reason_code
+                    is not ExternalContractCompatibilityReasonCode.NONE
+                ):
                     reason = finding.reason_code
                     break
             return _DimensionEvaluation(
@@ -329,8 +371,12 @@ class ExternalContractCompatibilityService:
     def _aggregate_outcome(
         self,
         required_dimensions: frozenset[ExternalContractCompatibilityDimension],
-        dimension_results: dict[ExternalContractCompatibilityDimension, _DimensionEvaluation],
-    ) -> tuple[ExternalContractCompatibilityOutcome, ExternalContractCompatibilityReasonCode]:
+        dimension_results: dict[
+            ExternalContractCompatibilityDimension, _DimensionEvaluation
+        ],
+    ) -> tuple[
+        ExternalContractCompatibilityOutcome, ExternalContractCompatibilityReasonCode
+    ]:
         for dimension in _CANONICAL_DIMENSION_ORDER:
             if dimension not in required_dimensions:
                 continue
