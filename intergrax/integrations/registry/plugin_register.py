@@ -13,7 +13,10 @@ from intergrax.integrations.contracts.catalog_factory import (
     IntegrationFactoryConfigValue,
 )
 from intergrax.integrations.core.manifest import IntegrationManifest
-from intergrax.integrations.core.plugin import IntegrationPlugin, integration_manifest_for_plugin
+from intergrax.integrations.core.plugin import (
+    IntegrationPlugin,
+    integration_manifest_for_plugin,
+)
 from intergrax.integrations.registry.catalog import register_integration
 from intergrax.integrations.registry.contract_spec import (
     IntegrationContractSpec,
@@ -21,6 +24,9 @@ from intergrax.integrations.registry.contract_spec import (
     typed_contract_categories,
     validate_contract_specs_against_manifest,
     validate_required_explicit_categories,
+)
+from intergrax.integrations.external_contract_compatibility_extensions import (
+    external_contract_compatibility_extensions_for_plugin,
 )
 from intergrax.runtime.integrations.contracts import PlatformIntegrationContract
 
@@ -88,10 +94,13 @@ def register_integration_plugin(
 ) -> IntegrationManifest:
     """Register catalog row from an :class:`IntegrationPlugin` implementation."""
 
-    def _factory(**kwargs: IntegrationFactoryConfigValue) -> PlatformIntegrationContract:
+    def _factory(
+        **kwargs: IntegrationFactoryConfigValue,
+    ) -> PlatformIntegrationContract:
         return plugin.create_integration(**kwargs)
 
     manifest = integration_manifest_for_plugin(plugin)
+    external_contract_compatibility_extensions_for_plugin(plugin)
     resolved_contract_specs = (
         contract_specs
         if contract_specs is not None
