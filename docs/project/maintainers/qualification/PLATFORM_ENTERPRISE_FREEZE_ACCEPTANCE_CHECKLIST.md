@@ -45,7 +45,9 @@ A Cursor implementation report alone is **not** sufficient evidence.
 
 ## Initial checklist policy
 
-Criteria default to OPEN. Historical closure may be noted under **Evidence / historical evidence** without upgrading to PASS until independently recertified under the current program. Do not expand PASS coverage without exact-SHA independent evidence.
+Criteria default to OPEN. Historical closure may be noted under **Evidence / historical evidence** without upgrading to PASS until independently recertified under the current program. Do not expand PASS coverage without exact-SHA independent evidence. **`FRZ-TEN-*` criteria default to OPEN; historical stage closure does not auto-PASS tenant isolation.**
+
+**`ARCH-FREEZE` gate:** cannot close while any applicable **`FRZ-TEN-*`** criterion remains **`OPEN`** or **`BLOCKED`**. Allowed final states: **`PASS`** or **`N/A — WITH EVIDENCE`** only.
 
 ---
 
@@ -256,6 +258,18 @@ Criteria default to OPEN. Historical closure may be noted under **Evidence / his
 | FRZ-AUD-08 | Continuous enterprise audit | audit result has deterministic machine-readable exit status | ENT-AUDIT-X | OPEN | — |
 | FRZ-AUD-09 | Continuous enterprise audit | full/freeze/changed-since audit modes or equivalent exist | ENT-AUDIT-X | OPEN | — |
 | FRZ-AUD-10 | Continuous enterprise audit | post-freeze scenario-wave enterprise audit policy is enforceable | ENT-AUDIT-X | OPEN | — |
+| FRZ-TEN-01 | Tenant isolation | canonical tenant identity where tenant scope applies | TENANT-X, EBH-7 | OPEN | — |
+| FRZ-TEN-02 | Tenant isolation | end-to-end tenant propagation across relevant semantic and runtime boundaries | TENANT-X, TRACE-X | OPEN | — |
+| FRZ-TEN-03 | Tenant isolation | child/downstream operations cannot silently switch or widen tenant scope (`child_tenant_scope ⊆ parent_tenant_scope`) | TENANT-X, GOV-X2, EBH-4 | OPEN | — |
+| FRZ-TEN-04 | Tenant isolation | cross-tenant state/cache/persistence/memory/index access blocked without explicit governed cross-tenant semantics | TENANT-X, STATE-X | OPEN | — |
+| FRZ-TEN-05 | Tenant isolation | provider selection, configuration, profiles and effective bindings preserve tenant scope | TENANT-X, CONFIG-X | OPEN | — |
+| FRZ-TEN-06 | Tenant isolation | tenant-specific credentials/secrets references cannot resolve or reuse under another tenant context | TENANT-X, PROD-Q, CONFIG-X | OPEN | — |
+| FRZ-TEN-07 | Tenant isolation | evidence, events, traces and diagnostics preserve tenant identity; cannot establish truth for another tenant | TENANT-X, TRACE-X | OPEN | — |
+| FRZ-TEN-08 | Tenant isolation | checkpoint, retry, recovery, replay and restore preserve original tenant identity | TENANT-X, STATE-X | OPEN | — |
+| FRZ-TEN-09 | Tenant isolation | legal cross-tenant actions require explicit typed contract + explicit authority + explicit policy + auditable evidence; no implicit admin/global bypass | TENANT-X, GOV-X2 | OPEN | — |
+| FRZ-TEN-10 | Tenant isolation | missing/invalid tenant must not silently become global, shared, default tenant, system tenant or provider-global scope where tenant identity is required | TENANT-X | OPEN | — |
+| FRZ-TEN-11 | Tenant isolation | runtime extensions/providers/plugins cannot mint, rewrite or widen tenant scope beyond explicitly supplied authority | TENANT-X, EBH-5 | OPEN | — |
+| FRZ-TEN-12 | Tenant isolation | executable adversarial tests prove tenant isolation across execution, state, provider/config, evidence and recovery critical paths | TENANT-X, QUAL-X, EBH-7 | OPEN | — |
 
 ---
 
@@ -299,26 +313,38 @@ Completeness detector: every FRZ family must have at least one primary closing s
 | Stage | Primary FRZ families |
 | --- | --- |
 | EBH-2* | BND, OWN, CTR, TYP, PLG |
-| HARNESS-* | HRN, EXE, GOV, OBS |
-| HARNESS-W4 | REL (bounded concurrency, overload, backpressure, saturation, provider throttling, bounded retry/fallback) |
-| GOV-X1 / GOV-X2 | GOV, EXE, TRC |
-| INT-EXTCOMP-X | CMP, CTR, TYP, PLG, TRC |
-| INT-CONFIG-REAL-X | CFG, CTR, PLG, RPL, GOV |
-| AW-7C | GOV, EXE, CTR, PLG, RPL |
-| EBH-3 | BND, OWN, CTR |
-| EBH-4 | BND, CTR, EXE, GOV |
-| CTRL-X | CTL, SEC, REL, OBS |
-| STATE-X | STA, REC |
-| TRACE-X | TRC, OBS, GOV |
-| CONFIG-X | CFG, CTR, PLG, RPL, PRD |
-| COMPAT-X | CMP |
-| PROD-Q | PRD, SEC, REL |
-| QUAL-X | REG |
-| EBH-5 | PLG, RPL |
-| EBH-6 | all applicable architecture families |
-| EBH-7 | all enterprise families |
-| ENT-AUDIT-X | AUD + executable evidence across all enterprise families |
-| ARCH-FREEZE | FRZ, DEBT, DOC + all remaining |
+| HARNESS-* | HRN, EXE, GOV, OBS, TEN |
+| HARNESS-W4 | REL, TEN |
+| GOV-X1 / GOV-X2 | GOV, EXE, TRC, TEN |
+| INT-EXTCOMP-X | CMP, CTR, TYP, PLG, TRC, TEN |
+| INT-CONFIG-REAL-X | CFG, CTR, PLG, RPL, GOV, TEN |
+| AW-7C | GOV, EXE, CTR, PLG, RPL, TEN |
+| EBH-3 | BND, OWN, CTR, TEN |
+| EBH-4 | BND, CTR, EXE, GOV, TEN |
+| CTRL-X | CTL, SEC, REL, OBS, TEN |
+| STATE-X | STA, REC, TEN |
+| TRACE-X | TRC, OBS, GOV, TEN |
+| CONFIG-X | CFG, CTR, PLG, RPL, PRD, TEN |
+| COMPAT-X | CMP, TEN |
+| TENANT-X | TEN |
+| PROD-Q | PRD, SEC, REL, TEN |
+| QUAL-X | REG, TEN |
+| EBH-5 | PLG, RPL, TEN |
+| EBH-6 | all applicable architecture families, TEN |
+| EBH-7 | all enterprise families, TEN |
+| ENT-AUDIT-X | AUD, TEN + executable evidence across all enterprise families |
+| ARCH-FREEZE | FRZ, DEBT, DOC, TEN + all remaining |
+
+**`FRZ-TEN` family owners (no orphan criteria):**
+
+| Role | Stage |
+| --- | --- |
+| Primary cross-platform closer | **TENANT-X** |
+| Final convergence | **EBH-7** |
+| Executable continuous enforcement | **ENT-AUDIT-X** |
+| Final acceptance | **ARCH-FREEZE** |
+
+Supporting stage linkage (local `TEN` evidence where applicable): `HARNESS-*`, `GOV-X*`, `INT-EXTCOMP-X`, `INT-CONFIG-REAL-X`, `AW-7C`, `EBH-3`, `EBH-4`, `CTRL-X`, `STATE-X`, `TRACE-X`, `CONFIG-X`, `COMPAT-X`, `PROD-Q`, `QUAL-X`, `EBH-5`, `EBH-6`.
 
 ### FRZ family → stage owners
 
@@ -348,6 +374,7 @@ Completeness detector: every FRZ family must have at least one primary closing s
 | DEBT | ARCH-FREEZE |
 | FRZ | ARCH-FREEZE |
 | AUD | ENT-AUDIT-X |
+| TEN | TENANT-X (primary), EBH-7 (final convergence), ENT-AUDIT-X (continuous), ARCH-FREEZE (acceptance); supporting: TRACE-X, STATE-X, CONFIG-X, GOV-X2, EBH-4, EBH-5, PROD-Q, QUAL-X |
 
 ---
 
@@ -357,7 +384,9 @@ Completeness detector: every FRZ family must have at least one primary closing s
 
 1. Read [PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md).
 2. Read this checklist.
-3. Resolve current task, parent, next mandatory stage, applicable FRZ-* IDs, blockers, and domain semantic authorities.
+3. Resolve current task, parent, next mandatory stage, applicable FRZ-* IDs (including **`FRZ-TEN-*`** where tenant scope applies), blockers, and domain semantic authorities.
+
+Every task instruction must require **Tenant Isolation Audit** per roadmap §2.0.1.
 
 ### After Cursor implementation
 

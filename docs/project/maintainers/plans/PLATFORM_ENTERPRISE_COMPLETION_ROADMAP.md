@@ -61,6 +61,27 @@ Every stage in this roadmap must preserve and revalidate these rules where appli
 25. **Resource boundedness** — production runtime must not rely on unbounded concurrency, queue growth, retry, memory/resource consumption or work admission. Overload must have explicit semantics: **bounded**, **rejected**, **backpressured** or **degraded** — not accidental behavior.
 26. **Durable recovery explicit** — where the platform holds durable state, backup/restore must be **supported and qualified** or **explicitly outside platform responsibility with evidence**. Restore must not create new authority, new identity, divergent truth or accept stale state as canonical.
 27. **Production operability** — a system qualified as production-ready must explicitly expose or classify health, readiness, degraded state, terminal failure and operator-actionable failure information, plus recovery procedure/responsibility for critical failure modes. Observability alone does not satisfy operability when only a log exists without actionable operator semantics.
+28. **Tenant isolation is end-to-end and non-negotiable.** Tenant context must be explicit where tenant scope applies, preserved across all semantic, composition, execution, persistence, recovery, provider, evidence, observability and asynchronous boundaries, and may never silently disappear, change tenant, widen to global scope or allow cross-tenant access. Cross-tenant behavior is legal only through an explicit typed contract, explicit authority and auditable policy. Missing tenant identity must fail closed where tenant identity is required.
+
+**Tenant isolation hard rules (where tenant scope applies):**
+
+```text
+tenant_child_scope ⊆ tenant_parent_scope
+```
+
+```text
+tenant A facts/state/authority/evidence
+MUST NOT
+become valid material for tenant B
+```
+
+```text
+missing tenant
+!=
+global tenant
+```
+
+**Historical stage closure:** historical CLOSED stages are **not** automatically tenant-certified. Historical evidence may contribute tenant proof only when **revalidated on current HEAD** during **`TENANT-X`** or an explicitly designated tenant-certification stage.
 
 ### 1.1 Scenario-discovered reusable capability ownership
 
@@ -111,35 +132,83 @@ Then resolve:
 
 Forbidden state: roadmap stage `CLOSED` while corresponding freeze evidence was not updated.
 
-### 2.0.1 Stage → freeze criteria linkage
+### 2.0.1 Tenant Isolation Audit (mandatory from this program revision)
+
+Every implementation/audit instruction from this point forward must include **Tenant Isolation Audit** with exactly one verdict:
+
+```text
+PASS
+BLOCKED
+N/A — WITH EVIDENCE
+```
+
+Forbidden when tenant scope is relevant: `not checked`, `probably safe`, `implicit`, `out of scope`.
+
+**Required questions (answer for every task where tenant scope may apply):**
+
+```text
+1. Does the mechanism carry tenant identity?
+2. Where is tenant identity introduced?
+3. Who owns tenant identity?
+4. Is tenant propagated through every relevant boundary?
+5. Can child/downstream work change or widen tenant?
+6. Can tenant identity disappear?
+7. Can missing tenant silently become global/shared?
+8. Is state/cache/storage/index lookup tenant-scoped?
+9. Is provider/config/profile resolution tenant-scoped?
+10. Are credentials/secrets tenant-scoped where applicable?
+11. Is evidence/trace/event attribution tenant-preserving?
+12. Does async/background/retry/resume preserve tenant?
+13. Can recovery restore data/state under another tenant?
+14. Can plugins/providers rewrite tenant scope?
+15. Are cross-tenant operations explicit, typed and governed?
+16. Are adversarial tenant-A → tenant-B accesses tested?
+```
+
+If relevant tenant-isolation evidence is missing → **`IN-SCOPE BLOCKER`**, unless a later explicitly designated tenant-certification stage owns global proof **and** the current stage proves its own local tenant invariant.
+
+**Default assumption:** runtime/data/provider/state/evidence mechanisms are **`TENANT RELEVANT`** unless proven otherwise with evidence-backed `N/A — WITH EVIDENCE`.
+
+**Independent audit:** no `FRZ-TEN-*` **PASS** without (1) exact SHA, (2) code/contract evidence, (3) targeted/adversarial tests, (4) independent audit. A Cursor report alone is not freeze evidence.
+
+**Compatibility local invariant (`INT-EXTCOMP-X` and descendants):** where tenant scope applies:
+
+```text
+expectation.tenant == evidence.tenant == resolver-key.tenant == assessment.tenant
+```
+
+Evidence from tenant A must never become assessment material for tenant B. Not accepted until exact-SHA independent audit.
+
+### 2.0.2 Stage → freeze criteria linkage
 
 From the current workflow position forward, every **parent-level** roadmap stage must declare which `FRZ-*` families it verifies or for which it supplies closure evidence. The checklist [Freeze Criteria Coverage Matrix](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md#freeze-criteria-coverage-matrix) is the completeness detector; an `FRZ` family without a stage owner means the program is incomplete.
 
 Minimum planned linkage:
 
-| Stage group | Primary `FRZ` families |
-|---|---|
-| EBH-2* | BND, OWN, CTR, TYP, PLG |
-| HARNESS-* | HRN, EXE, GOV, OBS |
-| HARNESS-W4 | REL (bounded concurrency, queue/backpressure, overload/saturation, provider throttling, bounded retry/fallback) |
-| GOV-X1 / GOV-X2 | GOV, EXE, TRC |
-| INT-EXTCOMP-X | CMP, CTR, TYP, PLG, TRC |
-| INT-CONFIG-REAL-X | CFG, CTR, PLG, RPL, GOV |
-| AW-7C | GOV, EXE, CTR, PLG, RPL |
-| EBH-3 | BND, OWN, CTR |
-| EBH-4 | BND, CTR, EXE, GOV |
-| CTRL-X | CTL, SEC, REL, OBS |
-| STATE-X | STA, REC |
-| TRACE-X | TRC, OBS, GOV |
-| CONFIG-X | CFG, CTR, PLG, RPL, PRD |
-| COMPAT-X | CMP |
-| PROD-Q | PRD, SEC, REL |
-| QUAL-X | REG |
-| EBH-5 | PLG, RPL |
-| EBH-6 | all applicable architecture families |
-| EBH-7 | all enterprise families |
-| ENT-AUDIT-X | all enterprise families as audit coverage + REG + FRZ + DEBT + DOC (cross-family executable audit evidence; not necessarily primary semantic closer per family) |
-| ARCH-FREEZE | FRZ, DEBT, DOC + all remaining |
+| Stage group | Primary `FRZ` families | Tenant isolation (`TEN`) |
+|---|---|---|
+| EBH-2* | BND, OWN, CTR, TYP, PLG | — (local hardening; cross-platform `TEN` via **TENANT-X**) |
+| HARNESS-* | HRN, EXE, GOV, OBS | TEN |
+| HARNESS-W4 | REL (bounded concurrency, queue/backpressure, overload/saturation, provider throttling, bounded retry/fallback) | TEN |
+| GOV-X1 / GOV-X2 | GOV, EXE, TRC | TEN |
+| INT-EXTCOMP-X | CMP, CTR, TYP, PLG, TRC | TEN |
+| INT-CONFIG-REAL-X | CFG, CTR, PLG, RPL, GOV | TEN |
+| AW-7C | GOV, EXE, CTR, PLG, RPL | TEN |
+| EBH-3 | BND, OWN, CTR | TEN |
+| EBH-4 | BND, CTR, EXE, GOV | TEN |
+| CTRL-X | CTL, SEC, REL, OBS | TEN |
+| STATE-X | STA, REC | TEN |
+| TRACE-X | TRC, OBS, GOV | TEN |
+| CONFIG-X | CFG, CTR, PLG, RPL, PRD | TEN |
+| COMPAT-X | CMP | TEN |
+| **TENANT-X** | **TEN** | **TEN (primary cross-platform closer)** |
+| PROD-Q | PRD, SEC, REL | TEN |
+| QUAL-X | REG | TEN |
+| EBH-5 | PLG, RPL | TEN |
+| EBH-6 | all applicable architecture families | TEN |
+| EBH-7 | all enterprise families | TEN |
+| ENT-AUDIT-X | all enterprise families as audit coverage + REG + FRZ + DEBT + DOC + **TEN** (cross-family executable audit evidence; not necessarily primary semantic closer per family) | TEN (executable continuous enforcement) |
+| ARCH-FREEZE | FRZ, DEBT, DOC + all remaining | TEN (final acceptance) |
 
 ### 2.1 Required instruction header
 
@@ -228,7 +297,7 @@ If a new blocker is discovered:
 | HARNESS-W5 | Harness W5 — Events / Observability delivery and export recertification | Reconcile and close W5 using existing event delivery/export/OTLP qualification records. Verify one event/evidence spine, lifecycle/composition ownership and no observability-created execution truth. | **[x] CLOSED** (independent exact-SHA audit accepted at `5a87046ba6b5dc46ffb3693417b4d2bf96a561c5`) |
 | HARNESS-W6 | Harness W6 — Runtime Intelligence recertification | Reconcile W6-A…W6-E against current HEAD: typed contracts, deterministic analysis, orchestration, execution advisory boundary. Runtime intelligence remains advisory/non-authoritative and must not become a second execution/governance owner. | **[x] CLOSED** (independent exact-SHA audit accepted at `846af28cd8fb6889cece1e8807196014dc89cdfd`) |
 | GOV-X1 | Governance Authority Boundary Recertification | Cross-cutting governance audit before global dependency/communication certification. Revalidate Governance ≠ Execution, proposal/permission/execution separation, authority narrowing, fresh side-effect authorization, HITL semantics, evidence-before-work and absence of governance bypasses. New transferred Integrations/AW capabilities must conform to authority rules established here. Parent reconciliation: [`GOV_X1_GOVERNANCE_AUTHORITY_BOUNDARY_RECERTIFICATION.md`](../qualification/GOV_X1_GOVERNANCE_AUTHORITY_BOUNDARY_RECERTIFICATION.md) (GX1-01..GX1-10). | **[x] CLOSED** (independent exact-SHA audit accepted at `27af801bec916165dab85019c07cf43d18e18551`; Governance Authority Boundary Recertification scope only — not full Governance+Execution E2E, not TRACE-X closure, not global FRZ closure; **GOV-X2** remains future mandatory work) |
-| **INT-EXTCOMP-X** | External Contract Semantic Compatibility | Integrations-owned reusable compatibility capability for determining whether an external API/system remains compatible with the expected business contract. Must distinguish: **COMPATIBLE**, **SCHEMA_INCOMPATIBLE**, **PROTOCOL_INCOMPATIBLE**, **SEMANTIC_INCOMPATIBLE**, **INSUFFICIENT_EVIDENCE**. Compatibility assessment is advisory/factual only. It must **not**: mint CapabilityGap; choose acquisition; choose configure/adapt; widen authority; invoke Execution Engine; invoke ToolRuntime; become a second Integration Catalog. **Architecture lock:** S24-GAP-04-P0 / P0-R1 = CLOSED; accepted architecture SHA `f1b56a5c38dd492974076c0c31118600a1032df5`; P1 implementation SHA `00b87fc05ca179390c719c2a689ef44e48ecd637` — superseded for parent closure by independently accepted **S24-GAP-04-P1-R1** at `0323272989df515b70537e0e654efde6013afb95` (do not certify `00b87fc…` as parent closure). **P1-R1 evidence-lineage blocker = RESOLVED / independently accepted.** Remaining mandatory children: **S24-GAP-04-P2**, **S24-GAP-04-CERT**. Parent cannot close before **S24-GAP-04-CERT** passes exact-SHA independent audit. | **[ ] BLOCKED / MANDATORY** |
+| **INT-EXTCOMP-X** | External Contract Semantic Compatibility | Integrations-owned reusable compatibility capability for determining whether an external API/system remains compatible with the expected business contract. Must distinguish: **COMPATIBLE**, **SCHEMA_INCOMPATIBLE**, **PROTOCOL_INCOMPATIBLE**, **SEMANTIC_INCOMPATIBLE**, **INSUFFICIENT_EVIDENCE**. Compatibility assessment is advisory/factual only. It must **not**: mint CapabilityGap; choose acquisition; choose configure/adapt; widen authority; invoke Execution Engine; invoke ToolRuntime; become a second Integration Catalog. **Architecture lock:** S24-GAP-04-P0 / P0-R1 = CLOSED; accepted architecture SHA `f1b56a5c38dd492974076c0c31118600a1032df5`; P1 implementation SHA `00b87fc05ca179390c719c2a689ef44e48ecd637` — superseded for parent closure by independently accepted **S24-GAP-04-P1-R1** at `0323272989df515b70537e0e654efde6013afb95` (do not certify `00b87fc…` as parent closure). **P1-R1 evidence-lineage blocker = RESOLVED / independently accepted.** Remaining mandatory children: **S24-GAP-04-P2**, **S24-GAP-04-CERT**. Parent cannot close before **S24-GAP-04-CERT** passes exact-SHA independent audit. **Tenant Isolation Audit (mandatory for this stage and all descendants):** report §2.0.1 verdict; where tenant scope applies, local invariant `expectation.tenant == evidence.tenant == resolver-key.tenant == assessment.tenant`; tenant A evidence must not become tenant B assessment material — not accepted until exact-SHA independent audit (implementation at `73ebf574…` or later is not parent-certified tenant evidence). | **[ ] BLOCKED / MANDATORY** |
 | **S24-GAP-04-P1-R1** | Evidence-Lineage Hardening (child of **INT-EXTCOMP-X**) | Goal: no evaluator may establish material compatibility/incompatibility without fresh authoritative evidence actually supplied by the platform. **Mandatory invariants:** `fresh authoritative evidence == ()` → **INSUFFICIENT_EVIDENCE** → `evaluator.evaluate()` **MUST NOT** run; `finding.evidence_refs ⊆ refs from fresh authoritative evidence passed to that evaluator` — otherwise **ExternalContractCompatibilityEvaluatorContractError**. `can_evaluate()` must receive only bounded fresh authoritative evidence for the current dimension — not the raw request bundle containing LLM_ADVISORY, stale evidence or other dimensions. Remove P1 test `# type: ignore` by typed test helpers. | **[x] CLOSED** (independent exact-SHA audit accepted at `0323272989df515b70537e0e654efde6013afb95`; bounded per-dimension fresh authoritative evidence; same evidence tuple for `can_evaluate()` and `evaluate()`; zero fresh authoritative evidence short-circuits evaluation; missing vs stale evidence distinguished; finding refs constrained to evaluator input evidence refs; forged/stale/advisory/other-dimension evidence-ref laundering rejected; test `type: ignore` removed; no public contract / authority / ownership change) |
 | **S24-GAP-04-P2** | Provider / Domain Evidence Extensions (child of **INT-EXTCOMP-X**) | Extend the already certified generic compatibility contracts with provider/domain evidence adapters without moving provider I/O or vendor branching into the generic core. **Hard rules:** generic service has no provider I/O; no vendor branches in generic core; extensions through Protocol contracts; no authority expansion; no UCA ownership. | **[ ] QUEUED** |
 | **S24-GAP-04-CERT** | External Contract Compatibility Adversarial Certification (child of **INT-EXTCOMP-X**) | Minimum certification matrix: schema drift; protocol drift; semantic false compatibility; LLM-only evidence; missing evidence; stale evidence; contradictory evidence; wrong tenant/provider/operation; expected v1 / observed v2; external plugin evaluator; evidence-lineage falsification. | [ ] PLANNED / MANDATORY |
@@ -245,13 +314,14 @@ If a new blocker is discovered:
 | **TRACE-X** | End-to-End Traceability & Evidence Certification | Prove end-to-end **causal traceability** forward: transport identity → runtime identity → execution → task → child execution → strategy → agent → model/context decision → tool call → governance decision → side-effect authorization → provider invocation → external effect → runtime evidence/events → diagnostics → terminal outcome; and **reverse reconstruction**: effect/failure/diagnostic → execution → authority → policy/profile revision → provider → contract/version → causal parent. Mandatory coverage includes `ExecutionId`, `RunId`, `TaskId`, parent/child causality, provider/delegation/tool invocation correlation, model/context attribution, profile/policy revision attribution, side-effect authorization evidence, restart/resume continuity, terminal outcome evidence, diagnostic provenance, evidence version attribution, configured vs effective provenance. | [ ] PLANNED / MANDATORY |
 | **CONFIG-X** | Configuration / Provider / Vendor Activation Certification | Closed-world platform audit of every mechanism whose behavior depends on configuration, provider, vendor, backend, model, endpoint, deployment, region, transport or external integration selection. Prove that: no production capability is selected by hard-coded implementation choice; no provider/vendor/model/backend is activated merely because code exists; explicit validated configuration is required where activation is configurable; missing/invalid required configuration fails closed or leaves the capability explicitly disabled; one canonical configuration contract and one sanctioned composition/selection owner exists per configurable concern; configured state and effective state are distinct and deterministic; external providers/backends remain replaceable through platform contracts; unsupported configuration cannot silently fall back to another vendor, model or backend. **Minimum future inventory:** LLM/model/deployment/endpoint/region/routing/fallback and embedding/rerank/eval models; vector/graph/search/document-parser/relational/object/cache/checkpoint/state backends; collaboration/email/calendar/external-work/payments/web-search/browser/notifications/identity integrations; OTLP/metrics/logging/diagnostic export transports; plugin/provider/capability/tool/agent/profile/workspace activation (`installed` ≠ `configured` ≠ `effective` ≠ `authorized`). Classify production literals as blocker vs protocol constant vs test fixture vs reference default vs safe internal value. | [ ] PLANNED / MANDATORY |
 | COMPAT-X | Contract, Schema & Evolution Certification | Identify frozen public/stable vs internal contracts and certify versioning/evolution rules for APIs, events, persisted schemas, plugin/provider contracts and serialization. Verify backward/forward compatibility policy, migrations, deprecation/removal rules and no compatibility shim becoming a permanent parallel authority. | [ ] PLANNED / MANDATORY |
+| **TENANT-X** | Cross-Platform Tenant Isolation Certification | First complete cross-platform tenant isolation certification after individual recertification of Governance, Execution, Control Plane, State/Recovery, Traceability, Configuration and Compatibility. Certifies tenant isolation across the entire platform with no tenant-boundary bypass across subsystem composition. **Closed-world domains (minimum):** identity; execution; governance; tool invocation; provider invocation; integration resolution; configuration/profile resolution; state; durable persistence; cache; memory; RAG/vector/graph indexes; events; observability; traceability; evidence; recovery/resume; queues/background work; retries; external operations; credentials/secrets references; plugins; provider extensions; compatibility assessment; control plane. **Required proof classes:** (A) identity continuity through canonical request/subject/envelope/state/evidence contracts; (B) authority isolation — tenant A authority cannot authorize tenant B; (C) state isolation — no cross-tenant read/write of state/durable records/checkpoints/cache/memory/index material without explicit governed cross-tenant semantics; (D) provider/config isolation; (E) evidence/trace isolation; (F) async continuity through queue/retry/background/child/resume/recovery; (G) fail closed — missing/invalid tenant must not silently select global/shared state or widen access; (H) adversarial proof — tenant A request → tenant B state = DENIED; tenant A evidence → tenant B assessment = REJECTED; tenant A credential ref → tenant B provider = REJECTED; tenant A checkpoint → tenant B recovery = REJECTED; tenant A child execution → tenant B scope = REJECTED. Full scope: §3.0.2. **Depends on:** `COMPAT-X`. **Next:** `PROD-Q`. | [ ] PLANNED / MANDATORY |
 | PROD-Q | Platform Production Qualification | Prove production readiness rather than harness/lab maturity: provider/plugin admission and qualification, startup/shutdown/resource lifecycle, strict-vs-lab mode separation, unsupported configuration handling, production bypass prevention, secrets/tenant isolation, degraded operation and fail-closed materialization. Historical `implementation complete` or harness qualification is not sufficient. **Capacity / overload:** capacity/overload behavior known; bounded resource behavior; backpressure or explicit rejection semantics; provider throttling handling; no silent infinite retry/fallback. **Operability:** health semantics; readiness semantics; degraded-state visibility; terminal failure visibility; operator-actionable failure classification; critical recovery responsibility/procedure; startup failure visibility; shutdown/resource-cleanup visibility. Platform-level enterprise requirements only — no mandated deployment technology or vendor observability stack. Overlapping Security/Reliability proof may reference evidence from `CTRL-X`, `HARNESS-W4` and `STATE-X` without duplicating semantic criteria. | [ ] PLANNED / MANDATORY |
 | **QUAL-X** | Enterprise Qualification & Regression Infrastructure Certification | Answers: *Are qualification/regression mechanisms that protect frozen architecture complete, credible, deterministic and correctly built?* Certifies architecture gates, regression gates, negative tests, allowlists, inventories, deterministic qualification, clean-checkout reproducibility, environment failure classification, and protection of frozen invariants—not a substitute for a full-platform enterprise audit (`ENT-AUDIT-X`). Verify: every frozen invariant has qualification evidence; corrected blockers have regression gates; architecture gates scan current closed-world surface; allowlists minimal and evidence-backed; stale inventories = 0; negative tests detect violations; critical invariants not docs-only; qualification tests deterministic; clean-checkout reproducibility; environment failure cannot auto-classify as architecture PASS; flaky tests cannot be freeze evidence; tests cannot assert names/other tests instead of invariants; qualification records match current code; mandatory architecture suite runnable as one defined freeze-oriented qualification set. | [ ] PLANNED / MANDATORY |
 | EBH-5 | Replaceability & E2E Certification | Practical E2E proof that key providers, strategies and implementations can be replaced through platform contracts without modifying core mechanisms; verify real pluginability rather than test-only monkeypatching. | [ ] PLANNED |
 | EBH-6 | Final Architecture Recertification | **Current-HEAD cross-platform recertification** after all local, Harness, Governance, control-plane, state, compatibility and production-qualification work: boundaries, ownership, communication, composition, evidence, fail-closed behavior, typing and regression protection — **including every `FRZ-*` criterion and invariant added to the freeze program after historical `EBH-2*` local hardening.** Historical `EBH-2*` closure is **not** sufficient alone for final `TYP`, `BND`, `OWN`, `CTR`, `PLG` PASS if later stages changed the audited surface. **EBH-2\*** = primary/local hardening and evidence; **EBH-6** = final current-HEAD architecture-family recertification. | [ ] PLANNED |
-| **EBH-7** | Comprehensive Platform Enterprise Architecture Certification | Final certification of Integrax as one enterprise platform: hard boundaries, exactly-one ownership, canonical contracts, pluginability/replaceability, zero bypasses, zero duplicated mechanisms, correct Governance/Execution separation, validated E2E behavior. **EBH-7** = final whole-platform enterprise certification on current HEAD after **EBH-6**; complements **EBH-2\*** local evidence and **EBH-6** architecture-family recertification — neither substitutes for the other at freeze. | **[ ] FINAL / MANDATORY** |
+| **EBH-7** | Comprehensive Platform Enterprise Architecture Certification | Final certification of Integrax as one enterprise platform: hard boundaries, exactly-one ownership, canonical contracts, pluginability/replaceability, zero bypasses, zero duplicated mechanisms, correct Governance/Execution separation, validated E2E behavior, **and end-to-end tenant isolation proven on current HEAD across subsystem boundaries — not inferred from individual component closure alone**. **EBH-7** = final whole-platform enterprise certification on current HEAD after **EBH-6**; complements **EBH-2\*** local evidence and **EBH-6** architecture-family recertification — neither substitutes for the other at freeze. | **[ ] FINAL / MANDATORY** |
 | **ENT-AUDIT-X** | Continuous Enterprise Architecture Audit System | Build and independently certify a **durable, executable full-platform enterprise audit system** before `ARCH-FREEZE` (after final enterprise certification, not before). Answers: *Run the whole platform as one audit—does current state still satisfy enterprise invariants, where is drift, and what was violated?* Reuses existing qualification/gates instead of duplicating them; adds cross-cutting static/structural checks; one actionable report; baseline vs accepted enterprise baseline; remains in use after scenario development begins. **Not** an alias of `QUAL-X`. Full scope, architecture, modes, reporting and post-freeze policy: §3.1. | **[ ] FINAL / MANDATORY** |
-| **ARCH-FREEZE** | Architecture Freeze Certification | Formal freeze gate after **`ENT-AUDIT-X`** (requires `EBH-7` and **`ENT-AUDIT-X` = CLOSED**). Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0; **`ENT-AUDIT-X` independently CLOSED**; **exact-freeze-SHA enterprise audit:** enterprise audit completed = yes; audit internal failure = 0; new enterprise violations = 0; unclassified findings = 0; expired debt = 0; unresolved enterprise BLOCKER findings = 0; **enterprise audit baseline SHA recorded** (reference for post-freeze scenario development). A complete freeze checklist additionally requires explicit resolution of **data lifecycle/security responsibilities**, **capacity/overload/resource boundedness**, **backup/restore responsibility** and **production operability** (via applicable `FRZ-SEC-*`, `FRZ-REL-*`, `FRZ-REC-*`, `FRZ-PRD-*` — not a second freeze gate). Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification + scenario-wave drift audit per §3.1). | **[ ] FINAL / MANDATORY** |
+| **ARCH-FREEZE** | Architecture Freeze Certification | Formal freeze gate after **`ENT-AUDIT-X`** (requires `EBH-7` and **`ENT-AUDIT-X` = CLOSED**). Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **`ARCH-FREEZE` cannot close while any applicable `FRZ-TEN-*` criterion remains `OPEN` or `BLOCKED`.** Allowed final tenant criterion states: `PASS` or `N/A — WITH EVIDENCE` only. **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0; **`ENT-AUDIT-X` independently CLOSED**; **exact-freeze-SHA enterprise audit:** enterprise audit completed = yes; audit internal failure = 0; new enterprise violations = 0; unclassified findings = 0; expired debt = 0; unresolved enterprise BLOCKER findings = 0; **enterprise audit baseline SHA recorded** (reference for post-freeze scenario development). A complete freeze checklist additionally requires explicit resolution of **data lifecycle/security responsibilities**, **capacity/overload/resource boundedness**, **backup/restore responsibility** and **production operability** (via applicable `FRZ-SEC-*`, `FRZ-REL-*`, `FRZ-REC-*`, `FRZ-PRD-*`, **`FRZ-TEN-*`** — not a second freeze gate). Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification + scenario-wave drift audit per §3.1). | **[ ] FINAL / MANDATORY** |
 | **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formal Go/No-Go to shift from platform hardening to full scenario focus. **Remains BLOCKED while `ARCH-FREEZE` ≠ CLOSED.** `ARCH-FREEZE` = CLOSED alone is **insufficient**: also requires **`ENT-AUDIT-X` = CLOSED**, **canonical enterprise audit baseline exists**, and **freeze-SHA enterprise audit = PASS**. Scenarios must not compensate for unfrozen architecture gaps. Gate CLOSED only when all mandatory rows above—including `ARCH-FREEZE` and audit baseline evidence—are CLOSED with independent SHA evidence and no known enterprise blocker. Transferred Scenario #24 capabilities remain **OPEN for Scenario #24** until each satisfies the cross-session return contract in §1.1. | **[ ] BLOCKED** |
 
 ### 3.0.1 Transferred Scenario #24 capabilities — mandatory order before EBH-3 / EBH-4
@@ -268,6 +338,33 @@ GOV-X1
 ```
 
 **INT-EXTCOMP-X**, **INT-CONFIG-REAL-X** and **AW-7C** must close before **EBH-3** / **EBH-4**. Reason: these stages introduce/finalize cross-platform contracts, owners, composition and communication paths. **EBH-3** and **EBH-4** must certify the final architecture after these capabilities exist, not a temporary architecture from before their introduction. **GOV-X1** remains first because the new capabilities must conform to the global authority rules established there.
+
+### 3.0.2 `TENANT-X` — Cross-Platform Tenant Isolation Certification
+
+**Position:** after **`COMPAT-X`**, before **`PROD-Q`**.
+
+**Primary purpose:** perform the first **complete cross-platform** tenant isolation certification on **current HEAD** after major surfaces have been recertified individually. **`TENANT-X` must revalidate** cross-platform tenant isolation even when historical stage closure contributed partial tenant evidence.
+
+**Dependencies:** `COMPAT-X` (and all prior mandatory stages in canonical order).
+
+**Next mandatory stage:** `PROD-Q`.
+
+**Scope:** certify tenant isolation across the entire platform — no tenant-boundary bypass across subsystem composition.
+
+**Minimum closed-world domains:** identity; execution; governance; tool invocation; provider invocation; integration resolution; configuration/profile resolution; state; durable persistence; cache; memory; RAG/vector/graph indexes; events; observability; traceability; evidence; recovery/resume; queues/background work; retries; external operations; credentials/secrets references; plugins; provider extensions; compatibility assessment; control plane.
+
+**Required proof classes (all mandatory at closure):**
+
+| Class | Requirement |
+|---|---|
+| A — Identity continuity | Tenant identity explicit and stable through canonical request/subject/envelope/state/evidence contracts. |
+| B — Authority isolation | Authority granted for tenant A cannot execute/authorize tenant B. |
+| C — State isolation | Tenant A cannot read/write state, durable records, checkpoints, cache, memory, vector/graph index material of tenant B without explicit cross-tenant authority contract. |
+| D — Provider/config isolation | Tenant-specific provider selection, profile, config, binding, credentials/secrets references cannot bleed across tenants. |
+| E — Evidence/trace isolation | Evidence for tenant A cannot establish truth or permission for tenant B. |
+| F — Async continuity | Tenant identity survives queueing, retries, background work, child execution, resume, recovery. |
+| G — Fail closed | Missing/invalid tenant context must not silently select global tenant, shared provider config, shared state, or widen access. |
+| H — Adversarial proof | Executable negative tests: tenant A request → tenant B state = DENIED; tenant A evidence → tenant B assessment = REJECTED; tenant A credential ref → tenant B provider = REJECTED; tenant A checkpoint → tenant B recovery = REJECTED; tenant A child execution → tenant B scope = REJECTED. |
 
 ### 3.1 `ENT-AUDIT-X` — Continuous Enterprise Architecture Audit System
 
@@ -314,6 +411,31 @@ Conceptual platform contracts (exact names not frozen by this docs task): `Audit
 - **Compatibility** — active legacy path as second mechanism; compatibility shim as permanent authority; expired deprecations; stale compatibility surface.
 - **Qualification / debt** — stale allowlists/inventories; expired debt; missing regression protection; critical invariant protected only by docs; environment/test issue incorrectly treated as PASS.
 - **Documentation drift** — canonical docs vs code; ownership manifest drift; dependency/layer manifest drift; composition manifest drift; frozen contract manifest drift.
+
+**Tenant isolation audit module (mandatory executable coverage — implementation future work; docs requirement only):** explicit audit family/checks including at minimum:
+
+```text
+TEN-IDENTITY
+TEN-PROPAGATION
+TEN-AUTHORITY
+TEN-STATE
+TEN-PROVIDER
+TEN-CONFIG
+TEN-CREDENTIALS
+TEN-EVIDENCE
+TEN-TRACE
+TEN-RECOVERY
+TEN-ASYNC
+TEN-CROSS-TENANT
+TEN-FAIL-CLOSED
+```
+
+**`ENT-AUDIT-X` must detect:**
+
+| Drift class | Examples |
+|---|---|
+| Static architecture drift | tenant field disappears from contract; tenant-unscoped repository introduced; shared cache key lacks tenant dimension; provider resolver stops accepting tenant scope. |
+| Behavioral drift | tenant A can access B; tenant A evidence accepted for B; tenant context lost after retry; recovery resumes under wrong tenant. |
 
 **Execution modes (conceptual; exact CLI is implementation detail):** `FAST` (cheap development check), `FULL` (complete current-platform audit), `FREEZE` (maximal pre-freeze audit), `CHANGED-SINCE <baseline>` (architectural drift since accepted baseline).
 
@@ -362,6 +484,7 @@ Every parent-level closure from this point forward must explicitly assess the ap
 | Compatibility / evolution | Frozen contracts/schemas/events/plugins have explicit versioning, migration, deprecation and compatibility policy. |
 | Production qualification | Production mode is independently qualified; lab/harness success is not accepted as production proof. |
 | Freeze readiness | No unresolved architecture state remains inside the declared frozen platform scope. |
+| Tenant isolation | Tenant identity explicit where required; propagated across boundaries; child scope ⊆ parent; no cross-tenant state/evidence/authority bleed; missing tenant fails closed; adversarial cross-tenant negatives where applicable. |
 
 ---
 
@@ -418,10 +541,11 @@ Update this section only after independent exact-SHA audit.
 | GOV-X1-FINAL | `27af801bec916165dab85019c07cf43d18e18551` | **GOV-X1 CLOSED / independently accepted** — parent reconciliation matrix GX1-01..GX1-10 on accepted child SHAs; Governance Authority Boundary Recertification scope only — not full Governance+Execution E2E, not TRACE-X closure, not global FRZ closure; **GOV-X2** remains future mandatory work. |
 | CTRL-X | — | PLANNED / MANDATORY — current-HEAD recertification of all cross-cutting control planes before freeze. |
 | STATE-X | — | PLANNED / MANDATORY — global persistence/state/recovery certification before freeze; includes resolution/classification of `R1-SQLITE-ENV-01` where persistence semantics apply. |
-| TRACE-X | — | PLANNED / MANDATORY — end-to-end traceability and evidence certification (`STATE-X` → `TRACE-X` → `CONFIG-X` → `COMPAT-X` → `PROD-Q`). |
-| CONFIG-X | — | PLANNED / MANDATORY — configuration/provider/vendor/backend/model activation certification (`TRACE-X` → `CONFIG-X` → `COMPAT-X` → `PROD-Q`). |
-| COMPAT-X | — | PLANNED / MANDATORY — contract/schema/event/plugin evolution certification before freeze (`CONFIG-X` → `COMPAT-X` → `PROD-Q`). |
-| PROD-Q | — | PLANNED / MANDATORY — explicit production qualification before final enterprise certification; includes ensuring the SQLite bootstrap finding cannot mask production startup correctness. |
+| TRACE-X | — | PLANNED / MANDATORY — end-to-end traceability and evidence certification (`STATE-X` → `TRACE-X` → `CONFIG-X` → `COMPAT-X` → `TENANT-X` → `PROD-Q`). |
+| CONFIG-X | — | PLANNED / MANDATORY — configuration/provider/vendor/backend/model activation certification (`TRACE-X` → `CONFIG-X` → `COMPAT-X` → `TENANT-X` → `PROD-Q`). |
+| COMPAT-X | — | PLANNED / MANDATORY — contract/schema/event/plugin evolution certification before tenant cross-platform certification (`CONFIG-X` → `COMPAT-X` → `TENANT-X` → `PROD-Q`). |
+| TENANT-X | — | PLANNED / MANDATORY — cross-platform tenant isolation certification on current HEAD after `COMPAT-X`; primary closer for `FRZ-TEN-*`; precedes `PROD-Q`. |
+| PROD-Q | — | PLANNED / MANDATORY — explicit production qualification before final enterprise certification; follows `TENANT-X`; includes ensuring the SQLite bootstrap finding cannot mask production startup correctness. |
 | QUAL-X | — | PLANNED / MANDATORY — qualification/regression infrastructure certification (`PROD-Q` → `QUAL-X` → `EBH-5`); `R1-SQLITE-ENV-01` is an explicit evidence item for `FRZ-REG-08` and cannot be treated as a false PASS. |
 | ENT-AUDIT-X | — | FINAL / MANDATORY — Build and independently certify the reusable full-platform enterprise architecture audit system before ARCH-FREEZE; exact-SHA implementation, coverage, baseline/drift and reporting evidence required. |
 | ARCH-FREEZE | — | FINAL / MANDATORY — formal architecture freeze gate after `ENT-AUDIT-X`; requires checklist complete per mechanical entry requirements in §3 including freeze-SHA enterprise audit PASS and recorded audit baseline. |
@@ -438,6 +562,27 @@ Every task instruction in this program must include an equivalent of:
 Every final Cursor report with code changes must also state:
 
 > **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+Every final Cursor report must include:
+
+### Tenant Isolation Audit
+
+```text
+tenant scope applicable: YES / NO
+canonical tenant identity:
+tenant owner:
+propagation path:
+state isolation:
+provider/config isolation:
+evidence/trace isolation:
+async/recovery continuity:
+cross-tenant path:
+fail-closed behavior:
+adversarial evidence:
+result: PASS / BLOCKED / N/A — WITH EVIDENCE
+```
+
+If **BLOCKED** and the finding violates the current parent invariant → create a child task; parent remains blocked.
 
 ---
 
@@ -460,7 +605,8 @@ Bring the whole Integrax platform to a fully, independently recertified and form
 - end-to-end traceability and evidence certification (`TRACE-X`);
 - configuration-driven provider/vendor/model/backend activation certified (`CONFIG-X`);
 - contract/schema/plugin evolution rules frozen and explicit (`COMPAT-X` after `CONFIG-X`);
-- production qualification proven independently from harness/lab maturity (`PROD-Q` after `COMPAT-X`);
+- cross-platform tenant isolation certified on current HEAD (`TENANT-X` after `COMPAT-X`);
+- production qualification proven independently from harness/lab maturity (`PROD-Q` after `TENANT-X`);
 - qualification/regression infrastructure certified (`QUAL-X`);
 - final enterprise closure through `EBH-7`;
 - reusable full-platform enterprise audit system certified before freeze (`ENT-AUDIT-X`);
