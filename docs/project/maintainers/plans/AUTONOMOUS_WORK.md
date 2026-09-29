@@ -347,9 +347,9 @@ Delivery rule:
 | **Status** | **CURRENT** |
 | **Purpose** | A2 scoped adaptive integration path |
 | **Dependencies** | Prerequisites **CLOSED / accepted** via AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ; architecture lock **CLOSED / independently accepted through R1** @ `fa5853ec009d015cb52c9de15dd7e283932a9b4d` — [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) |
-| **Child sequence** | AW-7C-P1-ARCH → AW-7C-P1-ARCH-R1 → AW-7C-P2 → AW-7C-P3 → AW-7C-P4 → AW-7C-CERT |
+| **Child sequence** | AW-7C-P1-ARCH → AW-7C-P1-ARCH-R1 → AW-7C-P2 → AW-7C-P3 → AW-7C-P4 → AW-7C-CERT → **AW-7C-CLOSURE** |
 | **Acceptance** | only approved hosts/secrets, narrow scope, runtime evidence of enforced controls; typed pluginable adaptation → qualification → canonical Execution; no A1 bypass |
-| **Next step** | Independent SHA audit of **AW-7C-CERT**; then parent closure audit |
+| **Next step** | Independent SHA audit of **AW-7C-CLOSURE** (parent runtime-bound path); **EBH-3** **NOT ENTERED** |
 
 | Field | Value |
 |---|---|
@@ -400,6 +400,14 @@ Delivery rule:
 | **Status** | **READY FOR AUDIT** — P4 audit blockers A–F remediated; adversarial credential/sandbox/tenant/forged-handoff evidence |
 | **Baseline** | `6fda62ca792255e482895a574250af547cb18cba` |
 | **Next step** | Independent GitHub SHA audit; **EBH-3** **NOT ENTERED** |
+
+| Field | Value |
+|---|---|
+| **ID** | AW-7C-CLOSURE |
+| **Priority** | P1 |
+| **Status** | **READY FOR AUDIT** — canonical `ExecutionRuntime` delegate; operation/credential/sandbox contract remediation from CERT independent audit |
+| **Baseline** | `6971095e2db558459e5c7f90cdc212149bb12186` |
+| **Next step** | Independent GitHub SHA parent-closure audit; **EBH-3** **NOT ENTERED** |
 
 | Field | Value |
 |---|---|

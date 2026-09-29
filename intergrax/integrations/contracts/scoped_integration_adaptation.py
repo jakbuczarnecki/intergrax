@@ -437,6 +437,7 @@ class ScopedAdaptedIntegrationOperationEvidence:
     tenant_id: str
     execution_id: str
     artifact_id: str
+    executed_operation: ScopedIntegrationAdaptationOperationId
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -469,6 +470,7 @@ class ScopedAdaptedIntegrationOperationPort(Protocol):
         self,
         *,
         artifact: ScopedIntegrationAdaptationArtifact,
+        requested_operation: ScopedIntegrationAdaptationOperationId,
         execution_id: str,
         tenant_id: str,
     ) -> ScopedAdaptedIntegrationOperationEvidence: ...

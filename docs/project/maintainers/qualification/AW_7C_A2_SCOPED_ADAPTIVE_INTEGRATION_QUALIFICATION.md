@@ -87,6 +87,15 @@ Sections 1–13 below retain **historical** prerequisite audit unless explicitly
 | **Idempotency** | No process-local duplicate authority in coordinator |
 | **Tests** | `test_aw_7c_cert_scoped_adaptive_integration_execution.py` |
 
+## AW-7C-CLOSURE parent certification (READY FOR AUDIT)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **READY FOR AUDIT** — not CLOSED |
+| **CERT carry-over fixes** | Canonical execution identity via `ExecutionRuntime`; typed `ExecutionBoundCredentialGrantProvider`; explicit operation on `ScopedAdaptedIntegrationOperationPort`; execution-bound `SandboxSecurityCapable` session |
+| **Scoped FRZ evidence** | Same families as CERT/P4 (EXE, GOV, CTR, SEC, TRC, TEN-local); **global FRZ PASS delta = 0** until checklist owner audit |
+| **Tests** | `test_aw_7c_closure_scoped_adaptive_integration_execution.py`, `test_aw_7c_closure_architecture_gates.py` |
+
 ---
 
 ## 1. Verdict

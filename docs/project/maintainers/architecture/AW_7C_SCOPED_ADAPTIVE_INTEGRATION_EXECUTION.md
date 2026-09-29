@@ -842,3 +842,16 @@ AW
 | **Tenant** | Local AW-7C chain adversarial cases in CERT tests; global `FRZ-TEN` PASS unchanged without checklist owner |
 | **Remaining** | Independent GitHub SHA audit; roadmap/checklist global closure |
 
+## AW-7C-CLOSURE (READY FOR AUDIT)
+
+| Item | Detail |
+| ---- | ------ |
+| **Parent baseline** | `6971095e2db558459e5c7f90cdc212149bb12186` (CERT) → closure candidate on `development` after cohesive commit |
+| **Status** | **READY FOR AUDIT** — not CLOSED |
+| **CERT audit blockers remediated** | (A) removed alternate intake identity minting — `ScopedAdaptiveIntegrationExecutionRuntimeDelegate` inside `ExecutionRuntime` via `CanonicalExecutionRuntimeAdapter`; (B) `ScopedAdaptedIntegrationOperationPort.execute(..., requested_operation=...)` + `executed_operation` evidence; (C) `ExecutionBoundCredentialGrantProvider` replaces `Callable` grant seam; (D) `SandboxSecurityCapable.security_capabilities()` from `ReferenceScopedAdaptiveIntegrationSandboxSession` — no naked construction-time capability truth |
+| **Canonical E2E** | `WorkerScopedAdaptiveIntegrationExecutionCoordinator` → CQ → `WorkerExecutionDispatchService` → `DefaultRootExecutionLauncher` → Governance → `CanonicalExecutionRuntimeAdapter` → `ExecutionRuntime` → AW-7C delegate → sandbox session → grant provider → `ScopedCredentialBroker` → operation port → envelope |
+| **Composition** | `build_scoped_adaptive_integration_canonical_execution_intake` — not a second `CanonicalExecutionIntakePort` owner |
+| **Tests** | `test_aw_7c_closure_scoped_adaptive_integration_execution.py`, `test_aw_7c_closure_architecture_gates.py`, CERT/P4 suites retained |
+| **P0-PHYSQ** | Physical substrate evidence unchanged; runtime binding claim is separate (session attestation before operation) |
+| **Next program stage** | Independent parent-closure SHA audit; **EBH-3** **NOT ENTERED** |
+
