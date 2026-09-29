@@ -32,7 +32,12 @@ from .firewall import (
     read_verified_egress_policy,
 )
 from .preflight import ReferenceSubstratePreflight, evaluate_reference_substrate_preflight
-from .topology import NetnsSessionResources, create_netns_session, destroy_netns_session
+from .topology import (
+    NetnsSessionResources,
+    ReferenceSubstrateTopologyRollbackError,
+    create_netns_session,
+    destroy_netns_session,
+)
 
 
 class ReferenceSubstrateSecurityError(RuntimeError):
@@ -80,11 +85,20 @@ class ReferenceSandboxBackend:
     def preflight(self) -> ReferenceSubstratePreflight:
         return self._preflight
 
+    def _create_owned_topology(self) -> NetnsSessionResources:
+        try:
+            resources = create_netns_session()
+        except ReferenceSubstrateTopologyRollbackError as exc:
+            self._sessions[exc.resources.netns] = _ReferenceSessionState(resources=exc.resources)
+            raise ReferenceSubstrateLifecycleError(
+                f"reference session topology construction failed: {exc}",
+            ) from exc
+        self._sessions[resources.netns] = _ReferenceSessionState(resources=resources)
+        return resources
+
     def create_session(self) -> SandboxSession:
-        resources = create_netns_session()
-        session_id = resources.netns
-        self._sessions[session_id] = _ReferenceSessionState(resources=resources)
-        return SandboxSession(session_id=session_id, status="running")
+        resources = self._create_owned_topology()
+        return SandboxSession(session_id=resources.netns, status="running")
 
     def create_session_with_security(
         self,
@@ -104,9 +118,8 @@ class ReferenceSandboxBackend:
             raise ReferenceSubstrateSecurityError(
                 "empty or missing allowlist cannot admit unrestricted network egress",
             )
-        resources = create_netns_session()
+        resources = self._create_owned_topology()
         session_id = resources.netns
-        self._sessions[session_id] = _ReferenceSessionState(resources=resources)
         try:
             apply_egress_policy_netns(
                 session_id,

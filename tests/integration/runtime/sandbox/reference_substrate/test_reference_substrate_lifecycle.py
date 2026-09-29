@@ -31,8 +31,10 @@ from tests.integration.runtime.sandbox.reference_substrate.preflight import Refe
 from tests.integration.runtime.sandbox.reference_substrate.topology import (
     NetnsSessionResources,
     ReferenceSubstrateTopologyError,
-    _PartialTopologyCreation,
-    _rollback_allocated_topology,
+    ReferenceSubstrateTopologyRollbackError,
+    _ResidualPresence,
+    _TopologyCleanupResult,
+    _cleanup_topology,
     destroy_netns_session,
 )
 
@@ -151,6 +153,22 @@ def _netns_resources(netns: str) -> NetnsSessionResources:
         netns=netns,
         veth_host=f"{netns}-h",
         veth_peer=f"{netns}-p",
+    )
+
+
+def _patch_topology_precheck_absent(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._verify_identifiers_unowned",
+        lambda *_args, **_kwargs: None,
+    )
+
+
+def _patch_fixed_topology_uuid(monkeypatch: pytest.MonkeyPatch, hex_suffix: str) -> None:
+    token = MagicMock()
+    token.hex = hex_suffix.ljust(32, "0")
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology.uuid4",
+        lambda: token,
     )
 
 
@@ -974,6 +992,7 @@ def test_topology_netns_created_veth_add_fails_rollback_netns(
     """T1: veth creation failure rolls back netns."""
     from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
 
+    _patch_topology_precheck_absent(monkeypatch)
     delete_calls: list[list[str]] = []
 
     def _run(command: list[str], *, timeout: float = 10.0) -> None:
@@ -1007,6 +1026,7 @@ def test_topology_later_setup_failure_rolls_back_netns_and_veth(
     """T2: address setup failure rolls back veth and netns."""
     from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
 
+    _patch_topology_precheck_absent(monkeypatch)
     delete_calls: list[list[str]] = []
 
     def _run(command: list[str], *, timeout: float = 10.0) -> None:
@@ -1039,6 +1059,7 @@ def test_topology_hosts_write_failure_rolls_back_network_resources(
     """T3: /etc/netns hosts failure rolls back network resources."""
     from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
 
+    _patch_topology_precheck_absent(monkeypatch)
     delete_calls: list[list[str]] = []
 
     monkeypatch.setattr(
@@ -1066,13 +1087,8 @@ def test_topology_hosts_write_failure_rolls_back_network_resources(
 def test_topology_rollback_partial_failure_surfaces_both_errors(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """T4: rollback incomplete remains visible alongside setup error."""
-    partial = _PartialTopologyCreation(
-        netns="igx-qual-rollback",
-        veth_host="veth000h",
-        veth_peer="veth000p",
-        mutation_started=True,
-    )
+    """T4: rollback incomplete remains visible alongside residual proof."""
+    resources = _netns_resources("igx-qual-rollback")
 
     def _try_run(command: list[str], *, timeout: float = 10.0) -> str | None:
         if command[:3] == ["ip", "netns", "delete"]:
@@ -1083,16 +1099,31 @@ def test_topology_rollback_partial_failure_surfaces_both_errors(
         "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
         _try_run,
     )
-    rollback_errors = _rollback_allocated_topology(partial)
-    assert "simulated netns delete failure" in "; ".join(rollback_errors)
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns",
+        lambda _netns: _ResidualPresence.PRESENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_link",
+        lambda _link: _ResidualPresence.ABSENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns_hosts_material",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+    result = _cleanup_topology(resources)
+    assert "simulated netns delete failure" in "; ".join(result.attempt_errors)
+    assert any("still present" in err for err in result.residual_errors)
+    assert not result.verified_absent
 
 
 def test_topology_successful_creation_does_not_invoke_rollback(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """T5: successful path does not call rollback helper."""
+    """T5: successful path does not call cleanup helper."""
     from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
 
+    _patch_topology_precheck_absent(monkeypatch)
     monkeypatch.setattr(
         "tests.integration.runtime.sandbox.reference_substrate.topology._run",
         lambda command, timeout=10.0: None,
@@ -1101,20 +1132,20 @@ def test_topology_successful_creation_does_not_invoke_rollback(
         "tests.integration.runtime.sandbox.reference_substrate.topology._write_netns_hosts",
         lambda _netns: None,
     )
-    rollback_calls = 0
+    cleanup_calls = 0
 
-    def _rollback(partial: _PartialTopologyCreation) -> list[str]:
-        nonlocal rollback_calls
-        rollback_calls += 1
-        return []
+    def _cleanup(resources: NetnsSessionResources) -> _TopologyCleanupResult:
+        nonlocal cleanup_calls
+        cleanup_calls += 1
+        return _TopologyCleanupResult((), ())
 
     monkeypatch.setattr(
-        "tests.integration.runtime.sandbox.reference_substrate.topology._rollback_allocated_topology",
-        _rollback,
+        "tests.integration.runtime.sandbox.reference_substrate.topology._cleanup_topology",
+        _cleanup,
     )
     resources = create_netns_session()
     assert resources.netns.startswith("igx-qual-")
-    assert rollback_calls == 0
+    assert cleanup_calls == 0
 
 
 def test_security_setup_policy_fail_cleanup_success_drops_provisional_session(
@@ -1262,6 +1293,7 @@ def test_topology_netns_add_timeout_attempts_conservative_rollback(
 
     from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
 
+    _patch_topology_precheck_absent(monkeypatch)
     delete_calls: list[list[str]] = []
 
     def _subprocess_run(command: list[str], **kwargs: object) -> MagicMock:
@@ -1282,6 +1314,18 @@ def test_topology_netns_add_timeout_attempts_conservative_rollback(
         "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
         _try_run,
     )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_link",
+        lambda _link: _ResidualPresence.ABSENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns_hosts_material",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
     with pytest.raises(ReferenceSubstrateTopologyError, match="classification=timeout"):
         create_netns_session()
     assert any(cmd[:3] == ["ip", "netns", "delete"] for cmd in delete_calls)
@@ -1294,6 +1338,7 @@ def test_topology_netns_add_os_error_attempts_conservative_rollback(
     """Unknown-outcome T2: netns add OSError still rolls back allocated identifiers."""
     from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
 
+    _patch_topology_precheck_absent(monkeypatch)
     delete_calls: list[list[str]] = []
 
     def _subprocess_run(command: list[str], **kwargs: object) -> MagicMock:
@@ -1314,6 +1359,18 @@ def test_topology_netns_add_os_error_attempts_conservative_rollback(
         "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
         _try_run,
     )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_link",
+        lambda _link: _ResidualPresence.ABSENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns_hosts_material",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
     with pytest.raises(ReferenceSubstrateTopologyError, match="classification=os_error"):
         create_netns_session()
     assert delete_calls
@@ -1325,6 +1382,7 @@ def test_topology_hosts_write_os_error_attempts_network_rollback(
     """Unknown-outcome T3: hosts filesystem failure still attempts network rollback."""
     from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
 
+    _patch_topology_precheck_absent(monkeypatch)
     delete_calls: list[list[str]] = []
 
     monkeypatch.setattr(
@@ -1441,6 +1499,309 @@ def test_destroy_cleanup_fails_closed_when_residual_inspection_unknown(
     )
     with pytest.raises(ReferenceSubstratePolicyError, match="cannot verify"):
         destroy_netns_session(resources)
+
+
+def test_destroy_cleanup_fails_when_peer_veth_still_present(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Residual peer veth on host blocks verified cleanup."""
+    resources = _netns_resources("igx-qual-peer-present")
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        lambda command, timeout=10.0: None,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+
+    def _inspect_link(link: str) -> _ResidualPresence:
+        if link == resources.veth_peer:
+            return _ResidualPresence.PRESENT
+        return _ResidualPresence.ABSENT
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_link",
+        _inspect_link,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns_hosts_material",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+    with pytest.raises(ReferenceSubstratePolicyError, match="peer veth still present"):
+        destroy_netns_session(resources)
+
+
+def test_topology_precheck_existing_netns_no_mutation_no_delete(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Matrix A: ambient netns collision fails closed without delete."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    _patch_fixed_topology_uuid(monkeypatch, "aaaa000001")
+    run_calls: list[list[str]] = []
+    try_run_calls: list[list[str]] = []
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._run",
+        lambda command, timeout=10.0: run_calls.append(command),
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        lambda command, timeout=10.0: try_run_calls.append(command) or None,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns",
+        lambda _netns: _ResidualPresence.PRESENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_link",
+        lambda _link: _ResidualPresence.ABSENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns_hosts_material",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+    with pytest.raises(ReferenceSubstrateTopologyError, match="netns already present"):
+        create_netns_session()
+    assert run_calls == []
+    assert try_run_calls == []
+
+
+def test_topology_precheck_existing_host_veth_no_mutation_no_delete(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Matrix B: ambient host veth collision fails closed without delete."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    _patch_fixed_topology_uuid(monkeypatch, "bbbb000002")
+    run_calls: list[list[str]] = []
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._run",
+        lambda command, timeout=10.0: run_calls.append(command),
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+
+    def _inspect_link(link: str) -> _ResidualPresence:
+        if link == "vethbbbb00h":
+            return _ResidualPresence.PRESENT
+        return _ResidualPresence.ABSENT
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_link",
+        _inspect_link,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns_hosts_material",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+    with pytest.raises(ReferenceSubstrateTopologyError, match="host veth already present"):
+        create_netns_session()
+    assert run_calls == []
+
+
+def test_topology_precheck_existing_peer_veth_no_mutation_no_delete(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Matrix C: ambient peer veth collision fails closed without delete."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    _patch_fixed_topology_uuid(monkeypatch, "cccc000003")
+    run_calls: list[list[str]] = []
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._run",
+        lambda command, timeout=10.0: run_calls.append(command),
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+
+    def _inspect_link(link: str) -> _ResidualPresence:
+        if link == "vethcccc00p":
+            return _ResidualPresence.PRESENT
+        return _ResidualPresence.ABSENT
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_link",
+        _inspect_link,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns_hosts_material",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+    with pytest.raises(ReferenceSubstrateTopologyError, match="peer veth already present"):
+        create_netns_session()
+    assert run_calls == []
+
+
+def test_topology_precheck_existing_hosts_material_no_mutation_no_delete(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Matrix D: ambient /etc/netns material collision fails closed without delete."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    _patch_fixed_topology_uuid(monkeypatch, "dddd000004")
+    run_calls: list[list[str]] = []
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._run",
+        lambda command, timeout=10.0: run_calls.append(command),
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_link",
+        lambda _link: _ResidualPresence.ABSENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns_hosts_material",
+        lambda _netns: _ResidualPresence.PRESENT,
+    )
+    with pytest.raises(ReferenceSubstrateTopologyError, match="/etc/netns material already present"):
+        create_netns_session()
+    assert run_calls == []
+
+
+def test_topology_precheck_unknown_fails_closed_without_mutation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Matrix E: pre-mutation inspection UNKNOWN blocks mutation."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    _patch_topology_precheck_absent(monkeypatch)
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._verify_identifiers_unowned",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            ReferenceSubstrateTopologyError(
+                "cannot verify netns absence before topology mutation: igx-qual-unknown",
+            ),
+        ),
+    )
+    run_calls: list[list[str]] = []
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._run",
+        lambda command, timeout=10.0: run_calls.append(command),
+    )
+    with pytest.raises(ReferenceSubstrateTopologyError, match="cannot verify netns absence"):
+        create_netns_session()
+    assert run_calls == []
+
+
+def test_topology_create_incomplete_rollback_raises_typed_resources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Matrix I: incomplete construction rollback carries exact retry resources."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    _patch_fixed_topology_uuid(monkeypatch, "eeee000005")
+    _patch_topology_precheck_absent(monkeypatch)
+
+    def _run(command: list[str], *, timeout: float = 10.0) -> None:
+        if command[:3] == ["ip", "link", "add"]:
+            raise ReferenceSubstrateTopologyError("simulated veth add failure")
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._run",
+        _run,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        lambda command, timeout=10.0: None,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns",
+        lambda _netns: _ResidualPresence.PRESENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_link",
+        lambda _link: _ResidualPresence.ABSENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns_hosts_material",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+    with pytest.raises(ReferenceSubstrateTopologyRollbackError) as exc_info:
+        create_netns_session()
+    assert exc_info.value.resources.netns == "igx-qual-eeee000005"
+    assert exc_info.value.resources.veth_host == "vetheeee00h"
+    assert "simulated veth add failure" in str(exc_info.value)
+
+
+def test_backend_create_session_incomplete_topology_rollback_close_retries(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Matrix N/O: backend retains retry ownership until verified cleanup on close()."""
+    backend = _backend_with_stub_endpoints(monkeypatch)
+    resources = _netns_resources("igx-qual-retry-owner")
+    rollback = ReferenceSubstrateTopologyRollbackError(
+        resources=resources,
+        creation_failure="simulated creation failure",
+        cleanup_result=_TopologyCleanupResult(
+            ("netns delete: simulated failure",),
+            ("netns still present for igx-qual-retry-owner",),
+        ),
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.create_netns_session",
+        lambda: (_ for _ in ()).throw(rollback),
+    )
+    destroy_calls = 0
+
+    def _destroy(res: NetnsSessionResources) -> None:
+        nonlocal destroy_calls
+        destroy_calls += 1
+        if destroy_calls == 1:
+            raise ReferenceSubstratePolicyError("simulated residual on first close")
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.destroy_netns_session",
+        _destroy,
+    )
+    with pytest.raises(ReferenceSubstrateLifecycleError):
+        backend.create_session()
+    with pytest.raises(ReferenceSubstrateLifecycleError):
+        backend.close()
+    assert destroy_calls == 1
+    backend.close()
+    assert destroy_calls == 2
+
+
+def test_backend_secure_create_topology_rollback_skips_firewall(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Matrix R: secure create does not apply firewall after incomplete topology rollback."""
+    backend = _backend_with_stub_endpoints(monkeypatch)
+    resources = _netns_resources("igx-qual-sec-rollback")
+    rollback = ReferenceSubstrateTopologyRollbackError(
+        resources=resources,
+        creation_failure="simulated topology failure",
+        cleanup_result=_TopologyCleanupResult((), ("netns still present",)),
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.create_netns_session",
+        lambda: (_ for _ in ()).throw(rollback),
+    )
+    apply_calls = 0
+
+    def _apply(*args: object, **kwargs: object) -> None:
+        nonlocal apply_calls
+        apply_calls += 1
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.apply_egress_policy_netns",
+        _apply,
+    )
+    with pytest.raises(ReferenceSubstrateLifecycleError):
+        backend.create_session_with_security(_cloud_allowlist_requirements())
+    assert apply_calls == 0
 
 
 def test_endpoint_add_timeout_with_address_present_invokes_cleanup(
