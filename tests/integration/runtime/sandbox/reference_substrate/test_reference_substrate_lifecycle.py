@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import threading
+from pathlib import Path as StdPath
 from unittest.mock import MagicMock
 
 import pytest
@@ -1529,6 +1530,223 @@ def test_destroy_cleanup_fails_when_peer_veth_still_present(
         lambda _netns: _ResidualPresence.ABSENT,
     )
     with pytest.raises(ReferenceSubstratePolicyError, match="peer veth still present"):
+        destroy_netns_session(resources)
+
+
+def _netns_hosts_material_posix(netns: str) -> str:
+    return (StdPath("/etc/netns") / netns).as_posix()
+
+
+def _patch_netns_hosts_filesystem_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    netns: str,
+    *,
+    exists_raises: bool = False,
+    iterdir_raises: bool = False,
+    unlink_raises: bool = False,
+    rmdir_raises: bool = False,
+) -> None:
+    hosts_posix = _netns_hosts_material_posix(netns)
+    orig_exists = StdPath.exists
+    orig_iterdir = StdPath.iterdir
+    orig_unlink = StdPath.unlink
+    orig_rmdir = StdPath.rmdir
+
+    def exists(self: StdPath) -> bool:
+        if self.as_posix() == hosts_posix:
+            if exists_raises:
+                raise PermissionError("simulated exists failure")
+            return True
+        return orig_exists(self)
+
+    def iterdir(self: StdPath):
+        if self.as_posix() == hosts_posix:
+            if iterdir_raises:
+                raise OSError("simulated iterdir failure")
+            if unlink_raises:
+                yield self / "hosts"
+                return
+            return iter(())
+        return orig_iterdir(self)
+
+    def unlink(self: StdPath, missing_ok: bool = False) -> None:
+        if self.parent.as_posix() == hosts_posix:
+            if unlink_raises:
+                raise OSError("simulated unlink failure")
+        orig_unlink(self, missing_ok=missing_ok)
+
+    def rmdir(self: StdPath) -> None:
+        if self.as_posix() == hosts_posix:
+            if rmdir_raises:
+                raise OSError("simulated rmdir failure")
+        orig_rmdir(self)
+
+    monkeypatch.setattr(StdPath, "exists", exists)
+    monkeypatch.setattr(StdPath, "iterdir", iterdir)
+    monkeypatch.setattr(StdPath, "unlink", unlink)
+    monkeypatch.setattr(StdPath, "rmdir", rmdir)
+
+
+def _patch_topology_residual_inspection(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    netns: _ResidualPresence = _ResidualPresence.ABSENT,
+    host_veth: _ResidualPresence = _ResidualPresence.ABSENT,
+    peer_veth: _ResidualPresence = _ResidualPresence.ABSENT,
+    hosts: _ResidualPresence = _ResidualPresence.ABSENT,
+) -> dict[str, int]:
+    calls = {"netns": 0, "host_veth": 0, "peer_veth": 0, "hosts": 0}
+
+    def inspect_netns(_name: str) -> _ResidualPresence:
+        calls["netns"] += 1
+        return netns
+
+    def inspect_link(link: str) -> _ResidualPresence:
+        if link.endswith("h"):
+            calls["host_veth"] += 1
+            return host_veth
+        calls["peer_veth"] += 1
+        return peer_veth
+
+    def inspect_hosts(_name: str) -> _ResidualPresence:
+        calls["hosts"] += 1
+        return hosts
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns",
+        inspect_netns,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_link",
+        inspect_link,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns_hosts_material",
+        inspect_hosts,
+    )
+    return calls
+
+
+@pytest.mark.parametrize(
+    ("failure_kwarg", "expected_fragment"),
+    [
+        ("exists_raises", "simulated exists failure"),
+        ("iterdir_raises", "simulated iterdir failure"),
+        ("unlink_raises", "simulated unlink failure"),
+        ("rmdir_raises", "simulated rmdir failure"),
+    ],
+    ids=["F1-exists", "F2-iterdir", "F3-unlink", "F4-rmdir"],
+)
+def test_topology_hosts_filesystem_oserror_does_not_short_circuit_cleanup(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_kwarg: str,
+    expected_fragment: str,
+) -> None:
+    """F1–F4: hosts filesystem attempt errors must not skip independent cleanup."""
+    resources = _netns_resources("igx-qual-fs-matrix")
+    _patch_netns_hosts_filesystem_failure(
+        monkeypatch,
+        resources.netns,
+        **{failure_kwarg: True},
+    )
+    try_run_calls: list[list[str]] = []
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        lambda command, timeout=10.0: try_run_calls.append(command) or None,
+    )
+    inspect_calls = _patch_topology_residual_inspection(monkeypatch)
+    result = _cleanup_topology(resources)
+    assert expected_fragment in "; ".join(result.attempt_errors)
+    assert any(cmd[:3] == ["ip", "netns", "delete"] for cmd in try_run_calls)
+    assert any(cmd[:3] == ["ip", "link", "delete"] and cmd[3] == resources.veth_host for cmd in try_run_calls)
+    assert any(cmd[:3] == ["ip", "link", "delete"] and cmd[3] == resources.veth_peer for cmd in try_run_calls)
+    assert inspect_calls == {"netns": 1, "host_veth": 1, "peer_veth": 1, "hosts": 1}
+
+
+@pytest.mark.parametrize(
+    ("hosts_residual", "netns_residual", "host_veth_residual", "peer_veth_residual", "verified"),
+    [
+        (_ResidualPresence.ABSENT, _ResidualPresence.ABSENT, _ResidualPresence.ABSENT, _ResidualPresence.ABSENT, True),
+        (_ResidualPresence.PRESENT, _ResidualPresence.ABSENT, _ResidualPresence.ABSENT, _ResidualPresence.ABSENT, False),
+        (_ResidualPresence.UNKNOWN, _ResidualPresence.ABSENT, _ResidualPresence.ABSENT, _ResidualPresence.ABSENT, False),
+        (_ResidualPresence.ABSENT, _ResidualPresence.PRESENT, _ResidualPresence.ABSENT, _ResidualPresence.ABSENT, False),
+        (_ResidualPresence.ABSENT, _ResidualPresence.ABSENT, _ResidualPresence.PRESENT, _ResidualPresence.ABSENT, False),
+    ],
+    ids=["C1-all-absent", "C2-hosts-present", "C3-hosts-unknown", "C4-netns-present", "C5-veth-present"],
+)
+def test_topology_hosts_attempt_error_physical_truth_from_residuals(
+    monkeypatch: pytest.MonkeyPatch,
+    hosts_residual: _ResidualPresence,
+    netns_residual: _ResidualPresence,
+    host_veth_residual: _ResidualPresence,
+    peer_veth_residual: _ResidualPresence,
+    verified: bool,
+) -> None:
+    """C1–C5: filesystem attempt failure does not define cleanup success."""
+    resources = _netns_resources("igx-qual-fs-truth")
+    _patch_netns_hosts_filesystem_failure(monkeypatch, resources.netns, exists_raises=True)
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        lambda command, timeout=10.0: None,
+    )
+    _patch_topology_residual_inspection(
+        monkeypatch,
+        netns=netns_residual,
+        host_veth=host_veth_residual,
+        peer_veth=peer_veth_residual,
+        hosts=hosts_residual,
+    )
+    result = _cleanup_topology(resources)
+    assert result.attempt_errors
+    assert result.verified_absent is verified
+
+
+def test_topology_create_rollback_filesystem_cleanup_failure_typed_owner(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Construction rollback when hosts cleanup attempt fails and residuals remain."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    _patch_fixed_topology_uuid(monkeypatch, "ffff000006")
+    _patch_topology_precheck_absent(monkeypatch)
+    _patch_netns_hosts_filesystem_failure(monkeypatch, "igx-qual-ffff000006", exists_raises=True)
+
+    def _run(command: list[str], *, timeout: float = 10.0) -> None:
+        if command[:3] == ["ip", "link", "add"]:
+            raise ReferenceSubstrateTopologyError("simulated veth add failure")
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._run",
+        _run,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        lambda command, timeout=10.0: None,
+    )
+    _patch_topology_residual_inspection(
+        monkeypatch,
+        netns=_ResidualPresence.PRESENT,
+        hosts=_ResidualPresence.UNKNOWN,
+    )
+    with pytest.raises(ReferenceSubstrateTopologyRollbackError) as exc_info:
+        create_netns_session()
+    assert exc_info.value.resources.netns == "igx-qual-ffff000006"
+    assert "simulated veth add failure" in str(exc_info.value)
+    assert exc_info.value.cleanup_result.attempt_errors
+
+
+def test_destroy_netns_session_hosts_exists_oserror_surfaces_policy_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Normal destroy: filesystem exists() failure must not escape as raw OSError."""
+    resources = _netns_resources("igx-qual-destroy-fs")
+    _patch_netns_hosts_filesystem_failure(monkeypatch, resources.netns, exists_raises=True)
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        lambda command, timeout=10.0: None,
+    )
+    _patch_topology_residual_inspection(monkeypatch, hosts=_ResidualPresence.UNKNOWN)
+    with pytest.raises(ReferenceSubstratePolicyError, match="cannot verify"):
         destroy_netns_session(resources)
 
 

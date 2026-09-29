@@ -38,14 +38,6 @@ class NetnsSessionResources:
     veth_peer: str
 
 
-@dataclass(slots=True)
-class _PartialTopologyCreation:
-    netns: str
-    veth_host: str
-    veth_peer: str
-    mutation_started: bool = False
-
-
 @dataclass(frozen=True, slots=True)
 class _TopologyCleanupResult:
     attempt_errors: tuple[str, ...]
@@ -172,16 +164,14 @@ def _inspect_netns_hosts_material(netns: str) -> _ResidualPresence:
 
 def _remove_netns_hosts_material(netns: str) -> str | None:
     hosts_path = Path("/etc/netns") / netns
-    if not hosts_path.exists():
-        return None
     try:
+        if not hosts_path.exists():
+            return None
         for child in hosts_path.iterdir():
             child.unlink(missing_ok=True)
         hosts_path.rmdir()
     except OSError as exc:
         return f"/etc/netns/{netns} cleanup: {exc}"
-    if _inspect_netns_hosts_material(netns) == _ResidualPresence.PRESENT:
-        return f"/etc/netns/{netns} still present after cleanup attempt"
     return None
 
 
@@ -220,20 +210,6 @@ def _cleanup_topology(resources: NetnsSessionResources) -> _TopologyCleanupResul
         attempt_errors.append(f"peer veth delete: {peer_err}")
     residual_errors = _collect_topology_residual_errors(resources)
     return _TopologyCleanupResult(tuple(attempt_errors), residual_errors)
-
-
-def _rollback_allocated_topology(partial: _PartialTopologyCreation) -> list[str]:
-    """Attempt idempotent cleanup for every resource that could exist after mutation began."""
-    if not partial.mutation_started:
-        return []
-    result = _cleanup_topology(
-        NetnsSessionResources(
-            netns=partial.netns,
-            veth_host=partial.veth_host,
-            veth_peer=partial.veth_peer,
-        ),
-    )
-    return list(result.attempt_errors) + list(result.residual_errors)
 
 
 def _verify_identifiers_unowned(netns: str, veth_host: str, veth_peer: str) -> None:
