@@ -344,11 +344,12 @@ Delivery rule:
 |---|---|
 | **ID** | AW-7C |
 | **Priority** | P0/P1 |
-| **Status** | BLOCKED BY PREREQUISITE |
+| **Status** | **CURRENT** |
 | **Purpose** | A2 scoped adaptive integration path |
-| **Dependencies** | enforceable egress + scoped secret brokering — see [`AW_7C_A2_SCOPED_ADAPTIVE_INTEGRATION_QUALIFICATION.md`](../qualification/AW_7C_A2_SCOPED_ADAPTIVE_INTEGRATION_QUALIFICATION.md) |
-| **Acceptance** | only approved hosts/secrets, narrow scope, runtime evidence of enforced controls |
-| **Next step** | AW-7D |
+| **Dependencies** | Prerequisites **CLOSED / accepted** via AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ; architecture lock [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) (AW-7C-P1-ARCH) |
+| **Child sequence** | AW-7C-P1-ARCH → AW-7C-P2 → AW-7C-P3 → AW-7C-P4 → AW-7C-CERT |
+| **Acceptance** | only approved hosts/secrets, narrow scope, runtime evidence of enforced controls; typed pluginable adaptation → qualification → canonical Execution; no A1 bypass |
+| **Next step** | AW-7C-P2 (after independent P1-ARCH audit) |
 
 | Field | Value |
 |---|---|

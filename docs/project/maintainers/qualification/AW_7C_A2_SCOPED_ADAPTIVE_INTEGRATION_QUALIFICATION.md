@@ -16,6 +16,23 @@
 
 ---
 
+## AW-7C implementation architecture lock (current)
+
+| Field | Value |
+| ----- | ----- |
+| **Stage** | AW-7C-P1-ARCH |
+| **Parent** | AW-7C **CURRENT** |
+| **Prerequisites** | AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ **CLOSED / accepted** |
+| **Purpose** | Contract-boundary and ownership lock for A2 scoped adaptive integration execution — **no A2 production implementation** |
+| **Canonical architecture** | [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) |
+| **A2 execution service on baseline** | **None** (gap documented; P2+ implements) |
+| **Next work** | AW-7C-P2 typed contracts/orchestration — **only after independent P1-ARCH audit** |
+| **Global FRZ** | No PASS delta from P1-ARCH |
+
+Sections 1–13 below retain **historical** prerequisite audit unless explicitly superseded above.
+
+---
+
 ## 1. Verdict
 
 ```text
