@@ -116,10 +116,11 @@ class ReferenceSandboxBackend:
         return self._capabilities_from_verified(verified.enforced_hosts)
 
     def destroy_session(self, session_id: str) -> None:
-        state = self._sessions.pop(session_id, None)
+        state = self._sessions.get(session_id)
         if state is None:
             return
         destroy_netns_session(state.resources)
+        self._sessions.pop(session_id, None)
 
     def close(self) -> None:
         if self._lifecycle_closed:
@@ -127,18 +128,15 @@ class ReferenceSandboxBackend:
         cleanup_errors: list[str] = []
         session_ids = list(self._sessions.keys())
         for session_id in session_ids:
-            state = self._sessions.pop(session_id, None)
+            state = self._sessions.get(session_id)
             if state is None:
                 continue
             try:
                 destroy_netns_session(state.resources)
             except ReferenceSubstratePolicyError as exc:
                 cleanup_errors.append(f"session {session_id}: {exc}")
-        if self._sessions:
-            cleanup_errors.append(
-                f"residual sessions after drain: {', '.join(sorted(self._sessions))}",
-            )
-            self._sessions.clear()
+                continue
+            self._sessions.pop(session_id, None)
         try:
             self._endpoints.stop()
         except ReferenceSubstrateLifecycleError as exc:

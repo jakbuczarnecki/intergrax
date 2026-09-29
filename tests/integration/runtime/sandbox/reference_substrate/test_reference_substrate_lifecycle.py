@@ -4,16 +4,16 @@
 
 from __future__ import annotations
 
+import threading
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
 
-from tests.integration.runtime.sandbox.reference_substrate.backend import (
-    ReferenceSandboxBackend,
-    _ReferenceSessionState,
-)
+from tests.integration.runtime.sandbox.reference_substrate.backend import ReferenceSandboxBackend
 from tests.integration.runtime.sandbox.reference_substrate.endpoints import ReferenceEndpointServers
 from tests.integration.runtime.sandbox.reference_substrate.errors import (
+    ReferenceSubstrateEndpointCleanupError,
     ReferenceSubstrateEndpointError,
     ReferenceSubstrateLifecycleError,
 )
@@ -38,15 +38,22 @@ def _ok_preflight() -> ReferenceSubstratePreflight:
 
 class _FakeHttpServer:
     RequestHandlerClass: type
+    shutdown_calls = 0
+    close_calls = 0
 
     def serve_forever(self) -> None:
         return
 
     def shutdown(self) -> None:
-        return
+        type(self).shutdown_calls += 1
 
     def server_close(self) -> None:
-        return
+        type(self).close_calls += 1
+
+
+def _reset_fake_server_metrics() -> None:
+    _FakeHttpServer.shutdown_calls = 0
+    _FakeHttpServer.close_calls = 0
 
 
 def _fake_httpserver_factory(
@@ -78,6 +85,23 @@ def _patch_ip_success(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+def _netns_resources(netns: str) -> NetnsSessionResources:
+    return NetnsSessionResources(
+        netns=netns,
+        veth_host=f"{netns}-h",
+        veth_peer=f"{netns}-p",
+    )
+
+
+def _backend_with_stub_endpoints(monkeypatch: pytest.MonkeyPatch) -> ReferenceSandboxBackend:
+    endpoints = ReferenceEndpointServers()
+    monkeypatch.setattr(endpoints, "start", lambda: None)
+    return ReferenceSandboxBackend(
+        preflight=_ok_preflight(),
+        endpoint_servers=endpoints,
+    )
+
+
 def test_address_add_failure_does_not_claim_ownership(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "tests.integration.runtime.sandbox.reference_substrate.endpoints.loopback_has_ipv4_address",
@@ -100,7 +124,36 @@ def test_address_add_failure_does_not_claim_ownership(monkeypatch: pytest.Monkey
     with pytest.raises(ReferenceSubstrateEndpointError):
         servers.start()
     assert servers.denied_addr_owned is False
-    assert servers._allowed is None  # noqa: SLF001 — lifecycle contract proof
+
+
+def test_partial_endpoint_startup_second_server_construct_fails_close_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T1: unstarted server rollback uses server_close only, never shutdown."""
+    _reset_fake_server_metrics()
+    _patch_ip_success(monkeypatch)
+    bind_attempts = 0
+
+    def _flaky_httpserver(
+        server_address: tuple[str, int],
+        request_handler_class: type,
+    ) -> _FakeHttpServer:
+        nonlocal bind_attempts
+        bind_attempts += 1
+        if bind_attempts >= 2:
+            raise OSError("simulated bind failure")
+        return _fake_httpserver_factory(server_address, request_handler_class)
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.ThreadingHTTPServer",
+        _flaky_httpserver,
+    )
+    servers = ReferenceEndpointServers()
+    with pytest.raises(ReferenceSubstrateEndpointError):
+        servers.start()
+    assert _FakeHttpServer.shutdown_calls == 0
+    assert _FakeHttpServer.close_calls == 1
+    assert servers.denied_addr_owned is False
 
 
 def test_partial_endpoint_startup_rolls_back_owned_address(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -145,6 +198,144 @@ def test_partial_endpoint_startup_rolls_back_owned_address(monkeypatch: pytest.M
     assert servers.denied_addr_owned is False
 
 
+def test_partial_startup_second_thread_start_fails_started_server_shutdown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T2: started server gets shutdown+close; unstarted gets close-only."""
+    _reset_fake_server_metrics()
+    _patch_ip_success(monkeypatch)
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.ThreadingHTTPServer",
+        _fake_httpserver_factory,
+    )
+    thread_start_calls = 0
+
+    def _flaky_thread(*args: Any, **kwargs: Any) -> threading.Thread:
+        nonlocal thread_start_calls
+        thread_start_calls += 1
+        if thread_start_calls >= 2:
+
+            class _FailingThread(threading.Thread):
+                def start(self) -> None:
+                    raise RuntimeError("simulated denied thread start failure")
+
+            return _FailingThread(*args, **kwargs)
+        return threading.Thread(*args, **kwargs)
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.threading.Thread",
+        _flaky_thread,
+    )
+    servers = ReferenceEndpointServers()
+    with pytest.raises(ReferenceSubstrateEndpointError) as exc_info:
+        servers.start()
+    assert "simulated denied thread start failure" in str(exc_info.value)
+    assert _FakeHttpServer.shutdown_calls == 1
+    assert _FakeHttpServer.close_calls == 2
+    assert servers.denied_addr_owned is False
+
+
+def test_stop_address_delete_failure_preserves_ownership_and_retries(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T3: failed address delete keeps ownership; second stop retries delete."""
+    del_calls = 0
+    del_fail_once = True
+
+    def _ip(command: list[str], **kwargs: object) -> MagicMock:
+        nonlocal del_calls, del_fail_once
+        result = MagicMock()
+        result.args = command
+        result.stdout = ""
+        result.stderr = ""
+        if command[:4] == ["ip", "addr", "del", "10.200.42.3/32"]:
+            del_calls += 1
+            if del_fail_once:
+                del_fail_once = False
+                result.returncode = 1
+                result.stderr = "simulated del failure"
+                return result
+        result.returncode = 0
+        return result
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.loopback_has_ipv4_address",
+        lambda _addr: False,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints._run_ip",
+        _ip,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.ThreadingHTTPServer",
+        _fake_httpserver_factory,
+    )
+    servers = ReferenceEndpointServers()
+    servers.start()
+    with pytest.raises(ReferenceSubstrateEndpointCleanupError):
+        servers.stop()
+    assert servers.denied_addr_owned is True
+    assert del_calls == 1
+    servers.stop()
+    assert servers.denied_addr_owned is False
+    assert del_calls == 2
+
+
+def test_partial_startup_rollback_address_delete_failure_surfaces_and_retries(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T4: rollback delete failure is visible; later stop() retries."""
+    _patch_ip_success(monkeypatch)
+    del_calls = 0
+    del_fail_once = True
+
+    def _ip(command: list[str], **kwargs: object) -> MagicMock:
+        nonlocal del_calls, del_fail_once
+        result = MagicMock()
+        result.args = command
+        result.stdout = ""
+        result.stderr = ""
+        if command[:4] == ["ip", "addr", "del", "10.200.42.3/32"]:
+            del_calls += 1
+            if del_fail_once:
+                del_fail_once = False
+                result.returncode = 1
+                result.stderr = "rollback del failure"
+                return result
+        result.returncode = 0
+        return result
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints._run_ip",
+        _ip,
+    )
+    bind_attempts = 0
+
+    def _flaky_httpserver(
+        server_address: tuple[str, int],
+        request_handler_class: type,
+    ) -> _FakeHttpServer:
+        nonlocal bind_attempts
+        bind_attempts += 1
+        if bind_attempts >= 2:
+            raise OSError("simulated bind failure")
+        return _fake_httpserver_factory(server_address, request_handler_class)
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.ThreadingHTTPServer",
+        _flaky_httpserver,
+    )
+    servers = ReferenceEndpointServers()
+    with pytest.raises(ReferenceSubstrateEndpointError) as exc_info:
+        servers.start()
+    assert "rollback incomplete" in str(exc_info.value)
+    assert servers.denied_addr_owned is True
+    assert del_calls == 1
+    servers.stop()
+    assert servers.denied_addr_owned is False
+    assert del_calls == 2
+
+
 def test_normal_stop_removes_harness_owned_address(monkeypatch: pytest.MonkeyPatch) -> None:
     del_calls = 0
 
@@ -180,6 +371,7 @@ def test_normal_stop_removes_harness_owned_address(monkeypatch: pytest.MonkeyPat
 
 
 def test_double_stop_is_idempotent_without_extra_delete(monkeypatch: pytest.MonkeyPatch) -> None:
+    """T7: second stop after success does not repeat address deletion."""
     del_calls = 0
 
     def _ip(command: list[str], **kwargs: object) -> MagicMock:
@@ -242,6 +434,36 @@ def test_preexisting_denied_address_fails_closed(monkeypatch: pytest.MonkeyPatch
     assert servers.denied_addr_owned is False
 
 
+def test_destroy_session_failure_preserves_ownership_for_retry(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T5: failed destroy keeps session registered for retry."""
+    backend = _backend_with_stub_endpoints(monkeypatch)
+    resources = _netns_resources("igx-qual-destroy-retry")
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.create_netns_session",
+        lambda: resources,
+    )
+    session = backend.create_session()
+    destroy_calls = 0
+
+    def _destroy(res: NetnsSessionResources) -> None:
+        nonlocal destroy_calls
+        destroy_calls += 1
+        if destroy_calls == 1:
+            raise ReferenceSubstratePolicyError("simulated destroy failure")
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.destroy_netns_session",
+        _destroy,
+    )
+    with pytest.raises(ReferenceSubstratePolicyError):
+        backend.destroy_session(session.session_id)
+    assert destroy_calls == 1
+    backend.destroy_session(session.session_id)
+    assert destroy_calls == 2
+
+
 def test_backend_close_drains_sessions_and_stops_endpoints(monkeypatch: pytest.MonkeyPatch) -> None:
     endpoints = ReferenceEndpointServers()
     monkeypatch.setattr(endpoints, "start", lambda: None)
@@ -251,8 +473,12 @@ def test_backend_close_drains_sessions_and_stops_endpoints(monkeypatch: pytest.M
         preflight=_ok_preflight(),
         endpoint_servers=endpoints,
     )
-    resources = NetnsSessionResources(netns="igx-qual-test", veth_host="veth1h", veth_peer="veth1p")
-    backend._sessions[resources.netns] = _ReferenceSessionState(resources=resources)  # noqa: SLF001
+    resources = _netns_resources("igx-qual-test")
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.create_netns_session",
+        lambda: resources,
+    )
+    backend.create_session()
     destroy_mock = MagicMock()
     monkeypatch.setattr(
         "tests.integration.runtime.sandbox.reference_substrate.backend.destroy_netns_session",
@@ -261,7 +487,62 @@ def test_backend_close_drains_sessions_and_stops_endpoints(monkeypatch: pytest.M
     backend.close()
     destroy_mock.assert_called_once_with(resources)
     stop_mock.assert_called_once()
-    assert backend._lifecycle_closed is True  # noqa: SLF001
+    destroy_mock.reset_mock()
+    stop_mock.reset_mock()
+    backend.close()
+    destroy_mock.assert_not_called()
+    stop_mock.assert_not_called()
+
+
+def test_backend_close_mixed_session_cleanup_retry(monkeypatch: pytest.MonkeyPatch) -> None:
+    """T6: successful session removed; failed session retried on second close."""
+    endpoints = ReferenceEndpointServers()
+    monkeypatch.setattr(endpoints, "start", lambda: None)
+    stop_mock = MagicMock()
+    monkeypatch.setattr(endpoints, "stop", stop_mock)
+    backend = ReferenceSandboxBackend(
+        preflight=_ok_preflight(),
+        endpoint_servers=endpoints,
+    )
+    r1 = _netns_resources("igx-qual-a")
+    r2 = _netns_resources("igx-qual-b")
+    created = iter((r1, r2))
+
+    def _create() -> NetnsSessionResources:
+        return next(created)
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.create_netns_session",
+        _create,
+    )
+    s1 = backend.create_session()
+    s2 = backend.create_session()
+    assert s1.session_id == r1.netns
+    assert s2.session_id == r2.netns
+    destroy_attempts: dict[str, int] = {"igx-qual-a": 0, "igx-qual-b": 0}
+
+    def _destroy(resources: NetnsSessionResources) -> None:
+        destroy_attempts[resources.netns] += 1
+        if resources.netns == "igx-qual-a" and destroy_attempts[resources.netns] == 1:
+            raise ReferenceSubstratePolicyError("simulated session cleanup failure")
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.destroy_netns_session",
+        _destroy,
+    )
+    with pytest.raises(ReferenceSubstrateLifecycleError):
+        backend.close()
+    stop_mock.assert_called_once()
+    assert destroy_attempts["igx-qual-a"] == 1
+    assert destroy_attempts["igx-qual-b"] == 1
+    stop_mock.reset_mock()
+    backend.close()
+    assert destroy_attempts["igx-qual-a"] == 2
+    assert destroy_attempts["igx-qual-b"] == 1
+    stop_mock.assert_called_once()
+    stop_mock.reset_mock()
+    backend.close()
+    stop_mock.assert_not_called()
 
 
 def test_backend_close_continues_after_session_cleanup_failure(
@@ -275,15 +556,20 @@ def test_backend_close_continues_after_session_cleanup_failure(
         preflight=_ok_preflight(),
         endpoint_servers=endpoints,
     )
-    r1 = NetnsSessionResources(netns="igx-qual-a", veth_host="va", veth_peer="vb")
-    r2 = NetnsSessionResources(netns="igx-qual-b", veth_host="vc", veth_peer="vd")
-    backend._sessions[r1.netns] = _ReferenceSessionState(resources=r1)  # noqa: SLF001
-    backend._sessions[r2.netns] = _ReferenceSessionState(resources=r2)  # noqa: SLF001
+    r1 = _netns_resources("igx-qual-a")
+    r2 = _netns_resources("igx-qual-b")
+    created = iter((r1, r2))
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.create_netns_session",
+        lambda: next(created),
+    )
+    backend.create_session()
+    backend.create_session()
 
     def _destroy(resources: NetnsSessionResources) -> None:
         if resources.netns == "igx-qual-a":
             raise ReferenceSubstratePolicyError("simulated session cleanup failure")
-        return None
 
     monkeypatch.setattr(
         "tests.integration.runtime.sandbox.reference_substrate.backend.destroy_netns_session",
@@ -292,4 +578,3 @@ def test_backend_close_continues_after_session_cleanup_failure(
     with pytest.raises(ReferenceSubstrateLifecycleError):
         backend.close()
     stop_mock.assert_called_once()
-    assert backend._lifecycle_closed is False  # noqa: SLF001
