@@ -56,24 +56,50 @@ class _DeniedHandler(BaseHTTPRequestHandler):
 
 
 def _run_ip(command: list[str], *, timeout: float = 5.0) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        command,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        check=False,
-    )
+    label = " ".join(command)
+    try:
+        return subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise ReferenceSubstrateEndpointError(
+            f"ip command timed out: {label} (classification=timeout)",
+        ) from exc
+    except OSError as exc:
+        raise ReferenceSubstrateEndpointError(
+            f"os error running ip command: {label} (classification=os_error; {exc})",
+        ) from exc
+
+
+def _loopback_address_presence(address: str) -> bool | None:
+    """Return True/False when known; None when loopback state cannot be inspected."""
+    try:
+        completed = subprocess.run(
+            ["ip", "-4", "addr", "show", "dev", "lo"],
+            capture_output=True,
+            text=True,
+            timeout=5.0,
+            check=False,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    if completed.returncode != 0:
+        return None
+    needle = f"inet {address}/"
+    return needle in completed.stdout
 
 
 def loopback_has_ipv4_address(address: str) -> bool:
-    completed = _run_ip(["ip", "-4", "addr", "show", "dev", "lo"])
-    if completed.returncode != 0:
-        stderr = completed.stderr.strip() or completed.stdout.strip()
+    presence = _loopback_address_presence(address)
+    if presence is None:
         raise ReferenceSubstrateEndpointError(
-            f"cannot inspect loopback addresses: {' '.join(completed.args)} ({stderr})",
+            "cannot inspect loopback addresses for qualification endpoint precheck",
         )
-    needle = f"inet {address}/"
-    return needle in completed.stdout
+    return presence
 
 
 def _add_denied_loopback_address() -> None:
@@ -86,11 +112,30 @@ def _add_denied_loopback_address() -> None:
 
 
 def _remove_owned_denied_loopback_address() -> None:
-    completed = _run_ip(["ip", "addr", "del", f"{DENIED_ADDR}/32", "dev", "lo"])
-    if completed.returncode != 0:
-        stderr = completed.stderr.strip() or completed.stdout.strip()
+    try:
+        completed = _run_ip(["ip", "addr", "del", f"{DENIED_ADDR}/32", "dev", "lo"])
+    except ReferenceSubstrateEndpointError as exc:
+        if "classification=timeout" in str(exc):
+            completed = None
+        else:
+            raise ReferenceSubstrateEndpointCleanupError(str(exc)) from exc
+    else:
+        if completed.returncode != 0:
+            stderr = completed.stderr.strip() or completed.stdout.strip()
+            if "Cannot find" not in stderr and "not found" not in stderr.lower():
+                presence = _loopback_address_presence(DENIED_ADDR)
+                if presence is True:
+                    raise ReferenceSubstrateEndpointCleanupError(
+                        f"cannot remove harness-owned address {DENIED_ADDR}/32: {stderr}",
+                    )
+    presence = _loopback_address_presence(DENIED_ADDR)
+    if presence is None:
         raise ReferenceSubstrateEndpointCleanupError(
-            f"cannot remove harness-owned address {DENIED_ADDR}/32: {stderr}",
+            f"cannot verify harness-owned address {DENIED_ADDR}/32 was removed",
+        )
+    if presence:
+        raise ReferenceSubstrateEndpointCleanupError(
+            f"harness-owned address {DENIED_ADDR}/32 still present after cleanup attempt",
         )
 
 
@@ -135,8 +180,20 @@ class ReferenceEndpointServers:
                 f"qualification denied address {DENIED_ADDR}/32 already present on loopback; "
                 "ambient host state is not harness-owned",
             )
-        _add_denied_loopback_address()
         self._denied_addr_owned = True
+        try:
+            _add_denied_loopback_address()
+        except ReferenceSubstrateEndpointError as add_exc:
+            rollback_errors: list[str] = []
+            try:
+                _remove_owned_denied_loopback_address()
+                self._denied_addr_owned = False
+            except ReferenceSubstrateEndpointCleanupError as cleanup_exc:
+                rollback_errors.append(str(cleanup_exc))
+            message = str(add_exc)
+            if rollback_errors:
+                message += f"; rollback incomplete: {'; '.join(rollback_errors)}"
+            raise ReferenceSubstrateEndpointError(message) from add_exc
         allowed: ThreadingHTTPServer | None = None
         denied: ThreadingHTTPServer | None = None
         allowed_serve_forever_started = False
@@ -160,15 +217,15 @@ class ReferenceEndpointServers:
         except BaseException as exc:
             startup_exc = exc
         if startup_exc is not None:
-            rollback_errors = self._rollback_partial_startup(
+            rollback_detail = self._rollback_partial_startup(
                 allowed,
                 denied,
                 allowed_serve_forever_started=allowed_serve_forever_started,
                 denied_serve_forever_started=denied_serve_forever_started,
             )
             message = f"reference endpoint servers failed to start: {startup_exc}"
-            if rollback_errors:
-                message += f"; rollback incomplete: {rollback_errors}"
+            if rollback_detail:
+                message += f"; rollback incomplete: {rollback_detail}"
             raise ReferenceSubstrateEndpointError(message) from startup_exc
         self._allowed = allowed
         self._denied = denied

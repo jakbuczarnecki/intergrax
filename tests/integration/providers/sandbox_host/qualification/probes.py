@@ -20,6 +20,7 @@ class SandboxNetworkProbe(Protocol):
 
     def execute(self, session: HostedSandboxSession, target: str) -> NetworkProbeResult:
         """Execute a network probe against ``target`` inside ``session``."""
+        ...
 
 
 def _probe_python_code(url: str) -> str:
@@ -33,7 +34,8 @@ def _probe_python_code(url: str) -> str:
         status_code = None
         try:
             request = urllib.request.Request(url)
-            with urllib.request.urlopen(request, timeout=20) as response:
+            opener = urllib.request.build_opener(urllib.request.ProxyHandler({{}}))
+            with opener.open(request, timeout=20) as response:
                 status_code = int(response.status)
                 final_url = response.geturl()
                 redirected = final_url.rstrip("/") != url.rstrip("/")

@@ -117,17 +117,27 @@ def _endpoint_to_canonical_host(addr: str, port: int) -> str | None:
 
 
 def _run_in_netns(netns: str, command: list[str], *, timeout: float = 10.0) -> str:
-    completed = subprocess.run(
-        ["ip", "netns", "exec", netns, *command],
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        check=False,
-    )
+    label = " ".join(command)
+    try:
+        completed = subprocess.run(
+            ["ip", "netns", "exec", netns, *command],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise ReferenceSubstratePolicyError(
+            f"command timed out in netns {netns}: {label} (classification=timeout)",
+        ) from exc
+    except OSError as exc:
+        raise ReferenceSubstratePolicyError(
+            f"os error in netns {netns}: {label} (classification=os_error; {exc})",
+        ) from exc
     if completed.returncode != 0:
         stderr = completed.stderr.strip() or completed.stdout.strip()
         raise ReferenceSubstratePolicyError(
-            f"command failed in netns {netns}: {' '.join(command)} ({stderr})",
+            f"command failed in netns {netns}: {label} (classification=nonzero_exit; {stderr})",
         )
     return completed.stdout
 
@@ -216,11 +226,27 @@ def _parse_nft_accept_destinations(raw: str) -> set[tuple[str, int]]:
             continue
         match = _NFT_DADDR_RE.search(line)
         if match is None:
+            if "daddr" in line:
+                raise ReferenceSubstratePolicyError(
+                    f"unparseable nftables accept rule line: {line!r}",
+                )
             continue
         addr = match.group(1)
         if addr == "127.0.0.0/8" or addr.startswith("127."):
             continue
-        port = int(match.group(2)) if match.group(2) else 0
+        port_text = match.group(2)
+        if not port_text:
+            if "tcp dport" in line:
+                raise ReferenceSubstratePolicyError(
+                    f"malformed nftables destination port in line: {line!r}",
+                )
+            continue
+        try:
+            port = int(port_text)
+        except ValueError as exc:
+            raise ReferenceSubstratePolicyError(
+                f"malformed nftables destination port in line: {line!r}",
+            ) from exc
         if port == 0:
             continue
         destinations.add((addr, port))
@@ -245,7 +271,12 @@ def _parse_iptables_accept_destinations(raw: str) -> set[tuple[str, int]]:
         port = 0
         if "-p" in parts and "tcp" in parts and "--dport" in parts:
             port_index = parts.index("--dport")
-            port = int(parts[port_index + 1])
+            try:
+                port = int(parts[port_index + 1])
+            except (ValueError, IndexError) as exc:
+                raise ReferenceSubstratePolicyError(
+                    f"malformed iptables destination port in line: {line!r}",
+                ) from exc
         if port == 0:
             continue
         destinations.add((addr, port))

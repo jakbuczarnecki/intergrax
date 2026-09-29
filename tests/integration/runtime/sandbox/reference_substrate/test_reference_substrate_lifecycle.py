@@ -32,7 +32,8 @@ from tests.integration.runtime.sandbox.reference_substrate.topology import (
     NetnsSessionResources,
     ReferenceSubstrateTopologyError,
     _PartialTopologyCreation,
-    _rollback_partial_topology,
+    _rollback_allocated_topology,
+    destroy_netns_session,
 )
 
 
@@ -106,9 +107,28 @@ def _patch_denied_thread_start_failure(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+class _LoopbackPresenceTracker:
+    def __init__(self, *, present: bool = True) -> None:
+        self.present = present
+
+
+def _patch_loopback_presence_tracker(
+    monkeypatch: pytest.MonkeyPatch,
+    tracker: _LoopbackPresenceTracker,
+) -> None:
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints._loopback_address_presence",
+        lambda _addr: tracker.present,
+    )
+
+
 def _patch_ip_success(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "tests.integration.runtime.sandbox.reference_substrate.endpoints.loopback_has_ipv4_address",
+        lambda _addr: False,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints._loopback_address_presence",
         lambda _addr: False,
     )
 
@@ -143,27 +163,33 @@ def _backend_with_stub_endpoints(monkeypatch: pytest.MonkeyPatch) -> ReferenceSa
     )
 
 
-def test_address_add_failure_does_not_claim_ownership(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_address_add_failure_retains_ownership_for_cleanup(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
         "tests.integration.runtime.sandbox.reference_substrate.endpoints.loopback_has_ipv4_address",
         lambda _addr: False,
     )
 
-    def _fail_add(command: list[str], **kwargs: object) -> MagicMock:
-        result = MagicMock()
-        result.returncode = 1
-        result.stderr = "simulated add failure"
-        result.stdout = ""
-        result.args = command
-        return result
+    def _fail_add() -> None:
+        raise ReferenceSubstrateEndpointError("simulated add failure")
 
     monkeypatch.setattr(
-        "tests.integration.runtime.sandbox.reference_substrate.endpoints._run_ip",
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints._add_denied_loopback_address",
         _fail_add,
+    )
+    remove_calls = 0
+
+    def _remove() -> None:
+        nonlocal remove_calls
+        remove_calls += 1
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints._remove_owned_denied_loopback_address",
+        _remove,
     )
     servers = ReferenceEndpointServers()
     with pytest.raises(ReferenceSubstrateEndpointError):
         servers.start()
+    assert remove_calls == 1
     assert servers.denied_addr_owned is False
 
 
@@ -374,6 +400,8 @@ def test_partial_startup_server_and_address_cleanup_failure_both_retained(
     """T4: server close failure and address delete failure both retained for stop()."""
     _reset_fake_server_metrics()
     del_failures_remaining = 2
+    presence = _LoopbackPresenceTracker(present=True)
+    _patch_loopback_presence_tracker(monkeypatch, presence)
 
     def _ip(command: list[str], **kwargs: object) -> MagicMock:
         nonlocal del_failures_remaining
@@ -386,6 +414,8 @@ def test_partial_startup_server_and_address_cleanup_failure_both_retained(
             result.returncode = 1
             result.stderr = "rollback del failure"
             return result
+        if command[:4] == ["ip", "addr", "del", "10.200.42.3/32"]:
+            presence.present = False
         result.returncode = 0
         return result
 
@@ -466,6 +496,8 @@ def test_stop_address_delete_failure_preserves_ownership_and_retries(
     """T3: failed address delete keeps ownership; second stop retries delete."""
     del_calls = 0
     del_fail_once = True
+    presence = _LoopbackPresenceTracker(present=True)
+    _patch_loopback_presence_tracker(monkeypatch, presence)
 
     def _ip(command: list[str], **kwargs: object) -> MagicMock:
         nonlocal del_calls, del_fail_once
@@ -480,6 +512,7 @@ def test_stop_address_delete_failure_preserves_ownership_and_retries(
                 result.returncode = 1
                 result.stderr = "simulated del failure"
                 return result
+            presence.present = False
         result.returncode = 0
         return result
 
@@ -513,6 +546,8 @@ def test_partial_startup_rollback_address_delete_failure_surfaces_and_retries(
     _patch_ip_success(monkeypatch)
     del_calls = 0
     del_fail_once = True
+    presence = _LoopbackPresenceTracker(present=True)
+    _patch_loopback_presence_tracker(monkeypatch, presence)
 
     def _ip(command: list[str], **kwargs: object) -> MagicMock:
         nonlocal del_calls, del_fail_once
@@ -527,6 +562,7 @@ def test_partial_startup_rollback_address_delete_failure_surfaces_and_retries(
                 result.returncode = 1
                 result.stderr = "rollback del failure"
                 return result
+            presence.present = False
         result.returncode = 0
         return result
 
@@ -563,6 +599,8 @@ def test_partial_startup_rollback_address_delete_failure_surfaces_and_retries(
 
 def test_normal_stop_removes_harness_owned_address(monkeypatch: pytest.MonkeyPatch) -> None:
     del_calls = 0
+    presence = _LoopbackPresenceTracker(present=True)
+    _patch_loopback_presence_tracker(monkeypatch, presence)
 
     def _ip(command: list[str], **kwargs: object) -> MagicMock:
         nonlocal del_calls
@@ -572,6 +610,7 @@ def test_normal_stop_removes_harness_owned_address(monkeypatch: pytest.MonkeyPat
         result.stderr = ""
         if command[:4] == ["ip", "addr", "del", "10.200.42.3/32"]:
             del_calls += 1
+            presence.present = False
         result.returncode = 0
         return result
 
@@ -598,6 +637,8 @@ def test_normal_stop_removes_harness_owned_address(monkeypatch: pytest.MonkeyPat
 def test_double_stop_is_idempotent_without_extra_delete(monkeypatch: pytest.MonkeyPatch) -> None:
     """T7: second stop after success does not repeat address deletion."""
     del_calls = 0
+    presence = _LoopbackPresenceTracker(present=True)
+    _patch_loopback_presence_tracker(monkeypatch, presence)
 
     def _ip(command: list[str], **kwargs: object) -> MagicMock:
         nonlocal del_calls
@@ -607,6 +648,7 @@ def test_double_stop_is_idempotent_without_extra_delete(monkeypatch: pytest.Monk
         result.stderr = ""
         if command[:4] == ["ip", "addr", "del", "10.200.42.3/32"]:
             del_calls += 1
+            presence.present = False
         result.returncode = 0
         return result
 
@@ -1029,8 +1071,7 @@ def test_topology_rollback_partial_failure_surfaces_both_errors(
         netns="igx-qual-rollback",
         veth_host="veth000h",
         veth_peer="veth000p",
-        netns_added=True,
-        veth_added=True,
+        mutation_started=True,
     )
 
     def _try_run(command: list[str], *, timeout: float = 10.0) -> str | None:
@@ -1042,7 +1083,7 @@ def test_topology_rollback_partial_failure_surfaces_both_errors(
         "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
         _try_run,
     )
-    rollback_errors = _rollback_partial_topology(partial)
+    rollback_errors = _rollback_allocated_topology(partial)
     assert "simulated netns delete failure" in "; ".join(rollback_errors)
 
 
@@ -1068,7 +1109,7 @@ def test_topology_successful_creation_does_not_invoke_rollback(
         return []
 
     monkeypatch.setattr(
-        "tests.integration.runtime.sandbox.reference_substrate.topology._rollback_partial_topology",
+        "tests.integration.runtime.sandbox.reference_substrate.topology._rollback_allocated_topology",
         _rollback,
     )
     resources = create_netns_session()
@@ -1211,3 +1252,446 @@ def test_security_setup_success_updates_same_session_ownership(
     state = backend._sessions[resources.netns]  # noqa: SLF001
     assert state.security is not None
     assert len(backend._sessions) == 1  # noqa: SLF001
+
+
+def test_topology_netns_add_timeout_attempts_conservative_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T1: netns add timeout still rolls back allocated identifiers."""
+    import subprocess
+
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    delete_calls: list[list[str]] = []
+
+    def _subprocess_run(command: list[str], **kwargs: object) -> MagicMock:
+        if command[:3] == ["ip", "netns", "add"]:
+            raise subprocess.TimeoutExpired(cmd=command, timeout=10.0)
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology.subprocess.run",
+        _subprocess_run,
+    )
+
+    def _try_run(command: list[str], *, timeout: float = 10.0) -> str | None:
+        delete_calls.append(command)
+        return None
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        _try_run,
+    )
+    with pytest.raises(ReferenceSubstrateTopologyError, match="classification=timeout"):
+        create_netns_session()
+    assert any(cmd[:3] == ["ip", "netns", "delete"] for cmd in delete_calls)
+    assert any(cmd[:3] == ["ip", "link", "delete"] for cmd in delete_calls)
+
+
+def test_topology_netns_add_os_error_attempts_conservative_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T2: netns add OSError still rolls back allocated identifiers."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    delete_calls: list[list[str]] = []
+
+    def _subprocess_run(command: list[str], **kwargs: object) -> MagicMock:
+        if command[:3] == ["ip", "netns", "add"]:
+            raise OSError("simulated netns add os error")
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology.subprocess.run",
+        _subprocess_run,
+    )
+
+    def _try_run(command: list[str], *, timeout: float = 10.0) -> str | None:
+        delete_calls.append(command)
+        return None
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        _try_run,
+    )
+    with pytest.raises(ReferenceSubstrateTopologyError, match="classification=os_error"):
+        create_netns_session()
+    assert delete_calls
+
+
+def test_topology_hosts_write_os_error_attempts_network_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T3: hosts filesystem failure still attempts network rollback."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    delete_calls: list[list[str]] = []
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._run",
+        lambda command, timeout=10.0: None,
+    )
+
+    def _write(_netns: str) -> None:
+        raise ReferenceSubstrateTopologyError(
+            "cannot materialize /etc/netns/x/hosts (classification=filesystem_os_error; simulated)",
+        )
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._write_netns_hosts",
+        _write,
+    )
+
+    def _try_run(command: list[str], *, timeout: float = 10.0) -> str | None:
+        delete_calls.append(command)
+        return None
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        _try_run,
+    )
+    with pytest.raises(ReferenceSubstrateTopologyError, match="filesystem_os_error"):
+        create_netns_session()
+    assert any(cmd[:3] == ["ip", "netns", "delete"] for cmd in delete_calls)
+
+
+def test_destroy_cleanup_delete_timeout_succeeds_when_verified_absent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T4: delete timeout is not failure when resources are absent."""
+    resources = _netns_resources("igx-qual-absent")
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        lambda command, timeout=10.0: f"timeout expired: {' '.join(command)}",
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns",
+        lambda _netns: __import__(
+            "tests.integration.runtime.sandbox.reference_substrate.topology",
+            fromlist=["_ResidualPresence"],
+        )._ResidualPresence.ABSENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_link",
+        lambda _link: __import__(
+            "tests.integration.runtime.sandbox.reference_substrate.topology",
+            fromlist=["_ResidualPresence"],
+        )._ResidualPresence.ABSENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns_hosts_material",
+        lambda _netns: __import__(
+            "tests.integration.runtime.sandbox.reference_substrate.topology",
+            fromlist=["_ResidualPresence"],
+        )._ResidualPresence.ABSENT,
+    )
+    destroy_netns_session(resources)
+
+
+def test_destroy_cleanup_fails_when_resource_still_present(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T5: residual presence retains cleanup failure."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import _ResidualPresence
+
+    resources = _netns_resources("igx-qual-present")
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        lambda command, timeout=10.0: None,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns",
+        lambda _netns: _ResidualPresence.PRESENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_link",
+        lambda _link: _ResidualPresence.ABSENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns_hosts_material",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+    with pytest.raises(ReferenceSubstratePolicyError, match="still present"):
+        destroy_netns_session(resources)
+
+
+def test_destroy_cleanup_fails_closed_when_residual_inspection_unknown(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T6: cannot prove absence → cleanup incomplete."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import _ResidualPresence
+
+    resources = _netns_resources("igx-qual-unknown")
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        lambda command, timeout=10.0: None,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns",
+        lambda _netns: _ResidualPresence.UNKNOWN,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_link",
+        lambda _link: _ResidualPresence.ABSENT,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._inspect_netns_hosts_material",
+        lambda _netns: _ResidualPresence.ABSENT,
+    )
+    with pytest.raises(ReferenceSubstratePolicyError, match="cannot verify"):
+        destroy_netns_session(resources)
+
+
+def test_endpoint_add_timeout_with_address_present_invokes_cleanup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T7: ambiguous add timeout still owns and cleans address."""
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.loopback_has_ipv4_address",
+        lambda _addr: False,
+    )
+    remove_calls = 0
+
+    def _remove() -> None:
+        nonlocal remove_calls
+        remove_calls += 1
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints._remove_owned_denied_loopback_address",
+        _remove,
+    )
+
+    def _add() -> None:
+        raise ReferenceSubstrateEndpointError(
+            "ip command timed out: ip addr add (classification=timeout)",
+        )
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints._add_denied_loopback_address",
+        _add,
+    )
+    servers = ReferenceEndpointServers()
+    with pytest.raises(ReferenceSubstrateEndpointError, match="classification=timeout"):
+        servers.start()
+    assert remove_calls == 1
+    assert servers.denied_addr_owned is False
+
+
+def test_endpoint_remove_timeout_succeeds_when_address_absent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T8: delete timeout with verified absence succeeds."""
+    from tests.integration.runtime.sandbox.reference_substrate.endpoints import (
+        _remove_owned_denied_loopback_address,
+    )
+
+    def _run_ip(command: list[str], **kwargs: object) -> MagicMock:
+        raise ReferenceSubstrateEndpointError(
+            "ip command timed out: ip addr del (classification=timeout)",
+        )
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints._run_ip",
+        _run_ip,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints._loopback_address_presence",
+        lambda _addr: False,
+    )
+    _remove_owned_denied_loopback_address()
+
+
+def test_endpoint_remove_error_retains_when_address_still_present(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T9: delete error with address present → cleanup failure."""
+    from tests.integration.runtime.sandbox.reference_substrate.endpoints import (
+        _remove_owned_denied_loopback_address,
+    )
+
+    def _run_ip(command: list[str], **kwargs: object) -> MagicMock:
+        result = MagicMock()
+        result.returncode = 1
+        result.stderr = "simulated delete failure"
+        result.stdout = ""
+        return result
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints._run_ip",
+        _run_ip,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints._loopback_address_presence",
+        lambda _addr: True,
+    )
+    with pytest.raises(ReferenceSubstrateEndpointCleanupError, match="cannot remove"):
+        _remove_owned_denied_loopback_address()
+
+
+def test_firewall_command_timeout_becomes_policy_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T10: firewall timeout normalizes to policy error."""
+    import subprocess
+
+    from tests.integration.runtime.sandbox.reference_substrate.firewall import _run_in_netns
+
+    def _run(command: list[str], **kwargs: object) -> MagicMock:
+        raise subprocess.TimeoutExpired(cmd=command, timeout=10.0)
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.firewall.subprocess.run",
+        _run,
+    )
+    with pytest.raises(ReferenceSubstratePolicyError, match="classification=timeout"):
+        _run_in_netns("igx-qual-fw", ["nft", "list", "ruleset"])
+
+
+def test_firewall_command_os_error_becomes_policy_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T11: firewall OSError normalizes to policy error."""
+    from tests.integration.runtime.sandbox.reference_substrate.firewall import _run_in_netns
+
+    def _run(command: list[str], **kwargs: object) -> MagicMock:
+        raise OSError("simulated firewall os error")
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.firewall.subprocess.run",
+        _run,
+    )
+    with pytest.raises(ReferenceSubstratePolicyError, match="classification=os_error"):
+        _run_in_netns("igx-qual-fw", ["nft", "list", "ruleset"])
+
+
+def test_malformed_kernel_evidence_fails_closed() -> None:
+    """Unknown-outcome T12: malformed attestation cannot pass verification."""
+    from tests.integration.runtime.sandbox.reference_substrate.firewall import (
+        read_verified_egress_policy,
+    )
+
+    def _bad_nft(_netns: str, _command: list[str], *, timeout: float = 10.0) -> str:
+        return 'ip daddr 10.200.42.1 tcp dport not-a-port accept'
+
+    import tests.integration.runtime.sandbox.reference_substrate.firewall as firewall_mod
+
+    original = firewall_mod._run_in_netns
+    firewall_mod._run_in_netns = _bad_nft  # type: ignore[method-assign]
+    try:
+        with pytest.raises(ReferenceSubstratePolicyError, match="malformed"):
+            read_verified_egress_policy("igx-qual-parse", use_nftables=True)
+    finally:
+        firewall_mod._run_in_netns = original  # type: ignore[method-assign]
+
+
+def test_security_setup_firewall_timeout_triggers_topology_cleanup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T10 integration: policy timeout enters destroy path."""
+    backend = _backend_with_stub_endpoints(monkeypatch)
+    resources = _netns_resources("igx-qual-sec-timeout")
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.create_netns_session",
+        lambda: resources,
+    )
+
+    def _apply(*args: object, **kwargs: object) -> None:
+        raise ReferenceSubstratePolicyError(
+            "command timed out in netns igx-qual-sec-timeout: nft add table "
+            "(classification=timeout)",
+        )
+
+    destroy_calls = 0
+
+    def _destroy(res: NetnsSessionResources) -> None:
+        nonlocal destroy_calls
+        destroy_calls += 1
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.apply_egress_policy_netns",
+        _apply,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.destroy_netns_session",
+        _destroy,
+    )
+    with pytest.raises(ReferenceSubstrateSecurityError, match="classification=timeout"):
+        backend.create_session_with_security(_cloud_allowlist_requirements())
+    assert destroy_calls == 1
+    assert resources.netns not in backend._sessions  # noqa: SLF001
+
+
+def test_preflight_netns_inspection_timeout_blocks_without_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T14: preflight classifies timeout as explicit block."""
+    import subprocess
+
+    from tests.integration.runtime.sandbox.reference_substrate.preflight import (
+        evaluate_reference_substrate_preflight,
+    )
+
+    monkeypatch.setattr("platform.system", lambda: "Linux")
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.preflight.shutil.which",
+        lambda name: "ip" if name in {"ip", "nft", "python3"} else None,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.preflight.os.geteuid",
+        lambda: 0,
+        raising=False,
+    )
+
+    def _run_ip(args: list[str], *, timeout: float = 5.0) -> subprocess.CompletedProcess[str]:
+        raise subprocess.TimeoutExpired(cmd=["ip", *args], timeout=timeout)
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.preflight._run_ip",
+        _run_ip,
+    )
+    result = evaluate_reference_substrate_preflight()
+    assert result.ok is False
+    assert result.block_reason is not None
+    assert "timed out" in result.block_reason
+
+
+def test_preflight_netns_inspection_os_error_blocks_without_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unknown-outcome T14: preflight classifies OSError as explicit block."""
+    from tests.integration.runtime.sandbox.reference_substrate.preflight import (
+        evaluate_reference_substrate_preflight,
+    )
+
+    monkeypatch.setattr("platform.system", lambda: "Linux")
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.preflight.shutil.which",
+        lambda name: "ip" if name in {"ip", "nft", "python3"} else None,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.preflight.os.geteuid",
+        lambda: 0,
+        raising=False,
+    )
+
+    def _run_ip(args: list[str], *, timeout: float = 5.0) -> None:
+        raise OSError("simulated preflight os error")
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.preflight._run_ip",
+        _run_ip,
+    )
+    result = evaluate_reference_substrate_preflight()
+    assert result.ok is False
+    assert result.block_reason is not None
+    assert "OS error" in result.block_reason
+
+
+def test_probe_python_code_disables_ambient_http_proxies() -> None:
+    """Unknown-outcome T15: qualification probe must not use ambient proxy env."""
+    from tests.integration.providers.sandbox_host.qualification.probes import _probe_python_code
+
+    code = _probe_python_code("http://allowed.test:18080/")
+    assert "ProxyHandler({})" in code
+    assert "build_opener" in code

@@ -49,23 +49,34 @@ def _run_ip(args: list[str], *, timeout: float = 5.0) -> subprocess.CompletedPro
     )
 
 
+def _inspect_netns_usable() -> tuple[bool, str | None]:
+    try:
+        probe = _run_ip(["netns", "list"])
+    except subprocess.TimeoutExpired:
+        return False, "`ip netns list` timed out during environment inspection"
+    except OSError as exc:
+        return False, f"`ip netns list` failed with OS error: {exc}"
+    if probe.returncode != 0:
+        stderr = probe.stderr.strip() or probe.stdout.strip() or f"exit {probe.returncode}"
+        return False, f"`ip netns list` failed: {stderr}"
+    return True, None
+
+
 def evaluate_reference_substrate_preflight() -> ReferenceSubstratePreflight:
     kernel = platform.release()
     wsl = _detect_wsl()
     ip_bin = shutil.which("ip") is not None
     netns_usable = False
+    netns_block: str | None = None
     if ip_bin:
-        probe = _run_ip(["netns", "list"])
-        netns_usable = probe.returncode == 0
+        netns_usable, netns_block = _inspect_netns_usable()
     firewall: str | None = None
     if shutil.which("nft"):
         firewall = "nftables"
     elif shutil.which("iptables"):
         firewall = "iptables"
-    if hasattr(os, "geteuid"):
-        privileged = os.geteuid() == 0
-    else:
-        privileged = False
+    geteuid = getattr(os, "geteuid", None)
+    privileged = geteuid() == 0 if geteuid is not None else False
     python_available = shutil.which("python3") is not None
 
     block: str | None = None
@@ -74,7 +85,7 @@ def evaluate_reference_substrate_preflight() -> ReferenceSubstratePreflight:
     elif not ip_bin:
         block = "`ip` utility unavailable"
     elif not netns_usable:
-        block = "`ip netns` not usable (missing privilege or kernel support)"
+        block = netns_block or "`ip netns` not usable (missing privilege or kernel support)"
     elif firewall is None:
         block = "neither nftables nor iptables available"
     elif not privileged:
