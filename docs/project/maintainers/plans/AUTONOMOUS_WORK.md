@@ -349,7 +349,7 @@ Delivery rule:
 | **Dependencies** | Prerequisites **CLOSED / accepted** via AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ; architecture lock **CLOSED / independently accepted through R1** @ `fa5853ec009d015cb52c9de15dd7e283932a9b4d` — [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) |
 | **Child sequence** | AW-7C-P1-ARCH → AW-7C-P1-ARCH-R1 → AW-7C-P2 → AW-7C-P3 → AW-7C-P4 → AW-7C-CERT |
 | **Acceptance** | only approved hosts/secrets, narrow scope, runtime evidence of enforced controls; typed pluginable adaptation → qualification → canonical Execution; no A1 bypass |
-| **Next step** | **AW-7C-P2** — Typed Core Contracts & Pure Orchestration (**NEXT / NOT ENTERED**) |
+| **Next step** | **AW-7C-P2** — Typed Core Contracts & Pure Orchestration (**READY FOR AUDIT**) |
 
 | Field | Value |
 |---|---|

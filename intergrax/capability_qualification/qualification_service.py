@@ -19,6 +19,9 @@ from intergrax.capability_qualification.qualification_registry import (
     CapabilityQualificationProviderRegistry,
     descriptor_for_provider,
 )
+from intergrax.contracts.capability_acquisition.acquisition_evidence import (
+    CapabilityAcquisitionEvidence,
+)
 from intergrax.contracts.capability_qualification.audit_record import (
     build_qualification_audit_record,
 )
@@ -58,8 +61,6 @@ from intergrax.contracts.capability_qualification.qualification_request import (
 from intergrax.contracts.capability_qualification.qualification_result import (
     CapabilityQualificationResult,
 )
-
-
 class CapabilityQualificationService:
     """Validate request, select provider, dispatch, validate result, lifecycle decide."""
 
@@ -234,18 +235,21 @@ def _assert_result_matches_request(
     *,
     provider_id: str,
 ) -> None:
+    subj = request.subject
     if result.qualification_request_id != request.qualification_request_id:
+        raise CapabilityQualificationIntegrityError("qualification_request_id mismatch")
+    if result.subject_kind != subj.subject_kind:
+        raise CapabilityQualificationIntegrityError("result subject_kind mismatch")
+    if result.subject_id != subj.subject_id:
+        raise CapabilityQualificationIntegrityError("result subject_id mismatch")
+    if result.subject_integrity_fingerprint != subj.subject_integrity_fingerprint:
         raise CapabilityQualificationIntegrityError(
-            "result qualification_request_id mismatch",
+            "result subject_integrity_fingerprint mismatch",
         )
-    if result.acquisition_request_id != request.acquisition_request_id:
-        raise CapabilityQualificationIntegrityError(
-            "result acquisition_request_id mismatch",
-        )
-    if result.gap_id != request.gap_id:
-        raise CapabilityQualificationIntegrityError("result gap_id mismatch")
-    if result.strategy_id != request.strategy_id:
-        raise CapabilityQualificationIntegrityError("result strategy_id mismatch")
+    if result.tenant_id != subj.tenant_id:
+        raise CapabilityQualificationIntegrityError("result tenant_id mismatch")
+    if result.scope_fingerprint != subj.scope_fingerprint:
+        raise CapabilityQualificationIntegrityError("result scope_fingerprint mismatch")
     if result.provider_id != provider_id:
         raise CapabilityQualificationIntegrityError("result provider_id mismatch")
     if result.correlation_id != request.correlation_id:
@@ -253,18 +257,19 @@ def _assert_result_matches_request(
     if result.causation_id != request.causation_id:
         raise CapabilityQualificationIntegrityError("result causation_id mismatch")
     if result.evidence is not None:
-        acquisition_evidence = request.acquisition_result.evidence
-        if acquisition_evidence is None:
-            raise CapabilityQualificationIntegrityError(
-                "qualification evidence requires acquisition evidence subject",
+        lineage = request.subject.acquisition_lineage
+        if lineage is not None:
+            acquisition_evidence = CapabilityAcquisitionEvidence(
+                artifact_reference=lineage.artifact_reference,
+                domain_handoff_reference=lineage.domain_handoff_reference,
             )
-        try:
-            validate_qualification_subject_binding(
-                acquisition_evidence,
-                result.evidence,
-            )
-        except ValueError as exc:
-            raise CapabilityQualificationIntegrityError(str(exc)) from exc
+            try:
+                validate_qualification_subject_binding(
+                    acquisition_evidence,
+                    result.evidence,
+                )
+            except ValueError as exc:
+                raise CapabilityQualificationIntegrityError(str(exc)) from exc
 
 
 def _terminal_result(
@@ -278,11 +283,20 @@ def _terminal_result(
     evidence: CapabilityQualificationEvidence | None = None,
 ) -> CapabilityQualificationResult:
     completed_at = datetime.now(tz=UTC)
+    subject = request.subject
+    lineage = subject.acquisition_lineage
     return CapabilityQualificationResult(
         qualification_request_id=request.qualification_request_id,
-        acquisition_request_id=request.acquisition_request_id,
-        gap_id=request.gap_id,
-        strategy_id=request.strategy_id,
+        subject_kind=subject.subject_kind,
+        subject_id=subject.subject_id,
+        subject_integrity_fingerprint=subject.subject_integrity_fingerprint,
+        tenant_id=subject.tenant_id,
+        scope_fingerprint=subject.scope_fingerprint,
+        acquisition_request_id=(
+            lineage.acquisition_request_id if lineage is not None else None
+        ),
+        gap_id=lineage.gap_id if lineage is not None else None,
+        strategy_id=lineage.strategy_id if lineage is not None else None,
         provider_id=provider_id,
         outcome=outcome,
         reason_code=reason_code,
@@ -307,11 +321,20 @@ def _build_decision(
             qualification_result=qualification_result,
         ).model_dump(),
     )
+    subject = request.subject
+    lineage = subject.acquisition_lineage
     audit_record = build_qualification_audit_record(
         qualification_request_id=request.qualification_request_id,
-        acquisition_request_id=request.acquisition_request_id,
-        acquisition_strategy_id=request.strategy_id,
-        gap_id=request.gap_id,
+        subject_kind=subject.subject_kind,
+        subject_id=subject.subject_id,
+        subject_integrity_fingerprint=subject.subject_integrity_fingerprint,
+        tenant_id=subject.tenant_id,
+        scope_fingerprint=subject.scope_fingerprint,
+        acquisition_request_id=(
+            lineage.acquisition_request_id if lineage is not None else None
+        ),
+        acquisition_strategy_id=lineage.strategy_id if lineage is not None else None,
+        gap_id=lineage.gap_id if lineage is not None else None,
         qualification_provider_id=qualification_result.provider_id,
         qualification_outcome=qualification_result.outcome,
         lifecycle_decision=lifecycle_decision,

@@ -11,7 +11,8 @@
 | **Status** | **CLOSED / independently accepted through R1 remediation** — design lock only; **no A2 production implementation** |
 | **Production / tests / contracts in P1 / R1** | **0** |
 | **Prerequisites** | AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ **CLOSED / accepted** (egress substrate evidence) |
-| **Next implementation** | `AW-7C-P2` — **NEXT / NOT ENTERED** |
+| **Next implementation** | `AW-7C-P2` — **READY FOR AUDIT** (implementation pending independent SHA audit) |
+| **Program** | `AW-7C` — **CURRENT**; `AW-7C-P3` — **NEXT / NOT ENTERED** |
 
 **Scope:** lock reusable platform semantics for **A2 scoped adaptive integration**: from `SCOPED_ADAPTATION_CANDIDATE` through bounded adaptation, qualification, Governance/runtime admission, and **canonical Execution** — without a parallel runtime, AW-owned integration registry, or A1 bypass.
 
@@ -782,3 +783,17 @@ AW
 ---
 
 *End of AW-7C-P1-ARCH / P1-ARCH-R1 architecture lock.*
+
+---
+
+## AW-7C-P2 implementation record (READY FOR AUDIT)
+
+| Item | Detail |
+| ---- | ------ |
+| **Baseline** | `9b89941ff695c7a01513e71d4e03fa7232883e98` |
+| **Status** | READY FOR AUDIT — not CLOSED |
+| **CQ** | `CapabilityQualificationSubject`, acquisition/adaptation projections, subject-oriented request/result/evidence/integrity/audit; `build_acquisition_qualification_request`; single `CapabilityQualificationService` |
+| **Integrations** | `scoped_integration_adaptation.py`, `ScopedIntegrationAdaptationService`, scope/artifact fingerprints, strategy SPI |
+| **AW** | `scoped_adaptive_integration.py` contracts + `WorkerScopedAdaptiveIntegrationOrchestrationService` → `QUALIFICATION_PENDING` |
+| **Tests** | `test_aw_7c_p2_qualification_subject.py`, `test_scoped_integration_adaptation_service.py`, `test_scoped_adaptive_integration_service.py`, `test_aw_7c_p2_architecture_gates.py` |
+| **Deferred** | P3 reference strategy; P4 `qualify()` + Governance/Execution; CERT adversarial tenant global close |

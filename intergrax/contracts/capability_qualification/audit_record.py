@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Typed audit chain linking acquisition, qualification, and lifecycle (UCA-4)."""
+"""Typed audit chain linking acquisition/adaptation, qualification, and lifecycle."""
 
 from __future__ import annotations
 
@@ -16,6 +16,9 @@ from intergrax.contracts.capability_qualification.lifecycle_decision import (
 )
 from intergrax.contracts.capability_qualification.qualification_outcome import (
     CapabilityQualificationOutcome,
+)
+from intergrax.contracts.capability_qualification.qualification_subject import (
+    CapabilityQualificationSubjectKind,
 )
 
 SCHEMA_CAPABILITY_QUALIFICATION_AUDIT_RECORD_V1: Final = (
@@ -33,9 +36,14 @@ class CapabilityQualificationAuditRecord(BaseModel):
         SCHEMA_CAPABILITY_QUALIFICATION_AUDIT_RECORD_V1
     )
     qualification_request_id: str = _NON_EMPTY
-    acquisition_request_id: str = _NON_EMPTY
-    acquisition_strategy_id: str = _NON_EMPTY
-    gap_id: str = _NON_EMPTY
+    subject_kind: CapabilityQualificationSubjectKind
+    subject_id: str = _NON_EMPTY
+    subject_integrity_fingerprint: str = _NON_EMPTY
+    tenant_id: str | None = None
+    scope_fingerprint: str | None = None
+    acquisition_request_id: str | None = None
+    acquisition_strategy_id: str | None = None
+    gap_id: str | None = None
     qualification_provider_id: str | None = None
     qualification_outcome: CapabilityQualificationOutcome
     lifecycle_outcome: CapabilityQualificationLifecycleOutcome
@@ -44,12 +52,16 @@ class CapabilityQualificationAuditRecord(BaseModel):
 
     @field_validator(
         "qualification_request_id",
+        "subject_id",
+        "subject_integrity_fingerprint",
         "acquisition_request_id",
         "acquisition_strategy_id",
         "gap_id",
         "qualification_provider_id",
         "correlation_id",
         "causation_id",
+        "tenant_id",
+        "scope_fingerprint",
     )
     @classmethod
     def _validate_ids(cls, value: str | None) -> str | None:
@@ -61,9 +73,14 @@ class CapabilityQualificationAuditRecord(BaseModel):
 def build_qualification_audit_record(
     *,
     qualification_request_id: str,
-    acquisition_request_id: str,
-    acquisition_strategy_id: str,
-    gap_id: str,
+    subject_kind: CapabilityQualificationSubjectKind,
+    subject_id: str,
+    subject_integrity_fingerprint: str,
+    tenant_id: str | None,
+    scope_fingerprint: str | None,
+    acquisition_request_id: str | None,
+    acquisition_strategy_id: str | None,
+    gap_id: str | None,
     qualification_provider_id: str | None,
     qualification_outcome: CapabilityQualificationOutcome,
     lifecycle_decision: CapabilityQualificationLifecycleDecision,
@@ -72,6 +89,11 @@ def build_qualification_audit_record(
 ) -> CapabilityQualificationAuditRecord:
     return CapabilityQualificationAuditRecord(
         qualification_request_id=qualification_request_id,
+        subject_kind=subject_kind,
+        subject_id=subject_id,
+        subject_integrity_fingerprint=subject_integrity_fingerprint,
+        tenant_id=tenant_id,
+        scope_fingerprint=scope_fingerprint,
         acquisition_request_id=acquisition_request_id,
         acquisition_strategy_id=acquisition_strategy_id,
         gap_id=gap_id,

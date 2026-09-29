@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Provenance and subject binding helpers for capability qualification (UCA-4R)."""
+"""Provenance and subject binding helpers for capability qualification (UCA-4R, AW-7C-P2)."""
 
 from __future__ import annotations
 
@@ -11,34 +11,41 @@ from intergrax.contracts.capability_acquisition.acquisition_evidence import (
 from intergrax.contracts.capability_qualification.qualification_evidence import (
     CapabilityQualificationEvidence,
 )
+from intergrax.contracts.capability_qualification.qualification_subject import (
+    CapabilityQualificationSubjectKind,
+)
 
 
 def validate_qualification_evidence_identity(
     *,
     provider_id: str | None,
     qualification_request_id: str,
-    acquisition_request_id: str,
-    strategy_id: str,
-    gap_id: str,
+    subject_kind: CapabilityQualificationSubjectKind,
+    subject_id: str,
+    subject_integrity_fingerprint: str,
+    tenant_id: str | None,
+    scope_fingerprint: str | None,
     evidence: CapabilityQualificationEvidence,
 ) -> None:
-    """Exact-bind provider output evidence to the qualification result."""
+    """Exact-bind provider output evidence to the qualification result subject."""
     if evidence.provider_id != provider_id:
         raise ValueError("evidence provider_id must match result provider_id")
     if evidence.qualification_request_id != qualification_request_id:
         raise ValueError(
             "evidence qualification_request_id must match result qualification_request_id",
         )
-    if evidence.acquisition_request_id != acquisition_request_id:
+    if evidence.subject_kind != subject_kind:
+        raise ValueError("evidence subject_kind must match result subject_kind")
+    if evidence.subject_id != subject_id:
+        raise ValueError("evidence subject_id must match result subject_id")
+    if evidence.subject_integrity_fingerprint != subject_integrity_fingerprint:
         raise ValueError(
-            "evidence acquisition_request_id must match result acquisition_request_id",
+            "evidence subject_integrity_fingerprint must match result fingerprint",
         )
-    if evidence.acquisition_strategy_id != strategy_id:
-        raise ValueError(
-            "evidence acquisition_strategy_id must match result strategy_id"
-        )
-    if evidence.gap_id != gap_id:
-        raise ValueError("evidence gap_id must match result gap_id")
+    if evidence.tenant_id != tenant_id:
+        raise ValueError("evidence tenant_id must match result tenant_id")
+    if evidence.scope_fingerprint != scope_fingerprint:
+        raise ValueError("evidence scope_fingerprint must match result scope_fingerprint")
 
 
 def validate_qualification_subject_binding(

@@ -8,9 +8,6 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Final
 
-from intergrax.contracts.capability_acquisition.acquisition_outcome import (
-    CapabilityAcquisitionOutcome,
-)
 from intergrax.contracts.capability_catalog.kind import CapabilityKind
 from intergrax.contracts.capability_qualification.qualification_evidence import (
     CapabilityQualificationEvidence,
@@ -26,6 +23,9 @@ from intergrax.contracts.capability_qualification.qualification_request import (
 )
 from intergrax.contracts.capability_qualification.qualification_result import (
     CapabilityQualificationResult,
+)
+from intergrax.contracts.capability_qualification.qualification_subject import (
+    CapabilityQualificationSubjectKind,
 )
 from intergrax.contracts.marketplace.handoff_traceability import (
     CapabilityHandoffConsumerTarget,
@@ -67,17 +67,17 @@ class MarketplaceToolCapabilityQualificationProvider:
         return MARKETPLACE_TOOL_CAPABILITY_QUALIFICATION_PROVIDER_ID
 
     def supports(self, request: CapabilityQualificationRequest) -> bool:
-        if request.strategy_id != _MARKETPLACE_GAP_ACQUISITION_STRATEGY_ID:
+        subject = request.subject
+        if subject.subject_kind is not CapabilityQualificationSubjectKind.ACQUIRED_CAPABILITY:
             return False
-        acquisition = request.acquisition_result
-        if acquisition.outcome is not CapabilityAcquisitionOutcome.SUCCEEDED:
+        lineage = subject.acquisition_lineage
+        if lineage is None:
             return False
-        evidence = acquisition.evidence
-        if evidence is None:
+        if lineage.strategy_id != _MARKETPLACE_GAP_ACQUISITION_STRATEGY_ID:
             return False
-        if not evidence.domain_handoff_reference:
+        if not lineage.domain_handoff_reference:
             return False
-        if evidence.artifact_reference is not None:
+        if lineage.artifact_reference is not None:
             return False
         return True
 
@@ -86,7 +86,17 @@ class MarketplaceToolCapabilityQualificationProvider:
         request: CapabilityQualificationRequest,
     ) -> CapabilityQualificationResult:
         started_at = datetime.now(tz=UTC)
-        if request.strategy_id != _MARKETPLACE_GAP_ACQUISITION_STRATEGY_ID:
+        subject = request.subject
+        lineage = subject.acquisition_lineage
+        if lineage is None:
+            return _terminal(
+                request=request,
+                outcome=CapabilityQualificationOutcome.REJECTED,
+                reason_code=CapabilityQualificationReasonCode.PROVIDER_REJECTED,
+                started_at=started_at,
+                reason_detail="missing acquisition lineage",
+            )
+        if lineage.strategy_id != _MARKETPLACE_GAP_ACQUISITION_STRATEGY_ID:
             return _terminal(
                 request=request,
                 outcome=CapabilityQualificationOutcome.NOT_SUPPORTED,
@@ -94,9 +104,7 @@ class MarketplaceToolCapabilityQualificationProvider:
                 started_at=started_at,
             )
 
-        acquisition = request.acquisition_result
-        evidence = acquisition.evidence
-        if evidence is None or not evidence.domain_handoff_reference:
+        if not lineage.domain_handoff_reference:
             return _terminal(
                 request=request,
                 outcome=CapabilityQualificationOutcome.REJECTED,
@@ -104,13 +112,13 @@ class MarketplaceToolCapabilityQualificationProvider:
                 started_at=started_at,
                 reason_detail="missing domain handoff evidence",
             )
-        domain_handoff_reference = evidence.domain_handoff_reference
+        domain_handoff_reference = lineage.domain_handoff_reference
 
         try:
             ctx = self._context_resolver.resolve_for_qualification(
-                acquisition_request_id=request.acquisition_request_id,
+                acquisition_request_id=lineage.acquisition_request_id,
                 domain_handoff_reference=domain_handoff_reference,
-                strategy_id=request.strategy_id,
+                strategy_id=lineage.strategy_id,
             )
         except MarketplaceQualifiedToolStageContextResolverNotSupportedError:
             return _terminal(
@@ -201,9 +209,14 @@ class MarketplaceToolCapabilityQualificationProvider:
         completed_at = datetime.now(tz=UTC)
         return CapabilityQualificationResult(
             qualification_request_id=request.qualification_request_id,
-            acquisition_request_id=request.acquisition_request_id,
-            gap_id=request.gap_id,
-            strategy_id=request.strategy_id,
+            subject_kind=subject.subject_kind,
+            subject_id=subject.subject_id,
+            subject_integrity_fingerprint=subject.subject_integrity_fingerprint,
+            tenant_id=subject.tenant_id,
+            scope_fingerprint=subject.scope_fingerprint,
+            acquisition_request_id=lineage.acquisition_request_id,
+            gap_id=lineage.gap_id,
+            strategy_id=lineage.strategy_id,
             provider_id=self.provider_id,
             outcome=CapabilityQualificationOutcome.QUALIFIED,
             reason_code=CapabilityQualificationReasonCode.NONE,
@@ -212,10 +225,13 @@ class MarketplaceToolCapabilityQualificationProvider:
             evidence=CapabilityQualificationEvidence(
                 provider_id=self.provider_id,
                 qualification_request_id=request.qualification_request_id,
-                acquisition_request_id=request.acquisition_request_id,
-                acquisition_strategy_id=request.strategy_id,
-                gap_id=request.gap_id,
+                subject_kind=subject.subject_kind,
+                subject_id=subject.subject_id,
+                subject_integrity_fingerprint=subject.subject_integrity_fingerprint,
                 domain_handoff_reference=domain_handoff_reference,
+                acquisition_request_id=lineage.acquisition_request_id,
+                acquisition_strategy_id=lineage.strategy_id,
+                gap_id=lineage.gap_id,
             ),
             correlation_id=request.correlation_id,
             causation_id=request.causation_id,
@@ -231,11 +247,20 @@ def _terminal(
     reason_detail: str = "",
 ) -> CapabilityQualificationResult:
     completed_at = datetime.now(tz=UTC)
+    subject = request.subject
+    lineage = subject.acquisition_lineage
     return CapabilityQualificationResult(
         qualification_request_id=request.qualification_request_id,
-        acquisition_request_id=request.acquisition_request_id,
-        gap_id=request.gap_id,
-        strategy_id=request.strategy_id,
+        subject_kind=subject.subject_kind,
+        subject_id=subject.subject_id,
+        subject_integrity_fingerprint=subject.subject_integrity_fingerprint,
+        tenant_id=subject.tenant_id,
+        scope_fingerprint=subject.scope_fingerprint,
+        acquisition_request_id=(
+            lineage.acquisition_request_id if lineage is not None else None
+        ),
+        gap_id=lineage.gap_id if lineage is not None else None,
+        strategy_id=lineage.strategy_id if lineage is not None else None,
         provider_id=MARKETPLACE_TOOL_CAPABILITY_QUALIFICATION_PROVIDER_ID,
         outcome=outcome,
         reason_code=reason_code,

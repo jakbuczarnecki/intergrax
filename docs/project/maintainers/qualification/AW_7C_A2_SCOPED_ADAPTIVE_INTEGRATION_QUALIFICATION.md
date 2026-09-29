@@ -26,7 +26,7 @@
 | **Purpose** | Contract-boundary and ownership lock for A2 scoped adaptive integration execution — **no A2 production implementation** |
 | **Canonical architecture** | [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) |
 | **A2 execution service on baseline** | **None** (gap documented; P2+ implements) |
-| **Next work** | **AW-7C-P2** — **NEXT / NOT ENTERED** |
+| **Next work** | **AW-7C-P2** — **READY FOR AUDIT** (implementation on `development`; independent SHA audit required) |
 | **Global FRZ** | No PASS delta from P1-ARCH / R1 |
 
 Sections 1–13 below retain **historical** prerequisite audit unless explicitly superseded above.
@@ -51,7 +51,7 @@ Sections 1–13 below retain **historical** prerequisite audit unless explicitly
 | **Scope** | Docs-only architecture remediation — **no** production code, contracts, or tests |
 | **Blocker A closure** | `ScopedIntegrationAdaptationScope` owned by **Integrations** (`intergrax/integrations/contracts/`); AW supplies immutable instance on orchestration request only |
 | **Blocker B closure** | `CapabilityQualificationSubject` owned by **Capability Qualification**; deterministic projections from `ScopedIntegrationAdaptationArtifact` and from successful `CapabilityAcquisitionResult`; single UCA-4 mechanism; V1→subject migration direction locked |
-| **Parent effect** | **AW-7C-P1-ARCH** = **CLOSED / architecture lock accepted through R1 remediation**; **AW-7C** = **CURRENT**; **AW-7C-P2** = **NEXT / NOT ENTERED** |
+| **Parent effect** | **AW-7C-P1-ARCH** = **CLOSED**; **AW-7C** = **CURRENT**; **AW-7C-P2** = **READY FOR AUDIT**; **AW-7C-P3** = **NEXT / NOT ENTERED** |
 | **Global FRZ** | **new global FRZ PASS = 0**; **new FRZ-TEN PASS = 0** |
 | **R1 gates (mechanical)** | 38 passed; 4 passed — architecture-doc gate only; not code/behavior proof of P2+ |
 
