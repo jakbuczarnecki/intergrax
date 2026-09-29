@@ -20,7 +20,12 @@ from intergrax.runtime.sandbox.network_egress import NetworkEgressAllowlist
 
 from .constants import REFERENCE_PROVIDER_ID
 from .endpoints import ReferenceEndpointServers
-from .errors import ReferenceSubstrateLifecycleError
+from .errors import (
+    ReferenceSubstrateEndpointCleanupError,
+    ReferenceSubstrateEndpointError,
+    ReferenceSubstrateLifecycleError,
+    ReferenceSubstrateSecuritySetupLifecycleError,
+)
 from .firewall import (
     ReferenceSubstratePolicyError,
     apply_egress_policy_netns,
@@ -53,10 +58,23 @@ class ReferenceSandboxBackend:
         if not self._preflight.ok:
             raise ReferenceSubstrateSecurityError(self._preflight.block_reason or "preflight blocked")
         self._use_nftables = self._preflight.firewall_backend == "nftables"
-        self._endpoints = endpoint_servers or ReferenceEndpointServers()
-        self._endpoints.start()
         self._sessions: dict[str, _ReferenceSessionState] = {}
         self._lifecycle_closed = False
+        self._endpoints = endpoint_servers or ReferenceEndpointServers()
+        try:
+            self._endpoints.start()
+        except ReferenceSubstrateEndpointError as startup_exc:
+            cleanup_exc: ReferenceSubstrateEndpointCleanupError | None = None
+            try:
+                self._endpoints.stop()
+            except ReferenceSubstrateEndpointCleanupError as stop_exc:
+                cleanup_exc = stop_exc
+            if cleanup_exc is not None:
+                raise ReferenceSubstrateLifecycleError(
+                    f"reference backend construction failed: {startup_exc}; "
+                    f"constructor cleanup incomplete: {cleanup_exc}",
+                ) from startup_exc
+            raise
 
     @property
     def preflight(self) -> ReferenceSubstratePreflight:
@@ -88,6 +106,7 @@ class ReferenceSandboxBackend:
             )
         resources = create_netns_session()
         session_id = resources.netns
+        self._sessions[session_id] = _ReferenceSessionState(resources=resources)
         try:
             apply_egress_policy_netns(
                 session_id,
@@ -96,7 +115,13 @@ class ReferenceSandboxBackend:
             )
             verified = read_verified_egress_policy(session_id, use_nftables=self._use_nftables)
         except ReferenceSubstratePolicyError as exc:
-            destroy_netns_session(resources)
+            try:
+                destroy_netns_session(resources)
+            except ReferenceSubstratePolicyError as cleanup_exc:
+                raise ReferenceSubstrateSecuritySetupLifecycleError(
+                    f"security setup failed: {exc}; topology cleanup incomplete: {cleanup_exc}",
+                ) from exc
+            self._sessions.pop(session_id, None)
             raise ReferenceSubstrateSecurityError(str(exc)) from exc
         capabilities = self._capabilities_from_verified(verified.enforced_hosts)
         self._sessions[session_id] = _ReferenceSessionState(

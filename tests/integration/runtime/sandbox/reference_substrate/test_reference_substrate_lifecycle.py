@@ -9,16 +9,31 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from tests.integration.runtime.sandbox.reference_substrate.backend import ReferenceSandboxBackend
+from intergrax.runtime.sandbox.contracts import SandboxSecurityRequirements
+
+from tests.integration.runtime.sandbox.reference_substrate.backend import (
+    ReferenceSandboxBackend,
+    ReferenceSubstrateSecurityError,
+)
+from tests.integration.runtime.sandbox.reference_substrate.constants import (
+    ALLOWED_ADDR,
+    ALLOWED_LISTEN_BIND,
+)
 from tests.integration.runtime.sandbox.reference_substrate.endpoints import ReferenceEndpointServers
 from tests.integration.runtime.sandbox.reference_substrate.errors import (
     ReferenceSubstrateEndpointCleanupError,
     ReferenceSubstrateEndpointError,
     ReferenceSubstrateLifecycleError,
+    ReferenceSubstrateSecuritySetupLifecycleError,
 )
 from tests.integration.runtime.sandbox.reference_substrate.firewall import ReferenceSubstratePolicyError
 from tests.integration.runtime.sandbox.reference_substrate.preflight import ReferenceSubstratePreflight
-from tests.integration.runtime.sandbox.reference_substrate.topology import NetnsSessionResources
+from tests.integration.runtime.sandbox.reference_substrate.topology import (
+    NetnsSessionResources,
+    ReferenceSubstrateTopologyError,
+    _PartialTopologyCreation,
+    _rollback_partial_topology,
+)
 
 
 def _ok_preflight() -> ReferenceSubstratePreflight:
@@ -788,3 +803,411 @@ def test_backend_close_continues_after_session_cleanup_failure(
     with pytest.raises(ReferenceSubstrateLifecycleError):
         backend.close()
     stop_mock.assert_called_once()
+
+
+def _cloud_allowlist_requirements() -> SandboxSecurityRequirements:
+    from tests.integration.runtime.sandbox.reference_substrate.endpoints import default_reference_scenario
+
+    scenario = default_reference_scenario()
+    return SandboxSecurityRequirements(
+        isolation_tier="cloud",
+        network_egress="allowlist",
+        network_egress_allowlist=scenario.allowlist,
+    )
+
+
+def test_backend_constructor_start_retained_ownership_invokes_stop(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """C1: failed endpoint start with retained ownership triggers constructor stop()."""
+    endpoints = ReferenceEndpointServers()
+    stop_calls = 0
+
+    def _start_fail() -> None:
+        monkeypatch.setattr(endpoints, "_allowed", _FakeHttpServer())
+        raise ReferenceSubstrateEndpointError("simulated startup with retained allowed server")
+
+    def _stop() -> None:
+        nonlocal stop_calls
+        stop_calls += 1
+        endpoints._allowed = None
+
+    monkeypatch.setattr(endpoints, "start", _start_fail)
+    monkeypatch.setattr(endpoints, "stop", _stop)
+    with pytest.raises(ReferenceSubstrateEndpointError):
+        ReferenceSandboxBackend(preflight=_ok_preflight(), endpoint_servers=endpoints)
+    assert stop_calls == 1
+
+
+def test_backend_constructor_start_fail_stop_succeeds_no_retained_resources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """C2: constructor cleanup succeeds; primary startup error preserved."""
+
+    def _start_fail() -> None:
+        raise ReferenceSubstrateEndpointError("simulated startup failure")
+
+    endpoints = ReferenceEndpointServers()
+    monkeypatch.setattr(endpoints, "start", _start_fail)
+    stop_calls = 0
+
+    def _stop() -> None:
+        nonlocal stop_calls
+        stop_calls += 1
+
+    monkeypatch.setattr(endpoints, "stop", _stop)
+    with pytest.raises(ReferenceSubstrateEndpointError, match="simulated startup failure"):
+        ReferenceSandboxBackend(preflight=_ok_preflight(), endpoint_servers=endpoints)
+    assert stop_calls == 1
+
+
+def test_backend_constructor_start_and_stop_fail_aggregate_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """C3: constructor raises lifecycle error with startup and cleanup failures."""
+    endpoints = ReferenceEndpointServers()
+    monkeypatch.setattr(
+        endpoints,
+        "start",
+        lambda: (_ for _ in ()).throw(ReferenceSubstrateEndpointError("simulated startup failure")),
+    )
+    monkeypatch.setattr(
+        endpoints,
+        "stop",
+        lambda: (_ for _ in ()).throw(
+            ReferenceSubstrateEndpointCleanupError("simulated constructor cleanup failure"),
+        ),
+    )
+    with pytest.raises(ReferenceSubstrateLifecycleError) as exc_info:
+        ReferenceSandboxBackend(preflight=_ok_preflight(), endpoint_servers=endpoints)
+    message = str(exc_info.value)
+    assert "simulated startup failure" in message
+    assert "simulated constructor cleanup failure" in message
+
+
+def test_backend_constructor_success_path_unchanged(monkeypatch: pytest.MonkeyPatch) -> None:
+    """C4: successful construction still starts endpoints."""
+    endpoints = ReferenceEndpointServers()
+    start_calls = 0
+
+    def _start() -> None:
+        nonlocal start_calls
+        start_calls += 1
+
+    monkeypatch.setattr(endpoints, "start", _start)
+    monkeypatch.setattr(endpoints, "stop", lambda: None)
+    backend = ReferenceSandboxBackend(preflight=_ok_preflight(), endpoint_servers=endpoints)
+    assert start_calls == 1
+    backend.close()
+
+
+def test_endpoint_startup_does_not_require_preexisting_allowed_addr(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Clean-host: listener bind does not require ALLOWED_ADDR on host before sessions."""
+    _patch_ip_success(monkeypatch)
+    bind_addresses: list[str] = []
+
+    def _tracking_httpserver(
+        server_address: tuple[str, int],
+        request_handler_class: type,
+    ) -> _FakeHttpServer:
+        bind_addresses.append(server_address[0])
+        return _fake_httpserver_factory(server_address, request_handler_class)
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.ThreadingHTTPServer",
+        _tracking_httpserver,
+    )
+    servers = ReferenceEndpointServers()
+    servers.start()
+    assert ALLOWED_LISTEN_BIND in bind_addresses
+    assert ALLOWED_ADDR not in bind_addresses
+    servers.stop()
+
+
+def test_topology_netns_created_veth_add_fails_rollback_netns(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T1: veth creation failure rolls back netns."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    delete_calls: list[list[str]] = []
+
+    def _run(command: list[str], *, timeout: float = 10.0) -> None:
+        if command[:3] == ["ip", "link", "add"]:
+            raise ReferenceSubstrateTopologyError("simulated veth add failure")
+        if command[:3] == ["ip", "netns", "add"]:
+            return
+        raise AssertionError(f"unexpected command: {command}")
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._run",
+        _run,
+    )
+
+    def _try_run(command: list[str], *, timeout: float = 10.0) -> str | None:
+        delete_calls.append(command)
+        return None
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        _try_run,
+    )
+    with pytest.raises(ReferenceSubstrateTopologyError, match="simulated veth add failure"):
+        create_netns_session()
+    assert any(cmd[:3] == ["ip", "netns", "delete"] for cmd in delete_calls)
+
+
+def test_topology_later_setup_failure_rolls_back_netns_and_veth(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T2: address setup failure rolls back veth and netns."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    delete_calls: list[list[str]] = []
+
+    def _run(command: list[str], *, timeout: float = 10.0) -> None:
+        if len(command) >= 4 and command[:3] == ["ip", "addr", "add"] and command[3] == f"{ALLOWED_ADDR}/24":
+            raise ReferenceSubstrateTopologyError("simulated host addr failure")
+        return None
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._run",
+        _run,
+    )
+
+    def _try_run(command: list[str], *, timeout: float = 10.0) -> str | None:
+        delete_calls.append(command)
+        return None
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        _try_run,
+    )
+    with pytest.raises(ReferenceSubstrateTopologyError, match="simulated host addr failure"):
+        create_netns_session()
+    assert any(cmd[:3] == ["ip", "netns", "delete"] for cmd in delete_calls)
+    assert any(cmd[:3] == ["ip", "link", "delete"] for cmd in delete_calls)
+
+
+def test_topology_hosts_write_failure_rolls_back_network_resources(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T3: /etc/netns hosts failure rolls back network resources."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    delete_calls: list[list[str]] = []
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._run",
+        lambda command, timeout=10.0: None,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._write_netns_hosts",
+        lambda _netns: (_ for _ in ()).throw(ReferenceSubstrateTopologyError("simulated hosts write failure")),
+    )
+
+    def _try_run(command: list[str], *, timeout: float = 10.0) -> str | None:
+        delete_calls.append(command)
+        return None
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        _try_run,
+    )
+    with pytest.raises(ReferenceSubstrateTopologyError, match="simulated hosts write failure"):
+        create_netns_session()
+    assert any(cmd[:3] == ["ip", "netns", "delete"] for cmd in delete_calls)
+
+
+def test_topology_rollback_partial_failure_surfaces_both_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T4: rollback incomplete remains visible alongside setup error."""
+    partial = _PartialTopologyCreation(
+        netns="igx-qual-rollback",
+        veth_host="veth000h",
+        veth_peer="veth000p",
+        netns_added=True,
+        veth_added=True,
+    )
+
+    def _try_run(command: list[str], *, timeout: float = 10.0) -> str | None:
+        if command[:3] == ["ip", "netns", "delete"]:
+            return "simulated netns delete failure"
+        return None
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._try_run",
+        _try_run,
+    )
+    rollback_errors = _rollback_partial_topology(partial)
+    assert "simulated netns delete failure" in "; ".join(rollback_errors)
+
+
+def test_topology_successful_creation_does_not_invoke_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T5: successful path does not call rollback helper."""
+    from tests.integration.runtime.sandbox.reference_substrate.topology import create_netns_session
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._run",
+        lambda command, timeout=10.0: None,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._write_netns_hosts",
+        lambda _netns: None,
+    )
+    rollback_calls = 0
+
+    def _rollback(partial: _PartialTopologyCreation) -> list[str]:
+        nonlocal rollback_calls
+        rollback_calls += 1
+        return []
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.topology._rollback_partial_topology",
+        _rollback,
+    )
+    resources = create_netns_session()
+    assert resources.netns.startswith("igx-qual-")
+    assert rollback_calls == 0
+
+
+def test_security_setup_policy_fail_cleanup_success_drops_provisional_session(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """S1: policy failure with successful topology cleanup removes provisional ownership."""
+    backend = _backend_with_stub_endpoints(monkeypatch)
+    resources = _netns_resources("igx-qual-sec-s1")
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.create_netns_session",
+        lambda: resources,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.apply_egress_policy_netns",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            ReferenceSubstratePolicyError("simulated policy apply failure"),
+        ),
+    )
+    destroy_calls = 0
+
+    def _destroy(res: NetnsSessionResources) -> None:
+        nonlocal destroy_calls
+        destroy_calls += 1
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.destroy_netns_session",
+        _destroy,
+    )
+    with pytest.raises(ReferenceSubstrateSecurityError, match="simulated policy apply failure"):
+        backend.create_session_with_security(_cloud_allowlist_requirements())
+    assert destroy_calls == 1
+    assert resources.netns not in backend._sessions  # noqa: SLF001
+
+
+def test_security_setup_policy_fail_cleanup_fail_retains_session_for_close(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """S2: policy failure with cleanup failure keeps ownership for backend.close()."""
+    backend = _backend_with_stub_endpoints(monkeypatch)
+    resources = _netns_resources("igx-qual-sec-s2")
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.create_netns_session",
+        lambda: resources,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.apply_egress_policy_netns",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            ReferenceSubstratePolicyError("simulated policy apply failure"),
+        ),
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.destroy_netns_session",
+        lambda res: (_ for _ in ()).throw(
+            ReferenceSubstratePolicyError("simulated topology cleanup failure"),
+        ),
+    )
+    with pytest.raises(ReferenceSubstrateSecuritySetupLifecycleError) as exc_info:
+        backend.create_session_with_security(_cloud_allowlist_requirements())
+    message = str(exc_info.value)
+    assert "simulated policy apply failure" in message
+    assert "simulated topology cleanup failure" in message
+    assert resources.netns in backend._sessions  # noqa: SLF001
+    destroy_calls = 0
+
+    def _destroy_on_close(res: NetnsSessionResources) -> None:
+        nonlocal destroy_calls
+        destroy_calls += 1
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.destroy_netns_session",
+        _destroy_on_close,
+    )
+    backend.close()
+    assert destroy_calls == 1
+
+
+def test_security_setup_verification_fail_cleanup_fail_retains_session(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """S3: verification failure with cleanup failure retains ownership."""
+    backend = _backend_with_stub_endpoints(monkeypatch)
+    resources = _netns_resources("igx-qual-sec-s3")
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.create_netns_session",
+        lambda: resources,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.apply_egress_policy_netns",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.read_verified_egress_policy",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            ReferenceSubstratePolicyError("simulated verification failure"),
+        ),
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.destroy_netns_session",
+        lambda res: (_ for _ in ()).throw(
+            ReferenceSubstratePolicyError("simulated topology cleanup failure"),
+        ),
+    )
+    with pytest.raises(ReferenceSubstrateSecuritySetupLifecycleError):
+        backend.create_session_with_security(_cloud_allowlist_requirements())
+    assert resources.netns in backend._sessions  # noqa: SLF001
+
+
+def test_security_setup_success_updates_same_session_ownership(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """S4: admitted session updates the same ownership record."""
+    from tests.integration.runtime.sandbox.reference_substrate.endpoints import default_reference_scenario
+
+    backend = _backend_with_stub_endpoints(monkeypatch)
+    resources = _netns_resources("igx-qual-sec-s4")
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.create_netns_session",
+        lambda: resources,
+    )
+    enforced = default_reference_scenario().allowlist
+
+    class _Verified:
+        enforced_hosts = enforced
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.apply_egress_policy_netns",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.backend.read_verified_egress_policy",
+        lambda *args, **kwargs: _Verified(),
+    )
+    session = backend.create_session_with_security(_cloud_allowlist_requirements())
+    assert session.session_id == resources.netns
+    state = backend._sessions[resources.netns]  # noqa: SLF001
+    assert state.security is not None
+    assert len(backend._sessions) == 1  # noqa: SLF001

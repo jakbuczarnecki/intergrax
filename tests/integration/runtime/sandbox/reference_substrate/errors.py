@@ -15,3 +15,7 @@ class ReferenceSubstrateEndpointError(ReferenceSubstrateLifecycleError):
 
 class ReferenceSubstrateEndpointCleanupError(ReferenceSubstrateLifecycleError):
     """HTTP endpoint harness cleanup did not complete."""
+
+
+class ReferenceSubstrateSecuritySetupLifecycleError(ReferenceSubstrateLifecycleError):
+    """Secure session setup failed; owned topology cleanup may also have failed."""

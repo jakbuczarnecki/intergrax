@@ -11,8 +11,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from tests.integration.providers.sandbox_host.qualification.scenarios import PhysicalEgressScenario
 
 from .constants import (
-    ALLOWED_ADDR,
     ALLOWED_HOSTNAME,
+    ALLOWED_LISTEN_BIND,
     ALLOWED_PORT,
     DENIED_ADDR,
     DENIED_HOSTNAME,
@@ -144,7 +144,7 @@ class ReferenceEndpointServers:
         threads: list[threading.Thread] = []
         startup_exc: BaseException | None = None
         try:
-            allowed = ThreadingHTTPServer((ALLOWED_ADDR, ALLOWED_PORT), _AllowedHandler)
+            allowed = ThreadingHTTPServer((ALLOWED_LISTEN_BIND, ALLOWED_PORT), _AllowedHandler)
             allowed.RequestHandlerClass.denied_redirect_url = (  # type: ignore[attr-defined]
                 f"http://{DENIED_HOSTNAME}:{DENIED_PORT}/"
             )
