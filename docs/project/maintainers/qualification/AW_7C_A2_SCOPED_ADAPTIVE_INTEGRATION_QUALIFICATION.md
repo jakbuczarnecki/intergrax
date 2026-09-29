@@ -1,6 +1,6 @@
 # AW-7C A2 Scoped Adaptive Integration — Prerequisite Qualification
 
-**Verdict:** BLOCKED BY PREREQUISITE
+**Verdict (current program state, post–AW-7C-P0-3B-PHYSQ reconciliation):** AW-7C-P0-3B-PHYSQ **CLOSED / independently accepted** @ `deaafee1a7612824bbe06dd7f0d403c3e490124b`; AW-7C-P0-3B **CLOSED / prerequisite satisfied**; AW-7C **CURRENT** (implementation/certification open). Sections 1–13 below retain **historical** prerequisite audit unless a later section states **current accepted state**.
 
 **Date:** 2026-09-07
 
@@ -417,7 +417,21 @@ uv run pytest tests/integration/providers/sandbox_host/e2b/ -q
 
 **E2B physical provider qualification:** **DEFERRED TO PROD-Q / NOT ESTABLISHED** for AW-7C closure. Historical P0-3A E2B harness attempts and skips remain valid historical evidence — not deleted.
 
-**Reference substrate physical qualification:** harness + ADR **implemented** @ baseline `a59744517b92847f55def1db22826d17d89ee155`. **Physical execution:** **BLOCKED — LOCAL PHYSICAL QUALIFICATION ENVIRONMENT UNAVAILABLE** (operator WSL2/Linux with root/CAP_NET_ADMIN required; session environment had no usable Linux distro with `python3`). **No mock PASS.** Status **not CLOSED** — independent exact-GitHub-SHA audit still required after physical run.
+**Reference substrate physical qualification:** harness + ADR **implemented** @ baseline `a59744517b92847f55def1db22826d17d89ee155`.
+
+**Historical pre-PHYSQ state:** P0-3B was **BLOCKED — LOCAL PHYSICAL QUALIFICATION ENVIRONMENT UNAVAILABLE** (operator WSL2/Linux with root/CAP_NET_ADMIN required; session environment had no usable Linux distro with `python3`). **No mock PASS.** Independent exact-GitHub-SHA audit was required after physical run.
+
+**Current accepted state (post–independent PHYSQ audit):**
+
+```text
+AW-7C-P0-3B-PHYSQ: CLOSED / independently accepted @ deaafee1a7612824bbe06dd7f0d403c3e490124b
+AW-7C-P0-3B: CLOSED / prerequisite satisfied
+AW-7C: CURRENT
+EBH-3: PLANNED / NOT ENTERED
+EBH-4: PLANNED / NOT ENTERED
+```
+
+See § **AW-7C-P0-3B-PHYSQ** for machine evidence, execution reference, and SHA-256.
 
 **Shared harness extraction:** provider-neutral modules under `tests/integration/providers/sandbox_host/qualification/` (models, probes, runner, attestation correlation). E2B integration tests consume the shared harness unchanged semantically.
 
@@ -425,18 +439,20 @@ uv run pytest tests/integration/providers/sandbox_host/e2b/ -q
 
 **Tenant isolation audit (reference substrate only):** **N/A — WITH EVIDENCE** — synthetic qualification IDs only; no tenant provider selection, credentials, or persistence.
 
-**AW-7C-P0-3B verdict:**
+**Historical AW-7C-P0-3B verdict (pre-PHYSQ):**
 
 ```text
 AW-7C-P0-3B: BLOCKED — LOCAL PHYSICAL QUALIFICATION ENVIRONMENT UNAVAILABLE (harness READY FOR AUDIT)
 AW-7C: BLOCKED BY PREREQUISITE (physical capability proof pending operator Linux/WSL2 run)
 ```
 
+**Current accepted state:** see block above under **Current accepted state (post–independent PHYSQ audit)**.
+
 **Production Python changes:** **0** (qualification + documentation only).
 
 ---
 
-## AW-7C-P0-3B-PHYSQ — Provider-Neutral Physical Qualification — READY FOR AUDIT
+## AW-7C-P0-3B-PHYSQ — Provider-Neutral Physical Qualification — CLOSED / independently accepted
 
 **Stage:** AW-7C-P0-3B-PHYSQ-DOCKER-RUN  
 **Parent:** AW-7C-P0-3B  
@@ -512,15 +528,16 @@ uv run pytest tests/integration/runtime/sandbox/reference_substrate/ -p no:xdist
 **FRZ scoped contribution (evidence candidate only):** FRZ-SEC-05, FRZ-SEC-07, FRZ-REG-02, FRZ-REG-03, FRZ-REG-06, FRZ-REG-08. **new global FRZ PASS = 0**. FRZ-SEC-06, FRZ-PRD-02, FRZ-PRD-05 remain **OPEN**.
 
 **physical PASS candidate = YES**  
-**independent audit = PENDING**
+**independent audit = ACCEPTED** @ `deaafee1a7612824bbe06dd7f0d403c3e490124b`
 
 **AW-7C-P0-3B-PHYSQ verdict:**
 
 ```text
-AW-7C-P0-3B-PHYSQ: READY FOR AUDIT (physical PASS candidate; independent exact-GitHub-SHA audit pending)
-AW-7C-P0-3B: BLOCKED pending independent PHYSQ audit
-AW-7C: BLOCKED BY PREREQUISITE pending independent PHYSQ audit
+AW-7C-P0-3B-PHYSQ: CLOSED / independently accepted @ deaafee1a7612824bbe06dd7f0d403c3e490124b
+AW-7C-P0-3B: CLOSED / prerequisite satisfied
+AW-7C: CURRENT
 EBH-3: PLANNED / NOT ENTERED
+EBH-4: PLANNED / NOT ENTERED
 ```
 
 **Production Python changes (this stage):** **0**. **Platform contracts:** **0**.
