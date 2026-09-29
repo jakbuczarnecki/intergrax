@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import threading
-from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -40,14 +39,22 @@ class _FakeHttpServer:
     RequestHandlerClass: type
     shutdown_calls = 0
     close_calls = 0
+    close_fail_once = False
+    shutdown_fail_once = False
 
     def serve_forever(self) -> None:
         return
 
     def shutdown(self) -> None:
+        if self.shutdown_fail_once:
+            self.shutdown_fail_once = False
+            raise OSError("simulated shutdown failure")
         type(self).shutdown_calls += 1
 
     def server_close(self) -> None:
+        if self.close_fail_once:
+            self.close_fail_once = False
+            raise OSError("simulated close failure")
         type(self).close_calls += 1
 
 
@@ -63,6 +70,25 @@ def _fake_httpserver_factory(
     server = _FakeHttpServer()
     server.RequestHandlerClass = request_handler_class
     return server
+
+
+def _patch_denied_thread_start_failure(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail the second Thread.start() (denied serve_forever), not Thread construction."""
+    original_thread = threading.Thread
+    start_calls = 0
+
+    class _PatchedThread(original_thread):
+        def start(self) -> None:
+            nonlocal start_calls
+            start_calls += 1
+            if start_calls >= 2:
+                raise RuntimeError("simulated denied thread start failure")
+            super().start()
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.threading.Thread",
+        _PatchedThread,
+    )
 
 
 def _patch_ip_success(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -208,24 +234,7 @@ def test_partial_startup_second_thread_start_fails_started_server_shutdown(
         "tests.integration.runtime.sandbox.reference_substrate.endpoints.ThreadingHTTPServer",
         _fake_httpserver_factory,
     )
-    thread_start_calls = 0
-
-    def _flaky_thread(*args: Any, **kwargs: Any) -> threading.Thread:
-        nonlocal thread_start_calls
-        thread_start_calls += 1
-        if thread_start_calls >= 2:
-
-            class _FailingThread(threading.Thread):
-                def start(self) -> None:
-                    raise RuntimeError("simulated denied thread start failure")
-
-            return _FailingThread(*args, **kwargs)
-        return threading.Thread(*args, **kwargs)
-
-    monkeypatch.setattr(
-        "tests.integration.runtime.sandbox.reference_substrate.endpoints.threading.Thread",
-        _flaky_thread,
-    )
+    _patch_denied_thread_start_failure(monkeypatch)
     servers = ReferenceEndpointServers()
     with pytest.raises(ReferenceSubstrateEndpointError) as exc_info:
         servers.start()
@@ -233,6 +242,207 @@ def test_partial_startup_second_thread_start_fails_started_server_shutdown(
     assert _FakeHttpServer.shutdown_calls == 1
     assert _FakeHttpServer.close_calls == 2
     assert servers.denied_addr_owned is False
+
+
+def test_partial_startup_unstarted_server_close_failure_retains_ownership(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T1: failed close on unstarted allowed server stays owned; stop() retries close-only."""
+    _reset_fake_server_metrics()
+    _patch_ip_success(monkeypatch)
+    bind_attempts = 0
+    retained_allowed: _FakeHttpServer | None = None
+
+    def _flaky_httpserver(
+        server_address: tuple[str, int],
+        request_handler_class: type,
+    ) -> _FakeHttpServer:
+        nonlocal bind_attempts, retained_allowed
+        bind_attempts += 1
+        if bind_attempts >= 2:
+            raise OSError("simulated bind failure")
+        server = _fake_httpserver_factory(server_address, request_handler_class)
+        server.close_fail_once = True
+        retained_allowed = server
+        return server
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.ThreadingHTTPServer",
+        _flaky_httpserver,
+    )
+    servers = ReferenceEndpointServers()
+    with pytest.raises(ReferenceSubstrateEndpointError) as exc_info:
+        servers.start()
+    assert "rollback incomplete" in str(exc_info.value)
+    assert _FakeHttpServer.shutdown_calls == 0
+    assert _FakeHttpServer.close_calls == 0
+    assert retained_allowed is not None
+    servers.stop()
+    assert _FakeHttpServer.shutdown_calls == 0
+    assert _FakeHttpServer.close_calls == 1
+
+
+def test_partial_startup_started_server_cleanup_failure_retains_ownership(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T2: failed shutdown on started allowed server stays owned; stop() retries shutdown+close."""
+    _reset_fake_server_metrics()
+    _patch_ip_success(monkeypatch)
+    allowed_server: _FakeHttpServer | None = None
+
+    def _tracking_httpserver(
+        server_address: tuple[str, int],
+        request_handler_class: type,
+    ) -> _FakeHttpServer:
+        nonlocal allowed_server
+        server = _fake_httpserver_factory(server_address, request_handler_class)
+        if server_address[0] != "10.200.42.3":
+            allowed_server = server
+            server.shutdown_fail_once = True
+        return server
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.ThreadingHTTPServer",
+        _tracking_httpserver,
+    )
+    _patch_denied_thread_start_failure(monkeypatch)
+    servers = ReferenceEndpointServers()
+    with pytest.raises(ReferenceSubstrateEndpointError) as exc_info:
+        servers.start()
+    assert "rollback incomplete" in str(exc_info.value)
+    assert allowed_server is not None
+    assert _FakeHttpServer.shutdown_calls == 0
+    assert _FakeHttpServer.close_calls == 2
+    servers.stop()
+    assert _FakeHttpServer.shutdown_calls == 1
+    assert _FakeHttpServer.close_calls == 3
+
+
+def test_partial_startup_rollback_independent_server_cleanup_ownership(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T3: sibling server cleanup success does not retain; failed server does."""
+    _reset_fake_server_metrics()
+    _patch_ip_success(monkeypatch)
+    denied_server: _FakeHttpServer | None = None
+
+    def _tracking_httpserver(
+        server_address: tuple[str, int],
+        request_handler_class: type,
+    ) -> _FakeHttpServer:
+        nonlocal denied_server
+        server = _fake_httpserver_factory(server_address, request_handler_class)
+        if server_address[0] == "10.200.42.3":
+            denied_server = server
+            server.close_fail_once = True
+        return server
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.ThreadingHTTPServer",
+        _tracking_httpserver,
+    )
+    _patch_denied_thread_start_failure(monkeypatch)
+    servers = ReferenceEndpointServers()
+    with pytest.raises(ReferenceSubstrateEndpointError):
+        servers.start()
+    assert _FakeHttpServer.shutdown_calls == 1
+    assert _FakeHttpServer.close_calls == 1
+    assert denied_server is not None
+    servers.stop()
+    assert _FakeHttpServer.shutdown_calls == 1
+    assert _FakeHttpServer.close_calls == 2
+
+
+def test_partial_startup_server_and_address_cleanup_failure_both_retained(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T4: server close failure and address delete failure both retained for stop()."""
+    _reset_fake_server_metrics()
+    del_failures_remaining = 2
+
+    def _ip(command: list[str], **kwargs: object) -> MagicMock:
+        nonlocal del_failures_remaining
+        result = MagicMock()
+        result.args = command
+        result.stdout = ""
+        result.stderr = ""
+        if command[:4] == ["ip", "addr", "del", "10.200.42.3/32"] and del_failures_remaining > 0:
+            del_failures_remaining -= 1
+            result.returncode = 1
+            result.stderr = "rollback del failure"
+            return result
+        result.returncode = 0
+        return result
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.loopback_has_ipv4_address",
+        lambda _addr: False,
+    )
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints._run_ip",
+        _ip,
+    )
+    bind_attempts = 0
+
+    def _flaky_httpserver(
+        server_address: tuple[str, int],
+        request_handler_class: type,
+    ) -> _FakeHttpServer:
+        nonlocal bind_attempts
+        bind_attempts += 1
+        if bind_attempts >= 2:
+            raise OSError("simulated bind failure")
+        server = _fake_httpserver_factory(server_address, request_handler_class)
+        server.close_fail_once = True
+        return server
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.ThreadingHTTPServer",
+        _flaky_httpserver,
+    )
+    servers = ReferenceEndpointServers()
+    with pytest.raises(ReferenceSubstrateEndpointError) as exc_info:
+        servers.start()
+    assert "rollback incomplete" in str(exc_info.value)
+    assert servers.denied_addr_owned is True
+    with pytest.raises(ReferenceSubstrateEndpointCleanupError):
+        servers.stop()
+    assert servers.denied_addr_owned is True
+    servers.stop()
+    assert servers.denied_addr_owned is False
+
+
+def test_partial_startup_successful_rollback_no_owned_servers(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """T5: successful rollback leaves no servers; stop() is idempotent."""
+    _reset_fake_server_metrics()
+    _patch_ip_success(monkeypatch)
+    bind_attempts = 0
+
+    def _flaky_httpserver(
+        server_address: tuple[str, int],
+        request_handler_class: type,
+    ) -> _FakeHttpServer:
+        nonlocal bind_attempts
+        bind_attempts += 1
+        if bind_attempts >= 2:
+            raise OSError("simulated bind failure")
+        return _fake_httpserver_factory(server_address, request_handler_class)
+
+    monkeypatch.setattr(
+        "tests.integration.runtime.sandbox.reference_substrate.endpoints.ThreadingHTTPServer",
+        _flaky_httpserver,
+    )
+    servers = ReferenceEndpointServers()
+    with pytest.raises(ReferenceSubstrateEndpointError):
+        servers.start()
+    assert _FakeHttpServer.shutdown_calls == 0
+    assert _FakeHttpServer.close_calls == 1
+    servers.stop()
+    assert _FakeHttpServer.shutdown_calls == 0
+    assert _FakeHttpServer.close_calls == 1
+    servers.stop()
 
 
 def test_stop_address_delete_failure_preserves_ownership_and_retries(

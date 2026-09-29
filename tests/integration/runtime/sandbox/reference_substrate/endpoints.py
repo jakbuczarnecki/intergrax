@@ -186,19 +186,23 @@ class ReferenceEndpointServers:
     ) -> str:
         rollback_errors: list[str] = []
         if allowed is not None:
-            rollback_errors.extend(
-                _cleanup_http_server(
-                    allowed,
-                    serve_forever_started=allowed_serve_forever_started,
-                ),
+            allowed_cleanup_errors = _cleanup_http_server(
+                allowed,
+                serve_forever_started=allowed_serve_forever_started,
             )
+            if allowed_cleanup_errors:
+                self._allowed = allowed
+                self._allowed_serve_forever_started = allowed_serve_forever_started
+                rollback_errors.extend(allowed_cleanup_errors)
         if denied is not None:
-            rollback_errors.extend(
-                _cleanup_http_server(
-                    denied,
-                    serve_forever_started=denied_serve_forever_started,
-                ),
+            denied_cleanup_errors = _cleanup_http_server(
+                denied,
+                serve_forever_started=denied_serve_forever_started,
             )
+            if denied_cleanup_errors:
+                self._denied = denied
+                self._denied_serve_forever_started = denied_serve_forever_started
+                rollback_errors.extend(denied_cleanup_errors)
         if self._denied_addr_owned:
             try:
                 _remove_owned_denied_loopback_address()
