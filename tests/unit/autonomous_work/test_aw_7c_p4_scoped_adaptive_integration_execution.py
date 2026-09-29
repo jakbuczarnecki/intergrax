@@ -38,8 +38,6 @@ from intergrax.collaborative_work.in_memory_repository import (
 from intergrax.collaborative_work.repository import (
     CreatePrincipalAuthorityGrantCommand,
     CreateWorkspaceMembershipCommand,
-    PrincipalAuthorityGrantScopeKey,
-    WorkspaceMembershipScopeKey,
 )
 from intergrax.contracts.autonomous_work import (
     WorkerLifecycleState,
@@ -67,6 +65,7 @@ from intergrax.contracts.autonomous_work.scoped_adaptive_integration_execution i
     ScopedAdaptiveIntegrationExecutionOutcome,
     ScopedAdaptiveIntegrationExecutionOutput,
     ScopedAdaptiveIntegrationExecutionRequest as P4ExecutionRequest,
+    ScopedAdaptiveIntegrationExecutionRuntimeEnvelope,
     ScopedAdaptiveIntegrationWorkerDispatchContext,
 )
 from intergrax.contracts.autonomous_work.scoped_adaptive_integration_execution import (
@@ -159,10 +158,13 @@ class _RecordingIntake(Generic[HandoffT, ResultT]):
             run_id=mint_run_id(),
             attempt_id=mint_attempt_id(),
             execution_id=mint_execution_id(),
-            result=ScopedAdaptiveIntegrationExecutionOutput(
-                evidence_ref="exec-evidence-1",
-                tenant_id=_TENANT,
-            ),  # type: ignore[arg-type]
+            result=ScopedAdaptiveIntegrationExecutionRuntimeEnvelope(
+                outcome=ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED,
+                output=ScopedAdaptiveIntegrationExecutionOutput(
+                    evidence_ref="exec-evidence-1",
+                    tenant_id=_TENANT,
+                ),
+            ),
         )
 
 
@@ -251,12 +253,17 @@ def _seed_worker(binding_repo: InMemoryWorkerPrincipalBindingRepository) -> None
 
 
 def _dispatch_stack(
-    intake: _RecordingIntake[ScopedAdaptiveIntegrationExecutionHandoff, ScopedAdaptiveIntegrationExecutionOutput],
+    intake: _RecordingIntake[
+        ScopedAdaptiveIntegrationExecutionHandoff,
+        ScopedAdaptiveIntegrationExecutionRuntimeEnvelope,
+    ],
     *,
-    root_admission: object | None = None,
+    root_admission: DenyingRootExecutionAuthorityAdmission
+    | UnavailableRootExecutionAuthorityAdmission
+    | None = None,
 ) -> WorkerExecutionDispatchService[
     ScopedAdaptiveIntegrationExecutionHandoff,
-    ScopedAdaptiveIntegrationExecutionOutput,
+    ScopedAdaptiveIntegrationExecutionRuntimeEnvelope,
 ]:
     worker_repo = InMemoryWorkerInstanceRepository()
     worker_repo.create(
@@ -337,6 +344,7 @@ def _p4_request(
             ),
         ),
         tenant_id=_TENANT,
+        requested_operation=reference_read_operation(),
         execution_idempotency_key=idempotency_key,
         requested_at=_TS,
     )
@@ -347,7 +355,7 @@ async def test_p4_success_dispatches_canonical_intake_once() -> None:
     preparation = _prepare()
     intake = _RecordingIntake[
         ScopedAdaptiveIntegrationExecutionHandoff,
-        ScopedAdaptiveIntegrationExecutionOutput,
+        ScopedAdaptiveIntegrationExecutionRuntimeEnvelope,
     ]()
     dispatch = _dispatch_stack(intake)
     coordinator = WorkerScopedAdaptiveIntegrationExecutionCoordinator(
@@ -414,7 +422,8 @@ async def test_p4_no_qualification_provider_zero_intake() -> None:
 
 
 @pytest.mark.asyncio
-async def test_p4_duplicate_idempotency_key_fails_closed() -> None:
+async def test_p4_same_idempotency_key_does_not_suppress_second_dispatch() -> None:
+    """execution_idempotency_key is correlation intent — not coordinator duplicate truth."""
     preparation = _prepare()
     intake = _RecordingIntake()
     dispatch = _dispatch_stack(intake)
@@ -425,10 +434,10 @@ async def test_p4_duplicate_idempotency_key_fails_closed() -> None:
         dispatch_service=dispatch,
     )
     first = await coordinator.execute(_p4_request(preparation, idempotency_key="dup-key"))
-    assert first.outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED
     second = await coordinator.execute(_p4_request(preparation, idempotency_key="dup-key"))
-    assert second.outcome is ScopedAdaptiveIntegrationExecutionOutcome.DUPLICATE_INVOCATION
-    assert len(intake.calls) == 1
+    assert first.outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED
+    assert second.outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED
+    assert len(intake.calls) == 2
 
 
 @pytest.mark.asyncio
@@ -447,6 +456,7 @@ async def test_p4_tenant_mismatch_rejected_before_dispatch() -> None:
         preparation=bad.preparation,
         worker_dispatch=bad.worker_dispatch,
         tenant_id="tenant-b",
+        requested_operation=reference_read_operation(),
         execution_idempotency_key="idem-tenant",
         requested_at=bad.requested_at,
     )

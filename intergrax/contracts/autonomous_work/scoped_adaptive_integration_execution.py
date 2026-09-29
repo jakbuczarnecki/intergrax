@@ -25,8 +25,14 @@ from intergrax.contracts.autonomous_work.scoped_adaptive_integration import (
     ScopedAdaptiveIntegrationPreparationResult,
     ScopedAdaptiveIntegrationPreparationStatus,
 )
+from intergrax.contracts.capability_qualification.lifecycle_decision import (
+    CapabilityQualificationLifecycleOutcome,
+)
 from intergrax.contracts.capability_qualification.qualification_decision import (
     CapabilityQualificationDecision,
+)
+from intergrax.contracts.capability_qualification.qualification_outcome import (
+    CapabilityQualificationOutcome,
 )
 from intergrax.contracts.capability_qualification.qualification_request import (
     CapabilityQualificationRequest,
@@ -67,7 +73,9 @@ class ScopedAdaptiveIntegrationExecutionHandoff:
 
     artifact: ScopedIntegrationAdaptationArtifact
     qualification_subject: CapabilityQualificationSubject
+    accepted_qualification: CapabilityQualificationDecision
     qualification_request_id: str
+    requested_operation: ScopedIntegrationAdaptationOperationId
     tenant_id: str
     integration_category: IntegrationCategory
     provider_id: str
@@ -85,6 +93,10 @@ class ScopedAdaptiveIntegrationExecutionHandoff:
             raise TypeError("artifact must be ScopedIntegrationAdaptationArtifact")
         if type(self.qualification_subject) is not CapabilityQualificationSubject:
             raise TypeError("qualification_subject must be CapabilityQualificationSubject")
+        if not isinstance(self.accepted_qualification, CapabilityQualificationDecision):
+            raise TypeError("accepted_qualification must be CapabilityQualificationDecision")
+        if type(self.requested_operation) is not ScopedIntegrationAdaptationOperationId:
+            raise TypeError("requested_operation must be ScopedIntegrationAdaptationOperationId")
         object.__setattr__(
             self,
             "qualification_request_id",
@@ -118,6 +130,8 @@ class ScopedAdaptiveIntegrationExecutionHandoff:
             "permitted_operations",
             freeze_tuple(self.permitted_operations, label="permitted_operations"),
         )
+        if self.requested_operation not in self.permitted_operations:
+            raise ValueError("requested_operation must be in permitted_operations")
         if type(self.network_allowlist) is not NetworkEgressAllowlist:
             raise TypeError("network_allowlist must be NetworkEgressAllowlist")
         object.__setattr__(
@@ -162,6 +176,7 @@ class ScopedAdaptiveIntegrationExecutionRequest:
     preparation: ScopedAdaptiveIntegrationPreparationResult
     worker_dispatch: ScopedAdaptiveIntegrationWorkerDispatchContext
     tenant_id: str
+    requested_operation: ScopedIntegrationAdaptationOperationId
     execution_idempotency_key: str
     requested_at: datetime
 
@@ -170,6 +185,8 @@ class ScopedAdaptiveIntegrationExecutionRequest:
             raise TypeError("preparation must be ScopedAdaptiveIntegrationPreparationResult")
         if type(self.worker_dispatch) is not ScopedAdaptiveIntegrationWorkerDispatchContext:
             raise TypeError("worker_dispatch must be ScopedAdaptiveIntegrationWorkerDispatchContext")
+        if type(self.requested_operation) is not ScopedIntegrationAdaptationOperationId:
+            raise TypeError("requested_operation must be ScopedIntegrationAdaptationOperationId")
         object.__setattr__(
             self,
             "tenant_id",
@@ -188,6 +205,24 @@ class ScopedAdaptiveIntegrationExecutionRequest:
             "requested_at",
             require_aware_utc(self.requested_at, label="requested_at"),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class ScopedAdaptiveIntegrationExecutionRuntimeEnvelope:
+    """Execution-runtime result — domain outcome plus optional operation output."""
+
+    outcome: ScopedAdaptiveIntegrationExecutionOutcome
+    output: ScopedAdaptiveIntegrationExecutionOutput | None = None
+    error_detail: str = ""
+
+    def __post_init__(self) -> None:
+        if type(self.outcome) is not ScopedAdaptiveIntegrationExecutionOutcome:
+            raise TypeError("outcome must be ScopedAdaptiveIntegrationExecutionOutcome")
+        if self.outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED:
+            if self.output is None:
+                raise ValueError("EXECUTED requires output")
+        elif self.output is not None:
+            raise ValueError("non-EXECUTED must not carry output")
 
 
 @dataclass(frozen=True, slots=True)
@@ -336,10 +371,79 @@ def validate_qualification_decision_continuity(
     return None
 
 
+def validate_execution_bound_qualification_proof(
+    handoff: ScopedAdaptiveIntegrationExecutionHandoff,
+) -> str | None:
+    """Mechanical CQ proof at execution boundary — qualification is fact, not permission."""
+    decision = handoff.accepted_qualification
+    result = decision.qualification_result
+    lifecycle = decision.lifecycle_decision
+    audit = decision.audit_record
+    if result.outcome is not CapabilityQualificationOutcome.QUALIFIED:
+        return "qualification outcome not QUALIFIED"
+    if lifecycle.outcome is not CapabilityQualificationLifecycleOutcome.ACCEPT:
+        return "lifecycle outcome not ACCEPT"
+    if handoff.qualification_request_id != result.qualification_request_id:
+        return "qualification_request_id mismatch"
+    if audit.qualification_request_id != handoff.qualification_request_id:
+        return "audit qualification_request_id mismatch"
+    subject = handoff.qualification_subject
+    artifact = handoff.artifact
+    if result.subject_id != subject.subject_id:
+        return "result subject mismatch"
+    if result.subject_integrity_fingerprint != subject.subject_integrity_fingerprint:
+        return "result fingerprint mismatch"
+    if result.tenant_id != subject.tenant_id:
+        return "result tenant mismatch"
+    if result.scope_fingerprint != subject.scope_fingerprint:
+        return "result scope fingerprint mismatch"
+    if result.subject_id != artifact.artifact_id:
+        return "result artifact mismatch"
+    if result.tenant_id != artifact.tenant_id:
+        return "result artifact tenant mismatch"
+    if handoff.tenant_id != artifact.tenant_id:
+        return "handoff tenant artifact mismatch"
+    if handoff.tenant_id != subject.tenant_id:
+        return "handoff tenant subject mismatch"
+    if handoff.scope_fingerprint != artifact.scope_fingerprint:
+        return "handoff scope fingerprint mismatch"
+    if handoff.credential_grant_ref != artifact.scope.credential_grant_ref:
+        return "handoff credential grant ref mismatch"
+    if result.correlation_id != handoff.correlation_id:
+        return "correlation_id mismatch"
+    if result.causation_id != handoff.causation_id:
+        return "causation_id mismatch"
+    evidence = result.evidence
+    if evidence is not None:
+        if evidence.qualification_request_id != handoff.qualification_request_id:
+            return "evidence request id mismatch"
+        if evidence.subject_id != subject.subject_id:
+            return "evidence subject mismatch"
+        if evidence.tenant_id != subject.tenant_id:
+            return "evidence tenant mismatch"
+        if evidence.scope_fingerprint != subject.scope_fingerprint:
+            return "evidence scope fingerprint mismatch"
+    return None
+
+
+def validate_handoff_credential_grant_identity(
+    *,
+    handoff: ScopedAdaptiveIntegrationExecutionHandoff,
+    grant_grant_id: str,
+) -> str | None:
+    if grant_grant_id != handoff.credential_grant_ref:
+        return "credential grant_id does not match handoff credential_grant_ref"
+    if grant_grant_id != handoff.artifact.scope.credential_grant_ref:
+        return "credential grant_id does not match artifact scope credential_grant_ref"
+    return None
+
+
 def build_scoped_adaptive_integration_execution_handoff(
     *,
     preparation: ScopedAdaptiveIntegrationPreparationResult,
     qualification_request: CapabilityQualificationRequest,
+    accepted_qualification: CapabilityQualificationDecision,
+    requested_operation: ScopedIntegrationAdaptationOperationId,
     execution_idempotency_key: str,
 ) -> ScopedAdaptiveIntegrationExecutionHandoff:
     artifact = preparation.artifact
@@ -347,10 +451,22 @@ def build_scoped_adaptive_integration_execution_handoff(
     if artifact is None or subject is None:
         raise ValueError("preparation missing artifact or subject")
     scope = artifact.scope
+    if requested_operation not in scope.permitted_operations:
+        raise ValueError("requested_operation not in artifact permitted_operations")
+    continuity = validate_qualification_decision_continuity(
+        qualification_request=qualification_request,
+        decision=accepted_qualification,
+        artifact=artifact,
+        subject=subject,
+    )
+    if continuity is not None:
+        raise ValueError(continuity)
     return ScopedAdaptiveIntegrationExecutionHandoff(
         artifact=artifact,
         qualification_subject=subject,
+        accepted_qualification=accepted_qualification,
         qualification_request_id=qualification_request.qualification_request_id,
+        requested_operation=requested_operation,
         tenant_id=artifact.tenant_id,
         integration_category=artifact.integration_category,
         provider_id=artifact.provider_id,
@@ -371,9 +487,12 @@ __all__ = [
     "ScopedAdaptiveIntegrationExecutionOutput",
     "ScopedAdaptiveIntegrationExecutionRequest",
     "ScopedAdaptiveIntegrationExecutionResult",
+    "ScopedAdaptiveIntegrationExecutionRuntimeEnvelope",
     "ScopedAdaptiveIntegrationWorkerDispatchContext",
     "WorkerScopedAdaptiveIntegrationExecutionCoordinatorPort",
     "build_scoped_adaptive_integration_execution_handoff",
+    "validate_execution_bound_qualification_proof",
+    "validate_handoff_credential_grant_identity",
     "validate_preparation_artifact_subject_continuity",
     "validate_qualification_decision_continuity",
 ]

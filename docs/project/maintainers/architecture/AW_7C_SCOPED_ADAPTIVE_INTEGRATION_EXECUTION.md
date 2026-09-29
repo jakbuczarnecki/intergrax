@@ -828,4 +828,17 @@ AW
 | **Credential / Sandbox** | Execution-bound reference path: `ScopedCredentialBroker` after active `ExecutionId`; `validate_qualified_allowlist_attestation` on `SandboxSecurityCapabilities` |
 | **Tests** | `test_aw_7c_p4_scoped_adaptive_integration_execution.py`, `test_aw_7c_p4_architecture_gates.py`, `test_aw_7c_p4_sandbox_attestation.py`, target-truth cases in `test_scoped_integration_adaptation_service.py` |
 | **Next** | `AW-7C-CERT` — adversarial certification / global FRZ-TEN close |
+| **P4 exact-SHA audit blockers (resolved in CERT)** | (A) `CapabilityQualificationDecision` bound on `ScopedAdaptiveIntegrationExecutionHandoff.accepted_qualification` + `validate_execution_bound_qualification_proof` at execution delegate; (B) `validate_handoff_credential_grant_identity` before `ScopedCredentialBroker.resolve_scoped`; (C) explicit `requested_operation`; (D) typed `ScopedAdaptiveIntegrationExecutionRuntimeEnvelope` (`CREDENTIAL_DENIED` ≠ `SANDBOX_SECURITY_UNSATISFIED`); (E) strong `ScopedIntegrationAdaptationArtifact` on operation port; (F) removed coordinator `_seen_idempotency_keys` — `execution_idempotency_key` is correlation intent only |
+
+## AW-7C-CERT (READY FOR AUDIT)
+
+| Item | Detail |
+| ---- | ------ |
+| **Baseline** | `6fda62ca792255e482895a574250af547cb18cba` |
+| **Status** | **READY FOR AUDIT** — not CLOSED |
+| **Integrated E2E** | `WorkerScopedAdaptiveIntegrationExecutionCoordinator` → CQ → `WorkerExecutionDispatchService` → root Governance → `ScopedAdaptiveIntegrationReferenceExecutionIntake` → execution-bound delegate → sandbox attestation → broker → adapted operation → `ScopedAdaptiveIntegrationExecutionRuntimeEnvelope` |
+| **Idempotency** | No AW-local duplicate truth; no durable exactly-once claim; replay uses new canonical execution identity unless a future canonical execution owner supplies idempotency |
+| **Tests** | `test_aw_7c_cert_scoped_adaptive_integration_execution.py` + P4/CQ/credential/sandbox targeted suites |
+| **Tenant** | Local AW-7C chain adversarial cases in CERT tests; global `FRZ-TEN` PASS unchanged without checklist owner |
+| **Remaining** | Independent GitHub SHA audit; roadmap/checklist global closure |
 

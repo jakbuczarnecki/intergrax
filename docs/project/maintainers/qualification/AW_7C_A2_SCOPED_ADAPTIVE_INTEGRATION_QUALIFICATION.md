@@ -65,14 +65,27 @@ Sections 1–13 below retain **historical** prerequisite audit unless explicitly
 | **P3 carry-over (P4)** | `ScopedIntegrationAdaptationTargetSource` + reference catalog; request-echo resolver removed |
 | **Deferred** | CERT global tenant close |
 
-## AW-7C-P4 scoped qualification + execution evidence (READY FOR AUDIT)
+## AW-7C-P4 scoped qualification + execution evidence (READY FOR COMBINED INDEPENDENT ACCEPTANCE)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **READY FOR COMBINED INDEPENDENT ACCEPTANCE** — P4 exact-SHA audit blockers remediated in **AW-7C-CERT** |
+| **Scoped evidence** | CQ `CapabilityQualificationDecision` carried on handoff; execution-bound `validate_execution_bound_qualification_proof`; Governance negatives; integrated reference intake E2E |
+| **FRZ (scoped; global statuses OPEN)** | FRZ-EXE-01..07, FRZ-GOV-01..05/07/09, FRZ-SEC-02/03/05/07, FRZ-TRC-01/03/04/06/10, FRZ-TEN-01/02/07/10/11/12 |
+| **Deferred** | Global FRZ-TEN close |
+
+## AW-7C-CERT adversarial qualification (READY FOR AUDIT)
 
 | Field | Value |
 | ----- | ----- |
 | **Status** | **READY FOR AUDIT** — not CLOSED |
-| **Scoped evidence** | `CapabilityQualificationService.qualify()` with subject continuity; Governance negatives (zero intake); canonical dispatch success; duplicate idempotency; sandbox allowlist attestation helper; target truth negatives |
-| **FRZ (scoped; global statuses OPEN)** | FRZ-EXE-01..07, FRZ-GOV-01..05/07/09, FRZ-SEC-02/03/05/07, FRZ-TRC-01/03/04/06/10, FRZ-TEN-01/02/07/10/11/12 |
-| **Deferred** | AW-7C-CERT adversarial global close |
+| **Baseline** | `6fda62ca792255e482895a574250af547cb18cba` |
+| **Proof binding** | `accepted_qualification` + `validate_execution_bound_qualification_proof` before credential/sandbox/operation |
+| **Credential** | `validate_handoff_credential_grant_identity`; broker sees canonical `ExecutionId` via grant factory |
+| **Operation** | `requested_operation` on P4 request/handoff; must ⊆ `permitted_operations`; credential scope uses same operation value |
+| **Failure typing** | `ScopedAdaptiveIntegrationExecutionRuntimeEnvelope` — sandbox ≠ credential |
+| **Idempotency** | No process-local duplicate authority in coordinator |
+| **Tests** | `test_aw_7c_cert_scoped_adaptive_integration_execution.py` |
 
 ---
 

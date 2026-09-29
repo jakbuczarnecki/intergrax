@@ -17,9 +17,9 @@ from intergrax.contracts.autonomous_work.ids import WorkerInstanceId
 from intergrax.contracts.autonomous_work.scoped_adaptive_integration_execution import (
     ScopedAdaptiveIntegrationExecutionHandoff,
     ScopedAdaptiveIntegrationExecutionOutcome,
-    ScopedAdaptiveIntegrationExecutionOutput,
     ScopedAdaptiveIntegrationExecutionRequest,
     ScopedAdaptiveIntegrationExecutionResult,
+    ScopedAdaptiveIntegrationExecutionRuntimeEnvelope,
     build_scoped_adaptive_integration_execution_handoff,
     validate_preparation_artifact_subject_continuity,
     validate_qualification_decision_continuity,
@@ -32,6 +32,7 @@ from intergrax.contracts.capability_qualification.qualification_outcome import (
 )
 from intergrax.contracts.execution_request import ExecutionRequest
 
+
 class WorkerScopedAdaptiveIntegrationExecutionCoordinator:
     """Phase-2 A2 orchestration after QUALIFICATION_PENDING — no authority minting."""
 
@@ -41,12 +42,11 @@ class WorkerScopedAdaptiveIntegrationExecutionCoordinator:
         qualification_service: CapabilityQualificationService,
         dispatch_service: WorkerExecutionDispatchService[
             ScopedAdaptiveIntegrationExecutionHandoff,
-            ScopedAdaptiveIntegrationExecutionOutput,
+            ScopedAdaptiveIntegrationExecutionRuntimeEnvelope,
         ],
     ) -> None:
         self._qualification_service = qualification_service
         self._dispatch_service = dispatch_service
-        self._seen_idempotency_keys: set[str] = set()
 
     async def execute(
         self,
@@ -56,15 +56,6 @@ class WorkerScopedAdaptiveIntegrationExecutionCoordinator:
         worker_id = preparation.worker_instance_id
         idem = request.execution_idempotency_key
         tenant_id = request.tenant_id
-
-        if idem in self._seen_idempotency_keys:
-            return ScopedAdaptiveIntegrationExecutionResult(
-                outcome=ScopedAdaptiveIntegrationExecutionOutcome.DUPLICATE_INVOCATION,
-                worker_instance_id=worker_id,
-                execution_idempotency_key=idem,
-                tenant_id=tenant_id,
-                error_detail="duplicate execution idempotency key",
-            )
 
         qual_request = preparation.qualification_request
         if qual_request is None:
@@ -89,7 +80,8 @@ class WorkerScopedAdaptiveIntegrationExecutionCoordinator:
                 continuity,
             )
 
-        if preparation.artifact is not None and preparation.artifact.tenant_id != tenant_id:
+        artifact = preparation.artifact
+        if artifact is not None and artifact.tenant_id != tenant_id:
             return _reject(
                 worker_id,
                 idem,
@@ -97,9 +89,17 @@ class WorkerScopedAdaptiveIntegrationExecutionCoordinator:
                 ScopedAdaptiveIntegrationExecutionOutcome.QUALIFICATION_REJECTED,
                 "preparation tenant mismatch",
             )
+        if artifact is not None:
+            if request.requested_operation not in artifact.scope.permitted_operations:
+                return _reject(
+                    worker_id,
+                    idem,
+                    tenant_id,
+                    ScopedAdaptiveIntegrationExecutionOutcome.QUALIFICATION_REJECTED,
+                    "requested_operation not permitted",
+                )
 
         decision = self._qualification_service.qualify(qual_request)
-        artifact = preparation.artifact
         subject = preparation.qualification_subject
         if artifact is None or subject is None:
             return _reject(
@@ -142,13 +142,15 @@ class WorkerScopedAdaptiveIntegrationExecutionCoordinator:
         handoff = build_scoped_adaptive_integration_execution_handoff(
             preparation=preparation,
             qualification_request=qual_request,
+            accepted_qualification=decision,
+            requested_operation=request.requested_operation,
             execution_idempotency_key=idem,
         )
 
         dispatch_ctx = request.worker_dispatch
         runtime_request = ExecutionRequest(
             input=handoff,
-            output_type=ScopedAdaptiveIntegrationExecutionOutput,
+            output_type=ScopedAdaptiveIntegrationExecutionRuntimeEnvelope,
         )
         dispatch_request = WorkerExecutionDispatchRequest(
             worker_instance_id=worker_id,
@@ -159,7 +161,6 @@ class WorkerScopedAdaptiveIntegrationExecutionCoordinator:
             requested_at=request.requested_at,
         )
 
-        self._seen_idempotency_keys.add(idem)
         dispatch_result = await self._dispatch_service.dispatch(dispatch_request)
 
         if dispatch_result.disposition is WorkerExecutionDispatchDisposition.UNAVAILABLE:
@@ -204,8 +205,8 @@ class WorkerScopedAdaptiveIntegrationExecutionCoordinator:
             )
 
         correlation = dispatch_result.correlation
-        operation_output = dispatch_result.runtime_result
-        if operation_output is None:
+        runtime_envelope = dispatch_result.runtime_result
+        if runtime_envelope is None:
             return ScopedAdaptiveIntegrationExecutionResult(
                 outcome=ScopedAdaptiveIntegrationExecutionOutcome.EXECUTION_FAILED,
                 worker_instance_id=worker_id,
@@ -217,9 +218,36 @@ class WorkerScopedAdaptiveIntegrationExecutionCoordinator:
                 execution_id=correlation.execution_id,
                 error_detail="missing runtime result",
             )
-        if operation_output.tenant_id != tenant_id:
+
+        domain_outcome = runtime_envelope.outcome
+        if domain_outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED:
+            operation_output = runtime_envelope.output
+            if operation_output is None:
+                return ScopedAdaptiveIntegrationExecutionResult(
+                    outcome=ScopedAdaptiveIntegrationExecutionOutcome.EXECUTION_FAILED,
+                    worker_instance_id=worker_id,
+                    execution_idempotency_key=idem,
+                    tenant_id=tenant_id,
+                    handoff=handoff,
+                    run_id=correlation.run_id,
+                    attempt_id=correlation.attempt_id,
+                    execution_id=correlation.execution_id,
+                    error_detail="EXECUTED envelope missing output",
+                )
+            if operation_output.tenant_id != tenant_id:
+                return ScopedAdaptiveIntegrationExecutionResult(
+                    outcome=ScopedAdaptiveIntegrationExecutionOutcome.EXECUTION_FAILED,
+                    worker_instance_id=worker_id,
+                    execution_idempotency_key=idem,
+                    tenant_id=tenant_id,
+                    handoff=handoff,
+                    run_id=correlation.run_id,
+                    attempt_id=correlation.attempt_id,
+                    execution_id=correlation.execution_id,
+                    error_detail="runtime result tenant mismatch",
+                )
             return ScopedAdaptiveIntegrationExecutionResult(
-                outcome=ScopedAdaptiveIntegrationExecutionOutcome.EXECUTION_FAILED,
+                outcome=ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED,
                 worker_instance_id=worker_id,
                 execution_idempotency_key=idem,
                 tenant_id=tenant_id,
@@ -227,11 +255,28 @@ class WorkerScopedAdaptiveIntegrationExecutionCoordinator:
                 run_id=correlation.run_id,
                 attempt_id=correlation.attempt_id,
                 execution_id=correlation.execution_id,
-                error_detail="runtime result tenant mismatch",
+                operation_output=operation_output,
+            )
+
+        if domain_outcome in (
+            ScopedAdaptiveIntegrationExecutionOutcome.CREDENTIAL_DENIED,
+            ScopedAdaptiveIntegrationExecutionOutcome.SANDBOX_SECURITY_UNSATISFIED,
+            ScopedAdaptiveIntegrationExecutionOutcome.QUALIFICATION_REJECTED,
+        ):
+            return ScopedAdaptiveIntegrationExecutionResult(
+                outcome=domain_outcome,
+                worker_instance_id=worker_id,
+                execution_idempotency_key=idem,
+                tenant_id=tenant_id,
+                handoff=handoff,
+                run_id=correlation.run_id,
+                attempt_id=correlation.attempt_id,
+                execution_id=correlation.execution_id,
+                error_detail=runtime_envelope.error_detail,
             )
 
         return ScopedAdaptiveIntegrationExecutionResult(
-            outcome=ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED,
+            outcome=ScopedAdaptiveIntegrationExecutionOutcome.EXECUTION_FAILED,
             worker_instance_id=worker_id,
             execution_idempotency_key=idem,
             tenant_id=tenant_id,
@@ -239,7 +284,7 @@ class WorkerScopedAdaptiveIntegrationExecutionCoordinator:
             run_id=correlation.run_id,
             attempt_id=correlation.attempt_id,
             execution_id=correlation.execution_id,
-            operation_output=operation_output,
+            error_detail=runtime_envelope.error_detail or "execution failed",
         )
 
 
