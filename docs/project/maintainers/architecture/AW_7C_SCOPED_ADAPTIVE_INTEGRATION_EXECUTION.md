@@ -854,4 +854,292 @@ AW
 | **Tests** | `test_aw_7c_closure_scoped_adaptive_integration_execution.py`, `test_aw_7c_closure_architecture_gates.py`, CERT/P4 suites retained |
 | **P0-PHYSQ** | Physical substrate evidence unchanged; runtime binding claim is separate (session attestation before operation) |
 | **Next program stage** | Independent parent-closure SHA audit; **EBH-3** **NOT ENTERED** |
+| **Enterprise blocker (post-closure audit)** | Adapted operation not mechanically bound to attested sandbox session + broker-resolved credential use — see **AW-7C-CLOSURE-R1-ARCH** below |
+| **Parent status after R1-ARCH** | **CURRENT / NOT CLOSED** — blocked pending R1-ARCH audit + R1 runtime implementation |
+
+---
+
+## AW-7C-CLOSURE-R1-ARCH — Execution-bound adapted operation security contract lock
+
+| Field | Value |
+| ----- | ----- |
+| **Task** | `AW-7C-CLOSURE-R1-ARCH` |
+| **Parent** | `AW-7C` — **CURRENT / NOT CLOSED** |
+| **Program baseline** | `8235f84749b5d0038b04d39bec4c9d479a7f93ac` (`development`) |
+| **Status** | **READY FOR AUDIT** (architecture lock only — **0** production/runtime changes in this task) |
+| **Blocker addressed** | Security resources are verified upstream, but `ScopedAdaptedIntegrationOperationPort` can still perform the meaningful side effect outside those resources |
+| **New authority introduced** | **NO** |
+| **Next mandatory program stage after parent closes** | `EBH-3` — **NOT ENTERED** until `AW-7C` closes |
+
+**Scope:** lock the single Integrations-owned, execution-bound **operation execution context** that composes canonical `ExecutionId`, tenant, qualified requested operation, attested sandbox session resource, and broker-authorized credential-use resource — without a second Execution Engine, AW-local broker/sandbox, or ToolRuntime path.
+
+### R1-ARCH — Root cause (precise)
+
+On closure baseline `8235f84749b5d0038b04d39bec4c9d479a7f93ac`, `execute_reference_scoped_adaptive_integration` correctly sequences:
+
+```text
+validate qualification proof
+→ SandboxSecurityCapable.security_capabilities() + allowlist attestation
+→ ExecutionBoundCredentialGrantProvider.resolve_grant(...)
+→ ScopedCredentialBroker.resolve_scoped(...)  # yields ScopedCredentialResolutionResult
+→ del resolved  # material discarded before operation
+→ ScopedAdaptedIntegrationOperationPort.execute(artifact, requested_operation, execution_id, tenant_id)
+```
+
+The operation seam receives **only** correlation identity and artifact facts. It does **not** receive:
+
+- the admitting `SandboxSecurityCapable` session object or any sandbox-bound effect channel;
+- `ScopedCredentialResolutionResult`, `CredentialUseEvidence`, or a single-use credential-use capability.
+
+Therefore a conforming `ScopedAdaptedIntegrationOperationPort` implementation can return plausible `ScopedAdaptedIntegrationOperationEvidence` while performing the real integration side effect via its own HTTP client, process, or credential store. Post-hoc evidence checks on tenant/operation/execution_id do not prevent an unauthorized side effect that already occurred. This violates parent AW-7C invariants: **all meaningful adapted work must consume the same execution-bound sandbox and credential resources that Governance/admission authorized for that canonical execution attempt.**
+
+### R1-ARCH — Owner matrix (unchanged canonical owners)
+
+| Concern | Semantic owner | Composition owner | Authority owner |
+| ------- | -------------- | ----------------- | --------------- |
+| AW orchestration / handoff | Autonomous Work | `WorkerScopedAdaptiveIntegrationExecutionCoordinator` + dispatch | None |
+| Adaptation artifact / operation SPI | Integrations | Integrations contracts + strategies | None |
+| **Execution-bound operation context (NEW contract surface)** | **Integrations** (`scoped_integration_adaptation.py` + credential adjunct types) | **Integrations runtime composer** on canonical Execution delegate path (`execute_reference_scoped_adaptive_integration` → production equivalent) | **None** — binds existing authorities; does not mint permission |
+| Qualification proof on handoff | Capability Qualification | CQ coordinator; `validate_execution_bound_qualification_proof` at delegate ingress | None |
+| Governance admission | Runtime / Governance | `WorkerExecutionAdmissionService` / root launch | Governance ALLOW only |
+| Execution identity / lifecycle | Canonical Execution | `ExecutionRuntime` + `peek_active_execution_id` | Runtime minted `ExecutionId` only |
+| Credential grant + material resolution | Credential domain | `ExecutionBoundCredentialGrantProvider` + `ScopedCredentialBroker` | Grant scope + broker admission only |
+| Sandbox isolation + attestation | Sandbox | Admitted session implementing `SandboxSecurityCapable` | Attested substrate facts only |
+| Integration catalog | Integrations | Existing catalog | Read-only for A2 identity |
+| Evidence / observability | Recording only | Envelope + operation evidence refs | **None** |
+
+### R1-ARCH — Before graph (closure baseline)
+
+```text
+Canonical Execution (active ExecutionId)
+  → ScopedAdaptiveIntegrationExecutionRuntimeDelegate
+  → execute_reference_scoped_adaptive_integration
+        ├─ validate_execution_bound_qualification_proof(handoff)
+        ├─ sandbox_security_source.security_capabilities()  [attestation only]
+        ├─ validate_qualified_allowlist_attestation(...)
+        ├─ credential_grant_provider.resolve_grant(...) → CredentialUseGrant
+        ├─ credential_broker.resolve_scoped(...) → ScopedCredentialResolutionResult
+        ├─ [resolved material discarded]
+        └─ operation_port.execute(artifact, requested_operation, execution_id, tenant_id)
+              └─ [unconstrained side-effect path — BLOCKER]
+```
+
+### R1-ARCH — After graph (locked)
+
+```text
+Canonical Execution (active ExecutionId) — authority owner: Execution
+  ↓
+Integrations execution composer (same delegate entrypoint; no AW-local executor)
+  ├─ fail-closed: handoff / artifact / tenant / active ExecutionId continuity
+  ├─ validate_execution_bound_qualification_proof
+  ├─ admit SandboxSecurityCapable session (single instance for this attempt)
+  ├─ security_capabilities() → validate_qualified_allowlist_attestation (same session)
+  ├─ resolve_grant → validate_handoff_credential_grant_identity → CredentialUseScope
+  ├─ ScopedCredentialBroker.resolve_scoped → ScopedCredentialResolutionResult
+  └─ materialize ScopedAdaptedIntegrationOperationExecutionContext (Integrations-owned, frozen)
+        ├── execution_id  (= active canonical ExecutionId, str form in evidence)
+        ├── tenant_id
+        ├── requested_operation  (= handoff.requested_operation)
+        ├── artifact  (strong ScopedIntegrationAdaptationArtifact)
+        ├── sandbox: ScopedAdaptedIntegrationSandboxExecutionResource
+        │     └── binds SAME session as attestation + session_binding_fingerprint
+        └── credential: ScopedAdaptedIntegrationCredentialUseResource
+              └── single-use; scope/use_evidence tied to grant + broker result
+        ↓
+ScopedAdaptedIntegrationOperationPort.execute(context) → ScopedAdaptedIntegrationOperationEvidence
+        ↓
+meaningful adapted integration effect ONLY via context.sandbox + context.credential sanctioned channels
+```
+
+**Composition owner:** Integrations qualification/production composer inside the canonical Execution delegate (`execute_reference_scoped_adaptive_integration` today; same ownership when promoted). **Autonomous Work does not construct or hold sandbox/credential resources.**
+
+### R1-ARCH — Contract decision
+
+| Item | Decision |
+| ---- | -------- |
+| **Reused** | `ScopedIntegrationAdaptationArtifact`, `ScopedIntegrationAdaptationOperationId`, `ScopedAdaptedIntegrationOperationEvidence`, `SandboxSecurityCapable`, `SandboxSecurityCapabilities`, `CredentialUseGrant`, `CredentialUseScope`, `ScopedCredentialResolutionResult`, `CredentialUseEvidence`, `ExecutionBoundCredentialGrantProvider`, `ScopedCredentialBroker`, `validate_execution_bound_qualification_proof`, `validate_handoff_credential_grant_identity`, `validate_qualified_allowlist_attestation` |
+| **Additive (required)** | `ScopedAdaptedIntegrationOperationExecutionContext` — frozen dataclass carrying identity + artifact + two resource handles |
+| **Additive (required)** | `ScopedAdaptedIntegrationSandboxExecutionResource` — Integrations Protocol: same object identity as attested session; exposes attestation read + **only** Integrations-typed adapted-effect execution surface for this A2 operation class |
+| **Additive (required)** | `ScopedAdaptedIntegrationCredentialUseResource` — Integrations Protocol: wraps broker output; **single consumption**; exposes credential application only through sandbox-bound transport owned by Integrations composition (no freestanding `ResolvedCredential` parameter on the operation port) |
+| **Port evolution** | `ScopedAdaptedIntegrationOperationPort.execute` **replaces** loose keyword parameters with one `context: ScopedAdaptedIntegrationOperationExecutionContext` argument (breaking at contract level; closure implementation task) |
+| **Materialization** | `build_scoped_adapted_integration_operation_execution_context(...)` — Integrations-owned factory; **only** callable from Integrations execution composer after all prechecks; validates session fingerprint + grant/use_evidence alignment with handoff |
+| **Visibility** | Types on `intergrax/integrations/contracts/` — **public Integrations contracts** (same tier as existing AW-7C adaptation contracts) |
+| **Second authority?** | **NO** — context is a capability **bundle**, not a broker, sandbox, or Execution mint |
+
+#### Why `SandboxExecCapable` is not reused as the AW-7C authority
+
+| Criterion | `SandboxExecCapable` | AW-7C need |
+| --------- | -------------------- | ---------- |
+| Typing | `operation: str`, `payload: dict \| None` | Strong `ScopedIntegrationAdaptationOperationId` + artifact-bound semantics |
+| Authority home | `sandbox.exec` catalog tool / ToolRuntime gateway | Integrations adapted-operation SPI under canonical Execution |
+| Responsibility | Generic sandbox command dispatch | Tenant/integration/operation-scoped adapted effect with credential coupling |
+| Risk | Promoting it widens catalog tool semantics into A2; second pseudo-execution API | Dedicated `ScopedAdaptedIntegrationSandboxExecutionResource` keeps Sandbox ownership narrow |
+
+Reuse is limited to **session identity** (`session_id` where present) and **attestation types** already on `SandboxSecurityCapable`.
+
+#### Why attestation-only `SandboxSecurityCapabilities` is insufficient alone
+
+`SandboxSecurityCapable.security_capabilities()` proves substrate properties; it does not force the adapted operation to emit side effects through that session. The sandbox resource handle must be the **same object** (or provably same `session_binding_fingerprint`) used for attestation and for effect execution.
+
+#### Why passing `ResolvedCredential` alone is insufficient
+
+Raw material outside a single-use, scope-bound resource allows copying and reuse across operations/tenants. The broker remains the sole resolver; the operation receives a **credential-use resource** constructed from `ScopedCredentialResolutionResult` that cannot be re-bound to another execution scope without failing closed.
+
+### R1-ARCH — Credential trust model (`ReferenceExecutionBoundCredentialGrantProvider` + canonical rule)
+
+**Trust rule (locked):** caller request/intention **≠** provider-owned authoritative grant facts.
+
+| Field / input | Classification | Rule |
+| ------------- | -------------- | ---- |
+| `grant_id`, `credential_ref`, `tenant_id`, `provider_id`, `integration_id`, `target_scope`, `expires_at` on provider | **Provider-owned authoritative facts** | Must be sourced from provider configuration/registry, not copied blindly from handoff |
+| `credential_grant_ref`, `execution_id`, `requested_operation`, caller `tenant_id` / `provider_id` / `integration_id` | **Caller binding keys** | Used to **select** and **verify** a grant; must match authoritative facts or fail closed |
+| `CredentialUseGrant` emitted | **Derived admission artifact** | Must satisfy `validate_handoff_credential_grant_identity`, `assert_grant_matches_scope`, broker admission |
+
+**Reference provider remediation (implementation task):** `resolve_grant` must:
+
+1. Reject when `credential_grant_ref != self.grant_id`.
+2. Reject when caller `tenant_id`, `provider_id`, or `integration_id` ≠ provider-owned fields.
+3. Bind `execution_id` from active canonical execution (already required at call site).
+4. Set `operation` from `requested_operation` only after verifying it is permitted for the grant (reference: single operation; production: grant policy).
+5. Never construct a grant whose `tenant_id`/`provider_id`/`integration_id` come **only** from caller kwargs without equality check against provider-owned state.
+
+No second grant model — continue `CredentialUseGrant` + `CredentialUseScope` + `ScopedCredentialBroker`.
+
+**Credential-use lifecycle (locked):**
+
+```text
+ExecutionBoundCredentialGrantProvider.resolve_grant (secret-free grant)
+  → validate_handoff_credential_grant_identity
+  → CredentialUseScope (tenant, provider, integration, operation, execution_id, target_scope)
+  → ScopedCredentialBroker.resolve_scoped → ScopedCredentialResolutionResult
+  → ScopedAdaptedIntegrationCredentialUseResource.wrap(result)  [single-use]
+  → operation executes only through resource API
+  → evidence: CredentialUseEvidence fields + operation evidence (no secret in logs)
+```
+
+### R1-ARCH — Sandbox / session binding model
+
+| Question | Answer |
+| -------- | ------ |
+| What represents admitted session? | The live object implementing `SandboxSecurityCapable` (and resource Protocol) admitted for this execution attempt — e.g. `ReferenceScopedAdaptiveIntegrationSandboxSession` in qualification |
+| Who creates/owns it? | Sandbox substrate / host wiring; Integrations composer **holds reference** for attempt duration only |
+| How is operation bound? | `ScopedAdaptedIntegrationSandboxExecutionResource` is built from **that same instance**; `session_binding_fingerprint()` hashes `session_id` (if any) + attestation fingerprint + provider_id |
+| Attestation vs effect | Attestation reads `security_capabilities()` on resource; effects call resource's Integrations-typed executor; composer rejects if fingerprint used at attestation ≠ fingerprint in context |
+| Session A attest + session B execute | **Structurally prevented** — one resource object; alternate session cannot be substituted without factory access (composer-internal) |
+
+### R1-ARCH — ExecutionId, tenant, requested-operation binding
+
+| Binding | Enforcement layer |
+| ------- | ------------------- |
+| `ExecutionId` | Active canonical context at delegate; context carries `str(execution_id)`; grant + `CredentialUseScope.execution_id` + evidence must match |
+| Tenant | Composer checks handoff, artifact, grant, scope, context, evidence; see tenant audit below |
+| Requested operation | Handoff `requested_operation` ⊆ artifact.scope.permitted_operations; grant.operation + scope.operation + context.requested_operation + evidence.executed_operation must match |
+
+### R1-ARCH — Evidence produced (no secrets)
+
+| Artifact | Contents |
+| -------- | -------- |
+| `CredentialUseEvidence` | refs, fingerprints, grant_id, execution_id, operation, tenant — **no** `value` |
+| `ScopedAdaptedIntegrationOperationEvidence` | evidence_ref, tenant_id, execution_id, artifact_id, executed_operation |
+| Runtime envelope | Existing typed outcomes; credential vs sandbox vs execution failures remain distinct |
+
+Optional future: `sandbox_binding_fingerprint` / `credential_use_evidence.grant_id` echoed in operation evidence — implementation may add non-secret correlation fields on evidence **only** if needed for audit; not retrospective permission.
+
+### R1-ARCH — Fail-closed matrix
+
+| Condition | Mechanism |
+| --------- | --------- |
+| Wrong `ExecutionId` | Composer vs `peek_active_execution_id`; grant/scope mismatch; evidence mismatch → `EXECUTION_FAILED` / `CREDENTIAL_DENIED` **before** operation |
+| Wrong tenant | Handoff/artifact/grant/scope/context/evidence chain → fail before operation |
+| Wrong requested operation | Grant/scope/permitted_operations → `CREDENTIAL_DENIED` or `EXECUTION_FAILED` before operation |
+| Wrong artifact | Qualification proof + artifact typing on handoff → early reject |
+| Wrong sandbox session | Resource factory requires same instance as attestation; fingerprint mismatch → `SANDBOX_SECURITY_UNSATISFIED` |
+| Attest A, execute B | Single resource object + fingerprint bind → **structurally impossible** without composer bypass |
+| Missing sandbox execution capability | No resource materialized → no `execute(context)` call |
+| Wrong credential grant | `validate_handoff_credential_grant_identity` + broker scope asserts |
+| Grant for another tenant/operation | `assert_grant_matches_scope` + provider equality rules |
+| Credential resolved outside admitted scope | Broker only invoked inside composer with constructed scope |
+| Expired grant | `assert_grant_not_expired` |
+| Plugin ignores context | **Cannot succeed**: reference/production resource APIs required to perform effect; tests inject bypass ports → must fail closed (no `EXECUTED` without resource consumption hooks) |
+| Plugin own credential source | Operation port no longer accepts bare identity kwargs; no `ResolvedCredential` parameter |
+| Plugin own host/network path | Effect API only on sandbox resource |
+| Evidence claims wrong tenant/execution/operation | Post-operation validation retains fail (defense in depth) — **not** sole control |
+
+### R1-ARCH — Forbidden bypasses (explicit)
+
+Second Execution Engine; AW-local executor/broker/sandbox; ToolRuntime/direct Nexus from AW; dict/`Any` context; reflection dispatch; retrospective evidence-as-permission; adding `execute()` to `SandboxSecurityCapable`; promoting `SandboxExecCapable` without closed-world match; passing standalone `SandboxSecurityCapabilities` or `ResolvedCredential` into operation port as sufficient binding.
+
+### R1-ARCH — Structural replaceability (locked)
+
+External `ScopedAdaptedIntegrationOperationPort` implementations remain replaceable via the **same** `ScopedAdaptedIntegrationOperationExecutionContext`. Replaceability does **not** permit alternate credential or network paths: every implementation must perform the meaningful effect only through `context.credential` and `context.sandbox` sanctioned APIs. Proof obligation: custom operation + no core patch + cannot bypass sandbox/credential/tenant/operation — enforced by closure/CERT tests extended in R1 implementation.
+
+### R1-ARCH — Tenant Isolation Audit (task-local)
+
+**Classification:** TENANT RELEVANT
+
+**Verdict:** `PASS` (architecture invariants fully specified; **not** global `FRZ-TEN-*` PASS)
+
+| Invariant | Locked |
+| --------- | ------ |
+| `operation_context.tenant == handoff.tenant == artifact.tenant == grant.tenant == scope.tenant == evidence.tenant` | Composer equality checks before `execute(context)` |
+| Plugin cannot rewrite tenant | Context frozen at materialization; evidence tenant mismatch fails |
+| Missing tenant ≠ global tenant | Empty/missing tenant rejected at contract validation (existing scope/grant validators) |
+| Tenant A credential unusable for tenant B operation | Broker `assert_tenant_consistency` + grant provider authoritative `tenant_id` |
+
+### R1-ARCH — FRZ evidence contribution (architecture-only)
+
+| Family | Contribution | Global status change |
+| ------ | ------------ | -------------------- |
+| FRZ-GOV-* | Admission before composer; no context minting governance | **NONE** |
+| FRZ-EXE-* | All adapted work still under canonical Execution; context carries ExecutionId only | **NONE** |
+| FRZ-CTR-* | New typed Integrations contracts; narrow responsibility | **NONE** |
+| FRZ-PLG-* / FRZ-RPL-* | Plugins constrained to resource bundle; replaceability preserved | **NONE** |
+| FRZ-TEN-* (local) | Tenant continuity table above | **NONE** (checklist owner only) |
+
+### R1-ARCH — Implementation exit criteria (next task: runtime closure)
+
+1. `ScopedAdaptedIntegrationOperationPort.execute` accepts `ScopedAdaptedIntegrationOperationExecutionContext` only.
+2. Composer materializes context only after qualification, sandbox attestation, and successful `resolve_scoped`.
+3. `del resolved` / discard-before-operation pattern **removed** — credential use flows through `ScopedAdaptedIntegrationCredentialUseResource`.
+4. Reference operation uses resource APIs (qualification proof).
+5. Adversarial tests: wrong sandbox fingerprint, bypass port ignoring resources, cross-tenant grant, wrong operation — all fail **before** `EXECUTED`.
+6. `ReferenceExecutionBoundCredentialGrantProvider` enforces provider-owned vs caller binding rules.
+7. Architecture gates updated for new forbidden patterns (e.g. restored loose `execute(artifact=..., tenant_id=...)` without context).
+8. Parent `AW-7C` remains **NOT CLOSED** until independent audit of implementation SHA.
+
+### R1-ARCH — Bounded files for next implementation task (maximum neighborhood)
+
+| Path | Allowed change |
+| ---- | -------------- |
+| `intergrax/integrations/contracts/scoped_integration_adaptation.py` | Context, resource Protocols, port signature |
+| `intergrax/integrations/contracts/credential.py` | Only if credential-use resource types fit credential contract ownership |
+| `intergrax/integrations/qualification/reference_scoped_adaptive_integration_execution.py` | Composer, reference provider, reference operation |
+| `intergrax/integrations/qualification/scoped_adaptive_integration_execution_runtime_delegate.py` | Wiring only if needed |
+| `intergrax/integrations/qualification/scoped_adaptive_integration_execution_intake.py` | Composition wiring |
+| `tests/unit/autonomous_work/test_aw_7c_closure_scoped_adaptive_integration_execution.py` | Adversarial + binding proofs |
+| `tests/unit/autonomous_work/test_aw_7c_closure_architecture_gates.py` | Static gates |
+| `tests/unit/autonomous_work/test_aw_7c_cert_scoped_adaptive_integration_execution.py` | If invariants overlap |
+| AW-7C architecture/qualification docs | Evidence text only |
+
+**Out of scope without STOP — ARCHITECTURE DECISION REQUIRED:** Sandbox substrate ownership changes, new broker, AW-owned session manager, Nexus/ToolRuntime shortcuts.
+
+### R1-ARCH — Exit questionnaire (audit checklist)
+
+| # | Question | Locked answer |
+| - | -------- | ------------- |
+| 1 | Sanctioned contract for execution-bound resources? | `ScopedAdaptedIntegrationOperationExecutionContext` + sandbox/credential resource Protocols |
+| 2 | Owner? | Integrations contracts |
+| 3 | Composer? | Integrations execution composer on canonical delegate path |
+| 4 | ExecutionId owner? | Canonical Execution |
+| 5 | Sandbox session truth? | Sandbox admitted session (`SandboxSecurityCapable` + resource binding) |
+| 6 | Credential resolution owner? | `ExecutionBoundCredentialGrantProvider` + `ScopedCredentialBroker` |
+| 7 | Same attested session for effect? | Single resource object + `session_binding_fingerprint` |
+| 8 | Credential tied to execution/tenant/operation? | Grant + scope + single-use credential resource |
+| 9 | Why no unsanctioned plugin path? | Operation port cannot run without resource APIs; material not passed loosely |
+| 10 | Structural replaceability? | Same context contract for all port implementations |
+| 11 | Tenant/operation identity? | Frozen context + multi-point equality |
+| 12 | Fail closed before work? | Composer gating + resource design |
+| 13 | Production files list? | See bounded table above |
+| 14 | Tests? | Closure + CERT adversarial extensions listed above |
+| 15 | New authority? | **NO** |
 

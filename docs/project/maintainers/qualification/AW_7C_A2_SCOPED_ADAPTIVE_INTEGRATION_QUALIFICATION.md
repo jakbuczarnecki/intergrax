@@ -95,6 +95,16 @@ Sections 1–13 below retain **historical** prerequisite audit unless explicitly
 | **CERT carry-over fixes** | Canonical execution identity via `ExecutionRuntime`; typed `ExecutionBoundCredentialGrantProvider`; explicit operation on `ScopedAdaptedIntegrationOperationPort`; execution-bound `SandboxSecurityCapable` session |
 | **Scoped FRZ evidence** | Same families as CERT/P4 (EXE, GOV, CTR, SEC, TRC, TEN-local); **global FRZ PASS delta = 0** until checklist owner audit |
 | **Tests** | `test_aw_7c_closure_scoped_adaptive_integration_execution.py`, `test_aw_7c_closure_architecture_gates.py` |
+| **Post-audit blocker** | Operation port not bound to broker/sandbox resources — parent **NOT CLOSED** until **AW-7C-CLOSURE-R1** runtime completes |
+
+## AW-7C-CLOSURE-R1-ARCH (READY FOR AUDIT)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **READY FOR AUDIT** — architecture lock only; **0** production delta in R1-ARCH task |
+| **Architecture** | `docs/project/maintainers/architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md` § AW-7C-CLOSURE-R1-ARCH |
+| **Certification criteria (future R1 runtime)** | (1) `ScopedAdaptedIntegrationOperationExecutionContext` mandatory on `ScopedAdaptedIntegrationOperationPort.execute`; (2) single-use `ScopedAdaptedIntegrationCredentialUseResource` after `ScopedCredentialBroker.resolve_scoped`; (3) `ScopedAdaptedIntegrationSandboxExecutionResource` same instance as attestation; (4) reference grant provider enforces provider-owned facts vs caller binding keys; (5) adversarial tests — bypass port, wrong tenant/grant/session/operation — fail before `EXECUTED`; (6) **no new authority** |
+| **Global FRZ** | **0** checklist PASS deltas from R1-ARCH |
 
 ---
 
