@@ -1,0 +1,106 @@
+{
+  "cleanup_phases": [
+    {
+      "destroyed": true,
+      "error": null,
+      "session_id": "igx-qual-ae0815c3f0"
+    },
+    {
+      "destroyed": true,
+      "error": null,
+      "session_id": "igx-qual-a1124e3360"
+    },
+    {
+      "destroyed": true,
+      "error": null,
+      "session_id": "igx-qual-3967718544"
+    }
+  ],
+  "control_phase": {
+    "allowed_host": {
+      "result": {
+        "latency_ms": 78.60394299950713,
+        "reachable": true,
+        "redirect_target": "http://allowed.test:18080",
+        "redirected": false,
+        "status_code": 200
+      },
+      "target": "http://allowed.test:18080"
+    },
+    "baseline_valid": true,
+    "denied_host": {
+      "result": {
+        "latency_ms": 64.47263799964276,
+        "reachable": true,
+        "redirect_target": "http://denied.test:18081",
+        "redirected": false,
+        "status_code": 200
+      },
+      "target": "http://denied.test:18081"
+    }
+  },
+  "execution_reference": "reference-physical-egress-causal-proof:33b06a80-58ae-470e-a0b8-b3865cb2a3eb",
+  "provider_identity": "reference-substrate-qualification",
+  "qualified_phase": {
+    "allowed_host": {
+      "result": {
+        "latency_ms": 66.78991799981304,
+        "reachable": true,
+        "redirect_target": "http://allowed.test:18080",
+        "redirected": false,
+        "status_code": 200
+      },
+      "target": "http://allowed.test:18080"
+    },
+    "attestation_correlation": {
+      "attestation_verified": true,
+      "attested_scope": [
+        "http://allowed.test:18080"
+      ],
+      "correlation_result": "PASS",
+      "execution_verified": true,
+      "observed_scope": {
+        "allowed_reachable": true,
+        "allowed_target": "http://allowed.test:18080",
+        "denied_reachable": false,
+        "denied_target": "http://denied.test:18081"
+      },
+      "requested_scope": [
+        "http://allowed.test:18080"
+      ]
+    },
+    "denied_host": {
+      "result": {
+        "latency_ms": 20087.345029999597,
+        "reachable": false,
+        "redirect_target": null,
+        "redirected": false,
+        "status_code": null
+      },
+      "target": "http://denied.test:18081"
+    },
+    "provider_attestation": {
+      "enforced_network_hosts": [
+        "http://allowed.test:18080"
+      ],
+      "network_egress_allowlist_enforced": true,
+      "provider_id": "reference-substrate-qualification"
+    }
+  },
+  "redirect_phase": {
+    "redirect": {
+      "attempted": true,
+      "escaped": false,
+      "redirect_url": "http://allowed.test:18080/redirect-to-denied",
+      "result": {
+        "latency_ms": 20086.638494,
+        "reachable": false,
+        "redirect_target": null,
+        "redirected": false,
+        "status_code": null
+      }
+    }
+  },
+  "scenario_id": "reference-physical-egress-causal-proof",
+  "timestamp_utc": "2026-09-29T07:40:51+00:00"
+}

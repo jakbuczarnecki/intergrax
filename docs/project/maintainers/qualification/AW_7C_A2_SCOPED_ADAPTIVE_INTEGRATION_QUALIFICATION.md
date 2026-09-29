@@ -433,3 +433,94 @@ AW-7C: BLOCKED BY PREREQUISITE (physical capability proof pending operator Linux
 ```
 
 **Production Python changes:** **0** (qualification + documentation only).
+
+---
+
+## AW-7C-P0-3B-PHYSQ — Provider-Neutral Physical Qualification — READY FOR AUDIT
+
+**Stage:** AW-7C-P0-3B-PHYSQ-DOCKER-RUN  
+**Parent:** AW-7C-P0-3B  
+**Program parent:** AW-7C  
+**Next mandatory program parent after AW-7C:** EBH-3 (not entered)
+
+**Qualified code baseline:** `d44a238dbe0d23dd9b864297175f54e663cfee3d`
+
+**Execution environment:** Docker Desktop 4.38.0 (181591), Linux engine 27.5.1, privileged disposable `ubuntu:24.04` container (qualification execution environment only — not a runtime provider).
+
+| Component | Value |
+|-----------|--------|
+| Container image | `ubuntu:24.04` |
+| Kernel (container view) | `6.18.33.2-microsoft-standard-WSL2` |
+| uid | `0` (root) |
+| Firewall substrate | nftables v1.0.9 |
+| Python | 3.12.3 |
+| uv | 0.12.20 |
+| `UV_PROJECT_ENVIRONMENT` | `/opt/intergrax-venv` (container-local; repo `.venv` untouched) |
+| `UV_CACHE_DIR` | `/opt/uv-cache` |
+
+**Execution path (unchanged):** `QualificationRunner` → `QualificationSandboxProvider` → `HostedSandboxSession` → `SandboxHostBackend` / `ReferenceSandboxBackend` → Linux network namespace → nftables → sandbox process. **Direct host-side substitute proof:** NO.
+
+**Command #1 (dedicated PHYSQ):**
+
+```text
+uv run pytest tests/integration/runtime/sandbox/reference_substrate/test_reference_physical_egress_qualification.py -p no:xdist -q -rs
+```
+
+**Result #1:** `12 passed in 124.86s` — 0 failed, 0 skipped, 0 xfailed.
+
+**Command #2 (full reference substrate):**
+
+```text
+uv run pytest tests/integration/runtime/sandbox/reference_substrate/ -p no:xdist -q -rs
+```
+
+**Result #2:** `80 passed in 124.75s` — 0 failed, 0 skipped.
+
+### Causal proof (machine evidence)
+
+| Phase | Outcome |
+|-------|---------|
+| **Control** | `allowed.test:18080` reachable; `denied.test:18081` reachable; `baseline_valid=true` |
+| **Qualified** | allowed reachable; denied **not** reachable |
+| **Redirect** | attempted; `escaped=false` |
+| **Attestation** | `network_egress_allowlist_enforced=true`; kernel-derived effective allowlist includes `http://allowed.test:18080`, excludes `http://denied.test:18081`; `ProviderAttestationCorrelation` → `PASS` |
+
+**Kernel evidence source:** `ip netns exec <netns> nft -n list ruleset` (reference substrate firewall readback — request echo not used as evidence).
+
+**Cleanup:** all `cleanup_phases` records `destroyed=true`, `error=null`. Post-suite residual checks: no `igx-qual-*` netns; no qualification veth; no `/etc/netns/igx-qual-*`; no `10.200.42.3/32` harness residue; no listeners on `18080`/`18081`.
+
+**Machine evidence (this run only):**
+
+| Field | Value |
+|-------|--------|
+| `execution_reference` | `reference-physical-egress-causal-proof:33b06a80-58ae-470e-a0b8-b3865cb2a3eb` |
+| `timestamp_utc` | `2026-09-29T07:40:51+00:00` |
+| `scenario_id` | `reference-physical-egress-causal-proof` |
+| `provider_identity` | `reference-substrate-qualification` |
+| Generated path (session) | `.tmp/session/reference-physical-egress-qualification/reference-physical-egress-causal-proof-33b06a80-58ae-470e-a0b8-b3865cb2a3eb.json` |
+| Committed copy | `docs/project/maintainers/qualification/AW_7C_P0_3B_PHYSQ_EVIDENCE.json` |
+| SHA-256 (exact generated file) | `252122e2a533b89f4bb8f4cb5f14b2897e9c620ada928e282e2f1b783a967651` |
+| Secret scan | clean (no token/credential/operator path) |
+
+**Threat model (scoped):**
+
+- **Establishes:** real Linux netns execution; kernel-level egress enforcement; allowed endpoint reachability; denied endpoint blocked; redirect escape blocked; kernel attestation ↔ effective scope ↔ observed connectivity; harness cleanup on qualification substrate.
+- **Does NOT establish:** E2B/Modal/Daytona production correctness; cloud IAM; hostile kernel escape; public DNS rebinding/CDN; production-provider cleanup guarantees (PROD-Q).
+
+**Tenant Isolation Audit:** **N/A — WITH EVIDENCE** — synthetic qualification tenant/session IDs only; no production tenant semantics, credentials, or provider selection changes.
+
+**FRZ scoped contribution (evidence candidate only):** FRZ-SEC-05, FRZ-SEC-07, FRZ-REG-02, FRZ-REG-03, FRZ-REG-06, FRZ-REG-08. **new global FRZ PASS = 0**. FRZ-SEC-06, FRZ-PRD-02, FRZ-PRD-05 remain **OPEN**.
+
+**physical PASS candidate = YES**  
+**independent audit = PENDING**
+
+**AW-7C-P0-3B-PHYSQ verdict:**
+
+```text
+AW-7C-P0-3B-PHYSQ: READY FOR AUDIT (physical PASS candidate; independent exact-GitHub-SHA audit pending)
+AW-7C-P0-3B: BLOCKED pending independent PHYSQ audit
+AW-7C: BLOCKED BY PREREQUISITE pending independent PHYSQ audit
+EBH-3: PLANNED / NOT ENTERED
+```
+
+**Production Python changes (this stage):** **0**. **Platform contracts:** **0**.
