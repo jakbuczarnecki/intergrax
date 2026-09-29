@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 from enum import StrEnum
+from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.autonomous_work._validation import (
     freeze_tuple,
@@ -37,7 +38,6 @@ from intergrax.contracts.capability_qualification.qualification_subject import (
 )
 from intergrax.integrations.contracts.scoped_integration_adaptation import (
     ScopedIntegrationAdaptationArtifact,
-    ScopedIntegrationAdaptationPort,
     ScopedIntegrationAdaptationScope,
 )
 
@@ -204,7 +204,14 @@ class ScopedAdaptiveIntegrationPreparationResult:
                 raise ValueError("QUALIFICATION_PENDING requires qualification_request")
 
 
-WorkerScopedAdaptiveIntegrationOrchestrationPort = ScopedIntegrationAdaptationPort
+@runtime_checkable
+class WorkerScopedAdaptiveIntegrationOrchestrationPort(Protocol):
+    def prepare(
+        self,
+        request: ScopedAdaptiveIntegrationExecutionRequest,
+        *,
+        prepared_at: datetime | None = None,
+    ) -> ScopedAdaptiveIntegrationPreparationResult: ...
 
 
 def validate_a2_scoped_adaptive_integration_eligibility(

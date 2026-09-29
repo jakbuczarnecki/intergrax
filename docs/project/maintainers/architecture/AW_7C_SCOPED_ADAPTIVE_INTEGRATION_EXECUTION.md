@@ -11,8 +11,8 @@
 | **Status** | **CLOSED / independently accepted through R1 remediation** — design lock only; **no A2 production implementation** |
 | **Production / tests / contracts in P1 / R1** | **0** |
 | **Prerequisites** | AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ **CLOSED / accepted** (egress substrate evidence) |
-| **Next implementation** | `AW-7C-P2` — **READY FOR AUDIT** (implementation pending independent SHA audit) |
-| **Program** | `AW-7C` — **CURRENT**; `AW-7C-P3` — **NEXT / NOT ENTERED** |
+| **Next implementation** | `AW-7C-P2` + integrated P2 hardening — **READY FOR AUDIT**; `AW-7C-P3` — **READY FOR AUDIT** (reference strategy + replaceability; pending independent SHA audit) |
+| **Program** | `AW-7C` — **CURRENT**; `AW-7C-P4` — **NEXT / NOT ENTERED** |
 
 **Scope:** lock reusable platform semantics for **A2 scoped adaptive integration**: from `SCOPED_ADAPTATION_CANDIDATE` through bounded adaptation, qualification, Governance/runtime admission, and **canonical Execution** — without a parallel runtime, AW-owned integration registry, or A1 bypass.
 
@@ -796,4 +796,22 @@ AW
 | **Integrations** | `scoped_integration_adaptation.py`, `ScopedIntegrationAdaptationService`, scope/artifact fingerprints, strategy SPI |
 | **AW** | `scoped_adaptive_integration.py` contracts + `WorkerScopedAdaptiveIntegrationOrchestrationService` → `QUALIFICATION_PENDING` |
 | **Tests** | `test_aw_7c_p2_qualification_subject.py`, `test_scoped_integration_adaptation_service.py`, `test_scoped_adaptive_integration_service.py`, `test_aw_7c_p2_architecture_gates.py` |
-| **Deferred** | P3 reference strategy; P4 `qualify()` + Governance/Execution; CERT adversarial tenant global close |
+| **Deferred** | P4 `qualify()` + Governance/Execution; CERT adversarial tenant global close |
+
+## AW-7C-P2 carry-over hardening + AW-7C-P3 (READY FOR AUDIT)
+
+| Item | Detail |
+| ---- | ------ |
+| **P2 baseline** | `d5e0b4b7dcfc0bd82d746f491c405cc73f8d73de` |
+| **Status** | **READY FOR AUDIT** — not CLOSED (independent GitHub SHA audit required) |
+| **Port ownership** | `WorkerScopedAdaptiveIntegrationOrchestrationPort.prepare(...)` (AW) ≠ `ScopedIntegrationAdaptationPort.adapt(...)` (Integrations); orchestration service consumes Integrations port only |
+| **Target truth** | `ScopedIntegrationAdaptationTargetResolver` (Integrations) + `IntegrationIdentityScopedIntegrationAdaptationTargetResolver`; AW does not construct `ScopedIntegrationAdaptationTarget` |
+| **Identity continuity** | Mandatory equality across request / scope / resolved target / artifact / artifact.scope (tenant, category, provider, resource_scope, candidate id/revision) |
+| **Revision** | Exact `candidate_revision` continuity; **no** lexical `min_candidate_revision` / string ordering |
+| **Operations** | `ScopedIntegrationAdaptationOperationId` extensible value object (no closed platform enum at SPI boundary) |
+| **Reference strategy** | `intergrax/integrations/qualification/reference_scoped_integration_adaptation.py` — explicit DI only; **not** production default |
+| **Replaceability proof** | Reference strategy A + alternate test strategy B; 0 → `STRATEGY_UNAVAILABLE`; >1 → `STRATEGY_AMBIGUOUS`; duplicate `strategy_id` → fail closed |
+| **CQ legacy tests** | All direct `CapabilityQualificationRequest(` constructors migrated to `build_acquisition_qualification_request` / `build_subject_qualification_request` |
+| **Tests (targeted)** | `test_scoped_integration_adaptation_service.py`, `test_scoped_adaptive_integration_service.py`, `test_aw_7c_p3_scoped_adaptive_integration.py`, `test_aw_7c_p3_architecture_gates.py`, CQ suites + migrated UCA consumers |
+| **Remaining** | P4 orchestrated `qualify()`, Governance, Execution, credential resolution, sandbox attestation consumption |
+

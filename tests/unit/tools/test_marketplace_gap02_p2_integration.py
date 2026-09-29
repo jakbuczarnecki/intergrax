@@ -56,8 +56,7 @@ from intergrax.contracts.capability_qualification.qualification_outcome import (
     CapabilityQualificationOutcome,
 )
 from intergrax.contracts.capability_qualification.qualification_request import (
-    CapabilityQualificationRequest,
-    derive_capability_qualification_request_id,
+    build_acquisition_qualification_request,
 )
 from intergrax.contracts.execution_identity import TaskId
 from intergrax.contracts.marketplace import MarketplaceListingRecord, MarketplaceQueryContext
@@ -208,16 +207,9 @@ def _run_tenant_flow(tenant_id: str, *, request_nonce: str) -> None:
     assert acquisition.evidence.evidence_ref is not None
     assert acquisition.evidence.artifact_reference is None
 
-    qual_request = CapabilityQualificationRequest(
-        qualification_request_id=derive_capability_qualification_request_id(
-            acquisition_request_id=acquisition_id,
-            qualification_nonce=f"nonce-{tenant_id}",
-        ),
-        qualification_nonce=f"nonce-{tenant_id}",
-        acquisition_request_id=acquisition_id,
-        gap_id=acquisition.gap_id,
-        strategy_id=MARKETPLACE_GAP_ACQUISITION_STRATEGY_ID,
+    qual_request = build_acquisition_qualification_request(
         acquisition_result=acquisition,
+        qualification_nonce=f"nonce-{tenant_id}",
         requested_at=_NOW,
     )
     stage_repo = DocumentStoreMarketplaceQualifiedToolStageRepository(store)

@@ -26,7 +26,7 @@
 | **Purpose** | Contract-boundary and ownership lock for A2 scoped adaptive integration execution — **no A2 production implementation** |
 | **Canonical architecture** | [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) |
 | **A2 execution service on baseline** | **None** (gap documented; P2+ implements) |
-| **Next work** | **AW-7C-P2** — **READY FOR AUDIT** (implementation on `development`; independent SHA audit required) |
+| **Next work** | **AW-7C-P2** + **AW-7C-P3** — **READY FOR AUDIT** (integrated hardening + reference strategy on `development`; independent SHA audit required) |
 | **Global FRZ** | No PASS delta from P1-ARCH / R1 |
 
 Sections 1–13 below retain **historical** prerequisite audit unless explicitly superseded above.
@@ -51,9 +51,18 @@ Sections 1–13 below retain **historical** prerequisite audit unless explicitly
 | **Scope** | Docs-only architecture remediation — **no** production code, contracts, or tests |
 | **Blocker A closure** | `ScopedIntegrationAdaptationScope` owned by **Integrations** (`intergrax/integrations/contracts/`); AW supplies immutable instance on orchestration request only |
 | **Blocker B closure** | `CapabilityQualificationSubject` owned by **Capability Qualification**; deterministic projections from `ScopedIntegrationAdaptationArtifact` and from successful `CapabilityAcquisitionResult`; single UCA-4 mechanism; V1→subject migration direction locked |
-| **Parent effect** | **AW-7C-P1-ARCH** = **CLOSED**; **AW-7C** = **CURRENT**; **AW-7C-P2** = **READY FOR AUDIT**; **AW-7C-P3** = **NEXT / NOT ENTERED** |
+| **Parent effect** | **AW-7C-P1-ARCH** = **CLOSED**; **AW-7C** = **CURRENT**; **AW-7C-P2** = **READY FOR AUDIT**; **AW-7C-P3** = **READY FOR AUDIT**; **AW-7C-P4** = **NEXT / NOT ENTERED** |
 | **Global FRZ** | **new global FRZ PASS = 0**; **new FRZ-TEN PASS = 0** |
 | **R1 gates (mechanical)** | 38 passed; 4 passed — architecture-doc gate only; not code/behavior proof of P2+ |
+
+## AW-7C-P3 scoped qualification evidence (READY FOR AUDIT)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **READY FOR AUDIT** — not CLOSED |
+| **Scoped evidence** | Replaceability, resolver negatives, scope narrowing, tenant-local adversarial rejection, pure path to `QUALIFICATION_PENDING` without `qualify()` / Governance / Execution |
+| **FRZ (scoped; global statuses OPEN)** | FRZ-OWN-01..03, FRZ-CTR-01..06, FRZ-TYP-01..04, FRZ-TYP-06, FRZ-PLG-01..02, FRZ-RPL-01..02, FRZ-GOV-09, FRZ-TRC-10; FRZ-TEN-01, FRZ-TEN-02, FRZ-TEN-07, FRZ-TEN-10, FRZ-TEN-11, FRZ-TEN-12 |
+| **Deferred** | P4 orchestrated qualification; CERT global tenant close |
 
 ---
 

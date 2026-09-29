@@ -34,8 +34,7 @@ from intergrax.contracts.capability_catalog.federation import (
 from intergrax.contracts.capability_catalog.kind import CapabilityKind
 from intergrax.contracts.capability_catalog.need import CapabilityNeed
 from intergrax.contracts.capability_qualification.qualification_request import (
-    CapabilityQualificationRequest,
-    derive_capability_qualification_request_id,
+    build_acquisition_qualification_request,
 )
 from intergrax.contracts.codecraft.gap_synthesis import (
     CodeCraftGapSynthesisOutcome,
@@ -195,21 +194,12 @@ def test_succeeded_result_is_qualification_request_compatible() -> None:
     )
     strategy = CodeCraftGapCapabilityAcquisitionStrategy(port)
     acquisition = strategy.acquire(req)
-    qual = CapabilityQualificationRequest(
-        qualification_request_id=derive_capability_qualification_request_id(
-            acquisition_request_id=req.request_id,
-            qualification_nonce="q-nonce",
-        ),
-        qualification_nonce="q-nonce",
-        acquisition_request_id=req.request_id,
-        gap_id=gap.gap_id,
-        strategy_id=CODECRAFT_GAP_SYNTHESIS_STRATEGY_ID,
+    qual = build_acquisition_qualification_request(
         acquisition_result=acquisition,
-        correlation_id=req.correlation_id,
-        causation_id=req.causation_id,
+        qualification_nonce="q-nonce",
         requested_at=_CREATED,
     )
-    assert qual.acquisition_result.outcome is CapabilityAcquisitionOutcome.SUCCEEDED
+    assert qual.subject.acquisition_lineage is not None
 
 
 def test_outcome_mappings() -> None:

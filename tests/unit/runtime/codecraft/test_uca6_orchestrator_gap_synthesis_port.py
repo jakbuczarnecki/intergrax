@@ -19,8 +19,7 @@ from intergrax.contracts.codecraft.gap_synthesis import (
     CodeCraftGapSynthesisRequest,
 )
 from intergrax.contracts.capability_qualification.qualification_request import (
-    CapabilityQualificationRequest,
-    derive_capability_qualification_request_id,
+    build_acquisition_qualification_request,
 )
 from intergrax.contracts.human_approver import local_development_approver_evidence
 from intergrax.contracts.execution_identity import (
@@ -370,18 +369,9 @@ def test_production_port_qualification_compatible(tmp_path: Path) -> None:
     assert (
         acquisition.evidence.artifact_reference == f"codecraft:artifact:{operation_id}"
     )
-    qual = CapabilityQualificationRequest(
-        qualification_request_id=derive_capability_qualification_request_id(
-            acquisition_request_id=req.request_id,
-            qualification_nonce="q-nonce",
-        ),
-        qualification_nonce="q-nonce",
-        acquisition_request_id=req.request_id,
-        gap_id=gap.gap_id,
-        strategy_id=CODECRAFT_GAP_SYNTHESIS_STRATEGY_ID,
+    qual = build_acquisition_qualification_request(
         acquisition_result=acquisition,
-        correlation_id=req.correlation_id,
-        causation_id=req.causation_id,
+        qualification_nonce="q-nonce",
         requested_at=created,
     )
-    assert qual.acquisition_result.outcome is CapabilityAcquisitionOutcome.SUCCEEDED
+    assert qual.subject.acquisition_lineage is not None

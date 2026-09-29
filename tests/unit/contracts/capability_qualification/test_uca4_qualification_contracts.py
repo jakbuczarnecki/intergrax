@@ -287,54 +287,42 @@ def _matching_evidence(
 def test_correlation_exact_match_required() -> None:
     gap = _gap()
     acquisition = _succeeded_acquisition(gap)
-    subject = _subject(acquisition)
+    base = build_acquisition_qualification_request(
+        acquisition_result=acquisition,
+        qualification_nonce="n",
+        requested_at=_CREATED,
+    )
     with pytest.raises(ValueError, match="correlation_id"):
-        CapabilityQualificationRequest(
-            qualification_request_id=derive_capability_qualification_request_id(
-                subject_id=subject.subject_id,
-                qualification_nonce="n",
-            ),
-            qualification_nonce="n",
-            subject=subject,
-            correlation_id="corr-B",
-            causation_id=acquisition.causation_id,
-            requested_at=_CREATED,
+        CapabilityQualificationRequest.model_validate(
+            {**base.model_dump(), "correlation_id": "corr-B"},
         )
 
 
 def test_correlation_dropped_rejected() -> None:
     gap = _gap()
     acquisition = _succeeded_acquisition(gap)
-    subject = _subject(acquisition)
+    base = build_acquisition_qualification_request(
+        acquisition_result=acquisition,
+        qualification_nonce="n",
+        requested_at=_CREATED,
+    )
     with pytest.raises(ValueError, match="correlation_id"):
-        CapabilityQualificationRequest(
-            qualification_request_id=derive_capability_qualification_request_id(
-                subject_id=subject.subject_id,
-                qualification_nonce="n",
-            ),
-            qualification_nonce="n",
-            subject=subject,
-            correlation_id=None,
-            causation_id=acquisition.causation_id,
-            requested_at=_CREATED,
+        CapabilityQualificationRequest.model_validate(
+            {**base.model_dump(), "correlation_id": None},
         )
 
 
 def test_causation_mismatch_rejected() -> None:
     gap = _gap()
     acquisition = _succeeded_acquisition(gap)
-    subject = _subject(acquisition)
+    base = build_acquisition_qualification_request(
+        acquisition_result=acquisition,
+        qualification_nonce="n",
+        requested_at=_CREATED,
+    )
     with pytest.raises(ValueError, match="causation_id"):
-        CapabilityQualificationRequest(
-            qualification_request_id=derive_capability_qualification_request_id(
-                subject_id=subject.subject_id,
-                qualification_nonce="n",
-            ),
-            qualification_nonce="n",
-            subject=subject,
-            correlation_id=acquisition.correlation_id,
-            causation_id="cause-wrong",
-            requested_at=_CREATED,
+        CapabilityQualificationRequest.model_validate(
+            {**base.model_dump(), "causation_id": "cause-wrong"},
         )
 
 

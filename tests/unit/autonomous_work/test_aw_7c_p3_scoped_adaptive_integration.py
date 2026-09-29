@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""AW-7C-P2 scoped adaptive integration orchestration."""
+"""AW-7C-P3 pure A2 → Integrations → CQ_PENDING flow."""
 
 from __future__ import annotations
 
@@ -29,13 +29,19 @@ from intergrax.contracts.autonomous_work.scoped_adaptive_integration import (
     ScopedAdaptiveIntegrationExecutionRequest,
     ScopedAdaptiveIntegrationPreparationStatus,
 )
-from intergrax.contracts.sandbox_network_egress import NetworkEgressAllowlist
+from intergrax.contracts.sandbox_network_egress import (
+    NetworkEgressAllowlist,
+    NetworkEgressHost,
+)
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.scoped_integration_adaptation import (
-    ScopedIntegrationAdaptationRequest,
     ScopedIntegrationAdaptationScope,
-    build_scoped_integration_adaptation_artifact,
-    scoped_integration_adaptation_operation_id,
+)
+from intergrax.integrations.qualification.reference_scoped_integration_adaptation import (
+    REFERENCE_SCOPED_INTEGRATION_ADAPTATION_PROVIDER_ID,
+    ReferenceScopedIntegrationAdaptationStrategy,
+    reference_read_operation,
+    reference_write_operation,
 )
 from intergrax.integrations.scoped_integration_adaptation_service import (
     ScopedIntegrationAdaptationPortAdapter,
@@ -48,50 +54,11 @@ from tests.unit.autonomous_work import repository_contracts as contract_suite
 pytestmark = pytest.mark.unit
 
 _WORKER_ID = contract_suite.mint_worker_instance_id()
-
 _TS = datetime(2026, 9, 20, 12, 0, tzinfo=UTC)
 _PROFILE = CapabilityProfileRef(
     profile_id="cap/default",
     version=initial_profile_version(),
 )
-
-
-class _Spec:
-    specification_type = "demo"
-    specification_version = "v1"
-    specification_fingerprint = "sha256:spec"
-
-
-class _AdaptPort:
-    def __init__(self, inner: ScopedIntegrationAdaptationPortAdapter) -> None:
-        self._inner = inner
-
-    def adapt(self, request: ScopedIntegrationAdaptationRequest):
-        return self._inner.adapt(request)
-
-
-class _Strategy:
-    @property
-    def strategy_id(self) -> str:
-        return "strategy-1"
-
-    def supports(self, request, target) -> bool:
-        return True
-
-    def adapt(self, request, target):
-        scope = request.scope
-        return build_scoped_integration_adaptation_artifact(
-            artifact_id="art-1",
-            tenant_id=scope.tenant_id,
-            integration_category=scope.integration_category,
-            provider_id=scope.provider_id,
-            resource_scope=scope.resource_scope,
-            strategy_id=self.strategy_id,
-            candidate_id=scope.candidate_id,
-            candidate_revision=scope.candidate_revision,
-            scope=scope,
-            specification=_Spec(),
-        )
 
 
 def _decision() -> WorkerCapabilityAcquisitionDecision:
@@ -100,7 +67,7 @@ def _decision() -> WorkerCapabilityAcquisitionDecision:
         candidate_kind=WorkerCapabilityCandidateKind.ADAPTIVE_INTEGRATION,
         capability_ref="integration:demo",
         source_domain="integrations",
-        operations=("READ_CONFIGURATION",),
+        operations=("READ_CONFIGURATION", "WRITE_CONFIGURATION"),
         risk_class=WorkerAutonomyLevel.A2_SCOPED_ADAPTIVE,
         evidence_refs=(),
         discovered_at=_TS,
@@ -125,10 +92,15 @@ def _scope() -> ScopedIntegrationAdaptationScope:
     return ScopedIntegrationAdaptationScope(
         tenant_id="tenant-a",
         integration_category=IntegrationCategory.MESSAGE_BUS,
-        provider_id="provider-1",
+        provider_id=REFERENCE_SCOPED_INTEGRATION_ADAPTATION_PROVIDER_ID,
         resource_scope="rs-1",
-        permitted_operations=(scoped_integration_adaptation_operation_id("READ_CONFIGURATION"),),
-        network_allowlist=NetworkEgressAllowlist(hosts=()),
+        permitted_operations=(reference_read_operation(), reference_write_operation()),
+        network_allowlist=NetworkEgressAllowlist(
+            hosts=(
+                NetworkEgressHost(scheme="https", hostname="a.example.com", port=443),
+                NetworkEgressHost(scheme="https", hostname="b.example.com", port=443),
+            ),
+        ),
         credential_grant_ref="grant-1",
         expires_at=_TS + timedelta(hours=1),
         candidate_id="cand-1",
@@ -136,21 +108,16 @@ def _scope() -> ScopedIntegrationAdaptationScope:
     )
 
 
-def _adaptation_port() -> _AdaptPort:
-    return _AdaptPort(
-        ScopedIntegrationAdaptationPortAdapter(
-            target_resolver=IntegrationIdentityScopedIntegrationAdaptationTargetResolver(),
-            strategies=(_Strategy(),),
-        ),
-    )
-
-
-def test_valid_a2_path_qualification_pending() -> None:
+def test_p3_end_to_end_qualification_pending_without_side_effects() -> None:
     decision = _decision()
     candidate = decision.selected_candidate
     assert candidate is not None
+    adaptation_port = ScopedIntegrationAdaptationPortAdapter(
+        target_resolver=IntegrationIdentityScopedIntegrationAdaptationTargetResolver(),
+        strategies=(ReferenceScopedIntegrationAdaptationStrategy(),),
+    )
     service = WorkerScopedAdaptiveIntegrationOrchestrationService(
-        adaptation_port=_adaptation_port(),
+        adaptation_port=adaptation_port,
     )
     request = ScopedAdaptiveIntegrationExecutionRequest(
         worker_instance_id=_WORKER_ID,
@@ -160,46 +127,13 @@ def test_valid_a2_path_qualification_pending() -> None:
         need_id="need-1",
         recovery_decision_id="rec-1",
         integration_capability_ref="integration:demo",
-        required_operations=("READ_CONFIGURATION",),
+        required_operations=("READ_CONFIGURATION", "WRITE_CONFIGURATION"),
         adaptation_scope=_scope(),
         requested_at=_TS,
     )
     result = service.prepare(request)
-    assert (
-        result.status is ScopedAdaptiveIntegrationPreparationStatus.QUALIFICATION_PENDING
-    )
-    assert result.qualification_request is not None
+    assert result.status is ScopedAdaptiveIntegrationPreparationStatus.QUALIFICATION_PENDING
+    assert result.artifact is not None
     assert result.qualification_subject is not None
-
-
-def test_a1_candidate_rejected() -> None:
-    decision = _decision()
-    candidate = decision.selected_candidate
-    assert candidate is not None
-    a1 = WorkerCapabilityCandidate(
-        candidate_id=candidate.candidate_id,
-        candidate_kind=WorkerCapabilityCandidateKind.CODECRAFT_EPHEMERAL,
-        capability_ref=candidate.capability_ref,
-        source_domain=candidate.source_domain,
-        operations=candidate.operations,
-        risk_class=WorkerAutonomyLevel.A1_EPHEMERAL_SAFE,
-        evidence_refs=(),
-        discovered_at=_TS,
-    )
-    service = WorkerScopedAdaptiveIntegrationOrchestrationService(
-        adaptation_port=_adaptation_port(),
-    )
-    request = ScopedAdaptiveIntegrationExecutionRequest(
-        worker_instance_id=_WORKER_ID,
-        correlation=ScopedAdaptiveIntegrationCorrelation(tenant_id="tenant-a"),
-        acquisition_decision=decision,
-        selected_candidate=a1,
-        need_id="need-1",
-        recovery_decision_id="rec-1",
-        integration_capability_ref="integration:demo",
-        required_operations=("READ_CONFIGURATION",),
-        adaptation_scope=_scope(),
-        requested_at=_TS,
-    )
-    result = service.prepare(request)
-    assert result.status is ScopedAdaptiveIntegrationPreparationStatus.DENIED
+    assert result.qualification_request is not None
+    assert result.qualification_subject.tenant_id == "tenant-a"

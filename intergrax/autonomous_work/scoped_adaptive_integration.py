@@ -13,7 +13,6 @@ from intergrax.contracts.autonomous_work.scoped_adaptive_integration import (
     ScopedAdaptiveIntegrationFailureReason,
     ScopedAdaptiveIntegrationPreparationResult,
     ScopedAdaptiveIntegrationPreparationStatus,
-    WorkerScopedAdaptiveIntegrationOrchestrationPort,
     validate_a2_scoped_adaptive_integration_eligibility,
 )
 from intergrax.contracts.capability_qualification.qualification_request import (
@@ -24,8 +23,8 @@ from intergrax.contracts.capability_qualification.qualification_subject import (
 )
 from intergrax.integrations.contracts.scoped_integration_adaptation import (
     ScopedIntegrationAdaptationError,
+    ScopedIntegrationAdaptationPort,
     ScopedIntegrationAdaptationRequest,
-    ScopedIntegrationAdaptationTarget,
 )
 
 
@@ -35,7 +34,7 @@ class WorkerScopedAdaptiveIntegrationOrchestrationService:
     def __init__(
         self,
         *,
-        adaptation_port: WorkerScopedAdaptiveIntegrationOrchestrationPort,
+        adaptation_port: ScopedIntegrationAdaptationPort,
         qualification_nonce: str = "qual-a2-1",
     ) -> None:
         self._adaptation_port = adaptation_port
@@ -59,13 +58,6 @@ class WorkerScopedAdaptiveIntegrationOrchestrationService:
             provider_id=scope.provider_id,
             resource_scope=scope.resource_scope,
             scope=scope,
-            target=ScopedIntegrationAdaptationTarget(
-                tenant_id=scope.tenant_id,
-                integration_category=scope.integration_category,
-                provider_id=scope.provider_id,
-                resource_scope=scope.resource_scope,
-                current_revision=scope.candidate_revision,
-            ),
             correlation_id=request.correlation.correlation_id,
             causation_id=request.acquisition_decision.decision_id,
         )

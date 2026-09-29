@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Typed scoped integration adaptation contracts (AW-7C-P2)."""
+"""Typed scoped integration adaptation contracts (AW-7C-P2/P3)."""
 
 from __future__ import annotations
 
@@ -13,13 +13,6 @@ from typing import Final, Protocol, runtime_checkable
 
 from intergrax.contracts.sandbox_network_egress import NetworkEgressAllowlist
 from intergrax.integrations.contracts.base import IntegrationCategory
-
-
-class ScopedIntegrationAdaptationOperation(StrEnum):
-    READ_CONFIGURATION = "READ_CONFIGURATION"
-    WRITE_CONFIGURATION = "WRITE_CONFIGURATION"
-    VALIDATE_CONNECTION = "VALIDATE_CONNECTION"
-    APPLY_SCHEMA_PATCH = "APPLY_SCHEMA_PATCH"
 
 
 class ScopedIntegrationAdaptationFailureReason(StrEnum):
@@ -50,6 +43,32 @@ class ScopedIntegrationAdaptationError(Exception):
         super().__init__(message)
 
 
+@dataclass(frozen=True, slots=True)
+class ScopedIntegrationAdaptationOperationId:
+    value: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "value",
+            _require_non_empty(self.value, "operation_id"),
+        )
+
+
+def scoped_integration_adaptation_operation_id(
+    value: str,
+) -> ScopedIntegrationAdaptationOperationId:
+    return ScopedIntegrationAdaptationOperationId(value=value)
+
+
+def parse_scoped_integration_adaptation_operation_ids(
+    values: tuple[str, ...],
+) -> tuple[ScopedIntegrationAdaptationOperationId, ...]:
+    if not values:
+        raise ValueError("permitted operations must not be empty")
+    return tuple(scoped_integration_adaptation_operation_id(value) for value in values)
+
+
 @runtime_checkable
 class ScopedIntegrationAdaptationSpecification(Protocol):
     @property
@@ -69,8 +88,8 @@ def _require_non_empty(value: str, label: str) -> str:
 
 
 def _sorted_operations(
-    operations: tuple[ScopedIntegrationAdaptationOperation, ...],
-) -> tuple[ScopedIntegrationAdaptationOperation, ...]:
+    operations: tuple[ScopedIntegrationAdaptationOperationId, ...],
+) -> tuple[ScopedIntegrationAdaptationOperationId, ...]:
     if not operations:
         raise ValueError("permitted operations must not be empty")
     return tuple(sorted(operations, key=lambda op: op.value))
@@ -82,13 +101,12 @@ class ScopedIntegrationAdaptationScope:
     integration_category: IntegrationCategory
     provider_id: str
     resource_scope: str
-    permitted_operations: tuple[ScopedIntegrationAdaptationOperation, ...]
+    permitted_operations: tuple[ScopedIntegrationAdaptationOperationId, ...]
     network_allowlist: NetworkEgressAllowlist
     credential_grant_ref: str
     expires_at: datetime
     candidate_id: str
     candidate_revision: str
-    min_candidate_revision: str | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -145,7 +163,6 @@ def derive_scoped_integration_adaptation_scope_fingerprint(
         f"expires_at={scope.expires_at.isoformat()}",
         f"candidate_id={scope.candidate_id}",
         f"candidate_revision={scope.candidate_revision}",
-        f"min_candidate_revision={scope.min_candidate_revision or ''}",
     ]
     canonical = "\n".join(parts)
     digest = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -191,7 +208,6 @@ class ScopedIntegrationAdaptationRequest:
     provider_id: str
     resource_scope: str
     scope: ScopedIntegrationAdaptationScope
-    target: ScopedIntegrationAdaptationTarget
     correlation_id: str | None = None
     causation_id: str | None = None
 
@@ -206,10 +222,15 @@ class ScopedIntegrationAdaptationRequest:
             "tenant_id",
             _require_non_empty(self.tenant_id, "tenant_id"),
         )
-        if self.scope.tenant_id != self.tenant_id:
+        scope = self.scope
+        if scope.tenant_id != self.tenant_id:
             raise ValueError("request tenant must match scope tenant")
-        if self.target.tenant_id != self.tenant_id:
-            raise ValueError("request tenant must match target tenant")
+        if scope.integration_category != self.integration_category:
+            raise ValueError("request integration_category must match scope")
+        if scope.provider_id != self.provider_id:
+            raise ValueError("request provider_id must match scope")
+        if scope.resource_scope != self.resource_scope:
+            raise ValueError("request resource_scope must match scope")
 
 
 @dataclass(frozen=True, slots=True)
@@ -261,8 +282,31 @@ class ScopedIntegrationAdaptationArtifact:
             "strategy_id",
             _require_non_empty(self.strategy_id, "strategy_id"),
         )
+        object.__setattr__(
+            self,
+            "candidate_id",
+            _require_non_empty(self.candidate_id, "candidate_id"),
+        )
+        object.__setattr__(
+            self,
+            "candidate_revision",
+            _require_non_empty(self.candidate_revision, "candidate_revision"),
+        )
+        art_scope = self.scope
+        if art_scope.tenant_id != self.tenant_id:
+            raise ValueError("artifact tenant must match scope tenant")
+        if art_scope.integration_category != self.integration_category:
+            raise ValueError("artifact integration_category must match scope")
+        if art_scope.provider_id != self.provider_id:
+            raise ValueError("artifact provider_id must match scope")
+        if art_scope.resource_scope != self.resource_scope:
+            raise ValueError("artifact resource_scope must match scope")
+        if art_scope.candidate_id != self.candidate_id:
+            raise ValueError("artifact candidate_id must match scope")
+        if art_scope.candidate_revision != self.candidate_revision:
+            raise ValueError("artifact candidate_revision must match scope")
         expected_scope_fp = derive_scoped_integration_adaptation_scope_fingerprint(
-            self.scope,
+            art_scope,
         )
         if self.scope_fingerprint != expected_scope_fp:
             raise ValueError("scope_fingerprint must match derived scope fingerprint")
@@ -333,6 +377,14 @@ class ScopedIntegrationAdaptationStrategy(Protocol):
 
 
 @runtime_checkable
+class ScopedIntegrationAdaptationTargetResolver(Protocol):
+    def resolve_target(
+        self,
+        request: ScopedIntegrationAdaptationRequest,
+    ) -> ScopedIntegrationAdaptationTarget: ...
+
+
+@runtime_checkable
 class ScopedIntegrationAdaptationPort(Protocol):
     def adapt(
         self,
@@ -396,13 +448,16 @@ __all__ = [
     "ScopedIntegrationAdaptationArtifact",
     "ScopedIntegrationAdaptationError",
     "ScopedIntegrationAdaptationFailureReason",
-    "ScopedIntegrationAdaptationOperation",
+    "ScopedIntegrationAdaptationOperationId",
     "ScopedIntegrationAdaptationPort",
     "ScopedIntegrationAdaptationRequest",
     "ScopedIntegrationAdaptationScope",
     "ScopedIntegrationAdaptationSpecification",
     "ScopedIntegrationAdaptationStrategy",
     "ScopedIntegrationAdaptationTarget",
+    "ScopedIntegrationAdaptationTargetResolver",
     "derive_scoped_integration_adaptation_artifact_fingerprint",
     "derive_scoped_integration_adaptation_scope_fingerprint",
+    "parse_scoped_integration_adaptation_operation_ids",
+    "scoped_integration_adaptation_operation_id",
 ]
