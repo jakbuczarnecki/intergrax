@@ -20,16 +20,36 @@
 
 | Field | Value |
 | ----- | ----- |
-| **Stage** | AW-7C-P1-ARCH |
+| **Stage** | AW-7C-P1-ARCH-R1 (remediation); parent AW-7C-P1-ARCH **BLOCKED** pending R1 audit |
 | **Parent** | AW-7C **CURRENT** |
 | **Prerequisites** | AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ **CLOSED / accepted** |
 | **Purpose** | Contract-boundary and ownership lock for A2 scoped adaptive integration execution — **no A2 production implementation** |
 | **Canonical architecture** | [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) |
 | **A2 execution service on baseline** | **None** (gap documented; P2+ implements) |
-| **Next work** | AW-7C-P2 typed contracts/orchestration — **only after independent P1-ARCH audit** |
-| **Global FRZ** | No PASS delta from P1-ARCH |
+| **Next work** | Independent **AW-7C-P1-ARCH-R1** audit; then AW-7C-P2 (**not entered**) |
+| **Global FRZ** | No PASS delta from P1-ARCH / R1 |
 
 Sections 1–13 below retain **historical** prerequisite audit unless explicitly superseded above.
+
+---
+
+## AW-7C-P1-ARCH independent audit (blocked)
+
+| Field | Value |
+| ----- | ----- |
+| **Verdict** | **BLOCKED** |
+| **Exact audited SHA** | `e055a5bdb3c120b90dad546dc33cc0219824ced7` |
+| **Reason 1** | Shared semantic owner for adaptation scope (`ScopedAdaptiveIntegrationScope` documented as AW + Integrations shared contract) — violates exactly-one owner (FRZ-OWN-01) |
+| **Reason 2** | Qualification subject / `CapabilityQualificationRequest` carry model for A2 artifacts left to P2 — material architecture decision deferred |
+
+## AW-7C-P1-ARCH-R1 remediation (current)
+
+| Field | Value |
+| ----- | ----- |
+| **Scope** | Docs-only architecture remediation — **no** production code, contracts, or tests |
+| **Blocker A closure** | `ScopedIntegrationAdaptationScope` owned by **Integrations** (`intergrax/integrations/contracts/`); AW supplies immutable instance on orchestration request only |
+| **Blocker B closure** | `CapabilityQualificationSubject` owned by **Capability Qualification**; deterministic projections from `ScopedIntegrationAdaptationArtifact` and from successful `CapabilityAcquisitionResult`; single UCA-4 mechanism; V1→subject migration direction locked |
+| **Status after remediation** | **READY FOR AUDIT** (independent SHA audit required; Cursor report is not closure) |
 
 ---
 

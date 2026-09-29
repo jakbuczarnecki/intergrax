@@ -4,14 +4,14 @@
 
 | Field | Value |
 | ----- | ----- |
-| **Task** | `AW-7C-P1-ARCH` (architecture / contract-boundary lock only) |
+| **Task** | `AW-7C-P1-ARCH-R1` (ownership + qualification-subject remediation); parent `AW-7C-P1-ARCH` |
 | **Parent** | `AW-7C` — Scoped Adaptive Integration Execution |
-| **Program baseline** | `88e423109d7321e273a68fcc4be5e950dd29ffba` (`development`) |
+| **Program baseline** | `e055a5bdb3c120b90dad546dc33cc0219824ced7` (`development`) |
 | **Source** | Scenario #24 GAP-03; roadmap §3.0.1 |
-| **Status** | **READY FOR AUDIT** — design lock only; **no A2 production implementation** |
-| **Production / tests / contracts in P1** | **0** |
+| **Status** | **READY FOR AUDIT** (R1 remediation) — design lock only; **no A2 production implementation** |
+| **Production / tests / contracts in P1 / R1** | **0** |
 | **Prerequisites** | AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ **CLOSED / accepted** (egress substrate evidence) |
-| **Next implementation** | `AW-7C-P2` only after independent P1-ARCH audit |
+| **Next implementation** | `AW-7C-P2` only after independent **P1-ARCH-R1** audit; `AW-7C-P1-ARCH` blocked pending R1 audit |
 
 **Scope:** lock reusable platform semantics for **A2 scoped adaptive integration**: from `SCOPED_ADAPTATION_CANDIDATE` through bounded adaptation, qualification, Governance/runtime admission, and **canonical Execution** — without a parallel runtime, AW-owned integration registry, or A1 bypass.
 
@@ -60,7 +60,9 @@
 | `SCOPED_ADAPTATION_CANDIDATE` / AW-7A decision | Autonomous Work (acquisition) | AW-7A `WorkerCapabilityAcquisitionService` | Upstream policy + acquisition rules (no execution) |
 | A2 orchestration (episode correlation, scope enforcement vs upstream decision) | **Autonomous Work** | Future `WorkerScopedAdaptiveIntegrationOrchestrationService` (P2) | None — orchestration only |
 | Integration identity & domain adaptation semantics | **Integrations** | Integrations adaptation service (P2) | None |
+| `ScopedIntegrationAdaptationScope` (adaptation envelope semantics) | **Integrations** (`intergrax/integrations/contracts/`) | Integrations validates at adaptation-port ingress; AW derives/supplies immutable instance | None |
 | Adaptation strategy SPI (`ScopedIntegrationAdaptationStrategy`) | **Integrations contracts** | **Integrations** pure selection (`select_scoped_adaptation_strategy` pattern, mirror INT-CONFIG) | None |
+| `CapabilityQualificationSubject` | **Capability Qualification** (`intergrax/contracts/capability_qualification/`) | Qualification coordinator — single provider-selection mechanism | None |
 | Strategy/provider implementation | Integrations providers / extensions | Host wiring / plugin composition (Integrations) | None |
 | Adaptation artifact immutability & fingerprint | Integrations contract + AW correlation refs | Strategy produces; AW stores correlation IDs only | None |
 | Qualification truth | **Capability qualification** domain (`CapabilityQualificationProvider`) | Qualification coordinator (existing UCA-4 seam) | None — evidence only |
@@ -130,12 +132,13 @@ Worker business execution (non-A2):
 ```text
 SCOPED_ADAPTATION_CANDIDATE + upstream acquisition evidence
   → ScopedAdaptiveIntegrationExecutionRequest (AW contract)
-  → ScopedAdaptiveIntegrationScope (immutable envelope ⊆ upstream authority)
+  → ScopedIntegrationAdaptationScope (Integrations contract; immutable envelope ⊆ upstream authority)
   → ScopedIntegrationAdaptationPort.adapt (Integrations)
        → select exactly one ScopedIntegrationAdaptationStrategy
        → ScopedIntegrationAdaptationArtifact (not permission)
-  → CapabilityQualificationRequest/Result (existing qualification owner)
-       → QUALIFIED artifact evidence only
+  → CapabilityQualificationSubject (projection from artifact)
+  → CapabilityQualificationRequest/Result (Capability Qualification owner)
+       → QUALIFIED subject-bound evidence only
   → Runtime/Governance admission (existing ports; scoped payload)
   → WorkerExecutionDispatchService or sanctioned RootExecutionLaunch
        → CanonicalExecutionIntakePort
@@ -159,16 +162,25 @@ SCOPED_ADAPTATION_CANDIDATE + upstream acquisition evidence
 - Recovery decision / episode id, selected `WorkerCapabilityCandidate` id + revision
 - Integration identity ref (catalog-backed, not live client)
 - Requested operations (typed enum/tuple — not free strings as authority)
-- `ScopedAdaptiveIntegrationScope` (see §7.2)
+- `adaptation_scope: ScopedIntegrationAdaptationScope` (Integrations-owned type; see §7.2)
 - Upstream acquisition decision refs / `WorkerCapabilityAcquisitionDecision` snapshot
 - Execution correlation (`RunId`, task refs as already used by dispatch)
 - Authority **reference** compatible with existing execution admission (not raw ParentExecutionAuthority minting by AW)
 
 **MUST NOT carry:** raw secrets, provider clients, sandbox handles, callables, unstructured bags used as contracts (forbidden patterns listed in §17).
 
-### 7.2 Adaptation scope — `ScopedAdaptiveIntegrationScope`
+### 7.2 Adaptation scope — `ScopedIntegrationAdaptationScope`
 
-**Owner:** AW + Integrations shared immutable contract (P2); enforced at AW orchestration boundary and re-validated at Integrations port ingress.
+**Semantic owner:** **Integrations** only. **Future contract location:** `intergrax/integrations/contracts/`.
+
+Autonomous Work does **not** own a second adaptation-scope contract. AW owns `ScopedAdaptiveIntegrationExecutionRequest` and constructs or supplies an immutable `ScopedIntegrationAdaptationScope` derived from upstream A2 decision/authority.
+
+**Dependency direction (locked):**
+
+```text
+Autonomous Work → consumes Integrations public adaptation contracts
+NOT: Integrations → imports AW concrete orchestration implementation
+```
 
 **Minimum fields (typed):**
 
@@ -181,6 +193,18 @@ SCOPED_ADAPTATION_CANDIDATE + upstream acquisition evidence
 - `expires_at` / lifetime bound
 - Candidate id, configuration/adaptation revision constraints
 
+**Responsibility split:**
+
+| Domain | Responsibility |
+| ------ | -------------- |
+| **Autonomous Work** | Derive maximum permissible scope from upstream acquisition/recovery context; refuse request wider than upstream authority; pass immutable scope to Integrations; preserve tenant/candidate/recovery correlation |
+| **Integrations** | Define `ScopedIntegrationAdaptationScope`; validate scope at adaptation-port ingress; ensure strategy output scope ≤ requested scope; reject strategy output widening; preserve integration identity and tenant continuity |
+| **Execution** | `execution_scope ≤` qualified adaptation scope |
+| **Credential domain** | `credential_use_scope ≤` adaptation scope |
+| **Sandbox** | Effective egress ≤ adaptation scope |
+
+No domain may silently broaden another domain's scope.
+
 **Invariants:**
 
 ```text
@@ -189,6 +213,18 @@ execution_scope ⊆ adaptation_scope
 effective_network_scope = intersection(upstream_network, grant_target, artifact_declared_hosts)
 effective_credential_scope = intersection(grant_scope, adaptation_scope) — never union widening
 ```
+
+#### 7.2.1 Scope fingerprint (`scope_fingerprint`)
+
+Deterministic semantic fingerprint of a `ScopedIntegrationAdaptationScope`. **Contributors (canonical ordered serialization; no raw secrets):** `tenant_id`; integration identity; permitted operations; resource scope; `NetworkEgressAllowlist` (canonical allowlist ordering); credential-grant binding/reference; `expires_at` / lifetime where semantically relevant; candidate/revision constraints.
+
+Recorded on `CapabilityQualificationSubject` and used in qualification result/evidence binding.
+
+#### 7.2.2 Artifact fingerprint (`artifact_fingerprint`)
+
+**Distinct from** `scope_fingerprint`. `artifact_fingerprint` covers the immutable produced artifact/spec. `scope_fingerprint` covers the maximum approved adaptation envelope.
+
+**Invariant:** artifact declares scope `S`; `artifact_fingerprint` binds the artifact to `scope_fingerprint(S)`. An artifact produced under `S1` cannot be re-qualified or reused as if produced under `S2`.
 
 ### 7.3 Integrations strategy SPI — `ScopedIntegrationAdaptationStrategy`
 
@@ -214,20 +250,121 @@ effective_credential_scope = intersection(grant_scope, adaptation_scope) — nev
 
 **Must NOT grant:** network access, secret access, Execution authority.
 
-### 7.5 Qualification — reuse existing boundary
+### 7.5 Qualification — single mechanism, subject-oriented model
 
 **Owner:** `intergrax/contracts/capability_qualification/` — `CapabilityQualificationProvider`, `CapabilityQualificationRequest`, `CapabilityQualificationResult`, `CapabilityQualificationEvidence`.
 
-**Semantic distinction (mandatory):**
+**Composition owner:** Capability Qualification domain only (existing UCA-4 coordinator). **Forbidden:** qualification provider registry in Integrations; `AWQualificationProviderRegistry`; separate A2 qualification engine.
+
+#### 7.5.1 `CapabilityQualificationSubject` (canonical semantic subject)
+
+Capability Qualification qualifies a canonical typed **subject**, not intrinsically a `CapabilityAcquisitionResult`.
+
+| Concept | Owner |
+| ------- | ----- |
+| `CapabilityQualificationSubject` | **Capability Qualification** — identity/integrity envelope only; **no domain-specific adaptation semantics**; **no authority** |
+
+**Required information (strongly typed fields / enums / value objects only):**
+
+- `subject_kind` (enum)
+- stable `subject_id`
+- `subject_integrity_fingerprint`
+- `tenant_id` when tenant-scoped (**mandatory** for A2 adaptation subjects)
+- `scope_fingerprint` (see §7.2.1)
+- typed `source_reference` / domain reference
+- lineage/correlation references sufficient to prove the subject qualified is the subject later consumed (artifact id, integration identity ref, recovery/acquisition lineage ids as applicable)
+
+**Forbidden at this boundary:** `dict[str, Any]`, `Mapping[str, Any]`, generic `object`, untyped metadata bags.
+
+#### 7.5.2 Domain artifact vs qualification subject
+
+| Type | Role |
+| ---- | ---- |
+| `ScopedIntegrationAdaptationArtifact` | Integrations-owned domain artifact |
+| `CapabilityQualificationSubject` | CQ-owned immutable identity/integrity **projection** — does **not** replace the artifact |
+
+**Deterministic projections (locked):**
+
+```text
+ScopedIntegrationAdaptationArtifact
+  → project_adaptation_qualification_subject()
+  → CapabilityQualificationSubject
+
+CapabilityAcquisitionResult (outcome SUCCEEDED only — existing acquisition path)
+  → project_acquisition_qualification_subject()
+  → CapabilityQualificationSubject
+```
+
+Projection for A2 binds at minimum: artifact identity; `artifact_fingerprint`; tenant; integration identity/reference; `scope_fingerprint`; strategy identity; relevant lineage/correlation.
+
+Qualification must be unable to qualify artifact A and later present evidence for artifact B.
+
+**Explicitly forbidden:**
+
+- Fabricating `CapabilityAcquisitionResult(outcome=SUCCEEDED)` for an A2 adaptation artifact
+- `qualified=True` (or equivalent) on `ScopedIntegrationAdaptationArtifact`
+- `A2QualificationEngine`, `ScopedAdaptationQualificationEngine`, or any second permanent qualification mechanism parallel to UCA-4
+
+#### 7.5.3 `CapabilityQualificationRequest` — V1 legacy vs canonical target
+
+**Baseline V1 (acquisition-specific legacy shape):** `CapabilityQualificationRequest` carries `acquisition_request_id`, `gap_id`, `strategy_id`, and `acquisition_result: CapabilityAcquisitionResult` with `requires acquisition_result.outcome == SUCCEEDED`. The acquisition result is the **legacy semantic subject** — adequate for acquisition-only handoff, **not** for A2 artifacts.
+
+**Canonical target shape (locked for P2 contract evolution):** request qualifies `subject: CapabilityQualificationSubject`. Acquisition-specific ids may remain as **lineage** fields during controlled migration but must **not** remain the universal semantic authority defining what is qualified.
+
+**Single-mechanism migration (locked):**
+
+```text
+V1 acquisition-specific request
+  → deterministic subject projection (acquisition path)
+  → canonical qualification path (same provider selection, same lifecycle policy)
+
+A2 adaptation artifact
+  → deterministic subject projection (adaptation path)
+  → same canonical qualification path
+```
+
+**Forbidden:** permanent fork where providers select unrelated mechanisms; `if request.is_a2: new_engine else: old_engine`; two provider registries; two lifecycle policies; legacy fallback provider path when projection fails (F27).
+
+P2 **implements** contracts and projection functions per this lock; P2 does **not** invent scope ownership, subject model, request semantic authority, result/evidence continuity, or migration direction.
+
+#### 7.5.4 Result and evidence continuity (target semantics)
+
+Target `CapabilityQualificationResult` and `CapabilityQualificationEvidence` bind:
+
+- `qualification_request_id`
+- subject identity + `subject_integrity_fingerprint` (and `subject_kind`)
+- `tenant_id` where applicable
+- `scope_fingerprint`
+- `provider_id`
+- qualification outcome
+- evidence integrity chain
+
+Acquisition identifiers may be retained as **lineage** for acquisition subjects; they are **not** mandatory universal identity for A2.
+
+A2 evidence is **unusable** if any differ: tenant; artifact id; `artifact_fingerprint`; integration identity; `scope_fingerprint`; strategy/adaptation revision where applicable.
+
+`CapabilityQualificationOutcome.QUALIFIED` ≠ Governance ALLOW ≠ Execution admission ≠ Execution success. Subject, provider, and evidence contain **no** authority and must not mint `ParentExecutionAuthority`, credential scope, network scope, or integration provider authority.
+
+#### 7.5.5 Integrity chain (fail closed)
+
+```text
+request.subject
+  == provider-evaluated subject
+  == result subject identity/fingerprint
+  == evidence subject identity/fingerprint
+  == artifact identity bound for subsequent A2 orchestration
+```
+
+Stale subject fingerprint, missing subject, subject-kind mismatch, tenant mismatch, scope-fingerprint mismatch → fail closed.
+
+#### 7.5.6 Semantic distinction (mandatory)
 
 | State | Meaning |
 | ----- | ------- |
 | Artifact exists | Strategy returned `ScopedIntegrationAdaptationArtifact` |
-| Artifact qualified | `CapabilityQualificationOutcome.QUALIFIED` with integrity-valid evidence |
+| Artifact qualified | `CapabilityQualificationOutcome.QUALIFIED` with integrity-valid evidence bound to `CapabilityQualificationSubject` |
 | Artifact authorized | Governance/runtime admission ALLOW for concrete execution |
 | Executed | `CanonicalExecutionIntakePort` completed successfully |
-
-**Gap note:** P2 must define how `CapabilityQualificationRequest` carries adaptation artifact identity (new qualified-subject fields) without inventing `qualified=True` on the artifact itself. No adequate subject type exists on baseline — **tracked P2 contract work**, not a hidden boolean.
 
 ### 7.6 Execution handoff — `ScopedAdaptiveIntegrationExecutionHandoff` (conceptual)
 
@@ -287,7 +424,7 @@ REQUESTED
 
 ---
 
-## 10. Failure-mode matrix (F1–F21)
+## 10. Failure-mode matrix (F1–F30)
 
 | ID | Condition | Resolution |
 | -- | --------- | ---------- |
@@ -312,6 +449,15 @@ REQUESTED
 | F19 | Stale artifact/evidence vs request fingerprint | Reject |
 | F20 | Duplicate invocation | Idempotency via deterministic request/artifact ids + execution correlation; duplicate qualified handoff must not double-mint authority (P4) |
 | F21 | Cleanup failure | Substrate/provider that created resource owns cleanup; AW must not report success if physical cleanup failed |
+| F22 | Qualification subject missing | Fail closed |
+| F23 | Subject kind unsupported | Fail closed |
+| F24 | Artifact fingerprint mismatch (subject vs artifact / evidence) | Fail closed |
+| F25 | Scope fingerprint mismatch (subject vs scope / evidence / artifact binding) | Fail closed |
+| F26 | Tenant mismatch across subject / artifact / qualification evidence | Fail closed |
+| F27 | Legacy acquisition projection cannot produce valid canonical subject | Fail closed; no fallback legacy-only provider path |
+| F28 | Qualification provider returns evidence for different subject than requested | Contract error; fail closed |
+| F29 | Stale subject or artifact revision vs current fingerprint | Reject |
+| F30 | Duplicate qualification request with conflicting subject identity/fingerprint | Reject deterministically |
 
 ---
 
@@ -320,7 +466,7 @@ REQUESTED
 | Layer | What is carried | Widening allowed? |
 | ----- | --------------- | ----------------- |
 | Upstream acquisition / recovery authority | Max envelope for A2 candidacy | N/A |
-| `ScopedAdaptiveIntegrationScope` | Adaptation envelope | **No** — ⊆ upstream |
+| `ScopedIntegrationAdaptationScope` | Adaptation envelope | **No** — ⊆ upstream |
 | `CredentialUseGrant` + scope validation | Secret use targets | **No** — intersection with adaptation/network |
 | `NetworkEgressAllowlist` | Egress hosts | **No** — ⊆ upstream approved + attested |
 | Execution dispatch payload | Runtime operation scope | **No** — ⊆ qualified artifact + admission |
@@ -389,13 +535,21 @@ A2 network scope ⊆ upstream approved scope ⊆ attested enforcement.
 
 ## 15. Qualification boundary
 
-**Owner:** Capability Qualification domain (`CapabilityQualificationProvider`).
+**Owner:** Capability Qualification domain (`CapabilityQualificationProvider`); **composition owner** for provider selection — exactly one mechanism (see §7.5).
 
-Integrations/AW **submit** qualification requests; provider **records** truth; Governance **admits**; Execution **runs**.
+Integrations/AW **submit** qualification requests carrying `CapabilityQualificationSubject` (directly or via deterministic projection from artifact or successful acquisition result); provider **evaluates** subject facts; Governance **admits**; Execution **runs**.
+
+Flow for A2:
+
+```text
+ScopedIntegrationAdaptationArtifact
+  → project_adaptation_qualification_subject()
+  → CapabilityQualificationRequest (canonical subject-oriented shape)
+  → CapabilityQualificationProvider
+  → CapabilityQualificationResult / Evidence
+```
 
 If qualification provider unavailable → orchestration stops at F10 (no execution).
-
-P4 wires artifact fingerprint + scope snapshot into `CapabilityQualificationRequest` subject (P2 typing).
 
 ---
 
@@ -530,9 +684,9 @@ Post-effect evidence cannot retroactively justify pre-effect execution.
 
 | ID | Scope |
 | -- | ----- |
-| **AW-7C-P2** | Typed AW + Integrations contracts; `ScopedIntegrationAdaptationStrategy` SPI; pure AW orchestration + Integrations adaptation service; strategy selection; no provider/sandbox/execution side effects |
+| **AW-7C-P2** | Typed AW orchestration request; Integrations `ScopedIntegrationAdaptationScope` + `ScopedIntegrationAdaptationStrategy` SPI + adaptation service; CQ `CapabilityQualificationSubject` + subject-oriented request/result/evidence evolution and V1→subject migration seam; deterministic acquisition/adaptation projections; scope/artifact fingerprints; no provider/sandbox/execution side effects |
 | **AW-7C-P3** | One reference adaptation strategy; structural replaceability; tenant continuity; scope narrowing proofs |
-| **AW-7C-P4** | Qualification wiring; Governance/runtime admission; canonical Execution composition; broker + egress attestation; evidence correlation |
+| **AW-7C-P4** | Qualification coordinator wiring using canonical subject path; Governance/runtime admission; canonical Execution composition; broker + egress attestation; evidence correlation |
 | **AW-7C-CERT** | Adversarial certification: authority non-amplification, tenant A→B, grant/expiry mismatch, host widening, ambiguity, stale qualification, bypass attempts, attestation gaps, provider failures, architecture regression gates |
 
 ---
@@ -569,7 +723,7 @@ Stop and escalate **ARCHITECTURE DECISION REQUIRED** if implementation needs:
 - Weak dict/Any contracts as only representation
 - Change to frozen owner authority from prior accepted stages
 
-P1-ARCH encountered **none** of the above.
+P1-ARCH-R1 encountered **none** of the above.
 
 ---
 
@@ -579,4 +733,52 @@ Proposal (adaptation request) ≠ artifact ≠ qualification evidence ≠ Govern
 
 ---
 
-*End of AW-7C-P1-ARCH architecture lock.*
+## 28. Ownership matrix (R1 closure — exactly-one semantic owner)
+
+| Concern | Semantic owner |
+| ------- | -------------- |
+| A2 orchestration request semantics (`ScopedAdaptiveIntegrationExecutionRequest`) | **Autonomous Work** |
+| `ScopedIntegrationAdaptationScope` | **Integrations** |
+| `ScopedIntegrationAdaptationStrategy` | **Integrations** |
+| `ScopedIntegrationAdaptationArtifact` | **Integrations** |
+| Adaptation strategy composition | **Integrations** |
+| `CapabilityQualificationSubject` | **Capability Qualification** |
+| Qualification provider selection / composition | **Capability Qualification** |
+| Governance admission | **Runtime / Governance** |
+| Execution lifecycle | **Execution** |
+| Credential material / use enforcement | **Credential domain** |
+| Network / isolation enforcement | **Sandbox** |
+| Evidence recording | **Evidence / observability consumers only** (no authority) |
+
+No row uses shared, joint, or dual semantic ownership.
+
+---
+
+## 29. Dependency graph (R1 closure)
+
+```text
+AW
+  → Integrations public adaptation contracts (ScopedIntegrationAdaptationScope, port, strategy SPI)
+      → strategy implementations (Integrations providers / extensions)
+
+AW
+  → Capability Qualification public contracts (subject, request, provider)
+
+Integrations adaptation artifact
+  → deterministic qualification-subject projection
+  → Capability Qualification
+
+AW
+  → canonical Governance / Execution boundary (existing ports)
+```
+
+**Forbidden reverse dependencies:**
+
+- Integrations core → AW concrete orchestration implementation
+- Capability Qualification core → AW concrete implementation
+- Capability Qualification core → concrete Integration provider implementation
+- Execution → AW-specific provider implementation
+
+---
+
+*End of AW-7C-P1-ARCH / P1-ARCH-R1 architecture lock.*

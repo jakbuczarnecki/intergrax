@@ -346,10 +346,27 @@ Delivery rule:
 | **Priority** | P0/P1 |
 | **Status** | **CURRENT** |
 | **Purpose** | A2 scoped adaptive integration path |
-| **Dependencies** | Prerequisites **CLOSED / accepted** via AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ; architecture lock [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) (AW-7C-P1-ARCH) |
-| **Child sequence** | AW-7C-P1-ARCH → AW-7C-P2 → AW-7C-P3 → AW-7C-P4 → AW-7C-CERT |
+| **Dependencies** | Prerequisites **CLOSED / accepted** via AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ; architecture lock [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) (AW-7C-P1-ARCH / R1) |
+| **Child sequence** | AW-7C-P1-ARCH → AW-7C-P1-ARCH-R1 → AW-7C-P2 → AW-7C-P3 → AW-7C-P4 → AW-7C-CERT |
 | **Acceptance** | only approved hosts/secrets, narrow scope, runtime evidence of enforced controls; typed pluginable adaptation → qualification → canonical Execution; no A1 bypass |
-| **Next step** | AW-7C-P2 (after independent P1-ARCH audit) |
+| **Next step** | AW-7C-P1-ARCH-R1 audit closure, then AW-7C-P2 (**P2 not entered**) |
+
+| Field | Value |
+|---|---|
+| **ID** | AW-7C-P1-ARCH |
+| **Priority** | P1 |
+| **Status** | **BLOCKED** — independent audit @ `e055a5bdb3c120b90dad546dc33cc0219824ced7` rejected closure (shared adaptation-scope owner; qualification subject deferred to P2); superseded by R1 remediation |
+| **Purpose** | Initial A2 architecture / contract-boundary lock (docs only) |
+| **Next step** | AW-7C-P1-ARCH-R1 audit |
+
+| Field | Value |
+|---|---|
+| **ID** | AW-7C-P1-ARCH-R1 |
+| **Priority** | P1 |
+| **Status** | **READY FOR AUDIT** — ownership + qualification-subject architecture remediation (docs only) |
+| **Purpose** | Lock Integrations-owned `ScopedIntegrationAdaptationScope`; lock `CapabilityQualificationSubject` and single-mechanism qualification continuity |
+| **Canonical architecture** | [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) |
+| **Next step** | Independent R1 audit, then AW-7C-P2 |
 
 | Field | Value |
 |---|---|
