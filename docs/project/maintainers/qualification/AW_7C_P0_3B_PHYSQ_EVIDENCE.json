@@ -3,23 +3,23 @@
     {
       "destroyed": true,
       "error": null,
-      "session_id": "igx-qual-ae0815c3f0"
+      "session_id": "igx-qual-5ff49b189f"
     },
     {
       "destroyed": true,
       "error": null,
-      "session_id": "igx-qual-a1124e3360"
+      "session_id": "igx-qual-b5cb0dbfd2"
     },
     {
       "destroyed": true,
       "error": null,
-      "session_id": "igx-qual-3967718544"
+      "session_id": "igx-qual-085f350b3a"
     }
   ],
   "control_phase": {
     "allowed_host": {
       "result": {
-        "latency_ms": 78.60394299950713,
+        "latency_ms": 76.4189189994795,
         "reachable": true,
         "redirect_target": "http://allowed.test:18080",
         "redirected": false,
@@ -30,7 +30,7 @@
     "baseline_valid": true,
     "denied_host": {
       "result": {
-        "latency_ms": 64.47263799964276,
+        "latency_ms": 68.94579199979489,
         "reachable": true,
         "redirect_target": "http://denied.test:18081",
         "redirected": false,
@@ -39,12 +39,12 @@
       "target": "http://denied.test:18081"
     }
   },
-  "execution_reference": "reference-physical-egress-causal-proof:33b06a80-58ae-470e-a0b8-b3865cb2a3eb",
+  "execution_reference": "reference-physical-egress-causal-proof:057165d0-14a6-4758-915c-b8bc8cc44920",
   "provider_identity": "reference-substrate-qualification",
   "qualified_phase": {
     "allowed_host": {
       "result": {
-        "latency_ms": 66.78991799981304,
+        "latency_ms": 66.78558100065857,
         "reachable": true,
         "redirect_target": "http://allowed.test:18080",
         "redirected": false,
@@ -71,7 +71,7 @@
     },
     "denied_host": {
       "result": {
-        "latency_ms": 20087.345029999597,
+        "latency_ms": 20088.77842900074,
         "reachable": false,
         "redirect_target": null,
         "redirected": false,
@@ -93,7 +93,7 @@
       "escaped": false,
       "redirect_url": "http://allowed.test:18080/redirect-to-denied",
       "result": {
-        "latency_ms": 20086.638494,
+        "latency_ms": 20092.283033998683,
         "reachable": false,
         "redirect_target": null,
         "redirected": false,
@@ -102,5 +102,5 @@
     }
   },
   "scenario_id": "reference-physical-egress-causal-proof",
-  "timestamp_utc": "2026-09-29T07:40:51+00:00"
+  "timestamp_utc": "2026-09-29T08:26:05+00:00"
 }

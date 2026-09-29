@@ -466,7 +466,7 @@ AW-7C: BLOCKED BY PREREQUISITE (physical capability proof pending operator Linux
 uv run pytest tests/integration/runtime/sandbox/reference_substrate/test_reference_physical_egress_qualification.py -p no:xdist -q -rs
 ```
 
-**Result #1:** `12 passed in 124.86s` — 0 failed, 0 skipped, 0 xfailed.
+**Result #1:** `12 passed in 124.67s` — 0 failed, 0 skipped, 0 xfailed.
 
 **Command #2 (full reference substrate):**
 
@@ -474,7 +474,7 @@ uv run pytest tests/integration/runtime/sandbox/reference_substrate/test_referen
 uv run pytest tests/integration/runtime/sandbox/reference_substrate/ -p no:xdist -q -rs
 ```
 
-**Result #2:** `80 passed in 124.75s` — 0 failed, 0 skipped.
+**Result #2:** `80 passed in 125.46s` — 0 failed, 0 skipped.
 
 ### Causal proof (machine evidence)
 
@@ -493,13 +493,13 @@ uv run pytest tests/integration/runtime/sandbox/reference_substrate/ -p no:xdist
 
 | Field | Value |
 |-------|--------|
-| `execution_reference` | `reference-physical-egress-causal-proof:33b06a80-58ae-470e-a0b8-b3865cb2a3eb` |
-| `timestamp_utc` | `2026-09-29T07:40:51+00:00` |
+| `execution_reference` | `reference-physical-egress-causal-proof:057165d0-14a6-4758-915c-b8bc8cc44920` |
+| `timestamp_utc` | `2026-09-29T08:26:05+00:00` |
 | `scenario_id` | `reference-physical-egress-causal-proof` |
 | `provider_identity` | `reference-substrate-qualification` |
-| Generated path (session) | `.tmp/session/reference-physical-egress-qualification/reference-physical-egress-causal-proof-33b06a80-58ae-470e-a0b8-b3865cb2a3eb.json` |
+| Generated path (session) | `.tmp/session/reference-physical-egress-qualification/reference-physical-egress-causal-proof-057165d0-14a6-4758-915c-b8bc8cc44920.json` |
 | Committed copy | `docs/project/maintainers/qualification/AW_7C_P0_3B_PHYSQ_EVIDENCE.json` |
-| SHA-256 (exact generated file) | `252122e2a533b89f4bb8f4cb5f14b2897e9c620ada928e282e2f1b783a967651` |
+| SHA-256 (exact generated file) | `05be0b3000aee7f30e70c7fa8f8ee2083a3621a50f32d8e28b6ee553b7b60f39` |
 | Secret scan | clean (no token/credential/operator path) |
 
 **Threat model (scoped):**
