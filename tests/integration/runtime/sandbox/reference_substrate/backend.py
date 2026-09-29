@@ -20,6 +20,7 @@ from intergrax.runtime.sandbox.network_egress import NetworkEgressAllowlist
 
 from .constants import REFERENCE_PROVIDER_ID
 from .endpoints import ReferenceEndpointServers
+from .errors import ReferenceSubstrateLifecycleError
 from .firewall import (
     ReferenceSubstratePolicyError,
     apply_egress_policy_netns,
@@ -55,6 +56,7 @@ class ReferenceSandboxBackend:
         self._endpoints = endpoint_servers or ReferenceEndpointServers()
         self._endpoints.start()
         self._sessions: dict[str, _ReferenceSessionState] = {}
+        self._lifecycle_closed = False
 
     @property
     def preflight(self) -> ReferenceSubstratePreflight:
@@ -118,6 +120,35 @@ class ReferenceSandboxBackend:
         if state is None:
             return
         destroy_netns_session(state.resources)
+
+    def close(self) -> None:
+        if self._lifecycle_closed:
+            return
+        cleanup_errors: list[str] = []
+        session_ids = list(self._sessions.keys())
+        for session_id in session_ids:
+            state = self._sessions.pop(session_id, None)
+            if state is None:
+                continue
+            try:
+                destroy_netns_session(state.resources)
+            except ReferenceSubstratePolicyError as exc:
+                cleanup_errors.append(f"session {session_id}: {exc}")
+        if self._sessions:
+            cleanup_errors.append(
+                f"residual sessions after drain: {', '.join(sorted(self._sessions))}",
+            )
+            self._sessions.clear()
+        try:
+            self._endpoints.stop()
+        except ReferenceSubstrateLifecycleError as exc:
+            cleanup_errors.append(str(exc))
+        if cleanup_errors:
+            raise ReferenceSubstrateLifecycleError(
+                "reference backend qualification cleanup incomplete: "
+                + "; ".join(cleanup_errors),
+            )
+        self._lifecycle_closed = True
 
     def exec(self, session_id: str, command: str) -> SandboxExecResult:
         if session_id not in self._sessions:

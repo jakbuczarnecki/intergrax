@@ -7,6 +7,7 @@ from __future__ import annotations
 import json
 import platform
 import re
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -56,8 +57,12 @@ def _require_linux_physical_environment() -> ReferenceSandboxBackend:
 
 
 @pytest.fixture(scope="module")
-def reference_backend() -> ReferenceSandboxBackend:
-    return _require_linux_physical_environment()
+def reference_backend() -> Iterator[ReferenceSandboxBackend]:
+    backend = _require_linux_physical_environment()
+    try:
+        yield backend
+    finally:
+        backend.close()
 
 
 @pytest.fixture(scope="module")
