@@ -62,7 +62,17 @@ Sections 1–13 below retain **historical** prerequisite audit unless explicitly
 | **Status** | **READY FOR AUDIT** — not CLOSED |
 | **Scoped evidence** | Replaceability, resolver negatives, scope narrowing, tenant-local adversarial rejection, pure path to `QUALIFICATION_PENDING` without `qualify()` / Governance / Execution |
 | **FRZ (scoped; global statuses OPEN)** | FRZ-OWN-01..03, FRZ-CTR-01..06, FRZ-TYP-01..04, FRZ-TYP-06, FRZ-PLG-01..02, FRZ-RPL-01..02, FRZ-GOV-09, FRZ-TRC-10; FRZ-TEN-01, FRZ-TEN-02, FRZ-TEN-07, FRZ-TEN-10, FRZ-TEN-11, FRZ-TEN-12 |
-| **Deferred** | P4 orchestrated qualification; CERT global tenant close |
+| **P3 carry-over (P4)** | `ScopedIntegrationAdaptationTargetSource` + reference catalog; request-echo resolver removed |
+| **Deferred** | CERT global tenant close |
+
+## AW-7C-P4 scoped qualification + execution evidence (READY FOR AUDIT)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **READY FOR AUDIT** — not CLOSED |
+| **Scoped evidence** | `CapabilityQualificationService.qualify()` with subject continuity; Governance negatives (zero intake); canonical dispatch success; duplicate idempotency; sandbox allowlist attestation helper; target truth negatives |
+| **FRZ (scoped; global statuses OPEN)** | FRZ-EXE-01..07, FRZ-GOV-01..05/07/09, FRZ-SEC-02/03/05/07, FRZ-TRC-01/03/04/06/10, FRZ-TEN-01/02/07/10/11/12 |
+| **Deferred** | AW-7C-CERT adversarial global close |
 
 ---
 

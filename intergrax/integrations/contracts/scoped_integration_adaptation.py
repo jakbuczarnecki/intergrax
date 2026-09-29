@@ -376,6 +376,43 @@ class ScopedIntegrationAdaptationStrategy(Protocol):
     ) -> ScopedIntegrationAdaptationArtifact: ...
 
 
+@dataclass(frozen=True, slots=True)
+class ScopedIntegrationAdaptationTargetLookupKey:
+    """Integrations-owned lookup identity — not request-echo target truth."""
+
+    tenant_id: str
+    integration_category: IntegrationCategory
+    provider_id: str
+    resource_scope: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "tenant_id",
+            _require_non_empty(self.tenant_id, "tenant_id"),
+        )
+        object.__setattr__(
+            self,
+            "provider_id",
+            _require_non_empty(self.provider_id, "provider_id"),
+        )
+        object.__setattr__(
+            self,
+            "resource_scope",
+            _require_non_empty(self.resource_scope, "resource_scope"),
+        )
+
+
+@runtime_checkable
+class ScopedIntegrationAdaptationTargetSource(Protocol):
+    """Authoritative target truth — resolved independently of request claims."""
+
+    def resolve(
+        self,
+        key: ScopedIntegrationAdaptationTargetLookupKey,
+    ) -> ScopedIntegrationAdaptationTarget: ...
+
+
 @runtime_checkable
 class ScopedIntegrationAdaptationTargetResolver(Protocol):
     def resolve_target(
@@ -390,6 +427,51 @@ class ScopedIntegrationAdaptationPort(Protocol):
         self,
         request: ScopedIntegrationAdaptationRequest,
     ) -> ScopedIntegrationAdaptationArtifact: ...
+
+
+@dataclass(frozen=True, slots=True)
+class ScopedAdaptedIntegrationOperationEvidence:
+    """Typed adapted-operation facts — no secret material."""
+
+    evidence_ref: str
+    tenant_id: str
+    execution_id: str
+    artifact_id: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "evidence_ref",
+            _require_non_empty(self.evidence_ref, "evidence_ref"),
+        )
+        object.__setattr__(
+            self,
+            "tenant_id",
+            _require_non_empty(self.tenant_id, "tenant_id"),
+        )
+        object.__setattr__(
+            self,
+            "execution_id",
+            _require_non_empty(self.execution_id, "execution_id"),
+        )
+        object.__setattr__(
+            self,
+            "artifact_id",
+            _require_non_empty(self.artifact_id, "artifact_id"),
+        )
+
+
+@runtime_checkable
+class ScopedAdaptedIntegrationOperationPort(Protocol):
+    """Execution-bound adapted integration operation — Integrations-owned seam."""
+
+    def execute(
+        self,
+        *,
+        artifact: ScopedIntegrationAdaptationArtifact,
+        execution_id: str,
+        tenant_id: str,
+    ) -> ScopedAdaptedIntegrationOperationEvidence: ...
 
 
 SCOPE_FINGERPRINT_PREFIX: Final = "sha256:"
@@ -454,8 +536,12 @@ __all__ = [
     "ScopedIntegrationAdaptationScope",
     "ScopedIntegrationAdaptationSpecification",
     "ScopedIntegrationAdaptationStrategy",
+    "ScopedAdaptedIntegrationOperationEvidence",
+    "ScopedAdaptedIntegrationOperationPort",
     "ScopedIntegrationAdaptationTarget",
+    "ScopedIntegrationAdaptationTargetLookupKey",
     "ScopedIntegrationAdaptationTargetResolver",
+    "ScopedIntegrationAdaptationTargetSource",
     "derive_scoped_integration_adaptation_artifact_fingerprint",
     "derive_scoped_integration_adaptation_scope_fingerprint",
     "parse_scoped_integration_adaptation_operation_ids",

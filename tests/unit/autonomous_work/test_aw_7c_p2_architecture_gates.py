@@ -37,6 +37,10 @@ def test_aw_scoped_adaptive_integration_no_tool_runtime() -> None:
 
 def test_no_second_qualification_service_symbol() -> None:
     aw_root = Path(__file__).resolve().parents[3] / "intergrax/autonomous_work"
-    text = "\n".join(p.read_text(encoding="utf-8") for p in aw_root.rglob("*.py"))
-    assert "A2CapabilityQualificationService" not in text
-    assert "CapabilityQualificationService" not in text
+    p4_only = aw_root / "scoped_adaptive_integration_execution.py"
+    for path in aw_root.rglob("*.py"):
+        if path == p4_only:
+            continue
+        text = path.read_text(encoding="utf-8")
+        assert "A2CapabilityQualificationService" not in text
+        assert "CapabilityQualificationService" not in text

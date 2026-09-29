@@ -220,9 +220,58 @@ def _verify_artifact_containment(
     target: ScopedIntegrationAdaptationTarget,
     artifact: ScopedIntegrationAdaptationArtifact,
 ) -> None:
-    del target
     req_scope = request.scope
     art_scope = artifact.scope
+    if artifact.tenant_id != target.tenant_id:
+        raise ScopedIntegrationAdaptationError(
+            ScopedIntegrationAdaptationFailureReason.TENANT_MISMATCH,
+            detail="artifact target tenant mismatch",
+        )
+    if art_scope.tenant_id != target.tenant_id:
+        raise ScopedIntegrationAdaptationError(
+            ScopedIntegrationAdaptationFailureReason.TENANT_MISMATCH,
+            detail="artifact scope target tenant mismatch",
+        )
+    if artifact.integration_category != target.integration_category:
+        raise ScopedIntegrationAdaptationError(
+            ScopedIntegrationAdaptationFailureReason.IDENTITY_MISMATCH,
+            detail="artifact target category mismatch",
+        )
+    if art_scope.integration_category != target.integration_category:
+        raise ScopedIntegrationAdaptationError(
+            ScopedIntegrationAdaptationFailureReason.IDENTITY_MISMATCH,
+            detail="artifact scope target category mismatch",
+        )
+    if artifact.provider_id != target.provider_id:
+        raise ScopedIntegrationAdaptationError(
+            ScopedIntegrationAdaptationFailureReason.IDENTITY_MISMATCH,
+            detail="artifact target provider mismatch",
+        )
+    if art_scope.provider_id != target.provider_id:
+        raise ScopedIntegrationAdaptationError(
+            ScopedIntegrationAdaptationFailureReason.IDENTITY_MISMATCH,
+            detail="artifact scope target provider mismatch",
+        )
+    if artifact.resource_scope != target.resource_scope:
+        raise ScopedIntegrationAdaptationError(
+            ScopedIntegrationAdaptationFailureReason.SCOPE_WIDENING,
+            detail="artifact target resource_scope mismatch",
+        )
+    if art_scope.resource_scope != target.resource_scope:
+        raise ScopedIntegrationAdaptationError(
+            ScopedIntegrationAdaptationFailureReason.SCOPE_WIDENING,
+            detail="artifact scope target resource_scope mismatch",
+        )
+    if artifact.candidate_revision != target.current_revision:
+        raise ScopedIntegrationAdaptationError(
+            ScopedIntegrationAdaptationFailureReason.REVISION_MISMATCH,
+            detail="artifact target revision mismatch",
+        )
+    if art_scope.candidate_revision != target.current_revision:
+        raise ScopedIntegrationAdaptationError(
+            ScopedIntegrationAdaptationFailureReason.REVISION_MISMATCH,
+            detail="artifact scope target revision mismatch",
+        )
     if artifact.tenant_id != request.tenant_id:
         raise ScopedIntegrationAdaptationError(
             ScopedIntegrationAdaptationFailureReason.TENANT_MISMATCH,

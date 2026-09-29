@@ -46,8 +46,11 @@ from intergrax.integrations.qualification.reference_scoped_integration_adaptatio
 from intergrax.integrations.scoped_integration_adaptation_service import (
     ScopedIntegrationAdaptationPortAdapter,
 )
+from intergrax.integrations.qualification.reference_scoped_integration_adaptation_target_source import (
+    reference_scoped_integration_adaptation_target_source,
+)
 from intergrax.integrations.scoped_integration_adaptation_target_resolver import (
-    IntegrationIdentityScopedIntegrationAdaptationTargetResolver,
+    SourceBackedScopedIntegrationAdaptationTargetResolver,
 )
 from tests.unit.autonomous_work import repository_contracts as contract_suite
 
@@ -113,7 +116,9 @@ def test_p3_end_to_end_qualification_pending_without_side_effects() -> None:
     candidate = decision.selected_candidate
     assert candidate is not None
     adaptation_port = ScopedIntegrationAdaptationPortAdapter(
-        target_resolver=IntegrationIdentityScopedIntegrationAdaptationTargetResolver(),
+        target_resolver=SourceBackedScopedIntegrationAdaptationTargetResolver(
+            target_source=reference_scoped_integration_adaptation_target_source(),
+        ),
         strategies=(ReferenceScopedIntegrationAdaptationStrategy(),),
     )
     service = WorkerScopedAdaptiveIntegrationOrchestrationService(

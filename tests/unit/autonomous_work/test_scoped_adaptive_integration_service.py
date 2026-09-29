@@ -40,8 +40,8 @@ from intergrax.integrations.contracts.scoped_integration_adaptation import (
 from intergrax.integrations.scoped_integration_adaptation_service import (
     ScopedIntegrationAdaptationPortAdapter,
 )
-from intergrax.integrations.scoped_integration_adaptation_target_resolver import (
-    IntegrationIdentityScopedIntegrationAdaptationTargetResolver,
+from tests.unit.integrations.test_scoped_integration_adaptation_service import (
+    _default_target_resolver,
 )
 from tests.unit.autonomous_work import repository_contracts as contract_suite
 
@@ -139,7 +139,7 @@ def _scope() -> ScopedIntegrationAdaptationScope:
 def _adaptation_port() -> _AdaptPort:
     return _AdaptPort(
         ScopedIntegrationAdaptationPortAdapter(
-            target_resolver=IntegrationIdentityScopedIntegrationAdaptationTargetResolver(),
+            target_resolver=_default_target_resolver(),
             strategies=(_Strategy(),),
         ),
     )

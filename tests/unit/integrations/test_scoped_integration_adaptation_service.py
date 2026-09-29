@@ -34,8 +34,14 @@ from intergrax.integrations.scoped_integration_adaptation_service import (
     ScopedIntegrationAdaptationPortAdapter,
     ScopedIntegrationAdaptationService,
 )
+from intergrax.integrations.contracts.scoped_integration_adaptation import (
+    ScopedIntegrationAdaptationTargetLookupKey,
+)
+from intergrax.integrations.qualification.reference_scoped_integration_adaptation_target_source import (
+    reference_scoped_integration_adaptation_target_source,
+)
 from intergrax.integrations.scoped_integration_adaptation_target_resolver import (
-    IntegrationIdentityScopedIntegrationAdaptationTargetResolver,
+    SourceBackedScopedIntegrationAdaptationTargetResolver,
 )
 
 pytestmark = pytest.mark.unit
@@ -89,7 +95,7 @@ def _service(
 ) -> ScopedIntegrationAdaptationService:
     selected = strategies or (ReferenceScopedIntegrationAdaptationStrategy(),)
     return ScopedIntegrationAdaptationService(
-        target_resolver=resolver or IntegrationIdentityScopedIntegrationAdaptationTargetResolver(),
+        target_resolver=resolver or _default_target_resolver(),
         strategies=selected,  # type: ignore[arg-type]
     )
 
@@ -143,6 +149,44 @@ class _FixedTargetResolver:
     ) -> ScopedIntegrationAdaptationTarget:
         del request
         return self._target
+
+
+class _TestAdaptationTargetSource:
+    """Independent per-key revision map — default ``rev-1`` for adaptation unit tests."""
+
+    def __init__(
+        self,
+        revisions: dict[tuple[str, str, str, str], str] | None = None,
+    ) -> None:
+        self._revisions = revisions or {}
+
+    @staticmethod
+    def _idx(key: ScopedIntegrationAdaptationTargetLookupKey) -> tuple[str, str, str, str]:
+        return (
+            key.tenant_id,
+            key.integration_category.value,
+            key.provider_id,
+            key.resource_scope,
+        )
+
+    def resolve(
+        self,
+        key: ScopedIntegrationAdaptationTargetLookupKey,
+    ) -> ScopedIntegrationAdaptationTarget:
+        revision = self._revisions.get(self._idx(key), "rev-1")
+        return ScopedIntegrationAdaptationTarget(
+            tenant_id=key.tenant_id,
+            integration_category=key.integration_category,
+            provider_id=key.provider_id,
+            resource_scope=key.resource_scope,
+            current_revision=revision,
+        )
+
+
+def _default_target_resolver() -> SourceBackedScopedIntegrationAdaptationTargetResolver:
+    return SourceBackedScopedIntegrationAdaptationTargetResolver(
+        target_source=_TestAdaptationTargetSource(),
+    )
 
 
 def test_reference_strategy_narrows_scope() -> None:
@@ -319,8 +363,15 @@ def test_port_adapter_explicit_composition() -> None:
         permitted_operations=(_OP_READ,),
         network_allowlist=NetworkEgressAllowlist(hosts=(_HOST_A,)),
     )
+    target = ScopedIntegrationAdaptationTarget(
+        tenant_id=scope.tenant_id,
+        integration_category=scope.integration_category,
+        provider_id=scope.provider_id,
+        resource_scope=scope.resource_scope,
+        current_revision=scope.candidate_revision,
+    )
     port = ScopedIntegrationAdaptationPortAdapter(
-        target_resolver=IntegrationIdentityScopedIntegrationAdaptationTargetResolver(),
+        target_resolver=_FixedTargetResolver(target),
         strategies=(_Strategy("s1"),),
     )
     assert port.adapt(_request(scope)).artifact_id == "art-1"
@@ -458,3 +509,57 @@ def test_reference_strategy_idempotent_fingerprint() -> None:
     first = service.adapt(req)
     second = service.adapt(req)
     assert first.artifact_fingerprint == second.artifact_fingerprint
+
+
+def test_independent_target_source_provider_mismatch_rejected() -> None:
+    scope = _scope()
+    wrong_provider_target = ScopedIntegrationAdaptationTarget(
+        tenant_id=scope.tenant_id,
+        integration_category=scope.integration_category,
+        provider_id="provider-wrong",
+        resource_scope=scope.resource_scope,
+        current_revision=scope.candidate_revision,
+    )
+    service = _service(
+        strategies=(_Strategy("s1"),),
+        resolver=_FixedTargetResolver(wrong_provider_target),
+    )
+    with pytest.raises(ScopedIntegrationAdaptationError) as exc:
+        service.adapt(_request(scope))
+    assert exc.value.reason is ScopedIntegrationAdaptationFailureReason.IDENTITY_MISMATCH
+
+
+def test_independent_target_source_revision_mismatch_rejected() -> None:
+    scope = _scope(candidate_revision="rev-1")
+    source = _TestAdaptationTargetSource(
+        revisions={
+            (
+                scope.tenant_id,
+                scope.integration_category.value,
+                scope.provider_id,
+                scope.resource_scope,
+            ): "rev-2",
+        },
+    )
+    service = ScopedIntegrationAdaptationService(
+        target_resolver=SourceBackedScopedIntegrationAdaptationTargetResolver(
+            target_source=source,
+        ),
+        strategies=(ReferenceScopedIntegrationAdaptationStrategy(),),
+    )
+    with pytest.raises(ScopedIntegrationAdaptationError) as exc:
+        service.adapt(_request(scope))
+    assert exc.value.reason is ScopedIntegrationAdaptationFailureReason.REVISION_MISMATCH
+
+
+def test_reference_target_source_independent_from_request_revision_claim() -> None:
+    scope = _scope(candidate_revision="rev-wrong")
+    service = ScopedIntegrationAdaptationService(
+        target_resolver=SourceBackedScopedIntegrationAdaptationTargetResolver(
+            target_source=reference_scoped_integration_adaptation_target_source(),
+        ),
+        strategies=(ReferenceScopedIntegrationAdaptationStrategy(),),
+    )
+    with pytest.raises(ScopedIntegrationAdaptationError) as exc:
+        service.adapt(_request(scope))
+    assert exc.value.reason is ScopedIntegrationAdaptationFailureReason.REVISION_MISMATCH
