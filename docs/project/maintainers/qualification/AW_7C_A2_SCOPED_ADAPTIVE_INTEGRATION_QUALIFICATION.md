@@ -20,13 +20,13 @@
 
 | Field | Value |
 | ----- | ----- |
-| **Stage** | AW-7C-P1-ARCH-R1 (remediation); parent AW-7C-P1-ARCH **BLOCKED** pending R1 audit |
+| **Stage** | AW-7C-P1-ARCH **CLOSED / architecture lock accepted through R1**; AW-7C-P1-ARCH-R1 **CLOSED / independently accepted** @ `fa5853ec009d015cb52c9de15dd7e283932a9b4d` |
 | **Parent** | AW-7C **CURRENT** |
 | **Prerequisites** | AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ **CLOSED / accepted** |
 | **Purpose** | Contract-boundary and ownership lock for A2 scoped adaptive integration execution — **no A2 production implementation** |
 | **Canonical architecture** | [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) |
 | **A2 execution service on baseline** | **None** (gap documented; P2+ implements) |
-| **Next work** | Independent **AW-7C-P1-ARCH-R1** audit; then AW-7C-P2 (**not entered**) |
+| **Next work** | **AW-7C-P2** — **NEXT / NOT ENTERED** |
 | **Global FRZ** | No PASS delta from P1-ARCH / R1 |
 
 Sections 1–13 below retain **historical** prerequisite audit unless explicitly superseded above.
@@ -42,14 +42,18 @@ Sections 1–13 below retain **historical** prerequisite audit unless explicitly
 | **Reason 1** | Shared semantic owner for adaptation scope (`ScopedAdaptiveIntegrationScope` documented as AW + Integrations shared contract) — violates exactly-one owner (FRZ-OWN-01) |
 | **Reason 2** | Qualification subject / `CapabilityQualificationRequest` carry model for A2 artifacts left to P2 — material architecture decision deferred |
 
-## AW-7C-P1-ARCH-R1 remediation (current)
+## AW-7C-P1-ARCH-R1 independent audit (accepted)
 
 | Field | Value |
 | ----- | ----- |
+| **Verdict** | **CLOSED / independently accepted** |
+| **Exact audited SHA** | `fa5853ec009d015cb52c9de15dd7e283932a9b4d` |
 | **Scope** | Docs-only architecture remediation — **no** production code, contracts, or tests |
 | **Blocker A closure** | `ScopedIntegrationAdaptationScope` owned by **Integrations** (`intergrax/integrations/contracts/`); AW supplies immutable instance on orchestration request only |
 | **Blocker B closure** | `CapabilityQualificationSubject` owned by **Capability Qualification**; deterministic projections from `ScopedIntegrationAdaptationArtifact` and from successful `CapabilityAcquisitionResult`; single UCA-4 mechanism; V1→subject migration direction locked |
-| **Status after remediation** | **READY FOR AUDIT** (independent SHA audit required; Cursor report is not closure) |
+| **Parent effect** | **AW-7C-P1-ARCH** = **CLOSED / architecture lock accepted through R1 remediation**; **AW-7C** = **CURRENT**; **AW-7C-P2** = **NEXT / NOT ENTERED** |
+| **Global FRZ** | **new global FRZ PASS = 0**; **new FRZ-TEN PASS = 0** |
+| **R1 gates (mechanical)** | 38 passed; 4 passed — architecture-doc gate only; not code/behavior proof of P2+ |
 
 ---
 

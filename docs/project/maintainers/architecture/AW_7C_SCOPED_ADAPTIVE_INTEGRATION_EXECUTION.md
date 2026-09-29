@@ -4,14 +4,14 @@
 
 | Field | Value |
 | ----- | ----- |
-| **Task** | `AW-7C-P1-ARCH-R1` (ownership + qualification-subject remediation); parent `AW-7C-P1-ARCH` |
-| **Parent** | `AW-7C` — Scoped Adaptive Integration Execution |
-| **Program baseline** | `e055a5bdb3c120b90dad546dc33cc0219824ced7` (`development`) |
+| **Task** | `AW-7C-P1-ARCH` — **CLOSED / independently accepted through R1**; `AW-7C-P1-ARCH-R1` — **CLOSED / independently accepted** @ `fa5853ec009d015cb52c9de15dd7e283932a9b4d` |
+| **Parent** | `AW-7C` — **CURRENT** — Scoped Adaptive Integration Execution |
+| **Program baseline** | P1 blocked baseline `e055a5bdb3c120b90dad546dc33cc0219824ced7`; accepted R1 architecture anchor `fa5853ec009d015cb52c9de15dd7e283932a9b4d` (`development`) |
 | **Source** | Scenario #24 GAP-03; roadmap §3.0.1 |
-| **Status** | **READY FOR AUDIT** (R1 remediation) — design lock only; **no A2 production implementation** |
+| **Status** | **CLOSED / independently accepted through R1 remediation** — design lock only; **no A2 production implementation** |
 | **Production / tests / contracts in P1 / R1** | **0** |
 | **Prerequisites** | AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ **CLOSED / accepted** (egress substrate evidence) |
-| **Next implementation** | `AW-7C-P2` only after independent **P1-ARCH-R1** audit; `AW-7C-P1-ARCH` blocked pending R1 audit |
+| **Next implementation** | `AW-7C-P2` — **NEXT / NOT ENTERED** |
 
 **Scope:** lock reusable platform semantics for **A2 scoped adaptive integration**: from `SCOPED_ADAPTATION_CANDIDATE` through bounded adaptation, qualification, Governance/runtime admission, and **canonical Execution** — without a parallel runtime, AW-owned integration registry, or A1 bypass.
 
