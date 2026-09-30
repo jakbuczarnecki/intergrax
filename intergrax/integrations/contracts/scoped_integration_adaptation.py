@@ -462,9 +462,106 @@ class ScopedAdaptedIntegrationOperationEvidence:
         )
 
 
+@dataclass(frozen=True, slots=True)
+class ScopedAdaptedIntegrationEffectRequest:
+    """Immutable typed effect description — no secrets, no callables."""
+
+    artifact_id: str
+    artifact_fingerprint: str
+    tenant_id: str
+    integration_category: IntegrationCategory
+    provider_id: str
+    resource_scope: str
+    requested_operation: ScopedIntegrationAdaptationOperationId
+    network_allowlist: NetworkEgressAllowlist
+    target_scope: NetworkEgressAllowlist
+    specification: ScopedIntegrationAdaptationSpecification
+    execution_id: str
+
+    def __post_init__(self) -> None:
+        object.__setattr__(
+            self,
+            "artifact_id",
+            _require_non_empty(self.artifact_id, "artifact_id"),
+        )
+        object.__setattr__(
+            self,
+            "artifact_fingerprint",
+            _require_non_empty(self.artifact_fingerprint, "artifact_fingerprint"),
+        )
+        object.__setattr__(
+            self,
+            "tenant_id",
+            _require_non_empty(self.tenant_id, "tenant_id"),
+        )
+        object.__setattr__(
+            self,
+            "provider_id",
+            _require_non_empty(self.provider_id, "provider_id"),
+        )
+        object.__setattr__(
+            self,
+            "resource_scope",
+            _require_non_empty(self.resource_scope, "resource_scope"),
+        )
+        object.__setattr__(
+            self,
+            "execution_id",
+            _require_non_empty(self.execution_id, "execution_id"),
+        )
+        if type(self.requested_operation) is not ScopedIntegrationAdaptationOperationId:
+            raise TypeError("requested_operation must be ScopedIntegrationAdaptationOperationId")
+
+
+@runtime_checkable
+class ScopedAdaptedIntegrationEffectRequestPort(Protocol):
+    """Replaceable effect preparer — non-authoritative, no credential material."""
+
+    def prepare(
+        self,
+        *,
+        artifact: ScopedIntegrationAdaptationArtifact,
+        requested_operation: ScopedIntegrationAdaptationOperationId,
+        execution_id: str,
+        tenant_id: str,
+        admitted_network_allowlist: NetworkEgressAllowlist,
+    ) -> ScopedAdaptedIntegrationEffectRequest:
+        """Build typed effect request from admitted semantic facts only."""
+
+
+@runtime_checkable
+class ScopedAdaptedIntegrationEffectExecutionIngress(Protocol):
+    """Executor ingress — binds request, sandbox session, and broker resolution."""
+
+    @property
+    def effect_request(self) -> ScopedAdaptedIntegrationEffectRequest: ...
+
+    @property
+    def execution_id(self) -> str: ...
+
+    @property
+    def sandbox_session_id(self) -> int: ...
+
+    @property
+    def credential_use_evidence_grant_id(self) -> str: ...
+
+    @property
+    def credential_use_evidence_fingerprint(self) -> str: ...
+
+
+@runtime_checkable
+class ScopedAdaptedIntegrationEffectExecutor(Protocol):
+    """Canonical physical adapted-integration effect boundary (Integrations-owned)."""
+
+    def execute(
+        self,
+        ingress: ScopedAdaptedIntegrationEffectExecutionIngress,
+    ) -> ScopedAdaptedIntegrationOperationEvidence: ...
+
+
 @runtime_checkable
 class ScopedAdaptedIntegrationOperationPort(Protocol):
-    """Execution-bound adapted integration operation — Integrations-owned seam."""
+    """Legacy physical operation seam — superseded by EffectPreparer + EffectExecutor (AW-7C R1)."""
 
     def execute(
         self,
@@ -538,6 +635,10 @@ __all__ = [
     "ScopedIntegrationAdaptationScope",
     "ScopedIntegrationAdaptationSpecification",
     "ScopedIntegrationAdaptationStrategy",
+    "ScopedAdaptedIntegrationEffectExecutionIngress",
+    "ScopedAdaptedIntegrationEffectExecutor",
+    "ScopedAdaptedIntegrationEffectRequest",
+    "ScopedAdaptedIntegrationEffectRequestPort",
     "ScopedAdaptedIntegrationOperationEvidence",
     "ScopedAdaptedIntegrationOperationPort",
     "ScopedIntegrationAdaptationTarget",
