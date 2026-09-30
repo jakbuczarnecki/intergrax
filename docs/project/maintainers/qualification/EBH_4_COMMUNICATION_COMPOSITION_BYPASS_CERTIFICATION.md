@@ -458,7 +458,9 @@ global FRZ PASS delta = 0
 | --- | --- |
 | B1 `application_graph_spec_to_plan` self-import | **RESOLVED** — real EE implementation restored; app shim re-exports; regression gate `test_application_graph_spec_to_plan_module.py` |
 | B2 EBH-2A / EBH-2I | **RESOLVED** — 9 unregistered violations remediated (contracts neutralized; wiring bundle owner = `runtime.execution.host_orchestration_wiring_bundle`) |
-| B3 checkpoint recovery participation | **RESOLVED (local)** — resume plan wired in `should_skip_graph_node` + graph executor re-run; DS-NEXUS-02 aligned with UE-11E production-path graph continuation |
+| B3A resume-plan GraphExecutor semantics | **RESOLVED (local)** — `should_skip_graph_node` + graph executor resume-node reset; UE-11E / DS-NEXUS-02 graph executor qualification |
+| B3B canonical production graph continuation | **READY FOR AUDIT (local)** — DS-NEXUS-02 `UnifiedTaskRunner` → `execute_root_task` → full Nexus intake/planning/graph path without `_handle_task_impl` monkeypatch; governed harness admission via `lab_admitted_root_governance_identity_for_task` |
+| B3 (aggregate) | **BLOCKED** — B3B independent audit pending; B4–B7 not completed |
 | B4–B7 full matrices / P9 / typing | **NOT COMPLETED** in this pass |
 
 ```text
