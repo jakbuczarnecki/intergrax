@@ -140,6 +140,7 @@ async def test_kernel_increments_budget_after_llm_drain() -> None:
     meter_seed = "run-meter-1"
     kernel_ctx = StepKernelContext(
         agent_id="demo",
+        tenant_id="tenant-test",
         run_id=canonical_run_id_for_tests(meter_seed),
         task_id=canonical_task_id_for_tests(meter_seed),
         allow_permissive_missing_policy=True,

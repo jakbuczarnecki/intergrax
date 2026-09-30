@@ -334,3 +334,44 @@ def test_b4_r1_codecraft_trace_blank_tenant_fail_closed() -> None:
             tenant_id="",
             task_id="task-a",
         )
+
+
+def test_b4_r2_step_kernel_context_missing_tenant_rejected() -> None:
+    from intergrax.runtime.kernel.step_kernel import StepKernelContext
+
+    with pytest.raises(TypeError):
+        StepKernelContext(agent_id="x")  # type: ignore[call-arg]
+
+
+def test_b4_r2_step_kernel_context_blank_tenant_rejected() -> None:
+    from intergrax.runtime.kernel.step_kernel import StepKernelContext
+
+    with pytest.raises(ValueError, match="tenant_id must be non-empty"):
+        StepKernelContext(agent_id="x", tenant_id="   ")
+
+
+def test_b4_r2_step_kernel_context_strips_tenant() -> None:
+    from intergrax.runtime.kernel.step_kernel import StepKernelContext
+
+    ctx = StepKernelContext(agent_id="x", tenant_id=" tenant-a ")
+    assert ctx.tenant_id == "tenant-a"
+
+
+def test_b4_r2_kernel_tenant_matches_uaep_step_context() -> None:
+    from intergrax.contracts.agent_step import AgentStep
+    from intergrax.runtime.kernel.step_kernel import StepKernelContext
+    from intergrax.runtime.nexus.agents.uaep_step_bridge import build_uaep_step_context
+
+    kernel_ctx = StepKernelContext(agent_id="agent-1", tenant_id="tenant-a")
+    exec_ctx = RuntimeExecutionContext(
+        run_id=mint_run_id(),
+        task_id=canonical_task_id_for_tests("b4-r2-kernel"),
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+        agent_id="agent-1",
+        workspace_id="ws-1",
+        request=build_runtime_request_for_tests(seed="b4-r2-kernel", tenant_id="tenant-a"),
+    )
+    step = AgentStep(step_index=0, step_id="s0", step_name="llm")
+    step_ctx = build_uaep_step_context(step, exec_ctx, kernel_ctx)
+    assert step_ctx.tenant_id == kernel_ctx.tenant_id == "tenant-a"

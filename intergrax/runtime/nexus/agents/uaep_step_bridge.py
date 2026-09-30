@@ -276,10 +276,10 @@ def build_kernel_session(
         resolved_principal_id = request_principal_id
     return StepKernelContext(
         agent_id=agent_id,
+        tenant_id=tenant_id.strip(),
         principal_id=resolved_principal_id,
         run_id=run_id,
         task_id=task_id,
-        tenant_id=tenant_id,
         max_steps=max_steps,
         policy_engine=policy_engine,
         production_mode=production_mode,

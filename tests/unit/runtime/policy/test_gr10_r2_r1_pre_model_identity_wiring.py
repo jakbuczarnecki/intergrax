@@ -188,6 +188,7 @@ async def test_step_kernel_production_empty_principal_fails_closed() -> None:
     with kernel_step_test_scope("gr10-r2-r1-missing-principal") as (task_id, run_id):
         kernel_ctx = StepKernelContext(
             agent_id="demo",
+            tenant_id="tenant-test",
             task_id=task_id,
             run_id=run_id,
             principal_id="",

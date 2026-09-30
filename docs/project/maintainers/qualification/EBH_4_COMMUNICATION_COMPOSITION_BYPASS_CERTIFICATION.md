@@ -624,3 +624,37 @@ uv run pytest -p no:xdist tests/unit/runtime/qualification/test_ebh_4_b4_tenant_
 **B4-R1 tenant verdict (local):** **PASS** · **IN-SCOPE BLOCKER = 0** · **global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0**
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 26. B4-R2 — StepKernel Tenant Contract Closure (Cursor @ `8f44f5b3…`)
+
+**START_HEAD:** `8f44f5b3af86b7073c121533a154ee0bdc1cb1d9`
+
+**8f44f5b3 independent audit:** B4-R1 remediation accepted for Agent/Eval/Memory/CodeCraft, but **B4 remained BLOCKED** because `StepKernelContext` still allowed implicit `tenant_id="default"`.
+
+### R2 contract
+
+| Seam | Change |
+| --- | --- |
+| `intergrax/runtime/kernel/step_kernel.py` | `tenant_id` required (field order: `agent_id`, `tenant_id`, …); `__post_init__` strip + non-empty validation |
+| Production constructors | `acp_run.py`, `uaep_step_bridge.build_kernel_session`, `uc11_compliance_golden.py` — explicit typed tenant only |
+| Tests | All `StepKernelContext(` callers supply explicit fixture tenant |
+
+### Post-R2 residual (`StepKernelContext` / kernel graph)
+
+**EBH-4-relevant implicit kernel tenant fallback:** **0** (local)
+
+HTTP harness route defaults, multimedia/integration config defaults — unchanged; **TRACKED FREEZE DEBT** (CONFIG-X / TENANT-X), outside StepKernel execution graph.
+
+### B4-R2 adversarial owner
+
+`tests/unit/runtime/qualification/test_ebh_4_b4_tenant_isolation.py` — R2 rows (missing/blank/strip kernel tenant; kernel → UAEP `AgentStepContext` equality).
+
+`tests/unit/runtime/kernel/test_step_kernel.py` — kernel event tenant continuity.
+
+**B4-R2 tenant verdict (local):** **PASS** candidate · **B4 whole-scope (local):** **PASS** candidate · **IN-SCOPE BLOCKER = 0** · **global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0**
+
+**EBH-4-R1-R3 / EBH-4 / HARNESS-W7:** BLOCKED / NOT ENTERED (audit not CLOSED)
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**

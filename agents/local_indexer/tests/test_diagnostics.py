@@ -98,6 +98,7 @@ async def test_kernel_propagates_typed_diagnostic_payloads() -> None:
     with kernel_step_test_scope("local-indexer-diag") as (task_id, run_id):
         kernel_ctx = StepKernelContext(
             agent_id="local_indexer",
+            tenant_id="tenant-test",
             task_id=task_id,
             run_id=run_id,
             allow_permissive_missing_policy=True,

@@ -45,6 +45,7 @@ async def test_kernel_opens_circuit_after_retriable_failures() -> None:
         step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0)
         kernel_ctx = StepKernelContext(
             agent_id="demo",
+            tenant_id="tenant-test",
             task_id=task_id,
             run_id=run_id,
             policy_engine=PolicyEngine(),
