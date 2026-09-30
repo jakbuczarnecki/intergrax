@@ -13,9 +13,11 @@ from intergrax.applications._shared.guardrail_runtime_bridge import (
     resolve_guardrail_wiring_options,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationApplicationWiringTarget,
+)
 from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,8 +33,11 @@ def wire_application_guardrail(env: ApplicationEnvironmentProfile) -> Applicatio
     )
 
 
-def _attach_middleware(nexus: NexusLoop, middleware: LlmGuardrailMiddleware) -> None:
-    pipeline = nexus._middleware  # noqa: SLF001
+def _attach_middleware(
+    target: HostOrchestrationApplicationWiringTarget,
+    middleware: LlmGuardrailMiddleware,
+) -> None:
+    pipeline = target.middleware
     if isinstance(pipeline, MiddlewarePipeline):
         pipeline._middleware = sorted(  # noqa: SLF001
             [middleware, *pipeline._middleware],
@@ -41,7 +46,7 @@ def _attach_middleware(nexus: NexusLoop, middleware: LlmGuardrailMiddleware) -> 
 
 
 def apply_application_guardrail_wiring(
-    nexus: NexusLoop,
+    target: HostOrchestrationApplicationWiringTarget,
     wiring: ApplicationGuardrailWiring,
     env: ApplicationEnvironmentProfile,
 ) -> ApplicationGuardrailWiring:
@@ -51,11 +56,11 @@ def apply_application_guardrail_wiring(
     if not env.guardrail_profile.enabled:
         return wiring
     _attach_middleware(
-        nexus,
+        target,
         LlmGuardrailMiddleware(
             wiring.backend,
             env.guardrail_profile,
-            event_bus=nexus.event_bus,
+            event_bus=target.event_bus,
         ),
     )
     return wiring

@@ -80,6 +80,9 @@ from intergrax.applications._shared.host_orchestration_backend_spec_builder impo
 from intergrax.runtime.execution.environment_orchestration_materialization import (
     materialize_host_orchestration_backend,
 )
+from intergrax.runtime.execution._orchestration_backend_access import (
+    orchestration_backend_for_execution_engine,
+)
 from intergrax.applications._shared.observability_assembly_resolver import (
     assert_observability_assembly_valid,
 )
@@ -524,7 +527,7 @@ def build_harness_host_runtime(
         resolved_registry,
         orchestration_spec,
     )
-    nexus_loop = orchestration.orchestration_backend_for_host_wiring()
+    nexus_loop = orchestration_backend_for_execution_engine(orchestration)
     assert_security_assembly_valid(
         security_wiring, effective_environment, nexus=nexus_loop
     )

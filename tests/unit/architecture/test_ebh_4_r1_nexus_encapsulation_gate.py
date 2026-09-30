@@ -96,16 +96,41 @@ def test_ebh_4_r1_runtime_task_does_not_import_nexus_loop() -> None:
     assert _nexus_loop_construction_count(tree) == 0
 
 
-def test_ebh_4_r1_scenario_runtime_public_surface_has_no_nexus_loop_field() -> None:
+def test_ebh_4_r1_production_nexus_imports_outside_ee_are_zero() -> None:
+    violations: list[str] = []
+    for path in _iter_production_py_files():
+        if _in_ee_zone(path):
+            continue
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        except OSError:
+            continue
+        if _imports_nexus_module(tree):
+            violations.append(path.relative_to(_REPO).as_posix())
+    assert violations == [], f"runtime.nexus imports outside EE: {violations}"
+
+
+def test_ebh_4_r1_import_gate_detects_fixture_violation(tmp_path: Path) -> None:
+    fixture = tmp_path / "fake_production_leak.py"
+    fixture.write_text(
+        "from intergrax.runtime.nexus.nexus_loop import NexusLoop\n",
+        encoding="utf-8",
+    )
+    tree = ast.parse(fixture.read_text(encoding="utf-8"), filename=str(fixture))
+    assert _imports_nexus_module(tree)
+
+
+def test_ebh_4_r1_scenario_runtime_public_surface_has_no_orchestration_materialization() -> None:
     scenario = _INTERGRAX / "applications" / "_shared" / "scenario_runtime_baseline.py"
     tree = ast.parse(scenario.read_text(encoding="utf-8-sig"), filename=str(scenario))
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef) and node.name == "ScenarioRuntimeComposition":
             for item in node.body:
                 if isinstance(item, ast.AnnAssign) and isinstance(item.target, ast.Name):
-                    if item.target.id == "nexus_loop":
-                        pytest.fail("ScenarioRuntimeComposition must not expose nexus_loop")
-    assert not _imports_nexus_loop(tree)
+                    if item.target.id == "orchestration":
+                        pytest.fail(
+                            "ScenarioRuntimeComposition must not expose orchestration materialization",
+                        )
 
 
 def test_ebh_4_r1_nexus_loop_construction_outside_ee_is_zero() -> None:

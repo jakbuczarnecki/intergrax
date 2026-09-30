@@ -17,7 +17,9 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ApplicationSecurityProfile,
 )
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationApplicationWiringTarget,
+)
 
 
 def _enabled_middleware_names(options: SecurityWiringOptions) -> tuple[str, ...]:
@@ -57,14 +59,14 @@ def wire_application_security(
 
 
 def apply_application_security_wiring(
-    nexus: NexusLoop,
+    target: HostOrchestrationApplicationWiringTarget,
     wiring: ApplicationSecurityWiring,
     *,
     env: ApplicationEnvironmentProfile | None = None,
 ) -> None:
-    """Attach V-SEC middleware to ``NexusLoop`` from resolved wiring."""
+    """Attach V-SEC middleware to orchestration host target from resolved wiring."""
     register_application_security_hooks(
-        nexus,
+        target,
         wiring.profile,
         options=wiring.options,
         env=env,

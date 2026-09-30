@@ -9,8 +9,10 @@ from typing import Sequence
 
 from intergrax.applications._shared.guardrail_wiring import ApplicationGuardrailWiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationAssemblyInspectionTarget,
+)
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,13 +46,13 @@ def validate_guardrail_wiring(
     return GuardrailAssemblyValidationResult(valid=not errors, errors=tuple(errors))
 
 
-def validate_guardrail_nexus_wiring(
+def validate_guardrail_host_wiring(
     wiring: ApplicationGuardrailWiring,
-    nexus: NexusLoop,
+    host: HostOrchestrationAssemblyInspectionTarget,
 ) -> GuardrailAssemblyValidationResult:
     if not wiring.options.enabled:
         return GuardrailAssemblyValidationResult(valid=True)
-    pipeline = nexus._middleware  # noqa: SLF001
+    pipeline = host.middleware
     if not isinstance(pipeline, MiddlewarePipeline):
         return GuardrailAssemblyValidationResult(
             valid=False,
@@ -60,7 +62,7 @@ def validate_guardrail_nexus_wiring(
     if "LlmGuardrailMiddleware" not in names:
         return GuardrailAssemblyValidationResult(
             valid=False,
-            errors=("missing LlmGuardrailMiddleware on NexusLoop",),
+            errors=("missing LlmGuardrailMiddleware on orchestration host",),
         )
     return GuardrailAssemblyValidationResult(valid=True)
 
@@ -69,10 +71,12 @@ def assert_guardrail_assembly_valid(
     wiring: ApplicationGuardrailWiring,
     env: ApplicationEnvironmentProfile,
     *,
-    nexus: NexusLoop | None = None,
+    orchestration_host: HostOrchestrationAssemblyInspectionTarget | None = None,
+    nexus: HostOrchestrationAssemblyInspectionTarget | None = None,
 ) -> None:
     errors = list(validate_guardrail_wiring(wiring, env).errors)
-    if nexus is not None and wiring.options.enabled:
-        errors.extend(validate_guardrail_nexus_wiring(wiring, nexus).errors)
+    resolved_host = orchestration_host if orchestration_host is not None else nexus
+    if resolved_host is not None and wiring.options.enabled:
+        errors.extend(validate_guardrail_host_wiring(wiring, resolved_host).errors)
     if errors:
         raise GuardrailAssemblyError(errors)

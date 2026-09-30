@@ -15,11 +15,9 @@ from intergrax.applications._shared.context_wiring import (
 )
 from intergrax.applications._shared.decision_wiring import (
     ApplicationDecisionWiring,
-    apply_application_decision_wiring,
 )
 from intergrax.applications._shared.guardrail_wiring import (
     ApplicationGuardrailWiring,
-    apply_application_guardrail_wiring,
     wire_application_guardrail,
 )
 from intergrax.applications._shared.host_execution_capacity_policy import (
@@ -39,7 +37,6 @@ from intergrax.applications._shared.reasoning_wiring import (
 )
 from intergrax.applications._shared.security_wiring import (
     ApplicationSecurityWiring,
-    apply_application_security_wiring,
     wire_application_security,
 )
 from intergrax.applications.contracts.environment_profile import (
@@ -70,6 +67,9 @@ from intergrax.runtime.execution.execution_terminal.wiring import (
 )
 from intergrax.runtime.execution.host_orchestration_loop_init_spec import (
     HostOrchestrationLoopInitSpec,
+)
+from intergrax.applications.contracts.host_orchestration_wiring_bundle import (
+    HostOrchestrationApplicationWiringBundle,
 )
 from intergrax.runtime.execution.lineage.wiring import (
     resolve_execution_lineage_persistence,
@@ -253,12 +253,12 @@ def build_host_orchestration_loop_init_spec_from_environment(
 
     resolved_security = security_wiring or wire_application_security(env)
     resolved_guardrail = guardrail_wiring or wire_application_guardrail(env)
-
-    def _post_materialize(backend: object) -> None:
-        apply_application_security_wiring(backend, resolved_security, env=env)
-        apply_application_guardrail_wiring(backend, resolved_guardrail, env)
-        if decision_wiring is not None:
-            apply_application_decision_wiring(backend, decision_wiring, environment=env)
+    wiring_bundle = HostOrchestrationApplicationWiringBundle(
+        environment=env,
+        security_wiring=resolved_security,
+        guardrail_wiring=resolved_guardrail,
+        decision_wiring=decision_wiring,
+    )
 
     return HostOrchestrationLoopInitSpec(
         classifier=classifier,
@@ -302,7 +302,7 @@ def build_host_orchestration_loop_init_spec_from_environment(
         execution_lineage_persistence=resolved_execution_lineage,
         execution_continuation_state_store=execution_continuation_state_store,
         governance_evidence_recorder=governance_evidence_recorder,
-        post_materialization_hooks=(_post_materialize,),
+        application_wiring=wiring_bundle,
     )
 
 

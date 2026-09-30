@@ -8,16 +8,30 @@
 | **Branch** | `development` |
 | **Prerequisites** | EBH-3 CLOSED @ qual pin `bd2f7d7…` (impl `4423eea…`); AW-7C, INT-CONFIG-REAL-X, INT-EXTCOMP-X, GOV-X1 CLOSED |
 | **Cursor status (pre-R1)** | **EBH-4 = BLOCKED** (independent exact-SHA audit) |
-| **Cursor status (post-R1 candidate)** | **EBH-4-R1 = READY FOR AUDIT** · **EBH-4 parent = READY FOR AUDIT** (candidate — not CLOSED) |
+| **Cursor status (post-R1 candidate)** | **EBH-4-R1 = BLOCKED** (independent exact-SHA audit — incomplete owner-zone gate, application Nexus spec types, scenario orchestration escape) |
+| **Cursor status (R1-R1 candidate)** | **EBH-4-R1-R1 = BLOCKED** — partial boundary work on `development`; **not READY FOR AUDIT** |
+| **EBH-4 parent** | **BLOCKED** (pending independent re-audit) |
 | **HARNESS-W7** | **NOT ENTERED** |
 
 ### Lineage
 
 1. Initial Cursor EBH-4 certification → **READY FOR AUDIT**
 2. Independent exact-SHA audit → **BLOCKED** (application-owned Nexus construction, scenario `nexus_loop` exposure, `runtime/task` Nexus construction, worker reference-allowing admission)
-3. **EBH-4-R1 — Execution Engine Exclusive Entry & Nexus Encapsulation Closure** (implementation on `development` after `ac4ae934…`)
+3. **EBH-4-R1 — Execution Engine Exclusive Entry & Nexus Encapsulation Closure** (implementation on `development` after `ac4ae934…`) → **BLOCKED** by independent audit (B1–B8)
+4. **EBH-4-R1-R1 — Full Nexus Owner-Zone & Execution-Semantic Boundary Closure** (partial on `development` @ pre-commit `c6f97c22…`) → **BLOCKED**
 
-### EBH-4-R1 remediation summary (candidate)
+### EBH-4-R1-R1 partial remediation (not exit)
+
+| Area | R1-R1 change |
+| --- | --- |
+| Owner-zone import gate | `test_ebh_4_r1_production_nexus_imports_outside_ee_are_zero` now enforced (currently **~185** production violators — gate red) |
+| Nexus callback on init spec | `HostOrchestrationPostMaterializationHook` / `Callable[[NexusLoop], None]` removed; `HostOrchestrationApplicationWiringBundle` applied inside EE materialization |
+| Escape API | `orchestration_backend_for_host_wiring()` removed from public materialization; EE-only `_orchestration_backend_access` |
+| Scenario composition | `EnvironmentOrchestrationMaterialization` removed from `ScenarioRuntimeComposition`; neutral `ApplicationHostOrchestrationSession` + `decision_flow_gate` |
+| Wiring apply | Security/guardrail/decision/reliability apply targets use `HostOrchestrationApplicationWiringTarget` (contracts) |
+| Remaining IN-SCOPE | `host_orchestration_backend_spec_builder` still resolves Nexus planner/classifier/config types; **~185** `runtime.nexus.*` imports outside EE; harness host still materializes/applies via raw backend; agents/runtime non-EE importers unchanged |
+
+### EBH-4-R1 remediation summary (historical — audit BLOCKED)
 
 | Blocker | R1 action |
 | --- | --- |

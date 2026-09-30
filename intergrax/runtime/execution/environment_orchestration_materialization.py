@@ -8,6 +8,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.execution.host_orchestration_application_wiring_applier import (
+    apply_host_orchestration_application_wiring_bundle,
+)
 from intergrax.runtime.execution.host_orchestration_loop_init_spec import (
     HostOrchestrationLoopInitSpec,
 )
@@ -21,7 +24,7 @@ from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
 @dataclass(slots=True)
 class EnvironmentOrchestrationMaterialization:
-    """Private orchestration backend handle for host/scenario composition roots."""
+    """Private orchestration backend handle — Execution Engine owner zone only."""
 
     _backend: NexusLoop
 
@@ -42,10 +45,6 @@ class EnvironmentOrchestrationMaterialization:
         self,
     ) -> DeferredPersistedTraceFinalize | None:
         return self._backend.take_deferred_persisted_trace_finalize()
-
-    def orchestration_backend_for_host_wiring(self) -> NexusLoop:
-        """Narrow host-composition-root access — not a public execution entry."""
-        return self._backend
 
 
 def materialize_host_orchestration_backend(
@@ -100,8 +99,8 @@ def materialize_host_orchestration_backend(
         execution_continuation_state_store=spec.execution_continuation_state_store,
         governance_evidence_recorder=spec.governance_evidence_recorder,
     )
-    for hook in spec.post_materialization_hooks:
-        hook(backend)
+    if spec.application_wiring is not None:
+        apply_host_orchestration_application_wiring_bundle(backend, spec.application_wiring)
     return EnvironmentOrchestrationMaterialization(_backend=backend)
 
 

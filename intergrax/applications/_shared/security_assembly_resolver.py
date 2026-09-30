@@ -14,8 +14,10 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.applications._shared.security_runtime_bridge import SecurityWiringOptions
 from intergrax.applications.contracts.execution_mode import ExecutionMode
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationAssemblyInspectionTarget,
+)
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,8 +37,10 @@ class SecurityAssemblyError(ValueError):
         super().__init__(message)
 
 
-def _middleware_names_on_nexus(nexus: NexusLoop) -> frozenset[str]:
-    pipeline = nexus._middleware  # noqa: SLF001 — assembly verification
+def _middleware_names_on_host(
+    host: HostOrchestrationAssemblyInspectionTarget,
+) -> frozenset[str]:
+    pipeline = host.middleware
     if not isinstance(pipeline, MiddlewarePipeline):
         return frozenset()
     return frozenset(middleware.name for middleware in pipeline._middleware)  # noqa: SLF001
@@ -125,16 +129,16 @@ def _expected_middleware_from_profile(
     return tuple(names)
 
 
-def validate_security_nexus_wiring(
+def validate_security_host_wiring(
     wiring: ApplicationSecurityWiring,
-    nexus: NexusLoop,
+    host: HostOrchestrationAssemblyInspectionTarget,
 ) -> SecurityAssemblyValidationResult:
-    """Validate Nexus middleware matches resolved security wiring."""
+    """Validate orchestration host middleware matches resolved security wiring."""
     errors: list[str] = []
-    attached = _middleware_names_on_nexus(nexus)
+    attached = _middleware_names_on_host(host)
     for name in wiring.enabled_middleware:
         if name not in attached:
-            errors.append(f"missing security middleware on NexusLoop: {name}")
+            errors.append(f"missing security middleware on orchestration host: {name}")
     return SecurityAssemblyValidationResult(valid=not errors, errors=tuple(errors))
 
 
@@ -142,13 +146,15 @@ def assert_security_assembly_valid(
     wiring: ApplicationSecurityWiring,
     env: ApplicationEnvironmentProfile,
     *,
-    nexus: NexusLoop | None = None,
+    orchestration_host: HostOrchestrationAssemblyInspectionTarget | None = None,
+    nexus: HostOrchestrationAssemblyInspectionTarget | None = None,
 ) -> None:
     """Raise :class:`SecurityAssemblyError` when security validation fails."""
     profile_result = validate_security_wiring(wiring, env)
     errors = list(profile_result.errors)
-    if nexus is not None:
-        nexus_result = validate_security_nexus_wiring(wiring, nexus)
-        errors.extend(nexus_result.errors)
+    resolved_host = orchestration_host if orchestration_host is not None else nexus
+    if resolved_host is not None:
+        host_result = validate_security_host_wiring(wiring, resolved_host)
+        errors.extend(host_result.errors)
     if errors:
         raise SecurityAssemblyError(errors)

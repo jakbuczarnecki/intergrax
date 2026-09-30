@@ -20,7 +20,9 @@ from intergrax.integrations.contracts.circuit_breaker import IntegrationCircuitB
 from intergrax.runtime.tools.reference_idempotency_store import resolve_reference_idempotency_store
 from intergrax.applications._shared.autonomy_middleware import AutonomyGovernanceMiddleware
 from intergrax.applications._shared.application_security_wiring import _attach_middleware
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationApplicationWiringTarget,
+)
 from intergrax.runtime.task.task import Task
 
 
@@ -95,13 +97,13 @@ def apply_reliability_task_defaults(task: Task, env: ApplicationEnvironmentProfi
 
 
 def apply_reliability_governance_wiring(
-    nexus: NexusLoop,
+    target: HostOrchestrationApplicationWiringTarget,
     env: ApplicationEnvironmentProfile,
 ) -> None:
     """Attach autonomy governance middleware from reliability profile (REL-ADV.3)."""
     reliability = env.reliability_profile
     _attach_middleware(
-        nexus,
+        target,
         AutonomyGovernanceMiddleware(
             execution_mode=env.execution_mode,
             default_autonomy=reliability.default_autonomy_level,

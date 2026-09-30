@@ -23,6 +23,9 @@ from intergrax.runtime.execution.effective_profile_revision_admission import (
 from intergrax.runtime.execution.environment_orchestration_materialization import (
     EnvironmentOrchestrationMaterialization,
 )
+from intergrax.runtime.execution._orchestration_backend_access import (
+    orchestration_backend_for_execution_engine,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.runtime.nexus.orchestration_capabilities import (
@@ -47,7 +50,7 @@ def build_environment_host_task_execution(
     """Build canonical host task execution from EE-owned orchestration materialization."""
     graph_spec = env.graph_spec
     return build_host_task_execution(
-        orchestration.orchestration_backend_for_host_wiring(),
+        orchestration_backend_for_execution_engine(orchestration),
         orchestration_triggers=(
             orchestration_triggers
             if orchestration_triggers is not None

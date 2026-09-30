@@ -29,6 +29,9 @@ from intergrax.runtime.execution.host_orchestration_loop_init_spec import (
 from intergrax.runtime.execution.environment_orchestration_materialization import (
     materialize_host_orchestration_backend,
 )
+from intergrax.runtime.execution._orchestration_backend_access import (
+    orchestration_backend_for_execution_engine,
+)
 from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
@@ -78,7 +81,7 @@ def build_worker_host_task_execution_from_registry(
     )
     materialization = materialize_host_orchestration_backend(registry, spec)
     return build_host_task_execution(
-        materialization.orchestration_backend_for_host_wiring(),
+        orchestration_backend_for_execution_engine(materialization),
         orchestration_triggers=orchestration_triggers,
         pipeline_capability_suffix=pipeline_capability_suffix,
         root_authority_admission=root_authority_admission,

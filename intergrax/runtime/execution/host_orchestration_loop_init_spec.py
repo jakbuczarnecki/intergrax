@@ -5,13 +5,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
+from intergrax.applications.contracts.host_orchestration_wiring_bundle import (
+    HostOrchestrationApplicationWiringBundle,
+)
 from intergrax.contracts.execution_continuation_state_store import (
     ExecutionContinuationStateStore,
 )
@@ -51,9 +53,6 @@ if TYPE_CHECKING:
         NexusTaskClassifierProtocol,
     )
     from intergrax.contracts.orchestration_enums import MergeStrategy
-
-
-HostOrchestrationPostMaterializationHook = Callable[[NexusLoop], None]
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,12 +98,9 @@ class HostOrchestrationLoopInitSpec:
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None
     event_bus: RuntimeEventBus | None = None
-    post_materialization_hooks: tuple[HostOrchestrationPostMaterializationHook, ...] = field(
-        default_factory=tuple,
-    )
+    application_wiring: HostOrchestrationApplicationWiringBundle | None = None
 
 
 __all__ = [
     "HostOrchestrationLoopInitSpec",
-    "HostOrchestrationPostMaterializationHook",
 ]

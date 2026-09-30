@@ -20,7 +20,7 @@ def build_nexus_loop_from_environment(
 ) -> NexusLoop:
     spec = build_host_orchestration_loop_init_spec_from_environment(registry, **kwargs)
     materialization = materialize_host_orchestration_backend(registry, spec)
-    return materialization.orchestration_backend_for_host_wiring()
+    return materialization._backend  # noqa: SLF001 — TEST_ONLY EE materialization escape
 
 
 __all__ = ["build_nexus_loop_from_environment"]

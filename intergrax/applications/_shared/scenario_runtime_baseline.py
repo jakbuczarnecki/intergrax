@@ -6,13 +6,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 
 from intergrax.applications._shared.cost_assembly_resolver import assert_cost_assembly_valid
 from intergrax.applications._shared.cost_wiring import wire_application_cost
 from intergrax.applications._shared.decision_wiring import (
     application_decision_wiring_spec_from_environment,
-    apply_application_decision_wiring,
     resolve_application_decision_agent_id,
     wire_application_decision,
 )
@@ -30,9 +32,6 @@ from intergrax.applications._shared.diagnostic_assembly_resolver import (
     DiagnosticAssemblyError,
     DiagnosticWiring,
 )
-from intergrax.applications._shared.diagnostic_runtime_wiring import (
-    wire_terminal_execution_diagnostics,
-)
 from intergrax.applications._shared.environment_wiring import (
     ApplicationEnvironmentWiring,
     wire_application_environment,
@@ -41,9 +40,6 @@ from intergrax.applications._shared.evaluation_assembly_resolver import (
     assert_evaluation_assembly_valid,
 )
 from intergrax.applications._shared.evaluation_wiring import wire_application_evaluation
-from intergrax.applications._shared.guardrail_assembly_resolver import (
-    assert_guardrail_assembly_valid,
-)
 from intergrax.applications._shared.guardrail_wiring import (
     ApplicationGuardrailWiring,
     wire_application_guardrail,
@@ -52,9 +48,18 @@ from intergrax.applications._shared.llm_resolver import resolve_environment_llm_
 from intergrax.applications._shared.host_orchestration_backend_spec_builder import (
     build_host_orchestration_loop_init_spec_from_environment,
 )
-from intergrax.runtime.execution.environment_orchestration_materialization import (
-    EnvironmentOrchestrationMaterialization,
-    materialize_host_orchestration_backend,
+from intergrax.runtime.execution.application_host_orchestration_composition import (
+    compose_application_host_orchestration_session,
+)
+from intergrax.runtime.execution.application_host_orchestration_session import (
+    ApplicationHostOrchestrationSession,
+)
+from intergrax.runtime.execution.host_orchestration_assembly_validation import (
+    apply_host_orchestration_application_runtime_wiring,
+    assert_host_orchestration_application_assembly,
+)
+from intergrax.runtime.execution.scenario_host_diagnostic_wiring import (
+    wire_scenario_terminal_execution_diagnostics,
 )
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.applications._shared.observability_assembly_resolver import (
@@ -62,13 +67,11 @@ from intergrax.applications._shared.observability_assembly_resolver import (
 )
 from intergrax.applications._shared.observability_wiring import (
     wire_application_observability,
-    wire_observability_event_subscriptions,
 )
 from intergrax.applications._shared.reliability_assembly_resolver import (
     assert_reliability_assembly_valid,
 )
 from intergrax.applications._shared.reliability_wiring import (
-    apply_reliability_governance_wiring,
     wire_application_reliability,
 )
 from intergrax.applications._shared.security_assembly_resolver import (
@@ -85,12 +88,10 @@ from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
-from intergrax.contracts.execution_identity import RunId, TaskId
+from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.runtime.decision_flow import DecisionFlowGate
 from intergrax.applications._shared.harness_host_task_execution_wiring import (
     build_harness_host_task_execution_governance,
-)
-from intergrax.runtime.execution.environment_host_task_execution import (
-    build_environment_host_task_execution,
 )
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
@@ -163,11 +164,12 @@ class ScenarioRuntimeComposition:
     observability: NexusObservabilityStores
     registry: AgentRegistry
     host_execution: HostTaskExecutionPort
-    orchestration: EnvironmentOrchestrationMaterialization
+    orchestration_session: ApplicationHostOrchestrationSession
     tenant_id: str
     security_wiring: ApplicationSecurityWiring
     guardrail_wiring: ApplicationGuardrailWiring
     diagnostic_wiring: DiagnosticWiring
+    decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
     workspace: ScenarioRuntimeWorkspace | None = None
     runtime_mode: ScenarioRuntimeMode | None = None
 
@@ -323,23 +325,13 @@ def _resolve_observability_stores(
 def rewire_scenario_decision_wiring(
     composition: ScenarioRuntimeComposition,
     *,
-    validation_engine: object | None = None,
-) -> None:
-    """Reapply Decision flow wiring and validation engine from the current environment profile."""
-    environment = composition.environment
-    decision_spec = application_decision_wiring_spec_from_environment(environment)
-    decision_wiring = wire_application_decision(
-        registry=composition.registry,
-        agent_id=resolve_application_decision_agent_id(composition.registry, environment),
-        spec=decision_spec,
-        environment=environment,
-    )
-    if validation_engine is not None:
-        composition.orchestration.apply_validation_engine(validation_engine)
-    apply_application_decision_wiring(
-        composition.orchestration.orchestration_backend_for_host_wiring(),
-        decision_wiring,
-        environment=environment,
+    validation_engine: NexusValidationEngine | None = None,
+) -> ScenarioRuntimeComposition:
+    """Rebuild scenario runtime with Decision flow wiring from the current environment profile."""
+    return rebuild_scenario_runtime_from_composition(
+        composition,
+        environment=composition.environment,
+        validation_engine=validation_engine,
     )
 
 
@@ -347,7 +339,7 @@ def rebuild_scenario_runtime_from_composition(
     composition: ScenarioRuntimeComposition,
     *,
     environment: ApplicationEnvironmentProfile,
-    validation_engine: object | None = None,
+    validation_engine: NexusValidationEngine | None = None,
     manifest: ApplicationManifest | None = None,
     conformance_check: bool = True,
 ) -> ScenarioRuntimeComposition:
@@ -384,7 +376,7 @@ def build_scenario_runtime_from_environment(
     workspace: ScenarioRuntimeWorkspace | None = None,
     runtime_mode: ScenarioRuntimeMode | None = None,
     conformance_check: bool = True,
-    validation_engine: object | None = None,
+    validation_engine: NexusValidationEngine | None = None,
     application_tool_registry: ToolRegistry | None = None,
 ) -> ScenarioRuntimeComposition:
     """
@@ -481,31 +473,29 @@ def build_scenario_runtime_from_environment(
             environment,
         ),
     )
-    orchestration = materialize_host_orchestration_backend(registry, orchestration_spec)
-    nexus_loop = orchestration.orchestration_backend_for_host_wiring()
-    assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
-    assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)
-
-    wire_observability_event_subscriptions(
-        orchestration.event_bus,
-        environment.observability_profile,
-    )
-    apply_reliability_governance_wiring(nexus_loop, environment)
-
     harness_execution_governance = build_harness_host_task_execution_governance()
-    host_execution = build_environment_host_task_execution(
-        orchestration,
+    orchestration_session, materialization = compose_application_host_orchestration_session(
+        registry,
+        orchestration_spec,
         environment,
         root_authority_admission=harness_execution_governance.root_authority_admission,
         admit_root_governance_identity=harness_execution_governance.admit_root_governance_identity,
     )
+    assert_host_orchestration_application_assembly(
+        materialization,
+        env=environment,
+        security_wiring=security_wiring,
+        guardrail_wiring=guardrail_wiring,
+    )
+    apply_host_orchestration_application_runtime_wiring(materialization, env=environment)
+    host_execution = orchestration_session.host_execution
 
     try:
-        diagnostic_wiring = wire_terminal_execution_diagnostics(
+        diagnostic_wiring = wire_scenario_terminal_execution_diagnostics(
+            materialization=materialization,
             env=environment,
             env_wiring=env_wiring,
             observability=observability,
-            nexus_loop=nexus_loop,
             scenario_runtime_mode=runtime_mode,
         )
     except DiagnosticAssemblyError as exc:
@@ -517,11 +507,12 @@ def build_scenario_runtime_from_environment(
         observability=observability,
         registry=registry,
         host_execution=host_execution,
-        orchestration=orchestration,
+        orchestration_session=orchestration_session,
         tenant_id=resolved_tenant_id,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
         diagnostic_wiring=diagnostic_wiring,
+        decision_flow_gate=decision_wiring.gate,
         workspace=workspace,
         runtime_mode=runtime_mode,
     )
@@ -547,14 +538,16 @@ async def execute_scenario_task(
         task_kwargs["context"] = TaskContext(capability=request.capability)
 
     task = Task(**task_kwargs)
-    composition.orchestration.set_hold_persisted_trace_finalize(
+    composition.orchestration_session.trace_lifecycle.set_hold_persisted_trace_finalize(
         request.hold_persisted_trace_finalize,
     )
     try:
         task_result = await composition.host_execution.execute(task)
     finally:
-        composition.orchestration.set_hold_persisted_trace_finalize(False)
-    deferred_finalize = composition.orchestration.take_deferred_persisted_trace_finalize()
+        composition.orchestration_session.trace_lifecycle.set_hold_persisted_trace_finalize(False)
+    deferred_finalize = (
+        composition.orchestration_session.trace_lifecycle.take_deferred_persisted_trace_finalize()
+    )
     return ScenarioRuntimeExecutionResult(
         task_result=task_result,
         task_id=task.task_id,
