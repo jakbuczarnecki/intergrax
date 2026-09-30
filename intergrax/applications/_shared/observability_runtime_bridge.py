@@ -10,7 +10,7 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ObservabilityProfile,
 )
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 @dataclass(frozen=True, slots=True)

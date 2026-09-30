@@ -23,7 +23,7 @@ from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import (
     RuntimeStateContract,
 )
 from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
-from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceLevel
+from intergrax.contracts.tracing import TraceComponent, TraceLevel
 from intergrax.runtime.tools.operation_identity import (
     compute_invocation_operation_identity,
 )

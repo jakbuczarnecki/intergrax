@@ -25,7 +25,7 @@ from intergrax.contracts.decision_authoritative_exposure import (
 from intergrax.contracts.partial_result_contract import PartialResultContract
 from intergrax.contracts.task_envelope import TaskEnvelope
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+    from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 
 from intergrax.runtime.task.task_contract import (
     TaskExecutionOptions,
@@ -146,7 +146,7 @@ class Task(BaseModel):
         return self.model_copy(update={"execution_authority": authority})
 
     def to_runtime_request(self, *, run_id: RunId) -> "RuntimeRequest":
-        from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+        from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
         from intergrax.runtime.task.task_metadata_bridge import task_to_request_metadata
 
         if not self.agent_id:

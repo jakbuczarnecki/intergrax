@@ -11,12 +11,12 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     CostProfile,
 )
-from intergrax.runtime.nexus.budget.budget_models import (
+from intergrax.contracts.run_budget import (
     BudgetEnforcementMode,
     BudgetPolicy,
     RunBudget,
 )
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 @dataclass(frozen=True, slots=True)

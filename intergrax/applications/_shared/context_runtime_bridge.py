@@ -8,7 +8,7 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ContextProfile,
 )
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.runtime.wiring.context_runtime_bridge import (
     CONTEXT_ENGINE_PROFILE_METADATA_KEY,
     apply_context_profile_to_runtime_config as _apply_context_profile_to_runtime_config,

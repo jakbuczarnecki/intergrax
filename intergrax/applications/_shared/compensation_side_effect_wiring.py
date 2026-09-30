@@ -19,7 +19,7 @@ from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFacto
 from intergrax.runtime.execution.compensation_side_effect import (
     build_runtime_compensation_side_effect_execution,
 )
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.contracts.run_budget import RunBudget
 
 
 def build_compensation_side_effect_execution(

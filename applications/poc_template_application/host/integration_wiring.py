@@ -36,7 +36,7 @@ from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import 
     DeliveryLedger,
 )
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+from intergrax.contracts.run_trace_store import RunTraceWriter
 from poc_template_application.host.settings import PocTemplateApplicationSettings
 
 

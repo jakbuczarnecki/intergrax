@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from intergrax.contracts.host_profile_slices import ReliabilityProfile
 from intergrax.contracts.resilience_policy import ResiliencePolicy, default_resilience_policy
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 @dataclass(frozen=True, slots=True)

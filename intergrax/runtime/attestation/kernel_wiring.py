@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 def apply_boundary_export_to_kernel(kernel_ctx: Any, config: RuntimeConfig) -> None:

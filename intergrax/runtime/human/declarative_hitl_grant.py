@@ -16,7 +16,7 @@ from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.long_running.checkpoint_builder import (
     reconcile_runtime_checkpoint_governance_pause_entries,
 )
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 from intergrax.runtime.task.task import Task
 
 

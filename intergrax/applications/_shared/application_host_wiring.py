@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from intergrax.harness.application_host import ApplicationHost
     from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
     from intergrax.applications.contracts.manifest import ApplicationManifest
-    from intergrax.runtime.nexus.budget.budget_models import RunBudget
+    from intergrax.contracts.run_budget import RunBudget
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 

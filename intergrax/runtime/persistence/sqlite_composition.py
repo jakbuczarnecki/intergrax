@@ -34,7 +34,7 @@ from intergrax.runtime.human.persistence_contract import HumanDecisionPersistenc
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceStore
+from intergrax.contracts.run_trace_store import RunTraceStore
 from intergrax.runtime.organization.organization_profile_store import (
     OrganizationProfileStore,
 )

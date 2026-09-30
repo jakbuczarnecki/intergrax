@@ -9,8 +9,8 @@ from dataclasses import dataclass
 from typing import Any
 
 from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
-from intergrax.runtime.nexus.tracing.trace_models import (
+from intergrax.contracts.run_trace_store import RunTraceWriter
+from intergrax.contracts.tracing import (
     DiagnosticPayload,
     TraceComponent,
     TraceEvent,

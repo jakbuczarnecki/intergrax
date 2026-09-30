@@ -9,7 +9,7 @@ from pathlib import Path
 from intergrax.agents.reference_harness import LabHarnessContext
 from intergrax.applications._shared.policy_wiring import build_runtime_policy_bundle
 from intergrax.applications.contracts.build_context import ApplicationBuildContext
-from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+from intergrax.runtime.execution.lab_reference_agent_runtime import (
     lab_harness_context_from_modality_tooling,
 )
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle

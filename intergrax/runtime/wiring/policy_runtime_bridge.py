@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 
 

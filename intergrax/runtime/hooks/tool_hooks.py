@@ -14,7 +14,7 @@ from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+    from intergrax.runtime.execution.runtime_state import RuntimeState
 
 ToolInvokeFn = Callable[[], Awaitable[ToolResponse]]
 

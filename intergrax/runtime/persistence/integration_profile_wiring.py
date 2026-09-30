@@ -20,7 +20,7 @@ from intergrax.runtime.events.persistence_contract import RuntimeEventPersistenc
 from intergrax.runtime.events.stores.validating_runtime_event_store import (
     ValidatingRuntimeEventPersistence,
 )
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceStore
+from intergrax.contracts.run_trace_store import RunTraceStore
 from intergrax.runtime.persistence.sqlite_composition import (
     SQLiteRuntimePersistenceBundle,
     create_sqlite_runtime_persistence,

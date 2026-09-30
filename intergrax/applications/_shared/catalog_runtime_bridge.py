@@ -9,7 +9,7 @@ from intergrax.applications._shared.application_composition_context import (
     ApplicationCompositionContext,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry.profile import ToolProfile
 

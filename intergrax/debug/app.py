@@ -28,7 +28,7 @@ from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
+from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 

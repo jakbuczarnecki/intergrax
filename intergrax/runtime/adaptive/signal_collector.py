@@ -20,7 +20,7 @@ from intergrax.runtime.architecture.online_evaluation_models import (
     OnlineEvaluationObservation,
 )
 from intergrax.runtime.metrics.export import RunMetricsExport
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.contracts.run_budget import RunBudget
 from intergrax.runtime.replay.regression import RegressionSignals
 
 

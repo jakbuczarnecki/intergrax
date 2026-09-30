@@ -155,6 +155,19 @@ def test_ebh_4_r1_nexus_loop_construction_outside_ee_is_zero() -> None:
     assert violations == []
 
 
+def test_ebh_4_r1_neutral_contracts_do_not_import_nexus() -> None:
+    violations: list[str] = []
+    contracts_root = _INTERGRAX / "contracts"
+    for path in contracts_root.rglob("*.py"):
+        try:
+            tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        except OSError:
+            continue
+        if _imports_nexus_module(tree):
+            violations.append(path.relative_to(_REPO).as_posix())
+    assert violations == [], f"contracts import Nexus: {violations}"
+
+
 def test_ebh_4_r1_worker_no_reference_allowing_admission() -> None:
     worker = _INTERGRAX / "runtime" / "task" / "nexus_worker_execution.py"
     source = worker.read_text(encoding="utf-8-sig")

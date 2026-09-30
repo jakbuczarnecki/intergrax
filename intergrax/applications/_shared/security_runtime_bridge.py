@@ -12,7 +12,7 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.factory import resolve_from_profile
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
 from intergrax.runtime.security.encryption_transform import (
     RestrictedPayloadEncryptor,

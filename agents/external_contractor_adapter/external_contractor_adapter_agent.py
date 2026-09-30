@@ -23,9 +23,9 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.memory.conversational_memory import ChatMessage
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
+from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 

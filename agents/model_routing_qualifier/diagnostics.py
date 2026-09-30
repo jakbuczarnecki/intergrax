@@ -8,7 +8,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 
 from intergrax.knowledge.contracts.validation import JsonObject
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.contracts.tracing import DiagnosticPayload
 
 _MODEL_ROUTING_SUMMARY_V1 = "lkw.model_routing_summary.v1"
 

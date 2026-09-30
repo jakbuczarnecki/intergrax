@@ -16,7 +16,7 @@ from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.routing import LLMRoutingProfile
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.execution.runtime_state import RuntimeState
 from model_routing_qualifier.model_routing import (
     RoutingProfileCandidate,
     artifact_ref_for_profile,

@@ -13,7 +13,7 @@ from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 LegalIdentitySource = Literal["body_or_context", "context_only"]
 
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+from intergrax.contracts.run_trace_store import RunTraceWriter
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.task.task import Task
 
@@ -25,7 +25,7 @@ from legal_application.serving.schemas import (
 )
 from intergrax.fastapi_core.context import RequestContext, get_request_context
 from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer
+from intergrax.runtime.execution.agent_runtime_io import RuntimeAnswer
 
 
 class LegalAgentService(Protocol):

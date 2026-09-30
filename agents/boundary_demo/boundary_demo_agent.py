@@ -15,7 +15,7 @@ from intergrax.agents.reference_harness import (
     LabHarnessContext,
     default_reference_harness,
 )
-from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+from intergrax.runtime.execution.lab_reference_agent_runtime import (
     build_lab_agent_runtime_config,
 )
 from intergrax.agents.tool_enablement import ToolEnablementProfile
@@ -28,8 +28,8 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.attestation.settings import ExecutionBoundaryExportRuntimeSettings
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
 from intergrax.runtime.nexus.session.session_manager import SessionManager
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope

@@ -34,7 +34,7 @@ def build_nexus_acp_runtime_session_hooks() -> AcpRuntimeSessionHooks:
             return None
         from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
         from intergrax.runtime.attestation.kernel_wiring import apply_boundary_export_to_kernel
-        from intergrax.runtime.nexus.config import RuntimeConfig
+        from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
         from intergrax.runtime.wiring.attestation_runtime_bridge import (
             apply_attestation_profile_to_runtime_config,
         )

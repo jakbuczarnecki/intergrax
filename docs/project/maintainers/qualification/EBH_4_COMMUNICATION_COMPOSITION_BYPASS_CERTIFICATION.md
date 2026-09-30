@@ -10,6 +10,7 @@
 | **Cursor status (pre-R1)** | **EBH-4 = BLOCKED** (independent exact-SHA audit) |
 | **Cursor status (post-R1 candidate)** | **EBH-4-R1 = BLOCKED** (independent exact-SHA audit — incomplete owner-zone gate, application Nexus spec types, scenario orchestration escape) |
 | **Cursor status (R1-R1 candidate)** | **EBH-4-R1-R1 = BLOCKED** — partial boundary work on `development`; **not READY FOR AUDIT** |
+| **Cursor status (R1-R2 candidate)** | **EBH-4-R1-R2 = BLOCKED** — semantic MOVE/remap wave on `development` @ `1a83ff33…`; owner-zone gate **94** violators (baseline **~179**); **not READY FOR AUDIT** |
 | **EBH-4 parent** | **BLOCKED** (pending independent re-audit) |
 | **HARNESS-W7** | **NOT ENTERED** |
 
@@ -19,6 +20,17 @@
 2. Independent exact-SHA audit → **BLOCKED** (application-owned Nexus construction, scenario `nexus_loop` exposure, `runtime/task` Nexus construction, worker reference-allowing admission)
 3. **EBH-4-R1 — Execution Engine Exclusive Entry & Nexus Encapsulation Closure** (implementation on `development` after `ac4ae934…`) → **BLOCKED** by independent audit (B1–B8)
 4. **EBH-4-R1-R1 — Full Nexus Owner-Zone & Execution-Semantic Boundary Closure** (partial on `development` @ pre-commit `c6f97c22…`) → **BLOCKED**
+5. **EBH-4-R1-R2 — Nexus Semantic Contract Extraction & Closed-World Consumer Migration** (in progress on `development` @ `1a83ff33…`) → **BLOCKED**
+
+### EBH-4-R1-R2 partial remediation (not exit)
+
+| Area | R1-R2 change (in progress) |
+| --- | --- |
+| Baseline | Owner-zone gate production violators **~179** @ START_HEAD `1a83ff33…` |
+| Canonical MOVE | `agent_runtime_io`, `agent_runtime_context`, `host_runtime_config`, `runtime_state`, `run_trace_store`, lab reference runtime → EE/contracts |
+| Consumer remap | Automated production import remaps (request/answer, budget, tracing, config, harness helpers) |
+| Gate | `test_ebh_4_r1_neutral_contracts_do_not_import_nexus` added |
+| Remaining IN-SCOPE | **94** production `runtime.nexus.*` imports outside EE; harness raw backend; host spec builder Nexus planner/classifier; runtime/task/eval/debug bridges |
 
 ### EBH-4-R1-R1 partial remediation (not exit)
 

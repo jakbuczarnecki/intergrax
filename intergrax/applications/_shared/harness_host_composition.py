@@ -22,7 +22,7 @@ from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookCoordinator
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
+from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.runtime.plugins.bootstrap import PluginBootstrapResult, bootstrap_runtime_plugins
 from intergrax.runtime.plugins.contract import RuntimePlugin
 from intergrax.runtime.policy.policy_engine import PolicyEngine

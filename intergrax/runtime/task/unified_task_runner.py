@@ -15,10 +15,10 @@ from intergrax.runtime.execution.orchestration import (
     resolve_root_task_identity,
 )
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.contracts.run_budget import RunBudget
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.runtime.task.task_run_bridge import task_from_runtime_request

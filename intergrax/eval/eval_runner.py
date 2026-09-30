@@ -7,7 +7,7 @@ from typing import List, Protocol, runtime_checkable
 
 from intergrax.eval.eval_case import EvalCase
 from intergrax.eval.eval_result import EvalResult
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.execution.agent_runtime_io import RuntimeAnswer, RuntimeRequest
 from intergrax.runtime.replay.metrics import ExecutionMetricsEngine
 from intergrax.runtime.replay.models import ReconstructedRun
 from intergrax.runtime.replay.replay_engine import ReplayEngine

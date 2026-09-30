@@ -69,9 +69,9 @@ from intergrax.applications.contracts.build_context import ApplicationBuildConte
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.policy.execution_mode_defaults import runtime_policies_for_execution_mode
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
+from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 from intergrax.runtime.policy.policy_bundle import RuntimePolicyBundle
 from intergrax.runtime.wiring.policy_runtime_bridge import apply_policy_bundle_to_runtime_config
 from intergrax.applications._shared.agent_runtime_governance_wiring import (

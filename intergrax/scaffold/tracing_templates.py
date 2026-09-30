@@ -162,7 +162,7 @@ def _application_example_diag(short: str) -> str:
         from dataclasses import dataclass
         from typing import Any, Dict
 
-        from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+        from intergrax.contracts.tracing import DiagnosticPayload
         from intergrax.runtime.observability.extension_sdk import application_diagnostic_schema_id
 
 

@@ -25,7 +25,7 @@ from intergrax.tools.core.contracts import ToolContract, ToolRiskLevel
 from intergrax.tools.execution_models import ToolExecutionRequest
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+    from intergrax.runtime.execution.runtime_state import RuntimeState
 
 _RISK_MAP: dict[ToolRiskLevel, ToolAuthorizationRiskLevel] = {
     ToolRiskLevel.LOW: ToolAuthorizationRiskLevel.LOW,

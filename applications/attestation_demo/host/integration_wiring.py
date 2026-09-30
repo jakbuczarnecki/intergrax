@@ -16,7 +16,7 @@ from intergrax.integrations._shared.in_memory_document_store import (
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+from intergrax.contracts.run_trace_store import RunTraceWriter
 
 
 @dataclass(frozen=True)

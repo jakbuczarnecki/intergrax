@@ -4,15 +4,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-    from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationApplicationWiringTarget,
+)
 
 
 def apply_capability_alias_wiring(
-    nexus: NexusLoop,
+    nexus: HostOrchestrationApplicationWiringTarget,
     *,
     environment: ApplicationEnvironmentProfile,
 ) -> None:

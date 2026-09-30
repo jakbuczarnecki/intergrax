@@ -23,7 +23,7 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.tools.canonical_tool_dispatch import (
     materialize_canonical_tool_definitions_for_llm_dispatch,
 )
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.execution.runtime_state import RuntimeState
 from tool_selection_qualifier.tool_functional_evidence import emit_tool_selection_functional_evidence
 from tool_selection_qualifier.tool_selection import (
     DEFAULT_QUALIFICATION_TOOL_IDS,

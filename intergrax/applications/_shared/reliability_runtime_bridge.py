@@ -7,7 +7,7 @@ from __future__ import annotations
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.contracts.host_profile_slices import ReliabilityProfile
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.runtime.wiring.reliability_runtime_bridge import (
     ReliabilityWiringOptions,
     apply_reliability_profile_to_runtime_config,

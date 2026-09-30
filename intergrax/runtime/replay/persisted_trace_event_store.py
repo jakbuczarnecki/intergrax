@@ -7,7 +7,8 @@ from typing import Iterable, List
 
 from intergrax.contracts.persisted_run_trace import PersistedTraceEvent
 from intergrax.runtime.nexus.tracing.persisted_trace_codec import persisted_trace_event_to_serialized
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader, SerializedTraceEvent
+from intergrax.contracts.run_trace_store import RunTraceReader
+from intergrax.runtime.nexus.tracing.persistence_models import SerializedTraceEvent
 from intergrax.runtime.replay.contracts.trace_event_dto import TraceEventDTO
 from intergrax.runtime.replay.contracts.trace_event_store import TraceEventStore
 from intergrax.runtime.replay.trace_replay_bridge import serialized_trace_events_to_replay_dtos

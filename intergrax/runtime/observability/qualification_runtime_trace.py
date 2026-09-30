@@ -26,7 +26,7 @@ from intergrax.runtime.nexus.tracing.execution.reconciliation_phase import (
     ReconciliationPhaseDiagV1,
     ReconciliationPhaseValue,
 )
-from intergrax.runtime.nexus.tracing.trace_models import (
+from intergrax.contracts.tracing import (
     TraceComponent,
     TraceLevel,
 )

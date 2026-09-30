@@ -11,7 +11,7 @@ from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.integrations.contracts.search_provider import SearchProvider
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.execution.runtime_state import RuntimeState
 from intergrax.websearch.schemas.search_hit import SearchHit
 from web_search_qualifier.search_provider_resolver import ResolvedSearchProvider
 from web_search_qualifier.source_selection.composition import (

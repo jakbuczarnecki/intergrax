@@ -349,7 +349,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
         from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
         from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
         from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
-        from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+        from intergrax.contracts.run_trace_store import RunTraceWriter
         from {pkg}.host.settings import {pascal}ApplicationSettings
 
 

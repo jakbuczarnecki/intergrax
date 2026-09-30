@@ -8,7 +8,7 @@ from intergrax.contracts.host_profile_slices import ExecutionBoundaryExportProfi
 from intergrax.contracts.runtime_environment import RuntimeEnvironmentProfile
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.attestation.settings import resolve_execution_boundary_export_runtime
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 def apply_attestation_profile_to_runtime_config(

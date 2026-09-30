@@ -24,7 +24,7 @@ from intergrax.contracts.execution_continuation_state_store import (
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.contracts.run_budget import RunBudget
 from intergrax.contracts.admitted_root_governance_identity import (
     AdmittedRootGovernanceIdentity,
 )

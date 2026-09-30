@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import Any
 
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.sandbox.sandbox_runtime import SANDBOX_SESSION_ID_KEY
 from intergrax.runtime.task.task_metadata_bridge import execution_options_for_request

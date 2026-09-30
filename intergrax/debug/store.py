@@ -23,7 +23,7 @@ from intergrax.runtime.task_memory.store import (
     resolve_task_memory_db_path,
     resolve_task_memory_persistence,
 )
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
+from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.runtime.nexus.tracing.store import (
     ENV_TRACE_DB,
     DEFAULT_TRACE_DB,

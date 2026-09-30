@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.contracts.run_budget import RunBudget
 
 
 def normalize_cost_against_budget(

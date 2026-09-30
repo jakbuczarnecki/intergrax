@@ -39,7 +39,7 @@ from intergrax.runtime.execution.worker_host_task_execution_composition import (
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.contracts.run_budget import RunBudget
 from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory

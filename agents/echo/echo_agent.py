@@ -16,7 +16,7 @@ from intergrax.agents.reference_harness import (
     LabHarnessContext,
     default_reference_harness,
 )
-from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+from intergrax.runtime.execution.lab_reference_agent_runtime import (
     build_lab_agent_runtime_context,
 )
 from echo.contract import build_agent_contract
@@ -30,8 +30,8 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.llm.messages import ChatMessage
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 
 
 class _EchoLLMAdapter(BaseLLMAdapter):

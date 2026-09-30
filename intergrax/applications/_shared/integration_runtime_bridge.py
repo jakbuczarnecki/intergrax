@@ -9,7 +9,7 @@ from intergrax.applications._shared.application_composition_context import (
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 def apply_integration_profile_to_runtime_config(

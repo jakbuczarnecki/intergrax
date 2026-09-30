@@ -11,7 +11,7 @@ from intergrax.runtime.attestation.settings import (
 )
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.attestation.host_attestation import resolve_host_attestation_sealer_from_env
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 def build_boundary_event_buffer(

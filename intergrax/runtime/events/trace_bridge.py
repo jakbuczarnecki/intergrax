@@ -59,7 +59,7 @@ from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
 from intergrax.runtime.nexus.tracing.adapters.model_catalog_miss import (
     ModelCatalogMissTraceDiagV1,
 )
-from intergrax.runtime.nexus.tracing.trace_models import TraceEvent, TraceLevel
+from intergrax.contracts.tracing import TraceEvent, TraceLevel
 from intergrax.runtime.task.task import Task, TaskState
 
 TraceBridgeSubject = Union[Task, "TraceBridgeSubjectView"]

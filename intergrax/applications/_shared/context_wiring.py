@@ -23,7 +23,7 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
 from intergrax.context.protocols import ContextEngine
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.task.task_contract import TaskExecutionOptions
 

@@ -14,7 +14,7 @@ from intergrax.applications._shared.plugin_bootstrap import (
 )
 from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
+from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter
 from intergrax.llm_adapters.tracking.observability_bridge import register_llm_observability_plugin
 from intergrax.rag.tracking.observability_bridge import register_rag_observability_plugin

@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 from intergrax.runtime.nexus.artifacts.models import ArtifactRef
-from intergrax.runtime.nexus.tracing.trace_models import TraceEvent
+from intergrax.contracts.tracing import TraceEvent
 
 @dataclass(frozen=True)
 class SerializedArtifactRef:
@@ -67,35 +67,8 @@ from intergrax.contracts.persisted_run_trace import (
     RunStats,
     RunSummary,
 )
-
-
-class RunTraceWriter(ABC):
-
-    @abstractmethod
-    def append_event(self, event: TraceEvent) -> None:
-        ...
-
-    @abstractmethod
-    def finalize_run(self, run_id: str, metadata: RunMetadata) -> None:
-        ...
-
-
-class RunTraceReader(ABC):
-
-    @abstractmethod
-    def read_run(self, run_id: str, tenant_id: str) -> PersistedRun:
-        """
-        Read a persisted run scoped by tenant.
-
-        Isolation boundary:
-        Implementations MUST enforce filtering by both run_id and tenant_id.
-        """
-        ...
-
-    def list_runs(self, tenant_id: str, *, limit: int = 50) -> List[RunSummary]:
-        """List recent finalized runs for a tenant (newest first)."""
-        raise NotImplementedError(f"{type(self).__name__} does not support list_runs")
-
-
-class RunTraceStore(RunTraceWriter, RunTraceReader):
-    """Canonical persisted trace store with read and write capabilities."""
+from intergrax.contracts.run_trace_store import (
+    RunTraceReader,
+    RunTraceStore,
+    RunTraceWriter,
+)

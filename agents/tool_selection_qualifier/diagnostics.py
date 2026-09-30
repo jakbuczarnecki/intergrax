@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.contracts.tracing import DiagnosticPayload
 
 _TOOL_SELECTION_SUMMARY_V1 = "lkw.tool_selection_summary.v1"
 

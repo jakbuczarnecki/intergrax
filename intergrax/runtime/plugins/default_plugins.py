@@ -13,7 +13,7 @@ from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetric
 from intergrax.runtime.governance.in_memory_metrics_store import InMemoryMetricsStore
 from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.metrics.export import persist_run_metrics
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
+from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.runtime.plugins.contract import PolicyEngineLike, RuntimeEventBusLike, RuntimePlugin
 from intergrax.runtime.schema.registry import current_runtime_version
 
