@@ -7,8 +7,8 @@
 | **AUDITED_HEAD** | `4423eea906cfce147c61e670190b2775d898f09f` (`development`) |
 | **Branch** | `development` |
 | **Prerequisites** | INT-EXTCOMP-X CLOSED; INT-CONFIG-REAL-X CLOSED; AW-7C CLOSED @ `2fab207f…` |
-| **Cursor status** | **EBH-3 = READY FOR AUDIT** (not CLOSED) |
-| **EBH-4** | **NOT ENTERED** |
+| **Cursor status** | **EBH-3 = CLOSED** (independently accepted; sync @ `bd2f7d788b882bcd633fc2fd0dcf35da9bdc243b`) |
+| **EBH-4** | **CURRENT** (entered after EBH-3 closure sync) |
 
 **Audit lineage:** initial EBH-3 READY FOR AUDIT → independent exact-SHA audit **BLOCKED** (cross-domain `integrations._shared.circuit_breaker` leakage) → **EBH-3-R2** required.
 
@@ -287,9 +287,8 @@ Historical EBH-2G `_shared.health` freeze debt: **CLOSED** via EBH-3-R1.
 
 ```text
 AW-7C = CLOSED (ledger @ 2fab207f3e850f1b339523587a19906ea1e9b292)
-EBH-3 = READY FOR AUDIT
-EBH-3 ≠ CLOSED
-EBH-4 = NOT ENTERED
+EBH-3 = CLOSED (independently accepted; impl `4423eea…`; qual pin `bd2f7d7…`)
+EBH-4 = CURRENT
 global FRZ PASS delta = 0
 ```
 
