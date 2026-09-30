@@ -4,7 +4,7 @@
 | ----- | ----- |
 | **Program stage** | EBH-3 — Dependency & Ownership Certification |
 | **START_HEAD** | `2fab207f3e850f1b339523587a19906ea1e9b292` |
-| **AUDITED_HEAD** | _recorded at EBH-3 completion commit on `development`_ |
+| **AUDITED_HEAD** | `360a71d73209e2ef1363bf3f278ce448b94bbb90` (`development`) |
 | **Branch** | `development` |
 | **Prerequisites** | INT-EXTCOMP-X CLOSED; INT-CONFIG-REAL-X CLOSED; AW-7C CLOSED @ `2fab207f…` |
 | **Cursor status** | **EBH-3 = READY FOR AUDIT** (not CLOSED) |
