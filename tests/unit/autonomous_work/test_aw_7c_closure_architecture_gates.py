@@ -17,6 +17,9 @@ _REF_EXECUTE = _AW7C_QUAL / "reference_scoped_adaptive_integration_execution.py"
 _DELEGATE = _AW7C_QUAL / "scoped_adaptive_integration_execution_runtime_delegate.py"
 _INTAKE = _AW7C_QUAL / "scoped_adaptive_integration_execution_intake.py"
 _CONTRACTS = _REPO / "intergrax/integrations/contracts/scoped_integration_adaptation.py"
+_EFFECT_EXEC_CONTRACTS = (
+    _REPO / "intergrax/integrations/contracts/scoped_adapted_integration_effect_execution.py"
+)
 _FORBIDDEN_IN_QUAL = (
     "mint_run_id",
     "mint_attempt_id",
@@ -79,9 +82,46 @@ def test_closure_r1_contracts_define_effect_request_and_executor() -> None:
     text = _CONTRACTS.read_text(encoding="utf-8")
     assert "class ScopedAdaptedIntegrationEffectRequest" in text
     assert "ScopedAdaptedIntegrationEffectRequestPort" in text
-    assert "ScopedAdaptedIntegrationEffectExecutor" in text
     assert ": Any" not in text
     assert "dict[str, Any]" not in text
+    effect_text = _EFFECT_EXEC_CONTRACTS.read_text(encoding="utf-8")
+    assert "ScopedAdaptedIntegrationEffectExecutor" in effect_text
+    assert "ScopedAdaptedIntegrationEffectExecutionIngress" in effect_text
+    assert "sandbox_resource" in effect_text
+    assert "credential_resolution" in effect_text
+    assert ": Any" not in effect_text
+
+
+def test_closure_r1_r1_executor_no_reference_context_type_check() -> None:
+    text = _REF_EXECUTE.read_text(encoding="utf-8")
+    assert "ReferenceScopedAdaptedIntegrationEffectExecutionContext" not in text.split(
+        "class ReferenceScopedAdaptedIntegrationEffectExecutor",
+    )[1].split("class ReferenceScopedAdaptiveIntegrationSandboxSession")[0]
+    assert "isinstance(\n        ingress,\n        ReferenceScopedAdaptedIntegrationEffectExecutionContext," not in text
+    assert 'isinstance(ingress, ReferenceScopedAdaptedIntegrationEffectExecutionContext)' not in text
+
+
+def test_closure_r1_r1_executor_no_resource_rediscovery() -> None:
+    executor_block = _REF_EXECUTE.read_text(encoding="utf-8").split(
+        "class ReferenceScopedAdaptedIntegrationEffectExecutor",
+    )[1].split("class ReferenceScopedAdaptiveIntegrationSandboxSession")[0]
+    assert "resolve_scoped(" not in executor_block
+    assert "CredentialResolver" not in executor_block
+    assert "sandbox_session_manager" not in executor_block
+
+
+def test_closure_r1_r1_ingress_contract_exposes_sanctioned_resources() -> None:
+    text = _EFFECT_EXEC_CONTRACTS.read_text(encoding="utf-8")
+    assert "def sandbox_resource(self)" in text or "sandbox_resource(self)" in text
+    assert "def credential_resolution(self)" in text or "credential_resolution(self)" in text
+
+
+def test_closure_r1_r1_effect_execution_contract_import_acyclic() -> None:
+    text = _EFFECT_EXEC_CONTRACTS.read_text(encoding="utf-8")
+    assert "from intergrax.integrations.contracts.scoped_integration_adaptation import" in text
+    assert "from intergrax.integrations.contracts.credential import" in text
+    adaptation_text = _CONTRACTS.read_text(encoding="utf-8")
+    assert "scoped_adapted_integration_effect_execution" not in adaptation_text
 
 
 def test_closure_r1_preparer_port_signature_excludes_credential_material() -> None:

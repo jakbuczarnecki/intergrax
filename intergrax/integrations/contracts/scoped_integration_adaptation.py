@@ -530,36 +530,6 @@ class ScopedAdaptedIntegrationEffectRequestPort(Protocol):
 
 
 @runtime_checkable
-class ScopedAdaptedIntegrationEffectExecutionIngress(Protocol):
-    """Executor ingress — binds request, sandbox session, and broker resolution."""
-
-    @property
-    def effect_request(self) -> ScopedAdaptedIntegrationEffectRequest: ...
-
-    @property
-    def execution_id(self) -> str: ...
-
-    @property
-    def sandbox_session_id(self) -> int: ...
-
-    @property
-    def credential_use_evidence_grant_id(self) -> str: ...
-
-    @property
-    def credential_use_evidence_fingerprint(self) -> str: ...
-
-
-@runtime_checkable
-class ScopedAdaptedIntegrationEffectExecutor(Protocol):
-    """Canonical physical adapted-integration effect boundary (Integrations-owned)."""
-
-    def execute(
-        self,
-        ingress: ScopedAdaptedIntegrationEffectExecutionIngress,
-    ) -> ScopedAdaptedIntegrationOperationEvidence: ...
-
-
-@runtime_checkable
 class ScopedAdaptedIntegrationOperationPort(Protocol):
     """Legacy physical operation seam — superseded by EffectPreparer + EffectExecutor (AW-7C R1)."""
 
@@ -635,8 +605,6 @@ __all__ = [
     "ScopedIntegrationAdaptationScope",
     "ScopedIntegrationAdaptationSpecification",
     "ScopedIntegrationAdaptationStrategy",
-    "ScopedAdaptedIntegrationEffectExecutionIngress",
-    "ScopedAdaptedIntegrationEffectExecutor",
     "ScopedAdaptedIntegrationEffectRequest",
     "ScopedAdaptedIntegrationEffectRequestPort",
     "ScopedAdaptedIntegrationOperationEvidence",

@@ -28,9 +28,11 @@ from intergrax.integrations.contracts.credential import (
     ExecutionBoundCredentialGrantProvider,
     ScopedCredentialResolutionResult,
 )
-from intergrax.integrations.contracts.scoped_integration_adaptation import (
+from intergrax.integrations.contracts.scoped_adapted_integration_effect_execution import (
     ScopedAdaptedIntegrationEffectExecutionIngress,
     ScopedAdaptedIntegrationEffectExecutor,
+)
+from intergrax.integrations.contracts.scoped_integration_adaptation import (
     ScopedAdaptedIntegrationEffectRequest,
     ScopedAdaptedIntegrationEffectRequestPort,
     ScopedAdaptedIntegrationOperationEvidence,
@@ -99,6 +101,10 @@ class ReferenceScopedAdaptedIntegrationEffectExecutionContext:
         return str(self.bound_execution_id)
 
     @property
+    def sandbox_resource(self) -> SandboxSecurityCapable:
+        return self.sandbox_security_source
+
+    @property
     def sandbox_session_id(self) -> int:
         return id(self.sandbox_security_source)
 
@@ -112,26 +118,24 @@ class ReferenceScopedAdaptedIntegrationEffectExecutionContext:
 
 
 class ReferenceScopedAdaptedIntegrationEffectExecutor:
-    """Canonical reference physical effect — requires sandbox + broker resolution."""
+    """Canonical reference physical effect — consumes typed executor ingress only."""
 
     def __init__(self) -> None:
-        self.last_ingress: ReferenceScopedAdaptedIntegrationEffectExecutionContext | None = None
+        self.last_ingress: ScopedAdaptedIntegrationEffectExecutionIngress | None = None
         self.call_count = 0
 
     def execute(
         self,
         ingress: ScopedAdaptedIntegrationEffectExecutionIngress,
     ) -> ScopedAdaptedIntegrationOperationEvidence:
-        if not isinstance(ingress, ReferenceScopedAdaptedIntegrationEffectExecutionContext):
-            raise TypeError("ingress must be ReferenceScopedAdaptedIntegrationEffectExecutionContext")
         self.call_count += 1
         self.last_ingress = ingress
         effect_request = ingress.effect_request
         if ingress.execution_id != effect_request.execution_id:
             raise ValueError("execution identity mismatch")
-        if not isinstance(ingress.sandbox_security_source, SandboxSecurityCapable):
+        if not isinstance(ingress.sandbox_resource, SandboxSecurityCapable):
             raise ValueError("sandbox security source missing")
-        ingress.sandbox_security_source.security_capabilities()
+        ingress.sandbox_resource.security_capabilities()
         evidence = ingress.credential_resolution.use_evidence
         if evidence.tenant_id != effect_request.tenant_id:
             raise ValueError("credential evidence tenant mismatch")
