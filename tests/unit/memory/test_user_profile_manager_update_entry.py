@@ -29,7 +29,7 @@ async def test_update_memory_entry_not_found_raises_and_skips_side_effects() -> 
     )
     store.get_profile = AsyncMock(return_value=profile)
     store.save_profile = AsyncMock()
-    mgr = UserProfileManager(store)
+    mgr = UserProfileManager(store, tenant_id="tenant-test")
 
     with pytest.raises(UserProfileMemoryEntryNotFoundError):
         await mgr.update_memory_entry(

@@ -50,7 +50,7 @@ def _step_ctx(
     *,
     run_id: str | None = None,
 ) -> AgentStepContext:
-    return AgentStepContext(
+    return AgentStepContext(tenant_id="tenant-test", 
         run_id=run_id or str(exec_ctx.run_id),
         agent_id="local_indexer",
         contract_id="local_indexer",
@@ -274,7 +274,7 @@ async def test_run_index_job_reads_source_paths_from_step_metadata_without_exec_
     doc.write_text("hello", encoding="utf-8")
     monkeypatch.setenv("INTERGRAX_ALLOWED_READ_ROOTS", str(allowed_root.resolve()))
 
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         run_id=str(canonical_run_id_for_tests("index-acp-metadata")),
         agent_id="local_indexer",
         contract_id="local_indexer",

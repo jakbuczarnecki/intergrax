@@ -584,3 +584,43 @@ uv run pytest -p no:xdist tests/unit/runtime/qualification/test_ebh_4_b4_tenant_
 ```
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 25. B4-R1 — Residual Default-Tenant Elimination (Cursor @ `02258a81…`)
+
+**START_HEAD:** `02258a8103bdc3808d2aac0a32d897c0b8d594c1` · **B3:** independently accepted local PASS
+
+**02258a81 independent audit:** **BLOCKED** — first-wave tenant remediation accepted, but residual implicit/default tenant semantics remain in `AgentStepContext`, `EvalTrajectoryInput`, `UserProfileManager`, and CodeCraft ownership/trace paths.
+
+**B4-R1 (local):** READY FOR AUDIT · **B4 (local):** READY FOR AUDIT · **EBH-4-R1-R3 / EBH-4 / HARNESS-W7:** BLOCKED / NOT ENTERED
+
+### R1 remediation (closed-world)
+
+| ID | Contract / seam | Change |
+| --- | --- | --- |
+| R1-A | `intergrax/contracts/agent_step_context.py` | Required non-empty `tenant_id`; production builders already typed |
+| R1-B | `intergrax/tools/providers/eval/contracts.py` | `EvalTrajectoryInput.tenant_id` required |
+| R1-C | `intergrax/memory/user_profile_manager.py` | Required non-empty `tenant_id` |
+| R1-D | `intergrax/runtime/codecraft/ownership.py` | Typed absence (`None`); blank caller assertion → fail closed |
+| R1-E | `intergrax/runtime/codecraft/trace.py` | No `"default"` EventBus fallback; validate before sinks |
+| R1-D/E+ | `intergrax/tools/providers/codecraft/contracts.py` | `CodeCraftContextFields` tenant/task optional `None` (not `"default"`) |
+
+### Residual scan (post-R1, production `intergrax/`)
+
+| Pattern | Example paths | Disposition |
+| --- | --- | --- |
+| `StepKernelContext.tenant_id = "default"` | `runtime/kernel/step_kernel.py` | TRACKED FREEZE DEBT — kernel default; UAEP bridge supplies `kernel_ctx.tenant_id` from execution |
+| HTTP harness route defaults | `harness_task_routes.py`, `trace_explorer_routes.py` | TRACKED FREEZE DEBT — CONFIG-X / TENANT-X (non-EBH-4 execution graph) |
+| Multimedia / integration configs | `multimedia/*`, `integrations/*` | TRACKED FREEZE DEBT — CONFIG-X |
+| `testing_support/builder.py` fixture default | test harness only | evidence-backed non-production |
+
+**EBH-4-relevant implicit tenant fallback on R1 seams:** **0** (local)
+
+### B4-R1 adversarial owner
+
+`tests/unit/runtime/qualification/test_ebh_4_b4_tenant_isolation.py` — extended with R1-A…R1-E matrix rows.
+
+**B4-R1 tenant verdict (local):** **PASS** · **IN-SCOPE BLOCKER = 0** · **global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0**
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**

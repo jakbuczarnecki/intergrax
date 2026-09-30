@@ -68,7 +68,7 @@ def _step_ctx(
             else str(canonical_run_id_for_tests("local-search-step"))
         )
     )
-    return AgentStepContext(
+    return AgentStepContext(tenant_id="tenant-test", 
         run_id=resolved_run_id,
         agent_id="local_search",
         contract_id="local_search",

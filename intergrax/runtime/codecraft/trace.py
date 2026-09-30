@@ -102,6 +102,16 @@ class CodeCraftDiagV1(DiagnosticPayload):
         return self
 
 
+def _require_non_empty_codecraft_tenant(tags: dict[str, Any], *, field: str = "tenant_id") -> str:
+    raw = tags.get(field)
+    if not isinstance(raw, str):
+        raise ValueError(f"{field} is required for codecraft trace emission")
+    stripped = raw.strip()
+    if not stripped:
+        raise ValueError(f"{field} must be non-empty for codecraft trace emission")
+    return stripped
+
+
 class CodeCraftTraceEmitter:
     """Emits ``codecraft.*`` trace steps correlated with craft_id and sandbox session."""
 
@@ -449,6 +459,7 @@ class CodeCraftTraceEmitter:
         payload: CodeCraftDiagV1,
         tags: dict[str, Any],
     ) -> TraceEvent:
+        tenant_id = _require_non_empty_codecraft_tenant(tags)
         self._seq += 1
         evt = TraceEvent(
             event_id=TraceEvent.new_id(),
@@ -478,7 +489,7 @@ class CodeCraftTraceEmitter:
             resolved_task_id = validate_task_id(tags.get("task_id"))
             active_run_id, attempt_id = require_active_execution_identity()
             subject = trace_bridge_subject_from_tags(
-                tenant_id=str(tags.get("tenant_id", "default")),
+                tenant_id=tenant_id,
                 task_id=resolved_task_id,
                 agent_id=str(tags.get("agent_id", "")),
             )

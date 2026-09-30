@@ -61,7 +61,7 @@ def _step_ctx(
             else str(canonical_run_id_for_tests("local-synth-step"))
         )
     )
-    return AgentStepContext(
+    return AgentStepContext(tenant_id="tenant-test", 
         run_id=resolved_run_id,
         agent_id="local_synthesizer",
         contract_id="local_synthesizer",
@@ -265,7 +265,7 @@ async def test_run_synthesize_job_fails_safe_without_content() -> None:
 @pytest.mark.asyncio
 async def test_run_synthesize_job_fails_safe_without_tool_gateway() -> None:
     output = await run_synthesize_job(
-        AgentStepContext(
+        AgentStepContext(tenant_id="tenant-test", 
             run_id=str(canonical_run_id_for_tests("synth-no-gateway")),
             agent_id="local_synthesizer",
             contract_id="local_synthesizer",

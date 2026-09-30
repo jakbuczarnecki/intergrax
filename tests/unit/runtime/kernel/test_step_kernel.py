@@ -62,7 +62,7 @@ from testing_support.builder import (
 @pytest.mark.gate
 async def test_kernel_policy_pre_deny() -> None:
     with kernel_step_test_scope("kernel-policy-pre-deny") as (task_id, run_id):
-        step_ctx = AgentStepContext(
+        step_ctx = AgentStepContext(tenant_id="tenant-test", 
             step_index=0,
             metadata={"policy_pre_deny": True},
         )
@@ -85,7 +85,7 @@ async def test_kernel_policy_pre_deny() -> None:
 @pytest.mark.gate
 async def test_kernel_budget_exceeded() -> None:
     with kernel_step_test_scope("kernel-budget-exceeded") as (task_id, run_id):
-        step_ctx = AgentStepContext(step_index=2)
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=2)
         kernel_ctx = StepKernelContext(
             agent_id="demo",
             task_id=task_id,
@@ -113,7 +113,7 @@ async def test_kernel_max_steps_boundary_allows_exactly_n_steps() -> None:
         )
         outcome = StepOutcome.continue_with({"phase": "execute"})
         for step_index in range(max_steps):
-            step_ctx = AgentStepContext(step_index=step_index)
+            step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=step_index)
             record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
             assert record.budget_exceeded is False
             assert record.error_code is None
@@ -130,7 +130,7 @@ async def test_kernel_max_steps_boundary_rejects_step_n_plus_one() -> None:
 
     max_steps = 3
     with kernel_step_test_scope("kernel-max-steps-exceeded") as (task_id, run_id):
-        step_ctx = AgentStepContext(step_index=max_steps)
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=max_steps)
         kernel_ctx = StepKernelContext(
             agent_id="demo",
             task_id=task_id,
@@ -164,7 +164,7 @@ async def test_kernel_max_steps_boundary_rejects_step_n_plus_one() -> None:
 @pytest.mark.gate
 async def test_kernel_merges_state_and_appends_trace() -> None:
     with kernel_step_test_scope("kernel-trace") as (task_id, run_id):
-        step_ctx = AgentStepContext(step_index=0)
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0)
         kernel_ctx = StepKernelContext(
             agent_id="demo",
             task_id=task_id,
@@ -184,7 +184,7 @@ async def test_kernel_merges_state_and_appends_trace() -> None:
 @pytest.mark.unit
 @pytest.mark.gate
 async def test_kernel_rejects_mixed_side_effect_mode() -> None:
-    step_ctx = AgentStepContext(step_index=0, side_effect_mode=SideEffectMode.IMMEDIATE)
+    step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0, side_effect_mode=SideEffectMode.IMMEDIATE)
     kernel_ctx = StepKernelContext(
         agent_id="demo",
         side_effect_mode=SideEffectMode.IMMEDIATE,
@@ -211,7 +211,7 @@ async def test_kernel_org_policy_denies_channel() -> None:
         ),
     )
     with kernel_step_test_scope("kernel-org-deny") as (task_id, run_id):
-        step_ctx = AgentStepContext(step_index=0, metadata={"channel": "phone"})
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0, metadata={"channel": "phone"})
         kernel_ctx = StepKernelContext(
             agent_id="demo",
             task_id=task_id,
@@ -238,7 +238,7 @@ async def test_kernel_org_policy_allows_happy_path_channel() -> None:
         ),
     )
     with kernel_step_test_scope("kernel-org-ok") as (task_id, run_id):
-        step_ctx = AgentStepContext(step_index=0, metadata={"channel": "chat"})
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0, metadata={"channel": "chat"})
         kernel_ctx = StepKernelContext(
             agent_id="demo",
             task_id=task_id,
@@ -263,7 +263,7 @@ async def test_kernel_org_policy_allows_happy_path_channel() -> None:
 @pytest.mark.gate
 async def test_kernel_rejects_mutating_tool_without_idempotency_key() -> None:
     with kernel_step_test_scope("kernel-mutating") as (task_id, run_id):
-        step_ctx = AgentStepContext(
+        step_ctx = AgentStepContext(tenant_id="tenant-test", 
             step_index=0,
             side_effect_mode=SideEffectMode.DECLARATIVE,
         )
@@ -305,7 +305,7 @@ async def test_kernel_executes_declarative_actions_and_commits_ledger() -> None:
             invoke_count += 1
             return DeclarativeToolInvokeResult(status="success", external_ref="msg-kernel")
 
-        step_ctx = AgentStepContext(
+        step_ctx = AgentStepContext(tenant_id="tenant-test", 
             step_index=0,
             side_effect_mode=SideEffectMode.DECLARATIVE,
         )
@@ -364,7 +364,7 @@ async def test_kernel_replay_skips_declarative_invoke_on_resume() -> None:
             invoke_count += 1
             return DeclarativeToolInvokeResult(status="success")
 
-        step_ctx = AgentStepContext(
+        step_ctx = AgentStepContext(tenant_id="tenant-test", 
             step_index=0,
             side_effect_mode=SideEffectMode.DECLARATIVE,
         )
@@ -427,7 +427,7 @@ async def test_kernel_compensates_after_policy_post_denies_committed_tools() -> 
                 compensation_tool_id="email.recall",
             ),
         }
-        step_ctx = AgentStepContext(
+        step_ctx = AgentStepContext(tenant_id="tenant-test", 
             step_index=0,
             side_effect_mode=SideEffectMode.DECLARATIVE,
         )
@@ -465,7 +465,7 @@ async def test_kernel_compensates_after_policy_post_denies_committed_tools() -> 
 @pytest.mark.gate
 async def test_kernel_policy_post_denies_empty_terminal_output() -> None:
     with kernel_step_test_scope("kernel-policy-post-empty") as (task_id, run_id):
-        step_ctx = AgentStepContext(step_index=0)
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0)
         kernel_ctx = StepKernelContext(
             agent_id="demo",
             task_id=task_id,
@@ -486,7 +486,7 @@ async def test_kernel_emits_single_step_completed_per_step() -> None:
     from intergrax.runtime.events.runtime_event import RuntimeEventType
 
     with kernel_step_test_scope("kernel-step-completed") as (task_id, run_id):
-        step_ctx = AgentStepContext(step_index=0)
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0)
         kernel_ctx = StepKernelContext(
             agent_id="demo",
             task_id=task_id,
@@ -510,7 +510,7 @@ async def test_kernel_emits_single_step_completed_per_step() -> None:
 @pytest.mark.gate
 async def test_kernel_strict_product_fails_closed_without_policy_engine() -> None:
     with kernel_step_test_scope("kernel-strict") as (task_id, run_id):
-        step_ctx = AgentStepContext(step_index=0)
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0)
         kernel_ctx = StepKernelContext(
             agent_id="demo",
             task_id=task_id,
@@ -531,7 +531,7 @@ async def test_kernel_strict_product_fails_closed_without_policy_engine() -> Non
 @pytest.mark.gate
 async def test_kernel_dev_test_explicit_permissive_missing_policy() -> None:
     with kernel_step_test_scope("kernel-permissive") as (task_id, run_id):
-        step_ctx = AgentStepContext(step_index=0)
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0)
         kernel_ctx = StepKernelContext(
             agent_id="demo",
             task_id=task_id,
@@ -550,7 +550,7 @@ async def test_kernel_dev_test_explicit_permissive_missing_policy() -> None:
 @pytest.mark.gate
 async def test_kernel_strict_product_ignores_permissive_missing_policy_flag() -> None:
     with kernel_step_test_scope("kernel-strict-no-override") as (task_id, run_id):
-        step_ctx = AgentStepContext(step_index=0)
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0)
         kernel_ctx = StepKernelContext(
             agent_id="demo",
             task_id=task_id,
@@ -594,7 +594,7 @@ async def test_kernel_harvests_uaep_catalog_tool_calls() -> None:
                 hit_count=2,
             )
         ]
-        step_ctx = AgentStepContext(
+        step_ctx = AgentStepContext(tenant_id="tenant-test", 
             step_index=0,
             metadata={"uaep_exec_ctx": exec_ctx},
         )
@@ -651,7 +651,7 @@ async def test_kernel_harvests_rag_calls_from_invoke_tool_flow() -> None:
                 input={"query": "x", "workspace_id": "ws-trace"},
             )
         )
-        step_ctx = AgentStepContext(
+        step_ctx = AgentStepContext(tenant_id="tenant-test", 
             step_index=0,
             metadata={"uaep_exec_ctx": exec_ctx},
         )

@@ -52,6 +52,13 @@ from intergrax.rag.vectorstore.contracts.native_vectorstore import (
 )
 
 
+def _require_non_empty_tenant_id(tenant_id: str) -> str:
+    stripped = tenant_id.strip()
+    if not stripped:
+        raise ValueError("tenant_id must be non-empty")
+    return stripped
+
+
 class UserProfileManager:
     """
     High-level facade for working with user profiles.
@@ -81,14 +88,15 @@ class UserProfileManager:
             rag_profile: Optional[RagProfile] = None,
             longterm_top_k: int = 6,
             longterm_score_threshold: float = 0.25,
-            tenant_id: str = "default",
+            tenant_id: str,
             vector_index_namespace: str | None = None,
             workspace_id: str | None = None,
             memory_projections: Sequence[UserProfileMemoryProjection] | None = None,
             diagnostic_emitter: MemoryDiagnosticEmitter | None = None,
     ) -> None:
         self._store = store
-        self._tenant_id = tenant_id
+        self._tenant_id = _require_non_empty_tenant_id(tenant_id)
+        tenant_id = self._tenant_id
         self._vector_index_namespace = vector_index_namespace
         self._workspace_id = workspace_id
         self._ltm_collection_name = resolve_memory_index_collection(

@@ -42,7 +42,7 @@ def test_reliability_checkpoint_interval() -> None:
 async def test_kernel_opens_circuit_after_retriable_failures() -> None:
     with kernel_step_test_scope("kernel-circuit-retriable") as (task_id, run_id):
         reliability = _reliability(threshold=2)
-        step_ctx = AgentStepContext(step_index=0)
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0)
         kernel_ctx = StepKernelContext(
             agent_id="demo",
             task_id=task_id,

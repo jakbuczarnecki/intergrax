@@ -132,7 +132,7 @@ async def test_kernel_increments_budget_after_llm_drain() -> None:
         default_model="frontier",
     )
     await router.complete("one two three four", model_hint="balanced")
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         step_index=0,
         metadata={},
         llm_router=router,

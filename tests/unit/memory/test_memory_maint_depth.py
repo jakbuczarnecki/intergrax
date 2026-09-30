@@ -41,7 +41,7 @@ async def test_procedural_memory_write_and_read_path() -> None:
     store.get_profile = AsyncMock(return_value=profile)
     store.save_profile = AsyncMock()
 
-    mgr = UserProfileManager(store)
+    mgr = UserProfileManager(store, tenant_id="tenant-test")
     from tests.unit.memory._projection_identity import memory_test_identity
 
     entry = await mgr.add_memory_entry(

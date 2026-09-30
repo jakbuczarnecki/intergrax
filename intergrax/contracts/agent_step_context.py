@@ -21,7 +21,7 @@ class AgentStepContext(BaseModel):
     step_index: int = Field(default=0, ge=0)
     run_id: str = ""
     task_id: str = ""
-    tenant_id: str = "default"
+    tenant_id: str = Field(..., min_length=1)
     workspace_id: str | None = None
     message: str = ""
     step_kind: str | None = None
@@ -33,6 +33,14 @@ class AgentStepContext(BaseModel):
     llm_router: object | None = Field(default=None, exclude=True, repr=False)
     invocation_usage: AcpInvocationUsageView | None = None
     shared_context: SharedContextView | None = None
+
+    @field_validator("tenant_id")
+    @classmethod
+    def _tenant_id_non_empty(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("tenant_id must be non-empty")
+        return stripped
 
     @field_validator("workspace_id")
     @classmethod

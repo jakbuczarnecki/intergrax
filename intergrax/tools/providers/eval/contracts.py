@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class EvalRecordObservationInput(BaseModel):
@@ -112,7 +112,7 @@ class EvalJudgeOutput(BaseModel):
 
 class EvalTrajectoryInput(BaseModel):
     run_id: str = Field(..., min_length=1)
-    tenant_id: str = Field(default="default", min_length=1)
+    tenant_id: str = Field(..., min_length=1)
     min_score: float = Field(default=0.75, ge=0.0, le=1.0)
     agent_id: str = Field(default="unknown", min_length=1)
     record_observation: bool = False
@@ -120,6 +120,14 @@ class EvalTrajectoryInput(BaseModel):
     scenario_id: str | None = None
     mode: str = Field(default="online", pattern="^(online|shadow)$")
     candidate_profile_version_id: str | None = None
+
+    @field_validator("tenant_id")
+    @classmethod
+    def _tenant_id_non_empty(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("tenant_id must be non-empty")
+        return stripped
 
 
 class EvalTrajectoryOutput(BaseModel):

@@ -194,7 +194,7 @@ async def test_step_kernel_production_empty_principal_fails_closed() -> None:
             production_mode=True,
             policy_engine=PolicyEngine(),
         )
-        step_ctx = AgentStepContext(step_index=0)
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0)
         outcome = StepOutcome.continue_with({"phase": "plan"})
         record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
         assert record.policy_pre is not None

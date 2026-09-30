@@ -73,7 +73,7 @@ def test_boundary_event_buffer_assigns_monotonic_event_sequence() -> None:
 def test_harness_boundary_emitter_writes_harness_step_event() -> None:
     buffer = BoundaryEventBuffer()
     kernel_ctx = _kernel_ctx(buffer)
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         step_index=0,
         run_id="run_harness_emit",
         agent_id="boundary_demo_agent",
@@ -127,7 +127,7 @@ def test_harness_boundary_emitter_skipped_when_step_level_disabled() -> None:
         allowlist=frozenset(),
         step_level_enabled=False,
     )
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         step_index=0,
         run_id="run_disabled",
         agent_id="boundary_demo_agent",

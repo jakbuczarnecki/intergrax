@@ -661,7 +661,7 @@ def test_strict_host_composition_wires_agent_boundary_and_integration(
 
     observation = asyncio.run(
         agent.perceive(
-            AgentStepContext(
+            AgentStepContext(tenant_id="tenant-test", 
                 task_id="gr6wire-host-task",
                 run_id="gr6wire-host-run",
                 message="probe",

@@ -76,7 +76,7 @@ def _plane(
     governance: MemorySecurityGovernanceService | None = None,
 ) -> DefaultMemoryControlPlane:
     store = InMemoryUserProfileStore()
-    manager = UserProfileManager(store=store)
+    manager = UserProfileManager(store=store, tenant_id="tenant-test")
     return DefaultMemoryControlPlane(
         user_profile=UserProfileManagerMemoryCapability(_manager=manager),
         security_governance=governance,

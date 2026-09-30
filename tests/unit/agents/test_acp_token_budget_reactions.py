@@ -239,7 +239,7 @@ async def test_budget_threshold_emits_runtime_event() -> None:
             limit_source="binding",
         ),
     )
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         invocation_usage=AcpInvocationUsageView(
             agent=AcpTokenUsage(tokens_total=12, tokens_limit=20),
             environment=AcpTokenUsage(tokens_total=12, tokens_limit=20),

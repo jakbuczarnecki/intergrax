@@ -94,7 +94,7 @@ async def test_kernel_propagates_typed_diagnostic_payloads() -> None:
         output,
         diagnostic_payloads=[index_diagnostic_from_output(output)],
     )
-    step_ctx = AgentStepContext(step_index=0, metadata={"step_id": "local_indexer_step"})
+    step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0, metadata={"step_id": "local_indexer_step"})
     with kernel_step_test_scope("local-indexer-diag") as (task_id, run_id):
         kernel_ctx = StepKernelContext(
             agent_id="local_indexer",

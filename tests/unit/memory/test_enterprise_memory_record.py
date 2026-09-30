@@ -273,7 +273,7 @@ async def test_update_increments_revision_preserves_memory_id() -> None:
     store = MagicMock()
     store.get_profile = AsyncMock(return_value=profile)
     store.save_profile = AsyncMock()
-    mgr = UserProfileManager(store)
+    mgr = UserProfileManager(store, tenant_id="tenant-test")
 
     from tests.unit.memory._projection_identity import memory_test_identity
 
