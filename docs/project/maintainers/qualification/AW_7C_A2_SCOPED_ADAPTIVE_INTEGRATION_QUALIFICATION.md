@@ -106,21 +106,22 @@ Sections 1–13 below retain **historical** prerequisite audit unless explicitly
 | **Parent** | **AW-7C** — **CURRENT / NOT CLOSED** |
 | **Next mandatory stage after AW-7C closes** | **EBH-3** — **NOT ENTERED** |
 
-## AW-7C-CLOSURE-R1-ARCH-R1 (READY FOR AUDIT)
+## AW-7C-CLOSURE-R1-ARCH-R1 (AUDIT REJECTED / SUPERSEDED FOR CREDENTIAL ORDERING)
 
 | Field | Value |
 | ----- | ----- |
-| **Status** | **READY FOR AUDIT** — docs-only remediation; **0** production delta |
-| **Baseline** | `618164a5c666e9854441890e6233f605ece8a9ee` (`development`) |
-| **Architecture** | [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) § AW-7C-CLOSURE-R1-ARCH-R1 |
-| **Blocker A remediation** | Typed `ScopedAdaptedIntegrationEffectRequest` + preparer SPI; **single** canonical `ScopedAdaptedIntegrationEffectExecutor` owns physical I/O; preparer **cannot** perform sanctioned physical effects |
-| **Blocker B remediation** | Credential **execution/tenant/provider/integration/operation/target/expiry-bound**; **no** `single-use` guarantee without concurrency-safe lifecycle owner (aligned with P0-2 `max_uses` removal) |
-| **Bypass claims** | **10.1** sanctioned single platform path (gates/tests); **10.2** hostile arbitrary Python **not** claimed via Protocol alone |
-| **Tenant audit (local)** | **PASS** — continuity chain through effect request + executor + evidence |
-| **Certification criteria (future R1 runtime implementation)** | (1) `ScopedAdaptedIntegrationEffectRequestPort.prepare` → immutable `ScopedAdaptedIntegrationEffectRequest` (no secrets/callables); (2) `ScopedAdaptedIntegrationEffectExecutor.execute` only physical boundary; (3) sandbox resource **same instance** as attestation; (4) credential via broker into **executor** only — preparer receives **no** material; (5) supersede physical `ScopedAdaptedIntegrationOperationPort` without parallel path; (6) adversarial matrix in architecture § R1-ARCH-R1; (7) **no new authority** |
+| **Status** | **AUDIT REJECTED / SUPERSEDED FOR CREDENTIAL ORDERING** @ `88d61eb51b0673433dce5f1bdc7c8365cd328323` — preparer/executor split **accepted**; `ScopedCredentialBroker.resolve_scoped()` before final `EffectRequest` validation **rejected** |
+| **Baseline** | `618164a5c666e9854441890e6233f605ece8a9ee` (`development`); ordering rejection SHA `88d61eb5…` |
+| **Architecture** | [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) § AW-7C-CLOSURE-R1-ARCH-R1 (historical ordering); **authoritative:** § AW-7C-CLOSURE-R1-ARCH-R1-R1 |
+| **Blocker A remediation** | Typed `ScopedAdaptedIntegrationEffectRequest` + preparer SPI; **single** canonical `ScopedAdaptedIntegrationEffectExecutor` owns physical I/O — **retained** |
+| **Blocker B remediation** | Credential **execution/tenant/provider/integration/operation/target/expiry-bound**; **no** `single-use` without lifecycle owner — **retained** |
+| **Ordering blocker (new)** | Late-resolution invariant: secret only after validated `EffectRequest` — remediated in **R1-ARCH-R1-R1** |
+| **Authoritative remediation** | **AW-7C-CLOSURE-R1-ARCH-R1-R1** — **READY FOR AUDIT** |
 | **Global FRZ** | **0** checklist PASS deltas |
 
-### R1-ARCH-R1 — Enterprise audit matrix (qualification evidence)
+### R1-ARCH-R1 — Enterprise audit matrix (historical @ acceptance of direction only)
+
+Superseded for credential **ordering** by R1-R1-R1; retained for preparer/executor/bypass dimensions.
 
 | Dimension | Verdict | Evidence |
 | --------- | ------- | -------- |
@@ -135,12 +136,49 @@ Sections 1–13 below retain **historical** prerequisite audit unless explicitly
 | Bypass resistance (sanctioned path) | PASS | Documented 10.1 vs 10.2 |
 | Governance | PASS | Unchanged separation |
 | Execution authority | PASS | Executor does not mint ExecutionId |
-| Credential authority | PASS | No new broker; no single-use without owner |
+| Credential authority | PASS (partial) | No new broker; ordering fix in R1-R1-R1 |
 | Sandbox authority | PASS | No second sandbox |
 | Tenant isolation | PASS | Local audit PASS |
 | Evidence / traceability | PASS | Typed evidence; no secrets |
-| Fail-closed | PASS | Failure matrix |
-| Regression protection | TRACKED | Runtime tests listed for next implementation task |
+| Fail-closed | PASS | Failure matrix + R1-R1 no-resolution-before-validation |
+| Regression protection | TRACKED | Runtime tests in architecture § R1-ARCH-R1-R1 |
+
+## AW-7C-CLOSURE-R1-ARCH-R1-R1 (READY FOR AUDIT)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **READY FOR AUDIT** — docs-only late credential resolution ordering; **0** production delta |
+| **Rejection SHA** | `88d61eb51b0673433dce5f1bdc7c8365cd328323` |
+| **Architecture** | [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) § AW-7C-CLOSURE-R1-ARCH-R1-R1 |
+| **Audit rejection reason** | `resolve_scoped()` before preparer and before final `ScopedAdaptedIntegrationEffectRequest` validation violates late-resolution invariant (`credential.py`) |
+| **Remediation** | Locked graph: prepare → validate EffectRequest → secret-free grant/scope → `resolve_scoped` → immediate executor; preparer/AW/evidence never receive raw material |
+| **FRZ-SEC-02 / FRZ-SEC-03** | Architecture contribution only — resolved material immediately before physical effect; no cross-layer raw secret |
+| **Tenant audit (local)** | **PASS** — mismatch before broker → zero resolution |
+| **Certification criteria (future runtime)** | Architecture § R1-ARCH-R1-R1 — positive path + mandatory `resolve_scoped` call count == 0 negatives + ordering proof + secret-boundary tests |
+| **Parent** | **AW-7C** — **CURRENT / NOT CLOSED** |
+| **Next mandatory stage after AW-7C** | **EBH-3** — **NOT ENTERED** |
+| **Global FRZ** | **0** checklist PASS deltas |
+
+### R1-ARCH-R1-R1 — Enterprise audit matrix (qualification evidence)
+
+| Dimension | Verdict | Evidence |
+| --------- | ------- | -------- |
+| Boundaries | PASS | No new credential owner; executor-only material consumption |
+| Communication | PASS | Grant/scope secret-free; material only broker → executor |
+| Composition | PASS | Single composer ordering locked |
+| Ownership | PASS | Unchanged R1-ARCH-R1 matrix |
+| Contracts | PASS | `CredentialUseGrant` ≠ `ResolvedCredential` explicit |
+| Abstraction / strong typing | PASS | EffectRequest still no secrets |
+| Pluginability | PASS | Preparer still replaceable; no post-resolution plugin calls |
+| Replaceability | PASS | Same executor after validated request |
+| Bypass resistance | PASS | Fail-closed before resolution on preparer/validation failures |
+| Governance / Execution | PASS | Unchanged |
+| Credential authority | PASS | Late resolution; single broker |
+| Sandbox boundary | PASS | Unchanged |
+| Evidence / traceability | PASS | No raw secret in evidence |
+| Fail-closed | PASS | § R1-ARCH-R1-R1 failure table |
+| Regression protection | TRACKED | Future tests enumerated in architecture |
+| FRZ-SEC-02 / -03 | TRACKED (local) | Contribution documented; global checklist **OPEN** |
 
 ---
 
