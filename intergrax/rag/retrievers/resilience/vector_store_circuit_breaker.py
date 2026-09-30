@@ -5,12 +5,13 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional, TypeVar
+from typing import Callable, TypeVar
 
-from intergrax.integrations._shared.circuit_breaker import (
-    IntegrationCircuitBreaker,
+from intergrax.integrations.contracts.circuit_breaker import (
     IntegrationCircuitBreakerConfig,
+    IntegrationCircuitBreakerPort,
 )
+from intergrax.integrations.registry.circuit_breakers import create_integration_circuit_breaker
 
 T = TypeVar("T")
 
@@ -22,9 +23,12 @@ class RetrieverVectorCircuitBreaker:
         self,
         *,
         name: str = "rag.vector_store",
-        config: Optional[IntegrationCircuitBreakerConfig] = None,
+        config: IntegrationCircuitBreakerConfig | None = None,
     ) -> None:
-        self._breaker = IntegrationCircuitBreaker(name, config)
+        self._breaker: IntegrationCircuitBreakerPort = create_integration_circuit_breaker(
+            name,
+            config,
+        )
 
     def call(self, operation: Callable[[], T]) -> T:
         return self._breaker.call(operation)

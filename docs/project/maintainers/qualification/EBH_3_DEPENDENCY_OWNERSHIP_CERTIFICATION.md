@@ -3,14 +3,16 @@
 | Field | Value |
 | ----- | ----- |
 | **Program stage** | EBH-3 — Dependency & Ownership Certification |
-| **START_HEAD** | `2fab207f3e850f1b339523587a19906ea1e9b292` |
-| **AUDITED_HEAD** | `360a71d73209e2ef1363bf3f278ce448b94bbb90` (`development`) |
+| **START_HEAD** | `49511107c7d018de3dc1c3b8f21cb6a020d6d436` |
+| **AUDITED_HEAD** | *(set at commit — EBH-3-R2 implementation SHA)* |
 | **Branch** | `development` |
 | **Prerequisites** | INT-EXTCOMP-X CLOSED; INT-CONFIG-REAL-X CLOSED; AW-7C CLOSED @ `2fab207f…` |
 | **Cursor status** | **EBH-3 = READY FOR AUDIT** (not CLOSED) |
 | **EBH-4** | **NOT ENTERED** |
 
-Child remediation: **EBH-3-R1** — Integrations health composition boundary + import-cycle closure.
+**Audit lineage:** initial EBH-3 READY FOR AUDIT → independent exact-SHA audit **BLOCKED** (cross-domain `integrations._shared.circuit_breaker` leakage) → **EBH-3-R2** required.
+
+Child remediations: **EBH-3-R1** (health composition + import-cycle); **EBH-3-R2** (cross-domain private Integrations `_shared` closure + circuit-breaker public contract).
 
 ---
 
@@ -60,6 +62,23 @@ Tools — invoke contracts / sanctioned registry seams
 
 **Remediated (EBH-3-R1):** `intergrax/tools/*` and `intergrax/applications/*` must not import `intergrax.integrations._shared.health`; sanctioned surface = `intergrax.integrations.registry.health_probes`.
 
+**Remediated (EBH-3-R2):** production modules outside `intergrax/integrations/**` must not import `intergrax.integrations._shared.*`; circuit-breaker config/port via `integrations.contracts.circuit_breaker`; materialization via `integrations.registry.circuit_breakers`.
+
+**Before (R2 blocker):**
+
+```text
+Applications → integrations._shared.circuit_breaker (config)
+RAG → integrations._shared.circuit_breaker (config + concrete)
+```
+
+**After (R2):**
+
+```text
+Applications → integrations.contracts.circuit_breaker
+RAG → integrations.contracts.circuit_breaker + integrations.registry.circuit_breakers
+Integrations registry/composition → integrations._shared.circuit_breaker (internal)
+```
+
 ---
 
 ## 3. Ownership matrix (audited concerns)
@@ -76,6 +95,7 @@ Tools — invoke contracts / sanctioned registry seams
 | Credential resolution | Integrations | credential contracts | resolver composition at Integrations edge | Provider resolvers |
 | Sandbox security attestation | Sandbox (runtime) | `runtime.sandbox.contracts` | Runtime sandbox session/host wiring | Hosted/local backends |
 | Integration health probing | Integrations | `HealthStatus`, `IntegrationHealthProbe` | **`registry.health_probes`** (EBH-3-R1) | `_shared.health` (internal) |
+| Integration circuit breaker | Integrations | `IntegrationCircuitBreakerConfig`, `IntegrationCircuitBreakerPort` | **`registry.circuit_breakers`** (EBH-3-R2) | `_shared.circuit_breaker` (internal) |
 | RAG retrieval / GraphRAG | RAG | RAG contracts | RAG composition helpers | Retrieval services |
 | Graph store provider | Integrations | Integration GraphStore contract | Integration factory | Provider bundles |
 | Memory truth | Memory | memory contracts | MemoryControlPlane / Tier-3 wiring | Store plugins |
@@ -109,6 +129,8 @@ No competing composition owner identified for graph store, configuration realiza
 | `integrations/contracts/scoped_adapted_integration_effect_execution.py` | Runtime sandbox type reference moved to `TYPE_CHECKING` only | **Remediated** (EBH-3) |
 | `integrations/contracts/*` (EBH-2I rescan) | No new unregistered public-contract → runtime imports | **PASS** (gate) |
 | `integrations.registry.health_probes` | Public composition facade; delegates to internal `_shared.health` | **VALID** |
+| `integrations/contracts/circuit_breaker.py` | Canonical config + port; zero registry/runtime/applications imports | **PASS** (R2 gate) |
+| `integrations.registry.circuit_breakers` | Sanctioned cross-domain materialization | **VALID** |
 
 ---
 
@@ -118,6 +140,8 @@ No competing composition owner identified for graph store, configuration realiza
 | --- | --- |
 | Integrations public contract → runtime namespace (AW-7C effect ingress) | **Remediated** (TYPE_CHECKING) |
 | Tools/Applications → `_shared.health` | **Remediated** (EBH-3-R1) |
+| Cross-domain → `integrations._shared.*` | **Remediated** (EBH-3-R2 AST gate) |
+| Applications/RAG → private `IntegrationCircuitBreaker` | **Remediated** (R2 composition) |
 | Memory/RAG → applications | **None** on audited EBH-2H/2G surfaces |
 | Runtime → applications | **None** (tier boundary) |
 
@@ -180,11 +204,13 @@ Internal provider modules may continue importing `_shared.health` (VALID INTERNA
 
 ## 12. Tenant isolation audit
 
-```text
-tenant scope applicable: YES (local cross-domain composition seams)
-canonical tenant identity: platform tenant contracts on governance/configuration/adaptation paths
-verdict: N/A — WITH EVIDENCE (global TENANT-X not entered; AW-7C + INT-CONFIG local tenant proofs remain prior stage evidence)
-```
+### EBH-3-R2 mechanism (circuit-breaker contract extraction)
+
+**N/A — WITH EVIDENCE:** R2 only relocates dependency/API placement (`IntegrationCircuitBreakerConfig` / port / factory). No tenant identity, provider profile selection, credential scope, or durable tenant state is introduced or erased.
+
+### Parent EBH-3 local dependency/ownership audit
+
+**PASS:** cross-domain composition seams (health probes, circuit-breaker config/port, bootstrap conformance, reference document store, speech bridge, config merge) preserve applicable tenant invariants; no tenant blocker on audited HEAD. Global **FRZ-TEN-*** remains future work.
 
 EBH-3 did not widen tenant scope via dependency remediation.
 
@@ -194,7 +220,8 @@ EBH-3 did not widen tenant scope via dependency remediation.
 
 | Dimension | Verdict |
 | --- | --- |
-| Boundaries | PASS (post R1 + contract TYPE_CHECKING) |
+| Boundaries | PASS (post R1/R2 + contract TYPE_CHECKING) |
+| Bypass resistance | PASS — generalized `integrations._shared.*` production import gate |
 | Ownership | PASS (audited matrix) |
 | Contracts | PASS (EBH-2I gate + AW-7C fix) |
 | Composition | PASS (health_probes sanctioned owner) |
@@ -211,9 +238,9 @@ EBH-3 did not widen tenant scope via dependency remediation.
 
 | Family | EBH-3 evidence | Global PASS delta |
 | --- | --- | --- |
-| FRZ-BND-* | EBH-3-R1 cross-layer health boundary; import-cycle closure | **0** |
-| FRZ-OWN-* | Single Integrations health composition owner | **0** |
-| FRZ-CTR-* | Public contract boundary gate green after AW-7C contract fix | **0** |
+| FRZ-BND-* | EBH-3-R1 health boundary; R2 full `_shared` cross-domain closure | **0** |
+| FRZ-OWN-* | Single Integrations health + circuit-breaker composition owner | **0** |
+| FRZ-CTR-* | EBH-2I/2A gates + R2 circuit-breaker contract purity / single config | **0** (candidate; no global promotion) |
 | FRZ-TEN-* | No new tenant claims | **0** |
 
 ---
@@ -225,11 +252,24 @@ uv run pytest -p no:xdist \
   tests/unit/architecture/test_ebh_3_dependency_ownership_gate.py \
   tests/unit/architecture/test_ebh_2a_public_contract_boundary_gate.py \
   tests/unit/architecture/test_ebh_2i_final_rescan_gate.py \
-  tests/unit/autonomous_work/test_aw_7c_closure_architecture_gates.py \
-  tests/unit/autonomous_work/test_aw_7c_prerequisite_architecture_gates.py
+  tests/unit/integrations/test_integration_circuit_breaker.py \
+  tests/unit/applications/test_integration_health_wiring.py \
+  tests/unit/rag/retrievers/test_retriever_engine_resilience.py
 ```
 
-Result: **PASS** (see session log `.tmp/session/ebh-3/pytest-arch2.log`).
+Result: **PASS** on architecture, circuit-breaker, integration-health, and RAG resilience targets (log: `.tmp/session/ebh-3-r2/pytest.log`). Pre-existing unrelated failures in `test_harness_reliability_wiring` / `test_reliability_wiring_provider_boundary` (Ollama optional dep, idempotency topology expectations) — **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED**; not introduced by R2.
+
+### EBH-3-R2 closed-world `_shared` inventory (production, outside Integrations)
+
+| Consumer | Private dependency | Action (R2) |
+| --- | --- | --- |
+| `applications/_shared/reliability_wiring.py` | `circuit_breaker` config | → `contracts.circuit_breaker` |
+| `applications/_shared/integration_health_wiring.py` | `circuit_breaker` config | → `contracts.circuit_breaker` |
+| `rag/.../vector_store_circuit_breaker.py` | concrete breaker + config | → contract + `registry.circuit_breakers` |
+| `applications/*` conformance / in-memory store / speech | assorted `_shared` | → sanctioned `registry.*` facades |
+| `autonomous_work` / `collaborative_work` | `config.merge_config` | → `registry.config_helpers` |
+| `speech_adapters` / `scaffold` | bridge / cutover templates | → `registry.speech_bridge` / `runtime_cutover_templates` |
+| Tools, Runtime, Memory, Agents | — | **none** on HEAD |
 
 ---
 

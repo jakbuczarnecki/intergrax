@@ -147,7 +147,7 @@ def materialize_host_diagnostic_read_dependencies(
     document_store = _document_store_from_wiring(wiring_context)
     execution_lineage_reader = None
     if document_store is not None:
-        from intergrax.integrations._shared.conformance import (
+        from intergrax.integrations.registry.bootstrap_conformance import (
             assert_conditional_document_store,
         )
 

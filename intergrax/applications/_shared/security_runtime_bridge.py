@@ -67,7 +67,7 @@ def resolve_restricted_payload_encryptor(
         raise RestrictedPayloadEncryptorResolutionError(
             "secrets_store integration is declared but integration_profile is missing",
         )
-    from intergrax.integrations._shared.conformance import assert_secrets_store
+    from intergrax.integrations.registry.bootstrap_conformance import assert_secrets_store
 
     try:
         store = resolve_from_profile(profile, IntegrationCategory.SECRETS_STORE)

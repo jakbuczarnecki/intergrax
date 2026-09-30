@@ -14,7 +14,7 @@ from intergrax.distributed.contracts.kv_store import (
     DistributedKVStore,
     DistributedKVStoreProvider,
 )
-from intergrax.integrations._shared.conformance import assert_conditional_document_store
+from intergrax.integrations.registry.bootstrap_conformance import assert_conditional_document_store
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.core.binding import IntegrationBinding
 from intergrax.integrations.providers.document_store.mongodb.manifest import (

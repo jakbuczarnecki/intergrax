@@ -22,7 +22,7 @@ from intergrax.applications._shared.diagnostic_cursor_secret import (
 from intergrax.contracts.diagnostics.problem_persistence import ProblemPersistence
 from intergrax.contracts.execution_lineage import ExecutionLineageReader
 from intergrax.contracts.execution_reconstruction import ExecutionReconstructionReader
-from intergrax.integrations._shared.conformance import assert_conditional_document_store
+from intergrax.integrations.registry.bootstrap_conformance import assert_conditional_document_store
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
     DeterministicProblemGroupingStrategy,
 )

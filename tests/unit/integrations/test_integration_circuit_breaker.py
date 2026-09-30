@@ -4,11 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.integrations._shared.circuit_breaker import (
-    CircuitState,
-    IntegrationCircuitBreaker,
-    IntegrationCircuitBreakerConfig,
-)
+from intergrax.integrations._shared.circuit_breaker import CircuitState, IntegrationCircuitBreaker
+from intergrax.integrations.contracts.circuit_breaker import IntegrationCircuitBreakerConfig
 from intergrax.integrations.contracts.base import IntegrationDependencyError
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]

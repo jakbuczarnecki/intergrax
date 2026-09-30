@@ -16,7 +16,7 @@ from intergrax.applications._shared.reliability_runtime_bridge import (
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.integrations._shared.circuit_breaker import IntegrationCircuitBreakerConfig
+from intergrax.integrations.contracts.circuit_breaker import IntegrationCircuitBreakerConfig
 from intergrax.runtime.tools.reference_idempotency_store import resolve_reference_idempotency_store
 from intergrax.applications._shared.autonomy_middleware import AutonomyGovernanceMiddleware
 from intergrax.applications._shared.application_security_wiring import _attach_middleware

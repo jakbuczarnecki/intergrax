@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Callable, Iterable, Optional
 
-from intergrax.integrations._shared.circuit_breaker import IntegrationCircuitBreakerConfig
+from intergrax.integrations.contracts.circuit_breaker import IntegrationCircuitBreakerConfig
 from intergrax.integrations._shared.circuit_breaker_registry import get_breaker_for_slug
 from intergrax.integrations.contracts.base import (
     HealthStatus,

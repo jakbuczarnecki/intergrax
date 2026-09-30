@@ -19,8 +19,10 @@ from intergrax.contracts.attempt_lifecycle import AttemptLifecyclePersistencePro
 from intergrax.contracts.execution_terminal import ExecutionTerminalPersistenceProvider
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.distributed.providers.sqlite_kv_store import build_sqlite_distributed_kv_store
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
 from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.integrations.registry.reference_document_store import (
+    create_reference_in_memory_document_store,
+)
 
 if TYPE_CHECKING:
     from intergrax.applications._shared.production_process_composition import (
@@ -50,7 +52,7 @@ def build_reference_production_platform_persistence(
     )
     return ProductionPlatformPersistence(
         kv_store=build_sqlite_distributed_kv_store(resolved_path),
-        document_store=InMemoryDocumentStore(),
+        document_store=create_reference_in_memory_document_store(),
         db_path=resolved_path,
     )
 

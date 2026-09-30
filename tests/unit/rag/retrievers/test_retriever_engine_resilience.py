@@ -6,7 +6,7 @@ from typing import List, Type
 
 import pytest
 
-from intergrax.integrations._shared.circuit_breaker import IntegrationCircuitBreakerConfig
+from intergrax.integrations.contracts.circuit_breaker import IntegrationCircuitBreakerConfig
 from intergrax.rag.retrieval.retrieval_errors import RetrievalError, RetrievalErrorKind
 from intergrax.rag.retrievers.contracts.base_retriever import (
     BaseRetriever,

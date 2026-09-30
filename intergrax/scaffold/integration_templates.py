@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.runtime_cutover_templates import (
+from intergrax.integrations.registry.runtime_cutover_templates import (
     CATEGORY_RUNTIME_SPECS,
     GENERIC_RUNTIME_CATEGORIES,
 )

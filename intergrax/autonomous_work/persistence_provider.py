@@ -12,7 +12,7 @@ from intergrax.autonomous_work.materialization_factory import (
     AutonomousWorkPersistenceFactory,
 )
 from intergrax.autonomous_work.persistence import AutonomousWorkRepositories
-from intergrax.integrations._shared.config import merge_config
+from intergrax.integrations.registry.config_helpers import merge_config
 from intergrax.integrations.contracts.base import IntegrationCategory, IntegrationConfigurationError
 from intergrax.integrations.registry.catalog import get_entry
 from intergrax.integrations.registry.factory import resolve_slug

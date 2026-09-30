@@ -6,10 +6,8 @@ from __future__ import annotations
 
 from threading import Lock
 
-from intergrax.integrations._shared.circuit_breaker import (
-    IntegrationCircuitBreaker,
-    IntegrationCircuitBreakerConfig,
-)
+from intergrax.integrations._shared.circuit_breaker import IntegrationCircuitBreaker
+from intergrax.integrations.contracts.circuit_breaker import IntegrationCircuitBreakerConfig
 
 _registry: dict[str, IntegrationCircuitBreaker] = {}
 _lock = Lock()

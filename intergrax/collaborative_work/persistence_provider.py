@@ -13,7 +13,7 @@ from intergrax.collaborative_work.materialization_factory import (
 from intergrax.collaborative_work.persistence import (
     CollaborativeWorkMaterializedRepositories,
 )
-from intergrax.integrations._shared.config import merge_config
+from intergrax.integrations.registry.config_helpers import merge_config
 from intergrax.integrations.contracts.base import (
     IntegrationCategory,
     IntegrationConfigurationError,
