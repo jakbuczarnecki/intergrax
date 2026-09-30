@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from intergrax.runtime.sandbox.network_egress import canonicalize_network_egress_allowlist
-from tests.integration.providers.sandbox_host.e2b.qualification import (
+from tests.integration.providers.sandbox_host.qualification import (
     HostProbeEvidence,
     NetworkProbeResult,
     ObservedNetworkScope,

@@ -37,7 +37,7 @@ from intergrax.contracts.capability_qualification.qualification_reason_code impo
 )
 from intergrax.contracts.capability_qualification.qualification_request import (
     CapabilityQualificationRequest,
-    derive_capability_qualification_request_id,
+    build_acquisition_qualification_request,
 )
 from intergrax.contracts.marketplace.handoff_traceability import (
     CapabilityHandoffConsumerTarget,
@@ -165,16 +165,9 @@ def _qualification_request(
             evidence_ref=evidence_ref,
         ),
     )
-    return CapabilityQualificationRequest(
-        qualification_request_id=derive_capability_qualification_request_id(
-            acquisition_request_id=acquisition_id,
-            qualification_nonce="nonce-1",
-        ),
-        qualification_nonce="nonce-1",
-        acquisition_request_id=acquisition_id,
-        gap_id="gap-1",
-        strategy_id=strategy_id,
+    return build_acquisition_qualification_request(
         acquisition_result=acquisition,
+        qualification_nonce="nonce-1",
         requested_at=_NOW,
     )
 

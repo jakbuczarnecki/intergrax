@@ -12,7 +12,11 @@ from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from intergrax.contracts.execution_identity import ExecutionId
 from intergrax.contracts.sandbox_network_egress import NetworkEgressAllowlist
+from intergrax.integrations.contracts.scoped_integration_adaptation import (
+    ScopedIntegrationAdaptationOperationId,
+)
 
 
 class CredentialResolutionMode(StrEnum):
@@ -238,6 +242,24 @@ class CredentialResolver(Protocol):
         """Resolve secret material immediately before an operation needs it."""
 
 
+@runtime_checkable
+class ExecutionBoundCredentialGrantProvider(Protocol):
+    """Resolve a bounded credential grant for an active canonical execution."""
+
+    def resolve_grant(
+        self,
+        *,
+        execution_id: ExecutionId,
+        credential_grant_ref: str,
+        tenant_id: str,
+        provider_id: str,
+        integration_id: str,
+        requested_operation: ScopedIntegrationAdaptationOperationId,
+    ) -> CredentialUseGrant:
+        """Return a secret-free grant bound to execution_id and requested operation."""
+        ...
+
+
 __all__ = [
     "CredentialNotFoundError",
     "CredentialProviderUnavailableError",
@@ -254,6 +276,7 @@ __all__ = [
     "CredentialUseGrant",
     "CredentialUseGrantExpiredError",
     "CredentialUseScope",
+    "ExecutionBoundCredentialGrantProvider",
     "ResolvedCredential",
     "ScopedCredentialResolutionResult",
 ]

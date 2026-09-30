@@ -108,6 +108,7 @@ from intergrax.contracts.capability_qualification.qualification_result import (
 )
 from intergrax.contracts.capability_qualification.qualification_request import (
     CapabilityQualificationRequest,
+    build_acquisition_qualification_request,
     derive_capability_qualification_request_id,
 )
 from intergrax.contracts.capability_qualification.qualified_subject import (
@@ -627,18 +628,9 @@ class Gap02CertHarness:
         strategy_id = acquisition_result.strategy_id
         assert strategy_id is not None
         qual_nonce = "qual-1"
-        qual_request = CapabilityQualificationRequest(
-            qualification_request_id=derive_capability_qualification_request_id(
-                acquisition_request_id=acquisition_result.request_id,
-                qualification_nonce=qual_nonce,
-            ),
-            qualification_nonce=qual_nonce,
-            acquisition_request_id=acquisition_result.request_id,
-            gap_id=gap.gap_id,
-            strategy_id=strategy_id,
+        qual_request = build_acquisition_qualification_request(
             acquisition_result=acquisition_result,
-            correlation_id=acquisition_result.correlation_id,
-            causation_id=acquisition_result.causation_id,
+            qualification_nonce=qual_nonce,
             requested_at=timestamp,
         )
         return self.qualification_adapter.qualify(qual_request)
@@ -739,7 +731,7 @@ class Gap02CertHarness:
         assert canonical_need.need_id is not None
         gap = CapabilityGap.from_discovery_completion(completion)
         qual_request_id = derive_capability_qualification_request_id(
-            acquisition_request_id=acquisition_result.request_id,
+            subject_id=acquisition_result.request_id,
             qualification_nonce="qual-1",
         )
         provenance = WorkerCapabilityRecoveryProvenance(

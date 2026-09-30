@@ -1,31 +1,32 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""E2B physical egress causal-proof qualification harness."""
+"""E2B physical egress causal-proof qualification harness (re-exports shared harness)."""
 
-from .attestation_correlation import ProviderAttestationCorrelation
-from .credentials import E2bCredentialStatus, resolve_e2b_credentials
-from .errors import (
-    QualificationAssertionError,
-    QualificationBaselineError,
-    QualificationCredentialUnavailable,
-    QualificationError,
-    QualificationSessionError,
-)
-from .models import (
+from tests.integration.providers.sandbox_host.qualification import (
     CleanupEvidence,
     ControlPhaseEvidence,
+    HostedPythonNetworkProbe,
     HostProbeEvidence,
     NetworkProbeResult,
     ObservedNetworkScope,
     PhysicalEgressQualificationEvidence,
+    ProviderAttestationCorrelation,
     ProviderAttestationCorrelationEvidence,
     ProviderAttestationEvidence,
+    QualificationAssertionError,
+    QualificationBaselineError,
+    QualificationError,
+    QualificationRunner,
+    QualificationSandboxProvider,
+    QualificationSessionError,
     QualifiedPhaseEvidence,
     RedirectEvidence,
     RedirectPhaseEvidence,
+    SandboxNetworkProbe,
 )
-from .probes import HostedPythonNetworkProbe, SandboxNetworkProbe
-from .runner import QualificationRunner, QualificationSandboxProvider
+
+from .credentials import E2bCredentialStatus, resolve_e2b_credentials
+from .errors import QualificationCredentialUnavailable
 from .scenarios import E2bPhysicalEgressScenario, default_e2b_physical_egress_scenario
 
 __all__ = [

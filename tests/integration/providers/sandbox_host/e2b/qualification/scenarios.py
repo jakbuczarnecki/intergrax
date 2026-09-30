@@ -5,24 +5,10 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
 
-from intergrax.runtime.sandbox.network_egress import canonicalize_network_egress_allowlist
+from tests.integration.providers.sandbox_host.qualification.scenarios import PhysicalEgressScenario
 
-
-@dataclass(frozen=True, slots=True)
-class E2bPhysicalEgressScenario:
-    """Deterministic public endpoints for causal egress qualification."""
-
-    scenario_id: str
-    provider: str
-    allowed_host: str
-    denied_host: str
-    redirect_url: str
-
-    @property
-    def allowlist(self):
-        return canonicalize_network_egress_allowlist([self.allowed_host])
+E2bPhysicalEgressScenario = PhysicalEgressScenario
 
 
 def default_e2b_physical_egress_scenario() -> E2bPhysicalEgressScenario:

@@ -4,13 +4,16 @@
 
 from __future__ import annotations
 
+import ast
 import inspect
+from pathlib import Path
 
 import pytest
 
 from intergrax.contracts.control_plane_mutation import (
     ControlPlaneMutationApprovalGrant,
     ControlPlaneMutationAuthorizationEvidence,
+    ControlPlaneMutationAuthorizationPort,
     ControlPlaneMutationAuthorizationResult,
     ControlPlaneMutationAuthorizationScope,
     ControlPlaneMutationDenialRecord,
@@ -20,6 +23,11 @@ from intergrax.contracts.control_plane_mutation import (
 )
 from intergrax.contracts.agent_run import RequestIdentity
 from intergrax.contracts.agent_run_enums import PrincipalType
+
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+_CONTROL_PLANE_CONTRACT_PATH = (
+    _REPO_ROOT / "intergrax/contracts/control_plane_mutation.py"
+)
 
 pytestmark = pytest.mark.unit
 
@@ -53,7 +61,10 @@ def test_cp13_authority_critical_fields_are_typed_not_dict_bags() -> None:
 
 
 def test_cp13_governance_evaluation_point_is_typed_enum() -> None:
-    assert GovernanceEvaluationPoint.CONTROL_PLANE_MUTATION.value == "control_plane_mutation"
+    assert (
+        GovernanceEvaluationPoint.CONTROL_PLANE_MUTATION.value
+        == "control_plane_mutation"
+    )
     assert inspect.isclass(GovernanceEvaluationPoint)
 
 
@@ -76,3 +87,20 @@ def test_cp13_risk_is_explicit_enum_not_inferred() -> None:
         risk_classification=ControlPlaneMutationRisk.HIGH,
     )
     assert request.risk_classification is ControlPlaneMutationRisk.HIGH
+
+
+def test_i1_contract_module_has_no_runtime_or_integrations_imports() -> None:
+    source = _CONTROL_PLANE_CONTRACT_PATH.read_text(encoding="utf-8-sig")
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            assert not node.module.startswith("intergrax.runtime")
+            assert not node.module.startswith("intergrax.integrations")
+
+
+def test_i1_control_plane_authorization_port_single_canonical_definition() -> None:
+    source = _CONTROL_PLANE_CONTRACT_PATH.read_text(encoding="utf-8-sig")
+    assert source.count("class ControlPlaneMutationAuthorizationPort") == 1
+    sig = inspect.signature(ControlPlaneMutationAuthorizationPort.authorize)
+    assert "ControlPlaneMutationRequest" in str(sig.parameters["request"].annotation)
+    assert "ControlPlaneMutationAuthorizationResult" in str(sig.return_annotation)

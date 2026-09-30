@@ -63,7 +63,11 @@ from intergrax.contracts.capability_qualification.qualification_reason_code impo
 )
 from intergrax.contracts.capability_qualification.qualification_request import (
     CapabilityQualificationRequest,
+    build_acquisition_qualification_request,
     derive_capability_qualification_request_id,
+)
+from intergrax.contracts.capability_qualification.qualification_subject import (
+    CapabilityQualificationSubjectKind,
 )
 from intergrax.contracts.capability_qualification.qualification_result import (
     CapabilityQualificationResult,
@@ -110,18 +114,9 @@ def _request(
 ) -> CapabilityQualificationRequest:
     gap = _gap()
     acq = acquisition or _succeeded_acquisition(gap)
-    return CapabilityQualificationRequest(
-        qualification_request_id=derive_capability_qualification_request_id(
-            acquisition_request_id=acq.request_id,
-            qualification_nonce=nonce,
-        ),
-        qualification_nonce=nonce,
-        acquisition_request_id=acq.request_id,
-        gap_id=acq.gap_id,
-        strategy_id=acq.strategy_id or "strategy-1",
+    return build_acquisition_qualification_request(
         acquisition_result=acq,
-        correlation_id=acq.correlation_id,
-        causation_id=acq.causation_id,
+        qualification_nonce=nonce,
         requested_at=_CREATED,
     )
 
@@ -130,17 +125,20 @@ def _evidence(
     request: CapabilityQualificationRequest,
     provider_id: str,
 ) -> CapabilityQualificationEvidence:
-    acq_evidence = request.acquisition_result.evidence
+    subject = request.subject
+    lineage = subject.acquisition_lineage
+    assert lineage is not None
     return CapabilityQualificationEvidence(
         provider_id=provider_id,
         qualification_request_id=request.qualification_request_id,
-        acquisition_request_id=request.acquisition_request_id,
-        acquisition_strategy_id=request.strategy_id,
-        gap_id=request.gap_id,
-        artifact_reference=acq_evidence.artifact_reference if acq_evidence else None,
-        domain_handoff_reference=(
-            acq_evidence.domain_handoff_reference if acq_evidence else None
-        ),
+        subject_kind=subject.subject_kind,
+        subject_id=subject.subject_id,
+        subject_integrity_fingerprint=subject.subject_integrity_fingerprint,
+        acquisition_request_id=lineage.acquisition_request_id,
+        acquisition_strategy_id=lineage.strategy_id,
+        gap_id=lineage.gap_id,
+        artifact_reference=lineage.artifact_reference,
+        domain_handoff_reference=lineage.domain_handoff_reference,
     )
 
 
@@ -168,11 +166,17 @@ class _FakeProvider:
         self, request: CapabilityQualificationRequest
     ) -> CapabilityQualificationResult:
         self.calls += 1
+        subject = request.subject
+        lineage = subject.acquisition_lineage
+        assert lineage is not None
         return CapabilityQualificationResult(
             qualification_request_id=request.qualification_request_id,
-            acquisition_request_id=request.acquisition_request_id,
-            gap_id=request.gap_id,
-            strategy_id=request.strategy_id,
+            subject_kind=subject.subject_kind,
+            subject_id=subject.subject_id,
+            subject_integrity_fingerprint=subject.subject_integrity_fingerprint,
+            acquisition_request_id=lineage.acquisition_request_id,
+            gap_id=lineage.gap_id,
+            strategy_id=lineage.strategy_id,
             provider_id=self._provider_id,
             outcome=CapabilityQualificationOutcome.QUALIFIED,
             reason_code=CapabilityQualificationReasonCode.NONE,
@@ -285,19 +289,28 @@ def test_subject_mismatch_raises_integrity_error() -> None:
             self, request: CapabilityQualificationRequest
         ) -> CapabilityQualificationResult:
             self.calls += 1
+            subject = request.subject
+            lineage = subject.acquisition_lineage
+            assert lineage is not None
             bad_evidence = CapabilityQualificationEvidence(
                 provider_id=self._provider_id,
                 qualification_request_id=request.qualification_request_id,
-                acquisition_request_id=request.acquisition_request_id,
-                acquisition_strategy_id=request.strategy_id,
-                gap_id=request.gap_id,
+                subject_kind=subject.subject_kind,
+                subject_id=subject.subject_id,
+                subject_integrity_fingerprint=subject.subject_integrity_fingerprint,
+                acquisition_request_id=lineage.acquisition_request_id,
+                acquisition_strategy_id=lineage.strategy_id,
+                gap_id=lineage.gap_id,
                 artifact_reference="artifact://not-acquired",
             )
             return CapabilityQualificationResult(
                 qualification_request_id=request.qualification_request_id,
-                acquisition_request_id=request.acquisition_request_id,
-                gap_id=request.gap_id,
-                strategy_id=request.strategy_id,
+                subject_kind=subject.subject_kind,
+                subject_id=subject.subject_id,
+                subject_integrity_fingerprint=subject.subject_integrity_fingerprint,
+                acquisition_request_id=lineage.acquisition_request_id,
+                gap_id=lineage.gap_id,
+                strategy_id=lineage.strategy_id,
                 provider_id=self._provider_id,
                 outcome=CapabilityQualificationOutcome.QUALIFIED,
                 reason_code=CapabilityQualificationReasonCode.NONE,
@@ -325,11 +338,17 @@ def test_result_integrity_mismatch_raises() -> None:
             evidence = _evidence(request, self.provider_id).model_copy(
                 update={"qualification_request_id": wrong_qreq_id},
             )
+            subject = request.subject
+            lineage = subject.acquisition_lineage
+            assert lineage is not None
             return CapabilityQualificationResult(
                 qualification_request_id=wrong_qreq_id,
-                acquisition_request_id=request.acquisition_request_id,
-                gap_id=request.gap_id,
-                strategy_id=request.strategy_id,
+                subject_kind=subject.subject_kind,
+                subject_id=subject.subject_id,
+                subject_integrity_fingerprint=subject.subject_integrity_fingerprint,
+                acquisition_request_id=lineage.acquisition_request_id,
+                gap_id=lineage.gap_id,
+                strategy_id=lineage.strategy_id,
                 provider_id=self._provider_id,
                 outcome=CapabilityQualificationOutcome.QUALIFIED,
                 reason_code=CapabilityQualificationReasonCode.NONE,
@@ -351,11 +370,17 @@ def test_provider_qualified_without_evidence_raises_at_validation() -> None:
             self, request: CapabilityQualificationRequest
         ) -> CapabilityQualificationResult:
             self.calls += 1
+            subject = request.subject
+            lineage = subject.acquisition_lineage
+            assert lineage is not None
             return CapabilityQualificationResult(
                 qualification_request_id=request.qualification_request_id,
-                acquisition_request_id=request.acquisition_request_id,
-                gap_id=request.gap_id,
-                strategy_id=request.strategy_id,
+                subject_kind=subject.subject_kind,
+                subject_id=subject.subject_id,
+                subject_integrity_fingerprint=subject.subject_integrity_fingerprint,
+                acquisition_request_id=lineage.acquisition_request_id,
+                gap_id=lineage.gap_id,
+                strategy_id=lineage.strategy_id,
                 provider_id=self._provider_id,
                 outcome=CapabilityQualificationOutcome.QUALIFIED,
                 reason_code=CapabilityQualificationReasonCode.NONE,
@@ -388,16 +413,18 @@ def test_provenance_audit_chain() -> None:
     service = CapabilityQualificationService((_FakeProvider(provider_id="p1"),))
     decision = service.qualify(req)
     record = decision.audit_record
-    assert record.acquisition_request_id == req.acquisition_request_id
-    assert record.acquisition_strategy_id == req.strategy_id
+    lineage = req.subject.acquisition_lineage
+    assert lineage is not None
+    assert record.acquisition_request_id == lineage.acquisition_request_id
+    assert record.acquisition_strategy_id == lineage.strategy_id
     assert record.qualification_request_id == req.qualification_request_id
     assert record.qualification_provider_id == "p1"
     assert record.correlation_id == req.correlation_id
     assert record.causation_id == req.causation_id
     evidence = decision.qualification_result.evidence
     assert evidence is not None
-    assert evidence.acquisition_request_id == req.acquisition_request_id
-    assert evidence.acquisition_strategy_id == req.strategy_id
+    assert evidence.acquisition_request_id == lineage.acquisition_request_id
+    assert evidence.acquisition_strategy_id == lineage.strategy_id
 
 
 def test_failed_acquisition_cannot_build_request() -> None:
@@ -405,8 +432,12 @@ def test_failed_acquisition_cannot_build_request() -> None:
     acq = _succeeded_acquisition(gap).model_copy(
         update={"outcome": CapabilityAcquisitionOutcome.FAILED},
     )
-    with pytest.raises(ValidationError):
-        _request(acq)
+    with pytest.raises(ValueError):
+        build_acquisition_qualification_request(
+            acquisition_result=acq,
+            qualification_nonce="q-nonce-1",
+            requested_at=_CREATED,
+        )
 
 
 def test_qualified_lifecycle_accept_not_execution() -> None:

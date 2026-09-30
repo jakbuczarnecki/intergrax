@@ -9,7 +9,7 @@ Domain owners execute mutations; this contract is evaluation-only input.
 from __future__ import annotations
 
 from enum import StrEnum
-from typing import Final, Literal, Protocol
+from typing import Final, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -334,8 +334,17 @@ class ControlPlaneMutationDenialRecord(BaseModel):
 class ControlPlaneMutationPolicyEvaluator(Protocol):
     """Configured policy/authority evaluator for control-plane mutations."""
 
-    def evaluate(self, request: ControlPlaneMutationRequest) -> PolicyDecision:
-        """Return a fresh governance decision for ``request``."""
+    def evaluate(self, request: ControlPlaneMutationRequest) -> PolicyDecision: ...
+
+
+@runtime_checkable
+class ControlPlaneMutationAuthorizationPort(Protocol):
+    """Governance authorization capability for control-plane mutation admission."""
+
+    def authorize(
+        self,
+        request: ControlPlaneMutationRequest,
+    ) -> ControlPlaneMutationAuthorizationResult: ...
 
 
 def control_plane_mutation_request_digest(

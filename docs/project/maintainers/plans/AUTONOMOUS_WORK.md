@@ -344,11 +344,70 @@ Delivery rule:
 |---|---|
 | **ID** | AW-7C |
 | **Priority** | P0/P1 |
-| **Status** | BLOCKED BY PREREQUISITE |
+| **Status** | **CURRENT** |
 | **Purpose** | A2 scoped adaptive integration path |
-| **Dependencies** | enforceable egress + scoped secret brokering — see [`AW_7C_A2_SCOPED_ADAPTIVE_INTEGRATION_QUALIFICATION.md`](../qualification/AW_7C_A2_SCOPED_ADAPTIVE_INTEGRATION_QUALIFICATION.md) |
-| **Acceptance** | only approved hosts/secrets, narrow scope, runtime evidence of enforced controls |
-| **Next step** | AW-7D |
+| **Dependencies** | Prerequisites **CLOSED / accepted** via AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ; architecture lock **CLOSED / independently accepted through R1** @ `fa5853ec009d015cb52c9de15dd7e283932a9b4d` — [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) |
+| **Child sequence** | AW-7C-P1-ARCH → AW-7C-P1-ARCH-R1 → AW-7C-P2 → AW-7C-P3 → AW-7C-P4 → AW-7C-CERT → **AW-7C-CLOSURE** |
+| **Acceptance** | only approved hosts/secrets, narrow scope, runtime evidence of enforced controls; typed pluginable adaptation → qualification → canonical Execution; no A1 bypass |
+| **Next step** | Independent SHA audit of **AW-7C-CLOSURE** (parent runtime-bound path); **EBH-3** **NOT ENTERED** |
+
+| Field | Value |
+|---|---|
+| **ID** | AW-7C-P1-ARCH |
+| **Priority** | P1 |
+| **Status** | **CLOSED / independently accepted through R1** — original independent audit @ `e055a5bdb3c120b90dad546dc33cc0219824ced7` **BLOCKED** (shared adaptation-scope owner; qualification subject deferred to P2); architecture lock accepted via **AW-7C-P1-ARCH-R1** @ `fa5853ec009d015cb52c9de15dd7e283932a9b4d` |
+| **Purpose** | Initial A2 architecture / contract-boundary lock (docs only) |
+| **Next step** | — (closed) |
+
+| Field | Value |
+|---|---|
+| **ID** | AW-7C-P1-ARCH-R1 |
+| **Priority** | P1 |
+| **Status** | **CLOSED / independently accepted** @ `fa5853ec009d015cb52c9de15dd7e283932a9b4d` — ownership + qualification-subject architecture remediation (docs only) |
+| **Purpose** | Lock Integrations-owned `ScopedIntegrationAdaptationScope`; lock `CapabilityQualificationSubject` and single-mechanism qualification continuity |
+| **Canonical architecture** | [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) |
+| **Next step** | — (closed); program continues at **AW-7C-P2** |
+
+| Field | Value |
+|---|---|
+| **ID** | AW-7C-P2 |
+| **Priority** | P1 |
+| **Status** | **READY FOR AUDIT** (P2 implementation + integrated hardening with P3 wave) |
+| **Purpose** | Typed core contracts, pure A2 orchestration to `QUALIFICATION_PENDING`, Integrations adaptation core |
+| **Baseline** | `d5e0b4b7dcfc0bd82d746f491c405cc73f8d73de` |
+| **Next step** | Independent SHA audit; program continues at **AW-7C-P4** after P3 audit |
+
+| Field | Value |
+|---|---|
+| **ID** | AW-7C-P3 |
+| **Priority** | P1 |
+| **Status** | **READY FOR AUDIT** — reference adaptation strategy, replaceability, resolver + scope narrowing proofs |
+| **Purpose** | Explicit reference strategy (qualification boundary only); structural replaceability; tenant-local adversarial evidence |
+| **Next step** | Independent SHA audit |
+
+| Field | Value |
+|---|---|
+| **ID** | AW-7C-P4 |
+| **Priority** | P1 |
+| **Status** | **READY FOR AUDIT** — P3 target-source carry-over; `WorkerScopedAdaptiveIntegrationExecutionCoordinator`; canonical `WorkerExecutionDispatchService` path; execution-bound credential/sandbox reference seam |
+| **Baseline** | `7245bb1d6f2ce6b340cea5df43324672b4765974` |
+| **Next step** | Independent SHA audit after CERT remediation @ `6fda62ca792255e482895a574250af547cb18cba` |
+
+| Field | Value |
+|---|---|
+| **ID** | AW-7C-CERT |
+| **Priority** | P1 |
+| **Status** | **READY FOR AUDIT** — P4 audit blockers A–F remediated; adversarial credential/sandbox/tenant/forged-handoff evidence |
+| **Baseline** | `6fda62ca792255e482895a574250af547cb18cba` |
+| **Next step** | Independent GitHub SHA audit; **EBH-3** **NOT ENTERED** |
+
+| Field | Value |
+|---|---|
+| **ID** | AW-7C-CLOSURE |
+| **Priority** | P1 |
+| **Status** | **READY FOR AUDIT** — canonical `ExecutionRuntime` delegate; operation/credential/sandbox contract remediation from CERT independent audit |
+| **Baseline** | `6971095e2db558459e5c7f90cdc212149bb12186` |
+| **Next step** | Independent GitHub SHA parent-closure audit; **EBH-3** **NOT ENTERED** |
 
 | Field | Value |
 |---|---|

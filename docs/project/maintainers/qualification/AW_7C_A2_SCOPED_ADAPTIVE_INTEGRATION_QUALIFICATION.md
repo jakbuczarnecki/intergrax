@@ -1,6 +1,6 @@
 # AW-7C A2 Scoped Adaptive Integration — Prerequisite Qualification
 
-**Verdict:** BLOCKED BY PREREQUISITE
+**Verdict (current program state, post–AW-7C-P0-3B-PHYSQ reconciliation):** AW-7C-P0-3B-PHYSQ **CLOSED / independently accepted** @ `deaafee1a7612824bbe06dd7f0d403c3e490124b`; AW-7C-P0-3B **CLOSED / prerequisite satisfied**; AW-7C **CURRENT** (implementation/certification open). Sections 1–13 below retain **historical** prerequisite audit unless a later section states **current accepted state**.
 
 **Date:** 2026-09-07
 
@@ -13,6 +13,134 @@
 **Task:** AW-7C qualification-first audit — no A2 production implementation. **P0-1 egress contract remediation** (2026-09-07): typed host scope + fail-closed substrate matching. **P0-2 secret broker remediation** (2026-09-07): purpose-scoped grant/broker contracts + enforcement at resolution boundary. **P0-3 hosted provider inventory** (2026-09-07): canonical sandbox-host audit + `SandboxSecurityConfigurable` admission seam. **P0-3A E2B adapter** (2026-09-07): security-qualified `E2bSandboxHostBackend` + provider-state attestation; physical qualification pending operator credentials.
 
 **P0-2 independent audit correction:** unenforced `max_uses` field removed. V1 bounded credential authority is time-bounded via `expires_at` only. Use-count restrictions require a future concurrency-safe lifecycle authority.
+
+---
+
+## AW-7C implementation architecture lock (current)
+
+| Field | Value |
+| ----- | ----- |
+| **Stage** | AW-7C-P1-ARCH **CLOSED / architecture lock accepted through R1**; AW-7C-P1-ARCH-R1 **CLOSED / independently accepted** @ `fa5853ec009d015cb52c9de15dd7e283932a9b4d` |
+| **Parent** | AW-7C **CURRENT** |
+| **Prerequisites** | AW-7C-P0-3B + AW-7C-P0-3B-PHYSQ **CLOSED / accepted** |
+| **Purpose** | Contract-boundary and ownership lock for A2 scoped adaptive integration execution — **no A2 production implementation** |
+| **Canonical architecture** | [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) |
+| **A2 execution service on baseline** | **None** (gap documented; P2+ implements) |
+| **Next work** | **AW-7C-P2** + **AW-7C-P3** — **READY FOR AUDIT** (integrated hardening + reference strategy on `development`; independent SHA audit required) |
+| **Global FRZ** | No PASS delta from P1-ARCH / R1 |
+
+Sections 1–13 below retain **historical** prerequisite audit unless explicitly superseded above.
+
+---
+
+## AW-7C-P1-ARCH independent audit (blocked)
+
+| Field | Value |
+| ----- | ----- |
+| **Verdict** | **BLOCKED** |
+| **Exact audited SHA** | `e055a5bdb3c120b90dad546dc33cc0219824ced7` |
+| **Reason 1** | Shared semantic owner for adaptation scope (`ScopedAdaptiveIntegrationScope` documented as AW + Integrations shared contract) — violates exactly-one owner (FRZ-OWN-01) |
+| **Reason 2** | Qualification subject / `CapabilityQualificationRequest` carry model for A2 artifacts left to P2 — material architecture decision deferred |
+
+## AW-7C-P1-ARCH-R1 independent audit (accepted)
+
+| Field | Value |
+| ----- | ----- |
+| **Verdict** | **CLOSED / independently accepted** |
+| **Exact audited SHA** | `fa5853ec009d015cb52c9de15dd7e283932a9b4d` |
+| **Scope** | Docs-only architecture remediation — **no** production code, contracts, or tests |
+| **Blocker A closure** | `ScopedIntegrationAdaptationScope` owned by **Integrations** (`intergrax/integrations/contracts/`); AW supplies immutable instance on orchestration request only |
+| **Blocker B closure** | `CapabilityQualificationSubject` owned by **Capability Qualification**; deterministic projections from `ScopedIntegrationAdaptationArtifact` and from successful `CapabilityAcquisitionResult`; single UCA-4 mechanism; V1→subject migration direction locked |
+| **Parent effect** | **AW-7C-P1-ARCH** = **CLOSED**; **AW-7C** = **CURRENT**; **AW-7C-P2** = **READY FOR AUDIT**; **AW-7C-P3** = **READY FOR AUDIT**; **AW-7C-P4** = **NEXT / NOT ENTERED** |
+| **Global FRZ** | **new global FRZ PASS = 0**; **new FRZ-TEN PASS = 0** |
+| **R1 gates (mechanical)** | 38 passed; 4 passed — architecture-doc gate only; not code/behavior proof of P2+ |
+
+## AW-7C-P3 scoped qualification evidence (READY FOR AUDIT)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **READY FOR AUDIT** — not CLOSED |
+| **Scoped evidence** | Replaceability, resolver negatives, scope narrowing, tenant-local adversarial rejection, pure path to `QUALIFICATION_PENDING` without `qualify()` / Governance / Execution |
+| **FRZ (scoped; global statuses OPEN)** | FRZ-OWN-01..03, FRZ-CTR-01..06, FRZ-TYP-01..04, FRZ-TYP-06, FRZ-PLG-01..02, FRZ-RPL-01..02, FRZ-GOV-09, FRZ-TRC-10; FRZ-TEN-01, FRZ-TEN-02, FRZ-TEN-07, FRZ-TEN-10, FRZ-TEN-11, FRZ-TEN-12 |
+| **P3 carry-over (P4)** | `ScopedIntegrationAdaptationTargetSource` + reference catalog; request-echo resolver removed |
+| **Deferred** | CERT global tenant close |
+
+## AW-7C-P4 scoped qualification + execution evidence (READY FOR COMBINED INDEPENDENT ACCEPTANCE)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **READY FOR COMBINED INDEPENDENT ACCEPTANCE** — P4 exact-SHA audit blockers remediated in **AW-7C-CERT** |
+| **Scoped evidence** | CQ `CapabilityQualificationDecision` carried on handoff; execution-bound `validate_execution_bound_qualification_proof`; Governance negatives; integrated reference intake E2E |
+| **FRZ (scoped; global statuses OPEN)** | FRZ-EXE-01..07, FRZ-GOV-01..05/07/09, FRZ-SEC-02/03/05/07, FRZ-TRC-01/03/04/06/10, FRZ-TEN-01/02/07/10/11/12 |
+| **Deferred** | Global FRZ-TEN close |
+
+## AW-7C-CERT adversarial qualification (READY FOR AUDIT)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **READY FOR AUDIT** — not CLOSED |
+| **Baseline** | `6fda62ca792255e482895a574250af547cb18cba` |
+| **Proof binding** | `accepted_qualification` + `validate_execution_bound_qualification_proof` before credential/sandbox/operation |
+| **Credential** | `validate_handoff_credential_grant_identity`; broker sees canonical `ExecutionId` via grant factory |
+| **Operation** | `requested_operation` on P4 request/handoff; must ⊆ `permitted_operations`; credential scope uses same operation value |
+| **Failure typing** | `ScopedAdaptiveIntegrationExecutionRuntimeEnvelope` — sandbox ≠ credential |
+| **Idempotency** | No process-local duplicate authority in coordinator |
+| **Tests** | `test_aw_7c_cert_scoped_adaptive_integration_execution.py` |
+
+## AW-7C-CLOSURE parent certification (READY FOR AUDIT)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **READY FOR AUDIT** — not CLOSED |
+| **CERT carry-over fixes** | Canonical execution identity via `ExecutionRuntime`; typed `ExecutionBoundCredentialGrantProvider`; explicit operation on `ScopedAdaptedIntegrationOperationPort`; execution-bound `SandboxSecurityCapable` session |
+| **Scoped FRZ evidence** | Same families as CERT/P4 (EXE, GOV, CTR, SEC, TRC, TEN-local); **global FRZ PASS delta = 0** until checklist owner audit |
+| **Tests** | `test_aw_7c_closure_scoped_adaptive_integration_execution.py`, `test_aw_7c_closure_architecture_gates.py` |
+| **Post-audit blocker** | Operation port not bound to broker/sandbox resources — parent **NOT CLOSED** until **AW-7C-CLOSURE-R1** runtime completes |
+
+## AW-7C-CLOSURE-R1-ARCH (AUDIT REJECTED)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **AUDIT REJECTED** @ `618164a5c666e9854441890e6233f605ece8a9ee` — blockers A (plugin physical I/O) + B (unowned single-use credential) |
+| **Architecture** | `docs/project/maintainers/architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md` § AW-7C-CLOSURE-R1-ARCH (historical); **authoritative:** § AW-7C-CLOSURE-R1-ARCH-R1 |
+| **Parent** | **AW-7C** — **CURRENT / NOT CLOSED** |
+| **Next mandatory stage after AW-7C closes** | **EBH-3** — **NOT ENTERED** |
+
+## AW-7C-CLOSURE-R1-ARCH-R1 (READY FOR AUDIT)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **READY FOR AUDIT** — docs-only remediation; **0** production delta |
+| **Baseline** | `618164a5c666e9854441890e6233f605ece8a9ee` (`development`) |
+| **Architecture** | [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) § AW-7C-CLOSURE-R1-ARCH-R1 |
+| **Blocker A remediation** | Typed `ScopedAdaptedIntegrationEffectRequest` + preparer SPI; **single** canonical `ScopedAdaptedIntegrationEffectExecutor` owns physical I/O; preparer **cannot** perform sanctioned physical effects |
+| **Blocker B remediation** | Credential **execution/tenant/provider/integration/operation/target/expiry-bound**; **no** `single-use` guarantee without concurrency-safe lifecycle owner (aligned with P0-2 `max_uses` removal) |
+| **Bypass claims** | **10.1** sanctioned single platform path (gates/tests); **10.2** hostile arbitrary Python **not** claimed via Protocol alone |
+| **Tenant audit (local)** | **PASS** — continuity chain through effect request + executor + evidence |
+| **Certification criteria (future R1 runtime implementation)** | (1) `ScopedAdaptedIntegrationEffectRequestPort.prepare` → immutable `ScopedAdaptedIntegrationEffectRequest` (no secrets/callables); (2) `ScopedAdaptedIntegrationEffectExecutor.execute` only physical boundary; (3) sandbox resource **same instance** as attestation; (4) credential via broker into **executor** only — preparer receives **no** material; (5) supersede physical `ScopedAdaptedIntegrationOperationPort` without parallel path; (6) adversarial matrix in architecture § R1-ARCH-R1; (7) **no new authority** |
+| **Global FRZ** | **0** checklist PASS deltas |
+
+### R1-ARCH-R1 — Enterprise audit matrix (qualification evidence)
+
+| Dimension | Verdict | Evidence |
+| --------- | ------- | -------- |
+| Boundaries | PASS | AW / Integrations / Execution / Governance / Credential / Sandbox separation locked in architecture § R1-ARCH-R1 |
+| Communication | PASS | Typed contracts only on preparer/executor seam |
+| Composition | PASS | Single composer on delegate path; executor not second intake |
+| Ownership | PASS | Ownership matrix — exactly-one physical executor |
+| Contracts | PASS | EffectRequest + preparer SPI + executor; no pseudo-dicts |
+| Abstraction / strong typing | PASS | No `Any`/arbitrary dict on effect request |
+| Pluginability | PASS | Preparer extensible |
+| Replaceability | PASS | Same executor/sandbox/credential for all preparers |
+| Bypass resistance (sanctioned path) | PASS | Documented 10.1 vs 10.2 |
+| Governance | PASS | Unchanged separation |
+| Execution authority | PASS | Executor does not mint ExecutionId |
+| Credential authority | PASS | No new broker; no single-use without owner |
+| Sandbox authority | PASS | No second sandbox |
+| Tenant isolation | PASS | Local audit PASS |
+| Evidence / traceability | PASS | Typed evidence; no secrets |
+| Fail-closed | PASS | Failure matrix |
+| Regression protection | TRACKED | Runtime tests listed for next implementation task |
 
 ---
 
@@ -401,3 +529,143 @@ uv run pytest tests/integration/providers/sandbox_host/e2b/ -q
 **Known limitations:** domain filter is routing control per E2B docs (shared CDN/SNI caveats); UDP/QUIC not domain-filtered; DNS rebinding not verified; E2B may inject `8.8.8.8` DNS helper IP in raw `allowOut` (excluded from canonical enforced host evidence).
 
 **Nexus:** untouched — qualification harness has architecture gate `test_no_nexus_dependency`.
+
+---
+
+## 14. P0-3B — Provider-neutral reference substrate physical qualification (2026-09-28)
+
+**Architecture decision:** [`ADR_AW_7C_PROVIDER_NEUTRAL_PHYSICAL_SANDBOX_QUALIFICATION_BOUNDARY.md`](../architecture/ADR_AW_7C_PROVIDER_NEUTRAL_PHYSICAL_SANDBOX_QUALIFICATION_BOUNDARY.md)
+
+**Corrected model:**
+
+| Gate | Meaning |
+|------|---------|
+| **Capability qualification (AW-7C)** | Platform contract + **physical** kernel enforcement via qualification-only Linux reference substrate (`tests/integration/runtime/sandbox/reference_substrate/`). Traverses `HostedSandboxSession` → `ReferenceSandboxBackend` → network namespace + nftables/iptables. |
+| **Provider qualification (PROD-Q)** | Concrete E2B / Modal / Daytona production correctness — **mandatory before production activation** of that provider. |
+
+**E2B physical provider qualification:** **DEFERRED TO PROD-Q / NOT ESTABLISHED** for AW-7C closure. Historical P0-3A E2B harness attempts and skips remain valid historical evidence — not deleted.
+
+**Reference substrate physical qualification:** harness + ADR **implemented** @ baseline `a59744517b92847f55def1db22826d17d89ee155`.
+
+**Historical pre-PHYSQ state:** P0-3B was **BLOCKED — LOCAL PHYSICAL QUALIFICATION ENVIRONMENT UNAVAILABLE** (operator WSL2/Linux with root/CAP_NET_ADMIN required; session environment had no usable Linux distro with `python3`). **No mock PASS.** Independent exact-GitHub-SHA audit was required after physical run.
+
+**Current accepted state (post–independent PHYSQ audit):**
+
+```text
+AW-7C-P0-3B-PHYSQ: CLOSED / independently accepted @ deaafee1a7612824bbe06dd7f0d403c3e490124b
+AW-7C-P0-3B: CLOSED / prerequisite satisfied
+AW-7C: CURRENT
+EBH-3: PLANNED / NOT ENTERED
+EBH-4: PLANNED / NOT ENTERED
+```
+
+See § **AW-7C-P0-3B-PHYSQ** for machine evidence, execution reference, and SHA-256.
+
+**Shared harness extraction:** provider-neutral modules under `tests/integration/providers/sandbox_host/qualification/` (models, probes, runner, attestation correlation). E2B integration tests consume the shared harness unchanged semantically.
+
+**Threat-model boundary:** reference proof establishes kernel egress enforcement and redirect blocking on owned topology (`allowed.test` / `denied.test`). It does **not** claim public DNS rebinding, CDN churn, or external SaaS isolation — those remain provider qualification scope.
+
+**Tenant isolation audit (reference substrate only):** **N/A — WITH EVIDENCE** — synthetic qualification IDs only; no tenant provider selection, credentials, or persistence.
+
+**Historical AW-7C-P0-3B verdict (pre-PHYSQ):**
+
+```text
+AW-7C-P0-3B: BLOCKED — LOCAL PHYSICAL QUALIFICATION ENVIRONMENT UNAVAILABLE (harness READY FOR AUDIT)
+AW-7C: BLOCKED BY PREREQUISITE (physical capability proof pending operator Linux/WSL2 run)
+```
+
+**Current accepted state:** see block above under **Current accepted state (post–independent PHYSQ audit)**.
+
+**Production Python changes:** **0** (qualification + documentation only).
+
+---
+
+## AW-7C-P0-3B-PHYSQ — Provider-Neutral Physical Qualification — CLOSED / independently accepted
+
+**Stage:** AW-7C-P0-3B-PHYSQ-DOCKER-RUN  
+**Parent:** AW-7C-P0-3B  
+**Program parent:** AW-7C  
+**Next mandatory program parent after AW-7C:** EBH-3 (not entered)
+
+**Qualified code baseline:** `d44a238dbe0d23dd9b864297175f54e663cfee3d`
+
+**Execution environment:** Docker Desktop 4.38.0 (181591), Linux engine 27.5.1, privileged disposable `ubuntu:24.04` container (qualification execution environment only — not a runtime provider).
+
+| Component | Value |
+|-----------|--------|
+| Container image | `ubuntu:24.04` |
+| Kernel (container view) | `6.18.33.2-microsoft-standard-WSL2` |
+| uid | `0` (root) |
+| Firewall substrate | nftables v1.0.9 |
+| Python | 3.12.3 |
+| uv | 0.12.20 |
+| `UV_PROJECT_ENVIRONMENT` | `/opt/intergrax-venv` (container-local; repo `.venv` untouched) |
+| `UV_CACHE_DIR` | `/opt/uv-cache` |
+
+**Execution path (unchanged):** `QualificationRunner` → `QualificationSandboxProvider` → `HostedSandboxSession` → `SandboxHostBackend` / `ReferenceSandboxBackend` → Linux network namespace → nftables → sandbox process. **Direct host-side substitute proof:** NO.
+
+**Command #1 (dedicated PHYSQ):**
+
+```text
+uv run pytest tests/integration/runtime/sandbox/reference_substrate/test_reference_physical_egress_qualification.py -p no:xdist -q -rs
+```
+
+**Result #1:** `12 passed in 124.67s` — 0 failed, 0 skipped, 0 xfailed.
+
+**Command #2 (full reference substrate):**
+
+```text
+uv run pytest tests/integration/runtime/sandbox/reference_substrate/ -p no:xdist -q -rs
+```
+
+**Result #2:** `80 passed in 125.46s` — 0 failed, 0 skipped.
+
+### Causal proof (machine evidence)
+
+| Phase | Outcome |
+|-------|---------|
+| **Control** | `allowed.test:18080` reachable; `denied.test:18081` reachable; `baseline_valid=true` |
+| **Qualified** | allowed reachable; denied **not** reachable |
+| **Redirect** | attempted; `escaped=false` |
+| **Attestation** | `network_egress_allowlist_enforced=true`; kernel-derived effective allowlist includes `http://allowed.test:18080`, excludes `http://denied.test:18081`; `ProviderAttestationCorrelation` → `PASS` |
+
+**Kernel evidence source:** `ip netns exec <netns> nft -n list ruleset` (reference substrate firewall readback — request echo not used as evidence).
+
+**Cleanup:** all `cleanup_phases` records `destroyed=true`, `error=null`. Post-suite residual checks: no `igx-qual-*` netns; no qualification veth; no `/etc/netns/igx-qual-*`; no `10.200.42.3/32` harness residue; no listeners on `18080`/`18081`.
+
+**Machine evidence (this run only):**
+
+| Field | Value |
+|-------|--------|
+| `execution_reference` | `reference-physical-egress-causal-proof:057165d0-14a6-4758-915c-b8bc8cc44920` |
+| `timestamp_utc` | `2026-09-29T08:26:05+00:00` |
+| `scenario_id` | `reference-physical-egress-causal-proof` |
+| `provider_identity` | `reference-substrate-qualification` |
+| Generated path (session) | `.tmp/session/reference-physical-egress-qualification/reference-physical-egress-causal-proof-057165d0-14a6-4758-915c-b8bc8cc44920.json` |
+| Committed copy | `docs/project/maintainers/qualification/AW_7C_P0_3B_PHYSQ_EVIDENCE.json` |
+| SHA-256 (exact generated file) | `05be0b3000aee7f30e70c7fa8f8ee2083a3621a50f32d8e28b6ee553b7b60f39` |
+| Secret scan | clean (no token/credential/operator path) |
+
+**Threat model (scoped):**
+
+- **Establishes:** real Linux netns execution; kernel-level egress enforcement; allowed endpoint reachability; denied endpoint blocked; redirect escape blocked; kernel attestation ↔ effective scope ↔ observed connectivity; harness cleanup on qualification substrate.
+- **Does NOT establish:** E2B/Modal/Daytona production correctness; cloud IAM; hostile kernel escape; public DNS rebinding/CDN; production-provider cleanup guarantees (PROD-Q).
+
+**Tenant Isolation Audit:** **N/A — WITH EVIDENCE** — synthetic qualification tenant/session IDs only; no production tenant semantics, credentials, or provider selection changes.
+
+**FRZ scoped contribution (evidence candidate only):** FRZ-SEC-05, FRZ-SEC-07, FRZ-REG-02, FRZ-REG-03, FRZ-REG-06, FRZ-REG-08. **new global FRZ PASS = 0**. FRZ-SEC-06, FRZ-PRD-02, FRZ-PRD-05 remain **OPEN**.
+
+**physical PASS candidate = YES**  
+**independent audit = ACCEPTED** @ `deaafee1a7612824bbe06dd7f0d403c3e490124b`
+
+**AW-7C-P0-3B-PHYSQ verdict:**
+
+```text
+AW-7C-P0-3B-PHYSQ: CLOSED / independently accepted @ deaafee1a7612824bbe06dd7f0d403c3e490124b
+AW-7C-P0-3B: CLOSED / prerequisite satisfied
+AW-7C: CURRENT
+EBH-3: PLANNED / NOT ENTERED
+EBH-4: PLANNED / NOT ENTERED
+```
+
+**Production Python changes (this stage):** **0**. **Platform contracts:** **0**.
