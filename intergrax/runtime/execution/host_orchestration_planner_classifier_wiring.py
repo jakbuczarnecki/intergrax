@@ -11,7 +11,7 @@ from intergrax.applications._shared.delegation_budget_wiring import (
     DelegationBudgetPolicy,
     resolve_delegation_budget_policy,
 )
-from intergrax.applications._shared.graph_spec_to_plan import (
+from intergrax.runtime.execution.application_graph_spec_to_plan import (
     application_graph_spec_to_nexus_plan,
     should_seed_plan_from_graph_spec,
 )

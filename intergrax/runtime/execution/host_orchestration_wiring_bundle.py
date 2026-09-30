@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Neutral host orchestration wiring bundle passed into Execution Engine composition."""
+"""Host orchestration wiring bundle for Execution Engine composition."""
 
 from __future__ import annotations
 

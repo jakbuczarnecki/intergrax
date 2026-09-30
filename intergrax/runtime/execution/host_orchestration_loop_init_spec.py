@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
-from intergrax.applications.contracts.host_orchestration_wiring_bundle import (
+from intergrax.runtime.execution.host_orchestration_wiring_bundle import (
     HostOrchestrationApplicationWiringBundle,
 )
 from intergrax.contracts.execution_continuation_state_store import (

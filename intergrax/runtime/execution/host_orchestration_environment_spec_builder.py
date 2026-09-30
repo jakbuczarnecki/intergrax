@@ -70,7 +70,7 @@ from intergrax.runtime.execution.execution_terminal.wiring import (
 from intergrax.runtime.execution.host_orchestration_loop_init_spec import (
     HostOrchestrationLoopInitSpec,
 )
-from intergrax.applications.contracts.host_orchestration_wiring_bundle import (
+from intergrax.runtime.execution.host_orchestration_wiring_bundle import (
     HostOrchestrationApplicationWiringBundle,
 )
 from intergrax.runtime.execution.lineage.wiring import (

@@ -448,4 +448,24 @@ HARNESS-W7 = NOT ENTERED
 global FRZ PASS delta = 0
 ```
 
+---
+
+## 23. R1-R3 final blocker elimination / P9 complete recert (Cursor pass)
+
+**START_HEAD:** `f1f9556d5ad0b74ddb5a690f6f61fd6aa4e2d1ba`
+
+| Blocker | Outcome |
+| --- | --- |
+| B1 `application_graph_spec_to_plan` self-import | **RESOLVED** — real EE implementation restored; app shim re-exports; regression gate `test_application_graph_spec_to_plan_module.py` |
+| B2 EBH-2A / EBH-2I | **RESOLVED** — 9 unregistered violations remediated (contracts neutralized; wiring bundle owner = `runtime.execution.host_orchestration_wiring_bundle`) |
+| B3 checkpoint recovery participation | **BLOCKED** — `agent_c` expected 2 / actual 1 on START_HEAD and post-fix; not R1-R3 regression |
+| B4–B7 full matrices / P9 / typing | **NOT COMPLETED** in this pass |
+
+```text
+EBH-4-R1-R3 = BLOCKED
+EBH-4 = BLOCKED
+HARNESS-W7 = NOT ENTERED
+IN-SCOPE BLOCKER > 0
+```
+
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**

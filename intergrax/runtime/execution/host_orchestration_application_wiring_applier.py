@@ -18,7 +18,7 @@ from intergrax.applications._shared.security_wiring import (
     apply_application_security_wiring,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.applications.contracts.host_orchestration_wiring_bundle import (
+from intergrax.runtime.execution.host_orchestration_wiring_bundle import (
     HostOrchestrationApplicationWiringBundle,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
