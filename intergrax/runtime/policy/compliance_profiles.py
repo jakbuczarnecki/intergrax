@@ -10,7 +10,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.contracts.task_envelope import TaskRiskTier
-from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy
+from intergrax.runtime.policy.data_compliance_policy import DataCompliancePolicy
 
 
 from intergrax.contracts.compliance_domain_class import ComplianceDomainClass

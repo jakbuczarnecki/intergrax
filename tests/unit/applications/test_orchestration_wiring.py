@@ -7,10 +7,12 @@ from __future__ import annotations
 import pytest
 
 from intergrax.applications._shared.orchestration_wiring import (
-    GraphSpecSeedingPlanner,
     OrchestrationWiringContext,
     OrchestrationWiringError,
     resolve_max_parallel_nodes,
+)
+from intergrax.runtime.execution.host_orchestration_planner_classifier_wiring import (
+    GraphSpecSeedingPlanner,
     resolve_nexus_task_classifier,
     resolve_nexus_task_planner,
 )

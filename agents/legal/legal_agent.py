@@ -20,7 +20,7 @@ from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
 from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
-from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy
+from intergrax.runtime.policy.data_compliance_policy import DataCompliancePolicy
 
 
 class LegalAgent(ReflexAgent):

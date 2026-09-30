@@ -11,6 +11,7 @@
 | **Cursor status (post-R1 candidate)** | **EBH-4-R1 = BLOCKED** (independent exact-SHA audit — incomplete owner-zone gate, application Nexus spec types, scenario orchestration escape) |
 | **Cursor status (R1-R1 candidate)** | **EBH-4-R1-R1 = BLOCKED** — partial boundary work on `development`; **not READY FOR AUDIT** |
 | **Cursor status (R1-R2 candidate)** | **EBH-4-R1-R2 = BLOCKED** — semantic MOVE/remap wave on `development` @ `1a83ff33…`; owner-zone gate **94** violators (baseline **~179**); **not READY FOR AUDIT** |
+| **Cursor status (R1-R3 candidate)** | **EBH-4-R1-R3 = BLOCKED** — wave P1/P2 partial on `development` @ `e8064d72…`; gate **73** files / **106** import rows (was **94** / **143**); harness raw-backend escape reduced; **not READY FOR AUDIT** |
 | **EBH-4 parent** | **BLOCKED** (pending independent re-audit) |
 | **HARNESS-W7** | **NOT ENTERED** |
 
@@ -21,6 +22,16 @@
 3. **EBH-4-R1 — Execution Engine Exclusive Entry & Nexus Encapsulation Closure** (implementation on `development` after `ac4ae934…`) → **BLOCKED** by independent audit (B1–B8)
 4. **EBH-4-R1-R1 — Full Nexus Owner-Zone & Execution-Semantic Boundary Closure** (partial on `development` @ pre-commit `c6f97c22…`) → **BLOCKED**
 5. **EBH-4-R1-R2 — Nexus Semantic Contract Extraction & Closed-World Consumer Migration** (in progress on `development` @ `1a83ff33…`) → **BLOCKED**
+6. **EBH-4-R1-R3 — Final Nexus Semantic Isolation & Zero-Leakage Closure** (in progress on `development` @ `e8064d72…`) → **BLOCKED**
+
+### EBH-4-R1-R3 partial remediation (not exit)
+
+| Area | R1-R3 change (in progress) |
+| --- | --- |
+| Manifest @ START | **94** files / **143** import rows (`.tmp/session/ebh-4-r1-r3/NEXUS_RESIDUAL_MANIFEST.md`) |
+| P1 host | EE `host_orchestration_environment_spec_builder`, harness materialization without app `_orchestration_backend_access`; neutral `HostOrchestrationPluginBootstrapTarget` |
+| Agents | `agents/**` nexus imports cleared in fleet steps + session factory via EE |
+| Remaining IN-SCOPE | **73** files — context/observability/session wiring, `runtime/task`, eval, debug, tier-3 apps, tenant fail-closed |
 
 ### EBH-4-R1-R2 partial remediation (not exit)
 

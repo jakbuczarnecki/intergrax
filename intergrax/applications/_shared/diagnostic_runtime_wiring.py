@@ -37,7 +37,9 @@ from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import 
     TerminalExecutionDiagnosticTrigger,
 )
 from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationApplicationWiringTarget,
+)
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
 
 
@@ -206,7 +208,7 @@ def wire_terminal_execution_diagnostics(
     env: ApplicationEnvironmentProfile,
     env_wiring: ApplicationEnvironmentWiring,
     observability: NexusObservabilityStores,
-    nexus_loop: NexusLoop,
+    orchestration_host: HostOrchestrationApplicationWiringTarget,
     scenario_runtime_mode: object | None = None,
     overrides: DiagnosticCompositionOverrides | None = None,
     materialized_dependencies: HostDiagnosticReadDependencies | None = None,
@@ -229,7 +231,7 @@ def wire_terminal_execution_diagnostics(
     terminal_diagnostic_port = try_build_terminal_execution_diagnostic_port(
         env_wiring=env_wiring,
         observability=observability,
-        event_bus=nexus_loop.event_bus,
+        event_bus=orchestration_host.event_bus,
         overrides=resolved_overrides,
         materialized_dependencies=materialized_dependencies,
     )
@@ -241,7 +243,7 @@ def wire_terminal_execution_diagnostics(
         missing_runtime_events=missing_runtime_events,
     )
     if attached:
-        nexus_loop.attach_terminal_diagnostic_trigger(terminal_diagnostic_port)
+        orchestration_host.attach_terminal_diagnostic_trigger(terminal_diagnostic_port)
     return DiagnosticWiring(required=required, attached=attached)
 
 

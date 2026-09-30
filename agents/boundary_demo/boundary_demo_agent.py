@@ -30,8 +30,9 @@ from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.attestation.settings import ExecutionBoundaryExportRuntimeSettings
 from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
 from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.execution.agent_in_memory_session_factory import (
+    build_in_memory_session_manager,
+)
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 RECORDS_PUT_TOOL_ID = "records.put"
 _REFLEX_PATTERN = ReflexAgent  # retain ReflexAgent symbol for fleet inventory scan
@@ -85,7 +86,7 @@ class BoundaryDemoAgent(HarnessReferenceAgent):
             config.boundary_event_buffer = self._boundary_event_buffer
         return RuntimeContext.build(
             config=config,
-            session_manager=SessionManager(storage=InMemorySessionStorage()),
+            session_manager=build_in_memory_session_manager(),
         )
 
     def get_steps(self) -> list[AgentStep]:

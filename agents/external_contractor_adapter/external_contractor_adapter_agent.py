@@ -26,8 +26,9 @@ from intergrax.memory.conversational_memory import ChatMessage
 from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
 from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.execution.agent_in_memory_session_factory import (
+    build_in_memory_session_manager,
+)
 
 # LLM / catalog (Tier-3 host): intergrax/llm_adapters/USAGE.md — LLMProfile, ModelCatalog,
 # optional LLMRoutingProfile on ApplicationEnvironmentProfile; agents use stub LLM below only in tests.
@@ -86,7 +87,7 @@ class ExternalContractorAdapterAgent(ReflexAgent):
             production_mode=harness_production_mode(),
             tenant_id=request.tenant_id,
         )
-        session_manager = SessionManager(storage=InMemorySessionStorage())
+        session_manager = build_in_memory_session_manager()
         return RuntimeContext.build(config=config, session_manager=session_manager)
 
     async def perceive(self, step_ctx: AgentStepContext) -> Observation:

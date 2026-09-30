@@ -15,8 +15,9 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
 from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.execution.agent_in_memory_session_factory import (
+    build_in_memory_session_manager,
+)
 
 
 def perceive_run_input(step_ctx: AgentStepContext, agent: object) -> Observation:
@@ -64,7 +65,7 @@ def build_agent_runtime_context(
         production_mode=harness_production_mode(),
         tenant_id=request.tenant_id,
     )
-    session_manager = SessionManager(storage=InMemorySessionStorage())
+    session_manager = build_in_memory_session_manager()
     return RuntimeContext.build(config=config, session_manager=session_manager)
 
 

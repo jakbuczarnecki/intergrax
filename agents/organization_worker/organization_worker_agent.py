@@ -36,8 +36,9 @@ from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.execution.agent_runtime_io import RuntimeAnswer, RuntimeRequest
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.execution.agent_in_memory_session_factory import (
+    build_in_memory_session_manager,
+)
 from intergrax.contracts.agent_step_context import AgentStepContext
 
 
@@ -115,7 +116,7 @@ class OrganizationWorkerAgent(ReflexAgent):
         )
         return RuntimeContext.build(
             config=config,
-            session_manager=SessionManager(storage=InMemorySessionStorage()),
+            session_manager=build_in_memory_session_manager(),
         )
 
     async def perceive(self, step_ctx: AgentStepContext):

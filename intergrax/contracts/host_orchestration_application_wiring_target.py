@@ -8,6 +8,8 @@ from typing import Any, Protocol
 
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.runtime.decision_flow import DecisionFlowGate
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.observability.qualification_runtime_trace import (
     DeferredPersistedTraceFinalize,
@@ -41,6 +43,33 @@ class HostOrchestrationApplicationWiringTarget(Protocol):
         self,
     ) -> DeferredPersistedTraceFinalize | None: ...
 
+    def attach_terminal_diagnostic_trigger(self, port: object) -> None: ...
+
+
+class HostOrchestrationPluginBootstrapTarget(Protocol):
+    """Plugin and platform bootstrap surface without Nexus types."""
+
+    @property
+    def event_bus(self) -> RuntimeEventBus: ...
+
+    @property
+    def middleware(self) -> MiddlewarePipeline: ...
+
+    @property
+    def policy_engine(self) -> object: ...
+
+    @property
+    def trace_store(self) -> object: ...
+
+    @property
+    def trace_emitter(self) -> object: ...
+
+    @property
+    def runtime_event_store(self) -> object: ...
+
+    @property
+    def execution_budget_ledger_factory(self) -> ExecutionBudgetLedgerFactory | None: ...
+
 
 class HostOrchestrationAssemblyInspectionTarget(Protocol):
     """Narrow read surface for assembly validation without Nexus types."""
@@ -57,4 +86,5 @@ class HostOrchestrationAssemblyInspectionTarget(Protocol):
 __all__ = [
     "HostOrchestrationApplicationWiringTarget",
     "HostOrchestrationAssemblyInspectionTarget",
+    "HostOrchestrationPluginBootstrapTarget",
 ]

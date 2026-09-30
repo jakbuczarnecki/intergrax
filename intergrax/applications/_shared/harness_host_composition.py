@@ -21,8 +21,11 @@ from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetric
 from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookCoordinator
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationPluginBootstrapTarget,
+)
 from intergrax.contracts.run_trace_store import RunTraceReader
+from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.plugins.bootstrap import PluginBootstrapResult, bootstrap_runtime_plugins
 from intergrax.runtime.plugins.contract import RuntimePlugin
 from intergrax.runtime.policy.policy_engine import PolicyEngine
@@ -51,26 +54,7 @@ class HarnessHostInternalComposition:
     lifecycle_hook_coordinator: NexusLifecycleHookCoordinator
     plugin_surface: HarnessHostPluginRegistrationSurface
     runtime_event_persistence: RuntimeEventPersistence | None
-    _orchestration_backend: NexusLoop
-
-
-def build_harness_host_internal_composition(nexus_loop: NexusLoop) -> HarnessHostInternalComposition:
-    """Capture explicit orchestration capabilities from a composed Nexus backend."""
-    middleware = nexus_loop.middleware
-    return HarnessHostInternalComposition(
-        execution_terminal=nexus_loop.execution_terminal,
-        event_bus=nexus_loop.event_bus,
-        decision_flow_gate=nexus_loop.peek_decision_flow_gate(),
-        middleware_pipeline=middleware,
-        lifecycle_hook_coordinator=nexus_loop._lifecycle_hooks,  # noqa: SLF001 — composition root
-        plugin_surface=HarnessHostPluginRegistrationSurface(
-            event_bus=nexus_loop.event_bus,
-            hook_registry=middleware.hooks,
-            policy_engine=nexus_loop.policy_engine,
-        ),
-        runtime_event_persistence=nexus_loop.runtime_event_store,
-        _orchestration_backend=nexus_loop,
-    )
+    plugin_bootstrap_target: HostOrchestrationPluginBootstrapTarget
 
 
 def _require_internal_composition(runtime: HarnessHostRuntime) -> HarnessHostInternalComposition:
@@ -94,9 +78,19 @@ def resolve_harness_host_decision_flow_gate(
     return _require_internal_composition(runtime).decision_flow_gate
 
 
-def resolve_harness_host_nexus_loop(runtime: HarnessHostRuntime) -> NexusLoop:
-    """Resolve orchestration backend for host-scoped execution composition."""
-    return _require_internal_composition(runtime)._orchestration_backend
+def resolve_harness_host_plugin_bootstrap_target(
+    runtime: HarnessHostRuntime,
+) -> HostOrchestrationPluginBootstrapTarget:
+    """Resolve orchestration host surface for plugin/bootstrap wiring."""
+    return _require_internal_composition(runtime).plugin_bootstrap_target
+
+
+def resolve_harness_host_execution_budget_ledger_factory(
+    runtime: HarnessHostRuntime,
+) -> ExecutionBudgetLedgerFactory | None:
+    return _require_internal_composition(
+        runtime,
+    ).plugin_bootstrap_target.execution_budget_ledger_factory
 
 
 def resolve_harness_host_orchestration_topology_submission_port(
@@ -144,7 +138,7 @@ def bootstrap_harness_host_platform(
     composition = _require_internal_composition(runtime)
     resolved_trace = trace_store or runtime.observability.trace_store
     return bootstrap_nexus_platform(
-        composition._orchestration_backend,
+        composition.plugin_bootstrap_target,
         trace_store=resolved_trace,
         metrics_store=metrics_store,
     )
@@ -169,13 +163,13 @@ __all__ = [
     "HarnessHostPluginRegistrationSurface",
     "bootstrap_harness_host_application_plugins",
     "bootstrap_harness_host_platform",
-    "build_harness_host_internal_composition",
     "resolve_harness_host_decision_flow_gate",
+    "resolve_harness_host_execution_budget_ledger_factory",
     "resolve_harness_host_event_bus",
     "resolve_harness_host_execution_terminal",
     "resolve_harness_host_lifecycle_hook_coordinator",
     "resolve_harness_host_middleware_pipeline",
-    "resolve_harness_host_nexus_loop",
+    "resolve_harness_host_plugin_bootstrap_target",
     "resolve_harness_host_orchestration_topology_submission_port",
     "resolve_harness_host_runtime_event_persistence",
 ]

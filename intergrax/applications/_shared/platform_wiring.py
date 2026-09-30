@@ -13,7 +13,9 @@ from intergrax.applications._shared.plugin_bootstrap import (
     bootstrap_application_plugins,
 )
 from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationPluginBootstrapTarget,
+)
 from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.runtime.task.task_trace import PersistingTaskTraceEmitter
 from intergrax.llm_adapters.tracking.observability_bridge import register_llm_observability_plugin
@@ -23,15 +25,15 @@ from intergrax.runtime.plugins.default_plugins import default_lab_plugins
 
 
 def bootstrap_nexus_platform(
-    nexus_loop: NexusLoop,
+    orchestration_host: HostOrchestrationPluginBootstrapTarget,
     *,
     trace_store: Optional[RunTraceReader] = None,
     metrics_store: Optional[ExecutionMetricsStore] = None,
 ) -> PluginBootstrapResult:
-    """Register default runtime plugins on a composed NexusLoop."""
-    reader = trace_store or nexus_loop.trace_store
+    """Register default runtime plugins on a composed orchestration host."""
+    reader = trace_store or orchestration_host.trace_store
     if reader is None:
-        emitter = nexus_loop.trace_emitter
+        emitter = orchestration_host.trace_emitter
         if isinstance(emitter, PersistingTaskTraceEmitter):
             reader = emitter.trace_store
     plugins = default_lab_plugins(trace_store=reader, metrics_store=metrics_store)
@@ -40,6 +42,6 @@ def bootstrap_nexus_platform(
     register_journal_export_plugin(
         plugins,
         trace_store=reader,
-        runtime_event_store=nexus_loop.runtime_event_store,
+        runtime_event_store=orchestration_host.runtime_event_store,
     )
-    return bootstrap_application_plugins(plugins, nexus_loop=nexus_loop)
+    return bootstrap_application_plugins(plugins, orchestration_host=orchestration_host)
