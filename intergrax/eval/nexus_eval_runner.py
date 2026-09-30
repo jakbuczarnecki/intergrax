@@ -54,8 +54,16 @@ class NexusEvalRunner:
 
     async def run_case(self, case: EvalCase) -> EvalResult:
         req = case.runtime_request
-        tenant_id = req.tenant_id or "eval-tenant"
-        user_id = req.user_id or "eval-user"
+        if req.tenant_id is None or not str(req.tenant_id).strip():
+            raise ValueError(
+                "EvalCase.runtime_request.tenant_id is required (explicit eval sandbox identity)"
+            )
+        if not str(req.user_id or "").strip():
+            raise ValueError(
+                "EvalCase.runtime_request.user_id is required (explicit eval sandbox identity)"
+            )
+        tenant_id = str(req.tenant_id).strip()
+        user_id = str(req.user_id).strip()
         capability = req.metadata.get("capability") if req.metadata else None
 
         try:

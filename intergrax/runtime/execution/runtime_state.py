@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Nexus-internal path — canonical: runtime.execution.runtime_state."""
+"""Execution-engine re-export — canonical Nexus runtime state implementation."""
 
 from __future__ import annotations
 
-from intergrax.runtime.execution.runtime_state import *  # noqa: F403
+from intergrax.runtime.nexus.engine.runtime_state import *  # noqa: F403

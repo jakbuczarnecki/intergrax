@@ -118,9 +118,16 @@ class RuntimeRequest:
         self.run_id = validate_run_id(self.run_id)
 
     def to_envelope(self) -> TaskEnvelope:
-        tenant = self.tenant_id or self.metadata.get("tenant_id") or "default"
+        if self.tenant_id is None or not str(self.tenant_id).strip():
+            raise ValueError("tenant_id is required for RuntimeRequest envelope")
+        meta_tenant = self.metadata.get("tenant_id")
+        if meta_tenant is not None and str(meta_tenant).strip():
+            if str(meta_tenant).strip() != str(self.tenant_id).strip():
+                raise ValueError(
+                    "metadata tenant_id cannot override canonical RuntimeRequest.tenant_id"
+                )
         return TaskEnvelope(
-            tenant_id=str(tenant),
+            tenant_id=str(self.tenant_id).strip(),
             user_id=self.user_id,
             message=self.message,
             session_id=self.session_id,

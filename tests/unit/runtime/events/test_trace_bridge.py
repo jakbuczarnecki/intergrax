@@ -584,3 +584,30 @@ def test_trace_bridge_rejects_explicit_execution_id_conflicting_with_active() ->
             )
     finally:
         reset_active_execution_identity(token)
+
+
+def test_trace_bridge_module_exports_canonical_symbols() -> None:
+    import intergrax.runtime.events.trace_bridge as bridge
+
+    for name in (
+        "trace_event_to_runtime_event",
+        "runtime_event_from_task_state",
+        "runtime_event_from_task_notification",
+        "trace_bridge_subject_from_tags",
+        "TraceBridgeSubjectView",
+    ):
+        assert hasattr(bridge, name), name
+        assert callable(getattr(bridge, name)) or name == "TraceBridgeSubjectView"
+
+
+def test_trace_bridge_has_no_self_importing_execution_shim() -> None:
+    from pathlib import Path
+
+    ee_bridge = (
+        Path(__file__).resolve().parents[4]
+        / "intergrax"
+        / "runtime"
+        / "execution"
+        / "nexus_trace_runtime_event_bridge.py"
+    )
+    assert not ee_bridge.exists(), "remove circular EE trace bridge shim; events owns mapping"

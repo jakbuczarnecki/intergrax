@@ -27,6 +27,9 @@ from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 if TYPE_CHECKING:
@@ -159,6 +162,6 @@ def build_obs_spine_unified_task_runner(loop: NexusLoop) -> UnifiedTaskRunner:
     )
 
     return UnifiedTaskRunner(
-        loop,
+        build_harness_root_task_execution_port(loop),
         admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
     )

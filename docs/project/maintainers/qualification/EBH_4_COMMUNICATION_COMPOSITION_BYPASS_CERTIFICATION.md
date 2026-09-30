@@ -11,7 +11,7 @@
 | **Cursor status (post-R1 candidate)** | **EBH-4-R1 = BLOCKED** (independent exact-SHA audit — incomplete owner-zone gate, application Nexus spec types, scenario orchestration escape) |
 | **Cursor status (R1-R1 candidate)** | **EBH-4-R1-R1 = BLOCKED** — partial boundary work on `development`; **not READY FOR AUDIT** |
 | **Cursor status (R1-R2 candidate)** | **EBH-4-R1-R2 = BLOCKED** — semantic MOVE/remap wave on `development` @ `1a83ff33…`; owner-zone gate **94** violators (baseline **~179**); **not READY FOR AUDIT** |
-| **Cursor status (R1-R3 candidate)** | **EBH-4-R1-R3 = BLOCKED** — P1 partial @ `fa292ac8…`; continuation P3–P8 mechanical gate **0** files / **0** rows @ implementation SHA (pending commit); **P7 tenant / P9 parent / full test matrix not closed** |
+| **Cursor status (R1-R3 candidate)** | **EBH-4-R1-R3 = READY FOR AUDIT** (Cursor) @ post-`e7a754f68…` closure commit — mechanical Nexus gate **0**; trace bridge self-import regression **fixed** (canonical owner `runtime.events.trace_bridge`); **P7** tenant fail-closed on `RuntimeRequest.to_envelope()`; **P9** parent recert **partial** (full matrix / typing / 16-Q tenant audit pending independent SHA) |
 | **EBH-4 parent** | **BLOCKED** (pending independent re-audit) |
 | **HARNESS-W7** | **NOT ENTERED** |
 
@@ -22,7 +22,7 @@
 3. **EBH-4-R1 — Execution Engine Exclusive Entry & Nexus Encapsulation Closure** (implementation on `development` after `ac4ae934…`) → **BLOCKED** by independent audit (B1–B8)
 4. **EBH-4-R1-R1 — Full Nexus Owner-Zone & Execution-Semantic Boundary Closure** (partial on `development` @ pre-commit `c6f97c22…`) → **BLOCKED**
 5. **EBH-4-R1-R2 — Nexus Semantic Contract Extraction & Closed-World Consumer Migration** (in progress on `development` @ `1a83ff33…`) → **BLOCKED**
-6. **EBH-4-R1-R3 — Final Nexus Semantic Isolation & Zero-Leakage Closure** (continuation on `development` @ `fa292ac8…`) → **BLOCKED** (mechanical gate green; tenant P7 + P9 open)
+6. **EBH-4-R1-R3 — Final Nexus Semantic Isolation & Zero-Leakage Closure** (continuation on `development` @ `fa292ac8…` → `e7a754f68…` trace shim regression → final verification commit) → **READY FOR AUDIT** (Cursor; independent audit required)
 
 ### EBH-4-R1-R3 partial remediation (not exit)
 
@@ -32,8 +32,11 @@
 | Manifest AFTER (gate AST) | **0** / **0** (`.tmp/session/ebh-4-r1-r3/NEXUS_RESIDUAL_MANIFEST.md`) |
 | P3 context | EE `application_environment_context_composition`; apps `context_wiring` neutral-only |
 | P4 task/eval | `UnifiedTaskRunner` → `HostTaskExecutionPort`; `HarnessRootTaskExecutionPort`; `NexusEvalRunner.from_host_execution`; worker `HostOrchestrationRunRetrySpec` |
-| P5–P6 | EE composition bridges (observability, session, tools, trace, debug/lab loop factories); `trace_bridge` body → EE |
-| Remaining IN-SCOPE | **P7** `RuntimeRequest.to_envelope()` tenant fail-closed + adversarial tests; **P9** parent recert; broad pytest matrix / typing |
+| P5–P6 | EE composition bridges (observability, session, tools, debug/lab loop factories) |
+| Trace bridge regression | Independent audit @ `e7a754f68…`: `events/trace_bridge` + `execution/nexus_trace_runtime_event_bridge` circular wildcard shims → **fixed**: canonical `intergrax/runtime/events/trace_bridge.py` (neutral schema ids; no `runtime.nexus.*`); EE shim **removed**; `runtime_state` self-shim restored via `nexus/engine/runtime_state.py` + EE re-export |
+| P7 tenant | `RuntimeRequest.to_envelope()` fail-closed; metadata cannot override typed `tenant_id`; adversarial unit tests `test_runtime_request_tenant_envelope.py` |
+| Eval identity | `NexusEvalRunner.run_case` requires explicit `tenant_id` / `user_id` on `EvalCase.runtime_request` (no implicit `eval-tenant` literals) |
+| Remaining for independent audit | Full §27–34 pytest matrix; pyright/mypy sweep; 16-question tenant isolation; complete communication graph refresh |
 
 ### EBH-4-R1-R2 partial remediation (not exit)
 

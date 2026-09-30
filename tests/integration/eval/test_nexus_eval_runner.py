@@ -6,6 +6,13 @@ from echo.echo_agent import EchoAgent
 from intergrax.eval.eval_case import EvalCase
 from intergrax.eval.nexus_eval_runner import NexusEvalRunner
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
+from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from testing_support.admitted_root_governance_identity import (
+    lab_admitted_root_governance_identity_for_task,
+)
 from testing_support.builder import build_runtime_request_for_tests
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import TaskState
@@ -17,7 +24,12 @@ from intergrax.runtime.task.task import TaskState
 async def test_nexus_eval_runner_runs_echo_case():
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    runner = NexusEvalRunner.from_nexus_loop(NexusLoop(registry))
+    runner = NexusEvalRunner(
+        UnifiedTaskRunner(
+            build_harness_root_task_execution_port(NexusLoop(registry)),
+            admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
+        )
+    )
 
     case = EvalCase(
         case_id="echo-1",
@@ -46,7 +58,12 @@ async def test_nexus_eval_runner_runs_echo_case():
 async def test_nexus_eval_runner_reports_output_mismatch():
     registry = AgentRegistry()
     registry.register(EchoAgent())
-    runner = NexusEvalRunner.from_nexus_loop(NexusLoop(registry))
+    runner = NexusEvalRunner(
+        UnifiedTaskRunner(
+            build_harness_root_task_execution_port(NexusLoop(registry)),
+            admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
+        )
+    )
 
     case = EvalCase(
         case_id="echo-mismatch",

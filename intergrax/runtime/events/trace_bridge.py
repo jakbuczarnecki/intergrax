@@ -1,6 +1,619 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Compatibility shim — implementation: ``runtime.execution.nexus_trace_runtime_event_bridge``."""
+"""
+Bridge between Nexus ``TraceEvent`` pipeline and §42 ``RuntimeEvent`` model.
 
-from intergrax.runtime.execution.nexus_trace_runtime_event_bridge import *  # noqa: F403
+Does NOT replace trace storage — publishes a canonical runtime view alongside
+existing ``RunTraceWriter`` / ``TaskTraceEmitter`` (architecture §5.2, §42.1).
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Any, Dict, Optional, Union
+
+from intergrax.contracts.event_severity import EventSeverity
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    peek_active_execution_identity,
+    peek_active_execution_id,
+    require_active_execution_id,
+    validate_attempt_id,
+    validate_execution_id,
+    validate_run_id,
+    validate_task_id,
+)
+from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.structured_json_value import JsonObject
+from intergrax.runtime.events.payload_registry import merge_payload_envelope
+from intergrax.runtime.events.spine_payload_codec import legacy_spine_payload_to_typed
+from intergrax.runtime.events.payloads import (
+    GraphNodePayloadV1,
+    LlmCallPayloadV1,
+    ToolPayloadV1,
+    TraceBridgePayloadV1,
+    ValidationPayloadV1,
+)
+from intergrax.llm_adapters.registry.catalog_miss_diag import ModelCatalogMissDiagV1
+from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
+from intergrax.runtime.events.phase_coverage import phase_for_event
+
+# Neutral diagnostic schema identifiers (Nexus/runtime producers emit matching payloads).
+GRAPH_NODE_STEP_START = "graph.node_start"
+GRAPH_NODE_STEP_COMPLETE = "graph.node_complete"
+_DIAG_GRAPH_NODE_V1 = "intergrax.diag.graph.node"
+_DIAG_RUNTIME_STEP_STARTED = "intergrax.diag.runtime.step_started"
+_DIAG_RUNTIME_STEP_FINISHED = "intergrax.diag.runtime.step_finished"
+_DIAG_RUNTIME_STEP_FAILED = "intergrax.diag.runtime.step_failed"
+_CORE_LLM_CALL_SCHEMA = "intergrax.diag.engine.core_llm.call_recorded"
+_CORE_LLM_RETURNED_SCHEMA = "intergrax.diag.engine.core_llm.adapter_returned"
+_CORE_LLM_ROUTING_ATTEMPT_SCHEMA = "intergrax.diag.engine.core_llm.routing_attempt"
+_CORE_LLM_ROUTING_RULE_SCHEMA = "intergrax.diag.engine.core_llm.routing_rule"
+from intergrax.contracts.tracing import TraceEvent, TraceLevel
+from intergrax.runtime.task.task import Task, TaskState
+
+TraceBridgeSubject = Union[Task, "TraceBridgeSubjectView"]
+
+
+@dataclass(frozen=True)
+class TraceBridgeSubjectView:
+    tenant_id: str
+    task_id: str
+    agent_id: str = ""
+
+
+def trace_bridge_subject_from_tags(
+    *,
+    tenant_id: str,
+    task_id: str,
+    agent_id: str = "",
+) -> TraceBridgeSubjectView:
+    resolved_tenant = tenant_id.strip()
+    if not resolved_tenant:
+        raise ValueError("tenant_id is required for trace bridge")
+    return TraceBridgeSubjectView(
+        tenant_id=resolved_tenant,
+        task_id=str(validate_task_id(task_id)),
+        agent_id=agent_id.strip(),
+    )
+
+
+def _trace_tag_agent_id(trace: TraceEvent, subject: TraceBridgeSubject) -> str | None:
+    raw = trace.tags.get("agent_id")
+    if type(raw) is str and raw.strip():
+        return raw
+    if isinstance(subject, TraceBridgeSubjectView) and subject.agent_id:
+        return subject.agent_id
+    return None
+
+
+_CORE_LLM_CATALOG_MISS_SCHEMA = ModelCatalogMissDiagV1.schema_id
+
+_TOOL_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
+    "tool_invocation_start": RuntimeEventType.TOOL_REQUESTED,
+    "tool_invocation_end": RuntimeEventType.TOOL_COMPLETED,
+    "tool_invocation_denied": RuntimeEventType.TOOL_DENIED,
+    "tool_invocation_error": RuntimeEventType.TOOL_FAILED,
+}
+
+_CRITIC_STEP_EVALUATOR_LOOP = "critic.evaluator_loop"
+
+_CRITIC_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
+    "critic.l0_failed": RuntimeEventType.VALIDATION_FAILED,
+    "critic.l1_judge": RuntimeEventType.LLM_CALL,
+    "critic.trajectory": RuntimeEventType.STEP_COMPLETED,
+    _CRITIC_STEP_EVALUATOR_LOOP: RuntimeEventType.STEP_COMPLETED,
+    "critic.final_verdict": RuntimeEventType.VALIDATION_STARTED,
+}
+
+_RUNTIME_STEP_SCHEMA_TO_EVENT: dict[str, RuntimeEventType] = {
+    _DIAG_RUNTIME_STEP_STARTED: RuntimeEventType.STEP_STARTED,
+    _DIAG_RUNTIME_STEP_FINISHED: RuntimeEventType.STEP_COMPLETED,
+    _DIAG_RUNTIME_STEP_FAILED: RuntimeEventType.STEP_FAILED,
+}
+
+_GRAPH_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
+    GRAPH_NODE_STEP_START: RuntimeEventType.STEP_STARTED,
+    GRAPH_NODE_STEP_COMPLETE: RuntimeEventType.STEP_COMPLETED,
+}
+
+_TASK_STATE_TO_EVENT: dict[TaskState, RuntimeEventType] = {
+    TaskState.CREATED: RuntimeEventType.TASK_CREATED,
+    TaskState.CLASSIFIED: RuntimeEventType.TASK_CLASSIFIED,
+    TaskState.PLANNED: RuntimeEventType.PLAN_CREATED,
+    TaskState.WAITING_FOR_RESOURCES: RuntimeEventType.PAUSE_REQUESTED,
+    # Canonical HUMAN_APPROVAL_REQUESTED (human.v1) is emitted by HITL producers with
+    # full HumanRequest identity; task_lifecycle traces only record state transition.
+    TaskState.WAITING_FOR_HUMAN: RuntimeEventType.PAUSED,
+    TaskState.RUNNING: RuntimeEventType.STEP_STARTED,
+    TaskState.VALIDATING: RuntimeEventType.VALIDATION_STARTED,
+    TaskState.COMPLETED: RuntimeEventType.TASK_COMPLETED,
+    TaskState.PARTIALLY_COMPLETED: RuntimeEventType.TASK_COMPLETED,
+    TaskState.NEEDS_MORE_INFORMATION: RuntimeEventType.TASK_FAILED,
+    TaskState.FAILED: RuntimeEventType.TASK_FAILED,
+    TaskState.CANCELLED: RuntimeEventType.CANCELLED,
+    TaskState.EXPIRED: RuntimeEventType.TASK_FAILED,
+}
+
+_TASK_STATE_TO_PHASE: dict[TaskState, ExecutionPhase] = {
+    TaskState.CREATED: ExecutionPhase.INTAKE,
+    TaskState.CLASSIFIED: ExecutionPhase.CLASSIFICATION,
+    TaskState.PLANNED: ExecutionPhase.PLANNING,
+    TaskState.WAITING_FOR_HUMAN: ExecutionPhase.HUMAN_APPROVAL,
+    TaskState.RUNNING: ExecutionPhase.STEP_EXECUTION,
+    TaskState.VALIDATING: ExecutionPhase.VALIDATION,
+    TaskState.COMPLETED: ExecutionPhase.COMPLETION,
+    TaskState.PARTIALLY_COMPLETED: ExecutionPhase.COMPLETION,
+    TaskState.FAILED: ExecutionPhase.COMPLETION,
+    TaskState.CANCELLED: ExecutionPhase.COMPLETION,
+}
+
+
+def _trace_level_to_severity(level: TraceLevel) -> EventSeverity:
+    if level == TraceLevel.ERROR:
+        return EventSeverity.ERROR
+    if level == TraceLevel.WARNING:
+        return EventSeverity.WARNING
+    if level == TraceLevel.DEBUG:
+        return EventSeverity.DEBUG
+    return EventSeverity.INFO
+
+
+def _parse_timestamp(ts_utc: str) -> datetime:
+    try:
+        return datetime.fromisoformat(ts_utc.replace("Z", "+00:00"))
+    except ValueError:
+        return datetime.now(timezone.utc)
+
+
+def runtime_event_from_task_state(
+    task: Task,
+    *,
+    run_id: RunId,
+    attempt_id: AttemptId,
+    message: str = "",
+    correlation_id: Optional[str] = None,
+) -> RuntimeEvent:
+    validated_run_id = validate_run_id(run_id)
+    validated_attempt_id = validate_attempt_id(attempt_id)
+    event_type = _TASK_STATE_TO_EVENT.get(task.state, RuntimeEventType.STEP_STARTED)
+    phase = _TASK_STATE_TO_PHASE.get(task.state, ExecutionPhase.STEP_EXECUTION)
+    capability = task.context.capability or ""
+    lifecycle_raw: JsonObject = {
+        "task_state": task.state.value,
+        "message": message,
+        "capability": capability,
+        "source": "task_lifecycle",
+    }
+    return runtime_event_from_task_notification(
+        task,
+        run_id=validated_run_id,
+        attempt_id=validated_attempt_id,
+        message=message,
+        event_type=event_type,
+        phase=phase,
+        payload_raw=lifecycle_raw,
+        correlation_id=correlation_id,
+    )
+
+
+def runtime_event_from_task_notification(
+    task: Task,
+    *,
+    run_id: RunId,
+    attempt_id: AttemptId,
+    message: str,
+    event_type: RuntimeEventType,
+    phase: ExecutionPhase,
+    payload_raw: JsonObject | None = None,
+    correlation_id: Optional[str] = None,
+) -> RuntimeEvent:
+    """Build a typed canonical ``RuntimeEvent`` for explicit task notifications."""
+    from intergrax.runtime.events.payload_registry import runtime_event_with_payload
+
+    validated_run_id = validate_run_id(run_id)
+    validated_attempt_id = validate_attempt_id(attempt_id)
+    execution_id = require_active_execution_id()
+    raw: JsonObject = dict(payload_raw or {})
+    raw.setdefault("message", message)
+    typed, promote_fields = legacy_spine_payload_to_typed(event_type, raw)
+    base = RuntimeEvent(
+        tenant_id=task.tenant_id,
+        task_id=task.task_id,
+        run_id=validated_run_id,
+        attempt_id=validated_attempt_id,
+        execution_id=execution_id,
+        agent_id=task.agent_id,
+        event_type=event_type,
+        phase=phase,
+        severity=EventSeverity.INFO,
+        timestamp=datetime.now(timezone.utc),
+        correlation_id=correlation_id or task.task_id,
+    )
+    return runtime_event_with_payload(
+        base,
+        typed,
+        promote_fields=promote_fields,
+    )
+
+
+def _resolve_event_type_from_trace(
+    trace: TraceEvent,
+    *,
+    payload_schema_id: Optional[str] = None,
+    payload_dict: Optional[Dict[str, Any]] = None,
+) -> tuple[RuntimeEventType, ExecutionPhase]:
+    task_state_str = trace.tags.get("task_state")
+    event_type = RuntimeEventType.STEP_STARTED
+    phase = ExecutionPhase.STEP_EXECUTION
+
+    schema_id = payload_schema_id or ""
+    payload = dict(payload_dict or {})
+    if trace.payload is not None and not payload:
+        payload = trace.payload.to_dict()
+        schema_id = schema_id or trace.payload.__class__.schema_id()
+
+    if schema_id in _RUNTIME_STEP_SCHEMA_TO_EVENT:
+        event_type = _RUNTIME_STEP_SCHEMA_TO_EVENT[schema_id]
+    elif trace.step in _GRAPH_STEP_TO_EVENT:
+        event_type = _GRAPH_STEP_TO_EVENT[trace.step]
+    elif schema_id == _DIAG_GRAPH_NODE_V1 and trace.step in _GRAPH_STEP_TO_EVENT:
+        event_type = _GRAPH_STEP_TO_EVENT[trace.step]
+    elif schema_id in {
+        _CORE_LLM_CALL_SCHEMA,
+        _CORE_LLM_RETURNED_SCHEMA,
+        _CORE_LLM_ROUTING_ATTEMPT_SCHEMA,
+        _CORE_LLM_ROUTING_RULE_SCHEMA,
+        _CORE_LLM_CATALOG_MISS_SCHEMA,
+    }:
+        event_type = RuntimeEventType.LLM_CALL
+    elif trace.step == "core_llm" and "finish_reason" in payload:
+        event_type = RuntimeEventType.LLM_CALL
+    elif trace.step in _TOOL_STEP_TO_EVENT:
+        event_type = _TOOL_STEP_TO_EVENT[trace.step]
+    elif trace.step in _CRITIC_STEP_TO_EVENT:
+        event_type = _CRITIC_STEP_TO_EVENT[trace.step]
+        phase = ExecutionPhase.VALIDATION
+        if trace.step in {_CRITIC_STEP_EVALUATOR_LOOP, "critic.final_verdict"}:
+            payload_passed = payload.get("passed")
+            if payload_passed is False:
+                event_type = RuntimeEventType.VALIDATION_FAILED
+            elif payload_passed is True:
+                event_type = RuntimeEventType.STEP_COMPLETED
+    elif trace.message.startswith("retry attempt"):
+        event_type = RuntimeEventType.RETRY_STARTED
+        phase = ExecutionPhase.RETRY_HANDLING
+    elif trace.step == "task_lifecycle" and task_state_str:
+        try:
+            state = TaskState(task_state_str)
+            event_type = _TASK_STATE_TO_EVENT.get(state, RuntimeEventType.STEP_STARTED)
+            phase = _TASK_STATE_TO_PHASE.get(state, ExecutionPhase.STEP_EXECUTION)
+        except ValueError:
+            pass
+    elif trace.message.startswith("graph node start:"):
+        event_type = RuntimeEventType.STEP_STARTED
+        phase = ExecutionPhase.STEP_EXECUTION
+    elif trace.message.startswith("graph node complete:"):
+        event_type = RuntimeEventType.STEP_COMPLETED
+        phase = ExecutionPhase.STEP_EXECUTION
+
+    return event_type, phase
+
+
+_TOOL_STATUS_BY_EVENT: dict[RuntimeEventType, str] = {
+    RuntimeEventType.TOOL_REQUESTED: "requested",
+    RuntimeEventType.TOOL_COMPLETED: "completed",
+    RuntimeEventType.TOOL_DENIED: "denied",
+    RuntimeEventType.TOOL_FAILED: "failed",
+}
+
+
+def _step_event_uses_graph_node_payload(
+    event_type: RuntimeEventType,
+    trace: TraceEvent,
+    diagnostic_schema_id: str,
+) -> bool:
+    if event_type not in {
+        RuntimeEventType.STEP_STARTED,
+        RuntimeEventType.STEP_COMPLETED,
+    }:
+        return False
+    if trace.step in _GRAPH_STEP_TO_EVENT:
+        return True
+    if diagnostic_schema_id == _DIAG_GRAPH_NODE_V1:
+        return True
+    step_diag_graph_node: dict[RuntimeEventType, str] = {
+        RuntimeEventType.STEP_STARTED: _DIAG_RUNTIME_STEP_STARTED,
+        RuntimeEventType.STEP_COMPLETED: _DIAG_RUNTIME_STEP_FINISHED,
+    }
+    if diagnostic_schema_id == step_diag_graph_node.get(event_type):
+        return True
+    if trace.message.startswith("graph node "):
+        return True
+    return False
+
+
+def _attach_typed_bridge_payload(
+    *,
+    event_type: RuntimeEventType,
+    base: dict[str, Any],
+    trace: TraceEvent,
+    extra_payload: dict[str, Any],
+    diagnostic_schema_id: str,
+) -> dict[str, Any]:
+    if _step_event_uses_graph_node_payload(event_type, trace, diagnostic_schema_id):
+        node_id = str(
+            extra_payload.get("node_id")
+            or trace.tags.get("node_id")
+            or extra_payload.get("step_name")
+            or ""
+        )
+        status = str(extra_payload.get("status") or "")
+        if not status and event_type == RuntimeEventType.STEP_STARTED:
+            status = "running"
+        if not status and event_type == RuntimeEventType.STEP_COMPLETED:
+            status = "completed"
+        agent_id = str(
+            extra_payload.get("agent_id") or trace.tags.get("agent_id") or ""
+        )
+        typed = GraphNodePayloadV1(
+            node_id=node_id,
+            status=status,
+            agent_id=agent_id,
+            message=trace.message,
+        )
+        return merge_payload_envelope(
+            base,
+            typed,
+            promote_fields={"node_id": node_id} if node_id else None,
+        )
+    if event_type == RuntimeEventType.STEP_FAILED and extra_payload:
+        step_name = str(extra_payload.get("step_name") or trace.step)
+        error_type = str(extra_payload.get("error_type") or "error")
+        typed = ValidationPayloadV1(
+            valid=False,
+            error_count=1,
+            stage=step_name,
+            rule_ids_failed=(error_type,),
+        )
+        return merge_payload_envelope(
+            base,
+            typed,
+            promote_fields={"stage": step_name, "error_type": error_type},
+        )
+    if event_type == RuntimeEventType.LLM_CALL and extra_payload:
+        model = str(extra_payload.get("model") or extra_payload.get("model_id", ""))
+        typed = LlmCallPayloadV1(
+            model=model,
+            prompt_tokens=int(extra_payload.get("prompt_tokens", 0) or 0),
+            completion_tokens=int(extra_payload.get("completion_tokens", 0) or 0),
+            total_tokens=int(extra_payload.get("total_tokens", 0) or 0),
+            finish_reason=extra_payload.get("finish_reason"),
+            label=str(extra_payload.get("label", "")),
+        )
+        promote_fields: dict[str, Any] = {
+            "model": typed.model,
+            "prompt_tokens": typed.prompt_tokens,
+            "completion_tokens": typed.completion_tokens,
+            "total_tokens": typed.total_tokens,
+            "finish_reason": typed.finish_reason,
+        }
+        resolution_tier = extra_payload.get("resolution_tier")
+        if resolution_tier:
+            promote_fields["resolution_tier"] = str(resolution_tier)
+        resolved_tokens = extra_payload.get("resolved_tokens")
+        if resolved_tokens is not None:
+            promote_fields["resolved_tokens"] = int(resolved_tokens)
+        return merge_payload_envelope(
+            base,
+            typed,
+            promote_fields=promote_fields,
+        )
+    if event_type in _TOOL_STATUS_BY_EVENT:
+        tool_name = str(
+            extra_payload.get("tool_id")
+            or extra_payload.get("tool_name")
+            or trace.tags.get("tool_name")
+            or ""
+        )
+        typed = ToolPayloadV1(
+            tool_name=tool_name,
+            status=_TOOL_STATUS_BY_EVENT[event_type],
+            duration_ms=int(extra_payload.get("duration_ms", 0) or 0),
+            redacted_input_summary=str(extra_payload.get("redacted_input_summary", "")),
+            step_id=str(extra_payload.get("step_id", "")),
+        )
+        promote: dict[str, Any] = {"tool_name": tool_name} if tool_name else {}
+        return merge_payload_envelope(base, typed, promote_fields=promote or None)
+    if trace.step == "task_lifecycle":
+        task_state = str(trace.tags.get("task_state") or extra_payload.get("task_state") or "")
+        lifecycle_raw = {
+            "task_state": task_state,
+            "message": trace.message,
+            "capability": str(trace.tags.get("capability") or ""),
+            "source": "task_lifecycle",
+        }
+        if task_state == TaskState.WAITING_FOR_HUMAN.value:
+            lifecycle_raw["lifecycle_state"] = task_state
+            lifecycle_raw["progress_message"] = trace.message
+        lifecycle_raw.update(
+            {
+                key: extra_payload[key]
+                for key in (
+                    "plan_id",
+                    "step_count",
+                    "failure_kind",
+                    "error_type",
+                    "error_message",
+                    "raw_hash",
+                    "decision_record",
+                    "lifecycle_state",
+                    "checkpoint_id",
+                    "resume_token",
+                    "progress_message",
+                    "reason",
+                )
+                if key in extra_payload
+            }
+        )
+        typed_lifecycle, lifecycle_promote = legacy_spine_payload_to_typed(
+            event_type,
+            lifecycle_raw,
+        )
+        return merge_payload_envelope(
+            base,
+            typed_lifecycle,
+            promote_fields=lifecycle_promote,
+        )
+    from intergrax.contracts.application_observability_attributes import (
+        coerce_observability_attribute_mapping,
+    )
+
+    typed = TraceBridgePayloadV1(
+        trace_event_id=trace.event_id,
+        trace_step=trace.step,
+        trace_component=trace.component.value,
+        trace_seq=trace.seq,
+        message=trace.message,
+        diagnostic_schema_id=diagnostic_schema_id,
+        diagnostic_data=coerce_observability_attribute_mapping(extra_payload),
+    )
+    merged = merge_payload_envelope(base, typed)
+    if diagnostic_schema_id:
+        merged["diagnostic_schema_id"] = diagnostic_schema_id
+    if extra_payload:
+        merged["trace_payload"] = dict(extra_payload)
+    return merged
+
+
+def _resolve_bridge_task_id(subject: TraceBridgeSubject) -> TaskId:
+    return validate_task_id(subject.task_id)
+
+
+def _resolve_bridge_execution_identity(
+    *,
+    run_id: RunId | str | None,
+    attempt_id: AttemptId | str | None,
+    execution_id: ExecutionId | str | None,
+    trace: TraceEvent,
+) -> tuple[RunId, AttemptId, ExecutionId]:
+    active = peek_active_execution_identity()
+    if active is not None:
+        active_run_id, active_attempt_id = active
+        if run_id is not None:
+            resolved_run_id = validate_run_id(run_id)
+            if resolved_run_id != active_run_id:
+                raise RuntimeError("run_id conflicts with active execution identity")
+        if attempt_id is not None:
+            resolved_attempt_id = validate_attempt_id(attempt_id)
+            if resolved_attempt_id != active_attempt_id:
+                raise RuntimeError("attempt_id conflicts with active execution identity")
+        if execution_id is not None:
+            resolved_execution_id = validate_execution_id(execution_id)
+            active_execution_id = peek_active_execution_id()
+            if active_execution_id is not None and active_execution_id != resolved_execution_id:
+                raise RuntimeError("execution_id conflicts with active execution identity")
+            return active_run_id, active_attempt_id, resolved_execution_id
+        return active_run_id, active_attempt_id, require_active_execution_id()
+
+    resolved_run_id: RunId | None = None
+    for candidate in (run_id, trace.run_id):
+        if candidate is None:
+            continue
+        try:
+            resolved_run_id = validate_run_id(candidate)
+            break
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"malformed run_id for trace bridge: {candidate!r}") from exc
+    if resolved_run_id is None:
+        raise RuntimeError("active execution identity or explicit run_id required for trace bridge")
+    if attempt_id is None:
+        raise RuntimeError("active execution identity or explicit attempt_id required for trace bridge")
+    if execution_id is None:
+        raise RuntimeError("active execution identity or explicit execution_id required for trace bridge")
+    return resolved_run_id, validate_attempt_id(attempt_id), validate_execution_id(execution_id)
+
+
+def trace_event_to_runtime_event(
+    trace: TraceEvent,
+    subject: TraceBridgeSubject,
+    *,
+    run_id: RunId | None = None,
+    attempt_id: AttemptId | None = None,
+    execution_id: ExecutionId | None = None,
+    correlation_id: Optional[str] = None,
+    payload_schema_id: Optional[str] = None,
+    payload_dict: Optional[Dict[str, Any]] = None,
+) -> RuntimeEvent:
+    """Map a persisted ``TraceEvent`` to canonical ``RuntimeEvent``."""
+    resolved_run_id, resolved_attempt_id, resolved_execution_id = _resolve_bridge_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        trace=trace,
+    )
+    event_type, phase = _resolve_event_type_from_trace(
+        trace,
+        payload_schema_id=payload_schema_id,
+        payload_dict=payload_dict,
+    )
+
+    payload: Dict[str, Any] = {
+        "trace_event_id": trace.event_id,
+        "trace_step": trace.step,
+        "trace_component": trace.component.value,
+        "trace_seq": trace.seq,
+        "message": trace.message,
+        "tags": dict(trace.tags),
+        "source": "trace_bridge",
+    }
+    schema_id = payload_schema_id or ""
+    extra_payload = dict(payload_dict or {})
+    if trace.payload is not None and not extra_payload:
+        extra_payload = trace.payload.to_dict()
+        schema_id = schema_id or trace.payload.__class__.schema_id()
+    payload = _attach_typed_bridge_payload(
+        event_type=event_type,
+        base=payload,
+        trace=trace,
+        extra_payload=extra_payload,
+        diagnostic_schema_id=schema_id,
+    )
+
+    mapped_phase = phase_for_event(event_type)
+    if mapped_phase is not None:
+        phase = mapped_phase
+
+    node_id = trace.tags.get("node_id")
+    step_id = trace.tags.get("step_id")
+    if extra_payload.get("step_name") and event_type in {
+        RuntimeEventType.STEP_STARTED,
+        RuntimeEventType.STEP_COMPLETED,
+        RuntimeEventType.STEP_FAILED,
+    }:
+        step_id = step_id or extra_payload.get("step_name")
+
+    tenant_id = subject.tenant_id.strip()
+    if not tenant_id:
+        raise ValueError("tenant_id is required for trace bridge")
+    return RuntimeEvent(
+        tenant_id=tenant_id,
+        task_id=_resolve_bridge_task_id(subject),
+        run_id=resolved_run_id,
+        attempt_id=resolved_attempt_id,
+        execution_id=resolved_execution_id,
+        agent_id=_trace_tag_agent_id(trace, subject),
+        node_id=str(node_id) if node_id else None,
+        step_id=str(step_id) if step_id else None,
+        event_type=event_type,
+        phase=phase,
+        severity=_trace_level_to_severity(trace.level),
+        payload=payload,
+        timestamp=_parse_timestamp(trace.ts_utc),
+        correlation_id=correlation_id or subject.task_id,
+    )
