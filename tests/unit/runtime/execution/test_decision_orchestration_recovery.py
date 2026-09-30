@@ -682,6 +682,7 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
         tenant_id=tenant_id,
         resume_token="rt_ds_nexus_02",
         task_state=TaskState.WAITING_FOR_HUMAN,
+        task_snapshot=task.model_dump(mode="json"),
         runtime=build_runtime_checkpoint(
             task,
             run_id=run_id,
@@ -913,6 +914,7 @@ async def test_malformed_physical_checkpoint_fails_without_mutating_decision_che
         tenant_id=tenant_id,
         resume_token="rt_ds_nexus_02_bad",
         task_state=TaskState.WAITING_FOR_HUMAN,
+        task_snapshot=task.model_dump(mode="json"),
         runtime=build_runtime_checkpoint(
             task,
             run_id=run_id,
@@ -937,7 +939,11 @@ async def test_malformed_physical_checkpoint_fails_without_mutating_decision_che
     loop = NexusLoop(registry)
     runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
 
-    with pytest.raises(ValueError, match="attempt_id mismatch"):
+    from intergrax.runtime.long_running.checkpoint_resume_validation import (
+        CheckpointResumeValidationError,
+    )
+
+    with pytest.raises(CheckpointResumeValidationError):
         await runner.run_task(task_resume, resume_checkpoint=corrupt_checkpoint)
 
     reloaded = load_decision_checkpoint(decision_store, key=capture.decision_key)

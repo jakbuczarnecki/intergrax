@@ -44,6 +44,12 @@ from intergrax.runtime.long_running.checkpoint_builder import (
     build_task_checkpoint_resume_plan,
     prepare_task_for_checkpoint_resume,
 )
+from intergrax.runtime.long_running.checkpoint_resume_validation import (
+    CheckpointResumeEligibility,
+    CheckpointResumeValidationError,
+    CheckpointResumeValidationResult,
+    assert_checkpoint_resume_eligible,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.resume_planner import (
     execution_identity_from_checkpoint,
@@ -69,6 +75,42 @@ _ORCHESTRATION_CAPABILITIES = frozenset({ExecutionCapability.ORCHESTRATION})
 
 def _default_root_decision_lifecycle_host() -> DecisionLifecycleHost:
     return CanonicalDecisionLifecycleHost()
+
+
+def _assert_task_governance_tenant_alignment(
+    task: Task,
+    admitted_governance_identity: AdmittedRootGovernanceIdentity | None,
+) -> None:
+    if admitted_governance_identity is None:
+        return
+    if admitted_governance_identity.tenant_id != task.tenant_id:
+        raise CheckpointResumeValidationError(
+            CheckpointResumeValidationResult(
+                eligibility=CheckpointResumeEligibility.REJECT_TENANT,
+                reason=(
+                    "admitted governance tenant mismatch with task tenant: "
+                    f"{admitted_governance_identity.tenant_id!r} != {task.tenant_id!r}"
+                ),
+            ),
+        )
+
+
+def assert_root_execution_resume_checkpoint_admitted(
+    task: Task,
+    resume_checkpoint: TaskCheckpoint,
+    *,
+    target_run_id: RunId,
+    admitted_governance_identity: AdmittedRootGovernanceIdentity | None = None,
+) -> None:
+    """Supply Execution context to canonical checkpoint resume eligibility (B3D)."""
+    _assert_task_governance_tenant_alignment(task, admitted_governance_identity)
+    assert_checkpoint_resume_eligible(
+        resume_checkpoint,
+        target_task_id=task.task_id,
+        target_tenant_id=task.tenant_id,
+        target_run_id=target_run_id,
+        current_task=task,
+    )
 
 
 OutputT = TypeVar("OutputT")
@@ -177,6 +219,14 @@ async def execute_root_task(
     run_budget: RunBudget | None = None,
 ) -> TaskResult:
     """execute_root_task: INTERNAL CERTIFIED HARNESS ENTRY (scheduler / resume bridge)."""
+    _assert_task_governance_tenant_alignment(task, admitted_governance_identity)
+    if resume_checkpoint is not None:
+        assert_root_execution_resume_checkpoint_admitted(
+            task,
+            resume_checkpoint,
+            target_run_id=identity.run_id,
+            admitted_governance_identity=admitted_governance_identity,
+        )
     segment_predecessor_root_execution_id = None
     resume_plan_token = None
     if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
@@ -251,8 +301,6 @@ async def execute_root_task(
     )
     governance_identity = admitted_governance_identity
     tenant_id = task.tenant_id
-    if governance_identity is not None:
-        tenant_id = governance_identity.tenant_id
     root_context = RootExecutionContext(
         run_id=identity.run_id,
         attempt_id=identity.attempt_id,
@@ -280,6 +328,7 @@ __all__ = [
     "NexusOrchestrationPort",
     "OrchestrationExecutor",
     "TaskBoundOrchestrationDelegate",
+    "assert_root_execution_resume_checkpoint_admitted",
     "execute_root_task",
     "resolve_root_task_identity",
 ]

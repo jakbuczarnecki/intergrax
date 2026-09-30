@@ -672,6 +672,7 @@ async def test_same_attempt_fresh_root_rebases_execution_tree_through_production
         tenant_id="t1",
         resume_token="rt_ue_11e_production",
         task_state=TaskState.WAITING_FOR_HUMAN,
+        task_snapshot=task_a.model_dump(mode="json"),
         runtime=build_runtime_checkpoint(
             task_a,
             run_id=run_id,

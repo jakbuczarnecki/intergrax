@@ -452,7 +452,7 @@ global FRZ PASS delta = 0
 
 ## 23. R1-R3 final blocker elimination / P9 complete recert (Cursor pass)
 
-**START_HEAD:** `f1f9556d5ad0b74ddb5a690f6f61fd6aa4e2d1ba`
+**START_HEAD:** `7beb9af8b87990aeec79a34575592dcc34267ea3`
 
 | Blocker | Outcome |
 | --- | --- |
@@ -461,7 +461,8 @@ global FRZ PASS delta = 0
 | B3A resume-plan GraphExecutor semantics | **RESOLVED (local)** — `should_skip_graph_node` + graph executor resume-node reset; UE-11E / DS-NEXUS-02 graph executor qualification |
 | B3B canonical production graph continuation | **READY FOR AUDIT (local)** — DS-NEXUS-02 `UnifiedTaskRunner` → `execute_root_task` → full Nexus intake/planning/graph path without `_handle_task_impl` monkeypatch; governed harness admission via `lab_admitted_root_governance_identity_for_task` |
 | B3C recovery qualification evidence closure | **READY FOR AUDIT (local)** — UE-9C execution-scoped `sync_execution_tree_to_task` test bind fix + fail-closed negative; combined B3 pytest batch green; tenant Q1–Q16 (B3 scope) below |
-| B3 (aggregate) | **READY FOR AUDIT (local)** — B3A/B3B semantics preserved; B3C evidence closure complete; independent audit pending; B4–B7 not completed |
+| B3D canonical resume tenant admission | **READY FOR AUDIT (local)** — `assert_root_execution_resume_checkpoint_admitted` → `assert_checkpoint_resume_eligible` at `execute_root_task` / `HostTaskExecutionPort.execute` before resume-plan preparation; governance/task tenant alignment fail-closed; adversarial `UnifiedTaskRunner` cross-tenant + task-id tests |
+| B3 (aggregate) | **READY FOR AUDIT (local)** — B3A/B3B semantics preserved; B3C/B3D evidence closure complete; independent audit pending; B4–B7 not completed |
 | B4–B7 full matrices / P9 / typing | **NOT COMPLETED** in this pass |
 
 ```text
@@ -487,10 +488,10 @@ IN-SCOPE BLOCKER = 0 (B3 scope)
 | 10 | Credentials/secrets in B3 path? | **N/A — WITH EVIDENCE** | No credential resolution in UE-9C / UE-11E / DS-NEXUS-02 recovery proofs |
 | 11 | Trace/evidence tenant-preserving? | **PASS** | Runtime events use `task.tenant_id`; B3B harness uses matching tenant on resume task |
 | 12 | Resume preserves tenant? | **PASS** | DS-NEXUS-02 resume task `tenant_id` matches loaded checkpoint tenant |
-| 13 | Restore under another tenant? | **PASS** | `evaluate_checkpoint_resume_eligibility` / `validate_checkpoint_identity_binding` reject mismatch (`REJECT_TENANT`); `test_decision_orchestration_resume_rejects_cross_tenant_checkpoint` |
+| 13 | Restore under another tenant? | **PASS** | Canonical Execution entry `assert_root_execution_resume_checkpoint_admitted` before resume-plan prep; `REJECT_TENANT`; `test_unified_task_runner_resume_rejects_cross_tenant_checkpoint_before_nexus` |
 | 14 | Extensions rewrite tenant? | **PASS** | No extension rewrite on audited B3 graph-recovery path |
-| 15 | Cross-tenant recovery explicit/governed? | **PASS** | Typed `CheckpointResumeEligibility.REJECT_TENANT`; coordinator asserts eligibility before restore |
-| 16 | Adversarial tenant-A → tenant-B tested? | **PASS** | `test_decision_orchestration_resume_rejects_cross_tenant_checkpoint`; `test_ee_b3_a_checkpoint_resume_rejects_cross_tenant` |
+| 15 | Cross-tenant recovery explicit/governed? | **PASS** | Typed `CheckpointResumeEligibility.REJECT_TENANT`; coordinator + Execution canonical minimum admission |
+| 16 | Adversarial tenant-A → tenant-B tested? | **PASS** | `test_unified_task_runner_resume_rejects_cross_tenant_checkpoint_before_nexus` (UnifiedTaskRunner → harness port → `execute_root_task`); helper-only proofs retained as supplemental |
 
 **B3 FRZ local evidence (no global promotion):** FRZ-STA-08, FRZ-REC-01..04, FRZ-REC-06, FRZ-REC-09..10, FRZ-TRC-01/02/09, FRZ-TEN-01..03, FRZ-TEN-07..10, FRZ-TEN-12 — **global FRZ PASS delta = 0**.
 

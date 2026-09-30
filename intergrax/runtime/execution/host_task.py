@@ -61,6 +61,7 @@ from intergrax.runtime.execution.facade import Execution
 from intergrax.runtime.execution.orchestration import (
     OrchestrationExecutor,
     TaskBoundOrchestrationDelegate,
+    assert_root_execution_resume_checkpoint_admitted,
 )
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.active_execution_resume import (
@@ -472,6 +473,12 @@ class HostTaskExecution:
         identity = resolved_root
         segment_predecessor_root_execution_id = None
         resume_plan_token = None
+        if resume_checkpoint is not None:
+            assert_root_execution_resume_checkpoint_admitted(
+                task,
+                resume_checkpoint,
+                target_run_id=identity.run_id,
+            )
         if resume_checkpoint is not None and resume_checkpoint.runtime is not None:
             _checkpoint_run_id, checkpoint_attempt_id = (
                 execution_identity_from_checkpoint(
