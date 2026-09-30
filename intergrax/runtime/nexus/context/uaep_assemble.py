@@ -18,7 +18,9 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.graph_assembly import text_from_assembled_messages
 from intergrax.runtime.nexus.context.provider_handles import build_graph_provider_context_bundle
+from intergrax.runtime.execution.agent_runtime_io import canonical_runtime_request_tenant_id
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.task.task import Task, TaskContext
 
 
 def build_uaep_assembly_request(
@@ -34,7 +36,7 @@ def build_uaep_assembly_request(
         trace_id=run_id,
         run_id=run_id,
         task_id=task_id,
-        tenant_id=str(request.tenant_id or request.metadata.get("tenant_id") or "default"),
+        tenant_id=canonical_runtime_request_tenant_id(request),
         workspace_id=request.workspace_id,
         assembly_scope="uaep_turn",
         objective=request.message or "",
@@ -110,8 +112,6 @@ async def assemble_uaep_session_prompt(
 
 def _task_stub_from_request(request: RuntimeRequest):
     """Minimal task view for provider handle extraction."""
-    from intergrax.runtime.task.task import Task, TaskContext
-
     task_id = str(request.metadata.get("task_id") or request.task_id)
     metadata = {
         k: v
@@ -134,7 +134,7 @@ def _task_stub_from_request(request: RuntimeRequest):
         }
     }
     return Task(
-        tenant_id=str(request.tenant_id or "default"),
+        tenant_id=canonical_runtime_request_tenant_id(request),
         user_id=str(request.metadata.get("user_id") or "user"),
         session_id=request.session_id,
         message=request.message or "",

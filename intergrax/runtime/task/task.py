@@ -58,6 +58,13 @@ class Task(BaseModel):
 
     tenant_id: str
     user_id: str
+
+    @field_validator("tenant_id")
+    @classmethod
+    def _non_empty_tenant_id(cls, value: str) -> str:
+        if not value or not str(value).strip():
+            raise ValueError("tenant_id must be non-empty")
+        return str(value).strip()
     session_id: Optional[str] = None
     agent_id: Optional[str] = None
     message: str = ""

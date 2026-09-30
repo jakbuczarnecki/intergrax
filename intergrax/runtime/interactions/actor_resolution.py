@@ -37,7 +37,7 @@ def resolve_actor_from_task(task: Task) -> ActorIdentity:
     return ActorIdentity(
         kind=kind,
         actor_id=actor_id,
-        tenant_id=task.tenant_id or "default",
+        tenant_id=task.tenant_id,
         delegated_from=task.metadata.get("delegated_from"),
         permission_scopes=scopes,
     )

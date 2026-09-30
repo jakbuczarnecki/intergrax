@@ -496,3 +496,91 @@ IN-SCOPE BLOCKER = 0 (B3 scope)
 **B3 FRZ local evidence (no global promotion):** FRZ-STA-08, FRZ-REC-01..04, FRZ-REC-06, FRZ-REC-09..10, FRZ-TRC-01/02/09, FRZ-TEN-01..03, FRZ-TEN-07..10, FRZ-TEN-12 — **global FRZ PASS delta = 0**.
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 24. B4 — Full EBH-4 Tenant Isolation Audit (Cursor @ `3cf07ef4…`)
+
+**START_HEAD:** `3cf07ef4e52b47e62e01963d7e8b59679b640a6d` · **B3:** independently accepted local PASS · **B4:** READY FOR AUDIT (local) · **EBH-4-R1-R3 / EBH-4 / HARNESS-W7:** BLOCKED / NOT ENTERED
+
+### Closed-world tenant graph (summary)
+
+| Source | Target | Tenant source | Storage key tenant? | Verdict |
+| --- | --- | --- | --- | --- |
+| Intake adapters | `TaskEnvelope` | envelope `tenant_id` | N/A | PASS |
+| `TaskEnvelope` | `Task` | typed field | N/A | PASS (B4-1 validator) |
+| `Task` | `ActorIdentity` | `task.tenant_id` | N/A | PASS (B4-2) |
+| `Task` / envelope | `RuntimeRequest` | typed `tenant_id` | N/A | PASS (P7 + `canonical_runtime_request_tenant_id`) |
+| `RuntimeRequest` | Nexus bridge / UAEP / context assembly | canonical request tenant | N/A | PASS |
+| Governance admission | `RootExecutionContext` | admitted identity | checkpoint store | PASS (B3D revalidated) |
+| `HostTaskExecutionPort` | Nexus backend | task + governance | execution lineage | PASS |
+| Worker queue payload | worker execution | task tenant | queue doc tenant | PASS (existing admission tests) |
+| Resume / checkpoint | execution | task + checkpoint binding | tenant in store key | PASS (B3 + rerun) |
+| `RuntimeEvent` TASK_COMPLETED | metrics plugin | `event.tenant_id` | trace read by tenant | PASS (B4-3 fail-closed) |
+| Memory vector index | collection name | `tenant_id` / explicit namespace | collection prefix | PASS (B4-4 no `default`) |
+| Eval `EvalCase` | `NexusEvalRunner` | explicit runtime request tenant | N/A | PASS (R1-R3 P7) |
+
+### Implicit fallback remediation
+
+| ID | Location | Disposition |
+| --- | --- | --- |
+| B4-1 | `runtime/task/task.py` | **FIXED** — non-empty `tenant_id` validator |
+| B4-2 | `runtime/interactions/actor_resolution.py` | **FIXED** — no `"default"` |
+| B4-3 | `runtime/plugins/default_plugins.py` | **FIXED** — skip metrics/trace when tenant missing |
+| B4-4 | `memory/memory_vector_namespace.py` | **FIXED** — require tenant or explicit namespace |
+| Bridge | `runtime/nexus/agents/runtime_request_bridge.py` | **FIXED** — canonical tenant only |
+| UAEP | `uaep_executor.py`, `uaep_assemble.py`, `acp_uaep_shim.py`, `cognitive_step_runtime.py` | **FIXED** — `canonical_runtime_request_tenant_id` |
+| Isolation | `runtime/workspace/exec_ctx_isolation.py` | **FIXED** — require tenant for shadow/sandbox |
+| Host evidence | `host_root_launch_evidence.py` | **FIXED** — workspace id from task tenant only |
+| App routing | `applications/_shared/llm_routing_wiring.py` | **FIXED** — require tenant when live routing enabled |
+| RAG tool | `tools/providers/rag/graph_maintenance_service.py` | **FIXED** — require tenant for idempotency key |
+
+### Tracked freeze debt (not breaking audited EBH-4 host execution path)
+
+| Finding | Classification | Owner |
+| --- | --- | --- |
+| `runtime/codecraft/trace.py` tags `tenant_id` default | TRACKED FREEZE DEBT | TENANT-X / TRC-X |
+| Pre-context policy gate missing `agents/uaep.py` scan root | ENVIRONMENT/TEST ISSUE | CI harness |
+| ACP bridge async tests without governance projection | ENVIRONMENT/TEST ISSUE | pre-existing `PreModelPolicyConfigurationError` |
+
+### 16-question matrix (B4 local scope)
+
+| # | Verdict |
+| --- | --- |
+| 1–8 | **PASS** — typed intake → task → request → execution; no missing→default on certified paths |
+| 9 | **PASS** — provider/profile on UAEP/context assembly uses canonical request tenant |
+| 10 | **N/A — WITH EVIDENCE** — no credential resolution on audited EBH-4 communication edges |
+| 11–12 | **PASS** — events/metrics/async worker preserve or fail-closed |
+| 13 | **PASS** — B3D cross-tenant resume rejection rerun green |
+| 14 | **PASS** — plugins/extensions do not mint `"default"` tenant |
+| 15 | **PASS** — no implicit cross-tenant API on graph |
+| 16 | **PASS** — `tests/unit/runtime/qualification/test_ebh_4_b4_tenant_isolation.py` |
+
+**B4 tenant verdict (local):** **PASS** · **IN-SCOPE BLOCKER = 0** (B4 scope) · **global FRZ PASS delta = 0**
+
+### Adversarial matrix (executable)
+
+| Scenario | Test | Result |
+| --- | --- | --- |
+| A empty `Task.tenant_id` | `test_b4_a_*` | reject |
+| B Task → Actor tenant | `test_b4_b_*` | PASS |
+| C tenantless TASK_COMPLETED | `test_b4_c_*` | no trace/metrics |
+| D metadata tenant override | `test_b4_d_*`, P7 tests | reject |
+| E–F Governance/checkpoint mismatch | B3D + `test_unified_task_runner_resume_rejects_cross_tenant_checkpoint_before_nexus` | reject |
+| G Worker tenant | worker admission / harness tests | PASS (existing) |
+| H Eval tenant | R1-R3 eval identity gates | PASS |
+| I Provider tenant | UAEP assembly + memory namespace tests | PASS |
+| J Trace tenant isolation | metrics plugin tests | PASS |
+
+### Verification (local)
+
+```text
+uv run pytest -p no:xdist tests/unit/runtime/qualification/test_ebh_4_b4_tenant_isolation.py \
+  tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py \
+  tests/unit/runtime/execution/test_runtime_request_tenant_envelope.py \
+  tests/unit/runtime/task/test_unified_task_runner_execution_boundary.py \
+  tests/unit/runtime/execution/test_decision_orchestration_recovery.py \
+  tests/unit/runtime/execution/test_ue_11e_resume_recovery.py
+```
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**

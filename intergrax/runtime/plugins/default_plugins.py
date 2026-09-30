@@ -79,10 +79,17 @@ def _make_metrics_plugin_register(
         async def _persist_metrics(event: RuntimeEvent) -> None:
             if event.event_type != RuntimeEventType.TASK_COMPLETED:
                 return
-            tenant = event.tenant_id or "default"
+            tenant = event.tenant_id
+            if tenant is None or not str(tenant).strip():
+                logger.debug(
+                    "metrics export skipped: TASK_COMPLETED missing tenant run=%s",
+                    event.run_id,
+                )
+                return
+            tenant_key = str(tenant).strip()
             agent_id = event.agent_id or "unknown"
             try:
-                persisted = trace_store.read_run(event.run_id, tenant)
+                persisted = trace_store.read_run(event.run_id, tenant_key)
             except (ValueError, KeyError):
                 return
             persist_run_metrics(

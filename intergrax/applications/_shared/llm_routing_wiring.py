@@ -100,7 +100,9 @@ def resolve_live_model_routing_wiring(
         return LiveModelRoutingWiring(enabled=False, engine_id="routing_tuning", routing_decision=None)
 
     context = routing_context or RoutingContext()
-    tenant_id = context.tenant_id or "default"
+    if context.tenant_id is None or not str(context.tenant_id).strip():
+        raise ValueError("tenant_id is required for live model routing wiring")
+    tenant_id = str(context.tenant_id).strip()
     task_class = context.task_class or "default"
 
     primary = env.llm_profile or LLMProfile.lab()

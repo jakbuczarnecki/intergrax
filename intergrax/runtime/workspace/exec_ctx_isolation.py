@@ -41,7 +41,9 @@ def attach_shadow_workspace_to_exec_ctx(
 ) -> None:
     if not execution_options_for_request(request).isolation.shadow_workspace:
         return
-    tenant_id = request.tenant_id or "default"
+    if request.tenant_id is None or not str(request.tenant_id).strip():
+        raise ValueError("tenant_id is required for shadow workspace isolation")
+    tenant_id = str(request.tenant_id).strip()
     workspace = shadow_manager.open_or_create(tenant_id=tenant_id, task_id=task_id)
     exec_ctx.metadata["shadow_workspace"] = workspace
     exec_ctx.metadata[SHADOW_WORKSPACE_ID_KEY] = workspace.workspace_id
@@ -56,7 +58,9 @@ def attach_sandbox_session_to_exec_ctx(
 ) -> None:
     if not execution_options_for_request(request).isolation.sandbox:
         return
-    tenant_id = request.tenant_id or "default"
+    if request.tenant_id is None or not str(request.tenant_id).strip():
+        raise ValueError("tenant_id is required for sandbox session isolation")
+    tenant_id = str(request.tenant_id).strip()
     session = sandbox_manager.open_or_create(tenant_id=tenant_id, task_id=task_id)
     exec_ctx.metadata["sandbox_session"] = session
     exec_ctx.metadata[SANDBOX_SESSION_ID_KEY] = session.session_id

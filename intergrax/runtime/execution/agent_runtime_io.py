@@ -159,6 +159,20 @@ class RuntimeRequest:
         )
 
 
+def canonical_runtime_request_tenant_id(request: RuntimeRequest) -> str:
+    """Return typed ``RuntimeRequest.tenant_id``; metadata cannot override or substitute."""
+    if request.tenant_id is None or not str(request.tenant_id).strip():
+        raise ValueError("tenant_id is required for RuntimeRequest")
+    tenant = str(request.tenant_id).strip()
+    meta_tenant = request.metadata.get("tenant_id")
+    if meta_tenant is not None and str(meta_tenant).strip():
+        if str(meta_tenant).strip() != tenant:
+            raise ValueError(
+                "metadata tenant_id cannot override canonical RuntimeRequest.tenant_id"
+            )
+    return tenant
+
+
 @dataclass
 class RuntimeAnswer:
     answer: str

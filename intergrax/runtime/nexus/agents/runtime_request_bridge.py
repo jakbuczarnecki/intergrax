@@ -27,6 +27,7 @@ from intergrax.contracts.request_identity_spine import (
     assert_untrusted_metadata_identity_compatible,
 )
 from intergrax.llm.messages import final_user_message_content, model_input_messages_from_metadata
+from intergrax.runtime.execution.agent_runtime_io import canonical_runtime_request_tenant_id
 from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
 
 
@@ -40,7 +41,7 @@ def runtime_request_to_agent_run(
         identity = request.canonical_identity
         assert_untrusted_metadata_identity_compatible(identity, request.metadata)
     else:
-        tenant_id = str(request.tenant_id or request.metadata.get("tenant_id") or "default")
+        tenant_id = canonical_runtime_request_tenant_id(request)
         user_id = request.metadata.get("user_id") or request.user_id
         user_id_str = str(user_id) if user_id else None
         principal_raw = str(request.metadata.get("principal_type") or "user")

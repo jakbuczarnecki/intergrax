@@ -20,7 +20,14 @@ def resolve_memory_index_collection(
     Default pattern: ``{tenant_id}:ltm`` / ``{tenant_id}:episodic`` unless
     ``vector_index_namespace`` overrides the prefix.
     """
-    prefix = (vector_index_namespace or tenant_id or "default").strip()
+    if vector_index_namespace and vector_index_namespace.strip():
+        prefix = vector_index_namespace.strip()
+    elif tenant_id and str(tenant_id).strip():
+        prefix = str(tenant_id).strip()
+    else:
+        raise ValueError(
+            "tenant_id or vector_index_namespace required for memory index collection"
+        )
     normalized_domain = domain.strip().lower()
     if normalized_domain in {LTM_INDEX_DOMAIN, EPISODIC_INDEX_DOMAIN}:
         return f"{prefix}:{normalized_domain}"

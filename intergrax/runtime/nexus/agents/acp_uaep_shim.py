@@ -114,9 +114,12 @@ def attach_acp_catalog_exec_ctx(
     if run_id != resolved_run_id:
         raise RuntimeError("step run_id conflicts with active execution identity")
     execution_id = require_active_execution_id()
+    shim_tenant = request.identity.tenant_id or step_ctx.tenant_id
+    if shim_tenant is None or not str(shim_tenant).strip():
+        raise ValueError("tenant_id is required for ACP UAEP shim RuntimeRequest")
     runtime_request = RuntimeRequest(
         agent_id=contract.id,
-        tenant_id=str(request.identity.tenant_id or step_ctx.tenant_id or "default"),
+        tenant_id=str(shim_tenant).strip(),
         user_id=str(request.identity.user_id or ""),
         session_id=str(request.session_id or resolved_run_id),
         message=str(request.input or step_ctx.message or ""),
@@ -208,9 +211,11 @@ def build_step_context_from_uaep(
     raw_state = exec_ctx.metadata.get(ACP_STATE_KEY)
     if isinstance(raw_state, dict):
         state_root = {ACP_STATE_KEY: dict(raw_state)}
-    tenant_id = "default"
-    if isinstance(exec_ctx.request, RuntimeRequest):
-        tenant_id = str(exec_ctx.request.tenant_id or "default")
+    if not isinstance(exec_ctx.request, RuntimeRequest):
+        raise ValueError("tenant_id is required for UAEP step context")
+    from intergrax.runtime.execution.agent_runtime_io import canonical_runtime_request_tenant_id
+
+    tenant_id = canonical_runtime_request_tenant_id(exec_ctx.request)
     return AgentStepContext(
         step_index=step.step_index,
         run_id=exec_ctx.run_id,
