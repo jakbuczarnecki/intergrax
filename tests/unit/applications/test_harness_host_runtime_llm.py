@@ -18,7 +18,7 @@ from intergrax.applications._shared.harness_host_composition import (
     resolve_harness_host_runtime_event_persistence,
 )
 from intergrax.applications._shared.lab_environment_profile import build_lab_environment_profile
-from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
+from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     OrchestrationProfile,
@@ -37,7 +37,7 @@ def test_build_harness_host_runtime_does_not_invoke_llm_resolution_without_requi
     manifest = build_lab_manifest(settings)
 
     with patch(
-        "intergrax.applications._shared.nexus_factory.resolve_environment_llm_adapter",
+        "intergrax.applications._shared.host_orchestration_backend_spec_builder.resolve_environment_llm_adapter",
     ) as resolve_mock:
         runtime = build_harness_host_runtime(
             manifest,

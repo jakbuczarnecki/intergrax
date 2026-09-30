@@ -357,6 +357,7 @@ def test_nexus_worker_preserves_bootstrap_identity_end_to_end() -> None:
         agent_registry,
         production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
     )
     fixed = BackgroundExecutionIdentity(
         tenant_id="tenant-a",

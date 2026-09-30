@@ -158,7 +158,7 @@ def _build_research_runtime() -> HarnessHostRuntime:
     )
     projection = build_research_test_registry_projection(settings)
     with patch(
-        "intergrax.applications._shared.nexus_factory.resolve_environment_llm_adapter",
+        "intergrax.applications._shared.host_orchestration_backend_spec_builder.resolve_environment_llm_adapter",
         return_value=FakeLLMAdapter(),
     ):
         return build_harness_host_runtime(

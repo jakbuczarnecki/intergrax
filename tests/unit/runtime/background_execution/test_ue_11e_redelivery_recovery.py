@@ -259,6 +259,7 @@ def _run_worker_delivery(
         deadline_authority_resolver=durable.deadline_authority_resolver,
         production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
     )
     task = Task(
         task_id=str(identity.task_id),

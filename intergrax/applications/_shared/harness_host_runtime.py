@@ -74,8 +74,11 @@ from intergrax.applications._shared.guardrail_wiring import (
     ApplicationGuardrailWiring,
     wire_application_guardrail,
 )
-from intergrax.applications._shared.nexus_factory import (
-    build_nexus_loop_from_environment,
+from intergrax.applications._shared.host_orchestration_backend_spec_builder import (
+    build_host_orchestration_loop_init_spec_from_environment,
+)
+from intergrax.runtime.execution.environment_orchestration_materialization import (
+    materialize_host_orchestration_backend,
 )
 from intergrax.applications._shared.observability_assembly_resolver import (
     assert_observability_assembly_valid,
@@ -491,7 +494,7 @@ def build_harness_host_runtime(
     resolved_compensation_queue_store = resolve_host_compensation_queue_store(
         checkpoints_db_path=checkpoints_db_path,
     )
-    nexus_loop = build_nexus_loop_from_environment(
+    orchestration_spec = build_host_orchestration_loop_init_spec_from_environment(
         resolved_registry,
         env=effective_environment,
         governance_evidence_recorder=orchestration_governance_evidence_recorder,
@@ -517,6 +520,11 @@ def build_harness_host_runtime(
         document_store=document_store,
         execution_continuation_state_store=execution_continuation_state_store,
     )
+    orchestration = materialize_host_orchestration_backend(
+        resolved_registry,
+        orchestration_spec,
+    )
+    nexus_loop = orchestration.orchestration_backend_for_host_wiring()
     assert_security_assembly_valid(
         security_wiring, effective_environment, nexus=nexus_loop
     )
@@ -598,7 +606,7 @@ def build_harness_host_runtime(
         governance_evidence_recorder=orchestration_governance_evidence_recorder,
     )
     execution = build_environment_host_task_execution(
-        nexus_loop,
+        orchestration,
         effective_environment,
         revision_admission=resolve_harness_effective_profile_revision_admission(
             EffectiveProfileExecutionPinningDependencies(

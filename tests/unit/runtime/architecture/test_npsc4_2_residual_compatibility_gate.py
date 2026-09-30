@@ -34,7 +34,7 @@ _ALLOWED_RAW_NEXUS_IMPORTERS = frozenset(
     {
         "intergrax/applications/_shared/harness_host_composition.py",
         "intergrax/applications/_shared/harness_host_runtime.py",
-        "intergrax/applications/_shared/nexus_factory.py",
+        "intergrax/applications/_shared/host_orchestration_backend_spec_builder.py",
         "intergrax/applications/_shared/governed_contractor_orchestration_topology_production.py",
         "intergrax/applications/_shared/harness_host_orchestration_topology_wiring.py",
         "intergrax/applications/_shared/platform_wiring.py",

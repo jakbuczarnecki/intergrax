@@ -7,8 +7,26 @@
 | **AUDITED_HEAD** | `bd2f7d788b882bcd633fc2fd0dcf35da9bdc243b` (`development`) |
 | **Branch** | `development` |
 | **Prerequisites** | EBH-3 CLOSED @ qual pin `bd2f7d7…` (impl `4423eea…`); AW-7C, INT-CONFIG-REAL-X, INT-EXTCOMP-X, GOV-X1 CLOSED |
-| **Cursor status** | **EBH-4 = READY FOR AUDIT** (not CLOSED) |
+| **Cursor status (pre-R1)** | **EBH-4 = BLOCKED** (independent exact-SHA audit) |
+| **Cursor status (post-R1 candidate)** | **EBH-4-R1 = READY FOR AUDIT** · **EBH-4 parent = READY FOR AUDIT** (candidate — not CLOSED) |
 | **HARNESS-W7** | **NOT ENTERED** |
+
+### Lineage
+
+1. Initial Cursor EBH-4 certification → **READY FOR AUDIT**
+2. Independent exact-SHA audit → **BLOCKED** (application-owned Nexus construction, scenario `nexus_loop` exposure, `runtime/task` Nexus construction, worker reference-allowing admission)
+3. **EBH-4-R1 — Execution Engine Exclusive Entry & Nexus Encapsulation Closure** (implementation on `development` after `ac4ae934…`)
+
+### EBH-4-R1 remediation summary (candidate)
+
+| Blocker | R1 action |
+| --- | --- |
+| B1 `nexus_factory.py` | Removed; spec resolution in `host_orchestration_backend_spec_builder.py`; **NexusLoop materialization** in `runtime/execution/environment_orchestration_materialization.py` |
+| B2 `ScenarioRuntimeComposition.nexus_loop` | Replaced with `host_execution` + EE-owned `orchestration` materialization handle |
+| B3 `runtime/task` Nexus construction | Moved to `runtime/execution/worker_host_task_execution_composition.py`; worker requires explicit `root_authority_admission` |
+| B4 reference-allowing admission in worker | Removed from production worker path; tests use `testing_support/reference_root_execution_authority_admission.py` |
+
+Mechanical gates: `tests/unit/architecture/test_ebh_4_r1_nexus_encapsulation_gate.py`. APP-PROD wrapper path fixed: `scripts/gates/check_application_production_gates.py`.
 
 EBH-3 established legal dependency/ownership. EBH-4 audits whether **runtime communication and composition** follow those boundaries on current HEAD.
 

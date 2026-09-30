@@ -19,6 +19,9 @@ from intergrax.runtime.task.worker_bootstrap import build_nexus_task_execution_r
 from testing_support.admitted_root_governance_identity import (
     lab_admitted_root_governance_identity_for_task,
 )
+from testing_support.reference_root_execution_authority_admission import (
+    REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -30,6 +33,7 @@ def test_from_registry_rejects_missing_governance_admission() -> None:
         is inspect.Parameter.empty
     )
     assert signature.parameters["production_mode"].default is inspect.Parameter.empty
+    assert signature.parameters["root_authority_admission"].default is inspect.Parameter.empty
 
 
 def test_build_nexus_task_execution_registry_requires_trusted_admission() -> None:
@@ -51,6 +55,7 @@ def test_explicit_admission_binds_governance_identity_on_execute() -> None:
         registry,
         production_mode=False,
         admit_root_governance_identity=_admit,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
     )
     assert runtime.host_execution is not None
 
@@ -62,6 +67,7 @@ def test_admission_rejects_task_without_principal() -> None:
         registry,
         production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
     )
     task = Task(
         tenant_id="tenant-a",

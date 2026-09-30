@@ -170,7 +170,7 @@ def test_build_scenario_runtime_lab_without_explicit_manifest(tmp_path: Path) ->
         trace_db_path=tmp_path / "trace.db",
         use_in_memory_trace=True,
     )
-    assert composition.nexus_loop is not None
+    assert composition.orchestration.orchestration_backend_for_host_wiring() is not None
     assert composition.tenant_id == _TENANT
 
 
@@ -220,7 +220,7 @@ def test_build_scenario_runtime_strict_with_explicit_manifest(tmp_path: Path) ->
         document_store=InMemoryDocumentStore(),
         use_in_memory_trace=True,
     )
-    assert composition.nexus_loop is not None
+    assert composition.orchestration.orchestration_backend_for_host_wiring() is not None
 
 
 def test_build_scenario_runtime_rejects_invalid_security_assembly(tmp_path: Path) -> None:
@@ -247,12 +247,12 @@ def test_build_scenario_runtime_rejects_invalid_security_assembly(tmp_path: Path
 def test_build_scenario_runtime_returns_nexus_backed_composition(tmp_path: Path) -> None:
     composition = _build_composition(tmp_path)
 
-    assert composition.nexus_loop is not None
+    assert composition.orchestration.orchestration_backend_for_host_wiring() is not None
     assert composition.tenant_id == _TENANT
     assert composition.env_wiring.composition.policy_bundle is not None
     assert composition.security_wiring is not None
     assert composition.guardrail_wiring is not None
-    assert composition.nexus_loop.policy_engine is not None
+    assert composition.orchestration.orchestration_backend_for_host_wiring().policy_engine is not None
     assert composition.has_runtime_event_store is True
 
 
@@ -277,7 +277,7 @@ def test_build_scenario_runtime_accepts_custom_validation_engine(tmp_path: Path)
         use_in_memory_trace=True,
         validation_engine=engine,
     )
-    assert composition.nexus_loop.peek_decision_flow_gate() is not None
+    assert composition.orchestration.orchestration_backend_for_host_wiring().peek_decision_flow_gate() is not None
     assert _RecordingValidationEngine.calls == 0
 
 
@@ -285,7 +285,7 @@ def test_rewire_scenario_decision_wiring_reapplies_validation_engine(tmp_path: P
     composition = _build_composition(tmp_path)
     replacement = _RecordingValidationEngine()
     rewire_scenario_decision_wiring(composition, validation_engine=replacement)
-    assert composition.nexus_loop.peek_decision_flow_gate() is not None
+    assert composition.orchestration.orchestration_backend_for_host_wiring().peek_decision_flow_gate() is not None
 
 
 def test_build_scenario_runtime_wires_decision_from_explicit_spec(
@@ -307,7 +307,7 @@ def test_build_scenario_runtime_wires_decision_from_explicit_spec(
         use_in_memory_trace=True,
         conformance_check=False,
     )
-    gate = composition.nexus_loop.peek_decision_flow_gate()
+    gate = composition.orchestration.orchestration_backend_for_host_wiring().peek_decision_flow_gate()
     assert gate is not None
     assert gate.supports_scope(DecisionFlowScope.GRAPH_FINAL)
 
@@ -403,7 +403,7 @@ def test_build_scenario_runtime_attaches_terminal_diagnostic_trigger_with_docume
 ) -> None:
     composition = _build_composition(tmp_path, document_store=InMemoryDocumentStore())
     assert composition.has_terminal_diagnostic_trigger is True
-    assert composition.nexus_loop._terminal_diagnostic_trigger is not None  # noqa: SLF001
+    assert composition.orchestration.orchestration_backend_for_host_wiring()._terminal_diagnostic_trigger is not None  # noqa: SLF001
 
 
 def test_build_scenario_runtime_lab_without_document_store_has_no_diagnostic_trigger(

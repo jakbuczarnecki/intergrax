@@ -46,7 +46,7 @@ class ApplicationGraphSpec(BaseModel):
     """
     Validated application graph — nodes must exist on the manifest roster.
 
-    Used by :func:`~intergrax.applications._shared.nexus_factory.build_nexus_loop_from_environment`.
+    Used by host orchestration backend spec resolution for Execution Engine materialization.
     """
 
     model_config = ConfigDict(extra="forbid")

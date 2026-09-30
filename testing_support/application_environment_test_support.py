@@ -30,7 +30,7 @@ def stub_environment_llm_adapter(
         _resolve,
     )
     monkeypatch.setattr(
-        "intergrax.applications._shared.nexus_factory.resolve_environment_llm_adapter",
+        "intergrax.applications._shared.host_orchestration_backend_spec_builder.resolve_environment_llm_adapter",
         _resolve,
     )
     monkeypatch.setattr(

@@ -15,7 +15,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate, pytest.mark.no_ci]
 
 def test_check_application_production_gates_passes() -> None:
     repo_root = Path(__file__).resolve().parents[3]
-    script = repo_root / "scripts" / "check_application_production_gates.py"
+    script = repo_root / "scripts" / "gates" / "check_application_production_gates.py"
     completed = subprocess.run(
         [sys.executable, str(script)],
         cwd=repo_root,

@@ -447,7 +447,7 @@ _PATHS: tuple[str, ...] = (
     "intergrax/applications/_shared/llm_routing_runtime_bridge.py",
     "intergrax/applications/_shared/memory_runtime_bridge.py",
     "intergrax/applications/_shared/memory_wiring.py",
-    "intergrax/applications/_shared/nexus_factory.py",
+    "intergrax/applications/_shared/host_orchestration_backend_spec_builder.py",
     "intergrax/applications/_shared/observability_assembly_resolver.py",
     "intergrax/applications/_shared/observability_runtime_bridge.py",
     "intergrax/applications/_shared/observability_wiring.py",

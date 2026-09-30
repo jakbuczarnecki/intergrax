@@ -9,7 +9,7 @@ from dataclasses import dataclass
 import pytest
 
 from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
-from intergrax.applications._shared.nexus_factory import (
+from intergrax.applications._shared.host_orchestration_backend_spec_builder import (
     build_nexus_loop_from_environment,
 )
 from intergrax.applications.contracts.environment_profile import (

@@ -49,7 +49,14 @@ from intergrax.applications._shared.guardrail_wiring import (
     wire_application_guardrail,
 )
 from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
-from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
+from intergrax.applications._shared.host_orchestration_backend_spec_builder import (
+    build_host_orchestration_loop_init_spec_from_environment,
+)
+from intergrax.runtime.execution.environment_orchestration_materialization import (
+    EnvironmentOrchestrationMaterialization,
+    materialize_host_orchestration_backend,
+)
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.applications._shared.observability_assembly_resolver import (
     assert_observability_assembly_valid,
 )
@@ -88,7 +95,6 @@ from intergrax.runtime.execution.environment_host_task_execution import (
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.observability.qualification_runtime_trace import (
     DeferredPersistedTraceFinalize,
 )
@@ -96,7 +102,6 @@ from intergrax.runtime.nexus.observability_wiring import (
     NexusObservabilityStores,
     wire_nexus_observability,
 )
-from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.tools.registry import ToolRegistry
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult
@@ -151,13 +156,14 @@ def build_scenario_lab_agent_registry(
 
 @dataclass(frozen=True, slots=True)
 class ScenarioRuntimeComposition:
-    """Immutable Nexus-backed scenario runtime artifacts."""
+    """Immutable execution-semantic scenario runtime artifacts."""
 
     environment: ApplicationEnvironmentProfile
     env_wiring: ApplicationEnvironmentWiring
     observability: NexusObservabilityStores
     registry: AgentRegistry
-    nexus_loop: NexusLoop
+    host_execution: HostTaskExecutionPort
+    orchestration: EnvironmentOrchestrationMaterialization
     tenant_id: str
     security_wiring: ApplicationSecurityWiring
     guardrail_wiring: ApplicationGuardrailWiring
@@ -317,7 +323,7 @@ def _resolve_observability_stores(
 def rewire_scenario_decision_wiring(
     composition: ScenarioRuntimeComposition,
     *,
-    validation_engine: NexusValidationEngine | None = None,
+    validation_engine: object | None = None,
 ) -> None:
     """Reapply Decision flow wiring and validation engine from the current environment profile."""
     environment = composition.environment
@@ -329,9 +335,9 @@ def rewire_scenario_decision_wiring(
         environment=environment,
     )
     if validation_engine is not None:
-        composition.nexus_loop.apply_validation_engine(validation_engine)
+        composition.orchestration.apply_validation_engine(validation_engine)
     apply_application_decision_wiring(
-        composition.nexus_loop,
+        composition.orchestration.orchestration_backend_for_host_wiring(),
         decision_wiring,
         environment=environment,
     )
@@ -341,7 +347,7 @@ def rebuild_scenario_runtime_from_composition(
     composition: ScenarioRuntimeComposition,
     *,
     environment: ApplicationEnvironmentProfile,
-    validation_engine: NexusValidationEngine | None = None,
+    validation_engine: object | None = None,
     manifest: ApplicationManifest | None = None,
     conformance_check: bool = True,
 ) -> ScenarioRuntimeComposition:
@@ -378,7 +384,7 @@ def build_scenario_runtime_from_environment(
     workspace: ScenarioRuntimeWorkspace | None = None,
     runtime_mode: ScenarioRuntimeMode | None = None,
     conformance_check: bool = True,
-    validation_engine: NexusValidationEngine | None = None,
+    validation_engine: object | None = None,
     application_tool_registry: ToolRegistry | None = None,
 ) -> ScenarioRuntimeComposition:
     """
@@ -452,7 +458,7 @@ def build_scenario_runtime_from_environment(
         ),
     )
 
-    nexus_loop = build_nexus_loop_from_environment(
+    orchestration_spec = build_host_orchestration_loop_init_spec_from_environment(
         registry,
         env=environment,
         trace_store=observability.trace_store,
@@ -475,14 +481,24 @@ def build_scenario_runtime_from_environment(
             environment,
         ),
     )
+    orchestration = materialize_host_orchestration_backend(registry, orchestration_spec)
+    nexus_loop = orchestration.orchestration_backend_for_host_wiring()
     assert_security_assembly_valid(security_wiring, environment, nexus=nexus_loop)
     assert_guardrail_assembly_valid(guardrail_wiring, environment, nexus=nexus_loop)
 
     wire_observability_event_subscriptions(
-        nexus_loop.event_bus,
+        orchestration.event_bus,
         environment.observability_profile,
     )
     apply_reliability_governance_wiring(nexus_loop, environment)
+
+    harness_execution_governance = build_harness_host_task_execution_governance()
+    host_execution = build_environment_host_task_execution(
+        orchestration,
+        environment,
+        root_authority_admission=harness_execution_governance.root_authority_admission,
+        admit_root_governance_identity=harness_execution_governance.admit_root_governance_identity,
+    )
 
     try:
         diagnostic_wiring = wire_terminal_execution_diagnostics(
@@ -500,7 +516,8 @@ def build_scenario_runtime_from_environment(
         env_wiring=env_wiring,
         observability=observability,
         registry=registry,
-        nexus_loop=nexus_loop,
+        host_execution=host_execution,
+        orchestration=orchestration,
         tenant_id=resolved_tenant_id,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
@@ -530,21 +547,14 @@ async def execute_scenario_task(
         task_kwargs["context"] = TaskContext(capability=request.capability)
 
     task = Task(**task_kwargs)
-    harness_execution_governance = build_harness_host_task_execution_governance()
-    host_execution = build_environment_host_task_execution(
-        composition.nexus_loop,
-        composition.environment,
-        root_authority_admission=harness_execution_governance.root_authority_admission,
-        admit_root_governance_identity=harness_execution_governance.admit_root_governance_identity,
-    )
-    composition.nexus_loop.set_hold_persisted_trace_finalize(
+    composition.orchestration.set_hold_persisted_trace_finalize(
         request.hold_persisted_trace_finalize,
     )
     try:
-        task_result = await host_execution.execute(task)
+        task_result = await composition.host_execution.execute(task)
     finally:
-        composition.nexus_loop.set_hold_persisted_trace_finalize(False)
-    deferred_finalize = composition.nexus_loop.take_deferred_persisted_trace_finalize()
+        composition.orchestration.set_hold_persisted_trace_finalize(False)
+    deferred_finalize = composition.orchestration.take_deferred_persisted_trace_finalize()
     return ScenarioRuntimeExecutionResult(
         task_result=task_result,
         task_id=task.task_id,

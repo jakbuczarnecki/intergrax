@@ -118,6 +118,7 @@ def test_nexus_worker_from_registry_requires_explicit_governance_admission() -> 
     param = signature.parameters["admit_root_governance_identity"]
     assert param.default is inspect.Parameter.empty
     assert signature.parameters["production_mode"].default is inspect.Parameter.empty
+    assert signature.parameters["root_authority_admission"].default is inspect.Parameter.empty
 
 
 def test_runtime_and_shared_apps_do_not_import_harness_identity_admission() -> None:

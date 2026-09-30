@@ -28,7 +28,7 @@ def test_nexus_worker_runtime_receives_explicit_execution_terminal() -> None:
 
 
 def test_nexus_factory_uses_terminal_provider_resolver() -> None:
-    source = (_REPO_ROOT / "intergrax/applications/_shared/nexus_factory.py").read_text(
+    source = (_REPO_ROOT / "intergrax/applications/_shared/host_orchestration_backend_spec_builder.py").read_text(
         encoding="utf-8",
     )
     assert "resolved_execution_terminal" in source

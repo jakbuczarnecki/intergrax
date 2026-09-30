@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from intergrax.applications._shared.nexus_factory import (
+from intergrax.applications._shared.host_orchestration_backend_spec_builder import (
     build_nexus_loop_from_environment,
 )
 from intergrax.applications.contracts.environment_profile import (

@@ -400,13 +400,13 @@ async def test_execute_scenario_task_reaches_graph_executor_with_execution_id(
         use_in_memory_trace=True,
     )
     seen: dict[str, ExecutionId | None] = {}
-    original_execute = composition.nexus_loop._graph_executor.execute
+    original_execute = composition.orchestration.orchestration_backend_for_host_wiring()._graph_executor.execute
 
     async def _spy_execute(*args: object, **kwargs: object) -> object:
         seen["execution_id"] = peek_active_execution_id()
         return await original_execute(*args, **kwargs)
 
-    composition.nexus_loop._graph_executor.execute = _spy_execute  # type: ignore[method-assign]
+    composition.orchestration.orchestration_backend_for_host_wiring()._graph_executor.execute = _spy_execute  # type: ignore[method-assign]
 
     result = await execute_scenario_task(
         composition,
