@@ -36,9 +36,17 @@ from intergrax.runtime.execution.execution_terminal import ExecutionTerminalServ
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.contracts.host_orchestration_run_retry import HostOrchestrationRunRetrySpec
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
+
+
+def _nexus_retry_policy(spec: HostOrchestrationRunRetrySpec) -> RetryPolicy:
+    return RetryPolicy(
+        max_retries=spec.max_retries,
+        retry_alternate_agent=spec.retry_alternate_agent,
+    )
 
 
 def build_worker_host_task_execution_from_registry(
@@ -56,7 +64,7 @@ def build_worker_host_task_execution_from_registry(
     production_mode: bool,
     admit_root_governance_identity: Callable[[Task], AdmittedRootGovernanceIdentity],
     root_authority_admission: RootExecutionAuthorityAdmissionPort,
-    retry_policy: RetryPolicy | None = None,
+    retry_policy: HostOrchestrationRunRetrySpec | None = None,
 ) -> HostTaskExecutionPort:
     """Materialize governed worker host execution without exposing Nexus to runtime/task."""
     resolved_factory = execution_budget_ledger_factory
@@ -77,7 +85,9 @@ def build_worker_host_task_execution_from_registry(
         execution_continuation_state_store=execution_continuation_state_store,
         production_mode=production_mode,
         max_run_retries=0,
-        retry_policy=retry_policy or RetryPolicy(max_retries=0),
+        retry_policy=_nexus_retry_policy(
+            retry_policy or HostOrchestrationRunRetrySpec(max_retries=0),
+        ),
     )
     materialization = materialize_host_orchestration_backend(registry, spec)
     return build_host_task_execution(

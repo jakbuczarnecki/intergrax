@@ -31,6 +31,9 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -57,7 +60,11 @@ def _runner_with_handle() -> tuple[UnifiedTaskRunner, object, AsyncMock]:
     )
     loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
     loop.handle_task = handle_task  # type: ignore[attr-defined]
-    return UnifiedTaskRunner(loop), loop, handle_task
+    return (
+        UnifiedTaskRunner(build_harness_root_task_execution_port(loop)),
+        loop,
+        handle_task,
+    )
 
 
 def test_unified_task_runner_source_has_no_direct_nexus_handle_task_call() -> None:
@@ -221,7 +228,10 @@ async def test_run_task_task_enricher_runs_before_nexus() -> None:
     )
     loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
     loop.handle_task = handle_task  # type: ignore[attr-defined]
-    runner = UnifiedTaskRunner(loop, task_enricher=enricher)
+    runner = UnifiedTaskRunner(
+        build_harness_root_task_execution_port(loop),
+        task_enricher=enricher,
+    )
 
     await runner.run_task(task)
 
@@ -236,7 +246,7 @@ async def test_run_task_unregisters_on_nexus_exception() -> None:
     handle_task = AsyncMock(side_effect=RuntimeError("nexus-fail"))
     loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
     loop.handle_task = handle_task  # type: ignore[attr-defined]
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
 
     with pytest.raises(RuntimeError, match="nexus-fail"):
         await runner.run_task(task, run_id=run_id)
@@ -301,7 +311,7 @@ async def test_concurrent_run_task_calls_use_isolated_delegate_identity() -> Non
 
     loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
     loop.handle_task = _handle  # type: ignore[attr-defined]
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
 
     first = asyncio.create_task(runner.run_task(task_a, run_id=run_id_a))
     second = asyncio.create_task(
@@ -317,5 +327,8 @@ async def test_concurrent_run_task_calls_use_isolated_delegate_identity() -> Non
 
 def test_unified_task_runner_constructor_remains_compatible() -> None:
     loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
-    runner = UnifiedTaskRunner(loop, task_enricher=lambda task: task)
+    runner = UnifiedTaskRunner(
+        build_harness_root_task_execution_port(loop),
+        task_enricher=lambda task: task,
+    )
     assert runner.nexus_loop is loop

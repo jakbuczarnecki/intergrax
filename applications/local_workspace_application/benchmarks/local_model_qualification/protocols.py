@@ -12,7 +12,7 @@ from pydantic import ValidationError
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.nexus.tools.canonical_tool_dispatch import (
+from intergrax.runtime.execution.agent_catalog_tool_dispatch import (
     materialize_canonical_tool_definitions_for_llm_dispatch,
 )
 

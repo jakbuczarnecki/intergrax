@@ -11,7 +11,7 @@ from intergrax.applications._shared.acp_checkpoint_task_enricher import (
     make_acp_checkpoint_task_enricher,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.runtime.nexus.orchestration_capabilities import (
+from intergrax.contracts.orchestration_capability_tokens import (
     is_orchestration_capability,
     orchestration_capabilities_from_triggers,
 )

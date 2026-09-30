@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
+    from intergrax.runtime.execution.host_validation_composition import NexusValidationEngine
 
 from intergrax.applications._shared.cost_assembly_resolver import assert_cost_assembly_valid
 from intergrax.applications._shared.cost_wiring import wire_application_cost
@@ -99,10 +99,8 @@ from intergrax.runtime.governance.decision_requirement_policy import (
 from intergrax.runtime.observability.qualification_runtime_trace import (
     DeferredPersistedTraceFinalize,
 )
-from intergrax.runtime.nexus.observability_wiring import (
-    NexusObservabilityStores,
-    wire_nexus_observability,
-)
+from intergrax.contracts.host_observability_stores import HostObservabilityStores
+from intergrax.runtime.execution.host_observability_composition import wire_host_observability
 from intergrax.tools.registry import ToolRegistry
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult
@@ -161,7 +159,7 @@ class ScenarioRuntimeComposition:
 
     environment: ApplicationEnvironmentProfile
     env_wiring: ApplicationEnvironmentWiring
-    observability: NexusObservabilityStores
+    observability: HostObservabilityStores
     registry: AgentRegistry
     host_execution: HostTaskExecutionPort
     orchestration_session: ApplicationHostOrchestrationSession
@@ -303,9 +301,9 @@ def _resolve_observability_stores(
     trace_db_path: Path | None,
     runtime_events_db_path: Path | None,
     use_in_memory_trace: bool,
-) -> NexusObservabilityStores:
+) -> HostObservabilityStores:
     if use_in_memory_trace:
-        return wire_nexus_observability(
+        return wire_host_observability(
             trace_db_path=trace_db_path,
             runtime_events_db_path=runtime_events_db_path,
             integration_profile=environment.integration_profile,

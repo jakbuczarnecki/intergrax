@@ -7,8 +7,8 @@ from datetime import datetime, timezone
 from typing import Any, Iterable, List
 
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
-from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
-from intergrax.runtime.nexus.tracing.persistence_models import SerializedTraceEvent
+from intergrax.runtime.execution.trace_persistence_models_bridge import CoreLLMCallRecordedDiagV1
+from intergrax.runtime.execution.trace_persistence_models_bridge import SerializedTraceEvent
 from intergrax.runtime.replay.contracts.trace_event_dto import TraceEventDTO
 from intergrax.runtime.replay.llm_call_mapper import llm_call_info_from_adapter_response
 

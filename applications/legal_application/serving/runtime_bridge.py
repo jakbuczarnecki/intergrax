@@ -15,7 +15,7 @@ from legal_application.serving.schemas import (
 from intergrax.fastapi_core.context import RequestContext
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.llm.messages import AttachmentRef
-from intergrax.runtime.nexus.policies.runtime_policies import ApiTraceExportMode, DataCompliancePolicy
+from intergrax.runtime.policy.data_compliance_policy import ApiTraceExportMode, DataCompliancePolicy
 from intergrax.runtime.execution.agent_runtime_io import (
     HistoryCompressionStrategy,
     RuntimeAnswer,

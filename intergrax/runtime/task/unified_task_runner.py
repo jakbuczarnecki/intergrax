@@ -7,18 +7,13 @@ from collections.abc import Callable
 from typing import Optional
 
 from intergrax.contracts.admitted_root_governance_identity import AdmittedRootGovernanceIdentity
-
 from intergrax.contracts.execution_identity import AttemptId, RunId
 from intergrax.llm_adapters.tracking.context import llm_tenant_scope
-from intergrax.runtime.execution.orchestration import (
-    execute_root_task,
-    resolve_root_task_identity,
-)
-from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
-from intergrax.contracts.run_budget import RunBudget
-from intergrax.runtime.long_running.models import TaskCheckpoint
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
+from intergrax.runtime.execution.harness_task_execution_port import HarnessRootTaskExecutionPort
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.execution.orchestration import resolve_root_task_identity
+from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.task.active_task_registry import ActiveTaskRegistry
 from intergrax.runtime.task.task import Task, TaskResult
 from intergrax.runtime.task.task_run_bridge import task_from_runtime_request
@@ -29,35 +24,27 @@ class UnifiedTaskRunner:
     Thin Task adapter into canonical root execution (§41).
 
     HARNESS / SCHEDULING ONLY — not a production Tier-3 execution entry.
-
-    Allowed: scheduler coordination, harness compatibility, eval orchestration.
-    Forbidden: lifecycle ownership, identity creation, direct production execution
-    bypassing :class:`~intergrax.runtime.execution.host_task.HostTaskExecutionPort`.
     """
 
     def __init__(
         self,
-        nexus_loop: NexusLoop,
+        execution: HostTaskExecutionPort,
         *,
         task_enricher: Callable[[Task], Task] | None = None,
         admitted_governance_identity_for_task: (
             Callable[[Task], AdmittedRootGovernanceIdentity] | None
         ) = None,
-        execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
-        run_budget: RunBudget | None = None,
     ) -> None:
-        self._nexus_loop = nexus_loop
+        resolved = execution
+        if (
+            admitted_governance_identity_for_task is not None
+            and isinstance(execution, HarnessRootTaskExecutionPort)
+        ):
+            resolved = execution.with_per_task_governance_admission(
+                admitted_governance_identity_for_task,
+            )
+        self._execution = resolved
         self._task_enricher = task_enricher
-        self._admitted_governance_identity_for_task = admitted_governance_identity_for_task
-        self._ledger_factory = (
-            execution_budget_ledger_factory
-            or nexus_loop.execution_budget_ledger_factory
-        )
-        self._run_budget = run_budget if run_budget is not None else nexus_loop.run_budget
-
-    @property
-    def nexus_loop(self) -> NexusLoop:
-        return self._nexus_loop
 
     async def run_task(
         self,
@@ -77,17 +64,11 @@ class UnifiedTaskRunner:
         await ActiveTaskRegistry.register(task, identity.run_id)
         try:
             with llm_tenant_scope(task.tenant_id):
-                admitted = None
-                if self._admitted_governance_identity_for_task is not None:
-                    admitted = self._admitted_governance_identity_for_task(task)
-                return await execute_root_task(
+                return await self._execution.execute(
                     task,
-                    nexus_loop=self._nexus_loop,
-                    identity=identity,
-                    admitted_governance_identity=admitted,
+                    run_id=identity.run_id,
+                    attempt_id=identity.attempt_id,
                     resume_checkpoint=resume_checkpoint,
-                    ledger_factory=self._ledger_factory,
-                    run_budget=self._run_budget,
                 )
         finally:
             await ActiveTaskRegistry.unregister(task.task_id, identity.run_id)

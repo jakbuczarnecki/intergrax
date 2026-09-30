@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Tier-3 context engineering wiring (Phase CTX-2, CE-2.4)."""
+"""Tier-3 context engineering wiring (Phase CTX-2, CE-2.4) — neutral profile/bootstrap only."""
 
 from __future__ import annotations
 
@@ -14,20 +14,42 @@ from intergrax.context.bootstrap import (
     bootstrap_context_catalog,
     materialize_context_plugin_registry,
 )
-from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from intergrax.context.registry import ContextPluginRegistry, UnknownContextPluginError
+from intergrax.context.protocols import ContextEngine
 from intergrax.core.plugin_env import discover_plugins_enabled
 from intergrax.core.plugins.admission import DomainPluginLoadReport
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
-from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.contracts.context_budget import ContextBudgetPolicy
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
-from intergrax.context.protocols import ContextEngine
 from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
-from intergrax.runtime.nexus.context.context_manager import ContextManager
+from intergrax.runtime.execution.application_environment_context_composition import (
+    default_task_execution_options_for_environment,
+    merge_task_context_options_from_environment,
+    resolve_context_engine_for_graph_node,
+    resolve_context_engine_from_environment,
+    resolve_context_manager_from_environment,
+    resolve_context_orchestrator_from_environment,
+)
 from intergrax.runtime.task.task_contract import TaskExecutionOptions
 
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "ContextAssemblyError",
+    "apply_context_engine_to_runtime_config",
+    "assert_strict_context_bootstrap_acceptable",
+    "bootstrap_application_context_catalog",
+    "context_plugin_bootstrap_errors",
+    "default_task_execution_options_for_environment",
+    "merge_task_context_options_from_environment",
+    "resolve_context_budget_policy",
+    "resolve_context_engine_for_graph_node",
+    "resolve_context_engine_from_environment",
+    "resolve_context_manager_from_environment",
+    "resolve_context_orchestrator_from_environment",
+    "resolve_context_plugin_registry_from_environment",
+    "validate_context_plugin_ids",
+]
 
 
 class ContextAssemblyError(ValueError):
@@ -68,9 +90,6 @@ def assert_strict_context_bootstrap_acceptable(
 
 
 def _is_production_environment(env: ApplicationEnvironmentProfile) -> bool:
-    """Lab / dev profiles fail closed on unknown plugin ids; prod hosts warn."""
-    from intergrax.applications.contracts.execution_mode import ExecutionMode
-
     return env.execution_mode == ExecutionMode.STRICT
 
 
@@ -142,80 +161,6 @@ def resolve_context_budget_policy(
     return ContextBudgetPolicy(max_chars=max(assembly.max_prior_chars, 4000))
 
 
-def resolve_context_engine_from_environment(
-    env: ApplicationEnvironmentProfile,
-) -> DefaultNexusContextEngine:
-    """Resolve context engine for the environment preset (CE-7.4, CE-8.2)."""
-    registry = resolve_context_plugin_registry_from_environment(env)
-    engine_ref = env.context_profile.engine_ref
-    preset = env.context_profile.engine_preset
-    if preset == "custom" and engine_ref:
-        from intergrax.applications._shared.context_engine_resolver import load_context_engine
-
-        return load_context_engine(engine_ref, registry=registry)
-    if preset == "codebase":
-        from intergrax.runtime.nexus.context.codebase_engine import CodebaseContextEngine
-
-        return CodebaseContextEngine(registry=registry)
-    if preset == "regulated_minimal":
-        from intergrax.runtime.nexus.context.preset_engines import RegulatedMinimalContextEngine
-
-        return RegulatedMinimalContextEngine(registry=registry)
-    if preset == "explore_child":
-        from intergrax.runtime.nexus.context.preset_engines import ExploreChildContextEngine
-
-        return ExploreChildContextEngine(registry=registry)
-    return DefaultNexusContextEngine(engine_id=preset, registry=registry)
-
-
-def resolve_context_orchestrator_from_environment(
-    env: ApplicationEnvironmentProfile,
-    engine: DefaultNexusContextEngine,
-):
-    """Return bounded orchestrator for codebase preset only (CE-8.2)."""
-    if env.context_profile.engine_preset != "codebase":
-        return None
-    from intergrax.context.orchestrator import ContextOrchestrator
-
-    return ContextOrchestrator(engine)
-
-
-def resolve_context_engine_for_graph_node(
-    env: ApplicationEnvironmentProfile,
-    *,
-    has_delegation: bool,
-) -> DefaultNexusContextEngine:
-    """Delegation children use ``explore_child`` preset automatically (CE-8.3)."""
-    if has_delegation:
-        registry = resolve_context_plugin_registry_from_environment(env)
-        from intergrax.runtime.nexus.context.preset_engines import ExploreChildContextEngine
-
-        return ExploreChildContextEngine(registry=registry)
-    return resolve_context_engine_from_environment(env)
-
-
-def resolve_context_manager_from_environment(
-    env: ApplicationEnvironmentProfile,
-    *,
-    event_bus: RuntimeEventBus | None = None,
-    llm_adapter: object | None = None,
-    context_engine: DefaultNexusContextEngine | None = None,
-) -> ContextManager:
-    """Build ``ContextManager`` with environment assembly and budget policies."""
-    assembly = env.context_profile.assembly_options
-    engine = context_engine or resolve_context_engine_from_environment(env)
-    orchestrator = resolve_context_orchestrator_from_environment(env, engine)
-    return ContextManager(
-        max_prior_chars=assembly.max_prior_chars,
-        default_policy=assembly,
-        budget_policy=resolve_context_budget_policy(env, llm_adapter=llm_adapter),  # type: ignore[arg-type]
-        event_bus=event_bus,
-        context_engine=engine,
-        context_orchestrator=orchestrator,
-        llm_adapter=llm_adapter,  # type: ignore[arg-type]
-    )
-
-
 def apply_context_engine_to_runtime_config(
     config: RuntimeConfig,
     env: ApplicationEnvironmentProfile,
@@ -227,25 +172,3 @@ def apply_context_engine_to_runtime_config(
         return config
     config.context_engine = context_engine or resolve_context_engine_from_environment(env)
     return config
-
-
-def merge_task_context_options_from_environment(
-    options: TaskExecutionOptions,
-    env: ApplicationEnvironmentProfile,
-) -> TaskExecutionOptions:
-    """
-    Overlay ``ContextProfile.assembly_options`` on task intake options.
-
-    Preserves non-context fields (governance, isolation, long_running).
-    """
-    assembly = env.context_profile.assembly_options
-    return options.model_copy(update={"context": assembly})
-
-
-def default_task_execution_options_for_environment(
-    env: ApplicationEnvironmentProfile,
-) -> TaskExecutionOptions:
-    """Baseline task intake options derived from environment context profile."""
-    return TaskExecutionOptions(
-        context=env.context_profile.assembly_options,
-    )

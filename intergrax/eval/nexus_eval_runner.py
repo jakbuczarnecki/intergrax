@@ -8,7 +8,7 @@ from typing import List, Optional
 from intergrax.contracts.agent_execution_result import AgentExecutionStatus
 from intergrax.eval.eval_case import EvalCase
 from intergrax.eval.eval_result import EvalResult
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.replay.metrics import ExecutionMetricsEngine
 from intergrax.runtime.replay.models import ReconstructedRun
 from intergrax.runtime.replay.replay_engine import ReplayEngine
@@ -19,7 +19,7 @@ from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 class NexusEvalRunner:
     """
-    Evaluation runner via NexusLoop + AgentExecutionResult (Phase A.4).
+    Evaluation runner via canonical host task execution (Phase A.4).
 
     Complements legacy EvalRunner (pre-ACP evaluation harness).
     """
@@ -37,20 +37,19 @@ class NexusEvalRunner:
         self._semantic_client = semantic_client
 
     @classmethod
-    def from_nexus_loop(
+    def from_host_execution(
         cls,
-        nexus_loop: NexusLoop,
+        host_execution: HostTaskExecutionPort,
         *,
         replay_engine: Optional[ReplayEngine] = None,
         metrics_engine: Optional[ExecutionMetricsEngine] = None,
         semantic_client: object | None = None,
     ) -> "NexusEvalRunner":
-        resolved_client = semantic_client
         return cls(
-            UnifiedTaskRunner(nexus_loop),
+            UnifiedTaskRunner(host_execution),
             replay_engine=replay_engine,
             metrics_engine=metrics_engine,
-            semantic_client=resolved_client,
+            semantic_client=semantic_client,
         )
 
     async def run_case(self, case: EvalCase) -> EvalResult:
@@ -128,7 +127,7 @@ class NexusEvalRunner:
             else:
                 error = "output_mismatch"
 
-        _ = agent_id, capability_id  # reserved for future eval report fields
+        _ = agent_id, capability_id
 
         return EvalResult(
             case_id=case.case_id,

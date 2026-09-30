@@ -10,8 +10,8 @@ from typing import Sequence
 from intergrax.applications._shared.observability_wiring import ApplicationObservabilityWiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
-from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
+from intergrax.runtime.execution.run_trace_store_factories import create_in_memory_run_trace_store
+from intergrax.runtime.execution.run_trace_store_factories import create_sqlite_run_trace_store
 
 
 @dataclass(frozen=True, slots=True)

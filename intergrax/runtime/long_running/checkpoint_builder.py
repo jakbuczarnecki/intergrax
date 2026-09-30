@@ -37,12 +37,12 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
     RuntimeCheckpoint,
 )
 from intergrax.utils.time_provider import SystemTimeProvider
-from intergrax.runtime.nexus.execution.execution_graph import (
+from intergrax.runtime.execution.checkpoint_execution_graph_bridge import (
     ExecutionGraph,
     ExecutionNode,
     ExecutionNodeStatus,
 )
-from intergrax.runtime.nexus.planning.task_planner import NexusPlan
+from intergrax.runtime.execution.checkpoint_execution_graph_bridge import NexusPlan
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import HumanApprovalResolution
 

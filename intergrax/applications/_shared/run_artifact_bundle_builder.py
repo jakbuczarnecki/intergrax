@@ -11,7 +11,7 @@ from intergrax.contracts.task_artifacts import (
     SandboxArtifactRef,
     WorkspaceArtifactRef,
 )
-from intergrax.runtime.nexus.orchestration.run_artifact_bundle_builder import build_run_artifact_bundle
+from intergrax.runtime.execution.run_artifact_bundle_composition import build_run_artifact_bundle
 from intergrax.runtime.task.task import Task
 
 

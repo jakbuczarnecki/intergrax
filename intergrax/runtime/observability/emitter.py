@@ -36,7 +36,7 @@ from intergrax.runtime.observability.trace_scope import (
 )
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.artifacts.models import ArtifactRef
+    from intergrax.runtime.execution.trace_persistence_models_bridge import ArtifactRef
 
 
 class TraceSeqProvider(Protocol):

@@ -412,7 +412,8 @@ def integration_wiring_py(names: ScaffoldApplicationNames) -> str:
 
         from intergrax.applications._shared.integration_wiring import bootstrap_application_integration_catalog
         from intergrax.integrations.registry.profile import IntegrationProfile
-        from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores, wire_nexus_observability
+        from intergrax.contracts.host_observability_stores import HostObservabilityStores
+from intergrax.runtime.execution.host_observability_composition import wire_host_observability
 
 
         def wire_{short}_integrations(
@@ -420,9 +421,9 @@ def integration_wiring_py(names: ScaffoldApplicationNames) -> str:
             trace_db_path: Path | None = None,
             runtime_events_db_path: Path | None = None,
             integration_profile: IntegrationProfile | None = None,
-        ) -> NexusObservabilityStores:
+        ) -> HostObservabilityStores:
             bootstrap_application_integration_catalog(integration_preset="full")
-            return wire_nexus_observability(
+            return wire_host_observability(
                 trace_db_path=trace_db_path,
                 runtime_events_db_path=runtime_events_db_path,
                 integration_profile=integration_profile or IntegrationProfile(),

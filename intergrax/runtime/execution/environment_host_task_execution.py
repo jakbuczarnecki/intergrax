@@ -28,7 +28,7 @@ from intergrax.runtime.execution._orchestration_backend_access import (
 )
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
-from intergrax.runtime.nexus.orchestration_capabilities import (
+from intergrax.contracts.orchestration_capability_tokens import (
     orchestration_capabilities_from_triggers,
 )
 from intergrax.runtime.task.task import Task

@@ -22,6 +22,9 @@ from intergrax.runtime.task.task_contract import (
     TaskHumanInput,
     TaskLongRunningOptions,
 )
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from testing_support.admitted_root_governance_identity import (
     lab_admitted_root_governance_identity_for_task,
@@ -54,7 +57,7 @@ def prepare_lab_graph_task(task: Task) -> Task:
 
 def build_lab_unified_task_runner(nexus_loop: NexusLoop) -> UnifiedTaskRunner:
     return UnifiedTaskRunner(
-        nexus_loop,
+        build_harness_root_task_execution_port(nexus_loop),
         admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
     )
 

@@ -15,7 +15,7 @@ from intergrax.contracts.persisted_run_trace import (
     RunSummary,
     persisted_trace_event_to_wire,
 )
-from intergrax.runtime.nexus.tracing.persistence_models import SerializedTraceEvent
+from intergrax.runtime.execution.trace_persistence_models_bridge import SerializedTraceEvent
 
 
 def format_run_list(runs: List[RunSummary]) -> str:

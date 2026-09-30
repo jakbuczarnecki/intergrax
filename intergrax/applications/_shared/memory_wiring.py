@@ -39,14 +39,12 @@ from intergrax.memory.stores.in_memory_user_profile_store import (
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_store import UserProfileStore
 from intergrax.rag.bootstrap.rag_stack_bootstrap import RagStack
-from intergrax.runtime.nexus.session.document_store_session_storage import (
+from intergrax.runtime.execution.session_host_composition import (
     DocumentStoreSessionStorage,
-)
-from intergrax.runtime.nexus.session.in_memory_session_storage import (
     InMemorySessionStorage,
+    SessionManager,
+    SessionStorage,
 )
-from intergrax.runtime.nexus.session.session_manager import SessionManager
-from intergrax.runtime.nexus.session.session_storage import SessionStorage
 from intergrax.memory.resolver import (
     MemoryStoreMaterializationContext,
     MemoryStorePluginResolutionError,

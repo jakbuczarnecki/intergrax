@@ -46,7 +46,7 @@ from intergrax.llm_adapters.contracts.strict_tool_arguments import (
     ToolDispatchRequirements,
     coerce_canonical_tool_definitions,
 )
-from intergrax.runtime.nexus.tools.atomic_planner_round import (
+from intergrax.runtime.execution.atomic_planner_round_bridge import (
     AtomicPlannerRoundProjectionError,
     decode_atomic_planner_round_arguments_json_envelope,
 )

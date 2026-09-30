@@ -185,7 +185,7 @@ def materialize_runtime_config(
 
     apply_context_engine_to_runtime_config(config, env)
     if config.context_budget_policy is None and config.llm_adapter is not None:
-        from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
+        from intergrax.contracts.context_budget import ContextBudgetPolicy
 
         config.context_budget_policy = ContextBudgetPolicy.from_adapter(config.llm_adapter)
         derive_run_budget_from_context_policy(config)
@@ -225,7 +225,7 @@ def materialize_runtime_config(
                 tool_wiring_context = active_composition.tool_wiring_context
     rag_wiring_context = tool_wiring_context
     apply_rag_for_environment(config, env, tool_wiring_context=rag_wiring_context)
-    from intergrax.runtime.nexus.context.routing_snapshot_sync import (
+    from intergrax.runtime.execution.llm_routing_surface_composition import (
         wire_secondary_llm_routing_surfaces,
     )
 

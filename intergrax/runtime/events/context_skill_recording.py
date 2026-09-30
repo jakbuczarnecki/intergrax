@@ -7,7 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.context.context_budget import ContextTrimResult
+    from intergrax.contracts.context_budget import ContextTrimResult
 
 from intergrax.contracts.execution_identity import (
     AttemptId,

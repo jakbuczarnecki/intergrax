@@ -70,7 +70,7 @@ def open_trace_store_from_profile(
     bundle = sqlite_bundle_for_profile(profile)
     if bundle is not None:
         return bundle.trace_store
-    from intergrax.runtime.nexus.tracing.store import (
+    from intergrax.runtime.execution.trace_store_debug_access import (
         open_run_trace_store,
         resolve_trace_db_path,
     )

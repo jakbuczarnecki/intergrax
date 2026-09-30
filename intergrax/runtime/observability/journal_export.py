@@ -23,7 +23,7 @@ from intergrax.runtime.events.unified_run_journal import (
     read_run_journal_page,
 )
 from intergrax.contracts.persisted_run_trace import PersistedRun
-from intergrax.runtime.nexus.tracing.persistence_models import SerializedTraceEvent
+from intergrax.runtime.execution.trace_persistence_models_bridge import SerializedTraceEvent
 from intergrax.runtime.observability.otlp_json_payload import OtlpKeyValue
 
 if TYPE_CHECKING:

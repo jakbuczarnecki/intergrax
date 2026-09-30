@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Sequence
 
 from intergrax.llm.messages import ChatMessage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.execution.session_host_composition import SessionManager
 from intergrax.runtime.user_profile.session_memory_consolidation_service import (
     SessionMemoryConsolidationService,
 )

@@ -32,7 +32,7 @@ from intergrax.runtime.execution.active_execution_continuation_store import (
 from intergrax.runtime.execution.continuation.composition import (
     wire_execution_engine_continuation_dependencies,
 )
-from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration import (
+from intergrax.runtime.execution.human_continuation_composition import (
     InternalHitlContinuationCapabilityError,
     InternalOrchestrationContinuation,
     establish_canonical_hitl_pause,

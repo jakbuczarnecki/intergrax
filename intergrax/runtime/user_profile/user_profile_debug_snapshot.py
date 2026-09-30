@@ -12,7 +12,7 @@ from intergrax.memory.user_profile_memory import (
     UserProfileMemoryEntry,
     MemoryKind,
 )
-from intergrax.runtime.nexus.session.chat_session import ChatSession
+from intergrax.runtime.execution.session_host_composition import ChatSession
 
 UNKNOWN:str = "UNKNOWN"
 

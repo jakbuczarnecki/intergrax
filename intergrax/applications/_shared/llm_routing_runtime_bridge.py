@@ -147,7 +147,7 @@ def wire_secondary_llm_routing_evaluating(
     if config.llm_routing_snapshot is None and config.llm_routing_context is None:
         return
 
-    from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
+    from intergrax.runtime.execution.reasoning_tool_planning_composition import CatalogToolPlanner
 
     tool_planner = config.tool_planner
     if isinstance(tool_planner, CatalogToolPlanner):

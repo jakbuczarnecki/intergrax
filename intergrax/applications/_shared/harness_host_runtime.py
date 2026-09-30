@@ -204,7 +204,7 @@ from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
-from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
+from intergrax.contracts.host_observability_stores import HostObservabilityStores
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
@@ -233,7 +233,7 @@ class HarnessHostRuntime:
     tenant_id: str
     env_wiring: ApplicationEnvironmentWiring
     registry: AgentRegistryRead
-    observability: NexusObservabilityStores
+    observability: HostObservabilityStores
     reliability: ApplicationReliabilityWiring
     security: ApplicationSecurityWiring
     guardrail: ApplicationGuardrailWiring
@@ -407,11 +407,11 @@ def build_harness_host_runtime(
         integration_profile=effective_environment.integration_profile,
     )
     if use_in_memory_trace:
-        from intergrax.runtime.nexus.observability_wiring import (
-            wire_nexus_observability,
+        from intergrax.runtime.execution.host_observability_composition import (
+            wire_host_observability,
         )
 
-        observability = wire_nexus_observability(
+        observability = wire_host_observability(
             trace_db_path=trace_db_path,
             runtime_events_db_path=runtime_events_db_path,
             integration_profile=effective_environment.integration_profile,

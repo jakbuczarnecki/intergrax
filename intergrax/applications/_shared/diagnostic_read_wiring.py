@@ -18,7 +18,7 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
 from intergrax.applications._shared.environment_wiring import ApplicationEnvironmentWiring
-from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
+from intergrax.contracts.host_observability_stores import HostObservabilityStores
 
 if TYPE_CHECKING:
     from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
@@ -117,7 +117,7 @@ def assert_host_diagnostic_composition_frozen(
 def materialize_host_diagnostic_read_dependencies(
     *,
     env_wiring: ApplicationEnvironmentWiring,
-    observability: NexusObservabilityStores,
+    observability: HostObservabilityStores,
     environment: ApplicationEnvironmentProfile,
     overrides: DiagnosticCompositionOverrides | None = None,
     require_durable: bool = False,

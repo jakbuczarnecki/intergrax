@@ -41,7 +41,7 @@ from intergrax.runtime.long_running.persistence_contract import (
 )
 from intergrax.contracts.run_budget import RunBudget
 from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
-from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
+from intergrax.contracts.host_orchestration_run_retry import HostOrchestrationRunRetrySpec
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.execution.budget.persistence import RunBudgetPersistence
 from intergrax.runtime.execution.deadline_authority import ExecutionDeadlineAuthorityResolver
@@ -126,7 +126,7 @@ class NexusWorkerRuntime:
             [Task], AdmittedRootGovernanceIdentity
         ],
         root_authority_admission: RootExecutionAuthorityAdmissionPort,
-        retry_policy: RetryPolicy | None = None,
+        retry_policy: HostOrchestrationRunRetrySpec | None = None,
     ) -> NexusWorkerRuntime:
         host_execution = build_worker_host_task_execution_from_registry(
             registry,

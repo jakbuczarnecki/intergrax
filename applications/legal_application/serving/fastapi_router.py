@@ -24,7 +24,7 @@ from legal_application.serving.schemas import (
     LegalChatResponseV1,
 )
 from intergrax.fastapi_core.context import RequestContext, get_request_context
-from intergrax.runtime.nexus.policies.runtime_policies import DataCompliancePolicy
+from intergrax.runtime.policy.data_compliance_policy import DataCompliancePolicy
 from intergrax.runtime.execution.agent_runtime_io import RuntimeAnswer
 
 

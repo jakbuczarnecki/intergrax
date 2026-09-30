@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.applications._shared.adaptive_wiring import ApplicationAdaptiveWiring
-from intergrax.applications._shared.context_wiring import (
+from intergrax.runtime.execution.application_environment_context_composition import (
     resolve_context_manager_from_environment,
 )
 from intergrax.applications._shared.decision_wiring import (

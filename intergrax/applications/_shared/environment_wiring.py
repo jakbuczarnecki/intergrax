@@ -387,7 +387,7 @@ def wire_application_environment(
     )
 
     if tenant_id is None:
-        from intergrax.runtime.nexus.session.session_manager import SessionManager
+        from intergrax.runtime.execution.session_host_composition import SessionManager
 
         session_manager = SessionManager(memory_wiring.session_storage)
         user_profile_manager = None

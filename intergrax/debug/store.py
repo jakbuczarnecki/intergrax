@@ -24,7 +24,7 @@ from intergrax.runtime.task_memory.store import (
     resolve_task_memory_persistence,
 )
 from intergrax.contracts.run_trace_store import RunTraceReader
-from intergrax.runtime.nexus.tracing.store import (
+from intergrax.runtime.execution.trace_store_debug_access import (
     ENV_TRACE_DB,
     DEFAULT_TRACE_DB,
     open_run_trace_store,

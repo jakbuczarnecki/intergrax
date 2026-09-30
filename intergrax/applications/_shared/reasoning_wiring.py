@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.prompts.registry.yaml_registry import YamlPromptRegistry
-from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
+from intergrax.runtime.execution.reasoning_tool_planning_composition import ToolPlanningConfig
 from intergrax.llm_adapters.registry.profile import create_adapter
 
 

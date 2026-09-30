@@ -19,10 +19,10 @@ from intergrax.contracts.idempotency_store import (
     InvocationUncertaintyError,
     PreEffectSuspendedWorkRecoveryAuthority,
 )
-from intergrax.runtime.nexus.engine.contracts.runtime_state_contract import (
+from intergrax.runtime.execution.idempotency_runtime_state_bridge import (
+    RuntimeErrorCode,
     RuntimeStateContract,
 )
-from intergrax.runtime.nexus.errors.error_codes import RuntimeErrorCode
 from intergrax.contracts.tracing import TraceComponent, TraceLevel
 from intergrax.runtime.tools.operation_identity import (
     compute_invocation_operation_identity,
