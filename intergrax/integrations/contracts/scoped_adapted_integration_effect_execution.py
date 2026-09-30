@@ -5,14 +5,16 @@
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from intergrax.integrations.contracts.credential import ScopedCredentialResolutionResult
 from intergrax.integrations.contracts.scoped_integration_adaptation import (
     ScopedAdaptedIntegrationEffectRequest,
     ScopedAdaptedIntegrationOperationEvidence,
 )
-from intergrax.runtime.sandbox.contracts import SandboxSecurityCapable
+
+if TYPE_CHECKING:
+    from intergrax.runtime.sandbox.contracts import SandboxSecurityCapable
 
 
 @runtime_checkable

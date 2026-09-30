@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.health import health_check_all, health_check_catalog_slugs
+from intergrax.integrations.registry.health_probes import health_check_all, health_check_catalog_slugs
 from intergrax.integrations.contracts.base import UnknownIntegrationError
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.tools.providers.health.contracts import (

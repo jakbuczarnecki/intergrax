@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Iterable, Optional
+from typing import TYPE_CHECKING, Callable, Iterable, Optional
 
 from intergrax.integrations._shared.circuit_breaker import IntegrationCircuitBreakerConfig
 from intergrax.integrations._shared.circuit_breaker_registry import get_breaker_for_slug
@@ -15,7 +15,9 @@ from intergrax.integrations.contracts.base import (
     IntegrationEntry,
 )
 from intergrax.integrations.contracts.health_probe import IntegrationHealthProbe
-from intergrax.integrations.registry.profile import IntegrationProfile
+
+if TYPE_CHECKING:
+    from intergrax.integrations.registry.profile import IntegrationProfile
 
 HealthProbe = Callable[[object], HealthStatus]
 
