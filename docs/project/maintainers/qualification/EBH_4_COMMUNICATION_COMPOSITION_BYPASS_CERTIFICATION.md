@@ -460,14 +460,38 @@ global FRZ PASS delta = 0
 | B2 EBH-2A / EBH-2I | **RESOLVED** — 9 unregistered violations remediated (contracts neutralized; wiring bundle owner = `runtime.execution.host_orchestration_wiring_bundle`) |
 | B3A resume-plan GraphExecutor semantics | **RESOLVED (local)** — `should_skip_graph_node` + graph executor resume-node reset; UE-11E / DS-NEXUS-02 graph executor qualification |
 | B3B canonical production graph continuation | **READY FOR AUDIT (local)** — DS-NEXUS-02 `UnifiedTaskRunner` → `execute_root_task` → full Nexus intake/planning/graph path without `_handle_task_impl` monkeypatch; governed harness admission via `lab_admitted_root_governance_identity_for_task` |
-| B3 (aggregate) | **BLOCKED** — B3B independent audit pending; B4–B7 not completed |
+| B3C recovery qualification evidence closure | **READY FOR AUDIT (local)** — UE-9C execution-scoped `sync_execution_tree_to_task` test bind fix + fail-closed negative; combined B3 pytest batch green; tenant Q1–Q16 (B3 scope) below |
+| B3 (aggregate) | **READY FOR AUDIT (local)** — B3A/B3B semantics preserved; B3C evidence closure complete; independent audit pending; B4–B7 not completed |
 | B4–B7 full matrices / P9 / typing | **NOT COMPLETED** in this pass |
 
 ```text
 EBH-4-R1-R3 = BLOCKED
 EBH-4 = BLOCKED
 HARNESS-W7 = NOT ENTERED
-IN-SCOPE BLOCKER > 0
+IN-SCOPE BLOCKER = 0 (B3 scope)
 ```
+
+### B3 recovery — tenant isolation audit (16 questions, local)
+
+| # | Question | Verdict | Evidence |
+| --- | --- | --- | --- |
+| 1 | Recovery carries tenant identity? | **PASS** | `TaskCheckpoint.tenant_id`, `Task.tenant_id`, `RootExecutionContext.tenant_id` / admitted governance on B3B path |
+| 2 | Where introduced? | **PASS** | Task admission; checkpoint persisted with tenant; harness `lab_admitted_root_governance_identity_for_task` |
+| 3 | Who owns tenant identity? | **PASS** | Task + admitted `AdmittedRootGovernanceIdentity`; checkpoint stores tenant as state only |
+| 4 | Propagated through recovery boundaries? | **PASS** | `TaskCheckpoint` → `UnifiedTaskRunner` / `HostTaskExecutionPort` → `execute_root_task` → Nexus `GraphExecutor` → `sync_execution_tree_to_task` under active execution identity; durable load via `store.get_by_token(task_id, tenant_id, …)` |
+| 5 | Child/downstream resumed work widen tenant? | **PASS** | Resume plan + graph continuation reuse task/governance tenant; no widening seam in B3 path |
+| 6 | Tenant identity disappear? | **PASS** | Required on task/checkpoint/governance context through B3 proofs |
+| 7 | Missing tenant → global/shared? | **PASS** | `validate_checkpoint_identity_binding` → `REJECT_TENANT`; coordinator `assert_checkpoint_resume_eligible`; lab admission requires non-empty `task.tenant_id` |
+| 8 | Recovery/checkpoint state tenant-scoped? | **PASS** | `TaskCheckpoint.tenant_id`; store keys include tenant |
+| 9 | Provider/config/profile in B3 path? | **N/A — WITH EVIDENCE** | B3 recovery tests do not exercise provider/profile resolution |
+| 10 | Credentials/secrets in B3 path? | **N/A — WITH EVIDENCE** | No credential resolution in UE-9C / UE-11E / DS-NEXUS-02 recovery proofs |
+| 11 | Trace/evidence tenant-preserving? | **PASS** | Runtime events use `task.tenant_id`; B3B harness uses matching tenant on resume task |
+| 12 | Resume preserves tenant? | **PASS** | DS-NEXUS-02 resume task `tenant_id` matches loaded checkpoint tenant |
+| 13 | Restore under another tenant? | **PASS** | `evaluate_checkpoint_resume_eligibility` / `validate_checkpoint_identity_binding` reject mismatch (`REJECT_TENANT`); `test_decision_orchestration_resume_rejects_cross_tenant_checkpoint` |
+| 14 | Extensions rewrite tenant? | **PASS** | No extension rewrite on audited B3 graph-recovery path |
+| 15 | Cross-tenant recovery explicit/governed? | **PASS** | Typed `CheckpointResumeEligibility.REJECT_TENANT`; coordinator asserts eligibility before restore |
+| 16 | Adversarial tenant-A → tenant-B tested? | **PASS** | `test_decision_orchestration_resume_rejects_cross_tenant_checkpoint`; `test_ee_b3_a_checkpoint_resume_rejects_cross_tenant` |
+
+**B3 FRZ local evidence (no global promotion):** FRZ-STA-08, FRZ-REC-01..04, FRZ-REC-06, FRZ-REC-09..10, FRZ-TRC-01/02/09, FRZ-TEN-01..03, FRZ-TEN-07..10, FRZ-TEN-12 — **global FRZ PASS delta = 0**.
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
