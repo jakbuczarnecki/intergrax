@@ -17,7 +17,12 @@ from intergrax.contracts.meaningful_side_effect_authorization import (
 )
 from intergrax.contracts.orchestration_topology import OrchestrationTopologySubmissionPort
 from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.execution.environment_orchestration_materialization import (
+    EnvironmentOrchestrationMaterialization,
+)
+from intergrax.runtime.execution.harness_host_topology_submission_wiring import (
+    build_strict_topology_submission_from_materialization,
+)
 
 if TYPE_CHECKING:
     from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
@@ -32,7 +37,7 @@ class StrictOrchestrationTopologySubmissionPortBuilder(Protocol):
 
     def __call__(
         self,
-        nexus_loop: NexusLoop,
+        orchestration: EnvironmentOrchestrationMaterialization,
         *,
         provider_invocation_store: ProviderInvocationStore,
         tenant_id: str,
@@ -50,7 +55,7 @@ class HarnessHostOrchestrationTopologyWiring:
 
 
 def build_harness_host_orchestration_topology_wiring(
-    nexus_loop: NexusLoop,
+    orchestration: EnvironmentOrchestrationMaterialization,
     *,
     provider_invocation_store: ProviderInvocationStore | None,
     tenant_id: str,
@@ -79,7 +84,7 @@ def build_harness_host_orchestration_topology_wiring(
         build_harness_host_production_orchestration_topology_submission_port
     )
     submission_port = builder(
-        nexus_loop,
+        orchestration,
         provider_invocation_store=provider_invocation_store,
         tenant_id=resolved_tenant,
         clock=resolved_clock,

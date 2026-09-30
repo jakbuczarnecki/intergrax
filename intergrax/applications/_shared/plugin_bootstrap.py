@@ -12,7 +12,9 @@ from typing import List
 from fastapi import FastAPI
 
 from intergrax.applications._shared.fastapi_lifespan import LifespanFn, apply_lifespans
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationPluginBootstrapTarget,
+)
 from intergrax.runtime.plugins.bootstrap import PluginBootstrapResult, bootstrap_runtime_plugins
 from intergrax.runtime.plugins.contract import RuntimePlugin
 
@@ -26,14 +28,14 @@ __all__ = [
 def bootstrap_application_plugins(
     plugins: List[RuntimePlugin],
     *,
-    nexus_loop: NexusLoop,
+    orchestration_host: HostOrchestrationPluginBootstrapTarget,
 ) -> PluginBootstrapResult:
-    """Wire runtime plugins against a composed NexusLoop instance."""
+    """Wire runtime plugins against a composed orchestration host."""
     return bootstrap_runtime_plugins(
         plugins,
-        event_bus=nexus_loop.event_bus,
-        hook_registry=nexus_loop.middleware.hooks,
-        policy_engine=nexus_loop.policy_engine,
+        event_bus=orchestration_host.event_bus,
+        hook_registry=orchestration_host.middleware.hooks,
+        policy_engine=orchestration_host.policy_engine,
     )
 
 

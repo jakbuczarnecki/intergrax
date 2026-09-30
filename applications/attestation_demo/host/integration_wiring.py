@@ -15,8 +15,8 @@ from intergrax.integrations._shared.in_memory_document_store import (
 )
 from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+from intergrax.runtime.execution.run_trace_store_factories import create_in_memory_run_trace_store
+from intergrax.contracts.run_trace_store import RunTraceWriter
 
 
 @dataclass(frozen=True)
@@ -37,7 +37,7 @@ def wire_attestation_demo_integrations(
     profile = IntegrationProfile.lab()
     resolved_store = document_store or InMemoryDocumentStore()
     if db_path is None:
-        trace_store: RunTraceWriter = InMemoryRunTraceStore()
+        trace_store: RunTraceWriter = create_in_memory_run_trace_store()
         trace_db_path = None
     else:
         from intergrax.runtime.persistence.sqlite_composition import (

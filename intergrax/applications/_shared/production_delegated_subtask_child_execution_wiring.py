@@ -18,7 +18,7 @@ from intergrax.runtime.execution.execution_work_port import (
     DelegatedSubtaskChildExecutionWorkPort,
     delegated_subtask_child_execution_work_port,
 )
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.contracts.run_budget import RunBudget
 
 
 @dataclass(frozen=True, slots=True)

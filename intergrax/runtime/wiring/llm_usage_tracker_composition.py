@@ -10,7 +10,7 @@ from intergrax.llm_adapters.contracts.llm_usage_aggregation import LLMUsageAggre
 from intergrax.llm_adapters.tracking.llm_usage_track import LLMUsageTracker
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+    from intergrax.runtime.execution.runtime_state import RuntimeState
 
 
 def create_platform_default_llm_usage_tracker(run_id: str) -> LLMUsageAggregator:

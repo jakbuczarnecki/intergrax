@@ -15,7 +15,7 @@ from intergrax.contracts.execution_identity import (
 from intergrax.runtime.execution.identity_authority import default_execution_identity_authority
 from intergrax.fastapi_core.execution.models import ExecutionRequest
 from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
 TASK_PAYLOAD_VERSION = 1

@@ -40,8 +40,7 @@ def host_workspace_id(task: Task) -> str:
     workspace = (task.metadata.get("workspace_id") or "").strip()
     if workspace:
         return workspace
-    tenant = task.tenant_id.strip()
-    return tenant or "default"
+    return task.tenant_id.strip()
 
 
 def host_principal_id(task: Task) -> str:

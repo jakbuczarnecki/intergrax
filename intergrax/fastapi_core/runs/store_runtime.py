@@ -10,7 +10,7 @@ from datetime import datetime
 from intergrax.fastapi_core.runs.models import RunResponse, RunStatus
 from intergrax.fastapi_core.runs.store_base import RunStore
 from intergrax.logging import IntergraxLogging
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.execution.runtime_state import RuntimeState
 
 
 class RuntimeRunStore(RunStore):

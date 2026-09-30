@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from typing import Optional, Sequence
 
-from intergrax.runtime.nexus.agents.acp_stub_reflex import perceive_run_input, reason_passthrough
+from intergrax.agents.authoring.acp_stub_reflex import perceive_run_input, reason_passthrough
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
 from intergrax.agents.authoring.patterns.types import AgentEvaluation, CognitiveEvaluation
 from intergrax.contracts.agent_contract_meta import AgentContract, AgentRiskLevel
@@ -27,17 +27,18 @@ from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step import AgentStep, StepOutput
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
+from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters._shared.adapter_response_builders import build_adapter_response
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
-from intergrax.runtime.nexus.responses.response_schema import RuntimeAnswer, RuntimeRequest
-from intergrax.runtime.nexus.session.in_memory_session_storage import InMemorySessionStorage
-from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.execution.agent_runtime_io import RuntimeAnswer, RuntimeRequest
+from intergrax.runtime.execution.agent_in_memory_session_factory import (
+    build_in_memory_session_manager,
+)
 from intergrax.contracts.agent_step_context import AgentStepContext
 
 
@@ -115,7 +116,7 @@ class OrganizationWorkerAgent(ReflexAgent):
         )
         return RuntimeContext.build(
             config=config,
-            session_manager=SessionManager(storage=InMemorySessionStorage()),
+            session_manager=build_in_memory_session_manager(),
         )
 
     async def perceive(self, step_ctx: AgentStepContext):

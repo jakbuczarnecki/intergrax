@@ -8,7 +8,7 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     PromptProfile,
 )
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 def apply_prompt_profile_to_runtime_config(

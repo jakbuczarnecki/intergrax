@@ -24,6 +24,9 @@ from testing_support.admitted_root_governance_identity import (
 )
 from testing_support.builder import canonical_governed_execution_scope
 from testing_support.nexus_hitl_test_agent import NexusBasicHitlTestAgent
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 pytestmark = pytest.mark.unit
@@ -138,7 +141,7 @@ async def test_debug_api_human_response_resume(tmp_path):
         runtime_event_store=event_store,
     )
     runner = UnifiedTaskRunner(
-        loop,
+        build_harness_root_task_execution_port(loop),
         admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
     )
     paused = await runner.run_task(

@@ -20,7 +20,7 @@ from intergrax.fastapi_core.runs.store_memory import InMemoryRunStore
 from intergrax.applications._shared.harness_host_runtime import build_harness_host_runtime
 from intergrax.applications._shared.registry_projection import MaterializedRegistryProjection
 from intergrax.runtime.task.host_task_execution_run_adapter import HostTaskExecutionRunAdapter
-from intergrax.runtime.nexus.orchestration_capabilities import orchestration_capabilities_from_triggers
+from intergrax.contracts.orchestration_capability_tokens import orchestration_capabilities_from_triggers
 
 from intergrax.applications._shared.workspace_cleanup_wiring import (
     apply_factory_lifespans,

@@ -17,7 +17,7 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     CostProfile,
 )
-from intergrax.runtime.nexus.budget.budget_models import BudgetPolicy, RunBudget
+from intergrax.contracts.run_budget import BudgetPolicy, RunBudget
 
 
 @dataclass(frozen=True, slots=True)

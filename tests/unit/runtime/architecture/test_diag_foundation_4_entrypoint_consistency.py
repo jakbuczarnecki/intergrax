@@ -70,6 +70,9 @@ from intergrax.runtime.observability.memory_causal_evidence_persistence import (
 )
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.tools.execution_models import ToolExecutionResult
 from tests.integration.runtime.test_terminal_diagnostic_production_e2e import (
@@ -319,7 +322,7 @@ async def test_df4_standard_task_uses_nexus_terminal_diagnostic_bridge(
         bridge_module, "invoke_terminal_execution_diagnostics", _capture_bridge
     )
     runner = UnifiedTaskRunner(
-        loop,
+        build_harness_root_task_execution_port(loop),
         admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
     )
     run_id = mint_run_id()
@@ -429,7 +432,7 @@ def test_df4_background_task_uses_shared_terminal_diagnostic_path(
         bridge_module, "invoke_terminal_execution_diagnostics", _capture_bridge
     )
     runner = UnifiedTaskRunner(
-        loop,
+        build_harness_root_task_execution_port(loop),
         admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
     )
     registry = TaskExecutionRegistry()

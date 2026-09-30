@@ -11,8 +11,8 @@ from typing import Any, Dict, List, Optional
 from intergrax.runtime.governance.contracts.metrics_record_dto import RunMetricsRecord
 from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
 from intergrax.contracts.persisted_run_trace import PersistedRun, PersistedTraceEvent
-from intergrax.runtime.nexus.tracing.persistence_models import SerializedTraceEvent
-from intergrax.runtime.nexus.tracing.trace_models import TraceComponent, TraceEvent
+from intergrax.runtime.execution.trace_persistence_models_bridge import SerializedTraceEvent
+from intergrax.contracts.tracing import TraceComponent, TraceEvent
 from intergrax.runtime.observability.modality_metrics import (
     ModalityMetricsPayload,
     aggregate_modality_metrics_from_trace_events,

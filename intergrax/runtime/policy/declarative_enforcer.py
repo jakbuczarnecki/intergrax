@@ -18,7 +18,7 @@ from intergrax.runtime.policy.rules.evaluation import (
 from intergrax.runtime.policy.rules.schema import DeclarativePolicyRule, PolicyRuleAction
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+    from intergrax.runtime.execution.runtime_state import RuntimeState
 
 _ACTION_PRECEDENCE = {
     PolicyRuleAction.DENY: 3,

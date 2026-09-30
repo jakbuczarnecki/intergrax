@@ -9,7 +9,7 @@ from intergrax.applications._shared.application_composition_context import (
     ApplicationCompositionContext,
 )
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.skills.registry.profile import SkillProfile
 from intergrax.tools.registry.profile import ToolProfile
 
@@ -37,7 +37,7 @@ def apply_tool_engine_settings_from_environment(
     env: ApplicationEnvironmentProfile,
 ) -> RuntimeConfig:
     """Bridge reasoning/tool engine settings before ``RuntimeContext.build`` (TOOL-ENG-0)."""
-    from intergrax.runtime.nexus.config_types import ToolInvocationMode, ToolSelectionMode
+    from intergrax.runtime.execution.catalog_runtime_config_bridge import ToolInvocationMode, ToolSelectionMode
 
     config.tool_planner_prompt_id = env.reasoning_profile.tool_planner_prompt_id
     config.engine_planner_prompt_id = resolve_engine_planner_prompt_config(env).prompt_id

@@ -12,7 +12,7 @@ import pytest
 from intergrax.applications._shared.host_queue_execution_wiring import (
     apply_queue_worker_environment_profile,
 )
-from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
+from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ReliabilityProfile,
@@ -52,7 +52,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _COMPOSITION_ROOTS = (
-    _REPO_ROOT / "intergrax/applications/_shared/nexus_factory.py",
+    _REPO_ROOT / "intergrax/applications/_shared/host_orchestration_backend_spec_builder.py",
 )
 _FORBIDDEN_ATTEMPT_RESOLUTION_NAMES = frozenset(
     {

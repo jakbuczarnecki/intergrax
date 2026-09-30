@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.speech_integration_bridge import (
+from intergrax.integrations.registry.speech_bridge import (
     IntegrationSpeechAdapter,
     infer_speech_provider_slug,
 )

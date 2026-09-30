@@ -77,7 +77,7 @@ BYPASS_IMPORT_ALLOWLIST: frozenset[str] = frozenset(
         "intergrax/applications/_shared/harness_host_runtime.py",
         "intergrax/applications/_shared/acp_session_host_wiring.py",
         "intergrax/applications/_shared/declarative_tool_wiring.py",
-        "intergrax/applications/_shared/nexus_factory.py",
+        "intergrax/applications/_shared/host_orchestration_backend_spec_builder.py",
         "intergrax/runtime/kernel/step_kernel.py",
         "intergrax/runtime/nexus/execution/graph_executor.py",
         "intergrax/agents/persistence/tool_invoker_wiring.py",

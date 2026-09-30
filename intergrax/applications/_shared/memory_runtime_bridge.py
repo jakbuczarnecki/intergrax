@@ -13,7 +13,7 @@ from intergrax.applications.contracts.environment_profile import (
     MemoryProfile,
 )
 from intergrax.memory.memory_vector_errors import MemoryVectorBackendUnavailableError
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 __all__ = [
     "MemoryVectorBackendUnavailableError",

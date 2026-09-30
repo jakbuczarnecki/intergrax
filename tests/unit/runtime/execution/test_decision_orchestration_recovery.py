@@ -119,7 +119,13 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from testing_support.admitted_root_governance_identity import (
+    lab_admitted_root_governance_identity_for_task,
+)
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -676,6 +682,7 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
         tenant_id=tenant_id,
         resume_token="rt_ds_nexus_02",
         task_state=TaskState.WAITING_FOR_HUMAN,
+        task_snapshot=task.model_dump(mode="json"),
         runtime=build_runtime_checkpoint(
             task,
             run_id=run_id,
@@ -709,8 +716,14 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
         classifier=_DeterministicClassifier(),
         retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
     )
-    runner = UnifiedTaskRunner(loop)
-    await runner.run_task(task_resume, resume_checkpoint=loaded)
+    # UE-11E production-path resume: execute_root_task prepares checkpoint + resume plan;
+    # graph continuation runs at the orchestration execution boundary (not intake/planning).
+    runner = UnifiedTaskRunner(
+        build_harness_root_task_execution_port(loop),
+        admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
+    )
+    resume_result = await runner.run_task(task_resume, resume_checkpoint=loaded)
+    assert resume_result.state is TaskState.COMPLETED
 
     counts_final = engine.snapshot_counts()
     assert counts_final.agent_a == 1
@@ -792,6 +805,37 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
     assert peek_active_execution_budget() is None
 
 
+def test_decision_orchestration_resume_rejects_cross_tenant_checkpoint() -> None:
+    from intergrax.runtime.long_running.checkpoint_resume_validation import (
+        CheckpointResumeEligibility,
+        evaluate_checkpoint_resume_eligibility,
+    )
+    from intergrax.runtime.long_running.execution_tree_checkpoint import (
+        minimal_runtime_checkpoint,
+    )
+
+    task_id = mint_task_id()
+    tenant_a = "tenant-a"
+    checkpoint = TaskCheckpoint(
+        task_id=task_id,
+        tenant_id=tenant_a,
+        resume_token="rt_ds_nexus_02_cross_tenant",
+        task_state=TaskState.WAITING_FOR_HUMAN,
+        runtime=minimal_runtime_checkpoint(
+            task_id=task_id,
+            run_id=mint_run_id(),
+            attempt_id=mint_attempt_id(),
+            root_execution_id=mint_execution_id(),
+        ),
+    )
+    result = evaluate_checkpoint_resume_eligibility(
+        checkpoint,
+        target_task_id=task_id,
+        target_tenant_id="tenant-b",
+    )
+    assert result.eligibility is CheckpointResumeEligibility.REJECT_TENANT
+
+
 @pytest.mark.asyncio
 async def test_malformed_physical_checkpoint_fails_without_mutating_decision_checkpoint() -> None:
     task_id = mint_task_id()
@@ -870,6 +914,7 @@ async def test_malformed_physical_checkpoint_fails_without_mutating_decision_che
         tenant_id=tenant_id,
         resume_token="rt_ds_nexus_02_bad",
         task_state=TaskState.WAITING_FOR_HUMAN,
+        task_snapshot=task.model_dump(mode="json"),
         runtime=build_runtime_checkpoint(
             task,
             run_id=run_id,
@@ -892,9 +937,13 @@ async def test_malformed_physical_checkpoint_fails_without_mutating_decision_che
         context=TaskContext(capability=_CAPABILITY),
     )
     loop = NexusLoop(registry)
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
 
-    with pytest.raises(ValueError, match="attempt_id mismatch"):
+    from intergrax.runtime.long_running.checkpoint_resume_validation import (
+        CheckpointResumeValidationError,
+    )
+
+    with pytest.raises(CheckpointResumeValidationError):
         await runner.run_task(task_resume, resume_checkpoint=corrupt_checkpoint)
 
     reloaded = load_decision_checkpoint(decision_store, key=capture.decision_key)

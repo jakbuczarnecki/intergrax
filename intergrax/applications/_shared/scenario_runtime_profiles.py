@@ -13,7 +13,9 @@ from typing import Any
 
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.manifest import ApplicationManifest
-from intergrax.integrations._shared.in_memory_document_store import InMemoryDocumentStore
+from intergrax.integrations.registry.reference_document_store import (
+    create_reference_in_memory_document_store,
+)
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 
 
@@ -90,7 +92,7 @@ def build_scenario_lab_runtime(
         resolved_profile_id = f"{scenario_slug}.lab"
     environment = ApplicationEnvironmentProfile.lab_defaults(profile_id=resolved_profile_id)
     resolved_document_store = (
-        document_store if document_store is not None else InMemoryDocumentStore()
+        document_store if document_store is not None else create_reference_in_memory_document_store()
     )
     resolved_registry = registry if registry is not None else AgentRegistry()
     return build_scenario_runtime_from_environment(

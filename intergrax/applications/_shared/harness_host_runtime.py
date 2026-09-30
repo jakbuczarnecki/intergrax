@@ -74,8 +74,17 @@ from intergrax.applications._shared.guardrail_wiring import (
     ApplicationGuardrailWiring,
     wire_application_guardrail,
 )
-from intergrax.applications._shared.nexus_factory import (
-    build_nexus_loop_from_environment,
+from intergrax.applications._shared.host_orchestration_backend_spec_builder import (
+    build_host_orchestration_loop_init_spec_from_environment,
+)
+from intergrax.runtime.execution.environment_orchestration_materialization import (
+    materialize_host_orchestration_backend,
+)
+from intergrax.runtime.execution.harness_host_internal_composition import (
+    build_harness_host_internal_composition_from_materialization,
+)
+from intergrax.runtime.execution.harness_host_orchestration_wiring import (
+    orchestration_application_wiring_target_from_materialization,
 )
 from intergrax.applications._shared.observability_assembly_resolver import (
     assert_observability_assembly_valid,
@@ -142,7 +151,6 @@ from intergrax.applications.contracts.manifest import ApplicationManifest
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.applications._shared.harness_host_composition import (
     HarnessHostInternalComposition,
-    build_harness_host_internal_composition,
 )
 from intergrax.applications._shared.harness_host_orchestration_topology_wiring import (
     HarnessHostOrchestrationTopologyWiring,
@@ -196,7 +204,7 @@ from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
-from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
+from intergrax.contracts.host_observability_stores import HostObservabilityStores
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
@@ -225,7 +233,7 @@ class HarnessHostRuntime:
     tenant_id: str
     env_wiring: ApplicationEnvironmentWiring
     registry: AgentRegistryRead
-    observability: NexusObservabilityStores
+    observability: HostObservabilityStores
     reliability: ApplicationReliabilityWiring
     security: ApplicationSecurityWiring
     guardrail: ApplicationGuardrailWiring
@@ -399,11 +407,11 @@ def build_harness_host_runtime(
         integration_profile=effective_environment.integration_profile,
     )
     if use_in_memory_trace:
-        from intergrax.runtime.nexus.observability_wiring import (
-            wire_nexus_observability,
+        from intergrax.runtime.execution.host_observability_composition import (
+            wire_host_observability,
         )
 
-        observability = wire_nexus_observability(
+        observability = wire_host_observability(
             trace_db_path=trace_db_path,
             runtime_events_db_path=runtime_events_db_path,
             integration_profile=effective_environment.integration_profile,
@@ -491,7 +499,7 @@ def build_harness_host_runtime(
     resolved_compensation_queue_store = resolve_host_compensation_queue_store(
         checkpoints_db_path=checkpoints_db_path,
     )
-    nexus_loop = build_nexus_loop_from_environment(
+    orchestration_spec = build_host_orchestration_loop_init_spec_from_environment(
         resolved_registry,
         env=effective_environment,
         governance_evidence_recorder=orchestration_governance_evidence_recorder,
@@ -517,11 +525,18 @@ def build_harness_host_runtime(
         document_store=document_store,
         execution_continuation_state_store=execution_continuation_state_store,
     )
+    orchestration = materialize_host_orchestration_backend(
+        resolved_registry,
+        orchestration_spec,
+    )
+    orchestration_host = orchestration_application_wiring_target_from_materialization(
+        orchestration,
+    )
     assert_security_assembly_valid(
-        security_wiring, effective_environment, nexus=nexus_loop
+        security_wiring, effective_environment, orchestration_host=orchestration_host
     )
     assert_guardrail_assembly_valid(
-        guardrail_wiring, effective_environment, nexus=nexus_loop
+        guardrail_wiring, effective_environment, orchestration_host=orchestration_host
     )
     from intergrax.applications._shared.capability_alias_intake_wiring import (
         apply_capability_alias_wiring,
@@ -531,39 +546,39 @@ def build_harness_host_runtime(
         cache_deploy_environment_snapshot,
     )
 
-    apply_capability_alias_wiring(nexus_loop, environment=effective_environment)
+    apply_capability_alias_wiring(orchestration_host, environment=effective_environment)
     cache_deploy_environment_snapshot(
         resolved_manifest,
         effective_environment,
         registry_snapshot=env_wiring.registry_snapshot,
     )
     apply_environment_snapshot_wiring(
-        nexus_loop,
+        orchestration_host,
         manifest=resolved_manifest,
         environment=effective_environment,
         registry_snapshot=env_wiring.registry_snapshot,
     )
     apply_application_environment_state_wiring(
-        nexus_loop,
+        orchestration_host,
         manifest=resolved_manifest,
         environment=effective_environment,
         run_budget=cost_wiring.run_budget,
     )
-    apply_application_host_wiring(nexus_loop, application_host)
-    apply_hook_runtime_guard_wiring(nexus_loop, effective_environment)
+    apply_application_host_wiring(orchestration_host, application_host)
+    apply_hook_runtime_guard_wiring(orchestration_host, effective_environment)
     from intergrax.applications._shared.observability_wiring import (
         wire_observability_event_subscriptions,
     )
 
     wire_observability_event_subscriptions(
-        nexus_loop.event_bus,
+        orchestration_host.event_bus,
         effective_environment.observability_profile,
     )
     from intergrax.applications._shared.reliability_wiring import (
         apply_reliability_governance_wiring,
     )
 
-    apply_reliability_governance_wiring(nexus_loop, effective_environment)
+    apply_reliability_governance_wiring(orchestration_host, effective_environment)
     from intergrax.applications._shared.diagnostic_runtime_wiring import (
         wire_terminal_execution_diagnostics,
     )
@@ -572,7 +587,7 @@ def build_harness_host_runtime(
         env=effective_environment,
         env_wiring=env_wiring,
         observability=observability,
-        nexus_loop=nexus_loop,
+        orchestration_host=orchestration_host,
         materialized_dependencies=host_diagnostic_dependencies,
     )
     control_plane_governance = build_harness_control_plane_governance(
@@ -598,7 +613,7 @@ def build_harness_host_runtime(
         governance_evidence_recorder=orchestration_governance_evidence_recorder,
     )
     execution = build_environment_host_task_execution(
-        nexus_loop,
+        orchestration,
         effective_environment,
         revision_admission=resolve_harness_effective_profile_revision_admission(
             EffectiveProfileExecutionPinningDependencies(
@@ -615,7 +630,7 @@ def build_harness_host_runtime(
     orchestration_topology_wiring: HarnessHostOrchestrationTopologyWiring | None = None
     if require_strict_orchestration_topology_reliability:
         orchestration_topology_wiring = build_harness_host_orchestration_topology_wiring(
-            nexus_loop,
+            orchestration,
             provider_invocation_store=provider_invocation_store,
             tenant_id=resolved_tenant_id,
             meaningful_side_effect_authorization=resolved_meaningful_side_effect_authorization,
@@ -637,7 +652,9 @@ def build_harness_host_runtime(
         diagnostic_wiring=diagnostic_wiring,
         execution=execution,
         orchestration_topology=orchestration_topology_wiring,
-        _internal_composition=build_harness_host_internal_composition(nexus_loop),
+        _internal_composition=build_harness_host_internal_composition_from_materialization(
+            orchestration,
+        ),
         application_host=application_host,
         agent_checkpoint_store=resolved_agent_checkpoint_store,
         compensation_queue_store=resolved_compensation_queue_store,

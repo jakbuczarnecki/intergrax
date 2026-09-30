@@ -41,6 +41,9 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
 )
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 from intergrax.runtime.task.task_contract import HumanApprovalResolution
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 
@@ -361,7 +364,7 @@ async def test_unified_task_runner_resume_preserves_checkpoint_identity(monkeypa
             authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, run_id=run_id, state=TaskState.COMPLETED)
 
     monkeypatch.setattr(loop, "handle_task", _fake_handle_task)
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="resume", task_id=task_id)
     checkpoint = TaskCheckpoint(
         task_id=task.task_id,
@@ -389,7 +392,7 @@ async def test_unified_task_runner_resume_rejects_explicit_run_id_mismatch(monke
     checkpoint_attempt_id = mint_attempt_id()
     task_id = mint_task_id()
     root = mint_execution_id()
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="resume", task_id=task_id)
     checkpoint = TaskCheckpoint(
         task_id=task.task_id,

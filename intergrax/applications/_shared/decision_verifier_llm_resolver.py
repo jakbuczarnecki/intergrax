@@ -7,7 +7,7 @@ from __future__ import annotations
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.registry.profile import LLMProfile, create_adapter
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 def resolve_decision_verifier_llm_adapter(

@@ -6,6 +6,9 @@ from intergrax.runtime.long_running.notification import LoggingNotificationAdapt
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.contracts.execution_identity import mint_run_id
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.runtime.nexus.task_classifier import TaskClassification
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -45,7 +48,7 @@ async def test_long_running_task_saves_checkpoint_on_pause(tmp_path):
         notification_adapter=LoggingNotificationAdapter(),
     )
     runner = UnifiedTaskRunner(
-        loop,
+        build_harness_root_task_execution_port(loop),
         admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
     )
     run_id = mint_run_id()
@@ -91,7 +94,7 @@ async def test_long_running_task_resumes_with_token(tmp_path):
         notification_adapter=LoggingNotificationAdapter(),
     )
     runner = UnifiedTaskRunner(
-        loop,
+        build_harness_root_task_execution_port(loop),
         admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
     )
     run_id = mint_run_id()

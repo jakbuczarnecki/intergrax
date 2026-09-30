@@ -321,10 +321,16 @@ async def test_normal_non_background_run_still_gets_fresh_budget(
         "_handle_task_impl",
         with_runtime_event_metric_scope(_observe),
     )
+    from intergrax.runtime.execution.harness_task_execution_port import (
+        build_harness_root_task_execution_port,
+    )
+
     runner = UnifiedTaskRunner(
-        loop,
-        execution_budget_ledger_factory=factory,
-        run_budget=run_budget,
+        build_harness_root_task_execution_port(
+            loop,
+            execution_budget_ledger_factory=factory,
+            run_budget=run_budget,
+        ),
     )
     await runner.run_task(
         Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="fresh"),
@@ -362,10 +368,16 @@ async def test_local_retry_does_not_create_new_ledger(
         "_handle_task_impl",
         with_runtime_event_metric_scope(_noop),
     )
+    from intergrax.runtime.execution.harness_task_execution_port import (
+        build_harness_root_task_execution_port,
+    )
+
     runner = UnifiedTaskRunner(
-        loop,
-        execution_budget_ledger_factory=factory,
-        run_budget=run_budget,
+        build_harness_root_task_execution_port(
+            loop,
+            execution_budget_ledger_factory=factory,
+            run_budget=run_budget,
+        ),
     )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="once")
     await runner.run_task(task)

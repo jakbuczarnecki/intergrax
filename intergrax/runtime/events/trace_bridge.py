@@ -39,27 +39,22 @@ from intergrax.runtime.events.payloads import (
     TraceBridgePayloadV1,
     ValidationPayloadV1,
 )
-from intergrax.runtime.nexus.tracing.graph_node_diag import (
-    GRAPH_NODE_STEP_COMPLETE,
-    GRAPH_NODE_STEP_START,
-    GraphNodeDiagV1,
-)
-from intergrax.runtime.nexus.tracing.steps.step_failed import RuntimeStepFailedDiagV1
-from intergrax.runtime.nexus.tracing.steps.step_finished import RuntimeStepFinishedDiagV1
-from intergrax.runtime.nexus.tracing.steps.step_started import RuntimeStepStartedDiagV1
+from intergrax.llm_adapters.registry.catalog_miss_diag import ModelCatalogMissDiagV1
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.phase_coverage import phase_for_event
-from intergrax.runtime.nexus.tracing.adapters.core_llm_call_recorded import CoreLLMCallRecordedDiagV1
-from intergrax.runtime.nexus.tracing.adapters.llm_routing_attempt import (
-    LLMRoutingAttemptDiagV1,
-    LLMRoutingRuleDiagV1,
-    attach_failover_routing_trace_observer,
-    emit_llm_routing_rule_diag,
-)
-from intergrax.runtime.nexus.tracing.adapters.model_catalog_miss import (
-    ModelCatalogMissTraceDiagV1,
-)
-from intergrax.runtime.nexus.tracing.trace_models import TraceEvent, TraceLevel
+
+# Neutral diagnostic schema identifiers (Nexus/runtime producers emit matching payloads).
+GRAPH_NODE_STEP_START = "graph.node_start"
+GRAPH_NODE_STEP_COMPLETE = "graph.node_complete"
+_DIAG_GRAPH_NODE_V1 = "intergrax.diag.graph.node"
+_DIAG_RUNTIME_STEP_STARTED = "intergrax.diag.runtime.step_started"
+_DIAG_RUNTIME_STEP_FINISHED = "intergrax.diag.runtime.step_finished"
+_DIAG_RUNTIME_STEP_FAILED = "intergrax.diag.runtime.step_failed"
+_CORE_LLM_CALL_SCHEMA = "intergrax.diag.engine.core_llm.call_recorded"
+_CORE_LLM_RETURNED_SCHEMA = "intergrax.diag.engine.core_llm.adapter_returned"
+_CORE_LLM_ROUTING_ATTEMPT_SCHEMA = "intergrax.diag.engine.core_llm.routing_attempt"
+_CORE_LLM_ROUTING_RULE_SCHEMA = "intergrax.diag.engine.core_llm.routing_rule"
+from intergrax.contracts.tracing import TraceEvent, TraceLevel
 from intergrax.runtime.task.task import Task, TaskState
 
 TraceBridgeSubject = Union[Task, "TraceBridgeSubjectView"]
@@ -97,11 +92,7 @@ def _trace_tag_agent_id(trace: TraceEvent, subject: TraceBridgeSubject) -> str |
     return None
 
 
-_CORE_LLM_CALL_SCHEMA = CoreLLMCallRecordedDiagV1.schema_id()
-_CORE_LLM_RETURNED_SCHEMA = "intergrax.diag.engine.core_llm.adapter_returned"
-_CORE_LLM_ROUTING_ATTEMPT_SCHEMA = LLMRoutingAttemptDiagV1.schema_id()
-_CORE_LLM_ROUTING_RULE_SCHEMA = LLMRoutingRuleDiagV1.schema_id()
-_CORE_LLM_CATALOG_MISS_SCHEMA = ModelCatalogMissTraceDiagV1.schema_id()
+_CORE_LLM_CATALOG_MISS_SCHEMA = ModelCatalogMissDiagV1.schema_id
 
 _TOOL_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
     "tool_invocation_start": RuntimeEventType.TOOL_REQUESTED,
@@ -121,9 +112,9 @@ _CRITIC_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
 }
 
 _RUNTIME_STEP_SCHEMA_TO_EVENT: dict[str, RuntimeEventType] = {
-    RuntimeStepStartedDiagV1.schema_id(): RuntimeEventType.STEP_STARTED,
-    RuntimeStepFinishedDiagV1.schema_id(): RuntimeEventType.STEP_COMPLETED,
-    RuntimeStepFailedDiagV1.schema_id(): RuntimeEventType.STEP_FAILED,
+    _DIAG_RUNTIME_STEP_STARTED: RuntimeEventType.STEP_STARTED,
+    _DIAG_RUNTIME_STEP_FINISHED: RuntimeEventType.STEP_COMPLETED,
+    _DIAG_RUNTIME_STEP_FAILED: RuntimeEventType.STEP_FAILED,
 }
 
 _GRAPH_STEP_TO_EVENT: dict[str, RuntimeEventType] = {
@@ -271,7 +262,7 @@ def _resolve_event_type_from_trace(
         event_type = _RUNTIME_STEP_SCHEMA_TO_EVENT[schema_id]
     elif trace.step in _GRAPH_STEP_TO_EVENT:
         event_type = _GRAPH_STEP_TO_EVENT[trace.step]
-    elif schema_id == GraphNodeDiagV1.schema_id() and trace.step in _GRAPH_STEP_TO_EVENT:
+    elif schema_id == _DIAG_GRAPH_NODE_V1 and trace.step in _GRAPH_STEP_TO_EVENT:
         event_type = _GRAPH_STEP_TO_EVENT[trace.step]
     elif schema_id in {
         _CORE_LLM_CALL_SCHEMA,
@@ -334,11 +325,11 @@ def _step_event_uses_graph_node_payload(
         return False
     if trace.step in _GRAPH_STEP_TO_EVENT:
         return True
-    if diagnostic_schema_id == GraphNodeDiagV1.schema_id():
+    if diagnostic_schema_id == _DIAG_GRAPH_NODE_V1:
         return True
     step_diag_graph_node: dict[RuntimeEventType, str] = {
-        RuntimeEventType.STEP_STARTED: RuntimeStepStartedDiagV1.schema_id(),
-        RuntimeEventType.STEP_COMPLETED: RuntimeStepFinishedDiagV1.schema_id(),
+        RuntimeEventType.STEP_STARTED: _DIAG_RUNTIME_STEP_STARTED,
+        RuntimeEventType.STEP_COMPLETED: _DIAG_RUNTIME_STEP_FINISHED,
     }
     if diagnostic_schema_id == step_diag_graph_node.get(event_type):
         return True

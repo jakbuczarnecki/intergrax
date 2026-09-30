@@ -9,7 +9,7 @@ import time
 from collections.abc import Callable
 from typing import Any, Dict, List
 
-from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph, ExecutionNodeStatus
+from intergrax.runtime.execution.checkpoint_execution_graph_bridge import ExecutionGraph, ExecutionNodeStatus
 from intergrax.runtime.task.task import Task
 
 CANCELLATION_REQUESTED_KEY = "cancellation_requested"

@@ -12,7 +12,7 @@ from dataclasses import replace
 from intergrax.rag.profiles.rag_profile import RagProfile
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.config import RuntimeConfig
+    from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 def sync_rag_profile_from_runtime_config(

@@ -21,7 +21,7 @@ from intergrax.runtime.events.execution_position import (
 )
 from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.runtime.events.runtime_event import RuntimeEvent
-from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun
+from intergrax.contracts.persisted_run_trace import PersistedRun
 
 JOURNAL_SCHEMA_VERSION = "unified_run_journal.v1"
 JOURNAL_READ_DEFAULT_MAX_EVENTS = 2_000_000

@@ -10,8 +10,8 @@ from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.events.runtime_event_identity import runtime_event_identity_kwargs
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
+from intergrax.runtime.execution.runtime_state import RuntimeState
 
 
 def record_plan_failed(

@@ -89,6 +89,7 @@ from intergrax.runtime.task.task_contract import TaskExecutionOptions
 from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
+from intergrax.runtime.execution.agent_runtime_io import canonical_runtime_request_tenant_id
 from intergrax.runtime.nexus.responses.response_schema import (
     RuntimeAnswer,
     RouteInfo,
@@ -151,17 +152,8 @@ class UAEPBlockedError(RuntimeError):
 def _tenant_id_from_ctx(ctx: RuntimeExecutionContext) -> str:
     request = ctx.request
     if isinstance(request, RuntimeRequest):
-        tenant_id = request.tenant_id or request.metadata.get("tenant_id")
-        if tenant_id:
-            return str(tenant_id)
-    elif request is not None:
-        tenant_id = request.metadata.get("tenant_id")
-        if tenant_id:
-            return str(tenant_id)
-    raw = ctx.metadata.get("tenant_id")
-    if raw:
-        return str(raw)
-    return "default"
+        return canonical_runtime_request_tenant_id(request)
+    raise ValueError("tenant_id is required for UAEP execution context")
 
 
 class _BusEventEmitter:
@@ -305,9 +297,7 @@ class UAEPExecutor:
             agent_id=contract.id,
             run_id=run_id,
             task_id=task_id,
-            tenant_id=str(
-                request.tenant_id or request.metadata.get("tenant_id") or "default"
-            ),
+            tenant_id=canonical_runtime_request_tenant_id(request),
             max_steps=contract.max_steps,
             policy_engine=self._interrupt_handler.policy_engine,
             request=request,
@@ -701,7 +691,7 @@ class UAEPExecutor:
                 from intergrax.contracts.uaep_decision_record import DecisionRecord
 
                 tenant_id = str(
-                    request.tenant_id or request.metadata.get("tenant_id") or "default"
+                    canonical_runtime_request_tenant_id(request)
                 )
                 decision_record = DecisionRecord(
                     trace_id=run_id,
@@ -917,7 +907,7 @@ class UAEPExecutor:
             structured_data=dict(step_result.output.data),
         )
         tenant_id = str(
-            request.tenant_id or request.metadata.get("tenant_id") or "default"
+            canonical_runtime_request_tenant_id(request)
         )
         active_run_id, active_attempt_id = require_active_execution_identity()
         decision_context = agent_execution_decision_context(

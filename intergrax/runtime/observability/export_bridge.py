@@ -17,8 +17,8 @@ from typing import Optional
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.hook_registry import HookRegistry
-from intergrax.runtime.nexus.tracing.parser_trace_flush import export_parser_traces_from_events
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
+from intergrax.runtime.execution.trace_persistence_models_bridge import export_parser_traces_from_events
+from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.runtime.observability.journal_export import (
     build_journal_export_snapshot,
     render_journal_otlp_json,

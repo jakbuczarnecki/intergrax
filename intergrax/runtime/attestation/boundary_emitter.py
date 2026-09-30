@@ -27,7 +27,7 @@ from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecution
 from intergrax.utils.time_provider import SystemTimeProvider
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+    from intergrax.runtime.execution.runtime_state import RuntimeState
 
 _LOG = logging.getLogger(__name__)
 

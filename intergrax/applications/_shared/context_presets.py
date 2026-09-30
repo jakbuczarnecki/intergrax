@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from intergrax.applications.contracts.environment_profile import ContextProfile
 from intergrax.contracts.context_assembly import ContextSummaryTier, TaskContextAssemblyOptions
-from intergrax.runtime.nexus.context.context_budget import ContextBudgetPolicy
+from intergrax.contracts.context_budget import ContextBudgetPolicy
 
 
 def production_context_profile() -> ContextProfile:

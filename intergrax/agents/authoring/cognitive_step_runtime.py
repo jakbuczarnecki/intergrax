@@ -43,9 +43,21 @@ def build_step_context_from_uaep(
     raw_state = exec_ctx.metadata.get(ACP_STATE_KEY)
     if isinstance(raw_state, dict):
         state_root = {ACP_STATE_KEY: dict(raw_state)}
-    tenant_id = "default"
+    tenant_id: str
     if exec_ctx.canonical_request_identity is not None:
-        tenant_id = str(exec_ctx.canonical_request_identity.tenant_id or "default")
+        raw = exec_ctx.canonical_request_identity.tenant_id
+        if raw is None or not str(raw).strip():
+            raise ValueError("tenant_id is required for cognitive step context")
+        tenant_id = str(raw).strip()
+    else:
+        from intergrax.runtime.execution.agent_runtime_io import (
+            RuntimeRequest,
+            canonical_runtime_request_tenant_id,
+        )
+
+        if not isinstance(exec_ctx.request, RuntimeRequest):
+            raise ValueError("tenant_id is required for cognitive step context")
+        tenant_id = canonical_runtime_request_tenant_id(exec_ctx.request)
     return AgentStepContext(
         step_index=step.step_index,
         run_id=exec_ctx.run_id,

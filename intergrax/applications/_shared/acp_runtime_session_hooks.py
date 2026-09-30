@@ -12,15 +12,11 @@ from intergrax.runtime.kernel.step_kernel import StepKernelContext
 
 
 def build_nexus_acp_runtime_session_hooks() -> AcpRuntimeSessionHooks:
-    from intergrax.runtime.nexus.agents.acp_routing_trace_bridge import (
-        record_acp_routing_rule_evaluation,
-    )
-    from intergrax.runtime.nexus.agents.acp_uaep_shim import (
+    from intergrax.runtime.execution.application_acp_session_composition import (
         attach_acp_catalog_exec_ctx,
         close_acp_catalog_exec_ctx,
-    )
-    from intergrax.runtime.nexus.agents.nexus_shared_context_access import (
         nexus_shared_context_access_for_run,
+        record_acp_routing_rule_evaluation,
     )
 
     def _apply_kernel_wiring(
@@ -34,7 +30,7 @@ def build_nexus_acp_runtime_session_hooks() -> AcpRuntimeSessionHooks:
             return None
         from intergrax.llm_adapters.routing.context_bridge import build_routing_context_from_runtime
         from intergrax.runtime.attestation.kernel_wiring import apply_boundary_export_to_kernel
-        from intergrax.runtime.nexus.config import RuntimeConfig
+        from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
         from intergrax.runtime.wiring.attestation_runtime_bridge import (
             apply_attestation_profile_to_runtime_config,
         )

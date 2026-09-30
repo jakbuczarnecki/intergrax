@@ -22,7 +22,8 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.integrations.registry.profile import IntegrationProfile
 from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores, wire_nexus_observability
+from intergrax.contracts.host_observability_stores import HostObservabilityStores
+from intergrax.runtime.execution.host_observability_composition import wire_host_observability
 
 
 class EventSubscriptionWiringError(ValueError):
@@ -34,7 +35,7 @@ class ApplicationObservabilityWiring:
     """Resolved observability stores and options for a Tier-3 host."""
 
     options: ObservabilityWiringOptions
-    stores: NexusObservabilityStores
+    stores: HostObservabilityStores
 
 
 @dataclass(frozen=True, slots=True)
@@ -94,7 +95,7 @@ def wire_application_observability(
 ) -> ApplicationObservabilityWiring:
     """Materialize Nexus observability stores from environment profile."""
     options = resolve_observability_wiring_options(env.observability_profile)
-    stores = wire_nexus_observability(
+    stores = wire_host_observability(
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
         use_in_memory_trace=options.use_in_memory_trace,

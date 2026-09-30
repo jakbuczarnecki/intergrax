@@ -12,7 +12,7 @@ from intergrax.runtime.context_lifecycle.contracts import (
     EphemeralArtifactPersistencePolicy,
     OptimizationArtifactType,
 )
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 CONTEXT_ENGINE_PROFILE_METADATA_KEY = "context_engine_profile.v1"
 CONTEXT_OPTIMIZATION_POLICY_METADATA_KEY = "context_optimization_policy.v1"
@@ -214,7 +214,7 @@ def apply_context_profile_to_runtime_config(
 def derive_run_budget_from_context_policy(config: RuntimeConfig) -> RuntimeConfig:
     """Mirror context token budget into Nexus ``RunBudget`` when unset."""
     if config.context_budget_policy is not None and config.run_budget is None:
-        from intergrax.runtime.nexus.budget.budget_models import RunBudget
+        from intergrax.contracts.run_budget import RunBudget
 
         policy = config.context_budget_policy
         config.run_budget = RunBudget(max_total_tokens=policy.max_tokens_estimate)

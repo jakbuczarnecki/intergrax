@@ -79,6 +79,9 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
@@ -669,6 +672,7 @@ async def test_same_attempt_fresh_root_rebases_execution_tree_through_production
         tenant_id="t1",
         resume_token="rt_ue_11e_production",
         task_state=TaskState.WAITING_FOR_HUMAN,
+        task_snapshot=task_a.model_dump(mode="json"),
         runtime=build_runtime_checkpoint(
             task_a,
             run_id=run_id,
@@ -717,7 +721,7 @@ async def test_same_attempt_fresh_root_rebases_execution_tree_through_production
         "_handle_task_impl",
         with_runtime_event_metric_scope(_handle_task_via_graph),
     )
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
     await runner.run_task(task_b, resume_checkpoint=loaded)
 
     assert len(captured_resume_roots) == 1

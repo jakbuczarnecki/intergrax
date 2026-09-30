@@ -5,11 +5,11 @@
 from __future__ import annotations
 
 import time
-from dataclasses import dataclass
 from enum import Enum
 from typing import Callable, Generic, TypeVar
 
 from intergrax.integrations.contracts.base import IntegrationDependencyError
+from intergrax.integrations.contracts.circuit_breaker import IntegrationCircuitBreakerConfig
 
 T = TypeVar("T")
 
@@ -17,18 +17,6 @@ T = TypeVar("T")
 class CircuitState(str, Enum):
     CLOSED = "closed"
     OPEN = "open"
-
-
-@dataclass(frozen=True, slots=True)
-class IntegrationCircuitBreakerConfig:
-    failure_threshold: int = 5
-    recovery_timeout_seconds: float = 30.0
-
-    def __post_init__(self) -> None:
-        if self.failure_threshold < 1:
-            raise ValueError("failure_threshold must be >= 1")
-        if self.recovery_timeout_seconds <= 0:
-            raise ValueError("recovery_timeout_seconds must be > 0")
 
 
 class IntegrationCircuitBreaker:
@@ -87,3 +75,10 @@ class IntegrationCircuitBreaker:
         if self._failure_count >= self._config.failure_threshold:
             self._state = CircuitState.OPEN
             self._opened_at_monotonic = time.monotonic()
+
+
+__all__ = [
+    "CircuitState",
+    "IntegrationCircuitBreaker",
+    "IntegrationCircuitBreakerConfig",
+]

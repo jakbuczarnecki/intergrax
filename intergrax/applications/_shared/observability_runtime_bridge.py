@@ -10,7 +10,7 @@ from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ObservabilityProfile,
 )
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,7 +27,7 @@ class ObservabilityWiringOptions:
 def resolve_observability_wiring_options(
     profile: ObservabilityProfile,
 ) -> ObservabilityWiringOptions:
-    """Translate ``ObservabilityProfile`` into ``wire_nexus_observability`` flags."""
+    """Translate ``ObservabilityProfile`` into ``wire_host_observability`` flags."""
     return ObservabilityWiringOptions(
         use_in_memory_trace=not profile.trace_sqlite_enabled,
         enable_runtime_events=profile.trace_sqlite_enabled,

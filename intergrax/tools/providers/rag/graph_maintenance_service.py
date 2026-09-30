@@ -26,7 +26,9 @@ def _require_orchestrator(ctx: ToolWiringContext) -> WorkflowOrchestratorBackend
 def _build_idempotency_key(params: RagScheduleGraphMaintenanceJobInput) -> str:
     if params.idempotency_key and params.idempotency_key.strip():
         return params.idempotency_key.strip()
-    tenant = (params.tenant_id or "default").strip()
+    tenant = (params.tenant_id or "").strip()
+    if not tenant:
+        raise ValueError("tenant_id is required for graph maintenance idempotency")
     workspace = (params.workspace_id or "default").strip()
     return f"graph-maint:{params.mode}:{tenant}:{workspace}"
 

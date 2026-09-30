@@ -13,7 +13,7 @@ import json
 
 import pytest
 
-from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
+from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     OrchestrationProfile,

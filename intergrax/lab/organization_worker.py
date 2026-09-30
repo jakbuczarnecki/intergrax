@@ -17,13 +17,18 @@ from intergrax.runtime.governance.execution_admission_composition import (
 from intergrax.runtime.execution.certified_internal_harness_governance_identity import (
     admit_certified_internal_harness_root_governance_identity,
 )
-from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
+from intergrax.runtime.execution.nexus_host_execution_from_wiring_target import (
+    build_host_task_execution_from_wiring_target,
+)
 from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.debug.store import open_default_task_checkpoint_persistence
 from intergrax.runtime.interactions.metadata_keys import INTERACTION_CHANNEL_KEY
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
 from intergrax.runtime.long_running.notification import NotificationAdapter
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationApplicationWiringTarget,
+)
+from intergrax.runtime.execution.debug_lab_nexus_loop import build_lab_organization_nexus_loop
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.dev_support.agent_registry_bootstrap import (
     build_organization_worker_registry,
@@ -90,14 +95,14 @@ def create_organization_worker_lab_app(
     checkpoint_store = open_default_task_checkpoint_persistence(
         db_path=checkpoints_db_path
     )
-    nexus_loop = NexusLoop(
+    nexus_loop = build_lab_organization_nexus_loop(
         resolved_registry,
         checkpoint_store=checkpoint_store,
         notification_adapter=notification_adapter,
     )
     interaction_service = DebugInteractionIntakeService(
         task_executor=HostTaskExecutionExecutor(
-            build_host_task_execution(
+            build_host_task_execution_from_wiring_target(
                 nexus_loop,
                 orchestration_triggers=frozenset({ORG_WORKER_CAPABILITY}),
                 root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
@@ -108,7 +113,7 @@ def create_organization_worker_lab_app(
         task_enricher=task_enricher,
     )
     hitl_service = DebugHitlResumeService(
-        host_execution=build_host_task_execution(
+        host_execution=build_host_task_execution_from_wiring_target(
             nexus_loop,
             orchestration_triggers=frozenset({ORG_WORKER_CAPABILITY}),
             root_authority_admission=build_reference_allowing_root_execution_authority_admission(),

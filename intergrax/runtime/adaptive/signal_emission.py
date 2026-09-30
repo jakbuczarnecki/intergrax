@@ -10,8 +10,8 @@ from intergrax.runtime.adaptive.signal_collector import SignalAssemblyInput, Sig
 from intergrax.runtime.adaptive.contracts import HarnessOutcomeSignal
 from intergrax.runtime.architecture.online_evaluation_registry import OnlineEvaluationRegistry
 from intergrax.runtime.metrics.export import RunMetricsExport
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.contracts.run_budget import RunBudget
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 from intergrax.runtime.replay.regression import RegressionSignals
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
 

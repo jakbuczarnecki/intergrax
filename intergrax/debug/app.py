@@ -27,8 +27,11 @@ from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPe
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.interactions.task_executor import HostTaskExecutionExecutor
 from intergrax.runtime.interactions.verification.factory import create_inbound_verifier
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationApplicationWiringTarget,
+)
+from intergrax.runtime.execution.debug_lab_nexus_loop import build_debug_minimal_nexus_loop
+from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 
@@ -46,7 +49,7 @@ def create_debug_app(
     hitl_service: DebugHitlResumeService | None = None,
     interaction_service: DebugInteractionIntakeService | None = None,
     host_execution: HostTaskExecutionPort | None = None,
-    nexus_loop: NexusLoop | None = None,
+    nexus_loop: HostOrchestrationApplicationWiringTarget | None = None,
     delivery_ledger: DeliveryLedger | None = None,
     adaptive_signal_store: SignalStore | None = None,
     adaptive_proposal_store: ProposalStore | None = None,
@@ -69,7 +72,7 @@ def create_debug_app(
     )
     resolved_loop = nexus_loop
     if resolved_loop is None and registry is not None and host_execution is None:
-        resolved_loop = NexusLoop(
+        resolved_loop = build_debug_minimal_nexus_loop(
             registry,
             checkpoint_store=resolved_checkpoint_store,
             trace_store=trace_store,

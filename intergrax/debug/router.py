@@ -83,7 +83,7 @@ from intergrax.experiments.store import resolve_experiments_db_path
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointReader
 from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceReader
+from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 
 

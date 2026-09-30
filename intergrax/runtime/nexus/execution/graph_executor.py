@@ -391,6 +391,13 @@ class GraphExecutor:
                 prior_outputs,
                 run_id=active_run_id,
             )
+            resume_binding = peek_active_execution_resume_plan()
+            if resume_binding is not None:
+                for graph_node in graph.nodes:
+                    if graph_node.node_id in resume_binding.plan.resume_graph_node_ids:
+                        graph_node.status = ExecutionNodeStatus.PENDING
+                        graph_node.execution_result = None
+                        prior_outputs.pop(graph_node.node_id, None)
             self._execution_tree_recorder = ExecutionTreeRecorder.from_snapshot(
                 runtime_ckpt.execution_tree
             )

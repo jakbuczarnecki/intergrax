@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.nexus.agents.catalog_declarative_invoker import (
+from intergrax.runtime.execution.application_declarative_tool_composition import (
     CatalogDeclarativeToolInvoker,
 )
 from intergrax.applications._shared.agent_runtime_governance_wiring import (
@@ -20,7 +20,7 @@ from intergrax.contracts.meaningful_side_effect_authorization import (
 )
 from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
-from intergrax.runtime.nexus.tools.runtime_tool_invoker_composition import (
+from intergrax.runtime.execution.application_declarative_tool_composition import (
     build_production_runtime_tool_invoker,
 )
 from intergrax.runtime.resilience.dependency_attempt_boundary_composition import (

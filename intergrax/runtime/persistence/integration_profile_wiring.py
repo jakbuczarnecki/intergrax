@@ -20,7 +20,7 @@ from intergrax.runtime.events.persistence_contract import RuntimeEventPersistenc
 from intergrax.runtime.events.stores.validating_runtime_event_store import (
     ValidatingRuntimeEventPersistence,
 )
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceStore
+from intergrax.contracts.run_trace_store import RunTraceStore
 from intergrax.runtime.persistence.sqlite_composition import (
     SQLiteRuntimePersistenceBundle,
     create_sqlite_runtime_persistence,
@@ -70,7 +70,7 @@ def open_trace_store_from_profile(
     bundle = sqlite_bundle_for_profile(profile)
     if bundle is not None:
         return bundle.trace_store
-    from intergrax.runtime.nexus.tracing.store import (
+    from intergrax.runtime.execution.trace_store_debug_access import (
         open_run_trace_store,
         resolve_trace_db_path,
     )

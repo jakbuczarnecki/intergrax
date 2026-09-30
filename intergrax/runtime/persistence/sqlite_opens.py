@@ -14,8 +14,8 @@ from intergrax.runtime.events.stores.sqlite_runtime_event_store import (
 )
 from intergrax.runtime.human.store import SQLiteHumanDecisionStore
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
-from intergrax.runtime.nexus.session.sqlite_session_storage import SQLiteSessionStorage
-from intergrax.runtime.nexus.tracing.sqlite_run_trace_store import SQLiteRunTraceStore
+from intergrax.runtime.execution.session_host_composition import SQLiteSessionStorage
+from intergrax.runtime.execution.run_trace_store_factories import create_sqlite_run_trace_store
 from intergrax.runtime.organization.stores.sqlite_organization_profile_store import (
     SQLiteOrganizationProfileStore,
 )

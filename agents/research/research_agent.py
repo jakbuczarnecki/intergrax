@@ -13,7 +13,7 @@ from intergrax.agents.reference_harness import (
     LabHarnessContext,
     default_reference_harness,
 )
-from intergrax.runtime.nexus.agents.reference_harness_runtime import (
+from intergrax.runtime.execution.lab_reference_agent_runtime import (
     build_lab_agent_runtime_context,
 )
 from intergrax.contracts.agent_contract_meta import AgentContract
@@ -21,8 +21,8 @@ from research.contract import build_agent_contract
 from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from intergrax.agents.tool_enablement import ToolEnablementProfile
 from intergrax.agents.authoring.stub_llm import PrefixStubLLMAdapter

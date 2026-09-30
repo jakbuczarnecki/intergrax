@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.nexus.agents.acp_stub_reflex import (
+from intergrax.agents.authoring.acp_stub_reflex import (
     build_agent_runtime_context,
     evaluate_complete,
     perceive_run_input,
@@ -14,9 +14,9 @@ from intergrax.contracts.agent_run_enums import CognitivePattern
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.capability import CapabilityMatchResult
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.runtime.execution.agent_runtime_context import RuntimeContext
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
+from intergrax.contracts.tracing import DiagnosticPayload
 from intergrax.contracts.task_envelope import TaskEnvelope, routing_capability_from_envelope
 from tool_selection_qualifier.capabilities import CAPABILITIES
 from tool_selection_qualifier.contract import build_agent_contract

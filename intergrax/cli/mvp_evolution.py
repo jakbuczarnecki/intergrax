@@ -48,7 +48,7 @@ def run_mvp_replay(args: argparse.Namespace) -> int:
     if args.trace_db is None:
         print("trace replay requires --trace-db")
         return 1
-    from intergrax.runtime.nexus.tracing.sqlite_trace_store import SQLiteRunTraceStore
+    from intergrax.runtime.execution.run_trace_store_factories import create_sqlite_run_trace_store
 
     reader = SQLiteRunTraceStore(str(args.trace_db))
     trace_store = PersistedRunTraceEventStore(reader)

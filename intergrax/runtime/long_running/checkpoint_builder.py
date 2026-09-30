@@ -37,12 +37,15 @@ from intergrax.runtime.long_running.runtime_checkpoint import (
     RuntimeCheckpoint,
 )
 from intergrax.utils.time_provider import SystemTimeProvider
-from intergrax.runtime.nexus.execution.execution_graph import (
+from intergrax.runtime.execution.checkpoint_execution_graph_bridge import (
     ExecutionGraph,
     ExecutionNode,
     ExecutionNodeStatus,
 )
-from intergrax.runtime.nexus.planning.task_planner import NexusPlan
+from intergrax.runtime.execution.checkpoint_execution_graph_bridge import NexusPlan
+from intergrax.runtime.execution.active_execution_resume import (
+    peek_active_execution_resume_plan,
+)
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import HumanApprovalResolution
 
@@ -342,6 +345,13 @@ def should_skip_graph_node(
     checkpoint: Optional[RuntimeCheckpoint],
     prior_outputs: Dict[str, AgentExecutionResult],
 ) -> bool:
+    resume_binding = peek_active_execution_resume_plan()
+    if resume_binding is not None:
+        plan = resume_binding.plan
+        if node.node_id in plan.resume_graph_node_ids:
+            return False
+        if node.node_id in plan.skip_graph_node_ids:
+            return node.node_id in prior_outputs
     if checkpoint is None:
         return False
     tree_entry = checkpoint.execution_tree.entry_by_graph_node_id(node.node_id)

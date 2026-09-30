@@ -79,7 +79,7 @@ def apply_guardrail_profiles_to_runtime_config(
 ) -> object:
     """Attach guardrail middleware for runtime pipeline LLM steps when enabled."""
     from intergrax.applications._shared.application_guardrail_middleware import LlmGuardrailMiddleware
-    from intergrax.runtime.nexus.config import RuntimeConfig
+    from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
     if not isinstance(config, RuntimeConfig):
         return config

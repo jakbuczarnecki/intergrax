@@ -348,8 +348,8 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
         )
         from intergrax.runtime.notifications.deliveries.delivery_ledger_protocol import DeliveryLedger
         from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
-        from intergrax.runtime.nexus.tracing.in_memory_trace_store import InMemoryRunTraceStore
-        from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+        from intergrax.runtime.execution.run_trace_store_factories import create_in_memory_run_trace_store
+        from intergrax.contracts.run_trace_store import RunTraceWriter
         from {pkg}.host.settings import {pascal}ApplicationSettings
 
 
@@ -419,7 +419,7 @@ def _integration_wiring_py(names: ScaffoldApplicationNames) -> str:
                 )
             sqlite_bundle = create_sqlite_runtime_persistence(**sqlite_overrides)
             if db_path is None:
-                trace_store: RunTraceWriter = InMemoryRunTraceStore()
+                trace_store: RunTraceWriter = create_in_memory_run_trace_store()
                 trace_db_path = None
             else:
                 trace_store = sqlite_bundle.trace_store  # type: ignore[assignment]

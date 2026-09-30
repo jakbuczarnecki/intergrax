@@ -13,14 +13,16 @@ from intergrax.contracts.meaningful_side_effect_authorization import (
 )
 from intergrax.contracts.orchestration_topology import OrchestrationTopologySubmissionPort
 from intergrax.contracts.provider_invocation_store import ProviderInvocationStore
-from intergrax.runtime.execution.orchestration_topology_production_composition import (
-    build_strict_production_orchestration_topology_submission_port,
+from intergrax.runtime.execution.environment_orchestration_materialization import (
+    EnvironmentOrchestrationMaterialization,
 )
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.runtime.execution.harness_host_topology_submission_wiring import (
+    build_strict_topology_submission_from_materialization,
+)
 
 
 def build_governed_contractor_production_orchestration_topology_submission_port(
-    nexus_loop: NexusLoop,
+    orchestration: EnvironmentOrchestrationMaterialization,
     *,
     provider_invocation_store: ProviderInvocationStore,
     tenant_id: str,
@@ -28,8 +30,8 @@ def build_governed_contractor_production_orchestration_topology_submission_port(
     meaningful_side_effect_authorization: MeaningfulSideEffectAuthorizationPort | None,
 ) -> OrchestrationTopologySubmissionPort[object, object]:
     """Production topology submission sharing the host ``ProviderInvocationStore`` with GR-7."""
-    return build_strict_production_orchestration_topology_submission_port(
-        nexus_loop,
+    return build_strict_topology_submission_from_materialization(
+        orchestration,
         provider_invocation_store=provider_invocation_store,
         tenant_id=tenant_id,
         clock=clock,

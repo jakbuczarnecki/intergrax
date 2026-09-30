@@ -31,6 +31,9 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -57,7 +60,11 @@ def _runner_with_handle() -> tuple[UnifiedTaskRunner, object, AsyncMock]:
     )
     loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
     loop.handle_task = handle_task  # type: ignore[attr-defined]
-    return UnifiedTaskRunner(loop), loop, handle_task
+    return (
+        UnifiedTaskRunner(build_harness_root_task_execution_port(loop)),
+        loop,
+        handle_task,
+    )
 
 
 def test_unified_task_runner_source_has_no_direct_nexus_handle_task_call() -> None:
@@ -123,6 +130,7 @@ async def test_run_task_resume_checkpoint_identity_reaches_nexus() -> None:
         tenant_id=task.tenant_id,
         resume_token="rt_test",
         task_state=TaskState.WAITING_FOR_HUMAN,
+        task_snapshot=task.model_dump(mode="json"),
         runtime=minimal_runtime_checkpoint(
             task_id=task.task_id,
             run_id=run_id,
@@ -221,7 +229,10 @@ async def test_run_task_task_enricher_runs_before_nexus() -> None:
     )
     loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
     loop.handle_task = handle_task  # type: ignore[attr-defined]
-    runner = UnifiedTaskRunner(loop, task_enricher=enricher)
+    runner = UnifiedTaskRunner(
+        build_harness_root_task_execution_port(loop),
+        task_enricher=enricher,
+    )
 
     await runner.run_task(task)
 
@@ -236,7 +247,7 @@ async def test_run_task_unregisters_on_nexus_exception() -> None:
     handle_task = AsyncMock(side_effect=RuntimeError("nexus-fail"))
     loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
     loop.handle_task = handle_task  # type: ignore[attr-defined]
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
 
     with pytest.raises(RuntimeError, match="nexus-fail"):
         await runner.run_task(task, run_id=run_id)
@@ -301,7 +312,7 @@ async def test_concurrent_run_task_calls_use_isolated_delegate_identity() -> Non
 
     loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
     loop.handle_task = _handle  # type: ignore[attr-defined]
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
 
     first = asyncio.create_task(runner.run_task(task_a, run_id=run_id_a))
     second = asyncio.create_task(
@@ -315,7 +326,117 @@ async def test_concurrent_run_task_calls_use_isolated_delegate_identity() -> Non
     await asyncio.gather(first, second)
 
 
-def test_unified_task_runner_constructor_remains_compatible() -> None:
-    loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
-    runner = UnifiedTaskRunner(loop, task_enricher=lambda task: task)
-    assert runner.nexus_loop is loop
+@pytest.mark.asyncio
+async def test_unified_task_runner_delegates_through_host_execution_port_only() -> None:
+    task = _task()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execute_calls: list[tuple[Task, RunId, AttemptId | None]] = []
+
+    class _RecordingExecutionPort:
+        async def execute(
+            self,
+            incoming: Task,
+            *,
+            run_id: RunId,
+            attempt_id: AttemptId | None = None,
+            resume_checkpoint=None,
+            execution_id=None,
+            restore_existing_execution: bool = False,
+        ) -> TaskResult:
+            execute_calls.append((incoming, run_id, attempt_id))
+            return TaskResult(
+                task_id=incoming.task_id,
+                run_id=run_id,
+                state=TaskState.COMPLETED,
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            )
+
+    runner = UnifiedTaskRunner(
+        _RecordingExecutionPort(),
+        task_enricher=lambda source: source,
+    )
+    public_api = {name for name in dir(runner) if not name.startswith("_")}
+    assert "nexus_loop" not in public_api
+
+    result = await runner.run_task(task, run_id=run_id, attempt_id=attempt_id)
+
+    assert len(execute_calls) == 1
+    assert execute_calls[0][0] is task
+    assert execute_calls[0][1] == run_id
+    assert execute_calls[0][2] == attempt_id
+    assert result.run_id == run_id
+
+
+def _resume_checkpoint(
+    *,
+    task: Task,
+    task_id,
+    tenant_id: str,
+    run_id: RunId | None = None,
+    attempt_id: AttemptId | None = None,
+) -> TaskCheckpoint:
+    run_id = run_id or mint_run_id()
+    attempt_id = attempt_id or mint_attempt_id()
+    root = mint_execution_id()
+    return TaskCheckpoint(
+        task_id=task_id,
+        tenant_id=tenant_id,
+        resume_token="rt_boundary",
+        task_state=TaskState.WAITING_FOR_HUMAN,
+        task_snapshot=task.model_dump(mode="json"),
+        runtime=minimal_runtime_checkpoint(
+            task_id=task_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
+            root_execution_id=root,
+        ),
+    )
+
+
+@pytest.mark.asyncio
+async def test_unified_task_runner_resume_rejects_cross_tenant_checkpoint_before_nexus() -> None:
+    from intergrax.runtime.long_running.checkpoint_builder import resolve_task_runtime_checkpoint
+    from intergrax.runtime.long_running.checkpoint_resume_validation import (
+        CheckpointResumeEligibility,
+        CheckpointResumeValidationError,
+    )
+
+    task = _task()
+    checkpoint = _resume_checkpoint(
+        task=task,
+        task_id=task.task_id,
+        tenant_id="tenant-other",
+    )
+    runner, _loop, handle_task = _runner_with_handle()
+    runtime_before = resolve_task_runtime_checkpoint(task)
+
+    with pytest.raises(CheckpointResumeValidationError) as exc_info:
+        await runner.run_task(task, resume_checkpoint=checkpoint)
+
+    assert exc_info.value.result.eligibility is CheckpointResumeEligibility.REJECT_TENANT
+    handle_task.assert_not_awaited()
+    assert resolve_task_runtime_checkpoint(task) == runtime_before
+
+
+@pytest.mark.asyncio
+async def test_unified_task_runner_resume_rejects_checkpoint_task_id_mismatch_before_nexus() -> None:
+    from intergrax.runtime.long_running.checkpoint_resume_validation import (
+        CheckpointResumeEligibility,
+        CheckpointResumeValidationError,
+    )
+
+    task = _task()
+    other_task_id = mint_task_id()
+    checkpoint = _resume_checkpoint(
+        task=task,
+        task_id=other_task_id,
+        tenant_id=task.tenant_id,
+    )
+    runner, _loop, handle_task = _runner_with_handle()
+
+    with pytest.raises(CheckpointResumeValidationError) as exc_info:
+        await runner.run_task(task, resume_checkpoint=checkpoint)
+
+    assert exc_info.value.result.eligibility is CheckpointResumeEligibility.REJECT_IDENTITY
+    handle_task.assert_not_awaited()

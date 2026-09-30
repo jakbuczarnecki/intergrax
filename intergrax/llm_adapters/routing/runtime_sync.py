@@ -13,8 +13,8 @@ from intergrax.llm_adapters.routing.context_bridge import (
 )
 from intergrax.llm_adapters.routing.contracts import RoutingContext
 from intergrax.llm_adapters.routing.metering import tokens_used_from_adapter
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.contracts.run_budget import RunBudget
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 def resolved_budget_limits_from_run_budget(

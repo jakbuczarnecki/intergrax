@@ -67,7 +67,7 @@ class SpeechProfile(BaseModel):
         secrets: Mapping[str, str] | None = None,
         **overrides: Any,
     ) -> SpeechAdapter:
-        from intergrax.integrations._shared.speech_integration_bridge import IntegrationSpeechAdapter
+        from intergrax.integrations.registry.speech_bridge import IntegrationSpeechAdapter
 
         slug = self.resolved_provider_slug()
         if self.backend is not None:

@@ -20,7 +20,7 @@ from typing import Any, Protocol
 import httpx
 
 from intergrax.llm_adapters.providers.openai_compat_providers import VllmChatAdapter
-from intergrax.runtime.nexus.tools.canonical_tool_dispatch import (
+from intergrax.runtime.execution.agent_catalog_tool_dispatch import (
     materialize_canonical_tool_definitions_for_llm_dispatch,
 )
 from intergrax.llm_adapters.providers.vllm_diagnostics import (

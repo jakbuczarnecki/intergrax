@@ -27,22 +27,23 @@ from intergrax.contracts.admitted_root_governance_identity import (
     AdmittedRootGovernanceIdentity,
 )
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
-from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.contracts.execution_continuation_state_store import (
     ExecutionContinuationStateStore,
+)
+from intergrax.contracts.runtime_execution_admission import (
+    RootExecutionAuthorityAdmissionPort,
+)
+from intergrax.runtime.execution.worker_host_task_execution_composition import (
+    build_worker_host_task_execution_from_registry,
 )
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.contracts.run_budget import RunBudget
 from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
+from intergrax.contracts.host_orchestration_run_retry import HostOrchestrationRunRetrySpec
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
-from intergrax.runtime.execution.budget.persistence import (
-    RunBudgetPersistence,
-    create_durable_run_budget_ledger_factory,
-)
+from intergrax.runtime.execution.budget.persistence import RunBudgetPersistence
 from intergrax.runtime.execution.deadline_authority import ExecutionDeadlineAuthorityResolver
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task
@@ -124,41 +125,24 @@ class NexusWorkerRuntime:
         admit_root_governance_identity: Callable[
             [Task], AdmittedRootGovernanceIdentity
         ],
-        retry_policy: RetryPolicy | None = None,
+        root_authority_admission: RootExecutionAuthorityAdmissionPort,
+        retry_policy: HostOrchestrationRunRetrySpec | None = None,
     ) -> NexusWorkerRuntime:
-        resolved_factory = execution_budget_ledger_factory
-        if resolved_factory is None and run_budget_persistence is not None:
-            resolved_factory = create_durable_run_budget_ledger_factory(
-                run_budget_persistence,
-                run_budget,
-            )
-        loop = NexusLoop(
+        host_execution = build_worker_host_task_execution_from_registry(
             registry,
             checkpoint_store=checkpoint_store,
             run_budget=run_budget,
-            execution_budget_ledger_factory=resolved_factory,
-            execution_terminal=execution_terminal,
-            execution_continuation_state_store=execution_continuation_state_store,
-            production_mode=production_mode,
-            max_run_retries=0,
-            retry_policy=retry_policy or RetryPolicy(max_retries=0),
-        )
-        from intergrax.runtime.governance.execution_admission_composition import (
-            build_reference_allowing_root_execution_authority_admission,
-        )
-
-        if run_budget_persistence is not None and deadline_authority_resolver is None:
-            raise ValueError(
-                "durable run_budget_persistence requires deadline_authority_resolver",
-            )
-        host_execution = build_host_task_execution(
-            loop,
-            orchestration_triggers=orchestration_triggers,
-            pipeline_capability_suffix=pipeline_capability_suffix,
-            root_authority_admission=build_reference_allowing_root_execution_authority_admission(),
-            admit_root_governance_identity=admit_root_governance_identity,
             run_budget_persistence=run_budget_persistence,
             deadline_authority_resolver=deadline_authority_resolver,
+            execution_budget_ledger_factory=execution_budget_ledger_factory,
+            execution_terminal=execution_terminal,
+            orchestration_triggers=orchestration_triggers,
+            pipeline_capability_suffix=pipeline_capability_suffix,
+            execution_continuation_state_store=execution_continuation_state_store,
+            production_mode=production_mode,
+            admit_root_governance_identity=admit_root_governance_identity,
+            root_authority_admission=root_authority_admission,
+            retry_policy=retry_policy,
         )
         return cls(
             host_execution,

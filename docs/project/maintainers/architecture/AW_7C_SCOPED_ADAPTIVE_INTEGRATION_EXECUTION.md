@@ -854,8 +854,8 @@ AW
 | **Tests** | `test_aw_7c_closure_scoped_adaptive_integration_execution.py`, `test_aw_7c_closure_architecture_gates.py`, CERT/P4 suites retained |
 | **P0-PHYSQ** | Physical substrate evidence unchanged; runtime binding claim is separate (session attestation before operation) |
 | **Next program stage** | Independent parent-closure SHA audit; **EBH-3** **NOT ENTERED** |
-| **Enterprise blocker (post-closure audit)** | Sanctioned physical effect path + credential authority — **AW-7C-CLOSURE-R1-ARCH** (rejected) → **AW-7C-CLOSURE-R1-ARCH-R1** (remediation **READY FOR AUDIT**) |
-| **Parent status** | **CURRENT / NOT CLOSED** — pending R1-ARCH-R1 audit + R1 runtime implementation |
+| **Enterprise blocker (post-closure audit)** | Sanctioned physical effect path + credential authority — **AW-7C-CLOSURE-R1-ARCH** (rejected @ `618164a5…`) → **AW-7C-CLOSURE-R1-ARCH-R1** (preparer/executor split accepted; credential ordering rejected @ `88d61eb5…`) → **AW-7C-CLOSURE-R1-ARCH-R1-R1** (late-resolution ordering — **READY FOR AUDIT**) |
+| **Parent status** | **CURRENT / NOT CLOSED** — pending R1-ARCH-R1-R1 audit + R1 runtime implementation |
 
 ---
 
@@ -1143,7 +1143,7 @@ Second Execution Engine; AW-local executor/broker/sandbox; ToolRuntime/direct Ne
 | **Task** | `AW-7C-CLOSURE-R1-ARCH-R1` |
 | **Parent** | `AW-7C-CLOSURE-R1-ARCH` → `AW-7C` — **CURRENT / NOT CLOSED** |
 | **Program baseline** | `618164a5c666e9854441890e6233f605ece8a9ee` (`development`) |
-| **Status** | **READY FOR AUDIT** (docs-only — **0** production/runtime changes) |
+| **Status** | **AUDIT REJECTED / SUPERSEDED FOR CREDENTIAL ORDERING** @ `88d61eb51b0673433dce5f1bdc7c8365cd328323` — preparer vs canonical executor split **accepted**; `ScopedCredentialBroker.resolve_scoped()` **before** final `ScopedAdaptedIntegrationEffectRequest` validation **rejected**; **authoritative remediation:** **AW-7C-CLOSURE-R1-ARCH-R1-R1** below |
 | **Never** | `CLOSED`; **EBH-3** **NOT ENTERED** |
 | **Global FRZ delta** | **NONE** |
 
@@ -1174,7 +1174,9 @@ arbitrary external operation implementation
 possible direct host I/O   ← still bypassable
 ```
 
-### R1-ARCH-R1 — After graph (locked)
+### R1-ARCH-R1 — After graph (**AUDIT REJECTED / SUPERSEDED FOR CREDENTIAL ORDERING** @ `88d61eb5…` — retained for diff only)
+
+Independent exact-SHA audit @ `88d61eb51b0673433dce5f1bdc7c8365cd328323` accepted the preparer → typed `EffectRequest` → single canonical effect executor direction, but **rejected** credential resolution **before** effect-request preparation and final validation. **Do not implement this ordering.**
 
 ```text
 Canonical Execution (active ExecutionId) — authority: Execution only
@@ -1185,7 +1187,7 @@ AW-7C delegate / Integrations execution composer (no AW-local executor; no secon
   ├─ admit SandboxSecurityCapable session (single instance per attempt)
   ├─ security_capabilities() → validate_qualified_allowlist_attestation (same session)
   ├─ ExecutionBoundCredentialGrantProvider → validate_handoff_credential_grant_identity
-  ├─ ScopedCredentialBroker.resolve_scoped → ScopedCredentialResolutionResult (+ CredentialUseEvidence)
+  ├─ ScopedCredentialBroker.resolve_scoped → ScopedCredentialResolutionResult (+ CredentialUseEvidence)   ← INVALID: secret before EffectRequest
   ↓
 external / provider-specific typed effect PREPARER (Integrations SPI)
   → ScopedAdaptedIntegrationEffectRequest  [immutable; no secrets; no callable]
@@ -1200,7 +1202,9 @@ canonical Integrations ScopedAdaptedIntegrationEffectExecutor (platform contract
 ScopedAdaptedIntegrationOperationEvidence
 ```
 
-**Position:** effect executor is **below** canonical Execution, **does not** mint `ExecutionId` or Governance permission; it materializes already-admitted work.
+**Authoritative corrected credential ordering:** **AW-7C-CLOSURE-R1-ARCH-R1-R1** — late resolution after validated `ScopedAdaptedIntegrationEffectRequest`; immediate handoff to executor.
+
+**Position (unchanged):** effect executor is **below** canonical Execution, **does not** mint `ExecutionId` or Governance permission; it materializes already-admitted work.
 
 ### R1-ARCH-R1 — Responsibility split
 
@@ -1254,14 +1258,15 @@ Removed false claim: *“operation plugin receives resources, therefore bypass i
 
 ### R1-ARCH-R1 — Credential lifecycle (no unowned single-use)
 
+**Ordering note:** grant/scope phases below remain valid; **broker resolution placement** in this subsection reflected the **superseded** R1-ARCH-R1 graph (resolve before preparer). **Authoritative order:** § AW-7C-CLOSURE-R1-ARCH-R1-R1.
+
 ```text
 ExecutionBoundCredentialGrantProvider
-  → provider-owned authoritative grant facts validated
-  → CredentialUseGrant
-  → CredentialUseScope
-  → ScopedCredentialBroker.resolve_scoped
+  → provider-owned authoritative grant facts validated (secret-free CredentialUseGrant)
+  → CredentialUseScope constructed from validated EffectRequest + grant (R1-R1)
+  → ScopedCredentialBroker.resolve_scoped   ← only after final EffectRequest accepted (R1-R1)
   → ScopedCredentialResolutionResult + CredentialUseEvidence (no secret in evidence)
-  → canonical Integrations effect executor
+  → immediate canonical Integrations effect executor
   → credential material applied only at provider/sandbox operation boundary
   → material lifetime minimized
 ```
@@ -1270,7 +1275,7 @@ Bindings locked: **execution-bound + tenant-bound + provider/integration-bound +
 
 Forbidden as credential authority: `single-use` without lifecycle owner; `_consumed`; process-local `set`/`dict`/boolean flags; `max_uses`; new durable lifecycle store.
 
-**Preparer does not receive resolved credential material.**
+**Preparer does not receive resolved credential material.** **AW coordinator does not receive raw credential material.**
 
 ### R1-ARCH-R1 — Replaceability (structural proof shape)
 
@@ -1292,7 +1297,7 @@ Replacing preparer **must not** create a new I/O path.
 
 | Invariant | Rule |
 | --------- | ---- |
-| `handoff.tenant == artifact.tenant == effect_request.tenant == grant.tenant == scope.tenant == executor.tenant == evidence.tenant` | Composer + executor reject mismatch **before** physical effect |
+| `handoff.tenant == artifact.tenant == effect_request.tenant == grant.tenant == scope.tenant == executor.tenant == evidence.tenant` | Composer + executor reject mismatch **before** `resolve_scoped` and **before** physical effect |
 | Preparer cannot change tenant | Request materialized under admission facts; tenant mismatch → fail closed |
 | Tenant A credential → tenant B effect | Broker `assert_tenant_consistency` + executor rejection |
 | Missing tenant | Fail closed — no default/global tenant |
@@ -1324,7 +1329,7 @@ Replacing preparer **must not** create a new I/O path.
 | FRZ-EXE-01, -02, -06, -07 | Single execution authority; work enters canonical boundary; identity on chain; no alternate scheduler |
 | FRZ-GOV-01..05, -07, -09 | Governance ≠ execution; proposal ≠ permission; narrowing; evidence before work; extensions cannot expand authority |
 | FRZ-CTR-* / FRZ-PLG-* / FRZ-RPL-* | Typed contracts; preparer replaceable without alternate physical path |
-| FRZ-SEC-02, -03, -05, -07 | Credential/sandbox binding; no preparer secrets; sanctioned path only |
+| FRZ-SEC-02, -03, -05, -07 | Credential/sandbox binding; no preparer secrets; sanctioned path only — **late resolution contribution:** § R1-ARCH-R1-R1 |
 | FRZ-TEN-* (local) | Tenant table above |
 
 **Global FRZ PASS delta = 0**
@@ -1365,7 +1370,9 @@ Replacing preparer **must not** create a new I/O path.
 
 ### R1-ARCH-R1 — Runtime test obligations (next task)
 
-**Positive:** qualified artifact → typed effect request → canonical executor → attested sandbox → scoped credential resolution → reference physical effect → matching evidence.
+**Superseded call-order obligations:** § **R1-ARCH-R1-R1 — Future runtime test obligations** (mandatory `resolve_scoped` call count == 0 negatives + ordering proof).
+
+**Positive (shape only; order locked in R1-R1):** qualification/handoff → sandbox attestation → preparer → validated effect request → grant/scope → `resolve_scoped` → immediate executor → physical effect → evidence.
 
 **Negative:** wrong execution/tenant/operation/artifact/sandbox/credential; effect-request scope widening; custom preparer attempting alternate executor; legacy direct operation path; alternate credential/sandbox/effect paths.
 
@@ -1373,5 +1380,260 @@ Replacing preparer **must not** create a new I/O path.
 
 ### R1-ARCH-R1 — Forbidden (recap)
 
-Second Execution Engine; AW-owned broker/sandbox/executor root; ToolRuntime/Nexus bypass; preparer credential resolution; callable-as-effect; `Any`/`dict[str, Any]` effect payloads; local single-use/`max_uses`; parallel legacy physical `OperationPort` path for compatibility without STOP.
+Second Execution Engine; AW-owned broker/sandbox/executor root; ToolRuntime/Nexus bypass; preparer credential resolution; **broker `resolve_scoped` before validated EffectRequest**; callable-as-effect; `Any`/`dict[str, Any]` effect payloads; local single-use/`max_uses`; parallel legacy physical `OperationPort` path for compatibility without STOP.
+
+---
+
+## AW-7C-CLOSURE-R1-ARCH-R1-R1 — Late credential resolution ordering closure
+
+| Field | Value |
+| ----- | ----- |
+| **Task** | `AW-7C-CLOSURE-R1-ARCH-R1-R1` |
+| **Parent** | `AW-7C-CLOSURE-R1-ARCH-R1` → `AW-7C-CLOSURE-R1-ARCH` → `AW-7C` — **CURRENT / NOT CLOSED** |
+| **Audit baseline (rejection)** | `88d61eb51b0673433dce5f1bdc7c8365cd328323` (`development`) |
+| **Status** | **READY FOR AUDIT** (docs-only — **0** production/runtime changes) |
+| **Never** | `CLOSED`; **EBH-3** **NOT ENTERED** |
+| **Global FRZ delta** | **NONE** (checklist statuses unchanged) |
+
+### R1-ARCH-R1-R1 — Independent-audit rejection (credential ordering)
+
+| Item | Detail |
+| ---- | ------ |
+| **Accepted from R1-ARCH-R1 @ `88d61eb5…`** | External typed effect preparer → immutable `ScopedAdaptedIntegrationEffectRequest` → one canonical Integrations effect executor → sanctioned sandbox + credential boundary → physical effect |
+| **Rejected** | `ScopedCredentialBroker.resolve_scoped()` depicted **before** external preparer and **before** final `EffectRequest` validation |
+| **Invariant violated** | Canonical late-resolution rule (`intergrax/integrations/contracts/credential.py`): resolved secret material is obtained **only after** the final typed effect request is produced and accepted, **immediately before** the sanctioned executor needs it |
+| **Provenance** | R1-ARCH rejected @ `618164a5…`; R1-ARCH-R1 direction accepted except ordering @ `88d61eb5…`; R1-ARCH-R1-R1 = ordering remediation awaiting audit |
+
+### R1-ARCH-R1-R1 — Root cause (precise)
+
+The preparer does **not** need a secret, **must not** receive a secret, may fail, may return an invalid `EffectRequest`, or widen scope. Resolving `ScopedCredentialResolutionResult` before preparation/validation means secret material can exist when no sanctioned physical effect will run — forbidden.
+
+Forbidden patterns:
+
+```text
+resolve secret → prepare
+resolve secret → unrelated validation/composition → maybe execute later
+```
+
+Required pattern:
+
+```text
+prepare → validate → authorize/bind exact scope → resolve secret → execute effect
+```
+
+### R1-ARCH-R1-R1 — After graph (locked — authoritative)
+
+```text
+Canonical Execution
+    ↓
+AW-7C delegate / Integrations composer
+
+    ↓
+validate:
+- active canonical ExecutionId
+- handoff identity
+- artifact
+- accepted qualification proof
+- tenant continuity
+- requested operation is within qualified artifact scope
+
+    ↓
+sandbox/session admission + security attestation
+(no credential material yet)
+
+    ↓
+external typed effect PREPARER
+
+    ↓
+ScopedAdaptedIntegrationEffectRequest
+(no secret)
+
+    ↓
+validate EffectRequest against admitted parent facts:
+- ExecutionId/correlation where applicable
+- tenant
+- artifact identity/fingerprint
+- provider/integration
+- requested operation
+- resource scope
+- target scope
+- network scope
+- expiry / parent bounds where applicable
+(NO downstream widening permitted)
+
+    ↓
+ExecutionBoundCredentialGrantProvider.resolve_grant(...)
+(secret-free)
+
+    ↓
+validate authoritative grant against:
+- handoff
+- validated EffectRequest
+- ExecutionId
+- tenant
+- provider/integration
+- operation
+- target scope
+- expiry
+
+    ↓
+construct exact CredentialUseScope
+from validated, authoritative facts
+
+    ↓
+ScopedCredentialBroker.resolve_scoped(...)
+        → ScopedCredentialResolutionResult
+        → secret material exists for first time
+
+    ↓
+IMMEDIATE HANDOFF
+to canonical ScopedAdaptedIntegrationEffectExecutor
+
+    ↓
+executor applies credential only at provider/sandbox transport boundary
+
+    ↓
+physical integration effect
+
+    ↓
+typed evidence
+```
+
+### R1-ARCH-R1-R1 — Grant ≠ secret (classification)
+
+| Phase | Type | Secret material |
+| ----- | ---- | --------------- |
+| **Grant** | `CredentialUseGrant` | **NO** — authority/scope metadata only |
+| **Scope** | `CredentialUseScope` | **NO** — binding facts only |
+| **Resolution** | `ScopedCredentialResolutionResult` / `ResolvedCredential` | **YES** — first appearance of raw material |
+| **Evidence** | `CredentialUseEvidence` | **NO** — fingerprints/refs only |
+
+Resolving or validating a **grant** does not violate late resolution **if** no broker resolution occurs yet. Preferred AW-7C order: validated `EffectRequest` → grant resolution/validation → `CredentialUseScope` → `broker.resolve_scoped()` → immediate executor.
+
+### R1-ARCH-R1-R1 — Exact credential binding (continuity)
+
+```text
+active ExecutionId == grant.execution_id == credential_scope.execution_id == effect execution identity
+```
+
+```text
+handoff.tenant == artifact.tenant == effect_request.tenant == grant.tenant == credential_scope.tenant == evidence.tenant
+```
+
+Equivalent non-widening for provider, integration, operation, target/resource scope, and network scope where relevant. Final effect request may only preserve or narrow parent authority.
+
+### R1-ARCH-R1-R1 — Failures that MUST NOT call `resolve_scoped`
+
+`ScopedCredentialBroker.resolve_scoped()` **must not run** when:
+
+- preparer raises/fails or is unavailable/ambiguous (where applicable);
+- malformed or invalid `EffectRequest`;
+- tenant, artifact, provider/integration, or operation mismatch;
+- operation, resource, target, or network widening;
+- invalid/missing required identity;
+- effect request escapes qualified scope;
+- any pre-executor fail-closed validation failure.
+
+After successful `resolve_scoped()`, **forbidden** before physical effect: another plugin/strategy call, provider discovery, alternate composition, unrelated policy, long-lived caching, queueing, raw credential storage, passing raw credential to preparer/AW, logging raw credential.
+
+### R1-ARCH-R1-R1 — Secret lifetime
+
+```text
+secret does not exist during preparation
+↓
+broker resolves immediately before executor
+↓
+executor consumes at transport boundary
+↓
+secret reference/material must not escape bounded executor path
+```
+
+No new credential lifecycle authority; no `single-use` / `max_uses` / `_consumed` / durable use-count store in this remediation.
+
+### R1-ARCH-R1-R1 — Closed-world inventory (credential + R1 contracts)
+
+| Path / contract | Owner | Typical caller | Secret material | Relevance |
+| --------------- | ----- | -------------- | --------------- | --------- |
+| `CredentialResolver` (`credential.py`) | Credential | Legacy/P1.7 paths | May resolve (non-AW-7C R1 path) | Baseline contract |
+| `ExecutionBoundCredentialGrantProvider` | Credential | Integrations composer | **NO** | Grant before scope/broker (secret-free) |
+| `CredentialUseGrant` | Credential | Grant provider → composer | **NO** | Authority metadata |
+| `CredentialUseScope` | Credential | Composer → broker | **NO** | Exact bind from validated facts |
+| `ScopedCredentialBroker` (`broker.py`) | Credential | Integrations composer | **YES** at `resolve_scoped` | Sole AW-7C material resolver |
+| `ScopedCredentialResolutionResult` | Credential | Broker output | **YES** | Executor ingress only |
+| `CredentialUseEvidence` | Credential / evidence path | Broker + observability | **NO** | Safe audit |
+| `ScopedAdaptedIntegrationEffectRequest` | Integrations | Preparer → composer | **NO** | Typed effect description (R1 locked) |
+| `ScopedAdaptedIntegrationEffectRequestPort` | Integrations SPI | Composer | **NO** | Replaceable preparer |
+| `ScopedAdaptedIntegrationEffectExecutor` | Integrations | Composer immediately after broker | Consumes secret at boundary | Single physical executor |
+
+Ownership unchanged from R1-ARCH-R1 matrix; late resolution does **not** add broker, resolver, or AW credential store.
+
+### R1-ARCH-R1-R1 — Tenant Isolation Audit
+
+**Classification:** TENANT RELEVANT
+
+**Verdict:** `PASS` (architecture invariants; **not** global `FRZ-TEN-*` PASS)
+
+- Tenant mismatch before broker resolution → **zero** secret resolution.
+- Tenant A `EffectRequest` cannot use tenant B grant; tenant A grant cannot resolve for tenant B executor.
+- Missing tenant → fail closed (no default/global tenant).
+- Preparer cannot rewrite tenant; evidence tenant matches execution chain.
+
+### R1-ARCH-R1-R1 — FRZ contribution (architecture-only)
+
+| Criterion | R1-ARCH-R1-R1 contribution |
+| --------- | --------------------------- |
+| **FRZ-SEC-02** | Resolved secret exists only immediately before sanctioned physical effect |
+| **FRZ-SEC-03** | Preparer, AW, and evidence do not receive resolved credential |
+| **FRZ-SEC-05** | Sandbox/isolation remains physical effect boundary (unchanged) |
+| **FRZ-SEC-07** | Security claims bounded by evidence; no false single-use/zeroization claims |
+| FRZ-GOV-*, FRZ-EXE-*, FRZ-CTR/PLG/RPL-* | Same families as R1-ARCH-R1; ordering reinforces fail-closed and single path |
+
+**Global FRZ PASS delta = 0**
+
+### R1-ARCH-R1-R1 — Future runtime implementation order (locked)
+
+```text
+validate qualification / handoff
+→ sandbox attestation
+→ preparer.prepare(...)
+→ validate EffectRequest completely
+→ resolve/validate secret-free grant
+→ construct exact CredentialUseScope
+→ broker.resolve_scoped(...)
+→ immediately executor.execute(...)
+→ physical effect
+→ evidence
+```
+
+Bounded neighborhood: same as § R1-ARCH-R1 — Bounded implementation neighborhood.
+
+### R1-ARCH-R1-R1 — Future runtime test obligations
+
+**Positive:** valid `EffectRequest` → grant matches → `resolve_scoped` called once → executor called immediately after resolution → physical effect → evidence.
+
+**Mandatory negative call-order (`resolve_scoped` call count == 0):** preparer fails; preparer throws; EffectRequest tenant/operation/provider mismatch; target/resource/network widening; artifact mismatch; execution identity mismatch.
+
+**Secret-boundary:** preparer never receives `ResolvedCredential` or `ScopedCredentialResolutionResult`; AW never receives raw credential; evidence excludes raw credential; AW-7C components do not cache/store raw credential.
+
+**Ordering proof (instrumented reference):** `prepare < validate effect request < resolve_scoped < effect executor`; no plugin/strategy invocation after `resolve_scoped`.
+
+### R1-ARCH-R1-R1 — Exit questionnaire (audit)
+
+| # | Question | Answer |
+| - | -------- | ------ |
+| 1 | EffectRequest before secret material? | **YES** |
+| 2 | EffectRequest fully checked before broker? | **YES** |
+| 3 | Preparer failure can trigger resolution? | **NO** |
+| 4 | Invalid EffectRequest can trigger resolution? | **NO** |
+| 5 | Grant distinguished from secret? | **YES** |
+| 6 | `CredentialUseScope` from final admitted facts? | **YES** |
+| 7 | `resolve_scoped` immediately before executor consumption? | **YES** |
+| 8 | Plugin/strategy after secret resolution? | **NO** |
+| 9 | Preparer receives credential material? | **NO** |
+| 10 | AW receives credential material? | **NO** |
+| 11 | Evidence exposes credential material? | **NO** |
+| 12 | Ownership change? | **NO** |
+| 13 | New Execution/Governance authority? | **NO** |
+| 14 | Tenant/provider/operation/target bounds preserved? | **YES** |
+| 15 | Runtime order deterministic for implementation? | **YES** |
 

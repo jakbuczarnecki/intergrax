@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""Canonical execution composition for AW-7C reference / qualification path (CLOSURE)."""
+"""Canonical execution composition for AW-7C reference / qualification path (CLOSURE-R1)."""
 
 from __future__ import annotations
 
@@ -13,11 +13,12 @@ from intergrax.contracts.execution_intake import CanonicalExecutionIntakePort
 from intergrax.contracts.execution_request import ExecutionRequest
 from intergrax.integrations.contracts.credential import ExecutionBoundCredentialGrantProvider
 from intergrax.integrations.contracts.scoped_integration_adaptation import (
-    ScopedAdaptedIntegrationOperationPort,
+    ScopedAdaptedIntegrationEffectRequestPort,
 )
 from intergrax.integrations.credentials.broker import ScopedCredentialBroker
 from intergrax.integrations.qualification.reference_scoped_adaptive_integration_execution import (
-    ReferenceScopedAdaptedIntegrationOperation,
+    ReferenceScopedAdaptedIntegrationEffectExecutor,
+    ReferenceScopedAdaptedIntegrationEffectRequestPreparer,
 )
 from intergrax.integrations.qualification.scoped_adaptive_integration_execution_runtime_delegate import (
     ScopedAdaptiveIntegrationExecutionRuntimeDelegate,
@@ -34,7 +35,7 @@ def build_scoped_adaptive_integration_canonical_execution_intake(
     credential_broker: ScopedCredentialBroker,
     credential_grant_provider: ExecutionBoundCredentialGrantProvider,
     sandbox_security_source: SandboxSecurityCapable,
-    operation_port: ScopedAdaptedIntegrationOperationPort | None = None,
+    effect_preparer: ScopedAdaptedIntegrationEffectRequestPort | None = None,
 ) -> tuple[
     CanonicalExecutionRuntimeAdapter[
         ExecutionRequest[
@@ -45,12 +46,14 @@ def build_scoped_adaptive_integration_canonical_execution_intake(
     ],
     ScopedAdaptiveIntegrationExecutionRuntimeDelegate,
 ]:
-    """Assemble ExecutionDelegate → ExecutionRuntime → CanonicalExecutionRuntimeAdapter."""
+    """Assemble EffectPreparer + canonical executor → delegate → ExecutionRuntime → intake."""
+    canonical_executor = ReferenceScopedAdaptedIntegrationEffectExecutor()
     delegate = ScopedAdaptiveIntegrationExecutionRuntimeDelegate(
         credential_broker=credential_broker,
         credential_grant_provider=credential_grant_provider,
         sandbox_security_source=sandbox_security_source,
-        operation_port=operation_port or ReferenceScopedAdaptedIntegrationOperation(),
+        effect_preparer=effect_preparer or ReferenceScopedAdaptedIntegrationEffectRequestPreparer(),
+        effect_executor=canonical_executor,
     )
     runtime = ExecutionRuntime(delegate)
     intake: CanonicalExecutionIntakePort[

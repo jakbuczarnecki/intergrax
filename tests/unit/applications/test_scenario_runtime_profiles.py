@@ -83,7 +83,7 @@ def test_lab_zero_config_build_succeeds() -> None:
         registry=_echo_registry(),
         tenant_id=_TENANT,
     )
-    assert composition.nexus_loop is not None
+    assert composition.orchestration_session.host_execution is not None
     assert composition.tenant_id == _TENANT
     assert composition.has_runtime_event_store is True
     assert composition.runtime_mode is ScenarioRuntimeMode.LAB

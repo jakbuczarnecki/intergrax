@@ -81,6 +81,7 @@ def test_gr10_r12_r2_production_worker_no_store_blocks() -> None:
             _empty_registry(),
             production_mode=True,
             admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
             execution_continuation_state_store=None,
         )
     assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
@@ -93,6 +94,7 @@ def test_gr10_r12_r2_production_worker_in_memory_blocks() -> None:
             _empty_registry(),
             production_mode=True,
             admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
             execution_continuation_state_store=store,
         )
     assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
@@ -108,6 +110,7 @@ def test_gr10_r12_r2_production_worker_custom_non_durable_blocks() -> None:
             _empty_registry(),
             production_mode=True,
             admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
             execution_continuation_state_store=_CustomNonDurableStore(),
         )
     assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
@@ -119,6 +122,7 @@ def test_gr10_r12_r2_production_worker_durable_passes() -> None:
         _empty_registry(),
         production_mode=True,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
         execution_continuation_state_store=store,
     )
     assert runtime.host_execution is not None
@@ -129,6 +133,7 @@ def test_gr10_r12_r2_lab_worker_implicit_in_memory_passes() -> None:
         _empty_registry(),
         production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
         execution_continuation_state_store=None,
     )
     assert runtime.host_execution is not None
@@ -140,6 +145,7 @@ def test_gr10_r12_r2_build_registry_production_without_store_blocks() -> None:
             _empty_registry(),
             production_mode=True,
             admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+            root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
         )
     assert exc.value.code is ExecutionContinuationErrorCode.NON_DURABLE_CONTINUATION_STORE
 

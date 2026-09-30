@@ -44,8 +44,8 @@ from intergrax.runtime.notifications.templates.hitl import build_hitl_pause_noti
 from intergrax.runtime.notifications.templates.partial_result import (
     build_partial_result_notification_message,
 )
-from intergrax.runtime.nexus.execution.execution_graph import ExecutionGraph
-from intergrax.runtime.nexus.planning.task_planner import NexusPlan
+from intergrax.runtime.execution.checkpoint_execution_graph_bridge import ExecutionGraph
+from intergrax.runtime.execution.checkpoint_execution_graph_bridge import NexusPlan
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.runtime.resilience.task_resume_recovery_handoff import (
     handoff_task_resume_recovery_start,

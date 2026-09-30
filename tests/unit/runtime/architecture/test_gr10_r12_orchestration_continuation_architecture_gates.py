@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
+from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.execution_continuation import (
@@ -574,7 +574,7 @@ def test_gr10_r12_r1_restart_pause_resolve_resume() -> None:
 
 
 def test_gr10_r12_r1_static_factory_no_implicit_wire() -> None:
-    factory = (_REPO / "intergrax/applications/_shared/nexus_factory.py").read_text(
+    factory = (_REPO / "intergrax/applications/_shared/host_orchestration_backend_spec_builder.py").read_text(
         encoding="utf-8",
     )
     assert "wire_execution_continuation_state_store" not in factory

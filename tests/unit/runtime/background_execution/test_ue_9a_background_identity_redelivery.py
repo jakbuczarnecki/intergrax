@@ -254,6 +254,7 @@ def _run_nexus_worker_attempt(
         agent_registry,
         production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
     )
     task = Task(
         task_id=str(identity.task_id),
@@ -592,6 +593,7 @@ def test_inconsistent_payload_run_id_fails_closed() -> None:
         agent_registry,
         production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
     )
     conflicting_run = mint_run_id()
     task = Task(
@@ -690,6 +692,7 @@ def test_queue_correlation_run_id_is_not_treated_as_canonical_conflict() -> None
         agent_registry,
         production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
     )
     task = Task(
         task_id=str(identity.task_id),

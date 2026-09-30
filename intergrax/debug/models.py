@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
 
-from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunSummary
+from intergrax.contracts.persisted_run_trace import PersistedRun, RunSummary
 
 
 class RunSummaryItem(BaseModel):

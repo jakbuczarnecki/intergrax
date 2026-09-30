@@ -27,7 +27,13 @@ from intergrax.experiments.models import (
     RegisterExperimentRequest,
 )
 from intergrax.experiments.persistence_contract import ExperimentPersistence
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationApplicationWiringTarget,
+)
+from intergrax.runtime.execution.debug_lab_nexus_loop import build_debug_minimal_nexus_loop
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port_from_wiring_target,
+)
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
 
@@ -127,16 +133,16 @@ class ExperimentSession:
     def register(self, request: RegisterExperimentRequest) -> ExperimentRecord:
         return self._experiment_store.register(request)
 
-    def build_nexus_loop(self, registry: AgentRegistry) -> NexusLoop:
+    def build_nexus_loop(self, registry: AgentRegistry) -> HostOrchestrationApplicationWiringTarget:
         trace_store = None
         if self._trace_db is not None:
             trace_store = create_sqlite_trace_store(db_path=self._trace_db)
-        return NexusLoop(registry, trace_store=trace_store)
+        return build_debug_minimal_nexus_loop(registry, trace_store=trace_store)
 
     async def run(
         self,
         *,
-        loop: NexusLoop,
+        loop: HostOrchestrationApplicationWiringTarget,
         record: ExperimentRecord,
         message: str,
         capability: str | None = None,
@@ -152,7 +158,9 @@ class ExperimentSession:
         if record.agent_id:
             task.agent_id = record.agent_id
 
-        result = await UnifiedTaskRunner(loop).run_task(task, run_id=mint_run_id())
+        result = await UnifiedTaskRunner(
+            build_harness_root_task_execution_port_from_wiring_target(loop),
+        ).run_task(task, run_id=mint_run_id())
         run_id = result.run_id or result.task_id
 
         updated = record
@@ -160,8 +168,9 @@ class ExperimentSession:
             updated = self._experiment_store.link_run(record.experiment_id, run_id)
 
         trace_count = 0
-        if loop.trace_emitter is not None:
-            trace_count = len(loop.trace_emitter.events)
+        trace_emitter = getattr(loop, "trace_emitter", None)
+        if trace_emitter is not None:
+            trace_count = len(trace_emitter.events)
 
         checks = evaluate_against_criteria(updated, result)
         return ExperimentRunOutcome(

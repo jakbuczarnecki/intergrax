@@ -5,7 +5,7 @@
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 
 
 @dataclass(frozen=True)

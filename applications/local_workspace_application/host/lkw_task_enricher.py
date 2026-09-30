@@ -23,7 +23,7 @@ from intergrax.agents.persistence.tool_invoker_wiring import attach_declarative_
 from intergrax.applications._shared.reliability_wiring import apply_reliability_task_defaults
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.contracts.idempotency_store import IdempotencyStore
-from intergrax.runtime.nexus.orchestration_capabilities import orchestration_capabilities_from_triggers
+from intergrax.contracts.orchestration_capability_tokens import orchestration_capabilities_from_triggers
 from intergrax.runtime.task.task import Task
 from local_workspace_application.host.run_task_enricher import build_lkw_http_run_task_enricher
 

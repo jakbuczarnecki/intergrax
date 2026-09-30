@@ -15,9 +15,9 @@ from intergrax.llm_adapters.routing.context_bridge import (
 )
 from intergrax.llm_adapters.routing.contracts import RoutingContext
 from intergrax.llm_adapters.routing.runtime_sync import refresh_config_routing_snapshot
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
-from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
+from intergrax.runtime.execution.runtime_state import RuntimeState
+from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
 
 
 def init_llm_routing_on_config(
@@ -147,7 +147,7 @@ def wire_secondary_llm_routing_evaluating(
     if config.llm_routing_snapshot is None and config.llm_routing_context is None:
         return
 
-    from intergrax.runtime.nexus.tools.catalog_tool_planner import CatalogToolPlanner
+    from intergrax.runtime.execution.reasoning_tool_planning_composition import CatalogToolPlanner
 
     tool_planner = config.tool_planner
     if isinstance(tool_planner, CatalogToolPlanner):

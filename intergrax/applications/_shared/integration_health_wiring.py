@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from intergrax.integrations._shared.circuit_breaker import IntegrationCircuitBreakerConfig
-from intergrax.integrations._shared.health import health_check_all
+from intergrax.integrations.contracts.circuit_breaker import IntegrationCircuitBreakerConfig
+from intergrax.integrations.registry.health_probes import health_check_all
 from intergrax.integrations.contracts.base import HealthStatus
 from intergrax.integrations.registry.profile import IntegrationProfile
 

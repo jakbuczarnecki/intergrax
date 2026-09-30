@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from intergrax.runtime.nexus.session.session_storage import SessionStorage
+from intergrax.runtime.execution.session_host_composition import SessionStorage
 from intergrax.tools.registry.session_storage_binding import session_storage_tool_binding
 from intergrax.tools.registry.wiring import ToolWiringContext
 

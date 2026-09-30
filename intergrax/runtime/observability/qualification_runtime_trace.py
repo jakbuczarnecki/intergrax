@@ -16,17 +16,13 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
     validate_run_id,
 )
-from intergrax.runtime.nexus.tracing.execution.evaluator_model_attempt import (
-    EvaluatorModelAttemptDiagV1,
-)
-from intergrax.runtime.nexus.tracing.execution.completion_alignment import (
+from intergrax.runtime.execution.trace_persistence_models_bridge import (
     CompletionAlignmentDiagV1,
-)
-from intergrax.runtime.nexus.tracing.execution.reconciliation_phase import (
+    EvaluatorModelAttemptDiagV1,
     ReconciliationPhaseDiagV1,
     ReconciliationPhaseValue,
 )
-from intergrax.runtime.nexus.tracing.trace_models import (
+from intergrax.contracts.tracing import (
     TraceComponent,
     TraceLevel,
 )

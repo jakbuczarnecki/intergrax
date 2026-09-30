@@ -15,9 +15,11 @@ from intergrax.applications._shared.application_decision_composition import (
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.applications.contracts.environment_profile.sub_profiles import DecisionProfile
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationApplicationWiringTarget,
+)
 from intergrax.runtime.decision_flow import DecisionFlowGate
 from intergrax.runtime.decision_verification_composition import ToolWiringEvalVerificationBridge
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
 
@@ -140,17 +142,17 @@ def wire_application_decision_flow(
 
 
 def apply_application_decision_wiring(
-    nexus: NexusLoop,
+    target: HostOrchestrationApplicationWiringTarget,
     wiring: ApplicationDecisionWiring,
     *,
     environment: ApplicationEnvironmentProfile | None = None,
 ) -> None:
-    """Attach resolved Decision flow gate to an existing ``NexusLoop`` instance."""
-    nexus.apply_decision_flow_gate(
+    """Attach resolved Decision flow gate to an existing orchestration host target."""
+    target.apply_decision_flow_gate(
         wiring.gate,
         verify_uaep_step=wiring.verify_uaep_step,
         verify_graph_final=wiring.verify_graph_final,
     )
     if environment is not None:
         exposure_selection = compose_application_decision_exposure_selection(environment)
-        nexus.apply_decision_exposure_selection(exposure_selection)
+        target.apply_decision_exposure_selection(exposure_selection)

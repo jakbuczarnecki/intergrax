@@ -8,8 +8,8 @@ from intergrax.applications.contracts.application_host import ApplicationProfile
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.runtime.adaptive.tool_engine_selection_engine import ToolEngineSelectionEngine
 from intergrax.runtime.architecture.adaptive_governance import AdaptiveLoopKind
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.tools.tool_engine_hook import ToolEngineHook
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
+from intergrax.runtime.execution.tool_engine_hook_composition import ToolEngineHook
 
 
 def resolve_tool_engine_hook(env: ApplicationEnvironmentProfile) -> ToolEngineHook:

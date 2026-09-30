@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from intergrax.runtime.events.runtime_event import RuntimeEvent
 from intergrax.contracts.persisted_run_trace import PersistedTraceEvent
-from intergrax.runtime.nexus.tracing.persistence_models import SerializedTraceEvent
+from intergrax.runtime.execution.trace_persistence_models_bridge import SerializedTraceEvent
 
 TraceEventForModalityMetrics = SerializedTraceEvent | PersistedTraceEvent
 

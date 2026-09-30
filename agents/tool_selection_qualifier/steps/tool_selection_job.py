@@ -8,7 +8,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from intergrax.runtime.nexus.agents.runtime_tool_helpers import (
+from intergrax.agents.authoring.runtime_tool_helpers import (
     exec_ctx_from_step,
     invoke_catalog_tool,
     request_metadata,
@@ -20,10 +20,10 @@ from intergrax.tools.providers.workspace.service import (
 )
 from intergrax.llm.messages import ChatMessage
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.nexus.tools.canonical_tool_dispatch import (
+from intergrax.runtime.execution.agent_catalog_tool_dispatch import (
     materialize_canonical_tool_definitions_for_llm_dispatch,
 )
-from intergrax.runtime.nexus.engine.runtime_state import RuntimeState
+from intergrax.runtime.execution.runtime_state import RuntimeState
 from tool_selection_qualifier.tool_functional_evidence import emit_tool_selection_functional_evidence
 from tool_selection_qualifier.tool_selection import (
     DEFAULT_QUALIFICATION_TOOL_IDS,

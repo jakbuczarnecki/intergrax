@@ -12,7 +12,7 @@ from collections.abc import Mapping, Sequence
 from pydantic import BaseModel
 
 from intergrax.knowledge.contracts.validation import JsonObject, JsonValue
-from intergrax.runtime.nexus.tools.atomic_planner_round import (
+from intergrax.runtime.execution.atomic_planner_round_bridge import (
     AtomicPlannerRoundProjectionError,
     extract_admitted_tool_ids_from_discriminated_actions_schema,
 )

@@ -24,9 +24,12 @@ from intergrax.contracts.execution_continuation_state_store import (
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
+from intergrax.contracts.run_budget import RunBudget
 from intergrax.contracts.admitted_root_governance_identity import (
     AdmittedRootGovernanceIdentity,
+)
+from intergrax.contracts.runtime_execution_admission import (
+    RootExecutionAuthorityAdmissionPort,
 )
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.registry.agent_registry import AgentRegistry
@@ -64,6 +67,7 @@ def build_nexus_task_execution_registry(
     pipeline_capability_suffix: str = ".pipeline",
     task_enricher=None,
     production_mode: bool,
+    root_authority_admission: RootExecutionAuthorityAdmissionPort | None = None,
 ) -> TaskExecutionRegistry:
     """Register ``nexus.task.v2`` on a worker TaskExecutionRegistry."""
     durable_deps = None
@@ -78,6 +82,11 @@ def build_nexus_task_execution_registry(
             task_enricher=task_enricher,
         )
     elif admit_root_governance_identity is not None:
+        if root_authority_admission is None:
+            raise ValueError(
+                "build_nexus_task_execution_registry requires root_authority_admission "
+                "when constructing worker host execution from registry",
+            )
         runtime = NexusWorkerRuntime.from_registry(
             registry,
             checkpoint_store=checkpoint_store,
@@ -95,6 +104,7 @@ def build_nexus_task_execution_registry(
             pipeline_capability_suffix=pipeline_capability_suffix,
             task_enricher=task_enricher,
             admit_root_governance_identity=admit_root_governance_identity,
+            root_authority_admission=root_authority_admission,
             production_mode=production_mode,
         )
     else:
@@ -133,6 +143,7 @@ def create_nexus_celery_worker_app(
     pipeline_capability_suffix: str = ".pipeline",
     task_enricher=None,
     production_mode: bool,
+    root_authority_admission: RootExecutionAuthorityAdmissionPort | None = None,
 ) -> Celery:
     """Production/lab composition root: Celery + ``nexus.task.v2`` handler."""
     if retry_policy is not None and lock_ttl_seconds is not None:
@@ -159,6 +170,7 @@ def create_nexus_celery_worker_app(
         pipeline_capability_suffix=pipeline_capability_suffix,
         task_enricher=task_enricher,
         production_mode=production_mode,
+        root_authority_admission=root_authority_admission,
     )
 
     app = Celery(app_name, broker=broker_url, backend=backend_url)

@@ -31,7 +31,8 @@ from intergrax.integrations.credentials.broker import ScopedCredentialBroker
 from intergrax.integrations.credentials.secrets_store_resolver import SecretsStoreCredentialResolver
 from intergrax.integrations.qualification.reference_scoped_adaptive_integration_execution import (
     ReferenceExecutionBoundCredentialGrantProvider,
-    ReferenceScopedAdaptedIntegrationOperation,
+    ReferenceScopedAdaptedIntegrationEffectExecutor,
+    ReferenceScopedAdaptedIntegrationEffectRequestPreparer,
     ReferenceScopedAdaptiveIntegrationSandboxSession,
     execute_reference_scoped_adaptive_integration,
 )
@@ -151,22 +152,22 @@ def _cert_intake(
     *,
     sandbox: ReferenceScopedAdaptiveIntegrationSandboxSession | None = None,
     grant_provider: ReferenceExecutionBoundCredentialGrantProvider | None = None,
-) -> tuple[object, ReferenceScopedAdaptedIntegrationOperation]:
+) -> tuple[object, ReferenceScopedAdaptedIntegrationEffectRequestPreparer]:
     broker = _broker()
     intake, delegate = build_scoped_adaptive_integration_canonical_execution_intake(
         credential_broker=broker,
         credential_grant_provider=grant_provider or _grant_provider(),
         sandbox_security_source=sandbox or _sandbox_ok(),
     )
-    op = delegate.operation_port
-    assert type(op) is ReferenceScopedAdaptedIntegrationOperation
-    return intake, op
+    preparer = delegate.effect_preparer
+    assert type(preparer) is ReferenceScopedAdaptedIntegrationEffectRequestPreparer
+    return intake, preparer
 
 
 @pytest.mark.asyncio
 async def test_cert_full_reference_e2e() -> None:
     preparation = _prepare()
-    intake, op = _cert_intake()
+    intake, preparer = _cert_intake()
     dispatch = _dispatch_stack(intake)
     coordinator = WorkerScopedAdaptiveIntegrationExecutionCoordinator(
         qualification_service=CapabilityQualificationService(
@@ -177,13 +178,13 @@ async def test_cert_full_reference_e2e() -> None:
     result = await coordinator.execute(_p4_request(preparation))
     assert result.outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED
     assert result.execution_id is not None
-    assert op.last_operation == reference_read_operation()
+    assert preparer.last_requested_operation == reference_read_operation()
 
 
 @pytest.mark.asyncio
 async def test_cert_requested_operation_not_permitted_rejected() -> None:
     preparation = _prepare()
-    intake, _op = _cert_intake()
+    intake, _preparer = _cert_intake()
     dispatch = _dispatch_stack(intake)
     coordinator = WorkerScopedAdaptiveIntegrationExecutionCoordinator(
         qualification_service=CapabilityQualificationService(
@@ -218,7 +219,8 @@ def test_cert_forged_handoff_missing_qualification_proof() -> None:
     tampered = replace(handoff, qualification_request_id="forged-request-id")
     assert validate_execution_bound_qualification_proof(tampered) is not None
     execution_id = mint_execution_id()
-    operation = ReferenceScopedAdaptedIntegrationOperation()
+    preparer = ReferenceScopedAdaptedIntegrationEffectRequestPreparer()
+    executor = ReferenceScopedAdaptedIntegrationEffectExecutor()
     envelope = execute_reference_scoped_adaptive_integration(
         handoff=tampered,
         execution_id=execution_id,
@@ -226,10 +228,12 @@ def test_cert_forged_handoff_missing_qualification_proof() -> None:
         sandbox_security_source=_sandbox_ok(),
         credential_broker=_broker(),
         credential_grant_provider=_grant_provider(),
-        operation_port=operation,
+        effect_preparer=preparer,
+        effect_executor=executor,
     )
     assert envelope.outcome is ScopedAdaptiveIntegrationExecutionOutcome.QUALIFICATION_REJECTED
-    assert operation.last_operation is None
+    assert preparer.last_requested_operation is None
+    assert executor.call_count == 0
 
 
 @pytest.mark.parametrize(
@@ -262,7 +266,8 @@ def test_cert_credential_grant_id_binding(
     )
     execution_id = mint_execution_id()
     provider = _MismatchGrantProvider() if use_mismatch_provider else _grant_provider()
-    operation = ReferenceScopedAdaptedIntegrationOperation()
+    preparer = ReferenceScopedAdaptedIntegrationEffectRequestPreparer()
+    executor = ReferenceScopedAdaptedIntegrationEffectExecutor()
     envelope = execute_reference_scoped_adaptive_integration(
         handoff=handoff,
         execution_id=execution_id,
@@ -270,11 +275,12 @@ def test_cert_credential_grant_id_binding(
         sandbox_security_source=_sandbox_ok(),
         credential_broker=_broker(),
         credential_grant_provider=provider,
-        operation_port=operation,
+        effect_preparer=preparer,
+        effect_executor=executor,
     )
     assert envelope.outcome is expected
     if expected is not ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED:
-        assert operation.last_operation is None
+        assert executor.call_count == 0
 
 
 @pytest.mark.parametrize(
@@ -313,7 +319,8 @@ def test_cert_sandbox_attestation_matrix(sandbox_caps: SandboxSecurityCapabiliti
         execution_idempotency_key="idem-sbx",
     )
     execution_id = mint_execution_id()
-    operation = ReferenceScopedAdaptedIntegrationOperation()
+    preparer = ReferenceScopedAdaptedIntegrationEffectRequestPreparer()
+    executor = ReferenceScopedAdaptedIntegrationEffectExecutor()
     envelope = execute_reference_scoped_adaptive_integration(
         handoff=handoff,
         execution_id=execution_id,
@@ -323,7 +330,8 @@ def test_cert_sandbox_attestation_matrix(sandbox_caps: SandboxSecurityCapabiliti
         ),
         credential_broker=_broker(),
         credential_grant_provider=_grant_provider(),
-        operation_port=operation,
+        effect_preparer=preparer,
+        effect_executor=executor,
     )
     assert envelope.outcome is ScopedAdaptiveIntegrationExecutionOutcome.SANDBOX_SECURITY_UNSATISFIED
-    assert operation.last_operation is None
+    assert executor.call_count == 0

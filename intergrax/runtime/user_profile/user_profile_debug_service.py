@@ -10,7 +10,7 @@ from datetime import datetime
 
 from intergrax.memory.user_profile_manager import UserProfileManager
 from intergrax.memory.user_profile_memory import UserProfile, UserProfileMemoryEntry
-from intergrax.runtime.nexus.session.session_manager import SessionManager
+from intergrax.runtime.execution.session_host_composition import SessionManager
 from intergrax.runtime.user_profile.user_profile_debug_snapshot import (
     UserProfileDebugSnapshot,
     SessionDebugView,

@@ -12,13 +12,18 @@ if TYPE_CHECKING:
     from intergrax.harness.application_host import ApplicationHost
     from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
     from intergrax.applications.contracts.manifest import ApplicationManifest
-    from intergrax.runtime.nexus.budget.budget_models import RunBudget
+    from intergrax.contracts.run_budget import RunBudget
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
+from intergrax.contracts.host_orchestration_application_wiring_target import (
+    HostOrchestrationApplicationWiringTarget,
+)
 
 
-def _attach_middleware(nexus: NexusLoop, middleware: RuntimeMiddleware) -> None:
-    pipeline = nexus._middleware  # noqa: SLF001 — Tier-3 composition hook
+def _attach_middleware(
+    host: HostOrchestrationApplicationWiringTarget,
+    middleware: RuntimeMiddleware,
+) -> None:
+    pipeline = host.middleware
     if not isinstance(pipeline, MiddlewarePipeline):
         return
     existing = list(pipeline._middleware)  # noqa: SLF001
@@ -31,7 +36,7 @@ def _attach_middleware(nexus: NexusLoop, middleware: RuntimeMiddleware) -> None:
 
 
 def apply_application_environment_state_wiring(
-    nexus: NexusLoop,
+    host: HostOrchestrationApplicationWiringTarget,
     *,
     manifest: ApplicationManifest,
     environment: ApplicationEnvironmentProfile,
@@ -43,7 +48,7 @@ def apply_application_environment_state_wiring(
     )
 
     _attach_middleware(
-        nexus,
+        host,
         ApplicationEnvironmentStateMiddleware(
             manifest=manifest,
             environment=environment,
@@ -53,26 +58,26 @@ def apply_application_environment_state_wiring(
 
 
 def apply_application_host_wiring(
-    nexus: NexusLoop,
-    host: ApplicationHost | None,
+    orchestration_host: HostOrchestrationApplicationWiringTarget,
+    application_host: ApplicationHost | None,
 ) -> None:
     """Attach ``ApplicationHost`` middleware when a host implementation is provided."""
-    if host is None:
+    if application_host is None:
         return
     from intergrax.harness.hooks import ApplicationHostMiddleware
 
-    _attach_middleware(nexus, ApplicationHostMiddleware(host))
+    _attach_middleware(orchestration_host, ApplicationHostMiddleware(application_host))
 
 
 def apply_hook_runtime_guard_wiring(
-    nexus: NexusLoop,
+    host: HostOrchestrationApplicationWiringTarget,
     environment: ApplicationEnvironmentProfile,
 ) -> None:
     """Configure middleware hook timeout and audit bus (APP-CON-5 · §32.6.5)."""
-    pipeline = nexus._middleware  # noqa: SLF001 — Tier-3 composition hook
+    pipeline = host.middleware
     if not isinstance(pipeline, MiddlewarePipeline):
         return
     pipeline.configure_hook_runtime(
         hook_timeout_seconds=environment.reliability_profile.middleware_hook_timeout_seconds,
-        event_bus=nexus.event_bus,
+        event_bus=host.event_bus,
     )

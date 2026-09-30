@@ -23,7 +23,7 @@ from intergrax.runtime.middleware.base import RuntimeMiddleware
 if TYPE_CHECKING:
     from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
     from intergrax.applications.contracts.manifest import ApplicationManifest
-    from intergrax.runtime.nexus.budget.budget_models import RunBudget
+    from intergrax.contracts.run_budget import RunBudget
 
 _HOOK_POINT_PHASE: dict[HookPoint, EnvironmentTaskPhase] = {
     HookPoint.BEFORE_TASK_INTAKE: EnvironmentTaskPhase.INTAKE,

@@ -22,7 +22,9 @@ from intergrax.utils.time_provider import SystemTimeProvider
 
 if TYPE_CHECKING:
     from intergrax.applications._shared.registry_snapshot import HarnessRegistrySnapshot
-    from intergrax.runtime.nexus.nexus_loop import NexusLoop
+    from intergrax.contracts.host_orchestration_application_wiring_target import (
+        HostOrchestrationApplicationWiringTarget,
+    )
 
 
 def stable_digest_hex(payload: Any) -> str:
@@ -206,7 +208,7 @@ def _binding_digest_payload(binding: AgentBinding) -> dict[str, Any]:
 
 
 def apply_environment_snapshot_wiring(
-    nexus: NexusLoop,
+    nexus: HostOrchestrationApplicationWiringTarget,
     *,
     manifest: ApplicationManifest,
     environment: ApplicationEnvironmentProfile,

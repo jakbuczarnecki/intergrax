@@ -12,7 +12,7 @@ from intergrax.applications.contracts.environment_profile import (
 )
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.registry.factory import resolve_from_profile
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
 from intergrax.runtime.security.encryption_transform import (
     RestrictedPayloadEncryptor,
@@ -67,7 +67,7 @@ def resolve_restricted_payload_encryptor(
         raise RestrictedPayloadEncryptorResolutionError(
             "secrets_store integration is declared but integration_profile is missing",
         )
-    from intergrax.integrations._shared.conformance import assert_secrets_store
+    from intergrax.integrations.registry.bootstrap_conformance import assert_secrets_store
 
     try:
         store = resolve_from_profile(profile, IntegrationCategory.SECRETS_STORE)

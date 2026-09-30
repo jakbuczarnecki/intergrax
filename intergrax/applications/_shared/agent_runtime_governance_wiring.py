@@ -11,7 +11,7 @@ from intergrax.applications.contracts.manifest import AgentBinding, ApplicationM
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_runtime_governance import CapabilityGrant
 from intergrax.runtime.agent_governance.ports import AgentRuntimeGovernancePort
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.wiring.agent_runtime_governance_factory import (
     build_agent_runtime_governance_boundary,

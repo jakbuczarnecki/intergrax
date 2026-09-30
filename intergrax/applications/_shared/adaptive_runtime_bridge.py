@@ -14,7 +14,7 @@ from intergrax.runtime.adaptive.profile_orchestration_resolver import apply_orch
 from intergrax.runtime.adaptive.profile_policy_resolver import apply_policy_fragment_version
 from intergrax.runtime.adaptive.profile_rag_router import apply_rag_profile_version
 from intergrax.runtime.adaptive.profile_resolution import ResolvedProfileVersions, resolve_profile_versions_for_request
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 
 
 def apply_adaptive_profile_to_runtime_config(

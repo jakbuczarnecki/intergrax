@@ -51,7 +51,7 @@ from intergrax.runtime.task.task_metadata_keys import (
 from intergrax.runtime.workspace.shadow_workspace import ShadowWorkspaceMetadataKey
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
+    from intergrax.runtime.execution.agent_runtime_io import RuntimeRequest
     from intergrax.runtime.task.task import Task, TaskResult
 
 _LEGACY_OPTION_KEYS = frozenset(

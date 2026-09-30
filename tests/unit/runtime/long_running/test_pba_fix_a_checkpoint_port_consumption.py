@@ -12,7 +12,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from intergrax.applications._shared.nexus_factory import (
+from intergrax.applications._shared.host_orchestration_backend_spec_builder import (
     build_nexus_loop_from_environment,
 )
 from intergrax.applications.contracts.environment_profile import (
@@ -65,7 +65,7 @@ _GENERIC_RUNTIME_FILES = (
     _REPO_ROOT / "intergrax/runtime/long_running/coordinator.py",
     _REPO_ROOT / "intergrax/runtime/task/nexus_worker_execution.py",
     _REPO_ROOT / "intergrax/runtime/task/worker_bootstrap.py",
-    _REPO_ROOT / "intergrax/applications/_shared/nexus_factory.py",
+    _REPO_ROOT / "intergrax/applications/_shared/host_orchestration_backend_spec_builder.py",
 )
 
 
@@ -275,6 +275,7 @@ def test_a5_worker_runtime_accepts_fake_port() -> None:
         checkpoint_store=fake,
         production_mode=False,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
     )
     assert runtime.host_execution is not None
 
@@ -302,6 +303,7 @@ def test_a6_worker_bootstrap_contract_accepts_fake_port() -> None:
         AgentRegistry(),
         checkpoint_store=fake,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
         production_mode=False,
     )
     assert registry is not None
@@ -317,6 +319,7 @@ def test_a6_worker_bootstrap_contract_accepts_fake_port() -> None:
         agent_registry=AgentRegistry(),
         checkpoint_store=fake,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
         task_always_eager=True,
         kv_store=DispatcherTestKVStore(),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),

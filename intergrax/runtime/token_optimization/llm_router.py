@@ -19,8 +19,8 @@ from intergrax.llm_adapters.contracts.structured_result import LLMStructuredResu
 from intergrax.llm_adapters.registry.catalog_capabilities import (
     unwrap_catalog_capability_adapter,
 )
-from intergrax.runtime.nexus.tools.tool_planning_config import ToolPlanningConfig
-from intergrax.runtime.nexus.tools.tool_planning_service import (
+from intergrax.runtime.execution.reasoning_tool_planning_composition import ToolPlanningConfig
+from intergrax.runtime.execution.reasoning_tool_planning_composition import (
     ToolPlanningService,
     build_tool_planning_schema,
 )

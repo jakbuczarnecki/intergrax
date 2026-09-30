@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from intergrax.rag.profiles.runtime_rag_sync import sync_rag_profile_from_runtime_config
-from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 

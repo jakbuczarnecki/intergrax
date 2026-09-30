@@ -1,65 +1,59 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Build NexusLoop from ApplicationEnvironmentProfile (Phase H-APP.3.3, ORCH-1)."""
+"""Resolve host orchestration backend construction spec from environment (no Nexus materialization)."""
 
 from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
+from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
+from intergrax.applications._shared.adaptive_wiring import ApplicationAdaptiveWiring
+from intergrax.runtime.execution.application_environment_context_composition import (
+    resolve_context_manager_from_environment,
+)
 from intergrax.applications._shared.decision_wiring import (
     ApplicationDecisionWiring,
-    apply_application_decision_wiring,
 )
 from intergrax.applications._shared.guardrail_wiring import (
     ApplicationGuardrailWiring,
-    apply_application_guardrail_wiring,
     wire_application_guardrail,
 )
-from intergrax.applications._shared.security_wiring import (
-    ApplicationSecurityWiring,
-    apply_application_security_wiring,
-    wire_application_security,
-)
-from intergrax.applications._shared.context_wiring import (
-    resolve_context_manager_from_environment,
-)
-from intergrax.runtime.governance.governance_evidence_recorder import (
-    GovernanceEvidenceRecorder,
-)
-from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
 from intergrax.applications._shared.host_execution_capacity_policy import (
     validate_strict_host_execution_capacity,
 )
+from intergrax.applications._shared.llm_resolver import resolve_environment_llm_adapter
 from intergrax.applications._shared.orchestration_wiring import (
     OrchestrationWiringContext,
     orchestration_requires_llm_adapter,
+    resolve_orchestration_runtime_settings,
+)
+from intergrax.runtime.execution.host_orchestration_planner_classifier_wiring import (
     resolve_nexus_task_classifier,
     resolve_nexus_task_planner,
-    resolve_orchestration_runtime_settings,
 )
 from intergrax.applications._shared.reasoning_wiring import (
     resolve_planner_llm_adapter,
     resolve_planner_model_id,
 )
-from intergrax.applications._shared.adaptive_wiring import ApplicationAdaptiveWiring
+from intergrax.applications._shared.security_wiring import (
+    ApplicationSecurityWiring,
+    wire_application_security,
+)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
 )
-from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.long_running.notification import NotificationAdapter
-from intergrax.runtime.long_running.persistence_contract import (
-    TaskCheckpointPersistence,
-)
-from intergrax.runtime.nexus.context.context_manager import ContextManager
-from intergrax.runtime.nexus.budget.budget_models import RunBudget
-from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
-from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.contracts.attempt_lifecycle import AttemptLifecycleStore
-from intergrax.contracts.idempotency_store import IdempotencyStore
 from intergrax.contracts.execution_bound_declarative_tool_invocation import (
     ExecutionBoundDeclarativeToolInvoker,
+)
+from intergrax.contracts.idempotency_store import IdempotencyStore
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.execution.attempt_lifecycle import (
+    AttemptLifecycleService,
+    resolve_attempt_lifecycle_store,
 )
 from intergrax.runtime.execution.authority import (
     resolve_execution_authority_policy_from_runtime_config,
@@ -69,26 +63,35 @@ from intergrax.runtime.execution.budget import (
     fixed_execution_budget_ledger_factory,
     resolve_execution_budget_allocation_policy_from_runtime_config,
 )
-from intergrax.runtime.execution.attempt_lifecycle import (
-    AttemptLifecycleService,
-    resolve_attempt_lifecycle_store,
-)
 from intergrax.runtime.execution.execution_terminal import ExecutionTerminalService
 from intergrax.runtime.execution.execution_terminal.wiring import (
     resolve_execution_terminal_store,
 )
+from intergrax.runtime.execution.host_orchestration_loop_init_spec import (
+    HostOrchestrationLoopInitSpec,
+)
+from intergrax.runtime.execution.host_orchestration_wiring_bundle import (
+    HostOrchestrationApplicationWiringBundle,
+)
 from intergrax.runtime.execution.lineage.wiring import (
     resolve_execution_lineage_persistence,
 )
-from intergrax.runtime.nexus.config import RuntimeConfig
-from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
+from intergrax.runtime.governance.governance_evidence_recorder import (
+    GovernanceEvidenceRecorder,
+)
+from intergrax.runtime.long_running.notification import NotificationAdapter
+from intergrax.runtime.long_running.persistence_contract import (
+    TaskCheckpointPersistence,
+)
+from intergrax.contracts.run_budget import RunBudget
+from intergrax.runtime.execution.host_runtime_config import RuntimeConfig
+from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+from intergrax.contracts.run_trace_store import RunTraceWriter
+from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
-
 
 if TYPE_CHECKING:
     from intergrax.contracts.execution_continuation_state_store import (
@@ -106,7 +109,7 @@ if TYPE_CHECKING:
     )
 
 
-def build_nexus_loop_from_environment(
+def build_host_orchestration_loop_init_spec_from_environment(
     registry: AgentRegistryRead,
     *,
     env: ApplicationEnvironmentProfile,
@@ -145,8 +148,8 @@ def build_nexus_loop_from_environment(
     execution_lineage_persistence: ExecutionLineagePersistence | None = None,
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
-) -> NexusLoop:
-    """Apply orchestration and reliability profiles to ``NexusLoop`` construction."""
+) -> HostOrchestrationLoopInitSpec:
+    """Resolve typed Execution Engine orchestration backend inputs from the environment."""
     validate_strict_host_execution_capacity(env)
     orch = env.orchestration_profile
     reliability = env.reliability_profile
@@ -250,8 +253,16 @@ def build_nexus_loop_from_environment(
         )
     )
 
-    loop = NexusLoop(
-        registry,
+    resolved_security = security_wiring or wire_application_security(env)
+    resolved_guardrail = guardrail_wiring or wire_application_guardrail(env)
+    wiring_bundle = HostOrchestrationApplicationWiringBundle(
+        environment=env,
+        security_wiring=resolved_security,
+        guardrail_wiring=resolved_guardrail,
+        decision_wiring=decision_wiring,
+    )
+
+    return HostOrchestrationLoopInitSpec(
         classifier=classifier,
         planner=planner,
         max_parallel_nodes=runtime_settings.max_parallel_nodes,
@@ -291,16 +302,10 @@ def build_nexus_loop_from_environment(
         attempt_lifecycle=resolved_attempt_lifecycle,
         execution_terminal=resolved_execution_terminal,
         execution_lineage_persistence=resolved_execution_lineage,
-        # Strict/production: host must inject a durable store (is_durable=True).
-        # Lab/non-strict: None → NexusLoop lab in-memory default. Never invent
-        # an implicit InMemory store inside this factory for production.
         execution_continuation_state_store=execution_continuation_state_store,
         governance_evidence_recorder=governance_evidence_recorder,
+        application_wiring=wiring_bundle,
     )
-    resolved_security = security_wiring or wire_application_security(env)
-    apply_application_security_wiring(loop, resolved_security, env=env)
-    resolved_guardrail = guardrail_wiring or wire_application_guardrail(env)
-    apply_application_guardrail_wiring(loop, resolved_guardrail, env)
-    if decision_wiring is not None:
-        apply_application_decision_wiring(loop, decision_wiring, environment=env)
-    return loop
+
+
+__all__ = ["build_host_orchestration_loop_init_spec_from_environment"]

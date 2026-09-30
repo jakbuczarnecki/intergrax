@@ -8,6 +8,7 @@ from typing import Any
 
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.contracts.tool_request import ToolRequest, ToolResponseStatus
 from intergrax.utils import attribute_access
 
 
@@ -32,3 +33,29 @@ def request_metadata(
         raw = step_ctx.metadata or {}
         return {key: raw[key] for key in fallback_keys if key in raw}
     return {}
+
+
+async def invoke_catalog_tool(
+    exec_ctx: RuntimeExecutionContext,
+    *,
+    tool_name: str,
+    agent_id: str,
+    step_id: str,
+    tool_input: dict[str, Any],
+) -> dict[str, Any]:
+    response = await exec_ctx.invoke_tool(
+        ToolRequest(
+            tool_name=tool_name,
+            agent_id=agent_id,
+            step_id=step_id,
+            input=tool_input,
+        )
+    )
+    entry: dict[str, Any] = {"status": response.status.value}
+    if response.status == ToolResponseStatus.SUCCESS and response.output:
+        entry.update(response.output)
+    elif response.error:
+        entry["reason"] = response.error
+    elif response.status != ToolResponseStatus.SUCCESS:
+        entry["reason"] = response.status.value
+    return entry

@@ -15,14 +15,15 @@ from intergrax.contracts.execution_identity import (
 
 if TYPE_CHECKING:
     from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.nexus.tracing.trace_models import (
+from intergrax.contracts.tracing import (
     DiagnosticPayload,
     TraceComponent,
     TraceEvent,
     TraceLevel,
     utc_now_iso,
 )
-from intergrax.runtime.nexus.tracing.persistence_models import RunMetadata, RunStats, RunTraceWriter
+from intergrax.contracts.persisted_run_trace import RunMetadata, RunStats
+from intergrax.contracts.run_trace_store import RunTraceWriter
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle
 from intergrax.runtime.task.task import Task
 

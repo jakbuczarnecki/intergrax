@@ -32,7 +32,7 @@ from intergrax.runtime.nexus.agents.reference_harness_runtime import (
     build_lab_agent_runtime_config,
     build_lab_agent_runtime_context,
 )
-from intergrax.applications._shared.nexus_factory import build_nexus_loop_from_environment
+from testing_support.nexus_loop_from_environment import build_nexus_loop_from_environment
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     OrchestrationProfile,

@@ -18,9 +18,9 @@ from intergrax.contracts.execution_identity import (
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.payload_registry import RuntimeEventPayload, runtime_event_with_payload
 from intergrax.runtime.events.runtime_event import RuntimeEvent
-from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+from intergrax.contracts.run_trace_store import RunTraceWriter
 from intergrax.contracts.tracing.values import TraceObject, normalize_trace_tags
-from intergrax.runtime.nexus.tracing.trace_models import (
+from intergrax.contracts.tracing import (
     DEFAULT_REDACTED_TEXT,
     DiagnosticPayload,
     TraceComponent,
@@ -36,7 +36,7 @@ from intergrax.runtime.observability.trace_scope import (
 )
 
 if TYPE_CHECKING:
-    from intergrax.runtime.nexus.artifacts.models import ArtifactRef
+    from intergrax.runtime.execution.trace_persistence_models_bridge import ArtifactRef
 
 
 class TraceSeqProvider(Protocol):

@@ -10,7 +10,7 @@ from typing import TypeVar
 
 from intergrax.runtime.events.payload_registry import register_payload_schema
 from intergrax.runtime.events.payloads import RuntimeEventPayload
-from intergrax.runtime.nexus.tracing.trace_models import DiagnosticPayload
+from intergrax.contracts.tracing import DiagnosticPayload
 
 TDiag = TypeVar("TDiag", bound=DiagnosticPayload)
 TRuntime = TypeVar("TRuntime", bound=RuntimeEventPayload)

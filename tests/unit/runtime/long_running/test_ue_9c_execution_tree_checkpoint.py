@@ -559,9 +559,35 @@ def test_recorder_sync_updates_task_runtime_checkpoint() -> None:
         parent_execution_id=root,
         graph_node_id="n1",
     )
-    sync_execution_tree_to_task(task, recorder)
+    token = bind_active_execution_identity(
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=root,
+    )
+    try:
+        sync_execution_tree_to_task(task, recorder)
+    finally:
+        reset_active_execution_identity(token)
     assert task.runtime.orchestration.runtime_checkpoint is not None
     assert task.runtime.orchestration.runtime_checkpoint.execution_tree.entry_by_graph_node_id("n1") is not None
+
+
+def test_sync_execution_tree_to_task_fail_closed_without_active_execution() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    root = mint_execution_id()
+    runtime = _runtime(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        entries=[_entry(root, status=ExecutionCheckpointStatus.RUNNING)],
+    )
+    task = Task(tenant_id="t1", user_id="u1", agent_id="a1", task_id=task_id)
+    task.runtime.orchestration.runtime_checkpoint = runtime
+    recorder = ExecutionTreeRecorder.from_snapshot(runtime.execution_tree)
+    with pytest.raises(RuntimeError, match="active execution identity required"):
+        sync_execution_tree_to_task(task, recorder)
 
 
 def test_build_runtime_checkpoint_uses_active_execution_id() -> None:

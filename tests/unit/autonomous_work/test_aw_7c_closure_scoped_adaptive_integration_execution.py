@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""AW-7C-CLOSURE — canonical runtime-bound parent certification tests."""
+"""AW-7C-CLOSURE-R1 — typed effect preparation, late credential resolution, canonical executor."""
 
 from __future__ import annotations
 
@@ -24,16 +24,26 @@ from intergrax.contracts.sandbox_network_egress import (
     NetworkEgressAllowlist,
     NetworkEgressHost,
 )
-from intergrax.integrations.contracts.credential import CredentialRef, CredentialUseGrant
+from intergrax.integrations.contracts.credential import (
+    CredentialScopeMismatchError,
+    CredentialUseGrant,
+    CredentialUseScope,
+    ScopedCredentialResolutionResult,
+)
+from intergrax.integrations.contracts.scoped_adapted_integration_effect_execution import (
+    ScopedAdaptedIntegrationEffectExecutionIngress,
+)
 from intergrax.integrations.contracts.scoped_integration_adaptation import (
-    ScopedAdaptedIntegrationOperationEvidence,
-    ScopedAdaptedIntegrationOperationPort,
+    ScopedAdaptedIntegrationEffectRequest,
+    ScopedAdaptedIntegrationEffectRequestPort,
     ScopedIntegrationAdaptationArtifact,
     ScopedIntegrationAdaptationOperationId,
 )
+from intergrax.integrations.credentials.broker import ScopedCredentialBroker
 from intergrax.integrations.qualification.reference_scoped_adaptive_integration_execution import (
     ReferenceExecutionBoundCredentialGrantProvider,
-    ReferenceScopedAdaptedIntegrationOperation,
+    ReferenceScopedAdaptedIntegrationEffectExecutor,
+    ReferenceScopedAdaptedIntegrationEffectRequestPreparer,
     ReferenceScopedAdaptiveIntegrationSandboxSession,
     execute_reference_scoped_adaptive_integration,
 )
@@ -45,14 +55,11 @@ from intergrax.integrations.qualification.reference_scoped_integration_adaptatio
 from intergrax.integrations.qualification.reference_scoped_integration_qualification import (
     ReferenceScopedIntegrationQualificationProvider,
 )
-from intergrax.integrations.qualification.scoped_adaptive_integration_execution_intake import (
-    build_scoped_adaptive_integration_canonical_execution_intake,
-)
 from intergrax.integrations.qualification.scoped_adaptive_integration_execution_runtime_delegate import (
     ScopedAdaptiveIntegrationExecutionRuntimeDelegate,
 )
 from intergrax.runtime.execution.canonical_intake_adapter import CanonicalExecutionRuntimeAdapter
-from intergrax.runtime.sandbox.contracts import SandboxSecurityCapabilities
+from intergrax.runtime.sandbox.contracts import SandboxSecurityCapabilities, SandboxSecurityCapable
 from tests.unit.autonomous_work.test_aw_7c_cert_scoped_adaptive_integration_execution import (
     _broker,
     _grant_provider,
@@ -69,27 +76,15 @@ from tests.unit.autonomous_work.test_aw_7c_p4_scoped_adaptive_integration_execut
 pytestmark = pytest.mark.unit
 
 _HOST_A = NetworkEgressHost(scheme="https", hostname="a.example.com", port=443)
+_HOST_B = NetworkEgressHost(scheme="https", hostname="b.example.com", port=443)
 _ALLOWLIST = NetworkEgressAllowlist(hosts=(_HOST_A,))
+_WIDENED_ALLOWLIST = NetworkEgressAllowlist(hosts=(_HOST_A, _HOST_B))
 
 
-class _AltScopedAdaptedIntegrationOperation:
-    """Replaceability proof — second operation implementation."""
+class _CustomPreparerSameContract(ReferenceScopedAdaptedIntegrationEffectRequestPreparer):
+    """Replaceable preparer emitting valid requests (pluginability)."""
 
-    def execute(
-        self,
-        *,
-        artifact: ScopedIntegrationAdaptationArtifact,
-        requested_operation: ScopedIntegrationAdaptationOperationId,
-        execution_id: str,
-        tenant_id: str,
-    ) -> ScopedAdaptedIntegrationOperationEvidence:
-        return ScopedAdaptedIntegrationOperationEvidence(
-            evidence_ref=f"alt:{artifact.artifact_id}:{execution_id}",
-            tenant_id=tenant_id,
-            execution_id=execution_id,
-            artifact_id=artifact.artifact_id,
-            executed_operation=requested_operation,
-        )
+    marker = "custom-preparer"
 
 
 class _WriteGrantProvider:
@@ -105,11 +100,11 @@ class _WriteGrantProvider:
     ) -> CredentialUseGrant:
         base = _grant_provider()
         return CredentialUseGrant(
-            grant_id=credential_grant_ref,
+            grant_id=base.grant_id,
             credential_ref=base.credential_ref,
-            tenant_id=tenant_id,
-            provider_id=provider_id,
-            integration_id=integration_id,
+            tenant_id=base.tenant_id,
+            provider_id=base.provider_id,
+            integration_id=base.integration_id,
             operation=reference_write_operation().value,
             execution_id=str(execution_id),
             target_scope=base.target_scope,
@@ -117,21 +112,19 @@ class _WriteGrantProvider:
         )
 
 
-class _WrongOpEvidenceOperation(ReferenceScopedAdaptedIntegrationOperation):
-    def execute(
-        self,
-        *,
-        artifact: ScopedIntegrationAdaptationArtifact,
-        requested_operation: ScopedIntegrationAdaptationOperationId,
-        execution_id: str,
-        tenant_id: str,
-    ) -> ScopedAdaptedIntegrationOperationEvidence:
+class _BrokenEffectExecutor(ReferenceScopedAdaptedIntegrationEffectExecutor):
+    def execute(self, ingress: object) -> object:
+        from intergrax.integrations.contracts.scoped_integration_adaptation import (
+            ScopedAdaptedIntegrationOperationEvidence,
+        )
+
+        effect_request = ingress.effect_request  # type: ignore[attr-defined]
         wrong = reference_write_operation()
         return ScopedAdaptedIntegrationOperationEvidence(
-            evidence_ref=f"bad:{artifact.artifact_id}",
-            tenant_id=tenant_id,
-            execution_id=execution_id,
-            artifact_id=artifact.artifact_id,
+            evidence_ref=f"bad:{effect_request.artifact_id}",
+            tenant_id=effect_request.tenant_id,
+            execution_id=effect_request.execution_id,
+            artifact_id=effect_request.artifact_id,
             executed_operation=wrong,
         )
 
@@ -188,57 +181,223 @@ class _TracingSandboxSession:
         return self._inner.security_capabilities()
 
 
-class _TracingOperation(ReferenceScopedAdaptedIntegrationOperation):
-    trace: _ExecutionOrderTrace
+class _TracingPreparer(ReferenceScopedAdaptedIntegrationEffectRequestPreparer):
+    def __init__(self, trace: _ExecutionOrderTrace) -> None:
+        super().__init__()
+        self._trace = trace
 
-    def execute(
+    def prepare(
         self,
         *,
         artifact: ScopedIntegrationAdaptationArtifact,
         requested_operation: ScopedIntegrationAdaptationOperationId,
         execution_id: str,
         tenant_id: str,
-    ) -> ScopedAdaptedIntegrationOperationEvidence:
-        self.trace.record("operation_invoked")
-        return super().execute(
+        admitted_network_allowlist: NetworkEgressAllowlist,
+    ) -> ScopedAdaptedIntegrationEffectRequest:
+        self._trace.record("effect_preparer_called")
+        return super().prepare(
             artifact=artifact,
             requested_operation=requested_operation,
             execution_id=execution_id,
             tenant_id=tenant_id,
+            admitted_network_allowlist=admitted_network_allowlist,
         )
+
+
+class _TracingBroker:
+    def __init__(self, inner: ScopedCredentialBroker, trace: _ExecutionOrderTrace) -> None:
+        self._inner = inner
+        self._trace = trace
+        self.resolve_scoped_calls = 0
+
+    def resolve_scoped(self, grant: CredentialUseGrant, scope: object) -> object:
+        self.resolve_scoped_calls += 1
+        self._trace.record("credential_broker_resolved")
+        return self._inner.resolve_scoped(grant, scope)
+
+
+class _TracingExecutor(ReferenceScopedAdaptedIntegrationEffectExecutor):
+    def __init__(self, trace: _ExecutionOrderTrace) -> None:
+        super().__init__()
+        self._trace = trace
+
+    def execute(self, ingress: object) -> object:
+        self._trace.record("canonical_effect_executor_called")
+        return super().execute(ingress)  # type: ignore[arg-type]
+
+
+class _CountingBroker:
+    def __init__(self, inner: ScopedCredentialBroker) -> None:
+        self._inner = inner
+        self.resolve_scoped_calls = 0
+
+    def resolve_scoped(self, grant: CredentialUseGrant, scope: object) -> object:
+        self.resolve_scoped_calls += 1
+        return self._inner.resolve_scoped(grant, scope)
+
+
+class _CountingExecutor(ReferenceScopedAdaptedIntegrationEffectExecutor):
+    def __init__(self) -> None:
+        super().__init__()
+        self.execute_calls = 0
+
+    def execute(self, ingress: object) -> object:
+        self.execute_calls += 1
+        return super().execute(ingress)  # type: ignore[arg-type]
+
+
+class _FailingPreparer:
+    def prepare(self, **kwargs: object) -> ScopedAdaptedIntegrationEffectRequest:
+        raise RuntimeError("preparer unavailable")
+
+
+class _InvalidEffectPreparer(ReferenceScopedAdaptedIntegrationEffectRequestPreparer):
+    def __init__(self, mutator) -> None:
+        super().__init__()
+        self._mutator = mutator
+
+    def prepare(
+        self,
+        *,
+        artifact: ScopedIntegrationAdaptationArtifact,
+        requested_operation: ScopedIntegrationAdaptationOperationId,
+        execution_id: str,
+        tenant_id: str,
+        admitted_network_allowlist: NetworkEgressAllowlist,
+    ) -> ScopedAdaptedIntegrationEffectRequest:
+        request = super().prepare(
+            artifact=artifact,
+            requested_operation=requested_operation,
+            execution_id=execution_id,
+            tenant_id=tenant_id,
+            admitted_network_allowlist=admitted_network_allowlist,
+        )
+        return self._mutator(request)
+
+
+@dataclass(frozen=True, slots=True)
+class _AlternateEffectExecutionIngress:
+    """Test-only ingress — contract implementation without reference context subclass."""
+
+    effect_request: ScopedAdaptedIntegrationEffectRequest
+    bound_execution_id: ExecutionId
+    sandbox_resource: SandboxSecurityCapable
+    credential_resolution: ScopedCredentialResolutionResult
+
+    @property
+    def execution_id(self) -> str:
+        return str(self.bound_execution_id)
+
+    @property
+    def sandbox_session_id(self) -> int:
+        return id(self.sandbox_resource)
+
+    @property
+    def credential_use_evidence_grant_id(self) -> str:
+        return self.credential_resolution.use_evidence.grant_id
+
+    @property
+    def credential_use_evidence_fingerprint(self) -> str:
+        return self.credential_resolution.use_evidence.credential_fingerprint
+
+
+class _InvalidSandboxResource:
+    """Structurally present but not SandboxSecurityCapable."""
+
+
+def _resolved_for_handoff(
+    handoff: object,
+) -> tuple[ExecutionId, ScopedAdaptedIntegrationEffectRequest, ScopedCredentialResolutionResult]:
+    execution_id = mint_execution_id()
+    preparer = ReferenceScopedAdaptedIntegrationEffectRequestPreparer()
+    effect_request = preparer.prepare(
+        artifact=handoff.artifact,  # type: ignore[attr-defined]
+        requested_operation=handoff.requested_operation,  # type: ignore[attr-defined]
+        execution_id=str(execution_id),
+        tenant_id=_TENANT,
+        admitted_network_allowlist=handoff.network_allowlist,  # type: ignore[attr-defined]
+    )
+    grant = _grant_provider().resolve_grant(
+        execution_id=execution_id,
+        credential_grant_ref=handoff.artifact.scope.credential_grant_ref,  # type: ignore[attr-defined]
+        tenant_id=_TENANT,
+        provider_id=handoff.provider_id,  # type: ignore[attr-defined]
+        integration_id=handoff.resource_scope,  # type: ignore[attr-defined]
+        requested_operation=effect_request.requested_operation,
+    )
+    scope = CredentialUseScope(
+        tenant_id=effect_request.tenant_id,
+        provider_id=effect_request.provider_id,
+        integration_id=effect_request.resource_scope,
+        operation=effect_request.requested_operation.value,
+        execution_id=effect_request.execution_id,
+        target_scope=effect_request.target_scope,
+    )
+    resolved = _broker().resolve_scoped(grant, scope)
+    return execution_id, effect_request, resolved
 
 
 def _canonical_stack(
     *,
-    operation_port: ScopedAdaptedIntegrationOperationPort | None = None,
+    effect_preparer: ScopedAdaptedIntegrationEffectRequestPort | None = None,
     grant_provider: object | None = None,
     trace: _ExecutionOrderTrace | None = None,
-) -> tuple[object, ScopedAdaptiveIntegrationExecutionRuntimeDelegate, ScopedAdaptedIntegrationOperationPort]:
-    broker = _broker()
+    broker: ScopedCredentialBroker | _TracingBroker | _CountingBroker | None = None,
+    effect_executor: ReferenceScopedAdaptedIntegrationEffectExecutor | None = None,
+) -> tuple[object, ScopedAdaptiveIntegrationExecutionRuntimeDelegate]:
+    from intergrax.runtime.execution.runtime import ExecutionRuntime
+
+    base_broker = broker or _broker()
     sandbox = _sandbox_ok()
     provider = grant_provider or _grant_provider()
-    op = operation_port or ReferenceScopedAdaptedIntegrationOperation()
+    preparer = effect_preparer or ReferenceScopedAdaptedIntegrationEffectRequestPreparer()
+    executor = effect_executor or ReferenceScopedAdaptedIntegrationEffectExecutor()
     if trace is not None:
         provider = _TracingGrantProvider(_grant_provider(), trace)
         sandbox = _TracingSandboxSession(sandbox, trace)
-        if type(op) is ReferenceScopedAdaptedIntegrationOperation:
-            traced = _TracingOperation()
-            traced.trace = trace
-            op = traced
-    intake, delegate = build_scoped_adaptive_integration_canonical_execution_intake(
-        credential_broker=broker,
+        preparer = _TracingPreparer(trace)
+        if broker is None:
+            base_broker = _TracingBroker(_broker(), trace)
+        executor = _TracingExecutor(trace)
+    delegate = ScopedAdaptiveIntegrationExecutionRuntimeDelegate(
+        credential_broker=base_broker,
         credential_grant_provider=provider,
         sandbox_security_source=sandbox,
-        operation_port=op,
+        effect_preparer=preparer,
+        effect_executor=executor,
     )
+    intake = CanonicalExecutionRuntimeAdapter(ExecutionRuntime(delegate))
     assert type(intake) is CanonicalExecutionRuntimeAdapter
-    return intake, delegate, op
+    return intake, delegate
+
+
+def _direct_execute(
+    handoff: object,
+    *,
+    preparer: ScopedAdaptedIntegrationEffectRequestPort | None = None,
+    grant_provider: object | None = None,
+    broker: ScopedCredentialBroker | _CountingBroker | None = None,
+    executor: ReferenceScopedAdaptedIntegrationEffectExecutor | None = None,
+    sandbox_security_source: SandboxSecurityCapable | None = None,
+) -> ScopedAdaptiveIntegrationExecutionRuntimeEnvelope:
+    execution_id = mint_execution_id()
+    return execute_reference_scoped_adaptive_integration(
+        handoff=handoff,
+        execution_id=execution_id,
+        tenant_id=_TENANT,
+        sandbox_security_source=sandbox_security_source or _sandbox_ok(),
+        credential_broker=broker or _broker(),
+        credential_grant_provider=grant_provider or _grant_provider(),
+        effect_preparer=preparer or ReferenceScopedAdaptedIntegrationEffectRequestPreparer(),
+        effect_executor=executor or ReferenceScopedAdaptedIntegrationEffectExecutor(),
+    )
 
 
 @pytest.mark.asyncio
 async def test_closure_canonical_e2e_execution_id_continuity() -> None:
     preparation = _prepare()
-    intake, delegate, _op = _canonical_stack()
+    intake, delegate = _canonical_stack()
     dispatch = _dispatch_stack(intake)
     coordinator = WorkerScopedAdaptiveIntegrationExecutionCoordinator(
         qualification_service=CapabilityQualificationService(
@@ -258,7 +417,7 @@ async def test_closure_delegate_without_runtime_active_id_fails_closed() -> None
         credential_broker=_broker(),
         credential_grant_provider=_grant_provider(),
         sandbox_security_source=_sandbox_ok(),
-        operation_port=ReferenceScopedAdaptedIntegrationOperation(),
+        effect_preparer=ReferenceScopedAdaptedIntegrationEffectRequestPreparer(),
     )
     preparation = _prepare()
     qual_request = preparation.qualification_request
@@ -285,8 +444,9 @@ async def test_closure_delegate_without_runtime_active_id_fails_closed() -> None
 @pytest.mark.asyncio
 async def test_closure_operation_binding_read_pass() -> None:
     preparation = _prepare()
-    intake, _delegate, op = _canonical_stack()
-    assert type(op) is ReferenceScopedAdaptedIntegrationOperation
+    intake, delegate = _canonical_stack()
+    preparer = delegate.effect_preparer
+    assert type(preparer) is ReferenceScopedAdaptedIntegrationEffectRequestPreparer
     dispatch = _dispatch_stack(intake)
     coordinator = WorkerScopedAdaptiveIntegrationExecutionCoordinator(
         qualification_service=CapabilityQualificationService(
@@ -296,10 +456,10 @@ async def test_closure_operation_binding_read_pass() -> None:
     )
     result = await coordinator.execute(_p4_request(preparation))
     assert result.outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED
-    assert op.last_operation == reference_read_operation()
+    assert preparer.last_requested_operation == reference_read_operation()
 
 
-def test_closure_operation_binding_write_pass() -> None:
+def test_closure_write_operation_outside_artifact_scope_rejected() -> None:
     preparation = _prepare()
     qual_request = preparation.qualification_request
     assert qual_request is not None
@@ -318,19 +478,13 @@ def test_closure_operation_binding_write_pass() -> None:
         requested_operation=reference_write_operation(),
         permitted_operations=(reference_read_operation(), reference_write_operation()),
     )
-    execution_id = mint_execution_id()
-    operation = ReferenceScopedAdaptedIntegrationOperation()
-    envelope = execute_reference_scoped_adaptive_integration(
-        handoff=handoff,
-        execution_id=execution_id,
-        tenant_id=_TENANT,
-        sandbox_security_source=_sandbox_ok(),
-        credential_broker=_broker(),
-        credential_grant_provider=_grant_provider(),
-        operation_port=operation,
-    )
-    assert envelope.outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED
-    assert operation.last_operation == reference_write_operation()
+    broker = _CountingBroker(_broker())
+    executor = _CountingExecutor()
+    envelope = _direct_execute(handoff, broker=broker, executor=executor)
+    assert envelope.outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTION_FAILED
+    assert envelope.error_detail == "effect request operation outside artifact scope"
+    assert broker.resolve_scoped_calls == 0
+    assert executor.execute_calls == 0
 
 
 def test_closure_handoff_read_grant_write_rejected() -> None:
@@ -347,19 +501,17 @@ def test_closure_handoff_read_grant_write_rejected() -> None:
         requested_operation=reference_read_operation(),
         execution_idempotency_key="op-mismatch",
     )
-    execution_id = mint_execution_id()
-    operation = ReferenceScopedAdaptedIntegrationOperation()
-    envelope = execute_reference_scoped_adaptive_integration(
-        handoff=handoff,
-        execution_id=execution_id,
-        tenant_id=_TENANT,
-        sandbox_security_source=_sandbox_ok(),
-        credential_broker=_broker(),
-        credential_grant_provider=_WriteGrantProvider(),
-        operation_port=operation,
+    broker = _CountingBroker(_broker())
+    executor = _CountingExecutor()
+    envelope = _direct_execute(
+        handoff,
+        grant_provider=_WriteGrantProvider(),
+        broker=broker,
+        executor=executor,
     )
     assert envelope.outcome is ScopedAdaptiveIntegrationExecutionOutcome.CREDENTIAL_DENIED
-    assert operation.last_operation is None
+    assert broker.resolve_scoped_calls == 0
+    assert executor.execute_calls == 0
 
 
 def test_closure_operation_evidence_mismatch_rejected() -> None:
@@ -376,24 +528,14 @@ def test_closure_operation_evidence_mismatch_rejected() -> None:
         requested_operation=reference_read_operation(),
         execution_idempotency_key="evidence-mismatch",
     )
-    execution_id = mint_execution_id()
-    operation = _WrongOpEvidenceOperation()
-    envelope = execute_reference_scoped_adaptive_integration(
-        handoff=handoff,
-        execution_id=execution_id,
-        tenant_id=_TENANT,
-        sandbox_security_source=_sandbox_ok(),
-        credential_broker=_broker(),
-        credential_grant_provider=_grant_provider(),
-        operation_port=operation,
-    )
+    envelope = _direct_execute(handoff, executor=_BrokenEffectExecutor())
     assert envelope.outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTION_FAILED
 
 
 @pytest.mark.asyncio
-async def test_closure_replaceable_operation_port() -> None:
+async def test_closure_replaceable_effect_preparer() -> None:
     preparation = _prepare()
-    intake, _delegate, _op = _canonical_stack(operation_port=_AltScopedAdaptedIntegrationOperation())
+    intake, _delegate = _canonical_stack(effect_preparer=_CustomPreparerSameContract())
     dispatch = _dispatch_stack(intake)
     coordinator = WorkerScopedAdaptiveIntegrationExecutionCoordinator(
         qualification_service=CapabilityQualificationService(
@@ -404,14 +546,14 @@ async def test_closure_replaceable_operation_port() -> None:
     result = await coordinator.execute(_p4_request(preparation))
     assert result.outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED
     assert result.operation_output is not None
-    assert result.operation_output.evidence_ref.startswith("alt:")
+    assert result.operation_output.evidence_ref.startswith("ref-effect:")
 
 
 @pytest.mark.asyncio
 async def test_closure_execution_order_observable() -> None:
     trace = _ExecutionOrderTrace(events=[])
     preparation = _prepare()
-    intake, _delegate, _op = _canonical_stack(trace=trace)
+    intake, _delegate = _canonical_stack(trace=trace)
     dispatch = _dispatch_stack(intake)
     coordinator = WorkerScopedAdaptiveIntegrationExecutionCoordinator(
         qualification_service=CapabilityQualificationService(
@@ -422,8 +564,296 @@ async def test_closure_execution_order_observable() -> None:
     result = await coordinator.execute(_p4_request(preparation))
     assert result.outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED
     assert trace.events.index("sandbox_capabilities_obtained") < trace.events.index(
+        "effect_preparer_called",
+    )
+    assert trace.events.index("effect_preparer_called") < trace.events.index(
         "credential_grant_resolved",
     )
     assert trace.events.index("credential_grant_resolved") < trace.events.index(
-        "operation_invoked",
+        "credential_broker_resolved",
     )
+    assert trace.events.index("credential_broker_resolved") < trace.events.index(
+        "canonical_effect_executor_called",
+    )
+
+
+@pytest.mark.parametrize(
+    ("label", "mutator"),
+    [
+        ("tenant", lambda r: replace(r, tenant_id="tenant-other")),
+        ("artifact_id", lambda r: replace(r, artifact_id="other-artifact")),
+        ("artifact_fp", lambda r: replace(r, artifact_fingerprint="sha256:dead")),
+        ("provider", lambda r: replace(r, provider_id="other-provider")),
+        ("resource", lambda r: replace(r, resource_scope="other-resource")),
+        ("operation", lambda r: replace(r, requested_operation=reference_write_operation())),
+        ("network", lambda r: replace(r, network_allowlist=_WIDENED_ALLOWLIST)),
+        ("target", lambda r: replace(r, target_scope=_WIDENED_ALLOWLIST)),
+    ],
+)
+def test_closure_invalid_effect_request_zero_resolution(
+    label: str,
+    mutator: object,
+) -> None:
+    preparation = _prepare()
+    qual_request = preparation.qualification_request
+    assert qual_request is not None
+    decision = CapabilityQualificationService(
+        (ReferenceScopedIntegrationQualificationProvider(),),
+    ).qualify(qual_request)
+    handoff = build_scoped_adaptive_integration_execution_handoff(
+        preparation=preparation,
+        qualification_request=qual_request,
+        accepted_qualification=decision,
+        requested_operation=reference_read_operation(),
+        execution_idempotency_key=f"bad-effect-{label}",
+    )
+    broker = _CountingBroker(_broker())
+    executor = _CountingExecutor()
+    envelope = _direct_execute(
+        handoff,
+        preparer=_InvalidEffectPreparer(mutator),
+        broker=broker,
+        executor=executor,
+    )
+    assert envelope.outcome is not ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED
+    assert broker.resolve_scoped_calls == 0
+    assert executor.execute_calls == 0
+
+
+def test_closure_preparer_failure_zero_resolution() -> None:
+    preparation = _prepare()
+    qual_request = preparation.qualification_request
+    assert qual_request is not None
+    decision = CapabilityQualificationService(
+        (ReferenceScopedIntegrationQualificationProvider(),),
+    ).qualify(qual_request)
+    handoff = build_scoped_adaptive_integration_execution_handoff(
+        preparation=preparation,
+        qualification_request=qual_request,
+        accepted_qualification=decision,
+        requested_operation=reference_read_operation(),
+        execution_idempotency_key="preparer-fail",
+    )
+    broker = _CountingBroker(_broker())
+    executor = _CountingExecutor()
+    envelope = _direct_execute(handoff, preparer=_FailingPreparer(), broker=broker, executor=executor)
+    assert envelope.outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTION_FAILED
+    assert broker.resolve_scoped_calls == 0
+    assert executor.execute_calls == 0
+
+
+@pytest.mark.parametrize(
+    ("kwargs_patch"),
+    [
+        ({"credential_grant_ref": "wrong-grant"}),
+        ({"tenant_id": "tenant-b"}),
+        ({"provider_id": "provider-b"}),
+        ({"integration_id": "integration-b"}),
+    ],
+)
+def test_closure_grant_provider_authoritative_rejection(kwargs_patch: dict[str, str]) -> None:
+    provider = _grant_provider()
+    execution_id = mint_execution_id()
+    base_kwargs = {
+        "execution_id": execution_id,
+        "credential_grant_ref": provider.grant_id,
+        "tenant_id": provider.tenant_id,
+        "provider_id": provider.provider_id,
+        "integration_id": provider.integration_id,
+        "requested_operation": reference_read_operation(),
+    }
+    base_kwargs.update(kwargs_patch)
+    with pytest.raises(CredentialScopeMismatchError):
+        provider.resolve_grant(**base_kwargs)
+
+
+def test_closure_grant_provider_returns_authoritative_values() -> None:
+    provider = _grant_provider()
+    execution_id = mint_execution_id()
+    grant = provider.resolve_grant(
+        execution_id=execution_id,
+        credential_grant_ref=provider.grant_id,
+        tenant_id=provider.tenant_id,
+        provider_id=provider.provider_id,
+        integration_id=provider.integration_id,
+        requested_operation=reference_read_operation(),
+    )
+    assert grant.grant_id == provider.grant_id
+    assert grant.tenant_id == provider.tenant_id
+    assert grant.provider_id == provider.provider_id
+    assert grant.integration_id == provider.integration_id
+    assert grant.execution_id == str(execution_id)
+    assert grant.operation == reference_read_operation().value
+
+
+def test_closure_r1_r1_alternate_ingress_same_canonical_executor() -> None:
+    preparation = _prepare()
+    qual_request = preparation.qualification_request
+    assert qual_request is not None
+    from intergrax.capability_qualification.qualification_service import CapabilityQualificationService
+
+    decision = CapabilityQualificationService(
+        (ReferenceScopedIntegrationQualificationProvider(),),
+    ).qualify(qual_request)
+    handoff = build_scoped_adaptive_integration_execution_handoff(
+        preparation=preparation,
+        qualification_request=qual_request,
+        accepted_qualification=decision,
+        requested_operation=reference_read_operation(),
+        execution_idempotency_key="alt-ingress",
+    )
+    execution_id, effect_request, resolved = _resolved_for_handoff(handoff)
+    sandbox = _sandbox_ok()
+    ingress = _AlternateEffectExecutionIngress(
+        effect_request=effect_request,
+        bound_execution_id=execution_id,
+        sandbox_resource=sandbox,
+        credential_resolution=resolved,
+    )
+    assert isinstance(ingress, ScopedAdaptedIntegrationEffectExecutionIngress)
+    executor = ReferenceScopedAdaptedIntegrationEffectExecutor()
+    evidence = executor.execute(ingress)
+    assert evidence.executed_operation == reference_read_operation()
+    assert evidence.tenant_id == _TENANT
+
+
+def test_closure_r1_r1_sandbox_and_credential_continuity_on_canonical_path() -> None:
+    preparation = _prepare()
+    qual_request = preparation.qualification_request
+    assert qual_request is not None
+    from intergrax.capability_qualification.qualification_service import CapabilityQualificationService
+
+    decision = CapabilityQualificationService(
+        (ReferenceScopedIntegrationQualificationProvider(),),
+    ).qualify(qual_request)
+    handoff = build_scoped_adaptive_integration_execution_handoff(
+        preparation=preparation,
+        qualification_request=qual_request,
+        accepted_qualification=decision,
+        requested_operation=reference_read_operation(),
+        execution_idempotency_key="continuity",
+    )
+    sandbox = _sandbox_ok()
+    broker_results: list[ScopedCredentialResolutionResult] = []
+
+    class _CapturingBroker:
+        def __init__(self, inner: ScopedCredentialBroker) -> None:
+            self._inner = inner
+
+        def resolve_scoped(self, grant: CredentialUseGrant, scope: object) -> ScopedCredentialResolutionResult:
+            result = self._inner.resolve_scoped(grant, scope)
+            broker_results.append(result)
+            return result
+
+    executor = ReferenceScopedAdaptedIntegrationEffectExecutor()
+    envelope = _direct_execute(
+        handoff,
+        broker=_CapturingBroker(_broker()),
+        executor=executor,
+        sandbox_security_source=sandbox,
+    )
+    assert envelope.outcome is ScopedAdaptiveIntegrationExecutionOutcome.EXECUTED
+    assert executor.last_ingress is not None
+    assert executor.last_ingress.sandbox_resource is sandbox
+    assert len(broker_results) == 1
+    assert executor.last_ingress.credential_resolution is broker_results[0]
+
+
+@pytest.mark.parametrize(
+    ("field", "mutator"),
+    [
+        (
+            "tenant",
+            lambda resolved, request: replace(
+                resolved,
+                use_evidence=replace(resolved.use_evidence, tenant_id="tenant-other"),
+            ),
+        ),
+        (
+            "execution",
+            lambda resolved, request: replace(
+                resolved,
+                use_evidence=replace(resolved.use_evidence, execution_id="exec-other"),
+            ),
+        ),
+        (
+            "operation",
+            lambda resolved, request: replace(
+                resolved,
+                use_evidence=replace(resolved.use_evidence, operation=reference_write_operation().value),
+            ),
+        ),
+        (
+            "integration",
+            lambda resolved, request: replace(
+                resolved,
+                use_evidence=replace(resolved.use_evidence, integration_id="integration-other"),
+            ),
+        ),
+        (
+            "provider",
+            lambda resolved, request: replace(
+                resolved,
+                use_evidence=replace(resolved.use_evidence, provider_id="provider-other"),
+            ),
+        ),
+    ],
+)
+def test_closure_r1_r1_executor_credential_evidence_mismatch_fail_closed(
+    field: str,
+    mutator: object,
+) -> None:
+    preparation = _prepare()
+    qual_request = preparation.qualification_request
+    assert qual_request is not None
+    from intergrax.capability_qualification.qualification_service import CapabilityQualificationService
+
+    decision = CapabilityQualificationService(
+        (ReferenceScopedIntegrationQualificationProvider(),),
+    ).qualify(qual_request)
+    handoff = build_scoped_adaptive_integration_execution_handoff(
+        preparation=preparation,
+        qualification_request=qual_request,
+        accepted_qualification=decision,
+        requested_operation=reference_read_operation(),
+        execution_idempotency_key=f"mismatch-{field}",
+    )
+    execution_id, effect_request, resolved = _resolved_for_handoff(handoff)
+    bad_resolution = mutator(resolved, effect_request)  # type: ignore[operator]
+    ingress = _AlternateEffectExecutionIngress(
+        effect_request=effect_request,
+        bound_execution_id=execution_id,
+        sandbox_resource=_sandbox_ok(),
+        credential_resolution=bad_resolution,
+    )
+    executor = ReferenceScopedAdaptedIntegrationEffectExecutor()
+    with pytest.raises(ValueError):
+        executor.execute(ingress)
+
+
+def test_closure_r1_r1_invalid_sandbox_resource_fail_closed() -> None:
+    preparation = _prepare()
+    qual_request = preparation.qualification_request
+    assert qual_request is not None
+    from intergrax.capability_qualification.qualification_service import CapabilityQualificationService
+
+    decision = CapabilityQualificationService(
+        (ReferenceScopedIntegrationQualificationProvider(),),
+    ).qualify(qual_request)
+    handoff = build_scoped_adaptive_integration_execution_handoff(
+        preparation=preparation,
+        qualification_request=qual_request,
+        accepted_qualification=decision,
+        requested_operation=reference_read_operation(),
+        execution_idempotency_key="bad-sandbox",
+    )
+    execution_id, effect_request, resolved = _resolved_for_handoff(handoff)
+    ingress = _AlternateEffectExecutionIngress(
+        effect_request=effect_request,
+        bound_execution_id=execution_id,
+        sandbox_resource=_InvalidSandboxResource(),  # type: ignore[arg-type]
+        credential_resolution=resolved,
+    )
+    executor = ReferenceScopedAdaptedIntegrationEffectExecutor()
+    with pytest.raises(ValueError, match="sandbox security source missing"):
+        executor.execute(ingress)

@@ -16,6 +16,7 @@ from intergrax.contracts.tracing.events import (
     TraceEvent,
     TraceLevel,
 )
+from intergrax.contracts.tracing.time import utc_now_iso
 from intergrax.contracts.tracing.values import (
     TraceObject,
     TraceScalar,
@@ -36,5 +37,6 @@ __all__ = [
     "TraceScalar",
     "TraceValue",
     "normalize_trace_tags",
+    "utc_now_iso",
     "validate_trace_value",
 ]

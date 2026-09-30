@@ -10,7 +10,8 @@ from typing import Any, Protocol
 from pydantic import BaseModel, ConfigDict, Field
 
 from intergrax.runtime.adaptive.signal_store import SignalStore
-from intergrax.runtime.nexus.tracing.persistence_models import PersistedRun, RunTraceReader
+from intergrax.contracts.persisted_run_trace import PersistedRun
+from intergrax.contracts.run_trace_store import RunTraceReader
 
 
 class ProcessSequenceToken(BaseModel):
