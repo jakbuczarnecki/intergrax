@@ -325,10 +325,43 @@ async def test_concurrent_run_task_calls_use_isolated_delegate_identity() -> Non
     await asyncio.gather(first, second)
 
 
-def test_unified_task_runner_constructor_remains_compatible() -> None:
-    loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
+@pytest.mark.asyncio
+async def test_unified_task_runner_delegates_through_host_execution_port_only() -> None:
+    task = _task()
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execute_calls: list[tuple[Task, RunId, AttemptId | None]] = []
+
+    class _RecordingExecutionPort:
+        async def execute(
+            self,
+            incoming: Task,
+            *,
+            run_id: RunId,
+            attempt_id: AttemptId | None = None,
+            resume_checkpoint=None,
+            execution_id=None,
+            restore_existing_execution: bool = False,
+        ) -> TaskResult:
+            execute_calls.append((incoming, run_id, attempt_id))
+            return TaskResult(
+                task_id=incoming.task_id,
+                run_id=run_id,
+                state=TaskState.COMPLETED,
+                authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            )
+
     runner = UnifiedTaskRunner(
-        build_harness_root_task_execution_port(loop),
-        task_enricher=lambda task: task,
+        _RecordingExecutionPort(),
+        task_enricher=lambda source: source,
     )
-    assert runner.nexus_loop is loop
+    public_api = {name for name in dir(runner) if not name.startswith("_")}
+    assert "nexus_loop" not in public_api
+
+    result = await runner.run_task(task, run_id=run_id, attempt_id=attempt_id)
+
+    assert len(execute_calls) == 1
+    assert execute_calls[0][0] is task
+    assert execute_calls[0][1] == run_id
+    assert execute_calls[0][2] == attempt_id
+    assert result.run_id == run_id

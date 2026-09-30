@@ -124,6 +124,9 @@ def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
         backing_execution_continuation_state_store,
     )
     from intergrax.runtime.nexus.nexus_loop import NexusLoop
+    from intergrax.runtime.execution.harness_task_execution_port import (
+        build_harness_root_task_execution_port,
+    )
     from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
     from intergrax.runtime.task.task_contract import (
         TaskExecutionOptions,
@@ -159,7 +162,7 @@ def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
         execution_continuation_state_store=continuation_store,
     )
     runner = UnifiedTaskRunner(
-        setup_loop,
+        build_harness_root_task_execution_port(setup_loop),
         admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
     )
     run_id = mint_run_id()

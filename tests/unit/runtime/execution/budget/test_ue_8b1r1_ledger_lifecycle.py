@@ -122,7 +122,12 @@ async def test_per_run_isolation_on_long_lived_nexus_loop(
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="budget")
     from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
-    runner = UnifiedTaskRunner(loop, run_budget=RunBudget(max_total_tokens=100))
+    runner = UnifiedTaskRunner(
+        build_harness_root_task_execution_port(
+            loop,
+            run_budget=RunBudget(max_total_tokens=100),
+        ),
+    )
     await runner.run_task(task)
     await runner.run_task(task)
 
@@ -247,7 +252,14 @@ async def test_handle_task_binds_root_execution_budget() -> None:
 
     loop._handle_task_impl = with_runtime_event_metric_scope(_fake_impl)  # type: ignore[method-assign]
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="bind")
-    runner = UnifiedTaskRunner(loop, run_budget=run_budget)
+    from intergrax.runtime.execution.harness_task_execution_port import (
+        build_harness_root_task_execution_port,
+    )
+    from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+
+    runner = UnifiedTaskRunner(
+        build_harness_root_task_execution_port(loop, run_budget=run_budget),
+    )
     await runner.run_task(task)
 
     assert observed == [42]

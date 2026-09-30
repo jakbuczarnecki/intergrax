@@ -403,10 +403,16 @@ async def test_factory_call_count_root_nexus_one_upstream_zero(
         "_handle_task_impl",
         with_runtime_event_metric_scope(_noop),
     )
+    from intergrax.runtime.execution.harness_task_execution_port import (
+        build_harness_root_task_execution_port,
+    )
+
     runner = UnifiedTaskRunner(
-        loop,
-        execution_budget_ledger_factory=factory,
-        run_budget=run_budget,
+        build_harness_root_task_execution_port(
+            loop,
+            execution_budget_ledger_factory=factory,
+            run_budget=run_budget,
+        ),
     )
 
     await runner.run_task(_task())
@@ -570,6 +576,9 @@ async def test_nexus_return_restores_upstream_budget_state_unchanged(
 async def test_fresh_root_nexus_run_still_creates_one_ledger(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    from intergrax.runtime.execution.harness_task_execution_port import (
+        build_harness_root_task_execution_port,
+    )
     from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
     run_budget = RunBudget(max_total_tokens=42)
@@ -596,7 +605,9 @@ async def test_fresh_root_nexus_run_still_creates_one_ledger(
         "_handle_task_impl",
         with_runtime_event_metric_scope(_observe),
     )
-    runner = UnifiedTaskRunner(loop, run_budget=run_budget)
+    runner = UnifiedTaskRunner(
+        build_harness_root_task_execution_port(loop, run_budget=run_budget),
+    )
     await runner.run_task(_task())
 
     assert observed == [42]

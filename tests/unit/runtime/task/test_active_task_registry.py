@@ -47,6 +47,9 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -244,7 +247,7 @@ async def test_taskreg_10_unified_task_runner_registers_canonical_run_identity()
 
     loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
     loop.handle_task = _handle  # type: ignore[attr-defined]
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
 
     await runner.run_task(task, run_id=run_id)
 
@@ -274,7 +277,7 @@ async def test_taskreg_11_unified_task_runner_cleanup_unregisters_same_run_ident
 
     loop = cast(NexusLoop, build_stub_nexus_loop_for_unified_task_runner())
     loop.handle_task = _handle  # type: ignore[attr-defined]
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
 
     await runner.run_task(task, run_id=run_id)
 

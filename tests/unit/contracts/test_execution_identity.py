@@ -36,6 +36,9 @@ from intergrax.runtime.task.task_run_bridge import (
     new_run_id,
     task_from_runtime_request,
 )
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 _CANONICAL_ID = re.compile(r"^(task|run|attempt|exec|evt)_[0-9a-f]{32}$")
@@ -331,26 +334,16 @@ def test_task_from_runtime_request_uses_request_task_id_not_run_id():
 async def test_unified_task_runner_mints_attempt_at_run_boundary():
     minted_attempt: AttemptId | None = None
 
-    class _StubLoop:
-        execution_budget_ledger_factory = None
-        run_budget = None
-        execution_lineage_persistence = None
-
-        def __init__(self) -> None:
-            from intergrax.runtime.events.event_bus import RuntimeEventBus
-            from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
-            from intergrax.runtime.registry.agent_registry import AgentRegistry
-
-            registry = AgentRegistry()
-            self._graph_executor = GraphExecutor(registry)
-            self.event_bus = RuntimeEventBus()
-
-        async def handle_task(
+    class _StubExecutionPort:
+        async def execute(
             self,
             task: Task,
             *,
             run_id: RunId,
             attempt_id: AttemptId | None = None,
+            resume_checkpoint=None,
+            execution_id=None,
+            restore_existing_execution: bool = False,
         ):
             nonlocal minted_attempt
             minted_attempt = attempt_id
@@ -363,11 +356,7 @@ async def test_unified_task_runner_mints_attempt_at_run_boundary():
                 authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
             )
 
-        async def publish_orchestration_root_terminal_runtime(self, task: Task) -> None:
-            return None
-
-    loop = _StubLoop()
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(_StubExecutionPort())
     task = Task(
         tenant_id="t1",
         user_id="u1",
@@ -589,7 +578,7 @@ async def test_unified_task_runner_resume_uses_checkpoint_identity(monkeypatch):
         )
 
     monkeypatch.setattr(loop, "handle_task", _fake_handle_task)
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="resume")
     checkpoint = TaskCheckpoint(
         task_id=task.task_id,

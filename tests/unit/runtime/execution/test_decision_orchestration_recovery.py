@@ -119,6 +119,9 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
@@ -709,7 +712,7 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
         classifier=_DeterministicClassifier(),
         retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
     )
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
     await runner.run_task(task_resume, resume_checkpoint=loaded)
 
     counts_final = engine.snapshot_counts()
@@ -892,7 +895,7 @@ async def test_malformed_physical_checkpoint_fails_without_mutating_decision_che
         context=TaskContext(capability=_CAPABILITY),
     )
     loop = NexusLoop(registry)
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
 
     with pytest.raises(ValueError, match="attempt_id mismatch"):
         await runner.run_task(task_resume, resume_checkpoint=corrupt_checkpoint)

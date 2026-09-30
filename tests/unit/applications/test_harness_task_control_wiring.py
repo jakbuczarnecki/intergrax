@@ -52,8 +52,8 @@ async def test_unified_task_runner_applies_enricher() -> None:
     env = ApplicationEnvironmentProfile.lab_defaults()
     env.reliability_profile.default_autonomy_level = AutonomyLevel.MANUAL
 
-    class _Loop:
-        async def handle_task(self, task: Task):
+    class _StubExecutionPort:
+        async def execute(self, task: Task, *, run_id, attempt_id=None, resume_checkpoint=None, execution_id=None, restore_existing_execution=False):
             from intergrax.runtime.task.task import TaskResult, TaskState
 
             assert task.options.governance.autonomy_level is AutonomyLevel.MANUAL
@@ -61,7 +61,7 @@ async def test_unified_task_runner_applies_enricher() -> None:
                 authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),task_id=task.task_id, state=TaskState.COMPLETED, answer="ok")
 
     enricher = build_reliability_task_enricher(env)
-    runner = UnifiedTaskRunner(_Loop(), task_enricher=enricher)  # type: ignore[arg-type]
+    runner = UnifiedTaskRunner(_StubExecutionPort(), task_enricher=enricher)
 
     await runner.run_task(
         Task(

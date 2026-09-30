@@ -73,6 +73,9 @@ from intergrax.runtime.execution.lineage.persistence import (
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.observability_wiring import wire_nexus_observability
 from intergrax.runtime.registry.agent_registry import AgentRegistry
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from testing_support.admitted_root_governance_identity import (
     lab_admitted_root_governance_identity_for_task,
@@ -322,7 +325,7 @@ def build_dg001_canonical_multi_agent_diagnostic_harness(
     return Dg001CanonicalMultiAgentDiagnosticHarness(
         nexus_loop=loop,
         runner=UnifiedTaskRunner(
-            loop,
+            build_harness_root_task_execution_port(loop),
             admitted_governance_identity_for_task=lab_admitted_root_governance_identity_for_task,
         ),
         lineage_persistence=lineage,

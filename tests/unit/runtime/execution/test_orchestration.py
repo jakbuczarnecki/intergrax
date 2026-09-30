@@ -42,6 +42,9 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
     terminal_task_result_exposure_no_decision_gate,
 )
 from intergrax.runtime.task.task import Task, TaskContext, TaskResult, TaskState
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
 if TYPE_CHECKING:
@@ -372,7 +375,7 @@ async def test_unified_task_runner_mints_root_execution_id_per_invocation(
         "_handle_task_impl",
         with_runtime_event_metric_scope(_fake_impl),
     )
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="root")
     await runner.run_task(task)
 
@@ -416,7 +419,7 @@ async def test_unified_task_runner_passes_same_concrete_attempt_to_nexus(
         "_handle_task_impl",
         with_runtime_event_metric_scope(_fake_impl),
     )
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="attempt")
     await runner.run_task(task)
 
@@ -457,7 +460,7 @@ async def test_resume_checkpoint_preserves_attempt_mints_fresh_execution_id(
         "_handle_task_impl",
         with_runtime_event_metric_scope(_fake_impl),
     )
-    runner = UnifiedTaskRunner(loop)
+    runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="resume")
     checkpoint = TaskCheckpoint(
         task_id=task.task_id,

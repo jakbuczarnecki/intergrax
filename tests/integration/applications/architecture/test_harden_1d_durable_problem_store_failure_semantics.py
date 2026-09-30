@@ -37,6 +37,9 @@ from intergrax.runtime.nexus.observability_wiring import wire_nexus_observabilit
 from intergrax.runtime.observability.persistence_conformance import sample_runtime_event
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 from intergrax.runtime.task.task import Task, TaskContext, TaskState
+from intergrax.runtime.execution.harness_task_execution_port import (
+    build_harness_root_task_execution_port,
+)
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 from intergrax.tools.registry.wiring import ToolWiringContext
 from testing_support.delegating_failing_conditional_document_store import (
@@ -64,7 +67,7 @@ def _admitted_governance_for_task(task: Task) -> AdmittedRootGovernanceIdentity:
 
 def _unified_task_runner(loop: NexusLoop) -> UnifiedTaskRunner:
     return UnifiedTaskRunner(
-        loop,
+        build_harness_root_task_execution_port(loop),
         admitted_governance_identity_for_task=_admitted_governance_for_task,
     )
 

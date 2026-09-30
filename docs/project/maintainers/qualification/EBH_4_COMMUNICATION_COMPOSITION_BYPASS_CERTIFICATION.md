@@ -11,7 +11,7 @@
 | **Cursor status (post-R1 candidate)** | **EBH-4-R1 = BLOCKED** (independent exact-SHA audit — incomplete owner-zone gate, application Nexus spec types, scenario orchestration escape) |
 | **Cursor status (R1-R1 candidate)** | **EBH-4-R1-R1 = BLOCKED** — partial boundary work on `development`; **not READY FOR AUDIT** |
 | **Cursor status (R1-R2 candidate)** | **EBH-4-R1-R2 = BLOCKED** — semantic MOVE/remap wave on `development` @ `1a83ff33…`; owner-zone gate **94** violators (baseline **~179**); **not READY FOR AUDIT** |
-| **Cursor status (R1-R3 candidate)** | **EBH-4-R1-R3 = READY FOR AUDIT** (Cursor) @ post-`e7a754f68…` closure commit — mechanical Nexus gate **0**; trace bridge self-import regression **fixed** (canonical owner `runtime.events.trace_bridge`); **P7** tenant fail-closed on `RuntimeRequest.to_envelope()`; **P9** parent recert **partial** (full matrix / typing / 16-Q tenant audit pending independent SHA) |
+| **Cursor status (R1-R3 candidate)** | **EBH-4-R1-R3 = BLOCKED** — independent audit @ `737a2696558dbddd1739155e68bbec8a0c47b358`: candidate zero-leakage structure accepted (Nexus gate **8/8**); stale `runner.nexus_loop` / `UnifiedTaskRunner(loop)` public-contract tests remediated in Cursor session; full matrix / typing / 16-Q tenant / P9 parent recert **open** |
 | **EBH-4 parent** | **BLOCKED** (pending independent re-audit) |
 | **HARNESS-W7** | **NOT ENTERED** |
 
@@ -22,7 +22,7 @@
 3. **EBH-4-R1 — Execution Engine Exclusive Entry & Nexus Encapsulation Closure** (implementation on `development` after `ac4ae934…`) → **BLOCKED** by independent audit (B1–B8)
 4. **EBH-4-R1-R1 — Full Nexus Owner-Zone & Execution-Semantic Boundary Closure** (partial on `development` @ pre-commit `c6f97c22…`) → **BLOCKED**
 5. **EBH-4-R1-R2 — Nexus Semantic Contract Extraction & Closed-World Consumer Migration** (in progress on `development` @ `1a83ff33…`) → **BLOCKED**
-6. **EBH-4-R1-R3 — Final Nexus Semantic Isolation & Zero-Leakage Closure** (continuation on `development` @ `fa292ac8…` → `e7a754f68…` trace shim regression → final verification commit) → **READY FOR AUDIT** (Cursor; independent audit required)
+6. **EBH-4-R1-R3 — Final Nexus Semantic Isolation & Zero-Leakage Closure** (continuation on `development` @ `737a2696…`) → **BLOCKED** (Cursor @ `737a2696…`: stale execution-contract tests + open full matrix / tenant / typing / P9)
 
 ### EBH-4-R1-R3 partial remediation (not exit)
 
