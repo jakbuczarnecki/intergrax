@@ -180,6 +180,162 @@ Superseded for credential **ordering** by R1-R1-R1; retained for preparer/execut
 | Regression protection | TRACKED | Future tests enumerated in architecture |
 | FRZ-SEC-02 / -03 | TRACKED (local) | Contribution documented; global checklist **OPEN** |
 
+## AW-7C-CLOSURE-R1-PARENT-RECERT — READY FOR AUDIT
+
+| Field | Value |
+| ----- | ----- |
+| **Task** | AW-7C-CLOSURE-R1-PARENT-RECERT — current-HEAD secure adapted effect execution parent recertification |
+| **Status recommendation** | **AW-7C-CLOSURE-R1 = READY FOR AUDIT** (not CLOSED) |
+| **Baseline / audited HEAD** | `f8a0af31fa3c9c5320c7dec0df6de8f9f8caf95d` on `development` (= `origin/development`) |
+| **Parent** | **AW-7C** — **CURRENT / NOT CLOSED** |
+| **Next mandatory stage** | **EBH-3** — **NOT ENTERED** |
+| **Global FRZ** | **global FRZ PASS delta = 0** |
+
+### Accepted architecture chain (historical, revalidated on HEAD)
+
+| Stage | Outcome |
+| ----- | ------- |
+| AW-7C-CLOSURE-R1-ARCH | Rejected |
+| AW-7C-CLOSURE-R1-ARCH-R1 | Preparer/executor architecture accepted; credential ordering rejected |
+| AW-7C-CLOSURE-R1-ARCH-R1-R1 | Late-resolution ordering accepted (**READY FOR AUDIT**) |
+
+### Runtime implementation lineage
+
+| SHA | Change |
+| --- | ------ |
+| `6ee08480ba3a251502888bc16a8836b3ca749f96` | **AW-7C-CLOSURE-R1** — runtime: typed `EffectRequest`, replaceable preparer, late grant/scope/`resolve_scoped`, canonical `EffectExecutor`, delegate/intake on canonical Execution route; active `operation_port` path removed from qualification runtime |
+| `f8a0af31fa3c9c5320c7dec0df6de8f9f8caf95d` | **AW-7C-CLOSURE-R1-R1** — typed `ScopedAdaptedIntegrationEffectExecutionIngress`; executor semantic dependency on `ReferenceScopedAdaptedIntegrationEffectExecutionContext` = 0; broker result and attested sandbox bound on ingress |
+
+### Closed-world R1 graph (current HEAD)
+
+```text
+WorkerScopedAdaptiveIntegrationExecutionCoordinator
+→ qualified handoff (CapabilityQualificationService)
+→ build_scoped_adaptive_integration_canonical_execution_intake
+→ CanonicalExecutionRuntimeAdapter → ExecutionRuntime
+→ ScopedAdaptiveIntegrationExecutionRuntimeDelegate (peek_active_execution_id — no mint)
+→ execute_reference_scoped_adaptive_integration
+→ sandbox attestation (validate_qualified_allowlist_attestation)
+→ effect_preparer.prepare (no secret, no broker)
+→ validate_admitted_scoped_adaptive_integration_effect_request
+→ ExecutionBoundCredentialGrantProvider.resolve_grant (secret-free grant)
+→ grant binding / grant-vs-effect validation
+→ CredentialUseScope
+→ ScopedCredentialBroker.resolve_scoped (secret first materializes here)
+→ ReferenceScopedAdaptedIntegrationEffectExecutionContext (ingress impl)
+→ ScopedAdaptedIntegrationEffectExecutor.execute (ingress Protocol only)
+→ ScopedAdaptedIntegrationOperationEvidence
+→ ScopedAdaptiveIntegrationExecutionRuntimeEnvelope → AW outcome
+```
+
+### Contract / component inventory (closed world)
+
+| Contract / component | Owner | Caller | Semantic authority | Extensible | Secret material |
+| ------------------ | ----- | ------ | ------------------ | ---------- | --------------- |
+| `ScopedIntegrationAdaptationArtifact` | Integrations (adaptation) | AW / qualification | Artifact identity, scope, fingerprint | Via qualification strategies | No |
+| `ScopedAdaptedIntegrationEffectRequest` | Integrations | Preparer produces; runtime validates | Narrowed effect intent ⊆ handoff/artifact | No (typed dataclass) | No |
+| `ScopedAdaptedIntegrationEffectRequestPort` | Integrations (SPI) | Reference delegate | Describe effect only | Yes (replaceable preparer) | No |
+| `ScopedAdaptedIntegrationEffectExecutionIngress` | Integrations | Runtime composer | Bundles validated request + ExecutionId + sandbox + broker result | Alternate ingress impl allowed | Resolved credential inside `credential_resolution` only |
+| `ScopedAdaptedIntegrationEffectExecutor` | Integrations (single sanctioned physical boundary) | Reference runtime | Physical/reference effect + evidence | No external plugin selection | Consumes resolution at execute |
+| `ScopedAdaptedIntegrationOperationEvidence` | Integrations | Executor | Effect attribution (tenant, operation, refs) | No | No raw secret |
+| `ExecutionBoundCredentialGrantProvider` | Integrations (credential contracts) | Reference runtime | Authoritative grant_id, ref, tenant, provider, integration, scope, expiry | Pluggable provider; not caller-echo | No |
+| `CredentialUseGrant` | Integrations | Grant provider | Secret-free admission token | No | No |
+| `CredentialUseScope` | Integrations | Runtime after validation | Exact resolution scope | No | No |
+| `ScopedCredentialBroker` | Integrations | Runtime (once) | Sole `resolve_scoped` on R1 path | Admission backend pluggable | Emits `ResolvedCredential` |
+| `ScopedCredentialResolutionResult` | Integrations | Broker | use_evidence + resolved_credential | No | Yes (bounded to executor path) |
+| `CredentialUseEvidence` | Integrations | Broker | Non-secret attribution / fingerprint | No | No raw secret |
+| `SandboxSecurityCapable` | Sandbox (contract surface) | Runtime / ingress | Attested sandbox truth | Replaceable substrate | No |
+| `ScopedAdaptiveIntegrationExecutionRuntimeDelegate` | Integrations (qualification) | ExecutionRuntime | AW-7C composition under active ExecutionId | Test injection of preparer/executor instances only | No |
+| Canonical Execution intake / `ExecutionRuntime` | Execution tier | AW coordinator dispatch | Admission + active ExecutionId | No second engine on path | No |
+
+**Composition owner (sanctioned path):** `build_scoped_adaptive_integration_canonical_execution_intake` + `execute_reference_scoped_adaptive_integration` — exactly one.
+
+**Legacy:** `ScopedAdaptedIntegrationOperationPort` remains contract-only; **active qualification runtime physical path = 0** (`operation_port` absent from delegate/intake/execute modules; static gates).
+
+### Dependency direction (R1)
+
+```text
+Autonomous Work → Execution intake/runtime → Integrations qualification delegate
+Integrations → Integrations contracts + credential broker + effect validation
+Integrations effect execution contract → SandboxSecurityCapable (Sandbox-owned Protocol, not sandbox implementation)
+Integrations → NOT agents/applications; no Governance permission minting on path
+```
+
+### Execution / Governance
+
+- **Execution:** `peek_active_execution_id()` in delegate; no `mint_execution_id` on qualification modules; coordinator uses canonical intake adapter.
+- **Governance:** Qualification proof gate (`validate_execution_bound_qualification_proof`); EffectRequest validation narrows authority; grant provider authoritative — caller claims fail closed on mismatch.
+
+### Credential / secret lifetime
+
+Ordering verified in `execute_reference_scoped_adaptive_integration` and `test_closure_r1_execute_path_no_operation_port`: prepare &lt; validate &lt; grant &lt; scope &lt; `resolve_scoped` &lt; executor. Invalid preparer/validation/grant cases: **zero** `resolve_scoped` (`test_aw_7c_closure_scoped_adaptive_integration_execution.py`).
+
+### Sandbox
+
+Attestation before preparer/effect; same `sandbox_security_source` instance wired into ingress `sandbox_resource`; executor does not re-resolve sandbox session.
+
+### Tenant isolation (local)
+
+**Verdict: PASS** — handoff/artifact/EffectRequest/grant/scope/evidence chain enforced; cross-tenant credential evidence rejected in executor; broker scope uses `effect_request.tenant_id`.
+
+### Bypass / legacy (active path)
+
+| Check | Result |
+| ----- | ------ |
+| Active `OperationPort` physical path | **0** |
+| ToolRuntime / Nexus bypass on qual path | **0** (static gate) |
+| Alternate sanctioned physical executor | **0** (single `ReferenceScopedAdaptedIntegrationEffectExecutor` on path) |
+| Second broker `resolve_scoped` in executor | **0** |
+
+### Regression protection
+
+`test_aw_7c_closure_architecture_gates.py` + `test_aw_7c_closure_scoped_adaptive_integration_execution.py` + cert/p4 suites; prerequisite/p4 architecture gates **9 passed**.
+
+### Targeted test evidence
+
+```text
+uv run pytest -p no:xdist \
+  tests/unit/autonomous_work/test_aw_7c_closure_scoped_adaptive_integration_execution.py \
+  tests/unit/autonomous_work/test_aw_7c_closure_architecture_gates.py \
+  tests/unit/autonomous_work/test_aw_7c_cert_scoped_adaptive_integration_execution.py \
+  tests/unit/autonomous_work/test_aw_7c_p4_scoped_adaptive_integration_execution.py -q
+→ 58 passed
+
+uv run pytest -p no:xdist \
+  tests/unit/autonomous_work/test_aw_7c_prerequisite_architecture_gates.py \
+  tests/unit/autonomous_work/test_aw_7c_p4_architecture_gates.py -q
+→ 9 passed
+```
+
+### Applicable FRZ (local contribution only — checklist unchanged)
+
+| Family | R1 evidence |
+| ------ | ----------- |
+| FRZ-CTR-* | Typed contracts; ingress/executor Protocols; no pseudo-dicts on effect surfaces |
+| FRZ-TYP-* | Gates forbid `Any`/dict typing on changed contracts; no getattr/hasattr on qual modules |
+| FRZ-PLG-* / FRZ-RPL-* | Custom preparer + alternate ingress tests; executor not externally selectable plugin |
+| FRZ-EXE-* | Canonical ExecutionRuntime only; active ExecutionId |
+| FRZ-GOV-* | Qualification ≠ permission; validation narrows |
+| FRZ-SEC-02/03/05/07 | Late resolution; secret bounded; sandbox continuity; fail-closed |
+| FRZ-TEN-* | Local PASS evidence above; **no global PASS delta** |
+
+### Unresolved findings
+
+| Finding | Classification |
+| ------- | -------------- |
+| None breaking R1 parent invariant on `f8a0af31…` | — |
+
+### Program status (explicit)
+
+```text
+AW-7C-CLOSURE-R1 = READY FOR AUDIT
+AW-7C = NOT CLOSED
+EBH-3 = NOT ENTERED
+global FRZ PASS delta = 0
+```
+
+Roadmap / global freeze checklist **not** updated in this task (independent parent closure only).
+
 ---
 
 ## 1. Verdict
