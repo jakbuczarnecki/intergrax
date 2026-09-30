@@ -123,6 +123,7 @@ from intergrax.runtime.execution.harness_task_execution_port import (
     build_harness_root_task_execution_port,
 )
 from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
+from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
 from testing_support.uaep_gate_stubs import UaepPipelineStubAgent
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -569,6 +570,7 @@ class _DecisionHostedOrchestrationDelegate:
 @pytest.mark.asyncio
 async def test_decision_orchestration_checkpoint_recovery_participation(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     task_id = mint_task_id()
     run_id = mint_run_id()
@@ -711,6 +713,27 @@ async def test_decision_orchestration_checkpoint_recovery_participation(
         planner=_DeterministicSequentialPlanner(),
         classifier=_DeterministicClassifier(),
         retry_engine=RetryEngine(registry, policy=RetryPolicy(max_retries=0)),
+    )
+    # UE-11E production-path resume: execute_root_task prepares checkpoint + resume plan;
+    # graph continuation runs at the orchestration execution boundary (not intake/planning).
+    resume_graph = _sequential_graph(task_id)
+
+    async def _handle_task_via_graph(task: Task) -> TaskResult:
+        active_run_id, active_attempt_id = require_active_execution_identity()
+        assert active_run_id == run_id
+        assert active_attempt_id == attempt_id
+        await resume_executor.execute(resume_graph, task)
+        return TaskResult(
+            authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+            task_id=task.task_id,
+            run_id=active_run_id,
+            state=TaskState.COMPLETED,
+        )
+
+    monkeypatch.setattr(
+        loop,
+        "_handle_task_impl",
+        with_runtime_event_metric_scope(_handle_task_via_graph),
     )
     runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
     await runner.run_task(task_resume, resume_checkpoint=loaded)
