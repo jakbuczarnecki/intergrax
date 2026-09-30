@@ -97,14 +97,50 @@ Sections 1–13 below retain **historical** prerequisite audit unless explicitly
 | **Tests** | `test_aw_7c_closure_scoped_adaptive_integration_execution.py`, `test_aw_7c_closure_architecture_gates.py` |
 | **Post-audit blocker** | Operation port not bound to broker/sandbox resources — parent **NOT CLOSED** until **AW-7C-CLOSURE-R1** runtime completes |
 
-## AW-7C-CLOSURE-R1-ARCH (READY FOR AUDIT)
+## AW-7C-CLOSURE-R1-ARCH (AUDIT REJECTED)
 
 | Field | Value |
 | ----- | ----- |
-| **Status** | **READY FOR AUDIT** — architecture lock only; **0** production delta in R1-ARCH task |
-| **Architecture** | `docs/project/maintainers/architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md` § AW-7C-CLOSURE-R1-ARCH |
-| **Certification criteria (future R1 runtime)** | (1) `ScopedAdaptedIntegrationOperationExecutionContext` mandatory on `ScopedAdaptedIntegrationOperationPort.execute`; (2) single-use `ScopedAdaptedIntegrationCredentialUseResource` after `ScopedCredentialBroker.resolve_scoped`; (3) `ScopedAdaptedIntegrationSandboxExecutionResource` same instance as attestation; (4) reference grant provider enforces provider-owned facts vs caller binding keys; (5) adversarial tests — bypass port, wrong tenant/grant/session/operation — fail before `EXECUTED`; (6) **no new authority** |
-| **Global FRZ** | **0** checklist PASS deltas from R1-ARCH |
+| **Status** | **AUDIT REJECTED** @ `618164a5c666e9854441890e6233f605ece8a9ee` — blockers A (plugin physical I/O) + B (unowned single-use credential) |
+| **Architecture** | `docs/project/maintainers/architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md` § AW-7C-CLOSURE-R1-ARCH (historical); **authoritative:** § AW-7C-CLOSURE-R1-ARCH-R1 |
+| **Parent** | **AW-7C** — **CURRENT / NOT CLOSED** |
+| **Next mandatory stage after AW-7C closes** | **EBH-3** — **NOT ENTERED** |
+
+## AW-7C-CLOSURE-R1-ARCH-R1 (READY FOR AUDIT)
+
+| Field | Value |
+| ----- | ----- |
+| **Status** | **READY FOR AUDIT** — docs-only remediation; **0** production delta |
+| **Baseline** | `618164a5c666e9854441890e6233f605ece8a9ee` (`development`) |
+| **Architecture** | [`AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md`](../architecture/AW_7C_SCOPED_ADAPTIVE_INTEGRATION_EXECUTION.md) § AW-7C-CLOSURE-R1-ARCH-R1 |
+| **Blocker A remediation** | Typed `ScopedAdaptedIntegrationEffectRequest` + preparer SPI; **single** canonical `ScopedAdaptedIntegrationEffectExecutor` owns physical I/O; preparer **cannot** perform sanctioned physical effects |
+| **Blocker B remediation** | Credential **execution/tenant/provider/integration/operation/target/expiry-bound**; **no** `single-use` guarantee without concurrency-safe lifecycle owner (aligned with P0-2 `max_uses` removal) |
+| **Bypass claims** | **10.1** sanctioned single platform path (gates/tests); **10.2** hostile arbitrary Python **not** claimed via Protocol alone |
+| **Tenant audit (local)** | **PASS** — continuity chain through effect request + executor + evidence |
+| **Certification criteria (future R1 runtime implementation)** | (1) `ScopedAdaptedIntegrationEffectRequestPort.prepare` → immutable `ScopedAdaptedIntegrationEffectRequest` (no secrets/callables); (2) `ScopedAdaptedIntegrationEffectExecutor.execute` only physical boundary; (3) sandbox resource **same instance** as attestation; (4) credential via broker into **executor** only — preparer receives **no** material; (5) supersede physical `ScopedAdaptedIntegrationOperationPort` without parallel path; (6) adversarial matrix in architecture § R1-ARCH-R1; (7) **no new authority** |
+| **Global FRZ** | **0** checklist PASS deltas |
+
+### R1-ARCH-R1 — Enterprise audit matrix (qualification evidence)
+
+| Dimension | Verdict | Evidence |
+| --------- | ------- | -------- |
+| Boundaries | PASS | AW / Integrations / Execution / Governance / Credential / Sandbox separation locked in architecture § R1-ARCH-R1 |
+| Communication | PASS | Typed contracts only on preparer/executor seam |
+| Composition | PASS | Single composer on delegate path; executor not second intake |
+| Ownership | PASS | Ownership matrix — exactly-one physical executor |
+| Contracts | PASS | EffectRequest + preparer SPI + executor; no pseudo-dicts |
+| Abstraction / strong typing | PASS | No `Any`/arbitrary dict on effect request |
+| Pluginability | PASS | Preparer extensible |
+| Replaceability | PASS | Same executor/sandbox/credential for all preparers |
+| Bypass resistance (sanctioned path) | PASS | Documented 10.1 vs 10.2 |
+| Governance | PASS | Unchanged separation |
+| Execution authority | PASS | Executor does not mint ExecutionId |
+| Credential authority | PASS | No new broker; no single-use without owner |
+| Sandbox authority | PASS | No second sandbox |
+| Tenant isolation | PASS | Local audit PASS |
+| Evidence / traceability | PASS | Typed evidence; no secrets |
+| Fail-closed | PASS | Failure matrix |
+| Regression protection | TRACKED | Runtime tests listed for next implementation task |
 
 ---
 
