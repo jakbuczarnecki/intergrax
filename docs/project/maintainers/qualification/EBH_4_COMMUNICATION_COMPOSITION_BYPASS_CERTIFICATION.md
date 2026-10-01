@@ -788,6 +788,8 @@ None in B5 pass (certification only).
 - **Victim effect:** `_assert_clean_caller_context()` UE-11D line 186 (`wave03` + diag #5).
 - **Classification:** **BOUNDED DIAGNOSIS INCONCLUSIVE** for single-test root cause; evidence supports **IN-SCOPE BLOCKER — AUTHORITY/ISOLATION LEAK** via UCA-6C R6 durable reentry — not §19 trivial test-only fix without R1B proof.
 
+**Reconciliation (independent exact-SHA audit @ `3bb1bd26…`):** B5-R1A bounded Cursor diagnosis remained inconclusive at exact-test level; independent audit identified concrete **TEST FIXTURE LIFECYCLE DEFECT** — nested `_identity_context()` in `test_uca6c_r6_r5_9_r4_final_distributed_recovery_e2e.py` reset **outer** `tokens` before **inner** `task_tokens`, violating LIFO for `ContextVar.reset(token)` and leaking execution identity into later tests (B5-BLK-01 signature). Prior R1A evidence retained; root cause classification updated for R1B.
+
 ### Expected B5-R1B shape (draft)
 
 - Owner: `intergrax/contracts/execution_identity.py` + production path from `ExecutionSuspendedWorkReentryCoordinator.reenter_after_resume` / bound catalog tool invoke.
@@ -801,5 +803,61 @@ None in B5 pass (certification only).
 ### Recommended status
 
 `EBH-4-R1-R3-B5-R1A = BLOCKED` · `B5-R1B = NOT ENTERED` · `B5 = BLOCKED`
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 31. B5-R1B — UCA-6C Nested Identity Fixture LIFO Repair
+
+**START_HEAD / AUDITED_HEAD:** `3bb1bd267e636a5e2f98348b441d11c21df5a494` · **branch:** `development`
+
+### Root cause (B5-BLK-01)
+
+**Classification:** **TEST FIXTURE LIFECYCLE DEFECT** (not production `execution_identity` semantics).
+
+**Owner file:** `tests/unit/runtime/execution/suspended_operation/test_uca6c_r6_r5_9_r4_final_distributed_recovery_e2e.py`
+
+**Bad pattern (pre-fix):** after `tokens = _identity_context(task_a, …)` and nested `task_tokens = _identity_context(task_b, …)`, `finally` reset **outer** `tokens` first, then **inner** `task_tokens`. `ContextVar.reset(token)` must unwind in reverse bind order (LIFO); resetting outer while inner is still active restores outer’s previous value and leaves inner’s layer active — on subsequent outer reset, stale identity can remain visible to `peek_active_execution_identity()` and contaminate `test_ue_11d_parallel_root_isolation`.
+
+**Fix:** reset `task_tokens` (inner) before `tokens` (outer); shared `_reset_nested_identity_tokens` helper; post-test `peek_active_execution_identity() is None`; `test_uca6c_nested_identity_context_lifo_restores_caller_context` guards nesting semantics.
+
+**Production files changed:** 0 (`intergrax/contracts/execution_identity.py` unchanged).
+
+### Same-pattern scan (`suspended_operation/`)
+
+| Location | Nested outer+inner `_identity_context` | Action |
+| --- | --- | --- |
+| `test_uca6c_r6_r5_9_r4_final_distributed_recovery_e2e.py` (2 E2E tests) | yes | LIFO fix |
+| `test_uca6c_r6_r5_9_r3_crash_windows.py` | single bind per scope only | no change |
+| Other UCA-6C suspended_operation modules | no identical nested pair | — |
+
+### Victim proof
+
+Contaminator module + `test_ue_11d_shared_runtime_parallel_root_identity_isolation[0]` in one pytest process — **PASS** (4 collected, 4 passed, ~3.7s local).
+
+### Local pytest (3/3 budget, `-p no:xdist`)
+
+| # | Scope | Result |
+| --- | --- | --- |
+| 1 | `test_uca6c_r6_r5_9_r4_final_distributed_recovery_e2e.py` | **PASS** (3, ~3.7s) |
+| 2 | same module + UE-11D victim `[0]` | **PASS** (4, ~3.7s) |
+| 3 | UE-11D victim + `test_ue_11e_local_retry_preserves_identity_and_budget` + `test_decision_orchestration_checkpoint_recovery_participation` | **PASS** (3, ~3.1s) |
+
+### Postcondition
+
+After affected UCA-6C scopes exit: `peek_active_execution_identity()` → `None` (asserted on E2E tests + dedicated LIFO unit test).
+
+### FRZ local evidence
+
+**global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0** · FRZ-REG-02, FRZ-REG-03, FRZ-REG-06, FRZ-REG-09 (harness isolation); supporting context FRZ-EXE-* / FRZ-TEN-* / FRZ-GOV-* — no promotion.
+
+### B5-BLK-01
+
+**RESOLVED CANDIDATE** (pending independent GitHub commit audit).
+
+### Recommended status
+
+`EBH-4-R1-R3-B5-R1B = READY FOR AUDIT` · `B5 = BLOCKED` · `B5-R2 = NEXT / NOT ENTERED` · B6/B7/HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**

@@ -32,6 +32,7 @@ from intergrax.contracts.execution_identity import (
     mint_attempt_id,
     mint_execution_id,
     mint_run_id,
+    peek_active_execution_identity,
     reset_active_execution_identity,
 )
 from intergrax.runtime.execution.suspended_operation.crash_injection import (
@@ -108,6 +109,45 @@ def _load_task_from_durable_checkpoint(
     checkpoint = checkpoint_store.get_latest(_TASK_ID, _TENANT)
     assert checkpoint is not None
     return build_checkpoint_resume_task(checkpoint)
+
+
+def _reset_nested_identity_tokens(
+    outer_tokens: tuple[object, object, object],
+    inner_tokens: tuple[object, object, object] | None,
+) -> None:
+    """LIFO: inner bind stack must be reset before outer (ContextVar token semantics)."""
+    if inner_tokens is not None:
+        reset_governed_execution_task(inner_tokens[2])
+        reset_active_execution_governance_identity(inner_tokens[1])
+        reset_active_execution_identity(inner_tokens[0])
+    reset_governed_execution_task(outer_tokens[2])
+    reset_active_execution_governance_identity(outer_tokens[1])
+    reset_active_execution_identity(outer_tokens[0])
+
+
+def test_uca6c_nested_identity_context_lifo_restores_caller_context() -> None:
+    assert peek_active_execution_identity() is None
+    run_id = mint_run_id()
+    attempt_id = mint_attempt_id()
+    execution_id = mint_execution_id()
+    task_outer = Task(
+        tenant_id=_TENANT,
+        user_id="u1",
+        message="lifo-outer",
+        task_id=_TASK_ID,
+    )
+    task_inner = Task(
+        tenant_id=_TENANT,
+        user_id="u1",
+        message="lifo-inner",
+        task_id=_TASK_ID,
+    )
+    outer_tokens = _identity_context(task_outer, run_id, attempt_id, execution_id)
+    assert peek_active_execution_identity() is not None
+    inner_tokens = _identity_context(task_inner, run_id, attempt_id, execution_id)
+    assert peek_active_execution_identity() is not None
+    _reset_nested_identity_tokens(outer_tokens, inner_tokens)
+    assert peek_active_execution_identity() is None
 
 
 def test_r59_r4_primary_w4_distributed_failover_and_stale_host_blocked(
@@ -297,13 +337,9 @@ def test_r59_r4_primary_w4_distributed_failover_and_stale_host_blocked(
         assert repeat.reason_detail == "execution_already_terminal"
         assert crash_counters.backend_logical_effects == 1
     finally:
-        reset_governed_execution_task(tokens[2])
-        reset_active_execution_governance_identity(tokens[1])
-        reset_active_execution_identity(tokens[0])
-        if "task_tokens" in locals():
-            reset_governed_execution_task(task_tokens[2])
-            reset_active_execution_governance_identity(task_tokens[1])
-            reset_active_execution_identity(task_tokens[0])
+        inner = task_tokens if "task_tokens" in locals() else None
+        _reset_nested_identity_tokens(tokens, inner)
+    assert peek_active_execution_identity() is None
 
 
 def _postgres_provider_smoke(schema_name: str, dsn: str) -> None:
@@ -521,11 +557,7 @@ def test_r59_r4_real_durable_postgres_host_failover_preserves_single_effect(
         assert repeat.disposition is ExecutionSuspendedWorkReentryDisposition.NOT_READY
         assert repeat.reason_detail == "execution_already_terminal"
     finally:
-        reset_governed_execution_task(tokens[2])
-        reset_active_execution_governance_identity(tokens[1])
-        reset_active_execution_identity(tokens[0])
-        if "task_tokens" in locals():
-            reset_governed_execution_task(task_tokens[2])
-            reset_active_execution_governance_identity(task_tokens[1])
-            reset_active_execution_identity(task_tokens[0])
+        inner = task_tokens if "task_tokens" in locals() else None
+        _reset_nested_identity_tokens(tokens, inner)
         drop_postgresql_document_schema(schema_name, dsn=dsn)
+    assert peek_active_execution_identity() is None
