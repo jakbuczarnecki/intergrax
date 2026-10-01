@@ -1066,3 +1066,31 @@ Targeted pyright on B6 modules; mechanical gate `test_ebh_4_r1_r3_b6_typing_gate
 `EBH-4-R1-R3-B6 = BLOCKED` (B6-R1) · B7/P9 NOT ENTERED
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 35. B6-R1 — Neutral Host Wiring Contract Typing Closure + Final B6 Reconciliation (Cursor)
+
+**START_HEAD:** `3e73598e988a9f817827c99898aea707f6d2dce8` · **branch:** `development`
+
+### Closed-world inventory (after)
+
+| Protocol | Member | Callers | Before | Action | After |
+| --- | --- | --- | --- | --- | --- |
+| `HostOrchestrationApplicationWiringTarget` | `middleware` | app host/security/guardrail wiring | `object` | `HostOrchestrationMiddlewarePipelinePort` | typed |
+| | `event_bus` | security/guardrail/diagnostics | `object` | `HostOrchestrationRuntimeEventPort` | typed |
+| | decision/validation/deferred members | decision wiring, EE | `object` | contracts ports (`DecisionFlowGate`, …) | typed |
+| `HostOrchestrationPluginBootstrapTarget` | bootstrap surface | plugin/platform wiring | `object` | neutral store/event/middleware ports | typed |
+| `HostOrchestrationAssemblyInspectionTarget` | unused members | — | `object` | removed; `middleware` → pipeline port | typed |
+
+**New Tier-0:** `host_orchestration_wiring_capabilities.py`, `decision_flow_gate.py`, `agent_execution_validation_engine.py`, `deferred_persisted_trace_finalize_port.py`, `execution_budget_ledger_port.py`, `DecisionExposureSelectionHostBinding`.
+
+**B6 ledger:** B6-TYP-01…05 **RESOLVED** · semantic `object` on audited host Protocols = 0 · `contracts → runtime` = 0.
+
+**Evidence:** `.tmp/session/ebh-4-r1-r3-b6-r1/` (pyright, gates). Harness SQLite diagnostic failures = **TRACKED FREEZE DEBT** (outside R1 delta).
+
+### Recommended status
+
+`EBH-4-R1-R3-B6-R1 = READY FOR AUDIT` · `EBH-4-R1-R3-B6 = READY FOR AUDIT` · B7/P9 NOT ENTERED
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**

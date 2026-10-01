@@ -115,3 +115,18 @@ class MiddlewarePipeline:
             if result.action.value != "allow":
                 return result
         return HookResult()
+
+    def registered_middleware_names(self) -> frozenset[str]:
+        return frozenset(middleware.name for middleware in self._middleware)
+
+    def attach_runtime_middleware_if_absent(
+        self,
+        middleware: RuntimeMiddleware,
+    ) -> None:
+        existing = list(self._middleware)
+        if any(mw.name == middleware.name for mw in existing):
+            return
+        self._middleware = sorted(
+            [*existing, middleware],
+            key=lambda item: item.priority,
+        )

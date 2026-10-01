@@ -10,11 +10,11 @@ from dataclasses import dataclass
 from intergrax.contracts.host_orchestration_application_wiring_target import (
     HostOrchestrationApplicationWiringTarget,
 )
+from intergrax.contracts.deferred_persisted_trace_finalize_port import (
+    DeferredPersistedTraceFinalizePort,
+)
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
-from intergrax.runtime.observability.qualification_runtime_trace import (
-    DeferredPersistedTraceFinalize,
-)
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,7 +28,7 @@ class HostOrchestrationTraceLifecycleControl:
 
     def take_deferred_persisted_trace_finalize(
         self,
-    ) -> DeferredPersistedTraceFinalize | None:
+    ) -> DeferredPersistedTraceFinalizePort | None:
         return self._target.take_deferred_persisted_trace_finalize()
 
 

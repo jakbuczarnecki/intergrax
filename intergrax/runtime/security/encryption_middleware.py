@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
+)
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
@@ -15,9 +18,6 @@ from intergrax.runtime.security.encryption_policy import (
 )
 from intergrax.runtime.security.encryption_transform import RestrictedPayloadEncryptor
 from intergrax.runtime.security.security_events import emit_encryption_denied
-
-if TYPE_CHECKING:
-    from intergrax.runtime.events.event_bus import RuntimeEventBus
 
 
 class EncryptionEnforcementMiddleware(RuntimeMiddleware):
@@ -32,7 +32,7 @@ class EncryptionEnforcementMiddleware(RuntimeMiddleware):
         enforcement_enabled: bool,
         secrets_store_configured: bool,
         encryptor: RestrictedPayloadEncryptor | None = None,
-        event_bus: RuntimeEventBus | None = None,
+        event_bus: HostOrchestrationRuntimeEventPort | None = None,
     ) -> None:
         self._enforcement_enabled = enforcement_enabled
         self._secrets_store_configured = secrets_store_configured

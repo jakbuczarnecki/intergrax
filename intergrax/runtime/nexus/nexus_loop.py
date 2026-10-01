@@ -86,6 +86,12 @@ from intergrax.runtime.nexus.orchestration.long_running_bridge import (
 from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.intake_runner import NexusIntakeRunner
+from intergrax.contracts.decision_exposure_selection import (
+    DecisionExposureSelectionHostBinding,
+)
+from intergrax.contracts.agent_execution_validation_engine import (
+    AgentExecutionValidationEnginePort,
+)
 from intergrax.runtime.execution.decision_exposure_selection_composition import (
     DecisionExposureSelectionComposition,
 )
@@ -600,7 +606,10 @@ class NexusLoop:
         """Canonical graph scheduler owned by this Nexus host."""
         return self._graph_executor
 
-    def apply_validation_engine(self, validation_engine: object | None) -> None:
+    def apply_validation_engine(
+        self,
+        validation_engine: AgentExecutionValidationEnginePort | None,
+    ) -> None:
         """Replace the active validation engine across Nexus execution surfaces."""
         if validation_engine is None:
             return
@@ -628,11 +637,11 @@ class NexusLoop:
 
     def apply_decision_exposure_selection(
         self,
-        composition: DecisionExposureSelectionComposition,
+        selection: DecisionExposureSelectionHostBinding,
     ) -> None:
-        if type(composition) is not DecisionExposureSelectionComposition:
-            raise TypeError("composition must be DecisionExposureSelectionComposition")
-        self._decision_exposure_selection = composition
+        if type(selection) is not DecisionExposureSelectionComposition:
+            raise TypeError("selection must be DecisionExposureSelectionComposition")
+        self._decision_exposure_selection = selection
 
     def _begin_decision_exposure_session(self) -> None:
         from intergrax.runtime.decision_flow import DecisionFlowScope

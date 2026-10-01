@@ -12,10 +12,12 @@ from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
     TerminalExecutionDiagnosticRequest,
 )
 from intergrax.runtime.diagnostics import terminal_execution_diagnostic_bridge as _terminal_diagnostic_bridge
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
+)
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTrigger,
 )
-from intergrax.runtime.events.event_bus import RuntimeEventBus
 
 
 class CentralTerminalExecutionDiagnosticPort:
@@ -29,7 +31,7 @@ class CentralTerminalExecutionDiagnosticPort:
         self,
         trigger: TerminalExecutionDiagnosticTrigger,
         *,
-        event_bus: RuntimeEventBus | None = None,
+        event_bus: HostOrchestrationRuntimeEventPort | None = None,
     ) -> None:
         self._trigger = trigger
         self._event_bus = event_bus
@@ -66,7 +68,7 @@ class CentralTerminalExecutionDiagnosticPort:
 def wrap_terminal_execution_diagnostic_trigger(
     trigger: TerminalExecutionDiagnosticTrigger,
     *,
-    event_bus: RuntimeEventBus | None = None,
+    event_bus: HostOrchestrationRuntimeEventPort | None = None,
 ) -> TerminalExecutionDiagnosticPort:
     """Expose production trigger through the neutral terminal diagnostic port."""
     return CentralTerminalExecutionDiagnosticPort(trigger=trigger, event_bus=event_bus)

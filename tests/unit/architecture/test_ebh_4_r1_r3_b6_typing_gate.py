@@ -103,6 +103,40 @@ def test_neutral_host_contract_does_not_import_nexus() -> None:
                 assert not alias.name.startswith("intergrax.runtime."), alias.name
 
 
+def test_neutral_host_contract_has_no_semantic_object_or_any() -> None:
+    source = _read(_HOST_CONTRACT)
+    tree = ast.parse(source)
+    forbidden = ("object", "Any")
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ClassDef):
+            continue
+        if not node.name.startswith("HostOrchestration"):
+            continue
+        for item in node.body:
+            ann: ast.expr | None = None
+            if isinstance(item, ast.AnnAssign) and item.annotation is not None:
+                ann = item.annotation
+            elif isinstance(item, ast.FunctionDef):
+                if item.returns is not None:
+                    ann = item.returns
+                for arg in item.args.args:
+                    if arg.annotation is not None:
+                        segment = ast.get_source_segment(source, arg.annotation) or ""
+                        assert not any(
+                            token == forbidden[0] or token == forbidden[1]
+                            for token in segment.replace("|", " ").split()
+                        ), f"{node.name}.{item.name} param uses semantic escape"
+            if ann is None:
+                continue
+            ann_src = ast.get_source_segment(source, ann) or ""
+            tokens = ann_src.replace("|", " ").replace("[", " ").replace("]", " ").split()
+            for token in tokens:
+                if token in forbidden:
+                    raise AssertionError(
+                        f"{node.name} annotation uses forbidden semantic escape: {ann_src!r}",
+                    )
+
+
 def test_neutral_host_contract_types_terminal_diagnostic_port() -> None:
     source = _read(_HOST_CONTRACT)
     assert "port: TerminalExecutionDiagnosticPort" in source

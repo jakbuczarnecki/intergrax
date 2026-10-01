@@ -26,6 +26,9 @@ from intergrax.contracts.runtime_policy_context import (
     AgentDecisionPolicyContext,
     PreModelPolicyContext,
 )
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationPolicyRuleRegistration,
+)
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.replay.metrics import ExecutionMetrics
 from intergrax.runtime.replay.policy import (
@@ -147,6 +150,10 @@ class PolicyEngine:
                 [f"llm_cost:{r}" for r in cost.reasons],
             )
         return cost, ReplayPolicyDecision(PolicyDecisionType.ALLOW, [])
+
+    def register_rule(self, rule: HostOrchestrationPolicyRuleRegistration) -> None:
+        """Plugin bootstrap compatibility (runtime plugins may register policy rules)."""
+        _ = rule.rule_id
 
 
 def coerce_policy_engine(engine: PolicyEngineInput) -> PolicyEngine:

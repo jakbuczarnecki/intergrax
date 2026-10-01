@@ -18,7 +18,7 @@ from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.contracts.host_orchestration_application_wiring_target import (
     HostOrchestrationApplicationWiringTarget,
 )
-from intergrax.runtime.decision_flow import DecisionFlowGate
+from intergrax.contracts.decision_flow_gate import DecisionFlowGate
 from intergrax.runtime.decision_verification_composition import ToolWiringEvalVerificationBridge
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 

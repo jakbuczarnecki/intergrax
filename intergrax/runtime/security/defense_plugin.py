@@ -6,17 +6,18 @@ from __future__ import annotations
 
 import asyncio
 from enum import Enum
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
 
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
+)
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
 from intergrax.runtime.security.security_events import emit_defense_blocked
 
-if TYPE_CHECKING:
-    from intergrax.runtime.events.event_bus import RuntimeEventBus
 
 DEFAULT_DEFENSE_INSPECTION_TIMEOUT_MS = 100
 
@@ -59,7 +60,7 @@ class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
         self,
         plugin: SecurityDefensePlugin,
         *,
-        event_bus: RuntimeEventBus | None = None,
+        event_bus: HostOrchestrationRuntimeEventPort | None = None,
         inspection_timeout_ms: int = DEFAULT_DEFENSE_INSPECTION_TIMEOUT_MS,
         enforce_tenant_scope: bool = True,
     ) -> None:

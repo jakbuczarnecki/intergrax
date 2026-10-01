@@ -4,22 +4,20 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from intergrax.applications.contracts.environment_profile import GuardrailProfile
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
 )
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
+)
 from intergrax.integrations.contracts.llm_guardrail import GuardrailContext, LlmGuardrailBackend
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
-
-if TYPE_CHECKING:
-    from intergrax.runtime.events.event_bus import RuntimeEventBus
 
 
 class LlmGuardrailMiddleware(RuntimeMiddleware):
@@ -33,7 +31,7 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
         backend: LlmGuardrailBackend,
         profile: GuardrailProfile,
         *,
-        event_bus: RuntimeEventBus | None = None,
+        event_bus: HostOrchestrationRuntimeEventPort | None = None,
     ) -> None:
         self._backend = backend
         self._profile = profile

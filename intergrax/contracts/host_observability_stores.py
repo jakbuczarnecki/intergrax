@@ -7,6 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.contracts.run_trace_store import RunTraceStore
 
 
@@ -15,7 +16,7 @@ class HostObservabilityStores:
     """Trace + runtime event backends for application composition roots."""
 
     trace_store: RunTraceStore
-    runtime_event_store: object | None
+    runtime_event_store: EvidencePersistencePort | None
     trace_db_path: Path | None
     runtime_events_db_path: Path | None
 

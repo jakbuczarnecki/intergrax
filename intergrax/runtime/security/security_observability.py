@@ -34,7 +34,14 @@ class SecuritySpineCounters:
             self.encryption_denied += 1
 
 
-def wire_security_spine_subscriber(event_bus: object) -> SecuritySpineCounters:
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
+)
+
+
+def wire_security_spine_subscriber(
+    event_bus: HostOrchestrationRuntimeEventPort,
+) -> SecuritySpineCounters:
     """Subscribe to ``platform.security.*`` kinds and increment counters."""
     from intergrax.runtime.events.event_bus import RuntimeEventBus
 

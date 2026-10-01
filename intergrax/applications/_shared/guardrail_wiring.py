@@ -17,7 +17,6 @@ from intergrax.contracts.host_orchestration_application_wiring_target import (
     HostOrchestrationApplicationWiringTarget,
 )
 from intergrax.integrations.contracts.llm_guardrail import LlmGuardrailBackend
-from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 
 
 @dataclass(frozen=True, slots=True)
@@ -37,12 +36,7 @@ def _attach_middleware(
     target: HostOrchestrationApplicationWiringTarget,
     middleware: LlmGuardrailMiddleware,
 ) -> None:
-    pipeline = target.middleware
-    if isinstance(pipeline, MiddlewarePipeline):
-        pipeline._middleware = sorted(  # noqa: SLF001
-            [middleware, *pipeline._middleware],
-            key=lambda item: item.priority,
-        )
+    target.middleware.attach_runtime_middleware_if_absent(middleware)
 
 
 def apply_application_guardrail_wiring(

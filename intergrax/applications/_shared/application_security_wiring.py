@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -32,7 +33,6 @@ from intergrax.runtime.architecture.tool_security import (
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
-from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.applications._shared.security_runtime_bridge import (
     SecurityWiringOptions,
 )
@@ -177,12 +177,7 @@ def _attach_middleware(
     target: HostOrchestrationApplicationWiringTarget,
     middleware: RuntimeMiddleware,
 ) -> None:
-    pipeline = target.middleware
-    if isinstance(pipeline, MiddlewarePipeline):
-        pipeline._middleware = sorted(  # noqa: SLF001
-            [middleware, *pipeline._middleware],
-            key=lambda item: item.priority,
-        )
+    target.middleware.attach_runtime_middleware_if_absent(middleware)
 
 
 def register_application_security_hooks(

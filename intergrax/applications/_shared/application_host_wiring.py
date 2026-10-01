@@ -13,7 +13,6 @@ if TYPE_CHECKING:
     from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
     from intergrax.applications.contracts.manifest import ApplicationManifest
     from intergrax.contracts.run_budget import RunBudget
-from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.contracts.host_orchestration_application_wiring_target import (
     HostOrchestrationApplicationWiringTarget,
 )
@@ -23,16 +22,7 @@ def _attach_middleware(
     host: HostOrchestrationApplicationWiringTarget,
     middleware: RuntimeMiddleware,
 ) -> None:
-    pipeline = host.middleware
-    if not isinstance(pipeline, MiddlewarePipeline):
-        return
-    existing = list(pipeline._middleware)  # noqa: SLF001
-    if any(mw.name == middleware.name for mw in existing):
-        return
-    pipeline._middleware = sorted(  # noqa: SLF001
-        [*existing, middleware],
-        key=lambda item: item.priority,
-    )
+    host.middleware.attach_runtime_middleware_if_absent(middleware)
 
 
 def apply_application_environment_state_wiring(
@@ -74,10 +64,7 @@ def apply_hook_runtime_guard_wiring(
     environment: ApplicationEnvironmentProfile,
 ) -> None:
     """Configure middleware hook timeout and audit bus (APP-CON-5 · §32.6.5)."""
-    pipeline = host.middleware
-    if not isinstance(pipeline, MiddlewarePipeline):
-        return
-    pipeline.configure_hook_runtime(
+    host.middleware.configure_hook_runtime(
         hook_timeout_seconds=environment.reliability_profile.middleware_hook_timeout_seconds,
         event_bus=host.event_bus,
     )
