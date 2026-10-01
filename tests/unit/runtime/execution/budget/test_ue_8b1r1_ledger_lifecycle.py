@@ -9,7 +9,7 @@ from dataclasses import dataclass
 import pytest
 
 from testing_support.nexus_handle_task_impl_stubs import with_runtime_event_metric_scope
-from intergrax.applications._shared.host_orchestration_backend_spec_builder import (
+from testing_support.nexus_loop_from_environment import (
     build_nexus_loop_from_environment,
 )
 from intergrax.applications.contracts.environment_profile import (
@@ -120,6 +120,9 @@ async def test_per_run_isolation_on_long_lived_nexus_loop(
         with_runtime_event_metric_scope(_fake_impl),
     )
     task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="budget")
+    from intergrax.runtime.execution.harness_task_execution_port import (
+        build_harness_root_task_execution_port,
+    )
     from intergrax.runtime.task.unified_task_runner import UnifiedTaskRunner
 
     runner = UnifiedTaskRunner(

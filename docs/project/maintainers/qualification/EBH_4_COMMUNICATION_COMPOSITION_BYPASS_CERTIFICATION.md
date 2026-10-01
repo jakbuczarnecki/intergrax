@@ -967,3 +967,70 @@ After affected UCA-6C scopes exit: `peek_active_execution_identity()` → `None`
 `EBH-4-R1-R3-B5-R3 = READY FOR AUDIT` · `EBH-4-R1-R3-B5 = READY FOR AUDIT` · **B6 = NEXT / NOT ENTERED** · B7/P9 / HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED (audit not CLOSED)
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 33. B5-R4 — Execution Qualification Import Closure + Final B5 Reconciliation (Cursor @ `3b5b1a0…`)
+
+**START_HEAD:** `3b5b1a05d3a6c7a6caab530fc2c2c1a1ba95e4dc` · **branch:** `development` · **origin/development:** identical · **production changed files:** 0
+
+### Stale import inventory (B5-BLK-03)
+
+| File | Old import | New import |
+| --- | --- | --- |
+| `tests/unit/runtime/execution/budget/test_ue_8b1r1_ledger_lifecycle.py` | `intergrax.applications._shared.host_orchestration_backend_spec_builder.build_nexus_loop_from_environment` | `testing_support.nexus_loop_from_environment.build_nexus_loop_from_environment` |
+| `tests/unit/runtime/execution/lineage/test_nexus_factory_lineage_wiring.py` | same | same |
+| `tests/unit/runtime/long_running/test_pba_fix_a_checkpoint_port_consumption.py` | same | same |
+
+**Same-pattern scan** (`tests/unit/runtime/execution/`, `tests/unit/runtime/long_running/`): identical stale production import **before = 3** · **after = 0**.
+
+**Supplemental (same module, collection unblocked):** `test_ue_8b1r1_ledger_lifecycle.py::test_per_run_isolation_on_long_lived_nexus_loop` lacked `build_harness_root_task_execution_port` import present in sibling test in file — added test-only import (no production change).
+
+### Ownership
+
+**Before:** test → `host_orchestration_backend_spec_builder` → nonexistent `build_nexus_loop_from_environment` → collection failure.
+
+**After:** test → `testing_support.nexus_loop_from_environment` → `build_host_orchestration_loop_init_spec_from_environment` → EE materialization → private Nexus backend.
+
+### Bounded pytest (`-p no:xdist`; logs `.tmp/session/ebh-4-r1-r3-b5-r4/`)
+
+| # | Exact command | Result |
+| --- | --- | --- |
+| 1 | `test_ue_8b1r1_ledger_lifecycle.py` + `test_nexus_factory_lineage_wiring.py` + `test_pba_fix_a_checkpoint_port_consumption.py` | **collection errors = 0**; 19 passed, 4 failed, 1 skipped (`run1-collection-targeted.log`) — failures in long_running module (not B5 bounded matrix) + ledger harness import (fixed in commit) |
+| 2 | Above two execution modules + `test_ebh_2f_r1_host_execution_port_replaceability.py` + `test_ebh_4_r1_nexus_encapsulation_gate.py` | 21 passed, 1 failed pre-harness-import fix (`run2-execution-factory-regression.log`); post-fix ledger+lineage **12 passed** |
+| 3 | `test_ebh_4_b4_tenant_isolation.py` + UE-11D victim + `test_ue_11e_resume_recovery.py` + `test_uaep_decision_integration.py` + `authoring/test_acp_session_identity.py` | **66 passed** (`run3-b5-core-matrix.log`) |
+| 4 | Arch gates: `test_ebh_4_r1_nexus_encapsulation_gate.py`, `test_ebh_3_dependency_ownership_gate.py`, `test_ebh_2a_public_contract_boundary_gate.py`, `test_ebh_2f_r1_host_execution_port_replaceability.py` | **35 passed** (`run4-architecture-gates.log`) |
+
+**Collection health (B5-BLK-03 scope):** `test_ue_8b1r1_ledger_lifecycle.py` + `test_nexus_factory_lineage_wiring.py` — **collection errors = 0**; targeted semantics **12/12 passed** after commit.
+
+### B5 blocker ledger (final)
+
+| Blocker | Final state |
+| --- | --- |
+| B5-BLK-01 — execution identity pollution | **RESOLVED** |
+| B5-BLK-02 — UAEP/ACP stale fixtures | **RESOLVED** |
+| B5-BLK-03 — stale execution qualification imports | **RESOLVED** |
+
+### Historical failure reconciliation (not current counts)
+
+| Family | Classification |
+| --- | --- |
+| B5-BLK-01 / B5-BLK-02 / B5-BLK-03 | **RESOLVED** |
+| Wave-03 mixed execution failures (pollution subset) | **SUPERSEDED** by B5-BLK-01 |
+| Delegated worker publish-port (40× historical) | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** · FRZ-REG-08 · QUAL-X |
+| `test_pba_fix_a_checkpoint_port_consumption.py` semantic failures (missing `REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION`, stale `long_running_bridge` patch targets) | **TRACKED FREEZE DEBT** — long_running qual; outside B5 bounded matrix; not B5-BLK-03 |
+| GR13 `GovernanceEvidenceRecorder` | **TRACKED FREEZE DEBT** |
+| SQLite / strict profile | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** · FRZ-REG-08 |
+| W5 event composition | **TRACKED FREEZE DEBT** · HARNESS-W5 |
+
+**unclassified findings = 0** · **IN-SCOPE BLOCKER = 0**
+
+### FRZ (scoped)
+
+**global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0** · primary: FRZ-REG-02, FRZ-REG-03, FRZ-REG-05 (stale import refs = 0 in targeted scope), FRZ-REG-06, FRZ-REG-09; FRZ-REG-08 for environment families.
+
+### Recommended status
+
+`EBH-4-R1-R3-B5-R4 = READY FOR AUDIT` · `EBH-4-R1-R3-B5 = READY FOR AUDIT` · **B6 = NEXT / NOT ENTERED** · B7/P9 / HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED (audit not CLOSED)
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
