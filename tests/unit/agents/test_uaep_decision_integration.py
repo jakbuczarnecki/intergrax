@@ -150,7 +150,7 @@ async def test_uaep_governance_deny_fails_without_rejecting_accepted(
         message="test",
         task_id=task_id,
         run_id=run_id,
-        metadata={"tenant_id": "tenant-a"},
+        tenant_id="tenant-a",
     )
     resolution = await executor._verify_uaep_step_authority(  # noqa: SLF001
         contract=contract,
@@ -209,7 +209,7 @@ async def test_uaep_governance_require_human_requests_human(
         message="test",
         task_id=task_id,
         run_id=run_id,
-        metadata={"tenant_id": "tenant-a"},
+        tenant_id="tenant-a",
     )
     resolution = await executor._verify_uaep_step_authority(  # noqa: SLF001
         contract=contract,

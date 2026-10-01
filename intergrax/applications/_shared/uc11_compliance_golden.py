@@ -31,14 +31,15 @@ async def run_uc11_kernel_happy_path_step(
     step_ctx = AgentStepContext(
         step_index=0,
         run_id="uc11-golden",
+        tenant_id=merged.tenant_id,
         agent_id=merged.agent_id,
         contract_id=merged.contract_id,
         metadata={"channel": channel},
     )
     kernel_ctx = StepKernelContext(
         agent_id=merged.agent_id,
-        run_id="uc11-golden",
         tenant_id=merged.tenant_id,
+        run_id="uc11-golden",
         policy_engine=PolicyEngine(),
         organizational=merged.organizational,
     )

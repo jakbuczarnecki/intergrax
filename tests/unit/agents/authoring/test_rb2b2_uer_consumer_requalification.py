@@ -123,6 +123,7 @@ async def test_rb2b2_uer02_kernel_merged_state_survives_failed_tool_step() -> No
     run_id = mint_run_id()
     kernel_ctx = StepKernelContext(
         agent_id="demo",
+        tenant_id="tenant-test",
         run_id=run_id,
         task_id=task_id,
         side_effect_mode=SideEffectMode.DECLARATIVE,
@@ -132,7 +133,7 @@ async def test_rb2b2_uer02_kernel_merged_state_survives_failed_tool_step() -> No
         allow_permissive_missing_policy=True,
         state_root={"acp.state": {"schema_version": "acp.state.v1", "_version": 0, "phase": "before"}},
     )
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         step_index=0,
         side_effect_mode=SideEffectMode.DECLARATIVE,
     )

@@ -188,13 +188,14 @@ async def test_step_kernel_production_empty_principal_fails_closed() -> None:
     with kernel_step_test_scope("gr10-r2-r1-missing-principal") as (task_id, run_id):
         kernel_ctx = StepKernelContext(
             agent_id="demo",
+            tenant_id="tenant-test",
             task_id=task_id,
             run_id=run_id,
             principal_id="",
             production_mode=True,
             policy_engine=PolicyEngine(),
         )
-        step_ctx = AgentStepContext(step_index=0)
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0)
         outcome = StepOutcome.continue_with({"phase": "plan"})
         record = await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
         assert record.policy_pre is not None

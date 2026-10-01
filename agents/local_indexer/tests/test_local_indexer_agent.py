@@ -82,7 +82,7 @@ async def _run_index_job_with_gateway(
         tool_gateway=gateway,
         tenant_id="tenant-a",
     )
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         run_id=str(canonical_run_id_for_tests(seed)),
         agent_id="local_indexer",
         metadata={"uaep_exec_ctx": exec_ctx},

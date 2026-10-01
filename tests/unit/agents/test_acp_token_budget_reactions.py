@@ -207,7 +207,9 @@ async def test_degrade_model_forces_cheapest_allowed_model() -> None:
         allowed_models=("premium", "economy"),
         default_model="premium",
     )
-    kernel_ctx = StepKernelContext(agent_id="demo", budget_degrade_active=True)
+    kernel_ctx = StepKernelContext(
+        agent_id="demo", tenant_id="tenant-test", budget_degrade_active=True
+    )
     wrapped = wrap_budget_enforcing_router(
         router,
         limits=ResolvedBudgetLimits(
@@ -228,6 +230,7 @@ async def test_budget_threshold_emits_runtime_event() -> None:
     task_seed = "task-1"
     kernel_ctx = StepKernelContext(
         agent_id="demo",
+        tenant_id="tenant-test",
         run_id=canonical_run_id_for_tests(run_seed),
         task_id=canonical_task_id_for_tests(task_seed),
         budget_reaction=BudgetReactionProfile(
@@ -239,7 +242,7 @@ async def test_budget_threshold_emits_runtime_event() -> None:
             limit_source="binding",
         ),
     )
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         invocation_usage=AcpInvocationUsageView(
             agent=AcpTokenUsage(tokens_total=12, tokens_limit=20),
             environment=AcpTokenUsage(tokens_total=12, tokens_limit=20),

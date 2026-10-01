@@ -114,12 +114,23 @@ def attach_acp_catalog_exec_ctx(
     if run_id != resolved_run_id:
         raise RuntimeError("step run_id conflicts with active execution identity")
     execution_id = require_active_execution_id()
-    shim_tenant = request.identity.tenant_id or step_ctx.tenant_id
-    if shim_tenant is None or not str(shim_tenant).strip():
+    request_tenant_raw = request.identity.tenant_id
+    if request_tenant_raw is None or not str(request_tenant_raw).strip():
         raise ValueError("tenant_id is required for ACP UAEP shim RuntimeRequest")
+    request_tenant = str(request_tenant_raw).strip()
+    step_tenant = str(step_ctx.tenant_id).strip()
+    kernel_tenant = str(kernel_ctx.tenant_id).strip()
+    if request_tenant != step_tenant:
+        raise ValueError(
+            "ACP AgentRunRequest identity tenant_id conflicts with AgentStepContext tenant_id"
+        )
+    if step_tenant != kernel_tenant:
+        raise ValueError(
+            "AgentStepContext tenant_id conflicts with StepKernelContext tenant_id"
+        )
     runtime_request = RuntimeRequest(
         agent_id=contract.id,
-        tenant_id=str(shim_tenant).strip(),
+        tenant_id=request_tenant,
         user_id=str(request.identity.user_id or ""),
         session_id=str(request.session_id or resolved_run_id),
         message=str(request.input or step_ctx.message or ""),

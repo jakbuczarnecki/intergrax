@@ -19,6 +19,8 @@ def test_search_summary_reason_frozen_values() -> None:
     assert {reason.value for reason in SearchSummaryReason} == {
         "query_missing",
         "tool_gateway_not_available",
+        "tenant_scope_invalid",
+        "source_scope_invalid",
         "retrieve_failed",
         "retrieve_complete",
     }

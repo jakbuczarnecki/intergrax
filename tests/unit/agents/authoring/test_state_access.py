@@ -14,7 +14,7 @@ class _ResearchState(AcpSessionState):
 @pytest.mark.unit
 @pytest.mark.gate
 def test_load_session_state_from_nested_blob() -> None:
-    ctx = AgentStepContext(
+    ctx = AgentStepContext(tenant_id="tenant-test", 
         state_snapshot={
             ACP_STATE_KEY: {
                 "schema_version": "acp.state.v1",

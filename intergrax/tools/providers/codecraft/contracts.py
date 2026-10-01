@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from intergrax.codecraft.contracts import CodeCraftSession, CraftResult
 
@@ -14,9 +14,19 @@ class CodeCraftContextFields(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     run_id: str | None = None
-    tenant_id: str = "default"
-    task_id: str = "default"
+    tenant_id: str | None = None
+    task_id: str | None = None
     agent_id: str = ""
+
+    @field_validator("tenant_id", "task_id")
+    @classmethod
+    def _identity_non_empty_when_set(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("tenant_id and task_id must be non-empty when provided")
+        return stripped
 
 
 class CodeCraftRunToolInput(CodeCraftContextFields):

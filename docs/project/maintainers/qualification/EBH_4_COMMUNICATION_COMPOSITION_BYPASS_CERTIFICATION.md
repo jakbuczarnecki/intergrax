@@ -584,3 +584,453 @@ uv run pytest -p no:xdist tests/unit/runtime/qualification/test_ebh_4_b4_tenant_
 ```
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 25. B4-R1 — Residual Default-Tenant Elimination (Cursor @ `02258a81…`)
+
+**START_HEAD:** `02258a8103bdc3808d2aac0a32d897c0b8d594c1` · **B3:** independently accepted local PASS
+
+**02258a81 independent audit:** **BLOCKED** — first-wave tenant remediation accepted, but residual implicit/default tenant semantics remain in `AgentStepContext`, `EvalTrajectoryInput`, `UserProfileManager`, and CodeCraft ownership/trace paths.
+
+**B4-R1 (local):** READY FOR AUDIT · **B4 (local):** READY FOR AUDIT · **EBH-4-R1-R3 / EBH-4 / HARNESS-W7:** BLOCKED / NOT ENTERED
+
+### R1 remediation (closed-world)
+
+| ID | Contract / seam | Change |
+| --- | --- | --- |
+| R1-A | `intergrax/contracts/agent_step_context.py` | Required non-empty `tenant_id`; production builders already typed |
+| R1-B | `intergrax/tools/providers/eval/contracts.py` | `EvalTrajectoryInput.tenant_id` required |
+| R1-C | `intergrax/memory/user_profile_manager.py` | Required non-empty `tenant_id` |
+| R1-D | `intergrax/runtime/codecraft/ownership.py` | Typed absence (`None`); blank caller assertion → fail closed |
+| R1-E | `intergrax/runtime/codecraft/trace.py` | No `"default"` EventBus fallback; validate before sinks |
+| R1-D/E+ | `intergrax/tools/providers/codecraft/contracts.py` | `CodeCraftContextFields` tenant/task optional `None` (not `"default"`) |
+
+### Residual scan (post-R1, production `intergrax/`)
+
+| Pattern | Example paths | Disposition |
+| --- | --- | --- |
+| `StepKernelContext.tenant_id = "default"` | `runtime/kernel/step_kernel.py` | TRACKED FREEZE DEBT — kernel default; UAEP bridge supplies `kernel_ctx.tenant_id` from execution |
+| HTTP harness route defaults | `harness_task_routes.py`, `trace_explorer_routes.py` | TRACKED FREEZE DEBT — CONFIG-X / TENANT-X (non-EBH-4 execution graph) |
+| Multimedia / integration configs | `multimedia/*`, `integrations/*` | TRACKED FREEZE DEBT — CONFIG-X |
+| `testing_support/builder.py` fixture default | test harness only | evidence-backed non-production |
+
+**EBH-4-relevant implicit tenant fallback on R1 seams:** **0** (local)
+
+### B4-R1 adversarial owner
+
+`tests/unit/runtime/qualification/test_ebh_4_b4_tenant_isolation.py` — extended with R1-A…R1-E matrix rows.
+
+**B4-R1 tenant verdict (local):** **PASS** · **IN-SCOPE BLOCKER = 0** · **global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0**
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 26. B4-R2 — StepKernel Tenant Contract Closure (Cursor @ `8f44f5b3…`)
+
+**START_HEAD:** `8f44f5b3af86b7073c121533a154ee0bdc1cb1d9`
+
+**8f44f5b3 independent audit:** B4-R1 remediation accepted for Agent/Eval/Memory/CodeCraft, but **B4 remained BLOCKED** because `StepKernelContext` still allowed implicit `tenant_id="default"`.
+
+### R2 contract
+
+| Seam | Change |
+| --- | --- |
+| `intergrax/runtime/kernel/step_kernel.py` | `tenant_id` required (field order: `agent_id`, `tenant_id`, …); `__post_init__` strip + non-empty validation |
+| Production constructors | `acp_run.py`, `uaep_step_bridge.build_kernel_session`, `uc11_compliance_golden.py` — explicit typed tenant only |
+| Tests | All `StepKernelContext(` callers supply explicit fixture tenant |
+
+### Post-R2 residual (`StepKernelContext` / kernel graph)
+
+**EBH-4-relevant implicit kernel tenant fallback:** **0** (local)
+
+HTTP harness route defaults, multimedia/integration config defaults — unchanged; **TRACKED FREEZE DEBT** (CONFIG-X / TENANT-X), outside StepKernel execution graph.
+
+### B4-R2 adversarial owner
+
+`tests/unit/runtime/qualification/test_ebh_4_b4_tenant_isolation.py` — R2 rows (missing/blank/strip kernel tenant; kernel → UAEP `AgentStepContext` equality).
+
+`tests/unit/runtime/kernel/test_step_kernel.py` — kernel event tenant continuity.
+
+**B4-R2 tenant verdict (local):** **PASS** candidate · **B4 whole-scope (local):** **PASS** candidate · **IN-SCOPE BLOCKER = 0** · **global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0**
+
+**EBH-4-R1-R3 / EBH-4 / HARNESS-W7:** BLOCKED / NOT ENTERED (audit not CLOSED)
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+## 27. B4-R3 — UAEP RuntimeRequest Tenant Authority Convergence (Cursor @ `cb503106…`)
+
+**START_HEAD:** `cb503106dd0ebd379240c940e926fedd7b022963`
+
+**cb503106 independent audit:** B4-R2 StepKernel contract = independently accepted local PASS. Whole B4 remained BLOCKED because UAEP/ACP current-HEAD rescan found:
+
+- metadata tenant substitution in `_runtime_request_identity`;
+- missing `build_kernel_session` request/tenant equality;
+- ACP shim request/step precedence (`identity.tenant_id or step_ctx.tenant_id`);
+- typed `RuntimeRequest` vs `canonical_identity` tenant equality not enforced at UAEP bridge.
+
+### R3 contract
+
+| Seam | Change |
+| --- | --- |
+| `uaep_step_bridge._runtime_request_identity` | `canonical_runtime_request_tenant_id` + metadata compatibility only; canonical identity must agree with typed tenant |
+| `uaep_step_bridge.build_kernel_session` | explicit `tenant_id` argument must equal canonical `RuntimeRequest` tenant before kernel materialization |
+| `acp_uaep_shim.attach_acp_catalog_exec_ctx` | fail-closed equality: ACP identity tenant == `AgentStepContext` == `StepKernelContext`; no OR precedence |
+
+### B4-R3 adversarial owner
+
+`tests/unit/runtime/qualification/test_ebh_4_b4_tenant_isolation.py` — R3 rows (metadata substitute, canonical mismatch, kernel param mismatch, ACP shim equality matrix).
+
+**B4-R3 tenant verdict (local):** **PASS** candidate · **B4 whole-scope (local):** **PASS** candidate · **IN-SCOPE BLOCKER = 0** · **global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0**
+
+**EBH-4-R1-R3 / EBH-4 / HARNESS-W7:** BLOCKED / NOT ENTERED (audit not CLOSED)
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+## 28. B4-R4 — Catalog Tool Tenant Scope Authority Closure (Cursor @ `f82e6276…`)
+
+**START_HEAD:** `f82e627614b1862a99a23d3a951de518ed6eb72b`
+
+**f82e6276 independent audit:** B4-R3 = independently accepted local PASS. Whole B4 remained BLOCKED because:
+
+- `resolve_request_scope` could still substitute `metadata.tenant_id` when typed tenant was absent;
+- `local_search` had a second metadata tenant fallback (`_resolved_tenant_id`);
+- production domain steps imported helper symbols from neutral Authoring owner that were implemented only in a parallel Nexus helper, leaving duplicated/inconsistent ownership.
+
+**B4-R4 adversarial owner:** `tests/unit/runtime/qualification/test_ebh_4_b4_tenant_isolation.py` — R4 rows (scope equality matrix, indexer/search zero-tool adversarial chains, helper ownership gates).
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 29. B5 — Current-HEAD Functional Regression Closure (Cursor @ `f4f75dfd…`)
+
+**AUDITED_HEAD / START_HEAD:** `f4f75dfd312ffe62cf1305ec69af4dcc8ba6d992` · **branch:** `development` · **origin/development:** identical · **working tree:** clean at audit start
+
+**B3 / B4:** independently accepted local PASS (revalidated wave-01) · **B5 (local):** **BLOCKED** · **B6 / B7/P9 / HARNESS-W7:** NOT ENTERED
+
+### Wave inventory (all `uv run pytest -p no:xdist`; logs under `.tmp/session/ebh-4-r1-r3-b5/`)
+
+| Wave | Command scope | passed | failed | skipped | errors | Log |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| 01 B3/B4 qualification | `test_ebh_4_b4_tenant_isolation.py`, `test_decision_orchestration_recovery.py`, `test_ue_11e_resume_recovery.py`, `test_unified_task_runner_execution_boundary.py` | 75 | 0 | 0 | 0 | `wave01-b3-b4-qualification.log` |
+| 02 Architecture gates | `test_ebh_4_r1_nexus_encapsulation_gate.py`, `test_ebh_3_dependency_ownership_gate.py`, `test_ebh_2a_public_contract_boundary_gate.py`, `test_ebh_2i_final_rescan_gate.py`, `test_ebh_2f_r1_host_execution_port_replaceability.py` | 47 | 0 | 0 | 0 | `wave02-architecture-gates.log` |
+| 03 Execution (full `runtime/execution/`, minus 2 collection-broken modules) | entire package | 1316 | 153 | 1 | 40 | `wave03-execution-rerun.log` |
+| 04 Governance | `tests/unit/runtime/governance/` | 215 | 8 | 0 | 0 | `wave04-governance.log` |
+| UAEP/ACP/Kernel | UAEP unit + `test_uaep_step_bridge.py`, `test_acp_run_session.py`, kernel session tests, B4 qualification overlap | 90 | 4 | 0 | 0 | `wave-uaep-acp-kernel.log` |
+| RAG/Memory/Eval/CodeCraft/Events | `test_rag_scope.py`, `memory/`, `eval/`, `codecraft/`, `runtime/events/` | 1022 | 9 | 1 | 0 | `wave-rag-memory-eval-events.log` |
+| B5 decisive batch (×2) | B4 + nexus gate + B3 trio + `test_uaep_step_bridge.py` + `test_step_kernel.py` | 113 | 0 | 0 | 0 | `b5-decisive-batch-run1.log`, `b5-decisive-batch-run2.log` |
+
+### IN-SCOPE BLOCKER
+
+| ID | Finding | Evidence |
+| --- | --- | --- |
+| B5-BLK-01 | Order-dependent pollution in `tests/unit/runtime/execution/`: B3 canonical tests green in wave-01 / decisive batch but fail in full wave-03; UE-11D green alone (81) but ~80 failures only in combined wave | `wave01` vs `wave03-execution-rerun.log`, `b3-isolation-rerun.log` |
+| B5-BLK-02 | UAEP/ACP tests stale vs tenant + pre_model governance: `tenant_id is required for RuntimeRequest`; `PreModelPolicyConfigurationError` | `wave-uaep-acp-kernel.log` (4 failures) |
+
+### ENVIRONMENT / TEST ISSUE (classified)
+
+Collection import drift (`build_nexus_loop_from_environment` wrong owner in 2 execution tests); delegated subprocess worker port errors (40×); GR13 `GovernanceEvidenceRecorder` NameError; governance runtime_context strict-profile/bootstrap failures; Windows chmod skip in memory audit.
+
+### TRACKED FREEZE DEBT
+
+HARNESS-W5 event composition/export tests (9 failures); mixed full execution wave attribution (QUAL-X).
+
+### FRZ local evidence — **global FRZ PASS delta = 0**
+
+FRZ-REG-02/03/06/09 partial on HEAD; FRZ-REG-08 noted for delegated-worker environment; no global promotion.
+
+### Repairs
+
+None in B5 pass (certification only).
+
+### Recommended status
+
+`EBH-4-R1-R3-B5 = BLOCKED` · B6/B7/HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 30. B5-R1A — Execution Pollution Bounded Diagnosis (Cursor @ `a0aa8dbc…`)
+
+**AUDITED_HEAD / START_HEAD:** `a0aa8dbcd3d8d9b1cd8e1187c5a7ac977f123e86` · **branch:** `development` · **origin/development:** identical
+
+### Victim
+
+`tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py::test_ue_11d_shared_runtime_parallel_root_identity_isolation[0]` — **PASS** isolated (`r1a-diag1-victim.log`).
+
+### Suspect modules (from `wave03-execution-rerun.log` + `module-order.txt` indices 46–53)
+
+| Rank | Module | Hypothesis |
+| --- | --- | --- |
+| S1 | `suspended_operation/test_uca6c_r6_r5_9_r4_final_distributed_recovery_e2e.py` | Manual `_identity_context` + production `_reenter` / tool-runtime path may leave `peek_active_execution_identity()` non-`None` after test `finally` |
+| S2 | `suspended_operation/test_uca6c_r6_r5_9_r3_crash_windows.py` | Same harness pattern; part of minimal failing prefix (46–50) |
+| S3 | `test_agent_executor.py` | Wave-03 first identity-reset failure cluster; likely **downstream** of earlier leak (same `run_id` across failures) |
+
+### Diagnostic pytest (6/6 budget)
+
+| # | Command | Purpose | Result |
+| --- | --- | --- | --- |
+| 1 | `pytest -p no:xdist` victim node only | Clean victim | **PASS** |
+| 2 | `test_agent_executor.py` + victim | S3 module | **PASS** (21) |
+| 3 | `test_agentic_tool_execution_identity.py` + victim | Adjacent wave-03 identity module | **PASS** (13) |
+| 4 | `test_active_execution_authority.py` + victim | Authority ContextVar module | **PASS** (9) |
+| 5 | `module-order` indices **46–50** (5 modules) + victim | Minimal prefix before UE-11D in bisect | **FAIL** victim (`peek_active_execution_identity()` not `None`; `r1a-diag5-m46-50-victim.log`) |
+| 6 | `test_uca6c_r6_r5_9_r3_crash_windows.py` + victim | Narrow S2 | **PASS** (7) |
+
+### Findings
+
+- **Contaminating module (group):** UCA-6C R6 suspended-operation prefix **46–50** — **confirmed** minimal reproduction with victim.
+- **Exact contaminator test:** **NOT FOUND** within budget (crash module alone does not reproduce; single E2E test not isolated).
+- **Leaked state (observed):** `peek_active_execution_identity()` → `(run_id, attempt_id)`; owner `intergrax.contracts.execution_identity` (`_active_execution_identity` ContextVar).
+- **Victim effect:** `_assert_clean_caller_context()` UE-11D line 186 (`wave03` + diag #5).
+- **Classification:** **BOUNDED DIAGNOSIS INCONCLUSIVE** for single-test root cause; evidence supports **IN-SCOPE BLOCKER — AUTHORITY/ISOLATION LEAK** via UCA-6C R6 durable reentry — not §19 trivial test-only fix without R1B proof.
+
+**Reconciliation (independent exact-SHA audit @ `3bb1bd26…`):** B5-R1A bounded Cursor diagnosis remained inconclusive at exact-test level; independent audit identified concrete **TEST FIXTURE LIFECYCLE DEFECT** — nested `_identity_context()` in `test_uca6c_r6_r5_9_r4_final_distributed_recovery_e2e.py` reset **outer** `tokens` before **inner** `task_tokens`, violating LIFO for `ContextVar.reset(token)` and leaking execution identity into later tests (B5-BLK-01 signature). Prior R1A evidence retained; root cause classification updated for R1B.
+
+### Expected B5-R1B shape (draft)
+
+- Owner: `intergrax/contracts/execution_identity.py` + production path from `ExecutionSuspendedWorkReentryCoordinator.reenter_after_resume` / bound catalog tool invoke.
+- Missing cleanup: token-scoped `reset_active_execution_identity` after nested production binds during suspended-work reentry (§24 nesting).
+- Regression: confirmed contaminator + UE-11D victim in one process.
+
+### FRZ local evidence
+
+**global FRZ PASS delta = 0** · FRZ-REG-02/03/06/09 · FRZ-EXE-* / FRZ-TEN-* (harness tenant-bound identity) — no promotion.
+
+### Recommended status
+
+`EBH-4-R1-R3-B5-R1A = BLOCKED` · `B5-R1B = NOT ENTERED` · `B5 = BLOCKED`
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 31. B5-R1B — UCA-6C Nested Identity Fixture LIFO Repair
+
+**START_HEAD / AUDITED_HEAD:** `3bb1bd267e636a5e2f98348b441d11c21df5a494` · **branch:** `development`
+
+### Root cause (B5-BLK-01)
+
+**Classification:** **TEST FIXTURE LIFECYCLE DEFECT** (not production `execution_identity` semantics).
+
+**Owner file:** `tests/unit/runtime/execution/suspended_operation/test_uca6c_r6_r5_9_r4_final_distributed_recovery_e2e.py`
+
+**Bad pattern (pre-fix):** after `tokens = _identity_context(task_a, …)` and nested `task_tokens = _identity_context(task_b, …)`, `finally` reset **outer** `tokens` first, then **inner** `task_tokens`. `ContextVar.reset(token)` must unwind in reverse bind order (LIFO); resetting outer while inner is still active restores outer’s previous value and leaves inner’s layer active — on subsequent outer reset, stale identity can remain visible to `peek_active_execution_identity()` and contaminate `test_ue_11d_parallel_root_isolation`.
+
+**Fix:** reset `task_tokens` (inner) before `tokens` (outer); shared `_reset_nested_identity_tokens` helper; post-test `peek_active_execution_identity() is None`; `test_uca6c_nested_identity_context_lifo_restores_caller_context` guards nesting semantics.
+
+**Production files changed:** 0 (`intergrax/contracts/execution_identity.py` unchanged).
+
+### Same-pattern scan (`suspended_operation/`)
+
+| Location | Nested outer+inner `_identity_context` | Action |
+| --- | --- | --- |
+| `test_uca6c_r6_r5_9_r4_final_distributed_recovery_e2e.py` (2 E2E tests) | yes | LIFO fix |
+| `test_uca6c_r6_r5_9_r3_crash_windows.py` | single bind per scope only | no change |
+| Other UCA-6C suspended_operation modules | no identical nested pair | — |
+
+### Victim proof
+
+Contaminator module + `test_ue_11d_shared_runtime_parallel_root_identity_isolation[0]` in one pytest process — **PASS** (4 collected, 4 passed, ~3.7s local).
+
+### Local pytest (3/3 budget, `-p no:xdist`)
+
+| # | Scope | Result |
+| --- | --- | --- |
+| 1 | `test_uca6c_r6_r5_9_r4_final_distributed_recovery_e2e.py` | **PASS** (3, ~3.7s) |
+| 2 | same module + UE-11D victim `[0]` | **PASS** (4, ~3.7s) |
+| 3 | UE-11D victim + `test_ue_11e_local_retry_preserves_identity_and_budget` + `test_decision_orchestration_checkpoint_recovery_participation` | **PASS** (3, ~3.1s) |
+
+### Postcondition
+
+After affected UCA-6C scopes exit: `peek_active_execution_identity()` → `None` (asserted on E2E tests + dedicated LIFO unit test).
+
+### FRZ local evidence
+
+**global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0** · FRZ-REG-02, FRZ-REG-03, FRZ-REG-06, FRZ-REG-09 (harness isolation); supporting context FRZ-EXE-* / FRZ-TEN-* / FRZ-GOV-* — no promotion.
+
+### B5-BLK-01
+
+**RESOLVED CANDIDATE** (pending independent GitHub commit audit).
+
+### Recommended status
+
+`EBH-4-R1-R3-B5-R1B = READY FOR AUDIT` · `B5 = BLOCKED` · `B5-R2 = NEXT / NOT ENTERED` · B6/B7/HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 31. B5-R2 — UAEP/ACP Qualification Fixture Alignment (Cursor @ `3c7e172…`)
+
+**START_HEAD / AUDITED_HEAD:** `3c7e172381824e2561f7eee88cf2554817fe10aa` · **branch:** `development` · **origin/development:** identical
+
+### B5-BLK-02 — four original failures (stale fixtures)
+
+| Test | Original error | Root cause |
+| --- | --- | --- |
+| `test_uaep_governance_deny_fails_without_rejecting_accepted` | `ValueError: tenant_id is required for RuntimeRequest` | Tenant only in `metadata`, not typed `RuntimeRequest.tenant_id` |
+| `test_uaep_governance_require_human_requests_human` | Same | Same |
+| `test_acp_mints_identity_once_when_absent` | `PreModelPolicyConfigurationError: pre_model governance identity unavailable` | Successful ACP path without active governance identity projection |
+| `test_acp_preserves_supplied_canonical_identity` | Same | Same |
+
+**Additional same-class fix:** `test_acp_binds_and_resets_active_execution_identity`; `test_acp_run_session.py` success paths (contract regression run #3).
+
+### Fixture before / after
+
+- **UAEP:** `metadata["tenant_id"]` → `tenant_id="tenant-a"` on `RuntimeRequest`.
+- **ACP:** `canonical_governed_execution_scope(..., governance_tenant_id=…, governance_principal_id=…)`; step-bridge host hooks for `attach_acp_catalog_exec_ctx` + aligned `run_id` / governed scope.
+
+### Production impact
+
+**production changed files = 0** (`intergrax/` untouched). Test-only: `testing_support/builder.py`, agent unit tests, this doc.
+
+### Post-fix pytest (`-p no:xdist`; logs `.tmp/session/ebh-4-r1-r3-b5-r2/`)
+
+| # | Scope | Result |
+| --- | --- | --- |
+| 1 | Four B5-BLK-02 nodes | **4 passed** (`run1-four-nodes.log`) |
+| 2 | `test_uaep_decision_integration.py` + `test_acp_session_identity.py` | **12 passed** (`run2-uaep-acp-files.log`) |
+| 3 | `test_uaep_decision_parity.py` + `test_uaep_executor.py` + `test_acp_run_session.py` | **8 passed** (`run3-contract-regression-final.log`) |
+
+### FRZ local evidence
+
+**global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0** · scoped FRZ-REG-02/03/06/09; supporting FRZ-TEN-01/02/07, FRZ-GOV-01/02/09, FRZ-EXE-01/02 (no promotion).
+
+### Recommended status
+
+`EBH-4-R1-R3-B5-R2 = READY FOR AUDIT` · `B5 = BLOCKED` (pending independent child audit) · B6/B7/HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 32. B5-R3 — Functional Regression Parent Reconciliation (Cursor @ `caea290…`)
+
+**START_HEAD / AUDITED_HEAD:** `caea290b10fa0d1cb12d082db761c77b3fff4b51` · **branch:** `development` · **origin/development:** identical · **production changed files:** 0 · **functional test changed files:** 0 (evidence doc only)
+
+### Canonical state before R3
+
+| Stage | State |
+| --- | --- |
+| B3 | independently accepted local PASS |
+| B4 | independently accepted local PASS |
+| B5-R1 (R1B) | independently accepted local PASS — B5-BLK-01 remediation |
+| B5-R2 | independently accepted local PASS — B5-BLK-02 remediation |
+| B5 | BLOCKED (pending parent reconciliation) |
+| B6 / B7·P9 / HARNESS-W7 | NOT ENTERED |
+| EBH-4-R1-R3 / EBH-4 | BLOCKED |
+
+### Bounded reconciliation pytest (`-p no:xdist`; logs `.tmp/session/ebh-4-r1-r3-b5-r3/`)
+
+| # | Exact command | Purpose | Result |
+| --- | --- | --- | --- |
+| 1 | `test_ebh_4_b4_tenant_isolation.py` + `test_decision_orchestration_recovery.py` + `test_ue_11e_resume_recovery.py` + `test_ue_11d_parallel_root_isolation.py::test_ue_11d_shared_runtime_parallel_root_identity_isolation[0]` | B3/B4 invariants + B5-BLK-01 signature | **62 passed** (`run1-b3-b4-r1-core.log`) |
+| 2 | `test_uaep_decision_integration.py` + `authoring/test_acp_session_identity.py` | B5-R2 typed tenant + ACP governed path | **12 passed** (`run2-b5-r2-core.log`) |
+| 3 | `test_uaep_decision_parity.py` + `test_uaep_executor.py` + `test_acp_run_session.py` | Current-contract UAEP/ACP cross-check | **8 passed** (`run3-contract-cross-check.log`) |
+| 4 | Arch gates: `test_ebh_4_r1_nexus_encapsulation_gate.py`, `test_ebh_3_dependency_ownership_gate.py`, `test_ebh_2a_public_contract_boundary_gate.py`, `test_ebh_2f_r1_host_execution_port_replaceability.py` | Boundary regression guard after R1/R2 test repairs | **35 passed** (`run4-architecture-gates-corrected.log`) |
+
+**Run #4 note:** task prompt path `tests/unit/architecture/test_ebh_2f_r1_host_execution_port_replaceability.py` absent on HEAD; current equivalent `tests/unit/runtime/architecture/test_ebh_2f_r1_host_execution_port_replaceability.py`. One invalid collect attempt (`run4-architecture-gates.log`, 0 items) precedes corrected run #4.
+
+### B5-BLK-01
+
+**RESOLVED** — R1B LIFO repair present (`_reset_nested_identity_tokens` in `test_uca6c_r6_r5_9_r4_final_distributed_recovery_e2e.py`); bounded matrix green; no new identity pollution observed.
+
+### B5-BLK-02
+
+**RESOLVED** — UAEP typed `RuntimeRequest.tenant_id` + ACP governed scope paths green (runs #2–#3); production `intergrax/` unchanged on reconciliation HEAD.
+
+### Historical failure family reconciliation (pre-R1/R2 wave-03 inventory — not current counts)
+
+| Historical family | Current evidence | B5 parent relevance | Classification | Owner / next stage |
+| --- | --- | --- | --- | --- |
+| B5-BLK-01 execution pollution | Run #1 + R1B code present | Direct | **RESOLVED** | — |
+| B5-BLK-02 UAEP/ACP stale fixtures | Runs #2–#3 | Direct | **RESOLVED** | — |
+| Delegated worker failed-to-publish-port (40× errors) | No new bounded proof; historical wave-03 only | Indirect | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | FRZ-REG-08 · QUAL-X / worker harness |
+| Collection stale imports (`build_nexus_loop_from_environment`) | Static: `lineage/test_nexus_factory_lineage_wiring.py`, `budget/test_ue_8b1r1_ledger_lifecycle.py` import from `host_orchestration_backend_spec_builder` (symbol lives in `nexus_factory.py` / `testing_support`); same 2-module collect break as B5 §29 wave-03 exclusion | Full `runtime/execution/` collect only | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | QUAL-X collection hygiene (not B5 bounded surface) |
+| GR13 `GovernanceEvidenceRecorder` NameError | Historical wave-04 only; no R3 re-run | Governance qual scope | **TRACKED FREEZE DEBT** | EBH-4 governance / QUAL-X |
+| SQLite / strict profile bootstrap | Historical traces only | Out of B5 bounded matrix | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | FRZ-REG-08 · R1-SQLITE-ENV-01 lineage |
+| W5 event composition/export (9×) | Historical `wave-rag-memory-eval-events.log` only | Harness observability | **TRACKED FREEZE DEBT** | HARNESS-W5 |
+| Remaining historical wave-03 mixed failures (~153 FAIL) | Not re-observed on current HEAD in bounded matrix; identity cluster **SUPERSEDED** by B5-BLK-01 fix | Attribution inventory | **SUPERSEDED BY RESOLVED ROOT CAUSE** (pollution subset) + **TRACKED FREEZE DEBT** (residual unbounded execution/governance mix) | B6+ / QUAL-X — no recount as current |
+
+**unclassified findings = 0**
+
+### FRZ local evidence (B5 reconciliation scope)
+
+**global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0** · primary: FRZ-REG-02, FRZ-REG-03, FRZ-REG-06, FRZ-REG-09; FRZ-REG-08 for worker/SQLite environment families; supporting context only: FRZ-EXE-*, FRZ-TEN-*, FRZ-GOV-*, FRZ-BND-*, FRZ-CTR-*, FRZ-RPL-* (no promotion).
+
+### Recommended status
+
+`EBH-4-R1-R3-B5-R3 = READY FOR AUDIT` · `EBH-4-R1-R3-B5 = READY FOR AUDIT` · **B6 = NEXT / NOT ENTERED** · B7/P9 / HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED (audit not CLOSED)
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 33. B5-R4 — Execution Qualification Import Closure + Final B5 Reconciliation (Cursor @ `3b5b1a0…`)
+
+**START_HEAD:** `3b5b1a05d3a6c7a6caab530fc2c2c1a1ba95e4dc` · **branch:** `development` · **origin/development:** identical · **production changed files:** 0
+
+### Stale import inventory (B5-BLK-03)
+
+| File | Old import | New import |
+| --- | --- | --- |
+| `tests/unit/runtime/execution/budget/test_ue_8b1r1_ledger_lifecycle.py` | `intergrax.applications._shared.host_orchestration_backend_spec_builder.build_nexus_loop_from_environment` | `testing_support.nexus_loop_from_environment.build_nexus_loop_from_environment` |
+| `tests/unit/runtime/execution/lineage/test_nexus_factory_lineage_wiring.py` | same | same |
+| `tests/unit/runtime/long_running/test_pba_fix_a_checkpoint_port_consumption.py` | same | same |
+
+**Same-pattern scan** (`tests/unit/runtime/execution/`, `tests/unit/runtime/long_running/`): identical stale production import **before = 3** · **after = 0**.
+
+**Supplemental (same module, collection unblocked):** `test_ue_8b1r1_ledger_lifecycle.py::test_per_run_isolation_on_long_lived_nexus_loop` lacked `build_harness_root_task_execution_port` import present in sibling test in file — added test-only import (no production change).
+
+### Ownership
+
+**Before:** test → `host_orchestration_backend_spec_builder` → nonexistent `build_nexus_loop_from_environment` → collection failure.
+
+**After:** test → `testing_support.nexus_loop_from_environment` → `build_host_orchestration_loop_init_spec_from_environment` → EE materialization → private Nexus backend.
+
+### Bounded pytest (`-p no:xdist`; logs `.tmp/session/ebh-4-r1-r3-b5-r4/`)
+
+| # | Exact command | Result |
+| --- | --- | --- |
+| 1 | `test_ue_8b1r1_ledger_lifecycle.py` + `test_nexus_factory_lineage_wiring.py` + `test_pba_fix_a_checkpoint_port_consumption.py` | **collection errors = 0**; 19 passed, 4 failed, 1 skipped (`run1-collection-targeted.log`) — failures in long_running module (not B5 bounded matrix) + ledger harness import (fixed in commit) |
+| 2 | Above two execution modules + `test_ebh_2f_r1_host_execution_port_replaceability.py` + `test_ebh_4_r1_nexus_encapsulation_gate.py` | 21 passed, 1 failed pre-harness-import fix (`run2-execution-factory-regression.log`); post-fix ledger+lineage **12 passed** |
+| 3 | `test_ebh_4_b4_tenant_isolation.py` + UE-11D victim + `test_ue_11e_resume_recovery.py` + `test_uaep_decision_integration.py` + `authoring/test_acp_session_identity.py` | **66 passed** (`run3-b5-core-matrix.log`) |
+| 4 | Arch gates: `test_ebh_4_r1_nexus_encapsulation_gate.py`, `test_ebh_3_dependency_ownership_gate.py`, `test_ebh_2a_public_contract_boundary_gate.py`, `test_ebh_2f_r1_host_execution_port_replaceability.py` | **35 passed** (`run4-architecture-gates.log`) |
+
+**Collection health (B5-BLK-03 scope):** `test_ue_8b1r1_ledger_lifecycle.py` + `test_nexus_factory_lineage_wiring.py` — **collection errors = 0**; targeted semantics **12/12 passed** after commit.
+
+### B5 blocker ledger (final)
+
+| Blocker | Final state |
+| --- | --- |
+| B5-BLK-01 — execution identity pollution | **RESOLVED** |
+| B5-BLK-02 — UAEP/ACP stale fixtures | **RESOLVED** |
+| B5-BLK-03 — stale execution qualification imports | **RESOLVED** |
+
+### Historical failure reconciliation (not current counts)
+
+| Family | Classification |
+| --- | --- |
+| B5-BLK-01 / B5-BLK-02 / B5-BLK-03 | **RESOLVED** |
+| Wave-03 mixed execution failures (pollution subset) | **SUPERSEDED** by B5-BLK-01 |
+| Delegated worker publish-port (40× historical) | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** · FRZ-REG-08 · QUAL-X |
+| `test_pba_fix_a_checkpoint_port_consumption.py` semantic failures (missing `REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION`, stale `long_running_bridge` patch targets) | **TRACKED FREEZE DEBT** — long_running qual; outside B5 bounded matrix; not B5-BLK-03 |
+| GR13 `GovernanceEvidenceRecorder` | **TRACKED FREEZE DEBT** |
+| SQLite / strict profile | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** · FRZ-REG-08 |
+| W5 event composition | **TRACKED FREEZE DEBT** · HARNESS-W5 |
+
+**unclassified findings = 0** · **IN-SCOPE BLOCKER = 0**
+
+### FRZ (scoped)
+
+**global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0** · primary: FRZ-REG-02, FRZ-REG-03, FRZ-REG-05 (stale import refs = 0 in targeted scope), FRZ-REG-06, FRZ-REG-09; FRZ-REG-08 for environment families.
+
+### Recommended status
+
+`EBH-4-R1-R3-B5-R4 = READY FOR AUDIT` · `EBH-4-R1-R3-B5 = READY FOR AUDIT` · **B6 = NEXT / NOT ENTERED** · B7/P9 / HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED (audit not CLOSED)
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**

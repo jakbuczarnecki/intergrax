@@ -458,7 +458,7 @@ async def test_gr13_agentic_pre_output_emits_fact(gr13_evidence_store) -> None:
             governance_evidence_recorder=recorder,
             allow_permissive_missing_policy=True,
         )
-        step_ctx = AgentStepContext(step_index=0)
+        step_ctx = AgentStepContext(tenant_id="tenant-test", step_index=0)
         outcome = StepOutcome.complete("done")
         await HarnessKernel.execute_step(outcome, step_ctx, kernel_ctx)
     assert len(store.facts) == 1

@@ -132,7 +132,7 @@ async def test_kernel_increments_budget_after_llm_drain() -> None:
         default_model="frontier",
     )
     await router.complete("one two three four", model_hint="balanced")
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         step_index=0,
         metadata={},
         llm_router=router,
@@ -140,6 +140,7 @@ async def test_kernel_increments_budget_after_llm_drain() -> None:
     meter_seed = "run-meter-1"
     kernel_ctx = StepKernelContext(
         agent_id="demo",
+        tenant_id="tenant-test",
         run_id=canonical_run_id_for_tests(meter_seed),
         task_id=canonical_task_id_for_tests(meter_seed),
         allow_permissive_missing_policy=True,

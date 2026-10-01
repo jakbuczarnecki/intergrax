@@ -42,7 +42,7 @@ async def test_three_step_session_loop() -> None:
         execution_id=execution_id,
     )
     try:
-        step_ctx = AgentStepContext(
+        step_ctx = AgentStepContext(tenant_id="tenant-test", 
             step_index=0,
             run_id=run_id,
             task_id=task_id,
@@ -50,6 +50,7 @@ async def test_three_step_session_loop() -> None:
         )
         kernel_ctx = StepKernelContext(
             agent_id="counter",
+            tenant_id="tenant-test",
             principal_id="test-principal",
             run_id=run_id,
             task_id=task_id,

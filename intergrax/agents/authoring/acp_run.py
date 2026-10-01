@@ -323,10 +323,10 @@ async def _run_acp_session_bound(
 
     kernel_ctx = StepKernelContext(
         agent_id=merged.agent_id,
+        tenant_id=merged.tenant_id,
         principal_id=session_principal_id,
         run_id=run_id,
         task_id=task_id,
-        tenant_id=merged.tenant_id,
         side_effect_mode=merged.side_effect_mode,
         max_steps=merged.max_steps,
         checkpoint_every_step=merged.checkpoint_every_step,

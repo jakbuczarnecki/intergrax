@@ -14,8 +14,6 @@ from intergrax.tools.registry.runtime_bindings import HumanDecisionStoreBinding
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 CODECRAFT_EXEC_HITL_NOTES_PREFIX = "codecraft_exec:"
-_DEFAULT_TENANT = "default"
-_DEFAULT_TASK = "default"
 
 
 class CodeCraftOwnershipError(Exception):
@@ -45,11 +43,20 @@ def codecraft_exec_hitl_notes(craft_id: str) -> str:
     return f"{CODECRAFT_EXEC_HITL_NOTES_PREFIX}{craft_id}"
 
 
+def _validate_caller_identity_field(value: str | None, *, field: str) -> str | None:
+    if value is None:
+        return None
+    stripped = value.strip()
+    if not stripped:
+        raise CodeCraftOwnershipError(f"codecraft_{field}_blank")
+    return stripped
+
+
 def resolve_codecraft_ownership(
     ctx: ToolWiringContext,
     *,
-    caller_tenant_id: str = _DEFAULT_TENANT,
-    caller_task_id: str = _DEFAULT_TASK,
+    caller_tenant_id: str | None = None,
+    caller_task_id: str | None = None,
     caller_run_id: str | None = None,
 ) -> CodeCraftSessionOwnership:
     """Resolve trusted tenant/task from sandbox binding and run_id from active execution identity."""
@@ -60,11 +67,11 @@ def resolve_codecraft_ownership(
     trusted_tenant = str(sandbox.tenant_id)
     trusted_task = str(sandbox.task_id)
 
-    caller_asserts_tenant = caller_tenant_id != _DEFAULT_TENANT
-    caller_asserts_task = caller_task_id != _DEFAULT_TASK
-    if caller_asserts_tenant and caller_tenant_id != trusted_tenant:
+    resolved_caller_tenant = _validate_caller_identity_field(caller_tenant_id, field="tenant")
+    resolved_caller_task = _validate_caller_identity_field(caller_task_id, field="task")
+    if resolved_caller_tenant is not None and resolved_caller_tenant != trusted_tenant:
         raise CodeCraftOwnershipError("codecraft_tenant_mismatch")
-    if caller_asserts_task and caller_task_id != trusted_task:
+    if resolved_caller_task is not None and resolved_caller_task != trusted_task:
         raise CodeCraftOwnershipError("codecraft_task_mismatch")
 
     trusted_run: str | None = None

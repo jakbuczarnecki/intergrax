@@ -102,10 +102,10 @@ class StepKernelContext:
     """Harness-owned execution context for one agent session loop."""
 
     agent_id: str
+    tenant_id: str
     principal_id: str = ""
     run_id: str = ""
     task_id: str = ""
-    tenant_id: str = "default"
     side_effect_mode: SideEffectMode = SideEffectMode.IMMEDIATE
     max_steps: int | None = None
     checkpoint_every_step: bool = True
@@ -137,6 +137,11 @@ class StepKernelContext:
     execution_boundary_export: ExecutionBoundaryExportRuntimeSettings | None = None
     boundary_event_buffer: BoundaryEventBuffer | None = None
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None
+
+    def __post_init__(self) -> None:
+        self.tenant_id = self.tenant_id.strip()
+        if not self.tenant_id:
+            raise ValueError("tenant_id must be non-empty")
 
 
 def _missing_principal_decision(kernel_ctx: StepKernelContext) -> PolicyDecision | None:

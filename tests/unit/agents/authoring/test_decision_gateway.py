@@ -53,7 +53,7 @@ def test_resolve_decision_flow_gate_from_metadata() -> None:
             scopes=frozenset({DecisionFlowScope.UAEP_STEP}),
         ),
     )
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         run_id=str(mint_run_id()),
         task_id=str(mint_task_id()),
         metadata={AcpRunContextKey.DECISION_FLOW_GATE: gate},
@@ -89,7 +89,7 @@ async def test_verify_reflection_draft_with_decision(mock_evaluate, execution_id
         authority_reason="needs revision",
         revision_decision=None,
     )
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         run_id=str(mint_run_id()),
         task_id=str(mint_task_id()),
         metadata={AcpRunContextKey.DECISION_FLOW_GATE: gate},
@@ -106,7 +106,7 @@ async def test_verify_reflection_draft_with_decision(mock_evaluate, execution_id
 
 def test_decision_flow_gate_attached() -> None:
     gate = MagicMock(spec=CanonicalDecisionFlowGate)
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         run_id=str(mint_run_id()),
         task_id=str(mint_task_id()),
         metadata={AcpRunContextKey.DECISION_FLOW_GATE: gate},

@@ -275,7 +275,7 @@ def test_close_acp_catalog_exec_ctx_closes_runtime_context_once() -> None:
         ),
         run_id=run_id,
     )
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         step_index=0,
         run_id=run_id,
         agent_id="counter-r6b",
@@ -291,7 +291,7 @@ def test_close_acp_catalog_exec_ctx_closes_runtime_context_once() -> None:
 
 @pytest.mark.unit
 def test_close_acp_catalog_exec_ctx_noop_when_missing() -> None:
-    step_ctx = AgentStepContext(
+    step_ctx = AgentStepContext(tenant_id="tenant-test", 
         step_index=0,
         run_id=mint_run_id(),
         agent_id="counter-r6b",

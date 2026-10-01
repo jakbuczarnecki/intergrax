@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 from intergrax.agents.authoring.runtime_tool_helpers import (
+    RequestScopeError,
     exec_ctx_from_step,
     invoke_catalog_tool,
     request_metadata,
@@ -221,27 +222,23 @@ def _output(
     }
 
 
-def _resolved_tenant_id(
-    scope: dict[str, str | None],
-    metadata: dict[str, Any],
-) -> str | None:
-    tenant_id = scope.get("tenant_id")
-    if tenant_id:
-        return tenant_id
-    raw = metadata.get("tenant_id")
-    if raw is not None and str(raw).strip():
-        return str(raw).strip()
-    return None
-
-
 async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
     """LKW.1.2 — rag.retrieve via catalog tool; evidence-first search_summary."""
     exec_ctx = exec_ctx_from_step(step_ctx)
     metadata = request_metadata(
         exec_ctx, step_ctx, fallback_keys=_LKW_SEARCH_METADATA_KEYS
     )
-    scope = resolve_request_scope(exec_ctx)
-    tenant_id = _resolved_tenant_id(scope, metadata)
+    try:
+        scope = resolve_request_scope(exec_ctx)
+    except RequestScopeError as exc:
+        return _output(
+            run_id=step_ctx.run_id,
+            used=False,
+            reason=SearchSummaryReason.TENANT_SCOPE_INVALID,
+            query=_resolve_query(step_ctx, metadata),
+            raw_tool_reason=str(exc),
+        )
+    tenant_id = scope.get("tenant_id")
     query = _resolve_query(step_ctx, metadata)
     collection_id_raw = metadata.get("collection_id")
     collection_id = (
@@ -273,11 +270,18 @@ async def run_search_job(step_ctx: AgentStepContext) -> dict[str, object]:
             collection_id=collection_id,
         )
 
-    tool_input: dict[str, Any] = {"query": query}
+    if not tenant_id:
+        return _output(
+            run_id=step_ctx.run_id,
+            used=False,
+            reason=SearchSummaryReason.TENANT_SCOPE_INVALID,
+            query=query,
+            collection_id=collection_id,
+        )
+
+    tool_input: dict[str, Any] = {"query": query, "tenant_id": tenant_id}
     if top_k is not None:
         tool_input["top_k"] = top_k
-    if tenant_id:
-        tool_input["tenant_id"] = tenant_id
     if scope["user_id"]:
         tool_input["user_id"] = scope["user_id"]
     if workspace_id:

@@ -2,7 +2,10 @@
 
 import pytest
 
+from intergrax.agents.authoring.acp_runtime_session_ports import AcpRuntimeSessionHooks
+from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY, ACPSessionHostContext
 from intergrax.agents.authoring.base import IntergraxAgent
+from intergrax.agents.authoring.shared_context_access import neutral_shared_context_access_for_run
 from intergrax.agents.authoring.decorators import step
 from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.contracts.agent_contract_meta import AgentRiskLevel
@@ -10,10 +13,13 @@ from intergrax.contracts.agent_run import AgentRunRequest, RequestIdentity
 from intergrax.contracts.agent_run_enums import AgentRunStatus, PrincipalType, TerminalReason
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.runtime_execution_context import RuntimeExecutionContext
+from intergrax.runtime.nexus.agents.acp_uaep_shim import (
+    attach_acp_catalog_exec_ctx,
+    close_acp_catalog_exec_ctx,
+)
 from testing_support.builder import (
     FakeLLMAdapter,
     build_in_memory_session_manager,
-    build_runtime_execution_context_for_tests,
     canonical_governed_execution_scope,
     canonical_run_id_for_tests,
 )
@@ -90,7 +96,12 @@ async def test_intergrax_agent_run_agent_run_request() -> None:
         ),
         metadata={"run_id": run_id},
     )
-    result = await agent.run(request)
+    with canonical_governed_execution_scope(
+        "direct-agent-run",
+        governance_tenant_id="tenant-a",
+        governance_principal_id="user-1",
+    ):
+        result = await agent.run(request)
     assert result.status == AgentRunStatus.SUCCEEDED
     assert result.terminal_reason == TerminalReason.GOAL_MET
     assert result.output == {"steps": 3}
@@ -102,17 +113,27 @@ async def test_intergrax_agent_run_agent_run_request() -> None:
 @pytest.mark.gate
 async def test_default_on_next_step_drives_authored_steps_with_exec_ctx() -> None:
     agent = _StepBridgeAgent()
+    run_id = canonical_run_id_for_tests("step-bridge")
+    host_ctx = ACPSessionHostContext(
+        runtime_session_hooks=AcpRuntimeSessionHooks(
+            attach_acp_catalog_exec_ctx=attach_acp_catalog_exec_ctx,
+            close_acp_catalog_exec_ctx=close_acp_catalog_exec_ctx,
+            resolve_shared_context_access=neutral_shared_context_access_for_run,
+        ),
+    )
     request = AgentRunRequest(
         input="go",
         identity=RequestIdentity(tenant_id="t", user_id="u"),
         metadata={
-            "uaep_exec_ctx": build_runtime_execution_context_for_tests(
-                seed="step-bridge",
-                agent_id="bridge",
-            ),
+            "run_id": run_id,
+            ACP_HOST_CONTEXT_KEY: host_ctx,
         },
     )
-    with canonical_governed_execution_scope("step-bridge"):
+    with canonical_governed_execution_scope(
+        "step-bridge",
+        governance_tenant_id="t",
+        governance_principal_id="u",
+    ):
         result = await agent.run(request)
     assert result.status == AgentRunStatus.SUCCEEDED
     assert "summary" in str(result.output)

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from intergrax.agents.authoring.runtime_tool_helpers import (
+    RequestScopeError,
     allowlist_roots,
     exec_ctx_from_step,
     invoke_catalog_tool,
@@ -89,7 +90,10 @@ def _failure_output(*, run_id: str, reason: str, rejected_paths: list[dict[str, 
 async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
     exec_ctx = exec_ctx_from_step(step_ctx)
     metadata = request_metadata(exec_ctx, step_ctx, fallback_keys=_LKW_INDEX_METADATA_KEYS)
-    scope = resolve_request_scope(exec_ctx)
+    try:
+        scope = resolve_request_scope(exec_ctx)
+    except RequestScopeError as exc:
+        return _failure_output(run_id=step_ctx.run_id, reason=str(exc))
     source_paths = parse_metadata_list(metadata, "source_paths")
 
     if not source_paths:
@@ -107,6 +111,8 @@ async def run_index_job(step_ctx: AgentStepContext) -> dict[str, object]:
     if exec_ctx is None:
         for path in validated:
             rejected.append({"path": str(path), "reason": "tool_gateway_not_available"})
+    elif not scope.get("tenant_id"):
+        return _failure_output(run_id=step_ctx.run_id, reason="tenant_scope_invalid")
     else:
         ingest_metadata: dict[str, Any] = {}
         collection_id_raw = metadata.get("collection_id")

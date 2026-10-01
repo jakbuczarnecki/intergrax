@@ -66,7 +66,7 @@ def _step_ctx(
     metadata: dict[str, object] = {"uaep_exec_ctx": exec_ctx}
     if extra_metadata:
         metadata.update(extra_metadata)
-    return AgentStepContext(
+    return AgentStepContext(tenant_id="tenant-test", 
         run_id=run_id,
         agent_id=agent_id,
         contract_id=agent_id,
