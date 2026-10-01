@@ -12,6 +12,7 @@ import pytest
 from echo.echo_agent import EchoAgent
 from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticAssemblyError
 from intergrax.applications._shared.diagnostic_runtime_wiring import wire_terminal_execution_diagnostics
+from intergrax.contracts.host_observability_stores import HostObservabilityStores
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     DiagnosticPosture,
@@ -171,12 +172,18 @@ def test_production_required_diagnostics_fail_closed_when_port_missing(
     env.diagnostic_profile = DiagnosticProfile(posture=DiagnosticPosture.REQUIRED)
     nexus_loop = NexusLoop(AgentRegistry())
 
+    host_observability = HostObservabilityStores(
+        trace_store=stores.trace_store,
+        runtime_event_store=stores.runtime_event_store,
+        trace_db_path=stores.trace_db_path,
+        runtime_events_db_path=stores.runtime_events_db_path,
+    )
     with pytest.raises(DiagnosticAssemblyError):
         wire_terminal_execution_diagnostics(
             env=env,
             env_wiring=_FakeEnvWiring(document_store),
-            observability=stores,
-            nexus_loop=nexus_loop,
+            observability=host_observability,
+            orchestration_host=nexus_loop,
         )
 
 

@@ -5,7 +5,12 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
+
+from intergrax.context.protocols import ContextEngine
+from intergrax.distributed.contracts.kv_store import DistributedKVStore
+from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
 
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
@@ -121,14 +126,14 @@ def build_host_orchestration_loop_init_spec_from_environment(
     declarative_tool_invoker: ExecutionBoundDeclarativeToolInvoker | None = None,
     notification_adapter: NotificationAdapter | None = None,
     runtime_events_db_path: Path | None = None,
-    task_memory_store: Any | None = None,
+    task_memory_store: TaskMemoryPersistence | None = None,
     task_memory_db_path: Path | None = None,
     shadow_manager: ShadowWorkspaceManager | None = None,
     sandbox_manager: SandboxSessionManager | None = None,
     llm_adapter: LLMAdapter | None = None,
     runtime_event_bus: RuntimeEventBus | None = None,
     context_manager: ContextManager | None = None,
-    context_engine: object | None = None,
+    context_engine: ContextEngine | None = None,
     security_wiring: ApplicationSecurityWiring | None = None,
     guardrail_wiring: ApplicationGuardrailWiring | None = None,
     decision_wiring: ApplicationDecisionWiring | None = None,
@@ -141,8 +146,8 @@ def build_host_orchestration_loop_init_spec_from_environment(
     execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
     execution_budget_ledger: ExecutionBudgetLedger | None = None,
     attempt_lifecycle_store: AttemptLifecycleStore | None = None,
-    key_value_cache: Any | None = None,
-    document_store: Any | None = None,
+    key_value_cache: DistributedKVStore | None = None,
+    document_store: DocumentStore | None = None,
     execution_terminal: ExecutionTerminalService | None = None,
     execution_terminal_store: ExecutionTerminalStore | None = None,
     execution_lineage_persistence: ExecutionLineagePersistence | None = None,
@@ -199,13 +204,8 @@ def build_host_orchestration_loop_init_spec_from_environment(
             resolved_budget_ledger_factory = create_execution_budget_ledger_factory(
                 run_budget
             )
-    from intergrax.distributed.contracts.kv_store import DistributedKVStore
-    from intergrax.integrations.contracts.document_store import DocumentStore
-
-    kv_store = (
-        key_value_cache if isinstance(key_value_cache, DistributedKVStore) else None
-    )
-    doc_store = document_store if isinstance(document_store, DocumentStore) else None
+    kv_store = key_value_cache
+    doc_store = document_store
     durable_checkpoint_store = (
         checkpoint_store
         if checkpoint_store is not None and reliability.long_running_scheduler_enabled
@@ -249,7 +249,7 @@ def build_host_orchestration_loop_init_spec_from_environment(
             env,
             event_bus=runtime_event_bus,
             llm_adapter=producer_llm,
-            context_engine=context_engine,  # type: ignore[arg-type]
+            context_engine=context_engine,
         )
     )
 

@@ -4,9 +4,11 @@
 
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Protocol
 
-from intergrax.contracts.agent_execution_result import AgentExecutionResult
+from intergrax.contracts.diagnostics.terminal_execution_diagnostic_port import (
+    TerminalExecutionDiagnosticPort,
+)
 
 
 class HostOrchestrationApplicationWiringTarget(Protocol):
@@ -34,7 +36,10 @@ class HostOrchestrationApplicationWiringTarget(Protocol):
 
     def take_deferred_persisted_trace_finalize(self) -> object | None: ...
 
-    def attach_terminal_diagnostic_trigger(self, port: object) -> None: ...
+    def attach_terminal_diagnostic_trigger(
+        self,
+        port: TerminalExecutionDiagnosticPort,
+    ) -> None: ...
 
 
 class HostOrchestrationPluginBootstrapTarget(Protocol):
@@ -71,7 +76,7 @@ class HostOrchestrationAssemblyInspectionTarget(Protocol):
     def peek_decision_flow_gate(self) -> object | None: ...
 
     @property
-    def policy_engine(self) -> Any: ...
+    def policy_engine(self) -> object: ...
 
 
 __all__ = [

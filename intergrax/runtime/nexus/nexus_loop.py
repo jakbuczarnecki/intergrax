@@ -86,6 +86,9 @@ from intergrax.runtime.nexus.orchestration.long_running_bridge import (
 from intergrax.runtime.nexus.orchestration.graph_runner import NexusGraphRunner
 from intergrax.runtime.nexus.orchestration.hitl_runner import NexusHitlRunner
 from intergrax.runtime.nexus.orchestration.intake_runner import NexusIntakeRunner
+from intergrax.runtime.execution.decision_exposure_selection_composition import (
+    DecisionExposureSelectionComposition,
+)
 from intergrax.runtime.execution.suspended_operation.claim_lifecycle_wiring import (
     claim_lifecycle_from_hitl_continuation,
 )
@@ -597,8 +600,12 @@ class NexusLoop:
         """Canonical graph scheduler owned by this Nexus host."""
         return self._graph_executor
 
-    def apply_validation_engine(self, validation_engine: NexusValidationEngine) -> None:
+    def apply_validation_engine(self, validation_engine: object | None) -> None:
         """Replace the active validation engine across Nexus execution surfaces."""
+        if validation_engine is None:
+            return
+        if not isinstance(validation_engine, NexusValidationEngine):
+            raise TypeError("validation_engine must be NexusValidationEngine")
         self._validation_engine = validation_engine
         self._graph_executor.apply_validation_engine(validation_engine)
         self._graph_runner.validation_engine = validation_engine
@@ -621,12 +628,8 @@ class NexusLoop:
 
     def apply_decision_exposure_selection(
         self,
-        composition: object,
+        composition: DecisionExposureSelectionComposition,
     ) -> None:
-        from intergrax.runtime.execution.decision_exposure_selection_composition import (
-            DecisionExposureSelectionComposition,
-        )
-
         if type(composition) is not DecisionExposureSelectionComposition:
             raise TypeError("composition must be DecisionExposureSelectionComposition")
         self._decision_exposure_selection = composition

@@ -23,6 +23,7 @@ from intergrax.applications._shared.diagnostic_assembly_resolver import (
 )
 from intergrax.applications._shared.environment_wiring import ApplicationEnvironmentWiring
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
+from intergrax.applications._shared.scenario_runtime_profiles import ScenarioRuntimeMode
 from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -209,7 +210,7 @@ def wire_terminal_execution_diagnostics(
     env_wiring: ApplicationEnvironmentWiring,
     observability: HostObservabilityStores,
     orchestration_host: HostOrchestrationApplicationWiringTarget,
-    scenario_runtime_mode: object | None = None,
+    scenario_runtime_mode: ScenarioRuntimeMode | None = None,
     overrides: DiagnosticCompositionOverrides | None = None,
     materialized_dependencies: HostDiagnosticReadDependencies | None = None,
 ) -> DiagnosticWiring:
@@ -221,7 +222,7 @@ def wire_terminal_execution_diagnostics(
     resolved_overrides = _resolve_overrides(env_wiring, overrides)
     required = resolve_central_diagnostics_required(
         env,
-        scenario_runtime_mode=scenario_runtime_mode,  # type: ignore[arg-type]
+        scenario_runtime_mode=scenario_runtime_mode,
     )
     missing_document_store, missing_runtime_events = _diagnostic_prerequisite_gaps(
         env_wiring=env_wiring,

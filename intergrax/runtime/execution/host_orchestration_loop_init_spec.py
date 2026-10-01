@@ -29,9 +29,11 @@ from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.retry.retry_engine import RetryPolicy
 from intergrax.runtime.nexus.tracing.persistence_models import RunTraceWriter
+from intergrax.runtime.adaptive.signal_collector import SignalCollector
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 from intergrax.runtime.sandbox.manager import SandboxSessionManager
+from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersistence
 from intergrax.runtime.workspace.manager import ShadowWorkspaceManager
 
 if TYPE_CHECKING:
@@ -78,10 +80,10 @@ class HostOrchestrationLoopInitSpec:
     declarative_tool_invoker: ExecutionBoundDeclarativeToolInvoker | None = None
     notification_adapter: NotificationAdapter | None = None
     runtime_events_db_path: Path | None = None
-    task_memory_store: object | None = None
+    task_memory_store: TaskMemoryPersistence | None = None
     task_memory_db_path: Path | None = None
     production_mode: bool = False
-    signal_collector: object | None = None
+    signal_collector: SignalCollector | None = None
     run_budget: RunBudget | None = None
     decision_flow_gate: DecisionFlowGate[AgentExecutionResult] | None = None
     emit_coordination_advisory: bool = False

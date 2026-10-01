@@ -1034,3 +1034,35 @@ After affected UCA-6C scopes exit: `peek_active_execution_identity()` → `None`
 `EBH-4-R1-R3-B5-R4 = READY FOR AUDIT` · `EBH-4-R1-R3-B5 = READY FOR AUDIT` · **B6 = NEXT / NOT ENTERED** · B7/P9 / HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED (audit not CLOSED)
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 34. B6 — Current-HEAD Strong Typing & Contract Boundary Closure (Cursor)
+
+**START_HEAD:** `c3ee9bc7dbc310c0724662bf76e92fc372c796e8` · **branch:** `development`
+
+### Bounded inventory (closed-world)
+
+| ID | Before | Classification | Canonical contract | After |
+| --- | --- | --- | --- | --- |
+| B6-TYP-01 | `nexus_loop=` + `# type: ignore` | Semantic | `orchestration_host=` + wiring target | Fixed in `scenario_host_diagnostic_wiring.py` |
+| B6-TYP-02 | `scenario_runtime_mode: object` | Semantic | `ScenarioRuntimeMode` | Typed in `diagnostic_runtime_wiring.py` |
+| B6-TYP-03 | ACP host / StepKernel `Any` capabilities | Semantic | Budget/notification/tool/decision contracts | Typed (`SkipValidation` on host model) |
+| B6-TYP-04 | Host builder `Any`/`object` deps | Semantic | `TaskMemoryPersistence`, `ContextEngine`, `DistributedKVStore`, `DocumentStore` | Typed in builder + loop init spec |
+| B6-TYP-05 | Host wiring `object`/`Any` | Semantic | `TerminalExecutionDiagnosticPort` (tier-0) | Port param typed; other members remain `object` (EBH-2A) |
+
+**IN-SCOPE BLOCKER:** `EBH-4-R1-R3-B6-R1` — neutral contracts for remaining host wiring members without `intergrax.runtime.*` imports.
+
+### Pyright / tests / gates
+
+Targeted pyright on B6 modules; mechanical gate `test_ebh_4_r1_r3_b6_typing_gate.py`; arch gates green after contract rollback. Session logs: `.tmp/session/ebh-4-r1-r3-b6/`.
+
+### FRZ (scoped)
+
+**global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0**
+
+### Recommended status
+
+`EBH-4-R1-R3-B6 = BLOCKED` (B6-R1) · B7/P9 NOT ENTERED
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
