@@ -38,11 +38,8 @@ from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
-from intergrax.runtime.plugins.bootstrap import (
-    RuntimePluginPolicyRegistrationUnsupportedError,
-    bootstrap_runtime_plugins,
-)
-from intergrax.runtime.plugins.contract import PolicyEngineLike, RuntimePlugin
+from intergrax.runtime.plugins.bootstrap import RuntimePluginPolicyRegistrationUnsupportedError
+from intergrax.runtime.policy.policy_engine import PolicyEngine
 from intergrax.runtime.registry.agent_registry import AgentRegistry
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
@@ -118,27 +115,10 @@ class _FakePolicyRule:
     rule_id: str = "plugin.fake.rule"
 
 
-def test_plugin_policy_registration_is_explicitly_unsupported() -> None:
-    def _attempt_register(
-        _event_bus: object,
-        _hooks: object,
-        policy: PolicyEngineLike,
-    ) -> None:
-        policy.register_rule(_FakePolicyRule())
-
-    plugins = [
-        RuntimePlugin(
-            plugin_id="conformance.policy",
-            version="1.0.0",
-            register=_attempt_register,
-        ),
-    ]
+def test_policy_engine_register_rule_is_explicitly_unsupported() -> None:
+    engine = PolicyEngine()
     with pytest.raises(RuntimePluginPolicyRegistrationUnsupportedError):
-        bootstrap_runtime_plugins(
-            plugins,
-            event_bus=RuntimeEventBus(),
-            hook_registry=MiddlewarePipeline().hooks,
-        )
+        engine.register_rule(_FakePolicyRule())
 
 
 class _CountingMiddleware(RuntimeMiddleware):

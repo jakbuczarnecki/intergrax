@@ -15,7 +15,7 @@ import pytest
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.hooks.hook_registry import HookRegistry
+from testing_support.runtime_events import runtime_event_test_identity
 from intergrax.runtime.observability.operator_wiring import (
     ElasticsearchExportOperatorConfig,
     ObservabilityExportBackendRegistry,
@@ -328,10 +328,9 @@ async def test_export_content_true_with_sentry_is_still_forced_to_metadata_only_
     assert len(plugins) == 1
 
     bus = RuntimeEventBus(record_history=False)
-    plugins[0].register(bus, HookRegistry(), MagicMock())
+    plugins[0].register(bus)
+    identity = runtime_event_test_identity()
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,
         phase=ExecutionPhase.STEP_EXECUTION,
         payload={
@@ -340,6 +339,7 @@ async def test_export_content_true_with_sentry_is_still_forced_to_metadata_only_
             "prompt": "secret prompt",
             "content": "raw body",
         },
+        **identity,
     )
 
     await bus.publish(event)
@@ -360,19 +360,19 @@ async def test_runtime_event_through_plugin_reaches_injected_fake_transport() ->
     assert len(plugins) == 1
 
     bus = RuntimeEventBus(record_history=False)
-    plugins[0].register(bus, HookRegistry(), MagicMock())
+    plugins[0].register(bus)
+    identity = runtime_event_test_identity()
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         event_type=RuntimeEventType.TASK_COMPLETED,
         phase=ExecutionPhase.COMPLETION,
         payload={"journal_ref": {"event_count": 1}},
+        **identity,
     )
 
     await bus.publish(event)
 
     assert transport.send_count == 1
-    assert _attribute_map(transport.payloads[0])["intergrax.run_id"] == "run-1"
+    assert _attribute_map(transport.payloads[0])["intergrax.run_id"] == str(identity["run_id"])
 
 
 @pytest.mark.asyncio
@@ -385,10 +385,8 @@ async def test_export_content_true_in_app_config_is_still_forced_to_metadata_onl
     assert len(plugins) == 1
 
     bus = RuntimeEventBus(record_history=False)
-    plugins[0].register(bus, HookRegistry(), MagicMock())
+    plugins[0].register(bus)
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,
         phase=ExecutionPhase.STEP_EXECUTION,
         payload={
@@ -397,6 +395,7 @@ async def test_export_content_true_in_app_config_is_still_forced_to_metadata_onl
             "prompt": "secret prompt",
             "content": "raw body",
         },
+        **runtime_event_test_identity(),
     )
 
     await bus.publish(event)
@@ -417,10 +416,8 @@ async def test_raw_prompt_content_and_local_path_do_not_appear_in_exported_paylo
     assert len(plugins) == 1
 
     bus = RuntimeEventBus(record_history=False)
-    plugins[0].register(bus, HookRegistry(), MagicMock())
+    plugins[0].register(bus)
     event = RuntimeEvent(
-        task_id="task-1",
-        run_id="run-1",
         event_type=RuntimeEventType.TOOL_COMPLETED,
         phase=ExecutionPhase.STEP_EXECUTION,
         payload={
@@ -431,6 +428,7 @@ async def test_raw_prompt_content_and_local_path_do_not_appear_in_exported_paylo
             "local_path": "/home/user/secret/doc.pdf",
             "safe_relative_path": "docs/public-note.md",
         },
+        **runtime_event_test_identity(),
     )
 
     await bus.publish(event)

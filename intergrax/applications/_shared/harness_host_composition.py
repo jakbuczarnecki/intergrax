@@ -18,7 +18,6 @@ from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.execution.execution_terminal.service import ExecutionTerminalService
 from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
-from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.hooks.nexus_lifecycle_hooks import NexusLifecycleHookCoordinator
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.contracts.host_orchestration_application_wiring_target import (
@@ -28,8 +27,6 @@ from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.plugins.bootstrap import PluginBootstrapResult, bootstrap_runtime_plugins
 from intergrax.runtime.plugins.contract import RuntimePlugin
-from intergrax.runtime.policy.policy_engine import PolicyEngine
-
 if TYPE_CHECKING:
     from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
 
@@ -39,8 +36,6 @@ class HarnessHostPluginRegistrationSurface:
     """Narrow plugin registration inputs owned by harness host composition."""
 
     event_bus: RuntimeEventBus
-    hook_registry: HookRegistry
-    policy_engine: PolicyEngine
 
 
 @dataclass(frozen=True, slots=True)
@@ -153,8 +148,6 @@ def bootstrap_harness_host_application_plugins(
     return bootstrap_runtime_plugins(
         plugins,
         event_bus=surface.event_bus,
-        hook_registry=surface.hook_registry,
-        policy_engine=surface.policy_engine,
     )
 
 

@@ -8,13 +8,15 @@ from __future__ import annotations
 import logging
 from typing import Callable, List, Optional
 
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
+)
+from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.governance.contracts.metrics_store import ExecutionMetricsStore
 from intergrax.runtime.governance.in_memory_metrics_store import InMemoryMetricsStore
-from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.metrics.export import persist_run_metrics
-from intergrax.contracts.run_trace_store import RunTraceReader
-from intergrax.runtime.plugins.contract import PolicyEngineLike, RuntimeEventBusLike, RuntimePlugin
+from intergrax.runtime.plugins.contract import RuntimePlugin
 from intergrax.runtime.schema.registry import current_runtime_version
 
 logger = logging.getLogger(__name__)
@@ -41,9 +43,7 @@ def default_lab_plugins(
 
 
 def _register_compatibility_probe(
-    event_bus: RuntimeEventBusLike,
-    _hook_registry: HookRegistry,
-    _policy_engine: PolicyEngineLike,
+    event_bus: HostOrchestrationRuntimeEventPort,
 ) -> None:
     info = current_runtime_version()
     logger.info(
@@ -67,13 +67,12 @@ def _make_metrics_plugin_register(
     *,
     trace_store: Optional[RunTraceReader],
     metrics_store: ExecutionMetricsStore,
-) -> Callable[[RuntimeEventBusLike, HookRegistry, PolicyEngineLike], None]:
+) -> Callable[[HostOrchestrationRuntimeEventPort], None]:
     def _register(
-        event_bus: RuntimeEventBusLike,
-        _hook_registry: HookRegistry,
-        _policy_engine: PolicyEngineLike,
+        event_bus: HostOrchestrationRuntimeEventPort,
     ) -> None:
-        if trace_store is None:
+        reader = trace_store
+        if reader is None:
             return
 
         async def _persist_metrics(event: RuntimeEvent) -> None:
@@ -89,7 +88,7 @@ def _make_metrics_plugin_register(
             tenant_key = str(tenant).strip()
             agent_id = event.agent_id or "unknown"
             try:
-                persisted = trace_store.read_run(event.run_id, tenant_key)
+                persisted = reader.read_run(event.run_id, tenant_key)
             except (ValueError, KeyError):
                 return
             persist_run_metrics(

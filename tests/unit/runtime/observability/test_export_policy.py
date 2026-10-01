@@ -174,7 +174,7 @@ async def test_observability_export_runtime_plugin_exports_sanitized_envelope() 
     policy = ObservabilityExportPolicy(enabled=True)
     bus = RuntimeEventBus(record_history=False)
     plugin = make_observability_export_runtime_plugin(exporter=exporter, policy=policy)
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     event = RuntimeEvent(
         tenant_id="tenant-a",
@@ -205,7 +205,7 @@ async def test_observability_export_runtime_plugin_survives_exporter_failure() -
     policy = ObservabilityExportPolicy(enabled=True)
     bus = RuntimeEventBus(record_history=False)
     plugin = make_observability_export_runtime_plugin(exporter=exporter, policy=policy)
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     event = RuntimeEvent(
         event_type=RuntimeEventType.TASK_COMPLETED,
@@ -223,7 +223,7 @@ async def test_observability_export_runtime_plugin_exports_once_on_publish() -> 
     policy = ObservabilityExportPolicy(enabled=True)
     bus = RuntimeEventBus(record_history=False)
     plugin = make_observability_export_runtime_plugin(exporter=exporter, policy=policy)
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     event_id = mint_event_id()
     event = RuntimeEvent(

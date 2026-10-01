@@ -6,23 +6,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, List, Optional
+from typing import Callable, List
 
-from intergrax.runtime.hooks.hook_registry import HookRegistry
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
+)
 from intergrax.runtime.plugins.compatibility import (
     RuntimePluginCompatibilityError,
     evaluate_runtime_plugin_compatibility,
 )
-from intergrax.runtime.plugins.contract import (
-    PolicyEngineLike,
-    RuntimeEventBusLike,
-    RuntimePlugin,
-)
+from intergrax.runtime.plugins.contract import RuntimePlugin
 from intergrax.runtime.schema.registry import current_runtime_version
 
 
 class RuntimePluginPolicyRegistrationUnsupportedError(RuntimeError):
-    """Runtime plugin bootstrap cannot mutate governance policy rules."""
+    """Governance policy rules are not mutable at runtime plugin bootstrap."""
 
 
 @dataclass
@@ -33,9 +31,7 @@ class PluginBootstrapResult:
 def bootstrap_runtime_plugins(
     plugins: List[RuntimePlugin],
     *,
-    event_bus: RuntimeEventBusLike,
-    hook_registry: HookRegistry,
-    policy_engine: Optional[PolicyEngineLike] = None,
+    event_bus: HostOrchestrationRuntimeEventPort,
 ) -> PluginBootstrapResult:
     """
     Register Tier-3 plugins at application startup.
@@ -48,19 +44,10 @@ def bootstrap_runtime_plugins(
         if not result.compatible:
             raise RuntimePluginCompatibilityError(result)
 
-    policy = policy_engine or _NullPolicyEngine()
     shutdowns: List[Callable[[], None]] = []
     for plugin in plugins:
         if plugin.register is not None:
-            plugin.register(event_bus, hook_registry, policy)
+            plugin.register(event_bus)
         if plugin.on_shutdown is not None:
             shutdowns.append(plugin.on_shutdown)
     return PluginBootstrapResult(shutdown_callbacks=shutdowns)
-
-
-class _NullPolicyEngine:
-    def register_rule(self, rule: object) -> None:
-        _ = rule
-        raise RuntimePluginPolicyRegistrationUnsupportedError(
-            "runtime plugin policy rule registration is not supported",
-        )

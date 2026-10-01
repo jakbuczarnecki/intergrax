@@ -13,14 +13,15 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from intergrax.llm_adapters.governance.llm_cost import evaluate_llm_run_cost
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
+)
 from intergrax.llm_adapters.tracking.exposition import render_otlp_json
 from intergrax.llm_adapters.tracking.metrics import get_llm_metrics_collector, is_metrics_enabled
 from intergrax.llm_adapters.tracking.prometheus_push import push_llm_metrics_to_gateway
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.hooks.hook_registry import HookRegistry
-from intergrax.runtime.plugins.contract import PolicyEngineLike, RuntimeEventBusLike, RuntimePlugin
-from intergrax.runtime.policy.policy_engine import PolicyEngine, coerce_policy_engine
+from intergrax.runtime.plugins.contract import RuntimePlugin
+from intergrax.runtime.policy.policy_engine import PolicyEngine
 
 logger = logging.getLogger(__name__)
 
@@ -29,13 +30,11 @@ def make_llm_metrics_runtime_plugin() -> RuntimePlugin:
     """Runtime plugin — log/export LLM metrics when a task completes."""
 
     def _register(
-        event_bus: RuntimeEventBusLike,
-        _hook_registry: HookRegistry,
-        policy_engine: PolicyEngineLike,
+        event_bus: HostOrchestrationRuntimeEventPort,
     ) -> None:
         if not is_metrics_enabled():
             return
-        policy = coerce_policy_engine(policy_engine)  # type: ignore[arg-type]
+        policy = PolicyEngine()
 
         async def _export_llm_metrics(event: RuntimeEvent) -> None:
             if event.event_type != RuntimeEventType.TASK_COMPLETED:

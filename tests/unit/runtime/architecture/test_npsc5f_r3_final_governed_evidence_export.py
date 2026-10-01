@@ -516,7 +516,7 @@ def test_r3_final_logger_extra_has_zero_canaries() -> None:
     plugin = make_journal_export_runtime_plugin(
         trace_store=trace_store, runtime_event_store=runtime_store
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
     completed = RuntimeEvent(
         tenant_id=tenant_id,
         event_type=RuntimeEventType.TASK_COMPLETED,

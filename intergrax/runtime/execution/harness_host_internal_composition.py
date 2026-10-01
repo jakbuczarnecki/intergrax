@@ -29,8 +29,6 @@ def build_harness_host_internal_composition_from_materialization(
         lifecycle_hook_coordinator=nexus_loop._lifecycle_hooks,  # noqa: SLF001
         plugin_surface=HarnessHostPluginRegistrationSurface(
             event_bus=nexus_loop.event_bus,
-            hook_registry=middleware.hooks,
-            policy_engine=nexus_loop.policy_engine,
         ),
         runtime_event_persistence=nexus_loop.runtime_event_store,
         plugin_bootstrap_target=nexus_loop,

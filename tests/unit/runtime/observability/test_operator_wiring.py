@@ -355,7 +355,7 @@ async def test_created_runtime_plugin_blocks_export_content_even_when_operator_c
     assert plugin is not None
 
     bus = RuntimeEventBus(record_history=False)
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
     event = RuntimeEvent(
         task_id=mint_task_id(),
         run_id=mint_run_id(),
@@ -431,7 +431,7 @@ async def test_runtime_event_through_plugin_reaches_injected_transport() -> None
     assert plugin is not None
 
     bus = RuntimeEventBus(record_history=False)
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
     run_id = mint_run_id()
     event = RuntimeEvent(
         task_id=mint_task_id(),

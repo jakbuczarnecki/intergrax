@@ -8,10 +8,12 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
+)
 from intergrax.rag.tracking.metrics import get_rag_metrics_collector, is_rag_metrics_enabled
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.hooks.hook_registry import HookRegistry
-from intergrax.runtime.plugins.contract import PolicyEngineLike, RuntimeEventBusLike, RuntimePlugin
+from intergrax.runtime.plugins.contract import RuntimePlugin
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +22,7 @@ def make_rag_metrics_runtime_plugin() -> RuntimePlugin:
     """Runtime plugin — log/export RAG metrics when a task completes."""
 
     def _register(
-        event_bus: RuntimeEventBusLike,
-        _hook_registry: HookRegistry,
-        _policy_engine: PolicyEngineLike,
+        event_bus: HostOrchestrationRuntimeEventPort,
     ) -> None:
         if not is_rag_metrics_enabled():
             return

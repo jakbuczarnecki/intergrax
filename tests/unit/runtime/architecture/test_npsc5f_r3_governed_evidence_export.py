@@ -217,7 +217,7 @@ def test_r3_logging_extra_has_no_raw_canaries() -> None:
     )
     bus = RuntimeEventBus(record_history=False)
     plugin = make_journal_export_runtime_plugin(trace_store=trace_store, runtime_event_store=runtime_store)
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     completed = RuntimeEvent(
         tenant_id=tenant_id,

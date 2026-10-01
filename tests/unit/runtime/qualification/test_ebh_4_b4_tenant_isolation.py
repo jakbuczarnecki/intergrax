@@ -75,7 +75,6 @@ def test_b4_c_tenantless_task_completed_skips_trace_and_metrics() -> None:
     bootstrap_runtime_plugins(
         default_lab_plugins(trace_store=trace_store, metrics_store=metrics_store),
         event_bus=bus,
-        hook_registry=HookRegistry(),
     )
     identity = runtime_event_test_identity(
         task_id=canonical_task_id_for_tests("metrics-tenantless"),
@@ -99,7 +98,6 @@ def test_b4_c_task_completed_tenant_a_reads_trace_for_a_only() -> None:
     bootstrap_runtime_plugins(
         default_lab_plugins(trace_store=trace_store, metrics_store=metrics_store),
         event_bus=bus,
-        hook_registry=HookRegistry(),
     )
     identity = runtime_event_test_identity(
         task_id=canonical_task_id_for_tests("metrics-tenant-a"),

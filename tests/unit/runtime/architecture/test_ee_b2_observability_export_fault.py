@@ -49,7 +49,7 @@ async def test_ee_b2_otlp_failure_does_not_remove_canonical_event() -> None:
         exporter=exporter,
         policy=ObservabilityExportPolicy(enabled=True),
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
     event = sample_runtime_event(tenant_id="tenant-a", **identity)  # type: ignore[arg-type]
     await bus.publish(event)
     persisted = store.list_for_run(identity["run_id"], tenant_id="tenant-a")

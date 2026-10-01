@@ -1119,3 +1119,72 @@ Targeted pyright on B6 modules; mechanical gate `test_ebh_4_r1_r3_b6_typing_gate
 `EBH-4-R1-R3-B6-R2 = READY FOR AUDIT` · `EBH-4-R1-R3-B6 = READY FOR AUDIT` · B7/P9 NOT ENTERED
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 37. B6-R3 — Runtime Plugin Registration Contract Deduplication + Final B6 Closure (Cursor)
+
+**START_HEAD:** `a918c658858a947baf1b6feb4a1d093ca3effe07` · **branch:** `development`
+
+### Old ABI
+
+`RuntimePlugin.register(event_bus: RuntimeEventBusLike, hook_registry: HookRegistry, policy_engine: PolicyEngineLike) -> None` via `bootstrap_runtime_plugins(..., event_bus, hook_registry, policy_engine?)`.
+
+### Closed-world production plugins (after)
+
+| Plugin | Event | Hooks | Policy | Final callback |
+| --- | --- | --- | --- | --- |
+| `runtime.compatibility` | subscribe TASK_CREATED | — | — | `(event_bus)` |
+| `runtime.metrics_export` | subscribe TASK_COMPLETED | — | — | `(event_bus)` |
+| `runtime.llm_metrics_export` | subscribe TASK_COMPLETED | — | — | `(event_bus)`; cost via local `PolicyEngine().evaluate_llm_cost_on_task_completed` |
+| `runtime.rag_metrics_export` | subscribe TASK_COMPLETED | — | — | `(event_bus)` |
+| `runtime.journal_export` | subscribe TASK_COMPLETED | — | — | `(event_bus)` |
+| `runtime.observability_export` | subscribe (policy-gated) | — | — | `(event_bus)` |
+
+### Contract inventory
+
+| Symbol | Before | After |
+| --- | --- | --- |
+| `RuntimeEventBusLike` | duplicate Protocol in `contract.py` | **removed** (0 defs / 0 prod refs) |
+| `HostOrchestrationRuntimeEventPort` | host wiring only | **canonical plugin event port** |
+| `PolicyEngineLike` | plugin ABI + `_NullPolicyEngine` shim | **removed from plugin ABI**; `PolicyEngine.register_rule` still fails closed |
+| `HookRegistry` plugin arg | unused in all prod registrations | **removed** |
+| `RuntimePlugin.register` | 3-arg weak ABI | `RuntimePluginRegisterCallback` → `HostOrchestrationRuntimeEventPort` |
+
+### Event ownership
+
+`HostOrchestrationRuntimeEventPort` (Tier-0) · implementation `RuntimeEventBus` · plugins are consumers only.
+
+### Policy / hook disposition
+
+- **Policy:** REMOVED FROM PLUGIN ABI (no `register_rule` advertisement).
+- **Hooks:** REMOVED AS UNUSED (closed-world hook mutations in plugin callbacks = 0).
+
+### Pyright / tests / gates
+
+- Session: `.tmp/session/ebh-4-r1-r3-b6-r3/` (pyright-plugin-flow.log, run4-arch-gates.log).
+- Gate: `test_ebh_4_r1_r3_b6_r3_plugin_abi_gate.py` + B6-R1/R2 + EBH encapsulation/dependency/2A/2F-R1.
+
+### Final B6 ledger
+
+| Finding | State |
+| --- | --- |
+| B6-TYP-01…05 | **RESOLVED** |
+| B6-CONF-01…04 | **RESOLVED** |
+| B6-CONF-05 | **RESOLVED** |
+
+### Tenant audit
+
+**PASS** — no new tenant authority on registration; `RuntimeEvent.tenant_id` unchanged.
+
+### FRZ (scoped)
+
+FRZ-CTR-01/03/04/05/06 · FRZ-TYP-01/02/03/04/06 · FRZ-PLG-01/02 · FRZ-RPL-01/02 · FRZ-REG-02/09 · FRZ-BND-04/05.
+
+**global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0**
+
+### Recommended status
+
+`EBH-4-R1-R3-B6-R3 = READY FOR AUDIT` · `EBH-4-R1-R3-B6 = READY FOR AUDIT` · B7/P9 NOT ENTERED
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
