@@ -19,7 +19,7 @@ Without this layer:
 - private platform-state reach-in becomes a normal integration pattern,
 - product-specific vocabulary pollutes generic platform contracts.
 
-Tier-3 solves this by keeping **one canonical composition path** from product definition to Nexus, with explicit boundaries to Hosting, Agents, Governance, Observability, Integrations, and Experimentation.
+Tier-3 solves this by keeping **one canonical composition path** from product definition through `HostTaskExecutionPort` and the Execution Engine (private Nexus inside), with explicit boundaries to Hosting, Agents, Governance, Observability, Integrations, and Experimentation.
 
 ## Maturity boundary
 
@@ -118,7 +118,7 @@ process lifecycle / readiness / restart / shutdown
 | How Harness **configures** capabilities for this host | `ApplicationEnvironmentProfile` |
 | Agent roster mount / per-entry options | `AgentBinding` |
 | Resolved runtime composition **output** | `ApplicationEnvironmentWiring` |
-| Task execution author surface | `UnifiedTaskRunner` / `HarnessApplication` / host factory |
+| Supported production execution entry | `HostTaskExecutionPort` via host factories and transport adapters (`HarnessApplication` / `build_harness_host_runtime` wire the port) |
 | Process lifecycle, readiness, restart, OS integration | [`Application Hosting`](APPLICATION_HOSTING.md) |
 
 ## Responsibility boundaries
@@ -135,7 +135,7 @@ process lifecycle / readiness / restart / shutdown
 
 | Neighbor | Boundary |
 | -------- | -------- |
-| **Application Hosting** | Process lifecycle, readiness, restart, shutdown - does not replace Manifest, Profile, `UnifiedTaskRunner`, or Nexus path |
+| **Application Hosting** | Process/deployment lifecycle only — does not replace Manifest, Profile, Tier-3 composition, `ApplicationHost.on_hook`, or canonical host execution (`HostTaskExecutionPort` / Execution Engine semantics) |
 | **Agents** | Agent contracts, cognition, tool behavior - Tier-3 composes/rosters only |
 | **Governance** | Authorization decisions - application selects within allowed profiles; cannot weaken global policy |
 | **Observability** | Execution evidence semantics - Tier-3 configures posture; no app-local trace authority |
@@ -352,9 +352,9 @@ Four-axis qualification ([`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_T
 |--------|--------------|
 | [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) | Optional deployment wrapper around a Tier-3 application definition |
 
-A Tier-3 application definition may be wrapped by Application Hosting for continuous availability, readiness, instance ownership, signals, graceful shutdown, restart supervision, and OS service integration. **Tier-3 application semantics remain unchanged** - standalone runner, hosted engine, or future deployment models execute the same `Task` / `NexusLoop` path.
+A Tier-3 application definition may be wrapped by Application Hosting for continuous availability, readiness, instance ownership, signals, graceful shutdown, restart supervision, and OS service integration. **Tier-3 application semantics remain unchanged by deployment posture** — standalone runner, hosted engine, or future deployment models route supported production intake through the same `HostTaskExecutionPort` → governance admission → Execution Engine path; Nexus remains private inside the Execution Engine, not a Tier-3 or hosting public seam.
 
-Application Hosting **does not replace** `ApplicationManifest`, `ApplicationEnvironmentProfile`, `UnifiedTaskRunner`, `ApplicationHost.on_hook`, or `NexusLoop`.
+Application Hosting **does not replace** `ApplicationManifest`, `ApplicationEnvironmentProfile`, Tier-3 composition (`wire_application_environment`), `ApplicationHost.on_hook`, or the canonical **host execution contract** (`HostTaskExecutionPort` and Execution Engine semantics). It is not an alternate orchestration or governance surface.
 
 **Deployment-posture boundary:**
 
@@ -624,9 +624,9 @@ Historical Tier-3 **Done** delivery facts and existing **TL-FIX-C/D**, **ITI-FIX
 
 Accepted [`END_TO_END_SYSTEM`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md) findings **01, 02** (2026-08-21). **Target state** - remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-END-TO-END-SYSTEM-PERSIST.
 
-1. Tier-3 materializes **one configured task execution service** (`UnifiedTaskRunner` + mandatory host-owned enricher) and passes that same instance to HTTP, MCP, queue, and other supported execution surfaces.
+1. Tier-3 host composition materializes **one canonical `HostTaskExecutionPort`** (plus optional host-owned task enrichers) and routes HTTP, MCP, queue, and other supported production surfaces through that port — not through ad-hoc `NexusLoop` construction or production `UnifiedTaskRunner.run_task()` entry. **HOST-01 implemented** on current HEAD; legacy `UnifiedTaskRunner` remains harness/scheduling-only.
 2. Tenant/model routing and LLM `RoutingContext` derive from the **runtime Task/Run execution identity** - not literal `tenant_id="default"` as product routing authority. Use a runtime `RoutingContextProvider` / execution-context bridge when the adapter is reused across tasks. Cross-link **IDENTITY_TRUST**, **LLM_ADAPTERS** - do not duplicate their findings.
-3. A surface must not reconstruct `UnifiedTaskRunner(nexus_loop)` independently when canonical wiring supplies reliability enrichment via `build_reliability_task_enricher()`. Cross-link **E2E-EXECUTION-CONTEXT-INTEGRITY**, **ITI-FIX-C**.
+3. A surface must not bypass canonical host wiring to construct private execution implementation (`NexusLoop`, direct Nexus imports) when canonical wiring supplies reliability enrichment via `build_reliability_task_enricher()`. Cross-link **E2E-EXECUTION-CONTEXT-INTEGRITY**, **ITI-FIX-C**.
 
 <a id="protocol-v2-cross-layer-composition-qualification-target-invariants-2026-08-18"></a>
 
@@ -660,8 +660,8 @@ Before implementing a new Tier-3 environment, answer:
  5. Single-agent or multi-agent - graph_spec vs pipeline token (§23.4)?
  6. Full ApplicationEnvironmentProfile declared - no orphan slices?
  7. wire_application_environment() - no getattr on manifest?
- 8. build_harness_host_runtime() - not ad-hoc NexusLoop?
- 9. All surfaces → UnifiedTaskRunner.run_task()?
+ 8. build_harness_host_runtime() wires sanctioned HostTaskExecutionPort — not ad-hoc NexusLoop?
+ 9. All supported production surfaces → HostTaskExecutionPort.execute(Task)?
 10. IdentityProfile matches auth story (tenant/user)?
 11. ExecutionMode STRICT for prod?
 12. ObservabilityProfile + ApplicationRunSummary on Task completion?

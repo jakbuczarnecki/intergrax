@@ -1,7 +1,8 @@
 # HARNESS-W7 / HOST-01 — Current-HEAD Host Convergence Recertification
 
 **Status:** READY FOR AUDIT (Cursor session evidence — not closure)  
-**Baseline:** `development` @ `33490b6aa07fbd6ac9e6d85f9a187be72dd56492` (START_HEAD = AUDITED_HEAD at session start)  
+**Baseline (prior session):** `development` @ `33490b6aa07fbd6ac9e6d85f9a187be72dd56492`  
+**HARNESS-W7-R1 START_HEAD:** `f972fecee89a4009f5ecd7d54a65546f74eed34b`  
 **Scope:** Recertification + canon sync only — no HOST-01 rebuild.
 
 ## W7 reconciliation
@@ -133,11 +134,65 @@ Evidence-aligned IDs: FRZ-BND-01..06, FRZ-CTR-01..06, FRZ-EXE-01/02/03/07, FRZ-G
 | ID | Class | Note |
 | ---- | ----- | ---- |
 | `tests/qualification/bg_01/test_bg_01_gates.py` still imports removed `governed_contractor_application.host.execution_wiring` | TRACKED FREEZE DEBT | BG-01 scope; not HOST-01 blocker |
-| `test_ue_9a_background_identity_redelivery.py` missing `REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION` import | ENVIRONMENT/TEST ISSUE | 5 failures in RUN#4 batch |
-| `test_npsc4_1_execution_boundary_hardening_gate.py` two failures | TRACKED FREEZE DEBT | offline_demo identity bind + UTR classification assertion drift |
+| `test_ue_9a_background_identity_redelivery.py` missing `REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION` import | **TRACKED FREEZE DEBT — BG-01 TEST QUALIFICATION DRIFT** | deterministic missing symbol in committed test; not HOST-01 / not environment |
+| `test_npsc4_1_execution_boundary_hardening_gate.py` UTR assertion drift | **resolved in HARNESS-W7-R1** | see §HARNESS-W7-R1 reconciliation below |
 | Local venv incomplete vs lockfile | ENVIRONMENT/TEST ISSUE | `uv sync` access denied on psycopg DLL |
 
 **IN-SCOPE BLOCKER = 0** · **unclassified findings = 0**
+
+## HARNESS-W7-R1 — canonical host execution truth & gate reconciliation
+
+| Field | Value |
+| ----- | ----- |
+| **START_HEAD** | `f972fecee89a4009f5ecd7d54a65546f74eed34b` |
+| **production delta** | 0 |
+| **tenant / authority / execution semantic delta** | 0 |
+
+### Stale canonical statements (inventory)
+
+| File | Before (stale) | After (current HEAD) | Classification |
+| ---- | -------------- | -------------------- | -------------- |
+| `TIER3_APPLICATION_ENVIRONMENT.md` | deployment models share `Task / NexusLoop` path | same semantics via `HostTaskExecutionPort` → EE; Nexus private | production architecture claim |
+| `TIER3_APPLICATION_ENVIRONMENT.md` | Hosting does not replace `UnifiedTaskRunner` / `NexusLoop` | Hosting does not replace Tier-3 composition or canonical host execution contract | public-boundary mislabel |
+| `TIER3_APPLICATION_ENVIRONMENT.md` | §45 checklist: surfaces → `UnifiedTaskRunner.run_task()` | surfaces → `HostTaskExecutionPort.execute` | operator checklist drift |
+| `APPLICATION_HOSTING.md` | Hosting bullet list names `UnifiedTaskRunner`, `NexusLoop` as peers | separates lifecycle vs Tier-3 vs `HostTaskExecutionPort` / EE | public-boundary mislabel |
+| `test_npsc4_1_…gate.py` | UTR must **not** import `HostTaskExecutionPort` | UTR must **consume** `HostTaskExecutionPort` and delegate `self._execution.execute` | regression gate drift |
+
+### NPSC4.1 root cause
+
+Gate asserted `from intergrax.runtime.execution.host_task import HostTaskExecutionPort` **not in source** — leftover from pre-EBH-4 bypass model. Current `UnifiedTaskRunner` correctly takes `execution: HostTaskExecutionPort` and awaits `self._execution.execute(...)`.
+
+**Before invariant:** harness-only ⇒ no `HostTaskExecutionPort` in UTR.  
+**After invariant:** harness/scheduling-only **and** consumes canonical port **and** no `runtime.nexus` import **and** AST-proven delegation.
+
+### NPSC4.1 / HOST-Q / regression gates (R1 session)
+
+| Run | Command | Result |
+| --- | ------- | ------ |
+| #1 | `pytest -p no:xdist tests/qualification/host_01/` | **20 passed** |
+| #2 | `pytest -p no:xdist tests/unit/runtime/architecture/test_npsc4_1_execution_boundary_hardening_gate.py` | **11 passed** (after UTR AST invariant + structural `offline_demo.py` demo classification) |
+| #3 | UE-11GP + EBH-4 encapsulation + EBH-2F-R1 | **15 passed** |
+
+**offline_demo bind finding:** demo/lab script (`applications/.../offline_demo.py`); production wire gate forbids importing it — not production intake. Gate scan scope aligned via filename structural classification (no production Python change).
+
+**production typing delta = 0** (no production Python in R1).
+
+### EBH-4 roadmap SSOT
+
+Roadmap table previously showed **EBH-4 = CURRENT** while independent audit already accepted closure @ `33490b6aa07fbd6ac9e6d85f9a187be72dd56492`. Synchronized to **[x] CLOSED** with evidence ledger row (not a new certification).
+
+### Unresolved debt reclassification
+
+- UE-9A missing import → **TRACKED FREEZE DEBT — BG-01 TEST QUALIFICATION DRIFT** (not environment).
+- NPSC4.1 UTR assertion → **closed in R1** (offline_demo bind: re-run classification in report if still red).
+
+### R1 recommendation
+
+```text
+HARNESS-W7-R1 = READY FOR AUDIT
+HOST-01 = READY FOR AUDIT
+HARNESS-W7 = READY FOR AUDIT
+```
 
 ## Recommendation
 
