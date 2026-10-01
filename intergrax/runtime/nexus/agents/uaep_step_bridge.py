@@ -26,6 +26,10 @@ from intergrax.contracts.runtime_execution_context import RuntimeExecutionContex
 from intergrax.contracts.step_execution import StepExecutionRecord
 from intergrax.contracts.uaep_bridge_keys import UaepStateDeltaKey
 from intergrax.runtime.kernel.step_kernel import HarnessKernel, StepKernelContext
+from intergrax.contracts.request_identity_spine import (
+    assert_untrusted_metadata_identity_compatible,
+)
+from intergrax.runtime.execution.agent_runtime_io import canonical_runtime_request_tenant_id
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 from intergrax.runtime.governance.active_execution_governance_identity import (
@@ -240,15 +244,16 @@ async def execute_uaep_step_via_kernel(
 
 def _runtime_request_identity(request: RuntimeRequest) -> RequestIdentity:
     """Request/run identity projection only — not governance authority."""
+    typed_tenant = canonical_runtime_request_tenant_id(request)
     if request.canonical_identity is not None:
-        return request.canonical_identity
-    tenant = request.tenant_id
-    if tenant is None:
-        meta_tenant = request.metadata.get("tenant_id")
-        tenant = meta_tenant if isinstance(meta_tenant, str) else None
-    if tenant is None or not str(tenant).strip():
-        raise ValueError("runtime request identity projection requires tenant_id")
-    return RequestIdentity(tenant_id=str(tenant).strip(), user_id=request.user_id)
+        identity = request.canonical_identity
+        assert_untrusted_metadata_identity_compatible(identity, request.metadata)
+        if str(identity.tenant_id).strip() != typed_tenant:
+            raise ValueError(
+                "request tenant_id conflicts with canonical RequestIdentity"
+            )
+        return identity
+    return RequestIdentity(tenant_id=typed_tenant, user_id=request.user_id)
 
 
 def build_kernel_session(
@@ -262,6 +267,14 @@ def build_kernel_session(
     request: RuntimeRequest,
     production_mode: bool = False,
 ) -> StepKernelContext:
+    explicit_tenant = str(tenant_id).strip()
+    if not explicit_tenant:
+        raise ValueError("tenant_id must be non-empty")
+    canonical_tenant = canonical_runtime_request_tenant_id(request)
+    if explicit_tenant != canonical_tenant:
+        raise ValueError(
+            "kernel tenant_id conflicts with canonical RuntimeRequest tenant_id"
+        )
     request_identity = _runtime_request_identity(request)
     request_principal_id = principal_id_from_request_identity(request_identity)
     if peek_active_execution_governance_identity() is not None or production_mode:

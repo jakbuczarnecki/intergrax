@@ -375,3 +375,249 @@ def test_b4_r2_kernel_tenant_matches_uaep_step_context() -> None:
     step = AgentStep(step_index=0, step_id="s0", step_name="llm")
     step_ctx = build_uaep_step_context(step, exec_ctx, kernel_ctx)
     assert step_ctx.tenant_id == kernel_ctx.tenant_id == "tenant-a"
+
+
+def test_b4_r3_runtime_request_identity_metadata_substitute_rejected() -> None:
+    from intergrax.runtime.nexus.agents.uaep_step_bridge import _runtime_request_identity
+
+    req = RuntimeRequest(
+        agent_id="a",
+        user_id="u",
+        session_id="s",
+        message="m",
+        task_id=canonical_task_id_for_tests("r3-meta-sub"),
+        run_id=mint_run_id(),
+        tenant_id=None,
+        metadata={"tenant_id": "tenant-a"},
+    )
+    with pytest.raises(ValueError, match="tenant_id is required for RuntimeRequest"):
+        _runtime_request_identity(req)
+
+
+def test_b4_r3_runtime_request_identity_canonical_mismatch_rejected() -> None:
+    from intergrax.runtime.nexus.agents.uaep_step_bridge import _runtime_request_identity
+
+    req = build_runtime_request_for_tests(seed="r3-can-mis", tenant_id="tenant-a")
+    req.canonical_identity = RequestIdentity(tenant_id="tenant-b", user_id="u1")
+    with pytest.raises(ValueError, match="conflicts with canonical RequestIdentity"):
+        _runtime_request_identity(req)
+
+
+def test_b4_r3_runtime_request_identity_typed_only_derives_identity() -> None:
+    from intergrax.runtime.nexus.agents.uaep_step_bridge import _runtime_request_identity
+
+    req = build_runtime_request_for_tests(seed="r3-typed-only", tenant_id="tenant-a")
+    identity = _runtime_request_identity(req)
+    assert identity.tenant_id == "tenant-a"
+
+
+def test_b4_r3_runtime_request_identity_canonical_agrees() -> None:
+    from intergrax.runtime.nexus.agents.uaep_step_bridge import _runtime_request_identity
+
+    req = build_runtime_request_for_tests(seed="r3-can-agree", tenant_id="tenant-a")
+    req.canonical_identity = RequestIdentity(tenant_id="tenant-a", user_id="u1")
+    identity = _runtime_request_identity(req)
+    assert identity is req.canonical_identity
+    assert identity.tenant_id == "tenant-a"
+
+
+def test_b4_r3_build_kernel_session_tenant_mismatch_rejected() -> None:
+    from unittest.mock import patch
+
+    from intergrax.runtime.nexus.agents.uaep_step_bridge import build_kernel_session
+    from intergrax.runtime.policy.policy_engine import PolicyEngine
+
+    req = build_runtime_request_for_tests(seed="r3-kernel-mis", tenant_id="tenant-b")
+    with (
+        patch(
+            "intergrax.runtime.nexus.agents.uaep_step_bridge.resolve_agentic_pre_model_scope"
+        ) as scope_mock,
+        pytest.raises(
+            ValueError,
+            match="kernel tenant_id conflicts with canonical RuntimeRequest tenant_id",
+        ),
+    ):
+        build_kernel_session(
+            agent_id="agent-1",
+            run_id=req.run_id,
+            task_id=req.task_id,
+            tenant_id="tenant-a",
+            max_steps=1,
+            policy_engine=PolicyEngine(),
+            request=req,
+        )
+    scope_mock.assert_not_called()
+
+
+def test_b4_r3_build_kernel_session_tenant_match() -> None:
+    from intergrax.runtime.kernel.step_kernel import StepKernelContext
+    from intergrax.runtime.nexus.agents.uaep_step_bridge import build_kernel_session
+    from intergrax.runtime.policy.policy_engine import PolicyEngine
+
+    req = build_runtime_request_for_tests(seed="r3-kernel-ok", tenant_id="tenant-a")
+    kernel_ctx = build_kernel_session(
+        agent_id="agent-1",
+        run_id=req.run_id,
+        task_id=req.task_id,
+        tenant_id="tenant-a",
+        max_steps=1,
+        policy_engine=PolicyEngine(),
+        request=req,
+    )
+    assert isinstance(kernel_ctx, StepKernelContext)
+    assert kernel_ctx.tenant_id == "tenant-a"
+
+
+def test_b4_r3_acp_shim_request_step_kernel_chain() -> None:
+    from intergrax.contracts.agent_contract_meta import AgentContract
+    from intergrax.contracts.agent_run import AgentRunRequest
+    from intergrax.runtime.kernel.step_kernel import StepKernelContext
+    from intergrax.runtime.nexus.agents.acp_uaep_shim import attach_acp_catalog_exec_ctx
+    from testing_support.builder import canonical_governed_execution_scope
+
+    task_id = canonical_task_id_for_tests("r3-acp-ok")
+    contract = AgentContract(
+        id="bridge-agent",
+        name="bridge",
+        description="",
+        risk_level=AgentRiskLevel.LOW,
+        allowed_tools=(),
+    )
+    with canonical_governed_execution_scope("r3-acp-ok") as run_id:
+        step_ctx = AgentStepContext(
+            tenant_id="tenant-a",
+            step_index=0,
+            run_id=run_id,
+            task_id=task_id,
+        )
+        kernel_ctx = StepKernelContext(agent_id="bridge-agent", tenant_id="tenant-a")
+        request = AgentRunRequest(
+            input="hi",
+            identity=RequestIdentity(tenant_id="tenant-a", user_id="u1"),
+        )
+        attach_acp_catalog_exec_ctx(
+            step_ctx,
+            kernel_ctx=kernel_ctx,
+            request=request,
+            contract=contract,
+        )
+        exec_ctx = step_ctx.metadata.get("uaep_exec_ctx")
+        assert isinstance(exec_ctx, RuntimeExecutionContext)
+        assert exec_ctx.request is not None
+        assert exec_ctx.request.tenant_id == "tenant-a"
+
+
+def test_b4_r3_acp_shim_request_vs_step_mismatch_rejected() -> None:
+    from intergrax.contracts.agent_contract_meta import AgentContract
+    from intergrax.contracts.agent_run import AgentRunRequest
+    from intergrax.runtime.kernel.step_kernel import StepKernelContext
+    from intergrax.runtime.nexus.agents.acp_uaep_shim import attach_acp_catalog_exec_ctx
+    from testing_support.builder import canonical_governed_execution_scope
+
+    task_id = canonical_task_id_for_tests("r3-acp-rs")
+    contract = AgentContract(
+        id="bridge-agent",
+        name="bridge",
+        description="",
+        risk_level=AgentRiskLevel.LOW,
+        allowed_tools=(),
+    )
+    with canonical_governed_execution_scope("r3-acp-rs") as run_id:
+        step_ctx = AgentStepContext(
+            tenant_id="tenant-b",
+            step_index=0,
+            run_id=run_id,
+            task_id=task_id,
+        )
+        kernel_ctx = StepKernelContext(agent_id="bridge-agent", tenant_id="tenant-b")
+        request = AgentRunRequest(
+            input="hi",
+            identity=RequestIdentity(tenant_id="tenant-a", user_id="u1"),
+        )
+        with pytest.raises(
+            ValueError,
+            match="conflicts with AgentStepContext tenant_id",
+        ):
+            attach_acp_catalog_exec_ctx(
+                step_ctx,
+                kernel_ctx=kernel_ctx,
+                request=request,
+                contract=contract,
+            )
+        assert "uaep_exec_ctx" not in step_ctx.metadata
+
+
+def test_b4_r3_acp_shim_step_vs_kernel_mismatch_rejected() -> None:
+    from intergrax.contracts.agent_contract_meta import AgentContract
+    from intergrax.contracts.agent_run import AgentRunRequest
+    from intergrax.runtime.kernel.step_kernel import StepKernelContext
+    from intergrax.runtime.nexus.agents.acp_uaep_shim import attach_acp_catalog_exec_ctx
+    from testing_support.builder import canonical_governed_execution_scope
+
+    task_id = canonical_task_id_for_tests("r3-acp-sk")
+    contract = AgentContract(
+        id="bridge-agent",
+        name="bridge",
+        description="",
+        risk_level=AgentRiskLevel.LOW,
+        allowed_tools=(),
+    )
+    with canonical_governed_execution_scope("r3-acp-sk") as run_id:
+        step_ctx = AgentStepContext(
+            tenant_id="tenant-a",
+            step_index=0,
+            run_id=run_id,
+            task_id=task_id,
+        )
+        kernel_ctx = StepKernelContext(agent_id="bridge-agent", tenant_id="tenant-b")
+        request = AgentRunRequest(
+            input="hi",
+            identity=RequestIdentity(tenant_id="tenant-a", user_id="u1"),
+        )
+        with pytest.raises(
+            ValueError,
+            match="conflicts with StepKernelContext tenant_id",
+        ):
+            attach_acp_catalog_exec_ctx(
+                step_ctx,
+                kernel_ctx=kernel_ctx,
+                request=request,
+                contract=contract,
+            )
+        assert "uaep_exec_ctx" not in step_ctx.metadata
+
+
+def test_b4_r3_acp_shim_missing_request_tenant_rejected() -> None:
+    from intergrax.contracts.agent_contract_meta import AgentContract
+    from intergrax.contracts.agent_run import AgentRunRequest
+    from intergrax.runtime.kernel.step_kernel import StepKernelContext
+    from intergrax.runtime.nexus.agents.acp_uaep_shim import attach_acp_catalog_exec_ctx
+    from testing_support.builder import canonical_governed_execution_scope
+
+    task_id = canonical_task_id_for_tests("r3-acp-miss")
+    contract = AgentContract(
+        id="bridge-agent",
+        name="bridge",
+        description="",
+        risk_level=AgentRiskLevel.LOW,
+        allowed_tools=(),
+    )
+    with canonical_governed_execution_scope("r3-acp-miss") as run_id:
+        step_ctx = AgentStepContext(
+            tenant_id="tenant-a",
+            step_index=0,
+            run_id=run_id,
+            task_id=task_id,
+        )
+        kernel_ctx = StepKernelContext(agent_id="bridge-agent", tenant_id="tenant-a")
+        request = AgentRunRequest(
+            input="hi",
+            identity=RequestIdentity.model_construct(tenant_id=None, user_id="u1"),
+        )
+        with pytest.raises(ValueError, match="tenant_id is required for ACP UAEP shim"):
+            attach_acp_catalog_exec_ctx(
+                step_ctx,
+                kernel_ctx=kernel_ctx,
+                request=request,
+                contract=contract,
+            )

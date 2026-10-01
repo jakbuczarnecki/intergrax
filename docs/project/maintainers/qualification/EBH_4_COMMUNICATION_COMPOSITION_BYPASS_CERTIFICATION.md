@@ -658,3 +658,32 @@ HTTP harness route defaults, multimedia/integration config defaults — unchange
 **EBH-4-R1-R3 / EBH-4 / HARNESS-W7:** BLOCKED / NOT ENTERED (audit not CLOSED)
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+## 27. B4-R3 — UAEP RuntimeRequest Tenant Authority Convergence (Cursor @ `cb503106…`)
+
+**START_HEAD:** `cb503106dd0ebd379240c940e926fedd7b022963`
+
+**cb503106 independent audit:** B4-R2 StepKernel contract = independently accepted local PASS. Whole B4 remained BLOCKED because UAEP/ACP current-HEAD rescan found:
+
+- metadata tenant substitution in `_runtime_request_identity`;
+- missing `build_kernel_session` request/tenant equality;
+- ACP shim request/step precedence (`identity.tenant_id or step_ctx.tenant_id`);
+- typed `RuntimeRequest` vs `canonical_identity` tenant equality not enforced at UAEP bridge.
+
+### R3 contract
+
+| Seam | Change |
+| --- | --- |
+| `uaep_step_bridge._runtime_request_identity` | `canonical_runtime_request_tenant_id` + metadata compatibility only; canonical identity must agree with typed tenant |
+| `uaep_step_bridge.build_kernel_session` | explicit `tenant_id` argument must equal canonical `RuntimeRequest` tenant before kernel materialization |
+| `acp_uaep_shim.attach_acp_catalog_exec_ctx` | fail-closed equality: ACP identity tenant == `AgentStepContext` == `StepKernelContext`; no OR precedence |
+
+### B4-R3 adversarial owner
+
+`tests/unit/runtime/qualification/test_ebh_4_b4_tenant_isolation.py` — R3 rows (metadata substitute, canonical mismatch, kernel param mismatch, ACP shim equality matrix).
+
+**B4-R3 tenant verdict (local):** **PASS** candidate · **B4 whole-scope (local):** **PASS** candidate · **IN-SCOPE BLOCKER = 0** · **global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0**
+
+**EBH-4-R1-R3 / EBH-4 / HARNESS-W7:** BLOCKED / NOT ENTERED (audit not CLOSED)
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
