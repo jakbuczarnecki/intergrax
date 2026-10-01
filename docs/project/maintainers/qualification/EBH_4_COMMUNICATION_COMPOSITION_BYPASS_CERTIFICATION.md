@@ -861,3 +861,47 @@ After affected UCA-6C scopes exit: `peek_active_execution_identity()` → `None`
 `EBH-4-R1-R3-B5-R1B = READY FOR AUDIT` · `B5 = BLOCKED` · `B5-R2 = NEXT / NOT ENTERED` · B6/B7/HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 31. B5-R2 — UAEP/ACP Qualification Fixture Alignment (Cursor @ `3c7e172…`)
+
+**START_HEAD / AUDITED_HEAD:** `3c7e172381824e2561f7eee88cf2554817fe10aa` · **branch:** `development` · **origin/development:** identical
+
+### B5-BLK-02 — four original failures (stale fixtures)
+
+| Test | Original error | Root cause |
+| --- | --- | --- |
+| `test_uaep_governance_deny_fails_without_rejecting_accepted` | `ValueError: tenant_id is required for RuntimeRequest` | Tenant only in `metadata`, not typed `RuntimeRequest.tenant_id` |
+| `test_uaep_governance_require_human_requests_human` | Same | Same |
+| `test_acp_mints_identity_once_when_absent` | `PreModelPolicyConfigurationError: pre_model governance identity unavailable` | Successful ACP path without active governance identity projection |
+| `test_acp_preserves_supplied_canonical_identity` | Same | Same |
+
+**Additional same-class fix:** `test_acp_binds_and_resets_active_execution_identity`; `test_acp_run_session.py` success paths (contract regression run #3).
+
+### Fixture before / after
+
+- **UAEP:** `metadata["tenant_id"]` → `tenant_id="tenant-a"` on `RuntimeRequest`.
+- **ACP:** `canonical_governed_execution_scope(..., governance_tenant_id=…, governance_principal_id=…)`; step-bridge host hooks for `attach_acp_catalog_exec_ctx` + aligned `run_id` / governed scope.
+
+### Production impact
+
+**production changed files = 0** (`intergrax/` untouched). Test-only: `testing_support/builder.py`, agent unit tests, this doc.
+
+### Post-fix pytest (`-p no:xdist`; logs `.tmp/session/ebh-4-r1-r3-b5-r2/`)
+
+| # | Scope | Result |
+| --- | --- | --- |
+| 1 | Four B5-BLK-02 nodes | **4 passed** (`run1-four-nodes.log`) |
+| 2 | `test_uaep_decision_integration.py` + `test_acp_session_identity.py` | **12 passed** (`run2-uaep-acp-files.log`) |
+| 3 | `test_uaep_decision_parity.py` + `test_uaep_executor.py` + `test_acp_run_session.py` | **8 passed** (`run3-contract-regression-final.log`) |
+
+### FRZ local evidence
+
+**global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0** · scoped FRZ-REG-02/03/06/09; supporting FRZ-TEN-01/02/07, FRZ-GOV-01/02/09, FRZ-EXE-01/02 (no promotion).
+
+### Recommended status
+
+`EBH-4-R1-R3-B5-R2 = READY FOR AUDIT` · `B5 = BLOCKED` (pending independent child audit) · B6/B7/HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**

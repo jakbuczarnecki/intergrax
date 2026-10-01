@@ -32,7 +32,11 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.engine.runtime_context import RuntimeContext
 from intergrax.runtime.nexus.responses.response_schema import RuntimeRequest
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
-from testing_support.builder import FakeLLMAdapter, build_in_memory_session_manager
+from testing_support.builder import (
+    FakeLLMAdapter,
+    build_in_memory_session_manager,
+    canonical_governed_execution_scope,
+)
 from tests.unit.agents.conftest import make_acp_host_context
 
 _CANONICAL_ID = re.compile(r"^(task|run|attempt)_[0-9a-f]{32}$")
@@ -112,6 +116,14 @@ def _request(**metadata: object) -> AgentRunRequest:
     )
 
 
+def _acp_success_path_scope(seed: str):
+    return canonical_governed_execution_scope(
+        seed,
+        governance_tenant_id="tenant-a",
+        governance_principal_id="user-1",
+    )
+
+
 def _strict_profile() -> ApplicationEnvironmentProfile:
     profile = ApplicationEnvironmentProfile.lab_defaults(profile_id="strict.host")
     return profile.model_copy(
@@ -133,6 +145,7 @@ async def test_acp_mints_identity_once_when_absent() -> None:
     )
     agent = _IdentityProbeAgent()
     with (
+        _acp_success_path_scope("acp-mint-absent"),
         patch(
             _ACP_MINT_PATCH,
             return_value=_minted_identity(minted_root),
@@ -154,6 +167,7 @@ async def test_acp_preserves_supplied_canonical_identity() -> None:
     supplied_task = mint_task_id()
     agent = _IdentityProbeAgent()
     with (
+        _acp_success_path_scope("acp-preserve-identity"),
         patch(
             _ACP_MINT_PATCH,
             return_value=_minted_identity(
@@ -302,6 +316,7 @@ async def test_acp_binds_and_resets_active_execution_identity() -> None:
     agent = _IdentityProbeAgent()
     _IdentityProbeAgent.captured_active_identity = None
     with (
+        _acp_success_path_scope("acp-bind-reset-identity"),
         patch(
             _ACP_MINT_PATCH,
             return_value=_minted_identity(

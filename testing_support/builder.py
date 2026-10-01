@@ -687,12 +687,23 @@ def build_runtime_execution_context_for_tests(
 
 
 @contextmanager
-def canonical_governed_execution_scope(run_id: str, *, bind_budget: bool = True):
+def canonical_governed_execution_scope(
+    run_id: str,
+    *,
+    bind_budget: bool = True,
+    governance_tenant_id: str | None = None,
+    governance_workspace_id: str | None = None,
+    governance_principal_id: str | None = None,
+):
     """
     Bind canonical execution identity and optional root budget for unit tests.
 
     Use when code under test calls ``require_active_execution_identity`` or
     ``require_active_execution_budget`` without going through the full host spine.
+
+    When ``governance_tenant_id`` and ``governance_principal_id`` are set, also binds
+    active execution governance identity for PRE_MODEL agentic paths (tenant/principal
+    must match the request under test).
     """
     from intergrax.contracts.execution_identity import (
         bind_active_execution_identity,
@@ -705,6 +716,11 @@ def canonical_governed_execution_scope(run_id: str, *, bind_budget: bool = True)
         reset_active_execution_budget,
     )
     from intergrax.runtime.execution.budget.ledger import create_execution_budget_ledger
+    from intergrax.runtime.governance.active_execution_governance_identity import (
+        ActiveExecutionGovernanceIdentity,
+        bind_active_execution_governance_identity,
+        reset_active_execution_governance_identity,
+    )
 
     canonical_run_id = canonical_run_id_for_tests(run_id)
     execution_id = mint_execution_id()
@@ -719,9 +735,21 @@ def canonical_governed_execution_scope(run_id: str, *, bind_budget: bool = True)
             execution_id=execution_id,
             ledger=create_execution_budget_ledger(None),
         )
+    governance_token = None
+    if governance_tenant_id is not None and governance_principal_id is not None:
+        workspace_id = governance_workspace_id or f"workspace-{run_id}"
+        governance_token = bind_active_execution_governance_identity(
+            ActiveExecutionGovernanceIdentity(
+                tenant_id=governance_tenant_id,
+                workspace_id=workspace_id,
+                principal_id=governance_principal_id,
+            ),
+        )
     try:
         yield canonical_run_id
     finally:
+        if governance_token is not None:
+            reset_active_execution_governance_identity(governance_token)
         if budget_token is not None:
             reset_active_execution_budget(budget_token)
         reset_active_execution_identity(identity_token)
