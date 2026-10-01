@@ -30,9 +30,14 @@ def open_host_run_trace_store(db_path: Path | None = None) -> RunTraceStore:
     return open_run_trace_store(db_path or resolve_trace_db_path(None))
 
 
+def is_in_memory_run_trace_store(store: RunTraceStore) -> bool:
+    return isinstance(store, InMemoryRunTraceStore)
+
+
 __all__ = [
     "create_in_memory_run_trace_store",
     "create_sqlite_run_trace_store",
+    "is_in_memory_run_trace_store",
     "open_host_run_trace_store",
     "resolve_trace_db_path",
 ]

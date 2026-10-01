@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from intergrax.contracts.run_trace_store import RunTraceStore
 from intergrax.experiments.store import SQLiteExperimentStore
 from intergrax.memory.stores.sqlite_user_profile_store import SQLiteUserProfileStore
 from intergrax.runtime.events.stores.sqlite_runtime_event_store import (
@@ -30,8 +31,8 @@ def _ensure_parent(path: Path) -> Path:
     return path
 
 
-def open_trace_store_at(path: Path) -> SQLiteRunTraceStore:
-    return SQLiteRunTraceStore(db_path=_ensure_parent(path))
+def open_trace_store_at(path: Path) -> RunTraceStore:
+    return create_sqlite_run_trace_store(_ensure_parent(path))
 
 
 def open_runtime_event_store_at(path: Path) -> SQLiteRuntimeEventStore:

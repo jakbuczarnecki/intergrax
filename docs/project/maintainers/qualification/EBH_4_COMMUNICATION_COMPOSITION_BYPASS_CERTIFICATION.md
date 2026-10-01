@@ -1188,3 +1188,206 @@ FRZ-CTR-01/03/04/05/06 · FRZ-TYP-01/02/03/04/06 · FRZ-PLG-01/02 · FRZ-RPL-01/
 `EBH-4-R1-R3-B6-R3 = READY FOR AUDIT` · `EBH-4-R1-R3-B6 = READY FOR AUDIT` · B7/P9 NOT ENTERED
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 38. B7/P9 — Final Current-HEAD Zero-Leakage Parent Recertification (Cursor)
+
+**branch:** `development` · **START_HEAD:** `cc59968df83693ee71577c82fc2151ae744f181c` · **AUDITED_HEAD (evidence commit):** see git commit containing this section · **origin/development:** aligned at certification start; post-fix commit required push for independent audit.
+
+### P9 parent decision
+
+**Do B3 + B4 + B5 + B6 together establish current-HEAD final Nexus isolation / zero leakage?** → **YES** (local Cursor qualification on AUDITED_HEAD after mechanical host-observability blocker remediation).
+
+### Ownership graph (final)
+
+```text
+Public / external semantic boundary:
+  Execution contracts · HostTaskExecutionPort · neutral host wiring · Governance contracts
+
+Execution semantic owner: intergrax/runtime/execution/**
+Private implementation: intergrax/runtime/nexus/** (PRIVATE INTERNAL IMPLEMENTATION — not public API, not peer EE, not plugin/app/scenario API, not Governance authority)
+
+Governance: admission / permission only — separate from Execution Engine perform work
+```
+
+### Closed-world communication inventory (current HEAD — revalidated)
+
+| Concern | Public entry | Contract | Composition owner | Governance owner | Execution owner | Private implementation | Alternate path? |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Host task execution | `build_harness_host_runtime` → `.host_execution` | `HostTaskExecutionPort` | `harness_host_runtime` | Harness governance bundle | `build_host_task_execution` / EE | Nexus backend (internal) | **No** |
+| Worker execution | Queue worker entry | `HostTaskExecutionPort` | `worker_host_task_execution_composition` / `NexusWorkerRuntime` | `admit_root_governance_identity` | same EE spine | Nexus (internal) | **No** — port required |
+| Scenario execution | Scenario runtime baseline | Neutral host/scenario contracts | `scenario_runtime_baseline` | Host policy | `HostTaskExecutionPort` | Nexus (internal) | **No** raw backend |
+| Agent execution | UAEP / graph via admitted run | `RuntimeRequest`, agent contracts | Host + registry assembly | Governance admission | EE → Nexus | Nexus nodes | **No** peer path |
+| Tool execution | Nexus graph / ToolGateway | Tool contracts | Host tool registry | `ToolAccessPolicy` + admission | `ToolRuntime.invoke` (sanctioned) | Provider I/O | **No** general bypass |
+| Runtime plugins | `bootstrap_runtime_plugins` | `RuntimePlugin` → `HostOrchestrationRuntimeEventPort` | `runtime/plugins/bootstrap` | N/A | N/A | N/A | **No** policy/hook ABI |
+| Integration provider resolution | `resolve_from_profile` / `resolve_typed` | Integration contracts | `integrations/registry/factory` | INT-CONFIG / CP where applicable | Consumer via contracts | Provider SDK | **No** consumer registry |
+| RAG composition | RAG composition helpers | RAG + Integration contracts | Integrations materialize; RAG adapt | Host/policy | Via admitted execution | Backends | EBH-2G gate |
+| Memory composition | Memory control plane | `memory.contracts` | Tier-3 + Memory | Governance on USER | Execution contexts | Stores | EBH-2H |
+| Observability | Host observability wiring | `EventSinkPort`, export ports | Harness W5 / host composition | N/A | N/A | OTLP transport | **No** execution authority |
+| Diagnostics | `diagnostic_composition` | Diagnostics contracts | X3 allowlist | N/A | N/A | Read/interpret | **No** execution authority |
+
+### Communication / execution graph
+
+```text
+Tier-3 host / worker / scenario
+        ↓
+sanctioned host composition (build_harness_host_runtime)
+        ↓
+Governance admission
+        ↓
+HostTaskExecutionPort
+        ↓
+Execution Engine (runtime/execution/**)
+        ↓
+private Nexus (runtime/nexus/**)
+        ↓
+tool / integration physical effects
+```
+
+Worker: `queue payload → NexusWorkerRuntime → HostTaskExecutionPort.execute → same spine`.
+
+### Composition-root matrix (exactly-one production owner)
+
+| Concern | Sanctioned root | Other constructors | Classification |
+| --- | --- | --- | --- |
+| Host runtime | `build_harness_host_runtime` | App `factory.py` delegates only | Single root |
+| Execution admission | `build_host_task_execution` | — | Canonical |
+| Nexus materialization | `environment_orchestration_materialization` / `build_nexus_loop_from_environment` | Worker `from_registry` (subordinate) | Private sub-root behind port |
+| Worker runtime | `NexusWorkerRuntime` + injected port | — | No `NexusLoop` import in worker module |
+| Integration providers | `integrations.registry.factory` | Provider bundles (internal) | Single registry |
+| Runtime plugins | `bootstrap_runtime_plugins` | — | Event consumer only |
+| Diagnostics | `diagnostic_composition` + X3 | — | Non-authoritative |
+
+### Nexus manifest (static gates @ AUDITED_HEAD)
+
+| Metric | Count | Files if non-zero | Classification |
+| --- | ---: | --- | --- |
+| Production `runtime.nexus` imports outside EE zone | **0** | — | `test_ebh_4_r1_production_nexus_imports_outside_ee_are_zero` |
+| `NexusLoop()` construction outside EE zone | **0** | — | `test_ebh_4_r1_nexus_loop_construction_outside_ee_is_zero` |
+| `intergrax/contracts/**` → Nexus imports | **0** | — | `test_ebh_4_r1_neutral_contracts_do_not_import_nexus` |
+| Public Nexus-type leakage on scenario/app surfaces | **0** | — | encapsulation + UE-11GP + OBS-DIAG-X3 |
+| Raw orchestration backend on scenario composition | **0** | — | `test_ebh_4_r1_scenario_runtime_public_surface_has_no_orchestration_materialization` |
+
+### Bypass numeric inventory
+
+| Bypass class | Count |
+| --- | ---: |
+| Tier-3 direct `NexusLoop` execution | **0** |
+| Applications direct Nexus imports | **0** |
+| Agents direct Nexus execution authority | **0** |
+| Scenario raw Nexus handle | **0** |
+| Worker peer bypass of `HostTaskExecutionPort` | **0** |
+| Direct `ToolRuntime` general-execution bypass | **0** |
+| Qualification → execution shortcut | **0** |
+| Evidence → permission shortcut | **0** |
+| Diagnostics → execution authority | **0** |
+| Observability → execution authority | **0** |
+
+### B3–B6 current-head reconciliation
+
+| Stage | Historical status | Current-head evidence | B7 classification |
+| --- | --- | --- | --- |
+| B3 recovery / worker-host | Independently accepted local PASS | Run #3: `test_decision_orchestration_recovery`, `test_ue_11e_resume_recovery`, `test_unified_task_runner_execution_boundary` — **75 passed** (incl. B4 module) | **CURRENT-HEAD REVALIDATED** |
+| B4 tenant isolation | Independently accepted local PASS | Run #3: `test_ebh_4_b4_tenant_isolation` — green | **CURRENT-HEAD REVALIDATED** |
+| B5 execution surfaces | Independently accepted local PASS | Run #3 execution batch + Run #1 architecture gates — no regression | **CURRENT-HEAD REVALIDATED** |
+| B6 typing / conformance / plugin ABI | Independently accepted local PASS | Run #2: B6 typing + R2 + R3 + EBH-2F-R1 — **21 passed** | **CURRENT-HEAD REVALIDATED** |
+| EBH-3 dependency ownership | CLOSED (historical) | Run #1 `test_ebh_3_dependency_ownership_gate` | **CURRENT-HEAD REVALIDATED** |
+| EBH-2A / EBH-2I contracts | Historical closure | Run #1 `test_ebh_2a_*`, `test_ebh_2i_*` | **CURRENT-HEAD REVALIDATED** |
+| EBH-2F-R1 host port | Historical closure | Run #2 replaceability gate | **CURRENT-HEAD REVALIDATED** |
+| AW-7C prerequisite arch | AW-7C CLOSED (historical) | Run #4 AW-7C gates | **CURRENT-HEAD REVALIDATED** |
+| RAG graph ownership | EBH-2G-R2 (historical) | Run #4 `test_ebh_2g_r2_graph_store_ownership_gate` | **CURRENT-HEAD REVALIDATED** |
+
+### Governance / execution matrix
+
+| Question | Verdict |
+| --- | --- |
+| Who proposes work? | Tier-3 / agents / scenarios via typed requests |
+| Who grants permission? | Governance (`ControlPlaneMutationAuthorizationPort`, meaningful side-effect ports, execution admission) |
+| Who admits root execution? | Governance + `HostTaskExecutionPort` admission |
+| Who executes? | Execution Engine (Nexus private backend) |
+| Who performs tool effects? | `ToolGateway` → `ToolRuntime` within admitted execution |
+| Can Nexus create permission? | **NO** |
+| Can plugin create permission? | **NO** |
+| Can diagnostics create permission? | **NO** |
+| Can evidence create permission? | **NO** |
+| Can qualification directly execute? | **NO** |
+
+### Tenant 16Q (EBH-4 local @ AUDITED_HEAD)
+
+| # | Verdict |
+| --- | --- |
+| 1–8 | **PASS** — B4 gate green on current HEAD; no regression in run #3 |
+| 9 | **PASS** — provider/profile uses canonical request tenant (B4 historical + rerun) |
+| 10 | **N/A — WITH EVIDENCE** — no credential edge in EBH-4 closed world |
+| 11–12 | **PASS** — events/trace tenant; B4-3 fail-closed preserved |
+| 13 | **PASS** — plugins do not mint tenant (B6-R3 ABI) |
+| 14 | **PASS** — no downstream widen on audited path |
+| 15 | **PASS** — cross-tenant explicit/governed (B3D/B4 adversarial) |
+| 16 | **PASS** — `test_ebh_4_b4_tenant_isolation.py` current HEAD |
+
+### Tests / gates (bounded campaign)
+
+| Run | Command | Result |
+| --- | --- | --- |
+| #1 | `test_ebh_4_r1_nexus_encapsulation_gate` + `test_ebh_3_dependency_ownership_gate` + `test_ebh_2a_public_contract_boundary_gate` + `test_ebh_2i_final_rescan_gate` | **45 passed** · log: `.tmp/session/ebh-4-r1-r3-b7-p9/run1-zero-leakage-gates.log` |
+| #2 | B6 typing + R2 + R3 + `test_ebh_2f_r1_host_execution_port_replaceability` (runtime/architecture path) | **21 passed** · `run2-b6-gate-matrix.log` |
+| #3 | B4 tenant + B3 recovery smoke + `test_unified_task_runner_execution_boundary` | **75 passed** · `run3-b3-b4-smoke.log` |
+| #4 | AW-7C prerequisite + EBH-2G graph ownership + OBS-DIAG-X3 + OBS-DIAG port-1 + UE-11GP + diag platform adoption | **69 passed** (after fix) · `run4-bypass-crosscheck-rerun.log` |
+
+Note: Run #4 initial attempt surfaced **IN-SCOPE mechanical blocker** on sanctioned host observability assembly (`open_trace_store_at` / trace store type guard). Remediated on AUDITED_HEAD (see changed files). Not an EBH-4 bypass; host composition correctness.
+
+### Enterprise audit matrix (EBH-4 scope)
+
+| Invariant | Verdict | Evidence |
+| --- | --- | --- |
+| Contracts over implementations | PASS | Runs #1–#2 |
+| Hard layer boundaries | PASS | EBH-3 + encapsulation gate |
+| Exactly-one semantic owner | PASS | Inventory + composition matrix |
+| Exactly-one composition owner | PASS | Host + Integrations roots |
+| Strong typing | PASS | B6 typing gate |
+| No semantic Any/object | PASS | B6 typing gate |
+| Pluginability | PASS | B6-R3 ABI |
+| Structural replaceability | PASS | EBH-2F-R1 |
+| No bypass | PASS | Bypass inventory = 0 |
+| No alternate execution path | PASS | UE-11GP + encapsulation |
+| No shadow authority | PASS | AW-7C + plugin ABI |
+| No duplicate mechanism | PASS | B6-R3 event port dedup |
+| Governance ≠ Execution | PASS | Matrix above |
+| Proposal ≠ permission ≠ execution | PASS | GOV historical + AW-7C gates |
+| Fail closed | PASS | B4 + B3 smoke |
+| Tenant isolation | PASS | B4 rerun |
+| Observability non-authoritative | PASS | OBS-DIAG port-1 + X3 |
+| Diagnostics non-authoritative | PASS | diag platform gate |
+| Trace/evidence continuity | N/A — WITH EVIDENCE | EBH-4 scope; not TRACE-X closure |
+| Regression protection | PASS | Gate suite runs #1–#4 |
+
+### FRZ contribution (scoped — no global promotion)
+
+Evaluated IDs: FRZ-BND-01…06, FRZ-CTR-01…06, FRZ-EXE-01/02/03/07, FRZ-GOV-01/02/09, FRZ-TYP-01…04/06, FRZ-PLG-01/02, FRZ-RPL-01…03, FRZ-REG-02/09.
+
+**global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0**
+
+### Unresolved findings
+
+| Finding | Classification |
+| --- | --- |
+| Host trace opener `NameError` on START_HEAD | **IN-SCOPE BLOCKER** — **REMEDIATED** on AUDITED_HEAD (`sqlite_opens.py`, `run_trace_store_factories.is_in_memory_run_trace_store`, `observability_assembly_resolver.py`) |
+| APP-PROD product health / wrapper path debt (historical) | **TRACKED FREEZE DEBT** — not promoted to EBH-4 bypass |
+
+**IN-SCOPE BLOCKER (open) = 0** · **unclassified findings = 0**
+
+### Changed files (certification session)
+
+| Path | Kind |
+| --- | --- |
+| `docs/project/maintainers/qualification/EBH_4_COMMUNICATION_COMPOSITION_BYPASS_CERTIFICATION.md` | Evidence (this section) |
+| `intergrax/runtime/persistence/sqlite_opens.py` | Mechanical blocker fix |
+| `intergrax/runtime/execution/run_trace_store_factories.py` | EE type guard helper |
+| `intergrax/applications/_shared/observability_assembly_resolver.py` | Use EE guard (no Tier-3 Nexus import) |
+
+### Recommended status
+
+`EBH-4-R1-R3-B7/P9 = READY FOR AUDIT` · `EBH-4-R1-R3 = READY FOR AUDIT` · `EBH-4 = READY FOR AUDIT` · **HARNESS-W7 = NEXT / NOT ENTERED**
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
