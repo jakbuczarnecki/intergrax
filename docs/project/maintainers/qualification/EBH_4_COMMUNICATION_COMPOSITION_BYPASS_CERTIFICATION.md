@@ -701,3 +701,52 @@ HTTP harness route defaults, multimedia/integration config defaults — unchange
 **B4-R4 adversarial owner:** `tests/unit/runtime/qualification/test_ebh_4_b4_tenant_isolation.py` — R4 rows (scope equality matrix, indexer/search zero-tool adversarial chains, helper ownership gates).
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 29. B5 — Current-HEAD Functional Regression Closure (Cursor @ `f4f75dfd…`)
+
+**AUDITED_HEAD / START_HEAD:** `f4f75dfd312ffe62cf1305ec69af4dcc8ba6d992` · **branch:** `development` · **origin/development:** identical · **working tree:** clean at audit start
+
+**B3 / B4:** independently accepted local PASS (revalidated wave-01) · **B5 (local):** **BLOCKED** · **B6 / B7/P9 / HARNESS-W7:** NOT ENTERED
+
+### Wave inventory (all `uv run pytest -p no:xdist`; logs under `.tmp/session/ebh-4-r1-r3-b5/`)
+
+| Wave | Command scope | passed | failed | skipped | errors | Log |
+| --- | --- | ---: | ---: | ---: | ---: | --- |
+| 01 B3/B4 qualification | `test_ebh_4_b4_tenant_isolation.py`, `test_decision_orchestration_recovery.py`, `test_ue_11e_resume_recovery.py`, `test_unified_task_runner_execution_boundary.py` | 75 | 0 | 0 | 0 | `wave01-b3-b4-qualification.log` |
+| 02 Architecture gates | `test_ebh_4_r1_nexus_encapsulation_gate.py`, `test_ebh_3_dependency_ownership_gate.py`, `test_ebh_2a_public_contract_boundary_gate.py`, `test_ebh_2i_final_rescan_gate.py`, `test_ebh_2f_r1_host_execution_port_replaceability.py` | 47 | 0 | 0 | 0 | `wave02-architecture-gates.log` |
+| 03 Execution (full `runtime/execution/`, minus 2 collection-broken modules) | entire package | 1316 | 153 | 1 | 40 | `wave03-execution-rerun.log` |
+| 04 Governance | `tests/unit/runtime/governance/` | 215 | 8 | 0 | 0 | `wave04-governance.log` |
+| UAEP/ACP/Kernel | UAEP unit + `test_uaep_step_bridge.py`, `test_acp_run_session.py`, kernel session tests, B4 qualification overlap | 90 | 4 | 0 | 0 | `wave-uaep-acp-kernel.log` |
+| RAG/Memory/Eval/CodeCraft/Events | `test_rag_scope.py`, `memory/`, `eval/`, `codecraft/`, `runtime/events/` | 1022 | 9 | 1 | 0 | `wave-rag-memory-eval-events.log` |
+| B5 decisive batch (×2) | B4 + nexus gate + B3 trio + `test_uaep_step_bridge.py` + `test_step_kernel.py` | 113 | 0 | 0 | 0 | `b5-decisive-batch-run1.log`, `b5-decisive-batch-run2.log` |
+
+### IN-SCOPE BLOCKER
+
+| ID | Finding | Evidence |
+| --- | --- | --- |
+| B5-BLK-01 | Order-dependent pollution in `tests/unit/runtime/execution/`: B3 canonical tests green in wave-01 / decisive batch but fail in full wave-03; UE-11D green alone (81) but ~80 failures only in combined wave | `wave01` vs `wave03-execution-rerun.log`, `b3-isolation-rerun.log` |
+| B5-BLK-02 | UAEP/ACP tests stale vs tenant + pre_model governance: `tenant_id is required for RuntimeRequest`; `PreModelPolicyConfigurationError` | `wave-uaep-acp-kernel.log` (4 failures) |
+
+### ENVIRONMENT / TEST ISSUE (classified)
+
+Collection import drift (`build_nexus_loop_from_environment` wrong owner in 2 execution tests); delegated subprocess worker port errors (40×); GR13 `GovernanceEvidenceRecorder` NameError; governance runtime_context strict-profile/bootstrap failures; Windows chmod skip in memory audit.
+
+### TRACKED FREEZE DEBT
+
+HARNESS-W5 event composition/export tests (9 failures); mixed full execution wave attribution (QUAL-X).
+
+### FRZ local evidence — **global FRZ PASS delta = 0**
+
+FRZ-REG-02/03/06/09 partial on HEAD; FRZ-REG-08 noted for delegated-worker environment; no global promotion.
+
+### Repairs
+
+None in B5 pass (certification only).
+
+### Recommended status
+
+`EBH-4-R1-R3-B5 = BLOCKED` · B6/B7/HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
