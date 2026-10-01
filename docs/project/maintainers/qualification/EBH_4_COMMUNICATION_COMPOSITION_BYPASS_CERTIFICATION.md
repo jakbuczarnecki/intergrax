@@ -750,3 +750,56 @@ None in B5 pass (certification only).
 `EBH-4-R1-R3-B5 = BLOCKED` · B6/B7/HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 30. B5-R1A — Execution Pollution Bounded Diagnosis (Cursor @ `a0aa8dbc…`)
+
+**AUDITED_HEAD / START_HEAD:** `a0aa8dbcd3d8d9b1cd8e1187c5a7ac977f123e86` · **branch:** `development` · **origin/development:** identical
+
+### Victim
+
+`tests/unit/runtime/execution/test_ue_11d_parallel_root_isolation.py::test_ue_11d_shared_runtime_parallel_root_identity_isolation[0]` — **PASS** isolated (`r1a-diag1-victim.log`).
+
+### Suspect modules (from `wave03-execution-rerun.log` + `module-order.txt` indices 46–53)
+
+| Rank | Module | Hypothesis |
+| --- | --- | --- |
+| S1 | `suspended_operation/test_uca6c_r6_r5_9_r4_final_distributed_recovery_e2e.py` | Manual `_identity_context` + production `_reenter` / tool-runtime path may leave `peek_active_execution_identity()` non-`None` after test `finally` |
+| S2 | `suspended_operation/test_uca6c_r6_r5_9_r3_crash_windows.py` | Same harness pattern; part of minimal failing prefix (46–50) |
+| S3 | `test_agent_executor.py` | Wave-03 first identity-reset failure cluster; likely **downstream** of earlier leak (same `run_id` across failures) |
+
+### Diagnostic pytest (6/6 budget)
+
+| # | Command | Purpose | Result |
+| --- | --- | --- | --- |
+| 1 | `pytest -p no:xdist` victim node only | Clean victim | **PASS** |
+| 2 | `test_agent_executor.py` + victim | S3 module | **PASS** (21) |
+| 3 | `test_agentic_tool_execution_identity.py` + victim | Adjacent wave-03 identity module | **PASS** (13) |
+| 4 | `test_active_execution_authority.py` + victim | Authority ContextVar module | **PASS** (9) |
+| 5 | `module-order` indices **46–50** (5 modules) + victim | Minimal prefix before UE-11D in bisect | **FAIL** victim (`peek_active_execution_identity()` not `None`; `r1a-diag5-m46-50-victim.log`) |
+| 6 | `test_uca6c_r6_r5_9_r3_crash_windows.py` + victim | Narrow S2 | **PASS** (7) |
+
+### Findings
+
+- **Contaminating module (group):** UCA-6C R6 suspended-operation prefix **46–50** — **confirmed** minimal reproduction with victim.
+- **Exact contaminator test:** **NOT FOUND** within budget (crash module alone does not reproduce; single E2E test not isolated).
+- **Leaked state (observed):** `peek_active_execution_identity()` → `(run_id, attempt_id)`; owner `intergrax.contracts.execution_identity` (`_active_execution_identity` ContextVar).
+- **Victim effect:** `_assert_clean_caller_context()` UE-11D line 186 (`wave03` + diag #5).
+- **Classification:** **BOUNDED DIAGNOSIS INCONCLUSIVE** for single-test root cause; evidence supports **IN-SCOPE BLOCKER — AUTHORITY/ISOLATION LEAK** via UCA-6C R6 durable reentry — not §19 trivial test-only fix without R1B proof.
+
+### Expected B5-R1B shape (draft)
+
+- Owner: `intergrax/contracts/execution_identity.py` + production path from `ExecutionSuspendedWorkReentryCoordinator.reenter_after_resume` / bound catalog tool invoke.
+- Missing cleanup: token-scoped `reset_active_execution_identity` after nested production binds during suspended-work reentry (§24 nesting).
+- Regression: confirmed contaminator + UE-11D victim in one process.
+
+### FRZ local evidence
+
+**global FRZ PASS delta = 0** · FRZ-REG-02/03/06/09 · FRZ-EXE-* / FRZ-TEN-* (harness tenant-bound identity) — no promotion.
+
+### Recommended status
+
+`EBH-4-R1-R3-B5-R1A = BLOCKED` · `B5-R1B = NOT ENTERED` · `B5 = BLOCKED`
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
