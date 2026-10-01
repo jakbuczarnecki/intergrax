@@ -905,3 +905,65 @@ After affected UCA-6C scopes exit: `peek_active_execution_identity()` → `None`
 `EBH-4-R1-R3-B5-R2 = READY FOR AUDIT` · `B5 = BLOCKED` (pending independent child audit) · B6/B7/HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 32. B5-R3 — Functional Regression Parent Reconciliation (Cursor @ `caea290…`)
+
+**START_HEAD / AUDITED_HEAD:** `caea290b10fa0d1cb12d082db761c77b3fff4b51` · **branch:** `development` · **origin/development:** identical · **production changed files:** 0 · **functional test changed files:** 0 (evidence doc only)
+
+### Canonical state before R3
+
+| Stage | State |
+| --- | --- |
+| B3 | independently accepted local PASS |
+| B4 | independently accepted local PASS |
+| B5-R1 (R1B) | independently accepted local PASS — B5-BLK-01 remediation |
+| B5-R2 | independently accepted local PASS — B5-BLK-02 remediation |
+| B5 | BLOCKED (pending parent reconciliation) |
+| B6 / B7·P9 / HARNESS-W7 | NOT ENTERED |
+| EBH-4-R1-R3 / EBH-4 | BLOCKED |
+
+### Bounded reconciliation pytest (`-p no:xdist`; logs `.tmp/session/ebh-4-r1-r3-b5-r3/`)
+
+| # | Exact command | Purpose | Result |
+| --- | --- | --- | --- |
+| 1 | `test_ebh_4_b4_tenant_isolation.py` + `test_decision_orchestration_recovery.py` + `test_ue_11e_resume_recovery.py` + `test_ue_11d_parallel_root_isolation.py::test_ue_11d_shared_runtime_parallel_root_identity_isolation[0]` | B3/B4 invariants + B5-BLK-01 signature | **62 passed** (`run1-b3-b4-r1-core.log`) |
+| 2 | `test_uaep_decision_integration.py` + `authoring/test_acp_session_identity.py` | B5-R2 typed tenant + ACP governed path | **12 passed** (`run2-b5-r2-core.log`) |
+| 3 | `test_uaep_decision_parity.py` + `test_uaep_executor.py` + `test_acp_run_session.py` | Current-contract UAEP/ACP cross-check | **8 passed** (`run3-contract-cross-check.log`) |
+| 4 | Arch gates: `test_ebh_4_r1_nexus_encapsulation_gate.py`, `test_ebh_3_dependency_ownership_gate.py`, `test_ebh_2a_public_contract_boundary_gate.py`, `test_ebh_2f_r1_host_execution_port_replaceability.py` | Boundary regression guard after R1/R2 test repairs | **35 passed** (`run4-architecture-gates-corrected.log`) |
+
+**Run #4 note:** task prompt path `tests/unit/architecture/test_ebh_2f_r1_host_execution_port_replaceability.py` absent on HEAD; current equivalent `tests/unit/runtime/architecture/test_ebh_2f_r1_host_execution_port_replaceability.py`. One invalid collect attempt (`run4-architecture-gates.log`, 0 items) precedes corrected run #4.
+
+### B5-BLK-01
+
+**RESOLVED** — R1B LIFO repair present (`_reset_nested_identity_tokens` in `test_uca6c_r6_r5_9_r4_final_distributed_recovery_e2e.py`); bounded matrix green; no new identity pollution observed.
+
+### B5-BLK-02
+
+**RESOLVED** — UAEP typed `RuntimeRequest.tenant_id` + ACP governed scope paths green (runs #2–#3); production `intergrax/` unchanged on reconciliation HEAD.
+
+### Historical failure family reconciliation (pre-R1/R2 wave-03 inventory — not current counts)
+
+| Historical family | Current evidence | B5 parent relevance | Classification | Owner / next stage |
+| --- | --- | --- | --- | --- |
+| B5-BLK-01 execution pollution | Run #1 + R1B code present | Direct | **RESOLVED** | — |
+| B5-BLK-02 UAEP/ACP stale fixtures | Runs #2–#3 | Direct | **RESOLVED** | — |
+| Delegated worker failed-to-publish-port (40× errors) | No new bounded proof; historical wave-03 only | Indirect | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | FRZ-REG-08 · QUAL-X / worker harness |
+| Collection stale imports (`build_nexus_loop_from_environment`) | Static: `lineage/test_nexus_factory_lineage_wiring.py`, `budget/test_ue_8b1r1_ledger_lifecycle.py` import from `host_orchestration_backend_spec_builder` (symbol lives in `nexus_factory.py` / `testing_support`); same 2-module collect break as B5 §29 wave-03 exclusion | Full `runtime/execution/` collect only | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | QUAL-X collection hygiene (not B5 bounded surface) |
+| GR13 `GovernanceEvidenceRecorder` NameError | Historical wave-04 only; no R3 re-run | Governance qual scope | **TRACKED FREEZE DEBT** | EBH-4 governance / QUAL-X |
+| SQLite / strict profile bootstrap | Historical traces only | Out of B5 bounded matrix | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | FRZ-REG-08 · R1-SQLITE-ENV-01 lineage |
+| W5 event composition/export (9×) | Historical `wave-rag-memory-eval-events.log` only | Harness observability | **TRACKED FREEZE DEBT** | HARNESS-W5 |
+| Remaining historical wave-03 mixed failures (~153 FAIL) | Not re-observed on current HEAD in bounded matrix; identity cluster **SUPERSEDED** by B5-BLK-01 fix | Attribution inventory | **SUPERSEDED BY RESOLVED ROOT CAUSE** (pollution subset) + **TRACKED FREEZE DEBT** (residual unbounded execution/governance mix) | B6+ / QUAL-X — no recount as current |
+
+**unclassified findings = 0**
+
+### FRZ local evidence (B5 reconciliation scope)
+
+**global FRZ PASS delta = 0** · **new FRZ-TEN PASS delta = 0** · primary: FRZ-REG-02, FRZ-REG-03, FRZ-REG-06, FRZ-REG-09; FRZ-REG-08 for worker/SQLite environment families; supporting context only: FRZ-EXE-*, FRZ-TEN-*, FRZ-GOV-*, FRZ-BND-*, FRZ-CTR-*, FRZ-RPL-* (no promotion).
+
+### Recommended status
+
+`EBH-4-R1-R3-B5-R3 = READY FOR AUDIT` · `EBH-4-R1-R3-B5 = READY FOR AUDIT` · **B6 = NEXT / NOT ENTERED** · B7/P9 / HARNESS-W7 NOT ENTERED · parent EBH-4-R1-R3 / EBH-4 BLOCKED (audit not CLOSED)
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
