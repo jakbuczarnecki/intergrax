@@ -24,7 +24,6 @@ from intergrax.contracts.execution_budget_ledger_port import ExecutionBudgetLedg
 from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.contracts.host_orchestration_wiring_capabilities import (
     HostOrchestrationMiddlewarePipelinePort,
-    HostOrchestrationPluginPolicyEnginePort,
     HostOrchestrationRuntimeEventPort,
     HostOrchestrationTraceEmitterPort,
 )
@@ -78,9 +77,6 @@ class HostOrchestrationPluginBootstrapTarget(Protocol):
 
     @property
     def middleware(self) -> HostOrchestrationMiddlewarePipelinePort: ...
-
-    @property
-    def policy_engine(self) -> HostOrchestrationPluginPolicyEnginePort: ...
 
     @property
     def trace_store(self) -> RunTraceReader | None: ...

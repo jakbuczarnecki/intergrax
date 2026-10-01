@@ -118,6 +118,9 @@ from intergrax.runtime.nexus.execution.orchestration_node_execution import (
     OrchestrationNodeExecutionPort,
 )
 from intergrax.runtime.nexus.retry.retry_engine import RetryEngine, RetryPolicy, RetryRecord
+from intergrax.contracts.agent_execution_validation_engine import (
+    AgentExecutionValidationEnginePort,
+)
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.execution.agentic import AgentExecutor
 from intergrax.runtime.execution.child import ChildExecutionRunner
@@ -213,7 +216,7 @@ class GraphExecutor:
         *,
         engine: Optional[AgentEngine] = None,
         router: Optional[AgentRouter] = None,
-        validation_engine: Optional[NexusValidationEngine] = None,
+        validation_engine: Optional[AgentExecutionValidationEnginePort] = None,
         retry_engine: Optional[RetryEngine] = None,
         context_manager: Optional[ContextManager] = None,
         handoff_coordinator: Optional[HandoffCoordinator] = None,
@@ -322,7 +325,10 @@ class GraphExecutor:
             return None
         return runtime_ckpt.execution_tree.entry_by_graph_node_id(graph_node_id)
 
-    def apply_validation_engine(self, validation_engine: NexusValidationEngine) -> None:
+    def apply_validation_engine(
+        self,
+        validation_engine: AgentExecutionValidationEnginePort,
+    ) -> None:
         """Replace the active graph validation engine."""
         self._validation_engine = validation_engine
 

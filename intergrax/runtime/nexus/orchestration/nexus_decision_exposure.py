@@ -18,6 +18,7 @@ from intergrax.contracts.decision_exposure_selection import (
     DecisionExposureCandidateAppend,
     DecisionExposurePublicationPolicy,
     DecisionExposureSelectionFailure,
+    DecisionExposureSelectionHostBinding,
     HostPublicationClass,
 )
 from intergrax.contracts.execution_identity import RunId, validate_run_id
@@ -33,9 +34,6 @@ from intergrax.runtime.decision_flow import (
 from intergrax.runtime.execution.attempt_lifecycle import AttemptLifecycleService
 from intergrax.runtime.execution.decision_exposure_collector import (
     DecisionExposureCandidateCollector,
-)
-from intergrax.runtime.execution.decision_exposure_selection_composition import (
-    DecisionExposureSelectionComposition,
 )
 from intergrax.runtime.execution.decision_exposure_selection_validation import (
     run_validated_decision_exposure_selection,
@@ -100,7 +98,7 @@ class NexusDecisionExposureRunSession:
     """Per-run collector and selection context (not checkpoint-durable)."""
 
     collector: DecisionExposureCandidateCollector[object]
-    selection: DecisionExposureSelectionComposition
+    selection: DecisionExposureSelectionHostBinding
     graph_final_gate_enabled: bool
     policy: DecisionExposurePublicationPolicy = GRAPH_HOST_DECISION_EXPOSURE_PUBLICATION_POLICY
     graph_final_evaluation_occurred: bool = field(default=False)

@@ -1094,3 +1094,28 @@ Targeted pyright on B6 modules; mechanical gate `test_ebh_4_r1_r3_b6_typing_gate
 `EBH-4-R1-R3-B6-R1 = READY FOR AUDIT` · `EBH-4-R1-R3-B6 = READY FOR AUDIT` · B7/P9 NOT ENTERED
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+---
+
+## 36. B6-R2 — Execution Contract Runtime Conformance Closure (Cursor)
+
+**START_HEAD:** `4180ccedc206ad8042752e2b12c3170a25d8c79e` · **branch:** `development`
+
+### Conformance inventory (after)
+
+| ID | EE contract | Correction |
+| --- | --- | --- |
+| B6-CONF-01 | `AgentExecutionValidationEnginePort` | Removed `NexusValidationEngine` identity lock; Nexus consumers typed to port |
+| B6-CONF-02 | `DecisionExposureSelectionHostBinding` | Removed `DecisionExposureSelectionComposition` identity lock; session uses `selection.strategy` only |
+| B6-CONF-03 | Plugin policy surface | **REMOVED / EXPLICITLY UNSUPPORTED** — `HostOrchestrationPluginPolicyEnginePort` removed; `register_rule` raises `RuntimePluginPolicyRegistrationUnsupportedError` |
+| B6-CONF-04 | `HostOrchestrationMiddlewarePipelinePort` | Executable middleware contract extended (`before`/`after`); runtime structural proofs in gate tests |
+
+**Evidence:** `.tmp/session/ebh-4-r1-r3-b6-r2/` · gates: `test_ebh_4_r1_r3_b6_r2_runtime_conformance.py`, extended `test_ebh_4_r1_r3_b6_typing_gate.py`.
+
+**FRZ:** global FRZ PASS delta = 0 · new FRZ-TEN PASS delta = 0.
+
+### Recommended status
+
+`EBH-4-R1-R3-B6-R2 = READY FOR AUDIT` · `EBH-4-R1-R3-B6 = READY FOR AUDIT` · B7/P9 NOT ENTERED
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**

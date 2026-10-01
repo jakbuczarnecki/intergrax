@@ -23,6 +23,12 @@ _STEP_KERNEL = _INTERGRAX / "runtime" / "kernel" / "step_kernel.py"
 _HOST_CONTRACT = (
     _INTERGRAX / "contracts" / "host_orchestration_application_wiring_target.py"
 )
+_NEXUS_LOOP = _INTERGRAX / "runtime" / "nexus" / "nexus_loop.py"
+
+_EE_CONTRACT_CONCRETE_LOCK_FORBIDDEN = (
+    ("isinstance(validation_engine, NexusValidationEngine)", _NEXUS_LOOP),
+    ("type(selection) is not DecisionExposureSelectionComposition", _NEXUS_LOOP),
+)
 _HOST_BUILDER = (
     _INTERGRAX
     / "runtime"
@@ -146,3 +152,9 @@ def test_wire_terminal_execution_diagnostics_types_scenario_runtime_mode() -> No
     source = _read(_DIAG_WIRING)
     assert "scenario_runtime_mode: ScenarioRuntimeMode | None" in source
     assert "scenario_runtime_mode: object" not in source
+
+
+def test_b6_r2_audited_paths_have_no_contract_concrete_locks() -> None:
+    for fragment, path in _EE_CONTRACT_CONCRETE_LOCK_FORBIDDEN:
+        source = _read(path)
+        assert fragment not in source, f"concrete lock {fragment!r} in {path}"

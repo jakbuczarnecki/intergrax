@@ -21,6 +21,10 @@ from intergrax.runtime.plugins.contract import (
 from intergrax.runtime.schema.registry import current_runtime_version
 
 
+class RuntimePluginPolicyRegistrationUnsupportedError(RuntimeError):
+    """Runtime plugin bootstrap cannot mutate governance policy rules."""
+
+
 @dataclass
 class PluginBootstrapResult:
     shutdown_callbacks: List[Callable[[], None]] = field(default_factory=list)
@@ -57,3 +61,6 @@ def bootstrap_runtime_plugins(
 class _NullPolicyEngine:
     def register_rule(self, rule: object) -> None:
         _ = rule
+        raise RuntimePluginPolicyRegistrationUnsupportedError(
+            "runtime plugin policy rule registration is not supported",
+        )

@@ -16,19 +16,47 @@ from intergrax.contracts.runtime_event_type import RuntimeEventType
 
 
 @runtime_checkable
+class HostOrchestrationMiddlewareHookAction(Protocol):
+    """Hook action token returned by executable orchestration middleware."""
+
+    @property
+    def value(self) -> str: ...
+
+
+@runtime_checkable
+class HostOrchestrationMiddlewareHookContext(Protocol):
+    """Minimal hook context required for orchestration middleware execution."""
+
+    task_id: str
+    run_id: str
+
+
+@runtime_checkable
+class HostOrchestrationMiddlewareHookResult(Protocol):
+    """Hook outcome consumed by the orchestration middleware pipeline."""
+
+    @property
+    def action(self) -> HostOrchestrationMiddlewareHookAction: ...
+
+
+@runtime_checkable
 class HostOrchestrationRuntimeMiddlewareRegistration(Protocol):
-    """One middleware registration mounted on the orchestration pipeline."""
+    """Executable middleware registration mounted on the orchestration pipeline."""
 
     name: str
     priority: int
 
+    async def before(
+        self,
+        point: str,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> HostOrchestrationMiddlewareHookResult: ...
 
-@runtime_checkable
-class HostOrchestrationPolicyRuleRegistration(Protocol):
-    """One policy rule registered by a runtime plugin at bootstrap."""
-
-    @property
-    def rule_id(self) -> str: ...
+    async def after(
+        self,
+        point: str,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> HostOrchestrationMiddlewareHookResult: ...
 
 
 @runtime_checkable
@@ -68,6 +96,7 @@ class HostOrchestrationRuntimeEventPort(Protocol):
 
 
 @runtime_checkable
+@runtime_checkable
 class HostOrchestrationMiddlewarePipelinePort(Protocol):
     """Middleware attachment and hook runtime configuration for orchestration hosts."""
 
@@ -93,13 +122,6 @@ class HostOrchestrationMiddlewarePipelinePort(Protocol):
 
 
 @runtime_checkable
-class HostOrchestrationPluginPolicyEnginePort(Protocol):
-    """Minimal policy registration surface for runtime plugins."""
-
-    def register_rule(self, rule: HostOrchestrationPolicyRuleRegistration) -> None: ...
-
-
-@runtime_checkable
 class HostOrchestrationTraceEmitterPort(Protocol):
     """Trace emitter exposing persisted trace read access for platform plugins."""
 
@@ -109,9 +131,10 @@ class HostOrchestrationTraceEmitterPort(Protocol):
 
 __all__ = [
     "HostOrchestrationHookRegistryPort",
+    "HostOrchestrationMiddlewareHookAction",
+    "HostOrchestrationMiddlewareHookContext",
+    "HostOrchestrationMiddlewareHookResult",
     "HostOrchestrationMiddlewarePipelinePort",
-    "HostOrchestrationPluginPolicyEnginePort",
-    "HostOrchestrationPolicyRuleRegistration",
     "HostOrchestrationRuntimeEventPort",
     "HostOrchestrationRuntimeMiddlewareRegistration",
     "HostOrchestrationTraceEmitterPort",

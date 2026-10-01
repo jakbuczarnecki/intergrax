@@ -92,9 +92,6 @@ from intergrax.contracts.decision_exposure_selection import (
 from intergrax.contracts.agent_execution_validation_engine import (
     AgentExecutionValidationEnginePort,
 )
-from intergrax.runtime.execution.decision_exposure_selection_composition import (
-    DecisionExposureSelectionComposition,
-)
 from intergrax.runtime.execution.suspended_operation.claim_lifecycle_wiring import (
     claim_lifecycle_from_hitl_continuation,
 )
@@ -226,7 +223,7 @@ class NexusLoop:
         max_delegation_depth: int | None = None,
         max_run_retries: int = 0,
         merge_strategy: MergeStrategy = MergeStrategy.CONCAT,
-        validation_engine: Optional[NexusValidationEngine] = None,
+        validation_engine: Optional[AgentExecutionValidationEnginePort] = None,
         retry_engine: Optional[RetryEngine] = None,
         graph_executor: Optional[GraphExecutor] = None,
         context_manager: Optional[ContextManager] = None,
@@ -613,8 +610,10 @@ class NexusLoop:
         """Replace the active validation engine across Nexus execution surfaces."""
         if validation_engine is None:
             return
-        if not isinstance(validation_engine, NexusValidationEngine):
-            raise TypeError("validation_engine must be NexusValidationEngine")
+        if not isinstance(validation_engine, AgentExecutionValidationEnginePort):
+            raise TypeError(
+                "validation_engine must implement AgentExecutionValidationEnginePort",
+            )
         self._validation_engine = validation_engine
         self._graph_executor.apply_validation_engine(validation_engine)
         self._graph_runner.validation_engine = validation_engine
@@ -639,8 +638,10 @@ class NexusLoop:
         self,
         selection: DecisionExposureSelectionHostBinding,
     ) -> None:
-        if type(selection) is not DecisionExposureSelectionComposition:
-            raise TypeError("selection must be DecisionExposureSelectionComposition")
+        if not isinstance(selection, DecisionExposureSelectionHostBinding):
+            raise TypeError(
+                "selection must implement DecisionExposureSelectionHostBinding",
+            )
         self._decision_exposure_selection = selection
 
     def _begin_decision_exposure_session(self) -> None:
@@ -663,9 +664,11 @@ class NexusLoop:
             self._decision_exposure_session = None
             self._graph_runner.decision_exposure_session = None
             return
+        selection = self._decision_exposure_selection
+        assert selection is not None
         session = NexusDecisionExposureRunSession(
             collector=DecisionExposureCandidateCollector(),
-            selection=self._decision_exposure_selection,
+            selection=selection,
             graph_final_gate_enabled=True,
         )
         self._decision_exposure_session = session
