@@ -621,3 +621,187 @@ def test_b4_r3_acp_shim_missing_request_tenant_rejected() -> None:
                 request=request,
                 contract=contract,
             )
+
+
+def test_b4_r4_resolve_request_scope_typed_a_metadata_a() -> None:
+    from intergrax.agents.authoring.runtime_tool_helpers import resolve_request_scope
+    from testing_support.builder import build_runtime_execution_context_for_tests, build_runtime_request_for_tests
+
+    seed = "r4-scope-aa"
+    request = build_runtime_request_for_tests(
+        seed=seed,
+        tenant_id="tenant-a",
+        metadata={"tenant_id": "tenant-a"},
+    )
+    exec_ctx = build_runtime_execution_context_for_tests(seed=seed, request=request, tenant_id="tenant-a")
+    scope = resolve_request_scope(exec_ctx)
+    assert scope["tenant_id"] == "tenant-a"
+
+
+def test_b4_r4_resolve_request_scope_typed_a_metadata_b_rejected() -> None:
+    from intergrax.agents.authoring.runtime_tool_helpers import RequestScopeError, resolve_request_scope
+    from testing_support.builder import build_runtime_execution_context_for_tests, build_runtime_request_for_tests
+
+    seed = "r4-scope-ab"
+    request = build_runtime_request_for_tests(
+        seed=seed,
+        tenant_id="tenant-a",
+        metadata={"tenant_id": "tenant-b"},
+    )
+    exec_ctx = build_runtime_execution_context_for_tests(seed=seed, request=request, tenant_id="tenant-a")
+    with pytest.raises(RequestScopeError, match="cannot override"):
+        resolve_request_scope(exec_ctx)
+
+
+def test_b4_r4_resolve_request_scope_metadata_only_rejected() -> None:
+    from intergrax.agents.authoring.runtime_tool_helpers import RequestScopeError, resolve_request_scope
+    from testing_support.builder import build_runtime_execution_context_for_tests, build_runtime_request_for_tests
+
+    seed = "r4-scope-meta"
+    base = build_runtime_request_for_tests(
+        seed=seed,
+        tenant_id="tenant-a",
+        metadata={"tenant_id": "tenant-a"},
+    )
+    request = RuntimeRequest(
+        agent_id=base.agent_id,
+        user_id=base.user_id,
+        session_id=base.session_id,
+        message=base.message,
+        task_id=base.task_id,
+        run_id=base.run_id,
+        workspace_id=base.workspace_id,
+        tenant_id=None,
+        metadata={"tenant_id": "tenant-a"},
+        canonical_identity=base.canonical_identity,
+    )
+    exec_ctx = build_runtime_execution_context_for_tests(seed=seed, request=request, tenant_id="tenant-a")
+    with pytest.raises(RequestScopeError):
+        resolve_request_scope(exec_ctx)
+
+
+@pytest.mark.asyncio
+async def test_b4_r4_indexer_metadata_attack_zero_tool_calls(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    from unittest.mock import AsyncMock
+
+    from local_indexer.steps import index_job
+    from local_indexer.steps.index_job import run_index_job
+    from testing_support.builder import build_runtime_execution_context_for_tests, build_runtime_request_for_tests
+
+    allowed = tmp_path / "allowed"
+    allowed.mkdir()
+    doc = allowed / "a.txt"
+    doc.write_text("x", encoding="utf-8")
+
+    seed = "r4-indexer-attack"
+    request = build_runtime_request_for_tests(
+        seed=seed,
+        agent_id="local_indexer",
+        tenant_id="tenant-a",
+        metadata={
+            "tenant_id": "tenant-b",
+            "source_paths": [str(doc)],
+            "collection_id": "c1",
+        },
+    )
+    invoke_mock = AsyncMock()
+    monkeypatch.setattr(index_job, "invoke_catalog_tool", invoke_mock)
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed=seed,
+        agent_id="local_indexer",
+        request=request,
+        tenant_id="tenant-a",
+    )
+    step_ctx = AgentStepContext(
+        tenant_id="tenant-a",
+        run_id=str(exec_ctx.run_id),
+        agent_id="local_indexer",
+        contract_id="local_indexer",
+        metadata={"uaep_exec_ctx": exec_ctx},
+    )
+    monkeypatch.setenv("INTERGRAX_READ_ALLOWLIST_ROOTS", str(allowed.resolve()))
+
+    result = await run_index_job(step_ctx)
+    invoke_mock.assert_not_called()
+    assert result["ingest_summary"]["used"] is False
+
+
+@pytest.mark.asyncio
+async def test_b4_r4_search_scope_missing_metadata_tenant_zero_retrieve(monkeypatch: pytest.MonkeyPatch) -> None:
+    from unittest.mock import AsyncMock
+
+    from local_search.steps import search_job
+    from local_search.steps.search_job import run_search_job
+    from testing_support.builder import build_runtime_execution_context_for_tests, build_runtime_request_for_tests
+
+    seed = "r4-search-meta-only"
+    base = build_runtime_request_for_tests(
+        seed=seed,
+        agent_id="local_search",
+        tenant_id="tenant-a",
+        message="find",
+        metadata={"tenant_id": "tenant-a", "query": "hello"},
+    )
+    request = RuntimeRequest(
+        agent_id=base.agent_id,
+        user_id=base.user_id,
+        session_id=base.session_id,
+        message=base.message,
+        task_id=base.task_id,
+        run_id=base.run_id,
+        workspace_id=base.workspace_id,
+        tenant_id=None,
+        metadata={"tenant_id": "tenant-a", "query": "hello"},
+        canonical_identity=base.canonical_identity,
+    )
+    invoke_mock = AsyncMock()
+    monkeypatch.setattr(search_job, "invoke_catalog_tool", invoke_mock)
+    exec_ctx = build_runtime_execution_context_for_tests(
+        seed=seed,
+        agent_id="local_search",
+        request=request,
+        tenant_id="tenant-a",
+    )
+    step_ctx = AgentStepContext(
+        tenant_id="tenant-a",
+        run_id=str(exec_ctx.run_id),
+        agent_id="local_search",
+        contract_id="local_search",
+        message="hello",
+        metadata={"uaep_exec_ctx": exec_ctx},
+    )
+    result = await run_search_job(step_ctx)
+    invoke_mock.assert_not_called()
+    assert result["search_summary"]["reason"] == "tenant_scope_invalid"
+
+
+def test_b4_r4_domain_agents_do_not_import_nexus_runtime_tool_helpers() -> None:
+    import ast
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[4]
+    agents_root = repo / "agents"
+    forbidden = "intergrax.runtime.nexus.agents.runtime_tool_helpers"
+    violations: list[str] = []
+    for path in agents_root.rglob("*.py"):
+        source = path.read_text(encoding="utf-8")
+        if forbidden in source:
+            violations.append(path.relative_to(repo).as_posix())
+    assert violations == [], violations
+
+
+def test_b4_r4_resolve_request_scope_single_semantic_implementation() -> None:
+    from pathlib import Path
+
+    repo = Path(__file__).resolve().parents[4]
+    authoring = repo / "intergrax" / "agents" / "authoring" / "runtime_tool_helpers.py"
+    nexus = repo / "intergrax" / "runtime" / "nexus" / "agents" / "runtime_tool_helpers.py"
+    assert "def resolve_request_scope" in authoring.read_text(encoding="utf-8")
+    assert "def resolve_request_scope" not in nexus.read_text(encoding="utf-8")
+
+
+def test_b4_r4_production_step_modules_importable() -> None:
+    import importlib
+
+    importlib.import_module("agents.local_indexer.steps.index_job")
+    importlib.import_module("agents.local_search.steps.search_job")

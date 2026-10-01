@@ -8,7 +8,7 @@ import pytest
 
 from intergrax.runtime.nexus.agents.agent_engine import AgentEngine
 from intergrax.agents.authoring.patterns.reflex import ReflexAgent
-from intergrax.runtime.nexus.agents.runtime_tool_helpers import exec_ctx_from_step, invoke_catalog_tool
+from intergrax.agents.authoring.runtime_tool_helpers import exec_ctx_from_step, invoke_catalog_tool
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey, AcpStructuredDataKey
 from intergrax.contracts.agent_contract_meta import AgentRiskLevel
 from intergrax.contracts.agent_execution_result import AgentExecutionResult, AgentExecutionStatus

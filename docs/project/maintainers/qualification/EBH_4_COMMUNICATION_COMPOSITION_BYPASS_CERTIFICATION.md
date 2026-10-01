@@ -687,3 +687,17 @@ HTTP harness route defaults, multimedia/integration config defaults — unchange
 **EBH-4-R1-R3 / EBH-4 / HARNESS-W7:** BLOCKED / NOT ENTERED (audit not CLOSED)
 
 **Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
+
+## 28. B4-R4 — Catalog Tool Tenant Scope Authority Closure (Cursor @ `f82e6276…`)
+
+**START_HEAD:** `f82e627614b1862a99a23d3a951de518ed6eb72b`
+
+**f82e6276 independent audit:** B4-R3 = independently accepted local PASS. Whole B4 remained BLOCKED because:
+
+- `resolve_request_scope` could still substitute `metadata.tenant_id` when typed tenant was absent;
+- `local_search` had a second metadata tenant fallback (`_resolved_tenant_id`);
+- production domain steps imported helper symbols from neutral Authoring owner that were implemented only in a parallel Nexus helper, leaving duplicated/inconsistent ownership.
+
+**B4-R4 adversarial owner:** `tests/unit/runtime/qualification/test_ebh_4_b4_tenant_isolation.py` — R4 rows (scope equality matrix, indexer/search zero-tool adversarial chains, helper ownership gates).
+
+**Wprowadzone zmiany muszą zostać niezależnie zaudytowane na podstawie kodu z commitu znajdującego się na GitHubie. Raport Cursor AI nie jest podstawą do finalnego zamknięcia zadania.**
