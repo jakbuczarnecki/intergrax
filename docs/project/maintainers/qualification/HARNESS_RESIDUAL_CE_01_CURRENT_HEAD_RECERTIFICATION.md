@@ -191,14 +191,37 @@ Semantic owner, Nexus locus-only, single composition owner, certified paths CE s
 
 Regression protection for full CE unit suites: **FAIL** until CE-01-R1.
 
+## CE-01-R1 — Typed assembly runtime boundary (2026-10-02)
+
+**START_HEAD:** `2df207b8012514c20ccb8e0f6fc2ede38e0d501c`  
+**R1-A:** `ContextProviderContext.runtime` was semantic `Any` in `intergrax/context/contracts.py`.  
+**R1-B:** Unit/integration tests used legacy `handles` (`runtime_config`, `messages`, …) without explicit `runtime` for `DefaultNexusContextEngine.assemble`.
+
+**After type graph:** `intergrax/context/assembly_runtime.py` (`ContextAssemblyRuntime` / `ContextEngineRuntimeConfig` Protocols) ← structural ← `ContextAssemblyRuntimeDependencies` (Nexus) ← `ContextProviderContext.runtime` ← `DefaultNexusContextEngine`. No Tier-0 import of Nexus implementation types.
+
+**Helpers:** `testing_support/context_assembly_test_runtime.py` (`build_test_assembly_runtime`, `provider_context_for_engine_assembly`, `provider_context_from_legacy_style_handles`).
+
+**Gates:** `check_ce_canonical_semantic_handles.py` extended — forbidden `runtime: Any|object|dict|Mapping`; production legacy bridge call scan = 0.
+
+| Run | Command | Result |
+| --- | ------- | ------ |
+| CE core | `uv run pytest -p no:xdist tests/unit/context/` | **330 passed** |
+| Nexus context | `tests/unit/runtime/nexus/context/` | **228 passed** |
+| CE-Q + wiring + integration | `ce_01/`, `test_context_wiring.py`, `test_context_engine_paths.py` | **566 passed** (combined batch) |
+| Pyright (R1 slice) | `contracts.py`, `assembly_runtime.py`, `assembly_runtime_deps.py`, test helper | **0 errors** |
+
+**Harness wiring:** `test_context_wiring` uses `resolve_context_manager_from_environment` (no `_orchestration_backend`).
+
+**IN-SCOPE BLOCKER (R1 closure):** **0**
+
 ## Recommendation (§T)
 
 ```text
-CE-01 = BLOCKED
-child = CE-01-R1 — explicit ContextAssemblyRuntimeDependencies test/helper convergence (and harness wiring test reconciliation)
+CE-01-R1 = READY FOR AUDIT
+CE-01 = READY FOR AUDIT
 CE-02 = NEXT / NOT ENTERED
 PLUG-01 = NOT ENTERED
 HARNESS-FINAL = NOT ENTERED
 ```
 
-Independent audit must re-run CE-Q catalog + full CE unit/nexus context suites green before READY FOR AUDIT.
+Independent audit must re-run CE-Q catalog + full CE unit/nexus context suites green before CLOSED.

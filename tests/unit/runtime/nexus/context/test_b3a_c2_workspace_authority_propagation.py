@@ -54,8 +54,8 @@ _PRODUCTION_BUILDER_PATHS = (
     _REPO_ROOT / "intergrax" / "agents" / "authoring" / "context_assembly_bridge.py",
 )
 _AUTHORITY_PROPAGATION_PATHS = _PRODUCTION_BUILDER_PATHS + (
-    _REPO_ROOT / "intergrax" / "agents" / "authoring" / "uaep_step_bridge.py",
-    _REPO_ROOT / "intergrax" / "agents" / "authoring" / "acp_uaep_shim.py",
+    _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "agents" / "uaep_step_bridge.py",
+    _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "agents" / "acp_uaep_shim.py",
 )
 
 

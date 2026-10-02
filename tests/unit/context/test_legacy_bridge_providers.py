@@ -56,6 +56,7 @@ from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.config import RuntimeConfig
+from testing_support.context_assembly_test_runtime import provider_context_for_engine_assembly
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.context.context_models import ContextProvenance, ContextSourceType, PriorOutputRecord
@@ -708,7 +709,10 @@ async def test_engine_preserves_exact_session_history_messages() -> None:
     base_messages = [ChatMessage(role="user", content="current turn", entry_id="current-user")]
     from intergrax.context.source_inputs import ContextProviderSourceInputs, ContextSessionSourceInput
 
-    provider_ctx = ContextProviderContext(
+    provider_ctx = provider_context_for_engine_assembly(
+        runtime_config=runtime_config,
+        messages=base_messages,
+        max_output_tokens=256,
         engine_id="default",
         sources=ContextProviderSourceInputs(
             session=ContextSessionSourceInput(
@@ -717,11 +721,6 @@ async def test_engine_preserves_exact_session_history_messages() -> None:
                 binding_revision_id="rev-engine",
             ),
         ),
-        handles={
-            "runtime_config": runtime_config,
-            "messages": base_messages,
-            "max_output_tokens": 256,
-        },
     )
     request = ContextAssemblyRequest(
         trace_id="trace-1",
@@ -783,7 +782,10 @@ async def test_engine_preserves_distinct_history_messages_with_same_content() ->
     )
     from intergrax.context.source_inputs import ContextProviderSourceInputs, ContextSessionSourceInput
 
-    provider_ctx = ContextProviderContext(
+    provider_ctx = provider_context_for_engine_assembly(
+        runtime_config=runtime_config,
+        messages=[ChatMessage(role="user", content="current", entry_id="current-user")],
+        max_output_tokens=256,
         engine_id="default",
         sources=ContextProviderSourceInputs(
             session=ContextSessionSourceInput(
@@ -792,11 +794,6 @@ async def test_engine_preserves_distinct_history_messages_with_same_content() ->
                 binding_revision_id="rev-repeat",
             ),
         ),
-        handles={
-            "runtime_config": runtime_config,
-            "messages": [ChatMessage(role="user", content="current", entry_id="current-user")],
-            "max_output_tokens": 256,
-        },
     )
     request = ContextAssemblyRequest(
         trace_id="trace-1",

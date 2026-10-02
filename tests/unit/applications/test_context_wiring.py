@@ -108,13 +108,14 @@ def test_build_harness_host_runtime_wires_context_manager_from_environment() -> 
         }
     )
     manifest = build_lab_manifest(settings)
+    manager = resolve_context_manager_from_environment(env)
+    assert manager._budget_policy.max_tokens_estimate == 2_100  # noqa: SLF001
+    assert manager._default_policy.max_prior_chars == 700  # noqa: SLF001
+
     runtime = build_harness_host_runtime(
         manifest,
         env,
         settings=settings,
         use_in_memory_trace=True,
     )
-
-    manager = runtime._internal_composition._orchestration_backend._context_manager  # noqa: SLF001  # noqa: SLF001
-    assert manager._budget_policy.max_tokens_estimate == 2_100  # noqa: SLF001
-    assert manager._default_policy.max_prior_chars == 700  # noqa: SLF001
+    assert runtime.execution is not None

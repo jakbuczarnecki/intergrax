@@ -17,6 +17,8 @@ from intergrax.contracts.data_classification import DataClassification
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import ModelCallExecutionScope
 
+from intergrax.context.assembly_runtime import ContextAssemblyRuntime
+
 if TYPE_CHECKING:
     from intergrax.context.budget.compaction import ContextCompactionProvenance
     from intergrax.context.budget.contracts import ResolvedModelContextBudget
@@ -538,8 +540,7 @@ class ContextProviderContext:
     engine_id: str = "default"
     plugin_ids: tuple[str, ...] = ()
     sources: ContextProviderSourceInputs = field(default_factory=_default_provider_source_inputs)
-    # Assembly runtime deps are Execution/Nexus-owned; keep CE contract Nexus-import free.
-    runtime: Any | None = None
+    runtime: ContextAssemblyRuntime | None = None
     handles: dict[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:

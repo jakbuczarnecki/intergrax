@@ -44,6 +44,20 @@ FORBIDDEN_IMPORTS_IN_ENGINE = (
 
 FORBIDDEN_REFLECTION_ON_CANONICAL = re.compile(r"\b(getattr|hasattr)\s*\(")
 
+LEGACY_BRIDGE_CALL = re.compile(
+    r"\b(build_context_assembly_runtime_from_legacy_handles|try_build_runtime_from_legacy_handles)\s*\("
+)
+
+FORBIDDEN_RUNTIME_ANNOTATIONS = re.compile(
+    r"runtime:\s*(Any|object|dict|Mapping)\b"
+)
+
+PRODUCTION_SCAN_ROOTS = (
+    REPO_ROOT / "intergrax",
+    REPO_ROOT / "agents",
+    REPO_ROOT / "applications",
+)
+
 
 def _scan_handle_gets(path: Path, text: str) -> list[str]:
     violations: list[str] = []
@@ -84,6 +98,22 @@ def main() -> int:
         violations.append("contracts.py: automatic semantic runtime hydration")
     if "legacy_assembly_runtime_bridge" in contracts_text:
         violations.append("contracts.py: imports legacy assembly runtime bridge")
+    if FORBIDDEN_RUNTIME_ANNOTATIONS.search(contracts_text):
+        violations.append("contracts.py: ContextProviderContext.runtime must use typed CE contract")
+
+    bridge_rel = LEGACY_BRIDGE_MODULE.relative_to(REPO_ROOT).as_posix()
+    for root in PRODUCTION_SCAN_ROOTS:
+        if not root.is_dir():
+            continue
+        for path in root.rglob("*.py"):
+            rel = path.relative_to(REPO_ROOT).as_posix()
+            if rel == bridge_rel:
+                continue
+            if "/tests/" in f"/{rel}/" or rel.startswith("tests/"):
+                continue
+            text = path.read_text(encoding="utf-8")
+            if LEGACY_BRIDGE_CALL.search(text):
+                violations.append(f"{rel}: production legacy assembly runtime bridge call")
 
     if violations:
         print("CE canonical typed runtime violations:", file=sys.stderr)
