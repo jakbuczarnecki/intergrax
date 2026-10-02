@@ -86,17 +86,24 @@ _FORBIDDEN_INTAKE_SCAN_ROOTS = (
     _SCHEDULER_ROOT,
 )
 
+# Evidence-backed non-production demos only (no filename-pattern trust).
+_NPSC4_1_EXPLICIT_NON_PRODUCTION_DEMO_FILES = frozenset(
+    {
+        "applications/governed_contractor_application/host/offline_demo.py",
+    }
+)
+
 
 def _path_excluded(path: Path) -> bool:
     return any(part in _INTAKE_EXCLUDED_PATH_PARTS for part in path.parts)
 
 
-def _is_structural_application_offline_demo(rel_posix: str) -> bool:
-    """Standalone offline demo entry scripts — not production host intake.
+def _is_explicit_non_production_demo(rel_posix: str) -> bool:
+    """Exact-path non-production demo modules exempt from identity-bind scan.
 
     Production composition must not import them (see governed_contractor GR6 wire gate).
     """
-    return rel_posix.endswith("/offline_demo.py")
+    return rel_posix in _NPSC4_1_EXPLICIT_NON_PRODUCTION_DEMO_FILES
 
 
 def _iter_intake_python_files() -> list[Path]:
@@ -163,7 +170,7 @@ def _collect_forbidden_calls(
             rel = path.relative_to(_REPO_ROOT).as_posix()
             if rel in allowed_files:
                 continue
-            if root == _APPLICATIONS_ROOT and _is_structural_application_offline_demo(rel):
+            if root == _APPLICATIONS_ROOT and _is_explicit_non_production_demo(rel):
                 continue
             tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
             for node in ast.walk(tree):
@@ -218,6 +225,22 @@ def test_npsc4_1_scheduler_does_not_mint_execution_identity() -> None:
     assert violations == [], (
         "scheduler must not mint execution identity: " + ", ".join(violations)
     )
+
+
+def test_npsc4_1_explicit_non_production_demo_allowlist_is_minimal_and_exact() -> None:
+    assert _NPSC4_1_EXPLICIT_NON_PRODUCTION_DEMO_FILES == frozenset(
+        {
+            "applications/governed_contractor_application/host/offline_demo.py",
+        }
+    )
+
+
+def test_npsc4_1_non_production_demo_classification_rejects_filename_pattern() -> None:
+    assert _is_explicit_non_production_demo(
+        "applications/governed_contractor_application/host/offline_demo.py"
+    )
+    assert not _is_explicit_non_production_demo("applications/example/host/offline_demo.py")
+    assert not _is_explicit_non_production_demo("applications/example/offline_demo.py")
 
 
 def test_npsc4_1_forbidden_zones_do_not_bind_execution_identity() -> None:

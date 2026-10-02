@@ -170,10 +170,10 @@ Gate asserted `from intergrax.runtime.execution.host_task import HostTaskExecuti
 | Run | Command | Result |
 | --- | ------- | ------ |
 | #1 | `pytest -p no:xdist tests/qualification/host_01/` | **20 passed** |
-| #2 | `pytest -p no:xdist tests/unit/runtime/architecture/test_npsc4_1_execution_boundary_hardening_gate.py` | **11 passed** (after UTR AST invariant + structural `offline_demo.py` demo classification) |
+| #2 | `pytest -p no:xdist tests/unit/runtime/architecture/test_npsc4_1_execution_boundary_hardening_gate.py` | **11 passed** (after UTR AST invariant + filename-based `offline_demo.py` structural classification — **not freeze-grade**; hardened in R2) |
 | #3 | UE-11GP + EBH-4 encapsulation + EBH-2F-R1 | **15 passed** |
 
-**offline_demo bind finding:** demo/lab script (`applications/.../offline_demo.py`); production wire gate forbids importing it — not production intake. Gate scan scope aligned via filename structural classification (no production Python change).
+**offline_demo bind finding:** demo/lab script (`applications/governed_contractor_application/host/offline_demo.py`); production wire gate forbids importing it — not production intake. R1 aligned gate scan via `endswith("/offline_demo.py")` (broad pattern). R2 replaced with explicit evidence-backed path allowlist (see § HARNESS-W7-R2).
 
 **production typing delta = 0** (no production Python in R1).
 
@@ -184,7 +184,7 @@ Roadmap table previously showed **EBH-4 = CURRENT** while independent audit alre
 ### Unresolved debt reclassification
 
 - UE-9A missing import → **TRACKED FREEZE DEBT — BG-01 TEST QUALIFICATION DRIFT** (not environment).
-- NPSC4.1 UTR assertion → **closed in R1** (offline_demo bind: re-run classification in report if still red).
+- NPSC4.1 UTR assertion → **closed in R1** (offline_demo bind classification hardened in R2).
 
 ### R1 recommendation
 
@@ -192,6 +192,72 @@ Roadmap table previously showed **EBH-4 = CURRENT** while independent audit alre
 HARNESS-W7-R1 = READY FOR AUDIT
 HOST-01 = READY FOR AUDIT
 HARNESS-W7 = READY FOR AUDIT
+```
+
+## HARNESS-W7-R2 — Explicit non-production demo classification hardening
+
+**R2 START_HEAD:** `7d22aad338472dbab3fc880938ad23ff6005c6a0` (`development`)
+
+### Root cause
+
+R1 introduced `_is_structural_application_offline_demo` with `rel_posix.endswith("/offline_demo.py")`, so any future `applications/*/offline_demo.py` would auto-exempt `bind_active_execution_identity` scanning — not freeze-grade regression protection.
+
+### After (explicit closed set)
+
+```python
+_NPSC4_1_EXPLICIT_NON_PRODUCTION_DEMO_FILES = frozenset({
+    "applications/governed_contractor_application/host/offline_demo.py",
+})
+```
+
+`count = 1`. No suffix/regex/name-based trust. Negative proof: `applications/example/host/offline_demo.py` and `applications/example/offline_demo.py` are **not** exempt.
+
+### Demo-only evidence (exact path)
+
+| Evidence | Detail |
+| -------- | ------ |
+| Module docstring | Reproducible offline governed-contractor demo; no network; deterministic fake provider; local/test attestor |
+| CLI | `intergrax/cli/external_work.py` — `demo-create`, `demo-accept`, governed-contractor offline deterministic surfaces import exact module only for demo ops |
+| Production composition | `test_production_composition_module_has_no_offline_demo_import` (GR6 wire gate) — `production_external_work_composition` has zero `offline_demo` import |
+
+**Production graph:** `production_external_work_composition` → canonical governed runtime — **no** `offline_demo`. **Demo graph:** explicit demo CLI → exact `offline_demo` module.
+
+### Allowlist justification
+
+Known current module + explicit demo contract + CLI demo surface + production-composition exclusion proof. Fundamentally different from filename convention; new exceptions require auditable gate diff (`test_npsc4_1_explicit_non_production_demo_allowlist_is_minimal_and_exact`).
+
+### R2 regression gates
+
+| Run | Command | Result |
+| --- | ------- | ------ |
+| #1 NPSC4.1 | `pytest -p no:xdist tests/unit/runtime/architecture/test_npsc4_1_execution_boundary_hardening_gate.py -q` | **13 passed** |
+| #2 HOST-01 | `pytest -p no:xdist tests/qualification/host_01/ -q` | **20 passed** |
+| #3 GR6 / demo | `test_gr6_wire_production_decision_governance.py` (full file) + `::test_production_composition_module_has_no_offline_demo_import` | full file **11 passed, 1 failed** (`test_strict_host_composition_wires_agent_boundary_and_integration` — `dependency_concurrency_admission` materialization; unrelated to R2); production non-import gate **1 passed** |
+| #4 execution gates | `test_ue_11gp_production_host_execution_gate.py` + `test_ebh_4_r1_nexus_encapsulation_gate.py` + `test_ebh_2f_r1_host_execution_port_replaceability.py` | **15 passed** |
+
+**Static scan (R2):** filename-pattern `offline_demo` exemptions = **0**; explicit non-production demo paths = **1**; production composition `offline_demo` imports = **0**; production UTR host use = **0** (UE-11GP); production Nexus host bypass = **0** (EBH-4).
+
+**production Python delta = 0** · **execution / governance / tenant semantic delta = 0**
+
+### Final W7 ledger (post-R2)
+
+```text
+HOST-01 mechanics = RESOLVED
+W7-R1 canonical docs = RESOLVED
+W7-R1 UTR gate semantics = RESOLVED
+W7-R2 explicit demo classification = RESOLVED
+IN-SCOPE BLOCKER = 0
+```
+
+### R2 recommendation
+
+```text
+HARNESS-W7-R2 = READY FOR AUDIT
+HOST-01 = READY FOR AUDIT
+HARNESS-W7 = READY FOR AUDIT
+HARNESS-W8 = NEXT / NOT ENTERED
+HARNESS-FINAL = NOT ENTERED
+GOV-X2 = NOT ENTERED
 ```
 
 ## Recommendation
