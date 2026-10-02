@@ -116,10 +116,12 @@ def provider_context_from_legacy_style_handles(
         optimization_policy = raw.pop(CONTEXT_OPTIMIZATION_POLICY_HANDLE, None)
     if optimization_policy is not None and not isinstance(optimization_policy, ContextOptimizationPolicy):
         optimization_policy = None
-    ucl_runtime = raw.pop(NEXUS_UCL_RUNTIME_HANDLE, None)
-    if ucl_runtime is not None:
+    ucl_runtime_candidate = raw.pop(NEXUS_UCL_RUNTIME_HANDLE, None)
+    ucl_runtime: ContextAssemblyUCLRuntime | None = None
+    if isinstance(ucl_runtime_candidate, ContextAssemblyUCLRuntime):
         try:
-            validate_context_assembly_ucl_runtime(ucl_runtime)
+            validate_context_assembly_ucl_runtime(ucl_runtime_candidate)
+            ucl_runtime = ucl_runtime_candidate
         except ValueError:
             ucl_runtime = None
     event_bus = raw.pop("event_bus", None)

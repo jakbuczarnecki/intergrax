@@ -1,7 +1,7 @@
 # HARNESS-RESIDUAL / CE-01 — Current-HEAD Context Pipeline Ownership Convergence
 
-**Status:** Cursor recertification — **BLOCKED** (not closure)  
-**START_HEAD / AUDITED_HEAD:** `433ff5fb97262c4bad84ea2a4173dc3711d7aa08` (`development`)  
+**Status:** Cursor parent reconciliation — **READY FOR AUDIT** (not closure)  
+**START_HEAD / AUDITED_HEAD:** `e9aa0842a28fb792d5cb0baf418f59ca052c75d2` (`development`)  
 **Parent:** Residual Harness convergence before HARNESS-FINAL  
 **Qualification package owner:** `tests/qualification/ce_01/` (CE-Q1..CE-Q15 catalog)
 
@@ -176,20 +176,22 @@ Scoped evidence only: FRZ-OWN-01..03, FRZ-BND-01/02/04/05, FRZ-CTR-01/04/05/06, 
 | Durable compaction runtime | **CE-02** — not CE-01 |
 | Optional OTel completeness | **FUTURE NON-FROZEN CAPABILITY** |
 
-## Unresolved findings (§S)
+## Unresolved findings (§S) — superseded by parent reconciliation @ `e9aa0842`
+
+Historical pre-R1 blockers below are **closed on current HEAD**; see **CE-01 — Parent Current-HEAD Reconciliation**.
 
 | ID | Class | Summary |
 | -- | ----- | ------- |
-| CE-01-R1 | **IN-SCOPE BLOCKER** | `DefaultNexusContextEngine` requires explicit `ContextAssemblyRuntimeDependencies` (`context_engine.py:193`); numerous unit tests still pass legacy `handles`-only `ContextProviderContext` → **39 failures** across `tests/unit/context/` and `tests/unit/runtime/nexus/context/test_context_plan_integration.py`. Production hot paths already use `build_context_assembly_runtime_dependencies` / `build_graph_provider_context_bundle`. |
-| HARNESS-WIRING-01 | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED** | `test_build_harness_host_runtime_wires_context_manager_from_environment` — `HarnessHostInternalComposition` missing `_orchestration_backend` @ HEAD |
+| CE-01-R1 | *(historical)* | Resolved by R1 + test/helper convergence — see reconciliation section |
+| HARNESS-WIRING-01 | *(historical)* | Resolved — `test_context_wiring` green @ `e9aa0842` |
 
-**unclassified findings = 0**
+**Current parent reconciliation:** **IN-SCOPE BLOCKER = 0** · **unclassified findings = 0**
 
 ## Enterprise matrix (§48) — summary
 
-Semantic owner, Nexus locus-only, single composition owner, certified paths CE semantics, single budget authority, boundaries, typing, pluginability, tenant local PASS, preflight on engine path: **PASS on architecture/code audit**.
+Semantic owner, Nexus locus-only, single composition owner, certified paths CE semantics, single budget authority, boundaries, typing, pluginability, tenant local PASS, preflight on engine path: **PASS on architecture/code audit @ `e9aa0842`**.
 
-Regression protection for full CE unit suites: **FAIL** until CE-01-R1.
+Regression protection for full CE unit suites: **PASS** (R1 + R1-R1 + R1-R2 + parent matrix).
 
 ## CE-01-R1 — Typed assembly runtime boundary (2026-10-02)
 
@@ -296,4 +298,101 @@ CE-02 = NEXT / NOT ENTERED
 PLUG-01 = NOT ENTERED
 HARNESS-FINAL = NOT ENTERED
 ```
+
+## CE-01 — Parent Current-HEAD Reconciliation (2026-10-02)
+
+**Parent task:** HARNESS-RESIDUAL / CE-01 — current-HEAD parent reconciliation (not a new architecture wave).  
+**START_HEAD / FINAL_COMMIT baseline:** `e9aa0842a28fb792d5cb0baf418f59ca052c75d2` (`fix(context): extract message sequence execution contract`).  
+**origin/development @ audit:** `e9aa0842a28fb792d5cb0baf418f59ca052c75d2` (matches pre-audit pin).
+
+### Original blocker → child remediations → current status
+
+| Track | Issue | Current HEAD |
+| ----- | ----- | ------------ |
+| **CE-01 (pre-R1)** | Legacy `handles`-only `ContextProviderContext`; 39 CE/Nexus test failures | **0 failures** — typed `runtime` required (`context_engine.py:193-198`); helpers in `testing_support/context_assembly_test_runtime.py` |
+| **R1** | `runtime: Any` on CE contract | `ContextAssemblyRuntime` Protocol + `ContextProviderContext.runtime: ContextAssemblyRuntime \| None` |
+| **R1-R1** | Concrete Nexus/UCL/event-bus coupling on CE boundary | `RuntimeEventRecorderPort`, `ContextAssemblyUCLRuntime`, `MessageSequenceArtifactExecutionPort` + `validate_context_assembly_*` |
+| **R1-R2** | Port ABI DTOs in `message_sequence_artifact.py` | Canonical DTOs + Port in `message_sequence_execution_contract.py`; implementation imports contract |
+| **Parent CE-01-R1-R2-PY** | Pyright H: `object` ucl_runtime in test helper | **Child remediation:** `isinstance(..., ContextAssemblyUCLRuntime)` before validate/pass-through |
+
+### Closed-world inventory (dependency surfaces)
+
+| Surface | Role | Owner | Contract vs impl | Callers / notes |
+| ------- | ---- | ----- | ---------------- | --------------- |
+| `intergrax/context/contracts.py` | CE request/fragment/provider ctx | CE | Contract | Engine, providers, gates |
+| `intergrax/context/assembly_runtime.py` | Assembly + UCL runtime Protocols | CE | Contract | Nexus deps, tests |
+| `intergrax/context/registry.py` | Provider registry | CE | Contract | `DefaultNexusContextEngine` |
+| `intergrax/contracts/context_assembly.py` | Cross-tier assembly contract | CE | Contract | Composition |
+| `intergrax/contracts/runtime_event_recording.py` | Event recorder port | Platform | Contract | Assembly runtime validation |
+| `intergrax/runtime/context_lifecycle/message_sequence_execution_contract.py` | UCL execution ABI + Port | UCL/CE boundary | Contract | Port, Nexus UCL, token_opt executor |
+| `intergrax/runtime/context_lifecycle/message_sequence_execution_port.py` | Re-export shim | UCL | Contract | Consumers |
+| `intergrax/runtime/token_optimization/message_sequence_artifact.py` | Reference executor | Token opt | Implementation | Imports contract DTOs |
+| `intergrax/runtime/nexus/context/context_engine.py` | CE engine implementation | Nexus locus | Impl satisfies CE | Graph, UAEP, ACP |
+| `intergrax/runtime/nexus/context/assembly_runtime_deps.py` | Typed runtime bundle | Nexus locus | Impl | `build_graph_provider_context_bundle` |
+| `intergrax/runtime/nexus/context/ucl_orchestration.py` | UCL wiring | Nexus locus | Impl | UCL runtime struct |
+| `intergrax/runtime/nexus/context/legacy_assembly_runtime_bridge.py` | Deprecated bridge | Nexus | Test/migration only | **0 production call sites** (maintenance gate) |
+
+### Current dependency + ownership graph
+
+```text
+CONTEXT_ENGINEERING (contracts, registry, assembly semantics)
+        ↓
+ContextAssemblyRuntime / ContextAssemblyUCLRuntime (Protocols)
+        ↓
+MessageSequenceArtifactExecutionPort + canonical execution DTOs (context_lifecycle)
+        ↑ structural satisfaction
+Nexus DefaultNexusContextEngine + assembly_runtime_deps + ucl_orchestration
+        ↑
+Token Optimization MessageSequenceArtifactExecutor (reference impl)
+```
+
+Tier-0 `intergrax/context/**` does **not** import Nexus implementation modules for CE semantics.
+
+### Parent test / gate matrix (@ `e9aa0842` + pyright fix commit)
+
+| ID | Command | Result |
+| -- | ------- | ------ |
+| A | `uv run pytest -p no:xdist tests/qualification/ce_01/` | **15 passed** |
+| B | `uv run pytest -p no:xdist tests/unit/context/` | **340 passed** |
+| C | `uv run pytest -p no:xdist tests/unit/runtime/nexus/context/` | **214 passed** |
+| D | `uv run pytest -p no:xdist tests/unit/applications/test_context_wiring.py` | **5 passed** (HARNESS-WIRING-01 absent) |
+| E | `uv run pytest -p no:xdist tests/integration/runtime/test_context_engine_paths.py` | **2 passed** |
+| F | `uv run pytest -p no:xdist tests/unit/context/test_ce_r1_r1_structural_runtime_boundary.py` | **10 passed** |
+| G | `check_context_tier0_import_boundary.py` + `check_ce_canonical_semantic_handles.py` | **exit 0** |
+| H | Pyright CE assembly slice (incl. `testing_support/context_assembly_test_runtime.py`) | **0 errors** (after CE-01-R1-R2-PY) |
+| I | Pyright UCL execution slice | **0 errors** |
+
+Log: `.tmp/session/ce-01-r1-r2/pytest-matrix.log`
+
+### Tenant Isolation Audit (CE-01 local)
+
+**Verdict: PASS**
+
+- `ContextAssemblyRequest.tenant_id` / `ContextFragmentScopeRef.tenant_id` enforced on assembly path (`contracts.py`).
+- CE-Q3 / scope isolation gates in `tests/qualification/ce_01/` (**green**).
+- Cross-tenant fragment rejection is fail-closed (no silent global scope).
+- Full tenant storage/credential/adversarial matrices remain **TENANT-X** global owners where not exercised by CE path.
+
+### FRZ scoped evidence (no PASS promotion)
+
+Contributions only for listed FRZ IDs in parent prompt (OWN, BND, CTR, TYP, PLG, RPL, TRC-05, REG, TEN) — evidence = green CE-Q + unit/nexus suites + maintenance gates + structural boundary tests + local tenant gates. **Global checklist unchanged.**
+
+### Unresolved (@ parent reconciliation)
+
+| Class | Count |
+| ----- | ----- |
+| IN-SCOPE BLOCKER | 0 |
+| TRACKED FREEZE DEBT | Durable compaction / TOKEN-CE-* / optional OTel — prior § classifications unchanged |
+| ENVIRONMENT/TEST ISSUE | 0 |
+
+### Parent recommendation
+
+```text
+HARNESS-RESIDUAL / CE-01 = READY FOR AUDIT
+HARNESS-FINAL = NEXT / NOT ENTERED
+global FRZ PASS delta = 0
+new FRZ-TEN PASS delta = 0
+```
+
+**Not set by this record:** roadmap `CE-01 = CLOSED`, global `FRZ-* = PASS`, checklist promotion — independent exact-SHA GitHub audit only.
 
