@@ -1,12 +1,22 @@
 # HARNESS-FINAL — Current-HEAD Top-Tier Harness Final Certification
 
-**Status:** Cursor certification — **READY FOR AUDIT** (pending independent GitHub SHA audit; not CLOSED)  
-**START_HEAD:** `7bf97076a9bc650ef749945d55e930ad3cffba7c` (`development` = `origin/development`)  
-**AUDITED_HEAD / CURSOR_CERT_COMMIT:** `88ade021f` (post HARNESS-FINAL-R1/R2 remediation + qualification record)  
-**Parent:** Harness convergence after HARNESS-RESIDUAL / CE-01  
-**Previous mandatory stage:** HARNESS-RESIDUAL / CE-01 — CLOSED @ `a8d47a6396c3e5e73a979be74429ed59a93e1551`  
-**Next mandatory stage:** GOV-X2 (not entered)  
-**Child remediations in this pass:** HARNESS-FINAL-R1 (`DecisionProposalRef` import), HARNESS-FINAL-R2 (HARNESS-01 inventory + regression alignment)
+**Status:** **CLOSED / independently accepted**
+
+**START_HEAD:** `7bf97076a9bc650ef749945d55e930ad3cffba7c`
+
+**IMPLEMENTATION / CERTIFICATION CODE BASELINE:** `3f799c13e27bf06c27eda661219c23fbd0db8e9e`
+
+**QUALIFICATION EVIDENCE COMMIT:** `6c084678fdd63617b2c5c051a3355315a938538c`
+
+**INDEPENDENT AUDIT RESULT:** ACCEPTED / CLOSED
+
+**Parent:** Harness convergence after HARNESS-RESIDUAL / CE-01
+
+**Previous mandatory stage:** HARNESS-RESIDUAL / CE-01 — CLOSED @ `a8d47a6396c3e5e73a979be74429ed59a93e1551`
+
+**Next mandatory stage:** GOV-X2 — **CURRENT / NOT ENTERED** (discovery, implementation, qualification not entered)
+
+**Child remediations accepted:** HARNESS-FINAL-R1, HARNESS-FINAL-R2, HARNESS-FINAL-Q1
 
 ## 1. Scope
 
@@ -20,7 +30,7 @@ Current-HEAD closed-world recertification of Harness enterprise invariants, A–
 | HARNESS-W8 / BG-01 | CLOSED — [`HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md`](HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md) |
 | SCHED-01 | CLOSED — [`HARNESS_RESIDUAL_SCHED_01_CURRENT_HEAD_RECERTIFICATION.md`](HARNESS_RESIDUAL_SCHED_01_CURRENT_HEAD_RECERTIFICATION.md) |
 | CE-01 | CLOSED — [`HARNESS_RESIDUAL_CE_01_CURRENT_HEAD_RECERTIFICATION.md`](HARNESS_RESIDUAL_CE_01_CURRENT_HEAD_RECERTIFICATION.md) |
-| **HARNESS-FINAL** | **CURRENT** — this record |
+| **HARNESS-FINAL** | **CLOSED** — this record (independently accepted) |
 
 ## 3. Closed-world inventory (summary)
 
@@ -165,9 +175,9 @@ Recovery owners: EE + host port + continuation stores. Failure classes (restart,
 | Command | Exit | Passed | Failed | Notes |
 | ------- | ---- | ------ | ------ | ----- |
 | `uv run pytest -p no:xdist tests/qualification/harness_01 tests/qualification/harness_02 tests/qualification/ce_01 tests/qualification/sched_01 tests/qualification/bg_01 tests/qualification/session_01 tests/qualification/plug_03 tests/qualification/plug_04 -q --tb=no` | 0 (post R1/R2) | 244 | 0 | log: `.tmp/session/harness-final/qualification-core-rerun.log` |
-| `uv run pytest -p no:xdist tests/qualification/host_01 -q` | — | — | — | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED**: collection `ModuleNotFoundError: fastmcp` on default `uv` env; install optional app deps before host_01 batch |
+| `uv run pytest -p no:xdist tests/qualification/host_01 -q` | 0 (Q1) | 20 | 0 | `dev-unit-cert` env; see §HARNESS-FINAL-Q1 |
 
-## 14. FRZ-HRN evidence (not promoted to PASS)
+## 14. FRZ-HRN evidence (independently accepted for PASS @ HARNESS-FINAL closure)
 
 | ID | Evidence ready |
 | -- | -------------- |
@@ -192,18 +202,17 @@ Recovery owners: EE + host port + continuation stores. Failure classes (restart,
 
 ## 16. Unresolved findings
 
-| ID | Class | Note |
-| -- | ----- | ---- |
-| HOST-01 optional `fastmcp` | ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED | host_01 qual not collected in default env |
+**IN-SCOPE BLOCKER:** 0
 
-**IN-SCOPE BLOCKER:** 0  
+**ENVIRONMENT/TEST ISSUE:** 0 (Q1: `dev-unit-cert` + HOST-01 20/20)
+
 **unclassified:** 0
 
 ## HARNESS-FINAL-Q1 — HOST-01 current-HEAD evidence completion
 
 ```text
 CODE_BASELINE = 3f799c13e27bf06c27eda661219c23fbd0db8e9e
-QUALIFICATION_EVIDENCE_COMMIT = <set after docs commit>
+QUALIFICATION_EVIDENCE_COMMIT = 6c084678fdd63617b2c5c051a3355315a938538c
 HOST-01 = PASS
 collection errors = 0
 environment issue = RESOLVED
@@ -227,7 +236,7 @@ Session logs (local, gitignored): `.tmp/session/harness-final-q1/`.
 **HOST-01 local tenant audit:** **PASS** (explicit `tenant_id` on host task paths; MCP/HTTP semantic parity gate `test_host_q10_mcp_and_http_harness_map_equivalent_task_semantics`; no global FRZ-TEN promotion).
 
 ```text
-HARNESS-FINAL-Q1 = READY FOR AUDIT
+HARNESS-FINAL-Q1 = ACCEPTED
 ```
 
 ## 17. ROADMAP-REPLAY-X
@@ -237,10 +246,49 @@ Inserted in [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTE
 ## 18. Recommendation
 
 ```text
-HARNESS-FINAL-Q1 = READY FOR AUDIT
-HARNESS-FINAL = READY FOR AUDIT
-GOV-X2 = NEXT / NOT ENTERED
+HARNESS-FINAL-R1 = ACCEPTED
+HARNESS-FINAL-R2 = ACCEPTED
+HARNESS-FINAL-Q1 = ACCEPTED
+HARNESS-FINAL = CLOSED
+GOV-X2 = CURRENT / NOT ENTERED
 ROADMAP-REPLAY-X = ADDED / FUTURE FINAL MANDATORY
 ```
 
-Independent audit must re-run qualification on exact GitHub commit SHA after merge.
+## Independent exact-SHA closure audit
+
+```text
+HARNESS-FINAL-R1 = ACCEPTED
+HARNESS-FINAL-R2 = ACCEPTED
+HARNESS-FINAL-Q1 = ACCEPTED
+HARNESS-FINAL = CLOSED
+```
+
+**Accepted evidence**
+
+```text
+code baseline:
+3f799c13e27bf06c27eda661219c23fbd0db8e9e
+
+qualification evidence:
+6c084678fdd63617b2c5c051a3355315a938538c
+```
+
+**Final findings**
+
+```text
+IN-SCOPE BLOCKER = 0
+ENVIRONMENT/TEST ISSUE = 0
+unclassified = 0
+```
+
+**FRZ result**
+
+```text
+FRZ-HRN-01..08 = independently accepted for PASS
+new PASS outside FRZ-HRN family = 0
+new FRZ-TEN PASS = 0
+```
+
+**HOST-01 local tenant audit:** PASS · **HARNESS local tenant evidence:** ACCEPTED · **global FRZ-TEN PASS delta:** 0 · **TENANT-X:** NOT ENTERED
+
+**Next mandatory stage:** GOV-X2 (implementation not entered)
