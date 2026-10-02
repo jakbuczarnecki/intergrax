@@ -2,7 +2,7 @@
 
 **Status:** Cursor certification — **READY FOR AUDIT** (pending independent GitHub SHA audit; not CLOSED)  
 **START_HEAD:** `7bf97076a9bc650ef749945d55e930ad3cffba7c` (`development` = `origin/development`)  
-**AUDITED_HEAD / CURSOR_CERT_COMMIT:** `7862e4988` (post HARNESS-FINAL-R1/R2 remediation + qualification record)  
+**AUDITED_HEAD / CURSOR_CERT_COMMIT:** `88ade021f` (post HARNESS-FINAL-R1/R2 remediation + qualification record)  
 **Parent:** Harness convergence after HARNESS-RESIDUAL / CE-01  
 **Previous mandatory stage:** HARNESS-RESIDUAL / CE-01 — CLOSED @ `a8d47a6396c3e5e73a979be74429ed59a93e1551`  
 **Next mandatory stage:** GOV-X2 (not entered)  
