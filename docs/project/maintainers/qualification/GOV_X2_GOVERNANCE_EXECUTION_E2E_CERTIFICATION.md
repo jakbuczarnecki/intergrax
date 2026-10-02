@@ -35,7 +35,7 @@ proposal / requested operation
   → terminal outcome
 ```
 
-**In scope:** audit, mechanical matrix, regression gates, GOV-X2-R1 minimal remediation (missing `DecisionResolution` import; stale GR-10 AST paths after Nexus canonicalization shims).  
+**In scope:** audit, mechanical matrix, regression gates, GOV-X2-R1 minimal remediation (missing `DecisionResolution` import; stale GR-10 AST paths after Nexus canonicalization shims), GOV-X2-R2 strong-typing + exact proof replay closure.
 **Out of scope:** new authority model, CTRL-X closure, TRACE-X / TENANT-X global closure, FRZ PASS promotion.
 
 ## 3. Canonical owners (current HEAD)
@@ -188,6 +188,39 @@ Searched symbols: `DefaultRootExecutionLauncher`, `RuntimeExecutionPolicyAdmissi
 
 **Real bypass count:** 0 in closed-world inventory.
 
+## GOV-X2-R2 — Strong-Typing & Exact Proof Replay Closure
+
+Independent audit @ `4b3a79120caa1db6afe55a3e2fdeef4fedd9c2d4`: **GOV-X2-R1 = ACCEPTED**, parent **BLOCKED** on proof collectability≠execution and targeted pyright (4 errors).
+
+### Before
+
+```text
+targeted pyright = 4 errors (TRACKED FREEZE DEBT)
+proof nodes = collectability only (gov_x2_all_proof_pytest_node_ids)
+```
+
+### After (remediation — pending independent re-audit)
+
+```text
+targeted pyright = 0 errors
+generic object semantic boundary = removed (EvidencePersistencePort | RuntimeEventPersistence | None)
+authority semantics changed = NO
+ownership changed = NO
+public contracts added = 0
+new execution path = 0
+
+proof catalog function = gov_x2_all_proof_pytest_node_ids()
+exact replay runner = tests/qualification/governance/gov_x2/proof_replay.py
+proof nodes requested = 30
+proof nodes executed = 30
+proof nodes passed = 30
+failed = 0
+missing = 0
+skipped = 0
+```
+
+Recursion protection: replay argv is derived only from catalog inventory; orchestration modules (`test_gov_x2_qualification_batch.py`, `test_gov_x2_proof_replay_gates.py`) are excluded mechanically and must not appear in the catalog. Full replay is invoked via `uv run python tests/qualification/governance/gov_x2/proof_replay.py`, not from a pytest test that re-enters the same node set.
+
 ## 16. Strong typing audit (semantic boundaries)
 
 Authority / evidence / identity ports use typed contracts under `intergrax/contracts/*`. GR-11 G13 weak-boundary scan = 0 on closed-world consumers.
@@ -198,7 +231,9 @@ Authority / evidence / identity ports use typed contracts under `intergrax/contr
 uv run pyright intergrax/contracts/canonical_inner_governance.py intergrax/contracts/control_plane_mutation.py intergrax/contracts/runtime_execution_policy_admission.py intergrax/runtime/governance intergrax/runtime/policy/meaningful_side_effect_authorization.py
 ```
 
-**Result:** 4 errors — composition helper optional-port wiring (`orchestration_*_composition.py`, `execution_guard.py` call arity). Classified **TRACKED FREEZE DEBT** (implementation typing), not alternate authority or untyped permission seam. **Semantic authority port definitions:** no weakening found.
+**Result @ independent audit:** 4 errors — optional-port wiring (`orchestration_*_composition.py`, `execution_guard.py` call arity), plus `object` at governance-evidence persistence seam. **CLOSED — GOV-X2-R2** (narrowing + `tenant_id` on `ReplayService.inspect_run`).
+
+**Result @ R2 remediation:** `0 errors`. **Semantic authority port definitions:** no weakening found.
 
 ## 17. Historical reconciliation
 
@@ -209,6 +244,8 @@ uv run pyright intergrax/contracts/canonical_inner_governance.py intergrax/contr
 | GOVERNANCE_FINAL_E2E_QUALIFICATION INFERENCE PARTIAL/GAP rows | **SUPERSEDED** — GR-10 FINAL CLOSED SSOT |
 | GR-10 AST paths via `nexus/engine/runtime_context.py` | **CLOSED — CURRENT** — tests retargeted to `agent_runtime_context.py` / `harness_host_runtime.py` (GOV-X2-R1) |
 | `DecisionResolution` NameError on reject resume | **CLOSED — CURRENT** — GOV-X2-R1 import fix |
+| Targeted pyright 4 errors on governance composition | **CLOSED — GOV-X2-R2** |
+| GX2 proof nodes collectability-only | **CLOSED — GOV-X2-R2** — exact replay runner |
 | Old docs marked IN PROGRESS / NOT GREEN | **TRACKED FUTURE STAGE** unless row above applies |
 
 ## 18. Tests / gates
@@ -217,15 +254,21 @@ uv run pyright intergrax/contracts/canonical_inner_governance.py intergrax/contr
 uv run pytest -p no:xdist tests/qualification/governance -q --tb=line
 ```
 
-**Result @ remediation commit:** `398 passed` (~170s).
+**Result @ R2 remediation:** `403 passed` (~83s).
 
 ```bash
 uv run pytest -p no:xdist tests/qualification/governance/gov_x2 -q --tb=short
 ```
 
-**Result:** `4 passed`.
+**Result:** `9 passed` (matrix + proof replay gates).
 
-Log: `.tmp/session/gov-x2/pytest-governance.log`
+```bash
+uv run python tests/qualification/governance/gov_x2/proof_replay.py
+```
+
+**Result:** `requested=30 executed=30 passed=30 failed=0`.
+
+Logs: `.tmp/session/gov-x2-r2/pytest-governance-full.log`, `.tmp/session/gov-x2-r2/exact-proof-replay.log`
 
 ## 19. FRZ evidence (no PASS promotion)
 
@@ -242,8 +285,8 @@ Evidence contribution only — checklist rows remain OPEN until independent exac
 
 | Class | Item |
 | ----- | ---- |
-| IN-SCOPE BLOCKER | **0** (post GOV-X2-R1) |
-| TRACKED FREEZE DEBT | Pyright optional-port noise on orchestration composition modules (§16) |
+| IN-SCOPE BLOCKER | **0** (post GOV-X2-R2 — pending independent audit) |
+| TRACKED FREEZE DEBT | **0** inside GOV-X2 parent scope (pyright composition — CLOSED R2) |
 | ENVIRONMENT/TEST ISSUE | None remaining on mandatory governance batch |
 
 **unclassified = 0**
@@ -252,7 +295,8 @@ Evidence contribution only — checklist rows remain OPEN until independent exac
 
 ```text
 GOV-X2 = READY FOR AUDIT
-GOV-X2-R1 = CLOSED (DecisionResolution import + GR-10 AST path reconciliation)
+GOV-X2-R1 = ACCEPTED (independent audit)
+GOV-X2-R2 = READY FOR AUDIT
 CTRL-X = NEXT / NOT ENTERED
 ```
 
