@@ -59,7 +59,10 @@ from intergrax.context.ranker import DefaultContextRanker
 from intergrax.context.registry import ContextPluginRegistry
 from intergrax.context.tracking.context_spans import context_span
 from intergrax.llm.messages import compute_model_facing_messages_hash
-from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.context.assembly_runtime import (
+    validate_context_assembly_event_recorder,
+    validate_context_assembly_ucl_runtime,
+)
 from intergrax.runtime.observability.context_counters import get_context_counters
 from intergrax.runtime.policy.context_assembly_policy import run_pre_context_policy_gate
 from intergrax.runtime.nexus.context.compile_service import compile_chat_messages
@@ -78,7 +81,6 @@ from intergrax.runtime.nexus.context.ucl_artifact_ownership_composition import (
 from intergrax.runtime.nexus.context.ucl_orchestration import (
     NexusUCLExecutionError,
     NexusUCLExecutionReason,
-    NexusUCLRuntimeDependencies,
     resolve_ucl_context_plan,
 )
 if TYPE_CHECKING:
@@ -198,7 +200,7 @@ class DefaultNexusContextEngine:
         raw_messages: list[ChatMessage] = list(runtime.base_messages)
         max_output_tokens = runtime.max_output_tokens
 
-        event_bus = runtime.event_bus if isinstance(runtime.event_bus, RuntimeEventBus) else None
+        event_bus = validate_context_assembly_event_recorder(runtime.event_bus)
         event_ctx = _assembly_event_context(request, runtime)
 
         pre_gate = run_pre_context_policy_gate(request)
@@ -452,8 +454,8 @@ class DefaultNexusContextEngine:
         )
 
         ucl_runtime = runtime.ucl_runtime
-        if ucl_runtime is not None and not isinstance(ucl_runtime, NexusUCLRuntimeDependencies):
-            raise ValueError("ContextAssemblyRuntimeDependencies.ucl_runtime must be NexusUCLRuntimeDependencies")
+        if ucl_runtime is not None:
+            validate_context_assembly_ucl_runtime(ucl_runtime)
 
         artifact_ownership = resolve_ucl_artifact_ownership_scope(
             request,
@@ -583,7 +585,7 @@ async def _load_session_history_snapshot(
 
 
 def _record_fragment_exclusion_drop_events(
-    event_bus: RuntimeEventBus | None,
+    event_bus: RuntimeEventRecorderPort | None,
     exclusions: list[tuple[ContextFragment, str]],
     *,
     engine_id: str,
@@ -623,7 +625,7 @@ def _assembly_event_context(
 
 
 def _record_validation_failed(
-    event_bus: RuntimeEventBus | None,
+    event_bus: RuntimeEventRecorderPort | None,
     event_ctx: dict[str, str | None],
     errors: tuple[str, ...] | list[str],
     *,

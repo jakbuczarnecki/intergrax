@@ -225,3 +225,30 @@ HARNESS-FINAL = NOT ENTERED
 ```
 
 Independent audit must re-run CE-Q catalog + full CE unit/nexus context suites green before CLOSED.
+
+## CE-01-R1-R1 — Structural runtime dependency contracts (2026-10-02)
+
+**START_HEAD:** `a043e60bedda2f9616185ac4c65c9c700a6b9b76`
+
+**Root causes:** R1-R1-A concrete types on CE Protocol; R1-R1-B Nexus `isinstance` on UCL; R1-R1-C `RuntimeEventBus`-only event seam.
+
+**After graph:** CE `ContextAssemblyRuntime` → `RuntimeEventRecorderPort` + `ContextAssemblyUCLRuntime` → `MessageSequenceArtifactExecutionPort` / `OptimizationArtifactRepository`; Nexus implementations structurally satisfy contracts; `ContextEngine` uses `validate_context_assembly_*` only.
+
+**New contracts:** `intergrax/contracts/runtime_event_recording.py`; `intergrax/runtime/context_lifecycle/message_sequence_execution_port.py`.
+
+**Tests:** `tests/unit/context/test_ce_r1_r1_structural_runtime_boundary.py`. **Gate:** extended `check_ce_canonical_semantic_handles.py`.
+
+| Run | Result |
+| --- | ------ |
+| CE-Q | 22 passed |
+| context + nexus context | 551 passed |
+| EBH-4 encapsulation gate | 8 passed |
+
+**IN-SCOPE BLOCKER:** 0. **FRZ PASS delta:** 0. **FRZ-TEN PASS delta:** 0.
+
+```text
+CE-01-R1-R1 = READY FOR AUDIT
+CE-01-R1 = READY FOR AUDIT
+CE-01 = READY FOR AUDIT
+```
+

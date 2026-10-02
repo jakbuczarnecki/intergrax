@@ -13,14 +13,12 @@ from typing import Any
 
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
-from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.context.assembly_runtime import validate_context_assembly_ucl_runtime
+from intergrax.contracts.runtime_event_recording import RuntimeEventRecorderPort
 from intergrax.runtime.nexus.context.assembly_runtime_deps import (
     ContextAssemblyRuntimeDependencies,
 )
-from intergrax.runtime.nexus.context.ucl_orchestration import (
-    NEXUS_UCL_RUNTIME_HANDLE,
-    NexusUCLRuntimeDependencies,
-)
+from intergrax.runtime.nexus.context.ucl_orchestration import NEXUS_UCL_RUNTIME_HANDLE
 from intergrax.runtime.wiring.context_runtime_bridge import CONTEXT_OPTIMIZATION_POLICY_HANDLE
 
 
@@ -51,10 +49,13 @@ def build_context_assembly_runtime_from_legacy_handles(
     if optimization_policy is not None and not isinstance(optimization_policy, ContextOptimizationPolicy):
         optimization_policy = None
     ucl_runtime = handles.get(NEXUS_UCL_RUNTIME_HANDLE)
-    if ucl_runtime is not None and not isinstance(ucl_runtime, NexusUCLRuntimeDependencies):
-        ucl_runtime = None
+    if ucl_runtime is not None:
+        try:
+            validate_context_assembly_ucl_runtime(ucl_runtime)
+        except ValueError:
+            ucl_runtime = None
     event_bus = handles.get("event_bus")
-    if not isinstance(event_bus, RuntimeEventBus):
+    if event_bus is not None and not isinstance(event_bus, RuntimeEventRecorderPort):
         event_bus = None
     node_id = handles.get("node_id")
     agent_id = handles.get("agent_id")

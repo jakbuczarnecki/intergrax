@@ -10,21 +10,20 @@ from intergrax.context.assembly_runtime import (
     ContextAssemblyUCLRuntime,
     ContextEngineRuntimeConfig,
 )
+from intergrax.contracts.runtime_event_recording import RuntimeEventRecorderPort
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
-from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.nexus.context.ucl_orchestration import NexusUCLRuntimeDependencies
 
 @dataclass(frozen=True, slots=True)
 class ContextAssemblyRuntimeDependencies:
     """Explicit runtime inputs for ``DefaultNexusContextEngine.assemble`` (not source payloads)."""
 
-    runtime_config: ContextEngineRuntimeConfig  # structural ContextEngineRuntimeConfig
+    runtime_config: ContextEngineRuntimeConfig
     base_messages: tuple[ChatMessage, ...] = ()
     max_output_tokens: int | None = None
     optimization_policy: ContextOptimizationPolicy | None = None
     ucl_runtime: ContextAssemblyUCLRuntime | None = None
-    event_bus: RuntimeEventBus | None = None
+    event_bus: RuntimeEventRecorderPort | None = None
     node_id: str | None = None
     agent_id: str | None = None
 
@@ -35,8 +34,8 @@ def build_context_assembly_runtime_dependencies(
     messages: Sequence[ChatMessage] | None = None,
     max_output_tokens: int | None = None,
     optimization_policy: ContextOptimizationPolicy | None = None,
-    ucl_runtime: NexusUCLRuntimeDependencies | None = None,
-    event_bus: RuntimeEventBus | None = None,
+    ucl_runtime: ContextAssemblyUCLRuntime | None = None,
+    event_bus: RuntimeEventRecorderPort | None = None,
     node_id: str | None = None,
     agent_id: str | None = None,
 ) -> ContextAssemblyRuntimeDependencies:

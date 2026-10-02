@@ -10,6 +10,7 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONTEXT_DIR = REPO_ROOT / "intergrax" / "runtime" / "nexus" / "context"
+CE_ASSEMBLY_RUNTIME = REPO_ROOT / "intergrax" / "context" / "assembly_runtime.py"
 
 CANONICAL_RUNTIME_MODULES = (
     CONTEXT_DIR / "context_engine.py",
@@ -50,6 +51,16 @@ LEGACY_BRIDGE_CALL = re.compile(
 
 FORBIDDEN_RUNTIME_ANNOTATIONS = re.compile(
     r"runtime:\s*(Any|object|dict|Mapping)\b"
+)
+
+FORBIDDEN_CE_ASSEMBLY_IMPORTS = (
+    "from intergrax.runtime.events.event_bus import RuntimeEventBus",
+    "from intergrax.runtime.token_optimization.message_sequence_artifact import MessageSequenceArtifactExecutor",
+)
+
+FORBIDDEN_CONTEXT_ENGINE_ISINSTANCE = (
+    "isinstance(ucl_runtime, NexusUCLRuntimeDependencies)",
+    "isinstance(runtime.event_bus, RuntimeEventBus)",
 )
 
 PRODUCTION_SCAN_ROOTS = (
@@ -100,6 +111,14 @@ def main() -> int:
         violations.append("contracts.py: imports legacy assembly runtime bridge")
     if FORBIDDEN_RUNTIME_ANNOTATIONS.search(contracts_text):
         violations.append("contracts.py: ContextProviderContext.runtime must use typed CE contract")
+
+    assembly_runtime_text = CE_ASSEMBLY_RUNTIME.read_text(encoding="utf-8")
+    for token in FORBIDDEN_CE_ASSEMBLY_IMPORTS:
+        if token in assembly_runtime_text:
+            violations.append(f"assembly_runtime.py: forbidden concrete import {token!r}")
+    for forbidden in FORBIDDEN_CONTEXT_ENGINE_ISINSTANCE:
+        if forbidden in engine_text:
+            violations.append(f"context_engine.py: forbidden concrete runtime check {forbidden!r}")
 
     bridge_rel = LEGACY_BRIDGE_MODULE.relative_to(REPO_ROOT).as_posix()
     for root in PRODUCTION_SCAN_ROOTS:

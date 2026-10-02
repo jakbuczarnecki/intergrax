@@ -46,9 +46,15 @@ from intergrax.runtime.context_lifecycle.repository import (
     build_optimization_artifact_reference,
 )
 from intergrax.runtime.context_lifecycle.serialization import compute_artifact_lookup_key_hash
+from intergrax.context.assembly_runtime import (
+    ContextAssemblyUCLRuntime,
+    validate_context_assembly_ucl_runtime,
+)
+from intergrax.runtime.context_lifecycle.message_sequence_execution_port import (
+    MessageSequenceArtifactExecutionPort,
+)
 from intergrax.runtime.token_optimization.message_sequence_artifact import (
     MessageSequenceArtifactExecutionRequest,
-    MessageSequenceArtifactExecutor,
     MessageSequenceArtifactSourceGroupProof,
 )
 from intergrax.runtime.token_optimization.durable_compaction_candidate import (
@@ -99,37 +105,18 @@ class NexusUCLExecutionError(ValueError):
 @dataclass(frozen=True, slots=True)
 class NexusUCLRuntimeDependencies:
     repository: OptimizationArtifactRepository
-    message_sequence_executor: MessageSequenceArtifactExecutor
+    message_sequence_executor: MessageSequenceArtifactExecutionPort
     strategy_versions: Mapping[str, str]
     artifact_id_factory: Callable[[], str]
     wait_timeout_seconds: float = 0.25
 
     def __post_init__(self) -> None:
-        if not isinstance(self.repository, OptimizationArtifactRepository):
-            raise ValueError("repository must be OptimizationArtifactRepository")
-        if type(self.message_sequence_executor) is not MessageSequenceArtifactExecutor:
-            raise ValueError("message_sequence_executor must be MessageSequenceArtifactExecutor")
-        if not isinstance(self.strategy_versions, Mapping):
-            raise ValueError("strategy_versions must be a Mapping")
-        if not self.strategy_versions:
-            raise ValueError("strategy_versions must contain at least one entry")
+        validate_context_assembly_ucl_runtime(self)
         frozen_versions: dict[str, str] = {}
         for key, value in self.strategy_versions.items():
-            if not isinstance(key, str) or not key:
-                raise ValueError("strategy_versions keys must be non-empty strings")
-            if not isinstance(value, str) or not value:
-                raise ValueError("strategy_versions values must be non-empty strings")
             frozen_versions[key] = value
         object.__setattr__(self, "strategy_versions", MappingProxyType(frozen_versions))
-        if not callable(self.artifact_id_factory):
-            raise TypeError("artifact_id_factory must be callable")
-        timeout = self.wait_timeout_seconds
-        if isinstance(timeout, bool) or not isinstance(timeout, (int, float)):
-            raise ValueError("wait_timeout_seconds must be int or float")
-        timeout_value = float(timeout)
-        if not math.isfinite(timeout_value) or timeout_value < 0 or timeout_value > 5.0:
-            raise ValueError("wait_timeout_seconds must be finite and in [0, 5.0]")
-        object.__setattr__(self, "wait_timeout_seconds", timeout_value)
+        object.__setattr__(self, "wait_timeout_seconds", float(self.wait_timeout_seconds))
 
 
 @dataclass(frozen=True, slots=True)
@@ -241,7 +228,7 @@ async def resolve_ucl_context_plan(
     messages_for_compile: Sequence[ChatMessage],
     fragment_messages: Sequence[ChatMessage],
     ranked_fragments: Sequence[ContextFragment],
-    runtime: NexusUCLRuntimeDependencies | None,
+    runtime: ContextAssemblyUCLRuntime | None,
     count_tokens: Callable[[str], int],
     artifact_ownership: UclArtifactOwnershipScope | None = None,
 ) -> NexusUCLResolution:

@@ -10,16 +10,17 @@ from intergrax.context.contracts import ContextProviderContext
 from intergrax.context.source_inputs import ContextProviderSourceInputs
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
-from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.context.assembly_runtime import (
+    ContextAssemblyUCLRuntime,
+    validate_context_assembly_ucl_runtime,
+)
+from intergrax.contracts.runtime_event_recording import RuntimeEventRecorderPort
 from intergrax.runtime.nexus.context.assembly_runtime_deps import (
     ContextAssemblyRuntimeDependencies,
-    ContextEngineRuntimeConfig,
     build_context_assembly_runtime_dependencies,
 )
-from intergrax.runtime.nexus.context.ucl_orchestration import (
-    NEXUS_UCL_RUNTIME_HANDLE,
-    NexusUCLRuntimeDependencies,
-)
+from intergrax.runtime.nexus.context.ucl_orchestration import NEXUS_UCL_RUNTIME_HANDLE
+from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.wiring.context_runtime_bridge import CONTEXT_OPTIMIZATION_POLICY_HANDLE
 
 _SEMANTIC_HANDLE_KEYS = frozenset(
@@ -39,12 +40,12 @@ _SEMANTIC_HANDLE_KEYS = frozenset(
 
 def build_test_assembly_runtime(
     *,
-    runtime_config: ContextEngineRuntimeConfig,
+    runtime_config: RuntimeConfig,
     messages: Sequence[ChatMessage] | None = None,
     max_output_tokens: int | None = None,
     optimization_policy: ContextOptimizationPolicy | None = None,
-    ucl_runtime: NexusUCLRuntimeDependencies | None = None,
-    event_bus: RuntimeEventBus | None = None,
+    ucl_runtime: ContextAssemblyUCLRuntime | None = None,
+    event_bus: RuntimeEventRecorderPort | None = None,
     node_id: str | None = None,
     agent_id: str | None = None,
 ) -> ContextAssemblyRuntimeDependencies:
@@ -62,12 +63,12 @@ def build_test_assembly_runtime(
 
 def provider_context_for_engine_assembly(
     *,
-    runtime_config: ContextEngineRuntimeConfig,
+    runtime_config: RuntimeConfig,
     messages: Sequence[ChatMessage] | None = None,
     max_output_tokens: int | None = None,
     optimization_policy: ContextOptimizationPolicy | None = None,
-    ucl_runtime: NexusUCLRuntimeDependencies | None = None,
-    event_bus: RuntimeEventBus | None = None,
+    ucl_runtime: ContextAssemblyUCLRuntime | None = None,
+    event_bus: RuntimeEventRecorderPort | None = None,
     node_id: str | None = None,
     agent_id: str | None = None,
     engine_id: str = "default",
@@ -116,10 +117,13 @@ def provider_context_from_legacy_style_handles(
     if optimization_policy is not None and not isinstance(optimization_policy, ContextOptimizationPolicy):
         optimization_policy = None
     ucl_runtime = raw.pop(NEXUS_UCL_RUNTIME_HANDLE, None)
-    if ucl_runtime is not None and not isinstance(ucl_runtime, NexusUCLRuntimeDependencies):
-        ucl_runtime = None
+    if ucl_runtime is not None:
+        try:
+            validate_context_assembly_ucl_runtime(ucl_runtime)
+        except ValueError:
+            ucl_runtime = None
     event_bus = raw.pop("event_bus", None)
-    if event_bus is not None and not isinstance(event_bus, RuntimeEventBus):
+    if event_bus is not None and not isinstance(event_bus, RuntimeEventRecorderPort):
         event_bus = None
     node_id = raw.pop("node_id", None)
     agent_id = raw.pop("agent_id", None)
