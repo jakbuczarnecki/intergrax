@@ -18,7 +18,7 @@
 | GX2 matrix SSOT | `tests/qualification/governance/gov_x2/catalog.py` |
 | E2E scenario SSOT | `tests/qualification/governance/catalog.py` (`GOV_FINAL_4_SCENARIO_CATALOG`) |
 
-**Initial status (Cursor):** `GOV-X2-R3 remediation` — parent **READY FOR AUDIT** pending independent re-audit after R3 (not `CLOSED`).
+**Initial status (Cursor):** `GOV-X2-Q2` — parent **READY FOR AUDIT** after Q2 Nexus pyright provenance classification (not `CLOSED`).
 
 ## 2. Scope
 
@@ -256,6 +256,81 @@ compatibility signature branch = 0
 
 Regression tests: `tests/unit/runtime/governance/test_gov_x2_r3_post_run_tenant_contract.py` (R3-01..05, cross-tenant denial, protocol conformance); updates in `test_g3b_governance_coverage.py`, `test_gr13_governance_evidence_gep_emission.py`.
 
+## GOV-X2-Q2 — NexusLoop Pyright Debt Provenance Classification
+
+Evidence-only classification @ audited HEAD `b233c61b123464726124dc02daaee21f55d3b856`. Baseline comparison SHA `8b4734c2e2fc06fee76af4959cb844f426d1dd59`. No production changes.
+
+**Pyright:** `1.1.411` · **Python:** `3.12.11`
+
+**Command (identical on both SHAs; caller-inclusive optional sweep = single-file inclusion of composition module):**
+
+```text
+pyright intergrax/runtime/nexus/nexus_loop.py
+```
+
+(invoked as `uv run pyright …` from repo root @ current HEAD; baseline replay from detached worktree cwd with main-repo `.venv\Scripts\pyright.exe` so config + toolchain match.)
+
+| Run | SHA | Exit | Count |
+| --- | --- | --- | --- |
+| Baseline | `8b4734c2…` | 1 | 3 (includes post-run contract error @ ~1003 — **REMOVED AFTER R3**) |
+| Current | `b233c61b…` | 1 | **2** (Q2 scope) |
+
+Logs: `.tmp/session/gov-x2-q2/pyright-baseline-8b4734c2-main-venv-cwd-worktree.log`, `.tmp/session/gov-x2-q2/pyright-current-b233c61b-main-venv.log` (matches `.tmp/session/gov-x2-r3/pyright.log` on current HEAD).
+
+### Q2-D1 — `wire_execution_terminal_store` / checkpoint seam
+
+| Field | Value |
+| --- | --- |
+| File | `intergrax/runtime/nexus/nexus_loop.py` |
+| Line:col | `400:60` (baseline `400:60`) |
+| Rule | `reportArgumentType` |
+| Expression | `checkpoint_store=self._checkpoint_store` |
+| Actual | `TaskCheckpointPersistence \| None` |
+| Expected | `ExecutionTerminalPersistenceCapability \| None` |
+| Enclosing | `NexusLoop.__init__` |
+| Semantic subsystem | Execution terminal persistence composition (`ExecutionTerminalService` wiring) |
+
+**R3 changed statement / feeding type / contract / control flow?** **NO** — `git diff 8b4734c2..b233c61b` on `nexus_loop.py` is only `tenant_id=task.tenant_id` on `invoke_post_run_governance` (~1001). Blame @ baseline: wiring line from `abb30d61c2` (2026-09-04).
+
+**Decision-exposure authority questions (§12):** all **NO** — generic composition typing; runtime `wire_execution_terminal_store` narrows via `isinstance(..., ExecutionTerminalPersistenceCapability)` before `CheckpointStoreExecutionTerminalStore` (`persistence.py`).
+
+### Q2-D2 — `authoritative_decision_exposure` projection
+
+| Field | Value |
+| --- | --- |
+| File | `intergrax/runtime/nexus/nexus_loop.py` |
+| Line:col | `1084:45` (baseline `1083:45` — line shift only) |
+| Rule | `reportArgumentType` |
+| Expression | `authoritative_decision_exposure=exposure` |
+| Actual | `object \| None` (annotated return on `_resolve_authoritative_decision_exposure`) |
+| Expected | `AuthoritativeDecisionExposure[object] \| None` |
+| Enclosing | `NexusLoop._build_task_result` |
+| Semantic subsystem | TaskResult public projection / decision exposure packaging (not permission grant) |
+
+**R3 changed?** **NO** (same diff evidence). Blame @ baseline: `-> object \| None` from `56b36fb52a` (2026-09-15); callee `resolve_authoritative_decision_exposure_for_task` already returns `AuthoritativeDecisionExposure[object] \| None`.
+
+**Authority questions (§12–13):** all **NO** — static annotation widening only; behavioral decision path unchanged.
+
+### Equivalence matrix (Q2 scope diagnostics only)
+
+| Field | Baseline `8b4734c2…` | Current `b233c61b…` | Classification |
+| --- | --- | --- | --- |
+| Count (Q2 pair) | 2 of 3 file errors | 2 | — |
+| D1 file / rule / message | `nexus_loop.py` L400 `reportArgumentType` checkpoint_store seam | identical meaning | **IDENTICAL PRE-EXISTING** |
+| D2 file / rule / message | `nexus_loop.py` L1083 `reportArgumentType` exposure projection | identical meaning (L1084) | **IDENTICAL PRE-EXISTING** |
+| Post-run pyright @ ~1003 | present | absent | **REMOVED AFTER R3** (GOV-X2-R3 scope, not Q2 debt) |
+
+### Classification table
+
+| ID | Baseline? | Current? | Changed by R3? | Semantic owner | GX2 impact | Tenant impact | Classification |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Q2-D1 | YES | YES | NO | **STATE-X** — execution terminal / checkpoint capability composition typing | NO IMPACT (static; runtime `isinstance` guard) | NO IMPACT | **PRE-EXISTING / NON-BLOCKING TO GOV-X2** |
+| Q2-D2 | YES | YES | NO | **COMPAT-X** — `AuthoritativeDecisionExposure` / `TaskResult` projection typing seam | NO IMPACT (annotation-only; resolver contract typed) | NO IMPACT | **PRE-EXISTING / NON-BLOCKING TO GOV-X2** |
+
+**GX2-01..GX2-20:** **NO IMPACT — WITH EVIDENCE** for both (pyright does not execute Governance/Execution admission, permission, or tenant propagation).
+
+**Closed-world callers (semantic slice):** `wire_execution_terminal_store` → `intergrax/runtime/execution/execution_terminal/persistence.py`; exposure → `nexus_decision_exposure.resolve_authoritative_decision_exposure_for_task`, `task_finisher.build_nexus_task_result`; **unclassified = 0**.
+
 ## 16. Strong typing audit (semantic boundaries)
 
 Authority / evidence / identity ports use typed contracts under `intergrax/contracts/*`. GR-11 G13 weak-boundary scan = 0 on closed-world consumers.
@@ -328,8 +403,8 @@ Evidence contribution only — checklist rows remain OPEN until independent exac
 
 | Class | Item |
 | ----- | ---- |
-| IN-SCOPE BLOCKER | **0** (post GOV-X2-R3 — pending independent audit) |
-| TRACKED FREEZE DEBT | **0** inside GOV-X2 parent scope (pyright composition — CLOSED R2; optional `nexus_loop.py` pyright when explicitly included in caller sweep — pre-R3, not post-run contract) |
+| IN-SCOPE BLOCKER | **0** (post GOV-X2-R3 + Q2 classification) |
+| TRACKED FREEZE DEBT | **2** — **outside GOV-X2 parent** (Q2-D1 @ `nexus_loop.py:400` → **STATE-X**; Q2-D2 @ `nexus_loop.py:1084` → **COMPAT-X**); identical on `8b4734c2` and `b233c61b`; not introduced by R3; GOV-X2 governance-tree pyright **CLOSED R2** |
 | ENVIRONMENT/TEST ISSUE | None remaining on mandatory governance batch |
 
 **unclassified = 0**
@@ -337,10 +412,11 @@ Evidence contribution only — checklist rows remain OPEN until independent exac
 ## 21. Recommendation
 
 ```text
+GOV-X2-Q2 = READY FOR AUDIT
 GOV-X2 = READY FOR AUDIT
 GOV-X2-R1 = ACCEPTED (independent audit @ 8b4734c2)
 GOV-X2-R2 = ACCEPTED AT REMEDIATION SCOPE (independent audit @ 8b4734c2)
-GOV-X2-R3 = READY FOR AUDIT
+GOV-X2-R3 = ACCEPTED (independent audit @ b233c61b — post-run tenant contract)
 CTRL-X = NEXT / NOT ENTERED
 ```
 
