@@ -21,6 +21,9 @@ from intergrax.runtime.execution.effective_profile_revision_admission import (
 from intergrax.runtime.execution.environment_host_task_execution import (
     build_environment_host_task_execution,
 )
+from intergrax.runtime.execution.environment_orchestration_materialization import (
+    EnvironmentOrchestrationMaterialization,
+)
 from intergrax.runtime.execution.host_task import HostTaskExecution
 from intergrax.runtime.execution.nexus_host_execution import build_host_task_execution
 from intergrax.runtime.governance.governance_evidence_recorder import GovernanceEvidenceRecorder
@@ -66,8 +69,9 @@ def build_harness_environment_host_task_execution(
     governance = build_harness_host_task_execution_governance(
         governance_evidence_recorder=governance_evidence_recorder,
     )
+    orchestration = EnvironmentOrchestrationMaterialization(_backend=nexus_loop)
     return build_environment_host_task_execution(
-        nexus_loop,
+        orchestration,
         env,
         revision_admission=resolve_harness_effective_profile_revision_admission(
             pinning_dependencies,

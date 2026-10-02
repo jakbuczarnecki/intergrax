@@ -62,10 +62,10 @@ from intergrax.tools.execution_models import ToolExecutionResult
 from governed_contractor_application.host.environment_profile import (
     build_governed_contractor_environment_profile,
 )
-from governed_contractor_application.host.execution_wiring import (
-    build_governed_contractor_host_task_execution,
-)
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+from tests.fixtures.harness_host_task_execution import (
+    build_harness_environment_host_task_execution,
+)
 from tests.unit.runtime.background_execution.reentry_admission_doubles import (
     make_kv_admission_dependencies,
 )
@@ -170,7 +170,7 @@ def _completed_task_result() -> TaskResult:
 
 def _governed_host_execution(nexus_loop: NexusLoop):
     env = build_governed_contractor_environment_profile(GovernedContractorBackendSettings.from_env())
-    return build_governed_contractor_host_task_execution(nexus_loop, env)
+    return build_harness_environment_host_task_execution(nexus_loop, env)
 
 
 def _worker_identity(

@@ -4,13 +4,13 @@
 **Plan (1:1):** [`plan/BACKGROUND_TASKS.md`](../maintainers/plans/BACKGROUND_TASKS.md)
 **Hub:** [`intergrax_runtime_architecture.md`](intergrax_runtime_architecture.md)
 **Generalizes:** LKW.4 background ingest proof ([`applications/local_workspace_application/docs/ARCHITECTURE.md`](../../../applications/local_workspace_application/docs/ARCHITECTURE.md) §8.7)
-**Last updated:** 2026-09-17 — **BG-01-R1** execution scope closure + result codec (`tests/qualification/bg_01/`)
+**Last updated:** 2026-10-02 — **BG-01** current-HEAD recertification (`tests/qualification/bg_01/`, BG-Q1..Q15 green on session HEAD; READY FOR AUDIT — not CLOSED)
 
 | Axis | Status | Meaning |
 |------|--------|---------|
 | **Foundation / contracts** | **CURRENT** | `TaskQueue` / `MessageBus`, `TaskRequest`, `BackgroundTaskHandler`, `TaskQueueProviderRegistry`, worker intake + BG-EXEC identity/reentry |
 | **Execution integration** | **COMPLETE** | All active production **host-task / agent harness** background execution converges through `NexusWorkerRuntime` → `HostTaskExecutionPort` (queue dispatch via `QueuedHostTaskExecutionAdapter` + typed `decode_host_task_result_payload`); provider workloads documented below are out of canonical execution semantics |
-| **Production qualification** | **PARTIAL** | LKW.4E, **BG-01** (`tests/qualification/bg_01/`, gates BG-Q1..Q15), **SCHED-01** long-running delayed resume (`tests/qualification/sched_01/`, gates SCHED-Q1..Q15); not universal multi-tenant production qualification |
+| **Production qualification** | **PARTIAL** | LKW.4E; **BG-01** current-HEAD recertification evidence [`HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md`](../maintainers/qualification/HARNESS_W8_BG_01_CURRENT_HEAD_RECERTIFICATION.md) (gates BG-Q1..Q15; READY FOR AUDIT); **SCHED-01** long-running delayed resume (`tests/qualification/sched_01/`, gates SCHED-Q1..Q15); not universal multi-tenant production qualification |
 
 ---
 
