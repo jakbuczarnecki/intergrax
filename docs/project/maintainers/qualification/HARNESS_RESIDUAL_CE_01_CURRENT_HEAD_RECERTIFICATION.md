@@ -1,7 +1,9 @@
 # HARNESS-RESIDUAL / CE-01 — Current-HEAD Context Pipeline Ownership Convergence
 
-**Status:** Cursor parent reconciliation — **READY FOR AUDIT** (not closure)  
-**START_HEAD / AUDITED_HEAD:** `e9aa0842a28fb792d5cb0baf418f59ca052c75d2` (`development`)  
+**Status:** **CLOSED** / independently accepted  
+**START_HEAD:** `e9aa0842a28fb792d5cb0baf418f59ca052c75d2` (parent reconciliation baseline before final CE-01-R1-R2-PY helper remediation)  
+**FINAL_IMPLEMENTATION_HEAD:** `a8d47a6396c3e5e73a979be74429ed59a93e1551`  
+**INDEPENDENTLY_AUDITED_HEAD:** `a8d47a6396c3e5e73a979be74429ed59a93e1551` (`development`)  
 **Parent:** Residual Harness convergence before HARNESS-FINAL  
 **Qualification package owner:** `tests/qualification/ce_01/` (CE-Q1..CE-Q15 catalog)
 
@@ -12,9 +14,9 @@
 | HARNESS-W7 / HOST-01 | CLOSED @ `5d5442dae7769671a7532a973428c8203b492ec6` |
 | HARNESS-W8 / BG-01 | CLOSED @ `3a9b58e6fa1e14ddc9786bd9a447a1d76552d196` |
 | SCHED-01 | **CLOSED** (independently accepted @ `433ff5fb97262c4bad84ea2a4173dc3711d7aa08`) |
-| **CE-01** | **CURRENT** (this record) |
+| **CE-01** | **CLOSED** @ `a8d47a6396c3e5e73a979be74429ed59a93e1551` (independently accepted) |
 | CE-02 | NOT ENTERED |
-| HARNESS-FINAL | NOT ENTERED (blocked on CE-01 + residual) |
+| HARNESS-FINAL | **CURRENT** / MANDATORY (not entered — implementation/audit deferred) |
 
 ## Canonical ownership (§1)
 
@@ -395,4 +397,26 @@ new FRZ-TEN PASS delta = 0
 ```
 
 **Not set by this record:** roadmap `CE-01 = CLOSED`, global `FRZ-* = PASS`, checklist promotion — independent exact-SHA GitHub audit only.
+
+## Independent exact-SHA closure audit
+
+**AUDITED_SHA:** `a8d47a6396c3e5e73a979be74429ed59a93e1551`  
+**RESULT:** **ACCEPTED** / **CLOSED**
+
+Independent exact-SHA audit (GitHub, outside Cursor AI) consumed parent reconciliation evidence including accepted parent test matrix on audited commit (see § CE-01 — Parent Current-HEAD Reconciliation — Parent test / gate matrix).
+
+| Outcome | Result |
+| ------- | ------ |
+| CE-01-R1-R2 | **CLOSED** |
+| CE-01-R1-R1 | **CLOSED** |
+| CE-01-R1 | **CLOSED** |
+| HARNESS-RESIDUAL / CE-01 | **CLOSED** |
+| IN-SCOPE BLOCKER | **0** |
+| unclassified findings | **0** |
+| Tenant Isolation Audit (local CE scope) | **PASS** |
+| global FRZ PASS delta | **0** |
+| new FRZ-TEN PASS delta | **0** |
+| HARNESS-FINAL | **NEXT** / **MANDATORY** |
+
+**Not granted by this audit:** global `FRZ-* = PASS`, global **TENANT-X** certification, HARNESS-FINAL implementation or closure.
 
