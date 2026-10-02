@@ -56,6 +56,7 @@ from intergrax.contracts.decision_lifecycle import (
 from intergrax.contracts.decision_record import (
     AuthoritativeAcceptedDecision,
     CandidateDecision,
+    DecisionProposalRef,
     candidate_decision,
     candidate_decision_ref,
 )

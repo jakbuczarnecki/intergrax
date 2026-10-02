@@ -634,33 +634,29 @@ def test_harness_01_layer_rules_reject_contract_and_public_nexus_imports() -> No
 
 
 def test_harness_01_application_host_nexus_importers_are_w6_debt_not_final_legal() -> None:
-    target = "applications/governed_contractor_application/host/integration_wiring.py"
-    by_path = {row.path: row for row in HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS}
-    row = by_path[target]
-    assert row.owner_layer == "APPLICATION_HOST"
-    assert row.classification == "HOST_EXECUTION_COMPOSITION"
-    assert row.boundary_status == "DEBT"
-    assert "HARNESS-01-R5-W6" in row.reason
-    for path, host_row in by_path.items():
-        if host_row.owner_layer != "APPLICATION_HOST":
-            continue
-        assert host_row.boundary_status == "DEBT", path
-        assert host_row.boundary_status != "LEGAL", path
+    """Post HOST-01 / EE composition convergence: Tier-3 host modules must not import Nexus."""
+    host_rows = [
+        row
+        for row in HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS
+        if row.owner_layer == "APPLICATION_HOST"
+    ]
+    assert host_rows == [], (
+        "APPLICATION_HOST Nexus importers must be 0 after EE-owned host composition convergence:\n"
+        + "\n".join(row.path for row in host_rows)
+    )
 
 
 def test_harness_01_shared_host_nexus_importers_are_w6_debt_not_final_legal() -> None:
-    target = "intergrax/applications/_shared/harness_host_orchestration_topology_wiring.py"
-    by_path = {row.path: row for row in HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS}
-    row = by_path[target]
-    assert row.owner_layer == "HOST_COMPOSITION"
-    assert row.classification == "HOST_EXECUTION_COMPOSITION"
-    assert row.boundary_status == "DEBT"
-    assert "HARNESS-01-R5-W6" in row.reason
-    for path, shared_row in by_path.items():
-        if shared_row.owner_layer != "HOST_COMPOSITION":
-            continue
-        assert shared_row.boundary_status == "DEBT", path
-        assert shared_row.boundary_status != "LEGAL", path
+    """Post HOST-01: shared host composition must not retain direct Nexus imports."""
+    shared_rows = [
+        row
+        for row in HARNESS_01_HIGHER_LAYER_NEXUS_IMPORTER_ROWS
+        if row.owner_layer == "HOST_COMPOSITION"
+    ]
+    assert shared_rows == [], (
+        "HOST_COMPOSITION Nexus importers must be 0 after EE-owned host composition convergence:\n"
+        + "\n".join(row.path for row in shared_rows)
+    )
 
 
 def test_harness_01_final_legal_nexus_importers_in_approved_owner_zone() -> None:
