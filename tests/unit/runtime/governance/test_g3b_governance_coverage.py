@@ -83,10 +83,10 @@ class _DenyContinuePolicyEngine(RuntimePolicyEngine):
 
 class _RecordingGovernanceService:
     def __init__(self) -> None:
-        self.calls: list[tuple[str, str]] = []
+        self.calls: list[tuple[str, str, str]] = []
 
-    def evaluate(self, run_id: str, agent_id: str):
-        self.calls.append((run_id, agent_id))
+    def evaluate(self, tenant_id: str, run_id: str, agent_id: str):
+        self.calls.append((tenant_id, run_id, agent_id))
         return None
 
 
@@ -211,8 +211,13 @@ async def test_pre_model_policy_allows_provider_on_allow() -> None:
 @pytest.mark.unit
 def test_post_run_governance_bridge_invokes_service() -> None:
     service = _RecordingGovernanceService()
-    invoke_post_run_governance(service, run_id="run_1", agent_id="agent_1")
-    assert service.calls == [("run_1", "agent_1")]
+    invoke_post_run_governance(
+        service,
+        tenant_id="tenant_1",
+        run_id="run_1",
+        agent_id="agent_1",
+    )
+    assert service.calls == [("tenant_1", "run_1", "agent_1")]
 
 
 class _UaepDenyBoundaryAgent(HarnessReferenceAgent):
@@ -313,7 +318,8 @@ async def test_nexus_finish_task_post_run_uses_active_run_id_not_task_id() -> No
         reset_active_execution_identity(token)
 
     assert len(service.calls) == 1
-    received_run_id, received_agent_id = service.calls[0]
+    received_tenant_id, received_run_id, received_agent_id = service.calls[0]
+    assert received_tenant_id == "tenant_1"
     assert received_run_id == run_id
     assert received_run_id != task.task_id
     assert received_agent_id == "agent_exec_1"

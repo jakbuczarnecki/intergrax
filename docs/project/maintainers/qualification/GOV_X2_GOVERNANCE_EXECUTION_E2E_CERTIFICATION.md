@@ -18,7 +18,7 @@
 | GX2 matrix SSOT | `tests/qualification/governance/gov_x2/catalog.py` |
 | E2E scenario SSOT | `tests/qualification/governance/catalog.py` (`GOV_FINAL_4_SCENARIO_CATALOG`) |
 
-**Initial status (Cursor):** `READY FOR AUDIT` — not `CLOSED`.
+**Initial status (Cursor):** `GOV-X2-R3 remediation` — parent **READY FOR AUDIT** pending independent re-audit after R3 (not `CLOSED`).
 
 ## 2. Scope
 
@@ -35,7 +35,7 @@ proposal / requested operation
   → terminal outcome
 ```
 
-**In scope:** audit, mechanical matrix, regression gates, GOV-X2-R1 minimal remediation (missing `DecisionResolution` import; stale GR-10 AST paths after Nexus canonicalization shims), GOV-X2-R2 strong-typing + exact proof replay closure.
+**In scope:** audit, mechanical matrix, regression gates, GOV-X2-R1 minimal remediation (missing `DecisionResolution` import; stale GR-10 AST paths after Nexus canonicalization shims), GOV-X2-R2 strong-typing + exact proof replay closure, GOV-X2-R3 post-run tenant contract alignment.
 **Out of scope:** new authority model, CTRL-X closure, TRACE-X / TENANT-X global closure, FRZ PASS promotion.
 
 ## 3. Canonical owners (current HEAD)
@@ -221,6 +221,41 @@ skipped = 0
 
 Recursion protection: replay argv is derived only from catalog inventory; orchestration modules (`test_gov_x2_qualification_batch.py`, `test_gov_x2_proof_replay_gates.py`) are excluded mechanically and must not appear in the catalog. Full replay is invoked via `uv run python tests/qualification/governance/gov_x2/proof_replay.py`, not from a pytest test that re-enters the same node set.
 
+**Independent audit @ `8b4734c2e2fc06fee76af4959cb844f426d1dd59`:** GOV-X2-R1 = **ACCEPTED**; GOV-X2-R2 exact proof replay + targeted pyright (governance tree) + persistence seam = **ACCEPTED**; parent **BLOCKED** on post-run `PostRunGovernanceService` / bridge / Nexus / UAEP tenant contract mismatch.
+
+## GOV-X2-R3 — Post-Run Governance Tenant Contract Alignment
+
+### Before (independent audit finding)
+
+```text
+GovernanceService.evaluate = tenant-aware (tenant_id, run_id, agent_id)
+ExecutionGuard.evaluate_run = tenant-aware
+ReplayService.inspect_run = tenant-aware
+PostRunGovernanceService = tenant-unaware (run_id, agent_id)
+invoke_post_run_governance = tenant-unaware
+NexusLoop._finish_task = drops task.tenant_id
+UAEPExecutor.execute = drops request tenant
+LabAllowGovernanceService = tenant-unaware
+```
+
+### After (R3 remediation — pending independent re-audit)
+
+```text
+PostRunGovernanceService Protocol = tenant-aware (tenant_id, run_id, agent_id)
+invoke_post_run_governance = tenant-aware + fail-closed on blank tenant
+NexusLoop = task.tenant_id propagated
+UAEPExecutor = canonical_runtime_request_tenant_id(request) propagated
+LabAllowGovernanceService = tenant-aware
+test doubles = tenant-aware
+GovernanceService → ExecutionGuard → ReplayService.inspect_run tenant continuity proven (R3-05)
+new authority = 0
+new owner = 0
+new public governance mechanism = 0
+compatibility signature branch = 0
+```
+
+Regression tests: `tests/unit/runtime/governance/test_gov_x2_r3_post_run_tenant_contract.py` (R3-01..05, cross-tenant denial, protocol conformance); updates in `test_g3b_governance_coverage.py`, `test_gr13_governance_evidence_gep_emission.py`.
+
 ## 16. Strong typing audit (semantic boundaries)
 
 Authority / evidence / identity ports use typed contracts under `intergrax/contracts/*`. GR-11 G13 weak-boundary scan = 0 on closed-world consumers.
@@ -254,7 +289,15 @@ uv run pyright intergrax/contracts/canonical_inner_governance.py intergrax/contr
 uv run pytest -p no:xdist tests/qualification/governance -q --tb=line
 ```
 
-**Result @ R2 remediation:** `403 passed` (~83s).
+**Result @ R3 remediation:** `403 passed` (~78s).
+
+```bash
+uv run pytest -p no:xdist tests/unit/runtime/governance/test_gov_x2_r3_post_run_tenant_contract.py tests/unit/runtime/governance/test_g3b_governance_coverage.py -q --tb=short
+```
+
+**Result:** `17 passed` (R3 regressions + G3B post-run).
+
+Logs: `.tmp/session/gov-x2-r3/pytest-governance-full.log`, `.tmp/session/gov-x2-r3/exact-proof-replay.log`, `.tmp/session/gov-x2-r3/pyright-governance-only.log`
 
 ```bash
 uv run pytest -p no:xdist tests/qualification/governance/gov_x2 -q --tb=short
@@ -279,14 +322,14 @@ Evidence contribution only — checklist rows remain OPEN until independent exac
 | FRZ-GOV-01..10 | Composition + GOV-X1 + GR-11/12/13 + GOV_FINAL_4 + GX2 matrix | See §5, `catalog.py`, GR-12-FINAL |
 | FRZ-EXE-01..07 | Root launcher, host task, no alternate scheduler in certified inventory | GR-2, GR-10 admission, HARNESS-FINAL reconciliation (historical) |
 | FRZ-TRC-03,04,06,07,09,10,12 | Tool/provider/side-effect/resume nodes in catalogs | GR-13, MP-4R7, GR-7 host — **not TRACE-X closure** |
-| FRZ-TEN-03, FRZ-TEN-09 | §14 local PASS | Scenario Z, GR-12 F20 |
+| FRZ-TEN-03, FRZ-TEN-09 | §14 local PASS + R3 post-run path | Scenario Z, GR-12 F20, `test_gov_x2_r3_*` |
 
 ## 20. Unresolved findings
 
 | Class | Item |
 | ----- | ---- |
-| IN-SCOPE BLOCKER | **0** (post GOV-X2-R2 — pending independent audit) |
-| TRACKED FREEZE DEBT | **0** inside GOV-X2 parent scope (pyright composition — CLOSED R2) |
+| IN-SCOPE BLOCKER | **0** (post GOV-X2-R3 — pending independent audit) |
+| TRACKED FREEZE DEBT | **0** inside GOV-X2 parent scope (pyright composition — CLOSED R2; optional `nexus_loop.py` pyright when explicitly included in caller sweep — pre-R3, not post-run contract) |
 | ENVIRONMENT/TEST ISSUE | None remaining on mandatory governance batch |
 
 **unclassified = 0**
@@ -295,8 +338,9 @@ Evidence contribution only — checklist rows remain OPEN until independent exac
 
 ```text
 GOV-X2 = READY FOR AUDIT
-GOV-X2-R1 = ACCEPTED (independent audit)
-GOV-X2-R2 = READY FOR AUDIT
+GOV-X2-R1 = ACCEPTED (independent audit @ 8b4734c2)
+GOV-X2-R2 = ACCEPTED AT REMEDIATION SCOPE (independent audit @ 8b4734c2)
+GOV-X2-R3 = READY FOR AUDIT
 CTRL-X = NEXT / NOT ENTERED
 ```
 
