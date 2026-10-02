@@ -23,7 +23,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _RUNTIME_CONTEXT = (
-    _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "engine" / "runtime_context.py"
+    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "agent_runtime_context.py"
 )
 _DECLARATIVE_WIRING = (
     _REPO_ROOT / "intergrax" / "applications" / "_shared" / "declarative_tool_wiring.py"
@@ -37,7 +37,7 @@ _COMPOSITION = (
     / "runtime_tool_invoker_composition.py"
 )
 _INVOKER = _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "tools" / "invoker.py"
-_CONFIG = _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "config.py"
+_CONFIG = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_runtime_config.py"
 _CONTRACT = _REPO_ROOT / "intergrax" / "contracts" / "meaningful_side_effect_authorization.py"
 
 

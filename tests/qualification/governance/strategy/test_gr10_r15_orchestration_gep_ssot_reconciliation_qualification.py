@@ -29,7 +29,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _NEXUS_LOOP = _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "nexus_loop.py"
 _INVOKER = _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "tools" / "invoker.py"
 _RUNTIME_CONTEXT = (
-    _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "engine" / "runtime_context.py"
+    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "agent_runtime_context.py"
 )
 _GRAPH_RUNNER = (
     _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "orchestration" / "graph_runner.py"

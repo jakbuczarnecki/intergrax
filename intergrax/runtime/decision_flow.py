@@ -60,7 +60,10 @@ from intergrax.contracts.decision_record import (
     candidate_decision,
     candidate_decision_ref,
 )
-from intergrax.contracts.decision_resolution import AuthoritativeResolutionRecord
+from intergrax.contracts.decision_resolution import (
+    AuthoritativeResolutionRecord,
+    DecisionResolution,
+)
 from intergrax.contracts.decision_revision import (
     DecisionRevisionDecision,
     DecisionRevisionDisposition,
