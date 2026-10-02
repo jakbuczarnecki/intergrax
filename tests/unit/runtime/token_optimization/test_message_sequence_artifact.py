@@ -200,6 +200,7 @@ def _coordination(
     reservation_id="res-1",
     artifact_lookup_key_hash=reservation_hash,
     tenant_id=reservation_tenant,
+    workspace_id="workspace-1",
     owner_operation_id=reservation_owner,
     acquired_at=acquired,
     lease_deadline=acquired + timedelta(seconds=60),
@@ -216,6 +217,7 @@ def _coordination(
 
     ref = OptimizationArtifactReference(
       tenant_id=_TENANT,
+      context_scope_id=_SCOPE,
       artifact_id="artifact-1",
       artifact_lookup_key_hash=lookup_hash,
       artifact_content_hash="contenthash",

@@ -45,11 +45,13 @@ from intergrax.runtime.context_lifecycle.serialization import (
     compute_durable_compaction_policy_hash,
     compute_durable_compaction_source_identity_hash,
 )
-from intergrax.runtime.token_optimization.message_sequence_artifact import (
-    MessageSequenceArtifactExecutionResult,
-    MessageSequenceArtifactExecutor,
-    MessageSequenceArtifactSourceGroupProof,
+from intergrax.runtime.context_lifecycle.message_sequence_execution_contract import (
     MessageSequenceArtifactExecutionRequest,
+    MessageSequenceArtifactExecutionResult,
+    MessageSequenceArtifactSourceGroupProof,
+)
+from intergrax.runtime.token_optimization.message_sequence_artifact import (
+    MessageSequenceArtifactExecutor,
 )
 
 _MEDIA_TYPE = "application/vnd.intergrax.message-sequence-summary+json"

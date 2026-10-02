@@ -271,13 +271,15 @@ from intergrax.runtime.token_optimization.signals import (
     emit_token_optimization_signal,
     sanitize_signal_metadata,
 )
+from intergrax.runtime.context_lifecycle.message_sequence_execution_contract import (
+    MessageSequenceArtifactExecutionReceipt,
+    MessageSequenceArtifactExecutionRequest,
+    MessageSequenceArtifactExecutionResult,
+)
 from intergrax.runtime.token_optimization.message_sequence_artifact import (
     InternalMessageSequenceModelCall,
     MessageSequenceArtifactExecutionError,
     MessageSequenceArtifactExecutionReason,
-    MessageSequenceArtifactExecutionReceipt,
-    MessageSequenceArtifactExecutionRequest,
-    MessageSequenceArtifactExecutionResult,
     MessageSequenceArtifactExecutor,
 )
 from intergrax.runtime.token_optimization.durable_compaction_candidate import (

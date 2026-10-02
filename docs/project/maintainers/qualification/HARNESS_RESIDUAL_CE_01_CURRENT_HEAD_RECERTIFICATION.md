@@ -252,3 +252,48 @@ CE-01-R1 = READY FOR AUDIT
 CE-01 = READY FOR AUDIT
 ```
 
+## CE-01-R1-R2 — Message sequence execution contract extraction (2026-10-02)
+
+**START_HEAD:** `63e18ae9291c3c53fd2e13d4662ba36366143e81`
+
+**Root cause:** `MessageSequenceArtifactExecutionPort` (and ABI consumers) depended on DTO types defined in `intergrax/runtime/token_optimization/message_sequence_artifact.py` (including `TYPE_CHECKING` imports) — contract → implementation leak.
+
+**DTO inventory (§4):**
+
+| Type | Port ABI? | Semantic contract? | Implementation? | Action |
+| --- | ---: | ---: | ---: | --- |
+| `MessageSequenceArtifactSourceGroupProof` | yes | yes | no | moved to contract |
+| `MessageSequenceArtifactExecutionRequest` | yes | yes | no | moved to contract |
+| `MessageSequenceArtifactExecutionReceipt` | yes | yes | no | moved to contract |
+| `MessageSequenceArtifactExecutionResult` | yes | yes | no | moved to contract |
+| `InternalMessageSequenceModelCall` | no | no | yes | stay in executor module |
+| `MessageSequenceArtifactExecutionReason` | no | no | yes | stay (reference executor failures) |
+| `MessageSequenceArtifactExecutionError` | no | no | yes | stay (reference executor failures) |
+| `MessageSequenceArtifactExecutor` | no | no | yes | stay in token_optimization |
+
+**Before:** Port → DTO types in `message_sequence_artifact.py` → executor module.
+
+**After:** `message_sequence_execution_contract.py` (DTOs + Port) ← `message_sequence_artifact.py` (executor + re-export aliases).
+
+**Canonical owner:** `intergrax/runtime/context_lifecycle/message_sequence_execution_contract.py`. **Compatibility:** `message_sequence_execution_port.py` re-exports; `token_optimization.message_sequence_artifact` and `token_optimization.__init__` re-export DTOs (same class objects).
+
+**Gate:** `check_ce_canonical_semantic_handles.py` — contract/port modules must not import `message_sequence_artifact`; single class definition per ABI type; executor imports contract.
+
+**Tests:** CE-Q + structural 25 passed; context+nexus 554 passed; mandatory MS/compaction/public-claims slice 234 passed (2 LKW doc link tests fail — doc path drift, not R2 ABI); EBH-4 encapsulation 8 passed.
+
+**Pyright (R2 slice):** 1 pre-existing error in `durable_compaction_candidate.py:504` (return path); 0 new contract-boundary errors.
+
+**HEAD unblockers (same session):** `contracts.py` — restore `@dataclass` on `DurableCompactionSourceIdentity`, add missing `_require_sha256_hex` / `_require_non_empty_source_refs`, import durable lossiness constants; test helpers updated for `workspace_id` / `context_scope_id` / `artifact_ownership` / repository `ownership` (HEAD drift, not R2 semantics).
+
+**FRZ PASS delta:** 0. **FRZ-TEN PASS delta:** 0.
+
+```text
+CE-01-R1-R2 = READY FOR AUDIT
+CE-01-R1-R1 = READY FOR AUDIT
+CE-01-R1 = READY FOR AUDIT
+CE-01 = READY FOR AUDIT
+CE-02 = NEXT / NOT ENTERED
+PLUG-01 = NOT ENTERED
+HARNESS-FINAL = NOT ENTERED
+```
+

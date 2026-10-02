@@ -150,6 +150,30 @@ def _reject_duplicates(values: tuple[str, ...], field_name: str) -> tuple[str, .
     return values
 
 
+def _require_sha256_hex(value: str, field_name: str) -> str:
+    digest = _require_strict_non_empty_text(value, field_name)
+    if len(digest) != 64:
+        raise ValueError(f"{field_name} must be a 64-character lowercase hex SHA-256 digest")
+    try:
+        int(digest, 16)
+    except ValueError as exc:
+        raise ValueError(f"{field_name} must be a valid hex SHA-256 digest") from exc
+    if digest != digest.lower():
+        raise ValueError(f"{field_name} must be lowercase hex")
+    return digest
+
+
+def _require_non_empty_source_refs(refs: object, field_name: str) -> tuple[str, ...]:
+    if type(refs) not in (list, tuple):
+        raise ValueError(f"{field_name} must be a sequence of strings")
+    if not refs:
+        raise ValueError(f"{field_name} must not be empty")
+    normalized: list[str] = []
+    for ref in refs:
+        normalized.append(_require_strict_non_empty_text(ref, field_name))
+    return _reject_duplicates(tuple(normalized), field_name)
+
+
 def _normalize_safe_metadata(metadata: Mapping[str, Any] | None) -> Mapping[str, Any]:
     if metadata is None:
         return MappingProxyType({})
@@ -211,6 +235,8 @@ from intergrax.contracts.context_optimization_policy import (
     DurableCompactionValidationRequirement,
     EphemeralArtifactPersistencePolicy,
     OptimizationArtifactType,
+    _DURABLE_LLM_SUMMARY_STRATEGY_IDS,
+    _SUPPORTED_DURABLE_LOSSINESS_PROFILES,
 )
 
 class ReusableArtifactStatus(StrEnum):
@@ -248,6 +274,7 @@ class ContextOptimizationReasonCode(StrEnum):
     ARTIFACT_CREATION_FAILED = "artifact_creation_failed"
 
 
+@dataclass(frozen=True, slots=True)
 class DurableCompactionSourceIdentity:
     """Immutable durable target identity; durable sources use source_refs, not ranges."""
 

@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Callable, get_type_hints
 
 import pytest
 
@@ -33,19 +33,21 @@ from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.assembly_runtime_deps import (
     build_context_assembly_runtime_dependencies,
 )
-from intergrax.runtime.context_lifecycle.message_sequence_execution_port import (
+from intergrax.runtime.context_lifecycle.message_sequence_execution_contract import (
     MessageSequenceArtifactExecutionPort,
-)
-
-from testing_support.builder import canonical_execution_identity_scope
-from intergrax.runtime.events.context_skill_recording import record_context_validation_failed
-from intergrax.runtime.nexus.context.ucl_orchestration import NexusUCLRuntimeDependencies
-from intergrax.runtime.token_optimization.message_sequence_artifact import (
     MessageSequenceArtifactExecutionRequest,
     MessageSequenceArtifactExecutionResult,
+)
+from intergrax.runtime.context_lifecycle.message_sequence_execution_port import (
+    MessageSequenceArtifactExecutionPort as MessageSequenceArtifactExecutionPortReexport,
+)
+from intergrax.runtime.events.context_skill_recording import record_context_validation_failed
+from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
+from intergrax.runtime.nexus.context.ucl_orchestration import NexusUCLRuntimeDependencies
+from intergrax.runtime.token_optimization.message_sequence_artifact import (
     MessageSequenceArtifactExecutor,
 )
-from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
+from testing_support.builder import canonical_execution_identity_scope
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -85,7 +87,7 @@ class _SyntheticUCLRuntime:
     repository: InMemoryOptimizationArtifactRepository
     message_sequence_executor: _SyntheticExecutor
     strategy_versions: dict[str, str]
-    artifact_id_factory: Any
+    artifact_id_factory: Callable[[], str]
     wait_timeout_seconds: float = 0.25
 
 
@@ -199,3 +201,25 @@ def test_synthetic_event_recorder_receives_ce_context_events() -> None:
             run_id=_RUN,
         )
     assert len(recorder.events) == 1
+
+
+def test_message_sequence_execution_port_reexport_is_canonical_contract() -> None:
+    assert MessageSequenceArtifactExecutionPortReexport is MessageSequenceArtifactExecutionPort
+
+
+def test_message_sequence_artifact_compatibility_reexport_is_canonical() -> None:
+    from intergrax.runtime.token_optimization import message_sequence_artifact as impl
+
+    from intergrax.runtime.context_lifecycle import message_sequence_execution_contract as contract
+
+    assert impl.MessageSequenceArtifactExecutionRequest is contract.MessageSequenceArtifactExecutionRequest
+    assert impl.MessageSequenceArtifactExecutionResult is contract.MessageSequenceArtifactExecutionResult
+    assert impl.MessageSequenceArtifactSourceGroupProof is contract.MessageSequenceArtifactSourceGroupProof
+    assert impl.MessageSequenceArtifactExecutionReceipt is contract.MessageSequenceArtifactExecutionReceipt
+
+
+def test_synthetic_executor_structural_proof_uses_contract_dtos_only() -> None:
+    assert isinstance(_SyntheticExecutor(), MessageSequenceArtifactExecutionPort)
+    hints = get_type_hints(_SyntheticExecutor.execute, globalns=globals())
+    assert hints["request"] is MessageSequenceArtifactExecutionRequest
+    assert hints["return"] is MessageSequenceArtifactExecutionResult

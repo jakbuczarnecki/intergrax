@@ -27,6 +27,7 @@ from intergrax.runtime.context_lifecycle import (
     ModelCallExecutionScope,
     OptimizationArtifactType,
     OptimizationExecutionGuard,
+    UclArtifactOwnershipScope,
     assess_durable_compaction_eligibility,
 )
 from intergrax.runtime.token_optimization.contracts import (
@@ -168,6 +169,10 @@ def _request(
             operation_id="operation-1",
             parent_operation_id=None,
             optimization_depth=0,
+        ),
+        artifact_ownership=UclArtifactOwnershipScope(
+            tenant_id="tenant-1",
+            workspace_id="workspace-1",
         ),
     )
     executor = MessageSequenceArtifactExecutor(

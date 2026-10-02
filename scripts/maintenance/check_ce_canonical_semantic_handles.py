@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import ast
 import re
 import sys
 from pathlib import Path
@@ -58,6 +59,35 @@ FORBIDDEN_CE_ASSEMBLY_IMPORTS = (
     "from intergrax.runtime.token_optimization.message_sequence_artifact import MessageSequenceArtifactExecutor",
 )
 
+MESSAGE_SEQUENCE_EXECUTION_CONTRACT_MODULES = (
+    REPO_ROOT
+    / "intergrax"
+    / "runtime"
+    / "context_lifecycle"
+    / "message_sequence_execution_contract.py",
+    REPO_ROOT
+    / "intergrax"
+    / "runtime"
+    / "context_lifecycle"
+    / "message_sequence_execution_port.py",
+)
+
+MESSAGE_SEQUENCE_ARTIFACT_IMPLEMENTATION = (
+    REPO_ROOT / "intergrax" / "runtime" / "token_optimization" / "message_sequence_artifact.py"
+)
+
+MS_EXECUTION_DTO_CLASS_NAMES = frozenset(
+    {
+        "MessageSequenceArtifactSourceGroupProof",
+        "MessageSequenceArtifactExecutionRequest",
+        "MessageSequenceArtifactExecutionReceipt",
+        "MessageSequenceArtifactExecutionResult",
+        "MessageSequenceArtifactExecutionPort",
+    }
+)
+
+FORBIDDEN_MS_ARTIFACT_SUBMODULE = "message_sequence_artifact"
+
 FORBIDDEN_CONTEXT_ENGINE_ISINSTANCE = (
     "isinstance(ucl_runtime, NexusUCLRuntimeDependencies)",
     "isinstance(runtime.event_bus, RuntimeEventBus)",
@@ -85,6 +115,54 @@ def _scan_reflection(path: Path, text: str) -> list[str]:
     rel = path.relative_to(REPO_ROOT).as_posix()
     if FORBIDDEN_REFLECTION_ON_CANONICAL.search(text):
         violations.append(f"{rel}: getattr/hasattr on canonical runtime module")
+    return violations
+
+
+def _module_imports_message_sequence_artifact(path: Path) -> list[str]:
+    violations: list[str] = []
+    rel = path.relative_to(REPO_ROOT).as_posix()
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=rel)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            if FORBIDDEN_MS_ARTIFACT_SUBMODULE in node.module:
+                violations.append(f"{rel}: imports {node.module}")
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if FORBIDDEN_MS_ARTIFACT_SUBMODULE in alias.name:
+                    violations.append(f"{rel}: imports {alias.name}")
+    return violations
+
+
+def _count_class_definitions(repo_relative_glob: str, class_name: str) -> int:
+    count = 0
+    for path in (REPO_ROOT / "intergrax").rglob("*.py"):
+        rel = path.relative_to(REPO_ROOT).as_posix()
+        if rel.startswith("tests/") or "/tests/" in f"/{rel}/":
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=rel)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ClassDef) and node.name == class_name:
+                count += 1
+    return count
+
+
+def _scan_message_sequence_execution_contract_purity() -> list[str]:
+    violations: list[str] = []
+    for path in MESSAGE_SEQUENCE_EXECUTION_CONTRACT_MODULES:
+        violations.extend(_module_imports_message_sequence_artifact(path))
+    for class_name in MS_EXECUTION_DTO_CLASS_NAMES:
+        definitions = _count_class_definitions("intergrax", class_name)
+        if definitions != 1:
+            violations.append(
+                f"message sequence execution ABI: expected exactly one class definition "
+                f"for {class_name}, found {definitions}"
+            )
+    impl_path = MESSAGE_SEQUENCE_ARTIFACT_IMPLEMENTATION
+    impl_text = impl_path.read_text(encoding="utf-8")
+    if "message_sequence_execution_contract" not in impl_text:
+        violations.append(
+            "message_sequence_artifact.py must import message_sequence_execution_contract"
+        )
     return violations
 
 
@@ -133,6 +211,8 @@ def main() -> int:
             text = path.read_text(encoding="utf-8")
             if LEGACY_BRIDGE_CALL.search(text):
                 violations.append(f"{rel}: production legacy assembly runtime bridge call")
+
+    violations.extend(_scan_message_sequence_execution_contract_purity())
 
     if violations:
         print("CE canonical typed runtime violations:", file=sys.stderr)

@@ -53,7 +53,7 @@ from intergrax.context.assembly_runtime import (
 from intergrax.runtime.context_lifecycle.message_sequence_execution_port import (
     MessageSequenceArtifactExecutionPort,
 )
-from intergrax.runtime.token_optimization.message_sequence_artifact import (
+from intergrax.runtime.context_lifecycle.message_sequence_execution_contract import (
     MessageSequenceArtifactExecutionRequest,
     MessageSequenceArtifactSourceGroupProof,
 )
