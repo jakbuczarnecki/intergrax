@@ -7,6 +7,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationMiddlewareHookContext,
     HostOrchestrationRuntimeEventPort,
 )
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
@@ -39,7 +40,11 @@ class EncryptionEnforcementMiddleware(RuntimeMiddleware):
         self._encryptor = encryptor
         self._event_bus = event_bus
 
-    async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def before(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> HookResult:
         if point not in {
             HookPoint.BEFORE_MEMORY_WRITE,
             HookPoint.AFTER_TOOL_CALL,
@@ -74,5 +79,9 @@ class EncryptionEnforcementMiddleware(RuntimeMiddleware):
                     return HookResult(action=HookAction.MODIFY, modified_payload=encrypted)
         return HookResult()
 
-    async def after(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def after(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> HookResult:
         return HookResult()

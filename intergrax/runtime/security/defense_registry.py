@@ -4,13 +4,15 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationMiddlewareHookContext,
+)
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.security.defense_plugin import (
     SecurityDefensePlugin,
     SecurityFailMode,
     SecurityInspectionResult,
 )
-from intergrax.runtime.hooks.hook_context import HookContext
 
 
 class _StrictInjectionDefensePlugin:
@@ -28,7 +30,11 @@ class _StrictInjectionDefensePlugin:
         "disable guardrails",
     )
 
-    def inspect(self, point: HookPoint, ctx: HookContext) -> SecurityInspectionResult:
+    def inspect(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> SecurityInspectionResult:
         if point != HookPoint.BEFORE_TOOL_CALL:
             return SecurityInspectionResult(allowed=True, plugin_id=self.plugin_id)
         arguments = ctx.runtime_state.get("arguments")

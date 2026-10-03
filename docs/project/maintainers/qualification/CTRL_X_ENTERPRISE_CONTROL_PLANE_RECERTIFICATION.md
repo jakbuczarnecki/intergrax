@@ -374,6 +374,21 @@ Mechanism: `tests/qualification/control_planes/ctrl_x/proof_replay.py` (excludes
 
 ---
 
+## CTRL-X-R2 — Contract-Pure Middleware Composition & Evidence Closure
+
+| Blocker | Before R2 | After R2 |
+|---|---|---|
+| R2-A | `application_security_wiring` narrowed on `MiddlewarePipeline` + `attach_tier1_middleware_if_absent` | `HostOrchestrationMiddlewarePipelinePort.attach_runtime_middleware_if_absent` only; `HookPoint` Tier-0 owner in `intergrax/contracts/middleware_hook_point.py`; alternate port proof (R2-MW-02) |
+| R2-B | Wide diagnostics auto-classified EBH-6 off manifest | Semantic plane mapping per domain; `ctrl_x_impact` on every group; `CTRL-X blocker = 0`; total diagnostics = 128 accounted |
+| R2-C | Weak `hasattr` / docstring Evaluation proofs | R2-EVAL flow proofs: registry append-only, `evaluate_agent_promotion` gate, Decision Verification composition disjoint; TENANT-X debt on missing `tenant_id` on `OnlineEvaluationObservation` |
+| R2-D | 15 security failures unbaselined | A/B/C identical 15 failures — `PRE-EXISTING TEST DEBT` matrix in `test_ctrl_x_r2_security_baseline.py` |
+
+**Middleware after R2:** composition boundary = `HostOrchestrationMiddlewarePipelinePort`; concrete `MiddlewarePipeline` check in production wiring = 0; sanctioned attach = 1; FAIL_OPEN production rejection preserved.
+
+**CTRL-X-R2 recommendation:** READY FOR AUDIT (independent GitHub audit required).
+
+---
+
 ## 27 Recommendation
 
 | Item | Status |

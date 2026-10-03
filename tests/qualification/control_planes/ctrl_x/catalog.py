@@ -63,6 +63,8 @@ _GR12 = (
 _CP_MUT = "tests/unit/runtime/governance/test_control_plane_mutation_approval.py"
 _R1_SEC = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py"
 _R1_EVAL = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_evaluation_plane.py"
+_R2_MW = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_middleware_composition.py"
+_R2_EVAL = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_evaluation_plane.py"
 _EVAL_WIRING = "tests/unit/applications/test_harness_evaluation_wiring.py"
 _ONLINE_REG = "tests/unit/runtime/architecture/test_online_evaluation_registry.py"
 
@@ -81,6 +83,8 @@ CTRL_X_PLANE_CATALOG: tuple[CtrlXPlaneEvidence, ...] = (
             _nid(_R1_SEC, "test_r1_sec_01_canonical_composition_rejects_external_fail_open"),
             _nid(_R1_SEC, "test_r1_sec_02_fail_closed_external_defense_accepted"),
             _nid(_R1_SEC, "test_r1_sec_06_security_emitters_use_host_orchestration_event_port"),
+            _nid(_R2_MW, "test_r2_mw_02_alternate_pipeline_port_accepts_security_middleware"),
+            _nid(_R2_MW, "test_r2_mw_05_fail_open_rejected_before_attach"),
         ),
         ("AW-7C-P0-3B scoped substrate evidence", "PLUG-03 security plugin adoption"),
     ),
@@ -124,9 +128,12 @@ CTRL_X_PLANE_CATALOG: tuple[CtrlXPlaneEvidence, ...] = (
             _nid(_R1_EVAL, "test_r1_eval_03_shadow_observation_is_observation_not_permission"),
             _nid(_DV, "test_pipeline_factory_registers_selected_stages_only"),
             _nid(_R1_EVAL, "test_r1_eval_07_evaluation_observation_host_scoped_not_cross_run"),
+            _nid(_R2_EVAL, "test_r2_eval_02_promotion_consumer_requires_separate_gate_evidence"),
+            _nid(_R2_EVAL, "test_r2_eval_04_decision_verification_distinct_from_evaluation_registry"),
+            _nid(_R2_EVAL, "test_r2_eval_05_tenant_verdict_not_tenant_aware_at_this_stage"),
         ),
         ("Offline RAG evaluation harness — product scope; not runtime permission",),
-        notes="OnlineEvaluationObservation is run/host-scoped; global TENANT-X not entered.",
+        notes="OnlineEvaluationObservation is run/host-scoped; TENANT-X debt on tenant_id surface.",
     ),
     CtrlXPlaneEvidence(
         "CX-05",

@@ -11,6 +11,7 @@ from typing import Protocol, runtime_checkable
 from pydantic import BaseModel, Field
 
 from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationMiddlewareHookContext,
     HostOrchestrationRuntimeEventPort,
 )
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
@@ -50,7 +51,11 @@ class SecurityDefensePlugin(Protocol):
     priority: int
     fail_mode: SecurityFailMode
 
-    def inspect(self, point: HookPoint, ctx: HookContext) -> SecurityInspectionResult: ...
+    def inspect(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> SecurityInspectionResult: ...
 
 
 class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
@@ -71,7 +76,11 @@ class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
         self.priority = plugin.priority
         self.name = f"SecurityDefense:{plugin.plugin_id}"
 
-    async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def before(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> HookResult:
         if point not in self._plugin.hook_points:
             return HookResult()
         if self._enforce_tenant_scope and not _tenant_scope_valid(ctx):
@@ -114,11 +123,15 @@ class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
             return HookResult(action=HookAction.MODIFY, reason=reason)
         return HookResult(action=HookAction.BLOCK, reason=reason)
 
-    async def after(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def after(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> HookResult:
         return HookResult()
 
 
-def _tenant_scope_valid(ctx: HookContext) -> bool:
+def _tenant_scope_valid(ctx: HostOrchestrationMiddlewareHookContext) -> bool:
     tenant_id = str(ctx.runtime_state.get("tenant_id", "")).strip()
     if not tenant_id:
         return True

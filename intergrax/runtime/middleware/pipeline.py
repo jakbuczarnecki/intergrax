@@ -7,14 +7,29 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List, Optional
 
-from intergrax.runtime.hooks.hook_context import HookContext, HookResult
-from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationMiddlewareHookResult,
+    HostOrchestrationRuntimeMiddlewareRegistration,
+)
+from intergrax.contracts.middleware_hook_point import HookPoint
+from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.middleware.base import RuntimeMiddleware
 from intergrax.runtime.middleware.hook_runtime_guard import invoke_guarded_hook
 
 if TYPE_CHECKING:
     from intergrax.runtime.events.event_bus import RuntimeEventBus
+
+
+def _coerce_hook_result(outcome: HostOrchestrationMiddlewareHookResult) -> HookResult:
+    if isinstance(outcome, HookResult):
+        return outcome
+    action_value = outcome.action.value
+    try:
+        action = HookAction(action_value)
+    except ValueError:
+        action = HookAction.ALLOW
+    return HookResult(action=action, reason=outcome.reason)
 
 
 class MiddlewarePipeline:
@@ -27,7 +42,7 @@ class MiddlewarePipeline:
     def __init__(
         self,
         hook_registry: Optional[HookRegistry] = None,
-        middleware: Optional[List[RuntimeMiddleware]] = None,
+        middleware: Optional[List[HostOrchestrationRuntimeMiddlewareRegistration]] = None,
         *,
         hook_timeout_seconds: float | None = None,
         event_bus: RuntimeEventBus | None = None,
@@ -57,30 +72,36 @@ class MiddlewarePipeline:
 
     async def _run_middleware_before(
         self,
-        mw: RuntimeMiddleware,
+        mw: HostOrchestrationRuntimeMiddlewareRegistration,
         point: HookPoint,
         ctx: HookContext,
     ) -> HookResult:
+        async def _coro() -> HookResult:
+            return _coerce_hook_result(await mw.before(point, ctx))
+
         return await invoke_guarded_hook(
             hook_name=mw.name,
             point=point,
             ctx=ctx,
-            coro_factory=lambda: mw.before(point, ctx),
+            coro_factory=_coro,
             timeout_seconds=self._hook_timeout_seconds,
             event_bus=self._event_bus,
         )
 
     async def _run_middleware_after(
         self,
-        mw: RuntimeMiddleware,
+        mw: HostOrchestrationRuntimeMiddlewareRegistration,
         point: HookPoint,
         ctx: HookContext,
     ) -> HookResult:
+        async def _coro() -> HookResult:
+            return _coerce_hook_result(await mw.after(point, ctx))
+
         return await invoke_guarded_hook(
             hook_name=mw.name,
             point=point,
             ctx=ctx,
-            coro_factory=lambda: mw.after(point, ctx),
+            coro_factory=_coro,
             timeout_seconds=self._hook_timeout_seconds,
             event_bus=self._event_bus,
         )
@@ -119,8 +140,11 @@ class MiddlewarePipeline:
     def registered_middleware_names(self) -> frozenset[str]:
         return frozenset(middleware.name for middleware in self._middleware)
 
-    def attach_tier1_middleware_if_absent(self, middleware: RuntimeMiddleware) -> None:
-        """Attach Tier-1 :class:`RuntimeMiddleware` (canonical host wiring entry)."""
+    def attach_runtime_middleware_if_absent(
+        self,
+        middleware: HostOrchestrationRuntimeMiddlewareRegistration,
+    ) -> None:
+        """Canonical host middleware composition (idempotent by ``middleware.name``)."""
         existing = list(self._middleware)
         if any(mw.name == middleware.name for mw in existing):
             return
@@ -128,9 +152,3 @@ class MiddlewarePipeline:
             [*existing, middleware],
             key=lambda item: item.priority,
         )
-
-    def attach_runtime_middleware_if_absent(
-        self,
-        middleware: RuntimeMiddleware,
-    ) -> None:
-        self.attach_tier1_middleware_if_absent(middleware)

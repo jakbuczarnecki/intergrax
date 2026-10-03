@@ -6,10 +6,10 @@ from __future__ import annotations
 
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationMiddlewareHookContext,
     HostOrchestrationRuntimeEventPort,
 )
 from intergrax.runtime.events.spine_consolidation import build_platform_signal_event
-from intergrax.runtime.hooks.hook_context import HookContext
 from intergrax.runtime.hooks.hook_point import HookPoint
 
 KIND_DEFENSE_BLOCKED = "platform.security.defense_blocked"
@@ -19,7 +19,7 @@ KIND_ENCRYPTION_DENIED = "platform.security.encryption_denied"
 async def emit_defense_blocked(
     event_bus: HostOrchestrationRuntimeEventPort | None,
     *,
-    ctx: HookContext,
+    ctx: HostOrchestrationMiddlewareHookContext,
     point: HookPoint,
     plugin_id: str,
     reason: str,
@@ -50,7 +50,7 @@ async def emit_defense_blocked(
 async def emit_encryption_denied(
     event_bus: HostOrchestrationRuntimeEventPort | None,
     *,
-    ctx: HookContext,
+    ctx: HostOrchestrationMiddlewareHookContext,
     point: HookPoint,
     reason: str,
     classification: str | None = None,

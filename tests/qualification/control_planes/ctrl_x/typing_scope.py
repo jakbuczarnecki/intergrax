@@ -10,6 +10,9 @@ CTRL_X_R1_START_HEAD: Final[str] = "5e9878d71d363542d25ada19cff2590aa37448d3"
 
 CTRL_X_SEMANTIC_BOUNDARY_MODULES: Final[dict[str, tuple[str, ...]]] = {
     "CX-01": (
+        "intergrax/contracts/host_orchestration_wiring_capabilities.py",
+        "intergrax/contracts/middleware_hook_point.py",
+        "intergrax/runtime/middleware/pipeline.py",
         "intergrax/applications/_shared/application_security_wiring.py",
         "intergrax/runtime/security/defense_plugin_loader.py",
         "intergrax/core/security_bootstrap.py",
@@ -94,3 +97,59 @@ def ctrl_x_plane_for_boundary_module(module_path: str) -> str | None:
         if normalized in paths:
             return plane_id
     return None
+
+
+def ctrl_x_semantic_plane_for_wide_file(module_path: str) -> str:
+    """Map wide-scan files to CTRL-X planes by domain (not manifest-only EBH-6)."""
+    boundary = ctrl_x_plane_for_boundary_module(module_path)
+    if boundary is not None:
+        return boundary
+    normalized = module_path.replace("\\", "/")
+    if normalized.startswith("intergrax/context/"):
+        return "CX-12"
+    if normalized.startswith("intergrax/runtime/nexus/tools/"):
+        return "CX-08"
+    if normalized.startswith("intergrax/runtime/diagnostics/"):
+        return "CX-07"
+    if normalized.startswith("intergrax/runtime/registry/"):
+        return "CX-10"
+    if normalized.startswith("intergrax/runtime/security/"):
+        return "CX-01"
+    if normalized.startswith("intergrax/runtime/observability/"):
+        return "CX-06"
+    if normalized.startswith("intergrax/skills/"):
+        return "CX-09"
+    if "evaluation" in normalized or "token_optimization" in normalized:
+        return "CX-04"
+    if "resilience" in normalized or "execution/budget" in normalized:
+        return "CX-03"
+    return "EBH-6"
+
+
+def ctrl_x_wide_diagnostic_classification(
+    module_path: str,
+    *,
+    on_semantic_boundary: bool,
+) -> tuple[str, str, str]:
+    """Return (ctrl_x_impact, boundary_or_internal, reason)."""
+    plane = ctrl_x_semantic_plane_for_wide_file(module_path)
+    if on_semantic_boundary:
+        return (
+            "CTRL-X BLOCKER",
+            "boundary",
+            "Diagnostic on committed semantic-boundary module; must be 0 before audit.",
+        )
+    if plane != "EBH-6":
+        return (
+            "NON-BLOCKING IMPLEMENTATION TYPING DEBT — WITH EVIDENCE",
+            "implementation-local",
+            (
+                f"CTRL-X plane surface ({plane}) implementation typing; "
+                "does not weaken boundary replaceability or authority."
+            ),
+        )
+    return (
+        "NON-BLOCKING IMPLEMENTATION TYPING DEBT — WITH EVIDENCE",
+        "implementation-local",
+        "Pre-existing wide-tree typing debt outside CTRL-X plane surfaces (EBH-6).",
+    )

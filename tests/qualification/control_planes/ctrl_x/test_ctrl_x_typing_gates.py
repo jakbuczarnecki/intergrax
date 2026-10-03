@@ -49,3 +49,13 @@ def test_ctrl_x_wide_pyright_provenance_accounts_for_all_diagnostics() -> None:
     assert accounted == CTRL_X_WIDE_PYRIGHT_DIAGNOSTIC_TOTAL
     assert CTRL_X_WIDE_PYRIGHT_DIAGNOSTIC_TOTAL > 0
     assert len(CTRL_X_WIDE_PYRIGHT_FILE_PATHS) >= 50
+    blockers = [
+        group
+        for group in CTRL_X_WIDE_PYRIGHT_DIAGNOSTIC_GROUPS
+        if group.get("ctrl_x_impact") == "CTRL-X BLOCKER"
+    ]
+    assert blockers == []
+    for group in CTRL_X_WIDE_PYRIGHT_DIAGNOSTIC_GROUPS:
+        assert group.get("semantic_plane")
+        assert group.get("reason")
+        assert group.get("ctrl_x_impact")

@@ -4,13 +4,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Mapping
 from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.event_taxonomy import EventCategory
 from intergrax.contracts.execution_budget_ledger_port import ExecutionBudgetLedgerFactoryPort
 from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.contracts.run_trace_store import RunTraceReader
+from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.middleware_hook_point import HookPoint
 from intergrax.contracts.runtime_event import RuntimeEvent
 from intergrax.contracts.runtime_event_type import RuntimeEventType
 
@@ -29,6 +31,13 @@ class HostOrchestrationMiddlewareHookContext(Protocol):
 
     task_id: str
     run_id: str
+    node_id: str | None
+    agent_id: str | None
+    step_id: str | None
+    phase: ExecutionPhase
+
+    @property
+    def runtime_state(self) -> Mapping[str, object]: ...
 
 
 @runtime_checkable
@@ -37,6 +46,9 @@ class HostOrchestrationMiddlewareHookResult(Protocol):
 
     @property
     def action(self) -> HostOrchestrationMiddlewareHookAction: ...
+
+    @property
+    def reason(self) -> str | None: ...
 
 
 @runtime_checkable
@@ -48,13 +60,13 @@ class HostOrchestrationRuntimeMiddlewareRegistration(Protocol):
 
     async def before(
         self,
-        point: str,
+        point: HookPoint,
         ctx: HostOrchestrationMiddlewareHookContext,
     ) -> HostOrchestrationMiddlewareHookResult: ...
 
     async def after(
         self,
-        point: str,
+        point: HookPoint,
         ctx: HostOrchestrationMiddlewareHookContext,
     ) -> HostOrchestrationMiddlewareHookResult: ...
 
@@ -95,7 +107,6 @@ class HostOrchestrationRuntimeEventPort(Protocol):
     async def publish(self, event: RuntimeEvent) -> None: ...
 
 
-@runtime_checkable
 @runtime_checkable
 class HostOrchestrationMiddlewarePipelinePort(Protocol):
     """Middleware attachment and hook runtime configuration for orchestration hosts."""

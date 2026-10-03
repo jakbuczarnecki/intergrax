@@ -14,6 +14,9 @@ from intergrax.applications.contracts.environment_profile import (
 from intergrax.contracts.host_orchestration_application_wiring_target import (
     HostOrchestrationApplicationWiringTarget,
 )
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationMiddlewareHookContext,
+)
 from intergrax.runtime.architecture.prompt_security import (
     PromptDefenseProfile,
     PromptInjectionRule,
@@ -36,7 +39,6 @@ from intergrax.runtime.middleware.base import RuntimeMiddleware
 from intergrax.applications._shared.security_runtime_bridge import (
     SecurityWiringOptions,
 )
-from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.runtime.security.defense_plugin import (
     PluginSecurityDefenseMiddleware,
     SecurityFailMode,
@@ -77,7 +79,7 @@ class PromptDefenseMiddleware(RuntimeMiddleware):
     def __init__(self, profile: PromptDefenseProfile) -> None:
         self._profile = profile
 
-    async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def before(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         if point != HookPoint.BEFORE_CONTEXT_BUILD:
             return HookResult()
         prompt = str(ctx.runtime_state.get("prompt", ""))
@@ -91,7 +93,7 @@ class PromptDefenseMiddleware(RuntimeMiddleware):
             )
         return HookResult()
 
-    async def after(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def after(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         return HookResult()
 
 
@@ -104,7 +106,7 @@ class ToolInjectionDefenseMiddleware(RuntimeMiddleware):
     def __init__(self, policy: ToolInvocationPolicy) -> None:
         self._policy = policy
 
-    async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def before(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         if point != HookPoint.BEFORE_TOOL_CALL:
             return HookResult()
         tool_id = str(ctx.runtime_state.get("tool_id", ""))
@@ -131,7 +133,7 @@ class ToolInjectionDefenseMiddleware(RuntimeMiddleware):
             )
         return HookResult()
 
-    async def after(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def after(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         return HookResult()
 
 
@@ -141,7 +143,7 @@ class TenantSecurityMiddleware(RuntimeMiddleware):
     priority = 45
     name = "TenantSecurityMiddleware"
 
-    async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def before(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         if point != HookPoint.BEFORE_TASK_INTAKE:
             return HookResult()
         request_tenant_id = str(ctx.runtime_state.get("tenant_id", ""))
@@ -173,7 +175,7 @@ class TenantSecurityMiddleware(RuntimeMiddleware):
             )
         return HookResult()
 
-    async def after(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def after(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         return HookResult()
 
 
@@ -181,12 +183,7 @@ def _attach_middleware(
     target: HostOrchestrationApplicationWiringTarget,
     middleware: RuntimeMiddleware,
 ) -> None:
-    pipeline = target.middleware
-    if not isinstance(pipeline, MiddlewarePipeline):
-        raise TypeError(
-            "canonical security wiring requires MiddlewarePipeline middleware attachment",
-        )
-    pipeline.attach_tier1_middleware_if_absent(middleware)
+    target.middleware.attach_runtime_middleware_if_absent(middleware)
 
 
 def _reject_non_fail_closed_defense_plugins(
