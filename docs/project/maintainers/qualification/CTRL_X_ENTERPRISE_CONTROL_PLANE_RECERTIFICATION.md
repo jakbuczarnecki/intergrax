@@ -402,6 +402,25 @@ Trigger: unauthorized `HookPoint` ownership move; `Mapping[str, object]` hook bo
 
 ---
 
+## CTRL-X-ADR1-Q1 — ADR consistency & security debt ownership (2026-10-03)
+
+Evidence commit baseline: `ec55899956cf6c3c6290407c8c8ebecdb066911a` (`development`).
+
+| Objective | Status | Evidence |
+|---|---|---|
+| **Q1-A** ADR supersession / refinement vs ADR-HARNESS-001 D1 | **resolved** | ADR-CTRL-X-001 header fields **Refines / supersedes** + **Does NOT reopen**; §ADR-HARNESS-001 relationship (Q1-A); exactly-one owner matrix for HookPoint, protocols, pipeline, port, alias |
+| **Q1-B** canonical roadmap ownership for 15 security failures | **resolved** | ADR-CTRL-X-001 §22 full 15-row matrix; A/B/C provenance unchanged; HEAD re-run 15/15 fail with classified owners (QUAL-X = 15); **remaining security-test CTRL-X blockers = 0** |
+
+| Item | Status |
+|---|---|
+| CTRL-X-ADR1-Q1 | **READY FOR AUDIT** |
+| CTRL-X-ADR1 | **READY FOR INDEPENDENT ACCEPTANCE** (ADR still Proposed until audit Accepts) |
+| CTRL-X parent | **BLOCKED PENDING ADR ACCEPTANCE** |
+| CTRL-X-R3 | **NOT ENTERED** |
+| STATE-X | **NOT ENTERED** |
+
+---
+
 ## 27 Recommendation
 
 | Item | Status |
