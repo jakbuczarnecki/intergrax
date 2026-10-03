@@ -562,7 +562,7 @@ See `CTRL_X_PLANE_CATALOG` fields: semantic_owner, canonical_contract_boundary, 
 | R3 implementation | `98a586540` — typed CTRL-X hook contracts |
 | R3-R1 remediation | `ebd5ac5653ee054d28cc32ed0302eb361a4ef56a` |
 | R3-R2 remediation | `c8338ebb6` — `fix(security): fail closed on incomplete tenant scope` (tenant files; `093b6570a` also touched checkpoint — **reverted in Q1**) |
-| R3-R2-Q1 remediation (`FINAL_COMMIT`) | `e5a67d89e` — `fix(ctrl-x): remove state scope contamination` |
+| R3-R2-Q1 remediation (`FINAL_COMMIT`) | `a4ce244a0` — `fix(ctrl-x): remove state scope contamination` |
 
 | Kind | Paths |
 |---|---|
