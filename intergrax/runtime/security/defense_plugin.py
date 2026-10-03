@@ -14,7 +14,7 @@ from intergrax.contracts.host_orchestration_wiring_capabilities import (
     HostOrchestrationMiddlewareHookContext,
     HostOrchestrationRuntimeEventPort,
 )
-from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
+from intergrax.runtime.hooks.hook_context import HookAction, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
 from intergrax.runtime.security.security_events import emit_defense_blocked
