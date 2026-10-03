@@ -119,10 +119,8 @@ class MiddlewarePipeline:
     def registered_middleware_names(self) -> frozenset[str]:
         return frozenset(middleware.name for middleware in self._middleware)
 
-    def attach_runtime_middleware_if_absent(
-        self,
-        middleware: RuntimeMiddleware,
-    ) -> None:
+    def attach_tier1_middleware_if_absent(self, middleware: RuntimeMiddleware) -> None:
+        """Attach Tier-1 :class:`RuntimeMiddleware` (canonical host wiring entry)."""
         existing = list(self._middleware)
         if any(mw.name == middleware.name for mw in existing):
             return
@@ -130,3 +128,9 @@ class MiddlewarePipeline:
             [*existing, middleware],
             key=lambda item: item.priority,
         )
+
+    def attach_runtime_middleware_if_absent(
+        self,
+        middleware: RuntimeMiddleware,
+    ) -> None:
+        self.attach_tier1_middleware_if_absent(middleware)

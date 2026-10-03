@@ -36,7 +36,11 @@ from intergrax.runtime.middleware.base import RuntimeMiddleware
 from intergrax.applications._shared.security_runtime_bridge import (
     SecurityWiringOptions,
 )
-from intergrax.runtime.security.defense_plugin import PluginSecurityDefenseMiddleware
+from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
+from intergrax.runtime.security.defense_plugin import (
+    PluginSecurityDefenseMiddleware,
+    SecurityFailMode,
+)
 from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
 from intergrax.runtime.security.encryption_middleware import EncryptionEnforcementMiddleware
 
@@ -177,7 +181,28 @@ def _attach_middleware(
     target: HostOrchestrationApplicationWiringTarget,
     middleware: RuntimeMiddleware,
 ) -> None:
-    target.middleware.attach_runtime_middleware_if_absent(middleware)
+    pipeline = target.middleware
+    if not isinstance(pipeline, MiddlewarePipeline):
+        raise TypeError(
+            "canonical security wiring requires MiddlewarePipeline middleware attachment",
+        )
+    pipeline.attach_tier1_middleware_if_absent(middleware)
+
+
+def _reject_non_fail_closed_defense_plugins(
+    plugin_ids: tuple[str, ...],
+    bundle_ids: tuple[str, ...],
+) -> None:
+    from intergrax.applications._shared.security_assembly_resolver import SecurityAssemblyError
+
+    for plugin in resolve_security_defense_plugins(plugin_ids, bundle_ids):
+        if plugin.fail_mode is not SecurityFailMode.FAIL_CLOSED:
+            raise SecurityAssemblyError(
+                [
+                    "security defense plugin "
+                    f"{plugin.plugin_id!r} must use fail_mode=FAIL_CLOSED for host composition",
+                ],
+            )
 
 
 def register_application_security_hooks(
@@ -216,6 +241,10 @@ def register_application_security_hooks(
         _attach_middleware(target, ToolInjectionDefenseMiddleware(default_tool_invocation_policy()))
     if profile.tenant_security_verify_enabled:
         _attach_middleware(target, TenantSecurityMiddleware())
+    _reject_non_fail_closed_defense_plugins(
+        resolved.defense_plugin_ids,
+        resolved.defense_bundle_ids,
+    )
     for plugin in resolve_security_defense_plugins(
         resolved.defense_plugin_ids,
         resolved.defense_bundle_ids,

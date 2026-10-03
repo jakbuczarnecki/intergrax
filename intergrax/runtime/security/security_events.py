@@ -4,29 +4,20 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
-
 from intergrax.contracts.event_severity import EventSeverity
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
+)
 from intergrax.runtime.events.spine_consolidation import build_platform_signal_event
 from intergrax.runtime.hooks.hook_context import HookContext
 from intergrax.runtime.hooks.hook_point import HookPoint
-
-if TYPE_CHECKING:
-    from intergrax.contracts.host_orchestration_wiring_capabilities import (
-        HostOrchestrationRuntimeEventPort,
-    )
-    from intergrax.runtime.events.event_bus import RuntimeEventBus
-
-    _DefenseEventBusPort = RuntimeEventBus | HostOrchestrationRuntimeEventPort
-else:
-    _DefenseEventBusPort = object
 
 KIND_DEFENSE_BLOCKED = "platform.security.defense_blocked"
 KIND_ENCRYPTION_DENIED = "platform.security.encryption_denied"
 
 
 async def emit_defense_blocked(
-    event_bus: _DefenseEventBusPort | None,
+    event_bus: HostOrchestrationRuntimeEventPort | None,
     *,
     ctx: HookContext,
     point: HookPoint,
@@ -57,7 +48,7 @@ async def emit_defense_blocked(
 
 
 async def emit_encryption_denied(
-    event_bus: _DefenseEventBusPort | None,
+    event_bus: HostOrchestrationRuntimeEventPort | None,
     *,
     ctx: HookContext,
     point: HookPoint,

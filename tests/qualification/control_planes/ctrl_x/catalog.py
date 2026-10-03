@@ -61,6 +61,10 @@ _GR12 = (
     "tests/qualification/governance/gr12/test_gr12_final_control_plane_qualification.py"
 )
 _CP_MUT = "tests/unit/runtime/governance/test_control_plane_mutation_approval.py"
+_R1_SEC = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py"
+_R1_EVAL = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_evaluation_plane.py"
+_EVAL_WIRING = "tests/unit/applications/test_harness_evaluation_wiring.py"
+_ONLINE_REG = "tests/unit/runtime/architecture/test_online_evaluation_registry.py"
 
 
 CTRL_X_PLANE_CATALOG: tuple[CtrlXPlaneEvidence, ...] = (
@@ -74,6 +78,9 @@ CTRL_X_PLANE_CATALOG: tuple[CtrlXPlaneEvidence, ...] = (
         (
             _nid(_PLUG03, "test_plug03_security_defense_canonical_hook_invokes_custom_plugin"),
             _nid(_MEM_SEC, "test_cross_tenant_isolation"),
+            _nid(_R1_SEC, "test_r1_sec_01_canonical_composition_rejects_external_fail_open"),
+            _nid(_R1_SEC, "test_r1_sec_02_fail_closed_external_defense_accepted"),
+            _nid(_R1_SEC, "test_r1_sec_06_security_emitters_use_host_orchestration_event_port"),
         ),
         ("AW-7C-P0-3B scoped substrate evidence", "PLUG-03 security plugin adoption"),
     ),
@@ -106,16 +113,20 @@ CTRL_X_PLANE_CATALOG: tuple[CtrlXPlaneEvidence, ...] = (
     CtrlXPlaneEvidence(
         "CX-04",
         "FRZ-CTL-04",
-        "Advisory evaluation surfaces (token optimization / quality governance)",
-        "TokenOptimizationAdvisoryEvaluation* — measure/recommend only",
+        "EvaluationProfile wiring + OnlineEvaluationRegistry + advisory/offline/shadow producers",
+        "EvaluationProfile / evaluation_wiring; OnlineEvaluationRegistry; advisory evaluation contracts",
         CtrlXTenantVerdict.NOT_APPLICABLE_WITH_EVIDENCE,
         CtrlXPlaneResult.PASS,
         (
+            _nid(_EVAL_WIRING, "test_wire_application_evaluation_builds_registry_and_bridge"),
+            _nid(_ONLINE_REG, "test_in_memory_registry_append"),
             _nid(_ADV_EVAL, "test_evaluation_result_rejects_auto_apply"),
-            _nid(_ADV_EVAL, "test_evaluation_case_rejects_auto_apply_expectation"),
+            _nid(_R1_EVAL, "test_r1_eval_03_shadow_observation_is_observation_not_permission"),
+            _nid(_DV, "test_pipeline_factory_registers_selected_stages_only"),
+            _nid(_R1_EVAL, "test_r1_eval_07_evaluation_observation_host_scoped_not_cross_run"),
         ),
         ("Offline RAG evaluation harness — product scope; not runtime permission",),
-        notes="Tenant-scoped online eval queues are host-scoped; global TENANT-X not entered.",
+        notes="OnlineEvaluationObservation is run/host-scoped; global TENANT-X not entered.",
     ),
     CtrlXPlaneEvidence(
         "CX-05",

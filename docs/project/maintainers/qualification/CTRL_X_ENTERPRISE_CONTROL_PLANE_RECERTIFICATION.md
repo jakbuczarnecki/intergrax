@@ -347,11 +347,30 @@ Mechanism: `tests/qualification/control_planes/ctrl_x/proof_replay.py` (excludes
 | ID | Class | Summary | Owner stage |
 |---|---|---|---|
 | — | — | **IN-SCOPE BLOCKER = 0** | — |
-| CTRL-X-D1 | TRACKED FREEZE DEBT | 133 pyright errors on wide representative tree | EBH-6 / FRZ-TYP |
+| CTRL-X-D1 | TRACKED FREEZE DEBT | Wide tree typing debt (committed provenance; boundary slice 0 errors) | EBH-6 / FRZ-TYP |
 | CTRL-X-D2 | TRACKED FREEZE DEBT | PROD-Q provider/sandbox global SEC rows | PROD-Q |
 | CTRL-X-D3 | TRACKED FREEZE DEBT | TRACE-X global observability completeness | TRACE-X |
 
 **unclassified = 0**
+
+---
+
+## CTRL-X-R1 — Independent-audit remediation
+
+| Blocker | Root cause | After R1 |
+|---|---|---|
+| R1-A | Production host accepted `FAIL_OPEN` defense plugins | `register_application_security_hooks` + `validate_security_wiring` reject non-`FAIL_CLOSED` before middleware attach |
+| R1-B | `security_events.py` used `TYPE_CHECKING` + `object` event port | `HostOrchestrationRuntimeEventPort` only |
+| R1-C | 133 wide pyright rows only under `.tmp` | Committed `typing_scope.py`, `wide_pyright_scope.py`, `wide_pyright_provenance.py`, `CTRL_X_WIDE_PYRIGHT_PROVENANCE.md` |
+| R1-D | CX-04 narrowed to advisory token optimization only | Closed-world Evaluation catalog + R1-EVAL proof nodes |
+
+**Security after:** production `FAIL_OPEN` accepted = 0; `FAIL_CLOSED` path proven; generic `object` event boundary = 0; no new Security authority.
+
+**Typing after:** `CTRL_X_SEMANTIC_BOUNDARY_MODULES` gate = 0 pyright errors; wide diagnostics grouped with `unaccounted = 0` (see provenance module total).
+
+**Evaluation after:** `EvaluationProfile` + `OnlineEvaluationRegistry` + shadow/advisory/offline surfaces inventoried in CX-04 catalog; evaluation ≠ Decision Verification; no direct execution/permission path in proofs.
+
+**CTRL-X-R1 recommendation:** READY FOR AUDIT (independent GitHub audit required).
 
 ---
 

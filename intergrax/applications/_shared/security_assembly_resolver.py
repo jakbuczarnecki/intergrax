@@ -86,6 +86,19 @@ def validate_security_wiring(
         if _resolve_defense_plugin(bundle_id) is None:
             errors.append(f"unknown security defense bundle id: {bundle_id}")
 
+    from intergrax.runtime.security.defense_plugin import SecurityFailMode
+    from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
+
+    for plugin in resolve_security_defense_plugins(
+        tuple(profile.defense_plugin_ids),
+        tuple(profile.defense_bundle_ids),
+    ):
+        if plugin.fail_mode is not SecurityFailMode.FAIL_CLOSED:
+            errors.append(
+                "security defense plugin "
+                f"{plugin.plugin_id!r} must use fail_mode=FAIL_CLOSED for host composition",
+            )
+
     return SecurityAssemblyValidationResult(valid=not errors, errors=tuple(errors))
 
 
