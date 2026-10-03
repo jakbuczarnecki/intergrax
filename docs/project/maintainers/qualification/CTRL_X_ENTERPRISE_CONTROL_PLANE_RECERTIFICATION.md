@@ -526,7 +526,7 @@ See `CTRL_X_PLANE_CATALOG` fields: semantic_owner, canonical_contract_boundary, 
 |---|---|
 | R3 implementation | `98a586540` — typed CTRL-X hook contracts |
 | R3-R1 remediation | `ebd5ac5653ee054d28cc32ed0302eb361a4ef56a` |
-| R3-R2 remediation (`FINAL_COMMIT`) | recorded at push — `fix(security): fail closed on incomplete tenant scope` |
+| R3-R2 remediation (`FINAL_COMMIT`) | `c8338ebb6` — `fix(security): fail closed on incomplete tenant scope` (includes `093b6570a` implementation) |
 
 | Kind | Paths |
 |---|---|
