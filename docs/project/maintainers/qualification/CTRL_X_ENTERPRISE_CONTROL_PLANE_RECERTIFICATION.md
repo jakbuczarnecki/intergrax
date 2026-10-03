@@ -385,7 +385,20 @@ Mechanism: `tests/qualification/control_planes/ctrl_x/proof_replay.py` (excludes
 
 **Middleware after R2:** composition boundary = `HostOrchestrationMiddlewarePipelinePort`; concrete `MiddlewarePipeline` check in production wiring = 0; sanctioned attach = 1; FAIL_OPEN production rejection preserved.
 
-**CTRL-X-R2 recommendation:** READY FOR AUDIT (independent GitHub audit required).
+**CTRL-X-R2 recommendation:** **BLOCKED** — independent audit requires ADR-CTRL-X-001 (middleware hook ownership & typed context). See `docs/project/technical/adr/entries/2026-10-03/ADR-CTRL-X-001-MIDDLEWARE-HOOK-CONTRACT-OWNERSHIP.md`.
+
+---
+
+## CTRL-X-ADR1 — Middleware hook contract (2026-10-03)
+
+| Item | Status |
+|---|---|
+| ADR-CTRL-X-001 | **Proposed / Ready for Independent Architecture Audit** (not Accepted) |
+| CTRL-X-R1 | **BLOCKED** pending ADR acceptance |
+| CTRL-X-R2 | **BLOCKED** pending ADR acceptance |
+| CTRL-X parent | **BLOCKED** pending ADR acceptance |
+
+Trigger: unauthorized `HookPoint` ownership move; `Mapping[str, object]` hook boundary; 15 security failures without roadmap owners; wide-pyright semantic classification policy.
 
 ---
 
@@ -393,7 +406,7 @@ Mechanism: `tests/qualification/control_planes/ctrl_x/proof_replay.py` (excludes
 
 | Item | Status |
 |---|---|
-| CTRL-X parent | **READY FOR AUDIT** |
+| CTRL-X parent | **BLOCKED PENDING ADR-CTRL-X-001 ACCEPTANCE** |
 | CX-01..CX-12 | PASS (mechanical) |
 | STATE-X | NOT ENTERED |
 | FRZ-CTL-* promotion | Independent audit only |
