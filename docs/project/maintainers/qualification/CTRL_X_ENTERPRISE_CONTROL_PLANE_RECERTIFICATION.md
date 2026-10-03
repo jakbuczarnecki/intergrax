@@ -20,8 +20,10 @@ Mechanical SSOT: `tests/qualification/control_planes/ctrl_x/catalog.py` (`CTRL_X
 | START_HEAD (R3-R2) | `ebd5ac5653ee054d28cc32ed0302eb361a4ef56a` |
 | R3 implementation | `98a586540` — typed CTRL-X hook contracts |
 | R3-R1 remediation | `ebd5ac5653ee054d28cc32ed0302eb361a4ef56a` |
-| R3-R2 remediation | see §44 `FINAL_COMMIT` |
-| origin/development | aligned with R3-R2 `FINAL_COMMIT` after push |
+| START_HEAD (R3-R2-Q1) | `6bcf1d615170da4b8eef91ca95554a21994dd130` |
+| R3-R2 remediation | see §44 `FINAL_COMMIT` (tenant scope; checkpoint contamination removed in Q1) |
+| R3-R2-Q1 remediation | see §44 `FINAL_COMMIT` |
+| origin/development | aligned with Q1 `FINAL_COMMIT` after push |
 
 Post-change `FINAL_COMMIT` recorded in §44 after commit.
 
@@ -463,8 +465,40 @@ HostOrchestrationMiddlewareHookContext.runtime_state: Mapping[str, object]
 
 | Item | Status |
 |---|---|
-| CTRL-X-R3-R2 | **READY FOR AUDIT** |
+| CTRL-X-R3-R2 | **READY FOR AUDIT** (superseded by Q1 current-head section below) |
 | CTRL-X-R3-R1 | **READY FOR AUDIT** |
+| CTRL-X-R3 | **READY FOR AUDIT** |
+| CTRL-X | **READY FOR AUDIT** (not CLOSED — independent audit required) |
+| STATE-X | **NEXT / NOT ENTERED** |
+
+---
+
+## CTRL-X-R3-R2-Q1 — Remove STATE-X scope contamination
+
+| Item | Value |
+|---|---|
+| Parent | CTRL-X-R3-R2 |
+| START_HEAD | `6bcf1d615170da4b8eef91ca95554a21994dd130` |
+| Contamination reverted | `intergrax/runtime/long_running/checkpoint_resume_validation.py` restored to exact `ebd5ac5653ee054d28cc32ed0302eb361a4ef56a` (git blob `d7bcd0253da353d59731020ca1ae5f1ad5b13cdc`) |
+| Deferred to STATE-X | checkpoint/resume authority semantics (e.g. missing `task_snapshot` → `ParentExecutionAuthority.unknown()` from `093b6570a`) — **not** in CTRL-X production delta |
+| STATE-X production delta | **0** (no `long_running` / state / recovery / checkpoint / persistence production changes vs `ebd5ac…`) |
+
+**R3-R2 production delta from `ebd5ac5653ee054d28cc32ed0302eb361a4ef56a` (exact, post-Q1):**
+
+```text
+intergrax/runtime/security/tenant_scope.py
+intergrax/runtime/security/defense_plugin.py
+intergrax/applications/_shared/application_security_wiring.py
+```
+
+Tenant fail-closed matrix unchanged (canonical `tenant_scope_is_valid`; plugin `allow_unscoped=True`; intake `allow_unscoped=False`; security ordering and `KIND_DEFENSE_BLOCKED` evidence preserved).
+
+**Exact proof replay (current HEAD after Q1):** `requested=44` `unique=44` `executed=44` `passed=44` `failed=0` `errors=0` `missing=0` `skipped=0` (`proof_replay.py` on Q1 `FINAL_COMMIT`). Historical `requested=40` (pre-R3-R2) superseded.
+
+| Item | Status |
+|---|---|
+| CTRL-X-R3-R2-Q1 | **READY FOR AUDIT** |
+| CTRL-X-R3-R2 | **READY FOR AUDIT** |
 | CTRL-X-R3 | **READY FOR AUDIT** |
 | CTRL-X | **READY FOR AUDIT** (not CLOSED — independent audit required) |
 | STATE-X | **NEXT / NOT ENTERED** |
@@ -504,6 +538,7 @@ HostOrchestrationMiddlewareHookContext.runtime_state: Mapping[str, object]
 
 | Item | Status |
 |---|---|
+| CTRL-X-R3-R2-Q1 | **READY FOR AUDIT** |
 | CTRL-X-R3-R2 | **READY FOR AUDIT** |
 | CTRL-X-R3-R1 | **READY FOR AUDIT** |
 | CTRL-X-R3 | **READY FOR AUDIT** |
@@ -526,13 +561,17 @@ See `CTRL_X_PLANE_CATALOG` fields: semantic_owner, canonical_contract_boundary, 
 |---|---|
 | R3 implementation | `98a586540` — typed CTRL-X hook contracts |
 | R3-R1 remediation | `ebd5ac5653ee054d28cc32ed0302eb361a4ef56a` |
-| R3-R2 remediation (`FINAL_COMMIT`) | `c8338ebb6` — `fix(security): fail closed on incomplete tenant scope` (includes `093b6570a` implementation) |
+| R3-R2 remediation | `c8338ebb6` — `fix(security): fail closed on incomplete tenant scope` (tenant files; `093b6570a` also touched checkpoint — **reverted in Q1**) |
+| R3-R2-Q1 remediation (`FINAL_COMMIT`) | `e5a67d89e` — `fix(ctrl-x): remove state scope contamination` |
 
 | Kind | Paths |
 |---|---|
-| production | `intergrax/runtime/security/tenant_scope.py` (new); `intergrax/runtime/security/defense_plugin.py`; `intergrax/applications/_shared/application_security_wiring.py` |
+| production (R3-R2 delta vs `ebd5ac…`, post-Q1) | `intergrax/runtime/security/tenant_scope.py` (new); `intergrax/runtime/security/defense_plugin.py`; `intergrax/applications/_shared/application_security_wiring.py` only — **not** `checkpoint_resume_validation.py` |
+| Q1 restore | `intergrax/runtime/long_running/checkpoint_resume_validation.py` → exact `ebd5ac…` content (STATE-X deferred) |
 | tests | `tests/unit/runtime/security/test_tenant_scope.py`; `tests/qualification/control_planes/ctrl_x/test_ctrl_x_r3_r2_tenant_scope_fail_closed.py`; `tests/support/middleware_hook_test_context.py`; `tests/qualification/control_planes/ctrl_x/catalog.py` |
 | qualification docs | `docs/project/maintainers/qualification/CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md` |
+
+**STATE-X production delta (vs `ebd5ac…`, post-Q1):** `0`
 
 ---
 
