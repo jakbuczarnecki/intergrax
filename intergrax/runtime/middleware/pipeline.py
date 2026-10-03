@@ -107,6 +107,7 @@ class MiddlewarePipeline:
         )
 
     async def run_before(self, point: HookPoint, ctx: HookContext) -> HookResult:
+        ctx = ctx.model_copy(update={"hook_point": point})
         for mw in self._middleware:
             result = await self._run_middleware_before(mw, point, ctx)
             if result.action.value != "allow":
@@ -121,6 +122,7 @@ class MiddlewarePipeline:
         )
 
     async def run_after(self, point: HookPoint, ctx: HookContext) -> HookResult:
+        ctx = ctx.model_copy(update={"hook_point": point})
         hook_result = await invoke_guarded_hook(
             hook_name="hook_registry",
             point=point,

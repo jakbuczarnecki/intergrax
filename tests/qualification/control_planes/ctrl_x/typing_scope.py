@@ -11,6 +11,7 @@ CTRL_X_R1_START_HEAD: Final[str] = "5e9878d71d363542d25ada19cff2590aa37448d3"
 CTRL_X_SEMANTIC_BOUNDARY_MODULES: Final[dict[str, tuple[str, ...]]] = {
     "CX-01": (
         "intergrax/contracts/host_orchestration_wiring_capabilities.py",
+        "intergrax/contracts/middleware_hook_semantics.py",
         "intergrax/contracts/middleware_hook_point.py",
         "intergrax/runtime/middleware/pipeline.py",
         "intergrax/applications/_shared/application_security_wiring.py",

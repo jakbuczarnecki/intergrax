@@ -29,7 +29,7 @@ async def emit_defense_blocked(
     await event_bus.publish(
         build_platform_signal_event(
             kind=KIND_DEFENSE_BLOCKED,
-            tenant_id=str(ctx.runtime_state.get("tenant_id", "")) or None,
+            tenant_id=ctx.subject.tenant_id,
             task_id=ctx.task_id,
             run_id=ctx.run_id,
             node_id=ctx.node_id,
@@ -60,7 +60,7 @@ async def emit_encryption_denied(
     await event_bus.publish(
         build_platform_signal_event(
             kind=KIND_ENCRYPTION_DENIED,
-            tenant_id=str(ctx.runtime_state.get("tenant_id", "")) or None,
+            tenant_id=ctx.subject.tenant_id,
             task_id=ctx.task_id,
             run_id=ctx.run_id,
             node_id=ctx.node_id,

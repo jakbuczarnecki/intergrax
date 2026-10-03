@@ -191,13 +191,28 @@ class ContextManager:
         if not use_engine:
             return bundle
 
+        from intergrax.contracts.middleware_hook_semantics import (
+            LlmInferenceHookPayload,
+            MiddlewareExecutionSubjectFacet,
+        )
+
         hook_base = HookContext(
             task_id=task.task_id,
             run_id=self._active_run_id(),
             node_id=node.node_id,
             agent_id=node.agent_id,
             phase=ExecutionPhase.CONTEXT_BUILDING,
-            runtime_state={"message": task.message, "capability": node.capability or ""},
+            subject=MiddlewareExecutionSubjectFacet(
+                tenant_id=task.tenant_id or None,
+            ),
+            payload=LlmInferenceHookPayload(
+                prompt=task.message or None,
+            ),
+            runtime_state={
+                "message": task.message,
+                "capability": node.capability or "",
+                "prompt": task.message,
+            },
         )
         if self._middleware is not None:
             await self._middleware.run_before(HookPoint.BEFORE_CONTEXT_BUILD, hook_base)

@@ -26,6 +26,7 @@ from intergrax.runtime.security.defense_registry import (
     reset_security_defense_registry_for_tests,
 )
 from intergrax.runtime.security.encryption_middleware import EncryptionEnforcementMiddleware
+from testing_support.builder import canonical_execution_identity_scope
 from intergrax.runtime.security.encryption_transform import (
     HarnessEnvelopeEncryptor,
     SecretsStorePayloadEncryptor,
@@ -101,13 +102,11 @@ def test_security_bootstrap_discovers_security_defense_entry_point() -> None:
 async def test_defense_blocked_emits_platform_signal() -> None:
     bus = RuntimeEventBus()
     middleware = PluginSecurityDefenseMiddleware(_BlockDefensePlugin(), event_bus=bus)
-    ctx = HookContext(
-        run_id="run-1",
-        task_id="task-1",
-        agent_id="agent-1",
-        runtime_state={"tool_id": "echo"},
-    )
-    result = await middleware.before(HookPoint.BEFORE_TOOL_CALL, ctx)
+    from tests.support.middleware_hook_test_context import tool_hook_context_for_test
+
+    ctx = tool_hook_context_for_test(tool_id="echo", agent_id="agent-1", run_id="run-1")
+    with canonical_execution_identity_scope("run-1"):
+        result = await middleware.before(HookPoint.BEFORE_TOOL_CALL, ctx)
     assert result.action.value == "block"
     kinds = [event.event_kind for event in bus.history]
     assert KIND_DEFENSE_BLOCKED in kinds
@@ -121,13 +120,11 @@ async def test_encryption_denied_emits_platform_signal() -> None:
         secrets_store_configured=False,
         event_bus=bus,
     )
-    ctx = HookContext(
-        run_id="run-1",
-        task_id="task-1",
-        agent_id="agent-1",
-        runtime_state={"value": {"data_classification": DataClassification.RESTRICTED.value, "secret": "x"}},
-    )
-    result = await middleware.before(HookPoint.BEFORE_MEMORY_WRITE, ctx)
+    from tests.support.middleware_hook_test_context import data_protection_hook_context_for_test
+
+    ctx = data_protection_hook_context_for_test(agent_id="agent-1", run_id="run-1")
+    with canonical_execution_identity_scope("run-1"):
+        result = await middleware.before(HookPoint.BEFORE_MEMORY_WRITE, ctx)
     assert result.action.value == "block"
     kinds = [event.event_kind for event in bus.history]
     assert KIND_ENCRYPTION_DENIED in kinds
@@ -141,13 +138,12 @@ async def test_encryption_middleware_transforms_restricted_payload() -> None:
         secrets_store_configured=True,
         encryptor=SecretsStorePayloadEncryptor(store),
     )
-    ctx = HookContext(
+    from tests.support.middleware_hook_test_context import data_protection_hook_context_for_test
+
+    ctx = data_protection_hook_context_for_test(
         run_id="run-enc",
-        task_id="task-1",
         agent_id="agent-1",
-        runtime_state={
-            "value": {"data_classification": "restricted", "secret": "top-secret"},
-        },
+        secret="top-secret",
     )
     result = await middleware.before(HookPoint.BEFORE_MEMORY_WRITE, ctx)
     assert result.action.value == "modify"
@@ -176,12 +172,9 @@ async def test_defense_plugin_inspection_timeout_blocks() -> None:
         _SlowDefensePlugin(),
         inspection_timeout_ms=50,
     )
-    ctx = HookContext(
-        run_id="run-1",
-        task_id="task-1",
-        agent_id="agent-1",
-        runtime_state={"tool_id": "echo"},
-    )
+    from tests.support.middleware_hook_test_context import tool_hook_context_for_test
+
+    ctx = tool_hook_context_for_test(tool_id="echo", agent_id="agent-1")
     result = await middleware.before(HookPoint.BEFORE_TOOL_CALL, ctx)
     assert result.action.value == "block"
     assert "timeout" in (result.reason or "")

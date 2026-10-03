@@ -132,8 +132,8 @@ class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
 
 
 def _tenant_scope_valid(ctx: HostOrchestrationMiddlewareHookContext) -> bool:
-    tenant_id = str(ctx.runtime_state.get("tenant_id", "")).strip()
+    tenant_id = ctx.subject.tenant_id
     if not tenant_id:
         return True
-    resource_tenant = str(ctx.runtime_state.get("resource_tenant_id", tenant_id)).strip()
+    resource_tenant = ctx.subject.resource_tenant_id or tenant_id
     return tenant_id == resource_tenant

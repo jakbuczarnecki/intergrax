@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.autonomy_level import AutonomyLevel
+from intergrax.contracts.middleware_hook_semantics import ToolCallHookPayload
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
@@ -32,20 +33,18 @@ class AutonomyGovernanceMiddleware(RuntimeMiddleware):
     async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
         if point != HookPoint.BEFORE_TOOL_CALL:
             return HookResult()
-        tool_id = str(ctx.runtime_state.get("tool_id", ""))
+        tool_payload = ctx.payload
+        if not isinstance(tool_payload, ToolCallHookPayload):
+            return HookResult()
+        tool_id = tool_payload.tool_id
         if not tool_id:
             return HookResult()
-        requested_raw = ctx.runtime_state.get("autonomy_level")
-        requested = (
-            AutonomyLevel(str(requested_raw))
-            if requested_raw
-            else self._default_autonomy
-        )
-        agent_risk = ctx.runtime_state.get("agent_risk_level")
+        requested = tool_payload.autonomy_level or self._default_autonomy
+        agent_risk = tool_payload.agent_risk_level
         effective = resolve_effective_autonomy(
             requested=requested,
             execution_mode=self._execution_mode,
-            agent_risk=str(agent_risk) if agent_risk is not None else None,
+            agent_risk=str(agent_risk.value) if agent_risk is not None else None,
             tenant_ceiling=self._tenant_ceiling,
         )
         allowed, reason = tool_allowed_for_autonomy(tool_id, effective)

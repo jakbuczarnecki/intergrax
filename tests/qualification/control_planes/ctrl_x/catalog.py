@@ -64,6 +64,7 @@ _CP_MUT = "tests/unit/runtime/governance/test_control_plane_mutation_approval.py
 _R1_SEC = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_composition.py"
 _R1_EVAL = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_evaluation_plane.py"
 _R2_MW = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_middleware_composition.py"
+_R3_MW = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r3_typed_middleware_contracts.py"
 _R2_EVAL = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_evaluation_plane.py"
 _EVAL_WIRING = "tests/unit/applications/test_harness_evaluation_wiring.py"
 _ONLINE_REG = "tests/unit/runtime/architecture/test_online_evaluation_registry.py"
@@ -85,6 +86,8 @@ CTRL_X_PLANE_CATALOG: tuple[CtrlXPlaneEvidence, ...] = (
             _nid(_R1_SEC, "test_r1_sec_06_security_emitters_use_host_orchestration_event_port"),
             _nid(_R2_MW, "test_r2_mw_02_alternate_pipeline_port_accepts_security_middleware"),
             _nid(_R2_MW, "test_r2_mw_05_fail_open_rejected_before_attach"),
+            _nid(_R3_MW, "test_r3_t08_encryption_middleware_boundary_is_typed"),
+            _nid(_R3_MW, "test_r3_cross_layer_middleware_no_runtime_state_semantic_reads"),
         ),
         ("AW-7C-P0-3B scoped substrate evidence", "PLUG-03 security plugin adoption"),
     ),

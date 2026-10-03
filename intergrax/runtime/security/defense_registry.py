@@ -7,6 +7,7 @@ from __future__ import annotations
 from intergrax.contracts.host_orchestration_wiring_capabilities import (
     HostOrchestrationMiddlewareHookContext,
 )
+from intergrax.contracts.middleware_hook_semantics import ToolCallHookPayload
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.security.defense_plugin import (
     SecurityDefensePlugin,
@@ -37,10 +38,10 @@ class _StrictInjectionDefensePlugin:
     ) -> SecurityInspectionResult:
         if point != HookPoint.BEFORE_TOOL_CALL:
             return SecurityInspectionResult(allowed=True, plugin_id=self.plugin_id)
-        arguments = ctx.runtime_state.get("arguments")
-        if not isinstance(arguments, dict):
+        payload = ctx.payload
+        if not isinstance(payload, ToolCallHookPayload):
             return SecurityInspectionResult(allowed=True, plugin_id=self.plugin_id)
-        blob = " ".join(str(value).lower() for value in arguments.values())
+        blob = " ".join(value.lower() for value in payload.arguments.values())
         for token in self._blocked_tokens:
             if token in blob:
                 return SecurityInspectionResult(

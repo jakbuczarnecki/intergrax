@@ -1,10 +1,10 @@
-# ADR-CTRL-X-001: Middleware Hook Contract Ownership & Typed Context
+﻿# ADR-CTRL-X-001: Middleware Hook Contract Ownership & Typed Context
 
 | Field | Value |
 |-------|-------|
-| **Status** | Proposed / Ready for Independent Architecture Audit |
+| **Status** | Accepted — independent architecture audit |
 | **Date** | 2026-10-03 |
-| **Baseline HEAD** | `309baa99839960a9db2aae35b8a5deb0d0aabb4e` |
+| **Baseline HEAD** | `07ef4d57a46e3d5a06bfc7a7d95cdfcd930e9b38` (accepted against exact SHA) |
 | **Parent** | CTRL-X — Enterprise Control-Plane Recertification |
 | **Trigger** | CTRL-X-R2 independent audit — unauthorized ownership move, untyped hook context boundary, unowned security test debt, insufficient wide-pyright semantic classification |
 | **Deciders** | Architecture / independent audit (not Cursor) |

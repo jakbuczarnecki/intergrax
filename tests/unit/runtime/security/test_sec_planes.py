@@ -82,11 +82,12 @@ def test_resolve_defense_plugins_from_bundle_ids() -> None:
 async def test_plugin_middleware_blocks_before_tool_call() -> None:
     register_security_defense_plugin(_BlockToolPlugin())
     middleware = PluginSecurityDefenseMiddleware(_BlockToolPlugin())
-    ctx = HookContext(
-        run_id="run-1",
-        task_id="task-1",
+    from tests.support.middleware_hook_test_context import tool_hook_context_for_test
+
+    ctx = tool_hook_context_for_test(
+        tool_id="echo",
+        arguments={"q": "x"},
         agent_id="agent-1",
-        runtime_state={"tool_id": "echo", "arguments": {"q": "x"}},
     )
     result = await middleware.before(HookPoint.BEFORE_TOOL_CALL, ctx)
     assert result.action.value == "block"
@@ -116,14 +117,9 @@ async def test_encryption_middleware_blocks_memory_write() -> None:
         enforcement_enabled=True,
         secrets_store_configured=False,
     )
-    ctx = HookContext(
-        run_id="run-1",
-        task_id="task-1",
-        agent_id="agent-1",
-        runtime_state={
-            "value": {"data_classification": "restricted", "secret": "x"},
-        },
-    )
+    from tests.support.middleware_hook_test_context import data_protection_hook_context_for_test
+
+    ctx = data_protection_hook_context_for_test(agent_id="agent-1")
     result = await middleware.before(HookPoint.BEFORE_MEMORY_WRITE, ctx)
     assert result.action.value == "block"
 

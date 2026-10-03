@@ -13,6 +13,10 @@ from intergrax.contracts.execution_identity import (
 from intergrax.contracts.host_orchestration_wiring_capabilities import (
     HostOrchestrationRuntimeEventPort,
 )
+from intergrax.contracts.middleware_hook_semantics import (
+    LlmInferenceHookPayload,
+    ToolCallHookPayload,
+)
 from intergrax.integrations.contracts.llm_guardrail import GuardrailContext, LlmGuardrailBackend
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
@@ -42,7 +46,10 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
             return HookResult()
         guard_ctx = _guardrail_context(ctx, point)
         if point in {HookPoint.BEFORE_CONTEXT_BUILD, HookPoint.BEFORE_LLM_INFERENCE} and self._profile.scan_input:
-            prompt = str(ctx.runtime_state.get("prompt", ""))
+            llm_payload = ctx.payload
+            if not isinstance(llm_payload, LlmInferenceHookPayload):
+                return HookResult()
+            prompt = llm_payload.prompt or ""
             if not prompt:
                 return HookResult()
             result = self._backend.scan_input(prompt, context=guard_ctx)
@@ -64,10 +71,13 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
                     modified_payload={"prompt": result.sanitized_text},
                 )
         if point == HookPoint.BEFORE_TOOL_CALL and self._profile.scan_tool_calls:
-            tool_id = str(ctx.runtime_state.get("tool_id", ctx.runtime_state.get("tool_name", "")))
+            tool_payload = ctx.payload
+            if not isinstance(tool_payload, ToolCallHookPayload):
+                return HookResult()
+            tool_id = tool_payload.tool_id
             if not tool_id:
                 return HookResult()
-            arguments = _stringify_argument_map(ctx.runtime_state.get("arguments"))
+            arguments = dict(tool_payload.arguments)
             result = self._backend.scan_tool_call(tool_id, arguments, context=guard_ctx)
             if not result.allowed:
                 reason = result.detail or f"guardrail tool blocked ({self._backend.slug})"
@@ -88,10 +98,13 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
             return HookResult()
         if point not in {HookPoint.AFTER_LLM_OUTPUT, HookPoint.AFTER_FINALIZATION}:
             return HookResult()
-        output = str(ctx.runtime_state.get("llm_output", ctx.runtime_state.get("output", "")))
+        llm_payload = ctx.payload
+        if not isinstance(llm_payload, LlmInferenceHookPayload):
+            return HookResult()
+        output = llm_payload.llm_output or ""
         if not output:
             return HookResult()
-        prompt = str(ctx.runtime_state.get("prompt", ""))
+        prompt = llm_payload.prompt or ""
         result = self._backend.scan_output(
             output,
             context=_guardrail_context(ctx, point),
@@ -144,7 +157,7 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
             raise RuntimeError("guardrail run_id conflicts with active execution identity")
         await self._event_bus.publish(
             RuntimeEvent(
-                tenant_id=str(ctx.runtime_state.get("tenant_id", "")) or None,
+                tenant_id=ctx.subject.tenant_id,
                 task_id=ctx.task_id,
                 run_id=ctx.run_id,
                 attempt_id=attempt_id,
@@ -168,7 +181,7 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
 
 def _guardrail_context(ctx: HookContext, point: HookPoint) -> GuardrailContext:
     return GuardrailContext(
-        tenant_id=str(ctx.runtime_state.get("tenant_id", "")),
+        tenant_id=ctx.subject.tenant_id or "",
         run_id=ctx.run_id,
         agent_id=ctx.agent_id or "",
         step_id=ctx.step_id or ctx.node_id or "",

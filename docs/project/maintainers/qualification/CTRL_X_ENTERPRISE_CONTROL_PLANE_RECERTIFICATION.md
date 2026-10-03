@@ -423,6 +423,30 @@ Evidence commit baseline: `ec55899956cf6c3c6290407c8c8ebecdb066911a` (`developme
 
 ---
 
+## CTRL-X-R3 — Typed middleware context (ADR-CTRL-X-001 implementation)
+
+| Item | Value |
+|---|---|
+| ADR baseline (independent acceptance) | `07ef4d57a46e3d5a06bfc7a7d95cdfcd930e9b38` |
+| ADR-CTRL-X-001 | **Accepted** — independent architecture audit |
+| Tier-0 contracts | `intergrax/contracts/middleware_hook_semantics.py` (`MiddlewareHookInvocationContext`, payload family, `MiddlewareExecutionSubjectFacet`) |
+| Cross-layer `runtime_state` on middleware ABI | **0** (internal `HookContext.runtime_state` retained for hook-registry mutation only) |
+
+**Before → after (boundary):**
+
+```text
+HostOrchestrationMiddlewareHookContext.runtime_state: Mapping[str, object]
+  → MiddlewareHookInvocationContext + typed payload + subject facet
+```
+
+**R3 invariants R3-01..R3-15:** qualified in `tests/qualification/control_planes/ctrl_x/test_ctrl_x_r3_typed_middleware_contracts.py` (R3-T01..R3-T12 + bypass search).
+
+**Evidence:** CTRL-X qualification suite green; semantic-boundary pyright 0 errors; exact proof replay `requested=38 passed=38`.
+
+**CTRL-X-R3 recommendation:** **READY FOR AUDIT** (independent GitHub SHA audit required).
+
+---
+
 ## 27 Recommendation
 
 | Item | Status |

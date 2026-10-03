@@ -4,15 +4,15 @@
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Awaitable, Callable
 from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.event_taxonomy import EventCategory
 from intergrax.contracts.execution_budget_ledger_port import ExecutionBudgetLedgerFactoryPort
 from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.contracts.run_trace_store import RunTraceReader
-from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.middleware_hook_point import HookPoint
+from intergrax.contracts.middleware_hook_semantics import MiddlewareHookInvocationContext
 from intergrax.contracts.runtime_event import RuntimeEvent
 from intergrax.contracts.runtime_event_type import RuntimeEventType
 
@@ -25,19 +25,8 @@ class HostOrchestrationMiddlewareHookAction(Protocol):
     def value(self) -> str: ...
 
 
-@runtime_checkable
-class HostOrchestrationMiddlewareHookContext(Protocol):
-    """Minimal hook context required for orchestration middleware execution."""
-
-    task_id: str
-    run_id: str
-    node_id: str | None
-    agent_id: str | None
-    step_id: str | None
-    phase: ExecutionPhase
-
-    @property
-    def runtime_state(self) -> Mapping[str, object]: ...
+HostOrchestrationMiddlewareHookContext = MiddlewareHookInvocationContext
+"""Backward-compatible alias for :class:`MiddlewareHookInvocationContext`."""
 
 
 @runtime_checkable
@@ -144,6 +133,7 @@ __all__ = [
     "HostOrchestrationHookRegistryPort",
     "HostOrchestrationMiddlewareHookAction",
     "HostOrchestrationMiddlewareHookContext",
+    "MiddlewareHookInvocationContext",
     "HostOrchestrationMiddlewareHookResult",
     "HostOrchestrationMiddlewarePipelinePort",
     "HostOrchestrationRuntimeEventPort",

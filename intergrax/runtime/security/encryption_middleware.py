@@ -10,6 +10,10 @@ from intergrax.contracts.host_orchestration_wiring_capabilities import (
     HostOrchestrationMiddlewareHookContext,
     HostOrchestrationRuntimeEventPort,
 )
+from intergrax.contracts.middleware_hook_semantics import DataProtectionHookPayload
+from intergrax.runtime.middleware.hook_semantic_adapters import (
+    data_protection_payload_to_encryption_dict,
+)
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
@@ -50,7 +54,10 @@ class EncryptionEnforcementMiddleware(RuntimeMiddleware):
             HookPoint.AFTER_TOOL_CALL,
         }:
             return HookResult()
-        payload = dict(ctx.runtime_state)
+        hook_payload = ctx.payload
+        if not isinstance(hook_payload, DataProtectionHookPayload):
+            return HookResult()
+        payload = data_protection_payload_to_encryption_dict(hook_payload)
         decision = evaluate_encryption_enforcement(
             payload=payload,
             secrets_store_configured=self._secrets_store_configured,

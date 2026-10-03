@@ -105,10 +105,13 @@ async def test_r1_sec_04_rejected_fail_open_no_protected_hook_effect() -> None:
         register_application_security_hooks(loop, profile)
     pipeline = loop._middleware  # noqa: SLF001
     assert isinstance(pipeline, MiddlewarePipeline)
+    from intergrax.contracts.middleware_hook_semantics import ToolCallHookPayload
+
     ctx = HookContext(
         task_id="t1",
         run_id="r1",
         phase=ExecutionPhase.STEP_EXECUTION,
+        payload=ToolCallHookPayload(tool_id="echo"),
         runtime_state={"tool_id": "echo", "arguments": {}},
     )
     result = await pipeline.run_before(HookPoint.BEFORE_TOOL_CALL, ctx)
@@ -122,10 +125,20 @@ async def test_r1_sec_05_tenant_scoped_fail_closed_defense_still_blocks() -> Non
         _FailClosedDefense(),
         enforce_tenant_scope=True,
     )
+    from intergrax.contracts.middleware_hook_semantics import (
+        MiddlewareExecutionSubjectFacet,
+        ToolCallHookPayload,
+    )
+
     ctx = HookContext(
         task_id="t1",
         run_id="r1",
         phase=ExecutionPhase.STEP_EXECUTION,
+        subject=MiddlewareExecutionSubjectFacet(
+            tenant_id="tenant-a",
+            resource_tenant_id="tenant-b",
+        ),
+        payload=ToolCallHookPayload(tool_id="echo"),
         runtime_state={
             "tenant_id": "tenant-a",
             "resource_tenant_id": "tenant-b",

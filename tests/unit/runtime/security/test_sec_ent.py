@@ -143,13 +143,12 @@ async def test_encryption_middleware_transforms_with_valid_secrets_store() -> No
         secrets_store_configured=True,
         encryptor=SecretsStorePayloadEncryptor(store),
     )
-    ctx = HookContext(
+    from tests.support.middleware_hook_test_context import data_protection_hook_context_for_test
+
+    ctx = data_protection_hook_context_for_test(
         run_id="run-mw",
-        task_id="task-1",
         agent_id="agent-1",
-        runtime_state={
-            "value": {"data_classification": DataClassification.RESTRICTED.value, "secret": "top-secret"},
-        },
+        secret="top-secret",
     )
     result = await middleware.before(HookPoint.BEFORE_MEMORY_WRITE, ctx)
     assert result.action.value == "modify"
@@ -168,11 +167,14 @@ async def test_encryption_middleware_leaves_non_restricted_payload_untouched() -
         secrets_store_configured=True,
         encryptor=SecretsStorePayloadEncryptor(_FakeSecretsStore()),
     )
-    ctx = HookContext(
+    from tests.support.middleware_hook_test_context import data_protection_hook_context_for_test
+
+    ctx = data_protection_hook_context_for_test(
         run_id="run-public",
-        task_id="task-1",
         agent_id="agent-1",
-        runtime_state={"value": {"data_classification": DataClassification.PUBLIC.value, "note": "ok"}},
+        classification=DataClassification.PUBLIC,
+        secret=None,
+        note="ok",
     )
     result = await middleware.before(HookPoint.BEFORE_MEMORY_WRITE, ctx)
     assert result.action.value == "allow"
@@ -220,21 +222,21 @@ def test_register_security_hooks_wires_spine_subscriber() -> None:
 async def test_defense_middleware_blocks_cross_tenant_scope() -> None:
     from intergrax.runtime.events.event_bus import RuntimeEventBus
 
-    bus = RuntimeEventBus()
     middleware = PluginSecurityDefenseMiddleware(
         _AllowDefensePlugin(),
-        event_bus=bus,
+        event_bus=None,
         enforce_tenant_scope=True,
     )
-    ctx = HookContext(
-        run_id="run-1",
-        task_id="task-1",
+    from intergrax.contracts.middleware_hook_semantics import ToolCallHookPayload
+    from tests.support.middleware_hook_test_context import tenant_intake_hook_context_for_test
+
+    ctx = tenant_intake_hook_context_for_test(
+        tenant_id="tenant-a",
+        resource_tenant_id="tenant-b",
         agent_id="agent-1",
-        runtime_state={
-            "tenant_id": "tenant-a",
-            "resource_tenant_id": "tenant-b",
-            "tool_id": "echo",
-        },
+    )
+    ctx = ctx.model_copy(
+        update={"payload": ToolCallHookPayload(tool_id="echo")},
     )
     result = await middleware.before(HookPoint.BEFORE_TOOL_CALL, ctx)
     assert result.action.value == "block"

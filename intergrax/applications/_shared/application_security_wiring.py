@@ -17,6 +17,10 @@ from intergrax.contracts.host_orchestration_application_wiring_target import (
 from intergrax.contracts.host_orchestration_wiring_capabilities import (
     HostOrchestrationMiddlewareHookContext,
 )
+from intergrax.contracts.middleware_hook_semantics import (
+    LlmInferenceHookPayload,
+    ToolCallHookPayload,
+)
 from intergrax.runtime.architecture.prompt_security import (
     PromptDefenseProfile,
     PromptInjectionRule,
@@ -82,7 +86,10 @@ class PromptDefenseMiddleware(RuntimeMiddleware):
     async def before(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         if point != HookPoint.BEFORE_CONTEXT_BUILD:
             return HookResult()
-        prompt = str(ctx.runtime_state.get("prompt", ""))
+        llm_payload = ctx.payload
+        if not isinstance(llm_payload, LlmInferenceHookPayload):
+            return HookResult()
+        prompt = llm_payload.prompt or ""
         if not prompt:
             return HookResult()
         result = inspect_prompt_for_injection(prompt=prompt, profile=self._profile)
@@ -109,12 +116,15 @@ class ToolInjectionDefenseMiddleware(RuntimeMiddleware):
     async def before(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         if point != HookPoint.BEFORE_TOOL_CALL:
             return HookResult()
-        tool_id = str(ctx.runtime_state.get("tool_id", ""))
+        tool_payload = ctx.payload
+        if not isinstance(tool_payload, ToolCallHookPayload):
+            return HookResult()
+        tool_id = tool_payload.tool_id
         if not tool_id:
             return HookResult()
-        arguments = _stringify_argument_map(ctx.runtime_state.get("arguments"))
-        capability_ids = _string_list(ctx.runtime_state.get("capability_ids"))
-        allowed_tool_ids = _string_list(ctx.runtime_state.get("allowed_tool_ids"))
+        arguments = dict(tool_payload.arguments)
+        capability_ids = list(tool_payload.capability_ids)
+        allowed_tool_ids = list(tool_payload.allowed_tool_ids)
         policy = self._policy
         if allowed_tool_ids:
             policy = policy.model_copy(update={"allowed_tool_ids": allowed_tool_ids})
@@ -146,23 +156,23 @@ class TenantSecurityMiddleware(RuntimeMiddleware):
     async def before(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         if point != HookPoint.BEFORE_TASK_INTAKE:
             return HookResult()
-        request_tenant_id = str(ctx.runtime_state.get("tenant_id", ""))
-        resource_tenant_id = str(ctx.runtime_state.get("resource_tenant_id", request_tenant_id))
-        actor_id = str(ctx.runtime_state.get("user_id", "unknown"))
-        if not request_tenant_id:
+        tenant_id = ctx.subject.tenant_id
+        if tenant_id is None:
             return HookResult(
                 action=HookAction.BLOCK,
                 reason="Missing tenant_id on task intake",
             )
+        resource_tenant_id = ctx.subject.resource_tenant_id or tenant_id
+        actor_id = ctx.subject.user_id or "unknown"
         check = TenantIsolationCheck(
-            request_tenant_id=request_tenant_id,
+            request_tenant_id=tenant_id,
             resource_tenant_id=resource_tenant_id,
-            passed=request_tenant_id == resource_tenant_id,
-            reason="" if request_tenant_id == resource_tenant_id else "tenant mismatch",
+            passed=tenant_id == resource_tenant_id,
+            reason="" if tenant_id == resource_tenant_id else "tenant mismatch",
         )
         audit_event = SecurityAuditEvent(
             event_id=f"{ctx.run_id}:intake",
-            tenant_id=request_tenant_id,
+            tenant_id=tenant_id,
             actor_id=actor_id,
             action="task_intake",
             occurred_at=datetime.now(UTC),
