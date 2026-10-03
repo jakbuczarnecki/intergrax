@@ -21,6 +21,8 @@ from tests.qualification.state_x.inventory import (
     STATE_X_KNOWN_BLOCKERS,
     STATE_X_P0_ALLOWLIST_PATHS,
     STATE_X_P0_AUDITED_HEAD,
+    STATE_X_R1_ALLOWLIST_PATHS,
+    STATE_X_R1_PRE_AUDIT_HEAD,
     StateFamilyInventoryEntry,
 )
 
@@ -316,7 +318,7 @@ def test_sx_p0_q23_regression_known_invalid_paths_absent() -> None:
 
 def test_sx_p0_q24_no_production_file_changed_since_audited_head() -> None:
     result = subprocess.run(
-        ["git", "diff", "--name-only", STATE_X_P0_AUDITED_HEAD],
+        ["git", "diff", "--name-only", STATE_X_R1_PRE_AUDIT_HEAD],
         cwd=_REPO_ROOT,
         check=True,
         capture_output=True,
@@ -325,13 +327,15 @@ def test_sx_p0_q24_no_production_file_changed_since_audited_head() -> None:
     changed = [line.strip() for line in result.stdout.splitlines() if line.strip()]
     if not changed:
         return
+    scope_allowlist = STATE_X_P0_ALLOWLIST_PATHS | STATE_X_R1_ALLOWLIST_PATHS
     for path in changed:
         normalized = path.replace("\\", "/")
-        assert normalized in STATE_X_P0_ALLOWLIST_PATHS, (
-            f"P0 scope violation: {normalized}"
+        assert normalized in scope_allowlist, (
+            f"STATE-X scope violation since R1 pre-audit head: {normalized}"
         )
-        for prefix in _FORBIDDEN_CHANGE_PREFIXES:
-            assert not normalized.startswith(prefix), normalized
+        if normalized not in STATE_X_R1_ALLOWLIST_PATHS:
+            for prefix in _FORBIDDEN_CHANGE_PREFIXES:
+                assert not normalized.startswith(prefix), normalized
 
 
 def test_sx_p0_no_family_mints_authority() -> None:

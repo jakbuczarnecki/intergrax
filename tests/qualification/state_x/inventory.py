@@ -738,3 +738,17 @@ STATE_X_P0_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/qualification/state_x/__init__.py",
     },
 )
+
+STATE_X_R1_PRE_AUDIT_HEAD: Final[str] = "c094d2dbdc9fd89755cddaf557332151696e4f01"
+
+STATE_X_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "intergrax/runtime/nexus/nexus_loop.py",
+        "intergrax/runtime/long_running/models.py",
+        "intergrax/runtime/long_running/checkpoint_resume_validation.py",
+        "docs/project/maintainers/qualification/STATE_X_R1_TASK_CHECKPOINT_RESUME_TERMINAL_AUTHORITY_CLOSURE.md",
+        "tests/qualification/state_x/test_state_x_r1_checkpoint_resume_terminal.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+    },
+)

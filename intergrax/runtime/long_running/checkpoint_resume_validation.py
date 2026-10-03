@@ -318,6 +318,63 @@ def validate_checkpoint_lineage_cross_reference(
     )
 
 
+def _parse_checkpoint_snapshot_task(
+    checkpoint: TaskCheckpoint,
+) -> Task | CheckpointResumeValidationResult:
+    """Canonical historical task material parser (STATE-X-R1)."""
+    snapshot = checkpoint.task_snapshot
+    if not snapshot:
+        return CheckpointResumeValidationResult(
+            eligibility=CheckpointResumeEligibility.REJECT_MALFORMED,
+            reason="checkpoint task_snapshot is empty",
+        )
+    if "task_id" not in snapshot:
+        return CheckpointResumeValidationResult(
+            eligibility=CheckpointResumeEligibility.REJECT_MALFORMED,
+            reason="task_snapshot missing required task_id",
+        )
+    if "tenant_id" not in snapshot:
+        return CheckpointResumeValidationResult(
+            eligibility=CheckpointResumeEligibility.REJECT_MALFORMED,
+            reason="task_snapshot missing required tenant_id",
+        )
+    try:
+        snapshot_task = Task.model_validate(snapshot)
+    except ValidationError as exc:
+        return CheckpointResumeValidationResult(
+            eligibility=CheckpointResumeEligibility.REJECT_MALFORMED,
+            reason=str(exc),
+        )
+    if snapshot_task.task_id != checkpoint.task_id:
+        return CheckpointResumeValidationResult(
+            eligibility=CheckpointResumeEligibility.REJECT_IDENTITY,
+            reason=(
+                "task_snapshot task_id mismatch: "
+                f"{snapshot_task.task_id!r} != {checkpoint.task_id!r}"
+            ),
+        )
+    if snapshot_task.tenant_id != checkpoint.tenant_id:
+        return CheckpointResumeValidationResult(
+            eligibility=CheckpointResumeEligibility.REJECT_TENANT,
+            reason=(
+                "task_snapshot tenant mismatch: "
+                f"{snapshot_task.tenant_id!r} != {checkpoint.tenant_id!r}"
+            ),
+        )
+    return snapshot_task
+
+
+def validate_checkpoint_snapshot_integrity(
+    checkpoint: TaskCheckpoint,
+) -> CheckpointResumeValidationResult:
+    parsed = _parse_checkpoint_snapshot_task(checkpoint)
+    if isinstance(parsed, CheckpointResumeValidationResult):
+        return parsed
+    return CheckpointResumeValidationResult(
+        eligibility=CheckpointResumeEligibility.ALLOW_RESUME,
+    )
+
+
 def _authority_does_not_exceed_current(
     checkpoint_authority: ParentExecutionAuthority,
     current_authority: ParentExecutionAuthority,
@@ -336,16 +393,12 @@ def _authority_does_not_exceed_current(
 def _parse_checkpoint_historical_authority(
     checkpoint: TaskCheckpoint,
 ) -> CheckpointResumeValidationResult | ParentExecutionAuthority:
-    try:
-        snapshot_task = Task.model_validate(checkpoint.task_snapshot)
-    except ValidationError as exc:
-        return CheckpointResumeValidationResult(
-            eligibility=CheckpointResumeEligibility.REJECT_MALFORMED,
-            reason=str(exc),
-        )
-    if snapshot_task.execution_authority is None:
+    parsed = _parse_checkpoint_snapshot_task(checkpoint)
+    if isinstance(parsed, CheckpointResumeValidationResult):
+        return parsed
+    if parsed.execution_authority is None:
         return ParentExecutionAuthority.unknown()
-    return snapshot_task.execution_authority
+    return parsed.execution_authority
 
 
 def narrow_resume_execution_authority(
@@ -435,14 +488,10 @@ def validate_checkpoint_authority_expansion(
     checkpoint: TaskCheckpoint,
     proposed_authority: ParentExecutionAuthority,
 ) -> CheckpointResumeValidationResult:
-    try:
-        snapshot_task = Task.model_validate(checkpoint.task_snapshot)
-    except ValidationError as exc:
-        return CheckpointResumeValidationResult(
-            eligibility=CheckpointResumeEligibility.REJECT_MALFORMED,
-            reason=str(exc),
-        )
-    checkpoint_authority = snapshot_task.execution_authority or ParentExecutionAuthority.unknown()
+    parsed = _parse_checkpoint_snapshot_task(checkpoint)
+    if isinstance(parsed, CheckpointResumeValidationResult):
+        return parsed
+    checkpoint_authority = parsed.execution_authority or ParentExecutionAuthority.unknown()
     if not _authority_does_not_exceed_current(checkpoint_authority, proposed_authority):
         return CheckpointResumeValidationResult(
             eligibility=CheckpointResumeEligibility.REJECT_AUTHORITY,
@@ -549,10 +598,6 @@ def evaluate_checkpoint_resume_eligibility(
     result = _merge_failure(result, validate_task_checkpoint_schema(checkpoint))
     result = _merge_failure(
         result,
-        validate_checkpoint_resumable_state(checkpoint),
-    )
-    result = _merge_failure(
-        result,
         validate_checkpoint_identity_binding(
             checkpoint,
             target_task_id=target_task_id,
@@ -561,6 +606,14 @@ def evaluate_checkpoint_resume_eligibility(
             target_attempt_id=target_attempt_id,
             target_root_execution_id=target_root_execution_id,
         ),
+    )
+    result = _merge_failure(
+        result,
+        validate_checkpoint_snapshot_integrity(checkpoint),
+    )
+    result = _merge_failure(
+        result,
+        validate_checkpoint_resumable_state(checkpoint),
     )
     result = _merge_failure(
         result,

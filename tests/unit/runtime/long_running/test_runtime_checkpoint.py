@@ -365,12 +365,20 @@ async def test_unified_task_runner_resume_preserves_checkpoint_identity(monkeypa
 
     monkeypatch.setattr(loop, "handle_task", _fake_handle_task)
     runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
-    task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="resume", task_id=task_id)
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        agent_id="agent-1",
+        message="resume",
+        task_id=task_id,
+        state=TaskState.WAITING_FOR_HUMAN,
+    )
     checkpoint = TaskCheckpoint(
         task_id=task.task_id,
         tenant_id="t1",
         resume_token="rt_test",
         task_state=TaskState.WAITING_FOR_HUMAN,
+        task_snapshot=task.model_dump(mode="json"),
         runtime=_runtime(task_id=task_id, run_id=run_id, attempt_id=attempt_id, root_execution_id=root),
     )
 
@@ -393,12 +401,20 @@ async def test_unified_task_runner_resume_rejects_explicit_run_id_mismatch(monke
     task_id = mint_task_id()
     root = mint_execution_id()
     runner = UnifiedTaskRunner(build_harness_root_task_execution_port(loop))
-    task = Task(tenant_id="t1", user_id="u1", agent_id="agent-1", message="resume", task_id=task_id)
+    task = Task(
+        tenant_id="t1",
+        user_id="u1",
+        agent_id="agent-1",
+        message="resume",
+        task_id=task_id,
+        state=TaskState.WAITING_FOR_HUMAN,
+    )
     checkpoint = TaskCheckpoint(
         task_id=task.task_id,
         tenant_id="t1",
         resume_token="rt_test",
         task_state=TaskState.WAITING_FOR_HUMAN,
+        task_snapshot=task.model_dump(mode="json"),
         runtime=_runtime(
             task_id=task_id,
             run_id=checkpoint_run_id,

@@ -155,6 +155,7 @@ from intergrax.runtime.execution.execution_terminal.durability_policy import (
 from intergrax.contracts.execution_terminal import (
     ExecutionTerminalConflictError,
     ExecutionTerminalError,
+    ExecutionTerminalPersistenceCapability,
 )
 from intergrax.runtime.execution.execution_terminal.persistence import (
     TerminalCommitResolution,
@@ -396,8 +397,19 @@ class NexusLoop:
         self._attempt_lifecycle = attempt_lifecycle or AttemptLifecycleService(
             InMemoryAttemptLifecycleStore(),
         )
+        terminal_checkpoint_capability: ExecutionTerminalPersistenceCapability | None = None
+        if (
+            self._checkpoint_store is not None
+            and isinstance(
+                self._checkpoint_store,
+                ExecutionTerminalPersistenceCapability,
+            )
+        ):
+            terminal_checkpoint_capability = self._checkpoint_store
         self._execution_terminal = execution_terminal or ExecutionTerminalService(
-            wire_execution_terminal_store(checkpoint_store=self._checkpoint_store),
+            wire_execution_terminal_store(
+                checkpoint_store=terminal_checkpoint_capability,
+            ),
         )
         validate_durable_attempt_lifecycle_for_composition(
             production_mode=production_mode,
