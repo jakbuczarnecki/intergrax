@@ -231,9 +231,11 @@ async def test_r3_r2_defense_plugin_emits_block_on_missing_request_tenant() -> N
         subject=MiddlewareExecutionSubjectFacet(tenant_id=None, resource_tenant_id="tenant-b"),
         payload=ToolCallHookPayload(tool_id="echo"),
     )
-    result = await middleware.before(HookPoint.BEFORE_TOOL_CALL, ctx)
+    with canonical_execution_identity_scope("r"):
+        result = await middleware.before(HookPoint.BEFORE_TOOL_CALL, ctx)
     assert result.action == HookAction.BLOCK
-    assert counters.defense_blocked >= 1
+    kinds = [event.event_kind for event in bus.history]
+    assert KIND_DEFENSE_BLOCKED in kinds
 
 
 def _discover_structural_middleware_shapes() -> frozenset[tuple[str, str]]:
