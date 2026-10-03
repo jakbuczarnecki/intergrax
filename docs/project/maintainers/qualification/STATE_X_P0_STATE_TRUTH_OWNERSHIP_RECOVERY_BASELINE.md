@@ -4,7 +4,7 @@
 
 **Stage:** STATE-X-P0 (baseline lock — no production changes)
 
-**AUDITED_HEAD:** `d9e57d1cb6649da3a22b514bfe20a029aede1396`
+**AUDITED_HEAD:** `658cf95864970d7c8bde1c7005cf178747c68b55`
 
 **Mechanical SSOT:** `tests/qualification/state_x/inventory.py`
 
@@ -17,8 +17,8 @@
 | Field | Value |
 |---|---|
 | Branch | `development` |
-| AUDITED_HEAD | `d9e57d1cb6649da3a22b514bfe20a029aede1396` |
-| `origin/development` (pre-task) | `d9e57d1cb6649da3a22b514bfe20a029aede1396` |
+| AUDITED_HEAD | `658cf95864970d7c8bde1c7005cf178747c68b55` |
+| `origin/development` (pre-task) | `658cf95864970d7c8bde1c7005cf178747c68b55` |
 | Production delta | **0** |
 
 ---
@@ -83,7 +83,7 @@ Mandatory families: **SX-F01 .. SX-F15** (exactly once).
 | SX-F12 | Human decision persistence | HumanDecisionPersistence |
 | SX-F13 | Long-running scheduler | ScheduledResumePersistence / SchedulerLedger |
 | SX-F14 | ACP agent checkpoint | AgentCheckpointStore |
-| SX-F15 | Recovery composition (no omnibus owner) | Multi-contract coordination |
+| SX-F15 | **Truth ownership: NONE** — cross-family recovery coordination | **None** (coordination only; see `underlying_family_ids`) |
 
 **Invariant:** storage backend ≠ semantic owner (see §23 task spec).
 
@@ -91,7 +91,7 @@ Mandatory families: **SX-F01 .. SX-F15** (exactly once).
 
 ## 7. Contract / implementation matrix
 
-See `production_implementations` and `contract_path` per inventory entry. Physical SQLite/KV/Document backends may host multiple families; contracts remain distinct.
+See `production_paths`, `implementation_symbols`, and `contract_path` per inventory entry. **Paths** are mechanically existence-checked at current HEAD; **symbols** are statically resolved in contract or production path sources (no dynamic imports). Physical SQLite/KV/Document backends may host multiple families; contracts remain distinct.
 
 ---
 
@@ -163,9 +163,10 @@ Documented per `stale_state_rule` in inventory (revision CAS, terminal denial, l
 
 | Classification | Families |
 |---|---|
-| CANONICAL_TRUTH | F01, F03–F07, F09–F15 |
+| CANONICAL_TRUTH | F01, F03–F07, F09–F14 |
 | DURABLE_COMPONENT | F02 |
 | READ_MODEL | F08 |
+| COORDINATION_ONLY | F15 |
 | CONFIGURATION_INPUT | (none at durable truth — RunBudget config vs ledger distinguished in F09) |
 
 ---

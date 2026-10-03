@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Final
 
-STATE_X_P0_AUDITED_HEAD: Final[str] = "d9e57d1cb6649da3a22b514bfe20a029aede1396"
+STATE_X_P0_AUDITED_HEAD: Final[str] = "658cf95864970d7c8bde1c7005cf178747c68b55"
 
 MANDATORY_FAMILY_IDS: Final[tuple[str, ...]] = tuple(f"SX-F{i:02d}" for i in range(1, 16))
 
@@ -18,9 +18,16 @@ class ProjectionOrTruth(StrEnum):
     DURABLE_COMPONENT_OF_CANONICAL_TRUTH = "DURABLE_COMPONENT_OF_CANONICAL_TRUTH"
     DERIVED_PROJECTION = "DERIVED_PROJECTION"
     READ_MODEL = "READ_MODEL"
+    COORDINATION_ONLY = "COORDINATION_ONLY"
     CONFIGURATION_INPUT = "CONFIGURATION_INPUT"
     EPHEMERAL_RUNTIME_STATE = "EPHEMERAL_RUNTIME_STATE"
     BLOCKED_ARCHITECTURE_DECISION = "BLOCKED_ARCHITECTURE_DECISION"
+
+
+class SemanticOwnershipRole(StrEnum):
+    CANONICAL_OWNER = "CANONICAL_OWNER"
+    COMPONENT_OWNER = "COMPONENT_OWNER"
+    NO_TRUTH_OWNERSHIP = "NO_TRUTH_OWNERSHIP"
 
 
 class AuthorityRole(StrEnum):
@@ -69,10 +76,13 @@ class StateFamilyInventoryEntry:
     family_id: str
     semantic_name: str
     semantic_owner: str
-    canonical_contract: str
-    contract_path: str
+    semantic_ownership_role: SemanticOwnershipRole
+    canonical_contract: str | None
+    contract_path: str | None
     composition_owner: str
-    production_implementations: tuple[str, ...]
+    production_paths: tuple[str, ...]
+    implementation_symbols: tuple[str, ...]
+    underlying_family_ids: tuple[str, ...]
     writers: tuple[str, ...]
     readers: tuple[str, ...]
     restore_consumers: tuple[str, ...]
@@ -165,13 +175,13 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F01",
         "Task / Runtime Checkpoint State",
         "Long-running checkpoint subsystem (TaskCheckpoint + RuntimeCheckpoint semantics)",
+        SemanticOwnershipRole.CANONICAL_OWNER,
         "TaskCheckpointPersistence",
         "intergrax/runtime/long_running/persistence_contract.py",
         "Host/Nexus composition wires store; semantic owner remains long-running checkpoint",
-        (
-            "intergrax/runtime/long_running/store.py",
-            "intergrax/runtime/long_running/in_memory_checkpoint_store.py",
-        ),
+        ("intergrax/runtime/long_running/store.py",),
+        ("SQLiteTaskCheckpointStore",),
+        (),
         ("LongRunningCoordinator", "NexusLoop checkpoint save path", "Scheduler resume writer"),
         (
             "LongRunningCoordinator",
@@ -198,10 +208,13 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F02",
         "Runtime Execution Tree Snapshot",
         "Long-running checkpoint subsystem (component of RuntimeCheckpoint)",
+        SemanticOwnershipRole.COMPONENT_OWNER,
         "RuntimeCheckpoint.execution_tree / ExecutionTreeSnapshot",
         "intergrax/runtime/long_running/execution_tree_checkpoint.py",
         "Embedded in TaskCheckpointPersistence payloads; not independent Nexus tree truth",
         ("intergrax/runtime/long_running/store.py",),
+        ("ExecutionTreeSnapshot",),
+        (),
         ("NexusLoop orchestration", "CheckpointBuilder"),
         ("Resume validation", "Nexus execution tree restore"),
         ("NexusLoop", "checkpoint_resume_validation"),
@@ -223,6 +236,7 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F03",
         "Decision Durable Checkpoint State",
         "Decision orchestration / decision recovery plane",
+        SemanticOwnershipRole.CANONICAL_OWNER,
         "DecisionCheckpointPersistence / DecisionCheckpointState",
         "intergrax/runtime/execution/decision_checkpoint_persistence.py",
         "Execution host composition (Nexus/decision runtime bindings)",
@@ -230,6 +244,11 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
             "intergrax/runtime/execution/sqlite_decision_checkpoint_persistence.py",
             "intergrax/runtime/execution/in_memory_decision_checkpoint_persistence.py",
         ),
+        (
+            "SQLiteDecisionCheckpointPersistence",
+            "InMemoryDecisionCheckpointPersistence",
+        ),
+        (),
         ("Decision recovery orchestration", "Active decision checkpoint binding"),
         ("Decision recovery", "Governance/decision resume consumers"),
         ("Decision recovery", "Decision orchestration resume"),
@@ -251,6 +270,7 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F04",
         "Attempt Lifecycle State",
         "AttemptLifecycleService",
+        SemanticOwnershipRole.CANONICAL_OWNER,
         "AttemptLifecycleStore",
         "intergrax/contracts/attempt_lifecycle.py",
         "NexusLoop / queue workers / background execution composition",
@@ -258,6 +278,13 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
             "intergrax/runtime/execution/attempt_lifecycle/persistence.py",
             "intergrax/runtime/execution/attempt_lifecycle/service.py",
         ),
+        (
+            "InMemoryAttemptLifecycleStore",
+            "KvAttemptLifecycleStore",
+            "DocumentStoreAttemptLifecycleStore",
+            "AttemptLifecycleService",
+        ),
+        (),
         ("AttemptLifecycleService",),
         ("NexusLoop", "Queue workers", "Background admission"),
         ("Resume/retry admission", "reentry_admission"),
@@ -279,13 +306,18 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F05",
         "Execution Terminal State",
         "Execution terminal semantic plane (ExecutionTerminalService owner)",
+        SemanticOwnershipRole.CANONICAL_OWNER,
         "ExecutionTerminalStore / ExecutionTerminalRecord",
         "intergrax/contracts/execution_terminal.py",
         "wire_execution_terminal_store composition; not TaskCheckpointPersistence semantics",
+        ("intergrax/runtime/execution/execution_terminal/persistence.py",),
         (
-            "intergrax/runtime/execution/execution_terminal/persistence.py",
+            "InMemoryExecutionTerminalStore",
+            "KvExecutionTerminalStore",
+            "DocumentStoreExecutionTerminalStore",
             "CheckpointStoreExecutionTerminalStore",
         ),
+        (),
         ("ExecutionTerminalService", "Admission paths recording terminal outcomes"),
         ("Resume admission", "Background execution", "NexusLoop"),
         ("checkpoint_resume_validation", "reentry_admission"),
@@ -307,13 +339,19 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F06",
         "Execution Lineage Durable State",
         "Execution lineage subsystem",
+        SemanticOwnershipRole.CANONICAL_OWNER,
         "ExecutionLineagePersistence",
         "intergrax/contracts/execution_lineage.py",
         "Active lineage binding + host persistence wiring",
         (
             "intergrax/runtime/execution/lineage/persistence.py",
-            "InMemoryExecutionLineagePersistence",
+            "intergrax/runtime/execution/lineage/document_store_persistence.py",
         ),
+        (
+            "InMemoryExecutionLineagePersistence",
+            "DocumentStoreExecutionLineagePersistence",
+        ),
+        (),
         ("Lineage persistence adapters", "Seal/segment writers"),
         ("checkpoint_resume_validation", "Resume orchestration"),
         ("checkpoint_resume_validation", "Long-running resume"),
@@ -335,13 +373,23 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F07",
         "Runtime Event / Evidence Persistence",
         "Runtime events / evidence plane",
+        SemanticOwnershipRole.CANONICAL_OWNER,
         "RuntimeEventPersistence",
         "intergrax/runtime/events/persistence_contract.py",
         "Observability composition; not recovery command source",
         (
-            "intergrax/runtime/events/sqlite_event_store.py",
-            "intergrax/runtime/events/evidence_persistence_adapter.py",
+            "intergrax/runtime/events/stores/sqlite_runtime_event_store.py",
+            "intergrax/runtime/events/stores/memory_runtime_event_store.py",
+            "intergrax/runtime/events/stores/document_backed_runtime_event_store.py",
+            "intergrax/runtime/events/stores/validating_runtime_event_store.py",
         ),
+        (
+            "SQLiteRuntimeEventStore",
+            "InMemoryRuntimeEventStore",
+            "DocumentBackedRuntimeEventStore",
+            "ValidatingRuntimeEventPersistence",
+        ),
+        (),
         ("Runtime event emitters", "Evidence adapters"),
         ("Observability", "Diagnostics", "Audit readers"),
         ("Not authoritative for resume commands",),
@@ -363,6 +411,7 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F08",
         "Run Trace / Read Projection",
         "Nexus tracing read plane",
+        SemanticOwnershipRole.NO_TRUTH_OWNERSHIP,
         "RunTraceStore / RunTraceReader",
         "intergrax/contracts/run_trace_store.py",
         "open_run_trace_store composition; debug/task event readers",
@@ -370,6 +419,8 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
             "intergrax/runtime/nexus/tracing/sqlite_run_trace_store.py",
             "intergrax/runtime/nexus/tracing/store.py",
         ),
+        ("SQLiteRunTraceStore", "open_run_trace_store"),
+        (),
         ("Nexus tracing writers", "Task event projection"),
         ("RunTraceReader", "Debug router", "Tool registry bindings"),
         ("Not used as resume truth",),
@@ -391,14 +442,17 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F09",
         "Execution Budget Durable State",
         "Execution budget / cost plane",
+        SemanticOwnershipRole.CANONICAL_OWNER,
         "RunBudgetPersistence / ExecutionBudgetLedger",
         "intergrax/runtime/execution/budget/persistence.py",
         "DurableRunBudgetLedgerFactory + host budget wiring",
+        ("intergrax/runtime/execution/budget/persistence.py",),
         (
-            "intergrax/runtime/execution/budget/persistence.py",
             "KvRunBudgetPersistence",
             "DocumentStoreRunBudgetPersistence",
+            "DurableRunBudgetLedgerFactory",
         ),
+        (),
         ("DurableRunBudgetLedgerFactory", "Budget enforcement hooks"),
         ("Budget enforcement", "Restore on resume hosts"),
         ("Resume budget restore",),
@@ -420,13 +474,21 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F10",
         "Idempotency State",
         "Side-effect deduplication plane",
+        SemanticOwnershipRole.CANONICAL_OWNER,
         "IdempotencyStore",
         "intergrax/contracts/idempotency_store.py",
         "Host/Nexus composition separate from checkpoint store",
         (
             "intergrax/runtime/tools/in_memory_idempotency_store.py",
+            "intergrax/runtime/tools/sqlite_idempotency_store.py",
             "intergrax/runtime/persistence/sqlite_composition.py",
         ),
+        (
+            "InMemoryIdempotencyStore",
+            "SQLiteIdempotencyStore",
+            "create_sqlite_idempotency_store",
+        ),
+        (),
         ("Tool runtime", "Effect executors"),
         ("Replay/retry guards",),
         ("Recovery/replay eligibility",),
@@ -448,12 +510,16 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F11",
         "Compensation Queue State",
         "Compensation queue semantic owner",
+        SemanticOwnershipRole.CANONICAL_OWNER,
         "CompensationQueueStore",
         "intergrax/agents/persistence/compensation_queue_store.py",
         "Host composition (separate from Nexus checkpoint_store)",
+        ("intergrax/agents/persistence/compensation_queue_store.py",),
         (
-            "intergrax/agents/persistence/compensation_queue_store.py",
+            "InMemoryCompensationQueueStore",
+            "SQLiteCompensationQueueStore",
         ),
+        (),
         ("Compensation processors",),
         ("Compensation workers",),
         ("Recovery compensation flows",),
@@ -475,13 +541,19 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F12",
         "Human Decision / HITL Persistence",
         "Human decision persistence plane",
+        SemanticOwnershipRole.CANONICAL_OWNER,
         "HumanDecisionPersistence",
         "intergrax/runtime/human/persistence_contract.py",
         "Human governance composition",
         (
-            "intergrax/runtime/human/sqlite_human_decision_store.py",
+            "intergrax/runtime/human/store.py",
             "intergrax/runtime/persistence/sqlite_composition.py",
         ),
+        (
+            "SQLiteHumanDecisionStore",
+            "create_sqlite_human_decision_store",
+        ),
+        (),
         ("HITL flows", "Agent governance grant lifecycle"),
         ("Governance admission", "Audit"),
         ("Governance re-admission on resume — not authority reuse",),
@@ -503,10 +575,13 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F13",
         "Scheduler Durable State",
         "Long-running scheduler (WHEN to resume)",
+        SemanticOwnershipRole.CANONICAL_OWNER,
         "ScheduledResumePersistence / SchedulerLedger",
         "intergrax/runtime/long_running/persistence_contract.py",
         "Colocated in TaskCheckpointPersistence implementations; semantic scheduler owner",
         ("intergrax/runtime/long_running/store.py",),
+        ("SQLiteTaskCheckpointStore",),
+        (),
         ("Scheduler service", "claim_action writers"),
         ("Scheduler", "Resume dispatcher"),
         ("Scheduled resume consumer",),
@@ -528,12 +603,16 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "SX-F14",
         "Agent Checkpoint State (ACP)",
         "Agent persistence / ACP step checkpoint plane",
+        SemanticOwnershipRole.CANONICAL_OWNER,
         "AgentCheckpointStore",
         "intergrax/agents/persistence/checkpoint_store.py",
         "Host resolve_host_agent_checkpoint_store; NexusLoop.agent_checkpoint_store surface",
+        ("intergrax/agents/persistence/checkpoint_store.py",),
         (
-            "intergrax/agents/persistence/checkpoint_store.py",
+            "InMemoryAgentCheckpointStore",
+            "SQLiteAgentCheckpointStore",
         ),
+        (),
         ("ACP agent steps",),
         ("Agent resume", "Host harness"),
         ("Agent-local resume",),
@@ -554,27 +633,30 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
     StateFamilyInventoryEntry(
         "SX-F15",
         "Execution / Compensation / Side-Effect Recovery State",
-        "Cross-family recovery composition (no omnibus owner)",
-        "IdempotencyStore + CompensationQueueStore + ExecutionTerminalStore + checkpoints",
-        "intergrax/contracts/idempotency_store.py",
+        "Cross-family recovery coordination (underlying families retain semantic ownership)",
+        SemanticOwnershipRole.NO_TRUTH_OWNERSHIP,
+        None,
+        None,
         "Nexus/host composition coordinates; each family retains semantic owner",
+        ("intergrax/runtime/execution/decision_recovery.py",),
         (
-            "intergrax/runtime/execution/decision_recovery.py",
-            "intergrax/agents/persistence/compensation_queue_store.py",
+            "resume_decision_from_durable_state",
+            "reconcile_checkpoint_with_durable_finalization",
         ),
+        ("SX-F01", "SX-F05", "SX-F10", "SX-F11"),
         ("Effect executors", "Compensation workers", "Recovery orchestration"),
         ("Recovery orchestration", "Admission"),
         ("Unified recovery admission",),
-        "tenant per underlying family contracts",
-        "Family-specific CAS/fencing",
+        "tenant continuity enforced in underlying families; F15 coordinates only",
+        "Family-specific CAS/fencing in underlying stores",
         "No duplicated semantic truth across families",
         AuthorityRole.NOT_AUTHORITY_BEARING,
         IdentityRole.REFERENCE_ONLY,
-        ProjectionOrTruth.CANONICAL_TRUTH,
+        ProjectionOrTruth.COORDINATION_ONLY,
         StateFamilyP0Status.BASELINE_INVENTORIED,
         _frz("FRZ-REC-04", "FRZ-REC-07", "FRZ-STA-02"),
-        BackupRestoreResponsibility.BACKEND_OPERATOR_WITH_CONSISTENCY,
-        TenantAuditDisposition.BLOCKED,
+        BackupRestoreResponsibility.NOT_APPLICABLE,
+        TenantAuditDisposition.NA_WITH_EVIDENCE,
         "Per-family corrupt handling; R3/R2 certification",
         "resume != retry != fork — family-specific",
         "FRZ-REC-07 matrix — R2/R3",
