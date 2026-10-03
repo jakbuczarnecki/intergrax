@@ -48,7 +48,10 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
         if point in {HookPoint.BEFORE_CONTEXT_BUILD, HookPoint.BEFORE_LLM_INFERENCE} and self._profile.scan_input:
             llm_payload = ctx.payload
             if not isinstance(llm_payload, LlmInferenceHookPayload):
-                return HookResult()
+                return HookResult(
+                    action=HookAction.BLOCK,
+                    reason="Guardrail input scan requires LlmInferenceHookPayload",
+                )
             prompt = llm_payload.prompt or ""
             if not prompt:
                 return HookResult()
@@ -73,11 +76,18 @@ class LlmGuardrailMiddleware(RuntimeMiddleware):
         if point == HookPoint.BEFORE_TOOL_CALL and self._profile.scan_tool_calls:
             tool_payload = ctx.payload
             if not isinstance(tool_payload, ToolCallHookPayload):
-                return HookResult()
+                return HookResult(
+                    action=HookAction.BLOCK,
+                    reason="Guardrail tool scan requires ToolCallHookPayload",
+                )
             tool_id = tool_payload.tool_id
             if not tool_id:
                 return HookResult()
-            arguments = dict(tool_payload.arguments)
+            from intergrax.runtime.security.json_security_projection import (
+                json_object_to_string_argument_map,
+            )
+
+            arguments = json_object_to_string_argument_map(tool_payload.arguments)
             result = self._backend.scan_tool_call(tool_id, arguments, context=guard_ctx)
             if not result.allowed:
                 reason = result.detail or f"guardrail tool blocked ({self._backend.slug})"
@@ -187,9 +197,3 @@ def _guardrail_context(ctx: HookContext, point: HookPoint) -> GuardrailContext:
         step_id=ctx.step_id or ctx.node_id or "",
         hook=point.value,
     )
-
-
-def _stringify_argument_map(raw: object) -> dict[str, str]:
-    if not isinstance(raw, dict):
-        return {}
-    return {str(key): str(value) for key, value in raw.items()}

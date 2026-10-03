@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from intergrax.contracts.agent_contract_meta import AgentRiskLevel
 from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.middleware_hook_semantics import (
@@ -11,18 +13,23 @@ from intergrax.contracts.middleware_hook_semantics import (
     DataProtectionHookPayload,
     LlmInferenceHookPayload,
     MiddlewareExecutionSubjectFacet,
+    MiddlewareHookPayload,
     TaskIntakeHookPayload,
     ToolCallHookPayload,
 )
+from intergrax.contracts.structured_json_value import JsonObject, normalize_structured_json_object
 from intergrax.runtime.middleware.hook_semantic_adapters import (
     data_protection_from_memory_write_state,
 )
 
 
-def stringify_argument_map(raw: object) -> dict[str, str]:
-    if not isinstance(raw, dict):
+def normalize_tool_arguments(raw: object) -> JsonObject:
+    """Lossless JSON object for middleware tool args; rejects non-JSON-safe values."""
+    if raw is None:
         return {}
-    return {str(key): str(value) for key, value in raw.items()}
+    if not isinstance(raw, Mapping):
+        raise ValueError("tool arguments must be a JSON object")
+    return normalize_structured_json_object(dict(raw), field_name="arguments")
 
 
 def tool_call_payload_from_runtime_state(
@@ -43,7 +50,7 @@ def tool_call_payload_from_runtime_state(
         tool_id=str(tool_id),
         tool_name=_optional_str(runtime_state.get("tool_name")),
         request_id=_optional_str(runtime_state.get("request_id")),
-        arguments=stringify_argument_map(runtime_state.get("arguments")),
+        arguments=normalize_tool_arguments(runtime_state.get("arguments")),
         capability_ids=_string_list(runtime_state.get("capability_ids")),
         allowed_tool_ids=_string_list(runtime_state.get("allowed_tool_ids")),
         autonomy_level=autonomy,
@@ -89,10 +96,10 @@ def sync_typed_fields_from_runtime_state(
     runtime_state: dict[str, object],
     *,
     prefer_data_protection: bool = False,
-) -> tuple[MiddlewareExecutionSubjectFacet, object]:
+) -> tuple[MiddlewareExecutionSubjectFacet, MiddlewareHookPayload]:
     subject = subject_from_runtime_state(runtime_state)
     if prefer_data_protection or "memory_write" in runtime_state or "value" in runtime_state:
-        payload: object = data_protection_from_memory_write_state(runtime_state)
+        payload: MiddlewareHookPayload = data_protection_from_memory_write_state(runtime_state)
         return subject, payload
     if runtime_state.get("tool_id") or runtime_state.get("tool_name"):
         tool_payload = tool_call_payload_from_runtime_state(runtime_state)

@@ -5,8 +5,6 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any
-
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ApplicationSecurityProfile,
@@ -49,6 +47,7 @@ from intergrax.runtime.security.defense_plugin import (
 )
 from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
 from intergrax.runtime.security.encryption_middleware import EncryptionEnforcementMiddleware
+from intergrax.runtime.security.json_security_projection import json_object_to_string_argument_map
 
 
 def default_prompt_defense_profile() -> PromptDefenseProfile:
@@ -88,7 +87,10 @@ class PromptDefenseMiddleware(RuntimeMiddleware):
             return HookResult()
         llm_payload = ctx.payload
         if not isinstance(llm_payload, LlmInferenceHookPayload):
-            return HookResult()
+            return HookResult(
+                action=HookAction.BLOCK,
+                reason="Prompt defense requires LlmInferenceHookPayload at context build",
+            )
         prompt = llm_payload.prompt or ""
         if not prompt:
             return HookResult()
@@ -118,11 +120,14 @@ class ToolInjectionDefenseMiddleware(RuntimeMiddleware):
             return HookResult()
         tool_payload = ctx.payload
         if not isinstance(tool_payload, ToolCallHookPayload):
-            return HookResult()
+            return HookResult(
+                action=HookAction.BLOCK,
+                reason="Tool injection defense requires ToolCallHookPayload",
+            )
         tool_id = tool_payload.tool_id
         if not tool_id:
             return HookResult()
-        arguments = dict(tool_payload.arguments)
+        arguments = json_object_to_string_argument_map(tool_payload.arguments)
         capability_ids = list(tool_payload.capability_ids)
         allowed_tool_ids = list(tool_payload.allowed_tool_ids)
         policy = self._policy
@@ -267,18 +272,3 @@ def register_application_security_hooks(
     from intergrax.runtime.security.security_observability import wire_security_spine_subscriber
 
     wire_security_spine_subscriber(target.event_bus)
-
-
-def _stringify_argument_map(raw: Any) -> dict[str, str]:
-    if not isinstance(raw, dict):
-        return {}
-    result: dict[str, str] = {}
-    for key, value in raw.items():
-        result[str(key)] = str(value)
-    return result
-
-
-def _string_list(raw: Any) -> list[str]:
-    if not isinstance(raw, (list, tuple)):
-        return []
-    return [str(item) for item in raw]

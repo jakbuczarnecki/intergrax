@@ -14,7 +14,7 @@ from intergrax.contracts.middleware_hook_semantics import (
 )
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext
-from intergrax.runtime.hooks.middleware_context_builders import stringify_argument_map
+from intergrax.runtime.hooks.middleware_context_builders import normalize_tool_arguments
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 
@@ -52,7 +52,7 @@ def tool_hook_context(
             tool_id=request.tool_name,
             tool_name=request.tool_name,
             request_id=request.request_id,
-            arguments=stringify_argument_map(runtime_state["arguments"]),
+            arguments=normalize_tool_arguments(runtime_state["arguments"]),
             agent_risk_level=request.risk_level,
         ),
         runtime_state=runtime_state,

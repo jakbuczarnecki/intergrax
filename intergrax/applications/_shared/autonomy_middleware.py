@@ -35,7 +35,10 @@ class AutonomyGovernanceMiddleware(RuntimeMiddleware):
             return HookResult()
         tool_payload = ctx.payload
         if not isinstance(tool_payload, ToolCallHookPayload):
-            return HookResult()
+            return HookResult(
+                action=HookAction.BLOCK,
+                reason="Autonomy governance requires ToolCallHookPayload",
+            )
         tool_id = tool_payload.tool_id
         if not tool_id:
             return HookResult()

@@ -14,6 +14,7 @@ from intergrax.contracts.host_orchestration_wiring_capabilities import (
     HostOrchestrationMiddlewareHookContext,
     HostOrchestrationRuntimeEventPort,
 )
+from intergrax.contracts.middleware_hook_semantics import ToolCallHookPayload
 from intergrax.runtime.hooks.hook_context import HookAction, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
@@ -83,6 +84,16 @@ class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
     ) -> HookResult:
         if point not in self._plugin.hook_points:
             return HookResult()
+        if point == HookPoint.BEFORE_TOOL_CALL and not isinstance(ctx.payload, ToolCallHookPayload):
+            reason = "defense plugin requires ToolCallHookPayload at tool call"
+            await emit_defense_blocked(
+                self._event_bus,
+                ctx=ctx,
+                point=point,
+                plugin_id=self._plugin.plugin_id,
+                reason=reason,
+            )
+            return HookResult(action=HookAction.BLOCK, reason=reason)
         if self._enforce_tenant_scope and not _tenant_scope_valid(ctx):
             reason = "defense plugin blocked: tenant scope mismatch"
             await emit_defense_blocked(

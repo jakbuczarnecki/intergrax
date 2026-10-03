@@ -13,6 +13,7 @@ from intergrax.contracts.autonomy_level import AutonomyLevel
 from intergrax.contracts.data_classification import DataClassification
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.middleware_hook_point import HookPoint
+from intergrax.contracts.structured_json_value import JsonObject
 
 
 class MiddlewareExecutionSubjectFacet(BaseModel):
@@ -44,7 +45,7 @@ class ToolCallHookPayload(BaseModel):
     tool_id: str
     tool_name: str | None = None
     request_id: str | None = None
-    arguments: dict[str, str] = Field(default_factory=dict)
+    arguments: JsonObject = Field(default_factory=dict)
     capability_ids: list[str] = Field(default_factory=list)
     allowed_tool_ids: list[str] = Field(default_factory=list)
     autonomy_level: AutonomyLevel | None = None

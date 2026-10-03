@@ -566,6 +566,7 @@ async def test_plug03_security_defense_canonical_hook_invokes_custom_plugin(
     from intergrax.core.catalog_bootstrap import bootstrap_catalogs
     from intergrax.core.plugin_env import INTERGRAX_DISCOVER_PLUGINS_ENV
     from intergrax.core.security_bootstrap import bootstrap_security_providers
+    from intergrax.contracts.middleware_hook_semantics import ToolCallHookPayload
     from intergrax.runtime.hooks.hook_context import HookContext
     from intergrax.runtime.hooks.hook_point import HookPoint
     from intergrax.runtime.security.defense_plugin import PluginSecurityDefenseMiddleware
@@ -593,6 +594,7 @@ async def test_plug03_security_defense_canonical_hook_invokes_custom_plugin(
         run_id="plug03-sec",
         task_id="task-1",
         agent_id="agent-1",
+        payload=ToolCallHookPayload(tool_id="demo.tool", arguments={}),
         runtime_state={"tool_id": "demo.tool", "arguments": {}},
     )
     result = await middleware.before(HookPoint.BEFORE_TOOL_CALL, ctx)

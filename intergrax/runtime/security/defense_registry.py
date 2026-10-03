@@ -9,6 +9,7 @@ from intergrax.contracts.host_orchestration_wiring_capabilities import (
 )
 from intergrax.contracts.middleware_hook_semantics import ToolCallHookPayload
 from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.runtime.security.json_security_projection import json_object_to_security_scan_text
 from intergrax.runtime.security.defense_plugin import (
     SecurityDefensePlugin,
     SecurityFailMode,
@@ -40,8 +41,13 @@ class _StrictInjectionDefensePlugin:
             return SecurityInspectionResult(allowed=True, plugin_id=self.plugin_id)
         payload = ctx.payload
         if not isinstance(payload, ToolCallHookPayload):
-            return SecurityInspectionResult(allowed=True, plugin_id=self.plugin_id)
-        blob = " ".join(value.lower() for value in payload.arguments.values())
+            return SecurityInspectionResult(
+                allowed=False,
+                reasons=["tool defense requires ToolCallHookPayload"],
+                plugin_id=self.plugin_id,
+                hook_point=point.value,
+            )
+        blob = json_object_to_security_scan_text(payload.arguments).lower()
         for token in self._blocked_tokens:
             if token in blob:
                 return SecurityInspectionResult(

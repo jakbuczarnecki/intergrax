@@ -56,7 +56,10 @@ class EncryptionEnforcementMiddleware(RuntimeMiddleware):
             return HookResult()
         hook_payload = ctx.payload
         if not isinstance(hook_payload, DataProtectionHookPayload):
-            return HookResult()
+            return HookResult(
+                action=HookAction.BLOCK,
+                reason="Encryption enforcement requires DataProtectionHookPayload",
+            )
         payload = data_protection_payload_to_encryption_dict(hook_payload)
         decision = evaluate_encryption_enforcement(
             payload=payload,

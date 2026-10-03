@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from intergrax.contracts.data_classification import DataClassification
+from intergrax.contracts.structured_json_value import JsonObject
 from intergrax.contracts.middleware_hook_semantics import (
     DataProtectionHookPayload,
     DataProtectionRestrictedValue,
@@ -19,7 +20,7 @@ from intergrax.runtime.hooks.hook_context import HookContext
 def tool_hook_context_for_test(
     *,
     tool_id: str,
-    arguments: dict[str, str] | None = None,
+    arguments: JsonObject | None = None,
     **kwargs: object,
 ) -> HookContext:
     runtime_state = {

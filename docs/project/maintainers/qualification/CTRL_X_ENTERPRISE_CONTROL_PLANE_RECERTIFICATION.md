@@ -441,18 +441,47 @@ HostOrchestrationMiddlewareHookContext.runtime_state: Mapping[str, object]
 
 **R3 invariants R3-01..R3-15:** qualified in `tests/qualification/control_planes/ctrl_x/test_ctrl_x_r3_typed_middleware_contracts.py` (R3-T01..R3-T12 + bypass search).
 
-**Evidence:** CTRL-X qualification suite green; semantic-boundary pyright 0 errors; exact proof replay `requested=38 passed=38`.
+**Evidence (historical R3 close):** semantic-boundary pyright 0 errors; proof replay superseded by R3-R1 evidence below.
 
-**CTRL-X-R3 recommendation:** **READY FOR AUDIT** (independent GitHub SHA audit required).
+**CTRL-X-R3 recommendation:** **READY FOR AUDIT** (superseded by R3-R1 current-head section).
 
 ---
 
-## 27 Recommendation
+## CTRL-X-R3-R1 — Tool payload fidelity & qualification closure
+
+| Item | Value |
+|---|---|
+| Parent | CTRL-X-R3 |
+| Evidence commit | current `development` HEAD after R3-R1 remediation |
+| Tool arguments contract | `ToolCallHookPayload.arguments: JsonObject` (`intergrax/contracts/structured_json_value.py`) |
+| Stringification at canonical payload build | **0** (`normalize_tool_arguments` / `normalize_structured_json_object`) |
+| Security token scan projection | `intergrax/runtime/security/json_security_projection.py` (local to Security / built-in scanners) |
+| Closed-world middleware inventory | `tests/qualification/control_planes/ctrl_x/middleware_inventory.py` |
+| R3-T10 | Direct FAIL_OPEN composition rejection (no test-function-as-proof) |
+| R1-TOOL-01..08 | `test_ctrl_x_r3_typed_middleware_contracts.py` |
+
+**Exact proof replay (current HEAD):** `requested=40` `unique=40` `executed=40` `passed=40` `failed=0` `errors=0` `missing=0` `skipped=0`.
+
+**CTRL-X suite:** `uv run pytest -p no:xdist tests/qualification/control_planes/ctrl_x -q` → exit 0 (70 tests).
 
 | Item | Status |
 |---|---|
-| CTRL-X parent | **BLOCKED PENDING ADR-CTRL-X-001 ACCEPTANCE** |
-| CX-01..CX-12 | PASS (mechanical) |
+| CTRL-X-R3-R1 | **READY FOR AUDIT** |
+| CTRL-X-R3 | **READY FOR AUDIT** |
+| CTRL-X | **READY FOR AUDIT** (blocked pending independent audit only) |
+| STATE-X | **NEXT / NOT ENTERED** |
+| FRZ-CTL-* promotion | Independent audit only |
+
+---
+
+## 27 Recommendation (current HEAD)
+
+| Item | Status |
+|---|---|
+| CTRL-X-R3-R1 | **READY FOR AUDIT** |
+| CTRL-X-R3 | **READY FOR AUDIT** |
+| CTRL-X parent | **READY FOR AUDIT** (not CLOSED — independent GitHub SHA audit required) |
+| CX-01..CX-12 | PASS (mechanical, current-head proof replay) |
 | STATE-X | NOT ENTERED |
 | FRZ-CTL-* promotion | Independent audit only |
 
