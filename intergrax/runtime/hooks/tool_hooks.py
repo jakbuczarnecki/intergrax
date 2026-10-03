@@ -8,8 +8,13 @@ from __future__ import annotations
 from typing import Awaitable, Callable, TYPE_CHECKING, Optional
 
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.middleware_hook_semantics import (
+    MiddlewareExecutionSubjectFacet,
+    ToolCallHookPayload,
+)
 from intergrax.contracts.tool_request import ToolRequest, ToolResponse, ToolResponseStatus
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext
+from intergrax.runtime.hooks.middleware_context_builders import normalize_tool_arguments
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 
@@ -25,19 +30,32 @@ def tool_hook_context(
     *,
     step_id: Optional[str] = None,
 ) -> HookContext:
+    runtime_state = {
+        "tool_id": request.tool_name,
+        "tool_name": request.tool_name,
+        "request_id": request.request_id,
+        "arguments": request.input if isinstance(request.input, dict) else {},
+        "capability_ids": [],
+        "allowed_tool_ids": [],
+        "agent_risk_level": request.risk_level.value,
+    }
     return HookContext(
         task_id=state.task_id,
         run_id=state.run_id,
         step_id=step_id,
         phase=ExecutionPhase.STEP_EXECUTION,
-        runtime_state={
-            "tool_id": request.tool_name,
-            "tool_name": request.tool_name,
-            "request_id": request.request_id,
-            "arguments": request.input if isinstance(request.input, dict) else {},
-            "capability_ids": [],
-            "allowed_tool_ids": [],
-        },
+        subject=MiddlewareExecutionSubjectFacet(
+            tenant_id=state.tenant_id,
+            resource_tenant_id=state.tenant_id,
+        ),
+        payload=ToolCallHookPayload(
+            tool_id=request.tool_name,
+            tool_name=request.tool_name,
+            request_id=request.request_id,
+            arguments=normalize_tool_arguments(runtime_state["arguments"]),
+            agent_risk_level=request.risk_level,
+        ),
+        runtime_state=runtime_state,
     )
 
 

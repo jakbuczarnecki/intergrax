@@ -95,6 +95,11 @@ def build_production_orchestration_meaningful_side_effect_authorization_boundary
         )
     resolved_recorder = governance_evidence_recorder
     if resolved_recorder is None:
+        if governance_evidence_persistence is None:
+            raise OrchestrationGovernanceEvidenceCompositionError(
+                "production orchestration MSE requires governance_evidence_persistence "
+                "when governance_evidence_recorder is not injected",
+            )
         resolved_recorder = build_orchestration_governance_evidence_recorder(
             governance_evidence_persistence=governance_evidence_persistence,
         )

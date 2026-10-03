@@ -5,13 +5,19 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     ApplicationSecurityProfile,
 )
 from intergrax.contracts.host_orchestration_application_wiring_target import (
     HostOrchestrationApplicationWiringTarget,
+)
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationMiddlewareHookContext,
+)
+from intergrax.contracts.middleware_hook_semantics import (
+    LlmInferenceHookPayload,
+    ToolCallHookPayload,
 )
 from intergrax.runtime.architecture.prompt_security import (
     PromptDefenseProfile,
@@ -32,13 +38,20 @@ from intergrax.runtime.architecture.tool_security import (
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
-from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
 from intergrax.applications._shared.security_runtime_bridge import (
     SecurityWiringOptions,
 )
-from intergrax.runtime.security.defense_plugin import PluginSecurityDefenseMiddleware
+from intergrax.runtime.security.defense_plugin import (
+    PluginSecurityDefenseMiddleware,
+    SecurityFailMode,
+)
+from intergrax.runtime.security.tenant_scope import (
+    normalize_tenant_scope_id,
+    tenant_scope_is_valid,
+)
 from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
 from intergrax.runtime.security.encryption_middleware import EncryptionEnforcementMiddleware
+from intergrax.runtime.security.json_security_projection import json_object_to_string_argument_map
 
 
 def default_prompt_defense_profile() -> PromptDefenseProfile:
@@ -73,10 +86,16 @@ class PromptDefenseMiddleware(RuntimeMiddleware):
     def __init__(self, profile: PromptDefenseProfile) -> None:
         self._profile = profile
 
-    async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def before(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         if point != HookPoint.BEFORE_CONTEXT_BUILD:
             return HookResult()
-        prompt = str(ctx.runtime_state.get("prompt", ""))
+        llm_payload = ctx.payload
+        if not isinstance(llm_payload, LlmInferenceHookPayload):
+            return HookResult(
+                action=HookAction.BLOCK,
+                reason="Prompt defense requires LlmInferenceHookPayload at context build",
+            )
+        prompt = llm_payload.prompt or ""
         if not prompt:
             return HookResult()
         result = inspect_prompt_for_injection(prompt=prompt, profile=self._profile)
@@ -87,7 +106,7 @@ class PromptDefenseMiddleware(RuntimeMiddleware):
             )
         return HookResult()
 
-    async def after(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def after(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         return HookResult()
 
 
@@ -100,15 +119,21 @@ class ToolInjectionDefenseMiddleware(RuntimeMiddleware):
     def __init__(self, policy: ToolInvocationPolicy) -> None:
         self._policy = policy
 
-    async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def before(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         if point != HookPoint.BEFORE_TOOL_CALL:
             return HookResult()
-        tool_id = str(ctx.runtime_state.get("tool_id", ""))
+        tool_payload = ctx.payload
+        if not isinstance(tool_payload, ToolCallHookPayload):
+            return HookResult(
+                action=HookAction.BLOCK,
+                reason="Tool injection defense requires ToolCallHookPayload",
+            )
+        tool_id = tool_payload.tool_id
         if not tool_id:
             return HookResult()
-        arguments = _stringify_argument_map(ctx.runtime_state.get("arguments"))
-        capability_ids = _string_list(ctx.runtime_state.get("capability_ids"))
-        allowed_tool_ids = _string_list(ctx.runtime_state.get("allowed_tool_ids"))
+        arguments = json_object_to_string_argument_map(tool_payload.arguments)
+        capability_ids = list(tool_payload.capability_ids)
+        allowed_tool_ids = list(tool_payload.allowed_tool_ids)
         policy = self._policy
         if allowed_tool_ids:
             policy = policy.model_copy(update={"allowed_tool_ids": allowed_tool_ids})
@@ -127,7 +152,7 @@ class ToolInjectionDefenseMiddleware(RuntimeMiddleware):
             )
         return HookResult()
 
-    async def after(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def after(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         return HookResult()
 
 
@@ -137,22 +162,29 @@ class TenantSecurityMiddleware(RuntimeMiddleware):
     priority = 45
     name = "TenantSecurityMiddleware"
 
-    async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def before(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         if point != HookPoint.BEFORE_TASK_INTAKE:
             return HookResult()
-        request_tenant_id = str(ctx.runtime_state.get("tenant_id", ""))
-        resource_tenant_id = str(ctx.runtime_state.get("resource_tenant_id", request_tenant_id))
-        actor_id = str(ctx.runtime_state.get("user_id", "unknown"))
-        if not request_tenant_id:
+        request_tenant_id = normalize_tenant_scope_id(ctx.subject.tenant_id)
+        if request_tenant_id is None:
             return HookResult(
                 action=HookAction.BLOCK,
                 reason="Missing tenant_id on task intake",
             )
+        scope_ok = tenant_scope_is_valid(
+            ctx.subject.tenant_id,
+            ctx.subject.resource_tenant_id,
+            allow_unscoped=False,
+        )
+        resource_tenant_id = (
+            normalize_tenant_scope_id(ctx.subject.resource_tenant_id) or request_tenant_id
+        )
+        actor_id = ctx.subject.user_id or "unknown"
         check = TenantIsolationCheck(
             request_tenant_id=request_tenant_id,
             resource_tenant_id=resource_tenant_id,
-            passed=request_tenant_id == resource_tenant_id,
-            reason="" if request_tenant_id == resource_tenant_id else "tenant mismatch",
+            passed=scope_ok,
+            reason="" if scope_ok else "tenant mismatch",
         )
         audit_event = SecurityAuditEvent(
             event_id=f"{ctx.run_id}:intake",
@@ -169,7 +201,7 @@ class TenantSecurityMiddleware(RuntimeMiddleware):
             )
         return HookResult()
 
-    async def after(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def after(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         return HookResult()
 
 
@@ -177,12 +209,23 @@ def _attach_middleware(
     target: HostOrchestrationApplicationWiringTarget,
     middleware: RuntimeMiddleware,
 ) -> None:
-    pipeline = target.middleware
-    if isinstance(pipeline, MiddlewarePipeline):
-        pipeline._middleware = sorted(  # noqa: SLF001
-            [middleware, *pipeline._middleware],
-            key=lambda item: item.priority,
-        )
+    target.middleware.attach_runtime_middleware_if_absent(middleware)
+
+
+def _reject_non_fail_closed_defense_plugins(
+    plugin_ids: tuple[str, ...],
+    bundle_ids: tuple[str, ...],
+) -> None:
+    from intergrax.applications._shared.security_assembly_resolver import SecurityAssemblyError
+
+    for plugin in resolve_security_defense_plugins(plugin_ids, bundle_ids):
+        if plugin.fail_mode is not SecurityFailMode.FAIL_CLOSED:
+            raise SecurityAssemblyError(
+                [
+                    "security defense plugin "
+                    f"{plugin.plugin_id!r} must use fail_mode=FAIL_CLOSED for host composition",
+                ],
+            )
 
 
 def register_application_security_hooks(
@@ -221,6 +264,10 @@ def register_application_security_hooks(
         _attach_middleware(target, ToolInjectionDefenseMiddleware(default_tool_invocation_policy()))
     if profile.tenant_security_verify_enabled:
         _attach_middleware(target, TenantSecurityMiddleware())
+    _reject_non_fail_closed_defense_plugins(
+        resolved.defense_plugin_ids,
+        resolved.defense_bundle_ids,
+    )
     for plugin in resolve_security_defense_plugins(
         resolved.defense_plugin_ids,
         resolved.defense_bundle_ids,
@@ -236,18 +283,3 @@ def register_application_security_hooks(
     from intergrax.runtime.security.security_observability import wire_security_spine_subscriber
 
     wire_security_spine_subscriber(target.event_bus)
-
-
-def _stringify_argument_map(raw: Any) -> dict[str, str]:
-    if not isinstance(raw, dict):
-        return {}
-    result: dict[str, str] = {}
-    for key, value in raw.items():
-        result[str(key)] = str(value)
-    return result
-
-
-def _string_list(raw: Any) -> list[str]:
-    if not isinstance(raw, (list, tuple)):
-        return []
-    return [str(item) for item in raw]

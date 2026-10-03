@@ -15,10 +15,13 @@ from intergrax.runtime.execution.host_orchestration_loop_init_spec import (
     HostOrchestrationLoopInitSpec,
 )
 from intergrax.runtime.nexus.nexus_loop import NexusLoop
-from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
-from intergrax.runtime.observability.qualification_runtime_trace import (
-    DeferredPersistedTraceFinalize,
+from intergrax.contracts.agent_execution_validation_engine import (
+    AgentExecutionValidationEnginePort,
 )
+from intergrax.contracts.deferred_persisted_trace_finalize_port import (
+    DeferredPersistedTraceFinalizePort,
+)
+from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.registry.agent_registry_read import AgentRegistryRead
 
 
@@ -34,7 +37,7 @@ class EnvironmentOrchestrationMaterialization:
 
     def apply_validation_engine(
         self,
-        validation_engine: NexusValidationEngine | None,
+        validation_engine: AgentExecutionValidationEnginePort | None,
     ) -> None:
         self._backend.apply_validation_engine(validation_engine)
 
@@ -43,7 +46,7 @@ class EnvironmentOrchestrationMaterialization:
 
     def take_deferred_persisted_trace_finalize(
         self,
-    ) -> DeferredPersistedTraceFinalize | None:
+    ) -> DeferredPersistedTraceFinalizePort | None:
         return self._backend.take_deferred_persisted_trace_finalize()
 
 

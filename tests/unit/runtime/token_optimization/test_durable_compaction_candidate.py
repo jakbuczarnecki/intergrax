@@ -530,7 +530,10 @@ def test_fail_closed_coordination_statuses(status: ArtifactCreationCoordinationS
 
 def test_artifact_available_and_in_progress_with_artifact_reuse() -> None:
     source_repo, request, created, _ = _create()
-    stored = source_repo.lookup(request.snapshot.source_identity.artifact_lookup_key)
+    stored = source_repo.lookup(
+        request.snapshot.source_identity.artifact_lookup_key,
+        ownership=request.artifact_ownership,
+    )
     assert stored is not None
     for status in (
         ArtifactCreationCoordinationStatus.ARTIFACT_AVAILABLE,

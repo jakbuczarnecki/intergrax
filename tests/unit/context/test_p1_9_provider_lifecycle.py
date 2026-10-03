@@ -54,6 +54,7 @@ from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.nexus.config import RuntimeConfig
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
+from testing_support.context_assembly_test_runtime import provider_context_for_engine_assembly
 from intergrax.llm_adapters.contracts.adapter_response import LLMAdapterResponse
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
@@ -107,16 +108,19 @@ def _provider_ctx(
     extra_handles: dict | None = None,
 ) -> ContextProviderContext:
     adapter = _SmallWindowAdapter()
-    handles = {
-        "runtime_config": RuntimeConfig(llm_adapter=adapter, production_mode=False),
-        "messages": [ChatMessage(role="user", content="hello")],
-        "max_output_tokens": 64,
-    }
+    config = RuntimeConfig(llm_adapter=adapter, production_mode=False)
+    handles: dict = {}
     if pinning_store is not None:
         handles[CONTEXT_PROVIDER_PINNING_STORE_HANDLE] = pinning_store
     if extra_handles:
         handles.update(extra_handles)
-    return ContextProviderContext(engine_id=engine_id, handles=handles)
+    return provider_context_for_engine_assembly(
+        runtime_config=config,
+        messages=[ChatMessage(role="user", content="hello")],
+        max_output_tokens=64,
+        engine_id=engine_id,
+        handles=handles,
+    )
 
 
 @dataclass

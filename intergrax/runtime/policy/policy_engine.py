@@ -26,6 +26,7 @@ from intergrax.contracts.runtime_policy_context import (
     AgentDecisionPolicyContext,
     PreModelPolicyContext,
 )
+from intergrax.runtime.plugins.bootstrap import RuntimePluginPolicyRegistrationUnsupportedError
 from intergrax.runtime.policy.runtime_policy_engine import RuntimePolicyEngine
 from intergrax.runtime.replay.metrics import ExecutionMetrics
 from intergrax.runtime.replay.policy import (
@@ -147,6 +148,13 @@ class PolicyEngine:
                 [f"llm_cost:{r}" for r in cost.reasons],
             )
         return cost, ReplayPolicyDecision(PolicyDecisionType.ALLOW, [])
+
+    def register_rule(self, rule: object) -> None:
+        """Fail closed — governance rules are not mutable at plugin bootstrap."""
+        _ = rule
+        raise RuntimePluginPolicyRegistrationUnsupportedError(
+            "runtime plugin policy rule registration is not supported",
+        )
 
 
 def coerce_policy_engine(engine: PolicyEngineInput) -> PolicyEngine:

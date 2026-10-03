@@ -120,7 +120,7 @@ async def test_canonical_persistence_occurs_before_export_attempt() -> None:
         exporter=probe,
         policy=ObservabilityExportPolicy(enabled=True),
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     event = _runtime_event(identity=identity)
     await bus.publish(event)
@@ -141,7 +141,7 @@ async def test_exporter_failure_does_not_remove_canonical_event() -> None:
         exporter=exporter,
         policy=ObservabilityExportPolicy(enabled=True),
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     await bus.publish(_runtime_event(identity=identity))
 
@@ -160,7 +160,7 @@ async def test_repeated_exporter_outage_persists_all_events_and_classifies_failu
         exporter=exporter,
         policy=ObservabilityExportPolicy(enabled=True),
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     for index in range(3):
         await bus.publish(_runtime_event(event_id=mint_event_id(), identity=identity))
@@ -180,7 +180,7 @@ async def test_exporter_recovery_exports_new_events_without_replay() -> None:
         exporter=exporter,
         policy=ObservabilityExportPolicy(enabled=True),
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     event_id_1 = mint_event_id()
     event_id_2 = mint_event_id()
@@ -203,7 +203,7 @@ async def test_exporter_failure_does_not_create_recursive_export_events() -> Non
         exporter=exporter,
         policy=ObservabilityExportPolicy(enabled=True),
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     await bus.publish(_runtime_event(identity=identity))
 
@@ -219,7 +219,7 @@ async def test_publish_awaits_slow_exporter_inline() -> None:
         exporter=slow,
         policy=ObservabilityExportPolicy(enabled=True),
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     publish_task = asyncio.create_task(bus.publish(_runtime_event()))
     await slow.started.wait()
@@ -237,7 +237,7 @@ def test_record_blocks_sync_caller_until_slow_exporter_finishes() -> None:
         exporter=blocking,
         policy=ObservabilityExportPolicy(enabled=True),
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     started = time.perf_counter()
     bus.record(_runtime_event())

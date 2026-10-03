@@ -14,6 +14,7 @@ from intergrax.contracts.execution_identity import (
 )
 from intergrax.runtime.execution.facade import Execution as ExecutionFacade
 from tests.fixtures.harness_host_task_execution import (
+    build_harness_environment_host_task_execution,
     build_harness_host_task_execution,
 )
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
@@ -29,9 +30,6 @@ from intergrax.runtime.task.task import TaskResult, TaskState
 from governed_contractor_application.host.environment_profile import (
     build_governed_contractor_environment_profile,
 )
-from governed_contractor_application.host.execution_wiring import (
-    build_governed_contractor_host_task_execution,
-)
 from governed_contractor_application.host.settings import GovernedContractorBackendSettings
 from governed_contractor_application.mcp.server import build_governed_contractor_mcp_server
 from research_application.mcp.server import build_research_mcp_server
@@ -41,7 +39,7 @@ pytestmark = [pytest.mark.unit]
 
 def _build_governed_contractor_host_execution(nexus_loop: NexusLoop):
     env = build_governed_contractor_environment_profile(GovernedContractorBackendSettings.from_env())
-    return build_governed_contractor_host_task_execution(nexus_loop, env)
+    return build_harness_environment_host_task_execution(nexus_loop, env)
 
 
 def _build_research_host_execution(nexus_loop: NexusLoop):

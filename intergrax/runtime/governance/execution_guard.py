@@ -59,6 +59,7 @@ class ExecutionGuard:
 
     def evaluate_run(
         self,
+        tenant_id: str,
         run_id: str,
         agent_id: str,
     ) -> GovernanceEvaluation:
@@ -67,7 +68,7 @@ class ExecutionGuard:
         """
 
         # 1. Reconstruct execution
-        reconstructed = self._replay.inspect_run(run_id)
+        reconstructed = self._replay.inspect_run(tenant_id, run_id)
 
         # 2. Compute metrics for current run
         metrics = self._metrics_engine.compute(reconstructed)

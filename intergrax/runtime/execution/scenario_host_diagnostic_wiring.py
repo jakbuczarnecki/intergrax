@@ -10,16 +10,28 @@ from intergrax.applications._shared.diagnostic_runtime_wiring import (
 )
 from intergrax.applications._shared.environment_wiring import ApplicationEnvironmentWiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
+from intergrax.contracts.host_observability_stores import HostObservabilityStores
 from intergrax.runtime.execution.environment_orchestration_materialization import (
     EnvironmentOrchestrationMaterialization,
 )
-from intergrax.runtime.execution._orchestration_backend_access import (
-    orchestration_backend_for_execution_engine,
+from intergrax.runtime.execution.harness_host_orchestration_wiring import (
+    orchestration_application_wiring_target_from_materialization,
 )
 from intergrax.runtime.nexus.observability_wiring import NexusObservabilityStores
 
 from intergrax.applications._shared.diagnostic_assembly_resolver import DiagnosticWiring
 from intergrax.applications._shared.scenario_runtime_profiles import ScenarioRuntimeMode
+
+
+def _as_host_observability_stores(
+    observability: NexusObservabilityStores,
+) -> HostObservabilityStores:
+    return HostObservabilityStores(
+        trace_store=observability.trace_store,
+        runtime_event_store=observability.runtime_event_store,
+        trace_db_path=observability.trace_db_path,
+        runtime_events_db_path=observability.runtime_events_db_path,
+    )
 
 
 def wire_scenario_terminal_execution_diagnostics(
@@ -30,12 +42,14 @@ def wire_scenario_terminal_execution_diagnostics(
     observability: NexusObservabilityStores,
     scenario_runtime_mode: ScenarioRuntimeMode | None = None,
 ) -> DiagnosticWiring:
-    host = orchestration_backend_for_execution_engine(materialization)
+    orchestration_host = orchestration_application_wiring_target_from_materialization(
+        materialization,
+    )
     return wire_terminal_execution_diagnostics(
         env=env,
         env_wiring=env_wiring,
-        observability=observability,
-        nexus_loop=host,  # type: ignore[arg-type]
+        observability=_as_host_observability_stores(observability),
+        orchestration_host=orchestration_host,
         scenario_runtime_mode=scenario_runtime_mode,
     )
 

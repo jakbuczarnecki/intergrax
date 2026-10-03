@@ -209,6 +209,7 @@ class DummyExecutionGuard(ExecutionGuard):
 
     def evaluate_run(
         self,
+        tenant_id: str,
         run_id: str,
         agent_id: str,
     ) -> GovernanceEvaluation:

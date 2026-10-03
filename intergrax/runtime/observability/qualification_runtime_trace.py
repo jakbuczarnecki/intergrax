@@ -16,6 +16,10 @@ from intergrax.contracts.execution_identity import (
     reset_active_execution_identity,
     validate_run_id,
 )
+from intergrax.contracts.deferred_persisted_trace_finalize_port import (
+    PersistedTraceCompletionAlignmentPayload,
+    PersistedTraceReconciliationPhase,
+)
 from intergrax.runtime.execution.trace_persistence_models_bridge import (
     CompletionAlignmentDiagV1,
     EvaluatorModelAttemptDiagV1,
@@ -158,8 +162,9 @@ class DeferredPersistedTraceFinalize:
         *,
         validation_invalid: bool,
         entered_reconciliation: bool,
-        phase: ReconciliationPhaseValue,
+        phase: PersistedTraceReconciliationPhase,
     ) -> None:
+        runtime_phase = ReconciliationPhaseValue(phase.value)
         port = TaskTraceRuntimeDiagnosticPort(
             trace_emitter=self.trace_emitter,
             task=self.task,
@@ -174,7 +179,7 @@ class DeferredPersistedTraceFinalize:
                 run_id=self.run_id,
                 validation_invalid=validation_invalid,
                 entered_reconciliation=entered_reconciliation,
-                phase=phase,
+                phase=runtime_phase,
             )
         finally:
             reset_active_execution_identity(token)
@@ -182,8 +187,10 @@ class DeferredPersistedTraceFinalize:
     def emit_completion_alignment_under_identity(
         self,
         *,
-        payload: CompletionAlignmentDiagV1,
+        payload: PersistedTraceCompletionAlignmentPayload,
     ) -> None:
+        if type(payload) is not CompletionAlignmentDiagV1:
+            raise TypeError("payload must be CompletionAlignmentDiagV1")
         port = TaskTraceRuntimeDiagnosticPort(
             trace_emitter=self.trace_emitter,
             task=self.task,

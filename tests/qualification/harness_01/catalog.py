@@ -425,7 +425,7 @@ HARNESS_01_RUNTIME_TOOL_INVOKER_REFERENCE_ALLOWLIST: frozenset[str] = frozenset(
         "intergrax/runtime/agent_governance/ports.py",
         "intergrax/runtime/nexus/agents/catalog_declarative_invoker.py",
         "intergrax/runtime/nexus/agents/idempotency_runtime_overlay.py",
-        "intergrax/runtime/nexus/config.py",
+        "intergrax/runtime/execution/host_runtime_config.py",
         "intergrax/runtime/nexus/config_sections.py",
         "intergrax/runtime/nexus/context/iterative_tool_context_assembly.py",
         "intergrax/runtime/nexus/tools/continuation_aware_catalog_tool_host.py",

@@ -29,7 +29,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[4]
 _HOST_TASK = _REPO_ROOT / "intergrax" / "runtime" / "execution" / "host_task.py"
 _AGENT_ENGINE = _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "agents" / "agent_engine.py"
 _RUNTIME_CONTEXT = (
-    _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "engine" / "runtime_context.py"
+    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "agent_runtime_context.py"
 )
 _STEP_KERNEL = _REPO_ROOT / "intergrax" / "runtime" / "kernel" / "step_kernel.py"
 

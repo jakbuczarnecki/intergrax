@@ -120,7 +120,7 @@ def test_gr10_r12_production_forbids_silent_continuation_downgrade() -> None:
         / "intergrax"
         / "applications"
         / "_shared"
-        / "nexus_factory.py"
+        / "harness_host_runtime.py"
     ).read_text(encoding="utf-8-sig")
     assert "wire_execution_continuation_state_store()" not in factory
     assert "execution_continuation_state_store=execution_continuation_state_store" in factory

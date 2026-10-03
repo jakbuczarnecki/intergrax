@@ -53,13 +53,7 @@ from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
 )
 from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
 from intergrax.runtime.task.worker_payload import encode_execution_request
-from governed_contractor_application.host.environment_profile import (
-    build_governed_contractor_environment_profile,
-)
-from governed_contractor_application.host.execution_wiring import (
-    build_governed_contractor_host_task_execution,
-)
-from governed_contractor_application.host.settings import GovernedContractorBackendSettings
+from tests.fixtures.harness_host_task_execution import build_harness_host_task_execution
 from tests.qualification.host_01.threaded_adapter_import_detector import (
     threaded_adapter_import_violations,
 )
@@ -123,8 +117,11 @@ def _task_semantic_core(task: Task) -> _TaskSemanticCore:
 
 
 def _governed_host_execution(nexus_loop: NexusLoop):
-    env = build_governed_contractor_environment_profile(GovernedContractorBackendSettings.from_env())
-    return build_governed_contractor_host_task_execution(nexus_loop, env)
+    return build_harness_host_task_execution(
+        nexus_loop,
+        orchestration_triggers=frozenset(),
+        pipeline_capability_suffix=".pipeline",
+    )
 
 
 def _completed_task_result() -> TaskResult:

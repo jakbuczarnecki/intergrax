@@ -85,7 +85,7 @@ async def test_journal_export_plugin_handles_task_completed() -> None:
         trace_store=store,
         runtime_event_store=runtime_store,
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     event = RuntimeEvent(
         event_id=mint_event_id(),
@@ -124,7 +124,7 @@ async def test_journal_export_queries_trace_reader_with_canonical_run_id() -> No
 
     bus = RuntimeEventBus(record_history=False)
     plugin = make_journal_export_runtime_plugin(trace_store=store)
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     event = RuntimeEvent(
         event_id=mint_event_id(),
@@ -155,7 +155,7 @@ async def test_journal_export_uses_exact_tenant_id() -> None:
 
     bus = RuntimeEventBus(record_history=False)
     plugin = make_journal_export_runtime_plugin(trace_store=store)
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     event = RuntimeEvent(
         event_id=mint_event_id(),
@@ -188,7 +188,7 @@ async def test_journal_export_skips_missing_tenant_without_default(tenant_id: st
 
     bus = RuntimeEventBus(record_history=False)
     plugin = make_journal_export_runtime_plugin(trace_store=store)
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     event = RuntimeEvent(
         event_id=mint_event_id(),
@@ -222,7 +222,7 @@ async def test_journal_export_parser_traces_without_runtime_event_store() -> Non
 
     bus = RuntimeEventBus(record_history=False)
     plugin = make_journal_export_runtime_plugin(trace_store=store, runtime_event_store=None)
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     event = RuntimeEvent(
         event_id=mint_event_id(),

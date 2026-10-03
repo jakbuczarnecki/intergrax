@@ -4,25 +4,15 @@
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Protocol
-
+from intergrax.context.assembly_runtime import (
+    ContextAssemblyUCLRuntime,
+    ContextEngineRuntimeConfig,
+)
+from intergrax.contracts.runtime_event_recording import RuntimeEventRecorderPort
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
-from intergrax.runtime.events.event_bus import RuntimeEventBus
-from intergrax.runtime.nexus.context.ucl_orchestration import NexusUCLRuntimeDependencies
-
-if TYPE_CHECKING:
-    from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
-    from intergrax.runtime.nexus.config import RuntimeConfig
-
-
-class ContextEngineRuntimeConfig(Protocol):
-    """Minimal runtime config surface required by canonical ContextEngine assembly."""
-
-    llm_adapter: LLMAdapter | None
-    production_mode: bool
-    metadata: dict[str, Any]
 
 @dataclass(frozen=True, slots=True)
 class ContextAssemblyRuntimeDependencies:
@@ -32,40 +22,24 @@ class ContextAssemblyRuntimeDependencies:
     base_messages: tuple[ChatMessage, ...] = ()
     max_output_tokens: int | None = None
     optimization_policy: ContextOptimizationPolicy | None = None
-    ucl_runtime: NexusUCLRuntimeDependencies | None = None
-    event_bus: RuntimeEventBus | None = None
+    ucl_runtime: ContextAssemblyUCLRuntime | None = None
+    event_bus: RuntimeEventRecorderPort | None = None
     node_id: str | None = None
     agent_id: str | None = None
-
-
-def _coerce_base_messages(raw: object) -> tuple[ChatMessage, ...]:
-    if not isinstance(raw, list) or not raw:
-        return ()
-    typed: list[ChatMessage] = []
-    for item in raw:
-        if isinstance(item, ChatMessage):
-            typed.append(item)
-    return tuple(typed)
-
-
-def _coerce_max_output_tokens(raw: object) -> int | None:
-    if type(raw) is int and raw > 0:
-        return raw
-    return None
 
 
 def build_context_assembly_runtime_dependencies(
     *,
     runtime_config: ContextEngineRuntimeConfig,
-    messages: list[Any] | tuple[Any, ...] | None = None,
+    messages: Sequence[ChatMessage] | None = None,
     max_output_tokens: int | None = None,
     optimization_policy: ContextOptimizationPolicy | None = None,
-    ucl_runtime: NexusUCLRuntimeDependencies | None = None,
-    event_bus: RuntimeEventBus | None = None,
+    ucl_runtime: ContextAssemblyUCLRuntime | None = None,
+    event_bus: RuntimeEventRecorderPort | None = None,
     node_id: str | None = None,
     agent_id: str | None = None,
 ) -> ContextAssemblyRuntimeDependencies:
-    base = _coerce_base_messages(list(messages or []))
+    base = tuple(messages or ())
     return ContextAssemblyRuntimeDependencies(
         runtime_config=runtime_config,
         base_messages=base,

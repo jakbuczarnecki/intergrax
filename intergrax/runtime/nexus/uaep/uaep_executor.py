@@ -829,6 +829,7 @@ class UAEPExecutor:
 
             invoke_post_run_governance(
                 self._governance_service,
+                tenant_id=str(canonical_runtime_request_tenant_id(request)),
                 run_id=run_id,
                 agent_id=contract.id,
             )

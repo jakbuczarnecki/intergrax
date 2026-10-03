@@ -6,7 +6,9 @@
 from __future__ import annotations
 
 from intergrax.runtime.events.runtime_event import RuntimeEvent
-from intergrax.runtime.hooks.hook_registry import HookRegistry
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
+)
 from intergrax.runtime.observability.export_boundary import (
     NoOpObservabilityExporter,
     ObservabilityExporter,
@@ -17,7 +19,7 @@ from intergrax.runtime.observability.export_policy import (
     ObservabilityExportPolicy,
     try_export_observability_envelope,
 )
-from intergrax.runtime.plugins.contract import PolicyEngineLike, RuntimeEventBusLike, RuntimePlugin
+from intergrax.runtime.plugins.contract import RuntimePlugin
 
 
 def make_observability_export_runtime_plugin(
@@ -33,9 +35,7 @@ def make_observability_export_runtime_plugin(
     active_policy = policy or ObservabilityExportPolicy()
 
     def _register(
-        event_bus: RuntimeEventBusLike,
-        _hook_registry: HookRegistry,
-        _policy_engine: PolicyEngineLike,
+        event_bus: HostOrchestrationRuntimeEventPort,
     ) -> None:
         if not active_policy.enabled:
             return

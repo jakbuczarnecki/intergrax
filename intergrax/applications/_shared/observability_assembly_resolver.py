@@ -10,8 +10,11 @@ from typing import Sequence
 from intergrax.applications._shared.observability_wiring import ApplicationObservabilityWiring
 from intergrax.applications.contracts.environment_profile import ApplicationEnvironmentProfile
 from intergrax.integrations.registry.profile import IntegrationProfile
-from intergrax.runtime.execution.run_trace_store_factories import create_in_memory_run_trace_store
-from intergrax.runtime.execution.run_trace_store_factories import create_sqlite_run_trace_store
+from intergrax.runtime.execution.run_trace_store_factories import (
+    create_in_memory_run_trace_store,
+    create_sqlite_run_trace_store,
+    is_in_memory_run_trace_store,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +48,7 @@ def validate_observability_wiring(
     stores = wiring.stores
 
     if profile.trace_sqlite_enabled:
-        if isinstance(stores.trace_store, InMemoryRunTraceStore):
+        if is_in_memory_run_trace_store(stores.trace_store):
             errors.append("trace_sqlite_enabled requires durable trace store, not in-memory")
         if stores.runtime_event_store is None:
             errors.append("trace_sqlite_enabled requires runtime event journal")
@@ -53,7 +56,7 @@ def validate_observability_wiring(
     if profile.otel_enabled and not _integration_has_observability_backend(env.integration_profile):
         errors.append("otel_enabled requires IntegrationProfile.observability_backend")
 
-    if not profile.trace_sqlite_enabled and not isinstance(stores.trace_store, InMemoryRunTraceStore):
+    if not profile.trace_sqlite_enabled and not is_in_memory_run_trace_store(stores.trace_store):
         errors.append("trace_sqlite_enabled=False requires in-memory trace store")
 
     return ObservabilityAssemblyValidationResult(valid=not errors, errors=tuple(errors))

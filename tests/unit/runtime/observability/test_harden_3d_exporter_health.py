@@ -230,7 +230,7 @@ async def test_bus_integration_marks_exporter_degraded_without_affecting_persist
         health_registry=registry,
         exporter_id="hos-primary",
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     await bus.publish(_runtime_event(identity=identity))
 
@@ -256,7 +256,7 @@ async def test_bus_integration_recovers_exporter_health_after_success() -> None:
         health_registry=registry,
         exporter_id="hos-primary",
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     await bus.publish(_runtime_event(identity=identity))
     degraded = registry.get("hos-primary")
@@ -287,7 +287,7 @@ async def test_health_update_does_not_emit_additional_runtime_events() -> None:
         health_registry=registry,
         exporter_id="hos-primary",
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
 
     await bus.publish(_runtime_event(identity=identity))
 

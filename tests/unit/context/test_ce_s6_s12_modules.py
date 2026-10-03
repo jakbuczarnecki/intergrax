@@ -27,6 +27,7 @@ from intergrax.context.tracking.context_spans import CE_OTEL_SPAN_NAMES, context
 from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.runtime.nexus.context.codebase_engine import CodebaseContextEngine
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from testing_support.context_assembly_test_runtime import provider_context_for_engine_assembly
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -100,13 +101,10 @@ async def test_one_k_workspace_assemble_stays_under_budget() -> None:
         budget_policy=ContextBudgetSnapshot(max_tokens_estimate=512),
         assembly_options=TaskContextAssemblyOptions(),
     )
-    ctx = ContextProviderContext(
-        handles={
-            "runtime_config": config,
-            "messages": [ChatMessage(role="user", content="summarize")],
-            "workspace_files": files,
-            "workspace_max_chunks": 8,
-        }
+    ctx = provider_context_for_engine_assembly(
+        runtime_config=config,
+        messages=[ChatMessage(role="user", content="summarize")],
+        handles={"workspace_files": files, "workspace_max_chunks": 8},
     )
     assembled = await engine.assemble(request, provider_ctx=ctx)
     assert assembled.total_tokens <= assembled.budget_tokens
@@ -218,11 +216,9 @@ async def test_orchestrator_bounded_hops() -> None:
     config = RuntimeConfig(llm_adapter=_Adapter(), production_mode=False)
     from intergrax.llm.messages import ChatMessage
 
-    ctx = ContextProviderContext(
-        handles={
-            "runtime_config": config,
-            "messages": [ChatMessage(role="user", content="hello")],
-        },
+    ctx = provider_context_for_engine_assembly(
+        runtime_config=config,
+        messages=[ChatMessage(role="user", content="hello")],
     )
     assembled = await orchestrator.assemble_with_hops(request, provider_ctx=ctx)
     assert assembled.budget_tokens >= 0

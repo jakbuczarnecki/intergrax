@@ -58,6 +58,9 @@ from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
 from testing_support.admitted_root_governance_identity import (
     lab_admitted_root_governance_identity_for_task,
 )
+from testing_support.reference_root_execution_authority_admission import (
+    REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
+)
 from intergrax.runtime.task.task import Task, TaskContext
 from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
 from intergrax.runtime.task.worker_payload import encode_execution_request

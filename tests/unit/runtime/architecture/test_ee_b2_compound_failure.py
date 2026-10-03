@@ -70,7 +70,7 @@ async def test_ee_b2_compound_worker_failure_plus_otlp_export_failure() -> None:
         exporter=_FailingExporter(),
         policy=ObservabilityExportPolicy(enabled=True),
     )
-    plugin.register(bus, HookRegistry(), MagicMock())
+    plugin.register(bus)
     port = DeterministicWorkerFaultPort(
         fail_labels=frozenset({"worker"}),
         succeed=lambda label: _WorkResult(value=label),

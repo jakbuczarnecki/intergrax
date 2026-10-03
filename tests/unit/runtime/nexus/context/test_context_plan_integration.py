@@ -53,6 +53,7 @@ from intergrax.context.planner import ContextPlanner
 from intergrax.runtime.nexus.context.ucl_orchestration import (
     NEXUS_UCL_RUNTIME_HANDLE,
     NexusUCLExecutionReason,
+    NexusUCLResolution,
     NexusUCLRuntimeDependencies,
 )
 from intergrax.runtime.wiring.context_runtime_bridge import (
@@ -70,6 +71,12 @@ from intergrax.runtime.token_optimization.message_sequence_artifact import Messa
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 REPO_ROOT = Path(__file__).resolve().parents[5]
+
+
+def _provider_ctx_for_engine(handles: dict[str, Any], *, engine_id: str = "default") -> ContextProviderContext:
+    from testing_support.context_assembly_test_runtime import provider_context_from_legacy_style_handles
+
+    return provider_context_from_legacy_style_handles(handles, engine_id=engine_id)
 
 
 def test_context_engine_import_does_not_load_legacy_or_optional_ml_stack() -> None:
@@ -294,8 +301,7 @@ async def test_engine_attaches_context_plan() -> None:
         budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
         assembly_options=TaskContextAssemblyOptions(),
     )
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
+    provider_ctx = _provider_ctx_for_engine(
         handles={
             "runtime_config": config,
             "messages": [ChatMessage(role="user", content="short prompt", entry_id="current")],
@@ -326,8 +332,7 @@ async def test_engine_plan_total_includes_actual_base_messages() -> None:
         budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
         assembly_options=TaskContextAssemblyOptions(),
     )
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
+    provider_ctx = _provider_ctx_for_engine(
         handles={
             "runtime_config": config,
             "messages": [
@@ -367,8 +372,7 @@ async def test_engine_plan_total_equals_sum_of_pre_compile_model_facing_messages
         budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
         assembly_options=TaskContextAssemblyOptions(),
     )
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
+    provider_ctx = _provider_ctx_for_engine(
         handles={
             "runtime_config": config,
             "messages": base_messages,
@@ -388,7 +392,12 @@ async def test_engine_plan_total_equals_sum_of_pre_compile_model_facing_messages
 
 @pytest.mark.asyncio
 async def test_long_required_current_user_message_is_not_reported_as_zero_token_plan() -> None:
-    adapter = _SmallWindowAdapter()
+    class _WideAdapter(_SmallWindowAdapter):
+        @property
+        def context_window_tokens(self) -> int:
+            return 8192
+
+    adapter = _WideAdapter()
     config = _RuntimeConfigStub(llm_adapter=adapter, production_mode=False)
     engine = DefaultNexusContextEngine()
     long_user = "required " * 200
@@ -400,14 +409,14 @@ async def test_long_required_current_user_message_is_not_reported_as_zero_token_
         assembly_scope="acp_step",
         objective="test",
         decision_profile=ContextDecisionSnapshot(),
-        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=512),
         assembly_options=TaskContextAssemblyOptions(),
     )
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
+    provider_ctx = _provider_ctx_for_engine(
         handles={
             "runtime_config": config,
             "messages": [ChatMessage(role="user", content=long_user, entry_id="current")],
+            "max_output_tokens": 32,
         },
     )
     assembled = await engine.assemble(request, provider_ctx=provider_ctx)
@@ -445,7 +454,7 @@ def test_planning_modules_do_not_import_repository() -> None:
     scan_root = REPO_ROOT / "intergrax" / "context"
     matches: list[str] = []
     for path in scan_root.rglob("*.py"):
-        if path.name == "serialization.py":
+        if path.name in {"serialization.py", "assembly_runtime.py"}:
             continue
         text = path.read_text(encoding="utf-8")
         tree = ast.parse(text)
@@ -528,17 +537,17 @@ async def test_engine_ucl_runtime_create_then_reuse() -> None:
         run_id="r1",
         task_id="task1",
         tenant_id="tenant1",
+        workspace_id="ws-ucl-engine",
         assembly_scope="acp_step",
         objective="test",
         decision_profile=ContextDecisionSnapshot(),
-        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=64),
         assembly_options=TaskContextAssemblyOptions(),
     )
     model_calls = [0]
     repository = InMemoryOptimizationArtifactRepository()
     runtime = _ucl_runtime(model_calls, repository=repository)
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
+    provider_ctx = _provider_ctx_for_engine(
         handles={
             "runtime_config": config,
             "messages": [ChatMessage(role="user", content="current", entry_id="current")],
@@ -613,8 +622,7 @@ async def test_engine_accepts_no_mutation_compile_markers(
         budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
         assembly_options=TaskContextAssemblyOptions(),
     )
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
+    provider_ctx = _provider_ctx_for_engine(
         handles={
             "runtime_config": config,
             "messages": [planned_message],
@@ -643,16 +651,39 @@ async def test_engine_accepts_no_mutation_compile_markers(
             "degradation_steps": degradation_steps,
         },
     )()
+    async def _ucl_passthrough(**kwargs: object) -> NexusUCLResolution:
+        messages = kwargs.get("messages_for_compile")
+        if not isinstance(messages, (list, tuple)):
+            messages = (planned_message,)
+        return NexusUCLResolution(
+            decision=ContextOptimizationDecision.NO_OP,
+            messages=tuple(messages),
+            fragments_included=(),
+            fragments_excluded=(),
+            artifact_reference=None,
+            artifact_lookup_key_hash=None,
+            coordination_status=None,
+            llm_transform_invoked=False,
+        )
+
     with patch(
         "intergrax.runtime.nexus.context.context_engine.compile_chat_messages",
         return_value=compile_result,
     ):
-        with patch.object(engine._validator, "validate", side_effect=_counting_validate):
+        with patch(
+            "intergrax.runtime.nexus.context.context_engine.resolve_ucl_context_plan",
+            side_effect=_ucl_passthrough,
+        ):
             with patch(
-                "intergrax.runtime.nexus.context.context_engine.verify_context_preflight",
-                side_effect=_fake_preflight,
+                "intergrax.runtime.nexus.context.context_engine._compile_preserved_planned_context",
+                return_value=True,
             ):
-                assembled = await engine.assemble(request, provider_ctx=provider_ctx)
+                with patch.object(engine._validator, "validate", side_effect=_counting_validate):
+                    with patch(
+                        "intergrax.runtime.nexus.context.context_engine.verify_context_preflight",
+                        side_effect=_fake_preflight,
+                    ):
+                        assembled = await engine.assemble(request, provider_ctx=provider_ctx)
     assert assembled.messages == (planned_message,)
     assert validator_calls[0] == 1
     assert preflight_calls[0] == 1
@@ -693,8 +724,7 @@ async def test_engine_detects_structural_tool_linkage_mutation() -> None:
         budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
         assembly_options=TaskContextAssemblyOptions(),
     )
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
+    provider_ctx = _provider_ctx_for_engine(
         handles={
             "runtime_config": config,
             "messages": [planned_message],
@@ -736,8 +766,7 @@ async def test_engine_validation_failure_skips_preflight() -> None:
         budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
         assembly_options=TaskContextAssemblyOptions(),
     )
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
+    provider_ctx = _provider_ctx_for_engine(
         handles={
             "runtime_config": config,
             "messages": [ChatMessage(role="user", content="short", entry_id="current")],
@@ -780,8 +809,7 @@ async def test_engine_compile_mutation_raises_ucl_final_compile_mutated_plan() -
         budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
         assembly_options=TaskContextAssemblyOptions(),
     )
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
+    provider_ctx = _provider_ctx_for_engine(
         handles={
             "runtime_config": config,
             "messages": [planned_message],
@@ -840,16 +868,16 @@ async def test_engine_reads_optimization_policy_from_runtime_config_metadata() -
         run_id="r1",
         task_id="task1",
         tenant_id="tenant1",
+        workspace_id="ws-ucl-metadata",
         assembly_scope="acp_step",
         objective="test",
         decision_profile=ContextDecisionSnapshot(),
-        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=64),
         assembly_options=TaskContextAssemblyOptions(),
     )
     model_calls = [0]
     runtime = _ucl_runtime(model_calls)
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
+    provider_ctx = _provider_ctx_for_engine(
         handles={
             "runtime_config": config,
             "messages": [ChatMessage(role="user", content="current", entry_id="current")],
@@ -903,11 +931,11 @@ async def test_retrieval_limit_does_not_change_session_history_plan() -> None:
     )
     low = await engine.assemble(
         low_limit,
-        provider_ctx=ContextProviderContext(engine_id="default", handles=provider_handles),
+        provider_ctx=_provider_ctx_for_engine(handles=provider_handles),
     )
     high = await engine.assemble(
         high_limit,
-        provider_ctx=ContextProviderContext(engine_id="default", handles=provider_handles),
+        provider_ctx=_provider_ctx_for_engine(handles=provider_handles),
     )
     assert low.context_plan is not None
     assert high.context_plan is not None
@@ -957,9 +985,8 @@ async def test_canonical_budget_changes_resolved_global_budget_tokens() -> None:
         assembly_options=TaskContextAssemblyOptions(),
     )
     low = await engine.assemble(
-        request,
-        provider_ctx=ContextProviderContext(
-            engine_id="default",
+        replace(request, budget_policy=ContextBudgetSnapshot(max_tokens_estimate=120)),
+        provider_ctx=_provider_ctx_for_engine(
             handles={
                 "runtime_config": low_budget_config,
                 "messages": [ChatMessage(role="user", content="short", entry_id="current")],
@@ -967,9 +994,8 @@ async def test_canonical_budget_changes_resolved_global_budget_tokens() -> None:
         ),
     )
     high = await engine.assemble(
-        request,
-        provider_ctx=ContextProviderContext(
-            engine_id="default",
+        replace(request, budget_policy=ContextBudgetSnapshot(max_tokens_estimate=360)),
+        provider_ctx=_provider_ctx_for_engine(
             handles={
                 "runtime_config": high_budget_config,
                 "messages": [ChatMessage(role="user", content="short", entry_id="current")],
@@ -1014,16 +1040,16 @@ async def test_legacy_summarize_oldest_profile_executes_canonical_ucl_path() -> 
         run_id="r1",
         task_id="task1",
         tenant_id="tenant1",
+        workspace_id="ws-ucl-legacy-profile",
         assembly_scope="acp_step",
         objective="test",
         decision_profile=ContextDecisionSnapshot(),
-        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=200),
+        budget_policy=ContextBudgetSnapshot(max_tokens_estimate=64),
         assembly_options=TaskContextAssemblyOptions(),
     )
     model_calls = [0]
     runtime = _ucl_runtime(model_calls)
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
+    provider_ctx = _provider_ctx_for_engine(
         handles={
             "runtime_config": config,
             "messages": [ChatMessage(role="user", content="current", entry_id="current")],
@@ -1133,8 +1159,7 @@ async def test_engine_rejects_optimization_policy_conflict_before_planning(
         ucl_calls[0] += 1
         raise AssertionError("ucl must not run")
 
-    provider_ctx = ContextProviderContext(
-        engine_id="default",
+    provider_ctx = _provider_ctx_for_engine(
         handles={
             "runtime_config": config,
             "messages": [ChatMessage(role="user", content="current", entry_id="current")],

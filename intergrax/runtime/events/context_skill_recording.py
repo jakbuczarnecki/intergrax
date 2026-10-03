@@ -20,7 +20,7 @@ from intergrax.contracts.execution_identity import (
     validate_task_id,
 )
 from intergrax.contracts.execution_phase import ExecutionPhase
-from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.contracts.runtime_event_recording import RuntimeEventRecorderPort
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
 from intergrax.runtime.events.payloads import (
     ContextAssemblyPayloadV2,
@@ -50,7 +50,7 @@ def _canonical_event_identity(
 
 
 def record_skill_resolved(
-    bus: RuntimeEventBus,
+    bus: RuntimeEventRecorderPort,
     *,
     agent_id: str,
     pack: ResolvedSkillPack,
@@ -87,7 +87,7 @@ def record_skill_resolved(
 
 
 def record_skill_import_failed(
-    bus: RuntimeEventBus,
+    bus: RuntimeEventRecorderPort,
     *,
     source: str,
     reason: str,
@@ -116,7 +116,7 @@ def record_skill_import_failed(
 
 
 def record_context_candidate_collected(
-    bus: RuntimeEventBus,
+    bus: RuntimeEventRecorderPort,
     *,
     task_id: str,
     run_id: str,
@@ -163,7 +163,7 @@ def record_context_candidate_collected(
 
 
 def record_context_candidate_dropped(
-    bus: RuntimeEventBus,
+    bus: RuntimeEventRecorderPort,
     *,
     task_id: str,
     run_id: str,
@@ -211,7 +211,7 @@ def record_context_candidate_dropped(
 
 
 def record_context_validation_failed(
-    bus: RuntimeEventBus,
+    bus: RuntimeEventRecorderPort,
     *,
     task_id: str,
     run_id: str,
@@ -256,7 +256,7 @@ def record_context_validation_failed(
 
 
 def record_context_assembly(
-    bus: RuntimeEventBus,
+    bus: RuntimeEventRecorderPort,
     *,
     task_id: str,
     run_id: str,
@@ -342,7 +342,7 @@ def record_context_assembly(
 
 
 def record_context_assembled_from_engine(
-    bus: RuntimeEventBus,
+    bus: RuntimeEventRecorderPort,
     *,
     assembled: AssembledContext,
     task_id: str,

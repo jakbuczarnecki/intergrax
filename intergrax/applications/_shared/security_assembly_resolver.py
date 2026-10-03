@@ -17,9 +17,6 @@ from intergrax.applications.contracts.execution_mode import ExecutionMode
 from intergrax.contracts.host_orchestration_application_wiring_target import (
     HostOrchestrationAssemblyInspectionTarget,
 )
-from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-
-
 @dataclass(frozen=True, slots=True)
 class SecurityAssemblyValidationResult:
     """Outcome of security assembly validation."""
@@ -40,10 +37,7 @@ class SecurityAssemblyError(ValueError):
 def _middleware_names_on_host(
     host: HostOrchestrationAssemblyInspectionTarget,
 ) -> frozenset[str]:
-    pipeline = host.middleware
-    if not isinstance(pipeline, MiddlewarePipeline):
-        return frozenset()
-    return frozenset(middleware.name for middleware in pipeline._middleware)  # noqa: SLF001
+    return host.middleware.registered_middleware_names()
 
 
 def validate_security_wiring(
@@ -91,6 +85,19 @@ def validate_security_wiring(
     for bundle_id in profile.defense_bundle_ids:
         if _resolve_defense_plugin(bundle_id) is None:
             errors.append(f"unknown security defense bundle id: {bundle_id}")
+
+    from intergrax.runtime.security.defense_plugin import SecurityFailMode
+    from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
+
+    for plugin in resolve_security_defense_plugins(
+        tuple(profile.defense_plugin_ids),
+        tuple(profile.defense_bundle_ids),
+    ):
+        if plugin.fail_mode is not SecurityFailMode.FAIL_CLOSED:
+            errors.append(
+                "security defense plugin "
+                f"{plugin.plugin_id!r} must use fail_mode=FAIL_CLOSED for host composition",
+            )
 
     return SecurityAssemblyValidationResult(valid=not errors, errors=tuple(errors))
 

@@ -172,3 +172,11 @@ class DecisionExposureSelectionStrategy(Protocol[T]):
     ) -> DecisionExposureSelectionDecision[T] | DecisionExposureSelectionFailure:
         """Select one public exposure from candidates of one effective attempt."""
         ...
+
+
+@runtime_checkable
+class DecisionExposureSelectionHostBinding(Protocol):
+    """Host-orchestration binding for composed exposure selection (strategy owner)."""
+
+    @property
+    def strategy(self) -> DecisionExposureSelectionStrategy[object]: ...

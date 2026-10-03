@@ -47,6 +47,7 @@ from intergrax.runtime.diagnostics.problem_lifecycle import ProblemLifecycleEngi
 from intergrax.runtime.diagnostics.problem_occurrence_persistence import (
     ProblemOccurrencePersistence,
 )
+from intergrax.contracts.execution_evidence.persistence_port import EvidencePersistencePort
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.observability.causal_evidence_persistence import (
     CausalEvidencePersistence,
@@ -103,7 +104,7 @@ class DiagnosticPersistenceComposition:
     problem_persistence: ProblemPersistence
     occurrence_persistence: ProblemOccurrencePersistence
     causal_evidence_persistence: CausalEvidencePersistence
-    runtime_event_persistence: RuntimeEventPersistence
+    runtime_event_persistence: RuntimeEventPersistence | EvidencePersistencePort
     problem_persistence_ownership: DiagnosticComponentOwnership
     occurrence_persistence_ownership: DiagnosticComponentOwnership
     causal_evidence_persistence_ownership: DiagnosticComponentOwnership
@@ -122,7 +123,7 @@ class ResolvedDiagnosticComposition:
 def resolve_diagnostic_persistence_composition(
     *,
     document_store: object | None,
-    runtime_event_persistence: RuntimeEventPersistence | None,
+    runtime_event_persistence: RuntimeEventPersistence | EvidencePersistencePort | EvidencePersistencePort | None,
     overrides: DiagnosticCompositionOverrides | None = None,
     list_cursor_secret: bytes | None = None,
     require_durable: bool = False,
@@ -208,7 +209,7 @@ def resolve_diagnostic_persistence_composition(
 def resolve_persistence_from_tool_wiring(
     *,
     tool_wiring_context: ToolWiringContext | None,
-    runtime_event_persistence: RuntimeEventPersistence | None,
+    runtime_event_persistence: RuntimeEventPersistence | EvidencePersistencePort | EvidencePersistencePort | None,
     overrides: DiagnosticCompositionOverrides | None = None,
     require_durable: bool = False,
 ) -> DiagnosticPersistenceComposition | None:

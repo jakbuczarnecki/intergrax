@@ -10,6 +10,7 @@ from intergrax.contracts.governed_execution_governance_evidence import (
     GovernanceEvidencePersistencePort,
 )
 from intergrax.runtime.events.evidence_persistence_adapter import as_evidence_persistence_port
+from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.governance.governance_evidence_composition import (
     build_governance_evidence_recorder,
     build_runtime_event_governance_evidence_persistence,
@@ -34,7 +35,7 @@ def build_orchestration_governance_evidence_recorder(
 
 
 def resolve_runtime_event_governance_evidence_persistence(
-    runtime_event_persistence: object | None,
+    runtime_event_persistence: EvidencePersistencePort | RuntimeEventPersistence | None,
 ) -> GovernanceEvidencePersistencePort | None:
     """Project runtime event persistence into GR-8 port when available."""
     if runtime_event_persistence is None:
@@ -43,6 +44,8 @@ def resolve_runtime_event_governance_evidence_persistence(
         evidence_port = runtime_event_persistence
     else:
         evidence_port = as_evidence_persistence_port(runtime_event_persistence)
+    if evidence_port is None:
+        return None
     return build_runtime_event_governance_evidence_persistence(
         evidence_persistence=evidence_port,
     )
@@ -51,7 +54,7 @@ def resolve_runtime_event_governance_evidence_persistence(
 def require_strict_orchestration_governance_evidence_persistence(
     *,
     explicit: GovernanceEvidencePersistencePort | None,
-    runtime_event_persistence: object | None,
+    runtime_event_persistence: EvidencePersistencePort | RuntimeEventPersistence | None,
     production_mode: bool,
 ) -> GovernanceEvidencePersistencePort | None:
     """Strict production orchestration requires an injected or runtime-event-backed GR-8 port."""

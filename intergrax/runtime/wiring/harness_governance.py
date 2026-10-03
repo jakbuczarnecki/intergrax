@@ -13,8 +13,13 @@ from intergrax.runtime.governance.execution_guard import GovernanceEvaluation
 class LabAllowGovernanceService:
     """Satisfies ``RuntimeContext.build`` when ``production_mode=True``."""
 
-    def evaluate(self, run_id: str, agent_id: str) -> GovernanceEvaluation | None:
-        _ = run_id, agent_id
+    def evaluate(
+        self,
+        tenant_id: str,
+        run_id: str,
+        agent_id: str,
+    ) -> GovernanceEvaluation | None:
+        _ = tenant_id, run_id, agent_id
         return None
 
 

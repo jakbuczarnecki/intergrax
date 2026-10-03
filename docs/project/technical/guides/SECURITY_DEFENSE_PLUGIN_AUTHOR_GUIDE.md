@@ -137,19 +137,26 @@ class BlockJailbreakDefense:
     priority = 57
     fail_mode = SecurityFailMode.FAIL_CLOSED
 
-    def inspect(self, point: HookPoint, ctx: HookContext) -> SecurityInspectionResult:
+    def inspect(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> SecurityInspectionResult:
         if point != HookPoint.BEFORE_TOOL_CALL:
             return SecurityInspectionResult(allowed=True, plugin_id=self.plugin_id)
-        arguments = ctx.runtime_state.get("arguments")
-        if isinstance(arguments, dict):
-            blob = " ".join(str(v).lower() for v in arguments.values())
-            if "jailbreak" in blob:
-                return SecurityInspectionResult(
-                    allowed=False,
-                    reasons=["blocked token: jailbreak"],
-                    plugin_id=self.plugin_id,
-                    hook_point=point.value,
-                )
+        from intergrax.contracts.middleware_hook_semantics import ToolCallHookPayload
+
+        payload = ctx.payload
+        if not isinstance(payload, ToolCallHookPayload):
+            return SecurityInspectionResult(allowed=True, plugin_id=self.plugin_id)
+        blob = " ".join(v.lower() for v in payload.arguments.values())
+        if "jailbreak" in blob:
+            return SecurityInspectionResult(
+                allowed=False,
+                reasons=["blocked token: jailbreak"],
+                plugin_id=self.plugin_id,
+                hook_point=point.value,
+            )
         return SecurityInspectionResult(allowed=True, plugin_id=self.plugin_id)
 ```
 
@@ -234,7 +241,7 @@ ApplicationSecurityProfile.defense_plugin_ids / defense_bundle_ids
   → SecurityInspectionResult.allowed → HookResult ALLOW | BLOCK | MODIFY
 ```
 
-Tenant scope: when `enforce_tenant_scope=True` (default), middleware blocks if `tenant_id` ≠ `resource_tenant_id` in `HookContext.runtime_state` before calling `inspect`.
+Tenant scope: when `enforce_tenant_scope=True` (default), middleware blocks if `ctx.subject.tenant_id` ≠ `ctx.subject.resource_tenant_id` (when both are present) before calling `inspect`.
 
 Blocks emit `platform.security.defense_blocked` on the runtime event bus when an `event_bus` is wired.
 
@@ -242,13 +249,13 @@ Blocks emit `platform.security.defense_blocked` on the runtime event bus when an
 
 ## 7. Secrets / credentials
 
-Defense plugins receive operation context via `HookContext.runtime_state` only. Do not read secrets from EP metadata. Host injects integration-backed values into `runtime_state` when needed.
+Defense plugins receive operation context via typed `HostOrchestrationMiddlewareHookContext` (`ctx.payload`, `ctx.subject`). Do not read secrets from EP metadata.
 
 ---
 
 ## 8. DI / composition
 
-Defense plugins are **stateless or self-contained** instances. The host does not inject a wiring context. Prefer reading `ctx.runtime_state` keys documented for each `HookPoint` (e.g. `tool_id`, `arguments` at `BEFORE_TOOL_CALL`).
+Defense plugins are **stateless or self-contained** instances. The host does not inject a wiring context. Use typed payloads (e.g. `ToolCallHookPayload` at `BEFORE_TOOL_CALL`) and `ctx.subject` for tenant scope.
 
 ---
 
@@ -396,7 +403,7 @@ assert get_security_defense_plugin("fixture_ep.defense") is not None
 | Plugin not in registry | Discovery disabled; run `bootstrap_security_providers(discover_entry_points=True)` |
 | Wrong plugin behavior | Check `SecurityDefenseAdmissionPolicy` - shipped override denied by default |
 | `PluginLoadError` at bootstrap | Broken EP import - with default policy, isolated in `failed` report; legacy fail-fast if `LEGACY_UNCONDITIONAL_OVERRIDE_POLICY` |
-| Always blocked before `inspect` | Tenant scope mismatch in `runtime_state` |
+| Always blocked before `inspect` | Tenant scope mismatch in `ctx.subject` |
 | Timeout blocks | `inspect` too slow - optimize or reduce work |
 | `ValueError: cannot override shipped` | Host registration without `override=True` on shipped id |
 

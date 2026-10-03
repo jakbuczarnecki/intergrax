@@ -30,6 +30,9 @@ from intergrax.runtime.task.worker_payload import (
 from testing_support.admitted_root_governance_identity import (
     lab_admitted_root_governance_identity_for_task,
 )
+from testing_support.reference_root_execution_authority_admission import (
+    REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
+)
 from testing_support.builder import DummyRunStore
 
 pytestmark = [pytest.mark.integration, pytest.mark.gate]
@@ -44,6 +47,7 @@ def _echo_celery_stack(*, wait_for_result: bool = True):
         backend_url="cache+memory://",
         agent_registry=registry,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
         task_always_eager=True,
         kv_store=DispatcherTestKVStore(),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),
@@ -195,6 +199,7 @@ def test_worker_checkpoint_resume_via_queue_payload(tmp_path) -> None:
         checkpoint_store=checkpoint_store,
         execution_continuation_state_store=continuation_store,
         admit_root_governance_identity=lab_admitted_root_governance_identity_for_task,
+        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
         task_always_eager=True,
         kv_store=DispatcherTestKVStore(),
         causal_evidence_persistence=InMemoryCausalEvidencePersistence(),

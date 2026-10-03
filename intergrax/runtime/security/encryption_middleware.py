@@ -6,6 +6,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationMiddlewareHookContext,
+    HostOrchestrationRuntimeEventPort,
+)
+from intergrax.contracts.middleware_hook_semantics import DataProtectionHookPayload
+from intergrax.runtime.middleware.hook_semantic_adapters import (
+    data_protection_payload_to_encryption_dict,
+)
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
@@ -15,9 +23,6 @@ from intergrax.runtime.security.encryption_policy import (
 )
 from intergrax.runtime.security.encryption_transform import RestrictedPayloadEncryptor
 from intergrax.runtime.security.security_events import emit_encryption_denied
-
-if TYPE_CHECKING:
-    from intergrax.runtime.events.event_bus import RuntimeEventBus
 
 
 class EncryptionEnforcementMiddleware(RuntimeMiddleware):
@@ -32,20 +37,30 @@ class EncryptionEnforcementMiddleware(RuntimeMiddleware):
         enforcement_enabled: bool,
         secrets_store_configured: bool,
         encryptor: RestrictedPayloadEncryptor | None = None,
-        event_bus: RuntimeEventBus | None = None,
+        event_bus: HostOrchestrationRuntimeEventPort | None = None,
     ) -> None:
         self._enforcement_enabled = enforcement_enabled
         self._secrets_store_configured = secrets_store_configured
         self._encryptor = encryptor
         self._event_bus = event_bus
 
-    async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def before(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> HookResult:
         if point not in {
             HookPoint.BEFORE_MEMORY_WRITE,
             HookPoint.AFTER_TOOL_CALL,
         }:
             return HookResult()
-        payload = dict(ctx.runtime_state)
+        hook_payload = ctx.payload
+        if not isinstance(hook_payload, DataProtectionHookPayload):
+            return HookResult(
+                action=HookAction.BLOCK,
+                reason="Encryption enforcement requires DataProtectionHookPayload",
+            )
+        payload = data_protection_payload_to_encryption_dict(hook_payload)
         decision = evaluate_encryption_enforcement(
             payload=payload,
             secrets_store_configured=self._secrets_store_configured,
@@ -74,5 +89,9 @@ class EncryptionEnforcementMiddleware(RuntimeMiddleware):
                     return HookResult(action=HookAction.MODIFY, modified_payload=encrypted)
         return HookResult()
 
-    async def after(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def after(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> HookResult:
         return HookResult()

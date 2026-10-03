@@ -16,7 +16,9 @@ from intergrax.contracts.context_assembly import TaskContextAssemblyOptions
 from intergrax.llm.messages import ChatMessage
 from intergrax.runtime.context_lifecycle.contracts import ContextOptimizationPolicy
 from intergrax.runtime.nexus.config import RuntimeConfig
+from intergrax.context.assembly_runtime import ContextAssemblyRuntime
 from intergrax.runtime.nexus.context.assembly_runtime_deps import (
+    ContextAssemblyRuntimeDependencies,
     build_context_assembly_runtime_dependencies,
 )
 from intergrax.runtime.nexus.context.context_engine import DefaultNexusContextEngine
@@ -44,6 +46,13 @@ class _Adapter(BaseLLMAdapter):
     def generate_messages(self, messages, **kwargs) -> LLMAdapterResponse:
         _ = messages, kwargs
         return LLMAdapterResponse(content="ok")
+
+
+def test_concrete_runtime_dependencies_satisfy_ce_assembly_runtime_protocol() -> None:
+    config = RuntimeConfig(llm_adapter=_Adapter(), production_mode=False)
+    runtime = build_context_assembly_runtime_dependencies(runtime_config=config)
+    assert isinstance(runtime, ContextAssemblyRuntimeDependencies)
+    assert isinstance(runtime, ContextAssemblyRuntime)
 
 
 def test_context_provider_context_does_not_auto_hydrate_runtime_from_handles() -> None:

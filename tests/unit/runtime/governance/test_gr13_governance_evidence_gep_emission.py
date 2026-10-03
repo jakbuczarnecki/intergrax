@@ -476,7 +476,10 @@ def test_gr13_agentic_post_run_emits_fact(gr13_evidence_store) -> None:
     run_id = str(mint_run_id())
 
     class _PostRun:
-        def evaluate(self, run_id: str, agent_id: str) -> GovernanceEvaluation:
+        def evaluate(
+            self, tenant_id: str, run_id: str, agent_id: str
+        ) -> GovernanceEvaluation:
+            _ = tenant_id
             return GovernanceEvaluation(
                 decision=ReplayPolicyDecision(
                     decision=PolicyDecisionType.ALLOW,
@@ -497,6 +500,7 @@ def test_gr13_agentic_post_run_emits_fact(gr13_evidence_store) -> None:
 
     invoke_post_run_governance(
         _PostRun(),
+        tenant_id=_TENANT,
         run_id=run_id,
         agent_id=_AGENT,
         governance_evidence_recorder=recorder,
@@ -631,7 +635,10 @@ def test_gr13_orchestration_post_run_emits_fact(gr13_evidence_store) -> None:
     run_id = str(mint_run_id())
 
     class _PostRun:
-        def evaluate(self, run_id: str, agent_id: str) -> GovernanceEvaluation:
+        def evaluate(
+            self, tenant_id: str, run_id: str, agent_id: str
+        ) -> GovernanceEvaluation:
+            _ = tenant_id
             return GovernanceEvaluation(
                 decision=ReplayPolicyDecision(
                     decision=PolicyDecisionType.BLOCK,
@@ -652,6 +659,7 @@ def test_gr13_orchestration_post_run_emits_fact(gr13_evidence_store) -> None:
 
     invoke_post_run_governance(
         _PostRun(),
+        tenant_id=_TENANT,
         run_id=run_id,
         agent_id=_AGENT,
         governance_evidence_recorder=recorder,

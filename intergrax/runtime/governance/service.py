@@ -26,8 +26,9 @@ class GovernanceService:
     def __post_init__(self) -> None:
         self._logger = IntergraxLogging.get_logger(__name__, component="governance")
 
-    def evaluate(self, run_id: str, agent_id: str) -> GovernanceEvaluation:
+    def evaluate(self, tenant_id: str, run_id: str, agent_id: str) -> GovernanceEvaluation:
         evaluation = self.guard.evaluate_run(
+            tenant_id=tenant_id,
             run_id=run_id,
             agent_id=agent_id,
         )

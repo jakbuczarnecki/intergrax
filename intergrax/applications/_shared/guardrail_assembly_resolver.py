@@ -12,8 +12,6 @@ from intergrax.applications.contracts.environment_profile import ApplicationEnvi
 from intergrax.contracts.host_orchestration_application_wiring_target import (
     HostOrchestrationAssemblyInspectionTarget,
 )
-from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
-
 
 @dataclass(frozen=True, slots=True)
 class GuardrailAssemblyValidationResult:
@@ -52,14 +50,13 @@ def validate_guardrail_host_wiring(
 ) -> GuardrailAssemblyValidationResult:
     if not wiring.options.enabled:
         return GuardrailAssemblyValidationResult(valid=True)
-    pipeline = host.middleware
-    if not isinstance(pipeline, MiddlewarePipeline):
+    attached = host.middleware.registered_middleware_names()
+    if not attached:
         return GuardrailAssemblyValidationResult(
             valid=False,
-            errors=("NexusLoop middleware pipeline missing",),
+            errors=("orchestration host middleware pipeline missing",),
         )
-    names = {middleware.name for middleware in pipeline._middleware}  # noqa: SLF001
-    if "LlmGuardrailMiddleware" not in names:
+    if "LlmGuardrailMiddleware" not in attached:
         return GuardrailAssemblyValidationResult(
             valid=False,
             errors=("missing LlmGuardrailMiddleware on orchestration host",),

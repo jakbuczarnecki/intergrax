@@ -8,6 +8,10 @@ from collections.abc import Awaitable, Callable
 from typing import TYPE_CHECKING
 
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.middleware_hook_semantics import (
+    LlmInferenceHookPayload,
+    MiddlewareExecutionSubjectFacet,
+)
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 
@@ -29,18 +33,21 @@ def llm_hook_context(
     prompt: str,
     agent_id: str | None = None,
     step_id: str | None = None,
-    tenant_id: str = "",
+    tenant_id: str | None = None,
 ) -> HookContext:
+    tenant = tenant_id.strip() if tenant_id else None
+    runtime_state = {"prompt": prompt}
+    if tenant:
+        runtime_state["tenant_id"] = tenant
     return HookContext(
         task_id=run_id,
         run_id=run_id,
         agent_id=agent_id,
         step_id=step_id,
         phase=ExecutionPhase.STEP_EXECUTION,
-        runtime_state={
-            "prompt": prompt,
-            "tenant_id": tenant_id,
-        },
+        subject=MiddlewareExecutionSubjectFacet(tenant_id=tenant),
+        payload=LlmInferenceHookPayload(prompt=prompt or None),
+        runtime_state=runtime_state,
     )
 
 
@@ -61,6 +68,7 @@ async def run_llm_generation_hooks(
                 **ctx.runtime_state,
                 "prompt": prompt,
             },
+            "payload": LlmInferenceHookPayload(prompt=prompt or None),
         },
     )
     before = await middleware.run_before(HookPoint.BEFORE_LLM_INFERENCE, inference_ctx)
@@ -76,6 +84,10 @@ async def run_llm_generation_hooks(
                 "llm_output": text,
                 "output": text,
             },
+            "payload": LlmInferenceHookPayload(
+                prompt=prompt or None,
+                llm_output=text,
+            ),
         },
     )
     after = await middleware.run_after(HookPoint.AFTER_LLM_OUTPUT, output_ctx)

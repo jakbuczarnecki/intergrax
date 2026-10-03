@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 
+from intergrax.context.assembly_runtime import ContextAssemblyRuntime
 from intergrax.context.contracts import (
     ASSEMBLED_CONTEXT_SCHEMA,
     CONTEXT_CONTRACTS_SCHEMA,
@@ -205,6 +206,7 @@ async def test_ce_q2_typed_context_contracts_are_assembly_abi() -> None:
     assert assembled.schema_version == ASSEMBLED_CONTEXT_SCHEMA
     assert isinstance(assembled.messages, tuple)
     assert isinstance(runtime, ContextAssemblyRuntimeDependencies)
+    assert isinstance(runtime, ContextAssemblyRuntime)
 
     engine_source = (_REPO_ROOT / "intergrax" / "runtime" / "nexus" / "context" / "context_engine.py").read_text(
         encoding="utf-8"

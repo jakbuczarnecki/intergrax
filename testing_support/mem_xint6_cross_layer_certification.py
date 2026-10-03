@@ -163,10 +163,13 @@ def build_certification_provider_context(
     sources: ContextProviderSourceInputs,
     engine_id: str = "mem-xint6",
 ) -> ContextProviderContext:
-    return ContextProviderContext(
+    from testing_support.context_assembly_test_runtime import provider_context_for_engine_assembly
+
+    return provider_context_for_engine_assembly(
+        runtime_config=runtime_config,
+        messages=messages or [ChatMessage(role="user", content="certify")],
         engine_id=engine_id,
         sources=sources,
-        handles=build_provider_handles(runtime_config=runtime_config, messages=messages),
     )
 
 

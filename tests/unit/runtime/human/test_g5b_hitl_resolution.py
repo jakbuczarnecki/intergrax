@@ -54,7 +54,10 @@ from intergrax.runtime.nexus.orchestration.internal_continuation_orchestration i
     execution_continuation_identity_for_task,
 )
 from intergrax.runtime.events.runtime_event import RuntimeEventType
-from intergrax.runtime.events.trace_bridge import runtime_event_from_task_state
+from intergrax.runtime.events.trace_bridge import (
+    runtime_event_from_task_notification,
+    runtime_event_from_task_state,
+)
 from intergrax.runtime.human.declarative_hitl_grant import (
     DeclarativeHitlGrantCoordinator,
     DeclarativeHitlGrantError,
@@ -353,24 +356,28 @@ def _build_intake_runner_with_hitl(
 
 
 def _patch_hitl_runtime_events(monkeypatch: pytest.MonkeyPatch) -> None:
-    def _event_from_task_state(
+    def _event_from_task_notification(
         task: Task,
         *,
         run_id: str,
+        attempt_id: str,
         message: str = "",
         **kwargs: object,
     ) -> object:
         effective_run_id = run_id if str(run_id).startswith("run_") else RUN_ID
-        return runtime_event_from_task_state(
+        return runtime_event_from_task_notification(
             task,
             run_id=effective_run_id,
-            attempt_id=ATTEMPT_ID,
+            attempt_id=attempt_id or ATTEMPT_ID,
             message=message,
+            event_type=kwargs["event_type"],
+            phase=kwargs["phase"],
+            payload_raw=kwargs.get("payload_raw"),
         )
 
     monkeypatch.setattr(
-        "intergrax.runtime.nexus.orchestration.hitl_runner.runtime_event_from_task_state",
-        _event_from_task_state,
+        "intergrax.runtime.nexus.orchestration.hitl_runner.runtime_event_from_task_notification",
+        _event_from_task_notification,
     )
 
 

@@ -16,14 +16,16 @@ from typing import Optional
 
 from intergrax.runtime.events.persistence_contract import RuntimeEventPersistence
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
-from intergrax.runtime.hooks.hook_registry import HookRegistry
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
+)
 from intergrax.runtime.execution.trace_persistence_models_bridge import export_parser_traces_from_events
 from intergrax.contracts.run_trace_store import RunTraceReader
 from intergrax.runtime.observability.journal_export import (
     build_journal_export_snapshot,
     render_journal_otlp_json,
 )
-from intergrax.runtime.plugins.contract import PolicyEngineLike, RuntimeEventBusLike, RuntimePlugin
+from intergrax.runtime.plugins.contract import RuntimePlugin
 
 logger = logging.getLogger(__name__)
 
@@ -46,9 +48,7 @@ def make_journal_export_runtime_plugin(
     """Runtime plugin — export unified journal + parser traces when a task completes."""
 
     def _register(
-        event_bus: RuntimeEventBusLike,
-        _hook_registry: HookRegistry,
-        _policy_engine: PolicyEngineLike,
+        event_bus: HostOrchestrationRuntimeEventPort,
     ) -> None:
         reader = trace_store
         if reader is None or not is_journal_export_enabled():

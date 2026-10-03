@@ -86,9 +86,24 @@ _FORBIDDEN_INTAKE_SCAN_ROOTS = (
     _SCHEDULER_ROOT,
 )
 
+# Evidence-backed non-production demos only (no filename-pattern trust).
+_NPSC4_1_EXPLICIT_NON_PRODUCTION_DEMO_FILES = frozenset(
+    {
+        "applications/governed_contractor_application/host/offline_demo.py",
+    }
+)
+
 
 def _path_excluded(path: Path) -> bool:
     return any(part in _INTAKE_EXCLUDED_PATH_PARTS for part in path.parts)
+
+
+def _is_explicit_non_production_demo(rel_posix: str) -> bool:
+    """Exact-path non-production demo modules exempt from identity-bind scan.
+
+    Production composition must not import them (see governed_contractor GR6 wire gate).
+    """
+    return rel_posix in _NPSC4_1_EXPLICIT_NON_PRODUCTION_DEMO_FILES
 
 
 def _iter_intake_python_files() -> list[Path]:
@@ -155,6 +170,8 @@ def _collect_forbidden_calls(
             rel = path.relative_to(_REPO_ROOT).as_posix()
             if rel in allowed_files:
                 continue
+            if root == _APPLICATIONS_ROOT and _is_explicit_non_production_demo(rel):
+                continue
             tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
             for node in ast.walk(tree):
                 if not isinstance(node, ast.Call):
@@ -210,6 +227,22 @@ def test_npsc4_1_scheduler_does_not_mint_execution_identity() -> None:
     )
 
 
+def test_npsc4_1_explicit_non_production_demo_allowlist_is_minimal_and_exact() -> None:
+    assert _NPSC4_1_EXPLICIT_NON_PRODUCTION_DEMO_FILES == frozenset(
+        {
+            "applications/governed_contractor_application/host/offline_demo.py",
+        }
+    )
+
+
+def test_npsc4_1_non_production_demo_classification_rejects_filename_pattern() -> None:
+    assert _is_explicit_non_production_demo(
+        "applications/governed_contractor_application/host/offline_demo.py"
+    )
+    assert not _is_explicit_non_production_demo("applications/example/host/offline_demo.py")
+    assert not _is_explicit_non_production_demo("applications/example/offline_demo.py")
+
+
 def test_npsc4_1_forbidden_zones_do_not_bind_execution_identity() -> None:
     violations = _collect_forbidden_calls(
         _FORBIDDEN_INTAKE_SCAN_ROOTS,
@@ -232,10 +265,84 @@ def test_npsc4_1_forbidden_zones_do_not_start_execution_lifecycle() -> None:
     )
 
 
+def _annotation_base_name(node: ast.AST | None) -> str | None:
+    if node is None:
+        return None
+    if isinstance(node, ast.Name):
+        return node.id
+    if isinstance(node, ast.Attribute):
+        return node.attr
+    return None
+
+
+def _unified_task_runner_class(tree: ast.Module) -> ast.ClassDef:
+    for node in tree.body:
+        if isinstance(node, ast.ClassDef) and node.name == "UnifiedTaskRunner":
+            return node
+    raise AssertionError("UnifiedTaskRunner class not found")
+
+
+def _unified_task_runner_init_execution_port(tree: ast.Module) -> ast.arg:
+    cls = _unified_task_runner_class(tree)
+    for node in cls.body:
+        if isinstance(node, ast.FunctionDef) and node.name == "__init__":
+            for arg in node.args.args:
+                if arg.arg == "execution":
+                    assert _annotation_base_name(arg.annotation) == "HostTaskExecutionPort", (
+                        "UnifiedTaskRunner.__init__ must annotate execution as HostTaskExecutionPort"
+                    )
+                    return arg
+    raise AssertionError("UnifiedTaskRunner.__init__ must accept execution: HostTaskExecutionPort")
+
+
+def _unified_task_runner_delegates_execute(tree: ast.Module) -> None:
+    cls = _unified_task_runner_class(tree)
+    for node in cls.body:
+        if not isinstance(node, ast.AsyncFunctionDef) or node.name != "run_task":
+            continue
+        for sub in ast.walk(node):
+            if not isinstance(sub, ast.Await):
+                continue
+            call = sub.value
+            if not isinstance(call, ast.Call):
+                continue
+            func = call.func
+            if (
+                isinstance(func, ast.Attribute)
+                and func.attr == "execute"
+                and isinstance(func.value, ast.Attribute)
+                and func.value.attr == "_execution"
+                and isinstance(func.value.value, ast.Name)
+                and func.value.value.id == "self"
+            ):
+                return
+    raise AssertionError(
+        "UnifiedTaskRunner.run_task must delegate via await self._execution.execute(...)"
+    )
+
+
+def _module_imports_nexus_runtime(tree: ast.Module) -> list[str]:
+    violations: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module and "runtime.nexus" in node.module:
+            violations.append(node.module)
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if "runtime.nexus" in alias.name:
+                    violations.append(alias.name)
+    return violations
+
+
 def test_npsc4_1_unified_task_runner_classified_harness_scheduling_only() -> None:
     source = _UNIFIED_TASK_RUNNER_PATH.read_text(encoding="utf-8")
     assert "HARNESS / SCHEDULING ONLY" in source
-    assert "from intergrax.runtime.execution.host_task import HostTaskExecutionPort" not in source
+    tree = ast.parse(source, filename=str(_UNIFIED_TASK_RUNNER_PATH))
+    _unified_task_runner_init_execution_port(tree)
+    _unified_task_runner_delegates_execute(tree)
+    nexus_imports = _module_imports_nexus_runtime(tree)
+    assert nexus_imports == [], (
+        "UnifiedTaskRunner must not import private Nexus runtime: " + ", ".join(nexus_imports)
+    )
     for token in ("mint_run_id", "mint_attempt_id", "mint_execution_id", "mint_task_id"):
         assert token not in source
 

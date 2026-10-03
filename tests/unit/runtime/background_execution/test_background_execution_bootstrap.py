@@ -55,6 +55,9 @@ from tests.unit.runtime.background_execution.reentry_admission_doubles import (
     admission_kwargs,
     make_kv_admission_dependencies,
 )
+from testing_support.reference_root_execution_authority_admission import (
+    REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
+)
 from intergrax.tools.execution_models import ToolExecutionResult
 
 pytestmark = pytest.mark.unit

@@ -44,7 +44,11 @@ from intergrax.contracts.acp_budget_enforcement import (
     evaluate_hard_budget_violation,
     is_budget_exceeded_outcome,
 )
-from intergrax.contracts.agent_budget import ResolvedBudgetLimits
+from intergrax.contracts.agent_budget import BudgetReactionProfile, ResolvedBudgetLimits
+from intergrax.contracts.budget_reaction_hook import (
+    BudgetReactionHook,
+    CustomBudgetReactionHook,
+)
 from intergrax.contracts.agent_step_context import AgentStepContext
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.agents.persistence.compensation_enqueue import (
@@ -83,6 +87,7 @@ from intergrax.runtime.governance.governance_evidence_recorder import (
 from intergrax.runtime.governance.governance_policy_decision_evidence_recording import (
     record_governance_policy_decision_evidence,
 )
+from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
 from intergrax.runtime.policy.policy_engine import PolicyEngine
 from intergrax.runtime.attestation.buffer import BoundaryEventBuffer
 from intergrax.runtime.attestation.settings import (
@@ -128,9 +133,9 @@ class StepKernelContext:
     resolved_budget_limits: ResolvedBudgetLimits = field(
         default_factory=ResolvedBudgetLimits
     )
-    budget_reaction: Any = None
-    notification_adapter: Any = None
-    budget_reaction_hook: Any = None
+    budget_reaction: BudgetReactionProfile | None = None
+    notification_adapter: NotificationAdapter | None = None
+    budget_reaction_hook: BudgetReactionHook | CustomBudgetReactionHook | None = None
     budget_threshold_emitted: set[str] = field(default_factory=set)
     budget_degrade_active: bool = False
     routing_rule_evaluations: list[dict[str, Any]] = field(default_factory=list)

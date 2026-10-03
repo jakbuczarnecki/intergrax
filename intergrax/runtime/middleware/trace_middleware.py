@@ -18,11 +18,8 @@ from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
 
 
-def _tenant_id_from_hook(ctx: HookContext) -> str:
-    raw = ctx.runtime_state.get("tenant_id")
-    if raw:
-        return str(raw)
-    return "default"
+def _tenant_id_from_hook(ctx: HookContext) -> str | None:
+    return ctx.subject.tenant_id
 
 
 class TraceEmittingMiddleware(RuntimeMiddleware):

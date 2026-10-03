@@ -167,9 +167,9 @@ Hosting does **not** replace:
 
 - `ApplicationManifest`
 - `ApplicationEnvironmentProfile`
-- `UnifiedTaskRunner`
+- Tier-3 composition (`wire_application_environment`, agent roster)
 - `ApplicationHost.on_hook`
-- `NexusLoop`
+- canonical host execution contract (`HostTaskExecutionPort`) or Execution Engine semantics
 
 > **`ApplicationHost.on_hook`** → Tier-3 application/domain reaction at harness hook points.
 >
@@ -192,7 +192,7 @@ They are distinct contracts and must not be merged.
 
 ### Application Hosting does not own
 
-- agent cognition, `Task` / `TaskResult`, `NexusLoop`
+- agent cognition, `Task` / `TaskResult`, or canonical execution orchestration (`HostTaskExecutionPort` / Execution Engine — Nexus is private inside EE, not a hosting-owned surface)
 - harness task preparation and business execution
 - cluster autoscaling ([`ELASTIC_CAPACITY_AND_SCALING.md`](ELASTIC_CAPACITY_AND_SCALING.md))
 - execution retry taxonomy ([`RELIABILITY_FAILURE_AND_HITL.md`](RELIABILITY_FAILURE_AND_HITL.md))

@@ -72,6 +72,9 @@ from intergrax.runtime.nexus.retry.retry_engine import (
     RetryRecord,
     _resilience_policy_from_task,
 )
+from intergrax.contracts.agent_execution_validation_engine import (
+    AgentExecutionValidationEnginePort,
+)
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.decision_flow import DecisionFlowHostAction, DecisionFlowScope
 from intergrax.contracts.execution_retry import (
@@ -145,7 +148,7 @@ class GraphPhaseOutcome:
 class NexusGraphRunner:
     registry: AgentRegistryRead
     graph_executor: GraphExecutor
-    validation_engine: NexusValidationEngine
+    validation_engine: AgentExecutionValidationEnginePort
     composer: FinalResponseComposer
     hitl: NexusHitlRunner
     events: NexusRuntimeEventPublisher

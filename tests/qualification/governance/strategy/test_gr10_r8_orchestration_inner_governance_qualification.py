@@ -25,7 +25,7 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
 _RUNTIME_CONTEXT = (
-    _REPO_ROOT / "intergrax" / "runtime" / "nexus" / "engine" / "runtime_context.py"
+    _REPO_ROOT / "intergrax" / "runtime" / "execution" / "agent_runtime_context.py"
 )
 _DECLARATIVE_WIRING = (
     _REPO_ROOT / "intergrax" / "applications" / "_shared" / "declarative_tool_wiring.py"

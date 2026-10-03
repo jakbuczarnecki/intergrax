@@ -2,7 +2,6 @@
 
 import pytest
 
-from intergrax.runtime.hooks.hook_registry import HookRegistry
 from intergrax.runtime.plugins.bootstrap import bootstrap_runtime_plugins
 from intergrax.runtime.plugins.compatibility import RuntimePluginCompatibilityError
 from intergrax.runtime.plugins.contract import RuntimePlugin
@@ -15,18 +14,17 @@ from intergrax.runtime.schema.registry import RuntimeVersionInfo, current_runtim
 pytestmark = pytest.mark.gate
 
 
-def _bootstrap(plugins, *, event_bus=None, hook_registry=None):
+def _bootstrap(plugins, *, event_bus=None):
     return bootstrap_runtime_plugins(
         plugins,
         event_bus=event_bus or RuntimeEventBus(record_history=False),
-        hook_registry=hook_registry or HookRegistry(),
     )
 
 
 def test_bootstrap_runtime_plugins_registers_shutdown():
     shutdown_called = {"value": False}
 
-    def _register(_event_bus, _hooks, _policy) -> None:
+    def _register(_event_bus) -> None:
         return None
 
     def _shutdown() -> None:
@@ -60,7 +58,7 @@ def test_default_lab_plugins_subscribe_without_error():
 def test_compatible_default_plugin_registers_successfully():
     register_called = {"value": False}
 
-    def _register(_event_bus, _hooks, _policy) -> None:
+    def _register(_event_bus) -> None:
         register_called["value"] = True
 
     plugin = RuntimePlugin(
@@ -76,7 +74,7 @@ def test_compatible_schema_subset_registers():
     runtime = current_runtime_version()
     register_called = {"value": False}
 
-    def _register(_event_bus, _hooks, _policy) -> None:
+    def _register(_event_bus) -> None:
         register_called["value"] = True
 
     plugin = RuntimePlugin(
@@ -96,7 +94,7 @@ def test_contract_bundle_mismatch_rejects_before_register():
     runtime = current_runtime_version()
     register_called = {"value": False}
 
-    def _register(_event_bus, _hooks, _policy) -> None:
+    def _register(_event_bus) -> None:
         register_called["value"] = True
 
     plugin = RuntimePlugin(
@@ -121,7 +119,7 @@ def test_missing_required_schema_rejects_before_register():
     runtime = current_runtime_version()
     register_called = {"value": False}
 
-    def _register(_event_bus, _hooks, _policy) -> None:
+    def _register(_event_bus) -> None:
         register_called["value"] = True
 
     plugin = RuntimePlugin(
@@ -145,7 +143,7 @@ def test_atomic_preflight_skips_all_register_on_incompatibility():
     runtime = current_runtime_version()
     first_register_called = {"value": False}
 
-    def _first_register(_event_bus, _hooks, _policy) -> None:
+    def _first_register(_event_bus) -> None:
         first_register_called["value"] = True
 
     valid_plugin = RuntimePlugin(
@@ -160,7 +158,7 @@ def test_atomic_preflight_skips_all_register_on_incompatibility():
             contract_bundle="uaep-0.9",
             supported_schemas=runtime.supported_schemas,
         ),
-        register=lambda _eb, _hk, _pl: None,
+        register=lambda _eb: None,
     )
     with pytest.raises(RuntimePluginCompatibilityError):
         _bootstrap([valid_plugin, incompatible_plugin])
@@ -171,7 +169,7 @@ def test_runtime_semver_difference_alone_does_not_reject():
     runtime = current_runtime_version()
     register_called = {"value": False}
 
-    def _register(_event_bus, _hooks, _policy) -> None:
+    def _register(_event_bus) -> None:
         register_called["value"] = True
 
     plugin = RuntimePlugin(

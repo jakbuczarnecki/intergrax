@@ -163,8 +163,6 @@ def test_build_acp_session_host_from_harness_attaches_decision_gate() -> None:
         lifecycle_hook_coordinator=MagicMock(),
         plugin_surface=HarnessHostPluginRegistrationSurface(
             event_bus=MagicMock(),
-            hook_registry=MagicMock(),
-            policy_engine=MagicMock(),
         ),
         runtime_event_persistence=None,
         _orchestration_backend=nexus_loop,
@@ -277,8 +275,6 @@ def test_build_acp_session_host_from_harness_strict_missing_tenant_fails_closed(
         lifecycle_hook_coordinator=MagicMock(),
         plugin_surface=HarnessHostPluginRegistrationSurface(
             event_bus=MagicMock(),
-            hook_registry=MagicMock(),
-            policy_engine=MagicMock(),
         ),
         runtime_event_persistence=None,
         _orchestration_backend=MagicMock(),

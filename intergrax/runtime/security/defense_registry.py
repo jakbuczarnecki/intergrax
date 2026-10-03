@@ -4,13 +4,17 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationMiddlewareHookContext,
+)
+from intergrax.contracts.middleware_hook_semantics import ToolCallHookPayload
 from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.runtime.security.json_security_projection import json_object_to_security_scan_text
 from intergrax.runtime.security.defense_plugin import (
     SecurityDefensePlugin,
     SecurityFailMode,
     SecurityInspectionResult,
 )
-from intergrax.runtime.hooks.hook_context import HookContext
 
 
 class _StrictInjectionDefensePlugin:
@@ -28,13 +32,22 @@ class _StrictInjectionDefensePlugin:
         "disable guardrails",
     )
 
-    def inspect(self, point: HookPoint, ctx: HookContext) -> SecurityInspectionResult:
+    def inspect(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> SecurityInspectionResult:
         if point != HookPoint.BEFORE_TOOL_CALL:
             return SecurityInspectionResult(allowed=True, plugin_id=self.plugin_id)
-        arguments = ctx.runtime_state.get("arguments")
-        if not isinstance(arguments, dict):
-            return SecurityInspectionResult(allowed=True, plugin_id=self.plugin_id)
-        blob = " ".join(str(value).lower() for value in arguments.values())
+        payload = ctx.payload
+        if not isinstance(payload, ToolCallHookPayload):
+            return SecurityInspectionResult(
+                allowed=False,
+                reasons=["tool defense requires ToolCallHookPayload"],
+                plugin_id=self.plugin_id,
+                hook_point=point.value,
+            )
+        blob = json_object_to_security_scan_text(payload.arguments).lower()
         for token in self._blocked_tokens:
             if token in blob:
                 return SecurityInspectionResult(

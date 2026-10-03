@@ -11,6 +11,11 @@ from typing import Any, Optional
 from intergrax.contracts.event_severity import EventSeverity
 from intergrax.contracts.execution_identity import require_active_execution_identity
 from intergrax.contracts.execution_phase import ExecutionPhase
+from intergrax.contracts.middleware_hook_semantics import (
+    LlmInferenceHookPayload,
+    MiddlewareExecutionSubjectFacet,
+    TaskIntakeHookPayload,
+)
 from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.pipeline import MiddlewarePipeline
@@ -34,21 +39,36 @@ def nexus_lifecycle_hook_context(
     extra: Optional[dict[str, Any]] = None,
 ) -> HookContext:
     run_id, _ = require_active_execution_identity()
+    runtime_state: dict[str, Any] = {
+        "task_state": task.state.value,
+        "classification": task.classification,
+        "capability": task.context.capability,
+        "tenant_id": task.tenant_id,
+        "user_id": task.user_id,
+        "resource_tenant_id": resource_tenant_id_for_task(task),
+        "prompt": task.message,
+        **(extra or {}),
+    }
+    subject = MiddlewareExecutionSubjectFacet(
+        tenant_id=task.tenant_id or None,
+        resource_tenant_id=resource_tenant_id_for_task(task),
+        user_id=task.user_id or None,
+    )
+    if phase == ExecutionPhase.INTAKE:
+        payload: TaskIntakeHookPayload | LlmInferenceHookPayload = TaskIntakeHookPayload(
+            capability=task.context.capability or None,
+            classification=task.classification or None,
+        )
+    else:
+        payload = LlmInferenceHookPayload(prompt=task.message or None)
     return HookContext(
         task_id=task.task_id,
         run_id=run_id,
         agent_id=task.agent_id,
         phase=phase,
-        runtime_state={
-            "task_state": task.state.value,
-            "classification": task.classification,
-            "capability": task.context.capability,
-            "tenant_id": task.tenant_id,
-            "user_id": task.user_id,
-            "resource_tenant_id": resource_tenant_id_for_task(task),
-            "prompt": task.message,
-            **(extra or {}),
-        },
+        subject=subject,
+        payload=payload,
+        runtime_state=runtime_state,
     )
 
 

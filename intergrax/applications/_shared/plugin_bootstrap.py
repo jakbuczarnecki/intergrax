@@ -34,8 +34,6 @@ def bootstrap_application_plugins(
     return bootstrap_runtime_plugins(
         plugins,
         event_bus=orchestration_host.event_bus,
-        hook_registry=orchestration_host.middleware.hooks,
-        policy_engine=orchestration_host.policy_engine,
     )
 
 

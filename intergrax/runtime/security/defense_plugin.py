@@ -6,17 +6,21 @@ from __future__ import annotations
 
 import asyncio
 from enum import Enum
-from typing import TYPE_CHECKING, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from pydantic import BaseModel, Field
 
-from intergrax.runtime.hooks.hook_context import HookAction, HookContext, HookResult
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationMiddlewareHookContext,
+    HostOrchestrationRuntimeEventPort,
+)
+from intergrax.contracts.middleware_hook_semantics import ToolCallHookPayload
+from intergrax.runtime.hooks.hook_context import HookAction, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
 from intergrax.runtime.security.security_events import emit_defense_blocked
+from intergrax.runtime.security.tenant_scope import tenant_scope_is_valid
 
-if TYPE_CHECKING:
-    from intergrax.runtime.events.event_bus import RuntimeEventBus
 
 DEFAULT_DEFENSE_INSPECTION_TIMEOUT_MS = 100
 
@@ -49,7 +53,11 @@ class SecurityDefensePlugin(Protocol):
     priority: int
     fail_mode: SecurityFailMode
 
-    def inspect(self, point: HookPoint, ctx: HookContext) -> SecurityInspectionResult: ...
+    def inspect(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> SecurityInspectionResult: ...
 
 
 class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
@@ -59,7 +67,7 @@ class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
         self,
         plugin: SecurityDefensePlugin,
         *,
-        event_bus: RuntimeEventBus | None = None,
+        event_bus: HostOrchestrationRuntimeEventPort | None = None,
         inspection_timeout_ms: int = DEFAULT_DEFENSE_INSPECTION_TIMEOUT_MS,
         enforce_tenant_scope: bool = True,
     ) -> None:
@@ -70,10 +78,28 @@ class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
         self.priority = plugin.priority
         self.name = f"SecurityDefense:{plugin.plugin_id}"
 
-    async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def before(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> HookResult:
         if point not in self._plugin.hook_points:
             return HookResult()
-        if self._enforce_tenant_scope and not _tenant_scope_valid(ctx):
+        if point == HookPoint.BEFORE_TOOL_CALL and not isinstance(ctx.payload, ToolCallHookPayload):
+            reason = "defense plugin requires ToolCallHookPayload at tool call"
+            await emit_defense_blocked(
+                self._event_bus,
+                ctx=ctx,
+                point=point,
+                plugin_id=self._plugin.plugin_id,
+                reason=reason,
+            )
+            return HookResult(action=HookAction.BLOCK, reason=reason)
+        if self._enforce_tenant_scope and not tenant_scope_is_valid(
+            ctx.subject.tenant_id,
+            ctx.subject.resource_tenant_id,
+            allow_unscoped=True,
+        ):
             reason = "defense plugin blocked: tenant scope mismatch"
             await emit_defense_blocked(
                 self._event_bus,
@@ -113,13 +139,9 @@ class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
             return HookResult(action=HookAction.MODIFY, reason=reason)
         return HookResult(action=HookAction.BLOCK, reason=reason)
 
-    async def after(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def after(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> HookResult:
         return HookResult()
-
-
-def _tenant_scope_valid(ctx: HookContext) -> bool:
-    tenant_id = str(ctx.runtime_state.get("tenant_id", "")).strip()
-    if not tenant_id:
-        return True
-    resource_tenant = str(ctx.runtime_state.get("resource_tenant_id", tenant_id)).strip()
-    return tenant_id == resource_tenant

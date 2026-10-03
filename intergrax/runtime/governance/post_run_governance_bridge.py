@@ -22,12 +22,18 @@ from intergrax.runtime.governance.governance_policy_decision_evidence_recording 
 
 @runtime_checkable
 class PostRunGovernanceService(Protocol):
-    def evaluate(self, run_id: str, agent_id: str) -> GovernanceEvaluation | None: ...
+    def evaluate(
+        self,
+        tenant_id: str,
+        run_id: str,
+        agent_id: str,
+    ) -> GovernanceEvaluation | None: ...
 
 
 def invoke_post_run_governance(
     governance_service: PostRunGovernanceService | None,
     *,
+    tenant_id: str,
     run_id: str,
     agent_id: str,
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
@@ -35,9 +41,17 @@ def invoke_post_run_governance(
     """Invoke post-run governance when a service is configured for the run."""
     if governance_service is None:
         return None
-    if not (run_id or "").strip() or not (agent_id or "").strip():
+    if (
+        not (tenant_id or "").strip()
+        or not (run_id or "").strip()
+        or not (agent_id or "").strip()
+    ):
         return None
-    evaluation = governance_service.evaluate(run_id=run_id, agent_id=agent_id)
+    evaluation = governance_service.evaluate(
+        tenant_id=tenant_id,
+        run_id=run_id,
+        agent_id=agent_id,
+    )
     if evaluation is not None:
         runtime_decision = runtime_policy_decision_from_post_run_evaluation(evaluation)
         record_governance_policy_decision_evidence_for_active_identity(
@@ -57,6 +71,7 @@ def invoke_post_run_governance(
     IntergraxLogging.get_logger(__name__, component="governance").info(
         "Post-run governance invoked",
         extra={
+            "tenant_id": tenant_id,
             "run_id": run_id,
             "agent_id": agent_id,
             "evaluated": evaluation is not None,

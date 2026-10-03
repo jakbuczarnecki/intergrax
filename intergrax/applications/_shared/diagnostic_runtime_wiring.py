@@ -23,6 +23,7 @@ from intergrax.applications._shared.diagnostic_assembly_resolver import (
 )
 from intergrax.applications._shared.environment_wiring import ApplicationEnvironmentWiring
 from intergrax.applications._shared.harness_host_runtime import HarnessHostRuntime
+from intergrax.applications._shared.scenario_runtime_profiles import ScenarioRuntimeMode
 from intergrax.runtime.diagnostics.diagnostic_orchestrator import DiagnosticOrchestrator
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
@@ -35,6 +36,9 @@ from intergrax.runtime.diagnostics.central_terminal_execution_diagnostic_port im
 )
 from intergrax.runtime.diagnostics.terminal_execution_diagnostic_trigger import (
     TerminalExecutionDiagnosticTrigger,
+)
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationRuntimeEventPort,
 )
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.contracts.host_orchestration_application_wiring_target import (
@@ -142,7 +146,7 @@ def try_build_terminal_execution_diagnostic_trigger(
 def build_terminal_execution_diagnostic_port(
     dependencies: HostDiagnosticReadDependencies,
     *,
-    event_bus: RuntimeEventBus | None = None,
+    event_bus: HostOrchestrationRuntimeEventPort | None = None,
     overrides: DiagnosticCompositionOverrides | None = None,
 ) -> TerminalExecutionDiagnosticPort:
     """Construct production terminal diagnostic port over shared orchestrator."""
@@ -159,7 +163,7 @@ def try_build_terminal_execution_diagnostic_port(
     *,
     env_wiring: ApplicationEnvironmentWiring,
     observability: HostObservabilityStores,
-    event_bus: RuntimeEventBus | None = None,
+    event_bus: HostOrchestrationRuntimeEventPort | None = None,
     overrides: DiagnosticCompositionOverrides | None = None,
     materialized_dependencies: HostDiagnosticReadDependencies | None = None,
 ) -> TerminalExecutionDiagnosticPort | None:
@@ -209,7 +213,7 @@ def wire_terminal_execution_diagnostics(
     env_wiring: ApplicationEnvironmentWiring,
     observability: HostObservabilityStores,
     orchestration_host: HostOrchestrationApplicationWiringTarget,
-    scenario_runtime_mode: object | None = None,
+    scenario_runtime_mode: ScenarioRuntimeMode | None = None,
     overrides: DiagnosticCompositionOverrides | None = None,
     materialized_dependencies: HostDiagnosticReadDependencies | None = None,
 ) -> DiagnosticWiring:
@@ -221,7 +225,7 @@ def wire_terminal_execution_diagnostics(
     resolved_overrides = _resolve_overrides(env_wiring, overrides)
     required = resolve_central_diagnostics_required(
         env,
-        scenario_runtime_mode=scenario_runtime_mode,  # type: ignore[arg-type]
+        scenario_runtime_mode=scenario_runtime_mode,
     )
     missing_document_store, missing_runtime_events = _diagnostic_prerequisite_gaps(
         env_wiring=env_wiring,

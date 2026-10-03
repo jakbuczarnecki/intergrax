@@ -19,12 +19,12 @@ Without this layer:
 - private platform-state reach-in becomes a normal integration pattern,
 - product-specific vocabulary pollutes generic platform contracts.
 
-Tier-3 solves this by keeping **one canonical composition path** from product definition to Nexus, with explicit boundaries to Hosting, Agents, Governance, Observability, Integrations, and Experimentation.
+Tier-3 solves this by keeping **one canonical composition path** from product definition through `HostTaskExecutionPort` and the Execution Engine (private Nexus inside), with explicit boundaries to Hosting, Agents, Governance, Observability, Integrations, and Experimentation.
 
 ## Maturity boundary
 
 > [!IMPORTANT]
-> **Protocol v2 (2026-08-18) accepted two Tier-3 boundary defects that remain planned, not fixed:** **TL-FIX-C** (LKW-specific fields on generic `HostDeploymentProfile`) and **TL-FIX-D** (private `_execution_adapter` mutation in Legal and Dispute Sim hosts). Finding 05 (dynamic boundary guard scope) is owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION`](PLATFORM_FOUNDATION.md) - not Tier-3 remediation. See [Current limitations](#current-limitations--protocol-v2).
+> **Protocol v2 (2026-08-18) accepted Tier-3 boundary defects that remain planned, not fixed:** **TL-FIX-C** (LKW-specific fields on generic `HostDeploymentProfile`). **TL-FIX-D** (private `_execution_adapter` mutation in Legal and Dispute Sim hosts) is **IMPLEMENTED** on current HEAD via public `DefaultRunService.bind_execution_adapter(...)` — historical audit text retained below. Finding 05 (dynamic boundary guard scope) is owned by **TL-FIX-A** in [`PLATFORM_FOUNDATION`](PLATFORM_FOUNDATION.md) - not Tier-3 remediation. See [Current limitations](#current-limitations--protocol-v2).
 
 > [!NOTE]
 > Historical **L3 / Done** plan rows and AUDIT-IDEAL closeout labels describe harness delivery - **not** automatic universal product production qualification. Representative product proof exists for LKW ([`PROOFS.md`](../proofs/PROOFS.md)); other hosts vary.
@@ -38,13 +38,13 @@ Tier-3 solves this by keeping **one canonical composition path** from product de
 | **Responsibility** | Product application definition, environment posture, agent roster, platform capability configuration |
 | **Composition root** | `ApplicationEnvironmentProfile` - configures platform-owned mechanisms; does not implement them |
 | **Canonical wiring** | `wire_application_environment()` → frozen `ApplicationEnvironmentWiring` |
-| **Execution surface** | `UnifiedTaskRunner.run_task()` on supported intake paths → `NexusLoop` |
+| **Execution surface** | Supported intake → `HostTaskExecutionPort.execute(Task)` → Execution Engine → private Nexus |
 | **Agent roster** | `AgentBinding[]` - mount/config only; agent lifecycle owned by Agent layer |
 | **Environment snapshot** | Immutable `EnvironmentSnapshot` on deploy/intake - request-bound, not durable history |
 | **App hooks** | `ApplicationHost.on_hook` - task/domain reactions; distinct from Hosting lifecycle hooks |
 | **Plugin boundary** | Applications consume admitted plugins; domain wiring discovers them |
 | **Hosting boundary** | [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) owns process lifecycle - not application definition |
-| **Protocol v2 debt** | TL-FIX-C · TL-FIX-D - **ACCEPTED / PLANNED** |
+| **Protocol v2 debt** | TL-FIX-C **ACCEPTED / PLANNED**; TL-FIX-D **IMPLEMENTED** (public bind API) |
 | **Maturity** | **A4 · I3 · P3 · E3** - see [Current maturity](#current-maturity) |
 | **Go deeper** | [Engineering canon](#engineering-canon) · [extended depth satellite](satellites/TIER3_APPLICATION_ENVIRONMENT_extended_depth.md) · [production gates satellite](satellites/TIER3_APPLICATION_ENVIRONMENT_production_gates.md) · [plan](../maintainers/plans/TIER3_APPLICATION_ENVIRONMENT.md) |
 
@@ -78,9 +78,11 @@ ApplicationEnvironmentWiring
       ↓
 HarnessApplication / ApplicationHost
       ↓
-UnifiedTaskRunner
+HostTaskExecutionPort (host adapters)
       ↓
-Nexus
+Execution Engine
+      ↓
+private Nexus
       ↓
 Agents / Tools / RAG / Memory / Policy / Observability
 ```
@@ -103,8 +105,8 @@ process lifecycle / readiness / restart / shutdown
 6. Materialize `EnvironmentSnapshot` on deploy or task intake when wired.
 7. Call `wire_application_environment(manifest, env, …)` - single domain wiring entry.
 8. Build host facade via `build_harness_host_runtime()` or `HarnessApplication.build_*()`.
-9. Route supported intake through `UnifiedTaskRunner.run_task()` (or `run_runtime_request`).
-10. Execute through `NexusLoop` and platform domains.
+9. Route supported intake through host adapters that delegate to `HostTaskExecutionPort.execute(Task)` (HTTP harness, FastAPI Core, MCP, queue worker, interaction intake).
+10. Execute through the Execution Engine (private Nexus orchestration) and platform domains.
 11. Emit `ApplicationRunSummary` (Plane A) into Observability path when orchestration completes.
 12. Optionally wrap with Application Hosting for continuous process lifecycle.
 
@@ -116,7 +118,7 @@ process lifecycle / readiness / restart / shutdown
 | How Harness **configures** capabilities for this host | `ApplicationEnvironmentProfile` |
 | Agent roster mount / per-entry options | `AgentBinding` |
 | Resolved runtime composition **output** | `ApplicationEnvironmentWiring` |
-| Task execution author surface | `UnifiedTaskRunner` / `HarnessApplication` / host factory |
+| Supported production execution entry | `HostTaskExecutionPort` via host factories and transport adapters (`HarnessApplication` / `build_harness_host_runtime` wire the port) |
 | Process lifecycle, readiness, restart, OS integration | [`Application Hosting`](APPLICATION_HOSTING.md) |
 
 ## Responsibility boundaries
@@ -133,7 +135,7 @@ process lifecycle / readiness / restart / shutdown
 
 | Neighbor | Boundary |
 | -------- | -------- |
-| **Application Hosting** | Process lifecycle, readiness, restart, shutdown - does not replace Manifest, Profile, `UnifiedTaskRunner`, or Nexus path |
+| **Application Hosting** | Process/deployment lifecycle only — does not replace Manifest, Profile, Tier-3 composition, `ApplicationHost.on_hook`, or canonical host execution (`HostTaskExecutionPort` / Execution Engine semantics) |
 | **Agents** | Agent contracts, cognition, tool behavior - Tier-3 composes/rosters only |
 | **Governance** | Authorization decisions - application selects within allowed profiles; cannot weaken global policy |
 | **Observability** | Execution evidence semantics - Tier-3 configures posture; no app-local trace authority |
@@ -183,16 +185,20 @@ Some generic Tier-3 profile surfaces still contain product-specific deployment v
 
 ### TL-FIX-D - private composition reach-in
 
-**Status:** ACCEPTED / PLANNED · **not fixed**
+**Status:** **IMPLEMENTED** (HOST-01 / HARNESS-W7 current-HEAD recertification)
 
-Some current product hosts still use private platform-state composition as a workaround; this is **not** the target public composition API and remediation is planned.
+Historical Protocol v2 audit recorded private `run_service._execution_adapter = ...` in Legal and Dispute Sim queue wiring. Current production hosts use the public API:
 
-| Application | Path | Pattern |
-| ----------- | ---- | ------- |
-| `legal_application` | `applications/legal_application/host/factory.py` | `run_service._execution_adapter = queue_wiring.execution_adapter` |
-| `dispute_sim_application` | `applications/dispute_sim_application/host/factory.py` | same private assignment |
+```python
+run_service.bind_execution_adapter(queue_wiring.execution_adapter)
+```
 
-**Cause:** `wire_optional_queue_execution` requires an existing `DefaultRunService` to build `QueuedNexusExecutionAdapter`; no public rebinding API on `DefaultRunService` today. **Not** all reference hosts use this pattern - LKW and lab hosts use `build_harness_host_runtime()` without documented reach-in.
+| Application | Path | Current pattern |
+| ----------- | ---- | ---------------- |
+| `legal_application` | `applications/legal_application/host/factory.py` | `bind_execution_adapter(...)` |
+| `dispute_sim_application` | `applications/dispute_sim_application/host/factory.py` | `bind_execution_adapter(...)` |
+
+**Historical cause (audit only):** queue composition needed a `DefaultRunService` rebind before the public seam existed. **Not** a supported integration pattern on current HEAD.
 
 ### Finding 05 - dynamic boundary (Platform Foundation)
 
@@ -260,11 +266,12 @@ Historical Tier-3 **Done** delivery facts, maturity score, and existing **IDT-FI
 | `ApplicationEnvironmentWiring` | Shipped - frozen dataclass output; not a second runtime authority |
 | `HarnessApplication` | Shipped - fluent author facade → manifest + `build_harness_host_runtime()` |
 | `ApplicationHost` | Shipped - Protocol for `on_hook`; distinct from `HostedApplicationHooks` |
-| `UnifiedTaskRunner` | Shipped - HTTP/MCP/eval paths on major reference hosts; queue worker paths converge when wired |
+| `UnifiedTaskRunner` | Shipped - **legacy / harness / scheduling / test-lab helper**; supported production intake uses `HostTaskExecutionPort` |
 | Intake parity | Done on plan register for product hosts (HTTP, async queue, streaming where implemented, scheduled/hybrid via profile) - not every theoretical surface |
 | Sandbox / shadow | Partial - real `SandboxSessionManager` / `ShadowWorkspaceManager` when profile enables; not a universal production isolation guarantee |
 | Production gates | Scripts exist (`check_application_production_gates.py` et al.); CI smoke invokes on PR/`main` - see [Evidence](#evidence--proof) |
-| TL-FIX-C / TL-FIX-D | Open planned remediation |
+| TL-FIX-C | Open planned remediation |
+| TL-FIX-D | Implemented (`bind_execution_adapter`) |
 
 ## Current maturity
 
@@ -272,8 +279,8 @@ Four-axis qualification ([`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_T
 
 | Axis | Rating | Rationale |
 | ---- | ------ | --------- |
-| **Architecture (A)** | **A4** | Stable composition model and adjacent ownership; **not A5** while TL-FIX-C/D remain accepted |
-| **Implementation (I)** | **I3** | Canonical path works on major hosts; private reach-in isolated to Legal/Dispute Sim queue wiring |
+| **Architecture (A)** | **A4** | Stable composition model and adjacent ownership; **not A5** while TL-FIX-C remains accepted |
+| **Implementation (I)** | **I3** | Canonical `HostTaskExecutionPort` path on supported production intake; TL-FIX-D reach-in remediated |
 | **Production (P)** | **P3** | Gate scripts + partial CI smoke; not universal product production qualification |
 | **Evidence (E)** | **E3** | LKW bounded platform proof; no E5 external/customer deployment evidence |
 
@@ -345,9 +352,9 @@ Four-axis qualification ([`MATURITY_TAXONOMY.md`](../technical/guides/MATURITY_T
 |--------|--------------|
 | [`APPLICATION_HOSTING.md`](APPLICATION_HOSTING.md) | Optional deployment wrapper around a Tier-3 application definition |
 
-A Tier-3 application definition may be wrapped by Application Hosting for continuous availability, readiness, instance ownership, signals, graceful shutdown, restart supervision, and OS service integration. **Tier-3 application semantics remain unchanged** - standalone runner, hosted engine, or future deployment models execute the same `Task` / `NexusLoop` path.
+A Tier-3 application definition may be wrapped by Application Hosting for continuous availability, readiness, instance ownership, signals, graceful shutdown, restart supervision, and OS service integration. **Tier-3 application semantics remain unchanged by deployment posture** — standalone runner, hosted engine, or future deployment models route supported production intake through the same `HostTaskExecutionPort` → governance admission → Execution Engine path; Nexus remains private inside the Execution Engine, not a Tier-3 or hosting public seam.
 
-Application Hosting **does not replace** `ApplicationManifest`, `ApplicationEnvironmentProfile`, `UnifiedTaskRunner`, `ApplicationHost.on_hook`, or `NexusLoop`.
+Application Hosting **does not replace** `ApplicationManifest`, `ApplicationEnvironmentProfile`, Tier-3 composition (`wire_application_environment`), `ApplicationHost.on_hook`, or the canonical **host execution contract** (`HostTaskExecutionPort` and Execution Engine semantics). It is not an alternate orchestration or governance surface.
 
 **Deployment-posture boundary:**
 
@@ -458,17 +465,19 @@ Domain plugin discovery and admission run in **domain/shared wiring** (`memory_w
 
 ### `UnifiedTaskRunner`
 
-Single Task entry via `NexusLoop.handle_task`. Used by HTTP routers, MCP mirrors, eval paths, LKW task executor, and background worker factories on wired hosts.
+**Legacy / harness / scheduling / test-lab helper** — retains `run_task()` for long-running scheduler hooks and compatibility surfaces. It is **not** the canonical supported production host execution API on current HEAD.
+
+Supported production intake (HTTP harness, FastAPI Core, MCP, queue worker, interaction intake) delegates to `HostTaskExecutionPort` — see [Host entry convergence (HOST-01)](#host-entry-convergence-host-01) below.
 
 ```text
-HTTP / CLI / queue worker / MCP / eval
+legacy / harness / scheduling / test-lab only
       ↓
-UnifiedTaskRunner.run_task()  (when host is wired correctly)
+UnifiedTaskRunner.run_task()
       ↓
-NexusLoop
+Execution Engine materialization (private Nexus)
 ```
 
-**Honest limit:** not every code path in the monorepo is proven to use `UnifiedTaskRunner` yet; queue composition in Legal/Dispute Sim additionally mutates private `_execution_adapter` (TL-FIX-D). Target: all **supported** intake surfaces converge on the same task semantics.
+**Monorepo honesty:** eval, experiments, and some unit proofs still construct `UnifiedTaskRunner` directly; mechanical gates (`test_ue_11gp_production_host_execution_gate.py`) forbid `UnifiedTaskRunner.run_task()` in production `applications/*/host` composition.
 
 ### Host entry convergence (HOST-01)
 
@@ -615,9 +624,9 @@ Historical Tier-3 **Done** delivery facts and existing **TL-FIX-C/D**, **ITI-FIX
 
 Accepted [`END_TO_END_SYSTEM`](../../audit_results/2026-08-18/END_TO_END_SYSTEM.md) findings **01, 02** (2026-08-21). **Target state** - remediation **ACCEPTED / PLANNED**; **not implemented** by audit persistence task AUDIT-20260818-END-TO-END-SYSTEM-PERSIST.
 
-1. Tier-3 materializes **one configured task execution service** (`UnifiedTaskRunner` + mandatory host-owned enricher) and passes that same instance to HTTP, MCP, queue, and other supported execution surfaces.
+1. Tier-3 host composition materializes **one canonical `HostTaskExecutionPort`** (plus optional host-owned task enrichers) and routes HTTP, MCP, queue, and other supported production surfaces through that port — not through ad-hoc `NexusLoop` construction or production `UnifiedTaskRunner.run_task()` entry. **HOST-01 implemented** on current HEAD; legacy `UnifiedTaskRunner` remains harness/scheduling-only.
 2. Tenant/model routing and LLM `RoutingContext` derive from the **runtime Task/Run execution identity** - not literal `tenant_id="default"` as product routing authority. Use a runtime `RoutingContextProvider` / execution-context bridge when the adapter is reused across tasks. Cross-link **IDENTITY_TRUST**, **LLM_ADAPTERS** - do not duplicate their findings.
-3. A surface must not reconstruct `UnifiedTaskRunner(nexus_loop)` independently when canonical wiring supplies reliability enrichment via `build_reliability_task_enricher()`. Cross-link **E2E-EXECUTION-CONTEXT-INTEGRITY**, **ITI-FIX-C**.
+3. A surface must not bypass canonical host wiring to construct private execution implementation (`NexusLoop`, direct Nexus imports) when canonical wiring supplies reliability enrichment via `build_reliability_task_enricher()`. Cross-link **E2E-EXECUTION-CONTEXT-INTEGRITY**, **ITI-FIX-C**.
 
 <a id="protocol-v2-cross-layer-composition-qualification-target-invariants-2026-08-18"></a>
 
@@ -651,8 +660,8 @@ Before implementing a new Tier-3 environment, answer:
  5. Single-agent or multi-agent - graph_spec vs pipeline token (§23.4)?
  6. Full ApplicationEnvironmentProfile declared - no orphan slices?
  7. wire_application_environment() - no getattr on manifest?
- 8. build_harness_host_runtime() - not ad-hoc NexusLoop?
- 9. All surfaces → UnifiedTaskRunner.run_task()?
+ 8. build_harness_host_runtime() wires sanctioned HostTaskExecutionPort — not ad-hoc NexusLoop?
+ 9. All supported production surfaces → HostTaskExecutionPort.execute(Task)?
 10. IdentityProfile matches auth story (tenant/user)?
 11. ExecutionMode STRICT for prod?
 12. ObservabilityProfile + ApplicationRunSummary on Task completion?

@@ -7,8 +7,11 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 
-from intergrax.runtime.hooks.hook_context import HookContext, HookResult
-from intergrax.runtime.hooks.hook_point import HookPoint
+from intergrax.contracts.host_orchestration_wiring_capabilities import (
+    HostOrchestrationMiddlewareHookContext,
+)
+from intergrax.contracts.middleware_hook_point import HookPoint
+from intergrax.runtime.hooks.hook_context import HookResult
 
 
 class RuntimeMiddleware(ABC):
@@ -18,9 +21,17 @@ class RuntimeMiddleware(ABC):
     name: str = "RuntimeMiddleware"
 
     @abstractmethod
-    async def before(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def before(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> HookResult:
         return HookResult()
 
     @abstractmethod
-    async def after(self, point: HookPoint, ctx: HookContext) -> HookResult:
+    async def after(
+        self,
+        point: HookPoint,
+        ctx: HostOrchestrationMiddlewareHookContext,
+    ) -> HookResult:
         return HookResult()
