@@ -67,23 +67,23 @@ Mandatory families: **SX-F01 .. SX-F15** (exactly once).
 
 ## 6. Semantic ownership matrix
 
-| ID | Semantic owner | Canonical contract |
+| ID | Semantic owner | Contract references (`symbol` @ path) |
 |---|---|---|
-| SX-F01 | Long-running checkpoint subsystem | TaskCheckpointPersistence |
-| SX-F02 | Long-running checkpoint (tree component) | RuntimeCheckpoint.execution_tree |
-| SX-F03 | Decision orchestration / recovery | DecisionCheckpointPersistence |
-| SX-F04 | AttemptLifecycleService | AttemptLifecycleStore |
-| SX-F05 | Execution terminal plane | ExecutionTerminalStore |
-| SX-F06 | Execution lineage subsystem | ExecutionLineagePersistence |
-| SX-F07 | Runtime events / evidence | RuntimeEventPersistence |
-| SX-F08 | Nexus tracing read plane | RunTraceStore / RunTraceReader |
-| SX-F09 | Execution budget plane | RunBudgetPersistence |
-| SX-F10 | Side-effect deduplication | IdempotencyStore |
-| SX-F11 | Compensation queue | CompensationQueueStore |
-| SX-F12 | Human decision persistence | HumanDecisionPersistence |
-| SX-F13 | Long-running scheduler | ScheduledResumePersistence / SchedulerLedger |
-| SX-F14 | ACP agent checkpoint | AgentCheckpointStore |
-| SX-F15 | **Truth ownership: NONE** — cross-family recovery coordination | **None** (coordination only; see `underlying_family_ids`) |
+| SX-F01 | Long-running checkpoint subsystem | TaskCheckpointPersistence @ `intergrax/runtime/long_running/persistence_contract.py` |
+| SX-F02 | Long-running checkpoint (tree component) | RuntimeCheckpoint @ `intergrax/runtime/long_running/runtime_checkpoint.py`; ExecutionTreeSnapshot @ `intergrax/runtime/long_running/execution_tree_checkpoint.py` |
+| SX-F03 | Decision orchestration / recovery | DecisionCheckpointPersistence @ `intergrax/runtime/execution/decision_checkpoint_persistence.py`; DecisionCheckpointState @ `intergrax/contracts/decision_checkpoint.py` |
+| SX-F04 | AttemptLifecycleService | AttemptLifecycleStore @ `intergrax/contracts/attempt_lifecycle.py` |
+| SX-F05 | Execution terminal plane | ExecutionTerminalStore @ `intergrax/contracts/execution_terminal.py`; ExecutionTerminalRecord @ `intergrax/contracts/execution_terminal.py` |
+| SX-F06 | Execution lineage subsystem | ExecutionLineagePersistence @ `intergrax/contracts/execution_lineage.py` |
+| SX-F07 | Runtime events / evidence | RuntimeEventPersistence @ `intergrax/runtime/events/persistence_contract.py` |
+| SX-F08 | Nexus tracing read plane (READ_MODEL) | RunTraceStore @ `intergrax/contracts/run_trace_store.py`; RunTraceReader @ `intergrax/contracts/run_trace_store.py` |
+| SX-F09 | Execution budget plane | RunBudgetPersistence @ `intergrax/runtime/execution/budget/persistence.py`; ExecutionBudgetLedger @ `intergrax/runtime/execution/budget/ledger.py` |
+| SX-F10 | Side-effect deduplication | IdempotencyStore @ `intergrax/contracts/idempotency_store.py` |
+| SX-F11 | Compensation queue | CompensationQueueStore @ `intergrax/agents/persistence/compensation_queue_store.py` |
+| SX-F12 | Human decision persistence | HumanDecisionPersistence @ `intergrax/runtime/human/persistence_contract.py` |
+| SX-F13 | Long-running scheduler | ScheduledResumePersistence @ `intergrax/runtime/long_running/scheduled_resume.py`; SchedulerLedger @ `intergrax/runtime/long_running/persistence_contract.py` |
+| SX-F14 | ACP agent checkpoint | AgentCheckpointStore @ `intergrax/agents/persistence/checkpoint_store.py` |
+| SX-F15 | **Truth ownership: NONE** — cross-family recovery coordination | **canonical contract references = NONE** (`contract_references=()`); coordination only; see `underlying_family_ids` |
 
 **Invariant:** storage backend ≠ semantic owner (see §23 task spec).
 
@@ -91,7 +91,11 @@ Mandatory families: **SX-F01 .. SX-F15** (exactly once).
 
 ## 7. Contract / implementation matrix
 
-See `production_paths`, `implementation_symbols`, and `contract_path` per inventory entry. **Paths** are mechanically existence-checked at current HEAD; **symbols** are statically resolved in contract or production path sources (no dynamic imports). Physical SQLite/KV/Document backends may host multiple families; contracts remain distinct.
+See `contract_references` (exact `symbol` ↔ `path` pairs), `production_paths`, and `implementation_symbols` per inventory entry. **Contract paths** must exist at current HEAD; each **symbol** must statically resolve in its assigned path only (AST `ClassDef` / `FunctionDef` / `AsyncFunctionDef`; no dynamic imports). **Implementation symbols** resolve in `production_paths` and/or contract paths where the inventory ties them. Physical SQLite/KV/Document backends may host multiple families; contracts remain distinct.
+
+**SX-F03 (mandatory split):** persistence contract ≠ semantic decision state model.
+
+**SX-F13 (mandatory split):** `ScheduledResumePersistence` is not defined in `persistence_contract.py`; `SchedulerLedger` is.
 
 ---
 
@@ -294,7 +298,7 @@ many previously qualified state mechanisms
 STATE-X canonical inventory
     ├── state family (SX-F01..15)
     ├── exactly-one semantic owner
-    ├── canonical contract
+    ├── contract_references (symbol ↔ path)
     ├── physical provider(s)
     ├── writers/readers
     ├── concurrency semantics

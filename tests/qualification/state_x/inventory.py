@@ -72,13 +72,22 @@ class BlockerClassification(StrEnum):
 
 
 @dataclass(frozen=True, slots=True)
+class ContractReference:
+    symbol: str
+    path: str
+
+
+def _cref(symbol: str, path: str) -> ContractReference:
+    return ContractReference(symbol=symbol, path=path)
+
+
+@dataclass(frozen=True, slots=True)
 class StateFamilyInventoryEntry:
     family_id: str
     semantic_name: str
     semantic_owner: str
     semantic_ownership_role: SemanticOwnershipRole
-    canonical_contract: str | None
-    contract_path: str | None
+    contract_references: tuple[ContractReference, ...]
     composition_owner: str
     production_paths: tuple[str, ...]
     implementation_symbols: tuple[str, ...]
@@ -176,8 +185,12 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Task / Runtime Checkpoint State",
         "Long-running checkpoint subsystem (TaskCheckpoint + RuntimeCheckpoint semantics)",
         SemanticOwnershipRole.CANONICAL_OWNER,
-        "TaskCheckpointPersistence",
-        "intergrax/runtime/long_running/persistence_contract.py",
+        (
+            _cref(
+                "TaskCheckpointPersistence",
+                "intergrax/runtime/long_running/persistence_contract.py",
+            ),
+        ),
         "Host/Nexus composition wires store; semantic owner remains long-running checkpoint",
         ("intergrax/runtime/long_running/store.py",),
         ("SQLiteTaskCheckpointStore",),
@@ -209,8 +222,16 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Runtime Execution Tree Snapshot",
         "Long-running checkpoint subsystem (component of RuntimeCheckpoint)",
         SemanticOwnershipRole.COMPONENT_OWNER,
-        "RuntimeCheckpoint.execution_tree / ExecutionTreeSnapshot",
-        "intergrax/runtime/long_running/execution_tree_checkpoint.py",
+        (
+            _cref(
+                "RuntimeCheckpoint",
+                "intergrax/runtime/long_running/runtime_checkpoint.py",
+            ),
+            _cref(
+                "ExecutionTreeSnapshot",
+                "intergrax/runtime/long_running/execution_tree_checkpoint.py",
+            ),
+        ),
         "Embedded in TaskCheckpointPersistence payloads; not independent Nexus tree truth",
         ("intergrax/runtime/long_running/store.py",),
         ("ExecutionTreeSnapshot",),
@@ -237,8 +258,16 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Decision Durable Checkpoint State",
         "Decision orchestration / decision recovery plane",
         SemanticOwnershipRole.CANONICAL_OWNER,
-        "DecisionCheckpointPersistence / DecisionCheckpointState",
-        "intergrax/runtime/execution/decision_checkpoint_persistence.py",
+        (
+            _cref(
+                "DecisionCheckpointPersistence",
+                "intergrax/runtime/execution/decision_checkpoint_persistence.py",
+            ),
+            _cref(
+                "DecisionCheckpointState",
+                "intergrax/contracts/decision_checkpoint.py",
+            ),
+        ),
         "Execution host composition (Nexus/decision runtime bindings)",
         (
             "intergrax/runtime/execution/sqlite_decision_checkpoint_persistence.py",
@@ -271,8 +300,7 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Attempt Lifecycle State",
         "AttemptLifecycleService",
         SemanticOwnershipRole.CANONICAL_OWNER,
-        "AttemptLifecycleStore",
-        "intergrax/contracts/attempt_lifecycle.py",
+        (_cref("AttemptLifecycleStore", "intergrax/contracts/attempt_lifecycle.py"),),
         "NexusLoop / queue workers / background execution composition",
         (
             "intergrax/runtime/execution/attempt_lifecycle/persistence.py",
@@ -307,8 +335,10 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Execution Terminal State",
         "Execution terminal semantic plane (ExecutionTerminalService owner)",
         SemanticOwnershipRole.CANONICAL_OWNER,
-        "ExecutionTerminalStore / ExecutionTerminalRecord",
-        "intergrax/contracts/execution_terminal.py",
+        (
+            _cref("ExecutionTerminalStore", "intergrax/contracts/execution_terminal.py"),
+            _cref("ExecutionTerminalRecord", "intergrax/contracts/execution_terminal.py"),
+        ),
         "wire_execution_terminal_store composition; not TaskCheckpointPersistence semantics",
         ("intergrax/runtime/execution/execution_terminal/persistence.py",),
         (
@@ -340,8 +370,12 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Execution Lineage Durable State",
         "Execution lineage subsystem",
         SemanticOwnershipRole.CANONICAL_OWNER,
-        "ExecutionLineagePersistence",
-        "intergrax/contracts/execution_lineage.py",
+        (
+            _cref(
+                "ExecutionLineagePersistence",
+                "intergrax/contracts/execution_lineage.py",
+            ),
+        ),
         "Active lineage binding + host persistence wiring",
         (
             "intergrax/runtime/execution/lineage/persistence.py",
@@ -374,8 +408,12 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Runtime Event / Evidence Persistence",
         "Runtime events / evidence plane",
         SemanticOwnershipRole.CANONICAL_OWNER,
-        "RuntimeEventPersistence",
-        "intergrax/runtime/events/persistence_contract.py",
+        (
+            _cref(
+                "RuntimeEventPersistence",
+                "intergrax/runtime/events/persistence_contract.py",
+            ),
+        ),
         "Observability composition; not recovery command source",
         (
             "intergrax/runtime/events/stores/sqlite_runtime_event_store.py",
@@ -412,8 +450,10 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Run Trace / Read Projection",
         "Nexus tracing read plane",
         SemanticOwnershipRole.NO_TRUTH_OWNERSHIP,
-        "RunTraceStore / RunTraceReader",
-        "intergrax/contracts/run_trace_store.py",
+        (
+            _cref("RunTraceStore", "intergrax/contracts/run_trace_store.py"),
+            _cref("RunTraceReader", "intergrax/contracts/run_trace_store.py"),
+        ),
         "open_run_trace_store composition; debug/task event readers",
         (
             "intergrax/runtime/nexus/tracing/sqlite_run_trace_store.py",
@@ -443,8 +483,16 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Execution Budget Durable State",
         "Execution budget / cost plane",
         SemanticOwnershipRole.CANONICAL_OWNER,
-        "RunBudgetPersistence / ExecutionBudgetLedger",
-        "intergrax/runtime/execution/budget/persistence.py",
+        (
+            _cref(
+                "RunBudgetPersistence",
+                "intergrax/runtime/execution/budget/persistence.py",
+            ),
+            _cref(
+                "ExecutionBudgetLedger",
+                "intergrax/runtime/execution/budget/ledger.py",
+            ),
+        ),
         "DurableRunBudgetLedgerFactory + host budget wiring",
         ("intergrax/runtime/execution/budget/persistence.py",),
         (
@@ -475,8 +523,7 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Idempotency State",
         "Side-effect deduplication plane",
         SemanticOwnershipRole.CANONICAL_OWNER,
-        "IdempotencyStore",
-        "intergrax/contracts/idempotency_store.py",
+        (_cref("IdempotencyStore", "intergrax/contracts/idempotency_store.py"),),
         "Host/Nexus composition separate from checkpoint store",
         (
             "intergrax/runtime/tools/in_memory_idempotency_store.py",
@@ -511,8 +558,12 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Compensation Queue State",
         "Compensation queue semantic owner",
         SemanticOwnershipRole.CANONICAL_OWNER,
-        "CompensationQueueStore",
-        "intergrax/agents/persistence/compensation_queue_store.py",
+        (
+            _cref(
+                "CompensationQueueStore",
+                "intergrax/agents/persistence/compensation_queue_store.py",
+            ),
+        ),
         "Host composition (separate from Nexus checkpoint_store)",
         ("intergrax/agents/persistence/compensation_queue_store.py",),
         (
@@ -542,8 +593,12 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Human Decision / HITL Persistence",
         "Human decision persistence plane",
         SemanticOwnershipRole.CANONICAL_OWNER,
-        "HumanDecisionPersistence",
-        "intergrax/runtime/human/persistence_contract.py",
+        (
+            _cref(
+                "HumanDecisionPersistence",
+                "intergrax/runtime/human/persistence_contract.py",
+            ),
+        ),
         "Human governance composition",
         (
             "intergrax/runtime/human/store.py",
@@ -576,8 +631,16 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Scheduler Durable State",
         "Long-running scheduler (WHEN to resume)",
         SemanticOwnershipRole.CANONICAL_OWNER,
-        "ScheduledResumePersistence / SchedulerLedger",
-        "intergrax/runtime/long_running/persistence_contract.py",
+        (
+            _cref(
+                "ScheduledResumePersistence",
+                "intergrax/runtime/long_running/scheduled_resume.py",
+            ),
+            _cref(
+                "SchedulerLedger",
+                "intergrax/runtime/long_running/persistence_contract.py",
+            ),
+        ),
         "Colocated in TaskCheckpointPersistence implementations; semantic scheduler owner",
         ("intergrax/runtime/long_running/store.py",),
         ("SQLiteTaskCheckpointStore",),
@@ -604,8 +667,12 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Agent Checkpoint State (ACP)",
         "Agent persistence / ACP step checkpoint plane",
         SemanticOwnershipRole.CANONICAL_OWNER,
-        "AgentCheckpointStore",
-        "intergrax/agents/persistence/checkpoint_store.py",
+        (
+            _cref(
+                "AgentCheckpointStore",
+                "intergrax/agents/persistence/checkpoint_store.py",
+            ),
+        ),
         "Host resolve_host_agent_checkpoint_store; NexusLoop.agent_checkpoint_store surface",
         ("intergrax/agents/persistence/checkpoint_store.py",),
         (
@@ -635,8 +702,7 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "Execution / Compensation / Side-Effect Recovery State",
         "Cross-family recovery coordination (underlying families retain semantic ownership)",
         SemanticOwnershipRole.NO_TRUTH_OWNERSHIP,
-        None,
-        None,
+        (),
         "Nexus/host composition coordinates; each family retains semantic owner",
         ("intergrax/runtime/execution/decision_recovery.py",),
         (
