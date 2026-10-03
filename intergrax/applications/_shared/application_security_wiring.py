@@ -45,6 +45,10 @@ from intergrax.runtime.security.defense_plugin import (
     PluginSecurityDefenseMiddleware,
     SecurityFailMode,
 )
+from intergrax.runtime.security.tenant_scope import (
+    normalize_tenant_scope_id,
+    tenant_scope_is_valid,
+)
 from intergrax.runtime.security.defense_registry import resolve_security_defense_plugins
 from intergrax.runtime.security.encryption_middleware import EncryptionEnforcementMiddleware
 from intergrax.runtime.security.json_security_projection import json_object_to_string_argument_map
@@ -161,23 +165,30 @@ class TenantSecurityMiddleware(RuntimeMiddleware):
     async def before(self, point: HookPoint, ctx: HostOrchestrationMiddlewareHookContext) -> HookResult:
         if point != HookPoint.BEFORE_TASK_INTAKE:
             return HookResult()
-        tenant_id = ctx.subject.tenant_id
-        if tenant_id is None:
+        request_tenant_id = normalize_tenant_scope_id(ctx.subject.tenant_id)
+        if request_tenant_id is None:
             return HookResult(
                 action=HookAction.BLOCK,
                 reason="Missing tenant_id on task intake",
             )
-        resource_tenant_id = ctx.subject.resource_tenant_id or tenant_id
+        scope_ok = tenant_scope_is_valid(
+            ctx.subject.tenant_id,
+            ctx.subject.resource_tenant_id,
+            allow_unscoped=False,
+        )
+        resource_tenant_id = (
+            normalize_tenant_scope_id(ctx.subject.resource_tenant_id) or request_tenant_id
+        )
         actor_id = ctx.subject.user_id or "unknown"
         check = TenantIsolationCheck(
-            request_tenant_id=tenant_id,
+            request_tenant_id=request_tenant_id,
             resource_tenant_id=resource_tenant_id,
-            passed=tenant_id == resource_tenant_id,
-            reason="" if tenant_id == resource_tenant_id else "tenant mismatch",
+            passed=scope_ok,
+            reason="" if scope_ok else "tenant mismatch",
         )
         audit_event = SecurityAuditEvent(
             event_id=f"{ctx.run_id}:intake",
-            tenant_id=tenant_id,
+            tenant_id=request_tenant_id,
             actor_id=actor_id,
             action="task_intake",
             occurred_at=datetime.now(UTC),

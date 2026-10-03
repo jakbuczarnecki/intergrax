@@ -56,14 +56,14 @@ def llm_hook_context_for_test(
 
 def tenant_intake_hook_context_for_test(
     *,
-    tenant_id: str,
+    tenant_id: str | None,
     resource_tenant_id: str | None = None,
     user_id: str | None = None,
     **kwargs: object,
 ) -> HookContext:
     runtime_state = {
         "tenant_id": tenant_id,
-        "resource_tenant_id": resource_tenant_id or tenant_id,
+        "resource_tenant_id": resource_tenant_id,
         "user_id": user_id or "user-1",
     }
     return HookContext(
@@ -73,7 +73,7 @@ def tenant_intake_hook_context_for_test(
         phase=kwargs.get("phase") or ExecutionPhase.INTAKE,
         subject=MiddlewareExecutionSubjectFacet(
             tenant_id=tenant_id,
-            resource_tenant_id=resource_tenant_id or tenant_id,
+            resource_tenant_id=resource_tenant_id,
             user_id=user_id or "user-1",
         ),
         runtime_state=runtime_state,

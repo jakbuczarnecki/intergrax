@@ -65,6 +65,8 @@ _R1_SEC = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_security_com
 _R1_EVAL = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r1_evaluation_plane.py"
 _R2_MW = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_middleware_composition.py"
 _R3_MW = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r3_typed_middleware_contracts.py"
+_R3_R2 = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r3_r2_tenant_scope_fail_closed.py"
+_TENANT_SCOPE = "tests/unit/runtime/security/test_tenant_scope.py"
 _R2_EVAL = "tests/qualification/control_planes/ctrl_x/test_ctrl_x_r2_evaluation_plane.py"
 _EVAL_WIRING = "tests/unit/applications/test_harness_evaluation_wiring.py"
 _ONLINE_REG = "tests/unit/runtime/architecture/test_online_evaluation_registry.py"
@@ -88,6 +90,10 @@ CTRL_X_PLANE_CATALOG: tuple[CtrlXPlaneEvidence, ...] = (
             _nid(_R2_MW, "test_r2_mw_05_fail_open_rejected_before_attach"),
             _nid(_R3_MW, "test_r3_t08_encryption_middleware_boundary_is_typed"),
             _nid(_R3_MW, "test_r3_cross_layer_middleware_no_runtime_state_semantic_reads"),
+            _nid(_TENANT_SCOPE, "test_tenant_scope_adversarial_matrix"),
+            _nid(_R3_R2, "test_r3_r2_defense_plugin_tenant_fail_closed_before_inspect"),
+            _nid(_R3_R2, "test_r3_r2_defense_plugin_emits_block_on_missing_request_tenant"),
+            _nid(_R3_R2, "test_r3_r2_task_intake_blank_or_missing_tenant_blocked"),
         ),
         ("AW-7C-P0-3B scoped substrate evidence", "PLUG-03 security plugin adoption"),
     ),

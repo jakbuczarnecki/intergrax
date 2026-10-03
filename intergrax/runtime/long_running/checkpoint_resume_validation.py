@@ -336,6 +336,8 @@ def _authority_does_not_exceed_current(
 def _parse_checkpoint_historical_authority(
     checkpoint: TaskCheckpoint,
 ) -> CheckpointResumeValidationResult | ParentExecutionAuthority:
+    if not checkpoint.task_snapshot:
+        return ParentExecutionAuthority.unknown()
     try:
         snapshot_task = Task.model_validate(checkpoint.task_snapshot)
     except ValidationError as exc:
@@ -435,14 +437,19 @@ def validate_checkpoint_authority_expansion(
     checkpoint: TaskCheckpoint,
     proposed_authority: ParentExecutionAuthority,
 ) -> CheckpointResumeValidationResult:
-    try:
-        snapshot_task = Task.model_validate(checkpoint.task_snapshot)
-    except ValidationError as exc:
-        return CheckpointResumeValidationResult(
-            eligibility=CheckpointResumeEligibility.REJECT_MALFORMED,
-            reason=str(exc),
+    if not checkpoint.task_snapshot:
+        checkpoint_authority = ParentExecutionAuthority.unknown()
+    else:
+        try:
+            snapshot_task = Task.model_validate(checkpoint.task_snapshot)
+        except ValidationError as exc:
+            return CheckpointResumeValidationResult(
+                eligibility=CheckpointResumeEligibility.REJECT_MALFORMED,
+                reason=str(exc),
+            )
+        checkpoint_authority = (
+            snapshot_task.execution_authority or ParentExecutionAuthority.unknown()
         )
-    checkpoint_authority = snapshot_task.execution_authority or ParentExecutionAuthority.unknown()
     if not _authority_does_not_exceed_current(checkpoint_authority, proposed_authority):
         return CheckpointResumeValidationResult(
             eligibility=CheckpointResumeEligibility.REJECT_AUTHORITY,

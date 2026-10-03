@@ -19,6 +19,7 @@ from intergrax.runtime.hooks.hook_context import HookAction, HookResult
 from intergrax.runtime.hooks.hook_point import HookPoint
 from intergrax.runtime.middleware.base import RuntimeMiddleware
 from intergrax.runtime.security.security_events import emit_defense_blocked
+from intergrax.runtime.security.tenant_scope import tenant_scope_is_valid
 
 
 DEFAULT_DEFENSE_INSPECTION_TIMEOUT_MS = 100
@@ -94,7 +95,11 @@ class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
                 reason=reason,
             )
             return HookResult(action=HookAction.BLOCK, reason=reason)
-        if self._enforce_tenant_scope and not _tenant_scope_valid(ctx):
+        if self._enforce_tenant_scope and not tenant_scope_is_valid(
+            ctx.subject.tenant_id,
+            ctx.subject.resource_tenant_id,
+            allow_unscoped=True,
+        ):
             reason = "defense plugin blocked: tenant scope mismatch"
             await emit_defense_blocked(
                 self._event_bus,
@@ -140,11 +145,3 @@ class PluginSecurityDefenseMiddleware(RuntimeMiddleware):
         ctx: HostOrchestrationMiddlewareHookContext,
     ) -> HookResult:
         return HookResult()
-
-
-def _tenant_scope_valid(ctx: HostOrchestrationMiddlewareHookContext) -> bool:
-    tenant_id = ctx.subject.tenant_id
-    if not tenant_id:
-        return True
-    resource_tenant = ctx.subject.resource_tenant_id or tenant_id
-    return tenant_id == resource_tenant
