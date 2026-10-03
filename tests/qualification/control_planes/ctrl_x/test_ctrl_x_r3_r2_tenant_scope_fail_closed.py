@@ -206,8 +206,8 @@ async def test_r3_r2_defense_plugin_tenant_fail_closed_before_inspect() -> None:
 
 @pytest.mark.asyncio
 async def test_r3_r2_defense_plugin_emits_block_on_missing_request_tenant() -> None:
-    from intergrax.contracts.execution_identity import canonical_execution_identity_scope
-    from intergrax.runtime.events.spine_consolidation import KIND_DEFENSE_BLOCKED
+    from testing_support.builder import canonical_execution_identity_scope
+    from intergrax.runtime.security.security_events import KIND_DEFENSE_BLOCKED
 
     bus = RuntimeEventBus()
     from intergrax.runtime.security.security_observability import wire_security_spine_subscriber
@@ -224,14 +224,25 @@ async def test_r3_r2_defense_plugin_emits_block_on_missing_request_tenant() -> N
         def inspect(self, point: HookPoint, ctx: HookContext) -> SecurityInspectionResult:
             return SecurityInspectionResult(allowed=True, plugin_id=self.plugin_id)
 
+    from tests.support.middleware_hook_test_context import tool_hook_context_for_test
+
+    run_id = "run_dddddddddddddddddddddddddddddddd"
     middleware = PluginSecurityDefenseMiddleware(_AllowPlugin(), event_bus=bus)
-    ctx = HookContext(
-        task_id="t",
-        run_id="r",
-        subject=MiddlewareExecutionSubjectFacet(tenant_id=None, resource_tenant_id="tenant-b"),
-        payload=ToolCallHookPayload(tool_id="echo"),
-    )
-    with canonical_execution_identity_scope("r"):
+    with canonical_execution_identity_scope(run_id):
+        ctx = tool_hook_context_for_test(
+            tool_id="echo",
+            agent_id="agent-1",
+            run_id=run_id,
+            task_id="task_eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+        )
+        ctx = ctx.model_copy(
+            update={
+                "subject": MiddlewareExecutionSubjectFacet(
+                    tenant_id=None,
+                    resource_tenant_id="tenant-b",
+                ),
+            },
+        )
         result = await middleware.before(HookPoint.BEFORE_TOOL_CALL, ctx)
     assert result.action == HookAction.BLOCK
     kinds = [event.event_kind for event in bus.history]

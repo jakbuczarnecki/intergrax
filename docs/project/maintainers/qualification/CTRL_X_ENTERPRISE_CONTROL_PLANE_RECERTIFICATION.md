@@ -1,6 +1,6 @@
 # CTRL-X — Enterprise Control-Plane Recertification
 
-**Parent recommendation:** `CTRL-X = READY FOR AUDIT`  
+**Parent recommendation:** `CTRL-X = READY FOR AUDIT` (pending independent GitHub SHA audit)
 **Never:** `CTRL-X = CLOSED` (independent audit only)  
 **STATE-X:** NEXT / NOT ENTERED  
 **TENANT-X:** NOT ENTERED — no global `FRZ-TEN-*` promotion  
@@ -17,11 +17,11 @@ Mechanical SSOT: `tests/qualification/control_planes/ctrl_x/catalog.py` (`CTRL_X
 | Field | Value |
 |---|---|
 | branch | `development` |
-| START_HEAD | `3e574ea35ee2e3f9e9adac4088cd51ae89ed469c` |
-| AUDITED_HEAD (pre-commit baseline) | `3e574ea35ee2e3f9e9adac4088cd51ae89ed469c` |
-| origin/development | `3e574ea35ee2e3f9e9adac4088cd51ae89ed469c` |
-| git status at start | clean |
-| last commit | `3e574ea35 docs(freeze): close GOV-X2 after independent audit` |
+| START_HEAD (R3-R2) | `ebd5ac5653ee054d28cc32ed0302eb361a4ef56a` |
+| R3 implementation | `98a586540` — typed CTRL-X hook contracts |
+| R3-R1 remediation | `ebd5ac5653ee054d28cc32ed0302eb361a4ef56a` |
+| R3-R2 remediation | see §44 `FINAL_COMMIT` |
+| origin/development | aligned with R3-R2 `FINAL_COMMIT` after push |
 
 Post-change `FINAL_COMMIT` recorded in §44 after commit.
 
@@ -447,6 +447,30 @@ HostOrchestrationMiddlewareHookContext.runtime_state: Mapping[str, object]
 
 ---
 
+---
+
+## CTRL-X-R3-R2 — Tenant scope fail-closed (Security middleware)
+
+| Item | Value |
+|---|---|
+| Parent | CTRL-X-R3 |
+| Blocker closed | missing/blank request tenant + tenant-bound resource no longer ALLOW |
+| Canonical helper | `intergrax/runtime/security/tenant_scope.py` (`normalize_tenant_scope_id`, `tenant_scope_is_valid`) |
+| Plugin defense | `allow_unscoped=True` (None/None only when both absent after normalize) |
+| Task intake | `TenantSecurityMiddleware` uses `allow_unscoped=False` |
+| Proof replay | `requested=44` `unique=44` `executed=44` `passed=44` `failed=0` |
+| CTRL-X suite | `76` tests, exit 0 |
+
+| Item | Status |
+|---|---|
+| CTRL-X-R3-R2 | **READY FOR AUDIT** |
+| CTRL-X-R3-R1 | **READY FOR AUDIT** |
+| CTRL-X-R3 | **READY FOR AUDIT** |
+| CTRL-X | **READY FOR AUDIT** (not CLOSED — independent audit required) |
+| STATE-X | **NEXT / NOT ENTERED** |
+
+---
+
 ## CTRL-X-R3-R1 — Tool payload fidelity & qualification closure
 
 | Item | Value |
@@ -460,9 +484,11 @@ HostOrchestrationMiddlewareHookContext.runtime_state: Mapping[str, object]
 | R3-T10 | Direct FAIL_OPEN composition rejection (no test-function-as-proof) |
 | R1-TOOL-01..08 | `test_ctrl_x_r3_typed_middleware_contracts.py` |
 
-**Exact proof replay (current HEAD):** `requested=40` `unique=40` `executed=40` `passed=40` `failed=0` `errors=0` `missing=0` `skipped=0`.
+**Exact proof replay (pre-R3-R2 baseline):** `requested=40` … `passed=40` (superseded by R3-R2 catalog nodes).
 
-**CTRL-X suite:** `uv run pytest -p no:xdist tests/qualification/control_planes/ctrl_x -q` → exit 0 (70 tests).
+**Exact proof replay (current HEAD after R3-R2):** `requested=44` `unique=44` `executed=44` `passed=44` `failed=0` `errors=0` `missing=0` `skipped=0`.
+
+**CTRL-X suite:** `uv run pytest -p no:xdist tests/qualification/control_planes/ctrl_x -q` → exit 0 (76 tests).
 
 | Item | Status |
 |---|---|
@@ -478,10 +504,11 @@ HostOrchestrationMiddlewareHookContext.runtime_state: Mapping[str, object]
 
 | Item | Status |
 |---|---|
+| CTRL-X-R3-R2 | **READY FOR AUDIT** |
 | CTRL-X-R3-R1 | **READY FOR AUDIT** |
 | CTRL-X-R3 | **READY FOR AUDIT** |
 | CTRL-X parent | **READY FOR AUDIT** (not CLOSED — independent GitHub SHA audit required) |
-| CX-01..CX-12 | PASS (mechanical, current-head proof replay) |
+| CX-01..CX-12 | PASS (mechanical, current-head proof replay — 44 nodes) |
 | STATE-X | NOT ENTERED |
 | FRZ-CTL-* promotion | Independent audit only |
 
@@ -495,12 +522,16 @@ See `CTRL_X_PLANE_CATALOG` fields: semantic_owner, canonical_contract_boundary, 
 
 ## Changed files (§44)
 
-Recorded after commit — see git show. Expected:
-
-| Kind | Files |
+| Commit role | SHA |
 |---|---|
-| production | `intergrax/runtime/security/security_events.py` (event bus port typing) |
-| tests | `tests/qualification/control_planes/ctrl_x/*` |
+| R3 implementation | `98a586540` — typed CTRL-X hook contracts |
+| R3-R1 remediation | `ebd5ac5653ee054d28cc32ed0302eb361a4ef56a` |
+| R3-R2 remediation (`FINAL_COMMIT`) | recorded at push — `fix(security): fail closed on incomplete tenant scope` |
+
+| Kind | Paths |
+|---|---|
+| production | `intergrax/runtime/security/tenant_scope.py` (new); `intergrax/runtime/security/defense_plugin.py`; `intergrax/applications/_shared/application_security_wiring.py` |
+| tests | `tests/unit/runtime/security/test_tenant_scope.py`; `tests/qualification/control_planes/ctrl_x/test_ctrl_x_r3_r2_tenant_scope_fail_closed.py`; `tests/support/middleware_hook_test_context.py`; `tests/qualification/control_planes/ctrl_x/catalog.py` |
 | qualification docs | `docs/project/maintainers/qualification/CTRL_X_ENTERPRISE_CONTROL_PLANE_RECERTIFICATION.md` |
 
 ---
