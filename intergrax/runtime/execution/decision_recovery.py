@@ -254,7 +254,12 @@ def persist_terminal_decision_state(
         finalization=commit_result.guard_state,
         revision=restored.revision,
     )
-    save_decision_checkpoint(checkpoint_persistence, checkpoint=terminal_checkpoint)
+    expected_revision = checkpoint_persistence.materialized_revision(key=key)
+    save_decision_checkpoint(
+        checkpoint_persistence,
+        checkpoint=terminal_checkpoint,
+        expected_revision=expected_revision,
+    )
     return terminal_checkpoint
 
 

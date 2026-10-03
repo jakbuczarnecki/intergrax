@@ -34,6 +34,14 @@ class DecisionCheckpointPersistence(Protocol[T]):
     ) -> DecisionCheckpointState[T] | None:
         """Return a validated checkpoint or ``None`` when absent."""
 
+    def materialized_revision(
+        self,
+        *,
+        key: DecisionFinalizationKey,
+    ) -> int:
+        """Return snapshot revision CAS metadata for ``key`` (0 when no snapshot exists)."""
+        ...
+
     def save(
         self,
         *,

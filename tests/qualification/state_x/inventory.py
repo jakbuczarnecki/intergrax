@@ -752,3 +752,16 @@ STATE_X_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/qualification/state_x/test_state_x_p0_baseline.py",
     },
 )
+
+STATE_X_R2_PRE_AUDIT_HEAD: Final[str] = "272f0af9c0c348febb22b3aaef5769989d454e5b"
+
+STATE_X_R2_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "intergrax/runtime/execution/decision_checkpoint_persistence.py",
+        "intergrax/runtime/execution/decision_recovery.py",
+        "docs/project/maintainers/qualification/STATE_X_R2_DECISION_ATTEMPT_LINEAGE_CONCURRENCY_REPLAY_CLOSURE.md",
+        "tests/qualification/state_x/test_state_x_r2_decision_attempt_lineage.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+    },
+)
