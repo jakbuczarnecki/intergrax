@@ -1,12 +1,11 @@
 # CTRL-X — Enterprise Control-Plane Recertification
 
-**Parent recommendation:** `CTRL-X = READY FOR AUDIT` (pending independent GitHub SHA audit)
-**Never:** `CTRL-X = CLOSED` (independent audit only)  
-**STATE-X:** NEXT / NOT ENTERED  
-**TENANT-X:** NOT ENTERED — no global `FRZ-TEN-*` promotion  
+**Parent recommendation (current):** `CTRL-X = CLOSED` @ independent audit exact SHA `318a4d835534ef5c48575f4649551c957dacd8ea`
+**STATE-X:** CURRENT / NOT ENTERED (discovery/implementation/qualification not entered)
+**TENANT-X:** NOT ENTERED — no global `FRZ-TEN-*` promotion
 
-**Roadmap:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) — GOV-X2 = CLOSED; CTRL-X = CURRENT (this artifact enters qualification evidence)  
-**Freeze checklist:** [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) — `FRZ-CTL-01..12` remain OPEN until independent audit  
+**Roadmap:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) — CTRL-X = CLOSED; STATE-X = CURRENT / MANDATORY (not entered)
+**Freeze checklist:** [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md) — `FRZ-CTL-01..12` = PASS (independent audit @ `318a4d835534ef5c48575f4649551c957dacd8ea`)
 
 Mechanical SSOT: `tests/qualification/control_planes/ctrl_x/catalog.py` (`CTRL_X_PLANE_CATALOG`, `CX-01..CX-12`).
 
@@ -534,18 +533,64 @@ Tenant fail-closed matrix unchanged (canonical `tenant_scope_is_valid`; plugin `
 
 ---
 
-## 27 Recommendation (current HEAD)
+## 27 Recommendation (historical snapshot — pre-independent audit)
 
 | Item | Status |
 |---|---|
-| CTRL-X-R3-R2-Q1 | **READY FOR AUDIT** |
-| CTRL-X-R3-R2 | **READY FOR AUDIT** |
-| CTRL-X-R3-R1 | **READY FOR AUDIT** |
-| CTRL-X-R3 | **READY FOR AUDIT** |
-| CTRL-X parent | **READY FOR AUDIT** (not CLOSED — independent GitHub SHA audit required) |
+| CTRL-X-R3-R2-Q1 | **READY FOR AUDIT** (historical) |
+| CTRL-X-R3-R2 | **READY FOR AUDIT** (historical) |
+| CTRL-X-R3-R1 | **READY FOR AUDIT** (historical) |
+| CTRL-X-R3 | **READY FOR AUDIT** (historical) |
+| CTRL-X parent | **READY FOR AUDIT** (historical — superseded by §28) |
 | CX-01..CX-12 | PASS (mechanical, current-head proof replay — 44 nodes) |
 | STATE-X | NOT ENTERED |
-| FRZ-CTL-* promotion | Independent audit only |
+| FRZ-CTL-* promotion | Independent audit only (historical) |
+
+**Current authoritative conclusion:** §28.
+
+---
+
+## 28 CTRL-X — Independent Acceptance / Canonical Closure
+
+**Independent audit exact SHA:** `318a4d835534ef5c48575f4649551c957dacd8ea`
+
+| Item | Status |
+|---|---|
+| CTRL-X-R3-R2-Q1 | **ACCEPTED** |
+| CTRL-X-R3-R2 | **ACCEPTED** |
+| CTRL-X-R3-R1 | **ACCEPTED** |
+| CTRL-X-R3 | **ACCEPTED** |
+| CTRL-X | **CLOSED** |
+| STATE-X | **CURRENT / NOT ENTERED** |
+
+### Final proof summary (accepted evidence on exact SHA)
+
+- CTRL-X qualification suite = **76 passed**
+- Proof replay: `declared=44` `unique=44` `requested=44` `executed=44` `passed=44` `failed=0` `errors=0` `missing=0` `skipped=0`
+- STATE-X production delta = **0**
+
+### Accepted CTRL-X invariants
+
+- CX-01..CX-12 = accepted on exact HEAD
+- Exactly-one semantic ownership retained; exactly-one sanctioned composition owner retained
+- Contracts over implementations; typed cross-layer middleware semantics
+- Cross-layer middleware `runtime_state` semantic reads = **0**
+- Pluginability / structural replaceability preserved
+- FAIL_OPEN production defense plugin admission = **0**; tenant scope fail-closed
+- No downstream authority widening; Governance ≠ Execution; proposal ≠ permission ≠ execution
+- Observability/Diagnostics do not create execution truth; evidence continuity preserved
+
+### Debt remaining explicit (not resolved here)
+
+| Debt | Owner |
+|---|---|
+| 15 stale Security qualification tests | **QUAL-X** |
+| OnlineEvaluationObservation tenant surface | **TENANT-X** |
+| Global tenant isolation | **TENANT-X** |
+| Checkpoint/resume/state/recovery semantics (incl. GOV-X2 Q2-D1; CTRL-X-R3-R2 `task_snapshot` question) | **STATE-X** |
+| Wide/global typing debt outside CTRL-X boundary | **EBH-6** / applicable **FRZ-TYP** |
+
+**Closure-maintenance docs commit** after `318a4d835534ef5c48575f4649551c957dacd8ea` is bookkeeping for canonical SSOT only; it does **not** replace the accepted code/evidence baseline above.
 
 ---
 
