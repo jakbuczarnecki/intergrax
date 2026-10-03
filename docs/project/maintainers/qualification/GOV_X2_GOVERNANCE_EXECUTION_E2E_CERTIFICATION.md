@@ -4,21 +4,24 @@
 **Role:** qualification evidence (not architecture SSOT)  
 **Architecture SSOT:** [`GOVERNED_EXECUTION.md`](../../architecture/GOVERNED_EXECUTION.md) · [`DECISION_APPROVAL_GOVERNANCE.md`](../../architecture/DECISION_APPROVAL_GOVERNANCE.md)  
 **Parent (closed):** [`GOV_X1_GOVERNANCE_AUTHORITY_BOUNDARY_RECERTIFICATION.md`](GOV_X1_GOVERNANCE_AUTHORITY_BOUNDARY_RECERTIFICATION.md) @ `27af801bec916165dab85019c07cf43d18e18551`  
-**Roadmap:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) — GOV-X2 = CURRENT  
+**Status:** **CLOSED / independently accepted**
+**Roadmap:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md) — GOV-X2 = CLOSED; **CTRL-X** = CURRENT / NOT ENTERED
 **Freeze companion:** [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md)
 
-## 1. START_HEAD
+## 1. START_HEAD and accepted baselines
 
 | Field | Value |
 | ----- | ----- |
 | Branch | `development` |
-| START_HEAD | `ccf1449144d256ffbe92ddba2450b38ff6dfae99` |
-| `origin/development` | `ccf1449144d256ffbe92ddba2450b38ff6dfae99` |
+| Original GOV-X2 START_HEAD | `ccf1449144d256ffbe92ddba2450b38ff6dfae99` |
+| Final accepted production/code baseline | `b233c61b123464726124dc02daaee21f55d3b856` |
+| Final qualification/provenance evidence | `e2d7a40b291c658677cc6d981183e20957c7cf0e` |
+| Independent audit result | **ACCEPTED / CLOSED** |
 | Qualification batch | `tests/qualification/governance/` + `tests/qualification/governance/gov_x2/` |
 | GX2 matrix SSOT | `tests/qualification/governance/gov_x2/catalog.py` |
 | E2E scenario SSOT | `tests/qualification/governance/catalog.py` (`GOV_FINAL_4_SCENARIO_CATALOG`) |
 
-**Initial status (Cursor):** `GOV-X2-Q2` — parent **READY FOR AUDIT** after Q2 Nexus pyright provenance classification (not `CLOSED`).
+**Historical (Cursor pre-audit):** `GOV-X2-Q2` — parent **READY FOR AUDIT** after Q2 Nexus pyright provenance classification.
 
 ## 2. Scope
 
@@ -325,7 +328,7 @@ Logs: `.tmp/session/gov-x2-q2/pyright-baseline-8b4734c2-main-venv-cwd-worktree.l
 | ID | Baseline? | Current? | Changed by R3? | Semantic owner | GX2 impact | Tenant impact | Classification |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Q2-D1 | YES | YES | NO | **STATE-X** — execution terminal / checkpoint capability composition typing | NO IMPACT (static; runtime `isinstance` guard) | NO IMPACT | **PRE-EXISTING / NON-BLOCKING TO GOV-X2** |
-| Q2-D2 | YES | YES | NO | **COMPAT-X** — `AuthoritativeDecisionExposure` / `TaskResult` projection typing seam | NO IMPACT (annotation-only; resolver contract typed) | NO IMPACT | **PRE-EXISTING / NON-BLOCKING TO GOV-X2** |
+| Q2-D2 | YES | YES | NO | **FRZ-TYP-01** / **FRZ-TYP-03** — strong-typing / contract-purity debt (`object \| None` vs `AuthoritativeDecisionExposure[object] \| None`); final current-HEAD architectural closer **EBH-6** | NO IMPACT (annotation-only; resolver contract typed) | NO IMPACT | **PRE-EXISTING / NON-BLOCKING TO GOV-X2** |
 
 **GX2-01..GX2-20:** **NO IMPACT — WITH EVIDENCE** for both (pyright does not execute Governance/Execution admission, permission, or tenant propagation).
 
@@ -388,9 +391,9 @@ uv run python tests/qualification/governance/gov_x2/proof_replay.py
 
 Logs: `.tmp/session/gov-x2-r2/pytest-governance-full.log`, `.tmp/session/gov-x2-r2/exact-proof-replay.log`
 
-## 19. FRZ evidence (no PASS promotion)
+## 19. FRZ evidence
 
-Evidence contribution only — checklist rows remain OPEN until independent exact-SHA audit.
+Independent exact-SHA audit accepted parent closure: **FRZ-GOV-01..10** and **FRZ-EXE-01..07** promoted to **PASS** with GOV-X2 primary evidence. **FRZ-TRC-***, **FRZ-TEN-***, **FRZ-TYP-*** remain **OPEN** (scoped contribution / tracked debt only; **new PASS outside FRZ-GOV/EXE = 0**).
 
 | FRZ | Evidence found | Files / tests |
 | --- | -------------- | ------------- |
@@ -404,23 +407,67 @@ Evidence contribution only — checklist rows remain OPEN until independent exac
 | Class | Item |
 | ----- | ---- |
 | IN-SCOPE BLOCKER | **0** (post GOV-X2-R3 + Q2 classification) |
-| TRACKED FREEZE DEBT | **2** — **outside GOV-X2 parent** (Q2-D1 @ `nexus_loop.py:400` → **STATE-X**; Q2-D2 @ `nexus_loop.py:1084` → **COMPAT-X**); identical on `8b4734c2` and `b233c61b`; not introduced by R3; GOV-X2 governance-tree pyright **CLOSED R2** |
+| TRACKED FREEZE DEBT | **2** — **outside GOV-X2 parent** (Q2-D1 @ `nexus_loop.py:400` → **STATE-X** — `TaskCheckpointPersistence \| None` → `ExecutionTerminalPersistenceCapability \| None`; Q2-D2 @ `nexus_loop.py:1084` → **FRZ-TYP-01** / **FRZ-TYP-03** / **EBH-6**); identical on `8b4734c2` and `b233c61b`; not introduced by R3; GOV-X2 governance-tree pyright **CLOSED R2** |
 | ENVIRONMENT/TEST ISSUE | None remaining on mandatory governance batch |
 
 **unclassified = 0**
 
-## 21. Recommendation
+## 21. Parent metrics (independent acceptance)
 
 ```text
-GOV-X2-Q2 = READY FOR AUDIT
-GOV-X2 = READY FOR AUDIT
-GOV-X2-R1 = ACCEPTED (independent audit @ 8b4734c2)
-GOV-X2-R2 = ACCEPTED AT REMEDIATION SCOPE (independent audit @ 8b4734c2)
-GOV-X2-R3 = ACCEPTED (independent audit @ b233c61b — post-run tenant contract)
-CTRL-X = NEXT / NOT ENTERED
+GX2-01..20 = PASS
+exact proof replay = 30/30
+governance qualification = 403 passed
+GOV-X2 batch = 9 passed
+targeted governance pyright = 0 errors
+post-run tenant contract = PASS
+local tenant audit = PASS
+alternate governance authority = 0
+alternate execution authority = 0
+in-scope blocker = 0
+environment/test issue = 0
+unclassified = 0
 ```
 
-Independent exact-SHA audit required before parent CLOSED.
+## 22. Tenant isolation audit (this maintenance)
+
+```text
+N/A — DOCS-ONLY MAINTENANCE
+runtime tenant behavior changed = NO
+new FRZ-TEN PASS = 0
+TENANT-X = NOT ENTERED
+```
+
+Accepted GOV-X2 tenant evidence preserved (§14, R3 post-run chain).
+
+## 23. Recommendation
+
+```text
+GOV-X2 closure maintenance = READY FOR AUDIT (bookkeeping commit only)
+GOV-X2 = CLOSED / independently accepted
+CTRL-X = CURRENT / NOT ENTERED
+```
+
+## Independent exact-SHA parent closure
+
+```text
+GOV-X2-R1 = ACCEPTED
+GOV-X2-R2 = ACCEPTED
+GOV-X2-R3 = ACCEPTED
+GOV-X2-Q2 = ACCEPTED
+GOV-X2 = CLOSED / independently accepted
+```
+
+Accepted evidence chain:
+
+```text
+4b3a79120caa1db6afe55a3e2fdeef4fedd9c2d4 — initial certification + R1
+8b4734c2e2fc06fee76af4959cb844f426d1dd59 — R2 typing + exact proof replay
+b233c61b123464726124dc02daaee21f55d3b856 — R3 final production code baseline
+e2d7a40b291c658677cc6d981183e20957c7cf0e — Q2 provenance / final qualification evidence
+```
+
+Closure-maintenance docs commit is bookkeeping only — it does **not** replace the production baseline or qualification evidence SHAs above.
 
 ---
 
