@@ -14,8 +14,8 @@
 
 | File | Change |
 |---|---|
-| `intergrax/runtime/execution/decision_checkpoint_persistence.py` | Protocol `materialized_revision(key)` |
-| `intergrax/runtime/execution/decision_recovery.py` | Terminal snapshot save uses CAS (`expected_revision`) |
+| `intergrax/runtime/execution/decision_checkpoint_persistence.py` | `MaterializedDecisionCheckpoint`, `load_materialized` |
+| `intergrax/runtime/execution/decision_recovery.py` | Terminal save binds CAS to read token |
 
 Attempt / lineage production semantics unchanged on current-head evidence.
 
@@ -25,7 +25,7 @@ Attempt / lineage production semantics unchanged on current-head evidence.
 
 | Case | Evidence |
 |---|---|
-| Port declares `materialized_revision` | R2-Q01 |
+| Typed materialized load envelope | R2-R1-Q01 |
 | Initial CAS `expected_revision=0` → rev 1 | R2-Q02 (memory + SQLite) |
 | Update CAS `expected_revision=1` → rev 2 | R2-Q03 |
 | Stale concurrent writer | R2-Q04 |
@@ -34,6 +34,21 @@ Attempt / lineage production semantics unchanged on current-head evidence.
 | CAS loss after finalization commit | R2-Q07 |
 | Event vs snapshot conflict types | R2-Q08 |
 | Tenant key isolation | R2-Q09 |
+
+---
+
+## R2-R1 — read-token CAS closure (corrective)
+
+| Invariant | Evidence |
+|---|---|
+| Snapshot + `snapshot_revision` loaded together (`load_materialized`) | R2-R1-Q02–Q06 |
+| Standalone decision `materialized_revision` removed | R2-R1-Q07 |
+| Stale writer rejected before finalization commit | R2-R1-Q08–Q09 |
+| Race after finalization commit → CAS fail, finalization kept | R2-R1-Q10 / R2-Q07 |
+| First-write `expected_snapshot_revision=0` | R2-R1-Q11 |
+| Token/key binding (no laundering) | R2-R1-Q12 |
+
+**Status:** READY FOR AUDIT (pending independent GitHub SHA audit)
 
 ---
 

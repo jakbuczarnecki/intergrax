@@ -290,10 +290,22 @@ def test_process_durability_crash_resume_regression(tmp_path: Path) -> None:
     )
     assert loaded is not None
     assert loaded.finalization.authoritative_outcome is not None
+    from intergrax.contracts.decision_checkpoint import restore_decision_checkpoint_state
+    from intergrax.runtime.execution.decision_checkpoint_persistence import (
+        load_materialized_decision_checkpoint,
+    )
+
+    materialized = load_materialized_decision_checkpoint(checkpoint_store, key=key)
+    assert materialized is not None
+    resumed = restore_decision_checkpoint_state(loaded)
+    envelope = restore_decision_checkpoint_state(materialized.checkpoint)
+    assert resumed.lifecycle.identity == envelope.lifecycle.identity
     terminal = persist_terminal_decision_state(
         checkpoint_persistence=checkpoint_store,
         finalization_persistence=finalization_store,
         checkpoint=loaded,
+        expected_snapshot_revision=materialized.snapshot_revision,
+        materialized_checkpoint=materialized,
     )
     assert terminal.lifecycle.stage is DecisionLifecycleStage.TERMINAL
 

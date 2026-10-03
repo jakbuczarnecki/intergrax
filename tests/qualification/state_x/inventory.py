@@ -765,3 +765,21 @@ STATE_X_R2_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/qualification/state_x/test_state_x_p0_baseline.py",
     },
 )
+
+STATE_X_R2_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "intergrax/runtime/execution/decision_checkpoint_persistence.py",
+        "intergrax/runtime/execution/in_memory_decision_checkpoint_persistence.py",
+        "intergrax/runtime/execution/sqlite_decision_checkpoint_persistence.py",
+        "intergrax/runtime/execution/decision_recovery.py",
+        "docs/project/maintainers/qualification/STATE_X_R2_DECISION_ATTEMPT_LINEAGE_CONCURRENCY_REPLAY_CLOSURE.md",
+        "tests/qualification/state_x/test_state_x_r2_decision_attempt_lineage.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+        "tests/unit/runtime/execution/test_decision_event_append_and_snapshot_cas.py",
+        "tests/unit/runtime/execution/test_decision_durable_recovery.py",
+        "tests/integration/decision_system/test_real_single_model.py",
+        "tests/integration/decision_system/test_docker_crash_resume.py",
+        "testing_support/decision_e2e/docker_worker.py",
+    },
+)

@@ -11,6 +11,7 @@ from typing import Generic, TypeVar
 from intergrax.contracts.decision_checkpoint import DecisionCheckpointState
 from intergrax.contracts.decision_finalization import DecisionFinalizationKey
 from intergrax.runtime.execution.decision_checkpoint_persistence import (
+    MaterializedDecisionCheckpoint,
     StaleDecisionCheckpointWriteError,
 )
 
@@ -27,17 +28,33 @@ class InMemoryDecisionCheckpointPersistence(Generic[T]):
         self._store: dict[DecisionFinalizationKey, DecisionCheckpointState[T]] = {}
         self._revisions: dict[DecisionFinalizationKey, int] = {}
 
-    def materialized_revision(self, *, key: DecisionFinalizationKey) -> int:
+    def load_materialized(
+        self,
+        *,
+        key: DecisionFinalizationKey,
+    ) -> MaterializedDecisionCheckpoint[T] | None:
         with self._lock:
-            return self._revisions.get(key, 0)
+            checkpoint = self._store.get(key)
+            if checkpoint is None:
+                return None
+            revision = self._revisions.get(key, 0)
+            if revision < 1:
+                return None
+            return MaterializedDecisionCheckpoint(
+                key=key,
+                checkpoint=checkpoint,
+                snapshot_revision=revision,
+            )
 
     def load(
         self,
         *,
         key: DecisionFinalizationKey,
     ) -> DecisionCheckpointState[T] | None:
-        with self._lock:
-            return self._store.get(key)
+        materialized = self.load_materialized(key=key)
+        if materialized is None:
+            return None
+        return materialized.checkpoint
 
     def save(
         self,

@@ -344,6 +344,7 @@ def test_persist_terminal_decision_state_orders_commit_before_checkpoint() -> No
         checkpoint_persistence=checkpoint_store,
         finalization_persistence=finalization_store,
         checkpoint=checkpoint,
+        expected_snapshot_revision=0,
     )
     assert is_terminal_resumable_checkpoint(terminal)
     loaded_guard = finalization_store.load_guard_state(key=decision_finalization_key(identity))
