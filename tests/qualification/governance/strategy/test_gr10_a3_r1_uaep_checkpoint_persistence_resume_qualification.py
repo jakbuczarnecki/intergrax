@@ -130,6 +130,7 @@ async def test_gr10_a3_r1_acp_session_checkpoint_save_and_resume() -> None:
         request,
         run_id=run_id,
         tenant_id=tenant_id,
+        agent_id="probe",
     )
     assert resume is None
 
@@ -161,6 +162,7 @@ async def test_gr10_a3_r1_acp_session_checkpoint_save_and_resume() -> None:
         resume_request,
         run_id=run_id,
         tenant_id=tenant_id,
+        agent_id="probe",
     )
     assert resume_state is not None
     assert resume_state.start_step_index == 1

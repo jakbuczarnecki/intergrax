@@ -67,8 +67,6 @@ def should_resume_acp_checkpoint(
     """Whether an ACP session should load the latest agent checkpoint."""
     if metadata.get(AcpMetadataKey.RESUME_FROM_CHECKPOINT) in {True, "true", "1", 1}:
         return True
-    if metadata.get("human_response") is not None:
-        return True
     if store is None:
         return False
     return store.get_latest(run_id, tenant_id) is not None

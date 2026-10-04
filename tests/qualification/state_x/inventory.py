@@ -880,6 +880,28 @@ STATE_X_R3_R4_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     },
 )
 
+STATE_X_R3_R5_PRE_AUDIT_HEAD: Final[str] = "0413a3f68f19faeee404b73986748e6fd583dec3"
+
+STATE_X_R3_R5_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "intergrax/agents/persistence/checkpoint_store.py",
+        "intergrax/agents/persistence/checkpoint_wiring.py",
+        "intergrax/agents/persistence/session_persistence.py",
+        "intergrax/contracts/checkpoint_revision.py",
+        "intergrax/agents/authoring/acp_run.py",
+        "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md",
+        "docs/project/maintainers/qualification/STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md",
+        "tests/qualification/governance/strategy/test_gr10_a3_r1_uaep_checkpoint_persistence_resume_qualification.py",
+        "tests/qualification/state_x/_r3_r5_qualification_tests.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+        "tests/qualification/state_x/_r3_r5_support.py",
+        "tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/unit/agents/persistence/test_pcm_checkpoint_cas_integrity.py",
+        "tests/unit/agents/persistence/test_checkpoint_wiring.py",
+    },
+)
+
 STATE_X_R3_R4_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     {
         "intergrax/runtime/long_running/scheduled_resume.py",

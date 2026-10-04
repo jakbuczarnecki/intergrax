@@ -12,8 +12,9 @@
 | STATE-X-R3-R2-R1 | **CLOSED** — reconciled through accepted child |
 | STATE-X-R3-R2 | **CLOSED** — reconciled |
 | STATE-X-R3-R3 | **CLOSED** — independently accepted @ `e05b5b8eb3a60e8f46b5502083440e2e863e7204` (SX-F12) |
-| STATE-X-R3-R4 | **CURRENT / BLOCKED** — SX-F13 pending independent R3-R4-R1 audit |
-| STATE-X-R3-R4-R1 | **CURRENT / REQUIRED** — provider validation parity (Cursor: READY FOR AUDIT pending independent audit) |
+| STATE-X-R3-R4-R1 | **CLOSED** — independently accepted @ `0413a3f68f19faeee404b73986748e6fd583dec3` |
+| STATE-X-R3-R4 | **CLOSED** — reconciled through accepted R3-R4-R1 (SX-F13) |
+| STATE-X-R3-R5 | **CURRENT / MANDATORY / IN EXECUTION** — SX-F14 (Cursor: READY FOR AUDIT pending independent audit) |
 | STATE-X (parent) | **CURRENT / MANDATORY** — not closed |
 
 **Evidence provenance (R3-R2 chain):**
@@ -528,4 +529,75 @@ Strengthens FRZ-STA-01/02/03/05, FRZ-REC-06/10 toward SX-F13; tenant rows as reg
 
 `tests/qualification/state_x/_r3_r4_r1_qualification_tests.py` (R1-Q01..Q20). Inventory: `STATE_X_R3_R4_R1_PRE_AUDIT_HEAD`, `STATE_X_R3_R4_R1_ALLOWLIST_PATHS`.
 
-**Status:** **READY FOR AUDIT** (Cursor) — **STATE-X-R3-R4** remains **BLOCKED PENDING INDEPENDENT R1 AUDIT**; parent not CLOSED.
+**Status:** **CLOSED** @ `0413a3f68f19faeee404b73986748e6fd583dec3` (independent audit bookkeeping).
+
+---
+
+## R3-R5 — SX-F14 Agent Checkpoint State
+
+**START_HEAD:** `0413a3f68f19faeee404b73986748e6fd583dec3`
+
+### Scope
+
+SX-F14 only — `AgentCheckpointStore`, `AgentRunCheckpoint`, ACP resume wiring, embedded `SideEffectRecord` lineage. Not global backup/restore, fork semantics, or TaskCheckpointPersistence merge.
+
+### Root causes (pre-remediation)
+
+1. Providers accepted post-construction `model_copy` mutations without canonical persistence revalidation.
+2. `agent_id` could change within the same `(run_id, tenant_id)` stream on update.
+3. `resolve_session_persistence` did not verify checkpoint `agent_id` against current effective agent.
+4. `should_resume_acp_checkpoint` treated generic `human_response` metadata as an independent resume trigger.
+5. Embedded side-effect records were not checked for run/step lineage before persistence.
+6. SQLite load silently reconciled payload/column revision mismatch.
+
+### Remediation
+
+- `validate_agent_checkpoint_for_persistence()` in `checkpoint_store.py` — single acceptance rule before provider mutation (both InMemory and SQLite).
+- `CheckpointAgentIdentityConflictError`, `CheckpointSideEffectLineageError`, `CheckpointDurableCorruptionError`, `CheckpointStreamIdentityConflictError`.
+- Resume seam: `resolve_session_persistence(..., agent_id=)` validates run/tenant/agent continuity (FRZ-STA-08).
+- Removed `human_response` branch from `should_resume_acp_checkpoint`.
+- Durable revision disagreement fails closed on load.
+
+### Before / after
+
+**Before:** human_response → resume; checkpoint agent accepted without current-agent match; per-provider acceptance; silent revision reconcile.
+
+**After:** ACP resume intent + checkpoint existence → current run/tenant/agent → canonical validator → state restore only.
+
+### Provider matrix
+
+| Invariant | InMemory | SQLite |
+|---|---:|---:|
+| contract | PASS | PASS |
+| valid create | PASS | PASS |
+| revision CAS | PASS | PASS |
+| stale writer reject | PASS | PASS |
+| step regression reject | PASS | PASS |
+| agent identity immutable | PASS | PASS |
+| invalid model reject | PASS | PASS |
+| no mutation on invalid | PASS | PASS |
+| tenant isolation | PASS | PASS |
+| side-effect lineage | PASS | PASS |
+| restart durability | N/A | PASS |
+| corrupt durable bytes | N/A | PASS |
+
+### Resume identity matrix
+
+| Identity | Canonical source | Checkpoint role |
+|---|---|---|
+| tenant_id | current request/runtime | must match |
+| run_id | current execution context | must match |
+| agent_id | current effective agent | must match |
+| revision | persistence provider | restored metadata |
+| step_index | checkpoint state | resume position |
+| execution authority | Governance/Execution | none |
+
+### Tests
+
+`tests/qualification/state_x/_r3_r5_qualification_tests.py` (R3-R5-Q01..Q35). Replayed: `test_pcm_checkpoint_cas_integrity.py`, `test_checkpoint_wiring.py`, GR10 ACP resume qualification.
+
+### FRZ (scoped, no global PASS)
+
+Primary evidence: FRZ-STA-01/02/03/04/05/08, FRZ-REC-01/03/04/06/10 toward SX-F14.
+
+**Status:** **READY FOR AUDIT** (Cursor) — **STATE-X-R3-R5** not CLOSED.
