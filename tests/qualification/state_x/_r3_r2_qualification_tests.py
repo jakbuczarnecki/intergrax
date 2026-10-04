@@ -14,9 +14,11 @@ import pytest
 from pydantic import BaseModel
 
 from intergrax.agents.persistence.compensation_queue_store import (
+    CompensationJobStatus,
     InMemoryCompensationQueueStore,
     SQLiteCompensationQueueStore,
 )
+from intergrax.agents.persistence.compensation_queue_worker import drain_pending_compensation_jobs
 from intergrax.agents.persistence.compensation_side_effect_input import (
     compensation_side_effect_input_from_job,
 )
@@ -34,6 +36,7 @@ from intergrax.contracts.idempotency_store import (
     InvocationUncertaintyError,
     PreEffectSuspendedWorkRecoveryAuthority,
 )
+from intergrax.runtime.nexus.agents.catalog_declarative_invoker import CatalogDeclarativeToolInvoker
 from intergrax.contracts.lease_claim import StaleClaimError
 from intergrax.runtime.tools.idempotency_pre_effect_coordinator import IdempotencyPreEffectCoordinator
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
@@ -41,13 +44,18 @@ from intergrax.runtime.tools.operation_identity import compute_invocation_operat
 from intergrax.tools.core.contracts import ToolContract
 from intergrax.tools.execution_models import ToolExecutionRequest, ToolExecutionResult
 from tests.qualification.state_x._r3_r2_support import (
-    _IdempotentBoundInvoker,
+    CompensationQueueStoreFactory,
+    IdempotencyStorePathFactory,
     _TENANT_A,
     _TENANT_B,
     _WIRING_PATH,
     _build_admitted_compensation_execution,
+    _build_canonical_compensation_production_execution,
+    _execute_compensation_with_lab_governance,
+    _compensation_queue_store_factories,
     _inventory_by_id,
     _local_idempotency_factories,
+    _paired_compensation_idempotency_factories,
     _redis_store_or_skip,
     _sample_compensation_job,
 )
@@ -361,8 +369,12 @@ def test_r3_r2_q14_no_legacy_record_started_in_side_effect_callers() -> None:
     assert offenders == []
 
 
-def test_r3_r2_q15_compensation_enqueue_dedupe() -> None:
-    store = InMemoryCompensationQueueStore()
+@pytest.mark.parametrize("queue_factory", _compensation_queue_store_factories())
+def test_r3_r2_q15_compensation_enqueue_dedupe(
+    tmp_path: Path,
+    queue_factory: CompensationQueueStoreFactory,
+) -> None:
+    store = queue_factory(tmp_path)
     job = _sample_compensation_job(key_suffix="dedupe")
     store.enqueue(job)
     store.enqueue(job.model_copy(update={"job_id": "other"}))
@@ -414,8 +426,12 @@ def test_r3_r2_q16_compensation_atomic_claim_sqlite(tmp_path: Path) -> None:
     assert len(winners) == 1
 
 
-def test_r3_r2_q17_compensation_fence_supersession() -> None:
-    store = InMemoryCompensationQueueStore()
+@pytest.mark.parametrize("queue_factory", _compensation_queue_store_factories())
+def test_r3_r2_q17_compensation_fence_supersession(
+    tmp_path: Path,
+    queue_factory: CompensationQueueStoreFactory,
+) -> None:
+    store = queue_factory(tmp_path)
     store.enqueue(_sample_compensation_job(key_suffix="fence"))
     first = store.claim_pending(_TENANT_A, "w-a", lease_seconds=30, limit=1)[0]
     store.fail_claim(first, "transient", retryable=True)
@@ -427,16 +443,26 @@ def test_r3_r2_q17_compensation_fence_supersession() -> None:
         store.fail_claim(first, "late", retryable=False)
 
 
-def test_r3_r2_q18_compensation_tenant_isolation() -> None:
-    store = InMemoryCompensationQueueStore()
-    store.enqueue(_sample_compensation_job(tenant_id=_TENANT_A, key_suffix="ta"))
-    store.enqueue(_sample_compensation_job(tenant_id=_TENANT_B, key_suffix="tb"))
+@pytest.mark.parametrize("queue_factory", _compensation_queue_store_factories())
+def test_r3_r2_q18_compensation_tenant_isolation(
+    tmp_path: Path,
+    queue_factory: CompensationQueueStoreFactory,
+) -> None:
+    store = queue_factory(tmp_path)
+    job_a = _sample_compensation_job(tenant_id=_TENANT_A, key_suffix="ta")
+    job_b = _sample_compensation_job(tenant_id=_TENANT_B, key_suffix="tb")
+    store.enqueue(job_a)
+    store.enqueue(job_b)
     claims_a = store.claim_pending(_TENANT_A, "worker-a", lease_seconds=30, limit=10)
     claims_b = store.claim_pending(_TENANT_B, "worker-b", lease_seconds=30, limit=10)
     assert len(claims_a) == 1
     assert len(claims_b) == 1
     assert claims_a[0].tenant_id == _TENANT_A
     assert claims_b[0].tenant_id == _TENANT_B
+    store.complete_claim(claims_a[0])
+    loaded_b = store.get_by_idempotency_key(_TENANT_B, job_b.request.idempotency_key)
+    assert loaded_b is not None
+    assert loaded_b.status != CompensationJobStatus.COMPLETED
 
 
 def test_r3_r2_q19_durable_identity_continuity() -> None:
@@ -503,9 +529,13 @@ async def test_r3_r2_q21_run_id_mismatch_denied() -> None:
     assert result.status == "failed"
 
 
+@pytest.mark.parametrize("queue_factory", _compensation_queue_store_factories())
 @pytest.mark.asyncio
-async def test_r3_r2_q22_stable_compensation_idempotency_key_on_retryable_reclaim() -> None:
-    store = InMemoryCompensationQueueStore()
+async def test_r3_r2_q22_stable_compensation_idempotency_key_on_retryable_reclaim(
+    tmp_path: Path,
+    queue_factory: CompensationQueueStoreFactory,
+) -> None:
+    store = queue_factory(tmp_path)
     job = _sample_compensation_job(key_suffix="stable-key")
     store.enqueue(job)
     first = store.claim_pending(_TENANT_A, "w-a", lease_seconds=30, limit=1)[0]
@@ -515,28 +545,107 @@ async def test_r3_r2_q22_stable_compensation_idempotency_key_on_retryable_reclai
     assert second.job.request.idempotency_key == key_first
 
 
+@pytest.mark.parametrize(
+    ("queue_factory", "idempotency_factory"),
+    _paired_compensation_idempotency_factories(),
+)
 @pytest.mark.asyncio
-async def test_r3_r2_q23_crash_after_success_idempotency_prevents_duplicate_effect() -> None:
-    idem_store = InMemoryIdempotencyStore()
-    queue = InMemoryCompensationQueueStore()
-    job = _sample_compensation_job(key_suffix="q23")
+async def test_r3_r2_q23_retryable_redelivery_canonical_idempotency_replay(
+    tmp_path: Path,
+    queue_factory: CompensationQueueStoreFactory,
+    idempotency_factory: IdempotencyStorePathFactory,
+) -> None:
+    idem_store = idempotency_factory(tmp_path)
+    queue = queue_factory(tmp_path)
+    execution, handler, catalog = _build_canonical_compensation_production_execution(idem_store)
+    assert isinstance(catalog, CatalogDeclarativeToolInvoker)
+    assert isinstance(catalog.tool_invoker._pre_effect_coordinator, IdempotencyPreEffectCoordinator)
+
+    job = _sample_compensation_job(key_suffix="q23-retryable")
     queue.enqueue(job)
     claim = queue.claim_pending(_TENANT_A, "worker-a", lease_seconds=30, limit=1)[0]
     work = compensation_side_effect_input_from_job(claim.job)
-
-    async def _inner(**kwargs):  # type: ignore[no-untyped-def]
-        return DeclarativeToolInvokeResult(status="success")
-
-    invoker = _IdempotentBoundInvoker(_store=idem_store, _inner=_inner)
-    execution = _build_admitted_compensation_execution(invoker)
-    assert (await execution.execute(work)).status == "success"
-    assert invoker.physical_calls == 1
+    assert (await _execute_compensation_with_lab_governance(execution, work)).status == "success"
+    assert handler.calls == 1
+    assert idem_store.get_status(_TENANT_A, work.idempotency_key) == InvocationStatus.COMPLETED
     queue.fail_claim(claim, "simulated crash before queue complete", retryable=True)
     reclaim = queue.claim_pending(_TENANT_A, "worker-b", lease_seconds=30, limit=1)[0]
     work_b = compensation_side_effect_input_from_job(reclaim.job)
     assert work_b.idempotency_key == work.idempotency_key
-    assert (await execution.execute(work_b)).status == "success"
-    assert invoker.physical_calls == 1
+    assert (await _execute_compensation_with_lab_governance(execution, work_b)).status == "success"
+    assert handler.calls == 1
+
+
+@pytest.mark.parametrize("queue_factory", _compensation_queue_store_factories())
+@pytest.mark.asyncio
+async def test_r3_r2_q30_expired_running_uncertain_not_reclaimable_queue(
+    tmp_path: Path,
+    queue_factory: CompensationQueueStoreFactory,
+) -> None:
+    queue = queue_factory(tmp_path)
+    job = _sample_compensation_job(key_suffix="uncertain-queue")
+    queue.enqueue(job)
+    first = queue.claim_pending(_TENANT_A, "worker-a", lease_seconds=1, limit=1)[0]
+    time.sleep(1.2)
+    second = queue.claim_pending(_TENANT_A, "worker-b", lease_seconds=30, limit=1)
+    loaded = queue.get_by_idempotency_key(_TENANT_A, job.request.idempotency_key)
+    assert second == []
+    assert loaded is not None
+    assert loaded.status == CompensationJobStatus.UNCERTAIN
+
+
+@pytest.mark.parametrize("queue_factory", _compensation_queue_store_factories())
+@pytest.mark.asyncio
+async def test_r3_r2_q31_current_owner_completes_claim(
+    tmp_path: Path,
+    queue_factory: CompensationQueueStoreFactory,
+) -> None:
+    store = queue_factory(tmp_path)
+    job = _sample_compensation_job(key_suffix="complete-owner")
+    store.enqueue(job)
+    claim = store.claim_pending(_TENANT_A, "worker-ok", lease_seconds=30, limit=1)[0]
+    store.complete_claim(claim)
+    loaded = store.get_by_idempotency_key(_TENANT_A, job.request.idempotency_key)
+    assert loaded is not None
+    assert loaded.status == CompensationJobStatus.COMPLETED
+
+
+@pytest.mark.parametrize(
+    ("queue_factory", "idempotency_factory"),
+    _paired_compensation_idempotency_factories(),
+)
+@pytest.mark.asyncio
+async def test_r3_r2_q32_crash_window_canonical_production_path_no_duplicate_effect(
+    tmp_path: Path,
+    queue_factory: CompensationQueueStoreFactory,
+    idempotency_factory: IdempotencyStorePathFactory,
+) -> None:
+    idem_store = idempotency_factory(tmp_path)
+    queue = queue_factory(tmp_path)
+    execution, handler, _catalog = _build_canonical_compensation_production_execution(idem_store)
+    job = _sample_compensation_job(key_suffix="q32-crash")
+    queue.enqueue(job)
+    claim = queue.claim_pending(_TENANT_A, "worker-a", lease_seconds=1, limit=1)[0]
+    work = compensation_side_effect_input_from_job(claim.job)
+    assert (await _execute_compensation_with_lab_governance(execution, work)).status == "success"
+    assert handler.calls == 1
+    assert idem_store.get_status(_TENANT_A, work.idempotency_key) == InvocationStatus.COMPLETED
+    time.sleep(1.2)
+    reclaim = queue.claim_pending(_TENANT_A, "worker-b", lease_seconds=30, limit=1)
+    loaded = queue.get_by_idempotency_key(_TENANT_A, job.request.idempotency_key)
+    assert reclaim == []
+    assert loaded is not None
+    assert loaded.status == CompensationJobStatus.UNCERTAIN
+    drained = await drain_pending_compensation_jobs(
+        queue,
+        tenant_id=_TENANT_A,
+        side_effect_execution=execution,
+        limit=10,
+        owner_id="drain-worker",
+        lease_seconds=30,
+    )
+    assert drained == []
+    assert handler.calls == 1
 
 
 def test_r3_r2_q24_queue_claim_not_execution_authority() -> None:

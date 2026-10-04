@@ -4,7 +4,7 @@
 
 **START_HEAD (R3-R2 pre-audit):** `b04327dd5dac4d47059a995e9aea61266a360c2e`
 
-**Status:** R3-R2 READY FOR AUDIT (pending independent GitHub SHA audit)
+**Status:** R3-R2-R1 READY FOR AUDIT · R3-R2 BLOCKED PENDING INDEPENDENT R3-R2-R1 AUDIT
 
 ---
 
@@ -125,7 +125,103 @@ Redis executable evidence: local `redis:7-alpine` on `localhost:6379` for Q25–
 
 Primary: FRZ-STA-01..05, FRZ-REC-01/04/05/06/07/09/10, FRZ-TEN-04/08. Supporting: FRZ-CTR/TYP/GOV/EXE families as cited in R3-R2 task.
 
-**Status:** R3-R2 READY FOR AUDIT (not CLOSED).
+**Status:** R3-R2 BLOCKED PENDING INDEPENDENT R3-R2-R1 AUDIT (independent audit found Q23 / SX-F11 SQLite parity gaps).
+
+---
+
+## R3-R2-R1 — Compensation Production-Path & Durable Provider Qualification Closure
+
+**START_HEAD:** `7f392e442f46ed3aff1c44d4b97d66aaeb703598`
+
+### Root cause (independent R3-R2 audit)
+
+- **BLOCKER A:** Q23 proved dedupe via test-owned `_IdempotentBoundInvoker` instead of canonical `RuntimeToolInvoker` + `IdempotencyPreEffectCoordinator`.
+- **BLOCKER B:** SX-F11 qualification lacked provider-parity mechanical evidence (SQLite vs InMemory) for several queue invariants and canonical compensation effect path.
+
+### Changed files (this closure)
+
+| Path | Role |
+|---|---|
+| `tests/qualification/state_x/_r3_r2_support.py` | Typed queue/idempotency factories; canonical compensation stack builder (`build_declarative_invoker_from_tool_wiring` → `CatalogDeclarativeToolInvoker` → `build_compensation_side_effect_execution`); lab policy/governance test harness |
+| `tests/qualification/state_x/_r3_r2_qualification_tests.py` | Q23 canonical RETRYABLE replay; Q30–Q32 crash/parity; parametrized SX-F11 matrix |
+| `tests/qualification/state_x/inventory.py` | R3-R2 allowlist bookkeeping for `_r3_r2_qualification_tests.py` |
+| `docs/project/maintainers/qualification/STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md` | This section |
+
+**Production delta:** NONE (qualification/test-only).
+
+### Canonical production-path graph (after)
+
+```text
+CompensationQueueStore (claim)
+→ compensation_side_effect_input_from_job
+→ CompensationSideEffectExecutionPort (build_compensation_side_effect_execution)
+→ ExecutionRuntime
+→ BoundCompensationToolInvokeSession
+→ CatalogDeclarativeToolInvoker.invoke
+→ invoke_catalog_tool_request
+→ RuntimeToolInvoker
+→ IdempotencyPreEffectCoordinator
+→ IdempotencyStore
+→ physical tool handler
+```
+
+### SX-F11 provider matrix (mechanical)
+
+| Invariant | InMemory | SQLite |
+|---|:---:|:---:|
+| enqueue dedupe | Q15 | Q15 |
+| atomic claim | Q16 | Q16 |
+| stale completion/failure reject | Q17 | Q17 |
+| tenant isolation | Q18 | Q18 |
+| stable idempotency key after RETRYABLE reclaim | Q22 | Q22 |
+| expired RUNNING → UNCERTAIN | Q30 | Q30 |
+| UNCERTAIN not claimable | Q30 / Q32 | Q30 / Q32 |
+| current owner completes | Q31 | Q31 |
+| production-path physical dedupe (RETRYABLE replay) | Q23 | Q23 |
+| crash window + no duplicate effect (canonical path) | Q32 | Q32 |
+
+### Crash vs RETRYABLE semantics (separate proofs)
+
+- **Crash window (Q32):** effect completes + idempotency COMPLETED; queue `complete_claim` skipped; lease expiry → `UNCERTAIN` → no reclaim; `drain_pending_compensation_jobs` does not re-invoke; handler calls == 1.
+- **Explicit RETRYABLE (Q23):** `fail_claim(..., retryable=True)` reclaim; same compensation idempotency key; canonical replay; handler calls == 1.
+
+### Tenant Isolation Audit
+
+- **tenant scope applicable:** YES
+- **canonical tenant identity:** `tenant_id`
+- **tenant owner:** `CompensationQueueStore` / `IdempotencyStore` (per-tenant keys)
+- **propagation path:** `CompensationJob.tenant_id` → `CompensationSideEffectInput` → catalog invoke → idempotency store partition
+- **state isolation:** Q12 (idempotency), Q18 (queue claim/completion cross-tenant)
+- **provider/config isolation:** parametrized InMemory + SQLite factories (`tmp_path`-scoped SQLite DBs)
+- **evidence/trace isolation:** declarative policy evaluation uses `state.tenant_id` on catalog dispatch state
+- **async/recovery continuity:** Q22 stable key on RETRYABLE; Q30/Q32 UNCERTAIN fail-closed
+- **cross-tenant path:** same idempotency key under tenant A does not complete/block tenant B (Q18)
+- **fail-closed behavior:** UNCERTAIN not claimable; no automatic RUNNING→RETRYABLE
+- **adversarial evidence:** Q18 completion on tenant A leaves tenant B job non-completed
+- **result:** PASS (qualification evidence; pending independent audit)
+
+### Test evidence
+
+- `tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py` (imports R3-R2 Q01–Q32 + Redis Q25–Q29)
+- Supporting: `tests/unit/agents/persistence/test_pcm_compensation_coordination.py`, `tests/unit/applications/shared/test_reliability_idempotency_declarative_invoker_wiring.py`, `tests/unit/runtime/execution/test_compensation_side_effect_admission.py`
+
+### FRZ evidence (no PASS promotion)
+
+| FRZ-ID | Evidence |
+|---|---|
+| FRZ-STA-03 | Q16 atomic claim; Q23/Q32 transactional boundaries via canonical invoker + stores |
+| FRZ-STA-04 | Q12, Q18 |
+| FRZ-STA-05 | Q17 stale fence rejection |
+| FRZ-REC-01 | Q30, Q32 crash/recovery |
+| FRZ-REC-04 | Q23 replay |
+| FRZ-REC-06 | Q32 partial queue completion fail-closed |
+| FRZ-REC-07 | Q30/Q32 UNCERTAIN modeling |
+| FRZ-TEN-04 | Q18 |
+| FRZ-TEN-08 | Q22, Q23 tenant/key continuity |
+
+Parent FRZ-STA/REC/TEN criteria: revalidated via preserved Q01–Q29 (+ Redis when available).
+
+**Status:** STATE-X-R3-R2-R1 = READY FOR AUDIT · STATE-X-R3-R2 = BLOCKED PENDING INDEPENDENT R3-R2-R1 AUDIT.
 
 ---
 

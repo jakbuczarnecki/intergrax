@@ -808,6 +808,7 @@ STATE_X_R3_R2_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "docs/project/maintainers/qualification/STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md",
         "tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py",
         "tests/qualification/state_x/_r3_r2_support.py",
+        "tests/qualification/state_x/_r3_r2_qualification_tests.py",
         "tests/qualification/state_x/inventory.py",
         "tests/qualification/state_x/test_state_x_p0_baseline.py",
         "tests/unit/runtime/execution/test_compensation_side_effect_admission.py",
