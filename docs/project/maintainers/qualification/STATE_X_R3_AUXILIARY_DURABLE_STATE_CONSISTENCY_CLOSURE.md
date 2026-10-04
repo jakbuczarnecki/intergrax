@@ -2,9 +2,25 @@
 
 **Parent:** STATE-X — Persistence, State & Recovery Certification
 
-**START_HEAD (R3-R2 pre-audit):** `b04327dd5dac4d47059a995e9aea61266a360c2e`
+**Accepted implementation/qualification baseline (R3-R2 chain):** `d5979a531e41f9a45a3a00b0b150765ee34bb0f8`
 
-**Status:** R3-R2-R1 READY FOR AUDIT · R3-R2 BLOCKED PENDING INDEPENDENT R3-R2-R1 AUDIT
+**Status (current):**
+
+| Task | Result |
+|---|---|
+| STATE-X-R3-R2-R1-R1 | **CLOSED** — independently accepted @ `d5979a531e41f9a45a3a00b0b150765ee34bb0f8` |
+| STATE-X-R3-R2-R1 | **CLOSED** — reconciled through accepted child |
+| STATE-X-R3-R2 | **CLOSED** — reconciled |
+| STATE-X-R3-R3 | **NEXT / MANDATORY / NOT ENTERED** |
+| STATE-X (parent) | **CURRENT / MANDATORY** — not closed |
+
+**Evidence provenance (R3-R2 chain):**
+
+| Milestone | Exact SHA | Role |
+|---|---|---|
+| R3-R2 implementation + original qualification | `7f392e442f46ed3aff1c44d4b97d66aaeb703598` | accepted implementation contribution |
+| R3-R2-R1 production-path / provider qualification remediation | `5b0e937c1bb4cbc309bf12b94402552deaab5d82` | canonical path + SQLite parity closure |
+| R3-R2-R1-R1 same-key cross-tenant isolation | `d5979a531e41f9a45a3a00b0b150765ee34bb0f8` | final independently accepted child; reconciled R3-R2 chain baseline |
 
 ---
 
@@ -13,8 +29,8 @@
 | Family | R3 disposition |
 |---|---|
 | SX-F09 Execution Budget Durable State | **ACCEPTED via R3-R1** |
-| SX-F10 Idempotency State | **R3-R2 under qualification** |
-| SX-F11 Compensation Queue State | **R3-R2 under qualification** |
+| SX-F10 Idempotency State | **ACCEPTED via R3-R2** |
+| SX-F11 Compensation Queue State | **ACCEPTED via R3-R2** |
 | SX-F12 Human Decision / HITL Persistence | NOT ENTERED |
 | SX-F13 Scheduler Durable State | NOT ENTERED |
 | SX-F14 Agent Checkpoint State | NOT ENTERED |
@@ -125,7 +141,7 @@ Redis executable evidence: local `redis:7-alpine` on `localhost:6379` for Q25–
 
 Primary: FRZ-STA-01..05, FRZ-REC-01/04/05/06/07/09/10, FRZ-TEN-04/08. Supporting: FRZ-CTR/TYP/GOV/EXE families as cited in R3-R2 task.
 
-**Status:** R3-R2 BLOCKED PENDING INDEPENDENT R3-R2-R1 AUDIT (independent audit found Q23 / SX-F11 SQLite parity gaps).
+**Status:** **CLOSED** — independently accepted through remediation chain ending at `d5979a531e41f9a45a3a00b0b150765ee34bb0f8` (historical: independent R3-R2 audit found Q23 / SX-F11 SQLite parity gaps → **R3-R2-R1** / **R3-R2-R1-R1**).
 
 ---
 
@@ -199,7 +215,7 @@ CompensationQueueStore (claim)
 - **cross-tenant path:** same compensation idempotency key under tenant A and tenant B coexists; tenant-scoped lookup, claim, completion, and failure/retry do not mutate the other tenant’s job (Q18)
 - **fail-closed behavior:** UNCERTAIN not claimable; no automatic RUNNING→RETRYABLE
 - **adversarial evidence:** Q18 — `tenant A + key X` and `tenant B + key X` (bit-identical key, runtime-asserted); exercised for InMemory and SQLite: coexistence, lookup isolation, claim isolation, `complete_claim` isolation, `fail_claim`/RETRYABLE reclaim and fence isolation
-- **result:** PASS — qualification evidence; pending independent exact-SHA audit
+- **result:** PASS — independently accepted @ `d5979a531e41f9a45a3a00b0b150765ee34bb0f8` (same-key cross-tenant matrix finalized in **R3-R2-R1-R1**)
 
 ### Test evidence
 
@@ -222,10 +238,33 @@ CompensationQueueStore (claim)
 
 Parent FRZ-STA/REC/TEN criteria: revalidated via preserved Q01–Q29 (+ Redis when available).
 
-**Status:** STATE-X-R3-R2-R1-R1 = READY FOR AUDIT · STATE-X-R3-R2-R1 = BLOCKED PENDING INDEPENDENT CHILD AUDIT · STATE-X-R3-R2 = BLOCKED · STATE-X-R3-R3 = NOT ENTERED.
+**Status:** **CLOSED** — child **STATE-X-R3-R2-R1-R1** independently accepted at `d5979a531e41f9a45a3a00b0b150765ee34bb0f8`; qualification remediation accepted @ `5b0e937c1bb4cbc309bf12b94402552deaab5d82`.
+
+---
+
+## R3-R2-R1-R1 — Same-Key Cross-Tenant Compensation Queue Isolation Closure
+
+**START_HEAD:** `5b0e937c1bb4cbc309bf12b94402552deaab5d82`
+
+**Production delta:** NONE (qualification/test-only).
+
+### Root cause (independent R3-R2-R1 audit)
+
+- **BLOCKER:** Q18 tenant isolation did not mechanically prove bit-identical compensation idempotency key coexistence and full lifecycle isolation (lookup / claim / complete / fail / RETRYABLE reclaim / fence) across tenant A and tenant B on both InMemory and SQLite providers.
+
+### Closure
+
+| Path | Role |
+|---|---|
+| `tests/qualification/state_x/_r3_r2_qualification_tests.py` | Q18 expanded same-key cross-tenant adversarial matrix (InMemory + SQLite) |
+| `docs/project/maintainers/qualification/STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md` | This section |
+
+**Exact accepted SHA:** `d5979a531e41f9a45a3a00b0b150765ee34bb0f8`
+
+**Status:** **CLOSED / INDEPENDENTLY ACCEPTED**
 
 ---
 
 ## Roadmap note
 
-Next child after R3-R2 audit: **STATE-X-R3-R3**. STATE-X-R4 and TRACE-X remain NOT ENTERED.
+Next mandatory child: **STATE-X-R3-R3**. **STATE-X** remains **CURRENT**. **STATE-X-R4** and **TRACE-X** remain **NOT ENTERED**.
