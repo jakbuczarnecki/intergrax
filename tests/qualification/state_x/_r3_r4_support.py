@@ -30,6 +30,7 @@ from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResume,
     ScheduledResumePersistence,
     ScheduledResumeStatus,
+    validate_scheduled_resume_for_persistence,
 )
 from intergrax.runtime.long_running.store import SQLiteTaskCheckpointStore
 from intergrax.runtime.task.task import Task, TaskResult, TaskState
@@ -152,14 +153,15 @@ class MemoryScheduleStore(ScheduledResumePersistence):
         self._rows: dict[str, ScheduledResume] = {}
 
     def schedule(self, entry: ScheduledResume) -> ScheduledResume:
-        if entry.schedule_id in self._rows:
+        validated = validate_scheduled_resume_for_persistence(entry)
+        if validated.schedule_id in self._rows:
             from intergrax.runtime.long_running.scheduler_claim import (
                 ScheduledResumeScheduleConflictError,
             )
 
-            raise ScheduledResumeScheduleConflictError(entry.schedule_id)
-        self._rows[entry.schedule_id] = entry
-        return entry
+            raise ScheduledResumeScheduleConflictError(validated.schedule_id)
+        self._rows[validated.schedule_id] = validated
+        return validated
 
     def list_due(self, *, before_utc_iso: str, limit: int = 100) -> List[ScheduledResume]:
         pending = [

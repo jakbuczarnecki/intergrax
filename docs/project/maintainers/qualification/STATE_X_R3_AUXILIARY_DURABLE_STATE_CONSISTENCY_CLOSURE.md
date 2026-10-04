@@ -12,7 +12,8 @@
 | STATE-X-R3-R2-R1 | **CLOSED** — reconciled through accepted child |
 | STATE-X-R3-R2 | **CLOSED** — reconciled |
 | STATE-X-R3-R3 | **CLOSED** — independently accepted @ `e05b5b8eb3a60e8f46b5502083440e2e863e7204` (SX-F12) |
-| STATE-X-R3-R4 | **CURRENT / MANDATORY / IN EXECUTION** — SX-F13 (Cursor: READY FOR AUDIT pending independent audit) |
+| STATE-X-R3-R4 | **CURRENT / BLOCKED** — SX-F13 pending independent R3-R4-R1 audit |
+| STATE-X-R3-R4-R1 | **CURRENT / REQUIRED** — provider validation parity (Cursor: READY FOR AUDIT pending independent audit) |
 | STATE-X (parent) | **CURRENT / MANDATORY** — not closed |
 
 **Evidence provenance (R3-R2 chain):**
@@ -478,3 +479,53 @@ SX-F13 only — `ScheduledResumePersistence`, `SchedulerLedger`, `LongRunningSch
 Direct/supporting contributions documented in qualification matrix; global FRZ rows remain OPEN.
 
 **Status:** **READY FOR AUDIT** (Cursor) — not CLOSED.
+
+---
+
+## R3-R4-R1 — Provider Validation Parity
+
+**START_HEAD:** `71562caa919bf7d237d0b492d049f5dce8f903f9`
+
+### Root cause
+
+`ScheduledResumePersistence.schedule()` did not mechanically require full domain revalidation at the persistence acceptance boundary. SQLite revalidated via `model_validate` + `validate_scheduled_resume_metadata`; `MemoryScheduleStore` stored the passed object directly. Post-construction `model_copy(update={...})` can bypass Pydantic revalidation, so equivalent invalid semantic state could be accepted by one provider and rejected by another.
+
+### Canonical validation owner
+
+`validate_scheduled_resume_for_persistence()` in `intergrax/runtime/long_running/scheduled_resume.py` — single persistence acceptance rule: JSON round-trip `ScheduledResume.model_validate`, metadata authority-negative check, return canonical instance before any provider mutation.
+
+### Providers
+
+| Implementation | Role |
+|---|---|
+| `SQLiteTaskCheckpointStore.schedule` | Production reference provider |
+| `MemoryScheduleStore` | R3-R4 qualification / replaceability provider |
+| `_MemoryScheduleStore` (SCHED-01) | Historical qualification test provider |
+
+All `schedule()` implementations invoke the canonical helper.
+
+### Adversarial bypass
+
+`valid = ScheduledResume(...)` → `invalid = valid.model_copy(update={"resume_metadata": {"human_approved": True}})` → both SQLite and Memory providers reject with `ScheduledResumeMetadataValidationError` (parameterized parity for `verdict`, `run_id`, `tenant_id`, `authorization_token`).
+
+### No-mutation proof
+
+Failed `schedule(invalid)` leaves SQLite row count 0 / empty `list_due`; Memory `_rows` unchanged.
+
+### Provider matrix (R1)
+
+SQLite and Memory/custom: valid accept, forbidden metadata reject, invalid no mutation, correlation metadata accept, duplicate `schedule_id` conflict — semantically aligned.
+
+### R3-R4 regression
+
+Claim/fence/UNCERTAIN/tenant/WHEN-only paths replayed via full `r3_r4` qualification suite on FINAL HEAD; R1 adds scoped regression hooks (Q15–Q17).
+
+### FRZ (scoped, no global PASS)
+
+Strengthens FRZ-STA-01/02/03/05, FRZ-REC-06/10 toward SX-F13; tenant rows as regression evidence only.
+
+### Tests
+
+`tests/qualification/state_x/_r3_r4_r1_qualification_tests.py` (R1-Q01..Q20). Inventory: `STATE_X_R3_R4_R1_PRE_AUDIT_HEAD`, `STATE_X_R3_R4_R1_ALLOWLIST_PATHS`.
+
+**Status:** **READY FOR AUDIT** (Cursor) — **STATE-X-R3-R4** remains **BLOCKED PENDING INDEPENDENT R1 AUDIT**; parent not CLOSED.

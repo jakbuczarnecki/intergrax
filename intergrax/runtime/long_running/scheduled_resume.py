@@ -14,6 +14,21 @@ from pydantic import BaseModel, Field, model_validator
 from intergrax.runtime.long_running.scheduled_resume_metadata import (
     validate_scheduled_resume_metadata,
 )
+
+__all__ = [
+    "ScheduledResume",
+    "ScheduledResumePersistence",
+    "ScheduledResumeStatus",
+    "validate_scheduled_resume_for_persistence",
+]
+
+
+def validate_scheduled_resume_for_persistence(entry: ScheduledResume) -> ScheduledResume:
+    """Canonical persistence acceptance rule for all ScheduledResumePersistence providers."""
+    validate_scheduled_resume_metadata(entry.resume_metadata)
+    validated = ScheduledResume.model_validate(entry.model_dump(mode="json"))
+    validate_scheduled_resume_metadata(validated.resume_metadata)
+    return validated
 from intergrax.utils.time_provider import SystemTimeProvider
 
 if TYPE_CHECKING:

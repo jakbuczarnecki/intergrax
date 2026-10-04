@@ -32,11 +32,11 @@ from intergrax.runtime.long_running.scheduler_claim import (
 )
 from intergrax.runtime.long_running.scheduled_resume_metadata import (
     ScheduledResumeMetadataValidationError,
-    validate_scheduled_resume_metadata,
 )
 from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResume,
     ScheduledResumeStatus,
+    validate_scheduled_resume_for_persistence,
 )
 from intergrax.contracts.execution_terminal import ExecutionTerminalOutcome, ExecutionTerminalRecord
 from intergrax.runtime.task.task_state import TaskState
@@ -466,8 +466,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
         return [self._row_to_checkpoint(row) for row in rows]
 
     def schedule(self, entry: ScheduledResume) -> ScheduledResume:
-        validated = ScheduledResume.model_validate(entry.model_dump(mode="json"))
-        validate_scheduled_resume_metadata(validated.resume_metadata)
+        validated = validate_scheduled_resume_for_persistence(entry)
         with self._connection() as conn:
             try:
                 conn.execute(
