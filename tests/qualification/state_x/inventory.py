@@ -783,3 +783,16 @@ STATE_X_R2_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "testing_support/decision_e2e/docker_worker.py",
     },
 )
+
+STATE_X_R3_R1_PRE_AUDIT_HEAD: Final[str] = "5c9375f13b3623f3ee21309c09748f85b44da1b0"
+
+STATE_X_R3_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "intergrax/runtime/execution/budget/persistence.py",
+        "docs/project/maintainers/qualification/STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md",
+        "tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+        "tests/unit/runtime/execution/budget/test_ue_9ar1_preserve_run_budget_across_redelivery.py",
+    },
+)

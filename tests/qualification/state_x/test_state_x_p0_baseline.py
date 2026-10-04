@@ -25,6 +25,8 @@ from tests.qualification.state_x.inventory import (
     STATE_X_R2_ALLOWLIST_PATHS,
     STATE_X_R2_PRE_AUDIT_HEAD,
     STATE_X_R2_R1_ALLOWLIST_PATHS,
+    STATE_X_R3_R1_ALLOWLIST_PATHS,
+    STATE_X_R3_R1_PRE_AUDIT_HEAD,
     StateFamilyInventoryEntry,
 )
 
@@ -320,7 +322,7 @@ def test_sx_p0_q23_regression_known_invalid_paths_absent() -> None:
 
 def test_sx_p0_q24_no_production_file_changed_since_audited_head() -> None:
     result = subprocess.run(
-        ["git", "diff", "--name-only", STATE_X_R2_PRE_AUDIT_HEAD],
+        ["git", "diff", "--name-only", STATE_X_R3_R1_PRE_AUDIT_HEAD],
         cwd=_REPO_ROOT,
         check=True,
         capture_output=True,
@@ -334,11 +336,13 @@ def test_sx_p0_q24_no_production_file_changed_since_audited_head() -> None:
         | STATE_X_R1_ALLOWLIST_PATHS
         | STATE_X_R2_ALLOWLIST_PATHS
         | STATE_X_R2_R1_ALLOWLIST_PATHS
+        | STATE_X_R3_R1_ALLOWLIST_PATHS
     )
     scoped_child_allowlist = (
         STATE_X_R1_ALLOWLIST_PATHS
         | STATE_X_R2_ALLOWLIST_PATHS
         | STATE_X_R2_R1_ALLOWLIST_PATHS
+        | STATE_X_R3_R1_ALLOWLIST_PATHS
     )
     for path in changed:
         normalized = path.replace("\\", "/")
