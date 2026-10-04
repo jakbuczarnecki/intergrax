@@ -815,3 +815,22 @@ STATE_X_R3_R2_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/unit/applications/shared/test_reliability_idempotency_declarative_invoker_wiring.py",
     },
 )
+
+STATE_X_R3_R3_PRE_AUDIT_HEAD: Final[str] = "91385b07ae1566f9f9ecff0d5705f1b141675da8"
+
+STATE_X_R3_R3_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "intergrax/runtime/human/persistence_contract.py",
+        "intergrax/runtime/human/persistence_errors.py",
+        "intergrax/runtime/human/models.py",
+        "intergrax/runtime/human/store.py",
+        "intergrax/runtime/nexus/orchestration/human_response.py",
+        "intergrax/runtime/nexus/orchestration/intake_runner.py",
+        "docs/project/maintainers/qualification/STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md",
+        "tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py",
+        "tests/qualification/state_x/_r3_r3_support.py",
+        "tests/qualification/state_x/_r3_r3_qualification_tests.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+    },
+)

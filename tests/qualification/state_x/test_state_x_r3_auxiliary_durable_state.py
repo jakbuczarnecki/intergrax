@@ -761,3 +761,4 @@ def test_r3_r1_factory_requires_tenant_no_blank_fallback() -> None:
 
 
 from tests.qualification.state_x._r3_r2_qualification_tests import *  # noqa: F403
+from tests.qualification.state_x._r3_r3_qualification_tests import *  # noqa: F403

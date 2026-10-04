@@ -279,4 +279,95 @@ Parent FRZ-STA/REC/TEN global criteria remain **OPEN**; revalidated via preserve
 
 ## Roadmap note
 
-Next mandatory child: **STATE-X-R3-R3**. **STATE-X** remains **CURRENT**. **STATE-X-R4** and **TRACE-X** remain **NOT ENTERED**.
+Next mandatory child after R3-R3 remediation: **STATE-X-R3-R3-A1** (if authority blocker persists). **STATE-X** remains **CURRENT**. **STATE-X-R4** and **TRACE-X** remain **NOT ENTERED**.
+
+---
+
+## R3-R3 — SX-F12 Human Decision / HITL Persistence
+
+**START_HEAD:** `91385b07ae1566f9f9ecff0d5705f1b141675da8`
+
+### Contract owner and providers
+
+| Role | Symbol / path |
+|---|---|
+| Semantic contract | `HumanDecisionPersistence` — `intergrax/runtime/human/persistence_contract.py` |
+| InMemory provider | `InMemoryHumanDecisionPersistence` (non-durable; test/qualification) |
+| SQLite provider | `SQLiteHumanDecisionStore` — `intergrax/runtime/human/store.py` |
+| Composition owner | `create_sqlite_human_decision_store` / `open_human_decision_store_at` — `intergrax/runtime/persistence/sqlite_composition.py` |
+| Record type | `HumanDecisionRecord` — `intergrax/runtime/human/models.py` |
+
+`record()` is **insert-only** per global `decision_id`; duplicates raise `HumanDecisionPersistenceConflictError`.
+
+### Caller inventory (production)
+
+| Consumer | Classification |
+|---|---|
+| `runtime/nexus/orchestration/human_response.py` | WRITE EVIDENCE |
+| `runtime/nexus/nexus_loop.py` | READ/WRITE EVIDENCE (injected store) |
+| `tools/providers/hitl/service.py` | TOOLING/QUERY |
+| `tools/registry/runtime_bindings.py` | structural `HumanDecisionStoreBinding` |
+| `runtime/persistence/sqlite_composition.py` | COMPOSITION |
+| `runtime/codecraft/ownership.py` (`resolve_codecraft_exec_authorization`) | **AUTHORITY CONSUMER — BLOCKER** |
+
+`DecisionHumanReviewPort` remains a separate Decision/Governance domain; not collapsed into `HumanDecisionPersistence`.
+
+### Evidence vs authority
+
+- Human decision persistence = **durable evidence** only.
+- **IN-SCOPE BLOCKER:** `resolve_codecraft_exec_authorization` maps scoped `HumanResponseVerdict.APPROVE` records to `CodeCraftExecAuthorization(authorized=True)` without canonical Governance re-evaluation (Case A). Mechanical proof: **R3-R3-Q17**.
+- Proposed child: **STATE-X-R3-R3-A1** — Human Decision Evidence → Execution Authority Boundary Remediation.
+
+### Provider parity matrix (mechanical)
+
+| Invariant | InMemory | SQLite |
+|---|:---:|:---:|
+| contract instance | Q02 | Q02 |
+| record/read round trip | Q03–Q04 | Q03–Q04 |
+| duplicate ID fail-closed | Q03 | Q03 |
+| duplicate cannot overwrite truth | Q04 | Q04 |
+| wrong-tenant get blocked | Q05 | Q05 |
+| task-list tenant isolation | Q06 | Q06 |
+| escalation tenant isolation | Q07 | Q07 |
+| queue summary tenant isolation | Q08 | Q08 |
+| approver tenant consistency | Q09 | Q09 |
+| deterministic ordering | Q10 | Q10 |
+| no authority mint (persistence layer) | Q15 | Q15 |
+| restart durability | N/A | Q11 |
+| corrupt approver data fail-closed | N/A | Q12–Q14 |
+| global `decision_id` collision | Q20 | Q20 |
+
+### Tenant isolation
+
+Proven via Q05–Q08, Q09 (write boundary), Q14 (read boundary), Q20 (global ID + tenant read scope).
+
+### Typing
+
+- `_approver_from_resolution` → `HumanApproverEvidence` (`human_response.py`).
+- HITL intake approver narrowing (`intake_runner.py`); semantic `type: ignore` removed on approver boundary.
+
+### FRZ mapping (scoped — no global PASS)
+
+| FRZ | Classification | Evidence |
+|---|---|---|
+| FRZ-STA-01 | direct (scoped SX-F12) | Q01, Q19 single contract owner |
+| FRZ-STA-02 | direct (scoped) | Q19 no duplicate production truth store |
+| FRZ-STA-03 | direct (scoped) | atomic `record()` insert; conflict leaves prior row |
+| FRZ-STA-04 | direct (scoped) | Q05–Q08 |
+| FRZ-STA-05 | direct (scoped) | Q03–Q04, Q20 |
+| FRZ-REC-01 | direct (scoped SQLite evidence reload) | Q11 |
+| FRZ-REC-06 | supporting | Q12–Q14 partial/corrupt row fail-closed |
+| FRZ-REC-10 | supporting | Q12–Q14 corrupt provenance |
+| FRZ-TEN-04 | direct (scoped) | Q05–Q08, Q20 |
+| FRZ-TEN-07 | supporting | Q09 approver tenant on record |
+| FRZ-TEN-08 | supporting (SQLite human-decision scope) | Q11 |
+
+**Not claimed:** FRZ-GOV-*, FRZ-EXE-* promotion; FRZ-REC-02/03/05/08/09; global TENANT-X/STATE-X closure.
+
+### Findings
+
+| ID | Classification |
+|---|---|
+| CodeCraft `resolve_codecraft_exec_authorization` uses persisted APPROVE as execution permission | **IN-SCOPE BLOCKER** → R3-R3-A1 |
+
+**Status:** **BLOCKED** — persistence parity work landed; authority boundary requires architecture decision before READY FOR AUDIT / closure.

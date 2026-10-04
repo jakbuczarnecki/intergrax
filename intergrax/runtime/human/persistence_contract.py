@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from collections import defaultdict
 
 from intergrax.runtime.human.models import HumanDecisionRecord, HumanResponseVerdict
+from intergrax.runtime.human.persistence_errors import HumanDecisionPersistenceConflictError
 
 
 class HumanDecisionPersistence(ABC):
@@ -21,7 +22,12 @@ class HumanDecisionPersistence(ABC):
 
     @abstractmethod
     def record(self, record: HumanDecisionRecord) -> HumanDecisionRecord:
-        """Persist a human decision record."""
+        """
+        Persist a human decision record (insert-only per ``decision_id``).
+
+        A duplicate ``decision_id`` must fail closed and must not overwrite
+        existing durable truth.
+        """
 
     @abstractmethod
     def list_for_task(self, task_id: str, tenant_id: str) -> list[HumanDecisionRecord]:
@@ -56,6 +62,11 @@ class InMemoryHumanDecisionPersistence(HumanDecisionPersistence):
         self._task_index: dict[tuple[str, str], list[str]] = defaultdict(list)
 
     def record(self, record: HumanDecisionRecord) -> HumanDecisionRecord:
+        if record.decision_id in self._records:
+            raise HumanDecisionPersistenceConflictError(
+                "human decision record already exists",
+                decision_id=record.decision_id,
+            )
         self._records[record.decision_id] = record
         key = (record.task_id, record.tenant_id)
         if record.decision_id not in self._task_index[key]:
@@ -65,7 +76,7 @@ class InMemoryHumanDecisionPersistence(HumanDecisionPersistence):
     def list_for_task(self, task_id: str, tenant_id: str) -> list[HumanDecisionRecord]:
         ids = self._task_index.get((task_id, tenant_id), [])
         records = [self._records[decision_id] for decision_id in ids if decision_id in self._records]
-        return sorted(records, key=lambda item: item.created_at_utc)
+        return sorted(records, key=lambda item: (item.created_at_utc, item.decision_id))
 
     def list_escalations(
         self,
@@ -78,6 +89,7 @@ class InMemoryHumanDecisionPersistence(HumanDecisionPersistence):
             for record in self._records.values()
             if record.tenant_id == tenant_id and record.verdict is HumanResponseVerdict.ESCALATE
         ]
+        escalations.sort(key=lambda item: item.decision_id)
         escalations.sort(key=lambda item: item.created_at_utc, reverse=True)
         return escalations[:limit]
 
