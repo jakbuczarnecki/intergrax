@@ -812,5 +812,6 @@ STATE_X_R3_R2_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/qualification/state_x/inventory.py",
         "tests/qualification/state_x/test_state_x_p0_baseline.py",
         "tests/unit/runtime/execution/test_compensation_side_effect_admission.py",
+        "tests/unit/applications/shared/test_reliability_idempotency_declarative_invoker_wiring.py",
     },
 )
