@@ -376,7 +376,7 @@ def test_rejected_decision_blocks_execution(tmp_path: Path) -> None:
                 CodeCraftIterateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
             )
             mocked_exec.assert_not_called()
-        assert out.result.error == "hitl_denied"
+        assert out.result.error == "hitl_pending"
     finally:
         _reset_run(token)
 
@@ -619,7 +619,7 @@ def test_approval_without_run_cannot_authorize_active_run(tmp_path: Path) -> Non
         _reset_run(token)
 
 
-def test_active_run_exact_approve_still_works_iterate(tmp_path: Path) -> None:
+def test_active_run_stored_approve_does_not_authorize_iterate(tmp_path: Path) -> None:
     store = InMemoryHumanDecisionPersistence()
     profile = CodeCraftProfile(mode="supervised", require_hitl_before_exec=True, require_tests=False)
     ctx = _ctx(
@@ -633,17 +633,18 @@ def test_active_run_exact_approve_still_works_iterate(tmp_path: Path) -> None:
         craft_id = _open_session(ctx, tenant_id=TENANT_A, task_id=TASK_X)
         _approve(store, tenant_id=TENANT_A, task_id=TASK_X, craft_id=craft_id, run_id=str(RUN_A))
 
-        out = codecraft_iterate(
-            ctx,
-            CodeCraftIterateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
-        )
-        assert out.result.error != "hitl_pending"
-        assert out.result.error != "hitl_denied"
+        with patch("intergrax.runtime.codecraft.orchestrator.code_exec") as mocked_exec:
+            out = codecraft_iterate(
+                ctx,
+                CodeCraftIterateToolInput(craft_id=craft_id, tenant_id=TENANT_A, task_id=TASK_X),
+            )
+            mocked_exec.assert_not_called()
+        assert out.result.error == "hitl_pending"
     finally:
         _reset_run(token)
 
 
-def test_active_run_exact_approve_still_works_codecraft_run(tmp_path: Path) -> None:
+def test_active_run_stored_approve_does_not_authorize_codecraft_run(tmp_path: Path) -> None:
     store = InMemoryHumanDecisionPersistence()
     profile = CodeCraftProfile(mode="supervised", require_hitl_before_exec=True)
     craft_id = "craft-run-hitl-parity"
@@ -690,17 +691,19 @@ def test_active_run_exact_approve_still_works_codecraft_run(tmp_path: Path) -> N
             hitl_store=exact_store,
         )
         _approve(exact_store, tenant_id=TENANT_A, task_id=TASK_X, craft_id=craft_id, run_id=str(RUN_A))
-        out = codecraft_run(
-            exact_ctx,
-            CodeCraftRunToolInput(
-                code="print('approved')\n",
-                tenant_id=TENANT_A,
-                task_id=TASK_X,
-                craft_id=craft_id,
-            ),
-        )
-        assert out.result.success is True
-        assert "approved" in out.result.stdout
+        with patch("intergrax.tools.providers.codecraft.service.code_exec") as mocked_exec:
+            out = codecraft_run(
+                exact_ctx,
+                CodeCraftRunToolInput(
+                    code="print('approved')\n",
+                    tenant_id=TENANT_A,
+                    task_id=TASK_X,
+                    craft_id=craft_id,
+                ),
+            )
+            mocked_exec.assert_not_called()
+        assert out.result.error == "hitl_pending"
+        assert out.result.success is False
     finally:
         _reset_run(token)
 

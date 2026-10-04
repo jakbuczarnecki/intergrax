@@ -370,4 +370,48 @@ Proven via Q05–Q08, Q09 (write boundary), Q14 (read boundary), Q20 (global ID 
 |---|---|
 | CodeCraft `resolve_codecraft_exec_authorization` uses persisted APPROVE as execution permission | **IN-SCOPE BLOCKER** → R3-R3-A1 |
 
-**Status:** **BLOCKED** — persistence parity work landed; authority boundary requires architecture decision before READY FOR AUDIT / closure.
+**Status:** **BLOCKED PENDING INDEPENDENT A1 AUDIT** — persistence parity accepted @ `37b3e5e6d6e57601ca0289b94589d4d2d970d250`; A1 remediation landed in follow-up commit (see R3-R3-A1).
+
+---
+
+## R3-R3-A1 — Human Decision Evidence / Execution Authority Boundary
+
+**START_HEAD:** `37b3e5e6d6e57601ca0289b94589d4d2d970d250`
+
+### Root cause
+
+`resolve_codecraft_exec_authorization` treated scoped `HumanDecisionRecord(APPROVE)` as `CodeCraftExecAuthorization(authorized=True)` on standalone CodeCraft paths (orchestrator, `codecraft.run`, wiring-bound without upstream flag).
+
+### Before / after
+
+**Before:** `HumanDecisionPersistence` → `APPROVE` → local resolver → `authorized=True` → physical execution.
+
+**After:** persisted human decisions = evidence/query/correlation only; supervised standalone paths **fail closed** (`hitl_pending`); execution-bound catalog path sets `upstream_canonical_hitl_satisfied=True` (does not read evidence store).
+
+### CodeCraft execution entrypoints
+
+| Path | Classification |
+|---|---|
+| `runtime/codecraft/orchestrator.py` | STANDALONE FAIL-CLOSED when supervised/HITL profile |
+| `tools/providers/codecraft/service.py` | STANDALONE FAIL-CLOSED |
+| `runtime/codecraft/wiring_bound_capability_execution.py` | CANONICALLY GOVERNED (`upstream_canonical_hitl_satisfied`) |
+
+### Persistence validation
+
+Single helper `validate_human_decision_for_persistence` in `runtime/human/persistence_validation.py`; invoked by InMemory + SQLite before mutation.
+
+### Ordering
+
+Intake APPROVE path: `resolve_human_response_and_apply_canonical` before `persist_human_decision` (A1-Q16 AST + A1-Q04..Q06 runtime).
+
+### Mechanical tests
+
+`tests/qualification/state_x/_r3_r3_a1_qualification_tests.py` (A1-Q01..Q20 subset implemented; R3-R3 matrix preserved via `_r3_r3_qualification_tests.py`).
+
+### Findings
+
+| ID | Classification |
+|---|---|
+| (prior) CodeCraft evidence-as-authority | **remediated in A1** |
+
+**Status:** **READY FOR AUDIT** (Cursor) — **STATE-X-R3-R3** remains **BLOCKED PENDING INDEPENDENT A1 AUDIT**; not CLOSED.

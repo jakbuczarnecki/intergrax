@@ -350,8 +350,8 @@ def test_r3_r3_q16_canonical_resolution_precedes_evidence_persistence() -> None:
     )
 
 
-def test_r3_r3_q17_persisted_evidence_can_authorize_codecraft_execution(tmp_path: Path) -> None:
-    """Documents authority bypass: APPROVE record → CodeCraftExecAuthorization(authorized=True)."""
+def test_r3_r3_q17_persisted_evidence_cannot_authorize_codecraft_execution(tmp_path: Path) -> None:
+    """Regression: persisted APPROVE must not mint CodeCraft execution permission (A1 boundary)."""
     store = SQLiteHumanDecisionStore(db_path=tmp_path / "codecraft.db")
     notes = codecraft_exec_hitl_notes("craft-r3r3")
     record = build_human_decision_record(
@@ -373,7 +373,8 @@ def test_r3_r3_q17_persisted_evidence_can_authorize_codecraft_execution(tmp_path
         ownership=ownership,
         craft_id="craft-r3r3",
     )
-    assert auth.authorized is True
+    assert auth.authorized is False
+    assert auth.pending_hitl is True
 
 
 def test_r3_r3_q18_composition_uses_human_decision_persistence_contract(tmp_path: Path) -> None:

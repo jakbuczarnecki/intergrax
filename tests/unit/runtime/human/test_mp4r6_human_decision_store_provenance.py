@@ -219,7 +219,7 @@ def test_cross_tenant_persisted_approver_fails_closed(tmp_path) -> None:
         store.get_decision(_DECISION, _TENANT)
 
 
-def test_codecraft_authorization_cannot_use_legacy_missing_provenance_row(tmp_path) -> None:
+def test_codecraft_authorization_does_not_read_persisted_evidence_for_permission(tmp_path) -> None:
     db = tmp_path / "human.db"
     _insert_legacy_row(db, user_id="someone", approver_json=None)
     store = SQLiteHumanDecisionStore(db_path=db)
@@ -227,13 +227,14 @@ def test_codecraft_authorization_cannot_use_legacy_missing_provenance_row(tmp_pa
     profile = CodeCraftProfile(mode="supervised", require_hitl_before_exec=True)
     ownership = CodeCraftSessionOwnership(tenant_id=_TENANT, task_id=_TASK, run_id="run-1")
 
-    with pytest.raises(HumanDecisionApproverProvenanceError):
-        resolve_codecraft_exec_authorization(
-            ctx,
-            profile=profile,
-            ownership=ownership,
-            craft_id="craft-1",
-        )
+    auth = resolve_codecraft_exec_authorization(
+        ctx,
+        profile=profile,
+        ownership=ownership,
+        craft_id="craft-1",
+    )
+    assert auth.authorized is False
+    assert auth.pending_hitl is True
 
 
 def test_summarize_queue_counts_legacy_rows_without_materializing_approver(tmp_path) -> None:

@@ -834,3 +834,27 @@ STATE_X_R3_R3_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/qualification/state_x/test_state_x_p0_baseline.py",
     },
 )
+
+STATE_X_R3_R3_A1_PRE_AUDIT_HEAD: Final[str] = "37b3e5e6d6e57601ca0289b94589d4d2d970d250"
+
+STATE_X_R3_R3_A1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "intergrax/runtime/human/persistence_validation.py",
+        "intergrax/runtime/codecraft/ownership.py",
+        "intergrax/runtime/codecraft/wiring_bound_capability_execution.py",
+        "intergrax/runtime/human/persistence_contract.py",
+        "intergrax/runtime/human/persistence_errors.py",
+        "intergrax/runtime/human/store.py",
+        "docs/project/maintainers/qualification/STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md",
+        "tests/qualification/state_x/_r3_r3_a1_qualification_tests.py",
+        "tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+        "tests/qualification/state_x/_r3_r3_qualification_tests.py",
+        "tests/unit/runtime/codecraft/test_orchestrator.py",
+        "tests/unit/runtime/codecraft/test_identity_governance.py",
+        "tests/unit/runtime/codecraft/test_autonomous_work_adapter.py",
+        "tests/unit/runtime/codecraft/test_uca6_orchestrator_gap_synthesis_port.py",
+        "tests/unit/runtime/human/test_mp4r6_human_decision_store_provenance.py",
+    },
+)

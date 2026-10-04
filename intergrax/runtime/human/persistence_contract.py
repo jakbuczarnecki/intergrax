@@ -10,6 +10,7 @@ from collections import defaultdict
 
 from intergrax.runtime.human.models import HumanDecisionRecord, HumanResponseVerdict
 from intergrax.runtime.human.persistence_errors import HumanDecisionPersistenceConflictError
+from intergrax.runtime.human.persistence_validation import validate_human_decision_for_persistence
 
 
 class HumanDecisionPersistence(ABC):
@@ -62,6 +63,7 @@ class InMemoryHumanDecisionPersistence(HumanDecisionPersistence):
         self._task_index: dict[tuple[str, str], list[str]] = defaultdict(list)
 
     def record(self, record: HumanDecisionRecord) -> HumanDecisionRecord:
+        validate_human_decision_for_persistence(record)
         if record.decision_id in self._records:
             raise HumanDecisionPersistenceConflictError(
                 "human decision record already exists",

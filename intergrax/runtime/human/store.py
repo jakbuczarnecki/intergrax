@@ -19,6 +19,7 @@ from intergrax.runtime.human.persistence_errors import (
     HumanDecisionPersistenceConflictError,
     deserialize_persisted_human_approver_evidence,
 )
+from intergrax.runtime.human.persistence_validation import validate_human_decision_for_persistence
 from intergrax.runtime.human.models import (
     EscalationTarget,
     HumanDecisionRecord,
@@ -93,6 +94,7 @@ class SQLiteHumanDecisionStore(HumanDecisionPersistence):
             )
 
     def record(self, record: HumanDecisionRecord) -> HumanDecisionRecord:
+        validate_human_decision_for_persistence(record)
         with self._connection() as conn:
             try:
                 conn.execute(
