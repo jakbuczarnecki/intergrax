@@ -32,11 +32,12 @@ class CodeCraftSessionOwnership:
 @dataclass(frozen=True, slots=True)
 class CodeCraftExecAuthorization:
     """
-    Local CodeCraft execution-gate result only.
+    Local CodeCraft profile gate result only.
 
-    Derived from profile mode and upstream canonical authority context when present.
-    Does not mint platform execution permission and never reads HumanDecisionPersistence
-    as an authorization source.
+    When ``authorized`` is True, the local supervised/HITL profile gate does not block
+    the attempt; it does **not** mean platform governance, MSE, or ToolRuntime
+    authorization exists. Does not mint platform execution permission and never reads
+    HumanDecisionPersistence as an authorization source.
     """
 
     authorized: bool
@@ -114,21 +115,19 @@ def resolve_codecraft_exec_authorization(
     profile: CodeCraftProfile,
     ownership: CodeCraftSessionOwnership,
     craft_id: str,
-    upstream_canonical_hitl_satisfied: bool = False,
 ) -> CodeCraftExecAuthorization:
     """
     Shared supervised-profile gate for iterate and codecraft.run execution paths.
 
     Persisted human decisions are evidence only; this gate never grants execution from
-    the human decision store as an authorization source.
+    the human decision store as an authorization source. When HITL is required by the
+    profile, fail closed until a sanctioned typed canonical authority contract exists
+    (not implemented on CodeCraft wiring-bound paths in this release).
     """
     _ = ctx
     _ = craft_id
     needs_hitl = profile.mode == "supervised" or profile.require_hitl_before_exec
     if not needs_hitl:
-        return CodeCraftExecAuthorization(authorized=True)
-
-    if upstream_canonical_hitl_satisfied:
         return CodeCraftExecAuthorization(authorized=True)
 
     if ownership.run_id is None:

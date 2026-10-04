@@ -116,7 +116,6 @@ class WiringCodeCraftBoundCapabilityExecution:
             profile=profile,
             ownership=ownership,
             craft_id=request.craft_id,
-            upstream_canonical_hitl_satisfied=True,
         )
         if exec_auth.denied:
             return CodeCraftBoundCapabilityExecutionResult(

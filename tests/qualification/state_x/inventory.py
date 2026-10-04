@@ -858,3 +858,18 @@ STATE_X_R3_R3_A1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/unit/runtime/human/test_mp4r6_human_decision_store_provenance.py",
     },
 )
+
+STATE_X_R3_R3_A1_R1_PRE_AUDIT_HEAD: Final[str] = "02ffbd9fc74676775d075de712d96e5a3d9699d7"
+
+STATE_X_R3_R3_A1_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "intergrax/runtime/codecraft/ownership.py",
+        "intergrax/runtime/codecraft/wiring_bound_capability_execution.py",
+        "docs/project/maintainers/qualification/STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md",
+        "tests/qualification/state_x/_r3_r3_a1_r1_qualification_tests.py",
+        "tests/qualification/state_x/_r3_r3_a1_qualification_tests.py",
+        "tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+    },
+)

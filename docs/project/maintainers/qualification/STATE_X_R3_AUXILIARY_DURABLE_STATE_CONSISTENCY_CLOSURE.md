@@ -386,7 +386,7 @@ Proven via Q05–Q08, Q09 (write boundary), Q14 (read boundary), Q20 (global ID 
 
 **Before:** `HumanDecisionPersistence` → `APPROVE` → local resolver → `authorized=True` → physical execution.
 
-**After:** persisted human decisions = evidence/query/correlation only; supervised standalone paths **fail closed** (`hitl_pending`); execution-bound catalog path sets `upstream_canonical_hitl_satisfied=True` (does not read evidence store).
+**After:** persisted human decisions = evidence/query/correlation only; supervised standalone paths **fail closed** (`hitl_pending`); wiring-bound supervised path **fail closed** (A1-R1 removed hardcoded upstream bool).
 
 ### CodeCraft execution entrypoints
 
@@ -394,7 +394,7 @@ Proven via Q05–Q08, Q09 (write boundary), Q14 (read boundary), Q20 (global ID 
 |---|---|
 | `runtime/codecraft/orchestrator.py` | STANDALONE FAIL-CLOSED when supervised/HITL profile |
 | `tools/providers/codecraft/service.py` | STANDALONE FAIL-CLOSED |
-| `runtime/codecraft/wiring_bound_capability_execution.py` | CANONICALLY GOVERNED (`upstream_canonical_hitl_satisfied`) |
+| `runtime/codecraft/wiring_bound_capability_execution.py` | FAIL-CLOSED when supervised/HITL profile (A1-R1); autonomous delegates to catalog invoker |
 
 ### Persistence validation
 
@@ -415,3 +415,27 @@ Intake APPROVE path: `resolve_human_response_and_apply_canonical` before `persis
 | (prior) CodeCraft evidence-as-authority | **remediated in A1** |
 
 **Status:** **READY FOR AUDIT** (Cursor) — **STATE-X-R3-R3** remains **BLOCKED PENDING INDEPENDENT A1 AUDIT**; not CLOSED.
+
+---
+
+## R3-R3-A1-R1 — CodeCraft Authority Shortcut Removal
+
+**START_HEAD:** `02ffbd9fc74676775d075de712d96e5a3d9699d7`
+
+### Root cause
+
+`WiringCodeCraftBoundCapabilityExecution` passed `upstream_canonical_hitl_satisfied=True` into `resolve_codecraft_exec_authorization`, minting local `authorized=True` without typed canonical HITL proof.
+
+### Remediation
+
+- Removed `upstream_canonical_hitl_satisfied` from production (`ownership.py`, all call-sites).
+- Supervised / `require_hitl_before_exec` profiles **fail closed** on all CodeCraft entrypoints including wiring-bound execution (no catalog `invoke`, no `code.exec`).
+- Autonomous / non-HITL wiring-bound paths still delegate physical execution to `ExecutionBoundCatalogToolInvoker` (canonical ToolRuntime / governance / MSE boundary unchanged).
+- `HumanDecisionPersistence` remains **evidence only**; no execution allow path from persisted verdicts.
+- Full canonical supervised CodeCraft HITL integration for execution-bound paths **not** implemented (architecture capability gap; see `UCA_6C_CANONICAL_HITL_REENTRY_PROOF.md`).
+
+### Mechanical tests
+
+`tests/qualification/state_x/_r3_r3_a1_r1_qualification_tests.py` (R1-Q01..Q20).
+
+**Status:** **READY FOR AUDIT** (Cursor) — **STATE-X-R3-R3-A1** / **STATE-X-R3-R3** remain **BLOCKED PENDING INDEPENDENT R1 AUDIT**; not CLOSED.

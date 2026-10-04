@@ -266,21 +266,6 @@ def test_r3_r3_a1_q20_codecraft_execution_inventory_complete() -> None:
     assert "intergrax/tools/providers/codecraft/service.py" in hits
 
 
-def test_r3_r3_a1_q12_governed_bound_path_uses_upstream_canonical_flag() -> None:
-    tree = ast.parse(
-        (_REPO_ROOT / "intergrax/runtime/codecraft/wiring_bound_capability_execution.py").read_text(
-            encoding="utf-8"
-        )
-    )
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
-            if node.func.id == "resolve_codecraft_exec_authorization":
-                keywords = {kw.arg: kw for kw in node.keywords if kw.arg}
-                assert "upstream_canonical_hitl_satisfied" in keywords
-                assert isinstance(keywords["upstream_canonical_hitl_satisfied"].value, ast.Constant)
-                assert keywords["upstream_canonical_hitl_satisfied"].value.value is True
-
-
 def test_r3_r3_a1_q16_intake_runner_orders_canonical_before_persist_for_approve() -> None:
     text = _INTAKE.read_text(encoding="utf-8")
     approve_idx = text.index("if verdict == HumanResponseVerdict.APPROVE:")
