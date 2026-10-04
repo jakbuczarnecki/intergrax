@@ -11,7 +11,8 @@
 | STATE-X-R3-R2-R1-R1 | **CLOSED** — independently accepted @ `d5979a531e41f9a45a3a00b0b150765ee34bb0f8` |
 | STATE-X-R3-R2-R1 | **CLOSED** — reconciled through accepted child |
 | STATE-X-R3-R2 | **CLOSED** — reconciled |
-| STATE-X-R3-R3 | **NEXT / MANDATORY / NOT ENTERED** |
+| STATE-X-R3-R3 | **CLOSED** — independently accepted @ `e05b5b8eb3a60e8f46b5502083440e2e863e7204` (SX-F12) |
+| STATE-X-R3-R4 | **CURRENT / MANDATORY / IN EXECUTION** — SX-F13 (Cursor: READY FOR AUDIT pending independent audit) |
 | STATE-X (parent) | **CURRENT / MANDATORY** — not closed |
 
 **Evidence provenance (R3-R2 chain):**
@@ -439,3 +440,41 @@ Intake APPROVE path: `resolve_human_response_and_apply_canonical` before `persis
 `tests/qualification/state_x/_r3_r3_a1_r1_qualification_tests.py` (R1-Q01..Q20).
 
 **Status:** **READY FOR AUDIT** (Cursor) — **STATE-X-R3-R3-A1** / **STATE-X-R3-R3** remain **BLOCKED PENDING INDEPENDENT R1 AUDIT**; not CLOSED.
+
+---
+
+## R3-R4 — SX-F13 Scheduler Durable State
+
+**START_HEAD:** `e05b5b8eb3a60e8f46b5502083440e2e863e7204`
+
+### Scope
+
+SX-F13 only — `ScheduledResumePersistence`, `SchedulerLedger`, `LongRunningScheduler` WHEN-only orchestration, SQLite reference provider colocation without semantic merge.
+
+### Root cause (pre-remediation)
+
+`ScheduledResume.resume_metadata` (`human_approved`, `verdict`, `response_text`) was interpreted in `build_scheduled_resume_task()` to mint `TaskHumanInput` / synthetic scheduler approver — violating scheduler = WHEN-only.
+
+### Remediation
+
+- `validate_scheduled_resume_metadata()` in `scheduled_resume_metadata.py`; model validator on `ScheduledResume`; persistence schedule/load fail-closed.
+- Delayed resume path no longer creates Human/Governance input from metadata; non-authoritative transport keys only (e.g. correlation).
+- Canonical human **timeout** path unchanged (`build_timeout_resume_task` + `HumanTimeoutCoordinator` policy).
+- Deterministic due ordering: `ORDER BY run_at_utc ASC, schedule_id ASC`.
+- Duplicate `schedule_id` → `ScheduledResumeScheduleConflictError`.
+
+### Before / after
+
+**Before:** resume_metadata → human_approved/verdict → TaskHumanInput → synthetic approver → resume.
+
+**After:** ScheduledResume → validated transport metadata → claim → checkpoint lookup → HostTaskExecutionPort → canonical admission.
+
+### Tests
+
+`tests/qualification/state_x/_r3_r4_qualification_tests.py` (R3-R4-Q01..Q35 + static gates). Historical SCHED-01 + `test_pcm_scheduler_integrity.py` replayed on current HEAD.
+
+### FRZ (scoped, no global PASS)
+
+Direct/supporting contributions documented in qualification matrix; global FRZ rows remain OPEN.
+
+**Status:** **READY FOR AUDIT** (Cursor) — not CLOSED.

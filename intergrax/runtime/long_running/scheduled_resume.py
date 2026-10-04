@@ -6,11 +6,14 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Self
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
+from intergrax.runtime.long_running.scheduled_resume_metadata import (
+    validate_scheduled_resume_metadata,
+)
 from intergrax.utils.time_provider import SystemTimeProvider
 
 if TYPE_CHECKING:
@@ -40,6 +43,11 @@ class ScheduledResume(BaseModel):
     owner_id: Optional[str] = None
     lease_expires_at_utc: Optional[str] = None
     fence: int = Field(default=0, ge=0)
+
+    @model_validator(mode="after")
+    def _reject_authority_bearing_metadata(self) -> Self:
+        validate_scheduled_resume_metadata(self.resume_metadata)
+        return self
 
 
 class ScheduledResumePersistence:

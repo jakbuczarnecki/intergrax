@@ -31,3 +31,7 @@ class SchedulerActionClaim(LeaseOwnership):
 
 class ScheduledResumeCancellationError(RuntimeError):
     """Cancellation rejected because a live or uncertain claim owns the schedule."""
+
+
+class ScheduledResumeScheduleConflictError(ValueError):
+    """Duplicate schedule_id rejected — global occurrence identity must not overwrite."""

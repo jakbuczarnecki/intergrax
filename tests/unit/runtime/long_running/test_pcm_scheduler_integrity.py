@@ -179,7 +179,6 @@ async def test_two_schedulers_single_resume_call(tmp_path) -> None:
         tenant_id=checkpoint.tenant_id,
         resume_token=checkpoint.resume_token,
         run_at_utc=run_at,
-        resume_metadata={"human_approved": True},
     )
     now = datetime.now(timezone.utc)
     processed_a = await scheduler_a.tick(now=now)
@@ -214,7 +213,6 @@ async def test_losing_worker_does_not_notify(tmp_path) -> None:
         tenant_id=checkpoint.tenant_id,
         resume_token=checkpoint.resume_token,
         run_at_utc=run_at,
-        resume_metadata={"human_approved": True},
     )
     now = datetime.now(timezone.utc)
     await scheduler_a.tick(now=now)

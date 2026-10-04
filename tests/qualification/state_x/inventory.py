@@ -861,6 +861,28 @@ STATE_X_R3_R3_A1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
 
 STATE_X_R3_R3_A1_R1_PRE_AUDIT_HEAD: Final[str] = "02ffbd9fc74676775d075de712d96e5a3d9699d7"
 
+STATE_X_R3_R4_PRE_AUDIT_HEAD: Final[str] = "e05b5b8eb3a60e8f46b5502083440e2e863e7204"
+
+STATE_X_R3_R4_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "intergrax/runtime/long_running/scheduled_resume.py",
+        "intergrax/runtime/long_running/scheduled_resume_metadata.py",
+        "intergrax/runtime/long_running/resume_planner.py",
+        "intergrax/runtime/long_running/store.py",
+        "intergrax/runtime/long_running/scheduler_claim.py",
+        "docs/project/maintainers/qualification/STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md",
+        "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md",
+        "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
+        "tests/qualification/state_x/_r3_r4_support.py",
+        "tests/qualification/state_x/_r3_r4_qualification_tests.py",
+        "tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+        "tests/unit/runtime/long_running/test_pcm_scheduler_integrity.py",
+        "tests/integration/runtime/long_running/test_long_running_scheduler_j4.py",
+    },
+)
+
 STATE_X_R3_R3_A1_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     {
         "intergrax/runtime/codecraft/ownership.py",

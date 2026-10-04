@@ -21,6 +21,9 @@ from intergrax.contracts.human_approver import (
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.scheduled_resume import ScheduledResume
+from intergrax.runtime.long_running.scheduled_resume_metadata import (
+    validate_scheduled_resume_metadata,
+)
 from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_contract import (
     TaskExecutionOptions,
@@ -94,20 +97,10 @@ def build_scheduled_resume_task(
     checkpoint: TaskCheckpoint,
     entry: ScheduledResume,
 ) -> Task:
+    """Build resume Task for delayed schedule — WHEN-only; no metadata-derived HITL."""
     task = _base_resume_task(checkpoint)
+    validate_scheduled_resume_metadata(entry.resume_metadata)
     extra = dict(entry.resume_metadata or {})
-    if extra.pop("human_approved", False):
-        extra.setdefault("verdict", HumanResponseVerdict.APPROVE.value)
-    verdict_raw = extra.pop("verdict", None)
-    if verdict_raw:
-        verdict = HumanResponseVerdict(str(verdict_raw))
-        _apply_scheduler_human_input(
-            task,
-            verdict=verdict,
-            response_text=str(
-                extra.pop("response_text", f"scheduler:delayed:{verdict.value}")
-            ),
-        )
     task.metadata["scheduler_delayed_resume"] = True
     task.metadata["schedule_id"] = entry.schedule_id
     for key, value in extra.items():

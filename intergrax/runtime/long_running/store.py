@@ -27,7 +27,12 @@ from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.long_running.scheduler_claim import (
     ScheduledResumeCancellationError,
     ScheduledResumeClaim,
+    ScheduledResumeScheduleConflictError,
     SchedulerActionClaim,
+)
+from intergrax.runtime.long_running.scheduled_resume_metadata import (
+    ScheduledResumeMetadataValidationError,
+    validate_scheduled_resume_metadata,
 )
 from intergrax.runtime.long_running.scheduled_resume import (
     ScheduledResume,
@@ -461,26 +466,33 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
         return [self._row_to_checkpoint(row) for row in rows]
 
     def schedule(self, entry: ScheduledResume) -> ScheduledResume:
+        validated = ScheduledResume.model_validate(entry.model_dump(mode="json"))
+        validate_scheduled_resume_metadata(validated.resume_metadata)
         with self._connection() as conn:
-            conn.execute(
-                """
-                INSERT INTO scheduled_resumes (
-                    schedule_id, task_id, tenant_id, resume_token, run_at_utc,
-                    status, resume_metadata_json, created_at_utc
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    entry.schedule_id,
-                    entry.task_id,
-                    entry.tenant_id,
-                    entry.resume_token,
-                    entry.run_at_utc,
-                    entry.status.value,
-                    json.dumps(entry.resume_metadata),
-                    entry.created_at_utc,
-                ),
-            )
-        return entry
+            try:
+                conn.execute(
+                    """
+                    INSERT INTO scheduled_resumes (
+                        schedule_id, task_id, tenant_id, resume_token, run_at_utc,
+                        status, resume_metadata_json, created_at_utc
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        validated.schedule_id,
+                        validated.task_id,
+                        validated.tenant_id,
+                        validated.resume_token,
+                        validated.run_at_utc,
+                        validated.status.value,
+                        json.dumps(validated.resume_metadata),
+                        validated.created_at_utc,
+                    ),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise ScheduledResumeScheduleConflictError(
+                    f"Duplicate schedule_id rejected: {validated.schedule_id!r}",
+                ) from exc
+        return validated
 
     def claim_due(
         self,
@@ -513,7 +525,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 """
                 SELECT schedule_id FROM scheduled_resumes
                 WHERE status = ? AND run_at_utc <= ?
-                ORDER BY run_at_utc ASC
+                ORDER BY run_at_utc ASC, schedule_id ASC
                 LIMIT ?
                 """,
                 (ScheduledResumeStatus.PENDING.value, before_utc_iso, limit),
@@ -599,7 +611,7 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
                 """
                 SELECT * FROM scheduled_resumes
                 WHERE status = ? AND run_at_utc <= ?
-                ORDER BY run_at_utc ASC
+                ORDER BY run_at_utc ASC, schedule_id ASC
                 LIMIT ?
                 """,
                 (ScheduledResumeStatus.PENDING.value, before_utc_iso, limit),
@@ -776,19 +788,31 @@ class SQLiteTaskCheckpointStore(TaskCheckpointPersistence):
             row["lease_expires_at_utc"] if "lease_expires_at_utc" in keys else None
         )
         fence = int(row["fence"]) if "fence" in keys else 0
-        return ScheduledResume(
-            schedule_id=row["schedule_id"],
-            task_id=row["task_id"],
-            tenant_id=row["tenant_id"],
-            resume_token=row["resume_token"],
-            run_at_utc=row["run_at_utc"],
-            status=ScheduledResumeStatus(row["status"]),
-            resume_metadata=json.loads(row["resume_metadata_json"]),
-            created_at_utc=row["created_at_utc"],
-            owner_id=owner_id,
-            lease_expires_at_utc=lease_expires_at_utc,
-            fence=fence,
-        )
+        try:
+            metadata = json.loads(row["resume_metadata_json"])
+        except json.JSONDecodeError as exc:
+            raise ScheduledResumeMetadataValidationError(
+                f"Invalid resume_metadata_json for schedule_id={row['schedule_id']!r}",
+            ) from exc
+        try:
+            return ScheduledResume(
+                schedule_id=row["schedule_id"],
+                task_id=row["task_id"],
+                tenant_id=row["tenant_id"],
+                resume_token=row["resume_token"],
+                run_at_utc=row["run_at_utc"],
+                status=ScheduledResumeStatus(row["status"]),
+                resume_metadata=metadata,
+                created_at_utc=row["created_at_utc"],
+                owner_id=owner_id,
+                lease_expires_at_utc=lease_expires_at_utc,
+                fence=fence,
+            )
+        except (ValueError, ScheduledResumeMetadataValidationError) as exc:
+            raise ScheduledResumeMetadataValidationError(
+                f"Durable scheduled resume row rejected for schedule_id="
+                f"{row['schedule_id']!r}: {exc}",
+            ) from exc
 
     @staticmethod
     def _row_to_checkpoint(row: sqlite3.Row) -> TaskCheckpoint:
