@@ -6,6 +6,8 @@ from __future__ import annotations
 
 import ast
 import threading
+from collections.abc import Callable
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
@@ -38,6 +40,7 @@ from intergrax.runtime.execution.budget.persistence import (
     decode_run_budget_snapshot,
     encode_run_budget_snapshot,
 )
+from intergrax.runtime.execution.budget.snapshot import RunBudgetLedgerSnapshot
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -47,7 +50,96 @@ _TENANT_A = "tenant-r3-a"
 _TENANT_B = "tenant-r3-b"
 _LIMIT = RunBudget(max_total_tokens=100, max_tool_calls=100)
 
+type PersistenceFactory = Callable[[], RunBudgetPersistence]
+
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
+
+
+@dataclass
+class _RedeliveryRaceCounters:
+    redelivery_cas_calls: int = 0
+    redelivery_cas_failed: int = 0
+    post_conflict_load_calls: int = 0
+
+
+class _RedeliveryRacePersistence(RunBudgetPersistence):
+    """Deterministic orchestration for redelivery settlement CAS races."""
+
+    def __init__(
+        self,
+        inner: RunBudgetPersistence,
+        *,
+        race_expected_raw: bytes,
+        race_inject_winner_raw: bytes,
+        race_settled_attempt_id: AttemptId,
+        counters: _RedeliveryRaceCounters,
+    ) -> None:
+        self._inner = inner
+        self._race_expected_raw = race_expected_raw
+        self._race_inject_winner_raw = race_inject_winner_raw
+        self._race_settled_attempt_id = race_settled_attempt_id
+        self._counters = counters
+        self._race_armed = True
+        self._awaiting_post_conflict_load = False
+
+    def load_snapshot(
+        self,
+        *,
+        tenant_id: str,
+        run_id: RunId,
+    ) -> bytes | None:
+        raw = self._inner.load_snapshot(tenant_id=tenant_id, run_id=run_id)
+        if self._awaiting_post_conflict_load:
+            self._counters.post_conflict_load_calls += 1
+            self._awaiting_post_conflict_load = False
+        return raw
+
+    def compare_and_swap_snapshot(
+        self,
+        *,
+        tenant_id: str,
+        run_id: RunId,
+        expected: bytes | None,
+        snapshot: RunBudgetLedgerSnapshot,
+    ) -> bool:
+        is_redelivery_cas = (
+            self._race_armed
+            and expected == self._race_expected_raw
+            and snapshot.attempt_id == self._race_settled_attempt_id
+        )
+        if not is_redelivery_cas:
+            return self._inner.compare_and_swap_snapshot(
+                tenant_id=tenant_id,
+                run_id=run_id,
+                expected=expected,
+                snapshot=snapshot,
+            )
+        self._counters.redelivery_cas_calls += 1
+        winner_snapshot = decode_run_budget_snapshot(self._race_inject_winner_raw)
+        injected = self._inner.compare_and_swap_snapshot(
+            tenant_id=tenant_id,
+            run_id=run_id,
+            expected=self._race_expected_raw,
+            snapshot=winner_snapshot,
+        )
+        assert injected
+        result = self._inner.compare_and_swap_snapshot(
+            tenant_id=tenant_id,
+            run_id=run_id,
+            expected=expected,
+            snapshot=snapshot,
+        )
+        assert not result
+        self._counters.redelivery_cas_failed += 1
+        self._race_armed = False
+        self._awaiting_post_conflict_load = True
+        return False
+
+
+_CANONICAL_PERSISTENCE_FACTORIES: tuple[PersistenceFactory, ...] = (
+    lambda: KvRunBudgetPersistence(_KV()),
+    lambda: DocumentStoreRunBudgetPersistence(InMemoryDocumentStore()),
+)
 
 
 class _KV(DistributedKVStore):
@@ -138,6 +230,56 @@ def _ledger_from_snapshot(
     )
 
 
+def _seed_durable_raw(
+    persistence: RunBudgetPersistence,
+    *,
+    tenant_id: str,
+    run_id: RunId,
+    raw: bytes,
+) -> None:
+    snapshot = decode_run_budget_snapshot(raw)
+    created = persistence.compare_and_swap_snapshot(
+        tenant_id=tenant_id,
+        run_id=run_id,
+        expected=None,
+        snapshot=snapshot,
+    )
+    assert created
+
+
+def _canonical_redelivery_winner_raw(
+    *,
+    raw_sa: bytes,
+    winner_attempt_id: AttemptId,
+    extra_consume: int,
+) -> bytes:
+    helper = KvRunBudgetPersistence(_KV())
+    run_id = mint_run_id()
+    snapshot_sa = decode_run_budget_snapshot(raw_sa)
+    assert helper.compare_and_swap_snapshot(
+        tenant_id=_TENANT_A,
+        run_id=run_id,
+        expected=None,
+        snapshot=snapshot_sa,
+    )
+    factory = _durable_pair(helper)
+    ledger = _open(
+        factory,
+        tenant_id=_TENANT_A,
+        run_id=run_id,
+        attempt_id=winner_attempt_id,
+    )
+    if extra_consume:
+        _consume_tokens(
+            ledger,
+            root_execution_id=mint_execution_id(),
+            amount=extra_consume,
+        )
+    raw_winner = helper.load_snapshot(tenant_id=_TENANT_A, run_id=run_id)
+    assert raw_winner is not None
+    return raw_winner
+
+
 def _consume_tokens(
     ledger: DurableExecutionBudgetLedger,
     *,
@@ -198,14 +340,11 @@ def test_r3_r1_q03_create_ledger_does_not_recurse() -> None:
 
 @pytest.mark.parametrize(
     "persistence_factory",
-    [
-        lambda: KvRunBudgetPersistence(_KV()),
-        lambda: DocumentStoreRunBudgetPersistence(InMemoryDocumentStore()),
-    ],
+    _CANONICAL_PERSISTENCE_FACTORIES,
     ids=("kv", "document"),
 )
 def test_r3_r1_q04_single_writer_cas_success(
-    persistence_factory: object,
+    persistence_factory: PersistenceFactory,
 ) -> None:
     persistence = persistence_factory()
     factory = _durable_pair(persistence)
@@ -228,15 +367,25 @@ def test_r3_r1_q04_single_writer_cas_success(
     assert reopened.snapshot_root_available().max_total_tokens == 90
 
 
-def test_r3_r1_q05_exact_stale_writer_rejected() -> None:
-    kv = _KV()
-    persistence = KvRunBudgetPersistence(kv)
+@pytest.mark.parametrize(
+    "persistence_factory",
+    _CANONICAL_PERSISTENCE_FACTORIES,
+    ids=("kv", "document"),
+)
+def test_r3_r1_q05_exact_stale_writer_rejected(
+    persistence_factory: PersistenceFactory,
+) -> None:
+    persistence = persistence_factory()
     run_id = mint_run_id()
     attempt_id = mint_attempt_id()
     inner = create_execution_budget_ledger(_LIMIT)
-    snapshot0 = inner.export_snapshot(attempt_id)
-    raw0 = encode_run_budget_snapshot(snapshot0)
-    kv.set(_TENANT_A, f"run_budget_ledger:{run_id}", raw0)
+    raw0 = encode_run_budget_snapshot(inner.export_snapshot(attempt_id))
+    _seed_durable_raw(
+        persistence,
+        tenant_id=_TENANT_A,
+        run_id=run_id,
+        raw=raw0,
+    )
 
     ledger_a = _ledger_from_snapshot(
         persistence,
@@ -259,11 +408,19 @@ def test_r3_r1_q05_exact_stale_writer_rejected() -> None:
     with pytest.raises(StaleRunBudgetSnapshotWriteError):
         _consume_tokens(ledger_b, root_execution_id=mint_execution_id(), amount=25)
 
-    durable_raw = kv.get(_TENANT_A, f"run_budget_ledger:{run_id}")
+    durable_raw = persistence.load_snapshot(tenant_id=_TENANT_A, run_id=run_id)
     assert durable_raw is not None
     durable_snapshot = decode_run_budget_snapshot(durable_raw)
     assert durable_snapshot.root_shared_consumed.total_tokens == 40
     assert ledger_b.snapshot_root_available().max_total_tokens == 60
+    factory = _durable_pair(persistence)
+    reopened = _open(
+        factory,
+        tenant_id=_TENANT_A,
+        run_id=run_id,
+        attempt_id=attempt_id,
+    )
+    assert reopened.snapshot_root_available().max_total_tokens == 60
 
 
 def test_r3_r1_q06_stale_grant_does_not_escape() -> None:
@@ -376,51 +533,134 @@ def test_r3_r1_q08_initial_create_race_one_winner() -> None:
     assert kv.get(_TENANT_A, f"run_budget_ledger:{run_id}") is not None
 
 
-def test_r3_r1_q09_redelivery_settlement_conflict_observes_winner() -> None:
-    kv = _KV()
-    persistence = KvRunBudgetPersistence(kv)
-    factory = _durable_pair(persistence)
+def test_r3_r1_q09_redelivery_settlement_cas_conflict_same_attempt_winner() -> None:
+    inner_persistence = KvRunBudgetPersistence(_KV())
     run_id = mint_run_id()
     attempt_one = mint_attempt_id()
     attempt_two = mint_attempt_id()
-
+    base_factory = _durable_pair(inner_persistence)
     ledger_one = _open(
-        factory,
+        base_factory,
         tenant_id=_TENANT_A,
         run_id=run_id,
         attempt_id=attempt_one,
     )
     _consume_tokens(ledger_one, root_execution_id=mint_execution_id(), amount=20)
-    raw_after_one = kv.get(_TENANT_A, f"run_budget_ledger:{run_id}")
-    assert raw_after_one is not None
+    raw_sa = inner_persistence.load_snapshot(tenant_id=_TENANT_A, run_id=run_id)
+    assert raw_sa is not None
 
-    first_two = _open(
-        factory,
+    winner_raw = _canonical_redelivery_winner_raw(
+        raw_sa=raw_sa,
+        winner_attempt_id=attempt_two,
+        extra_consume=15,
+    )
+    winner_snapshot = decode_run_budget_snapshot(winner_raw)
+    assert winner_snapshot.attempt_id == attempt_two
+    assert winner_snapshot.root_shared_consumed.total_tokens == 35
+
+    loser_candidate_snapshot = decode_run_budget_snapshot(raw_sa)
+    inner = create_execution_budget_ledger(loser_candidate_snapshot.root_limits)
+    inner.restore_snapshot(loser_candidate_snapshot)
+    inner.prepare_for_attempt_redelivery()
+    loser_candidate = inner.export_snapshot(attempt_two)
+    assert loser_candidate.root_shared_consumed.total_tokens == 20
+
+    counters = _RedeliveryRaceCounters()
+    race_persistence = _RedeliveryRacePersistence(
+        inner_persistence,
+        race_expected_raw=raw_sa,
+        race_inject_winner_raw=winner_raw,
+        race_settled_attempt_id=attempt_two,
+        counters=counters,
+    )
+    race_factory = _durable_pair(race_persistence)
+    returned = _open(
+        race_factory,
         tenant_id=_TENANT_A,
         run_id=run_id,
         attempt_id=attempt_two,
     )
-    assert first_two.snapshot_root_available().max_total_tokens == 80
 
-    second_two = _open(
-        factory,
+    assert counters.redelivery_cas_calls == 1
+    assert counters.redelivery_cas_failed == 1
+    assert counters.post_conflict_load_calls == 1
+    assert returned.snapshot_root_available().max_total_tokens == 65
+    assert (
+        returned.snapshot_root_available().max_total_tokens
+        != 100 - loser_candidate.root_shared_consumed.total_tokens
+    )
+
+    durable_raw = inner_persistence.load_snapshot(tenant_id=_TENANT_A, run_id=run_id)
+    assert durable_raw is not None
+    assert durable_raw == winner_raw
+    durable_snapshot = decode_run_budget_snapshot(durable_raw)
+    assert durable_snapshot.root_shared_consumed.total_tokens == 35
+    assert durable_snapshot.root_permanent_consumed.total_tokens == 0
+
+    fresh = _open(
+        base_factory,
         tenant_id=_TENANT_A,
         run_id=run_id,
         attempt_id=attempt_two,
     )
-    assert second_two.snapshot_root_available().max_total_tokens == 80
+    assert fresh.snapshot_root_available().max_total_tokens == 65
+
+
+def test_r3_r1_q09_redelivery_settlement_cas_conflict_different_attempt_stale() -> None:
+    inner_persistence = KvRunBudgetPersistence(_KV())
+    run_id = mint_run_id()
+    attempt_one = mint_attempt_id()
+    attempt_two = mint_attempt_id()
+    attempt_three = mint_attempt_id()
+    base_factory = _durable_pair(inner_persistence)
+    ledger_one = _open(
+        base_factory,
+        tenant_id=_TENANT_A,
+        run_id=run_id,
+        attempt_id=attempt_one,
+    )
+    _consume_tokens(ledger_one, root_execution_id=mint_execution_id(), amount=20)
+    raw_sa = inner_persistence.load_snapshot(tenant_id=_TENANT_A, run_id=run_id)
+    assert raw_sa is not None
+
+    winner_raw = _canonical_redelivery_winner_raw(
+        raw_sa=raw_sa,
+        winner_attempt_id=attempt_three,
+        extra_consume=0,
+    )
+    assert decode_run_budget_snapshot(winner_raw).attempt_id == attempt_three
+
+    counters = _RedeliveryRaceCounters()
+    race_persistence = _RedeliveryRacePersistence(
+        inner_persistence,
+        race_expected_raw=raw_sa,
+        race_inject_winner_raw=winner_raw,
+        race_settled_attempt_id=attempt_two,
+        counters=counters,
+    )
+    race_factory = _durable_pair(race_persistence)
+    with pytest.raises(StaleRunBudgetSnapshotWriteError):
+        _open(
+            race_factory,
+            tenant_id=_TENANT_A,
+            run_id=run_id,
+            attempt_id=attempt_two,
+        )
+
+    assert counters.redelivery_cas_calls == 1
+    assert counters.redelivery_cas_failed == 1
+    assert counters.post_conflict_load_calls == 1
+    durable_raw = inner_persistence.load_snapshot(tenant_id=_TENANT_A, run_id=run_id)
+    assert durable_raw == winner_raw
 
 
 @pytest.mark.parametrize(
     "persistence_factory",
-    [
-        lambda: KvRunBudgetPersistence(_KV()),
-        lambda: DocumentStoreRunBudgetPersistence(InMemoryDocumentStore()),
-    ],
+    _CANONICAL_PERSISTENCE_FACTORIES,
     ids=("kv", "document"),
 )
 def test_r3_r1_q10_tenant_isolation_same_run_id(
-    persistence_factory: object,
+    persistence_factory: PersistenceFactory,
 ) -> None:
     persistence = persistence_factory()
     factory = _durable_pair(persistence)
@@ -495,11 +735,6 @@ def test_r3_r1_q13_redelivery_preserves_consumption() -> None:
         attempt_id=attempt_two,
     )
     assert ledger_two.snapshot_root_available().max_total_tokens == 63
-
-
-def test_r3_r1_q14_provider_conformance_parametrized() -> None:
-    assert test_r3_r1_q04_single_writer_cas_success
-    assert test_r3_r1_q10_tenant_isolation_same_run_id
 
 
 def test_r3_r1_q15_no_authority_mint_in_persistence_module() -> None:

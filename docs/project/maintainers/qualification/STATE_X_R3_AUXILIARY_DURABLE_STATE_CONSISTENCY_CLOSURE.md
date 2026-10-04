@@ -62,17 +62,33 @@ Mechanical proof: `tests/qualification/state_x/test_state_x_r3_auxiliary_durable
 | R3-R1-Q02 | No `while True` in `_persist_current_state` |
 | R3-R1-Q03 | No recursive `create_ledger` |
 | R3-R1-Q04 | Single-writer CAS success (KV + Document) |
-| R3-R1-Q05 | Exact stale writer adversarial |
+| R3-R1-Q05 | Exact stale writer adversarial (KV + DocumentStore) |
 | R3-R1-Q06 | Stale `grant_child_budget` does not escape |
 | R3-R1-Q07 | Stale consume cannot overwrite winner |
 | R3-R1-Q08 | Initial create race |
-| R3-R1-Q09 | Redelivery settlement conflict observes winner |
+| R3-R1-Q09 | Redelivery settlement failed CAS + winner / stale branches |
 | R3-R1-Q10 | Tenant A/B isolation (KV + Document) |
 | R3-R1-Q11 | Different runs independent |
 | R3-R1-Q12 | Corrupt durable bytes → `RunBudgetPersistenceError` |
 | R3-R1-Q13 | Redelivery preserves consumption |
-| R3-R1-Q14 | Provider conformance parametrization |
 | R3-R1-Q15 | No authority mint in persistence module |
+
+Provider conformance for canonical `RunBudgetPersistence` implementations is proven by parametrized **Q04**, **Q05**, and **Q10** (not function-existence checks).
+
+---
+
+## R3-R1-R1 — provider + redelivery race proof closure
+
+**START_HEAD:** `47ec47831118d9f3b127d78b61587fb9202c4409`
+
+**Production delta:** none — `intergrax/runtime/execution/budget/persistence.py` unchanged at qualification HEAD.
+
+| Gap | Closure |
+|---|---|
+| GAP-1 (Q09 did not force redelivery CAS conflict) | `_RedeliveryRacePersistence` test wrapper; Q09 executes failed `compare_and_swap_snapshot` on redelivery branch, post-conflict `load_snapshot`, same-attempt winner accepted with full budget state, different-attempt winner → `StaleRunBudgetSnapshotWriteError` |
+| GAP-2 (stale writer KV-only) | Q05 parametrized for `KvRunBudgetPersistence` and `DocumentStoreRunBudgetPersistence` via `DurableExecutionBudgetLedger` |
+
+**Status:** R3-R1-R1 READY FOR AUDIT · R3-R1 READY FOR AUDIT (not CLOSED — independent GitHub SHA audit required).
 
 ### FRZ evidence (no PASS promotion)
 
