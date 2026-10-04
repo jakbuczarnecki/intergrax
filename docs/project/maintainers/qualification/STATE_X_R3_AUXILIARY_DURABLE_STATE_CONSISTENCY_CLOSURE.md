@@ -139,7 +139,13 @@ Redis executable evidence: local `redis:7-alpine` on `localhost:6379` for Q25–
 
 ### FRZ evidence (no PASS promotion)
 
-Primary: FRZ-STA-01..05, FRZ-REC-01/04/05/06/07/09/10, FRZ-TEN-04/08. Supporting: FRZ-CTR/TYP/GOV/EXE families as cited in R3-R2 task.
+**Direct (scoped SX-F10/SX-F11 only):** FRZ-STA-01, FRZ-STA-02, FRZ-STA-03, FRZ-STA-04, FRZ-STA-05, FRZ-REC-01, FRZ-REC-04, FRZ-REC-06, FRZ-REC-07, FRZ-TEN-04, FRZ-TEN-08.
+
+**Supporting only:** FRZ-REC-09 (tenant/key continuity on retry/replay — no restore qualification); FRZ-REC-10 (UNCERTAIN/stale-fence fail-closed — no corrupt-bytes or restore-truth qualification).
+
+**No R3-R2 attribution:** FRZ-REC-05 (fork semantics — not mechanically proven in accepted R3-R2 chain; historical reconciliation once incorrectly mapped Q23/Q32 to fork).
+
+**Other families:** FRZ-CTR/TYP/GOV/EXE as cited in R3-R2 task (supporting).
 
 **Status:** **CLOSED** — independently accepted through remediation chain ending at `d5979a531e41f9a45a3a00b0b150765ee34bb0f8` (historical: independent R3-R2 audit found Q23 / SX-F11 SQLite parity gaps → **R3-R2-R1** / **R3-R2-R1-R1**).
 
@@ -224,19 +230,25 @@ CompensationQueueStore (claim)
 
 ### FRZ evidence (no PASS promotion)
 
-| FRZ-ID | Evidence |
-|---|---|
-| FRZ-STA-03 | Q16 atomic claim; Q23/Q32 transactional boundaries via canonical invoker + stores |
-| FRZ-STA-04 | Q12; Q18 same-key `(tenant_id, idempotency_key)` queue isolation (InMemory + SQLite) |
-| FRZ-STA-05 | Q17 stale fence rejection |
-| FRZ-REC-01 | Q30, Q32 crash/recovery |
-| FRZ-REC-04 | Q23 replay |
-| FRZ-REC-06 | Q32 partial queue completion fail-closed |
-| FRZ-REC-07 | Q30/Q32 UNCERTAIN modeling |
-| FRZ-TEN-04 | Q18 same-key cross-tenant queue mutation blocked (InMemory + SQLite) |
-| FRZ-TEN-08 | Q22, Q23 tenant/key continuity |
+| FRZ-ID | Classification | Evidence |
+|---|---|---|
+| FRZ-STA-01 | direct (scoped) | Q01 ownership symbols; `IdempotencyStore` + `CompensationQueueStore` contract owners |
+| FRZ-STA-02 | direct (scoped) | SX-F10/SX-F11 closed-world inventory — providers only, no duplicate semantic owners |
+| FRZ-STA-03 | direct (scoped) | Q16 atomic claim; idempotency coordinator/store claim lifecycle; SQLite transactional behavior (`R1-SQLITE-ENV-01` remains OPEN) |
+| FRZ-STA-04 | direct (scoped) | Q12; Q18 same-key `(tenant_id, idempotency_key)` queue isolation (InMemory + SQLite) |
+| FRZ-STA-05 | direct (scoped) | Q17 stale fence rejection |
+| FRZ-REC-01 | direct (scoped) | Q30, Q32 crash/recovery (UNCERTAIN fail-closed) |
+| FRZ-REC-04 | direct (scoped) | Q23 canonical RETRYABLE replay — second physical effect blocked |
+| FRZ-REC-06 | direct (scoped) | Q32 partial queue completion fail-closed; no duplicate re-execution |
+| FRZ-REC-07 | direct (scoped) | Q30/Q32 UNCERTAIN modeling; not automatically reclaimable |
+| FRZ-REC-09 | supporting only | Q22/Q23 tenant/key continuity on retry/replay — **no** restore qualification |
+| FRZ-REC-10 | supporting only | Q17/Q30/Q32 fail-closed — **no** corrupt-bytes / restore-truth qualification |
+| FRZ-TEN-04 | direct (scoped) | Q18 same-key cross-tenant queue mutation blocked (InMemory + SQLite) |
+| FRZ-TEN-08 | direct (scoped) | Q22, Q23, Q18 retry/fence isolation — **no** checkpoint/restore proof |
 
-Parent FRZ-STA/REC/TEN criteria: revalidated via preserved Q01–Q29 (+ Redis when available).
+**FRZ-REC-05:** no R3-R2 contribution (fork semantics).
+
+Parent FRZ-STA/REC/TEN global criteria remain **OPEN**; revalidated via preserved Q01–Q29 (+ Redis when available).
 
 **Status:** **CLOSED** — child **STATE-X-R3-R2-R1-R1** independently accepted at `d5979a531e41f9a45a3a00b0b150765ee34bb0f8`; qualification remediation accepted @ `5b0e937c1bb4cbc309bf12b94402552deaab5d82`.
 
