@@ -10,7 +10,7 @@ No storage backend or runtime wiring in this slice.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Generic, Protocol, TypeVar
+from typing import Generic, Protocol, TypeAlias, TypeVar
 
 from intergrax.contracts.decision_checkpoint import (
     DecisionCheckpointState,
@@ -42,6 +42,25 @@ class MaterializedDecisionCheckpoint(Generic[T]):
             raise ValueError(
                 "materialized key must match checkpoint finalization key",
             )
+
+
+@dataclass(frozen=True, slots=True)
+class ExpectedDecisionSnapshotAbsence:
+    """Concurrency expectation: no materialized snapshot exists for this key."""
+
+    key: DecisionFinalizationKey
+
+
+@dataclass(frozen=True, slots=True)
+class ExistingMaterializedDecisionSnapshot(Generic[T]):
+    """Concurrency expectation: persist against one read-for-update envelope."""
+
+    materialized: MaterializedDecisionCheckpoint[T]
+
+
+DecisionSnapshotWriteExpectation: TypeAlias = (
+    ExpectedDecisionSnapshotAbsence | ExistingMaterializedDecisionSnapshot[T]
+)
 
 
 class DecisionCheckpointPersistence(Protocol[T]):

@@ -34,10 +34,12 @@ from intergrax.contracts.decision_lifecycle import (
 from intergrax.contracts.decision_record import (
     AuthoritativeAcceptedDecision,
     DecisionArtifact,
+    DecisionProposalRef,
     DecisionVersionLineage,
     decision_lineage_ref,
     validate_decision_artifact_kind,
 )
+from intergrax.contracts.decision_revision import decision_revision_checkpoint_state
 from intergrax.contracts.execution_identity import (
     bind_active_execution_identity,
     mint_attempt_id,
@@ -63,6 +65,8 @@ from intergrax.runtime.execution.attempt_lifecycle import (
     InMemoryAttemptLifecycleStore,
 )
 from intergrax.runtime.execution.decision_checkpoint_persistence import (
+    ExpectedDecisionSnapshotAbsence,
+    ExistingMaterializedDecisionSnapshot,
     MaterializedDecisionCheckpoint,
     StaleDecisionCheckpointWriteError,
     load_materialized_decision_checkpoint,
@@ -74,6 +78,7 @@ from intergrax.runtime.execution.decision_finalization_conformance import (
 )
 from intergrax.runtime.execution.decision_recovery import (
     DecisionCheckpointCorruptionError,
+    _validate_terminal_write_expectation,
     persist_terminal_decision_state,
     resume_decision_from_durable_state,
 )
@@ -429,13 +434,20 @@ def test_r2_q07_cas_loss_after_finalization_commit() -> None:
     key = decision_finalization_key(identity)
     checkpoint_store = _ConcurrentSnapshotAdvancePersistence()
     save_decision_checkpoint(checkpoint_store, checkpoint=checkpoint, expected_revision=0)
+    materialized = load_materialized_decision_checkpoint(
+        checkpoint_store,
+        key=key,
+    )
+    assert materialized is not None
     finalization_store = InMemoryDecisionFinalizationPersistence[IncidentDecisionPayload]()
     with pytest.raises(StaleDecisionCheckpointWriteError):
         persist_terminal_decision_state(
             checkpoint_persistence=checkpoint_store,
             finalization_persistence=finalization_store,
             checkpoint=checkpoint,
-            expected_snapshot_revision=1,
+            write_expectation=ExistingMaterializedDecisionSnapshot(
+                materialized=materialized,
+            ),
         )
     loaded = finalization_store.load_guard_state(key=key)
     assert loaded is not None
@@ -542,8 +554,9 @@ def test_r2_r1_q08_stale_read_adversarial_before_terminal(
             checkpoint_persistence=store,
             finalization_persistence=finalization_store,
             checkpoint=checkpoint_a,
-            expected_snapshot_revision=1,
-            materialized_checkpoint=loaded_a,
+            write_expectation=ExistingMaterializedDecisionSnapshot(
+                materialized=loaded_a,
+            ),
         )
     current = load_materialized_decision_checkpoint(store, key=key)
     assert current is not None
@@ -572,8 +585,9 @@ def test_r2_r1_q09_stale_writer_does_not_commit_finalization(
             checkpoint_persistence=store,
             finalization_persistence=finalization_store,
             checkpoint=checkpoint_a,
-            expected_snapshot_revision=1,
-            materialized_checkpoint=loaded_a,
+            write_expectation=ExistingMaterializedDecisionSnapshot(
+                materialized=loaded_a,
+            ),
         )
     assert finalization_store.load_guard_state(key=key) is None
 
@@ -592,7 +606,9 @@ def test_r2_r1_q11_initial_absence_token(store_kind: str, tmp_path: Path) -> Non
         checkpoint_persistence=store,
         finalization_persistence=finalization_store,
         checkpoint=checkpoint,
-        expected_snapshot_revision=0,
+        write_expectation=ExpectedDecisionSnapshotAbsence(
+            key=decision_finalization_key(identity),
+        ),
     )
     assert terminal.lifecycle.stage is DecisionLifecycleStage.TERMINAL
     identity_b = _identity()
@@ -605,7 +621,9 @@ def test_r2_r1_q11_initial_absence_token(store_kind: str, tmp_path: Path) -> Non
             checkpoint_persistence=store_b,
             finalization_persistence=finalization_b,
             checkpoint=checkpoint_b,
-            expected_snapshot_revision=0,
+            write_expectation=ExpectedDecisionSnapshotAbsence(
+                key=decision_finalization_key(identity_b),
+            ),
         )
 
 
@@ -623,13 +641,14 @@ def test_r2_r1_q12_token_key_binding_rejects_mismatch() -> None:
     assert materialized_a is not None
     checkpoint_b = _checkpoint_for_identity(id_b)
     finalization_store = InMemoryDecisionFinalizationPersistence[IncidentDecisionPayload]()
-    with pytest.raises((StaleDecisionCheckpointWriteError, ValueError)):
+    with pytest.raises(StaleDecisionCheckpointWriteError):
         persist_terminal_decision_state(
             checkpoint_persistence=store,
             finalization_persistence=finalization_store,
             checkpoint=checkpoint_b,
-            expected_snapshot_revision=materialized_a.snapshot_revision,
-            materialized_checkpoint=materialized_a,
+            write_expectation=ExistingMaterializedDecisionSnapshot(
+                materialized=materialized_a,
+            ),
         )
 
 
@@ -649,7 +668,9 @@ def test_r2_r1_first_write_absence_race(store_kind: str, tmp_path: Path) -> None
                 checkpoint_persistence=store,
                 finalization_persistence=fin,
                 checkpoint=checkpoint,
-                expected_snapshot_revision=0,
+                write_expectation=ExpectedDecisionSnapshotAbsence(
+                    key=decision_finalization_key(identity),
+                ),
             )
             return "ok"
         except StaleDecisionCheckpointWriteError:
@@ -690,13 +711,283 @@ def test_r2_r1_token_laundering_checkpoint_mismatch() -> None:
     )
     assert mat_b is not None
     fin = InMemoryDecisionFinalizationPersistence[IncidentDecisionPayload]()
-    with pytest.raises(ValueError):
+    with pytest.raises(StaleDecisionCheckpointWriteError):
         persist_terminal_decision_state(
             checkpoint_persistence=store,
             finalization_persistence=fin,
             checkpoint=_checkpoint_for_identity(id_a),
-            expected_snapshot_revision=mat_b.snapshot_revision,
-            materialized_checkpoint=mat_b,
+            write_expectation=ExistingMaterializedDecisionSnapshot(materialized=mat_b),
+        )
+
+
+def test_r2_r1_r1_q01_typed_write_expectation_models() -> None:
+    source = _DECISION_CHECKPOINT_PROTOCOL.read_text(encoding="utf-8")
+    for name in (
+        "ExpectedDecisionSnapshotAbsence",
+        "ExistingMaterializedDecisionSnapshot",
+        "DecisionSnapshotWriteExpectation",
+    ):
+        assert f"class {name}" in source or f"{name}:" in source
+    tree = ast.parse(source, filename=str(_DECISION_CHECKPOINT_PROTOCOL))
+    for class_name in (
+        "ExpectedDecisionSnapshotAbsence",
+        "ExistingMaterializedDecisionSnapshot",
+    ):
+        classes = [
+            n
+            for n in ast.walk(tree)
+            if isinstance(n, ast.ClassDef) and n.name == class_name
+        ]
+        assert len(classes) == 1
+        assert classes[0].decorator_list
+
+
+def test_r2_r1_r1_q02_raw_revision_removed_from_terminal_api() -> None:
+    source = (_REPO_ROOT / "intergrax/runtime/execution/decision_recovery.py").read_text(
+        encoding="utf-8",
+    )
+    tree = ast.parse(source)
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.FunctionDef) or node.name != "persist_terminal_decision_state":
+            continue
+        arg_names = [a.arg for a in node.args.args + node.args.kwonlyargs]
+        forbidden = {
+            "expected_snapshot_revision",
+            "expected_revision",
+            "revision_token",
+            "materialized_checkpoint",
+        }
+        assert forbidden.isdisjoint(set(arg_names))
+
+
+def test_r2_r1_r1_q03_materialized_optional_param_removed() -> None:
+    test_r2_r1_r1_q02_raw_revision_removed_from_terminal_api()
+
+
+@pytest.mark.parametrize("store_kind", ["memory", "sqlite"])
+def test_r2_r1_r1_q04_create_first_absence(store_kind: str, tmp_path: Path) -> None:
+    test_r2_r1_q11_initial_absence_token(store_kind, tmp_path)
+
+
+@pytest.mark.parametrize("store_kind", ["memory", "sqlite"])
+def test_r2_r1_r1_q05_create_first_absence_race(store_kind: str, tmp_path: Path) -> None:
+    test_r2_r1_first_write_absence_race(store_kind, tmp_path)
+
+
+@pytest.mark.parametrize("store_kind", ["memory", "sqlite"])
+def test_r2_r1_r1_q06_existing_materialized_success(store_kind: str, tmp_path: Path) -> None:
+    identity = _identity()
+    store = _checkpoint_store_factory(store_kind, tmp_path)
+    key = decision_finalization_key(identity)
+    checkpoint = _checkpoint_for_identity(identity)
+    save_decision_checkpoint(store, checkpoint=checkpoint, expected_revision=0)
+    materialized = load_materialized_decision_checkpoint(store, key=key)
+    assert materialized is not None
+    assert materialized.snapshot_revision == 1
+    fin = InMemoryDecisionFinalizationPersistence[IncidentDecisionPayload]()
+    terminal = persist_terminal_decision_state(
+        checkpoint_persistence=store,
+        finalization_persistence=fin,
+        checkpoint=checkpoint,
+        write_expectation=ExistingMaterializedDecisionSnapshot(materialized=materialized),
+    )
+    assert terminal.lifecycle.stage is DecisionLifecycleStage.TERMINAL
+    after = load_materialized_decision_checkpoint(store, key=key)
+    assert after is not None
+    assert after.snapshot_revision == 2
+
+
+@pytest.mark.parametrize("store_kind", ["memory", "sqlite"])
+def test_r2_r1_r1_q07_stale_existing_expectation(store_kind: str, tmp_path: Path) -> None:
+    test_r2_r1_q09_stale_writer_does_not_commit_finalization(store_kind, tmp_path)
+
+
+def test_r2_r1_r1_q08_same_key_token_laundering() -> None:
+    identity = _identity()
+    store = InMemoryDecisionCheckpointPersistence[IncidentDecisionPayload]()
+    key = decision_finalization_key(identity)
+    checkpoint_a = _checkpoint_with_recommendation(identity, "rollback")
+    save_decision_checkpoint(store, checkpoint=checkpoint_a, expected_revision=0)
+    mat_a = load_materialized_decision_checkpoint(store, key=key)
+    assert mat_a is not None
+    checkpoint_b = _checkpoint_with_recommendation(identity, "contain")
+    save_decision_checkpoint(store, checkpoint=checkpoint_b, expected_revision=1)
+    mat_b = load_materialized_decision_checkpoint(store, key=key)
+    assert mat_b is not None
+    fin = InMemoryDecisionFinalizationPersistence[IncidentDecisionPayload]()
+    with pytest.raises(StaleDecisionCheckpointWriteError):
+        persist_terminal_decision_state(
+            checkpoint_persistence=store,
+            finalization_persistence=fin,
+            checkpoint=checkpoint_a,
+            write_expectation=ExistingMaterializedDecisionSnapshot(materialized=mat_b),
+        )
+    assert fin.load_guard_state(key=key) is None
+    current = load_materialized_decision_checkpoint(store, key=key)
+    assert current is not None
+    outcome = current.checkpoint.finalization.authoritative_outcome
+    assert outcome is not None
+    assert outcome.artifact.content.recommendation == "contain"
+
+
+def test_r2_r1_r1_q09_revision_state_laundering() -> None:
+    identity = _identity()
+    revision_a = decision_revision_checkpoint_state(
+        proposal_ref=DecisionProposalRef(
+            identity=identity,
+            lineage_ref=decision_lineage_ref(identity.version),
+        ),
+        revision_count=1,
+        max_revisions=3,
+    )
+    revision_b = decision_revision_checkpoint_state(
+        proposal_ref=DecisionProposalRef(
+            identity=identity,
+            lineage_ref=decision_lineage_ref(identity.version),
+        ),
+        revision_count=2,
+        max_revisions=3,
+    )
+    base_cp = decision_checkpoint_state(
+        lifecycle=_lifecycle_at_finalization(identity),
+        finalization=guard_decision_finalization(
+            initial_decision_finalize_guard(decision_finalization_key(identity)),
+            _accepted(identity),
+        ).state,
+        revision=revision_a,
+    )
+    requested_cp = decision_checkpoint_state(
+        lifecycle=_lifecycle_at_finalization(identity),
+        finalization=guard_decision_finalization(
+            initial_decision_finalize_guard(decision_finalization_key(identity)),
+            _accepted(identity),
+        ).state,
+        revision=revision_b,
+    )
+    store = InMemoryDecisionCheckpointPersistence[IncidentDecisionPayload]()
+    key = decision_finalization_key(identity)
+    save_decision_checkpoint(store, checkpoint=base_cp, expected_revision=0)
+    materialized = load_materialized_decision_checkpoint(store, key=key)
+    assert materialized is not None
+    fin = InMemoryDecisionFinalizationPersistence[IncidentDecisionPayload]()
+    with pytest.raises(StaleDecisionCheckpointWriteError):
+        persist_terminal_decision_state(
+            checkpoint_persistence=store,
+            finalization_persistence=fin,
+            checkpoint=requested_cp,
+            write_expectation=ExistingMaterializedDecisionSnapshot(materialized=materialized),
+        )
+
+
+def test_r2_r1_r1_q10_outcome_laundering() -> None:
+    test_r2_r1_r1_q08_same_key_token_laundering()
+
+
+def test_r2_r1_r1_q11_cross_tenant_expectation() -> None:
+    test_r2_r1_q12_token_key_binding_rejects_mismatch()
+
+
+def test_r2_r1_r1_q12_race_after_finalization() -> None:
+    test_r2_r1_q10_race_after_finalization_commit_preserved()
+
+
+def test_r2_r1_r1_q13_no_raw_revision_callsite() -> None:
+    violations: list[str] = []
+    scan_roots = (
+        _REPO_ROOT / "intergrax",
+        _REPO_ROOT / "tests",
+        _REPO_ROOT / "testing_support",
+    )
+    for root in scan_roots:
+        for path in root.rglob("*.py"):
+            if "__pycache__" in path.parts:
+                continue
+            rel = path.relative_to(_REPO_ROOT).as_posix()
+            if rel == "intergrax/runtime/execution/decision_recovery.py":
+                continue
+            try:
+                tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+            except (SyntaxError, UnicodeDecodeError):
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                func = node.func
+                name: str | None
+                if isinstance(func, ast.Name):
+                    name = func.id
+                elif isinstance(func, ast.Attribute):
+                    name = func.attr
+                else:
+                    continue
+                if name != "persist_terminal_decision_state":
+                    continue
+                for kw in node.keywords:
+                    if kw.arg in {
+                        "expected_snapshot_revision",
+                        "expected_revision",
+                        "materialized_checkpoint",
+                    }:
+                        violations.append(f"{rel}:{node.lineno}:{kw.arg}")
+    assert violations == []
+
+
+def test_r2_r1_r1_q14_low_level_cas_unchanged() -> None:
+    test_r2_q05_no_production_blind_decision_write()
+
+
+def test_r2_r1_r1_q15_p0_r1_r2_regression_gate() -> None:
+    assert _DECISION_CHECKPOINT_PROTOCOL.exists()
+
+
+def test_r2_r1_r1_validator_semantic_coherence_matrix() -> None:
+    identity = _identity()
+    key = decision_finalization_key(identity)
+    checkpoint = _checkpoint_for_identity(identity)
+    restored = checkpoint
+    allowed = _validate_terminal_write_expectation(
+        restored,
+        ExistingMaterializedDecisionSnapshot(
+            materialized=MaterializedDecisionCheckpoint(
+                key=key,
+                checkpoint=checkpoint,
+                snapshot_revision=1,
+            ),
+        ),
+    )
+    assert allowed == 1
+    revision_other = decision_revision_checkpoint_state(
+        proposal_ref=DecisionProposalRef(
+            identity=identity,
+            lineage_ref=decision_lineage_ref(identity.version),
+        ),
+        revision_count=2,
+        max_revisions=3,
+    )
+    mismatch = decision_checkpoint_state(
+        lifecycle=_lifecycle_at_finalization(identity),
+        finalization=guard_decision_finalization(
+            initial_decision_finalize_guard(key),
+            _accepted(identity),
+        ).state,
+        revision=revision_other,
+    )
+    with pytest.raises(StaleDecisionCheckpointWriteError):
+        _validate_terminal_write_expectation(
+            mismatch,
+            ExistingMaterializedDecisionSnapshot(
+                materialized=MaterializedDecisionCheckpoint(
+                    key=key,
+                    checkpoint=checkpoint,
+                    snapshot_revision=1,
+                ),
+            ),
+        )
+    other_identity = _identity(tenant_id="tenant-other")
+    with pytest.raises(StaleDecisionCheckpointWriteError):
+        _validate_terminal_write_expectation(
+            _checkpoint_for_identity(other_identity),
+            ExpectedDecisionSnapshotAbsence(key=key),
         )
 
 

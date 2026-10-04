@@ -28,6 +28,7 @@ from intergrax.contracts.decision_lifecycle import (
     DecisionLifecycleState,
     initial_decision_lifecycle_state,
     transition_decision_lifecycle,
+    validate_lifecycle_transition,
 )
 from intergrax.contracts.decision_revision import (
     DecisionRevisionPolicy,
@@ -38,7 +39,9 @@ from intergrax.contracts.decision_revision import (
 )
 from intergrax.runtime.execution.decision_checkpoint_persistence import (
     DecisionCheckpointPersistence,
-    MaterializedDecisionCheckpoint,
+    DecisionSnapshotWriteExpectation,
+    ExpectedDecisionSnapshotAbsence,
+    ExistingMaterializedDecisionSnapshot,
     StaleDecisionCheckpointWriteError,
     load_decision_checkpoint,
     load_materialized_decision_checkpoint,
@@ -230,27 +233,87 @@ def resume_decision_from_durable_state(
     )
 
 
-def _validate_terminal_write_coherence(
-    restored: DecisionCheckpointState[T],
-    materialized_checkpoint: MaterializedDecisionCheckpoint[T],
+def _validate_lifecycle_coherence_for_terminal_write(
+    base_lifecycle: DecisionLifecycleState,
+    requested_lifecycle: DecisionLifecycleState,
 ) -> None:
-    envelope = restore_decision_checkpoint_state(materialized_checkpoint.checkpoint)
-    if materialized_checkpoint.key != restored.finalization.key:
-        raise ValueError("materialized checkpoint key does not match terminal checkpoint")
-    if envelope.lifecycle.identity != restored.lifecycle.identity:
-        raise ValueError(
+    if base_lifecycle.identity != requested_lifecycle.identity:
+        raise StaleDecisionCheckpointWriteError(
             "materialized checkpoint identity does not match terminal checkpoint",
         )
+    if requested_lifecycle.transition_index < base_lifecycle.transition_index:
+        raise StaleDecisionCheckpointWriteError(
+            "terminal persistence cannot rewind decision lifecycle",
+        )
+    if base_lifecycle.stage is DecisionLifecycleStage.TERMINAL:
+        if requested_lifecycle.stage is not DecisionLifecycleStage.TERMINAL:
+            raise StaleDecisionCheckpointWriteError(
+                "terminal materialized base cannot accept non-terminal lifecycle",
+            )
+        return
+    try:
+        validate_lifecycle_transition(
+            from_stage=base_lifecycle.stage,
+            to_stage=requested_lifecycle.stage,
+        )
+    except ValueError:
+        if base_lifecycle.stage != requested_lifecycle.stage:
+            raise StaleDecisionCheckpointWriteError(
+                "terminal persistence lifecycle is not a legal forward transition",
+            ) from None
+
+
+def _validate_terminal_write_expectation(
+    restored: DecisionCheckpointState[T],
+    write_expectation: DecisionSnapshotWriteExpectation[T],
+) -> int:
+    """Validate requested checkpoint against typed write expectation; return CAS token."""
+    key = restored.finalization.key
+    if isinstance(write_expectation, ExpectedDecisionSnapshotAbsence):
+        if write_expectation.key != key:
+            raise StaleDecisionCheckpointWriteError(
+                "absence expectation key does not match terminal checkpoint",
+            )
+        return 0
+    if not isinstance(write_expectation, ExistingMaterializedDecisionSnapshot):
+        raise ValueError("unsupported decision snapshot write expectation")
+    materialized = write_expectation.materialized
+    if materialized.key != key:
+        raise StaleDecisionCheckpointWriteError(
+            "materialized checkpoint key does not match terminal checkpoint",
+        )
+    base = restore_decision_checkpoint_state(materialized.checkpoint)
+    _validate_lifecycle_coherence_for_terminal_write(
+        base.lifecycle,
+        restored.lifecycle,
+    )
+    if base.revision != restored.revision:
+        raise StaleDecisionCheckpointWriteError(
+            "terminal checkpoint revision state does not match materialized base",
+        )
+    base_outcome = base.finalization.authoritative_outcome
+    requested_outcome = restored.finalization.authoritative_outcome
+    if base_outcome is not None:
+        if requested_outcome != base_outcome:
+            raise StaleDecisionCheckpointWriteError(
+                "terminal checkpoint outcome conflicts with materialized base",
+            )
+    elif requested_outcome is not None:
+        if decision_finalization_key(requested_outcome.identity) != materialized.key:
+            raise StaleDecisionCheckpointWriteError(
+                "terminal outcome key does not match materialized expectation",
+            )
+    return materialized.snapshot_revision
 
 
 def _assert_snapshot_revision_still_current(
     checkpoint_persistence: DecisionCheckpointPersistence[T],
     *,
     key: DecisionFinalizationKey,
-    expected_snapshot_revision: int,
+    expected_revision: int,
 ) -> None:
     current = load_materialized_decision_checkpoint(checkpoint_persistence, key=key)
-    if expected_snapshot_revision == 0:
+    if expected_revision == 0:
         if current is not None:
             raise StaleDecisionCheckpointWriteError(
                 "expected absent decision checkpoint snapshot for first CAS insert",
@@ -260,9 +323,9 @@ def _assert_snapshot_revision_still_current(
         raise StaleDecisionCheckpointWriteError(
             "decision checkpoint snapshot missing during terminal persistence",
         )
-    if current.snapshot_revision != expected_snapshot_revision:
+    if current.snapshot_revision != expected_revision:
         raise StaleDecisionCheckpointWriteError(
-            f"expected snapshot_revision={expected_snapshot_revision}, "
+            f"expected snapshot_revision={expected_revision}, "
             f"actual={current.snapshot_revision}",
         )
 
@@ -272,8 +335,7 @@ def persist_terminal_decision_state(
     checkpoint_persistence: DecisionCheckpointPersistence[T],
     finalization_persistence: DecisionFinalizationPersistence[T],
     checkpoint: DecisionCheckpointState[T],
-    expected_snapshot_revision: int,
-    materialized_checkpoint: MaterializedDecisionCheckpoint[T] | None = None,
+    write_expectation: DecisionSnapshotWriteExpectation[T],
 ) -> DecisionCheckpointState[T]:
     """Commit durable outcome first, then persist terminal checkpoint."""
     restored = restore_decision_checkpoint_state(checkpoint)
@@ -281,16 +343,11 @@ def persist_terminal_decision_state(
     if outcome is None:
         raise ValueError("terminal persistence requires authoritative outcome")
     key = restored.finalization.key
-    if materialized_checkpoint is not None:
-        if materialized_checkpoint.snapshot_revision != expected_snapshot_revision:
-            raise ValueError(
-                "materialized checkpoint revision does not match expected token",
-            )
-        _validate_terminal_write_coherence(restored, materialized_checkpoint)
+    expected_revision = _validate_terminal_write_expectation(restored, write_expectation)
     _assert_snapshot_revision_still_current(
         checkpoint_persistence,
         key=key,
-        expected_snapshot_revision=expected_snapshot_revision,
+        expected_revision=expected_revision,
     )
     commit_result = finalization_persistence.commit_authoritative_outcome(
         key=key,
@@ -310,7 +367,7 @@ def persist_terminal_decision_state(
     save_decision_checkpoint(
         checkpoint_persistence,
         checkpoint=terminal_checkpoint,
-        expected_revision=expected_snapshot_revision,
+        expected_revision=expected_revision,
     )
     return terminal_checkpoint
 

@@ -101,11 +101,15 @@ async def test_ds_e2e_01_real_single_model_decision(
         lifecycle=flow_result.lifecycle_state,
         finalization=guard.state,
     )
+    from intergrax.runtime.execution.decision_checkpoint_persistence import (
+        ExpectedDecisionSnapshotAbsence,
+    )
+
     terminal = persist_terminal_decision_state(
         checkpoint_persistence=persistence.checkpoint,
         finalization_persistence=persistence.finalization,
         checkpoint=checkpoint,
-        expected_snapshot_revision=0,
+        write_expectation=ExpectedDecisionSnapshotAbsence(key=finalize_key),
     )
     assert terminal.lifecycle.stage is DecisionLifecycleStage.TERMINAL
 

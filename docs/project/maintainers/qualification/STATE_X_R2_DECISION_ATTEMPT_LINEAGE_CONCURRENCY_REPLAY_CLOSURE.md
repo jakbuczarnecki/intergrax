@@ -52,6 +52,27 @@ Attempt / lineage production semantics unchanged on current-head evidence.
 
 ---
 
+## R2-R1-R1 — token non-detachment closure
+
+| Invariant | Evidence |
+|---|---|
+| Raw `expected_snapshot_revision` removed from semantic terminal API | R2-R1-R1-Q02–Q03 |
+| Typed `ExpectedDecisionSnapshotAbsence` / `ExistingMaterializedDecisionSnapshot` | R2-R1-R1-Q01 |
+| Create-first via explicit absence expectation | R2-R1-R1-Q04–Q05 |
+| Existing write requires full materialized envelope | R2-R1-R1-Q06 |
+| Stale existing expectation before finalization | R2-R1-R1-Q07 |
+| Same-key token laundering rejected | R2-R1-R1-Q08 |
+| Semantic revision-state mismatch rejected | R2-R1-R1-Q09 |
+| Conflicting authoritative outcome laundering rejected | R2-R1-R1-Q10 |
+| Cross-tenant / cross-key expectation rejected | R2-R1-R1-Q11 |
+| Race after finalization: finalization kept, snapshot CAS stale | R2-R1-R1-Q12 |
+| No raw revision terminal callsites | R2-R1-R1-Q13 |
+| Low-level `save_decision_checkpoint` CAS preserved | R2-R1-R1-Q14 |
+
+**Status:** READY FOR AUDIT (pending independent GitHub SHA audit)
+
+---
+
 ## Attempt / lineage / retry
 
 Mechanical proof: `tests/qualification/state_x/test_state_x_r2_decision_attempt_lineage.py` (R2-Q10–Q24).
