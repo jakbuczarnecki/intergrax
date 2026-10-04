@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""STATE-X-R3-R1 — SX-F09 durable budget CAS & stale-writer closure."""
+"""STATE-X-R3 — auxiliary durable state (R3-R1 budget CAS · R3-R2 idempotency/compensation)."""
 
 from __future__ import annotations
 
@@ -758,3 +758,6 @@ def test_r3_r1_factory_requires_tenant_no_blank_fallback() -> None:
             run_id=mint_run_id(),
             attempt_id=mint_attempt_id(),
         )
+
+
+from tests.qualification.state_x._r3_r2_qualification_tests import *  # noqa: F403

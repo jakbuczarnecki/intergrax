@@ -528,11 +528,13 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         (
             "intergrax/runtime/tools/in_memory_idempotency_store.py",
             "intergrax/runtime/tools/sqlite_idempotency_store.py",
+            "intergrax/distributed/providers/redis_idempotency_store.py",
             "intergrax/runtime/persistence/sqlite_composition.py",
         ),
         (
             "InMemoryIdempotencyStore",
             "SQLiteIdempotencyStore",
+            "RedisIdempotencyStore",
             "create_sqlite_idempotency_store",
         ),
         (),
@@ -794,5 +796,20 @@ STATE_X_R3_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/qualification/state_x/inventory.py",
         "tests/qualification/state_x/test_state_x_p0_baseline.py",
         "tests/unit/runtime/execution/budget/test_ue_9ar1_preserve_run_budget_across_redelivery.py",
+    },
+)
+
+STATE_X_R3_R2_PRE_AUDIT_HEAD: Final[str] = "b04327dd5dac4d47059a995e9aea61266a360c2e"
+
+STATE_X_R3_R2_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "intergrax/applications/_shared/compensation_side_effect_wiring.py",
+        "intergrax/runtime/tools/sqlite_idempotency_store.py",
+        "docs/project/maintainers/qualification/STATE_X_R3_AUXILIARY_DURABLE_STATE_CONSISTENCY_CLOSURE.md",
+        "tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py",
+        "tests/qualification/state_x/_r3_r2_support.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+        "tests/unit/runtime/execution/test_compensation_side_effect_admission.py",
     },
 )

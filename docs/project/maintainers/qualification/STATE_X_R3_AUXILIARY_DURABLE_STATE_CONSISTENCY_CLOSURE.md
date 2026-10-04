@@ -2,9 +2,9 @@
 
 **Parent:** STATE-X — Persistence, State & Recovery Certification
 
-**START_HEAD (R3-R1 pre-audit):** `5c9375f13b3623f3ee21309c09748f85b44da1b0`
+**START_HEAD (R3-R2 pre-audit):** `b04327dd5dac4d47059a995e9aea61266a360c2e`
 
-**Status:** R3-R1 READY FOR AUDIT (pending independent GitHub SHA audit)
+**Status:** R3-R2 READY FOR AUDIT (pending independent GitHub SHA audit)
 
 ---
 
@@ -12,9 +12,9 @@
 
 | Family | R3 disposition |
 |---|---|
-| SX-F09 Execution Budget Durable State | **R3-R1 under qualification** |
-| SX-F10 Idempotency State | NOT ENTERED |
-| SX-F11 Compensation Queue State | NOT ENTERED |
+| SX-F09 Execution Budget Durable State | **ACCEPTED via R3-R1** |
+| SX-F10 Idempotency State | **R3-R2 under qualification** |
+| SX-F11 Compensation Queue State | **R3-R2 under qualification** |
 | SX-F12 Human Decision / HITL Persistence | NOT ENTERED |
 | SX-F13 Scheduler Durable State | NOT ENTERED |
 | SX-F14 Agent Checkpoint State | NOT ENTERED |
@@ -96,6 +96,39 @@ Supporting: FRZ-STA-01, FRZ-STA-03, FRZ-STA-04, FRZ-STA-05, FRZ-STA-06, FRZ-REC-
 
 ---
 
+## R3-R2 — Idempotency / Compensation External-Effect Recovery Closure
+
+**START_HEAD:** `b04327dd5dac4d47059a995e9aea61266a360c2e`
+
+### Production delta
+
+| Path | Change |
+|---|---|
+| `intergrax/applications/_shared/compensation_side_effect_wiring.py` | Mandatory `authority: ParentExecutionAuthority`; removed `unrestricted_root()` fallback |
+| `intergrax/runtime/tools/sqlite_idempotency_store.py` | `_row_to_claim` uses caller `tenant_id`/`key` (fixes active-claim path `IndexError` found by R3-R2-Q05/Q07) |
+
+### SX-F10 closed-world inventory
+
+Contract owner: `IdempotencyStore`. Providers: `InMemoryIdempotencyStore` (process-local), `SQLiteIdempotencyStore` (durable single-host), `RedisIdempotencyStore` (shared multi-host).
+
+### SX-F11 ownership
+
+Contract owner: `CompensationQueueStore`. Providers: `InMemoryCompensationQueueStore`, `SQLiteCompensationQueueStore`. Queue claim is processing lease only; physical effect via `CompensationSideEffectExecutionPort` → `ExecutionRuntime`.
+
+### Evidence
+
+Mechanical proof: `tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py` (imports R3-R2-Q01..Q29 from `_r3_r2_qualification_tests.py`).
+
+Redis executable evidence: local `redis:7-alpine` on `localhost:6379` for Q25–Q29; full multi-host Docker proof per `tests/system/tools_side_effect_safety/README.md` (operator/CI).
+
+### FRZ evidence (no PASS promotion)
+
+Primary: FRZ-STA-01..05, FRZ-REC-01/04/05/06/07/09/10, FRZ-TEN-04/08. Supporting: FRZ-CTR/TYP/GOV/EXE families as cited in R3-R2 task.
+
+**Status:** R3-R2 READY FOR AUDIT (not CLOSED).
+
+---
+
 ## Roadmap note
 
-On R3-R1 audit success, next child: **STATE-X-R3-R2** (idempotency / compensation). STATE-X-R4 and TRACE-X remain NOT ENTERED.
+Next child after R3-R2 audit: **STATE-X-R3-R3**. STATE-X-R4 and TRACE-X remain NOT ENTERED.

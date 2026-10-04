@@ -136,6 +136,7 @@ async def test_u2_production_wiring_builds_admitted_execution_port() -> None:
 
     port = build_compensation_side_effect_execution(
         RecordingExecutionBoundDeclarativeToolInvoker(_invoke),
+        authority=ParentExecutionAuthority.unrestricted_root(),
     )
     assert isinstance(port, CompensationSideEffectExecutionPort)
     work = _sample_input()

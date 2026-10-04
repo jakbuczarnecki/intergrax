@@ -25,16 +25,15 @@ from intergrax.contracts.run_budget import RunBudget
 def build_compensation_side_effect_execution(
     invoker: ExecutionBoundDeclarativeToolInvoker,
     *,
-    authority: ParentExecutionAuthority | None = None,
+    authority: ParentExecutionAuthority,
     ledger_factory: ExecutionBudgetLedgerFactory | None = None,
     run_budget: RunBudget | None = None,
     execution_lineage_persistence: ExecutionLineagePersistence | None = None,
 ) -> CompensationSideEffectExecutionPort:
     """Compose canonical compensation admission from execution stack inputs + catalog invoker."""
-    resolved_authority = authority or ParentExecutionAuthority.unrestricted_root()
     return build_runtime_compensation_side_effect_execution(
         tool_session=bound_compensation_tool_invoke_session(invoker),
-        authority=resolved_authority,
+        authority=authority,
         ledger_factory=ledger_factory,
         run_budget=run_budget,
         execution_lineage_persistence=execution_lineage_persistence,
