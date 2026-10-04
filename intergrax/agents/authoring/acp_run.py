@@ -288,6 +288,7 @@ async def _run_acp_session_bound(
         run_id=str(run_id),
         tenant_id=merged.tenant_id,
         agent_id=merged.agent_id,
+        checkpoint_store=host.agent_checkpoint_store if host is not None else None,
     )
     state_root = _initial_state_root(request)
     start_step_index = 0

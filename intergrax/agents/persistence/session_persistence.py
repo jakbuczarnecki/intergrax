@@ -49,9 +49,10 @@ def resolve_session_persistence(
     run_id: str,
     tenant_id: str,
     agent_id: str,
+    checkpoint_store: AgentCheckpointStore | None = None,
 ) -> tuple[AgentSessionPersistence, SessionResumeState | None]:
     metadata = request.metadata
-    store = resolve_checkpoint_store(metadata)
+    store = checkpoint_store
     resume_enabled = bool(metadata.get(AcpMetadataKey.RESUME_FROM_CHECKPOINT))
     ledger = SideEffectLedger()
 

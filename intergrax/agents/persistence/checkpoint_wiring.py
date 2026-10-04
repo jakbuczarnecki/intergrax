@@ -25,15 +25,35 @@ def open_agent_checkpoint_store(
     return SQLiteAgentCheckpointStore(db_path)
 
 
+def merge_host_checkpoint_store(
+    metadata: dict[str, Any],
+    store: AgentCheckpointStore,
+) -> None:
+    """Attach sanctioned host-owned checkpoint store via typed ``ACPSessionHostContext``."""
+    from intergrax.agents.authoring.acp_session_host import (
+        ACP_HOST_CONTEXT_KEY,
+        ACPSessionHostContext,
+    )
+
+    raw = metadata.get(ACP_HOST_CONTEXT_KEY)
+    if isinstance(raw, ACPSessionHostContext):
+        host = raw.model_copy(update={"agent_checkpoint_store": store})
+    elif isinstance(raw, dict):
+        host = ACPSessionHostContext.model_validate({**raw, "agent_checkpoint_store": store})
+    else:
+        host = ACPSessionHostContext(agent_checkpoint_store=store)
+    metadata[ACP_HOST_CONTEXT_KEY] = host
+
+
 def attach_checkpoint_wiring(
     metadata: dict[str, Any],
     store: AgentCheckpointStore,
     *,
     resume: bool = False,
 ) -> dict[str, Any]:
-    """Return metadata with checkpoint store (and optional resume flag) attached."""
+    """Return metadata with host checkpoint store (and optional resume flag) attached."""
     wired = dict(metadata)
-    wired[AcpMetadataKey.CHECKPOINT_STORE] = store
+    merge_host_checkpoint_store(wired, store)
     if resume:
         wired[AcpMetadataKey.RESUME_FROM_CHECKPOINT] = True
     return wired
@@ -45,7 +65,7 @@ def wire_acp_run_request(
     *,
     resume: bool = False,
 ) -> AgentRunRequest:
-    """Attach checkpoint store to a typed ``AgentRunRequest``."""
+    """Test/lab helper: attach host checkpoint store to a typed ``AgentRunRequest``."""
     return request.model_copy(
         update={
             "metadata": attach_checkpoint_wiring(
@@ -86,7 +106,7 @@ def inject_acp_checkpoint_metadata(
         return
     metadata.setdefault("run_id", run_id)
     metadata.setdefault("task_id", run_id)
-    metadata[AcpMetadataKey.CHECKPOINT_STORE] = store
+    merge_host_checkpoint_store(metadata, store)
     if should_resume_acp_checkpoint(
         metadata,
         store=store,

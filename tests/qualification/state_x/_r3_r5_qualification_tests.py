@@ -235,6 +235,7 @@ def test_r3_r5_q15_resume_rejects_checkpoint_agent_mismatch() -> None:
             run_id="run-r5",
             tenant_id="tenant-a",
             agent_id="current-agent",
+            checkpoint_store=store,
         )
 
 

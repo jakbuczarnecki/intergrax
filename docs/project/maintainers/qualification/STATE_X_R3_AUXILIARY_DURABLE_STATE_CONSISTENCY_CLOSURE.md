@@ -14,7 +14,8 @@
 | STATE-X-R3-R3 | **CLOSED** — independently accepted @ `e05b5b8eb3a60e8f46b5502083440e2e863e7204` (SX-F12) |
 | STATE-X-R3-R4-R1 | **CLOSED** — independently accepted @ `0413a3f68f19faeee404b73986748e6fd583dec3` |
 | STATE-X-R3-R4 | **CLOSED** — reconciled through accepted R3-R4-R1 (SX-F13) |
-| STATE-X-R3-R5 | **CURRENT / MANDATORY / IN EXECUTION** — SX-F14 (Cursor: READY FOR AUDIT pending independent audit) |
+| STATE-X-R3-R5 | **BLOCKED** — pending independent R3-R5-R1 audit (SX-F14) |
+| STATE-X-R3-R5-R1 | **READY FOR AUDIT** (Cursor) — checkpoint provider provenance |
 | STATE-X (parent) | **CURRENT / MANDATORY** — not closed |
 
 **Evidence provenance (R3-R2 chain):**
@@ -600,4 +601,54 @@ SX-F14 only — `AgentCheckpointStore`, `AgentRunCheckpoint`, ACP resume wiring,
 
 Primary evidence: FRZ-STA-01/02/03/04/05/08, FRZ-REC-01/03/04/06/10 toward SX-F14.
 
-**Status:** **READY FOR AUDIT** (Cursor) — **STATE-X-R3-R5** not CLOSED.
+**Status:** **BLOCKED** — pending independent R3-R5 audit; superseded for provider provenance by **STATE-X-R3-R5-R1**.
+
+---
+
+## R3-R5-R1 — Checkpoint Provider Provenance & Composition
+
+**START_HEAD:** `70ddff7e9d087b79d148be78c22344586af0744f`
+
+### Root cause
+
+`resolve_session_persistence()` resolved `AgentCheckpointStore` from `AgentRunRequest.metadata[AcpMetadataKey.CHECKPOINT_STORE]`, allowing a second composition path beside sanctioned host/runtime wiring (`HarnessHostRuntime`, `GraphExecutor`, `resolve_host_agent_checkpoint_store`).
+
+### Trusted boundary
+
+| Source | Role |
+|---|---|
+| `ACPSessionHostContext.agent_checkpoint_store` | sanctioned provider carrier |
+| `resolve_session_persistence(..., checkpoint_store=)` | ACP session consumer |
+| Public `metadata[CHECKPOINT_STORE]` | **no provider authority** (ignored) |
+| `AcpMetadataKey.RESUME_FROM_CHECKPOINT` | lifecycle intent only |
+
+### Remediation
+
+- Extended `ACPSessionHostContext` with typed `agent_checkpoint_store`.
+- `run_acp_session` passes `host.agent_checkpoint_store` into `resolve_session_persistence`.
+- `merge_host_checkpoint_store` / `inject_acp_checkpoint_metadata` / task enricher propagate store via host context, not `CHECKPOINT_STORE` metadata.
+- `build_acp_session_host_from_harness` injects `runtime.agent_checkpoint_store`.
+- `wire_acp_run_request` classified test/lab helper (host context only).
+
+### Before / after
+
+**Before:** Host composition and public request metadata both supplied `AgentCheckpointStore`.
+
+**After:** Host/application composition → `ACPSessionHostContext` → ACP session; request metadata cannot select durable provider.
+
+### Proofs
+
+- Adversarial: host store A vs request store B → restore uses A; B `get_latest` calls = 0.
+- Missing host + request store → persistence disabled, no fallback.
+- Ingress: `resolve_host_agent_checkpoint_store` + `make_acp_checkpoint_task_enricher` + `inject_acp_checkpoint_metadata` (Tier-3 shared wiring).
+- Pluginability: InMemory/SQLite via host composition only; ACP session persistence imports contract only.
+
+### Tests
+
+`tests/qualification/state_x/_r3_r5_r1_qualification_tests.py` (R1-Q01..Q30). Inventory: `STATE_X_R3_R5_R1_PRE_AUDIT_HEAD`, `STATE_X_R3_R5_R1_ALLOWLIST_PATHS`.
+
+### FRZ (scoped)
+
+FRZ-STA-01/02/03/08, FRZ-REC-03/04/06, FRZ-TEN-04/08 — provider composition owner only; no global PASS.
+
+**Status:** **READY FOR AUDIT** (Cursor) — **STATE-X-R3-R5** remains **BLOCKED** pending independent R1 audit.
