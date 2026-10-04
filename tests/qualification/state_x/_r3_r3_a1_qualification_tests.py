@@ -290,6 +290,37 @@ def test_r3_r3_a1_q16_intake_runner_orders_canonical_before_persist_for_approve(
     assert resolve_idx < persist_idx
 
 
+def test_r3_r3_a1_q13_autonomous_profile_regression() -> None:
+    profile = CodeCraftProfile(mode="autonomous", require_hitl_before_exec=False)
+    auth = resolve_codecraft_exec_authorization(
+        ToolWiringContext(),
+        profile=profile,
+        ownership=CodeCraftSessionOwnership(tenant_id=TENANT_A, task_id=SHARED_TASK, run_id="run-a"),
+        craft_id="craft-auto",
+    )
+    assert auth.authorized is True
+
+
+def test_r3_r3_a1_q15_no_hitl_approved_execution_bypass_in_codecraft_production() -> None:
+    orchestrator = (_REPO_ROOT / "intergrax/runtime/codecraft/orchestrator.py").read_text(
+        encoding="utf-8"
+    )
+    service = (_REPO_ROOT / "intergrax/tools/providers/codecraft/service.py").read_text(
+        encoding="utf-8"
+    )
+    assert "if session.hitl_approved" not in orchestrator
+    assert "if params.hitl_approved" not in service
+    assert "hitl_approved" not in _OWNERSHIP.read_text(encoding="utf-8")
+
+
+def test_r3_r3_a1_q17_hitl_tool_service_is_evidence_query_only() -> None:
+    path = _REPO_ROOT / "intergrax/tools/providers/hitl/service.py"
+    text = path.read_text(encoding="utf-8")
+    assert "ExecutionContinuationPort" not in text
+    assert "create_grant" not in text.lower()
+    assert "resume" not in text or "human_decision_store_not_configured" in text
+
+
 def test_r3_r3_a1_validate_helper_single_owner() -> None:
     path = _REPO_ROOT / "intergrax/runtime/human/persistence_validation.py"
     assert path.is_file()
