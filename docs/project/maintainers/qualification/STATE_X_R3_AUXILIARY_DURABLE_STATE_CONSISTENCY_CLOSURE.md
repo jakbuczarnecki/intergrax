@@ -189,16 +189,17 @@ CompensationQueueStore (claim)
 
 - **tenant scope applicable:** YES
 - **canonical tenant identity:** `tenant_id`
+- **semantic storage identity:** `(tenant_id, idempotency_key)` for `CompensationQueueStore` (InMemory dict key; SQLite `PRIMARY KEY (tenant_id, idempotency_key)`)
 - **tenant owner:** `CompensationQueueStore` / `IdempotencyStore` (per-tenant keys)
-- **propagation path:** `CompensationJob.tenant_id` → `CompensationSideEffectInput` → catalog invoke → idempotency store partition
-- **state isolation:** Q12 (idempotency), Q18 (queue claim/completion cross-tenant)
+- **propagation path:** `CompensationJob.tenant_id` → queue persistence key → `CompensationClaim.tenant_id` → `complete_claim` / `fail_claim` mutation scope; idempotency: `CompensationSideEffectInput` → catalog invoke → idempotency store partition
+- **state isolation:** Q12 (idempotency), Q18 (compensation queue same-key cross-tenant lifecycle)
 - **provider/config isolation:** parametrized InMemory + SQLite factories (`tmp_path`-scoped SQLite DBs)
 - **evidence/trace isolation:** declarative policy evaluation uses `state.tenant_id` on catalog dispatch state
 - **async/recovery continuity:** Q22 stable key on RETRYABLE; Q30/Q32 UNCERTAIN fail-closed
-- **cross-tenant path:** same idempotency key under tenant A does not complete/block tenant B (Q18)
+- **cross-tenant path:** same compensation idempotency key under tenant A and tenant B coexists; tenant-scoped lookup, claim, completion, and failure/retry do not mutate the other tenant’s job (Q18)
 - **fail-closed behavior:** UNCERTAIN not claimable; no automatic RUNNING→RETRYABLE
-- **adversarial evidence:** Q18 completion on tenant A leaves tenant B job non-completed
-- **result:** PASS (qualification evidence; pending independent audit)
+- **adversarial evidence:** Q18 — `tenant A + key X` and `tenant B + key X` (bit-identical key, runtime-asserted); exercised for InMemory and SQLite: coexistence, lookup isolation, claim isolation, `complete_claim` isolation, `fail_claim`/RETRYABLE reclaim and fence isolation
+- **result:** PASS — qualification evidence; pending independent exact-SHA audit
 
 ### Test evidence
 
@@ -210,18 +211,18 @@ CompensationQueueStore (claim)
 | FRZ-ID | Evidence |
 |---|---|
 | FRZ-STA-03 | Q16 atomic claim; Q23/Q32 transactional boundaries via canonical invoker + stores |
-| FRZ-STA-04 | Q12, Q18 |
+| FRZ-STA-04 | Q12; Q18 same-key `(tenant_id, idempotency_key)` queue isolation (InMemory + SQLite) |
 | FRZ-STA-05 | Q17 stale fence rejection |
 | FRZ-REC-01 | Q30, Q32 crash/recovery |
 | FRZ-REC-04 | Q23 replay |
 | FRZ-REC-06 | Q32 partial queue completion fail-closed |
 | FRZ-REC-07 | Q30/Q32 UNCERTAIN modeling |
-| FRZ-TEN-04 | Q18 |
+| FRZ-TEN-04 | Q18 same-key cross-tenant queue mutation blocked (InMemory + SQLite) |
 | FRZ-TEN-08 | Q22, Q23 tenant/key continuity |
 
 Parent FRZ-STA/REC/TEN criteria: revalidated via preserved Q01–Q29 (+ Redis when available).
 
-**Status:** STATE-X-R3-R2-R1 = READY FOR AUDIT · STATE-X-R3-R2 = BLOCKED PENDING INDEPENDENT R3-R2-R1 AUDIT.
+**Status:** STATE-X-R3-R2-R1-R1 = READY FOR AUDIT · STATE-X-R3-R2-R1 = BLOCKED PENDING INDEPENDENT CHILD AUDIT · STATE-X-R3-R2 = BLOCKED · STATE-X-R3-R3 = NOT ENTERED.
 
 ---
 

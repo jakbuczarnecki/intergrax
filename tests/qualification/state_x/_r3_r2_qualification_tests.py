@@ -449,20 +449,93 @@ def test_r3_r2_q18_compensation_tenant_isolation(
     queue_factory: CompensationQueueStoreFactory,
 ) -> None:
     store = queue_factory(tmp_path)
-    job_a = _sample_compensation_job(tenant_id=_TENANT_A, key_suffix="ta")
-    job_b = _sample_compensation_job(tenant_id=_TENANT_B, key_suffix="tb")
+
+    # Phase A–C: bit-identical compensation idempotency key under two tenants.
+    job_a = _sample_compensation_job(tenant_id=_TENANT_A, key_suffix="shared-iso-key")
+    job_b = _sample_compensation_job(tenant_id=_TENANT_B, key_suffix="shared-iso-key")
+    assert job_a.tenant_id != job_b.tenant_id
+    assert job_a.request.idempotency_key == job_b.request.idempotency_key
+    key_x = job_a.request.idempotency_key
+
     store.enqueue(job_a)
     store.enqueue(job_b)
+
+    loaded_a = store.get_by_idempotency_key(_TENANT_A, key_x)
+    loaded_b = store.get_by_idempotency_key(_TENANT_B, key_x)
+    assert loaded_a is not None and loaded_b is not None
+    assert loaded_a.tenant_id == _TENANT_A
+    assert loaded_b.tenant_id == _TENANT_B
+    assert loaded_a.job_id != loaded_b.job_id
+
     claims_a = store.claim_pending(_TENANT_A, "worker-a", lease_seconds=30, limit=10)
-    claims_b = store.claim_pending(_TENANT_B, "worker-b", lease_seconds=30, limit=10)
     assert len(claims_a) == 1
+    claim_a = claims_a[0]
+    assert claim_a.tenant_id == _TENANT_A
+    assert claim_a.idempotency_key == key_x
+
+    b_after_a_claim = store.get_by_idempotency_key(_TENANT_B, key_x)
+    assert b_after_a_claim is not None
+    assert b_after_a_claim.status != CompensationJobStatus.RUNNING
+    assert b_after_a_claim.owner_id != "worker-a"
+
+    claims_b = store.claim_pending(_TENANT_B, "worker-b", lease_seconds=30, limit=10)
     assert len(claims_b) == 1
-    assert claims_a[0].tenant_id == _TENANT_A
-    assert claims_b[0].tenant_id == _TENANT_B
-    store.complete_claim(claims_a[0])
-    loaded_b = store.get_by_idempotency_key(_TENANT_B, job_b.request.idempotency_key)
-    assert loaded_b is not None
-    assert loaded_b.status != CompensationJobStatus.COMPLETED
+    claim_b = claims_b[0]
+    assert claim_b.tenant_id == _TENANT_B
+    assert claim_b.idempotency_key == key_x
+
+    b_before_complete_a = store.get_by_idempotency_key(_TENANT_B, key_x)
+    assert b_before_complete_a is not None
+    b_owner_before_complete_a = b_before_complete_a.owner_id
+    b_fence_before_complete_a = b_before_complete_a.fence
+
+    store.complete_claim(claim_a)
+
+    loaded_a = store.get_by_idempotency_key(_TENANT_A, key_x)
+    loaded_b = store.get_by_idempotency_key(_TENANT_B, key_x)
+    assert loaded_a is not None and loaded_b is not None
+    assert loaded_a.status == CompensationJobStatus.COMPLETED
+    assert loaded_b.status == CompensationJobStatus.RUNNING
+    assert loaded_b.owner_id == "worker-b"
+    assert loaded_b.owner_id == b_owner_before_complete_a
+    assert loaded_b.fence == claim_b.fence
+    assert loaded_b.fence == b_fence_before_complete_a
+
+    store.complete_claim(claim_b)
+
+    # Phase D: failure/retry isolation with a second same-key pair (key Y).
+    job_a_y = _sample_compensation_job(tenant_id=_TENANT_A, key_suffix="shared-iso-retry")
+    job_b_y = _sample_compensation_job(tenant_id=_TENANT_B, key_suffix="shared-iso-retry")
+    assert job_a_y.tenant_id != job_b_y.tenant_id
+    assert job_a_y.request.idempotency_key == job_b_y.request.idempotency_key
+    key_y = job_a_y.request.idempotency_key
+
+    store.enqueue(job_a_y)
+    store.enqueue(job_b_y)
+    claim_a_y = store.claim_pending(_TENANT_A, "worker-a-y", lease_seconds=30, limit=1)[0]
+    claim_b_y = store.claim_pending(_TENANT_B, "worker-b-y", lease_seconds=30, limit=1)[0]
+    b_y_fence_before_fail = claim_b_y.fence
+
+    store.fail_claim(claim_a_y, "transient-a", retryable=True)
+
+    loaded_a_y = store.get_by_idempotency_key(_TENANT_A, key_y)
+    loaded_b_y = store.get_by_idempotency_key(_TENANT_B, key_y)
+    assert loaded_a_y is not None and loaded_b_y is not None
+    assert loaded_a_y.status == CompensationJobStatus.RETRYABLE
+    assert loaded_b_y.status == CompensationJobStatus.RUNNING
+    assert loaded_b_y.owner_id == "worker-b-y"
+    assert loaded_b_y.fence == b_y_fence_before_fail
+
+    reclaim_a_y = store.claim_pending(_TENANT_A, "worker-a-y-reclaim", lease_seconds=30, limit=1)[0]
+    assert reclaim_a_y.tenant_id == _TENANT_A
+    assert reclaim_a_y.idempotency_key == key_y
+    assert reclaim_a_y.fence > claim_a_y.fence
+
+    loaded_b_y_after_reclaim = store.get_by_idempotency_key(_TENANT_B, key_y)
+    assert loaded_b_y_after_reclaim is not None
+    assert loaded_b_y_after_reclaim.status == CompensationJobStatus.RUNNING
+    assert loaded_b_y_after_reclaim.owner_id == "worker-b-y"
+    assert loaded_b_y_after_reclaim.fence == b_y_fence_before_fail
 
 
 def test_r3_r2_q19_durable_identity_continuity() -> None:
