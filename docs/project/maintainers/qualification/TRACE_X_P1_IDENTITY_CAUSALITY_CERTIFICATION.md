@@ -4,6 +4,8 @@
 
 **START_HEAD:** `19eda895d7db3c11758d77aaf8a96d746fa7c304`
 
+**FINAL_COMMIT / AUDITED_HEAD:** `097b8236817456377848885a324afa1044101009`
+
 **Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p1_support.py`
 
 **Applicable FRZ (P1 only):** `FRZ-TRC-02`, `FRZ-TRC-12`
