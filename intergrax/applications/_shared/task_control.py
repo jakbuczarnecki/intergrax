@@ -42,7 +42,7 @@ from intergrax.runtime.long_running.checkpoint_resume_validation import (
     CheckpointResumeValidationError,
     CheckpointResumeValidationResult,
     assert_checkpoint_resume_materialization_eligible,
-    validate_checkpoint_snapshot_integrity,
+    validated_task_snapshot_from_checkpoint,
 )
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
@@ -657,10 +657,11 @@ async def governed_resume_checkpoint_task(
 
 
 def _pause_record_from_checkpoint(checkpoint: TaskCheckpoint) -> TaskPauseRecord | None:
-    integrity = validate_checkpoint_snapshot_integrity(checkpoint)
-    if integrity.eligibility is not CheckpointResumeEligibility.ALLOW_RESUME:
-        raise CheckpointResumeValidationError(integrity)
-    snapshot = Task.model_validate(checkpoint.task_snapshot)
+    snapshot = validated_task_snapshot_from_checkpoint(
+        checkpoint,
+        target_task_id=checkpoint.task_id,
+        target_tenant_id=checkpoint.tenant_id,
+    )
     return snapshot.runtime.governance.pause_record
 
 

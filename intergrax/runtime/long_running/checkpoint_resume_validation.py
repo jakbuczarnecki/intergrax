@@ -375,6 +375,37 @@ def validate_checkpoint_snapshot_integrity(
     )
 
 
+def validated_task_snapshot_from_checkpoint(
+    checkpoint: TaskCheckpoint,
+    *,
+    target_task_id: TaskId | str,
+    target_tenant_id: str,
+) -> Task:
+    """Structurally validated Task bound to target identity (not execution admission)."""
+    result = CheckpointResumeValidationResult(
+        eligibility=CheckpointResumeEligibility.ALLOW_RESUME,
+    )
+    result = _merge_failure(result, validate_task_checkpoint_schema(checkpoint))
+    result = _merge_failure(
+        result,
+        validate_checkpoint_identity_binding(
+            checkpoint,
+            target_task_id=target_task_id,
+            target_tenant_id=target_tenant_id,
+        ),
+    )
+    result = _merge_failure(
+        result,
+        validate_checkpoint_snapshot_integrity(checkpoint),
+    )
+    if result.eligibility is not CheckpointResumeEligibility.ALLOW_RESUME:
+        raise CheckpointResumeValidationError(result)
+    parsed = _parse_checkpoint_snapshot_task(checkpoint)
+    if isinstance(parsed, CheckpointResumeValidationResult):
+        raise CheckpointResumeValidationError(parsed)
+    return parsed
+
+
 def _authority_does_not_exceed_current(
     checkpoint_authority: ParentExecutionAuthority,
     current_authority: ParentExecutionAuthority,

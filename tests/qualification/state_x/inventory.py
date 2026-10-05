@@ -969,6 +969,25 @@ STATE_X_R4_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     },
 )
 
+STATE_X_R4_R1_PRE_AUDIT_HEAD: Final[str] = "6a8252548a8fb81830afac8534acbd5183f9df95"
+
+STATE_X_R4_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "intergrax/runtime/long_running/checkpoint_resume_validation.py",
+        "intergrax/runtime/execution/suspended_operation/reentry_coordinator.py",
+        "intergrax/runtime/human/agent_governance_pause_projection.py",
+        "intergrax/runtime/human/agent_governance_grant_lifecycle.py",
+        "intergrax/applications/_shared/task_control_governance.py",
+        "intergrax/applications/_shared/task_control.py",
+        "intergrax/debug/hitl_service.py",
+        "docs/project/maintainers/qualification/STATE_X_R4_TASK_CHECKPOINT_RESTORE_INTEGRITY_CERTIFICATION.md",
+        "tests/qualification/state_x/_r4_r1_restore_consumer_convergence_tests.py",
+        "tests/qualification/state_x/_r4_r1_restore_consumer_support.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+    },
+)
+
 STATE_X_R3_R5_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     {
         "intergrax/agents/persistence/checkpoint_store.py",

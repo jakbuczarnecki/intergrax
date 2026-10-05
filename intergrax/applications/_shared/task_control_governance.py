@@ -18,6 +18,9 @@ from intergrax.contracts.control_plane_mutation import (
 )
 from intergrax.contracts.execution_identity import RunId, TaskId
 from intergrax.contracts.runtime_policy import PolicyAction
+from intergrax.runtime.long_running.checkpoint_resume_validation import (
+    validated_task_snapshot_from_checkpoint,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.task.task import Task, TaskState
 from intergrax.runtime.task.task_contract import TaskPauseRecord
@@ -124,7 +127,11 @@ def task_execution_autonomy_revision(*, autonomy_level: AutonomyLevel | None) ->
 
 
 def _pause_id_from_checkpoint(checkpoint: TaskCheckpoint) -> str | None:
-    snapshot = Task.model_validate(checkpoint.task_snapshot)
+    snapshot = validated_task_snapshot_from_checkpoint(
+        checkpoint,
+        target_task_id=checkpoint.task_id,
+        target_tenant_id=checkpoint.tenant_id,
+    )
     pause_record: TaskPauseRecord | None = snapshot.runtime.governance.pause_record
     if pause_record is None:
         return None

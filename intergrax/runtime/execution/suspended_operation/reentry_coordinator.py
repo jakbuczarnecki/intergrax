@@ -76,6 +76,11 @@ from intergrax.runtime.human.declarative_hitl_grant import (
     DeclarativeHitlGrantCoordinator,
 )
 from intergrax.runtime.human.pause import HumanPauseCoordinator
+from intergrax.contracts.execution_identity import TaskId
+from intergrax.runtime.long_running.checkpoint_resume_validation import (
+    CheckpointResumeValidationError,
+    validated_task_snapshot_from_checkpoint,
+)
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
 )
@@ -542,14 +547,21 @@ class ExecutionSuspendedWorkReentryCoordinator:
 
 def _load_task_from_durable_checkpoint(
     *,
-    task_id: object,
+    task_id: TaskId | str,
     tenant_id: str,
     checkpoint_store: TaskCheckpointPersistence,
 ) -> Task | None:
     checkpoint = checkpoint_store.get_latest(str(task_id), tenant_id)
     if checkpoint is None:
         return None
-    return Task.model_validate(checkpoint.task_snapshot)
+    try:
+        return validated_task_snapshot_from_checkpoint(
+            checkpoint,
+            target_task_id=task_id,
+            target_tenant_id=tenant_id,
+        )
+    except CheckpointResumeValidationError:
+        return None
 
 
 def _governance_terminalization_succeeded(

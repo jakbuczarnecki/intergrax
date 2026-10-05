@@ -10,6 +10,10 @@ from typing import Optional
 from intergrax.contracts.human_approver import HumanApproverEvidence
 from intergrax.runtime.execution.host_task import HostTaskExecutionPort
 from intergrax.runtime.human.models import HumanResponseVerdict
+from intergrax.runtime.long_running.checkpoint_resume_validation import (
+    assert_checkpoint_resume_materialization_eligible,
+    validated_task_snapshot_from_checkpoint,
+)
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
 from intergrax.runtime.task.task import Task, TaskResult
@@ -46,14 +50,21 @@ class DebugHitlResumeService:
         if checkpoint is None:
             raise ValueError(f"No checkpoint found for task {task_id!r} (tenant={tenant_id})")
 
-        paused = Task.model_validate(checkpoint.task_snapshot)
-        pause_record = paused.runtime.governance.pause_record
+        assert_checkpoint_resume_materialization_eligible(
+            checkpoint,
+            target_task_id=task_id,
+            target_tenant_id=tenant_id,
+        )
+        task = validated_task_snapshot_from_checkpoint(
+            checkpoint,
+            target_task_id=task_id,
+            target_tenant_id=tenant_id,
+        )
+        pause_record = task.runtime.governance.pause_record
         if pause_record is None:
             raise ValueError(
                 f"Checkpoint for task {task_id!r} has no active pause record for HITL resume"
             )
-
-        task = Task.model_validate(checkpoint.task_snapshot)
         effective_approver = approver
         if effective_approver is None:
             from intergrax.contracts.human_approver import local_development_approver_evidence
