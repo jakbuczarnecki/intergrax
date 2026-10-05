@@ -48,7 +48,7 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 
 def test_r1r1_q01_start_head_exact() -> None:
-    assert STATE_X_FINAL_R1_R1_START_HEAD == "d2b08198c674ba2f40e6a30afadb198fb9a3d5f9"
+    assert STATE_X_FINAL_R1_R1_START_HEAD == "5f57b3df1ac400d3676f376c218be148b3481bc8"
 
 
 def test_r1r1_q02_no_review_queue_records() -> None:
