@@ -28,7 +28,7 @@ Mechanical SSOT: `tests/qualification/state_x/_state_x_final_support.py`, gates 
 | Scanner | Value |
 | --- | --- |
 | Roots | `intergrax/contracts`, `intergrax/runtime`, `agents`, `applications`, `intergrax/applications` |
-| Candidates (FINAL_HEAD) | **520** class/file mechanisms classified |
+| Candidates (FINAL_HEAD) | **238** class/file mechanisms classified |
 | Broad prefix blind exclusions | **removed** (prior prefixes listed in `PRIOR_BROAD_EXCLUSION_PREFIXES` for audit trace only) |
 
 **New canonical families (F16+):** SX-F16 background transport identity; SX-F17 execution continuation; SX-F18 execution deadline authority; SX-F19 delegated invocation correlation; SX-F20 suspended execution operation descriptors. Historical **SX-F01..F15** meanings preserved; `HISTORICAL_BASE_FAMILY_IDS ⊆ CURRENT_STATE_X_FAMILY_IDS`.
