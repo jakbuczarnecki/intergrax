@@ -12,6 +12,10 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Final
 
+from tests.qualification.state_x._state_x_explicit_mechanism_classifications import (
+    EXPLICIT_MECHANISM_CLASSIFICATIONS,
+    ExplicitMechanismClassification,
+)
 from tests.qualification.state_x.inventory import (
     CURRENT_STATE_X_FAMILY_IDS,
     HISTORICAL_BASE_FAMILY_IDS,
@@ -19,6 +23,30 @@ from tests.qualification.state_x.inventory import (
     SemanticOwnershipRole,
     STATE_X_FAMILY_INVENTORY,
     StateFamilyInventoryEntry,
+)
+
+_FORBIDDEN_PLACEHOLDER_OWNERS: Final[frozenset[str]] = frozenset(
+    {
+        "see family contract",
+        "see classes in module",
+        "module aggregate",
+        "non execution-state subsystem",
+        "unmapped durable-like symbol",
+    },
+)
+
+_FORBIDDEN_OWNER_STAGES: Final[frozenset[str]] = frozenset(
+    {
+        "",
+        "REVIEW-QUEUE",
+        "UNKNOWN",
+        "PENDING",
+        "TBD",
+        "MISC",
+        "OTHER",
+        "UNREVIEWED",
+        "AUTO_CLASSIFIED",
+    },
 )
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -236,6 +264,7 @@ def _outside(
     reason: str,
     *,
     durability: str = "N/A",
+    evidence: tuple[str, ...] | None = None,
 ) -> DurableStateMechanismRecord:
     return _base_record_fields(
         candidate,
@@ -254,7 +283,7 @@ def _outside(
         restart_restore_behavior="N/A",
         backup_restore_responsibility="N/A",
         owner_stage=owner_stage,
-        evidence=(reason,),
+        evidence=evidence if evidence is not None else (reason,),
     )
 
 
@@ -287,7 +316,40 @@ def _reference_only(candidate: DiscoveredMechanism, owner_family: str | None) ->
     )
 
 
-def _classify_candidate(candidate: DiscoveredMechanism) -> DurableStateMechanismRecord:
+def _record_from_explicit(
+    candidate: DiscoveredMechanism,
+    spec: ExplicitMechanismClassification,
+) -> DurableStateMechanismRecord:
+    classification = DurableStateClassification(spec.classification)
+    return _base_record_fields(
+        candidate,
+        classification,
+        spec.family_id,
+        semantic_owner=spec.semantic_owner,
+        composition_owner=spec.composition_owner,
+        durability=spec.durability,
+        canonical_truth=spec.canonical_truth,
+        tenant_semantics=spec.tenant_semantics,
+        identity_semantics=spec.identity_semantics,
+        authority_semantics=spec.authority_semantics,
+        atomicity_semantics=spec.atomicity_semantics,
+        stale_conflict_behavior=spec.stale_conflict_behavior,
+        corruption_behavior=spec.corruption_behavior,
+        restart_restore_behavior=spec.restart_restore_behavior,
+        backup_restore_responsibility=spec.backup_restore_responsibility,
+        owner_stage=spec.owner_stage,
+        evidence=spec.evidence,
+    )
+
+
+def classify_candidate(
+    candidate: DiscoveredMechanism,
+) -> DurableStateMechanismRecord | None:
+    """Return explicit classification or None when the candidate is unclassified."""
+    explicit = EXPLICIT_MECHANISM_CLASSIFICATIONS.get(candidate.mechanism_id)
+    if explicit is not None:
+        return _record_from_explicit(candidate, explicit)
+
     sym = candidate.symbol
     rel = candidate.paths[0]
 
@@ -299,19 +361,26 @@ def _classify_candidate(candidate: DiscoveredMechanism) -> DurableStateMechanism
             candidate,
             "APPLICATION-MEMORY",
             "task memory plane; agent/application scoped memory not platform execution SSOT",
+            evidence=(
+                "intergrax/runtime/task_memory/ — application memory plane",
+                "tests/qualification/state_x/_state_x_final_r1_closed_world_tests.py::test_sxf_r1_q29",
+            ),
         )
 
     if sym in _CANONICAL_CONTRACT_SYMBOLS and sym in _SYMBOL_FAMILY:
         fid = _SYMBOL_FAMILY[sym]
         is_new = fid not in HISTORICAL_BASE_FAMILY_IDS
+        inv = _entry(fid)
         return _base_record_fields(
             candidate,
             DurableStateClassification.NEW_CANONICAL_FAMILY
             if is_new
             else DurableStateClassification.CANONICAL_FAMILY,
             fid,
+            semantic_owner=inv.semantic_owner,
+            composition_owner=inv.composition_owner,
             canonical_truth=True,
-            evidence=(f"canonical contract {sym}",),
+            evidence=(f"canonical contract {sym}", inv.contract_references[0].path),
         )
 
     if sym in _SYMBOL_FAMILY:
@@ -327,6 +396,8 @@ def _classify_candidate(candidate: DiscoveredMechanism) -> DurableStateMechanism
                 candidate,
                 cls,
                 fid,
+                semantic_owner=inv.semantic_owner,
+                composition_owner=inv.composition_owner,
                 canonical_truth=inv.projection_or_truth.value.startswith("CANONICAL"),
                 evidence=(f"inventory semantic owner/provider {sym}",),
             )
@@ -335,6 +406,8 @@ def _classify_candidate(candidate: DiscoveredMechanism) -> DurableStateMechanism
                 candidate,
                 DurableStateClassification.COMPONENT_OF_FAMILY,
                 fid,
+                semantic_owner=inv.semantic_owner,
+                composition_owner=inv.composition_owner,
                 canonical_truth=True,
                 evidence=("physical backing component of family store",),
             )
@@ -344,98 +417,36 @@ def _classify_candidate(candidate: DiscoveredMechanism) -> DurableStateMechanism
             candidate,
             DurableStateClassification.PROVIDER_IMPLEMENTATION,
             fid,
+            semantic_owner=inv.semantic_owner,
+            composition_owner=inv.composition_owner,
             evidence=(f"provider implementation for {fid}",),
         )
 
-    if sym.startswith("InMemory") or sym.startswith("Null") or sym.startswith("Memory"):
-        return _reference_only(candidate, None)
-
-    if "Projection" in sym or sym.endswith("ReadModel") or "TraceReader" in sym:
-        return _projection(candidate, "read model / projection; not execution truth")
-
-    if "CausalEvidence" in sym or "FunctionalEvidence" in sym:
-        return _projection(
-            candidate,
-            "causal/functional evidence persistence; recovery gates do not treat as authority",
-        )
-
-    if rel.startswith("intergrax/runtime/execution_evidence/"):
-        return _projection(candidate, "execution evidence reconstruction; TRACE-X read plane")
-
-    if rel.startswith("intergrax/runtime/vendor_knowledge/"):
-        return _outside(
-            candidate,
-            "INTEGRATION-X",
-            "vendor knowledge sync repositories; integration domain not execution recovery truth",
-        )
-
-    if rel.startswith(
-        (
-            "intergrax/runtime/adaptive/",
-            "intergrax/runtime/prediction/",
-            "intergrax/runtime/self_healing/",
-            "intergrax/runtime/diagnostics/",
-            "intergrax/runtime/notifications/",
-            "intergrax/runtime/organization/",
-            "intergrax/runtime/integrations/",
-            "intergrax/runtime/external_operations/",
-        ),
-    ):
-        return _outside(
-            candidate,
-            "PLATFORM-EXTENSION",
-            f"non execution-state subsystem ({rel.split('/')[2]})",
-        )
-
-    if rel.startswith("intergrax/runtime/governance/"):
-        return _projection(
-            candidate,
-            "governance evidence persistence; historical evidence not live execution authority",
-        )
-
-    if rel.startswith("applications/") and "autonomous_work" in rel:
-        return _outside(
-            candidate,
-            "AUTONOMOUS-WORK",
-            "autonomous work application repositories; outside STATE-X platform families",
-        )
-
-    if rel.startswith("applications/governed_contractor_application/"):
-        if "ContinuationStateStore" in sym:
-            return _base_record_fields(
-                candidate,
-                DurableStateClassification.COMPONENT_OF_FAMILY,
-                "SX-F17",
-                evidence=("application host adapter over execution continuation contract",),
-            )
-        return _outside(
-            candidate,
-            "APPLICATION",
-            "application host wiring store; not independent platform semantic family",
-        )
-
-    if candidate.discovery_kind == "file":
+    if rel.startswith("applications/governed_contractor_application/") and "ContinuationStateStore" in sym:
+        inv = _entry("SX-F17")
         return _base_record_fields(
             candidate,
             DurableStateClassification.COMPONENT_OF_FAMILY,
-            None,
-            semantic_owner=f"module aggregate {rel}",
-            composition_owner="see classes in module",
-            durability="module may host multiple providers",
-            canonical_truth=False,
-            evidence=("file-level discovery aggregate",),
+            "SX-F17",
+            semantic_owner=inv.semantic_owner,
+            composition_owner=inv.composition_owner,
+            evidence=("application host adapter over execution continuation contract",),
         )
 
-    return _outside(
-        candidate,
-        "REVIEW-QUEUE",
-        f"unmapped durable-like symbol {sym} at {rel}; classified outside pending domain owner",
-    )
+    return None
 
 
 @lru_cache(maxsize=1)
 def _build_closed_world_inventory() -> tuple[DurableStateMechanismRecord, ...]:
-    records = [_classify_candidate(c) for c in discover_durable_state_candidates()]
+    records: list[DurableStateMechanismRecord] = []
+    unclassified: list[str] = []
+    for candidate in discover_durable_state_candidates():
+        record = classify_candidate(candidate)
+        if record is None:
+            unclassified.append(candidate.mechanism_id)
+        else:
+            records.append(record)
+    assert not unclassified, f"unclassified durable mechanisms: {unclassified[:20]}"
     by_id = {r.mechanism_id: r for r in records}
     assert len(by_id) == len(records), "duplicate mechanism_id in classification"
     return tuple(records)
@@ -446,13 +457,80 @@ STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY: Final[tuple[DurableStateMechanismR
 )
 
 
-def assert_durable_state_discovery_fully_classified() -> None:
+def _record_has_placeholder_owner(record: DurableStateMechanismRecord) -> bool:
+    hay = " ".join(
+        (
+            record.semantic_owner or "",
+            record.composition_owner or "",
+            " ".join(record.evidence),
+        ),
+    ).lower()
+    return any(p in hay for p in _FORBIDDEN_PLACEHOLDER_OWNERS)
+
+
+def assert_no_review_queue_records() -> None:
+    hits = [r for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY if r.owner_stage in _FORBIDDEN_OWNER_STAGES]
+    assert not hits, f"forbidden owner_stage records: {[r.mechanism_id for r in hits[:10]]}"
+
+
+def assert_no_anonymous_components() -> None:
+    hits = [
+        r
+        for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY
+        if r.classification == DurableStateClassification.COMPONENT_OF_FAMILY and r.family_id is None
+    ]
+    assert not hits, f"anonymous components: {[r.mechanism_id for r in hits[:10]]}"
+
+
+def assert_no_anonymous_providers() -> None:
+    hits = [
+        r
+        for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY
+        if r.classification == DurableStateClassification.PROVIDER_IMPLEMENTATION and r.family_id is None
+    ]
+    assert not hits, f"anonymous providers: {[r.mechanism_id for r in hits[:10]]}"
+
+
+def assert_no_anonymous_reference_implementations() -> None:
+    hits = [
+        r
+        for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY
+        if r.classification == DurableStateClassification.NON_DURABLE_REFERENCE_ONLY
+        and r.family_id is None
+    ]
+    assert not hits, f"anonymous reference stores: {[r.mechanism_id for r in hits[:10]]}"
+
+
+def assert_no_placeholder_classification_records() -> None:
+    hits = [r for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY if _record_has_placeholder_owner(r)]
+    assert not hits, f"placeholder classification records: {[r.mechanism_id for r in hits[:10]]}"
+
+
+def assert_unknown_candidate_is_rejected() -> None:
+    unknown = DiscoveredMechanism(
+        mechanism_id="class:intergrax/runtime/synthetic.py::BrandNewDurableFooStateStore",
+        symbol="BrandNewDurableFooStateStore",
+        paths=("intergrax/runtime/synthetic.py",),
+        discovery_kind="class",
+    )
+    assert classify_candidate(unknown) is None
+
+
+def assert_all_discovered_candidates_explicitly_classified() -> None:
     discovered = {c.mechanism_id for c in discover_durable_state_candidates()}
     classified = {r.mechanism_id for r in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY}
-    assert discovered == classified, (
-        f"unclassified={sorted(discovered - classified)[:20]} "
-        f"orphan_records={sorted(classified - discovered)[:20]}"
-    )
+    unknown = discovered - classified
+    assert not unknown, f"unclassified discovered={sorted(unknown)[:20]}"
+    assert not (classified - discovered), "orphan classification records"
+
+
+def assert_durable_state_discovery_fully_classified() -> None:
+    assert_all_discovered_candidates_explicitly_classified()
+    assert_no_review_queue_records()
+    assert_no_anonymous_components()
+    assert_no_anonymous_providers()
+    assert_no_anonymous_reference_implementations()
+    assert_no_placeholder_classification_records()
     for record in STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY:
         assert record.classification in DurableStateClassification
         forbidden = {"UNKNOWN", "TBD", "IGNORE", "MISC", "OTHER", "ALLOWLIST"}
@@ -464,11 +542,24 @@ def assert_durable_state_discovery_fully_classified() -> None:
         ):
             assert record.family_id in CURRENT_STATE_X_FAMILY_IDS
             assert record.semantic_owner
+            assert record.composition_owner
+            assert record.canonical_truth is True
         if record.classification == DurableStateClassification.OUTSIDE_STATE_X:
-            assert record.owner_stage
+            assert record.owner_stage not in _FORBIDDEN_OWNER_STAGES
             assert record.semantic_owner
+            assert record.evidence
+            assert record.family_id is None
+            assert record.canonical_truth is False
         if record.classification == DurableStateClassification.PROVIDER_IMPLEMENTATION:
             assert record.family_id in CURRENT_STATE_X_FAMILY_IDS
+        if record.classification == DurableStateClassification.COMPONENT_OF_FAMILY:
+            assert record.family_id is not None
+        if record.classification == DurableStateClassification.NON_AUTHORITATIVE_PROJECTION:
+            assert record.canonical_truth is False
+            assert record.evidence
+            assert record.owner_stage not in _FORBIDDEN_OWNER_STAGES
+        if record.classification == DurableStateClassification.NON_DURABLE_REFERENCE_ONLY:
+            assert record.family_id is not None
 
 
 def assert_no_blind_directory_exclusions_in_scanner() -> None:

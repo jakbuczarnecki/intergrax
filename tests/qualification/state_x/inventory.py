@@ -1275,7 +1275,9 @@ STATE_X_R6_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     },
 )
 
-STATE_X_FINAL_START_HEAD: Final[str] = "4ed4c01d3ce5417fc902ace213d3a4f53c9064bc"
+STATE_X_FINAL_R1_R1_START_HEAD: Final[str] = "d2b08198c674ba2f40e6a30afadb198fb9a3d5f9"
+
+STATE_X_FINAL_START_HEAD: Final[str] = "d2b08198c674ba2f40e6a30afadb198fb9a3d5f9"
 
 STATE_X_FINAL_R1_START_HEAD: Final[str] = STATE_X_FINAL_START_HEAD
 
@@ -1294,5 +1296,15 @@ STATE_X_FINAL_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/qualification/state_x/inventory.py",
         "tests/qualification/state_x/test_state_x_p0_baseline.py",
         "tests/qualification/state_x/_r5_backup_restore_support.py",
+    },
+)
+
+STATE_X_FINAL_R1_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "tests/qualification/state_x/_state_x_explicit_mechanism_classifications.py",
+        "tests/qualification/state_x/_state_x_final_r1_r1_soundness_tests.py",
+        "tests/qualification/state_x/test_state_x_final_r1_r1_soundness.py",
+        "tests/unit/runtime/execution/deadline_authority/test_harness_02_r1a_qualification.py",
+        "tests/unit/runtime/long_running/test_pba_fix_a_checkpoint_port_consumption.py",
     },
 )

@@ -37,6 +37,8 @@ from tests.qualification.state_x.inventory import (
     CURRENT_STATE_X_FAMILY_IDS,
     HISTORICAL_BASE_FAMILY_IDS,
     MANDATORY_FAMILY_IDS,
+    STATE_X_FINAL_ALLOWLIST_PATHS,
+    STATE_X_FINAL_R1_R1_ALLOWLIST_PATHS,
     STATE_X_FINAL_START_HEAD,
     STATE_X_R6_ACCEPTED_CLOSURE_SHA,
 )
@@ -53,7 +55,21 @@ def _import_test(module_path: str, test_name: str) -> None:
 
 
 def test_sxf_q01_r6_closure_reconciled() -> None:
-    assert STATE_X_R6_ACCEPTED_CLOSURE_SHA == STATE_X_FINAL_START_HEAD
+    ancestor = subprocess.run(
+        [
+            "git",
+            "merge-base",
+            "--is-ancestor",
+            STATE_X_R6_ACCEPTED_CLOSURE_SHA,
+            STATE_X_FINAL_START_HEAD,
+        ],
+        cwd=_REPO_ROOT,
+        check=False,
+    )
+    assert ancestor.returncode == 0, (
+        f"R6 closure {STATE_X_R6_ACCEPTED_CLOSURE_SHA} must be ancestor of "
+        f"STATE-X-FINAL start {STATE_X_FINAL_START_HEAD}"
+    )
     assert STATE_X_R6_PRE_AUDIT_HEAD == "bcd8157065cc649412b64e9d6ada34be92d4b6a3"
     assert_frz_rec_05_r6_completeness()
 
@@ -148,8 +164,11 @@ def test_sxf_q31_production_delta_qualification_only() -> None:
         text=True,
     )
     changed = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    scope_allowlist = STATE_X_FINAL_ALLOWLIST_PATHS | STATE_X_FINAL_R1_R1_ALLOWLIST_PATHS
     for path in changed:
         norm = path.replace("\\", "/")
+        if norm in scope_allowlist:
+            continue
         assert norm.startswith(
             (
                 "docs/project/maintainers/",

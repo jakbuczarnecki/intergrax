@@ -148,6 +148,7 @@ def test_sxf_r1_q49_in_scope_blocker_zero() -> None:
 def test_sxf_r1_q50_discovery_inventory_counts() -> None:
     discovered = discover_durable_state_candidates()
     assert len(discovered) == len(STATE_X_DURABLE_STATE_CLOSED_WORLD_INVENTORY)
+    assert_durable_state_discovery_fully_classified()
 
 
 def test_sxf_r1_mechanical_parent_gate() -> None:
