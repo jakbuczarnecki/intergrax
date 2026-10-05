@@ -3,10 +3,11 @@
 | Field | Value |
 | --- | --- |
 | STATE_X_R6_PRE_AUDIT_HEAD | `bcd8157065cc649412b64e9d6ada34be92d4b6a3` |
+| STATE_X_R6_ACCEPTED_CLOSURE_SHA | `3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7` |
 | R5 accepted closure SHA | `bcd8157065cc649412b64e9d6ada34be92d4b6a3` |
 | Scope | FRZ-REC-05 — explicit resume/retry/replay/partial-recovery semantics; first-class fork disposition |
 | Production delta | **0** |
-| Status (Cursor) | **STATE-X-R6 READY FOR AUDIT** |
+| Status | **STATE-X-R6 CLOSED** (independently accepted @ `3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7`) |
 
 ## R5 reconciliation
 
@@ -56,7 +57,7 @@ No public `fork()` / `ForkRequest` / `ExecutionForkPort` on HEAD. Anti-fork AST 
 
 | Criterion | R6 disposition |
 | --- | --- |
-| **FRZ-REC-05** | READY FOR INDEPENDENT CLOSURE REVIEW |
+| **FRZ-REC-05** | **PASS** @ `3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7` |
 | FRZ-REC-01..04, 06, 07, 09, 10 | Supporting replay only (not global PASS) |
 | FRZ-STA-02, 03, 05, 06, 08 | Supporting |
 | FRZ-TEN-08 | Supporting (scoped) |

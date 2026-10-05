@@ -124,29 +124,29 @@ STATE_X_KNOWN_BLOCKERS: Final[tuple[StateXKnownBlocker, ...]] = (
         "SX-B01",
         "NexusLoop checkpoint_store typing vs wire_execution_terminal_store "
         "(GOV-X2 Q2-D1 / ExecutionTerminalPersistenceCapability)",
-        "STATE-X-R1",
-        BlockerClassification.TRACKED_FREEZE_DEBT,
-        "GOV_X2_GOVERNANCE_EXECUTION_E2E_CERTIFICATION.md Q2-D1; "
-        "NexusLoop.__init__ TaskCheckpointPersistence | None; "
-        "wire_execution_terminal_store expects ExecutionTerminalPersistenceCapability | None; "
-        "runtime isinstance guard in execution_terminal/persistence.py",
+        "STATE-X-FINAL",
+        BlockerClassification.SUPERSEDED,
+        "STATE-X-R4 Q2-D1 PASS @ 61faf8f317125b996526ceceaf5754b9c28073d6: "
+        "terminal_capability_from_task_checkpoint_store() in execution_terminal/persistence.py; "
+        "reconciled STATE-X-FINAL @ 3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7",
     ),
     StateXKnownBlocker(
         "SX-B02",
         "Checkpoint historical authority / missing task_snapshot semantics",
-        "STATE-X-R1",
-        BlockerClassification.IN_SCOPE_BLOCKER,
-        "checkpoint_resume_validation._parse_checkpoint_historical_authority; "
-        "SQLite task_snapshot_json NOT NULL; P0 lock: CURRENT CANON REQUIRES SNAPSHOT "
-        "(valid Task material) for authority parse; legacy-empty semantics → R1 ADR",
+        "STATE-X-FINAL",
+        BlockerClassification.SUPERSEDED,
+        "STATE-X-R4-R1 validated_task_snapshot_from_checkpoint() + consumer convergence; "
+        "R4 behavioral Q05 empty snapshot rejected; "
+        "reconciled STATE-X-FINAL @ 3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7",
     ),
     StateXKnownBlocker(
         "SX-B03",
         "R1-SQLITE-ENV-01 collaborative-work SQLite bootstrap",
-        "STATE-X-R4 / QUAL-X / PROD-Q",
+        "STATE-X-FINAL",
         BlockerClassification.ENVIRONMENT_TEST_ISSUE,
-        "PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST R1-SQLITE-ENV-01; "
-        "not causal to R1 host boundary; requires reproducible classification on current HEAD",
+        "CLASSIFIED @ 3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7: default build/intergrax.db "
+        "polluted (non-SQLite bytes); fresh INTERGRAX_RELATIONAL_DB isolates bootstrap; "
+        "STATE-X semantic impact = NONE; PROD-Q/QUAL-X debt preserved",
     ),
 )
 
@@ -1054,6 +1054,40 @@ STATE_X_R5_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/qualification/state_x/_r5_backup_restore_qualification_tests.py",
         "tests/qualification/state_x/_r5_q1_cross_store_restore_tests.py",
         "tests/qualification/state_x/test_state_x_r5_backup_restore.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+    },
+)
+
+STATE_X_R6_PRE_AUDIT_HEAD: Final[str] = "bcd8157065cc649412b64e9d6ada34be92d4b6a3"
+
+STATE_X_R6_ACCEPTED_CLOSURE_SHA: Final[str] = "3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7"
+
+STATE_X_R6_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md",
+        "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
+        "docs/project/maintainers/qualification/STATE_X_R5_BACKUP_RESTORE_RESPONSIBILITY_CERTIFICATION.md",
+        "docs/project/maintainers/qualification/STATE_X_R6_RECOVERY_BRANCHING_SEMANTICS_CERTIFICATION.md",
+        "tests/qualification/state_x/_r6_recovery_branching_support.py",
+        "tests/qualification/state_x/_r6_recovery_branching_qualification_tests.py",
+        "tests/qualification/state_x/test_state_x_r6_recovery_branching.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+    },
+)
+
+STATE_X_FINAL_START_HEAD: Final[str] = "3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7"
+
+STATE_X_FINAL_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md",
+        "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
+        "docs/project/maintainers/qualification/STATE_X_R6_RECOVERY_BRANCHING_SEMANTICS_CERTIFICATION.md",
+        "docs/project/maintainers/qualification/STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md",
+        "tests/qualification/state_x/_state_x_final_support.py",
+        "tests/qualification/state_x/_state_x_final_parent_qualification_tests.py",
+        "tests/qualification/state_x/test_state_x_final_parent.py",
         "tests/qualification/state_x/inventory.py",
         "tests/qualification/state_x/test_state_x_p0_baseline.py",
     },
