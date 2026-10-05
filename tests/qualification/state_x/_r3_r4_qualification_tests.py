@@ -460,7 +460,13 @@ def test_r3_r4_q24_timeout_path_uses_canonical_policy() -> None:
 
     verdict = timeout_action_to_verdict(AgentDecisionType.FAIL)
     checkpoint = paused_checkpoint(task_state=TaskState.WAITING_FOR_HUMAN)
-    task = build_timeout_resume_task(checkpoint, verdict=verdict, action=AgentDecisionType.FAIL)
+    task = build_timeout_resume_task(
+        checkpoint,
+        verdict=verdict,
+        action=AgentDecisionType.FAIL,
+        target_task_id=checkpoint.task_id,
+        target_tenant_id=checkpoint.tenant_id,
+    )
     assert task.options.human is not None
     assert task.metadata.get("scheduler_timeout") is True
 

@@ -936,6 +936,39 @@ STATE_X_R3_R5_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     },
 )
 
+STATE_X_R4_PRE_AUDIT_HEAD: Final[str] = "716ed746f8b463681db536804235cedc86adc162"
+
+STATE_X_R4_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "intergrax/runtime/long_running/checkpoint_resume_validation.py",
+        "intergrax/runtime/long_running/resume_planner.py",
+        "intergrax/runtime/long_running/coordinator.py",
+        "intergrax/runtime/long_running/scheduler.py",
+        "intergrax/runtime/long_running/models.py",
+        "intergrax/runtime/long_running/persistence_contract.py",
+        "intergrax/applications/_shared/task_control.py",
+        "intergrax/runtime/task/nexus_worker_execution.py",
+        "intergrax/runtime/execution/host_task.py",
+        "intergrax/runtime/execution/harness_task_execution_port.py",
+        "intergrax/runtime/execution/effective_profile_revision_admission.py",
+        "intergrax/runtime/execution/execution_terminal/persistence.py",
+        "intergrax/runtime/nexus/nexus_loop.py",
+        "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md",
+        "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
+        "docs/project/maintainers/qualification/STATE_X_R4_TASK_CHECKPOINT_RESTORE_INTEGRITY_CERTIFICATION.md",
+        "tests/qualification/state_x/_r4_task_checkpoint_restore_qualification_tests.py",
+        "tests/qualification/state_x/_r4_task_checkpoint_restore_support.py",
+        "tests/qualification/state_x/test_state_x_r4_task_checkpoint_restore.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+        "tests/unit/runtime/long_running/test_resume_planner.py",
+        "tests/unit/autonomous_work/test_uca6c_r6_r5_9_r1_true_restart_worker_governed_e2e.py",
+        "tests/unit/runtime/execution/suspended_operation/test_uca6c_r6_r5_9_r4_final_distributed_recovery_e2e.py",
+        "tests/qualification/state_x/test_state_x_r3_auxiliary_durable_state.py",
+        "tests/qualification/state_x/_r3_r4_qualification_tests.py",
+    },
+)
+
 STATE_X_R3_R5_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     {
         "intergrax/agents/persistence/checkpoint_store.py",

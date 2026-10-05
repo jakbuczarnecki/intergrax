@@ -37,6 +37,13 @@ from intergrax.runtime.cancellation.resume_admission import (
 from intergrax.runtime.governance.control_plane_mutation_authorization import (
     ControlPlaneMutationAuthorizationBoundary,
 )
+from intergrax.runtime.long_running.checkpoint_resume_validation import (
+    CheckpointResumeEligibility,
+    CheckpointResumeValidationError,
+    CheckpointResumeValidationResult,
+    assert_checkpoint_resume_materialization_eligible,
+    validate_checkpoint_snapshot_integrity,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import TaskCheckpointPersistence
 from intergrax.runtime.long_running.resume_planner import (
@@ -413,6 +420,17 @@ def _is_checkpoint_resumable(
     return is_checkpoint_resumable(checkpoint, execution_terminal=execution_terminal)
 
 
+def _optional_latest_checkpoint(
+    checkpoint_store: TaskCheckpointPersistence,
+    task_id: str,
+    tenant_id: str,
+) -> TaskCheckpoint | None:
+    get_latest = getattr(checkpoint_store, "get_latest", None)
+    if get_latest is None:
+        return None
+    return get_latest(task_id, tenant_id)
+
+
 def _resume_denial_detail(exc: CheckpointNotResumableError) -> str:
     if str(exc) == TERMINALLY_CANCELLED_RESUME_MSG:
         return "execution_terminally_cancelled"
@@ -424,8 +442,14 @@ def _validate_operator_hitl_input(
     checkpoint: TaskCheckpoint,
     operator_input: dict[str, Any] | None,
     approver: HumanApproverEvidence | None,
+    execution_terminal: ExecutionTerminalService | None = None,
 ) -> None:
-    task = build_checkpoint_resume_task(checkpoint)
+    task = build_checkpoint_resume_task(
+        checkpoint,
+        target_task_id=checkpoint.task_id,
+        target_tenant_id=checkpoint.tenant_id,
+        execution_terminal=execution_terminal,
+    )
     if operator_input:
         verdict = operator_input.get("verdict")
         if verdict:
@@ -544,10 +568,31 @@ async def governed_resume_checkpoint_task(
             ),
         )
 
+    latest = _optional_latest_checkpoint(checkpoint_store, task_id, tenant_id)
+    try:
+        assert_checkpoint_resume_materialization_eligible(
+            checkpoint,
+            target_task_id=task_id,
+            target_tenant_id=tenant_id,
+            latest_checkpoint=latest,
+            execution_terminal=execution_terminal,
+        )
+    except CheckpointResumeValidationError:
+        return GovernedResumeResult(
+            accepted=False,
+            blocked=TaskControlResult(
+                task_id=task_id,
+                action="resume",
+                accepted=False,
+                detail="checkpoint_restore_validation_failed",
+            ),
+        )
+
     _validate_operator_hitl_input(
         checkpoint=checkpoint,
         operator_input=operator_input,
         approver=approver,
+        execution_terminal=execution_terminal,
     )
 
     if mutation_boundary is None:
@@ -612,6 +657,9 @@ async def governed_resume_checkpoint_task(
 
 
 def _pause_record_from_checkpoint(checkpoint: TaskCheckpoint) -> TaskPauseRecord | None:
+    integrity = validate_checkpoint_snapshot_integrity(checkpoint)
+    if integrity.eligibility is not CheckpointResumeEligibility.ALLOW_RESUME:
+        raise CheckpointResumeValidationError(integrity)
     snapshot = Task.model_validate(checkpoint.task_snapshot)
     return snapshot.runtime.governance.pause_record
 
@@ -664,8 +712,18 @@ async def _resume_task_with_token(
     checkpoint: TaskCheckpoint,
     approver: HumanApproverEvidence | None = None,
 ) -> TaskResult:
-    task = build_checkpoint_resume_task(checkpoint)
-    task.task_id = task_id
+    if checkpoint.task_id != task_id:
+        raise CheckpointResumeValidationError(
+            CheckpointResumeValidationResult(
+                eligibility=CheckpointResumeEligibility.REJECT_IDENTITY,
+                reason="task_id mismatch",
+            )
+        )
+    task = build_checkpoint_resume_task(
+        checkpoint,
+        target_task_id=task_id,
+        target_tenant_id=checkpoint.tenant_id,
+    )
     task.options.long_running.resume_token = resume_token
     if operator_input:
         verdict = operator_input.get("verdict")
@@ -760,10 +818,31 @@ async def governed_resume_checkpoint_task_with_host_execution(
             ),
         )
 
+    latest = _optional_latest_checkpoint(checkpoint_store, task_id, tenant_id)
+    try:
+        assert_checkpoint_resume_materialization_eligible(
+            checkpoint,
+            target_task_id=task_id,
+            target_tenant_id=tenant_id,
+            latest_checkpoint=latest,
+            execution_terminal=execution_terminal,
+        )
+    except CheckpointResumeValidationError:
+        return GovernedResumeResult(
+            accepted=False,
+            blocked=TaskControlResult(
+                task_id=task_id,
+                action="resume",
+                accepted=False,
+                detail="checkpoint_restore_validation_failed",
+            ),
+        )
+
     _validate_operator_hitl_input(
         checkpoint=checkpoint,
         operator_input=operator_input,
         approver=approver,
+        execution_terminal=execution_terminal,
     )
 
     if mutation_boundary is None:
@@ -836,8 +915,18 @@ async def _resume_task_with_host_execution(
     checkpoint: TaskCheckpoint,
     approver: HumanApproverEvidence | None = None,
 ) -> TaskResult:
-    task = build_checkpoint_resume_task(checkpoint)
-    task.task_id = task_id
+    if checkpoint.task_id != task_id:
+        raise CheckpointResumeValidationError(
+            CheckpointResumeValidationResult(
+                eligibility=CheckpointResumeEligibility.REJECT_IDENTITY,
+                reason="task_id mismatch",
+            )
+        )
+    task = build_checkpoint_resume_task(
+        checkpoint,
+        target_task_id=task_id,
+        target_tenant_id=checkpoint.tenant_id,
+    )
     task.options.long_running.resume_token = resume_token
     if operator_input:
         verdict = operator_input.get("verdict")

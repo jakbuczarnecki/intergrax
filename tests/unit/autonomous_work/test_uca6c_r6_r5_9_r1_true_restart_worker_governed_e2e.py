@@ -692,7 +692,14 @@ def _load_task_from_durable_checkpoint(
 ) -> tuple[Task, TaskCheckpoint]:
     checkpoint = checkpoint_store.get_latest(expected_task_id, _TENANT)
     assert checkpoint is not None, "durable task checkpoint missing after Host A pause"
-    return build_checkpoint_resume_task(checkpoint), checkpoint
+    return (
+        build_checkpoint_resume_task(
+            checkpoint,
+            target_task_id=checkpoint.task_id,
+            target_tenant_id=checkpoint.tenant_id,
+        ),
+        checkpoint,
+    )
 
 
 def _orch_request_from_durable_worker_recovery_episode(

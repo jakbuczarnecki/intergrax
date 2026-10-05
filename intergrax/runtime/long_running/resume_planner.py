@@ -19,6 +19,13 @@ from intergrax.contracts.human_approver import (
     HumanApproverEvidence,
 )
 from intergrax.runtime.human.models import HumanResponseVerdict
+from intergrax.contracts.execution_lineage import ExecutionLineagePersistence
+from intergrax.runtime.execution.execution_terminal.service import (
+    ExecutionTerminalService,
+)
+from intergrax.runtime.long_running.checkpoint_resume_validation import (
+    assert_checkpoint_resume_materialization_eligible,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.scheduled_resume import ScheduledResume
 from intergrax.runtime.long_running.scheduled_resume_metadata import (
@@ -80,8 +87,22 @@ def build_timeout_resume_task(
     *,
     verdict: HumanResponseVerdict,
     action: AgentDecisionType,
+    target_task_id: str,
+    target_tenant_id: str,
+    latest_checkpoint: TaskCheckpoint | None = None,
+    execution_terminal: ExecutionTerminalService | None = None,
+    execution_lineage_persistence: ExecutionLineagePersistence | None = None,
+    require_durable_lineage: bool = False,
 ) -> Task:
-    task = _base_resume_task(checkpoint)
+    task = _base_resume_task(
+        checkpoint,
+        target_task_id=target_task_id,
+        target_tenant_id=target_tenant_id,
+        latest_checkpoint=latest_checkpoint,
+        execution_terminal=execution_terminal,
+        execution_lineage_persistence=execution_lineage_persistence,
+        require_durable_lineage=require_durable_lineage,
+    )
     _apply_scheduler_human_input(
         task,
         verdict=verdict,
@@ -96,9 +117,22 @@ def build_timeout_resume_task(
 def build_scheduled_resume_task(
     checkpoint: TaskCheckpoint,
     entry: ScheduledResume,
+    *,
+    latest_checkpoint: TaskCheckpoint | None = None,
+    execution_terminal: ExecutionTerminalService | None = None,
+    execution_lineage_persistence: ExecutionLineagePersistence | None = None,
+    require_durable_lineage: bool = False,
 ) -> Task:
     """Build resume Task for delayed schedule — WHEN-only; no metadata-derived HITL."""
-    task = _base_resume_task(checkpoint)
+    task = _base_resume_task(
+        checkpoint,
+        target_task_id=entry.task_id,
+        target_tenant_id=entry.tenant_id,
+        latest_checkpoint=latest_checkpoint,
+        execution_terminal=execution_terminal,
+        execution_lineage_persistence=execution_lineage_persistence,
+        require_durable_lineage=require_durable_lineage,
+    )
     validate_scheduled_resume_metadata(entry.resume_metadata)
     extra = dict(entry.resume_metadata or {})
     task.metadata["scheduler_delayed_resume"] = True
@@ -109,12 +143,47 @@ def build_scheduled_resume_task(
     return task
 
 
-def build_checkpoint_resume_task(checkpoint: TaskCheckpoint) -> Task:
-    """Public helper for operator/API resume (FLOW-CTL.4)."""
-    return _base_resume_task(checkpoint)
+def build_checkpoint_resume_task(
+    checkpoint: TaskCheckpoint,
+    *,
+    target_task_id: str,
+    target_tenant_id: str,
+    latest_checkpoint: TaskCheckpoint | None = None,
+    execution_terminal: ExecutionTerminalService | None = None,
+    execution_lineage_persistence: ExecutionLineagePersistence | None = None,
+    require_durable_lineage: bool = False,
+) -> Task:
+    """Operator/API resume Task materialization after canonical restore validation."""
+    return _base_resume_task(
+        checkpoint,
+        target_task_id=target_task_id,
+        target_tenant_id=target_tenant_id,
+        latest_checkpoint=latest_checkpoint,
+        execution_terminal=execution_terminal,
+        execution_lineage_persistence=execution_lineage_persistence,
+        require_durable_lineage=require_durable_lineage,
+    )
 
 
-def _base_resume_task(checkpoint: TaskCheckpoint) -> Task:
+def _base_resume_task(
+    checkpoint: TaskCheckpoint,
+    *,
+    target_task_id: str,
+    target_tenant_id: str,
+    latest_checkpoint: TaskCheckpoint | None = None,
+    execution_terminal: ExecutionTerminalService | None = None,
+    execution_lineage_persistence: ExecutionLineagePersistence | None = None,
+    require_durable_lineage: bool = False,
+) -> Task:
+    assert_checkpoint_resume_materialization_eligible(
+        checkpoint,
+        target_task_id=target_task_id,
+        target_tenant_id=target_tenant_id,
+        latest_checkpoint=latest_checkpoint,
+        execution_terminal=execution_terminal,
+        execution_lineage_persistence=execution_lineage_persistence,
+        require_durable_lineage=require_durable_lineage,
+    )
     task = Task.model_validate(checkpoint.task_snapshot)
     task.options.long_running = TaskLongRunningOptions(
         enabled=True,

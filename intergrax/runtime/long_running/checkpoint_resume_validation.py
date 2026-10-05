@@ -642,6 +642,92 @@ def evaluate_checkpoint_resume_eligibility(
     return result
 
 
+def evaluate_checkpoint_resume_materialization(
+    checkpoint: TaskCheckpoint,
+    *,
+    target_task_id: TaskId | str,
+    target_tenant_id: str,
+    target_run_id: RunId | str | None = None,
+    target_attempt_id: AttemptId | str | None = None,
+    target_root_execution_id: ExecutionId | str | None = None,
+    latest_checkpoint: TaskCheckpoint | None = None,
+    execution_terminal: ExecutionTerminalService | None = None,
+    execution_lineage_persistence: ExecutionLineagePersistence | None = None,
+    require_durable_lineage: bool = False,
+) -> CheckpointResumeValidationResult:
+    """Structural restore safety before Task snapshot materialization (no current authority)."""
+    result = CheckpointResumeValidationResult(
+        eligibility=CheckpointResumeEligibility.ALLOW_RESUME,
+    )
+    result = _merge_failure(result, validate_task_checkpoint_schema(checkpoint))
+    result = _merge_failure(
+        result,
+        validate_checkpoint_identity_binding(
+            checkpoint,
+            target_task_id=target_task_id,
+            target_tenant_id=target_tenant_id,
+            target_run_id=target_run_id,
+            target_attempt_id=target_attempt_id,
+            target_root_execution_id=target_root_execution_id,
+        ),
+    )
+    result = _merge_failure(
+        result,
+        validate_checkpoint_snapshot_integrity(checkpoint),
+    )
+    result = _merge_failure(
+        result,
+        validate_checkpoint_resumable_state(checkpoint),
+    )
+    result = _merge_failure(
+        result,
+        validate_checkpoint_not_stale(checkpoint, latest_checkpoint),
+    )
+    result = _merge_failure(
+        result,
+        validate_checkpoint_terminal_gate(checkpoint, execution_terminal),
+    )
+    result = _merge_failure(
+        result,
+        validate_checkpoint_lineage_cross_reference(
+            checkpoint,
+            execution_lineage_persistence,
+            require_durable_lineage=require_durable_lineage,
+        ),
+    )
+    return result
+
+
+def assert_checkpoint_resume_materialization_eligible(
+    checkpoint: TaskCheckpoint,
+    *,
+    target_task_id: TaskId | str,
+    target_tenant_id: str,
+    target_run_id: RunId | str | None = None,
+    target_attempt_id: AttemptId | str | None = None,
+    target_root_execution_id: ExecutionId | str | None = None,
+    latest_checkpoint: TaskCheckpoint | None = None,
+    execution_terminal: ExecutionTerminalService | None = None,
+    execution_lineage_persistence: ExecutionLineagePersistence | None = None,
+    require_durable_lineage: bool = False,
+) -> None:
+    result = evaluate_checkpoint_resume_materialization(
+        checkpoint,
+        target_task_id=target_task_id,
+        target_tenant_id=target_tenant_id,
+        target_run_id=target_run_id,
+        target_attempt_id=target_attempt_id,
+        target_root_execution_id=target_root_execution_id,
+        latest_checkpoint=latest_checkpoint,
+        execution_terminal=execution_terminal,
+        execution_lineage_persistence=execution_lineage_persistence,
+        require_durable_lineage=require_durable_lineage,
+    )
+    if result.eligibility is CheckpointResumeEligibility.ALLOW_RESUME:
+        return
+    raise CheckpointResumeValidationError(result)
+
+
 def assert_checkpoint_resume_eligible(
     checkpoint: TaskCheckpoint,
     *,

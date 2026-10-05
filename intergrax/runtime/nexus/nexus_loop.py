@@ -398,15 +398,13 @@ class NexusLoop:
         self._attempt_lifecycle = attempt_lifecycle or AttemptLifecycleService(
             InMemoryAttemptLifecycleStore(),
         )
-        terminal_checkpoint_capability: ExecutionTerminalPersistenceCapability | None = None
-        if (
-            self._checkpoint_store is not None
-            and isinstance(
-                self._checkpoint_store,
-                ExecutionTerminalPersistenceCapability,
-            )
-        ):
-            terminal_checkpoint_capability = self._checkpoint_store
+        from intergrax.runtime.execution.execution_terminal.persistence import (
+            terminal_capability_from_task_checkpoint_store,
+        )
+
+        terminal_checkpoint_capability = terminal_capability_from_task_checkpoint_store(
+            self._checkpoint_store,
+        )
         self._execution_terminal = execution_terminal or ExecutionTerminalService(
             wire_execution_terminal_store(
                 checkpoint_store=terminal_checkpoint_capability,
