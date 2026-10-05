@@ -9,7 +9,7 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Final
 
-TRACE_X_P0_AUDITED_HEAD: Final[str] = "9c68b47dcd30f328f1acd530af13bb32f860507f"
+TRACE_X_P0_AUDITED_HEAD: Final[str] = "6be91ed91e3132dddd77d1fb14312bf23870e4e1"
 
 MANDATORY_FRZ_TRC_IDS: Final[tuple[str, ...]] = tuple(
     f"FRZ-TRC-{i:02d}" for i in range(1, 13)

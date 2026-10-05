@@ -4,7 +4,9 @@
 
 **Stage:** TRACE-X-P0 (baseline lock — **production delta = 0**)
 
-**AUDITED_HEAD:** `9c68b47dcd30f328f1acd530af13bb32f860507f`
+**START_HEAD:** `9c68b47dcd30f328f1acd530af13bb32f860507f`
+
+**AUDITED_HEAD / FINAL_COMMIT:** `6be91ed91e3132dddd77d1fb14312bf23870e4e1`
 
 **Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p0_support.py`
 
@@ -17,7 +19,7 @@
 | Field | Value |
 |---|---|
 | Branch | `development` |
-| START_HEAD / AUDITED_HEAD | `9c68b47dcd30f328f1acd530af13bb32f860507f` |
+| START_HEAD / AUDITED_HEAD | `6be91ed91e3132dddd77d1fb14312bf23870e4e1` (baseline commit; task START_HEAD `9c68b47d…`) |
 | Production delta | **0** |
 
 ---
