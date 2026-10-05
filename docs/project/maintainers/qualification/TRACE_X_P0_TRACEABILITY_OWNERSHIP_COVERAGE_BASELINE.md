@@ -4,15 +4,31 @@
 
 **Stage:** TRACE-X-P0 (baseline lock — **production delta = 0**)
 
-**START_HEAD:** `9c68b47dcd30f328f1acd530af13bb32f860507f`
+**Task START_HEAD (original P0):** `9c68b47dcd30f328f1acd530af13bb32f860507f`
 
-**AUDITED_HEAD (baseline commit):** `6be91ed91e3132dddd77d1fb14312bf23870e4e1`
+**Initial P0 baseline commit:** `6be91ed91e3132dddd77d1fb14312bf23870e4e1`
 
-**FINAL_COMMIT (bookkeeping):** `fe0868254d2cf0b6cc5015dbd7e8640f756dc8fe` (HEAD anchor pin; Q01 accepts baseline ancestor)
+**Intermediate bookkeeping (HEAD-pin; superseded):** `fe0868254d2cf0b6cc5015dbd7e8640f756dc8fe`
+
+**R1 remediation START_HEAD:** `a2eb3d6e1e748e99a0f0430b32f6a44f25345696`
+
+**R1 FINAL_COMMIT:** recorded by final task report / independent GitHub audit (no self-pin in qualification code)
 
 **Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p0_support.py`
 
-**Status:** TRACE-X-P0 = **READY FOR AUDIT** (pending independent GitHub SHA audit)
+**Status:** TRACE-X-P0 = **BLOCKED PENDING INDEPENDENT R1 AUDIT** · TRACE-X-P0-R1 = **READY FOR AUDIT**
+
+---
+
+## R1 remediation (TRACE-X-P0-R1)
+
+| Root cause | Before | After |
+|---|---|---|
+| Closed-world gate | Only unknown `*Reconstructor` blocked | Any discovered sensitive class (all suffix categories) must appear in `TRACE_MECHANISM_CLASS_REGISTRY` or gate **FAIL** |
+| HEAD / provenance | Q01 accepted any descendant of baseline SHA as “current head” | Q01 = task `START_HEAD` provenance only; exact `FINAL_COMMIT` via report + independent audit |
+| Child mapping | P3/P4 drift in reverse reconstruction notes | Canonical `FRZ_TO_CHILD` + typed `future_child_owner` on reverse rows; mechanical gates |
+
+**Sentinel suite:** `tests/qualification/trace_x/test_trace_x_p0_r1_soundness.py` (TXP0-R1-Q01..Q20).
 
 ---
 
@@ -21,16 +37,16 @@
 | Field | Value |
 |---|---|
 | Branch | `development` |
-| Baseline commit | `6be91ed91e3132dddd77d1fb14312bf23870e4e1` |
-| Task START_HEAD | `9c68b47dcd30f328f1acd530af13bb32f860507f` |
-| FINAL_COMMIT | `fe0868254d2cf0b6cc5015dbd7e8640f756dc8fe` (after HEAD-pin bookkeeping) |
+| P0 baseline commit | `6be91ed91e3132dddd77d1fb14312bf23870e4e1` |
+| R1 START_HEAD | `a2eb3d6e1e748e99a0f0430b32f6a44f25345696` |
+| FINAL_COMMIT | See Cursor final report / GitHub SHA after R1 commit |
 | Production delta | **0** |
 
 ---
 
 ## 2. Scope
 
-**In scope:** closed-world traceability inventory (TX-S01..S19), architecture locks, semantic owner matrix, forward/reverse matrices, FRZ-TRC-01..12 P0 disposition (no PASS), TXP0-Q01..Q30 gates, tenant isolation P0 audit, child decomposition.
+**In scope:** closed-world traceability inventory (TX-S01..S19), architecture locks, semantic owner matrix, forward/reverse matrices, FRZ-TRC-01..12 P0 disposition (no PASS), TXP0-Q01..Q30 gates, TXP0-R1 soundness gates, tenant isolation P0 audit, child decomposition.
 
 **Out of scope:** production contract changes, CONFIG-X / COMPAT-X / TENANT-X / PROD-Q / QUAL-X implementation, FRZ-TRC PASS promotion, new global trace envelopes.
 
@@ -91,7 +107,9 @@ Typed records: `TRACEABILITY_SURFACES` (`TraceabilitySurface`, surfaces **TX-S01
 
 ## 8. Reverse reconstruction matrix
 
-`REVERSE_RECONSTRUCTION_MATRIX` covers: external effect, provider invocation, tool invocation, model call, failure, diagnostic finding, terminal outcome — with per-dimension status (`COMPLETE` / `PARTIAL` / `NOT_AVAILABLE` / `NOT_APPLICABLE`).
+`REVERSE_RECONSTRUCTION_MATRIX` covers: external effect, provider invocation, tool invocation, model call, failure, diagnostic finding, terminal outcome — with per-dimension status (`COMPLETE` / `PARTIAL` / `NOT_AVAILABLE` / `NOT_APPLICABLE`) and typed `future_child_owner` where applicable.
+
+**Canonical reverse child owners:** external effect / provider / tool → **TRACE-X-P3**; model call → **TRACE-X-P4**; failure / terminal → **TRACE-X-P6**.
 
 ---
 
@@ -112,7 +130,7 @@ Typed records: `TRACEABILITY_SURFACES` (`TraceabilitySurface`, surfaces **TX-S01
 | FRZ-TRC-11 | PARTIAL_CURRENT_HEAD | TRACE-X-P5 |
 | FRZ-TRC-12 | SUPPORTED_CURRENT_HEAD | TRACE-X-P1 |
 
-Authoritative rows: `FRZ_TRC_P0_MATRIX` in SSOT. **FRZ criteria remain OPEN** — no PASS.
+Authoritative rows: `FRZ_TRC_P0_MATRIX` + `FRZ_TO_CHILD` in SSOT. **FRZ criteria remain OPEN** — no PASS.
 
 ---
 
@@ -142,7 +160,7 @@ FRZ-OBS-01..07 remain **OPEN** supporting evidence only. P0 references OBS-TRACE
 
 `TRACE_X_CHILD_DECOMPOSITION`: TRACE-X-P1 .. TRACE-X-P6 + TRACE-X-CERT (derived from inventory gaps, not invented scope).
 
-**Recommended parent:** TRACE-X = **CURRENT / BLOCKED PENDING CHILD QUALIFICATION**
+**Recommended parent:** TRACE-X = **CURRENT / BLOCKED PENDING P0 CLOSURE**
 
 ---
 
@@ -162,22 +180,27 @@ See `TENANT_ISOLATION_AUDIT` in SSOT. **Result:** PARTIAL — tenant_id propagat
 
 TXP0-Q01..TXP0-Q30 in `tests/qualification/trace_x/_trace_x_p0_qualification_tests.py`; entrypoint `tests/qualification/trace_x/test_trace_x_p0_baseline.py`.
 
-Closed-world regression: sensitive class discovery + forbidden global trace type names; unregistered `*Reconstructor` → FAIL.
+TXP0-R1-Q01..Q20 in `tests/qualification/trace_x/test_trace_x_p0_r1_soundness.py`.
+
+Closed-world: `discover_sensitive_classes()` + `assert_sensitive_classes_explicitly_classified()` (all suffix categories); registry→surface integrity; registry orphan audit; forbidden global trace type names.
 
 ---
 
-## 17. Tests @ AUDITED_HEAD
+## 17. Tests @ R1 remediation
 
 ```text
-Pass 1: uv run --with cryptography pytest tests/qualification/trace_x/test_trace_x_p0_baseline.py -p no:xdist -q
+Pass 1: uv run --with cryptography pytest tests/qualification/trace_x/test_trace_x_p0_r1_soundness.py -p no:xdist -q
+        → 20 passed
+
+Pass 2: uv run --with cryptography pytest tests/qualification/trace_x/test_trace_x_p0_baseline.py -p no:xdist -q
         → 48 passed
 
-Pass 2: uv run --with cryptography pytest \
+Pass 3: uv run --with cryptography pytest \
           tests/unit/runtime/observability/test_obs_trace_1_qualification.py \
           tests/unit/runtime/architecture/test_obs_reconstruction_1_architecture.py \
           tests/unit/runtime/architecture/test_obs_diag_conformance_architecture.py \
           -p no:xdist -q
-        → 33 passed
+        → (see final task report)
 
 max concurrent uv = 1; max concurrent pytest = 1; parallel execution = NO; -p no:xdist
 ```

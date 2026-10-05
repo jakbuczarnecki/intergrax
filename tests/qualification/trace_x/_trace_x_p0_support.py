@@ -4,12 +4,16 @@
 
 from __future__ import annotations
 
+import ast
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 from typing import Final
 
-TRACE_X_P0_AUDITED_HEAD: Final[str] = "6be91ed91e3132dddd77d1fb14312bf23870e4e1"
+TRACE_X_P0_START_HEAD: Final[str] = "a2eb3d6e1e748e99a0f0430b32f6a44f25345696"
+TRACE_X_P0_BASELINE_COMMIT: Final[str] = "6be91ed91e3132dddd77d1fb14312bf23870e4e1"
+TRACE_X_P0_AUDITED_HEAD: Final[str] = TRACE_X_P0_BASELINE_COMMIT
 
 MANDATORY_FRZ_TRC_IDS: Final[tuple[str, ...]] = tuple(
     f"FRZ-TRC-{i:02d}" for i in range(1, 13)
@@ -102,6 +106,45 @@ class BlockerClassification(StrEnum):
     ENVIRONMENT_TEST_ISSUE = "ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED"
 
 
+class TraceXChildId(StrEnum):
+    P1 = "TRACE-X-P1"
+    P2 = "TRACE-X-P2"
+    P3 = "TRACE-X-P3"
+    P4 = "TRACE-X-P4"
+    P5 = "TRACE-X-P5"
+    P6 = "TRACE-X-P6"
+    CERT = "TRACE-X-CERT"
+
+
+class SensitiveClassificationError(AssertionError):
+    """Closed-world sensitive mechanism classification failure."""
+
+
+FRZ_TO_CHILD: Final[dict[str, TraceXChildId]] = {
+    "FRZ-TRC-01": TraceXChildId.P2,
+    "FRZ-TRC-02": TraceXChildId.P1,
+    "FRZ-TRC-03": TraceXChildId.P3,
+    "FRZ-TRC-04": TraceXChildId.P3,
+    "FRZ-TRC-05": TraceXChildId.P4,
+    "FRZ-TRC-06": TraceXChildId.P3,
+    "FRZ-TRC-07": TraceXChildId.P5,
+    "FRZ-TRC-08": TraceXChildId.P5,
+    "FRZ-TRC-09": TraceXChildId.P6,
+    "FRZ-TRC-10": TraceXChildId.P6,
+    "FRZ-TRC-11": TraceXChildId.P5,
+    "FRZ-TRC-12": TraceXChildId.P1,
+}
+
+REVERSE_RECONSTRUCTION_CHILD_BY_SUBJECT: Final[dict[str, TraceXChildId]] = {
+    "external effect": TraceXChildId.P3,
+    "provider invocation": TraceXChildId.P3,
+    "tool invocation": TraceXChildId.P3,
+    "model call": TraceXChildId.P4,
+    "failure": TraceXChildId.P6,
+    "terminal outcome": TraceXChildId.P6,
+}
+
+
 @dataclass(frozen=True, slots=True)
 class TraceabilitySurface:
     surface_id: str
@@ -159,6 +202,7 @@ class ReverseReconstructionRow:
     governance_evidence: ReverseReconstructionStatus
     policy_profile_revision: ReverseReconstructionStatus
     provider_contract: ReverseReconstructionStatus
+    future_child_owner: TraceXChildId | None
     evidence_notes: tuple[str, ...]
 
 
@@ -809,9 +853,10 @@ REVERSE_RECONSTRUCTION_MATRIX: Final[tuple[ReverseReconstructionRow, ...]] = (
         ReverseReconstructionStatus.PARTIAL,
         ReverseReconstructionStatus.PARTIAL,
         ReverseReconstructionStatus.PARTIAL,
+        TraceXChildId.P3,
         (
             "ExecutionBoundaryEvent + GOV-X2 qualified paths",
-            "global reverse closure → TRACE-X-P4",
+            "global reverse closure → TRACE-X-P3",
         ),
     ),
     ReverseReconstructionRow(
@@ -825,6 +870,7 @@ REVERSE_RECONSTRUCTION_MATRIX: Final[tuple[ReverseReconstructionRow, ...]] = (
         ReverseReconstructionStatus.PARTIAL,
         ReverseReconstructionStatus.PARTIAL,
         ReverseReconstructionStatus.PARTIAL,
+        TraceXChildId.P3,
         ("ProviderInvocationSection inventory",),
     ),
     ReverseReconstructionRow(
@@ -838,6 +884,7 @@ REVERSE_RECONSTRUCTION_MATRIX: Final[tuple[ReverseReconstructionRow, ...]] = (
         ReverseReconstructionStatus.PARTIAL,
         ReverseReconstructionStatus.NOT_AVAILABLE,
         ReverseReconstructionStatus.NOT_AVAILABLE,
+        TraceXChildId.P3,
         ("Tool invoker surfaces TX-S07",),
     ),
     ReverseReconstructionRow(
@@ -851,7 +898,8 @@ REVERSE_RECONSTRUCTION_MATRIX: Final[tuple[ReverseReconstructionRow, ...]] = (
         ReverseReconstructionStatus.NOT_AVAILABLE,
         ReverseReconstructionStatus.NOT_AVAILABLE,
         ReverseReconstructionStatus.PARTIAL,
-        ("CE-01 scoped; global → TRACE-X-P3",),
+        TraceXChildId.P4,
+        ("CE-01 scoped; global → TRACE-X-P4",),
     ),
     ReverseReconstructionRow(
         "failure",
@@ -864,6 +912,7 @@ REVERSE_RECONSTRUCTION_MATRIX: Final[tuple[ReverseReconstructionRow, ...]] = (
         ReverseReconstructionStatus.NOT_AVAILABLE,
         ReverseReconstructionStatus.NOT_AVAILABLE,
         ReverseReconstructionStatus.NOT_AVAILABLE,
+        TraceXChildId.P6,
         ("RuntimeEvent failure recorders",),
     ),
     ReverseReconstructionRow(
@@ -877,6 +926,7 @@ REVERSE_RECONSTRUCTION_MATRIX: Final[tuple[ReverseReconstructionRow, ...]] = (
         ReverseReconstructionStatus.NOT_AVAILABLE,
         ReverseReconstructionStatus.NOT_AVAILABLE,
         ReverseReconstructionStatus.NOT_APPLICABLE,
+        None,
         ("Diagnostics consumes reconstruction only",),
     ),
     ReverseReconstructionRow(
@@ -890,6 +940,7 @@ REVERSE_RECONSTRUCTION_MATRIX: Final[tuple[ReverseReconstructionRow, ...]] = (
         ReverseReconstructionStatus.PARTIAL,
         ReverseReconstructionStatus.NOT_AVAILABLE,
         ReverseReconstructionStatus.NOT_AVAILABLE,
+        TraceXChildId.P6,
         ("TX-S16 + GOV-X2 partial",),
     ),
 )
@@ -1218,7 +1269,13 @@ TRACE_MECHANISM_CLASS_REGISTRY: Final[dict[str, str]] = {
     "RunTraceStore": "TX-S03",
     "RunTraceReader": "TX-S03",
     "ExecutionLineageReader": "TX-S05",
+    "ExecutionLineagePersistence": "TX-S05",
+    "DocumentStoreExecutionLineagePersistence": "TX-S05",
+    "InMemoryExecutionLineagePersistence": "TX-S05",
 }
+
+# Registry symbols intentionally retained though not discovered by closed-world AST scan.
+TRACE_MECHANISM_REGISTRY_COMPATIBILITY_ALIASES: Final[frozenset[str]] = frozenset()
 
 _SENSITIVE_CLASS_SUFFIXES: Final[tuple[str, ...]] = (
     "Reconstructor",
@@ -1239,9 +1296,129 @@ _FORBIDDEN_GLOBAL_TRACE_NAMES: Final[frozenset[str]] = frozenset(
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
+_CLOSED_WORLD_SKIP_DIR_NAMES: Final[frozenset[str]] = frozenset(
+    {
+        "__pycache__",
+        "tests",
+        "docker",
+        "runtime-context",
+    }
+)
+
 
 def repo_root() -> Path:
     return _REPO_ROOT
+
+
+def _python_files_under(rel_root: str) -> list[Path]:
+    root = _REPO_ROOT / rel_root
+    if not root.is_dir():
+        return []
+    files: list[Path] = []
+    for path in root.rglob("*.py"):
+        if any(part in _CLOSED_WORLD_SKIP_DIR_NAMES for part in path.parts):
+            continue
+        files.append(path)
+    return files
+
+
+def _class_names_in_file(path: Path) -> frozenset[str]:
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+    except SyntaxError:
+        return frozenset()
+    names: set[str] = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef):
+            names.add(node.name)
+    return frozenset(names)
+
+
+def discover_sensitive_classes() -> dict[str, list[str]]:
+    found: dict[str, list[str]] = {}
+    for rel in CLOSED_WORLD_ROOTS:
+        for path in _python_files_under(rel):
+            rel_path = path.relative_to(_REPO_ROOT).as_posix()
+            for name in _class_names_in_file(path):
+                if name in TRACE_MECHANISM_CLASS_REGISTRY:
+                    found.setdefault(name, []).append(rel_path)
+                    continue
+                for suffix in _SENSITIVE_CLASS_SUFFIXES:
+                    if name.endswith(suffix):
+                        found.setdefault(name, []).append(rel_path)
+    return found
+
+
+def assert_sensitive_classes_explicitly_classified(
+    discovered: Mapping[str, Sequence[str]],
+) -> None:
+    unclassified = {
+        name: list(paths)
+        for name, paths in discovered.items()
+        if name not in TRACE_MECHANISM_CLASS_REGISTRY
+    }
+    if unclassified:
+        detail = ", ".join(sorted(unclassified))
+        raise SensitiveClassificationError(
+            f"unclassified sensitive trace mechanisms: {detail}"
+        )
+
+
+def assert_registry_references_valid_surfaces() -> None:
+    surface_ids = {surface.surface_id for surface in TRACEABILITY_SURFACES}
+    invalid = {
+        symbol: surface_id
+        for symbol, surface_id in TRACE_MECHANISM_CLASS_REGISTRY.items()
+        if surface_id not in surface_ids
+    }
+    assert invalid == {}, f"registry references unknown TX surfaces: {invalid}"
+
+
+def assert_registry_no_unexplained_orphans(
+    discovered: Mapping[str, Sequence[str]],
+) -> None:
+    discovered_names = frozenset(discovered)
+    orphans = {
+        symbol
+        for symbol in TRACE_MECHANISM_CLASS_REGISTRY
+        if symbol not in discovered_names
+        and symbol not in TRACE_MECHANISM_REGISTRY_COMPATIBILITY_ALIASES
+    }
+    assert orphans == frozenset(), f"unexplained registry orphans: {sorted(orphans)}"
+
+
+def assert_frz_to_child_mapping_consistent() -> None:
+    assert set(FRZ_TO_CHILD) == set(MANDATORY_FRZ_TRC_IDS)
+    for criterion, child in FRZ_TO_CHILD.items():
+        row = frz_row_by_id()[criterion]
+        assert row.future_child_owner == child.value, (
+            f"{criterion}: matrix={row.future_child_owner} canonical={child.value}"
+        )
+    child_frz: dict[TraceXChildId, set[str]] = {}
+    for child in TRACE_X_CHILD_DECOMPOSITION:
+        if child.child_id == TraceXChildId.CERT.value:
+            continue
+        child_frz[TraceXChildId(child.child_id)] = set(child.frz_criteria)
+    for child_id in (
+        TraceXChildId.P1,
+        TraceXChildId.P2,
+        TraceXChildId.P3,
+        TraceXChildId.P4,
+        TraceXChildId.P5,
+        TraceXChildId.P6,
+    ):
+        assert child_frz.get(child_id), f"{child_id} has no FRZ criteria"
+    cert = next(c for c in TRACE_X_CHILD_DECOMPOSITION if c.child_id == TraceXChildId.CERT.value)
+    assert set(cert.frz_criteria) == set(MANDATORY_FRZ_TRC_IDS)
+
+
+def assert_reverse_reconstruction_child_mapping_consistent() -> None:
+    for row in REVERSE_RECONSTRUCTION_MATRIX:
+        expected = REVERSE_RECONSTRUCTION_CHILD_BY_SUBJECT.get(row.subject)
+        if expected is None:
+            assert row.future_child_owner is None, row.subject
+        else:
+            assert row.future_child_owner == expected, row.subject
 
 
 def _contract_path_from_semantic_contract(semantic_contract: str) -> str | None:

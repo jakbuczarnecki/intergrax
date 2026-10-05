@@ -4,10 +4,8 @@
 
 from __future__ import annotations
 
-import ast
 import dataclasses
 import subprocess
-from pathlib import Path
 
 import pytest
 
@@ -22,10 +20,9 @@ from tests.qualification.trace_x._trace_x_p0_support import (
     MANDATORY_FRZ_TRC_IDS,
     REVERSE_RECONSTRUCTION_MATRIX,
     SEMANTIC_OWNER_MATRIX,
-    TRACE_MECHANISM_CLASS_REGISTRY,
     TRACE_X_CHILD_DECOMPOSITION,
     TRACE_X_KNOWN_BLOCKERS,
-    TRACE_X_P0_AUDITED_HEAD,
+    TRACE_X_P0_START_HEAD,
     TRACEABILITY_SURFACES,
     AuthorityRole,
     BlockerClassification,
@@ -34,7 +31,14 @@ from tests.qualification.trace_x._trace_x_p0_support import (
     TenantIsolationP0Result,
     TraceabilityDomain,
     _FORBIDDEN_GLOBAL_TRACE_NAMES,
-    _SENSITIVE_CLASS_SUFFIXES,
+    _class_names_in_file,
+    _python_files_under,
+    assert_frz_to_child_mapping_consistent,
+    assert_registry_no_unexplained_orphans,
+    assert_registry_references_valid_surfaces,
+    assert_reverse_reconstruction_child_mapping_consistent,
+    assert_sensitive_classes_explicitly_classified,
+    discover_sensitive_classes,
     frz_row_by_id,
     repo_root,
     surfaces_by_id,
@@ -51,66 +55,17 @@ def _git_head() -> str:
     ).strip()
 
 
-def _python_files_under(rel_root: str) -> list[Path]:
-    root = _REPO_ROOT / rel_root
-    if not root.is_dir():
-        return []
-    files: list[Path] = []
-    skip_dir_names = frozenset(
-        {
-            "__pycache__",
-            "tests",
-            "docker",
-            "runtime-context",
-        }
-    )
-    for path in root.rglob("*.py"):
-        if any(part in skip_dir_names for part in path.parts):
-            continue
-        files.append(path)
-    return files
-
-
-def _class_names_in_file(path: Path) -> frozenset[str]:
-    try:
-        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
-    except SyntaxError:
-        return frozenset()
-    names: set[str] = set()
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef):
-            names.add(node.name)
-    return frozenset(names)
-
-
-def _discover_sensitive_classes() -> dict[str, list[str]]:
-    found: dict[str, list[str]] = {}
-    for rel in CLOSED_WORLD_ROOTS:
-        for path in _python_files_under(rel):
-            rel_path = path.relative_to(_REPO_ROOT).as_posix()
-            for name in _class_names_in_file(path):
-                if name in TRACE_MECHANISM_CLASS_REGISTRY:
-                    found.setdefault(name, []).append(rel_path)
-                    continue
-                for suffix in _SENSITIVE_CLASS_SUFFIXES:
-                    if name.endswith(suffix):
-                        found.setdefault(name, []).append(rel_path)
-    return found
-
-
-def test_txp0_q01_current_head_anchor() -> None:
+def test_txp0_q01_task_provenance_anchor_preserved() -> None:
+    """R1 task START_HEAD must remain an ancestor of current HEAD (provenance only)."""
     head = _git_head()
-    audited = TRACE_X_P0_AUDITED_HEAD
-    if head == audited:
-        return
-    check = subprocess.run(
-        ["git", "merge-base", "--is-ancestor", audited, head],
+    start = TRACE_X_P0_START_HEAD
+    merge_base = subprocess.check_output(
+        ["git", "merge-base", start, head],
         cwd=_REPO_ROOT,
-        capture_output=True,
         text=True,
-    )
-    assert check.returncode == 0, (
-        f"HEAD {head} must equal or descend from TRACE-X-P0 baseline {audited}"
+    ).strip()
+    assert merge_base == start, (
+        f"task provenance broken: merge-base({start}, {head})={merge_base}, expected {start}"
     )
 
 
@@ -281,7 +236,7 @@ def test_txp0_q22_reverse_matrix_complete_as_inventory() -> None:
 def test_txp0_q23_no_duplicate_trace_reconstruction_authority() -> None:
     owners = [row.canonical_semantic_owner for row in SEMANTIC_OWNER_MATRIX]
     assert len(owners) == len(set(owners))
-    recon_impls = _discover_sensitive_classes().get("ExecutionReconstructor", [])
+    recon_impls = discover_sensitive_classes().get("ExecutionReconstructor", [])
     assert recon_impls == [
         "intergrax/runtime/observability/reconstruction/execution_reconstruction.py"
     ]
@@ -353,14 +308,13 @@ def test_txp0_closed_world_no_forbidden_global_trace_types() -> None:
 
 
 def test_txp0_closed_world_sensitive_classes_classified() -> None:
-    """Unknown relevant mechanism → FAIL (no generic OUTSIDE pass)."""
-    discovered = _discover_sensitive_classes()
-    unregistered_reconstructors = [
-        name
-        for name in discovered
-        if name.endswith("Reconstructor") and name not in TRACE_MECHANISM_CLASS_REGISTRY
-    ]
-    assert unregistered_reconstructors == []
+    """Unknown sensitive mechanism (any category) → FAIL."""
+    discovered = discover_sensitive_classes()
+    assert_sensitive_classes_explicitly_classified(discovered)
+    assert_registry_references_valid_surfaces()
+    assert_registry_no_unexplained_orphans(discovered)
+    assert_frz_to_child_mapping_consistent()
+    assert_reverse_reconstruction_child_mapping_consistent()
 
 
 def test_txp0_semantic_owner_matrix_no_unknown_tokens() -> None:
