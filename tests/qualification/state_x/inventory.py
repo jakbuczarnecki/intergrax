@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""STATE-X-P0 canonical state-family inventory (mechanical SSOT for SX-F01..SX-F15)."""
+"""STATE-X canonical state-family inventory (SSOT; historical SX-F01..F15 + current F16+)."""
 
 from __future__ import annotations
 
@@ -11,6 +11,8 @@ from typing import Final
 STATE_X_P0_AUDITED_HEAD: Final[str] = "658cf95864970d7c8bde1c7005cf178747c68b55"
 
 MANDATORY_FAMILY_IDS: Final[tuple[str, ...]] = tuple(f"SX-F{i:02d}" for i in range(1, 16))
+
+HISTORICAL_BASE_FAMILY_IDS: Final[tuple[str, ...]] = MANDATORY_FAMILY_IDS
 
 
 class ProjectionOrTruth(StrEnum):
@@ -729,6 +731,202 @@ STATE_X_FAMILY_INVENTORY: Final[tuple[StateFamilyInventoryEntry, ...]] = (
         "resume != retry != fork — family-specific",
         "FRZ-REC-07 matrix — R2/R3",
     ),
+    StateFamilyInventoryEntry(
+        "SX-F16",
+        "Background Transport→Canonical Execution Identity",
+        "BackgroundExecutionIdentityPersistence",
+        SemanticOwnershipRole.CANONICAL_OWNER,
+        (
+            _cref(
+                "BackgroundExecutionIdentityPersistence",
+                "intergrax/runtime/background_execution/identity_persistence.py",
+            ),
+        ),
+        "wire_background_execution_identity_persistence + background admission wiring",
+        ("intergrax/runtime/background_execution/identity_persistence.py",),
+        (
+            "BackgroundExecutionIdentityPersistence",
+            "KvBackgroundExecutionIdentityPersistence",
+            "DocumentStoreBackgroundExecutionIdentityPersistence",
+        ),
+        (),
+        ("Background admission", "Queue/RabbitMQ workers"),
+        ("reentry_admission", "Dispatcher identity resolution"),
+        ("Background worker restart/redelivery",),
+        "tenant_id + provider + transport_task_id partition",
+        "store_if_absent / compare-and-set; dual-read v1/v2 reconciliation",
+        "Conflicting identity records → fail closed; stale CAS rejected",
+        AuthorityRole.NOT_AUTHORITY_BEARING,
+        IdentityRole.PRESERVE_ON_RESTORE,
+        ProjectionOrTruth.CANONICAL_TRUTH,
+        StateFamilyP0Status.READY_FOR_CHILD_CERTIFICATION,
+        _frz("FRZ-STA-01", "FRZ-STA-05", "FRZ-REC-02", "FRZ-REC-03", "FRZ-TEN-04", "FRZ-TEN-08"),
+        BackupRestoreResponsibility.BACKEND_OPERATOR_WITH_CONSISTENCY,
+        TenantAuditDisposition.BLOCKED,
+        "Invalid v1/v2 codec; conflict → BackgroundExecutionIdentityConflictError",
+        "Same transport ref after restart → same canonical TaskId/RunId/AttemptId/ExecutionId",
+        "Mapping resolves identity only; does not grant execution permission",
+    ),
+    StateFamilyInventoryEntry(
+        "SX-F17",
+        "Execution Continuation Lifecycle State",
+        "ExecutionContinuationStateStore",
+        SemanticOwnershipRole.CANONICAL_OWNER,
+        (
+            _cref(
+                "ExecutionContinuationStateStore",
+                "intergrax/contracts/execution_continuation_state_store.py",
+            ),
+        ),
+        "wire_execution_continuation_state_store / wire_execution_engine_continuation_dependencies",
+        (
+            "intergrax/runtime/execution/continuation/persistence.py",
+            "intergrax/runtime/execution/continuation/durable_state_file.py",
+        ),
+        (
+            "ExecutionContinuationStateStore",
+            "InMemoryExecutionContinuationStateStore",
+            "ExecutionContinuationDurableBacking",
+            "ExecutionContinuationDurableStateFilePersistence",
+        ),
+        (),
+        ("ExecutionContinuationService", "Continuation progress gate"),
+        ("Pause/resume hosts", "Governed continuation correlation consumers"),
+        ("GR-5 restart qualification", "Execution host resume"),
+        "tenant via ExecutionContinuationIdentity / execution context binding",
+        "CAS transitions; single current episode per four-ID identity",
+        "Stale CAS rejected; ambiguous identity → fail closed",
+        AuthorityRole.NOT_AUTHORITY_BEARING,
+        IdentityRole.PRESERVE_ON_RESTORE,
+        ProjectionOrTruth.CANONICAL_TRUTH,
+        StateFamilyP0Status.READY_FOR_CHILD_CERTIFICATION,
+        _frz("FRZ-STA-01", "FRZ-STA-03", "FRZ-STA-05", "FRZ-REC-02", "FRZ-REC-03", "FRZ-TEN-08"),
+        BackupRestoreResponsibility.BACKEND_OPERATOR_WITH_CONSISTENCY,
+        TenantAuditDisposition.BLOCKED,
+        "Corrupt durable continuation bytes → explicit rejection",
+        "Restart preserves exact four-ID binding; no second active episode",
+        "Continuation state ≠ Governance permission; resume still gated by admission",
+    ),
+    StateFamilyInventoryEntry(
+        "SX-F18",
+        "Execution Deadline Authority Snapshot",
+        "ExecutionDeadlineAuthorityPersistencePort",
+        SemanticOwnershipRole.CANONICAL_OWNER,
+        (
+            _cref(
+                "ExecutionDeadlineAuthorityPersistencePort",
+                "intergrax/contracts/execution_deadline/persistence_port.py",
+            ),
+        ),
+        "wire_execution_deadline_persistence + deadline resolver composition",
+        ("intergrax/runtime/execution/deadline_authority/persistence.py",),
+        (
+            "InMemoryExecutionDeadlinePersistence",
+            "KvExecutionDeadlinePersistence",
+            "DocumentStoreExecutionDeadlinePersistence",
+        ),
+        (),
+        ("Execution deadline resolver", "Run-bound enforcement hooks"),
+        ("Deadline enforcement", "Resume/reentry deadline checks"),
+        ("Restart reload of deadline authority",),
+        "tenant_id + run_id canonical key",
+        "compare_and_create / CAS; one authority snapshot per run",
+        "Conflict/stale expected revision rejected; corrupt document fail-closed",
+        AuthorityRole.CONSTRAIN_CURRENT_AUTHORITY,
+        IdentityRole.REFERENCE_ONLY,
+        ProjectionOrTruth.CANONICAL_TRUTH,
+        StateFamilyP0Status.READY_FOR_CHILD_CERTIFICATION,
+        _frz("FRZ-STA-06", "FRZ-STA-07", "FRZ-REC-02", "FRZ-TEN-04"),
+        BackupRestoreResponsibility.BACKEND_OPERATOR_WITH_CONSISTENCY,
+        TenantAuditDisposition.BLOCKED,
+        "Codec/validation errors on load; missing cannot silently widen deadline",
+        "Absence → safe default or fail-closed per resolver (no unlimited execution)",
+        "Deadline constrains time authority; does not mint Governance permission",
+    ),
+    StateFamilyInventoryEntry(
+        "SX-F19",
+        "Delegated Invocation Correlation",
+        "DelegatedInvocationCorrelationStore",
+        SemanticOwnershipRole.CANONICAL_OWNER,
+        (
+            _cref(
+                "DelegatedInvocationCorrelationStore",
+                "intergrax/contracts/delegated_invocation_correlation.py",
+            ),
+        ),
+        "Delegated execution provider composition + correlation persistence wiring",
+        (
+            "intergrax/runtime/execution/delegated_execution/correlation_persistence.py",
+            "intergrax/runtime/execution/delegated_execution/correlation_query_persistence.py",
+        ),
+        (
+            "DelegatedInvocationCorrelationStore",
+            "InMemoryDelegatedInvocationCorrelationStore",
+            "DocumentStoreDelegatedInvocationCorrelationStore",
+        ),
+        (),
+        ("Delegated execution services", "Correlation service"),
+        ("Status/query/control/continuation delegated paths",),
+        ("Restart recovery of delegated bindings",),
+        "tenant_id on DelegatedInvocationCorrelationRecord",
+        "put-if-absent; same record idempotent; conflicting record fail closed",
+        "DurabilityMode.REQUIRED cannot silently use process-local store",
+        AuthorityRole.NOT_AUTHORITY_BEARING,
+        IdentityRole.PRESERVE_ON_RESTORE,
+        ProjectionOrTruth.CANONICAL_TRUTH,
+        StateFamilyP0Status.READY_FOR_CHILD_CERTIFICATION,
+        _frz("FRZ-STA-01", "FRZ-STA-05", "FRZ-REC-02", "FRZ-REC-07", "FRZ-TEN-08"),
+        BackupRestoreResponsibility.BACKEND_OPERATOR_WITH_CONSISTENCY,
+        TenantAuditDisposition.BLOCKED,
+        "Corrupt correlation document → DelegatedInvocationCorrelationPersistenceError",
+        "execution_id → exact delegated invocation binding survives restart",
+        "Correlation identifies delegation record; does not expand child/parent authority",
+    ),
+    StateFamilyInventoryEntry(
+        "SX-F20",
+        "Suspended Execution Operation Descriptor State",
+        "SuspendedExecutionOperationStore",
+        SemanticOwnershipRole.CANONICAL_OWNER,
+        (
+            _cref(
+                "SuspendedExecutionOperationStore",
+                "intergrax/contracts/execution/suspended_operation/store.py",
+            ),
+        ),
+        "wire_suspended_execution_operation_store + suspended work reentry composition",
+        (
+            "intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py",
+            "intergrax/runtime/execution/suspended_operation/in_memory_store.py",
+            "intergrax/runtime/execution/suspended_operation/store_engine.py",
+        ),
+        (
+            "SuspendedExecutionOperationStore",
+            "DocumentStoreSuspendedExecutionOperationStore",
+            "InMemorySuspendedExecutionOperationStore",
+            "SuspendedOperationBackingStore",
+        ),
+        (),
+        ("Suspended operation claim lifecycle", "Reentry coordinator"),
+        ("Governed resume reentry", "HITL pause materialization"),
+        ("Authorized resume reentry",),
+        "tenant via descriptor / governed correlation binding",
+        "Claim lease + materialization state; active descriptor uniqueness",
+        "Conflict → SuspendedOperationPersistenceConflictError; invariant violation fail closed",
+        AuthorityRole.NOT_AUTHORITY_BEARING,
+        IdentityRole.REFERENCE_ONLY,
+        ProjectionOrTruth.CANONICAL_TRUTH,
+        StateFamilyP0Status.READY_FOR_CHILD_CERTIFICATION,
+        _frz("FRZ-STA-01", "FRZ-STA-05", "FRZ-REC-02", "FRZ-TEN-08"),
+        BackupRestoreResponsibility.BACKEND_OPERATOR_WITH_CONSISTENCY,
+        TenantAuditDisposition.BLOCKED,
+        "Corrupt descriptor payload rejected on load",
+        "Durable document mode required on production continuation path",
+        "Descriptor state does not replace Governance admission for resume",
+    ),
+)
+
+CURRENT_STATE_X_FAMILY_IDS: Final[tuple[str, ...]] = tuple(
+    entry.family_id for entry in STATE_X_FAMILY_INVENTORY
 )
 
 
@@ -1061,7 +1259,7 @@ STATE_X_R5_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
 
 STATE_X_R6_PRE_AUDIT_HEAD: Final[str] = "bcd8157065cc649412b64e9d6ada34be92d4b6a3"
 
-STATE_X_R6_ACCEPTED_CLOSURE_SHA: Final[str] = "3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7"
+STATE_X_R6_ACCEPTED_CLOSURE_SHA: Final[str] = "4ed4c01d3ce5417fc902ace213d3a4f53c9064bc"
 
 STATE_X_R6_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     {
@@ -1077,7 +1275,9 @@ STATE_X_R6_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     },
 )
 
-STATE_X_FINAL_START_HEAD: Final[str] = "3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7"
+STATE_X_FINAL_START_HEAD: Final[str] = "4ed4c01d3ce5417fc902ace213d3a4f53c9064bc"
+
+STATE_X_FINAL_R1_START_HEAD: Final[str] = STATE_X_FINAL_START_HEAD
 
 STATE_X_FINAL_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
     {
@@ -1085,10 +1285,14 @@ STATE_X_FINAL_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
         "docs/project/maintainers/qualification/STATE_X_R6_RECOVERY_BRANCHING_SEMANTICS_CERTIFICATION.md",
         "docs/project/maintainers/qualification/STATE_X_FINAL_CURRENT_HEAD_CERTIFICATION.md",
+        "tests/qualification/state_x/_state_x_closed_world_durable_state_support.py",
+        "tests/qualification/state_x/_state_x_final_r1_closed_world_tests.py",
         "tests/qualification/state_x/_state_x_final_support.py",
         "tests/qualification/state_x/_state_x_final_parent_qualification_tests.py",
         "tests/qualification/state_x/test_state_x_final_parent.py",
+        "tests/qualification/state_x/test_state_x_final_r1_closed_world.py",
         "tests/qualification/state_x/inventory.py",
         "tests/qualification/state_x/test_state_x_p0_baseline.py",
+        "tests/qualification/state_x/_r5_backup_restore_support.py",
     },
 )

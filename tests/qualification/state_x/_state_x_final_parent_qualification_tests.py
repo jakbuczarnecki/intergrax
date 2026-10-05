@@ -34,6 +34,8 @@ from tests.qualification.state_x._state_x_final_support import (
     scan_unclassified_durable_persistence_paths,
 )
 from tests.qualification.state_x.inventory import (
+    CURRENT_STATE_X_FAMILY_IDS,
+    HISTORICAL_BASE_FAMILY_IDS,
     MANDATORY_FAMILY_IDS,
     STATE_X_FINAL_START_HEAD,
     STATE_X_R6_ACCEPTED_CLOSURE_SHA,
@@ -58,7 +60,8 @@ def test_sxf_q01_r6_closure_reconciled() -> None:
 
 def test_sxf_q02_sx_families_complete() -> None:
     assert_family_inventory_closed_world()
-    assert {r.family_id for r in FAMILY_OWNERSHIP_MATRIX} == set(MANDATORY_FAMILY_IDS)
+    assert set(HISTORICAL_BASE_FAMILY_IDS) <= set(CURRENT_STATE_X_FAMILY_IDS)
+    assert {r.family_id for r in FAMILY_OWNERSHIP_MATRIX} == set(CURRENT_STATE_X_FAMILY_IDS)
 
 
 def test_sxf_q03_unclassified_durable_paths_zero() -> None:
@@ -67,7 +70,7 @@ def test_sxf_q03_unclassified_durable_paths_zero() -> None:
 
 def test_sxf_q04_exactly_one_semantic_owner() -> None:
     assert_no_duplicate_semantic_owners()
-    assert len(FAMILY_OWNERSHIP_MATRIX) == 15
+    assert len(FAMILY_OWNERSHIP_MATRIX) == len(CURRENT_STATE_X_FAMILY_IDS)
 
 
 def test_sxf_q05_duplicate_semantic_store_zero() -> None:

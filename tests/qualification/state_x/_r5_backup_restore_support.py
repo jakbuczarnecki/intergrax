@@ -12,6 +12,8 @@ from pathlib import Path
 from typing import Final
 
 from tests.qualification.state_x.inventory import (
+    CURRENT_STATE_X_FAMILY_IDS,
+    HISTORICAL_BASE_FAMILY_IDS,
     MANDATORY_FAMILY_IDS,
     BackupRestoreResponsibility,
     STATE_X_FAMILY_INVENTORY,
@@ -243,12 +245,64 @@ _R5_FAMILY_EXTENSION: Final[dict[str, tuple[str, tuple[str, ...], str, str, str,
         "decision_recovery.py orchestration",
         ("R5-Q27", "inventory COORDINATION_ONLY"),
     ),
+    "SX-F16": (
+        "KV/DocumentStore partitions for background identity records",
+        ("SX-F04", "SX-F05"),
+        "Operator restores identity backend; platform validates codec + conflict rules",
+        "Missing identity with active transport redelivery → admission fail closed",
+        "Invalid v1/v2 / conflict → BackgroundExecutionIdentityConflictError",
+        "tenant_id + provider namespace partition",
+        "KvBackgroundExecutionIdentityPersistence; DocumentStoreBackgroundExecutionIdentityPersistence",
+        ("NPSC conformance", "background_execution unit tests", "SXF-R1-Q12..Q13"),
+    ),
+    "SX-F17": (
+        "ExecutionContinuationDurableBacking file/KV unit",
+        ("SX-F01", "SX-F05"),
+        "Operator restores continuation backing; platform CAS + episode invariants",
+        "Corrupt/missing episode when durable required → fail closed",
+        "Corrupt snapshot bytes rejected",
+        "tenant via execution continuation identity binding",
+        "ExecutionContinuationDurableStateFilePersistence",
+        ("GR-5 restart qualification", "SXF-R1-Q15..Q17"),
+    ),
+    "SX-F18": (
+        "KV/DocumentStore per-tenant run deadline authority documents",
+        ("SX-F01",),
+        "Operator restores deadline store; platform validates tenant+run binding",
+        "Stale restore cannot widen deadline authority",
+        "Corrupt codec fail closed",
+        "tenant_id + run_id key",
+        "KvExecutionDeadlinePersistence; DocumentStoreExecutionDeadlinePersistence",
+        ("deadline_authority unit tests", "SXF-R1-Q19..Q22"),
+    ),
+    "SX-F19": (
+        "DocumentStore delegated correlation partition",
+        ("SX-F04", "SX-F05"),
+        "Operator restores correlation documents; REQUIRED mode rejects silent fallback",
+        "Conflicting correlation → DelegatedInvocationCorrelationPersistenceError",
+        "Corrupt document fail closed",
+        "tenant on DelegatedInvocationCorrelationRecord",
+        "DocumentStoreDelegatedInvocationCorrelationStore",
+        ("delegated correlation durability tests", "SXF-R1-Q24..Q26"),
+    ),
+    "SX-F20": (
+        "DocumentStore suspended operation descriptor partition",
+        ("SX-F17", "SX-F12"),
+        "Operator restores descriptor documents; claim invariants validated on load",
+        "Descriptor conflict / invariant violation → fail closed",
+        "Corrupt descriptor payload rejected",
+        "tenant via descriptor / governed correlation",
+        "DocumentStoreSuspendedExecutionOperationStore",
+        ("suspended_operation store tests", "SXF-R1 broad-exclusion audit"),
+    ),
 }
 
 
-def build_r5_family_records() -> tuple[BackupRestoreFamilyRecord, ...]:
+def build_r5_family_records(
+    family_ids: tuple[str, ...],
+) -> tuple[BackupRestoreFamilyRecord, ...]:
     records: list[BackupRestoreFamilyRecord] = []
-    for family_id in MANDATORY_FAMILY_IDS:
+    for family_id in family_ids:
         entry = _entry(family_id)
         ext = _R5_FAMILY_EXTENSION[family_id]
         records.append(
@@ -270,7 +324,11 @@ def build_r5_family_records() -> tuple[BackupRestoreFamilyRecord, ...]:
 
 
 R5_BACKUP_RESTORE_FAMILY_MATRIX: Final[tuple[BackupRestoreFamilyRecord, ...]] = (
-    build_r5_family_records()
+    build_r5_family_records(MANDATORY_FAMILY_IDS)
+)
+
+CURRENT_R5_BACKUP_RESTORE_FAMILY_MATRIX: Final[tuple[BackupRestoreFamilyRecord, ...]] = (
+    build_r5_family_records(CURRENT_STATE_X_FAMILY_IDS)
 )
 
 PHYSICAL_BACKUP_UNIT_MATRIX: Final[tuple[PhysicalBackupUnitRecord, ...]] = (
@@ -405,7 +463,12 @@ SEMANTIC_RECOVERY_FLOW_MATRIX: Final[tuple[SemanticRecoveryFlowRecord, ...]] = (
 
 def assert_frz_rec_08_r5_completeness() -> None:
     matrix_ids = {row.family_id for row in R5_BACKUP_RESTORE_FAMILY_MATRIX}
-    assert matrix_ids == set(MANDATORY_FAMILY_IDS)
+    assert matrix_ids == set(HISTORICAL_BASE_FAMILY_IDS)
+
+
+def assert_state_x_current_backup_restore_completeness() -> None:
+    matrix_ids = {row.family_id for row in CURRENT_R5_BACKUP_RESTORE_FAMILY_MATRIX}
+    assert matrix_ids == set(CURRENT_STATE_X_FAMILY_IDS)
     for row in R5_BACKUP_RESTORE_FAMILY_MATRIX:
         inv = _entry(row.family_id)
         assert row.responsibility is inv.backup_restore_responsibility

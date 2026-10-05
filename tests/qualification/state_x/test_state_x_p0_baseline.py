@@ -14,6 +14,8 @@ from tests.qualification.state_x.inventory import (
     AuthorityRole,
     ContractReference,
     IdentityRole,
+    CURRENT_STATE_X_FAMILY_IDS,
+    HISTORICAL_BASE_FAMILY_IDS,
     MANDATORY_FAMILY_IDS,
     ProjectionOrTruth,
     SemanticOwnershipRole,
@@ -142,7 +144,9 @@ def _all_contract_references() -> tuple[ContractReference, ...]:
 
 def test_sx_p0_q01_mandatory_family_ids_exactly_once() -> None:
     ids = [entry.family_id for entry in STATE_X_FAMILY_INVENTORY]
-    assert ids == list(MANDATORY_FAMILY_IDS)
+    assert ids[: len(HISTORICAL_BASE_FAMILY_IDS)] == list(HISTORICAL_BASE_FAMILY_IDS)
+    assert set(HISTORICAL_BASE_FAMILY_IDS) <= set(ids)
+    assert ids == list(CURRENT_STATE_X_FAMILY_IDS)
     assert len(ids) == len(set(ids))
 
 

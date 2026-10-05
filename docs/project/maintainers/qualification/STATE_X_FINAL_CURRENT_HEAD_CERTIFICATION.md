@@ -2,10 +2,10 @@
 
 | Field | Value |
 | --- | --- |
-| **START_HEAD / FINAL_HEAD (Cursor)** | `3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7` |
+| **START_HEAD / FINAL_HEAD (Cursor)** | `4ed4c01d3ce5417fc902ace213d3a4f53c9064bc` |
 | **Branch** | `development` |
 | **Production delta** | **0** (qualification + bookkeeping only) |
-| **Cursor status** | **STATE-X-FINAL = READY FOR AUDIT** |
+| **Cursor status** | **STATE-X-FINAL-R1 = READY FOR AUDIT**; **STATE-X-FINAL = BLOCKED PENDING INDEPENDENT R1 AUDIT** |
 
 ## Accepted child chain
 
@@ -15,17 +15,31 @@
 | STATE-X-R3-R3 / R3-R4 / R3-R5 | `716ed746f8b463681db536804235cedc86adc162` |
 | STATE-X-R4 | `61faf8f317125b996526ceceaf5754b9c28073d6` |
 | STATE-X-R5 | `bcd8157065cc649412b64e9d6ada34be92d4b6a3` |
-| STATE-X-R6 | `3e1c82f224a9f7d5a87555836c5fd80a3fdf22f7` |
+| STATE-X-R6 | `4ed4c01d3ce5417fc902ace213d3a4f53c9064bc` (reconciled on R1 HEAD) |
 
-Mechanical SSOT: `tests/qualification/state_x/_state_x_final_support.py`, gates `tests/qualification/state_x/_state_x_final_parent_qualification_tests.py`.
+Mechanical SSOT: `tests/qualification/state_x/_state_x_final_support.py`, gates `tests/qualification/state_x/_state_x_final_parent_qualification_tests.py`, R1 `tests/qualification/state_x/_state_x_final_r1_closed_world_tests.py`.
 
-## Current-head family inventory (SX-F01..F15)
+## STATE-X-FINAL-R1 CLOSED-WORLD DURABLE STATE RECONCILIATION
 
-Closed-world inventory: `tests/qualification/state_x/inventory.py` (`STATE_X_FAMILY_INVENTORY`). Gates: `test_sxf_q02`, P0 baseline Q01–Q15.
+**Root cause remediated:** `scan_unclassified_durable_persistence_paths()` used directory-level `out_of_state_x_prefixes` blind skips; durable execution mechanisms under `background_execution/`, `execution/continuation/`, `deadline_authority/`, `delegated_execution/`, etc. were excluded instead of classified.
+
+**After:** AST + filename discovery (`_state_x_closed_world_durable_state_support.py`) → per-mechanism `DurableStateMechanismRecord` → gate `assert_durable_state_discovery_fully_classified()` (`discovered == classified`, **unclassified = 0**).
+
+| Scanner | Value |
+| --- | --- |
+| Roots | `intergrax/contracts`, `intergrax/runtime`, `agents`, `applications`, `intergrax/applications` |
+| Candidates (FINAL_HEAD) | **520** class/file mechanisms classified |
+| Broad prefix blind exclusions | **removed** (prior prefixes listed in `PRIOR_BROAD_EXCLUSION_PREFIXES` for audit trace only) |
+
+**New canonical families (F16+):** SX-F16 background transport identity; SX-F17 execution continuation; SX-F18 execution deadline authority; SX-F19 delegated invocation correlation; SX-F20 suspended execution operation descriptors. Historical **SX-F01..F15** meanings preserved; `HISTORICAL_BASE_FAMILY_IDS ⊆ CURRENT_STATE_X_FAMILY_IDS`.
+
+## Current-head family inventory (SX-F01..F20)
+
+Closed-world inventory: `tests/qualification/state_x/inventory.py` (`STATE_X_FAMILY_INVENTORY`, `CURRENT_STATE_X_FAMILY_IDS`). Gates: `test_sxf_q02`, `test_sxf_r1_q*`, P0 baseline Q01.
 
 ## Owner / provider / composition matrix
 
-`FAMILY_OWNERSHIP_MATRIX` — 15 rows, `duplicate_authority = 0` for every family.
+`FAMILY_OWNERSHIP_MATRIX` — **20** rows (current registry), `duplicate_authority = 0` for every family.
 
 ## Atomicity / transaction matrix
 
@@ -79,14 +93,16 @@ Parent table: `PRIMARY_FRZ_CRITERION_EVIDENCE` (18 rows). Mechanical completenes
 | --- | --- |
 | FRZ-STA-01..08 | **READY FOR INDEPENDENT CLOSURE REVIEW** |
 | FRZ-REC-01..04, 06..07, 09..10 | **READY FOR INDEPENDENT CLOSURE REVIEW** |
-| FRZ-REC-05 | **PASS** (STATE-X-R6 @ `3e1c82f…`) |
-| FRZ-REC-08 | **PASS** (STATE-X-R5 @ `bcd8157…`) |
+| FRZ-REC-05 | **PASS** (preserved; R1 supplemental — no new fork semantics) |
+| FRZ-REC-08 | **PASS** (preserved @ R5; extended via `CURRENT_R5_BACKUP_RESTORE_FAMILY_MATRIX` / F16+) |
 
 ## Tests (EXECUTED ON FINAL_HEAD)
 
 ```bash
 uv run --with cryptography pytest tests/qualification/state_x -p no:xdist -q
-# 598 passed, 5 skipped (redis provider — no FRZ semantic invalidation)
+# 616 passed, 5 skipped (redis provider — no FRZ semantic invalidation)
+
+uv run --with cryptography pytest tests/qualification/state_x/test_state_x_final_r1_closed_world.py -p no:xdist -q
 
 uv run --with cryptography pytest \
   tests/qualification/state_x/test_state_x_r4_task_checkpoint_restore.py \
@@ -116,7 +132,8 @@ uv run --with cryptography pytest \
 ## Recommended parent status
 
 ```text
-STATE-X-FINAL = READY FOR AUDIT
+STATE-X-FINAL-R1 = READY FOR AUDIT
+STATE-X-FINAL = BLOCKED PENDING INDEPENDENT R1 AUDIT
 STATE-X = BLOCKED PENDING INDEPENDENT FINAL AUDIT
 TRACE-X = NOT ENTERED
 ```

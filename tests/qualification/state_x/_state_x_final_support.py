@@ -4,14 +4,22 @@
 
 from __future__ import annotations
 
-import re
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
 from typing import Final
 
+from tests.qualification.state_x._r5_backup_restore_support import (
+    assert_state_x_current_backup_restore_completeness,
+)
+from tests.qualification.state_x._state_x_closed_world_durable_state_support import (
+    assert_durable_state_discovery_fully_classified,
+    scan_unclassified_durable_persistence_paths,
+)
 from tests.qualification.state_x.inventory import (
     BlockerClassification,
+    CURRENT_STATE_X_FAMILY_IDS,
+    HISTORICAL_BASE_FAMILY_IDS,
     MANDATORY_FAMILY_IDS,
     ProjectionOrTruth,
     SemanticOwnershipRole,
@@ -43,12 +51,6 @@ _PRIMARY_FRZ_IDS: Final[tuple[str, ...]] = (
     "FRZ-REC-08",
     "FRZ-REC-09",
     "FRZ-REC-10",
-)
-
-_DISCOVERY_SCAN_ROOTS: Final[tuple[str, ...]] = (
-    "intergrax/contracts",
-    "intergrax/runtime",
-    "agents",
 )
 
 def _inventory_closed_world_paths() -> frozenset[str]:
@@ -172,11 +174,6 @@ class TenantIsolationAuditFinal:
     result: str
 
 
-@dataclass(frozen=True, slots=True)
-class UnclassifiedDurableHit:
-    rel_path: str
-
-
 def _entry(family_id: str) -> StateFamilyInventoryEntry:
     for item in STATE_X_FAMILY_INVENTORY:
         if item.family_id == family_id:
@@ -245,6 +242,51 @@ ATOMICITY_MATRIX: Final[tuple[AtomicityMatrixRow, ...]] = (
         "independent from idempotency",
         "stale schedule revision denied",
     ),
+    AtomicityMatrixRow(
+        "SX-F16",
+        "Kv/DocumentStore background identity",
+        "transport→canonical identity record",
+        "store_if_absent CAS",
+        "single record per transport key",
+        "independent from task checkpoint store",
+        "conflicting v1/v2 identity fail closed",
+    ),
+    AtomicityMatrixRow(
+        "SX-F17",
+        "ExecutionContinuationDurableBacking / file persistence",
+        "continuation episode snapshot",
+        "CAS episode transitions",
+        "single current episode per four-ID",
+        "independent from TaskCheckpoint",
+        "stale CAS / corrupt snapshot rejected",
+    ),
+    AtomicityMatrixRow(
+        "SX-F18",
+        "Kv/DocumentStore deadline authority",
+        "per-run deadline authority snapshot",
+        "compare_and_create CAS",
+        "single row per tenant+run",
+        "independent from scheduler timing tables",
+        "stale restore cannot widen deadline",
+    ),
+    AtomicityMatrixRow(
+        "SX-F19",
+        "DocumentStore delegated correlation",
+        "correlation document per execution_id",
+        "put-if-absent",
+        "single-store",
+        "independent from parent checkpoint",
+        "conflicting correlation fail closed",
+    ),
+    AtomicityMatrixRow(
+        "SX-F20",
+        "DocumentStore suspended operation descriptors",
+        "descriptor + claim lease row",
+        "claim conflict detection",
+        "single-store",
+        "paired with continuation/HITL gates semantically",
+        "descriptor invariant violation fail closed",
+    ),
 )
 
 CONFIGURED_EFFECTIVE_PERSISTED_MATRIX: Final[tuple[ConfiguredEffectivePersistedRow, ...]] = (
@@ -275,6 +317,27 @@ CONFIGURED_EFFECTIVE_PERSISTED_MATRIX: Final[tuple[ConfiguredEffectivePersistedR
         "TaskCheckpoint stream",
         "coordinator effective pause/resume",
         "resume validates snapshot + lineage",
+    ),
+    ConfiguredEffectivePersistedRow(
+        "Execution deadline authority",
+        "configured timeout policy",
+        "ExecutionDeadlinePersistence per-run snapshot",
+        "resolver effective bound",
+        "missing/corrupt cannot widen execution time",
+    ),
+    ConfiguredEffectivePersistedRow(
+        "Background transport identity",
+        "admission wiring",
+        "BackgroundExecutionIdentityPersistence mapping",
+        "canonical four-ID on reentry",
+        "restart preserves mapping; conflict fail closed",
+    ),
+    ConfiguredEffectivePersistedRow(
+        "Execution continuation",
+        "pause/resume policy",
+        "ExecutionContinuationStateStore episodes",
+        "current episode pointer",
+        "restart preserves exact four-ID binding",
     ),
 )
 
@@ -313,6 +376,34 @@ POLICY_DURABILITY_MATRIX: Final[tuple[PolicyDurabilityRow, ...]] = (
         "CONFIG-X owner (out of STATE-X scope)",
         "rebuilt from config — not historical truth",
         False,
+    ),
+    PolicyDurabilityRow(
+        "Background execution identity mapping",
+        "MUST_BE_DURABLE",
+        "SX-F16 BackgroundExecutionIdentityPersistence",
+        "missing mapping → cannot invent canonical identity on redelivery",
+        True,
+    ),
+    PolicyDurabilityRow(
+        "Execution continuation episodes",
+        "MUST_BE_DURABLE",
+        "SX-F17 continuation store (production path)",
+        "non-durable fallback blocked where durable required",
+        True,
+    ),
+    PolicyDurabilityRow(
+        "Execution deadline authority",
+        "MUST_BE_DURABLE",
+        "SX-F18 deadline persistence",
+        "absence cannot imply unlimited execution",
+        True,
+    ),
+    PolicyDurabilityRow(
+        "Delegated invocation correlation",
+        "MUST_BE_DURABLE",
+        "SX-F19 correlation store (REQUIRED mode)",
+        "silent in-memory fallback forbidden in required mode",
+        True,
     ),
 )
 
@@ -361,7 +452,7 @@ TENANT_ISOLATION_AUDIT_FINAL: Final[TenantIsolationAuditFinal] = TenantIsolation
     tenant_scope_applicable=True,
     scope="STATE-X state / persistence / recovery only",
     canonical_tenant_identity="tenant_id on durable contracts (per-family typed bindings)",
-    tenant_owner="state/recovery semantic owners per SX-F01..F15",
+    tenant_owner="state/recovery semantic owners per current STATE-X family registry",
     propagation_path=(
         "request/task/run → persistence contract → durable record → "
         "recovery validator → sanctioned execution/recovery"
@@ -393,7 +484,7 @@ PRIMARY_FRZ_CRITERION_EVIDENCE: Final[tuple[StateXFreezeCriterionEvidence, ...]]
         ("test_sxf_q04_exactly_one_semantic_owner", "test_r5_q01_closed_world_family_inventory_complete"),
         True,
         CriterionResolution.READY_FOR_INDEPENDENT_CLOSURE_REVIEW.value,
-        "15 families; duplicate_authority=0 in FAMILY_OWNERSHIP_MATRIX",
+        "current family registry; duplicate_authority=0 in FAMILY_OWNERSHIP_MATRIX",
     ),
     StateXFreezeCriterionEvidence(
         "FRZ-STA-02",
@@ -579,71 +670,6 @@ ACCEPTED_CHILD_CHAIN: Final[tuple[tuple[str, str], ...]] = (
 )
 
 
-def scan_unclassified_durable_persistence_paths() -> tuple[UnclassifiedDurableHit, ...]:
-    """Implementation modules named like stores absent from SX-F closed-world inventory."""
-    hits: list[UnclassifiedDurableHit] = []
-    impl_roots = ("intergrax/runtime/", "agents/")
-    name_pattern = re.compile(r"(store|persistence|ledger|checkpoint_store)\.py$", re.IGNORECASE)
-    extra_allow = frozenset(
-        {
-            "intergrax/runtime/persistence/sqlite_composition.py",
-            "intergrax/runtime/long_running/in_memory_checkpoint_store.py",
-            "intergrax/runtime/events/store.py",
-            "intergrax/runtime/events/in_memory_event_store.py",
-            "intergrax/runtime/task_memory/store.py",
-        },
-    )
-    out_of_state_x_prefixes = (
-        "intergrax/runtime/adaptive/",
-        "intergrax/runtime/prediction/",
-        "intergrax/runtime/self_healing/",
-        "intergrax/runtime/vendor_knowledge/",
-        "intergrax/runtime/diagnostics/",
-        "intergrax/runtime/governance/",
-        "intergrax/runtime/observability/",
-        "intergrax/runtime/notifications/",
-        "intergrax/runtime/organization/",
-        "intergrax/runtime/integrations/",
-        "intergrax/runtime/external_operations/",
-        "intergrax/runtime/execution_evidence/",
-        "intergrax/runtime/background_execution/",
-        "intergrax/runtime/nexus/",
-        "intergrax/runtime/execution/continuation/",
-        "intergrax/runtime/execution/deadline_authority/",
-        "intergrax/runtime/execution/delegated_execution/",
-        "intergrax/runtime/execution/suspended_operation/",
-        "intergrax/runtime/execution/active_",
-        "intergrax/runtime/execution/in_memory_decision",
-        "intergrax/runtime/execution/sqlite_decision",
-        "intergrax/runtime/execution/decision_finalization",
-        "intergrax/runtime/tools/reference_idempotency_store.py",
-        "intergrax/runtime/task_memory/",
-    )
-    inventory_parent_dirs = frozenset(
-        Path(p).parent.as_posix() + "/" for p in _INVENTORY_CLOSED_WORLD_PATHS
-    )
-    for root in impl_roots:
-        base = _REPO_ROOT / root
-        if not base.is_dir():
-            continue
-        for path in base.rglob("*.py"):
-            rel = path.relative_to(_REPO_ROOT).as_posix()
-            if "test_" in rel or "/tests/" in rel:
-                continue
-            if not name_pattern.search(path.name):
-                continue
-            if rel in _INVENTORY_CLOSED_WORLD_PATHS or rel in extra_allow:
-                continue
-            if any(rel.startswith(p) for p in out_of_state_x_prefixes):
-                continue
-            if any(rel.startswith(d) for d in inventory_parent_dirs):
-                continue
-            if rel.startswith("intergrax/runtime/replay/"):
-                continue
-            hits.append(UnclassifiedDurableHit(rel_path=rel))
-    return tuple(hits)
-
-
 def assert_primary_frz_matrix_complete() -> None:
     ids = {row.criterion_id for row in PRIMARY_FRZ_CRITERION_EVIDENCE}
     assert ids == set(_PRIMARY_FRZ_IDS)
@@ -651,7 +677,8 @@ def assert_primary_frz_matrix_complete() -> None:
 
 def assert_family_inventory_closed_world() -> None:
     inv_ids = {e.family_id for e in STATE_X_FAMILY_INVENTORY}
-    assert inv_ids == set(MANDATORY_FAMILY_IDS)
+    assert inv_ids == set(CURRENT_STATE_X_FAMILY_IDS)
+    assert set(HISTORICAL_BASE_FAMILY_IDS) <= inv_ids
     for entry in STATE_X_FAMILY_INVENTORY:
         if entry.projection_or_truth in (
             ProjectionOrTruth.CANONICAL_TRUTH,
@@ -687,6 +714,8 @@ def assert_state_x_final_mechanical_gate() -> None:
     assert_no_duplicate_semantic_owners()
     assert_no_in_scope_state_x_blockers()
     assert_r1_sqlite_disposition_final()
+    assert_durable_state_discovery_fully_classified()
+    assert_state_x_current_backup_restore_completeness()
     unclassified = scan_unclassified_durable_persistence_paths()
     assert len(unclassified) == 0, unclassified
     assert TENANT_ISOLATION_AUDIT_FINAL.result == "PASS"
