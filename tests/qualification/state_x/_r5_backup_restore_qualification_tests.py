@@ -30,6 +30,7 @@ from tests.qualification.state_x._r5_backup_restore_support import (
     SEMANTIC_RECOVERY_FLOW_MATRIX,
     STATE_X_R4_ACCEPTED_CLOSURE_SHA,
     STATE_X_R5_PRE_AUDIT_HEAD,
+    assert_frz_rec_08_behavioral_evidence_complete,
     assert_frz_rec_08_r5_completeness,
     decision_recovery_source_references_families,
     persistence_contracts_lack_backup_api,
@@ -254,10 +255,21 @@ def test_r5_q18_budget_restore_not_config_reset() -> None:
     assert "Configured RunBudget" in entry.stale_state_rule or "persisted ledger" in entry.stale_state_rule
 
 
-def test_r5_q19_idempotency_skew_regression_import() -> None:
-    from tests.qualification.state_x import _r3_r2_qualification_tests as r32  # noqa: F401
+@pytest.mark.asyncio
+async def test_r5_q19_idempotency_skew_regression_import(tmp_path: Path) -> None:
+    from tests.qualification.state_x._r3_r2_qualification_tests import (  # noqa: PLC0415
+        test_r3_r2_q32_crash_window_canonical_production_path_no_duplicate_effect,
+    )
+    from tests.qualification.state_x._r3_r2_support import (  # noqa: PLC0415
+        _sqlite_compensation_queue_store,
+        _sqlite_idempotency_store_path,
+    )
 
-    assert hasattr(r32, "test_r3_r2_q32_crash_window_canonical_production_path_no_duplicate_effect")
+    await test_r3_r2_q32_crash_window_canonical_production_path_no_duplicate_effect(
+        tmp_path,
+        _sqlite_compensation_queue_store,
+        _sqlite_idempotency_store_path,
+    )
 
 
 def test_r5_q20_compensation_responsibility_explicit() -> None:
@@ -406,6 +418,11 @@ def test_r5_q37_tenant_isolation_audit_mechanical_pass() -> None:
 
 def test_r5_q38_frz_rec_08_completeness_gate() -> None:
     assert_frz_rec_08_r5_completeness()
+    assert_frz_rec_08_behavioral_evidence_complete()
+
+
+def test_r5_q41_frz_rec_08_behavioral_evidence_gate() -> None:
+    assert_frz_rec_08_behavioral_evidence_complete()
 
 
 def test_r5_q39_frz_rec_05_remains_open_not_claimed() -> None:

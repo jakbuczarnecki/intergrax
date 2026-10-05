@@ -1052,6 +1052,7 @@ STATE_X_R5_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "docs/project/maintainers/qualification/STATE_X_R5_BACKUP_RESTORE_RESPONSIBILITY_CERTIFICATION.md",
         "tests/qualification/state_x/_r5_backup_restore_support.py",
         "tests/qualification/state_x/_r5_backup_restore_qualification_tests.py",
+        "tests/qualification/state_x/_r5_q1_cross_store_restore_tests.py",
         "tests/qualification/state_x/test_state_x_r5_backup_restore.py",
         "tests/qualification/state_x/inventory.py",
         "tests/qualification/state_x/test_state_x_p0_baseline.py",

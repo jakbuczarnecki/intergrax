@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import ast
 import re
+import importlib
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
@@ -162,10 +163,11 @@ _R5_FAMILY_EXTENSION: Final[dict[str, tuple[str, tuple[str, ...], str, str, str,
         ("inventory restore_consumers", "R5-Q25"),
     ),
     "SX-F08": (
-        "N/A — rebuildable read projection (separate trace SQLite file in bundle)",
+        "N/A — separate trace SQLite file in runtime bundle (non-authoritative for execution recovery)",
         (),
-        "Projection loss reduces observability only; must not alter checkpoint/terminal/idempotency",
-        "Trace lag/loss → N/A for execution recovery authority",
+        "Loss-tolerant trace projection; automatic reconstruction NOT certified by R5; "
+        "must not alter checkpoint/terminal/idempotency truth",
+        "Trace loss → observability only; not execution-recovery authority; no guaranteed rebuild",
         "Reader validation only",
         "Tenant on trace rows where modeled",
         "SQLiteRunTraceStore; open_run_trace_store composition",
@@ -451,6 +453,77 @@ def sqlite_runtime_bundle_paths_are_distinct() -> bool:
 def run_trace_not_resume_consumer() -> bool:
     inv = _entry("SX-F08")
     return inv.restore_consumers == ("Not used as resume truth",)
+
+
+_RESUME_AUTHORITY_SOURCE_PATHS: Final[tuple[str, ...]] = (
+    "intergrax/runtime/long_running/checkpoint_resume_validation.py",
+    "intergrax/runtime/long_running/coordinator.py",
+    "intergrax/runtime/cancellation/resume_admission.py",
+    "intergrax/runtime/execution/decision_recovery.py",
+    "intergrax/runtime/tools/idempotency_pre_effect_coordinator.py",
+)
+
+
+def run_trace_excluded_from_execution_recovery_authority_sources() -> bool:
+    needles = ("RunTraceStore", "run_trace_store", "SQLiteRunTraceStore")
+    for rel in _RESUME_AUTHORITY_SOURCE_PATHS:
+        text = (_REPO_ROOT / rel).read_text(encoding="utf-8")
+        if any(token in text for token in needles):
+            return False
+    return True
+
+
+@dataclass(frozen=True, slots=True)
+class R5BehavioralEvidenceRef:
+    evidence_id: str
+    module: str
+    test_name: str
+
+
+R5_FRZ_REC_08_BEHAVIORAL_EVIDENCE: Final[tuple[R5BehavioralEvidenceRef, ...]] = (
+    R5BehavioralEvidenceRef(
+        "checkpoint_terminal_skew",
+        "tests.qualification.state_x._r5_q1_cross_store_restore_tests",
+        "test_r5_q1_old_checkpoint_newer_terminal_restore_skew_fails_closed",
+    ),
+    R5BehavioralEvidenceRef(
+        "compensation_idempotency_skew",
+        "tests.qualification.state_x._r5_q1_cross_store_restore_tests",
+        "test_r5_q1_old_compensation_queue_newer_idempotency_no_duplicate_effect",
+    ),
+    R5BehavioralEvidenceRef(
+        "corrupt_terminal_restore",
+        "tests.qualification.state_x._r5_q1_cross_store_restore_tests",
+        "test_r5_q1_terminal_backend_corruption_is_not_treated_as_absence",
+    ),
+    R5BehavioralEvidenceRef(
+        "corrupt_durable_restore",
+        "tests.qualification.state_x._r5_backup_restore_qualification_tests",
+        "test_r5_q28_corrupt_task_checkpoint_fail_closed",
+    ),
+    R5BehavioralEvidenceRef(
+        "tenant_restore",
+        "tests.qualification.state_x._r5_backup_restore_qualification_tests",
+        "test_r5_q30_cross_tenant_restored_state_rejected",
+    ),
+    R5BehavioralEvidenceRef(
+        "authority_preservation",
+        "tests.qualification.state_x._r5_backup_restore_qualification_tests",
+        "test_r5_q32_restore_cannot_mint_execution_authority",
+    ),
+    R5BehavioralEvidenceRef(
+        "run_trace_non_authoritative",
+        "tests.qualification.state_x._r5_q1_cross_store_restore_tests",
+        "test_r5_q1_run_trace_loss_is_non_authoritative_not_claimed_rebuildable",
+    ),
+)
+
+
+def assert_frz_rec_08_behavioral_evidence_complete() -> None:
+    for ref in R5_FRZ_REC_08_BEHAVIORAL_EVIDENCE:
+        mod = importlib.import_module(ref.module)
+        fn = getattr(mod, ref.test_name, None)
+        assert callable(fn), f"missing behavioral evidence {ref.evidence_id}: {ref.test_name}"
 
 
 def sx_f15_has_no_persistence_contract() -> bool:
