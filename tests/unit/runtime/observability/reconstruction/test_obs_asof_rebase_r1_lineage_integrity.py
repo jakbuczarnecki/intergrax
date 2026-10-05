@@ -374,12 +374,14 @@ def test_execution_lineage_as_of_reader_enriches_historical_when_injected() -> N
     task_id = mint_task_id()
     run_id = mint_run_id()
     attempt_a1 = mint_attempt_id()
+    root = mint_execution_id()
     store = InMemoryRuntimeEventStore()
     positioned = _append_sequence(
         store,
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_a1,
+        execution_id=root,
         event_types=[
             RuntimeEventType.TASK_CREATED,
             RuntimeEventType.PLAN_CREATED,
@@ -394,7 +396,6 @@ def test_execution_lineage_as_of_reader_enriches_historical_when_injected() -> N
         attempt_id=attempt_a1,
     )
     register_v1_attempt(lineage, scope)
-    root = mint_execution_id()
     lineage.open_segment(scope, root)
     lineage.admit_root(scope, root, root)
     as_of_reader = _PassthroughLineageAsOfReader(lineage)

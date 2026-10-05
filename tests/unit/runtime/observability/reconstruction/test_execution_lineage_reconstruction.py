@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 import pytest
 
 from intergrax.contracts.execution_identity import (
+    ExecutionId,
     mint_attempt_id,
     mint_execution_id,
     mint_run_id,
@@ -71,9 +72,11 @@ def _build_reconstructor(
     run_id: str,
     attempt_id: str,
     max_lineage_records: int = 10_000,
+    execution_id: ExecutionId | None = None,
 ) -> ExecutionReconstructor:
     runtime_store = InMemoryRuntimeEventStore()
     causal_store = InMemoryCausalEvidencePersistence()
+    resolved_execution_id = execution_id or mint_execution_id()
     causal_store.append(
         PlatformCausalEvidence(
             relation_kind=CausalRelationKind.TRANSPORT_TASK_TRIGGERED_EXECUTION,
@@ -83,7 +86,7 @@ def _build_reconstructor(
                 task_id=task_id,
                 run_id=run_id,
                 attempt_id=attempt_id,
-                execution_id=mint_execution_id(),
+                execution_id=resolved_execution_id,
                 tenant_id=_TENANT,
             ),
             recorded_at=datetime(2026, 6, 8, 12, 0, tzinfo=UTC),
@@ -95,6 +98,7 @@ def _build_reconstructor(
             task_id=task_id,
             run_id=run_id,
             attempt_id=attempt_id,
+            execution_id=resolved_execution_id,
         ),
         tenant_id=_TENANT,
     )
@@ -124,6 +128,7 @@ def test_single_segment_parent_chain() -> None:
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=e1,
     ).reconstruct_execution(_TENANT, task_id, run_id)
 
     attempt = reconstruction.attempts[0]
@@ -158,6 +163,7 @@ def test_multi_segment_resume_topology() -> None:
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=e1,
     ).reconstruct_execution(_TENANT, task_id, run_id).attempts[0]
     assert attempt.lineage is not None
     assert [segment.root_execution_id for segment in attempt.lineage.segments] == [e1, e4]
@@ -186,6 +192,7 @@ def test_nested_fan_out_parents() -> None:
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=e1,
     ).reconstruct_execution(_TENANT, task_id, run_id).attempts[0].lineage.segments[0]
     by_id = {row.execution_id: row.parent_execution_id for row in segment.admissions}
     assert by_id[e2] == e1
@@ -210,6 +217,7 @@ def test_degraded_attempt_is_partial() -> None:
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=root,
     ).reconstruct_execution(_TENANT, task_id, run_id).attempts[0].lineage.completeness
     assert completeness is ExecutionLineageCompleteness.PARTIAL
 
@@ -231,6 +239,7 @@ def test_failed_execution_can_be_complete_lineage() -> None:
         task_id=task_id,
         run_id=run_id,
         attempt_id=attempt_id,
+        execution_id=root,
     ).reconstruct_execution(_TENANT, task_id, run_id).attempts[0].lineage
     assert attempt_lineage.completeness is ExecutionLineageCompleteness.COMPLETE
     assert attempt_lineage.closure_kind is ExecutionLineageAttemptClosureKind.FAILED
@@ -256,6 +265,7 @@ def test_truncated_when_max_records_exceeded() -> None:
         run_id=run_id,
         attempt_id=attempt_id,
         max_lineage_records=2,
+        execution_id=root,
     ).reconstruct_execution(_TENANT, task_id, run_id).attempts[0].lineage.completeness
     assert completeness is ExecutionLineageCompleteness.TRUNCATED
 
@@ -369,6 +379,7 @@ def test_duplicate_execution_admission_integrity_error() -> None:
             task_id=task_id,
             run_id=run_id,
             attempt_id=attempt_id,
+            execution_id=e1,
         ).reconstruct_execution(_TENANT, task_id, run_id)
 
 

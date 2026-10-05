@@ -38,6 +38,7 @@ from intergrax.contracts.execution_lineage import (
     build_execution_lineage_run_scope,
 )
 from intergrax.contracts.execution_reconstruction_lineage import (
+    ExecutionLineageCompleteness,
     ExecutionLineageReadStatus,
     ReconstructedAttemptLineage,
 )
@@ -724,12 +725,72 @@ def _build_reconstructed_attempt(
                     discovery_contract_version=lineage.discovery_contract_version,
                     discovery_position=discovery_record.discovery_position,
                 )
-    return ReconstructedAttempt(
-        attempt_id=attempt_id,
-        causal_evidence=tuple(causal_by_attempt.get(attempt_id, ())),
-        positioned_events=tuple(events_by_attempt.get(attempt_id, ())),
+    causal_rows = tuple(causal_by_attempt.get(attempt_id, ()))
+    event_rows = tuple(events_by_attempt.get(attempt_id, ()))
+    _validate_cross_source_execution_identity_coherence(
+        causal_evidence=causal_rows,
+        positioned_events=event_rows,
         lineage=lineage,
     )
+    return ReconstructedAttempt(
+        attempt_id=attempt_id,
+        causal_evidence=causal_rows,
+        positioned_events=event_rows,
+        lineage=lineage,
+    )
+
+
+def _lineage_execution_membership_provable(
+    lineage: ReconstructedAttemptLineage,
+) -> bool:
+    if lineage.read_status is not ExecutionLineageReadStatus.AVAILABLE:
+        return False
+    if lineage.completeness is None:
+        return False
+    if lineage.completeness in (
+        ExecutionLineageCompleteness.PARTIAL,
+        ExecutionLineageCompleteness.TRUNCATED,
+    ):
+        return False
+    return lineage.completeness in (
+        ExecutionLineageCompleteness.OPEN,
+        ExecutionLineageCompleteness.COMPLETE,
+    )
+
+
+def _collect_lineage_execution_ids(
+    lineage: ReconstructedAttemptLineage,
+) -> frozenset[str]:
+    ids: set[str] = set()
+    for segment in lineage.segments:
+        for admission in segment.admissions:
+            ids.add(str(admission.execution_id))
+    return frozenset(ids)
+
+
+def _validate_cross_source_execution_identity_coherence(
+    *,
+    causal_evidence: tuple[PlatformCausalEvidence, ...],
+    positioned_events: tuple[PositionedRuntimeEvent, ...],
+    lineage: ReconstructedAttemptLineage | None,
+) -> None:
+    if lineage is None or not _lineage_execution_membership_provable(lineage):
+        return
+    membership = _collect_lineage_execution_ids(lineage)
+    if not membership:
+        return
+    for evidence in causal_evidence:
+        if str(evidence.target.execution_id) not in membership:
+            raise ExecutionReconstructionIntegrityError(
+                "causal evidence target.execution_id is not present in "
+                "complete attempt lineage topology",
+            )
+    for row in positioned_events:
+        if str(row.event.execution_id) not in membership:
+            raise ExecutionReconstructionIntegrityError(
+                "runtime event execution_id is not present in "
+                "complete attempt lineage topology",
+            )
 
 
 def _validate_post_v1_discovery_requirements(

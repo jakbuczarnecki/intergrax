@@ -79,6 +79,7 @@ def _append_sequence(
     run_id: str,
     attempt_id: str,
     event_types: list[RuntimeEventType],
+    execution_id: str | None = None,
 ) -> list[PositionedRuntimeEvent]:
     positioned: list[PositionedRuntimeEvent] = []
     for event_type in event_types:
@@ -88,6 +89,7 @@ def _append_sequence(
                     task_id=task_id,
                     run_id=run_id,
                     attempt_id=attempt_id,
+                    execution_id=execution_id,
                     event_type=event_type,
                 ),
                 tenant_id=_TENANT,
