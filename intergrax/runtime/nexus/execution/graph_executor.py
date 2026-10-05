@@ -247,7 +247,10 @@ class GraphExecutor:
         self._max_inflight_nodes = max_inflight_nodes
         self._max_delegation_depth = max_delegation_depth
         self._inflight_semaphore: asyncio.Semaphore | None = None
-        self._engine = engine or AgentEngine(registry)
+        self._engine = engine or AgentEngine(
+            registry,
+            agent_checkpoint_store=agent_checkpoint_store,
+        )
         self._router = router or AgentRouter(registry, event_bus=event_bus)
         self._validation_engine = validation_engine or NexusValidationEngine()
         self._retry_engine = retry_engine or RetryEngine(

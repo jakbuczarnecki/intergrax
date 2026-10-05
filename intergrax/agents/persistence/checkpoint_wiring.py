@@ -13,7 +13,6 @@ from intergrax.agents.persistence.checkpoint_store import (
     SQLiteAgentCheckpointStore,
 )
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
-from intergrax.contracts.agent_run import AgentRunRequest
 
 
 def open_agent_checkpoint_store(
@@ -25,56 +24,18 @@ def open_agent_checkpoint_store(
     return SQLiteAgentCheckpointStore(db_path)
 
 
-def merge_host_checkpoint_store(
-    metadata: dict[str, Any],
-    store: AgentCheckpointStore,
-) -> None:
-    """Attach sanctioned host-owned checkpoint store via typed ``ACPSessionHostContext``."""
-    from intergrax.agents.authoring.acp_session_host import (
-        ACP_HOST_CONTEXT_KEY,
-        ACPSessionHostContext,
-    )
-
-    raw = metadata.get(ACP_HOST_CONTEXT_KEY)
-    if isinstance(raw, ACPSessionHostContext):
-        host = raw.model_copy(update={"agent_checkpoint_store": store})
-    elif isinstance(raw, dict):
-        host = ACPSessionHostContext.model_validate({**raw, "agent_checkpoint_store": store})
-    else:
-        host = ACPSessionHostContext(agent_checkpoint_store=store)
-    metadata[ACP_HOST_CONTEXT_KEY] = host
-
-
 def attach_checkpoint_wiring(
     metadata: dict[str, Any],
     store: AgentCheckpointStore,
     *,
     resume: bool = False,
 ) -> dict[str, Any]:
-    """Return metadata with host checkpoint store (and optional resume flag) attached."""
+    """Return metadata with resume intent only (store is host-composed, not request metadata)."""
+    _ = store
     wired = dict(metadata)
-    merge_host_checkpoint_store(wired, store)
     if resume:
         wired[AcpMetadataKey.RESUME_FROM_CHECKPOINT] = True
     return wired
-
-
-def wire_acp_run_request(
-    request: AgentRunRequest,
-    store: AgentCheckpointStore,
-    *,
-    resume: bool = False,
-) -> AgentRunRequest:
-    """Test/lab helper: attach host checkpoint store to a typed ``AgentRunRequest``."""
-    return request.model_copy(
-        update={
-            "metadata": attach_checkpoint_wiring(
-                dict(request.metadata),
-                store,
-                resume=resume,
-            ),
-        },
-    )
 
 
 def should_resume_acp_checkpoint(
@@ -106,7 +67,6 @@ def inject_acp_checkpoint_metadata(
         return
     metadata.setdefault("run_id", run_id)
     metadata.setdefault("task_id", run_id)
-    merge_host_checkpoint_store(metadata, store)
     if should_resume_acp_checkpoint(
         metadata,
         store=store,

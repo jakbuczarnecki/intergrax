@@ -332,6 +332,7 @@ class NexusLoop:
         self._engine = AgentEngine(
             registry,
             production_mode=production_mode,
+            agent_checkpoint_store=agent_checkpoint_store,
             event_bus=self._event_bus,
             policy_engine=self._policy_engine,
             uaep_executor=UAEPExecutor(

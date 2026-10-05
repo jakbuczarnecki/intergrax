@@ -18,10 +18,8 @@ from intergrax.agents.persistence.checkpoint_store import (
     SQLiteAgentCheckpointStore,
     build_checkpoint,
 )
-from intergrax.agents.persistence.checkpoint_wiring import (
-    inject_acp_checkpoint_metadata,
-    wire_acp_run_request,
-)
+from intergrax.agents.persistence.checkpoint_wiring import inject_acp_checkpoint_metadata
+from testing_support.acp_checkpoint_test_wiring import wire_acp_run_request
 from intergrax.agents.persistence.session_persistence import resolve_session_persistence
 from intergrax.applications._shared.acp_checkpoint_host_wiring import resolve_host_agent_checkpoint_store
 from intergrax.applications._shared.acp_checkpoint_task_enricher import make_acp_checkpoint_task_enricher
@@ -71,13 +69,13 @@ def test_r3_r5_r1_q02_exactly_one_sanctioned_production_composition_chain() -> N
     )
     assert "resolve_host_agent_checkpoint_store" in wiring
     session_src = inspect.getsource(acp_run_module._run_acp_session_bound)
-    assert "host.agent_checkpoint_store" in session_src
+    assert "agent_checkpoint_store" in session_src
+    assert "host.agent_checkpoint_store" not in session_src
 
 
 def test_r3_r5_r1_q03_acp_session_receives_store_through_host_carrier() -> None:
     fields = ACPSessionHostContext.model_fields
-    assert "agent_checkpoint_store" in fields
-    assert "AgentCheckpointStore" in str(fields["agent_checkpoint_store"].annotation)
+    assert "agent_checkpoint_store" not in fields
 
 
 def test_r3_r5_r1_q04_resolve_session_persistence_no_metadata_checkpoint_store() -> None:
@@ -243,12 +241,11 @@ def test_r3_r5_r1_q10_resume_flag_cannot_make_request_store_authoritative() -> N
 
 
 def _resume_via_host_store(store: AgentCheckpointStore) -> None:
-    host = ACPSessionHostContext(agent_checkpoint_store=store)
     request = AgentRunRequest(
         input="x",
         identity=RequestIdentity(tenant_id="tenant-a", user_id="u1"),
         agent_id="agent-a",
-        metadata={ACP_HOST_CONTEXT_KEY: host, AcpMetadataKey.RESUME_FROM_CHECKPOINT: True},
+        metadata={AcpMetadataKey.RESUME_FROM_CHECKPOINT: True},
     )
     store.save(build_valid_checkpoint(run_id="run-r1"))
     _persistence, resume = resolve_session_persistence(
@@ -256,7 +253,7 @@ def _resume_via_host_store(store: AgentCheckpointStore) -> None:
         run_id="run-r1",
         tenant_id="tenant-a",
         agent_id="agent-a",
-        checkpoint_store=host.agent_checkpoint_store,
+        checkpoint_store=store,
     )
     assert resume is not None
 
@@ -274,7 +271,7 @@ def test_r3_r5_r1_q15_graph_executor_uses_host_checkpoint_injection() -> None:
     wiring = (_REPO_ROOT / "intergrax/agents/persistence/checkpoint_wiring.py").read_text(
         encoding="utf-8",
     )
-    assert "merge_host_checkpoint_store" in wiring
+    assert "merge_host_checkpoint_store" not in wiring
     assert 'wired[AcpMetadataKey.CHECKPOINT_STORE]' not in wiring
 
 
@@ -283,12 +280,16 @@ def test_r3_r5_r1_q16_nexus_host_propagation_via_harness() -> None:
     harness_src = (
         _REPO_ROOT / "intergrax/applications/_shared/acp_session_host_wiring.py"
     ).read_text(encoding="utf-8")
-    assert "agent_checkpoint_store=runtime.agent_checkpoint_store" in harness_src
+    assert "agent_checkpoint_store" not in harness_src
     host = build_acp_session_host_context(
         app_profile=ApplicationEnvironmentProfile.lab_defaults(),
-        agent_checkpoint_store=store,
     )
-    assert host.agent_checkpoint_store is store
+    assert "agent_checkpoint_store" not in ACPSessionHostContext.model_fields
+    engine_src = (
+        _REPO_ROOT / "intergrax/runtime/nexus/agents/agent_engine.py"
+    ).read_text(encoding="utf-8")
+    assert "agent_checkpoint_store" in engine_src
+    assert store is not None
 
 
 def test_r3_r5_r1_q17_q18_checkpoint_store_metadata_writers_readers_inventoried() -> None:
@@ -312,8 +313,7 @@ def test_r3_r5_r1_q20_r3_r5_regression_matrix_imported() -> None:
 
 
 def test_r3_r5_r1_q25_host_context_checkpoint_field_strongly_typed() -> None:
-    host = ACPSessionHostContext(agent_checkpoint_store=InMemoryAgentCheckpointStore())
-    assert isinstance(host.agent_checkpoint_store, AgentCheckpointStore)
+    assert "agent_checkpoint_store" not in ACPSessionHostContext.model_fields
 
 
 def test_r3_r5_r1_q26_no_caller_controlled_trust_boolean() -> None:
@@ -343,9 +343,8 @@ def test_r3_r5_r1_q27_production_ingress_host_enrichment() -> None:
         run_id=str(task.task_id),
         tenant_id=task.tenant_id,
     )
-    host = metadata[ACP_HOST_CONTEXT_KEY]
-    assert isinstance(host, ACPSessionHostContext)
-    assert host.agent_checkpoint_store is host_store
+    assert ACP_HOST_CONTEXT_KEY not in metadata
+    assert metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
 
 
 def test_r3_r5_r1_q28_no_duplicate_composition_owner() -> None:
@@ -374,8 +373,6 @@ def test_r3_r5_r1_q30_negative_ingress_malicious_metadata_ignored() -> None:
         run_id="run-ingress",
         tenant_id="tenant-a",
     )
-    host = metadata[ACP_HOST_CONTEXT_KEY]
-    assert isinstance(host, ACPSessionHostContext)
     request = AgentRunRequest(
         input="x",
         identity=RequestIdentity(tenant_id="tenant-a", user_id="u1"),
@@ -387,7 +384,7 @@ def test_r3_r5_r1_q30_negative_ingress_malicious_metadata_ignored() -> None:
         run_id="run-ingress",
         tenant_id="tenant-a",
         agent_id="agent-a",
-        checkpoint_store=host.agent_checkpoint_store,
+        checkpoint_store=host_store,
     )
     assert _CallCountingStore.calls == 0
 
@@ -402,28 +399,24 @@ def test_r3_r5_r1_wire_acp_run_request_uses_host_context() -> None:
         ),
         store,
     )
-    host = request.metadata[ACP_HOST_CONTEXT_KEY]
-    assert isinstance(host, ACPSessionHostContext)
-    assert host.agent_checkpoint_store is store
+    assert ACP_HOST_CONTEXT_KEY not in request.metadata
     assert request.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
 
 
 def test_r3_r5_r1_provider_replaceability_at_composition(tmp_path: Path) -> None:
     for _label, factory in parity_checkpoint_store_factories(tmp_path):
         store = factory()
-        host = ACPSessionHostContext(agent_checkpoint_store=store)
         request = AgentRunRequest(
             input="x",
             identity=RequestIdentity(tenant_id="tenant-a", user_id="u1"),
             agent_id="agent-a",
-            metadata={ACP_HOST_CONTEXT_KEY: host},
         )
         persistence, _ = resolve_session_persistence(
             request,
             run_id="run-r5",
             tenant_id="tenant-a",
             agent_id="agent-a",
-            checkpoint_store=host.agent_checkpoint_store,
+            checkpoint_store=store,
         )
         assert persistence.checkpoint_store is store
 

@@ -768,3 +768,4 @@ from tests.qualification.state_x._r3_r4_qualification_tests import *  # noqa: F4
 from tests.qualification.state_x._r3_r4_r1_qualification_tests import *  # noqa: F403
 from tests.qualification.state_x._r3_r5_qualification_tests import *  # noqa: F403
 from tests.qualification.state_x._r3_r5_r1_qualification_tests import *  # noqa: F403
+from tests.qualification.state_x._r3_r5_r1_r1_qualification_tests import *  # noqa: F403

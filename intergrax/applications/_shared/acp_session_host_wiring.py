@@ -7,7 +7,6 @@ from __future__ import annotations
 from typing import Any
 
 from intergrax.agents.authoring.acp_session_host import ACPSessionHostContext
-from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.applications._shared.declarative_tool_wiring import (
     build_declarative_invoker_for_application_host,
 )
@@ -33,7 +32,6 @@ def build_acp_session_host_context(
     decision_flow_gate: Any = None,
     execution_budget_ledger_factory: ExecutionBudgetLedgerFactory | None = None,
     runtime_session_hooks: Any = None,
-    agent_checkpoint_store: AgentCheckpointStore | None = None,
 ) -> ACPSessionHostContext:
     hooks = runtime_session_hooks or build_nexus_acp_runtime_session_hooks()
     return ACPSessionHostContext(
@@ -43,7 +41,6 @@ def build_acp_session_host_context(
         decision_flow_gate=decision_flow_gate,
         execution_budget_ledger_factory=execution_budget_ledger_factory,
         runtime_session_hooks=hooks,
-        agent_checkpoint_store=agent_checkpoint_store,
     )
 
 
@@ -69,5 +66,4 @@ def build_acp_session_host_from_harness(
         execution_budget_ledger_factory=resolve_harness_host_execution_budget_ledger_factory(
             runtime,
         ),
-        agent_checkpoint_store=runtime.agent_checkpoint_store,
     )

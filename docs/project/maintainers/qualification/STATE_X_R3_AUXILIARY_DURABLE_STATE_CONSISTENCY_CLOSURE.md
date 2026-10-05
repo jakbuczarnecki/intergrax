@@ -652,3 +652,47 @@ Primary evidence: FRZ-STA-01/02/03/04/05/08, FRZ-REC-01/03/04/06/10 toward SX-F1
 FRZ-STA-01/02/03/08, FRZ-REC-03/04/06, FRZ-TEN-04/08 — provider composition owner only; no global PASS.
 
 **Status:** **READY FOR AUDIT** (Cursor) — **STATE-X-R3-R5** remains **BLOCKED** pending independent R1 audit.
+
+---
+
+## R3-R5-R1-R1 — ACP Host Context Trust Boundary & Provider Provenance
+
+**START_HEAD:** `941f2c3bfab0e546031b7ad033efddfc69da41f5`
+
+### Architecture decision
+
+Existing **AgentEngine → `run_acp_session`** internal bridge is sufficient (**YES**): host-owned `AgentCheckpointStore` is injected at `AgentEngine` construction (from `NexusLoop` / `GraphExecutor`) and passed only via typed `run_acp_session(..., agent_checkpoint_store=...)`. Public `IntergraxAgent.run(AgentRunRequest)` unchanged; no trust token, ContextVar, or second execution entry.
+
+### Root cause closed
+
+R1 removed `metadata[CHECKPOINT_STORE]` authority but left `ACPSessionHostContext.agent_checkpoint_store` caller-forgeable on public `AgentRunRequest.metadata[HOST_CONTEXT]`.
+
+### Remediation
+
+- Removed `agent_checkpoint_store` from `ACPSessionHostContext`.
+- `run_acp_session` / `_run_acp_session_bound` consume host-composed store only via keyword (AgentEngine path).
+- `inject_acp_checkpoint_metadata` sets resume intent only; does not attach provider to request metadata.
+- `wire_acp_run_request` removed from `intergrax.agents.persistence` public exports; test helper in `testing_support/acp_checkpoint_test_wiring.py`.
+- Dict host context strips `agent_checkpoint_store` before validation.
+
+### Before / after
+
+**Before:** Public request could supply `ACPSessionHostContext(agent_checkpoint_store=B)` → ACP persistence.
+
+**After:** Host/runtime → `AgentEngine._agent_checkpoint_store` → `run_acp_session` → `resolve_session_persistence(checkpoint_store=…)`; public metadata cannot select provider.
+
+### Proofs
+
+- Adversarial: caller host/dict/metadata store → zero provider calls; resume disabled without engine store.
+- Positive: `run_acp_with_host_checkpoint_store` (engine-equivalent) saves/resumes InMemory/SQLite/custom stores.
+- Conflict: engine store A vs forged request paths → A only.
+
+### Tests
+
+`tests/qualification/state_x/_r3_r5_r1_r1_qualification_tests.py` (R1-R1-Q01..Q30). Inventory: `STATE_X_R3_R5_R1_R1_PRE_AUDIT_HEAD`, `STATE_X_R3_R5_R1_R1_ALLOWLIST_PATHS`.
+
+### FRZ (scoped)
+
+FRZ-STA-01/02/08, FRZ-REC-03/04/06, FRZ-TEN-04/08 — provider provenance at composition boundary only.
+
+**Status:** **READY FOR AUDIT** (Cursor) — **STATE-X-R3-R5-R1** remains **BLOCKED** pending independent R1-R1 audit; **STATE-X-R3-R5** **BLOCKED**.

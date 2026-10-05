@@ -22,6 +22,7 @@ from intergrax.runtime.wiring.reliability_runtime_bridge import resolve_reliabil
 from intergrax.agents.authoring.artifact_refs import artifact_refs_from_payloads
 from intergrax.agents.compliance_summary import build_compliance_summary
 from intergrax.agents.persistence.declarative_run_binding import DeclarativeToolInvokerWithRunBinding
+from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.session_persistence import (
     make_checkpoint_hook,
     resolve_session_persistence,
@@ -129,7 +130,12 @@ def _host_context_from_metadata(metadata: dict[str, Any]) -> ACPSessionHostConte
     if isinstance(raw, ACPSessionHostContext):
         return raw
     if isinstance(raw, dict):
-        return ACPSessionHostContext.model_validate(raw)
+        stripped = {
+            key: value
+            for key, value in raw.items()
+            if key != "agent_checkpoint_store"
+        }
+        return ACPSessionHostContext.model_validate(stripped)
     return None
 
 
@@ -159,6 +165,8 @@ def _terminal_status(outcome_terminal: bool, next_action: StepNextAction) -> Age
 async def run_acp_session(
     agent: object,
     request: AgentRunRequest,
+    *,
+    agent_checkpoint_store: AgentCheckpointStore | None = None,
 ) -> AgentRunResult:
     """Execute typed agent session loop until terminal outcome."""
     started = time.perf_counter()
@@ -261,6 +269,7 @@ async def run_acp_session(
             trace_id=trace_id,
             model_messages=model_messages,
             started=started,
+            agent_checkpoint_store=agent_checkpoint_store,
         )
     finally:
         reset_active_execution_budget(budget_token)
@@ -279,6 +288,7 @@ async def _run_acp_session_bound(
     trace_id: str,
     model_messages: object,
     started: float,
+    agent_checkpoint_store: AgentCheckpointStore | None = None,
 ) -> AgentRunResult:
     await agent.on_run_start(merged)
     session_hooks = resolve_acp_runtime_session_hooks(host)
@@ -288,7 +298,7 @@ async def _run_acp_session_bound(
         run_id=str(run_id),
         tenant_id=merged.tenant_id,
         agent_id=merged.agent_id,
-        checkpoint_store=host.agent_checkpoint_store if host is not None else None,
+        checkpoint_store=agent_checkpoint_store,
     )
     state_root = _initial_state_root(request)
     start_step_index = 0

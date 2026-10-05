@@ -9,7 +9,10 @@ import pytest
 from intergrax.agents.authoring.patterns.reference import PatternPlanExecuteProbe
 from intergrax.agents.authoring.patterns.states import PlanExecuteSessionState
 from intergrax.agents.persistence.checkpoint_store import InMemoryAgentCheckpointStore
-from intergrax.agents.persistence.checkpoint_wiring import wire_acp_run_request
+from testing_support.acp_checkpoint_test_wiring import (
+    run_acp_with_host_checkpoint_store,
+    wire_acp_run_request,
+)
 from intergrax.contracts.agent_run import AgentExecutionOptions, AgentRunRequest, RequestIdentity
 from intergrax.contracts.agent_run_enums import AgentRunStatus
 from intergrax.dev_support.execution_identity_scope import canonical_agent_run_smoke_scope
@@ -54,7 +57,7 @@ async def test_acp_checkpoint_resume_continues_plan_execute_phase() -> None:
             store,
             resume=False,
         )
-        partial_result = await agent.run(partial)
+        partial_result = await run_acp_with_host_checkpoint_store(agent, partial, store)
         checkpoint = store.get_latest(run_id, "t-resume")
         assert checkpoint is not None
         assert checkpoint.step_index == 0
@@ -74,7 +77,12 @@ async def test_acp_checkpoint_resume_continues_plan_execute_phase() -> None:
             store,
             resume=True,
         )
-        final_result = await agent.run(resumed)
+        final_result = await run_acp_with_host_checkpoint_store(
+            agent,
+            resumed,
+            store,
+            resume=True,
+        )
     assert final_result.status == AgentRunStatus.SUCCEEDED
     assert _CountablePlanProbe.perceive_calls == 3
     final_phase = PlanExecuteSessionState.model_validate(

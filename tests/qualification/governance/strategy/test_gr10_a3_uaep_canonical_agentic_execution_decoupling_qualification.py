@@ -78,11 +78,9 @@ def test_gr10_a3_execution_path_matrix(
         )
         metadata = dict(enricher(task).metadata)
         if session_enabled:
-            from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY, ACPSessionHostContext
+            from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY
 
-            host = metadata.get(ACP_HOST_CONTEXT_KEY)
-            assert isinstance(host, ACPSessionHostContext)
-            assert host.agent_checkpoint_store is store
+            assert metadata.get(ACP_HOST_CONTEXT_KEY) is None
             assert metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
         else:
             assert metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
@@ -117,11 +115,9 @@ def test_gr10_a3_checkpoint_enricher_wires_store_when_session_explicit() -> None
         metadata={AcpMetadataKey.SESSION_ENABLED: True},
     )
     enriched = enricher(task)
-    from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY, ACPSessionHostContext
+    from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY
 
-    host = enriched.metadata.get(ACP_HOST_CONTEXT_KEY)
-    assert isinstance(host, ACPSessionHostContext)
-    assert host.agent_checkpoint_store is store
+    assert enriched.metadata.get(ACP_HOST_CONTEXT_KEY) is None
     assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
 
 

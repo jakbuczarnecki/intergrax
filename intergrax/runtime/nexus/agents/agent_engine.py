@@ -6,7 +6,9 @@ from __future__ import annotations
 
 from typing import Any, Dict, Optional, Union
 
+from intergrax.agents.authoring.acp_run import run_acp_session
 from intergrax.agents.authoring.base import IntergraxAgent
+from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.contracts.tier2_agent import Tier2Agent
 from intergrax.runtime.nexus.agents.runtime_request_bridge import (
     acp_session_enabled,
@@ -53,6 +55,7 @@ class AgentEngine:
         sandbox_manager: Optional[SandboxSessionManager] = None,
         task_memory_store: Optional[TaskMemoryPersistence] = None,
         production_mode: bool = False,
+        agent_checkpoint_store: AgentCheckpointStore | None = None,
     ) -> None:
         if isinstance(agents, dict):
             self._registry = None
@@ -61,6 +64,7 @@ class AgentEngine:
             self._registry = agents
             self._agents = None
         self._production_mode = production_mode
+        self._agent_checkpoint_store = agent_checkpoint_store
         self._uaep = uaep_executor or UAEPExecutor(
             middleware=middleware,
             event_bus=event_bus,
@@ -88,7 +92,13 @@ class AgentEngine:
 
     async def run(self, request: RuntimeRequest) -> RuntimeAnswer:
         agent = self._resolve_agent(request)
-        return await self._execute_agent_impl(agent, request, self._uaep, registry=self._registry)
+        return await self._execute_agent_impl(
+            agent,
+            request,
+            self._uaep,
+            registry=self._registry,
+            agent_checkpoint_store=self._agent_checkpoint_store,
+        )
 
     async def run_with_result(self, request: RuntimeRequest) -> AgentExecutionResult:
         agent = self._resolve_agent(request)
@@ -101,6 +111,7 @@ class AgentEngine:
                     request,
                     self._uaep,
                     registry=self._registry,
+                    agent_checkpoint_store=self._agent_checkpoint_store,
                 )
             )
         except UAEPBlockedError as exc:
@@ -222,6 +233,7 @@ class AgentEngine:
         uaep_executor: UAEPExecutor,
         *,
         registry: AgentRegistryRead | None = None,
+        agent_checkpoint_store: AgentCheckpointStore | None = None,
     ) -> tuple[
         RuntimeAnswer,
         ValidationResult,
@@ -231,7 +243,11 @@ class AgentEngine:
         if isinstance(agent, IntergraxAgent) and acp_session_enabled(request):
             contract = agent.get_contract()
             agent_run = runtime_request_to_agent_run(request, contract=contract)
-            result = await agent.run(agent_run)
+            result = await run_acp_session(
+                agent,
+                agent_run,
+                agent_checkpoint_store=agent_checkpoint_store,
+            )
             if not isinstance(result, AgentRunResult):
                 raise TypeError("IntergraxAgent.run must return AgentRunResult for ACP session")
             answer = agent_run_result_to_runtime_answer(result)

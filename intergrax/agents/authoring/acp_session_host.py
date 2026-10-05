@@ -21,7 +21,6 @@ from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.runtime.decision_flow import DecisionFlowGate
 from intergrax.runtime.execution.budget.ledger import ExecutionBudgetLedgerFactory
 from intergrax.runtime.notifications.adapter_contract import NotificationAdapter
-from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 
 ACP_HOST_CONTEXT_KEY = AcpMetadataKey.HOST_CONTEXT
 
@@ -51,10 +50,6 @@ class ACPSessionHostContext(BaseModel):
         exclude=True,
     )
     runtime_session_hooks: SkipValidation[AcpRuntimeSessionHooks | None] = Field(
-        default=None,
-        exclude=True,
-    )
-    agent_checkpoint_store: SkipValidation[AgentCheckpointStore | None] = Field(
         default=None,
         exclude=True,
     )
