@@ -134,3 +134,9 @@ Root activation binds `AttemptLineageDegradationState` from durable attempt meta
 ## Final verdict
 
 **PASS** — logical lineage mutations (admission, segment open, unclean successor, seal) are single durable atomic transitions; canonical HostTask path uses production lineage composition without manual injection; resume and provider contracts are fail-closed where required.
+
+## TRACE-X-P1-R1 supersession
+
+**Historical policy (pre-R1):** when child `admit_child` raised `ExecutionLineageUnavailableError` and durable `mark_degraded` succeeded, the child delegate could still execute; runtime `non_durable_execution_ids` blocked nested children only.
+
+**Enterprise freeze policy (TRACE-X-P1-R1):** durable child lineage admission is **mandatory**; unavailable admission **blocks** child delegate execution after best-effort degradation recording. Obsolete `mark_execution_lineage_non_durable` / `non_durable_execution_ids` machinery removed.

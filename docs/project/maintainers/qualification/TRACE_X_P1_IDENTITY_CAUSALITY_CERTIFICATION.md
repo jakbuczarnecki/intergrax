@@ -12,9 +12,9 @@
 
 **Production delta:** **0** (certification + qualification evidence only)
 
-**Status:** **TRACE-X-P1 = BLOCKED** (IN-SCOPE BLOCKER — degraded child lineage vs FRZ-TRC-02)
+**Status:** **TRACE-X-P1 = READY FOR AUDIT** (post-R1; not CLOSED)
 
-**Proposed child:** `TRACE-X-P1-R1` (architecture decision on degraded child execution policy)
+**Child:** `TRACE-X-P1-R1` strict durable child lineage @ START_HEAD `f31a326bb96b936e07d149c2ba8c75351d9117c4`
 
 ---
 
@@ -48,17 +48,17 @@ Duplicate owner = 0 · shadow writer = 0.
 
 ---
 
-## 4. Degraded-lineage verdict
+## 4. Degraded-lineage verdict (post TRACE-X-P1-R1)
 
-**Can an executed child exist without reconstructable canonical parent edge?** **YES**
+**Can an executed child exist without reconstructable canonical parent edge?** **NO**
 
-When `ExecutionLineageChildAdmissionHook` catches `ExecutionLineageUnavailableError`, it marks attempt degraded and child non-durable but **does not block** the child delegate (`admission.py`). Reconstruction reports `PARTIAL` / degraded (`test_degraded_attempt_is_partial`) — it does **not** invent the missing edge.
+After `TRACE-X-P1-R1`, `ExecutionLineageChildAdmissionHook` re-raises on `ExecutionLineageUnavailableError` after best-effort `mark_degraded`; the child delegate **does not** run. Failed admissions may leave the attempt `PARTIAL`/degraded without fabricating a parent edge for a non-executed child.
 
 No alternate canonical owner stores equivalent parent→child topology (`delegated_execution` bindings are delegation correlation, not lineage truth).
 
-**FRZ-TRC-02:** **BLOCKED** — requires `TRACE-X-P1-R1` architecture decision before independent closure review.
+**FRZ-TRC-02:** **READY FOR INDEPENDENT CLOSURE REVIEW** (Cursor recommendation only; not PASS).
 
-**FRZ-TRC-12:** **READY FOR INDEPENDENT CLOSURE REVIEW** (Cursor recommendation only; not PASS).
+**FRZ-TRC-12:** **READY FOR INDEPENDENT CLOSURE REVIEW** — prior evidence @ `097b8236817456377848885a324afa1044101009` preserved.
 
 ---
 
@@ -80,7 +80,7 @@ No alternate canonical owner stores equivalent parent→child topology (`delegat
 ```bash
 uv run --with cryptography pytest tests/qualification/trace_x/test_trace_x_p1_identity_causality.py -p no:xdist -q
 uv run --with cryptography pytest tests/unit/runtime/background_execution/test_background_causal_evidence_admission_paths.py tests/unit/runtime/background_execution/test_required_audit_evidence_admission.py tests/unit/runtime/observability/test_causal_evidence_contract.py tests/unit/runtime/observability/test_durable_causal_evidence_persistence.py -p no:xdist -q
-uv run --with cryptography pytest tests/unit/runtime/execution/lineage/test_execution_lineage_admission_order.py tests/unit/runtime/execution/lineage/test_execution_lineage_persistence_conformance.py tests/unit/runtime/execution/lineage/test_nested_child_after_degraded_parent.py tests/unit/runtime/observability/reconstruction/test_execution_lineage_reconstruction.py -p no:xdist -q
+uv run --with cryptography pytest tests/unit/runtime/execution/lineage/test_execution_lineage_admission_order.py tests/unit/runtime/execution/lineage/test_execution_lineage_persistence_conformance.py tests/unit/runtime/execution/lineage/test_child_lineage_admission_failure.py tests/unit/runtime/observability/reconstruction/test_execution_lineage_reconstruction.py -p no:xdist -q
 ```
 
 **Pass 1:** 32 passed (`test_trace_x_p1_identity_causality.py`). **Pass 2:** 49 passed (requires `uv run --extra dev` for Celery path tests). **Pass 3:** 31 passed.
@@ -93,7 +93,7 @@ Record `FINAL_COMMIT` / `AUDITED_HEAD` in the independent audit after push.
 
 | ID | Classification |
 |---|---|
-| P1-BLK-DEGRADED-LINEAGE-01 | IN-SCOPE BLOCKER |
+| P1-BLK-DEGRADED-LINEAGE-01 | RESOLVED PENDING INDEPENDENT AUDIT (TRACE-X-P1-R1) |
 
 ---
 
@@ -101,7 +101,7 @@ Record `FINAL_COMMIT` / `AUDITED_HEAD` in the independent audit after push.
 
 ```text
 TRACE-X = CURRENT / MANDATORY
-TRACE-X-P1 = BLOCKED
-TRACE-X-P1-R1 = proposed (architecture decision)
+TRACE-X-P1 = READY FOR AUDIT
+TRACE-X-P1-R1 = READY FOR AUDIT
 TRACE-X-P2 = NOT ENTERED
 ```

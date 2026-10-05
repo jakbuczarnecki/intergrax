@@ -32,12 +32,11 @@ from tests.qualification.trace_x._trace_x_p1_support import (
     OWNERSHIP_MATRIX,
     P1_IN_SCOPE_BLOCKERS,
     P1_READINESS,
+    P1_RESOLVED_BLOCKERS,
     P1_TRANSPORT_PATHS,
-    P1BlockerClassification,
     P1Concern,
     P1GateResult,
     P1ReadinessStatus,
-    PROPOSED_CHILD_ON_BLOCKER,
     TENANT_ISOLATION_AUDIT_P1,
     TRACE_X_P1_START_HEAD,
     TRANSPORT_ENTRYPOINTS,
@@ -219,12 +218,13 @@ def test_txp1_q21_missing_lineage_not_fabricated() -> None:
 
 def test_txp1_q22_degraded_lineage_semantics_explicit() -> None:
     assert len(DEGRADED_LINEAGE_CASES) >= 6
-    assert EXECUTED_CHILD_WITHOUT_DURABLE_PARENT_EDGE is True
+    assert EXECUTED_CHILD_WITHOUT_DURABLE_PARENT_EDGE is False
 
 
-def test_txp1_q23_nested_child_from_non_durable_parent_fails_closed() -> None:
+def test_txp1_q23_failed_child_admission_blocks_delegate() -> None:
     assert any(
-        "test_nested_child_fails_closed_when_parent_lineage_non_durable" in p.evidence_tests
+        "test_child_admission_unavailable_blocks_delegate_and_marks_degraded"
+        in p.evidence_tests
         for p in LINEAGE_PATHS
     )
 
@@ -256,21 +256,24 @@ def test_txp1_q28_tenant_isolation_p1_audit() -> None:
 
 
 def test_txp1_q29_blocker_inventory() -> None:
-    assert P1_IN_SCOPE_BLOCKERS
-    for blocker in P1_IN_SCOPE_BLOCKERS:
-        assert blocker.classification == P1BlockerClassification.IN_SCOPE_BLOCKER
+    assert P1_IN_SCOPE_BLOCKERS == ()
+    assert any(
+        row[0] == "P1-BLK-DEGRADED-LINEAGE-01" for row in P1_RESOLVED_BLOCKERS
+    )
 
 
 def test_txp1_q30_readiness() -> None:
-    assert P1_READINESS == P1ReadinessStatus.BLOCKED
+    assert P1_READINESS == P1ReadinessStatus.READY_FOR_AUDIT
     assert (
         FRZ_TRC_12_DISPOSITION
         == FrzTrcP1Disposition.READY_FOR_INDEPENDENT_CLOSURE_REVIEW
     )
-    assert FRZ_TRC_02_DISPOSITION == FrzTrcP1Disposition.BLOCKED
-    assert PROPOSED_CHILD_ON_BLOCKER == "TRACE-X-P1-R1"
+    assert (
+        FRZ_TRC_02_DISPOSITION
+        == FrzTrcP1Disposition.READY_FOR_INDEPENDENT_CLOSURE_REVIEW
+    )
     blocked_rows = [r for r in ENTERPRISE_AUDIT_MATRIX_P1 if r.result == P1GateResult.BLOCKED]
-    assert any("FRZ-TRC-02" in r.area for r in blocked_rows)
+    assert blocked_rows == []
 
 
 def test_txp1_transport_entrypoint_modules_exist() -> None:

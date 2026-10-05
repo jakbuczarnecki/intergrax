@@ -15,7 +15,6 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
 )
-from intergrax.contracts.execution_lineage import ExecutionLineageIntegrityError
 from intergrax.runtime.execution.identity_authority import (
     default_execution_identity_authority,
 )
@@ -145,13 +144,6 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
         parent_run_id, parent_attempt_id = require_active_execution_identity()
         parent_execution_id = require_active_execution_id()
         lineage_state = peek_active_execution_lineage()
-        if (
-            lineage_state is not None
-            and parent_execution_id in lineage_state.non_durable_execution_ids
-        ):
-            raise ExecutionLineageIntegrityError(
-                "non-durable lineage parent cannot admit nested child",
-            )
         parent_authority = require_active_execution_authority()
 
         resolution = self._authority_policy.resolve_child_authority(

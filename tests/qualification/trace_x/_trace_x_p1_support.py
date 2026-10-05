@@ -185,7 +185,7 @@ LINEAGE_PATHS: Final[tuple[P1LineagePath, ...]] = (
         failure_behavior="ExecutionLineageIntegrityError → child does not execute",
         evidence_tests=(
             "test_root_and_child_admissions",
-            "test_child_admission_before_delegate",
+            "test_child_lineage_hook_auto_attached",
             "test_conflicting_parent_fails_closed",
         ),
     ),
@@ -196,18 +196,10 @@ LINEAGE_PATHS: Final[tuple[P1LineagePath, ...]] = (
         scope="same attempt",
         durability="durable per successful admission",
         expected_reconstruction="multiple child edges from shared parent",
-        failure_behavior="conflicting parent fails closed",
-        evidence_tests=("test_sibling_from_durable_root_allowed_after_non_durable_child",),
-    ),
-    P1LineagePath(
-        lineage_path_id="TXP1-L04",
-        parent_source="immediate parent execution id",
-        child_identity_source="nested ChildExecutionRunner",
-        scope="same attempt",
-        durability="durable when parent durable",
-        expected_reconstruction="nested edges parent→child chain",
-        failure_behavior="non-durable parent blocks nested child",
-        evidence_tests=("test_nested_child_fails_closed_when_parent_lineage_non_durable",),
+        failure_behavior="conflicting parent fails closed; failed admission blocks delegate",
+        evidence_tests=(
+            "test_sibling_after_failed_child_admission_may_execute_when_durable",
+        ),
     ),
     P1LineagePath(
         lineage_path_id="TXP1-L05",
@@ -234,12 +226,13 @@ LINEAGE_PATHS: Final[tuple[P1LineagePath, ...]] = (
         parent_source="active parent ExecutionId",
         child_identity_source="ChildExecutionRunner on ExecutionLineageUnavailableError",
         scope="same attempt",
-        durability="non-durable child; attempt may be degraded",
-        expected_reconstruction="PARTIAL completeness; no fabricated parent edge",
-        failure_behavior="delegate may run; nested child blocked",
+        durability="durable admission required before delegate; attempt may be degraded",
+        expected_reconstruction="PARTIAL completeness; no fabricated parent edge for failed admission",
+        failure_behavior="delegate blocked; later sibling may run after its own durable admission",
         evidence_tests=(
-            "test_nested_child_fails_closed_when_parent_lineage_non_durable",
-            "test_sibling_from_durable_root_allowed_after_non_durable_child",
+            "test_child_admission_unavailable_blocks_delegate_and_marks_degraded",
+            "test_sibling_after_failed_child_admission_may_execute_when_durable",
+            "test_failed_child_admission_reconstruction_honest",
             "test_degraded_attempt_is_partial",
         ),
     ),
@@ -254,21 +247,18 @@ DEGRADED_LINEAGE_CASES: Final[tuple[P1DegradedLineageCase, ...]] = (
     ),
     P1DegradedLineageCase(
         "Case C",
-        "child admission backend unavailable → child may execute without durable edge",
-        (
-            "test_nested_child_fails_closed_when_parent_lineage_non_durable",
-            "test_sibling_from_durable_root_allowed_after_non_durable_child",
-        ),
+        "child admission backend unavailable → delegate blocked; attempt degraded",
+        ("test_child_admission_unavailable_blocks_delegate_and_marks_degraded",),
     ),
     P1DegradedLineageCase(
         "Case D",
-        "non-durable parent cannot admit nested child",
-        ("test_nested_child_fails_closed_when_parent_lineage_non_durable",),
+        "mark_degraded unavailable → delegate still blocked",
+        ("test_mark_degraded_unavailable_still_blocks_delegate",),
     ),
     P1DegradedLineageCase(
         "Case E",
-        "sibling from durable root after degraded child allowed",
-        ("test_sibling_from_durable_root_allowed_after_non_durable_child",),
+        "sibling from durable root after failed child admission may execute",
+        ("test_sibling_after_failed_child_admission_may_execute_when_durable",),
     ),
     P1DegradedLineageCase(
         "Case F",
@@ -311,21 +301,12 @@ P1_TRANSPORT_PATHS: Final[tuple[P1Path, ...]] = (
     ),
 )
 
-P1_IN_SCOPE_BLOCKERS: Final[tuple[P1InScopeBlocker, ...]] = (
-    P1InScopeBlocker(
-        blocker_id="P1-BLK-DEGRADED-LINEAGE-01",
-        classification=P1BlockerClassification.IN_SCOPE_BLOCKER,
-        summary=(
-            "On ExecutionLineageUnavailableError during child admission, "
-            "ChildExecutionRunner may execute the child delegate without a durable "
-            "parent→child ExecutionLineage fact; reconstruction reports PARTIAL/degraded "
-            "but does not restore the missing canonical edge."
-        ),
-        architecture_decision_required=(
-            "Whether FRZ-TRC-02 permits executed children with only degraded/incomplete "
-            "lineage representation, or child execution must fail closed when durable "
-            "admission fails (policy change)."
-        ),
+P1_IN_SCOPE_BLOCKERS: Final[tuple[P1InScopeBlocker, ...]] = ()
+
+P1_RESOLVED_BLOCKERS: Final[tuple[tuple[str, str], ...]] = (
+    (
+        "P1-BLK-DEGRADED-LINEAGE-01",
+        "RESOLVED PENDING INDEPENDENT AUDIT (TRACE-X-P1-R1 strict durable child admission)",
     ),
 )
 
@@ -357,11 +338,13 @@ FRZ_TRC_12_DISPOSITION: Final[FrzTrcP1Disposition] = (
     FrzTrcP1Disposition.READY_FOR_INDEPENDENT_CLOSURE_REVIEW
 )
 
-FRZ_TRC_02_DISPOSITION: Final[FrzTrcP1Disposition] = FrzTrcP1Disposition.BLOCKED
+FRZ_TRC_02_DISPOSITION: Final[FrzTrcP1Disposition] = (
+    FrzTrcP1Disposition.READY_FOR_INDEPENDENT_CLOSURE_REVIEW
+)
 
-P1_READINESS: Final[P1ReadinessStatus] = P1ReadinessStatus.BLOCKED
+P1_READINESS: Final[P1ReadinessStatus] = P1ReadinessStatus.READY_FOR_AUDIT
 
-EXECUTED_CHILD_WITHOUT_DURABLE_PARENT_EDGE: Final[bool] = True
+EXECUTED_CHILD_WITHOUT_DURABLE_PARENT_EDGE: Final[bool] = False
 
 ENTERPRISE_AUDIT_MATRIX_P1: Final[tuple[P1EnterpriseAuditRow, ...]] = (
     P1EnterpriseAuditRow("transport/runtime identity domain separation", P1GateResult.PASS),
@@ -383,13 +366,13 @@ ENTERPRISE_AUDIT_MATRIX_P1: Final[tuple[P1EnterpriseAuditRow, ...]] = (
     P1EnterpriseAuditRow("corrupt lineage fail-closed", P1GateResult.PASS),
     P1EnterpriseAuditRow("missing lineage not fabricated", P1GateResult.PASS),
     P1EnterpriseAuditRow("degraded lineage semantics", P1GateResult.PASS),
-    P1EnterpriseAuditRow("nested child after non-durable parent", P1GateResult.PASS),
+    P1EnterpriseAuditRow("strict child admission on lineage unavailable", P1GateResult.PASS),
     P1EnterpriseAuditRow("contracts over implementations", P1GateResult.PASS),
     P1EnterpriseAuditRow("strong typing", P1GateResult.PASS),
     P1EnterpriseAuditRow("pluginability / replaceability", P1GateResult.PASS),
     P1EnterpriseAuditRow("Governance/Execution separation", P1GateResult.PASS),
     P1EnterpriseAuditRow("tenant isolation P1", P1GateResult.PASS),
-    P1EnterpriseAuditRow("FRZ-TRC-02 readiness", P1GateResult.BLOCKED),
+    P1EnterpriseAuditRow("FRZ-TRC-02 readiness", P1GateResult.PASS),
     P1EnterpriseAuditRow("FRZ-TRC-12 readiness", P1GateResult.PASS),
 )
 

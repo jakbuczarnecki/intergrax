@@ -14,7 +14,6 @@ from intergrax.contracts.execution_lineage import (
 )
 from intergrax.runtime.execution.lineage.active_lineage import (
     mark_attempt_lineage_degraded,
-    mark_execution_lineage_non_durable,
 )
 
 
@@ -101,7 +100,7 @@ class ExecutionLineageChildAdmissionHook:
             except ExecutionLineageUnavailableError:
                 raise
             mark_attempt_lineage_degraded()
-            mark_execution_lineage_non_durable(self._execution_id)
+            raise
         except ExecutionLineageIntegrityError:
             raise
 
