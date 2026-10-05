@@ -1041,3 +1041,19 @@ STATE_X_R3_R3_A1_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/qualification/state_x/test_state_x_p0_baseline.py",
     },
 )
+
+STATE_X_R5_PRE_AUDIT_HEAD: Final[str] = "61faf8f317125b996526ceceaf5754b9c28073d6"
+
+STATE_X_R5_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
+    {
+        "docs/project/maintainers/plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md",
+        "docs/project/maintainers/qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md",
+        "docs/project/maintainers/qualification/STATE_X_R4_TASK_CHECKPOINT_RESTORE_INTEGRITY_CERTIFICATION.md",
+        "docs/project/maintainers/qualification/STATE_X_R5_BACKUP_RESTORE_RESPONSIBILITY_CERTIFICATION.md",
+        "tests/qualification/state_x/_r5_backup_restore_support.py",
+        "tests/qualification/state_x/_r5_backup_restore_qualification_tests.py",
+        "tests/qualification/state_x/test_state_x_r5_backup_restore.py",
+        "tests/qualification/state_x/inventory.py",
+        "tests/qualification/state_x/test_state_x_p0_baseline.py",
+    },
+)

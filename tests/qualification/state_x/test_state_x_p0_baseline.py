@@ -41,6 +41,8 @@ from tests.qualification.state_x.inventory import (
     STATE_X_R4_ALLOWLIST_PATHS,
     STATE_X_R4_PRE_AUDIT_HEAD,
     STATE_X_R4_R1_ALLOWLIST_PATHS,
+    STATE_X_R5_ALLOWLIST_PATHS,
+    STATE_X_R5_PRE_AUDIT_HEAD,
     StateFamilyInventoryEntry,
 )
 
@@ -362,6 +364,7 @@ def test_sx_p0_q24_no_production_file_changed_since_audited_head() -> None:
         | STATE_X_R3_R5_R1_R1_ALLOWLIST_PATHS
         | STATE_X_R4_ALLOWLIST_PATHS
         | STATE_X_R4_R1_ALLOWLIST_PATHS
+        | STATE_X_R5_ALLOWLIST_PATHS
     )
     scoped_child_allowlist = (
         STATE_X_R1_ALLOWLIST_PATHS
@@ -379,6 +382,7 @@ def test_sx_p0_q24_no_production_file_changed_since_audited_head() -> None:
         | STATE_X_R3_R5_R1_R1_ALLOWLIST_PATHS
         | STATE_X_R4_ALLOWLIST_PATHS
         | STATE_X_R4_R1_ALLOWLIST_PATHS
+        | STATE_X_R5_ALLOWLIST_PATHS
     )
     for path in changed:
         normalized = path.replace("\\", "/")

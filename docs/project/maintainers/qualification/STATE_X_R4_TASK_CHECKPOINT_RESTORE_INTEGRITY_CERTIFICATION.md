@@ -3,12 +3,14 @@
 | Field | Value |
 | --- | --- |
 | PRE_AUDIT_HEAD / START_HEAD (R4) | `716ed746f8b463681db536804235cedc86adc162` |
+| **Independent acceptance SHA (R4 / R4-R1 / R4-R1-Q1)** | **`61faf8f317125b996526ceceaf5754b9c28073d6`** |
 | R4-R1 START_HEAD | `6a8252548a8fb81830afac8534acbd5183f9df95` |
 | STATE-X-R4-R1-Q1 START_HEAD | `08c9be388e8cfbe1c0271f153497aa748db356b6` |
 | Scope | TaskCheckpoint → validated restore → Task materialization → execution re-entry |
 | Canonical restore validator | `intergrax/runtime/long_running/checkpoint_resume_validation.py` |
 | Canonical persistence owner | `TaskCheckpointPersistence` |
-| Status (Cursor) | **READY FOR AUDIT** — not CLOSED |
+| Status (independent audit) | **CLOSED** @ `61faf8f317125b996526ceceaf5754b9c28073d6` |
+| Status (Cursor bookkeeping) | Reconciled; **STATE-X-R5** is current mandatory child |
 
 ## Prior accepted reconciliation
 
@@ -62,7 +64,7 @@ Behavioral evidence (no patch of `_reconcile_resume_identity`):
 - `test_r4_r1_worker_recovery_wrong_task_checkpoint_denied`
 - `test_r4_r1_worker_recovery_invalid_checkpoint_fail_closed`
 
-Prior report **Q47**: documentation numbering error (DG-001 lineage matrix), not STATE-X-R4 Q01–Q40.
+Prior report **Q47**: documentation numbering error (DG-001 lineage matrix), **not** STATE-X-R4 mechanical Q01–Q40. R4-R1-Q1 evidence matrix below maps **R4-R1-Q1** pytest rows; R4 qualification file uses overlapping `test_r4_q*` names — do not conflate DG-001 with R4-Q47.
 
 ## STATE-X-R4-R1-Q1 — behavioral evidence matrix (R4-Q01..Q40)
 
