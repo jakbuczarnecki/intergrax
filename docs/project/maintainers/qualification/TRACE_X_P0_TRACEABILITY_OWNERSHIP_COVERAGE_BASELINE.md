@@ -12,11 +12,19 @@
 
 **R1 remediation START_HEAD:** `a2eb3d6e1e748e99a0f0430b32f6a44f25345696`
 
-**R1 FINAL_COMMIT:** recorded by final task report / independent GitHub audit (no self-pin in qualification code)
+**Final independent accepted P0 HEAD (evidence/code):** `3a6030deb2cd05f080efeee83a5d1060fa3704de`
+
+**P0 closure bookkeeping:** first `development` commit after evidence SHA `3a6030deb…` (docs-only; see task report — not P0 evidence baseline).
 
 **Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p0_support.py`
 
-**Status:** TRACE-X-P0 = **BLOCKED PENDING INDEPENDENT R1 AUDIT** · TRACE-X-P0-R1 = **READY FOR AUDIT**
+**Status:** TRACE-X-P0-R1 = **CLOSED / INDEPENDENTLY ACCEPTED** · TRACE-X-P0 = **CLOSED / INDEPENDENTLY ACCEPTED**
+
+**Accepted evidence/code SHA:** `3a6030deb2cd05f080efeee83a5d1060fa3704de`
+
+**Independent closure reason:** (1) closed-world gate covers all sensitive categories; (2) SHA provenance separated from exact final independent audit SHA; (3) P1–P6 child mapping mechanically consistent.
+
+**Closed-world evidence @ accepted SHA:** sensitive categories Reconstructor, CausalEvidence, LineageReader, LineageWriter, LineagePersistence — discovered **17**, registry **17**, unclassified **0**, invalid surface refs **0**, unexplained orphans **0**. Sentinels: UnknownReconstructor / UnknownCausalEvidence / UnknownLineageReader / UnknownLineageWriter / UnknownLineagePersistence → **FAIL**.
 
 ---
 
@@ -39,7 +47,7 @@
 | Branch | `development` |
 | P0 baseline commit | `6be91ed91e3132dddd77d1fb14312bf23870e4e1` |
 | R1 START_HEAD | `a2eb3d6e1e748e99a0f0430b32f6a44f25345696` |
-| FINAL_COMMIT | See Cursor final report / GitHub SHA after R1 commit |
+| Final independent accepted P0 HEAD | `3a6030deb2cd05f080efeee83a5d1060fa3704de` |
 | Production delta | **0** |
 
 ---
@@ -160,7 +168,9 @@ FRZ-OBS-01..07 remain **OPEN** supporting evidence only. P0 references OBS-TRACE
 
 `TRACE_X_CHILD_DECOMPOSITION`: TRACE-X-P1 .. TRACE-X-P6 + TRACE-X-CERT (derived from inventory gaps, not invented scope).
 
-**Recommended parent:** TRACE-X = **CURRENT / BLOCKED PENDING P0 CLOSURE**
+**Recommended parent:** TRACE-X = **CURRENT / MANDATORY** · P0 **CLOSED** · **NEXT CHILD = TRACE-X-P1**
+
+**Canonical child → FRZ mapping (steering baseline):** P1 → FRZ-TRC-02, FRZ-TRC-12; P2 → FRZ-TRC-01; P3 → FRZ-TRC-03, FRZ-TRC-04, FRZ-TRC-06; P4 → FRZ-TRC-05; P5 → FRZ-TRC-07, FRZ-TRC-08, FRZ-TRC-11; P6 → FRZ-TRC-09, FRZ-TRC-10; TRACE-X-CERT → FRZ-TRC-01..12. P2..P6 + CERT = **NOT ENTERED**.
 
 ---
 
