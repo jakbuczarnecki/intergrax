@@ -7,7 +7,8 @@
 | R5 structural baseline SHA | `3e12503b8677e06d4a032983eb1d28d35761fb4c` |
 | Scope | FRZ-REC-08 — backup/restore responsibility, physical units, semantic recovery sets, restore validation |
 | Production delta | **0** |
-| Status (Cursor) | **STATE-X-R5-Q1 READY FOR AUDIT** — R5 parent **BLOCKED PENDING INDEPENDENT Q1 AUDIT** |
+| R5 accepted closure SHA | `bcd8157065cc649412b64e9d6ada34be92d4b6a3` |
+| Status (Cursor) | **STATE-X-R5 CLOSED** @ accepted SHA; **STATE-X-R6** is next mandatory child |
 
 ## R4 reconciliation
 
@@ -185,14 +186,21 @@ result: PASS
 | TRACKED FREEZE DEBT | unchanged (FRZ-REC-05 next child) |
 | ENVIRONMENT/TEST ISSUE | Redis idempotency skips in R3-R2 (pre-existing) |
 
+## R5-Q1 closure @ `bcd8157065cc649412b64e9d6ada34be92d4b6a3`
+
+Independent audit accepted:
+
+- **STATE-X-R5-Q1** — CLOSED  
+- **STATE-X-R5** — CLOSED  
+- **FRZ-REC-08** — PASS (checklist scoped)
+
 ## Recommended status
 
 ```text
-STATE-X-R5-Q1 = READY FOR AUDIT
-STATE-X-R5 = BLOCKED PENDING INDEPENDENT Q1 AUDIT
+STATE-X-R5 = CLOSED @ bcd8157065cc649412b64e9d6ada34be92d4b6a3
+STATE-X-R6 = CURRENT / MANDATORY
 STATE-X = CURRENT
-FRZ-REC-08 = READY FOR INDEPENDENT CLOSURE REVIEW
-FRZ-REC-05 = OPEN
-next STATE-X child = NOT ENTERED
+FRZ-REC-08 = PASS @ accepted SHA (scoped)
+FRZ-REC-05 = OPEN (R6 primary)
 TRACE-X = NOT ENTERED
 ```
