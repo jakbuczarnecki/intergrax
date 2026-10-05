@@ -718,22 +718,87 @@ async def test_taskcpm_r17_hitl_pause_id_anti_forgery_still_enforced() -> None:
     checkpoint = _checkpoint()
     boundary, _ = _allow_boundary()
     runner = AsyncMock(spec=UnifiedTaskRunner)
-    with pytest.raises(HitlResumeValidationError, match="pause_id conflicts"):
-        await governed_resume_checkpoint_task(
-            runner,
-            task_id=str(_TASK_ID),
-            tenant_id=_TENANT,
-            resume_token=_RESUME_TOKEN,
-            mutation_id=_MUTATION_ID,
-            principal=_principal(),
-            mutation_boundary=boundary,
-            checkpoint_store=_StaticCheckpointStore(checkpoint),
-            operator_input={
-                "verdict": "approve",
-                "pause_id": "FORGED",
-            },
-            approver=local_development_approver_evidence(tenant_id=_TENANT),
-        )
+    with patch(
+        "intergrax.applications._shared.task_control._resume_task_with_token",
+        new_callable=AsyncMock,
+    ) as resume_call:
+        with pytest.raises(HitlResumeValidationError, match="pause_id conflicts"):
+            await governed_resume_checkpoint_task(
+                runner,
+                task_id=str(_TASK_ID),
+                tenant_id=_TENANT,
+                resume_token=_RESUME_TOKEN,
+                mutation_id=_MUTATION_ID,
+                principal=_principal(),
+                mutation_boundary=boundary,
+                checkpoint_store=_StaticCheckpointStore(checkpoint),
+                operator_input={
+                    "verdict": "approve",
+                    "pause_id": "FORGED",
+                },
+                approver=local_development_approver_evidence(tenant_id=_TENANT),
+            )
+    assert resume_call.await_count == 0
+
+
+@pytest.mark.asyncio
+async def test_taskcpm_r17b_hitl_human_request_id_anti_forgery_still_enforced() -> None:
+    checkpoint = _checkpoint()
+    boundary, _ = _allow_boundary()
+    runner = AsyncMock(spec=UnifiedTaskRunner)
+    with patch(
+        "intergrax.applications._shared.task_control._resume_task_with_token",
+        new_callable=AsyncMock,
+    ) as resume_call:
+        with pytest.raises(
+            HitlResumeValidationError,
+            match="human_request_id conflicts",
+        ):
+            await governed_resume_checkpoint_task(
+                runner,
+                task_id=str(_TASK_ID),
+                tenant_id=_TENANT,
+                resume_token=_RESUME_TOKEN,
+                mutation_id=_MUTATION_ID,
+                principal=_principal(),
+                mutation_boundary=boundary,
+                checkpoint_store=_StaticCheckpointStore(checkpoint),
+                operator_input={
+                    "verdict": "approve",
+                    "pause_id": _PAUSE_ID,
+                    "human_request_id": "HR-FORGED",
+                },
+                approver=local_development_approver_evidence(tenant_id=_TENANT),
+            )
+    assert resume_call.await_count == 0
+
+
+@pytest.mark.asyncio
+async def test_taskcpm_r21_operator_resume_missing_approver_zero_runner() -> None:
+    checkpoint = _checkpoint()
+    boundary, _ = _allow_boundary()
+    runner = AsyncMock(spec=UnifiedTaskRunner)
+    with patch(
+        "intergrax.applications._shared.task_control._resume_task_with_token",
+        new_callable=AsyncMock,
+    ) as resume_call:
+        with pytest.raises(
+            HitlResumeValidationError,
+            match="approver evidence required",
+        ):
+            await governed_resume_checkpoint_task(
+                runner,
+                task_id=str(_TASK_ID),
+                tenant_id=_TENANT,
+                resume_token=_RESUME_TOKEN,
+                mutation_id=_MUTATION_ID,
+                principal=_principal(),
+                mutation_boundary=boundary,
+                checkpoint_store=_StaticCheckpointStore(checkpoint),
+                operator_input={"verdict": "approve"},
+                approver=None,
+            )
+    assert resume_call.await_count == 0
 
 
 @pytest.mark.asyncio

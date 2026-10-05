@@ -985,6 +985,7 @@ STATE_X_R4_R1_ALLOWLIST_PATHS: Final[frozenset[str]] = frozenset(
         "tests/qualification/state_x/_r4_r1_restore_consumer_support.py",
         "tests/qualification/state_x/inventory.py",
         "tests/qualification/state_x/test_state_x_p0_baseline.py",
+        "tests/unit/applications/test_task_control_governed_resume.py",
     },
 )
 

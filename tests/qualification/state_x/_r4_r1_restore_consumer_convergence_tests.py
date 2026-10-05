@@ -11,7 +11,28 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
+from intergrax.fastapi_core.execution.models import ExecutionRequest as FastApiExecutionRequest
+from intergrax.runtime.background_execution.bootstrap import BackgroundExecutionIdentity
+from intergrax.runtime.execution.host_task import HostTaskExecutionPort
+from intergrax.runtime.long_running.execution_tree_checkpoint import minimal_runtime_checkpoint
+from intergrax.runtime.long_running.resume_planner import execution_identity_from_checkpoint
+from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
+from intergrax.runtime.task.task_contract import TaskExecutionOptions, TaskLongRunningOptions
+from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
+    terminal_task_result_exposure_no_decision_gate,
+)
+from intergrax.runtime.task.task_run_bridge import task_to_execution_payload
+from intergrax.runtime.task.worker_payload import encode_execution_request
 from intergrax.runtime.execution.execution_terminal.persistence import (
     terminal_capability_from_task_checkpoint_store,
 )
@@ -57,6 +78,107 @@ pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _TENANT = "tenant-r4-r1"
+_WORKER_RESUME_TOKEN = "rt-r4-r1-worker-recovery"
+
+
+def _worker_recovery_checkpoint(
+    *,
+    tenant_id: str = _TENANT,
+    task_id: str | None = None,
+    run_id: RunId | None = None,
+    attempt_id: AttemptId | None = None,
+    root_execution_id: ExecutionId | None = None,
+) -> TaskCheckpoint:
+    resolved_task_id = task_id or str(mint_task_id())
+    run_a = run_id or mint_run_id()
+    attempt_a2 = attempt_id or mint_attempt_id()
+    root_ea = root_execution_id or mint_execution_id()
+    task = Task(
+        task_id=resolved_task_id,
+        tenant_id=tenant_id,
+        user_id="user",
+        message="paused",
+        state=TaskState.WAITING_FOR_HUMAN,
+        options=TaskExecutionOptions(
+            long_running=TaskLongRunningOptions(
+                enabled=True,
+                resume_token=_WORKER_RESUME_TOKEN,
+            ),
+        ),
+    )
+    return TaskCheckpoint(
+        task_id=resolved_task_id,
+        tenant_id=tenant_id,
+        resume_token=_WORKER_RESUME_TOKEN,
+        task_state=TaskState.WAITING_FOR_HUMAN,
+        task_snapshot=task.model_dump(mode="json"),
+        runtime=minimal_runtime_checkpoint(
+            task_id=resolved_task_id,
+            run_id=run_a,
+            attempt_id=attempt_a2,
+            root_execution_id=root_ea,
+        ),
+    )
+
+
+def _worker_incoming_task(
+    *,
+    tenant_id: str,
+    task_id: str,
+) -> Task:
+    return Task(
+        task_id=task_id,
+        tenant_id=tenant_id,
+        user_id="user",
+        message="worker",
+        state=TaskState.CREATED,
+        options=TaskExecutionOptions(
+            long_running=TaskLongRunningOptions(
+                enabled=True,
+                resume_token=_WORKER_RESUME_TOKEN,
+            ),
+        ),
+    )
+
+
+def _worker_execution_identity(
+    *,
+    tenant_id: str,
+    task_id: str,
+    run_id: RunId,
+    attempt_id: AttemptId,
+    execution_id: ExecutionId,
+) -> BackgroundExecutionIdentity:
+    return BackgroundExecutionIdentity(
+        tenant_id=tenant_id,
+        task_id=TaskId(task_id),
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+    )
+
+
+def _encoded_worker_payload(
+    identity: BackgroundExecutionIdentity,
+    task: Task,
+) -> bytes:
+    return encode_execution_request(
+        FastApiExecutionRequest(
+            run_id=str(identity.run_id),
+            tenant_id=identity.tenant_id,
+            user_id="user",
+            input_payload=task_to_execution_payload(task),
+        )
+    )
+
+
+def _completed_worker_task_result(task_id: str) -> TaskResult:
+    return TaskResult(
+        task_id=task_id,
+        state=TaskState.COMPLETED,
+        answer="ok",
+        authoritative_decision_exposure=terminal_task_result_exposure_no_decision_gate(),
+    )
 
 
 def _hitl_paused_checkpoint(tenant_id: str = _TENANT) -> TaskCheckpoint:
@@ -317,7 +439,7 @@ async def test_r4_r1_q17_debug_hitl_executable_path_validates_before_host(
     cp = _hitl_paused_checkpoint()
     store = SQLiteTaskCheckpointStore(db_path=str(tmp_path / "hitl.db"))
     store.save(cp)
-    from intergrax.runtime.task.task_result_exposure import (
+    from intergrax.runtime.task.task_result_authoritative_exposure_defaults import (
         terminal_task_result_exposure_no_decision_gate,
     )
 
@@ -436,40 +558,205 @@ def test_r4_r1_q24_scheduler_timeout_when_only_replay() -> None:
 def test_r4_r1_q25_scheduled_metadata_authority_negative_replay() -> None:
     from tests.qualification.state_x import _r3_r4_qualification_tests as r34
 
-    assert hasattr(r34, "test_r3_r4_q20_q21_authority_metadata_rejected")
+    r34.test_r3_r4_q20_q21_authority_metadata_rejected("human_approved", True)
+    r34.test_r3_r4_q20_q21_authority_metadata_rejected("verdict", "approve")
+    r34.test_r3_r4_q22_other_authority_metadata_keys_rejected()
+    r34.test_r3_r4_q23_delayed_resume_no_synthetic_human_approval()
 
 
-def test_r4_r1_q26_post_authorization_stale_checkpoint_denied() -> None:
+@pytest.mark.asyncio
+async def test_r4_r1_q26_post_authorization_stale_checkpoint_denied() -> None:
     from tests.unit.applications import test_task_control_governed_resume as tcr
 
-    assert hasattr(tcr, "test_taskcpm_r14_checkpoint_identity_changes_after_allow_zero_runner")
+    await tcr.test_taskcpm_r14_checkpoint_identity_changes_after_allow_zero_runner()
+    await tcr.test_taskcpm_r15_checkpoint_run_id_conflict_zero_runner()
+    await tcr.test_taskcpm_r16_resume_token_stale_zero_runner()
 
 
-def test_r4_r1_q27_forged_pause_id_denied() -> None:
+@pytest.mark.asyncio
+async def test_r4_r1_q27_forged_pause_id_denied() -> None:
     from tests.unit.applications import test_task_control_governed_resume as tcr
 
-    assert hasattr(tcr, "test_taskcpm_r17_hitl_pause_id_anti_forgery_still_enforced")
+    await tcr.test_taskcpm_r17_hitl_pause_id_anti_forgery_still_enforced()
 
 
-def test_r4_r1_q28_forged_human_request_id_denied() -> None:
+@pytest.mark.asyncio
+async def test_r4_r1_q28_forged_human_request_id_denied() -> None:
     from tests.unit.applications import test_task_control_governed_resume as tcr
 
-    assert hasattr(tcr, "test_taskcpm_r17_hitl_pause_id_anti_forgery_still_enforced")
+    await tcr.test_taskcpm_r17b_hitl_human_request_id_anti_forgery_still_enforced()
 
 
-def test_r4_r1_q29_missing_approver_evidence_denied() -> None:
-    from tests.qualification.state_x import _r3_r3_qualification_tests as r33
+@pytest.mark.asyncio
+async def test_r4_r1_q29_missing_approver_evidence_denied() -> None:
+    from tests.unit.applications import test_task_control_governed_resume as tcr
 
-    assert hasattr(r33, "test_r3_r3_q12_missing_approver_provenance_fail_closed")
+    await tcr.test_taskcpm_r21_operator_resume_missing_approver_zero_runner()
 
 
-def test_r4_r1_q30_worker_recovery_identity_semantics() -> None:
-    src = (_REPO_ROOT / "intergrax/runtime/task/nexus_worker_execution.py").read_text(
-        encoding="utf-8",
+def test_r4_r1_q1_worker_recovery_positive_runtime_reconciles_identity(
+    tmp_path: Path,
+) -> None:
+    """Internal execution-engine recovery: real _reconcile_resume_identity path."""
+
+    run_a = mint_run_id()
+    attempt_a2 = mint_attempt_id()
+    root_ea = mint_execution_id()
+    checkpoint = _worker_recovery_checkpoint(
+        run_id=run_a,
+        attempt_id=attempt_a2,
+        root_execution_id=root_ea,
     )
-    assert "restore_if_resuming" in src
-    assert "tenant_id=execution_identity.tenant_id" in src
-    assert "execution_identity_from_checkpoint(restored)" in src
+    store = SQLiteTaskCheckpointStore(db_path=str(tmp_path / "worker-pos.db"))
+    store.save(checkpoint)
+
+    run_b = mint_run_id()
+    attempt_b2 = mint_attempt_id()
+    execution_eb = mint_execution_id()
+    identity = _worker_execution_identity(
+        tenant_id=_TENANT,
+        task_id=checkpoint.task_id,
+        run_id=run_b,
+        attempt_id=attempt_b2,
+        execution_id=execution_eb,
+    )
+    incoming_task = _worker_incoming_task(
+        tenant_id=_TENANT,
+        task_id=checkpoint.task_id,
+    )
+
+    port = AsyncMock(spec=HostTaskExecutionPort)
+    port.execute = AsyncMock(
+        return_value=_completed_worker_task_result(checkpoint.task_id),
+    )
+    runtime = NexusWorkerRuntime(port, checkpoint_store=store)
+    runtime.execute_payload(
+        _encoded_worker_payload(identity, incoming_task),
+        tenant_id=identity.tenant_id,
+        run_id=str(identity.run_id),
+        execution_identity=identity,
+    )
+
+    port.execute.assert_awaited_once()
+    host_task, kwargs = port.execute.await_args[0][0], port.execute.await_args.kwargs
+    checkpoint_run, checkpoint_attempt = execution_identity_from_checkpoint(checkpoint)
+    assert kwargs["run_id"] == checkpoint_run
+    assert kwargs["attempt_id"] == checkpoint_attempt
+    assert kwargs["resume_checkpoint"] is not None
+    assert kwargs["resume_checkpoint"].task_id == checkpoint.task_id
+    assert host_task.tenant_id == _TENANT
+    assert str(host_task.task_id) == checkpoint.task_id
+
+
+def test_r4_r1_q30_worker_recovery_identity_semantics(tmp_path: Path) -> None:
+    test_r4_r1_q1_worker_recovery_positive_runtime_reconciles_identity(tmp_path)
+
+
+def test_r4_r1_worker_recovery_cross_tenant_checkpoint_denied(tmp_path: Path) -> None:
+    checkpoint = _worker_recovery_checkpoint(tenant_id="tenant-a")
+    store = SQLiteTaskCheckpointStore(db_path=str(tmp_path / "worker-xtenant.db"))
+    store.save(checkpoint)
+
+    run_b = mint_run_id()
+    identity = _worker_execution_identity(
+        tenant_id="tenant-b",
+        task_id=checkpoint.task_id,
+        run_id=run_b,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    incoming_task = _worker_incoming_task(
+        tenant_id="tenant-b",
+        task_id=checkpoint.task_id,
+    )
+
+    port = AsyncMock(spec=HostTaskExecutionPort)
+    port.execute = AsyncMock(
+        return_value=_completed_worker_task_result(checkpoint.task_id),
+    )
+    runtime = NexusWorkerRuntime(port, checkpoint_store=store)
+    runtime.execute_payload(
+        _encoded_worker_payload(identity, incoming_task),
+        tenant_id=identity.tenant_id,
+        run_id=str(identity.run_id),
+        execution_identity=identity,
+    )
+
+    port.execute.assert_awaited_once()
+    _, kwargs = port.execute.await_args
+    assert kwargs["resume_checkpoint"] is None
+    assert kwargs["run_id"] == run_b
+
+
+def test_r4_r1_worker_recovery_wrong_task_checkpoint_denied(tmp_path: Path) -> None:
+    checkpoint = _worker_recovery_checkpoint()
+    store = SQLiteTaskCheckpointStore(db_path=str(tmp_path / "worker-wrong-task.db"))
+    store.save(checkpoint)
+
+    other_task_id = str(mint_task_id())
+    run_b = mint_run_id()
+    identity = _worker_execution_identity(
+        tenant_id=_TENANT,
+        task_id=other_task_id,
+        run_id=run_b,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    incoming_task = _worker_incoming_task(
+        tenant_id=_TENANT,
+        task_id=other_task_id,
+    )
+
+    port = AsyncMock(spec=HostTaskExecutionPort)
+    port.execute = AsyncMock(
+        return_value=_completed_worker_task_result(other_task_id),
+    )
+    runtime = NexusWorkerRuntime(port, checkpoint_store=store)
+    runtime.execute_payload(
+        _encoded_worker_payload(identity, incoming_task),
+        tenant_id=identity.tenant_id,
+        run_id=str(identity.run_id),
+        execution_identity=identity,
+    )
+
+    port.execute.assert_awaited_once()
+    _, kwargs = port.execute.await_args
+    assert kwargs["resume_checkpoint"] is None
+    assert kwargs["run_id"] == run_b
+
+
+def test_r4_r1_worker_recovery_invalid_checkpoint_fail_closed(tmp_path: Path) -> None:
+    checkpoint = _worker_recovery_checkpoint()
+    corrupt = checkpoint.model_copy(update={"task_snapshot": {}})
+    store = SQLiteTaskCheckpointStore(db_path=str(tmp_path / "worker-corrupt.db"))
+    store.save(corrupt)
+
+    run_b = mint_run_id()
+    identity = _worker_execution_identity(
+        tenant_id=_TENANT,
+        task_id=checkpoint.task_id,
+        run_id=run_b,
+        attempt_id=mint_attempt_id(),
+        execution_id=mint_execution_id(),
+    )
+    incoming_task = _worker_incoming_task(
+        tenant_id=_TENANT,
+        task_id=checkpoint.task_id,
+    )
+
+    port = AsyncMock(spec=HostTaskExecutionPort)
+    port.execute = AsyncMock(
+        return_value=_completed_worker_task_result(checkpoint.task_id),
+    )
+    runtime = NexusWorkerRuntime(port, checkpoint_store=store)
+    with pytest.raises(CheckpointResumeValidationError):
+        runtime.execute_payload(
+            _encoded_worker_payload(identity, incoming_task),
+            tenant_id=identity.tenant_id,
+            run_id=str(identity.run_id),
+            execution_identity=identity,
+        )
+    port.execute.assert_not_called()
 
 
 def test_r4_r1_q31_worker_cross_tenant_checkpoint_impossible(tmp_path: Path) -> None:

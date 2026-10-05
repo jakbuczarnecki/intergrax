@@ -99,7 +99,7 @@ R4_R1_TASK_CHECKPOINT_CONSUMERS: Final[tuple[TaskCheckpointConsumerRecord, ...]]
         can_influence_governance=False,
         tenant_binding="execution_identity.tenant_id preserved",
         authority_handling="checkpoint run/attempt after canonical restore",
-        qualification_test="test_r4_r1_q30_worker_recovery_identity_semantics",
+        qualification_test="test_r4_r1_q1_worker_recovery_positive_runtime_reconciles_identity",
     ),
     TaskCheckpointConsumerRecord(
         file="intergrax/runtime/execution/suspended_operation/reentry_coordinator.py",
