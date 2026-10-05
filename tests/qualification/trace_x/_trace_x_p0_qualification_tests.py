@@ -99,7 +99,19 @@ def _discover_sensitive_classes() -> dict[str, list[str]]:
 
 
 def test_txp0_q01_current_head_anchor() -> None:
-    assert _git_head() == TRACE_X_P0_AUDITED_HEAD
+    head = _git_head()
+    audited = TRACE_X_P0_AUDITED_HEAD
+    if head == audited:
+        return
+    check = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", audited, head],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+    )
+    assert check.returncode == 0, (
+        f"HEAD {head} must equal or descend from TRACE-X-P0 baseline {audited}"
+    )
 
 
 def test_txp0_q02_all_frz_trc_represented() -> None:

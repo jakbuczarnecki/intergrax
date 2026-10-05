@@ -6,7 +6,9 @@
 
 **START_HEAD:** `9c68b47dcd30f328f1acd530af13bb32f860507f`
 
-**AUDITED_HEAD / FINAL_COMMIT:** `6be91ed91e3132dddd77d1fb14312bf23870e4e1`
+**AUDITED_HEAD (baseline commit):** `6be91ed91e3132dddd77d1fb14312bf23870e4e1`
+
+**FINAL_COMMIT (bookkeeping):** `fe0868254d2cf0b6cc5015dbd7e8640f756dc8fe` (HEAD anchor pin; Q01 accepts baseline ancestor)
 
 **Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p0_support.py`
 
@@ -19,7 +21,9 @@
 | Field | Value |
 |---|---|
 | Branch | `development` |
-| START_HEAD / AUDITED_HEAD | `6be91ed91e3132dddd77d1fb14312bf23870e4e1` (baseline commit; task START_HEAD `9c68b47d…`) |
+| Baseline commit | `6be91ed91e3132dddd77d1fb14312bf23870e4e1` |
+| Task START_HEAD | `9c68b47dcd30f328f1acd530af13bb32f860507f` |
+| FINAL_COMMIT | `fe0868254d2cf0b6cc5015dbd7e8640f756dc8fe` (after HEAD-pin bookkeeping) |
 | Production delta | **0** |
 
 ---
