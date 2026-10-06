@@ -15,7 +15,7 @@ Primary freeze gate: **FRZ-TRC-05** → **OPEN** until independent audit on GitH
 | Field | Value |
 |-------|-------|
 | START_HEAD | `bef997db3fd40eab7d47ca605f12dcd0145bcb0e` |
-| FINAL_COMMIT | *(set at commit — see git log)* |
+| FINAL_COMMIT | `36d1733d8a4eca34861135029bb02fbb9f62e876` |
 
 ### Production composition closed world (R5)
 
