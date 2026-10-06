@@ -73,6 +73,24 @@ def _orchestrator_create(
     return step, calls_before
 
 
+def test_gov1_missing_active_governance_identity_fails_before_provider() -> None:
+    fake = DeterministicExternalWorkFake()
+    task_id, run_id, attempt_id, execution_id = default_gr3_identity_bundle()
+    runtime, _ = _build_runtime(fake, task_id)
+    step, calls_before = _orchestrator_create(
+        runtime,
+        fake,
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        tenant_id=_TENANT,
+        bind_governance=False,
+    )
+    assert step.reason == "canonical_governance_identity_required"
+    assert fake.create_calls == calls_before
+
+
 def test_tid1_missing_active_task_fails_before_provider() -> None:
     fake = DeterministicExternalWorkFake()
     task_id, run_id, attempt_id, execution_id = default_gr3_identity_bundle()
@@ -231,3 +249,36 @@ def test_cross_tenant_negative_no_provider_and_no_ger() -> None:
     assert fake.create_calls == 0
     assert step.governed_result is None
     assert step.receipt is None
+
+
+def test_p3r1r1_z99_mechanical_pass1_closure_evidence() -> None:
+    from tests.qualification.trace_x._trace_x_p3_r1_pass1_session import PASS1_PASSED_NODEIDS
+    from tests.qualification.trace_x._trace_x_p3_r1_support import (
+        ENTERPRISE_AUDIT_MATRIX_GATE_IDS,
+        ENTERPRISE_AUDIT_MATRIX_P3_R1,
+        ENTERPRISE_AUDIT_MATRIX_ROW_GATES,
+        P3_R1_R1_GATE_BY_ID,
+        P3_R1_R1_Q_BLK_01_RESOLUTION,
+        R1GateResult,
+        TENANT_ISOLATION_AUDIT_P3_R1_R1,
+        normalize_pytest_nodeid,
+        observed_audit_row_result,
+        observed_gate_passed,
+    )
+
+    passed = {normalize_pytest_nodeid(nodeid) for nodeid in PASS1_PASSED_NODEIDS}
+    cross_tenant = normalize_pytest_nodeid(TENANT_ISOLATION_AUDIT_P3_R1_R1["cross_tenant_path"])
+    assert cross_tenant in passed
+    assert observed_gate_passed("TXP3R1R1-Q17", passed)
+    for row in ENTERPRISE_AUDIT_MATRIX_P3_R1:
+        gate_ids = ENTERPRISE_AUDIT_MATRIX_ROW_GATES[row.area]
+        observed = observed_audit_row_result(row.area, passed, pass1_only=True)
+        assert observed is R1GateResult.PASS, (
+            f"{row.area} gates={gate_ids} observed={observed}"
+        )
+        if row.area in ENTERPRISE_AUDIT_MATRIX_GATE_IDS:
+            for gate_id in ENTERPRISE_AUDIT_MATRIX_GATE_IDS[row.area]:
+                if not P3_R1_R1_GATE_BY_ID[gate_id].pass1_required:
+                    continue
+                assert observed_gate_passed(gate_id, passed), gate_id
+    assert P3_R1_R1_Q_BLK_01_RESOLUTION.startswith("RESOLVED")

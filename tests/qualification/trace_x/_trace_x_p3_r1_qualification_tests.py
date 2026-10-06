@@ -63,13 +63,21 @@ from intergrax.contracts.provider_invocation import (
 )
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from tests.qualification.trace_x._trace_x_p3_r1_support import (
+    CLOSED_WORLD_INVENTORY,
     ENTERPRISE_AUDIT_MATRIX_GATE_IDS,
     ENTERPRISE_AUDIT_MATRIX_P3_R1,
+    ENTERPRISE_AUDIT_MATRIX_ROW_GATES,
     MANDATORY_FRZ_P3_R1_IDS,
+    P3_R1_R1_GATE_BY_ID,
+    P3_R1_R1_GATE_REGISTRY,
+    P3_R1_R1_Q_BLK_01_RESOLUTION,
+    PASS1_MECHANICAL_NODEIDS,
     R1GateResult,
     TENANT_ISOLATION_AUDIT_P3_R1_R1,
+    TRACE_X_P3_R1_R1_Q1_START_HEAD,
     TRACE_X_P3_R1_R1_START_HEAD,
     TRACE_X_P3_R1_START_HEAD,
+    assert_nodeid_targets_test_function,
 )
 
 _REPO = repo_root()
@@ -349,11 +357,54 @@ def test_txp3r1_q33_strong_typing_no_any_on_v2_identity() -> None:
     assert hints["task_id"].annotation is TaskId
 
 
-def test_txp3r1_enterprise_audit_matrix_all_pass() -> None:
-    for row in ENTERPRISE_AUDIT_MATRIX_P3_R1:
-        assert row.result is R1GateResult.PASS
-        if row.area in ENTERPRISE_AUDIT_MATRIX_GATE_IDS:
-            assert ENTERPRISE_AUDIT_MATRIX_GATE_IDS[row.area]
+def test_txp3r1r1q1_q01_production_delta_zero() -> None:
+    baseline = TRACE_X_P3_R1_R1_Q1_START_HEAD
+    subprocess.run(["git", "cat-file", "-e", f"{baseline}^{{commit}}"], cwd=_REPO, check=True)
+    diff = subprocess.check_output(
+        [
+            "git",
+            "diff",
+            "--name-only",
+            baseline,
+            "--",
+            "intergrax/",
+            "applications/governed_contractor_application/host/",
+        ],
+        cwd=_REPO,
+        text=True,
+    ).strip()
+    assert diff == "", f"production paths changed in Q1 scope: {diff}"
+
+
+def test_txp3r1r1_q1_q1_start_head_provenance() -> None:
+    head = _git_head()
+    start = TRACE_X_P3_R1_R1_Q1_START_HEAD
+    subprocess.run(["git", "cat-file", "-e", f"{start}^{{commit}}"], cwd=_REPO, check=True)
+    assert _git_is_ancestor(start, head)
+
+
+def test_txp3r1r1_gate_registry_mechanical_integrity() -> None:
+    gate_ids = {row.gate_id for row in P3_R1_R1_GATE_REGISTRY}
+    assert len(gate_ids) == len(P3_R1_R1_GATE_REGISTRY)
+    referenced: set[str] = set()
+    for gate_tuple in ENTERPRISE_AUDIT_MATRIX_GATE_IDS.values():
+        referenced.update(gate_tuple)
+    for gate_tuple in ENTERPRISE_AUDIT_MATRIX_ROW_GATES.values():
+        referenced.update(gate_tuple)
+    assert referenced.issubset(gate_ids)
+    for gate_id in gate_ids:
+        if gate_id == "TXP3R1R1Q1-Q01":
+            continue
+        assert gate_id.startswith("TXP3R1R1-Q")
+    for row in P3_R1_R1_GATE_REGISTRY:
+        assert_nodeid_targets_test_function(row.test_nodeid)
+
+
+def test_txp3r1r1_closed_world_inventory_classified() -> None:
+    assert CLOSED_WORLD_INVENTORY
+    categories = {category for _, category in CLOSED_WORLD_INVENTORY}
+    assert "Execution identity" in categories
+    assert "Governance/tenant" in categories
 
 
 def test_txp3r1r1_q01_r1_start_head_ancestry() -> None:
@@ -556,7 +607,68 @@ def test_txp3r1r1_q15_receipt_preserves_tenant() -> None:
 
 def test_txp3r1r1_tenant_isolation_audit_complete() -> None:
     assert TENANT_ISOLATION_AUDIT_P3_R1_R1["tenant_scope_applicable"] == "YES"
+    assert TENANT_ISOLATION_AUDIT_P3_R1_R1["fail_closed_behavior"]
     assert TENANT_ISOLATION_AUDIT_P3_R1_R1["result"] == "PASS"
+
+
+def test_txp3r1r1_q23_atomic_provider_execution_attribution_in_ebe_v2() -> None:
+    ger = _ger_v2(tenant_id="tenant-attr")
+    event = compose_execution_boundary_event_v2_from_result(ger, event_id="ebe-attr")
+    assert str(event.execution.execution_id) == str(ger.execution_id)
+    assert str(event.execution.task_id) == str(ger.task_id)
+    assert event.provider_invocation.invocation_id == ger.provider_invocation.invocation_id
+    assert event.tenant_id == ger.tenant_id
+
+
+def test_txp3r1r1_q21_reliability_projection_non_authoritative() -> None:
+    from applications.governed_contractor_application.tests.host.test_gr7_a8_r1_early_lifecycle_evidence_wiring import (
+        test_observer_failure_does_not_block_success_path,
+    )
+
+    test_observer_failure_does_not_block_success_path()
+
+
+def test_txp3r1r1_q25_governance_not_execution() -> None:
+    from tests.qualification.trace_x._trace_x_p3_qualification_tests import (
+        test_txp3_q24_governance_not_execution,
+    )
+
+    test_txp3_q24_governance_not_execution()
+
+
+def test_txp3r1r1_q28_no_heuristic_provider_join() -> None:
+    from tests.qualification.trace_x._trace_x_p3_qualification_tests import (
+        test_txp3_q14_no_heuristic_provider_join,
+    )
+
+    test_txp3_q14_no_heuristic_provider_join()
+
+
+def test_txp3r1r1_q26_exactly_one_compose_owner() -> None:
+    compose_path = _REPO / "intergrax/runtime/execution_evidence/compose.py"
+    text = compose_path.read_text(encoding="utf-8")
+    assert "def compose_execution_boundary_event_v2_from_result" in text
+    assert text.count("def compose_execution_boundary_event_v2_from_result") == 1
+
+
+def test_txp3r1r1_q29_frz_trc_04_readiness_evidence() -> None:
+    for gate_id in ENTERPRISE_AUDIT_MATRIX_GATE_IDS["FRZ-TRC-04 readiness"]:
+        assert gate_id in P3_R1_R1_GATE_BY_ID
+    assert P3_R1_R1_Q_BLK_01_RESOLUTION.startswith("RESOLVED")
+
+
+def test_txp3r1r1_q30_frz_trc_06_readiness_evidence() -> None:
+    for gate_id in ENTERPRISE_AUDIT_MATRIX_GATE_IDS["FRZ-TRC-06 readiness"]:
+        assert gate_id in P3_R1_R1_GATE_BY_ID
+
+
+def test_txp3r1r1_pass1_mechanical_nodeid_manifest() -> None:
+    assert PASS1_MECHANICAL_NODEIDS
+    for nodeid in PASS1_MECHANICAL_NODEIDS:
+        assert_nodeid_targets_test_function(nodeid)
+    for gate_id, evidence in P3_R1_R1_GATE_BY_ID.items():
+        if evidence.pass1_required:
+            assert evidence.test_nodeid in PASS1_MECHANICAL_NODEIDS
 
 
 def test_txp3r1_q23_v2_receipt_event_pair_valid() -> None:
