@@ -185,10 +185,12 @@ def test_default_production_runtime_uses_dynamic_utc_not_fixed_fallback() -> Non
     task_id, run_id, _, _ = default_gr3_identity_bundle()
     fake = DeterministicExternalWorkFake()
     runtime = _build_runtime(fake, task_id, clock=None)
+    dynamic_exec = mint_execution_id()
     with bound_gr3_active_execution(
         run_id=run_id,
         attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
+        execution_id=dynamic_exec,
+        task_id=task_id,
     ):
         step = runtime.orchestrator.create(
             task_id=str(task_id),
@@ -196,7 +198,7 @@ def test_default_production_runtime_uses_dynamic_utc_not_fixed_fallback() -> Non
             principal_id=_PRINCIPAL,
             tenant_id=_TENANT,
             metadata=_create_meta(str(task_id), str(run_id)),
-            execution_id="exec-gr6t1-dynamic-clock",
+            execution_id=dynamic_exec,
         )
     assert step.adapter_result is not None
     decision = step.adapter_result.policy_decision
@@ -207,7 +209,7 @@ def test_default_production_runtime_uses_dynamic_utc_not_fixed_fallback() -> Non
     assert evaluated_at != _HISTORICAL_FIXED_PRODUCTION_CLOCK
     assert evaluated_at.tzinfo is not None
 
-    ger = runtime.orchestrator.get_result("exec-gr6t1-dynamic-clock")
+    ger = runtime.orchestrator.get_result(str(dynamic_exec))
     assert ger is not None
     assert ger.execution_started_at != _HISTORICAL_FIXED_PRODUCTION_CLOCK
     assert ger.execution_completed_at != _HISTORICAL_FIXED_PRODUCTION_CLOCK
@@ -217,10 +219,12 @@ def test_injected_clock_is_shared_between_policy_evaluator_and_orchestrator() ->
     task_id, run_id, _, _ = default_gr3_identity_bundle()
     fake = DeterministicExternalWorkFake()
     runtime = _build_runtime(fake, task_id, clock=lambda: _T0)
+    shared_exec = mint_execution_id()
     with bound_gr3_active_execution(
         run_id=run_id,
         attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
+        execution_id=shared_exec,
+        task_id=task_id,
     ):
         step = runtime.orchestrator.create(
             task_id=str(task_id),
@@ -228,7 +232,7 @@ def test_injected_clock_is_shared_between_policy_evaluator_and_orchestrator() ->
             principal_id=_PRINCIPAL,
             tenant_id=_TENANT,
             metadata=_create_meta(str(task_id), str(run_id)),
-            execution_id="exec-gr6t1-shared-clock",
+            execution_id=shared_exec,
         )
     assert step.adapter_result is not None
     decision = step.adapter_result.policy_decision
@@ -238,7 +242,7 @@ def test_injected_clock_is_shared_between_policy_evaluator_and_orchestrator() ->
     assert runtime.policy_evaluator.last_evaluation is not None
     assert runtime.policy_evaluator.last_evaluation.evaluated_at == _T0
 
-    ger = runtime.orchestrator.get_result("exec-gr6t1-shared-clock")
+    ger = runtime.orchestrator.get_result(str(shared_exec))
     assert ger is not None
     assert ger.execution_started_at == _T0
     assert ger.execution_completed_at == _T0

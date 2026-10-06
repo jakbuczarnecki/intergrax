@@ -212,6 +212,7 @@ def _create_step(
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
+        task_id=task_id,
     ):
         step = runtime.orchestrator.create(
             task_id=str(task_id),
@@ -219,7 +220,7 @@ def _create_step(
             principal_id=_PRINCIPAL,
             tenant_id=_TENANT,
             metadata=_create_meta(str(task_id), str(run_id), idempotency_key=idempotency_key),
-            execution_id="exec-gr7a2",
+            execution_id=execution_id,
         )
     return step, fake
 

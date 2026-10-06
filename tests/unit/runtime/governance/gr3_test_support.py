@@ -96,11 +96,13 @@ def bound_gr3_active_execution(
     run_id: RunId,
     attempt_id: AttemptId,
     execution_id: ExecutionId,
+    task_id: TaskId | None = None,
 ) -> Iterator[None]:
     token = bind_active_execution_identity(
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
+        task_id=task_id,
     )
     try:
         yield

@@ -54,7 +54,10 @@ from governed_contractor_application.host.stores import (
     InMemoryProviderInvocationStore,
 )
 from intergrax.contracts.actor_identity import ActorIdentity, ActorKind
-from intergrax.contracts.execution_evidence.receipt import ProofReceipt
+from intergrax.contracts.execution_evidence.receipt import (
+    ProofReceiptV2,
+    parse_execution_evidence_proof_receipt_json,
+)
 from intergrax.contracts.external_work import QuoteAcceptanceEvidence
 from intergrax.contracts.external_work_provider_capabilities import (
     quote_first_partner_capability_fixture,
@@ -74,8 +77,13 @@ from intergrax.runtime.execution_evidence.verify import (
 from intergrax.runtime.policy.runtime_policy_bundle_evaluator import (
     RuntimePolicyBundleEvaluator,
 )
-from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
-from tests.unit.runtime.governance.gr3_test_support import bound_gr3_active_execution
+from intergrax.contracts.execution_identity import (
+    bind_active_execution_identity,
+    mint_attempt_id,
+    mint_execution_id,
+    reset_active_execution_identity,
+    validate_task_id,
+)
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
@@ -88,12 +96,17 @@ _PC_RUN = str(EXTERNAL_WORK_TEST_RUN_ID)
 
 @contextmanager
 def _active_pc_execution():
-    with bound_gr3_active_execution(
+    exec_id = mint_execution_id()
+    token = bind_active_execution_identity(
         run_id=_PC_RUN,
         attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
-    ):
-        yield
+        execution_id=exec_id,
+        task_id=validate_task_id(_PC_TASK),
+    )
+    try:
+        yield exec_id
+    finally:
+        reset_active_execution_identity(token)
 
 
 def _meta(idem: str = "idem-pc") -> dict[str, object]:
@@ -181,14 +194,14 @@ def _orch(
 def test_create_accept_cancel_distinct_invocation_ids() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, fake, _, _ = _orch(attestor=attestor)
-    with _active_pc_execution():
+    with _active_pc_execution() as create_exec:
         created = orch.create(
             task_id=_PC_TASK,
             run_id=_PC_RUN,
             principal_id="pc-user",
             tenant_id="pc-tenant",
             metadata=_meta("idem-create"),
-            execution_id="exec-create",
+            execution_id=create_exec,
         )
     assert created.governed_result is not None
     assert created.receipt is not None
@@ -196,13 +209,13 @@ def test_create_accept_cancel_distinct_invocation_ids() -> None:
     assert create_inv.startswith("inv-")
 
     orch.surface_continuation(
-        execution_id="exec-create",
+        execution_id=create_exec,
         adapter_result=created.adapter_result,  # type: ignore[arg-type]
         run_id=_PC_RUN,
     )
-    with _active_pc_execution():
+    with _active_pc_execution() as accept_exec:
         accepted = orch.accept(
-            execution_id="exec-accept",
+            execution_id=accept_exec,
             create_result=created.adapter_result,  # type: ignore[arg-type]
             acceptance=_acceptance(created.adapter_result.quote.quote_id),  # type: ignore[union-attr]
             idempotency_key="idem-accept",
@@ -216,17 +229,18 @@ def test_create_accept_cancel_distinct_invocation_ids() -> None:
 
     # Fresh create for cancel path
     orch2, fake2, _, _ = _orch(attestor=attestor)
-    with _active_pc_execution():
+    with _active_pc_execution() as c2_exec:
         c2 = orch2.create(
             task_id=_PC_TASK,
             run_id=_PC_RUN,
             principal_id="pc-user",
             tenant_id="pc-tenant",
             metadata=_meta("idem-c2"),
-            execution_id="exec-c2",
+            execution_id=c2_exec,
         )
+    with _active_pc_execution() as cancel_exec:
         cancelled = orch2.cancel(
-            execution_id="exec-cancel",
+            execution_id=cancel_exec,
             create_result=c2.adapter_result,  # type: ignore[arg-type]
             principal_id="pc-user",
             tenant_id="pc-tenant",
@@ -255,14 +269,14 @@ def test_deny_zero_provider_calls() -> None:
     )
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, fake, _, _ = _orch(attestor=attestor, bundle=deny_bundle)
-    with _active_pc_execution():
+    with _active_pc_execution() as deny_exec:
         step = orch.create(
             task_id=_PC_TASK,
             run_id=_PC_RUN,
             principal_id="pc-user",
             tenant_id="pc-tenant",
             metadata=_meta(),
-            execution_id="exec-deny",
+            execution_id=deny_exec,
         )
     assert step.state is GovernedExternalWorkHostState.CREATE_POLICY_DENIED
     assert fake.create_calls == 0
@@ -272,19 +286,19 @@ def test_deny_zero_provider_calls() -> None:
 def test_continuation_zero_provider_calls() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, fake, _, _ = _orch(attestor=attestor)
-    with _active_pc_execution():
+    with _active_pc_execution() as cont_exec:
         created = orch.create(
             task_id=_PC_TASK,
             run_id=_PC_RUN,
             principal_id="pc-user",
             tenant_id="pc-tenant",
             metadata=_meta("idem-cont"),
-            execution_id="exec-cont",
+            execution_id=cont_exec,
         )
     create_calls = fake.create_calls
     accept_calls = fake.accept_calls
     surfaced = orch.surface_continuation(
-        execution_id="exec-cont",
+        execution_id=cont_exec,
         adapter_result=created.adapter_result,  # type: ignore[arg-type]
         run_id=_PC_RUN,
     )
@@ -299,14 +313,14 @@ def test_continuation_zero_provider_calls() -> None:
 def test_human_evidence_alone_does_not_accept() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, fake, _, _ = _orch(attestor=attestor)
-    with _active_pc_execution():
+    with _active_pc_execution() as _ev_exec:
         created = orch.create(
             task_id=_PC_TASK,
             run_id=_PC_RUN,
             principal_id="pc-user",
             tenant_id="pc-tenant",
             metadata=_meta("idem-ev"),
-            execution_id="exec-ev",
+            execution_id=_ev_exec,
         )
     _ = _acceptance(created.adapter_result.quote.quote_id)  # type: ignore[union-attr]
     assert fake.accept_calls == 0
@@ -317,19 +331,19 @@ def test_human_evidence_alone_does_not_accept() -> None:
 def test_accept_requires_fresh_policy_evaluation() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, fake, policy, _ = _orch(attestor=attestor)
-    with _active_pc_execution():
+    with _active_pc_execution() as _pol_create_exec:
         created = orch.create(
             task_id=_PC_TASK,
             run_id=_PC_RUN,
             principal_id="pc-user",
             tenant_id="pc-tenant",
             metadata=_meta("idem-pol-c"),
-            execution_id="exec-pol-c",
+            execution_id=_pol_create_exec,
         )
     calls_before = len(policy.calls)
-    with _active_pc_execution():
+    with _active_pc_execution() as pol_accept_exec:
         orch.accept(
-            execution_id="exec-pol-a",
+            execution_id=pol_accept_exec,
             create_result=created.adapter_result,  # type: ignore[arg-type]
             acceptance=_acceptance(created.adapter_result.quote.quote_id, "pol"),  # type: ignore[union-attr]
             idempotency_key="idem-pol-a",
@@ -345,14 +359,14 @@ def test_accept_requires_fresh_policy_evaluation() -> None:
 def test_bundle_artifact_verification_and_tamper() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, _, _, bundle = _orch(attestor=attestor)
-    with _active_pc_execution():
+    with _active_pc_execution() as bun_exec:
         created = orch.create(
             task_id=_PC_TASK,
             run_id=_PC_RUN,
             principal_id="pc-user",
             tenant_id="pc-tenant",
             metadata=_meta("idem-bun"),
-            execution_id="exec-bun",
+            execution_id=bun_exec,
         )
     assert created.receipt is not None
     assert created.receipt.policy_bundle_artifact is not None
@@ -418,21 +432,21 @@ def test_attestation_recovery_no_provider_repeat(tmp_path: Path) -> None:
         bundle_store=store,
         continuation_store=store,
     )
-    with _active_pc_execution():
+    with _active_pc_execution() as rec_exec:
         created = orch.create(
             task_id=_PC_TASK,
             run_id=_PC_RUN,
             principal_id="pc-user",
             tenant_id="pc-tenant",
             metadata=_meta("idem-rec"),
-            execution_id="exec-rec",
+            execution_id=rec_exec,
         )
     assert created.state is (
         GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTATION_FAILED
     )
     assert created.governed_result is not None
     create_calls = fake.create_calls
-    assert store.get_result("exec-rec") is not None
+    assert store.get_result(str(rec_exec)) is not None
 
     # New orchestrator instance + working attestor.
     good = build_deterministic_test_attestor(
@@ -447,14 +461,14 @@ def test_attestation_recovery_no_provider_repeat(tmp_path: Path) -> None:
         bundle_store=store,
         continuation_store=store,
     )
-    retried = orch2.retry_attestation("exec-rec")
+    retried = orch2.retry_attestation(str(rec_exec))
     assert retried.receipt is not None
     assert retried.state is GovernedExternalWorkHostState.EXECUTION_SUCCEEDED_ATTESTED
     assert fake.create_calls == create_calls
     assert fake2.create_calls == create_calls
 
     # Idempotent second retry.
-    again = orch2.retry_attestation("exec-rec")
+    again = orch2.retry_attestation(str(rec_exec))
     assert again.reason == "attested_idempotent"
     assert fake.create_calls == create_calls
 
@@ -485,17 +499,17 @@ def test_cannot_attest_failed_execution() -> None:
         execution_store=store,
         receipt_store=receipts,
     )
-    with _active_pc_execution():
+    with _active_pc_execution() as fail_exec:
         orch.create(
             task_id=_PC_TASK,
             run_id=_PC_RUN,
             principal_id="pc-user",
             tenant_id="pc-tenant",
             metadata=_meta(),
-            execution_id="exec-fail",
+            execution_id=fail_exec,
         )
     with pytest.raises(ValueError, match="execution_result_missing"):
-        orch.retry_attestation("exec-fail")
+        orch.retry_attestation(str(fail_exec))
 
 
 def test_offline_demo_and_json_roundtrip(tmp_path: Path) -> None:
@@ -504,9 +518,10 @@ def test_offline_demo_and_json_roundtrip(tmp_path: Path) -> None:
     assert report.create_invocation_id != report.accept_invocation_id
     receipt_file = Path(report.receipt_absolute_path or report.receipt_path)
     assert receipt_file.is_file()
-    receipt = ProofReceipt.model_validate_json(
+    receipt = parse_execution_evidence_proof_receipt_json(
         receipt_file.read_text(encoding="utf-8")
     )
+    assert isinstance(receipt, ProofReceiptV2)
     attestor = build_deterministic_test_attestor(
         key_id=report.key_id,
     )
@@ -515,7 +530,7 @@ def test_offline_demo_and_json_roundtrip(tmp_path: Path) -> None:
         receipt, key_resolver=resolver, require_policy_bundle_artifact=True
     ).valid
     # Mutation of signed event invalidates.
-    event = receipt.execution_boundary_event.model_copy(update={"actor": "mutated"})
+    event = receipt.execution_boundary_event.model_copy(update={"actor": "mutated-demo"})
     mutated = receipt.model_copy(update={"execution_boundary_event": event})
     assert verify_proof_receipt(mutated, key_resolver=resolver).valid is False
 
@@ -599,14 +614,14 @@ def test_strict_attestation_requires_first_class_invocation() -> None:
 def test_receipt_does_not_authorize_and_verifier_is_offline() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, fake, _, _ = _orch(attestor=attestor)
-    with _active_pc_execution():
+    with _active_pc_execution() as auth_exec:
         created = orch.create(
             task_id=_PC_TASK,
             run_id=_PC_RUN,
             principal_id="pc-user",
             tenant_id="pc-tenant",
             metadata=_meta("idem-auth"),
-            execution_id="exec-auth",
+            execution_id=auth_exec,
         )
     assert created.receipt is not None
     accept_before = fake.accept_calls
@@ -636,17 +651,23 @@ def test_capability_fixture_quote_first_profile() -> None:
 def test_json_roundtrip_preserves_verification() -> None:
     attestor = build_deterministic_test_attestor(clock=lambda: _T0)
     orch, _, _, _ = _orch(attestor=attestor)
-    with _active_pc_execution():
+    with _active_pc_execution() as json_exec:
         created = orch.create(
             task_id=_PC_TASK,
             run_id=_PC_RUN,
             principal_id="pc-user",
             tenant_id="pc-tenant",
             metadata=_meta("idem-json"),
-            execution_id="exec-json",
+            execution_id=json_exec,
         )
     assert created.receipt is not None
-    restored = ProofReceipt.model_validate_json(created.receipt.model_dump_json())
+    from intergrax.contracts.execution_evidence.receipt import (
+        parse_execution_evidence_proof_receipt_json,
+    )
+
+    restored = parse_execution_evidence_proof_receipt_json(
+        created.receipt.model_dump_json()
+    )
     resolver = StaticKeyResolver({attestor.key_id: attestor.public_key_bytes})
     assert verify_proof_receipt(
         restored, key_resolver=resolver, require_policy_bundle_artifact=True

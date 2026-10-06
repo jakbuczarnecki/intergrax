@@ -12,11 +12,17 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PublicKey
 
 from intergrax.contracts.execution_evidence.attestation import HostKeyResolver
 from intergrax.contracts.execution_evidence.boundary_event import (
+    ExecutionBoundaryEvent,
+    ExecutionBoundaryEventV2,
     SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V1,
+    SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V2,
 )
 from intergrax.contracts.execution_evidence.receipt import (
-    SCHEMA_EXECUTION_EVIDENCE_PROOF_RECEIPT_V1,
+    ExecutionEvidenceProofReceipt,
     ProofReceipt,
+    ProofReceiptV2,
+    SCHEMA_EXECUTION_EVIDENCE_PROOF_RECEIPT_V1,
+    SCHEMA_EXECUTION_EVIDENCE_PROOF_RECEIPT_V2,
 )
 from intergrax.contracts.execution_evidence.verification import VerificationResult
 from intergrax.contracts.runtime_policy import PolicyAction
@@ -32,10 +38,10 @@ from intergrax.runtime.execution_evidence.key_store import (  # noqa: F401 — p
     write_verification_key_artifact,
 )
 
-_SUPPORTED_SCHEMAS = frozenset(
+_SUPPORTED_RECEIPT_EVENT_PAIRS = frozenset(
     {
-        SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V1,
-        SCHEMA_EXECUTION_EVIDENCE_PROOF_RECEIPT_V1,
+        (SCHEMA_EXECUTION_EVIDENCE_PROOF_RECEIPT_V1, SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V1),
+        (SCHEMA_EXECUTION_EVIDENCE_PROOF_RECEIPT_V2, SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V2),
     }
 )
 
@@ -80,13 +86,24 @@ class StaticKeyResolver:
         return key_id in self._deprecated
 
 
-def _verify_policy_bundle_artifact(receipt: ProofReceipt, errors: list[str]) -> None:
+def _boundary_event_from_receipt(
+    receipt: ExecutionEvidenceProofReceipt,
+) -> ExecutionBoundaryEvent | ExecutionBoundaryEventV2:
+    if isinstance(receipt, ProofReceiptV2):
+        return receipt.execution_boundary_event
+    return receipt.execution_boundary_event
+
+
+def _verify_policy_bundle_artifact(
+    receipt: ExecutionEvidenceProofReceipt,
+    errors: list[str],
+) -> None:
     """PC-2: recompute bundle digest and bind decision to pack body."""
     artifact = receipt.policy_bundle_artifact
     if artifact is None:
         errors.append("policy_bundle_artifact_missing")
         return
-    event = receipt.execution_boundary_event
+    event = _boundary_event_from_receipt(receipt)
     recomputed = artifact.compute_digest()
     if artifact.canonical_digest and artifact.canonical_digest != recomputed:
         errors.append("policy_bundle_canonical_digest_mismatch")
@@ -116,8 +133,8 @@ def _verify_policy_bundle_artifact(receipt: ProofReceipt, errors: list[str]) -> 
             errors.append("policy_action_mismatch_with_rule")
 
 
-def verify_proof_receipt(
-    receipt: ProofReceipt,
+def verify_execution_evidence_proof_receipt(
+    receipt: ExecutionEvidenceProofReceipt,
     *,
     key_resolver: VerificationKeyResolver | HostKeyResolver,
     require_policy_bundle_artifact: bool = False,
@@ -134,16 +151,32 @@ def verify_proof_receipt(
     signature_valid = False
     key_id = receipt.host_attestation.key_id
 
-    if receipt.schema_id != SCHEMA_EXECUTION_EVIDENCE_PROOF_RECEIPT_V1:
+    receipt_schema = receipt.schema_id
+    event = _boundary_event_from_receipt(receipt)
+    event_schema = event.schema_id
+    attestation_schema = receipt.host_attestation.payload_schema
+
+    if receipt_schema not in {
+        SCHEMA_EXECUTION_EVIDENCE_PROOF_RECEIPT_V1,
+        SCHEMA_EXECUTION_EVIDENCE_PROOF_RECEIPT_V2,
+    }:
         schema_valid = False
         errors.append("unsupported_receipt_schema")
-    event = receipt.execution_boundary_event
-    if event.schema_id != SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V1:
+    if event_schema not in {
+        SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V1,
+        SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V2,
+    }:
         schema_valid = False
         errors.append("unsupported_event_schema")
-    if receipt.host_attestation.payload_schema != SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V1:
+    if (receipt_schema, event_schema) not in _SUPPORTED_RECEIPT_EVENT_PAIRS:
+        schema_valid = False
+        errors.append("receipt_event_schema_mismatch")
+    if attestation_schema != event_schema:
         schema_valid = False
         errors.append("unsupported_attestation_payload_schema")
+    if (receipt_schema, attestation_schema) not in _SUPPORTED_RECEIPT_EVENT_PAIRS:
+        schema_valid = False
+        errors.append("receipt_attestation_schema_mismatch")
     if receipt.host_attestation.algorithm != ALGORITHM_ED25519:
         schema_valid = False
         errors.append("unsupported_algorithm")
@@ -187,4 +220,18 @@ def verify_proof_receipt(
         signature_valid=signature_valid,
         key_id=key_id,
         errors=tuple(errors),
+    )
+
+
+def verify_proof_receipt(
+    receipt: ProofReceipt,
+    *,
+    key_resolver: VerificationKeyResolver | HostKeyResolver,
+    require_policy_bundle_artifact: bool = False,
+) -> VerificationResult:
+    """Verify a v1 execution-evidence ProofReceipt (compatibility entrypoint)."""
+    return verify_execution_evidence_proof_receipt(
+        receipt,
+        key_resolver=key_resolver,
+        require_policy_bundle_artifact=require_policy_bundle_artifact,
     )
