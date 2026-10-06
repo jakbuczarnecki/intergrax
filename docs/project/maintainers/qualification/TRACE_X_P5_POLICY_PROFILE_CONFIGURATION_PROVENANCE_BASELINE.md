@@ -10,7 +10,7 @@
 
 **R1-R1 START_HEAD:** `a9fd88da1d5efa3fc61d668289c13f78e4d52b1d`
 
-**R1-R1 final commit:** _(record at push — independent audit uses GitHub SHA, not this doc)_
+**R1-R1 final commit:** `11ee2dae4` (full SHA at independent audit: `git rev-parse 11ee2dae4`)
 
 **Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p5_support.py` · discovery: `tests/qualification/trace_x/_trace_x_p5_discovery.py`
 
