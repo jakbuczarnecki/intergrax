@@ -176,12 +176,9 @@ def test_txp4r2_life_05_sequential_executions_cannot_inherit_stale_ce() -> None:
                     bus, assembled=_assembled(messages), task_id=task_id, run_id=run_id
                 )
                 stale_ce = peek_pending_context_assembly_event_id()
-                with model_call_attribution_scope(messages=messages):
-                    pass
             else:
                 with model_call_attribution_scope(messages=messages):
-                    pending = peek_pending_context_assembly_event_id()
-                    assert pending == "" or pending != stale_ce
+                    assert peek_pending_context_assembly_event_id() == ""
         finally:
             reset_active_runtime_event_recorder(recorder_binding)
             reset_active_execution_evidence_context(evidence_token)

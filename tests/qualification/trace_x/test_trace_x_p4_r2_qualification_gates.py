@@ -27,13 +27,13 @@ from intergrax.runtime.llm import model_call_attribution as mca
 from intergrax.runtime.llm import model_context_attribution as mctx
 from tests.qualification.trace_x._trace_x_p4_support import (
     CONTEXT_ASSEMBLY_SURFACE_INVENTORY,
-    MODEL_CALL_SURFACE_INVENTORY,
     P4_R2_GATE_REGISTRY,
+    P4_R3_GATE_REGISTRY,
     TRACE_X_P4_R2_START_HEAD,
     attribute_model_call_to_context,
     discovered_context_assembly_production_paths,
-    discovered_model_call_production_paths,
     gate_nodeids,
+    nodeid_observed,
     observed_gate_passed,
 )
 from tests.qualification.trace_x.test_trace_x_p4_model_context_attribution import governed_execution
@@ -54,11 +54,11 @@ def test_txp4r2_q01_start_head_ancestry() -> None:
 
 
 def test_txp4r2_q02_model_call_surfaces_classified() -> None:
-    discovered = discovered_model_call_production_paths()
-    classified = {row.path for row in MODEL_CALL_SURFACE_INVENTORY}
-    assert classified.issubset(discovered)
-    unknown = discovered - classified
-    assert not unknown, f"unclassified model-call surfaces: {sorted(unknown)}"
+    from tests.qualification.trace_x.test_trace_x_p4_r3_closed_world import (
+        test_txp4r3_q02_model_call_surfaces_closed_world_classified,
+    )
+
+    test_txp4r3_q02_model_call_surfaces_closed_world_classified()
 
 
 def test_txp4r2_q03_context_assembly_surfaces_classified() -> None:
@@ -333,16 +333,19 @@ def test_txp4r2_q35_p1_p2_p3_minimal_regression() -> None:
 
 
 def test_txp4r2_q36_frz_trc_05_readiness_registry_complete() -> None:
-    gate_ids = {row.gate_id for row in P4_R2_GATE_REGISTRY}
-    assert len(gate_ids) == len(P4_R2_GATE_REGISTRY)
-    for row in P4_R2_GATE_REGISTRY:
-        assert row.nodeids
-    manifest = Path(".tmp/session/trace-x-p4-r2/pass1_observed_nodeids.json")
-    if manifest.is_file():
-        import json
+    import json
+    import os
 
+    gate_ids = {row.gate_id for row in P4_R3_GATE_REGISTRY}
+    assert len(gate_ids) == len(P4_R3_GATE_REGISTRY)
+    for row in P4_R3_GATE_REGISTRY:
+        assert row.nodeids
+    manifest = Path(".tmp/session/trace-x-p4-r3/pass1_observed_nodeids.json")
+    if os.environ.get("TRACE_X_P4_PASS1") == "1":
+        return
+    if manifest.is_file():
         passed = set(json.loads(manifest.read_text(encoding="utf-8")))
-        for row in P4_R2_GATE_REGISTRY:
+        for row in P4_R3_GATE_REGISTRY:
             if not row.pass1_required:
                 continue
             assert observed_gate_passed(row.gate_id, passed), row.gate_id
@@ -359,6 +362,7 @@ def test_txp4r2_registry_nodeids_exist_as_tests() -> None:
         tree = ast.parse(path.read_text(encoding="utf-8"))
         for node in tree.body:
             if isinstance(node, ast.FunctionDef) and node.name.startswith("test_"):
+                names.add(f"{path.name}::{node.name}")
                 names.add(node.name)
-    missing = [nid for nid in gate_nodeids(P4_R2_GATE_REGISTRY) if nid not in names]
+    missing = [nid for nid in gate_nodeids(P4_R3_GATE_REGISTRY) if not nodeid_observed(nid, names)]
     assert not missing, missing

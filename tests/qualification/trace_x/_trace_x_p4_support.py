@@ -1,9 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TRACE-X-P4 / P4-R2 qualification support (model ↔ context attribution)."""
+"""TRACE-X-P4 / P4-R2 / P4-R3 qualification support (model ↔ context attribution)."""
 
 from __future__ import annotations
 
+import ast
+import enum
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -24,8 +26,22 @@ from intergrax.runtime.llm.model_context_attribution import (
 
 TRACE_X_P4_START_HEAD: Final[str] = "7d782af85fa97807b882cc9063a5d57aef899e57"
 TRACE_X_P4_R2_START_HEAD: Final[str] = "54936ecf758e68d6b79f2b05604fca7c1fc79849"
+TRACE_X_P4_R3_START_HEAD: Final[str] = "bb1b7fa76784f13c5f5c64d9962e136fc5e40701"
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
+_PRODUCTION_SCAN_ROOTS: Final[tuple[str, ...]] = ("intergrax", "agents", "applications")
+_PRODUCTION_EXCLUDE_DIR_NAMES: Final[frozenset[str]] = frozenset(
+    {"tests", "docs", "examples", "__pycache__", "benchmarks", "model_runtime_proof"},
+)
+_LLM_ADAPTER_INVOCATION_METHODS: Final[frozenset[str]] = frozenset(
+    {
+        "generate_messages",
+        "generate_with_tools",
+        "generate_structured",
+        "stream_messages",
+        "stream_with_tools",
+    },
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,38 +59,107 @@ class ClassifiedSurface:
     evidence_nodeid: str
 
 
-MODEL_CALL_SURFACE_INVENTORY: Final[tuple[ClassifiedSurface, ...]] = (
-    ClassifiedSurface(
-        "intergrax/runtime/llm/model_call_runtime_evidence_adapter.py",
-        "generate_messages",
-        "test_txp4r2_q24_generate_with_tools_uses_attribution_scope",
-    ),
-    ClassifiedSurface(
-        "intergrax/runtime/llm/model_call_runtime_evidence_adapter.py",
-        "generate_with_tools",
-        "test_txp4r2_q24_generate_with_tools_uses_attribution_scope",
-    ),
-    ClassifiedSurface(
-        "intergrax/runtime/llm/model_call_runtime_evidence_adapter.py",
-        "generate_structured",
-        "test_txp4r2_q26_structured_output_uses_attribution_scope",
-    ),
-    ClassifiedSurface(
-        "intergrax/runtime/llm/model_call_runtime_evidence_adapter.py",
-        "stream_messages",
-        "test_txp4r1_q25_streaming_not_production_primary",
-    ),
-    ClassifiedSurface(
-        "intergrax/runtime/llm/model_call_runtime_evidence_adapter.py",
-        "stream_with_tools",
-        "test_txp4r1_q25_streaming_not_production_primary",
-    ),
-    ClassifiedSurface(
-        "intergrax/runtime/token_optimization/llm_router.py",
-        "internal optimization structured",
-        "test_txp4_q16_internal_optimization_scope",
-    ),
-)
+class ModelCallSurfaceClassification(enum.StrEnum):
+    CANONICAL_PRIMARY = "canonical_primary"
+    CANONICAL_INTERNAL_OPTIMIZATION = "canonical_internal_optimization"
+    NON_PRODUCTION = "non_production"
+    NOT_LLM_ADAPTER_CALL = "not_llm_adapter_call"
+
+
+@dataclass(frozen=True, slots=True)
+class DiscoveredModelCallSurface:
+    path: str
+    method: str
+
+
+@dataclass(frozen=True, slots=True)
+class ClassifiedModelCallSurface:
+    path: str
+    method: str
+    classification: ModelCallSurfaceClassification
+    evidence_nodeid: str
+
+
+def _production_path_excluded(rel_path: Path) -> bool:
+    parts = rel_path.parts
+    if _PRODUCTION_EXCLUDE_DIR_NAMES.intersection(parts):
+        return True
+    if "docker" in parts and "runtime-context" in parts:
+        return True
+    if "proofs" in parts:
+        return True
+    if "legacy" in parts:
+        return True
+    return False
+
+
+def discover_model_call_surfaces_ast() -> frozenset[DiscoveredModelCallSurface]:
+    discovered: set[DiscoveredModelCallSurface] = set()
+    for root_name in _PRODUCTION_SCAN_ROOTS:
+        root = _REPO_ROOT / root_name
+        if not root.is_dir():
+            continue
+        for py_path in root.rglob("*.py"):
+            rel = py_path.relative_to(_REPO_ROOT).as_posix()
+            if _production_path_excluded(Path(rel)):
+                continue
+            try:
+                tree = ast.parse(py_path.read_text(encoding="utf-8"))
+            except SyntaxError:
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                func = node.func
+                if not isinstance(func, ast.Attribute):
+                    continue
+                if func.attr not in _LLM_ADAPTER_INVOCATION_METHODS:
+                    continue
+                discovered.add(DiscoveredModelCallSurface(path=rel, method=func.attr))
+    return frozenset(discovered)
+
+
+def _classify_model_call_surface(path: str, method: str) -> tuple[ModelCallSurfaceClassification, str]:
+    closed_world_gate = "test_trace_x_p4_r3_closed_world.py::test_txp4r3_q02_model_call_surfaces_closed_world_classified"
+    evidence_adapter = "intergrax/runtime/llm/model_call_runtime_evidence_adapter.py"
+    if path == evidence_adapter:
+        if method in ("generate_messages", "generate_with_tools", "generate_structured"):
+            return (
+                ModelCallSurfaceClassification.CANONICAL_PRIMARY,
+                "test_trace_x_p4_model_context_attribution.py::test_txp4_q12_primary_context_model_e2e_attribution",
+            )
+        return (
+            ModelCallSurfaceClassification.NON_PRODUCTION,
+            "test_trace_x_p4_model_context_attribution.py::test_txp4r1_q25_streaming_not_production_primary",
+        )
+    if path == "intergrax/runtime/token_optimization/llm_router.py" and method == "generate_structured":
+        return (
+            ModelCallSurfaceClassification.CANONICAL_INTERNAL_OPTIMIZATION,
+            "test_trace_x_p4_model_context_attribution.py::test_txp4_q16_internal_optimization_scope",
+        )
+    if path.startswith("intergrax/llm_adapters/"):
+        return ModelCallSurfaceClassification.NOT_LLM_ADAPTER_CALL, closed_world_gate
+    if path.startswith("agents/") or path.startswith("applications/"):
+        return ModelCallSurfaceClassification.NON_PRODUCTION, closed_world_gate
+    return ModelCallSurfaceClassification.NON_PRODUCTION, closed_world_gate
+
+
+def build_model_call_surface_inventory() -> tuple[ClassifiedModelCallSurface, ...]:
+    rows: list[ClassifiedModelCallSurface] = []
+    for surface in sorted(discover_model_call_surfaces_ast(), key=lambda s: (s.path, s.method)):
+        classification, evidence = _classify_model_call_surface(surface.path, surface.method)
+        rows.append(
+            ClassifiedModelCallSurface(
+                path=surface.path,
+                method=surface.method,
+                classification=classification,
+                evidence_nodeid=evidence,
+            ),
+        )
+    return tuple(rows)
+
+
+MODEL_CALL_SURFACE_INVENTORY: Final[tuple[ClassifiedModelCallSurface, ...]] = build_model_call_surface_inventory()
 
 CONTEXT_ASSEMBLY_SURFACE_INVENTORY: Final[tuple[ClassifiedSurface, ...]] = (
     ClassifiedSurface(
@@ -101,15 +186,15 @@ CONTEXT_ASSEMBLY_SURFACE_INVENTORY: Final[tuple[ClassifiedSurface, ...]] = (
 
 
 def discovered_model_call_production_paths() -> set[str]:
-    rel_paths = (
-        "intergrax/runtime/llm/model_call_runtime_evidence_adapter.py",
-        "intergrax/runtime/token_optimization/llm_router.py",
-    )
-    discovered: set[str] = set()
-    for rel in rel_paths:
-        if (_REPO_ROOT / rel).is_file():
-            discovered.add(rel)
-    return discovered
+    return {row.path for row in discover_model_call_surfaces_ast()}
+
+
+def discovered_model_call_surfaces() -> frozenset[DiscoveredModelCallSurface]:
+    return discover_model_call_surfaces_ast()
+
+
+def classified_model_call_surfaces() -> frozenset[tuple[str, str]]:
+    return frozenset((row.path, row.method) for row in MODEL_CALL_SURFACE_INVENTORY)
 
 
 def discovered_context_assembly_production_paths() -> set[str]:
@@ -155,17 +240,37 @@ def gate_nodeids(registry: tuple[P4GateEvidence, ...]) -> tuple[str, ...]:
     return tuple(out)
 
 
+def normalize_gate_nodeid(nodeid: str) -> str:
+    if "::" not in nodeid:
+        return nodeid
+    path_part, func = nodeid.rsplit("::", 1)
+    return f"{Path(path_part).name}::{func}"
+
+
+def nodeid_observed(expected: str, passed_nodeids: set[str]) -> bool:
+    normalized_expected = normalize_gate_nodeid(expected)
+    if normalized_expected in passed_nodeids:
+        return True
+    if "::" in normalized_expected:
+        return False
+    return any(entry.endswith(f"::{normalized_expected}") for entry in passed_nodeids)
+
+
 def observed_gate_passed(gate_id: str, passed_nodeids: set[str]) -> bool:
-    for row in P4_R2_GATE_REGISTRY:
+    for row in P4_R3_GATE_REGISTRY:
         if row.gate_id != gate_id:
             continue
-        return any(nodeid in passed_nodeids for nodeid in row.nodeids)
+        return any(nodeid_observed(nodeid, passed_nodeids) for nodeid in row.nodeids)
     return False
 
 
 P4_R2_GATE_REGISTRY: tuple[P4GateEvidence, ...] = (
     P4GateEvidence("TXP4R2-Q01", "R2 START_HEAD ancestry", ("test_txp4r2_q01_start_head_ancestry",)),
-    P4GateEvidence("TXP4R2-Q02", "model-call surfaces classified", ("test_txp4r2_q02_model_call_surfaces_classified",)),
+    P4GateEvidence(
+        "TXP4R2-Q02",
+        "model-call surfaces classified (superseded by TXP4R3-Q02)",
+        ("test_trace_x_p4_r3_closed_world.py::test_txp4r3_q02_model_call_surfaces_closed_world_classified",),
+    ),
     P4GateEvidence(
         "TXP4R2-Q03",
         "context assembly surfaces classified",
@@ -314,9 +419,53 @@ P4_R2_GATE_REGISTRY: tuple[P4GateEvidence, ...] = (
         "nested scope restores outer relation",
         ("test_txp4r2_life_06_nested_model_attribution_scope_restores_outer_relation",),
     ),
+    P4GateEvidence(
+        "TXP4R3-Q01",
+        "R3 START_HEAD ancestry",
+        ("test_trace_x_p4_r3_closed_world.py::test_txp4r3_q01_start_head_ancestry",),
+    ),
+    P4GateEvidence(
+        "TXP4R3-Q02",
+        "model-call production surfaces closed-world discovered and classified",
+        ("test_trace_x_p4_r3_closed_world.py::test_txp4r3_q02_model_call_surfaces_closed_world_classified",),
+    ),
+    P4GateEvidence(
+        "TXP4R3-LIFE-01",
+        "true abandoned assembly cross-execution isolation",
+        ("test_trace_x_p4_r3_abandoned_context.py::test_txp4r3_life_01_true_abandoned_assembly_not_visible_in_e2",),
+    ),
+    P4GateEvidence(
+        "TXP4R3-LIFE-02",
+        "stale CE cannot reach E2 LLM_CALL",
+        ("test_trace_x_p4_r3_abandoned_context.py::test_txp4r3_life_02_stale_ce_cannot_reach_e2_llm_call",),
+    ),
+    P4GateEvidence(
+        "TXP4R3-LIFE-03",
+        "same execution CE remains valid",
+        ("test_trace_x_p4_r3_abandoned_context.py::test_txp4r3_life_03_same_execution_ce_remains_usable",),
+    ),
+    P4GateEvidence(
+        "TXP4R3-LIFE-04",
+        "nested scope restoration without cross-execution contamination",
+        ("test_trace_x_p4_r3_abandoned_context.py::test_txp4r3_life_04_nested_scope_restoration",),
+    ),
+    P4GateEvidence(
+        "TXP4R3-LIFE-05",
+        "provider failure regression",
+        ("test_txp4r2_life_02_provider_failure_clears_context_ref",),
+    ),
+    P4GateEvidence(
+        "TXP4R3-LIFE-06",
+        "no-recorder / no-evidence-context regression",
+        (
+            "test_txp4r2_life_03_no_recorder_path_cannot_leak_context_ref",
+            "test_txp4r2_life_04_missing_evidence_context_cannot_leak_context_ref",
+        ),
+    ),
 )
 
-P4_R1_GATE_REGISTRY = P4_R2_GATE_REGISTRY
+P4_R3_GATE_REGISTRY: Final[tuple[P4GateEvidence, ...]] = P4_R2_GATE_REGISTRY
+P4_R1_GATE_REGISTRY = P4_R3_GATE_REGISTRY
 
 
 def parse_context_assembly_payload(
@@ -350,16 +499,27 @@ def attribute_model_call_to_context(
 
 __all__ = [
     "CONTEXT_ASSEMBLY_SURFACE_INVENTORY",
+    "ClassifiedModelCallSurface",
+    "DiscoveredModelCallSurface",
     "MODEL_CALL_SURFACE_INVENTORY",
+    "ModelCallSurfaceClassification",
     "P4GateEvidence",
     "P4_R1_GATE_REGISTRY",
     "P4_R2_GATE_REGISTRY",
+    "P4_R3_GATE_REGISTRY",
     "TRACE_X_P4_R2_START_HEAD",
+    "TRACE_X_P4_R3_START_HEAD",
     "TRACE_X_P4_START_HEAD",
     "attribute_model_call_to_context",
+    "build_model_call_surface_inventory",
+    "classified_model_call_surfaces",
+    "discover_model_call_surfaces_ast",
     "discovered_context_assembly_production_paths",
     "discovered_model_call_production_paths",
+    "discovered_model_call_surfaces",
     "gate_nodeids",
+    "nodeid_observed",
+    "normalize_gate_nodeid",
     "observed_gate_passed",
     "parse_context_assembly_payload",
     "parse_llm_call_payload",

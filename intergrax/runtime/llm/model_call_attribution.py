@@ -10,7 +10,13 @@ from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from dataclasses import dataclass
 
-from intergrax.contracts.execution_identity import EventId, validate_event_id
+from intergrax.contracts.execution_identity import (
+    EventId,
+    ExecutionId,
+    peek_active_execution_id,
+    require_active_execution_id,
+    validate_event_id,
+)
 from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.runtime.context_lifecycle.contracts import ModelCallExecutionScope
 
@@ -34,9 +40,10 @@ _pending_context_assembly_event_id: ContextVar[str] = ContextVar(
 
 @dataclass(frozen=True, slots=True)
 class PendingContextAssemblyBinding:
-    """Token-scoped pending CONTEXT_ASSEMBLED → model-call relation (TRACE-X-P4-R2)."""
+    """Token-scoped pending CONTEXT_ASSEMBLED → model-call relation (TRACE-X-P4-R2/R3)."""
 
     event_id: str
+    execution_id: ExecutionId
     token: Token[str]
 
 
@@ -70,6 +77,16 @@ def clear_pending_model_input_messages_hash() -> None:
     _pending_model_input_hash.set("")
 
 
+def _discard_stale_pending_context_bindings_for_execution(execution_id: ExecutionId) -> None:
+    while True:
+        stack = _pending_context_assembly_bind_stack.get()
+        if not stack:
+            return
+        if stack[-1].execution_id == execution_id:
+            return
+        _pop_context_assembly_bind_stack_to_depth(len(stack) - 1)
+
+
 def _pop_context_assembly_bind_stack_to_depth(depth: int) -> None:
     stack = _pending_context_assembly_bind_stack.get()
     while len(stack) > depth:
@@ -81,10 +98,15 @@ def _pop_context_assembly_bind_stack_to_depth(depth: int) -> None:
 
 def bind_pending_context_assembly_event_id(event_id: EventId | str) -> PendingContextAssemblyBinding:
     resolved = str(validate_event_id(event_id))
+    origin_execution_id = require_active_execution_id()
     if _model_call_attribution_scope_depth.get() == 0 and _pending_context_assembly_bind_stack.get():
         _pop_context_assembly_bind_stack_to_depth(0)
     token = _pending_context_assembly_event_id.set(resolved)
-    binding = PendingContextAssemblyBinding(event_id=resolved, token=token)
+    binding = PendingContextAssemblyBinding(
+        event_id=resolved,
+        execution_id=origin_execution_id,
+        token=token,
+    )
     _pending_context_assembly_bind_stack.set(_pending_context_assembly_bind_stack.get() + (binding,))
     return binding
 
@@ -128,6 +150,12 @@ def model_call_attribution_scope(
     previous_step = _attribution_step_id.get()
     previous_label = _attribution_label.get()
     parent_scope_depth = _model_call_attribution_scope_depth.get()
+    if parent_scope_depth == 0:
+        active_execution_id = peek_active_execution_id()
+        if active_execution_id is not None:
+            _discard_stale_pending_context_bindings_for_execution(active_execution_id)
+        elif peek_pending_context_assembly_event_id():
+            clear_pending_context_assembly_event_id()
     stack_len_at_entry = len(_pending_context_assembly_bind_stack.get())
     if parent_scope_depth == 0 and peek_pending_context_assembly_event_id():
         context_bind_floor_at_entry = max(0, stack_len_at_entry - 1)

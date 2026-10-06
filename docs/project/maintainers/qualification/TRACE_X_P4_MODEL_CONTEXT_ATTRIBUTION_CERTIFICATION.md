@@ -1,6 +1,6 @@
 # TRACE-X-P4 — Model Call & Context Decision Attribution
 
-Status: **P4-R2 on `development`; READY FOR AUDIT** (not independently closed).
+Status: **P4-R3 on `development`; READY FOR AUDIT** (not independently closed).
 
 Primary freeze gate: **FRZ-TRC-05** → **READY FOR INDEPENDENT CLOSURE REVIEW** when qualification passes on GitHub HEAD.
 
@@ -15,6 +15,14 @@ Primary freeze gate: **FRZ-TRC-05** → **READY FOR INDEPENDENT CLOSURE REVIEW**
 | P4-STREAM-01 | RESOLVED (streaming classified NOT PRODUCTION PRIMARY on certified Nexus/agents/applications paths) |
 | P4-R1-BLK-CONTEXT-REF-LIFECYCLE-01 | RESOLVED (token/stack scoped relation; `model_call_attribution_scope` floor reset) |
 | P4-R1-Q-BLK-02 | RESOLVED (`P4_R2_GATE_REGISTRY` + Pass 1 session manifest) |
+| P4-R2-BLK-ABANDONED-CONTEXT-01 | RESOLVED (execution-bound pending relation; stale binding cleared before top-level `model_call_attribution_scope` body) |
+| P4-R2-Q-BLK-CLOSED-WORLD-01 | RESOLVED (AST closed-world discovery over `intergrax/` / `agents/` / `applications/`; TXP4R3-Q02 parity gate) |
+
+## Evidence summary (R3)
+
+- `PendingContextAssemblyBinding` records originating canonical `ExecutionId` at bind time (`require_active_execution_id`; no caller-minted authority).
+- Top-level `model_call_attribution_scope` discards pending bindings whose `execution_id` ≠ active execution before scope body (R3-LIFE-01..02).
+- Model-call closed-world: `discover_model_call_surfaces_ast()` + `MODEL_CALL_SURFACE_INVENTORY` path+method classifications (TXP4R3-Q02).
 
 ## Evidence summary (R2)
 
@@ -27,7 +35,7 @@ Primary freeze gate: **FRZ-TRC-05** → **READY FOR INDEPENDENT CLOSURE REVIEW**
 Pass 1 (set `TRACE_X_P4_PASS1=1` for session manifest):
 
 ```text
-uv run pytest tests/qualification/trace_x/test_trace_x_p4_model_context_attribution.py tests/qualification/trace_x/test_trace_x_p4_r1_recorder_tenant.py tests/qualification/trace_x/test_trace_x_p4_r2_lifecycle.py tests/qualification/trace_x/test_trace_x_p4_r2_qualification_gates.py -p no:xdist -q
+uv run pytest tests/qualification/trace_x/test_trace_x_p4_model_context_attribution.py tests/qualification/trace_x/test_trace_x_p4_r1_recorder_tenant.py tests/qualification/trace_x/test_trace_x_p4_r2_lifecycle.py tests/qualification/trace_x/test_trace_x_p4_r2_qualification_gates.py tests/qualification/trace_x/test_trace_x_p4_r3_abandoned_context.py tests/qualification/trace_x/test_trace_x_p4_r3_closed_world.py -p no:xdist -q
 ```
 
 Do **not** mark TRACE-X-P4 CLOSED or FRZ-TRC-05 PASS without independent audit.
