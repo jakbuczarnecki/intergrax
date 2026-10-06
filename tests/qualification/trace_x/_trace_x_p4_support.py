@@ -21,6 +21,14 @@ from intergrax.runtime.llm.model_context_attribution import (
     ModelContextAttributionVerdict,
     try_attribute_model_call_to_context,
 )
+from tests.qualification.trace_x._trace_x_p4_production_composition_types import (
+    DiscoveredProductionCompositionSite,
+    NonProductionReachabilityReason,
+    ProductionCompositionSiteClassification,
+    ProductionCompositionSiteKind,
+    RegisteredNonProductionModelReachability,
+    RegisteredProductionCompositionSite,
+)
 from tests.qualification.trace_x._trace_x_p4_registry_types import (
     ContextSurfaceClassification,
     ModelCallSurfaceClassification,
@@ -34,6 +42,7 @@ TRACE_X_P4_START_HEAD: Final[str] = "7d782af85fa97807b882cc9063a5d57aef899e57"
 TRACE_X_P4_R2_START_HEAD: Final[str] = "54936ecf758e68d6b79f2b05604fca7c1fc79849"
 TRACE_X_P4_R3_START_HEAD: Final[str] = "bb1b7fa76784f13c5f5c64d9962e136fc5e40701"
 TRACE_X_P4_R4_START_HEAD: Final[str] = "069315c5fe45afc4ed39c5b02900fd56889e3bb5"
+TRACE_X_P4_R5_START_HEAD: Final[str] = "bef997db3fd40eab7d47ca605f12dcd0145bcb0e"
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _PRODUCTION_SCAN_ROOTS: Final[tuple[str, ...]] = ("intergrax", "agents", "applications")
@@ -208,6 +217,207 @@ def discovered_model_call_surface_keys() -> frozenset[tuple[str, str]]:
 
 def discovered_context_surface_keys() -> frozenset[tuple[str, str]]:
     return frozenset((surface.path, surface.surface_kind) for surface in DISCOVERED_CONTEXT_SURFACES)
+
+
+def _ast_call_callee_root_name(node: ast.Call) -> str | None:
+    func = node.func
+    if isinstance(func, ast.Name):
+        return func.id
+    if isinstance(func, ast.Attribute):
+        return func.attr
+    if isinstance(func, ast.Subscript):
+        inner = func.value
+        if isinstance(inner, ast.Name):
+            return inner.id
+        if isinstance(inner, ast.Attribute):
+            return inner.attr
+    return None
+
+
+def _ast_is_wrap_model_call_runtime_evidence(node: ast.AST) -> bool:
+    if not isinstance(node, ast.Call):
+        return False
+    name = _ast_call_callee_root_name(node)
+    return name == "wrap_model_call_runtime_evidence"
+
+
+def discover_production_composition_sites_ast() -> frozenset[DiscoveredProductionCompositionSite]:
+    discovered: set[DiscoveredProductionCompositionSite] = set()
+    for root_name in _PRODUCTION_SCAN_ROOTS:
+        root = _REPO_ROOT / root_name
+        if not root.is_dir():
+            continue
+        for py_path in root.rglob("*.py"):
+            rel = py_path.relative_to(_REPO_ROOT).as_posix()
+            if _production_path_excluded(Path(rel)):
+                continue
+            try:
+                tree = ast.parse(py_path.read_text(encoding="utf-8"))
+            except SyntaxError:
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.FunctionDef) and node.name == "build_governed_inference_executor":
+                    discovered.add(
+                        DiscoveredProductionCompositionSite(
+                            path=rel,
+                            site_kind=ProductionCompositionSiteKind.GOVERNED_INFERENCE_EXECUTOR_FACTORY_DEF,
+                            line_number=node.lineno,
+                        ),
+                    )
+                if isinstance(node, ast.Call):
+                    callee = _ast_call_callee_root_name(node)
+                    if callee == "StrategyExecutionRouter":
+                        discovered.add(
+                            DiscoveredProductionCompositionSite(
+                                path=rel,
+                                site_kind=ProductionCompositionSiteKind.STRATEGY_EXECUTION_ROUTER_INSTANTIATION,
+                                line_number=node.lineno,
+                            ),
+                        )
+                    if callee == "InferenceExecutor":
+                        discovered.add(
+                            DiscoveredProductionCompositionSite(
+                                path=rel,
+                                site_kind=ProductionCompositionSiteKind.RUNTIME_INFERENCE_EXECUTOR_INSTANTIATION,
+                                line_number=node.lineno,
+                            ),
+                        )
+                    if callee == "build_governed_inference_executor":
+                        discovered.add(
+                            DiscoveredProductionCompositionSite(
+                                path=rel,
+                                site_kind=ProductionCompositionSiteKind.GOVERNED_INFERENCE_EXECUTOR_CALL,
+                                line_number=node.lineno,
+                            ),
+                        )
+                    if callee == "RuntimeConfig":
+                        for keyword in node.keywords:
+                            if keyword.arg == "llm_adapter":
+                                discovered.add(
+                                    DiscoveredProductionCompositionSite(
+                                        path=rel,
+                                        site_kind=ProductionCompositionSiteKind.RUNTIME_CONFIG_LLM_ADAPTER_KW,
+                                        line_number=node.lineno,
+                                    ),
+                                )
+                    for keyword in node.keywords:
+                        if keyword.arg == "inference_executor":
+                            discovered.add(
+                                DiscoveredProductionCompositionSite(
+                                    path=rel,
+                                    site_kind=ProductionCompositionSiteKind.STRATEGY_ROUTER_INFERENCE_EXECUTOR_KW,
+                                    line_number=node.lineno,
+                                ),
+                            )
+                if isinstance(node, ast.Assign):
+                    for target in node.targets:
+                        if not isinstance(target, ast.Attribute):
+                            continue
+                        if target.attr != "llm_adapter":
+                            continue
+                        if _ast_is_wrap_model_call_runtime_evidence(node.value):
+                            discovered.add(
+                                DiscoveredProductionCompositionSite(
+                                    path=rel,
+                                    site_kind=ProductionCompositionSiteKind.SANCTIONED_LLM_ADAPTER_P4_WRAP,
+                                    line_number=node.lineno,
+                                ),
+                            )
+                        else:
+                            discovered.add(
+                                DiscoveredProductionCompositionSite(
+                                    path=rel,
+                                    site_kind=ProductionCompositionSiteKind.RAW_LLM_ADAPTER_CONFIG_ASSIGNMENT,
+                                    line_number=node.lineno,
+                                ),
+                            )
+    return frozenset(discovered)
+
+
+DISCOVERED_PRODUCTION_COMPOSITION_SITES: Final[
+    frozenset[DiscoveredProductionCompositionSite]
+] = discover_production_composition_sites_ast()
+
+
+def discovered_production_composition_site_keys() -> frozenset[tuple[str, str, int]]:
+    return frozenset(site.key for site in DISCOVERED_PRODUCTION_COMPOSITION_SITES)
+
+
+def compare_production_composition_sites_to_registry(
+    discovered_keys: frozenset[tuple[str, str, int]],
+    registry: tuple[RegisteredProductionCompositionSite, ...],
+) -> SurfaceParityResult:
+    return compare_discovered_to_registry(discovered_keys, registry)
+
+
+def classify_non_production_reachability_reason(
+    path: str,
+) -> NonProductionReachabilityReason:
+    if path.startswith("agents/"):
+        return NonProductionReachabilityReason.TIER2_AGENT_NOT_SANCTIONED_COMPOSITION_ROOT
+    if path.startswith("applications/"):
+        return NonProductionReachabilityReason.TIER3_APPLICATION_NOT_SANCTIONED_COMPOSITION_ROOT
+    if path == "intergrax/runtime/execution/inference.py":
+        return NonProductionReachabilityReason.INTERNAL_INFERENCE_BACKEND_UNREACHABLE
+    return NonProductionReachabilityReason.AUXILIARY_NOT_REACHABLE_FROM_SANCTIONED_COMPOSITION
+
+
+def production_composition_supplies_inference_executor(
+    registry: tuple[RegisteredProductionCompositionSite, ...] | tuple[object, ...],
+) -> bool:
+    for row in registry:
+        if row.inference_executor_supplied and row.classification in (
+            ProductionCompositionSiteClassification.SANCTIONED_PRODUCTION_ROOT,
+            ProductionCompositionSiteClassification.SANCTIONED_PRODUCTION_ROUTER,
+        ):
+            return True
+    return False
+
+
+def discover_alternate_p4_attribution_seam_instantiations_ast() -> frozenset[tuple[str, int]]:
+    """Direct ModelCallRuntimeEvidenceAdapter(...) outside the canonical adapter module."""
+    canonical = "intergrax/runtime/llm/model_call_runtime_evidence_adapter.py"
+    discovered: set[tuple[str, int]] = set()
+    for root_name in _PRODUCTION_SCAN_ROOTS:
+        root = _REPO_ROOT / root_name
+        if not root.is_dir():
+            continue
+        for py_path in root.rglob("*.py"):
+            rel = py_path.relative_to(_REPO_ROOT).as_posix()
+            if rel == canonical:
+                continue
+            if _production_path_excluded(Path(rel)):
+                continue
+            try:
+                tree = ast.parse(py_path.read_text(encoding="utf-8"))
+            except SyntaxError:
+                continue
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
+                    continue
+                if _ast_call_callee_root_name(node) != "ModelCallRuntimeEvidenceAdapter":
+                    continue
+                discovered.add((rel, node.lineno))
+    return frozenset(discovered)
+
+
+def llm_adapter_has_canonical_p4_evidence_wrapper(adapter: object) -> bool:
+    from intergrax.runtime.llm.model_call_runtime_evidence_adapter import ModelCallRuntimeEvidenceAdapter
+
+    return isinstance(adapter, ModelCallRuntimeEvidenceAdapter)
+
+
+def compare_non_production_reachability_to_model_registry(
+    model_registry: tuple[RegisteredModelCallSurface, ...],
+    reachability_registry: tuple[RegisteredNonProductionModelReachability, ...],
+) -> SurfaceParityResult:
+    non_production_keys = frozenset(
+        row.key
+        for row in model_registry
+        if row.classification == ModelCallSurfaceClassification.NON_PRODUCTION
+    )
+    reachability_keys = frozenset(row.key for row in reachability_registry)
+    return compare_discovered_to_registry(non_production_keys, reachability_registry)
 
 
 def compare_model_call_surfaces_to_registry(
@@ -573,7 +783,70 @@ P4_R4_GATE_REGISTRY: Final[tuple[P4GateEvidence, ...]] = P4_R3_GATE_REGISTRY + (
     ),
 )
 
-P4_R1_GATE_REGISTRY = P4_R4_GATE_REGISTRY
+P4_R5_GATE_REGISTRY: Final[tuple[P4GateEvidence, ...]] = P4_R4_GATE_REGISTRY + (
+    P4GateEvidence(
+        "TXP4R5-Q01",
+        "R5 START_HEAD ancestry",
+        ("test_trace_x_p4_r5_closed_world.py::test_txp4r5_q01_start_head_ancestry",),
+    ),
+    P4GateEvidence(
+        "TXP4R5-Q02",
+        "production composition discovery/registry parity",
+        ("test_trace_x_p4_r5_closed_world.py::test_txp4r5_q04_production_composition_registry_parity",),
+    ),
+    P4GateEvidence(
+        "TXP4R5-Q03",
+        "production composition negative sensitivity (synthetic site)",
+        ("test_trace_x_p4_r5_closed_world.py::test_txp4r5_q05_production_composition_negative_sensitivity",),
+    ),
+    P4GateEvidence(
+        "TXP4R5-Q04",
+        "InferenceExecutor unreachable from sanctioned production routers",
+        ("test_trace_x_p4_r5_closed_world.py::test_txp4r5_q06_inference_executor_unreachable_from_sanctioned_routers",),
+    ),
+    P4GateEvidence(
+        "TXP4R5-Q05",
+        "build_governed_inference_executor has no production caller",
+        ("test_trace_x_p4_r5_closed_world.py::test_txp4r5_q07_build_governed_inference_executor_no_production_caller",),
+    ),
+    P4GateEvidence(
+        "TXP4R5-Q06",
+        "NON_PRODUCTION model surfaces have explicit reachability proof rows",
+        ("test_trace_x_p4_r5_closed_world.py::test_txp4r5_q08_non_production_surfaces_have_reachability_proof",),
+    ),
+    P4GateEvidence(
+        "TXP4R5-Q07",
+        "R5-N1 synthetic sanctioned inference_executor injection fails closed",
+        ("test_trace_x_p4_r5_closed_world.py::test_txp4r5_q09_r5_n1_synthetic_inference_executor_injection_fails",),
+    ),
+    P4GateEvidence(
+        "TXP4R5-Q08",
+        "R5-N2 synthetic NON_PRODUCTION production link fails closed",
+        ("test_trace_x_p4_r5_closed_world.py::test_txp4r5_q11_r5_n2_non_production_production_link_fails",),
+    ),
+    P4GateEvidence(
+        "TXP4R5-Q09",
+        "R5-N3 raw LLM adapter without canonical P4 wrapper fails composition proof",
+        ("test_trace_x_p4_r5_closed_world.py::test_txp4r5_q12_r5_n3_raw_adapter_fails_p4_wrap_proof",),
+    ),
+    P4GateEvidence(
+        "TXP4R5-Q10",
+        "R5-N4 zero alternate P4 attribution seam instantiations",
+        ("test_trace_x_p4_r5_closed_world.py::test_txp4r5_q13_r5_n4_zero_alternate_p4_attribution_seams",),
+    ),
+    P4GateEvidence(
+        "TXP4R5-Q11",
+        "sanctioned runtime config bridge propagates canonical P4 wrap (behavioral)",
+        ("test_trace_x_p4_r5_closed_world.py::test_txp4r5_q10_sanctioned_runtime_config_llm_adapter_wrap_propagation",),
+    ),
+    P4GateEvidence(
+        "TXP4R5-Q12",
+        "production-reachable PRIMARY model-call surfaces remain P4 protected",
+        ("test_trace_x_p4_r5_closed_world.py::test_txp4r5_q14_production_reachable_primary_surfaces_p4_protected",),
+    ),
+)
+
+P4_R1_GATE_REGISTRY = P4_R5_GATE_REGISTRY
 
 
 def parse_context_assembly_payload(
@@ -622,16 +895,26 @@ __all__ = [
     "P4_R2_GATE_REGISTRY",
     "P4_R3_GATE_REGISTRY",
     "P4_R4_GATE_REGISTRY",
+    "P4_R5_GATE_REGISTRY",
     "SurfaceParityResult",
     "TRACE_X_P4_R2_START_HEAD",
     "TRACE_X_P4_R3_START_HEAD",
     "TRACE_X_P4_R4_START_HEAD",
+    "TRACE_X_P4_R5_START_HEAD",
     "TRACE_X_P4_START_HEAD",
     "attribute_model_call_to_context",
     "classified_model_call_surfaces",
     "compare_context_surfaces_to_registry",
     "compare_discovered_to_registry",
     "compare_model_call_surfaces_to_registry",
+    "compare_non_production_reachability_to_model_registry",
+    "compare_production_composition_sites_to_registry",
+    "discover_alternate_p4_attribution_seam_instantiations_ast",
+    "discover_production_composition_sites_ast",
+    "discovered_production_composition_site_keys",
+    "llm_adapter_has_canonical_p4_evidence_wrapper",
+    "production_composition_supplies_inference_executor",
+    "classify_non_production_reachability_reason",
     "discover_context_surfaces_ast",
     "discover_model_call_surfaces_ast",
     "discovered_context_assembly_production_paths",
