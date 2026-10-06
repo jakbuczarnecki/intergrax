@@ -1,8 +1,60 @@
 # TRACE-X-P4 — Model Call & Context Decision Attribution
 
-Status: **P4-R6 on `development`; READY FOR AUDIT** (not independently closed).
+Status: **P4-R7 on `development`; READY FOR AUDIT** (not independently closed).
 
 Primary freeze gate: **FRZ-TRC-05** → **OPEN** until independent audit on GitHub HEAD.
+
+## P4-R7 transitive production composition reachability (R6 blocker remediation)
+
+| Blocker | Status |
+|---------|--------|
+| P4-R6-Q-BLK-TRANSITIVE-REACHABILITY-01 | REMEDIATED in R7 (`_import_closure` + class/composition-factory edges over full closure; BFS >1 hop) |
+| P4-R6-Q-BLK-PATH-PREFIX-CLASSIFICATION-02 | REMEDIATED in R7 (removed `agents/` / `applications/` verdict shortcuts) |
+| P4-R6-Q-BLK-STREAM-CLOSURE-03 | REMEDIATED in R7 (stream surfaces use same graph; external `stream_*` call scan on `production_reachable_modules`) |
+
+**R7 evidence baseline**
+
+| Field | Value |
+|-------|-------|
+| START_HEAD | `7350e6b5827de23b53173a4edd6654b89d2f6371` |
+| FINAL_COMMIT | `ca1b4ec636af6c9c04d1c1a5c3453055384fb4eb` |
+
+### Mechanical reachability graph (R7)
+
+- **Single owner:** `build_production_reachability_graph()` in `_trace_x_p4_r6_reachability_analysis.py`.
+- **Seeds:** sanctioned `SANCTIONED_PRODUCTION_ROOT` + `SANCTIONED_PRODUCTION_ROUTER` module paths from `PRODUCTION_COMPOSITION_SITE_REGISTRY`.
+- **Import closure:** repository-local imports from seeds (fixed point).
+- **Composition edges:** AST class-instantiation edges within closure + explicit P4 composition factory callees (`StrategyExecutionRouter`, `InferenceExecutor`, `build_governed_inference_executor`, `wrap_model_call_runtime_evidence`, `ModelCallRuntimeEvidenceAdapter`, `RuntimeConfig`) — not general `apply_*` procedural calls.
+- **Traversal:** BFS from seeds; `MechanicalReachabilityResult` includes `reachable_from` / `evidence_edges`; `UNRESOLVED` for `unresolved:*` synthetic edges and ambiguous composition-relevant resolution.
+- **Gates:** TXP4R7-Q01–Q09; R6 regression `test_trace_x_p4_r6_closed_world.py` unchanged green.
+
+### Reachability counts (mechanical at R7 START_HEAD)
+
+| Metric | Value |
+|--------|------:|
+| Sanctioned seed modules | 4 |
+| Import closure modules | 3690 |
+| Composition edges | 6161 |
+| Production-reachable modules (BFS) | 109 |
+| NON_PRODUCTION model-call surfaces | 29 |
+| Mechanically `PRODUCTION_REACHABLE` among NON_PRODUCTION | 0 |
+| Unresolved | 0 |
+| InferenceExecutor `generate_structured` | `NOT_REACHABLE_FROM_SANCTIONED_PRODUCTION_ROOT` |
+
+### Negative sensitivity (R7)
+
+| Case | Gate |
+|------|------|
+| Two-hop InferenceExecutor synthetic | TXP4R7-Q04 |
+| `agents/` path not shortcut | TXP4R7-Q05 |
+| `applications/` path not shortcut | TXP4R7-Q06 |
+| Transitive external stream | TXP4R7-Q07 |
+| Ambiguous edge fail-closed | TXP4R7-Q08 |
+
+```text
+uv run pytest tests/qualification/trace_x/test_trace_x_p4_r7_closed_world.py tests/qualification/trace_x/test_trace_x_p4_r6_closed_world.py -p no:xdist -q
+uv run pytest tests/qualification/trace_x/ -k test_trace_x_p4 -p no:xdist -q
+```
 
 ## P4-R6 mechanical reachability & real composition wrap (R5 blocker remediation)
 

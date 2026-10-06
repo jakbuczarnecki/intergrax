@@ -13,6 +13,7 @@ class ReachabilityVerdict(enum.StrEnum):
     NOT_REACHABLE_FROM_SANCTIONED_PRODUCTION_ROOT = "not_reachable_from_sanctioned_production_root"
     TEST_OR_QUALIFICATION_ONLY = "test_or_qualification_only"
     DEVELOPMENT_LAB_ONLY = "development_lab_only"
+    UNRESOLVED = "unresolved"
 
 
 class ReachabilityReason(enum.StrEnum):
@@ -26,6 +27,8 @@ class ReachabilityReason(enum.StrEnum):
         "wrapper_stream_not_invoked_from_sanctioned_composition"
     )
     SYNTHETIC_PRODUCTION_COMPOSITION_EDGE = "synthetic_production_composition_edge"
+    AMBIGUOUS_COMPOSITION_EDGE = "ambiguous_composition_edge"
+    IMPORT_RESOLUTION_FAILED = "import_resolution_failed"
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +57,18 @@ class MechanicalReachabilityResult:
     surface: ModelConsumerSurface
     verdict: ReachabilityVerdict
     reason: ReachabilityReason
+    reachable_from: frozenset[str] = frozenset()
+    evidence_edges: tuple[CompositionEdge, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ProductionReachabilityGraphSnapshot:
+    sanctioned_seed_modules: frozenset[str]
+    import_closure_modules: frozenset[str]
+    composition_edges: frozenset[CompositionEdge]
+    production_reachable_modules: frozenset[str]
+    lab_reachable_modules: frozenset[str]
+    unresolved_modules: frozenset[str]
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,6 +94,7 @@ __all__ = [
     "CompositionEdge",
     "MechanicalReachabilityResult",
     "ModelConsumerSurface",
+    "ProductionReachabilityGraphSnapshot",
     "ReachabilityExpectationParityResult",
     "ReachabilityReason",
     "ReachabilityVerdict",

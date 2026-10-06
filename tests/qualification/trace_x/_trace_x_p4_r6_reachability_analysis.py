@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TRACE-X-P4-R6 static production reachability analysis (P4-bounded, not a general call graph)."""
+"""TRACE-X-P4-R6/R7 static production reachability analysis (P4-bounded, not a general call graph)."""
 
 from __future__ import annotations
 
@@ -24,13 +24,13 @@ from tests.qualification.trace_x._trace_x_p4_r6_reachability_types import (
     CompositionEdge,
     MechanicalReachabilityResult,
     ModelConsumerSurface,
+    ProductionReachabilityGraphSnapshot,
     ReachabilityExpectationParityResult,
     ReachabilityReason,
     ReachabilityVerdict,
 )
 from tests.qualification.trace_x._trace_x_p4_support import (
     _PRODUCTION_EXCLUDE_DIR_NAMES,
-    _PRODUCTION_SCAN_ROOTS,
     _REPO_ROOT,
     _ast_call_callee_root_name,
 )
@@ -41,12 +41,29 @@ _INFERENCE_SURFACE = ModelConsumerSurface(
 )
 _WRAPPER_MODULE = "intergrax/runtime/llm/model_call_runtime_evidence_adapter.py"
 _STREAM_METHODS: Final[frozenset[str]] = frozenset({"stream_messages", "stream_with_tools"})
+_UNRESOLVED_EDGE_PREFIX: Final[str] = "unresolved:"
+_COMPOSITION_FACTORY_CALLEES: Final[frozenset[str]] = frozenset(
+    {
+        "StrategyExecutionRouter",
+        "InferenceExecutor",
+        "build_governed_inference_executor",
+        "wrap_model_call_runtime_evidence",
+        "ModelCallRuntimeEvidenceAdapter",
+        "RuntimeConfig",
+    },
+)
 
 
 @dataclass(frozen=True, slots=True)
 class ReachabilityEvaluationContext:
     production_composition_registry: tuple[RegisteredProductionCompositionSite, ...]
     extra_composition_edges: frozenset[CompositionEdge] = frozenset()
+
+
+@dataclass(frozen=True, slots=True)
+class _ImportBinding:
+    module_path: str
+    symbol: str | None
 
 
 def _production_path_excluded(rel_path: Path) -> bool:
@@ -62,10 +79,6 @@ def _production_path_excluded(rel_path: Path) -> bool:
     return False
 
 
-def _module_path_from_file(rel_posix: str) -> str:
-    return rel_posix
-
-
 def _parse_module(rel_posix: str) -> ast.Module | None:
     py_path = _REPO_ROOT / rel_posix
     if not py_path.is_file():
@@ -76,13 +89,31 @@ def _parse_module(rel_posix: str) -> ast.Module | None:
         return None
 
 
+def _resolve_import_to_path(dotted: str, _current_pkg: str) -> str:
+    dotted = dotted.strip(".")
+    if not dotted.startswith(("intergrax", "agents", "applications")):
+        return ""
+    candidate = dotted.replace(".", "/") + ".py"
+    if (_REPO_ROOT / candidate).is_file():
+        return candidate
+    init_candidate = dotted.replace(".", "/") + "/__init__.py"
+    if (_REPO_ROOT / init_candidate).is_file():
+        return init_candidate
+    return ""
+
+
+def _current_package(rel_posix: str) -> str:
+    current_pkg = rel_posix.replace("/", ".").removesuffix(".py")
+    if current_pkg.endswith(".__init__"):
+        current_pkg = current_pkg.removesuffix(".__init__")
+    return current_pkg
+
+
 def _imports_from_module(rel_posix: str) -> frozenset[str]:
     tree = _parse_module(rel_posix)
     if tree is None:
         return frozenset()
-    current_pkg = rel_posix.replace("/", ".").removesuffix(".py")
-    if current_pkg.endswith(".__init__"):
-        current_pkg = current_pkg.removesuffix(".__init__")
+    current_pkg = _current_package(rel_posix)
     discovered: set[str] = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
@@ -104,18 +135,35 @@ def _imports_from_module(rel_posix: str) -> frozenset[str]:
     return frozenset(path for path in discovered if path)
 
 
-def _resolve_import_to_path(dotted: str, _current_pkg: str) -> str:
-    """Map import name to repo-relative module path (best-effort, P4 scan roots only)."""
-    dotted = dotted.strip(".")
-    if not dotted.startswith(("intergrax", "agents", "applications")):
-        return ""
-    candidate = dotted.replace(".", "/") + ".py"
-    if (_REPO_ROOT / candidate).is_file():
-        return candidate
-    init_candidate = dotted.replace(".", "/") + "/__init__.py"
-    if (_REPO_ROOT / init_candidate).is_file():
-        return init_candidate
-    return ""
+def _import_bindings(rel_posix: str) -> dict[str, _ImportBinding]:
+    tree = _parse_module(rel_posix)
+    if tree is None:
+        return {}
+    current_pkg = _current_package(rel_posix)
+    bindings: dict[str, _ImportBinding] = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                local = alias.asname or alias.name.split(".")[0]
+                path = _resolve_import_to_path(alias.name, current_pkg)
+                bindings[local] = _ImportBinding(module_path=path, symbol=None)
+        elif isinstance(node, ast.ImportFrom):
+            if node.module is None:
+                continue
+            base = node.module
+            if node.level:
+                pkg_parts = current_pkg.split(".")
+                parent = ".".join(pkg_parts[: max(0, len(pkg_parts) - (node.level - 1))])
+                base = f"{parent}.{node.module}" if parent else node.module
+            base_path = _resolve_import_to_path(base, current_pkg)
+            for alias in node.names:
+                if alias.name == "*":
+                    continue
+                local = alias.asname or alias.name
+                symbol_path = _resolve_import_to_path(f"{base}.{alias.name}", current_pkg)
+                module_path = symbol_path or base_path
+                bindings[local] = _ImportBinding(module_path=module_path, symbol=alias.name)
+    return bindings
 
 
 def _sanctioned_production_module_paths(
@@ -157,7 +205,9 @@ def _import_closure(entry_modules: frozenset[str]) -> frozenset[str]:
 
 
 _CLASS_NAMES_CACHE: dict[str, frozenset[str]] = {}
+_FUNCTION_NAMES_CACHE: dict[str, frozenset[str]] = {}
 _IMPORTS_CACHE: dict[str, frozenset[str]] = {}
+_BINDINGS_CACHE: dict[str, dict[str, _ImportBinding]] = {}
 
 
 def _class_names_in_module(rel_posix: str) -> frozenset[str]:
@@ -174,6 +224,22 @@ def _class_names_in_module(rel_posix: str) -> frozenset[str]:
     return result
 
 
+def _function_names_in_module(rel_posix: str) -> frozenset[str]:
+    if rel_posix in _FUNCTION_NAMES_CACHE:
+        return _FUNCTION_NAMES_CACHE[rel_posix]
+    tree = _parse_module(rel_posix)
+    if tree is None:
+        result = frozenset()
+    else:
+        result = frozenset(
+            node.name
+            for node in ast.walk(tree)
+            if isinstance(node, ast.FunctionDef) and not node.name.startswith("_")
+        )
+    _FUNCTION_NAMES_CACHE[rel_posix] = result
+    return result
+
+
 def _cached_imports(rel_posix: str) -> frozenset[str]:
     if rel_posix in _IMPORTS_CACHE:
         return _IMPORTS_CACHE[rel_posix]
@@ -182,59 +248,180 @@ def _cached_imports(rel_posix: str) -> frozenset[str]:
     return result
 
 
-def _model_consumer_classes_by_module(
-    surfaces: frozenset[ModelConsumerSurface],
+def _cached_bindings(rel_posix: str) -> dict[str, _ImportBinding]:
+    if rel_posix in _BINDINGS_CACHE:
+        return _BINDINGS_CACHE[rel_posix]
+    result = _import_bindings(rel_posix)
+    _BINDINGS_CACHE[rel_posix] = result
+    return result
+
+
+def _class_name_index(
+    analysis_modules: frozenset[str],
 ) -> dict[str, frozenset[str]]:
-    modules = frozenset(surface.path for surface in surfaces)
-    return {
-        module: _class_names_in_module(module)
-        for module in modules
-    }
+    index: dict[str, set[str]] = {}
+    for module in analysis_modules:
+        for class_name in _class_names_in_module(module):
+            index.setdefault(class_name, set()).add(module)
+    return {name: frozenset(modules) for name, modules in index.items()}
 
 
-def _resolve_callee_consumer_module(
+def _resolve_class_target_module(
     rel_posix: str,
-    callee: str,
-    consumer_modules: frozenset[str],
-) -> str:
-    if callee in _class_names_in_module(rel_posix) and rel_posix in consumer_modules:
+    name: str,
+    *,
+    analysis_modules: frozenset[str],
+    class_index: dict[str, frozenset[str]],
+) -> str | None:
+    local_classes = class_index.get(name, frozenset())
+    in_closure = frozenset(module for module in local_classes if module in analysis_modules)
+    if len(in_closure) == 1:
+        return next(iter(in_closure))
+    if len(in_closure) > 1:
+        return None
+    if name in _class_names_in_module(rel_posix):
         return rel_posix
     for imported in _cached_imports(rel_posix):
-        if imported not in consumer_modules:
+        if imported not in analysis_modules:
             continue
-        if callee in _class_names_in_module(imported):
+        if name in _class_names_in_module(imported):
             return imported
     return ""
 
 
-def _build_instantiation_adjacency(
-    source_modules: frozenset[str],
-    consumer_modules: frozenset[str],
-) -> dict[str, frozenset[str]]:
-    adjacency: dict[str, set[str]] = {module: set() for module in source_modules}
-    for rel_posix in source_modules:
+def _resolve_factory_target_module(
+    rel_posix: str,
+    name: str,
+    bindings: dict[str, _ImportBinding],
+) -> str | None:
+    if name not in _COMPOSITION_FACTORY_CALLEES:
+        return ""
+    if name in bindings:
+        binding = bindings[name]
+        if not binding.module_path:
+            return None
+        return binding.module_path
+    if name in _function_names_in_module(rel_posix):
+        return rel_posix
+    return ""
+
+
+def _resolve_call_target_module(
+    rel_posix: str,
+    call: ast.Call,
+    *,
+    analysis_modules: frozenset[str],
+    class_index: dict[str, frozenset[str]],
+) -> str | None:
+    """Return target module path, empty if not a composition edge, None if ambiguous/unresolved."""
+    bindings = _cached_bindings(rel_posix)
+    func = call.func
+
+    if isinstance(func, ast.Name):
+        name = func.id
+        factory_target = _resolve_factory_target_module(rel_posix, name, bindings)
+        if factory_target is None:
+            return None
+        if factory_target:
+            return factory_target
+        if name in bindings:
+            binding = bindings[name]
+            if not binding.module_path:
+                return None
+            if binding.symbol is None:
+                return ""
+            return _resolve_class_target_module(
+                binding.module_path,
+                binding.symbol,
+                analysis_modules=analysis_modules,
+                class_index=class_index,
+            )
+        return _resolve_class_target_module(
+            rel_posix,
+            name,
+            analysis_modules=analysis_modules,
+            class_index=class_index,
+        )
+
+    if isinstance(func, ast.Attribute):
+        attr = func.attr
+        factory_target = _resolve_factory_target_module(rel_posix, attr, bindings)
+        if factory_target is None:
+            return None
+        if factory_target:
+            return factory_target
+        if isinstance(func.value, ast.Name):
+            base_name = func.value.id
+            if base_name in bindings:
+                binding = bindings[base_name]
+                if not binding.module_path:
+                    return None
+                return _resolve_class_target_module(
+                    binding.module_path,
+                    attr,
+                    analysis_modules=analysis_modules,
+                    class_index=class_index,
+                )
+        return ""
+
+    callee = _ast_call_callee_root_name(call)
+    if callee is None:
+        return ""
+    factory_target = _resolve_factory_target_module(rel_posix, callee, bindings)
+    if factory_target is None:
+        return None
+    if factory_target:
+        return factory_target
+    return _resolve_class_target_module(
+        rel_posix,
+        callee,
+        analysis_modules=analysis_modules,
+        class_index=class_index,
+    )
+
+
+def _discover_composition_edges(
+    analysis_modules: frozenset[str],
+) -> tuple[frozenset[CompositionEdge], frozenset[str]]:
+    class_index = _class_name_index(analysis_modules)
+    edges: set[CompositionEdge] = set()
+    unresolved_modules: set[str] = set()
+    for rel_posix in analysis_modules:
         tree = _parse_module(rel_posix)
         if tree is None:
             continue
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
-            callee = _ast_call_callee_root_name(node)
-            if callee is None:
+            target = _resolve_call_target_module(
+                rel_posix,
+                node,
+                analysis_modules=analysis_modules,
+                class_index=class_index,
+            )
+            if target is None:
+                callee = _ast_call_callee_root_name(node)
+                if callee in _COMPOSITION_FACTORY_CALLEES or (
+                    callee and callee in class_index
+                ):
+                    unresolved_modules.add(rel_posix)
                 continue
-            target = _resolve_callee_consumer_module(rel_posix, callee, consumer_modules)
-            if target:
-                adjacency.setdefault(rel_posix, set()).add(target)
-    return {module: frozenset(targets) for module, targets in adjacency.items()}
+            if target and target in analysis_modules:
+                callee = _ast_call_callee_root_name(node) or "call"
+                edges.add(
+                    CompositionEdge(
+                        source_module_path=rel_posix,
+                        target_module_path=target,
+                        edge_kind=f"instantiate:{callee}",
+                    ),
+                )
+    return frozenset(edges), frozenset(unresolved_modules)
 
 
-def _wiring_closure(
+def _reachable_modules_bfs(
     seed_modules: frozenset[str],
-    consumer_modules: frozenset[str],
-    import_closed_modules: frozenset[str],
-    extra_edges: frozenset[CompositionEdge],
+    adjacency: dict[str, frozenset[str]],
 ) -> frozenset[str]:
-    adjacency = _build_instantiation_adjacency(import_closed_modules, consumer_modules)
     reachable: set[str] = set(seed_modules)
     queue = list(seed_modules)
     while queue:
@@ -243,26 +430,73 @@ def _wiring_closure(
             if target not in reachable:
                 reachable.add(target)
                 queue.append(target)
-        for edge in extra_edges:
-            if edge.source_module_path == module and edge.target_module_path not in reachable:
-                reachable.add(edge.target_module_path)
-                queue.append(edge.target_module_path)
     return frozenset(reachable)
 
 
-def _sanctioned_modules_invoke_stream_methods(sanctioned_modules: frozenset[str]) -> bool:
-    for module in sanctioned_modules:
-        tree = _parse_module(module)
-        if tree is None:
+def _adjacency_from_edges(
+    edges: frozenset[CompositionEdge],
+    module_universe: frozenset[str],
+) -> dict[str, frozenset[str]]:
+    adjacency: dict[str, set[str]] = {module: set() for module in module_universe}
+    for edge in edges:
+        if edge.source_module_path in module_universe and edge.target_module_path in module_universe:
+            adjacency.setdefault(edge.source_module_path, set()).add(edge.target_module_path)
+    return {module: frozenset(targets) for module, targets in adjacency.items()}
+
+
+def _shortest_path_edges(
+    seeds: frozenset[str],
+    target: str,
+    adjacency: dict[str, frozenset[str]],
+    all_edges: frozenset[CompositionEdge],
+) -> tuple[CompositionEdge, ...]:
+    if target not in seeds:
+        parent: dict[str, str] = {}
+        queue = list(seeds)
+        visited = set(seeds)
+        found = False
+        while queue and not found:
+            current = queue.pop(0)
+            for nxt in adjacency.get(current, frozenset()):
+                if nxt not in visited:
+                    visited.add(nxt)
+                    parent[nxt] = current
+                    if nxt == target:
+                        found = True
+                        break
+                    queue.append(nxt)
+        if not found:
+            return ()
+        chain: list[str] = [target]
+        while chain[-1] not in seeds:
+            chain.append(parent[chain[-1]])
+        chain.reverse()
+    else:
+        chain = [target]
+    path_edges: list[CompositionEdge] = []
+    for idx in range(len(chain) - 1):
+        src, dst = chain[idx], chain[idx + 1]
+        match = next(
+            (
+                edge
+                for edge in all_edges
+                if edge.source_module_path == src and edge.target_module_path == dst
+            ),
+            CompositionEdge(source_module_path=src, target_module_path=dst, edge_kind="path:hop"),
+        )
+        path_edges.append(match)
+    return tuple(path_edges)
+
+
+def _module_invokes_stream_methods(rel_posix: str) -> bool:
+    tree = _parse_module(rel_posix)
+    if tree is None:
+        return False
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
             continue
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.Call):
-                continue
-            func = node.func
-            if not isinstance(func, ast.Attribute):
-                continue
-            if func.attr not in _STREAM_METHODS:
-                continue
+        func = node.func
+        if isinstance(func, ast.Attribute) and func.attr in _STREAM_METHODS:
             return True
     return False
 
@@ -292,6 +526,34 @@ def _inference_executor_mechanically_unreachable(
     return True
 
 
+def build_production_reachability_graph(
+    context: ReachabilityEvaluationContext,
+) -> ProductionReachabilityGraphSnapshot:
+    sanctioned = _sanctioned_production_module_paths(context.production_composition_registry)
+    lab_seeds = _development_lab_module_paths(context.production_composition_registry)
+    import_closed = _import_closure(sanctioned)
+    discovered_edges, unresolved_from_parse = _discover_composition_edges(import_closed)
+    all_edges = discovered_edges | context.extra_composition_edges
+    unresolved_targets: set[str] = set(unresolved_from_parse)
+    for edge in context.extra_composition_edges:
+        if edge.edge_kind.startswith(_UNRESOLVED_EDGE_PREFIX):
+            unresolved_targets.add(edge.target_module_path)
+    module_universe = import_closed | frozenset(
+        edge.source_module_path for edge in all_edges
+    ) | frozenset(edge.target_module_path for edge in all_edges)
+    adjacency = _adjacency_from_edges(all_edges, module_universe)
+    production_reachable = _reachable_modules_bfs(sanctioned, adjacency)
+    lab_reachable = _reachable_modules_bfs(lab_seeds, adjacency) if lab_seeds else frozenset()
+    return ProductionReachabilityGraphSnapshot(
+        sanctioned_seed_modules=sanctioned,
+        import_closure_modules=import_closed,
+        composition_edges=all_edges,
+        production_reachable_modules=production_reachable,
+        lab_reachable_modules=lab_reachable,
+        unresolved_modules=frozenset(unresolved_targets),
+    )
+
+
 def _expectation_verdict_for_reason(
     reason: NonProductionReachabilityReason,
 ) -> ReachabilityVerdict:
@@ -310,26 +572,40 @@ def evaluate_non_production_model_surface_reachability(
     model_registry: tuple[RegisteredModelCallSurface, ...],
     context: ReachabilityEvaluationContext,
     all_non_production_surfaces: frozenset[ModelConsumerSurface],
+    graph: ProductionReachabilityGraphSnapshot,
 ) -> MechanicalReachabilityResult:
-    consumer_modules = frozenset(surface.path for surface in all_non_production_surfaces)
-    sanctioned = _sanctioned_production_module_paths(context.production_composition_registry)
+    sanctioned = graph.sanctioned_seed_modules
     lab_modules = _development_lab_module_paths(context.production_composition_registry)
-    wired_modules = _wiring_closure(
-        sanctioned,
-        consumer_modules,
-        sanctioned,
-        context.extra_composition_edges,
-    )
+    adjacency = _adjacency_from_edges(graph.composition_edges, graph.import_closure_modules)
+
+    for edge in context.extra_composition_edges:
+        if edge.edge_kind.startswith(_UNRESOLVED_EDGE_PREFIX) and edge.target_module_path == surface.path:
+            return MechanicalReachabilityResult(
+                surface=surface,
+                verdict=ReachabilityVerdict.UNRESOLVED,
+                reason=ReachabilityReason.AMBIGUOUS_COMPOSITION_EDGE,
+            )
 
     if surface == _INFERENCE_SURFACE:
-        if not _inference_executor_mechanically_unreachable(
+        inference_reachable = (
+            "intergrax/runtime/execution/inference.py" in graph.production_reachable_modules
+        )
+        if inference_reachable or not _inference_executor_mechanically_unreachable(
             context.production_composition_registry,
             context.extra_composition_edges,
         ):
+            path_edges = _shortest_path_edges(
+                sanctioned,
+                "intergrax/runtime/execution/inference.py",
+                adjacency,
+                graph.composition_edges,
+            )
             return MechanicalReachabilityResult(
                 surface=surface,
                 verdict=ReachabilityVerdict.PRODUCTION_REACHABLE,
                 reason=ReachabilityReason.INFERENCE_EXECUTOR_PRODUCTION_WIRED,
+                reachable_from=sanctioned,
+                evidence_edges=path_edges,
             )
         return MechanicalReachabilityResult(
             surface=surface,
@@ -337,26 +613,18 @@ def evaluate_non_production_model_surface_reachability(
             reason=ReachabilityReason.INFERENCE_EXECUTOR_NO_PRODUCTION_CALLER,
         )
 
-    if surface.path.startswith("agents/"):
-        return MechanicalReachabilityResult(
-            surface=surface,
-            verdict=ReachabilityVerdict.NOT_REACHABLE_FROM_SANCTIONED_PRODUCTION_ROOT,
-            reason=ReachabilityReason.TIER2_AGENT_MODULE,
-        )
-
-    if surface.path.startswith("applications/"):
-        return MechanicalReachabilityResult(
-            surface=surface,
-            verdict=ReachabilityVerdict.NOT_REACHABLE_FROM_SANCTIONED_PRODUCTION_ROOT,
-            reason=ReachabilityReason.TIER3_APPLICATION_MODULE,
-        )
-
     if surface.path == _WRAPPER_MODULE and surface.method in _STREAM_METHODS:
-        if _sanctioned_modules_invoke_stream_methods(sanctioned):
+        stream_modules = frozenset(
+            module
+            for module in graph.production_reachable_modules
+            if module != _WRAPPER_MODULE and _module_invokes_stream_methods(module)
+        )
+        if stream_modules:
             return MechanicalReachabilityResult(
                 surface=surface,
                 verdict=ReachabilityVerdict.PRODUCTION_REACHABLE,
                 reason=ReachabilityReason.SYNTHETIC_PRODUCTION_COMPOSITION_EDGE,
+                reachable_from=sanctioned,
             )
         return MechanicalReachabilityResult(
             surface=surface,
@@ -364,26 +632,32 @@ def evaluate_non_production_model_surface_reachability(
             reason=ReachabilityReason.WRAPPER_STREAM_NOT_INVOKED_FROM_SANCTIONED_COMPOSITION,
         )
 
-    if surface.path in lab_modules and surface.path not in sanctioned:
-        return MechanicalReachabilityResult(
-            surface=surface,
-            verdict=ReachabilityVerdict.DEVELOPMENT_LAB_ONLY,
-            reason=ReachabilityReason.CONSUMER_NOT_INSTANTIATED_FROM_SANCTIONED_WIRING,
-        )
+    path_edges = _shortest_path_edges(
+        sanctioned,
+        surface.path,
+        adjacency,
+        graph.composition_edges,
+    )
+    reachable_from = sanctioned if surface.path in graph.production_reachable_modules else frozenset()
 
-    for edge in context.extra_composition_edges:
-        if edge.target_module_path == surface.path:
-            return MechanicalReachabilityResult(
-                surface=surface,
-                verdict=ReachabilityVerdict.PRODUCTION_REACHABLE,
-                reason=ReachabilityReason.SYNTHETIC_PRODUCTION_COMPOSITION_EDGE,
-            )
-
-    if surface.path in wired_modules and surface.path not in sanctioned:
+    if surface.path in graph.production_reachable_modules:
         return MechanicalReachabilityResult(
             surface=surface,
             verdict=ReachabilityVerdict.PRODUCTION_REACHABLE,
             reason=ReachabilityReason.SYNTHETIC_PRODUCTION_COMPOSITION_EDGE,
+            reachable_from=reachable_from,
+            evidence_edges=path_edges,
+        )
+
+    if (
+        surface.path in graph.lab_reachable_modules
+        and surface.path not in graph.production_reachable_modules
+        and surface.path in lab_modules
+    ):
+        return MechanicalReachabilityResult(
+            surface=surface,
+            verdict=ReachabilityVerdict.DEVELOPMENT_LAB_ONLY,
+            reason=ReachabilityReason.CONSUMER_NOT_INSTANTIATED_FROM_SANCTIONED_WIRING,
         )
 
     return MechanicalReachabilityResult(
@@ -402,12 +676,14 @@ def evaluate_all_non_production_reachability(
         for row in model_registry
         if row.classification == ModelCallSurfaceClassification.NON_PRODUCTION
     )
+    graph = build_production_reachability_graph(context)
     return tuple(
         evaluate_non_production_model_surface_reachability(
             surface,
             model_registry=model_registry,
             context=context,
             all_non_production_surfaces=surfaces,
+            graph=graph,
         )
         for surface in sorted(surfaces, key=lambda s: s.key)
     )
@@ -437,6 +713,9 @@ def compare_mechanical_reachability_to_expectations(
         if row is None:
             continue
         expected = _expectation_verdict_for_reason(row.reason)
+        if result.verdict == ReachabilityVerdict.UNRESOLVED:
+            unresolved.add(key)
+            continue
         if result.verdict == ReachabilityVerdict.PRODUCTION_REACHABLE:
             contradictions.add(key)
         elif result.verdict != expected and result.verdict not in (
@@ -467,6 +746,7 @@ def build_synthetic_inference_executor_production_edge(
 
 __all__ = [
     "ReachabilityEvaluationContext",
+    "build_production_reachability_graph",
     "build_synthetic_inference_executor_production_edge",
     "compare_mechanical_reachability_to_expectations",
     "evaluate_all_non_production_reachability",

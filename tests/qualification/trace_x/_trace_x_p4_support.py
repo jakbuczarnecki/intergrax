@@ -45,6 +45,7 @@ TRACE_X_P4_R3_START_HEAD: Final[str] = "bb1b7fa76784f13c5f5c64d9962e136fc5e40701
 TRACE_X_P4_R4_START_HEAD: Final[str] = "069315c5fe45afc4ed39c5b02900fd56889e3bb5"
 TRACE_X_P4_R5_START_HEAD: Final[str] = "bef997db3fd40eab7d47ca605f12dcd0145bcb0e"
 TRACE_X_P4_R6_START_HEAD: Final[str] = "c916c8fff0e772c6d09662be28f81318402b44b0"
+TRACE_X_P4_R7_START_HEAD: Final[str] = "7350e6b5827de23b53173a4edd6654b89d2f6371"
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _PRODUCTION_SCAN_ROOTS: Final[tuple[str, ...]] = ("intergrax", "agents", "applications")
