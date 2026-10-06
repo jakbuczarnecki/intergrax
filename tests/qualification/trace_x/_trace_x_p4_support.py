@@ -5,8 +5,6 @@
 from __future__ import annotations
 
 import ast
-import enum
-import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
@@ -23,10 +21,19 @@ from intergrax.runtime.llm.model_context_attribution import (
     ModelContextAttributionVerdict,
     try_attribute_model_call_to_context,
 )
+from tests.qualification.trace_x._trace_x_p4_registry_types import (
+    ContextSurfaceClassification,
+    ModelCallSurfaceClassification,
+    RegisteredContextSurface,
+    RegisteredModelCallSurface,
+    SurfaceParityResult,
+    compare_discovered_to_registry,
+)
 
 TRACE_X_P4_START_HEAD: Final[str] = "7d782af85fa97807b882cc9063a5d57aef899e57"
 TRACE_X_P4_R2_START_HEAD: Final[str] = "54936ecf758e68d6b79f2b05604fca7c1fc79849"
 TRACE_X_P4_R3_START_HEAD: Final[str] = "bb1b7fa76784f13c5f5c64d9962e136fc5e40701"
+TRACE_X_P4_R4_START_HEAD: Final[str] = "069315c5fe45afc4ed39c5b02900fd56889e3bb5"
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _PRODUCTION_SCAN_ROOTS: Final[tuple[str, ...]] = ("intergrax", "agents", "applications")
@@ -59,13 +66,6 @@ class ClassifiedSurface:
     evidence_nodeid: str
 
 
-class ModelCallSurfaceClassification(enum.StrEnum):
-    CANONICAL_PRIMARY = "canonical_primary"
-    CANONICAL_INTERNAL_OPTIMIZATION = "canonical_internal_optimization"
-    NON_PRODUCTION = "non_production"
-    NOT_LLM_ADAPTER_CALL = "not_llm_adapter_call"
-
-
 @dataclass(frozen=True, slots=True)
 class DiscoveredModelCallSurface:
     path: str
@@ -80,6 +80,12 @@ class ClassifiedModelCallSurface:
     evidence_nodeid: str
 
 
+@dataclass(frozen=True, slots=True)
+class DiscoveredContextSurface:
+    path: str
+    surface_kind: str
+
+
 def _production_path_excluded(rel_path: Path) -> bool:
     parts = rel_path.parts
     if _PRODUCTION_EXCLUDE_DIR_NAMES.intersection(parts):
@@ -90,6 +96,22 @@ def _production_path_excluded(rel_path: Path) -> bool:
         return True
     if "legacy" in parts:
         return True
+    return False
+
+
+def _runtime_event_context_assembled_call(node: ast.AST) -> bool:
+    if not isinstance(node, ast.Call):
+        return False
+    func = node.func
+    name = func.id if isinstance(func, ast.Name) else (func.attr if isinstance(func, ast.Attribute) else None)
+    if name != "RuntimeEvent":
+        return False
+    for keyword in node.keywords:
+        if keyword.arg != "event_type":
+            continue
+        value = keyword.value
+        if isinstance(value, ast.Attribute) and value.attr == "CONTEXT_ASSEMBLED":
+            return True
     return False
 
 
@@ -119,47 +141,104 @@ def discover_model_call_surfaces_ast() -> frozenset[DiscoveredModelCallSurface]:
     return frozenset(discovered)
 
 
-def _classify_model_call_surface(path: str, method: str) -> tuple[ModelCallSurfaceClassification, str]:
-    closed_world_gate = "test_trace_x_p4_r3_closed_world.py::test_txp4r3_q02_model_call_surfaces_closed_world_classified"
-    evidence_adapter = "intergrax/runtime/llm/model_call_runtime_evidence_adapter.py"
-    if path == evidence_adapter:
-        if method in ("generate_messages", "generate_with_tools", "generate_structured"):
-            return (
-                ModelCallSurfaceClassification.CANONICAL_PRIMARY,
-                "test_trace_x_p4_model_context_attribution.py::test_txp4_q12_primary_context_model_e2e_attribution",
-            )
-        return (
-            ModelCallSurfaceClassification.NON_PRODUCTION,
-            "test_trace_x_p4_model_context_attribution.py::test_txp4r1_q25_streaming_not_production_primary",
-        )
-    if path == "intergrax/runtime/token_optimization/llm_router.py" and method == "generate_structured":
-        return (
-            ModelCallSurfaceClassification.CANONICAL_INTERNAL_OPTIMIZATION,
-            "test_trace_x_p4_model_context_attribution.py::test_txp4_q16_internal_optimization_scope",
-        )
-    if path.startswith("intergrax/llm_adapters/"):
-        return ModelCallSurfaceClassification.NOT_LLM_ADAPTER_CALL, closed_world_gate
-    if path.startswith("agents/") or path.startswith("applications/"):
-        return ModelCallSurfaceClassification.NON_PRODUCTION, closed_world_gate
-    return ModelCallSurfaceClassification.NON_PRODUCTION, closed_world_gate
+DISCOVERED_MODEL_CALL_SURFACES: Final[frozenset[DiscoveredModelCallSurface]] = discover_model_call_surfaces_ast()
 
 
-def build_model_call_surface_inventory() -> tuple[ClassifiedModelCallSurface, ...]:
-    rows: list[ClassifiedModelCallSurface] = []
-    for surface in sorted(discover_model_call_surfaces_ast(), key=lambda s: (s.path, s.method)):
-        classification, evidence = _classify_model_call_surface(surface.path, surface.method)
-        rows.append(
-            ClassifiedModelCallSurface(
-                path=surface.path,
-                method=surface.method,
-                classification=classification,
-                evidence_nodeid=evidence,
-            ),
-        )
-    return tuple(rows)
+def discover_context_surfaces_ast() -> frozenset[DiscoveredContextSurface]:
+    discovered: set[DiscoveredContextSurface] = set()
+    for root_name in _PRODUCTION_SCAN_ROOTS:
+        root = _REPO_ROOT / root_name
+        if not root.is_dir():
+            continue
+        for py_path in root.rglob("*.py"):
+            rel = py_path.relative_to(_REPO_ROOT).as_posix()
+            if _production_path_excluded(Path(rel)):
+                continue
+            try:
+                tree = ast.parse(py_path.read_text(encoding="utf-8"))
+            except SyntaxError:
+                continue
+            for node in ast.walk(tree):
+                if isinstance(node, ast.FunctionDef) and node.name == "record_context_assembled_from_engine":
+                    discovered.add(
+                        DiscoveredContextSurface(path=rel, surface_kind="def:record_context_assembled_from_engine"),
+                    )
+                if not isinstance(node, ast.Call):
+                    continue
+                func = node.func
+                if isinstance(func, ast.Name) and func.id == "record_context_assembled_from_engine":
+                    discovered.add(
+                        DiscoveredContextSurface(path=rel, surface_kind="call:record_context_assembled_from_engine"),
+                    )
+                elif isinstance(func, ast.Attribute) and func.attr == "record_context_assembled_from_engine":
+                    discovered.add(
+                        DiscoveredContextSurface(path=rel, surface_kind="call:record_context_assembled_from_engine"),
+                    )
+                if isinstance(func, ast.Name) and func.id == "bind_pending_context_assembly_event_id":
+                    discovered.add(
+                        DiscoveredContextSurface(path=rel, surface_kind="call:bind_pending_context_assembly_event_id"),
+                    )
+                elif isinstance(func, ast.Attribute) and func.attr == "bind_pending_context_assembly_event_id":
+                    discovered.add(
+                        DiscoveredContextSurface(path=rel, surface_kind="call:bind_pending_context_assembly_event_id"),
+                    )
+                if _runtime_event_context_assembled_call(node):
+                    discovered.add(
+                        DiscoveredContextSurface(path=rel, surface_kind="emit:runtime_event_context_assembled"),
+                    )
+                callee = node.func
+                callee_name = callee.id if isinstance(callee, ast.Name) else None
+                if callee_name == "ContextAssemblyPayloadV4":
+                    discovered.add(
+                        DiscoveredContextSurface(path=rel, surface_kind="construct:context_assembly_payload_v4"),
+                    )
+                if callee_name == "ContextAssemblyPayloadV2":
+                    discovered.add(
+                        DiscoveredContextSurface(path=rel, surface_kind="construct:context_assembly_payload_v2"),
+                    )
+    return frozenset(discovered)
 
 
-MODEL_CALL_SURFACE_INVENTORY: Final[tuple[ClassifiedModelCallSurface, ...]] = build_model_call_surface_inventory()
+DISCOVERED_CONTEXT_SURFACES: Final[frozenset[DiscoveredContextSurface]] = discover_context_surfaces_ast()
+
+
+def discovered_model_call_surface_keys() -> frozenset[tuple[str, str]]:
+    return frozenset((surface.path, surface.method) for surface in DISCOVERED_MODEL_CALL_SURFACES)
+
+
+def discovered_context_surface_keys() -> frozenset[tuple[str, str]]:
+    return frozenset((surface.path, surface.surface_kind) for surface in DISCOVERED_CONTEXT_SURFACES)
+
+
+def compare_model_call_surfaces_to_registry(
+    discovered_keys: frozenset[tuple[str, str]],
+    registry: tuple[RegisteredModelCallSurface, ...],
+) -> SurfaceParityResult:
+    return compare_discovered_to_registry(discovered_keys, registry)
+
+
+def compare_context_surfaces_to_registry(
+    discovered_keys: frozenset[tuple[str, str]],
+    registry: tuple[RegisteredContextSurface, ...],
+) -> SurfaceParityResult:
+    return compare_discovered_to_registry(discovered_keys, registry)
+
+
+from tests.qualification.trace_x._trace_x_p4_context_surface_registry import (  # noqa: E402
+    CONTEXT_SURFACE_REGISTRY,
+)
+from tests.qualification.trace_x._trace_x_p4_model_surface_registry import (  # noqa: E402
+    MODEL_CALL_SURFACE_REGISTRY,
+)
+MODEL_CALL_SURFACE_INVENTORY: Final[tuple[ClassifiedModelCallSurface, ...]] = tuple(
+    ClassifiedModelCallSurface(
+        path=row.path,
+        method=row.method,
+        classification=row.classification,
+        evidence_nodeid=row.evidence_nodeid,
+    )
+    for row in MODEL_CALL_SURFACE_REGISTRY
+)
 
 CONTEXT_ASSEMBLY_SURFACE_INVENTORY: Final[tuple[ClassifiedSurface, ...]] = (
     ClassifiedSurface(
@@ -186,51 +265,31 @@ CONTEXT_ASSEMBLY_SURFACE_INVENTORY: Final[tuple[ClassifiedSurface, ...]] = (
 
 
 def discovered_model_call_production_paths() -> set[str]:
-    return {row.path for row in discover_model_call_surfaces_ast()}
+    return {row.path for row in DISCOVERED_MODEL_CALL_SURFACES}
 
 
 def discovered_model_call_surfaces() -> frozenset[DiscoveredModelCallSurface]:
-    return discover_model_call_surfaces_ast()
+    return DISCOVERED_MODEL_CALL_SURFACES
 
 
 def classified_model_call_surfaces() -> frozenset[tuple[str, str]]:
-    return frozenset((row.path, row.method) for row in MODEL_CALL_SURFACE_INVENTORY)
+    return frozenset((row.path, row.method) for row in MODEL_CALL_SURFACE_REGISTRY)
+
+
+def discovered_context_surfaces() -> frozenset[DiscoveredContextSurface]:
+    return DISCOVERED_CONTEXT_SURFACES
 
 
 def discovered_context_assembly_production_paths() -> set[str]:
-    result = subprocess.run(
-        [
-            "git",
-            "grep",
-            "-l",
-            "record_context_assembled_from_engine",
-            "--",
-            "intergrax/runtime",
-        ],
-        cwd=_REPO_ROOT,
-        capture_output=True,
-        text=True,
-    )
-    paths = set()
-    if result.returncode == 0:
-        paths.update(line.strip() for line in result.stdout.splitlines() if line.strip())
-    uaep = subprocess.run(
-        [
-            "git",
-            "grep",
-            "-l",
-            "RuntimeEventType.CONTEXT_ASSEMBLED",
-            "--",
-            "intergrax/runtime/nexus/uaep/uaep_executor.py",
-            "intergrax/runtime/events/context_skill_recording.py",
-        ],
-        cwd=_REPO_ROOT,
-        capture_output=True,
-        text=True,
-    )
-    if uaep.returncode == 0:
-        paths.update(line.strip() for line in uaep.stdout.splitlines() if line.strip())
-    return paths
+    return {surface.path for surface in DISCOVERED_CONTEXT_SURFACES}
+
+
+def registry_model_call_surface_keys() -> frozenset[tuple[str, str]]:
+    return frozenset(row.key for row in MODEL_CALL_SURFACE_REGISTRY)
+
+
+def registry_context_surface_keys() -> frozenset[tuple[str, str]]:
+    return frozenset(row.key for row in CONTEXT_SURFACE_REGISTRY)
 
 
 def gate_nodeids(registry: tuple[P4GateEvidence, ...]) -> tuple[str, ...]:
@@ -257,7 +316,7 @@ def nodeid_observed(expected: str, passed_nodeids: set[str]) -> bool:
 
 
 def observed_gate_passed(gate_id: str, passed_nodeids: set[str]) -> bool:
-    for row in P4_R3_GATE_REGISTRY:
+    for row in P4_R4_GATE_REGISTRY:
         if row.gate_id != gate_id:
             continue
         return any(nodeid_observed(nodeid, passed_nodeids) for nodeid in row.nodeids)
@@ -465,7 +524,56 @@ P4_R2_GATE_REGISTRY: tuple[P4GateEvidence, ...] = (
 )
 
 P4_R3_GATE_REGISTRY: Final[tuple[P4GateEvidence, ...]] = P4_R2_GATE_REGISTRY
-P4_R1_GATE_REGISTRY = P4_R3_GATE_REGISTRY
+
+P4_R4_GATE_REGISTRY: Final[tuple[P4GateEvidence, ...]] = P4_R3_GATE_REGISTRY + (
+    P4GateEvidence(
+        "TXP4R4-Q01",
+        "R4 START_HEAD ancestry",
+        ("test_trace_x_p4_r4_closed_world.py::test_txp4r4_q01_start_head_ancestry",),
+    ),
+    P4GateEvidence(
+        "TXP4R4-Q02",
+        "model-call discovery/registry parity (independent closed world)",
+        ("test_trace_x_p4_r4_closed_world.py::test_txp4r4_q02_model_call_surfaces_closed_world_parity",),
+    ),
+    P4GateEvidence(
+        "TXP4R4-Q03",
+        "model-call negative sensitivity (synthetic unregistered surface)",
+        ("test_trace_x_p4_r4_closed_world.py::test_txp4r4_q03_model_call_negative_sensitivity_unregistered_surface",),
+    ),
+    P4GateEvidence(
+        "TXP4R4-Q04",
+        "context discovery/registry parity (independent closed world)",
+        ("test_trace_x_p4_r4_closed_world.py::test_txp4r4_q04_context_surfaces_closed_world_parity",),
+    ),
+    P4GateEvidence(
+        "TXP4R4-Q05",
+        "context negative sensitivity (synthetic unregistered producer)",
+        ("test_trace_x_p4_r4_closed_world.py::test_txp4r4_q05_context_negative_sensitivity_unregistered_surface",),
+    ),
+    P4GateEvidence(
+        "TXP4R4-Q06",
+        "explicit model registry not derived from discovery",
+        ("test_trace_x_p4_r4_closed_world.py::test_txp4r4_q06_model_registry_is_static_not_discovery_derived",),
+    ),
+    P4GateEvidence(
+        "TXP4R4-Q07",
+        "no permissive default model-call classification helper",
+        ("test_trace_x_p4_r4_closed_world.py::test_txp4r4_q07_no_permissive_model_call_classification_fallback",),
+    ),
+    P4GateEvidence(
+        "TXP4R4-Q08",
+        "NOT_LLM_ADAPTER_CALL registry rows confined to llm_adapters package",
+        ("test_trace_x_p4_r4_closed_world.py::test_txp4r4_q08_not_llm_adapter_registry_rows_under_llm_adapters",),
+    ),
+    P4GateEvidence(
+        "TXP4R4-Q09",
+        "production composition roots wrap sanctioned model evidence adapter",
+        ("test_trace_x_p4_r4_closed_world.py::test_txp4r4_q09_production_composition_roots_attribution_seam",),
+    ),
+)
+
+P4_R1_GATE_REGISTRY = P4_R4_GATE_REGISTRY
 
 
 def parse_context_assembly_payload(
@@ -499,23 +607,38 @@ def attribute_model_call_to_context(
 
 __all__ = [
     "CONTEXT_ASSEMBLY_SURFACE_INVENTORY",
+    "CONTEXT_SURFACE_REGISTRY",
     "ClassifiedModelCallSurface",
+    "ContextSurfaceClassification",
+    "DISCOVERED_CONTEXT_SURFACES",
+    "DISCOVERED_MODEL_CALL_SURFACES",
+    "DiscoveredContextSurface",
     "DiscoveredModelCallSurface",
     "MODEL_CALL_SURFACE_INVENTORY",
+    "MODEL_CALL_SURFACE_REGISTRY",
     "ModelCallSurfaceClassification",
     "P4GateEvidence",
     "P4_R1_GATE_REGISTRY",
     "P4_R2_GATE_REGISTRY",
     "P4_R3_GATE_REGISTRY",
+    "P4_R4_GATE_REGISTRY",
+    "SurfaceParityResult",
     "TRACE_X_P4_R2_START_HEAD",
     "TRACE_X_P4_R3_START_HEAD",
+    "TRACE_X_P4_R4_START_HEAD",
     "TRACE_X_P4_START_HEAD",
     "attribute_model_call_to_context",
-    "build_model_call_surface_inventory",
     "classified_model_call_surfaces",
+    "compare_context_surfaces_to_registry",
+    "compare_discovered_to_registry",
+    "compare_model_call_surfaces_to_registry",
+    "discover_context_surfaces_ast",
     "discover_model_call_surfaces_ast",
     "discovered_context_assembly_production_paths",
+    "discovered_context_surfaces",
+    "discovered_context_surface_keys",
     "discovered_model_call_production_paths",
+    "discovered_model_call_surface_keys",
     "discovered_model_call_surfaces",
     "gate_nodeids",
     "nodeid_observed",
@@ -523,4 +646,6 @@ __all__ = [
     "observed_gate_passed",
     "parse_context_assembly_payload",
     "parse_llm_call_payload",
+    "registry_context_surface_keys",
+    "registry_model_call_surface_keys",
 ]

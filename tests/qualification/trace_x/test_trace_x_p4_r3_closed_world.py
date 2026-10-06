@@ -9,10 +9,12 @@ import subprocess
 
 import pytest
 
+from tests.qualification.trace_x._trace_x_p4_model_surface_registry import MODEL_CALL_SURFACE_REGISTRY
 from tests.qualification.trace_x._trace_x_p4_support import (
     MODEL_CALL_SURFACE_INVENTORY,
     TRACE_X_P4_R3_START_HEAD,
-    classified_model_call_surfaces,
+    compare_model_call_surfaces_to_registry,
+    discovered_model_call_surface_keys,
     discover_model_call_surfaces_ast,
 )
 
@@ -27,13 +29,13 @@ def test_txp4r3_q01_start_head_ancestry() -> None:
 
 def test_txp4r3_q02_model_call_surfaces_closed_world_classified() -> None:
     discovered = discover_model_call_surfaces_ast()
-    classified = classified_model_call_surfaces()
-    discovered_keys = frozenset((surface.path, surface.method) for surface in discovered)
-    unknown = discovered_keys - classified
-    orphans = classified - discovered_keys
-    assert not unknown, f"unclassified model-call surfaces: {sorted(unknown)}"
-    assert not orphans, f"orphan registry entries: {sorted(orphans)}"
-    assert len(MODEL_CALL_SURFACE_INVENTORY) == len(discovered_keys)
+    result = compare_model_call_surfaces_to_registry(
+        discovered_model_call_surface_keys(),
+        MODEL_CALL_SURFACE_REGISTRY,
+    )
+    assert not result.unknown, f"unclassified model-call surfaces: {sorted(result.unknown)}"
+    assert not result.orphan, f"orphan registry entries: {sorted(result.orphan)}"
+    assert len(MODEL_CALL_SURFACE_INVENTORY) == len(discovered)
 
 
 def test_txp4r3_ast_scanner_finds_synthetic_representative_call() -> None:
