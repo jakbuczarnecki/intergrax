@@ -2,15 +2,19 @@
 
 **Parent:** TRACE-X — End-to-End Traceability & Evidence Certification
 
-**Stage:** TRACE-X-P5-P0-R1 (independent structural discovery soundness — **production delta = 0**)
+**Stage:** TRACE-X-P5-P0-R1-R1 (qualification sentinel package isolation — **production delta = 0**)
 
 **P0 START_HEAD:** `0102eeabc6d1d59efbecff52737491c96b1d3f0c`
 
 **R1 START_HEAD:** `9d48ca424e025888f7ac8ea61ed463f4284a0d29`
 
+**R1-R1 START_HEAD:** `a9fd88da1d5efa3fc61d668289c13f78e4d52b1d`
+
+**R1-R1 final commit:** _(record at push — independent audit uses GitHub SHA, not this doc)_
+
 **Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p5_support.py` · discovery: `tests/qualification/trace_x/_trace_x_p5_discovery.py`
 
-**Status:** TRACE-X-P5-P0-R1 = **READY FOR AUDIT** · TRACE-X-P5-P0 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5 = **BLOCKED** · **FRZ-TRC-07 / 08 / 11** remain **OPEN** (Cursor must not mark P5-P0 CLOSED)
+**Status:** TRACE-X-P5-P0-R1-R1 = **READY FOR AUDIT** · TRACE-X-P5-P0-R1 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5-P0 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5 = **BLOCKED** · **FRZ-TRC-07 / 08 / 11** remain **OPEN** (Cursor must not mark P5-P0 CLOSED)
 
 ---
 
@@ -22,23 +26,35 @@
 
 ---
 
-## 2. Closed-world inventories (@ R1 HEAD — structural discovery)
+## 2. Closed-world inventories (@ R1-R1 — production discovery only)
 
-| Domain | Raw discovered | Classified (non-applicable) | Parity keys | Registry | Unknown | Orphan |
+| Domain | Production raw | Classified (non-applicable) | Parity keys | Registry | Unknown | Orphan |
 |---|---:|---:|---:|---:|---:|---:|
-| Policy | 16 | 3 | 13 | 13 | 0 | 0 |
-| Profile revision | 28 | 7 | 21 | 21 | 0 | 0 |
-| Configuration | 11 | 3 | 8 | 8 | 0 | 0 |
+| Policy | 15 | 2 | 13 | 13 | 0 | 0 |
+| Profile revision | 27 | 6 | 21 | 21 | 0 | 0 |
+| Configuration | 10 | 2 | 8 | 8 | 0 | 0 |
 
-**Discovery method (registry-independent):** deterministic AST scan of `intergrax`, `agents`, `applications`, plus qualification sentinels under `intergrax/qualification/trace_x_p5_r1_sentinels/`. Three bounded discoverers (`_trace_x_p5_discovery.py`) match structural provenance indicators (typed field bundles, governance/boundary composition, profile revision/pinning/admission shapes, configuration fingerprint/version/binding shapes) — **not** predefined registry symbol sets.
+**Qualification sentinel fixtures (not in production inventory):**
 
-**Classifications:** explicit `DiscoveryCandidateDisposition` rows in `_trace_x_p5_support.py` (`NOT_PROVENANCE`, `TEST_OR_DIAGNOSTIC_ONLY`) — no silent name-list filtering inside discovery.
+| Domain | Fixture raw discovered | Expected production parity |
+|---|---:|---|
+| Policy | 1 | FAIL (unknown vs registry) |
+| Profile revision | 1 | FAIL (unknown vs registry) |
+| Configuration | 1 | FAIL (unknown vs registry) |
 
-**R1 sensitivity evidence:** source sentinels `SyntheticGovernanceRevisionTrace`, `Qx7PinnedTenantExecutionRevisionEvidence`, `ZetaScopedConfigurationIdentityTrace`; rename gate `test_txp5p0_r1_q05`; registry-independence gate `test_txp5p0_r1_q06`.
+**Production discovery (registry-independent):** deterministic AST scan of `intergrax`, `agents`, `applications` only (`discover_*_provenance_surfaces` in `_trace_x_p5_discovery.py`). Qualification sentinels are **excluded** from production counts and parity keys.
+
+**Qualification fixture discovery:** separate scan of `tests/qualification/trace_x/r1_fixtures/` (`discover_qualification_*_sentinel_surfaces`). Same structural matchers; used for negative sensitivity only — never unioned into production inventory.
+
+**Distributable package:** `pyproject.toml` → `packages = ["intergrax"]`. P5 sentinel sources must not live under `intergrax/` (gate `test_txp5p0_r1_r1_q02`).
+
+**Classifications:** explicit `DiscoveryCandidateDisposition` rows in `_trace_x_p5_support.py` (`NOT_PROVENANCE`) for production-only non-parity candidates — no silent name-list filtering inside discovery.
+
+**R1 sensitivity evidence:** fixture sentinels `SyntheticGovernanceRevisionTrace`, `Qx7PinnedTenantExecutionRevisionEvidence`, `ZetaScopedConfigurationIdentityTrace`; rename gate `test_txp5p0_r1_q05`; registry-independence gate `test_txp5p0_r1_q06`; package isolation `test_txp5p0_r1_r1_q02`.
 
 **Newly surfaced @ R1 (registry rows added):** durable profile persistence — `DocumentStore*` / `Kv*` effective profile revision and execution pinning stores (`persistence.py`).
 
-Registry parity gates: `test_txp5p0_q02`..`q04`, R1 gates `test_txp5p0_r1_q02`..`q08`.
+Registry parity gates: `test_txp5p0_q02`..`q04`, R1 gates `test_txp5p0_r1_q02`..`q08`, R1-R1 gates `test_txp5p0_r1_r1_q01`..`q02`.
 
 ---
 
@@ -149,15 +165,15 @@ configuration payload (configuration_type/version/fingerprint)
 | P5-GAP-04 | IN-SCOPE BLOCKER | No global config fingerprint → execution evidence chain | TRACE-X-P5-R2 |
 | P5-GAP-05 | TRACKED FREEZE DEBT | TXP1R1-Q02 / TXP1R1-Q23 | — |
 
-**Recommendation:** **TRACE-X-P5 = BLOCKED** for independent closure until children remediate blockers; **TRACE-X-P5-P0-R1 = READY FOR AUDIT**; **TRACE-X-P5-P0 = READY FOR INDEPENDENT CLOSURE REVIEW** (inventory only — FRZ criteria still OPEN).
+**Recommendation:** **TRACE-X-P5 = BLOCKED** for independent closure until children remediate blockers; **TRACE-X-P5-P0-R1-R1 = READY FOR AUDIT**; **TRACE-X-P5-P0-R1 / P5-P0 = READY FOR INDEPENDENT CLOSURE REVIEW** (inventory only — FRZ criteria still OPEN).
 
 ---
 
 ## 9. Mechanical gates
 
-Entrypoint: `tests/qualification/trace_x/test_trace_x_p5_p0_baseline.py` (TXP5P0-Q01..Q13, TXP5P0-R1-Q01..Q08).
+Entrypoint: `tests/qualification/trace_x/test_trace_x_p5_p0_baseline.py` (TXP5P0-Q01..Q13, TXP5P0-R1-Q01..Q08, TXP5P0-R1-R1-Q01..Q02).
 
-Negative sensitivity: source-level sentinels TXP5P0-Q06..Q08 (fail parity when classifications withheld); structural rename TXP5P0-R1-Q05.
+Negative sensitivity: qualification fixture sentinels TXP5P0-Q06..Q08 (fail parity vs production registry); structural rename TXP5P0-R1-Q05; package isolation TXP5P0-R1-R1-Q02.
 
 ---
 

@@ -11,7 +11,7 @@ from typing import Final
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 
 _PRODUCTION_SCAN_ROOTS: Final[tuple[str, ...]] = ("intergrax", "agents", "applications")
-_P5_SENTINEL_SCAN_ROOT: Final[str] = "intergrax/qualification/trace_x_p5_r1_sentinels"
+_QUALIFICATION_FIXTURE_SCAN_ROOT: Final[str] = "tests/qualification/trace_x/r1_fixtures"
 _PRODUCTION_EXCLUDE_DIR_NAMES: Final[frozenset[str]] = frozenset(
     {"tests", "docs", "examples", "__pycache__", "benchmarks", "model_runtime_proof"},
 )
@@ -58,7 +58,7 @@ def _production_path_excluded(rel_path: Path) -> bool:
     return False
 
 
-def _iter_discovery_py_files() -> list[Path]:
+def _iter_production_discovery_py_files() -> list[Path]:
     paths: list[Path] = []
     for root_name in _PRODUCTION_SCAN_ROOTS:
         root = _REPO_ROOT / root_name
@@ -69,11 +69,14 @@ def _iter_discovery_py_files() -> list[Path]:
             if _production_path_excluded(rel):
                 continue
             paths.append(py_path)
-    sentinel_root = _REPO_ROOT / _P5_SENTINEL_SCAN_ROOT
-    if sentinel_root.is_dir():
-        for py_path in sentinel_root.rglob("*.py"):
-            paths.append(py_path)
     return paths
+
+
+def _iter_qualification_fixture_py_files() -> list[Path]:
+    fixture_root = _REPO_ROOT / _QUALIFICATION_FIXTURE_SCAN_ROOT
+    if not fixture_root.is_dir():
+        return []
+    return list(fixture_root.rglob("*.py"))
 
 
 def _annotation_id(node: ast.expr | None) -> str | None:
@@ -414,14 +417,15 @@ def _discover_in_tree(
     return discovered
 
 
-def _discover_domain(
+def _discover_domain_in_paths(
+    py_paths: list[Path],
     *,
     policy: bool = False,
     profile: bool = False,
     configuration: bool = False,
 ) -> frozenset[tuple[str, str]]:
     discovered: set[tuple[str, str]] = set()
-    for py_path in _iter_discovery_py_files():
+    for py_path in py_paths:
         rel = py_path.relative_to(_REPO_ROOT).as_posix()
         try:
             tree = ast.parse(py_path.read_text(encoding="utf-8"), filename=str(py_path))
@@ -437,16 +441,56 @@ def _discover_domain(
     return frozenset(discovered)
 
 
+def _discover_production_domain(
+    *,
+    policy: bool = False,
+    profile: bool = False,
+    configuration: bool = False,
+) -> frozenset[tuple[str, str]]:
+    return _discover_domain_in_paths(
+        _iter_production_discovery_py_files(),
+        policy=policy,
+        profile=profile,
+        configuration=configuration,
+    )
+
+
+def _discover_qualification_fixture_domain(
+    *,
+    policy: bool = False,
+    profile: bool = False,
+    configuration: bool = False,
+) -> frozenset[tuple[str, str]]:
+    return _discover_domain_in_paths(
+        _iter_qualification_fixture_py_files(),
+        policy=policy,
+        profile=profile,
+        configuration=configuration,
+    )
+
+
 def discover_policy_provenance_surfaces() -> frozenset[tuple[str, str]]:
-    return _discover_domain(policy=True)
+    return _discover_production_domain(policy=True)
 
 
 def discover_profile_revision_surfaces() -> frozenset[tuple[str, str]]:
-    return _discover_domain(profile=True)
+    return _discover_production_domain(profile=True)
 
 
 def discover_configuration_provenance_surfaces() -> frozenset[tuple[str, str]]:
-    return _discover_domain(configuration=True)
+    return _discover_production_domain(configuration=True)
+
+
+def discover_qualification_policy_sentinel_surfaces() -> frozenset[tuple[str, str]]:
+    return _discover_qualification_fixture_domain(policy=True)
+
+
+def discover_qualification_profile_sentinel_surfaces() -> frozenset[tuple[str, str]]:
+    return _discover_qualification_fixture_domain(profile=True)
+
+
+def discover_qualification_configuration_sentinel_surfaces() -> frozenset[tuple[str, str]]:
+    return _discover_qualification_fixture_domain(configuration=True)
 
 
 def discover_policy_surfaces_in_source(rel_path: str, source: str) -> frozenset[tuple[str, str]]:
@@ -467,6 +511,9 @@ def discover_configuration_surfaces_in_source(rel_path: str, source: str) -> fro
 __all__ = [
     "discover_configuration_provenance_surfaces",
     "discover_configuration_surfaces_in_source",
+    "discover_qualification_configuration_sentinel_surfaces",
+    "discover_qualification_policy_sentinel_surfaces",
+    "discover_qualification_profile_sentinel_surfaces",
     "discover_policy_provenance_surfaces",
     "discover_policy_surfaces_in_source",
     "discover_profile_revision_surfaces",

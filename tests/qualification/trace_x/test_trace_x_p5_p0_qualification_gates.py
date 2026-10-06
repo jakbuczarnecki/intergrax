@@ -18,7 +18,13 @@ from intergrax.integrations.contracts.existing_capability_configuration import (
     ExistingCapabilityConfigurationRealizationError,
     ExistingCapabilityConfigurationRealizationFailureReason,
 )
-from tests.qualification.trace_x._trace_x_p5_discovery import discover_policy_surfaces_in_source
+from tests.qualification.trace_x._trace_x_p5_discovery import (
+    discover_policy_surfaces_in_source,
+    discover_qualification_configuration_sentinel_surfaces,
+    discover_qualification_policy_sentinel_surfaces,
+    discover_qualification_profile_sentinel_surfaces,
+    repo_root,
+)
 from tests.qualification.trace_x._trace_x_p5_registry_types import DiscoveryCandidateDisposition
 from tests.qualification.trace_x._trace_x_p5_support import (
     CONFIGURATION_PROVENANCE_SURFACE_REGISTRY,
@@ -27,6 +33,7 @@ from tests.qualification.trace_x._trace_x_p5_support import (
     PROFILE_REVISION_SURFACE_REGISTRY,
     PROVENANCE_GAPS,
     PROVENANCE_JOINS,
+    TRACE_X_P5_P0_R1_R1_START_HEAD,
     TRACE_X_P5_P0_R1_START_HEAD,
     TRACE_X_P5_P0_START_HEAD,
     _CONFIGURATION_DISCOVERY_CLASSIFICATIONS,
@@ -43,6 +50,19 @@ from tests.qualification.trace_x._trace_x_p5_support import (
 from tests.qualification.trace_x._trace_x_p4_registry_types import compare_discovered_to_registry
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
+
+_POLICY_SENTINEL_FIXTURE = (
+    "tests/qualification/trace_x/r1_fixtures/policy_provenance_sentinel.py",
+    "SyntheticGovernanceRevisionTrace",
+)
+_PROFILE_SENTINEL_FIXTURE = (
+    "tests/qualification/trace_x/r1_fixtures/profile_revision_sentinel.py",
+    "Qx7PinnedTenantExecutionRevisionEvidence",
+)
+_CONFIG_SENTINEL_FIXTURE = (
+    "tests/qualification/trace_x/r1_fixtures/configuration_provenance_sentinel.py",
+    "ZetaScopedConfigurationIdentityTrace",
+)
 
 
 def test_txp5p0_q01_start_head_ancestry() -> None:
@@ -88,38 +108,32 @@ def test_txp5p0_q05_provenance_joins_non_heuristic() -> None:
 
 
 def test_txp5p0_q06_synthetic_policy_surface_negative() -> None:
-    sentinel_key = (
-        "intergrax/qualification/trace_x_p5_r1_sentinels/policy_provenance_sentinel.py",
-        "SyntheticGovernanceRevisionTrace",
-    )
-    discovered = discover_policy_provenance_surfaces()
-    assert sentinel_key in discovered
-    unclassified = _discovery_keys_for_parity(discovered, ())
-    result = compare_discovered_to_registry(unclassified, POLICY_PROVENANCE_SURFACE_REGISTRY)
+    sentinel_key = _POLICY_SENTINEL_FIXTURE
+    fixture_discovered = discover_qualification_policy_sentinel_surfaces()
+    assert sentinel_key in fixture_discovered
+    production = discover_policy_provenance_surfaces()
+    assert sentinel_key not in production
+    result = compare_discovered_to_registry(frozenset({sentinel_key}), POLICY_PROVENANCE_SURFACE_REGISTRY)
     assert sentinel_key in result.unknown
 
 
 def test_txp5p0_q07_synthetic_profile_surface_negative() -> None:
-    sentinel_key = (
-        "intergrax/qualification/trace_x_p5_r1_sentinels/profile_revision_sentinel.py",
-        "Qx7PinnedTenantExecutionRevisionEvidence",
-    )
-    discovered = discover_profile_revision_surfaces()
-    assert sentinel_key in discovered
-    unclassified = _discovery_keys_for_parity(discovered, ())
-    result = compare_discovered_to_registry(unclassified, PROFILE_REVISION_SURFACE_REGISTRY)
+    sentinel_key = _PROFILE_SENTINEL_FIXTURE
+    fixture_discovered = discover_qualification_profile_sentinel_surfaces()
+    assert sentinel_key in fixture_discovered
+    production = discover_profile_revision_surfaces()
+    assert sentinel_key not in production
+    result = compare_discovered_to_registry(frozenset({sentinel_key}), PROFILE_REVISION_SURFACE_REGISTRY)
     assert sentinel_key in result.unknown
 
 
 def test_txp5p0_q08_synthetic_configuration_surface_negative() -> None:
-    sentinel_key = (
-        "intergrax/qualification/trace_x_p5_r1_sentinels/configuration_provenance_sentinel.py",
-        "ZetaScopedConfigurationIdentityTrace",
-    )
-    discovered = discover_configuration_provenance_surfaces()
-    assert sentinel_key in discovered
-    unclassified = _discovery_keys_for_parity(discovered, ())
-    result = compare_discovered_to_registry(unclassified, CONFIGURATION_PROVENANCE_SURFACE_REGISTRY)
+    sentinel_key = _CONFIG_SENTINEL_FIXTURE
+    fixture_discovered = discover_qualification_configuration_sentinel_surfaces()
+    assert sentinel_key in fixture_discovered
+    production = discover_configuration_provenance_surfaces()
+    assert sentinel_key not in production
+    result = compare_discovered_to_registry(frozenset({sentinel_key}), CONFIGURATION_PROVENANCE_SURFACE_REGISTRY)
     assert sentinel_key in result.unknown
 
 
@@ -212,42 +226,29 @@ def test_txp5p0_r1_q01_start_head_ancestry() -> None:
 
 
 def test_txp5p0_r1_q02_policy_sentinel_discovered_without_registry_union() -> None:
-    key = (
-        "intergrax/qualification/trace_x_p5_r1_sentinels/policy_provenance_sentinel.py",
-        "SyntheticGovernanceRevisionTrace",
-    )
-    assert key in discover_policy_provenance_surfaces()
+    assert _POLICY_SENTINEL_FIXTURE in discover_qualification_policy_sentinel_surfaces()
+    assert _POLICY_SENTINEL_FIXTURE not in discover_policy_provenance_surfaces()
 
 
 def test_txp5p0_r1_q03_profile_sentinel_discovered_without_registry_union() -> None:
-    key = (
-        "intergrax/qualification/trace_x_p5_r1_sentinels/profile_revision_sentinel.py",
-        "Qx7PinnedTenantExecutionRevisionEvidence",
-    )
-    assert key in discover_profile_revision_surfaces()
+    assert _PROFILE_SENTINEL_FIXTURE in discover_qualification_profile_sentinel_surfaces()
+    assert _PROFILE_SENTINEL_FIXTURE not in discover_profile_revision_surfaces()
 
 
 def test_txp5p0_r1_q04_config_sentinel_discovered_without_registry_union() -> None:
-    key = (
-        "intergrax/qualification/trace_x_p5_r1_sentinels/configuration_provenance_sentinel.py",
-        "ZetaScopedConfigurationIdentityTrace",
-    )
-    assert key in discover_configuration_provenance_surfaces()
+    assert _CONFIG_SENTINEL_FIXTURE in discover_qualification_configuration_sentinel_surfaces()
+    assert _CONFIG_SENTINEL_FIXTURE not in discover_configuration_provenance_surfaces()
 
 
 def test_txp5p0_r1_q05_renamed_policy_sentinel_still_discovered() -> None:
-    from pathlib import Path
-
-    from tests.qualification.trace_x._trace_x_p5_discovery import repo_root
-
-    rel = "intergrax/qualification/trace_x_p5_r1_sentinels/policy_provenance_sentinel.py"
+    rel = _POLICY_SENTINEL_FIXTURE[0]
     source = (repo_root() / rel).read_text(encoding="utf-8")
     renamed = source.replace(
         "class SyntheticGovernanceRevisionTrace:",
         "class RenamedGovernanceRevisionTraceProbe:",
     )
     hits = discover_policy_surfaces_in_source(rel, renamed)
-    assert ("intergrax/qualification/trace_x_p5_r1_sentinels/policy_provenance_sentinel.py", "RenamedGovernanceRevisionTraceProbe") in hits
+    assert (rel, "RenamedGovernanceRevisionTraceProbe") in hits
 
 
 def test_txp5p0_r1_q06_registry_removal_does_not_change_discovery() -> None:
@@ -289,6 +290,38 @@ def test_txp5p0_r1_q08_classifications_are_explicit_typed() -> None:
     ):
         assert row.disposition is not DiscoveryCandidateDisposition.APPLICABLE
         assert row.reason.strip()
+
+
+def test_txp5p0_r1_r1_q01_start_head_ancestry() -> None:
+    subprocess.check_call(
+        ["git", "merge-base", "--is-ancestor", TRACE_X_P5_P0_R1_R1_START_HEAD, "HEAD"],
+    )
+
+
+def test_txp5p0_r1_r1_q02_qualification_sentinel_package_isolation() -> None:
+    from pathlib import Path
+
+    root = repo_root()
+    intergrax_tree = root / "intergrax"
+    sentinel_under_package = list(intergrax_tree.rglob("trace_x_p5*_sentinel*"))
+    assert not sentinel_under_package, f"P5 sentinels under intergrax: {sentinel_under_package}"
+    for fixture in (root / "tests/qualification/trace_x/r1_fixtures").rglob("*.py"):
+        rel = fixture.relative_to(root).as_posix()
+        assert rel.startswith("tests/qualification/")
+    pyproject = (root / "pyproject.toml").read_text(encoding="utf-8")
+    assert 'packages = ["intergrax"]' in pyproject
+    forbidden_refs = (
+        "trace_x_p5_r1_sentinels",
+        "r1_fixtures",
+    )
+    for scan_root in ("intergrax", "agents", "applications"):
+        base = root / scan_root
+        if not base.is_dir():
+            continue
+        for py_path in base.rglob("*.py"):
+            text = py_path.read_text(encoding="utf-8")
+            for needle in forbidden_refs:
+                assert needle not in text, f"{py_path}: references qualification fixture path {needle}"
 
 
 def test_txp5p0_q13_registry_duplicate_owner_gate() -> None:

@@ -30,6 +30,7 @@ from tests.qualification.trace_x._trace_x_p5_registry_types import (
 
 TRACE_X_P5_P0_START_HEAD: Final[str] = "0102eeabc6d1d59efbecff52737491c96b1d3f0c"
 TRACE_X_P5_P0_R1_START_HEAD: Final[str] = "9d48ca424e025888f7ac8ea61ed463f4284a0d29"
+TRACE_X_P5_P0_R1_R1_START_HEAD: Final[str] = "a9fd88da1d5efa3fc61d668289c13f78e4d52b1d"
 
 _POLICY_DISCOVERY_CLASSIFICATIONS: Final[tuple[ClassifiedDiscoveryCandidate, ...]] = (
     ClassifiedDiscoveryCandidate(
@@ -43,12 +44,6 @@ _POLICY_DISCOVERY_CLASSIFICATIONS: Final[tuple[ClassifiedDiscoveryCandidate, ...
         "_CanonicalSerializedRuleV1",
         DiscoveryCandidateDisposition.NOT_PROVENANCE,
         "Internal derivation serializer — not a policy provenance surface",
-    ),
-    ClassifiedDiscoveryCandidate(
-        "intergrax/qualification/trace_x_p5_r1_sentinels/policy_provenance_sentinel.py",
-        "SyntheticGovernanceRevisionTrace",
-        DiscoveryCandidateDisposition.TEST_OR_DIAGNOSTIC_ONLY,
-        "P5-P0-R1 negative sensitivity sentinel",
     ),
 )
 
@@ -89,12 +84,6 @@ _PROFILE_DISCOVERY_CLASSIFICATIONS: Final[tuple[ClassifiedDiscoveryCandidate, ..
         DiscoveryCandidateDisposition.NOT_PROVENANCE,
         "Skills execution pinning — outside effective profile revision SSOT",
     ),
-    ClassifiedDiscoveryCandidate(
-        "intergrax/qualification/trace_x_p5_r1_sentinels/profile_revision_sentinel.py",
-        "Qx7PinnedTenantExecutionRevisionEvidence",
-        DiscoveryCandidateDisposition.TEST_OR_DIAGNOSTIC_ONLY,
-        "P5-P0-R1 negative sensitivity sentinel",
-    ),
 )
 
 _CONFIGURATION_DISCOVERY_CLASSIFICATIONS: Final[tuple[ClassifiedDiscoveryCandidate, ...]] = (
@@ -109,12 +98,6 @@ _CONFIGURATION_DISCOVERY_CLASSIFICATIONS: Final[tuple[ClassifiedDiscoveryCandida
         "ScopedIntegrationAdaptationTarget",
         DiscoveryCandidateDisposition.NOT_PROVENANCE,
         "Scoped adaptation identity — not configured capability provenance",
-    ),
-    ClassifiedDiscoveryCandidate(
-        "intergrax/qualification/trace_x_p5_r1_sentinels/configuration_provenance_sentinel.py",
-        "ZetaScopedConfigurationIdentityTrace",
-        DiscoveryCandidateDisposition.TEST_OR_DIAGNOSTIC_ONLY,
-        "P5-P0-R1 negative sensitivity sentinel",
     ),
 )
 
@@ -747,5 +730,15 @@ P5_P0_GATE_REGISTRY: Final[tuple[P5GateEvidence, ...]] = (
         "TXP5P0-R1-Q08",
         "Explicit typed discovery classifications",
         "test_txp5p0_r1_q08_classifications_are_explicit_typed",
+    ),
+    P5GateEvidence(
+        "TXP5P0-R1-R1-Q01",
+        "R1-R1 START_HEAD ancestry",
+        "test_txp5p0_r1_r1_q01_start_head_ancestry",
+    ),
+    P5GateEvidence(
+        "TXP5P0-R1-R1-Q02",
+        "P5 sentinel fixtures outside distributable intergrax package",
+        "test_txp5p0_r1_r1_q02_qualification_sentinel_package_isolation",
     ),
 )
