@@ -16,7 +16,7 @@ Primary freeze gate: **FRZ-TRC-05** → **OPEN** until independent audit on GitH
 | Field | Value |
 |-------|-------|
 | START_HEAD | `c916c8fff0e772c6d09662be28f81318402b44b0` |
-| FINAL_COMMIT | *(set at push)* |
+| FINAL_COMMIT | `329e1efecde08ebfac8422decd859e4c29b4db82` |
 
 ### Mechanical reachability (R6)
 
