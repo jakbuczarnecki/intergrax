@@ -8,21 +8,26 @@
 
 **P3-Q1 accepted final evidence:** `1780e2efebb6160b262e49bb3f8e8b4c0cf957c3`
 
+**P3 accepted evidence/code baseline (final):** `3799b2d974369e6002ac5326e62c8c8b381e7944`
+
 **Qualification replayability defect:** `P3-Q-BLK-01` — **RESOLVED** in TRACE-X-P3-Q1 (provenance gate uses `merge-base --is-ancestor` semantics).
 
 **Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p3_support.py`
 
-**Applicable FRZ (P3 only):** `FRZ-TRC-03`, `FRZ-TRC-04`, `FRZ-TRC-06`
+**P3-R1 mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p3_r1_support.py`
+
+**Applicable FRZ (P3):** `FRZ-TRC-03`, `FRZ-TRC-04`, `FRZ-TRC-06`
 
 **Status:**
 
 | Stage | State |
 |---|---|
-| **TRACE-X-P3** | **BLOCKED** (partial closure) |
+| **TRACE-X-P3** | **CLOSED / INDEPENDENTLY ACCEPTED** @ `3799b2d974369e6002ac5326e62c8c8b381e7944` |
 | **TRACE-X-P3-Q1** | **CLOSED / INDEPENDENTLY ACCEPTED** @ `1780e2efebb6160b262e49bb3f8e8b4c0cf957c3` |
-| **TRACE-X-P3-R1** | **REQUIRED / NEXT / NOT ENTERED** |
+| **TRACE-X-P3-R1** | **CLOSED / INDEPENDENTLY ACCEPTED** @ `3799b2d974369e6002ac5326e62c8c8b381e7944` |
+| **TRACE-X-P4** | **NEXT / REQUIRED / NOT ENTERED** |
 
-**Next engineering task:** **TRACE-X-P3-R1** — Versioned Governed Provider/Effect Execution Identity Binding — preserve canonical Task/Run/Attempt/Execution identity already known by Execution through the governed provider/effect boundary so a provider invocation and external side effect can be attributed to the exact execution and authorization without heuristics or a second evidence authority.
+**R1 qualification record:** [`TRACE_X_P3_R1_GOVERNED_BOUNDARY_V2_CERTIFICATION.md`](TRACE_X_P3_R1_GOVERNED_BOUNDARY_V2_CERTIFICATION.md)
 
 ---
 
@@ -47,9 +52,11 @@ Preserved ownership (unchanged from TRACE-X-P0..P2):
 | Harness export | `ExecutionBoundaryEventV1` (**non-authoritative**) |
 | Execution Evidence boundary composition | exactly-one boundary evidence composition owner (**unchanged**) |
 
+**Authority planes (unchanged):** **Governance** = permission authority; **Execution** = effect/execution authority; **Evidence Plane** = descriptive factual recording only.
+
 **Critical:** `intergrax/contracts/execution_evidence/boundary_event.py` (`ExecutionBoundaryEvent`) ≠ `intergrax/runtime/attestation/execution_boundary_event.py` (`ExecutionBoundaryEventV1`).
 
-**Forbidden (P3-R1 direction):** new `ProviderAttributionService`, `ProviderEffectReconstructor`, or side-effect truth store. Governance remains permission owner; boundary evidence records the already-made decision only. Execution remains Task/Run/Attempt/Execution identity authority; evidence propagates only.
+**Forbidden:** new `ProviderAttributionService`, `ProviderEffectReconstructor`, or side-effect truth store. Governance remains permission owner; boundary evidence records the already-made decision only. Execution remains Task/Run/Attempt/Execution identity authority; evidence propagates only.
 
 ---
 
@@ -69,36 +76,43 @@ Accepted invariant: tool invocation → `RuntimeEvent` → exact `AttemptId` + `
 
 Tool diagnostic payloads carry `tool_id` / `step_id`; execution identity lives on the `RuntimeEvent` envelope.
 
-### Provider (FRZ-TRC-04) — **BLOCKED** (`P3-B04-01`)
+### Provider (FRZ-TRC-04) — **PASS / independently accepted** @ `3799b2d974369e6002ac5326e62c8c8b381e7944`
 
 ```text
-Governed ExecutionBoundaryEvent v1: task_id + run_id + ProviderInvocationSection(invocation_id)
-  — no AttemptId / ExecutionId fields
+governed_execution_boundary_event.v2
+  TaskId + RunId + AttemptId + ExecutionId (from Execution only)
+  + ProviderInvocationSection(invocation_id)
+  atomically in versioned execution evidence
 ```
 
-`GovernedProofProfile.execution_ref` ≠ canonical `ExecutionId` authority (may default to `run_id` for compatibility; no semantic aliasing in P3-R1).
+**Execution** = sole execution identity authority. No heuristic join; no host-minted canonical `ExecutionId`. **`P3-B04-01`** = **RESOLVED**.
 
-### Side-effect authorization (FRZ-TRC-06) — **BLOCKED** (`P3-B06-01`)
+### Side-effect authorization (FRZ-TRC-06) — **PASS / independently accepted** @ `3799b2d974369e6002ac5326e62c8c8b381e7944`
 
-`GovernanceDecisionEvidenceFact` can carry full execution correlation; fresh scope-bound authorization is enforced in production paths.
+Certified chain:
 
-Linking **this exact external effect** to **this exact authorization decision** for **this exact execution** through governed boundary/provider evidence cannot be completed at execution granularity without boundary contract identity (`P3-B06-01`).
+```text
+authorization
+  → Task/Run/Attempt/Execution
+  → provider invocation
+  → provider outcome
+  → governed side-effect evidence
+  → signed ProofReceiptV2
+```
+
+Adversarial evidence: cross-execution mismatch rejected; cross-attempt mismatch rejected; cross-tenant mismatch rejected; DENY cannot produce successful receipt.
+
+**GovernanceEvidenceRef** may be emitted only when `GovernanceEvidencePersistenceOutcome.persisted == True` and `evidence_id` matches exactly. `persisted=False` → no **GovernanceEvidenceRef** → no dangling signed evidence reference.
+
+**GR-8** evidence persistence failure does **not** convert ALLOW into DENY — it only means no durable **GovernanceEvidenceRef** may be claimed for the unpersisted fact. Evidence persistence is **not** authorization authority.
+
+**`P3-B06-01`** = **RESOLVED**.
 
 ---
 
-## 3. GovernedExecutionResult (current code)
+## 3. GovernedExecutionResult
 
-Before boundary-event composition, the system already knows:
-
-```text
-GovernedExecutionResult.execution_id
-+ GovernedExecutionResult.provider_invocation
-+ GovernedExecutionResult.evaluated_policy_decision
-+ GovernedExecutionResult.provider_outcome
-+ GovernedExecutionResult.proof
-```
-
-Remaining gap includes canonical **`AttemptId`** propagation through governed boundary evidence — **not** claimed solved.
+At boundary composition, canonical identity and attribution are bound through **v2** boundary evidence and **ProofReceiptV2** pairing (cross-version pairings fail closed).
 
 ---
 
@@ -107,9 +121,10 @@ Remaining gap includes canonical **`AttemptId`** propagation through governed bo
 | Item | Decision |
 |---|---|
 | `ProviderInvocationReliabilityFact` | **Must NOT** become canonical TRACE-X execution truth (projection only; observer optional; observer failure non-blocking). Not a substitute for FRZ-TRC-04/06 attribution. |
-| `governed_execution_boundary_event.v1` | Compatibility / legacy schema — **do not** silently extend in place |
-| `governed_execution_boundary_event.v2` | Future canonical writer for fully execution-attributable governed boundary evidence (P3-R1 implementation; migration mechanics → COMPAT-X later) |
-| v1 deprecation | **Not** in P3-Q1 scope |
+| `governed_execution_boundary_event.v1` | Compatibility / legacy schema — retained; **do not** silently extend in place |
+| `governed_execution_boundary_event.v2` | Canonical current execution-attributable writer |
+| ProofReceipt v1 ↔ boundary v1; ProofReceipt v2 ↔ boundary v2 | Cross-version pairings fail closed |
+| v1 deprecation | **Not** required for P3 closure |
 
 ---
 
@@ -118,8 +133,8 @@ Remaining gap includes canonical **`AttemptId`** propagation through governed bo
 | Criterion | Disposition |
 |---|---|
 | FRZ-TRC-03 | **PASS** / independently accepted @ `1780e2efebb6160b262e49bb3f8e8b4c0cf957c3` |
-| FRZ-TRC-04 | **BLOCKED** — `P3-B04-01` |
-| FRZ-TRC-06 | **BLOCKED** — `P3-B06-01` |
+| FRZ-TRC-04 | **PASS** / independently accepted @ `3799b2d974369e6002ac5326e62c8c8b381e7944` |
+| FRZ-TRC-06 | **PASS** / independently accepted @ `3799b2d974369e6002ac5326e62c8c8b381e7944` |
 
 ---
 
@@ -127,12 +142,15 @@ Remaining gap includes canonical **`AttemptId`** propagation through governed bo
 
 | ID | Classification | Summary |
 |---|---|---|
-| P3-B04-01 | **OPEN / CONFIRMED** | Provider/boundary evidence lacks canonical AttemptId/ExecutionId |
-| P3-B06-01 | **OPEN / CONFIRMED** | Effect↔authorization exact chain blocked at boundary join |
+| P3-B04-01 | **RESOLVED** | Provider boundary preserves canonical Task/Run/Attempt/Execution + `ProviderInvocation.invocation_id` via v2 |
+| P3-B06-01 | **RESOLVED** | Exact authorization→effect chain via v2 + ProofReceiptV2 |
+| P3-Q-BLK-01 | **RESOLVED** | Qualification replayability / provenance gate |
+| P3-R1-BLK-TASK-IDENTITY-01 | **RESOLVED** | Task identity propagation through governed boundary |
+| P3-R1-BLK-TENANT-01 | **RESOLVED** | Tenant isolation on governed attribution path |
 
 ---
 
-## 7. Approved P3-R1 architecture direction
+## 7. P3-R1 architecture (accepted)
 
 ```text
 governed_execution_boundary_event.v2
@@ -145,27 +163,27 @@ Identity must **never** be minted by the evidence layer, inferred from `correlat
 
 ---
 
-## 8. TRACE-X-P3-Q1 closure record
+## 8. TRACE-X-P3 closure record
 
 | Item | State |
 |---|---|
+| TRACE-X-P3 | **CLOSED / INDEPENDENTLY ACCEPTED** @ `3799b2d974369e6002ac5326e62c8c8b381e7944` |
 | TRACE-X-P3-Q1 | **CLOSED / INDEPENDENTLY ACCEPTED** @ `1780e2efebb6160b262e49bb3f8e8b4c0cf957c3` |
+| TRACE-X-P3-R1 | **CLOSED / INDEPENDENTLY ACCEPTED** @ `3799b2d974369e6002ac5326e62c8c8b381e7944` |
 | P3-Q-BLK-01 | **RESOLVED** |
-| FRZ-TRC-03 | **PASS** / independently accepted |
-| Authorization suite | **Stale test fixture** — production defect = **NO** |
-| P3-B04-01 | **OPEN / CONFIRMED** |
-| P3-B06-01 | **OPEN / CONFIRMED** |
+| P3-B04-01 / P3-B06-01 | **RESOLVED** |
+| FRZ-TRC-03 / FRZ-TRC-04 / FRZ-TRC-06 | **PASS** / independently accepted |
 
 ---
 
 ## 9. Roadmap (current)
 
 ```text
-TRACE-X     = CURRENT / BLOCKED
-TRACE-X-P3  = BLOCKED
-TRACE-X-P3-Q1 = CLOSED / independently accepted
-TRACE-X-P3-R1 = NEXT / REQUIRED / NOT ENTERED
-TRACE-X-P4  = NOT ENTERED
+TRACE-X     = CURRENT
+TRACE-X-P3  = CLOSED / independently accepted @ 3799b2d9…
+TRACE-X-P3-Q1 = CLOSED / independently accepted @ 1780e2e…
+TRACE-X-P3-R1 = CLOSED / independently accepted @ 3799b2d9…
+TRACE-X-P4  = NEXT / REQUIRED / NOT ENTERED
 TRACE-X-P5  = NOT ENTERED
 TRACE-X-P6  = NOT ENTERED
 TRACE-X-CERT = NOT ENTERED
@@ -173,13 +191,22 @@ TRACE-X-CERT = NOT ENTERED
 
 ---
 
-## 10. Tests (evidence baseline)
+## 10. Tracked freeze debt (does not block P3)
 
-Evidence accepted @ `1780e2efebb6160b262e49bb3f8e8b4c0cf957c3` (not re-run for P3-Q1 bookkeeping closure):
+| Item | Classification |
+|---|---|
+| `applications/governed_contractor_application/tests/host/test_gr6_wire_production_decision_governance.py::test_strict_host_composition_wires_agent_boundary_and_integration` → `ToolDependencyAttemptBoundaryMaterializationError` | **TRACKED FREEZE DEBT** — Reliability / Composition / PROD-Q / QUAL-X |
+
+---
+
+## 11. Tests (evidence baseline)
+
+Evidence accepted @ `3799b2d974369e6002ac5326e62c8c8b381e7944` (independent audit baseline — not re-run for docs-only closure bookkeeping):
 
 1. `tests/qualification/trace_x/test_trace_x_p3_tool_provider_effect_attribution.py`
-2. `tests/unit/runtime/tools/test_fresh_side_effect_authorization.py`
-3. Boundary / governance evidence unit tests
+2. `tests/qualification/trace_x/test_trace_x_p3_r1_governed_boundary_v2.py`
+3. `tests/unit/runtime/tools/test_fresh_side_effect_authorization.py`
+4. Boundary / governance evidence unit tests (see P3-R1 certification)
 
 ---
 
