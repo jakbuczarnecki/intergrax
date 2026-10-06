@@ -16,7 +16,7 @@ Primary freeze gate: **FRZ-TRC-05** → **OPEN** until independent audit on GitH
 | Field | Value |
 |-------|-------|
 | START_HEAD | `e6597dba6ca61e15a12fcaf6e85c00f7a0c33f12` |
-| FINAL_COMMIT | *(set at push)* |
+| FINAL_COMMIT | `95fd906215b789bde8a0d04f718ff21cb144833e` |
 
 ### Resolver rules (R8)
 
