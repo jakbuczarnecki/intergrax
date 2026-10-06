@@ -1,8 +1,10 @@
 # TRACE-X-P4 — Model Call & Context Decision Attribution
 
-Status: **P4-R8 on `development`; READY FOR AUDIT** (not independently closed).
+Status: **CLOSED / independently accepted** @ accepted code baseline `95fd906215b789bde8a0d04f718ff21cb144833e`.
 
-Primary freeze gate: **FRZ-TRC-05** → **OPEN** until independent audit on GitHub HEAD.
+Primary freeze gate: **FRZ-TRC-05** → **PASS** (independent exact-SHA audit on GitHub).
+
+Closure-maintenance bookkeeping on `development` after the evidence baseline (docs-only; not code evidence) includes e.g. `65e33fff66016a7fbdd88f1b11d71ed657827590` (R8 FINAL_COMMIT record).
 
 ## P4-R8 reachability resolver soundness & fail-closed closure (R7 blocker remediation)
 
@@ -212,4 +214,4 @@ Model/context discovery, independent static registries, parity, and R4 negative 
 uv run pytest tests/qualification/trace_x/test_trace_x_p4_model_context_attribution.py tests/qualification/trace_x/test_trace_x_p4_r1_recorder_tenant.py tests/qualification/trace_x/test_trace_x_p4_r2_lifecycle.py tests/qualification/trace_x/test_trace_x_p4_r2_qualification_gates.py tests/qualification/trace_x/test_trace_x_p4_r3_abandoned_context.py tests/qualification/trace_x/test_trace_x_p4_r3_closed_world.py tests/qualification/trace_x/test_trace_x_p4_r4_closed_world.py tests/qualification/trace_x/test_trace_x_p4_r5_closed_world.py tests/qualification/trace_x/test_trace_x_p4_r6_closed_world.py -p no:xdist -q
 ```
 
-Do **not** mark TRACE-X-P4 CLOSED or promote FRZ-TRC-05 without independent audit.
+**TRACE-X-P4** = **CLOSED / independently accepted** @ `95fd906215b789bde8a0d04f718ff21cb144833e`. **FRZ-TRC-05** = **PASS**. **Tenant isolation audit:** PASS — local P4 scope (tenant identity preserved; cross-tenant attribution rejected); **global TENANT-X** not closed. Tracked debt **TXP1R1-Q02** / **TXP1R1-Q23** preserved for reconciliation before final TRACE-X / QUAL-X (non-blocking P4).
