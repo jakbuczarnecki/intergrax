@@ -11,7 +11,6 @@ from intergrax.contracts.execution_identity import validate_event_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.runtime_event_recording import RuntimeEventRecorderPort
 from intergrax.runtime.llm.model_call_attribution import (
-    clear_pending_context_assembly_event_id,
     get_model_call_execution_scope,
     peek_model_call_attribution_ids,
     peek_pending_context_assembly_event_id,
@@ -107,7 +106,6 @@ def record_llm_call_runtime_event(
             promote_fields=promote,
         )
     )
-    clear_pending_context_assembly_event_id()
 
 
 def maybe_record_llm_call_from_usage_end(

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
-from contextvars import ContextVar
+from contextvars import ContextVar, Token
 from dataclasses import dataclass
 
 from intergrax.contracts.execution_identity import EventId, validate_event_id
@@ -32,6 +32,24 @@ _pending_context_assembly_event_id: ContextVar[str] = ContextVar(
 )
 
 
+@dataclass(frozen=True, slots=True)
+class PendingContextAssemblyBinding:
+    """Token-scoped pending CONTEXT_ASSEMBLED → model-call relation (TRACE-X-P4-R2)."""
+
+    event_id: str
+    token: Token[str]
+
+
+_pending_context_assembly_bind_stack: ContextVar[tuple[PendingContextAssemblyBinding, ...]] = ContextVar(
+    "intergrax_pending_context_assembly_bind_stack",
+    default=(),
+)
+_model_call_attribution_scope_depth: ContextVar[int] = ContextVar(
+    "intergrax_model_call_attribution_scope_depth",
+    default=0,
+)
+
+
 def get_model_call_execution_scope() -> ModelCallExecutionScope:
     return _model_call_scope.get()
 
@@ -52,9 +70,31 @@ def clear_pending_model_input_messages_hash() -> None:
     _pending_model_input_hash.set("")
 
 
-def bind_pending_context_assembly_event_id(event_id: EventId | str) -> None:
-    resolved = validate_event_id(event_id)
-    _pending_context_assembly_event_id.set(str(resolved))
+def _pop_context_assembly_bind_stack_to_depth(depth: int) -> None:
+    stack = _pending_context_assembly_bind_stack.get()
+    while len(stack) > depth:
+        binding = stack[-1]
+        stack = stack[:-1]
+        _pending_context_assembly_event_id.reset(binding.token)
+        _pending_context_assembly_bind_stack.set(stack)
+
+
+def bind_pending_context_assembly_event_id(event_id: EventId | str) -> PendingContextAssemblyBinding:
+    resolved = str(validate_event_id(event_id))
+    if _model_call_attribution_scope_depth.get() == 0 and _pending_context_assembly_bind_stack.get():
+        _pop_context_assembly_bind_stack_to_depth(0)
+    token = _pending_context_assembly_event_id.set(resolved)
+    binding = PendingContextAssemblyBinding(event_id=resolved, token=token)
+    _pending_context_assembly_bind_stack.set(_pending_context_assembly_bind_stack.get() + (binding,))
+    return binding
+
+
+def reset_pending_context_assembly_event_id(binding: PendingContextAssemblyBinding) -> None:
+    stack = _pending_context_assembly_bind_stack.get()
+    if not stack or stack[-1] is not binding:
+        raise ValueError("pending context assembly binding is not the active stack head")
+    _pending_context_assembly_event_id.reset(binding.token)
+    _pending_context_assembly_bind_stack.set(stack[:-1])
 
 
 def peek_pending_context_assembly_event_id() -> str:
@@ -62,7 +102,7 @@ def peek_pending_context_assembly_event_id() -> str:
 
 
 def clear_pending_context_assembly_event_id() -> None:
-    _pending_context_assembly_event_id.set("")
+    _pop_context_assembly_bind_stack_to_depth(0)
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,6 +127,13 @@ def model_call_attribution_scope(
     previous_agent = _attribution_agent_id.get()
     previous_step = _attribution_step_id.get()
     previous_label = _attribution_label.get()
+    parent_scope_depth = _model_call_attribution_scope_depth.get()
+    stack_len_at_entry = len(_pending_context_assembly_bind_stack.get())
+    if parent_scope_depth == 0 and peek_pending_context_assembly_event_id():
+        context_bind_floor_at_entry = max(0, stack_len_at_entry - 1)
+    else:
+        context_bind_floor_at_entry = stack_len_at_entry
+    scope_depth_token = _model_call_attribution_scope_depth.set(parent_scope_depth + 1)
 
     resolved_scope = execution_scope
     if overlay is not None and overlay.execution_scope is not None:
@@ -110,6 +157,8 @@ def model_call_attribution_scope(
     try:
         yield
     finally:
+        _pop_context_assembly_bind_stack_to_depth(context_bind_floor_at_entry)
+        _model_call_attribution_scope_depth.reset(scope_depth_token)
         _model_call_scope.set(previous_scope)
         set_pending_model_input_messages_hash(previous_hash)
         _attribution_node_id.set(previous_node)
@@ -129,6 +178,7 @@ def peek_model_call_attribution_ids() -> tuple[str, str, str, str]:
 
 __all__ = [
     "ModelCallAttributionOverlay",
+    "PendingContextAssemblyBinding",
     "bind_model_input_messages",
     "bind_pending_context_assembly_event_id",
     "clear_pending_context_assembly_event_id",
@@ -138,5 +188,6 @@ __all__ = [
     "peek_model_call_attribution_ids",
     "peek_pending_context_assembly_event_id",
     "peek_pending_model_input_messages_hash",
+    "reset_pending_context_assembly_event_id",
     "set_pending_model_input_messages_hash",
 ]
