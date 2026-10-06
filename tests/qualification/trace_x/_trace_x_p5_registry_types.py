@@ -48,6 +48,13 @@ class ProvenanceDisposition(enum.StrEnum):
     NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
+class DiscoveryCandidateDisposition(enum.StrEnum):
+    APPLICABLE = "APPLICABLE"
+    NOT_PROVENANCE = "NOT_PROVENANCE"
+    TEST_OR_DIAGNOSTIC_ONLY = "TEST_OR_DIAGNOSTIC_ONLY"
+    LEGACY_NON_PRODUCTION = "LEGACY_NON_PRODUCTION"
+
+
 @dataclass(frozen=True, slots=True)
 class ProvenanceJoin:
     domain: ProvenanceDomain
@@ -71,6 +78,18 @@ class ProvenanceGap:
     ]
     summary: str
     proposed_child: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ClassifiedDiscoveryCandidate:
+    path: str
+    surface_id: str
+    disposition: DiscoveryCandidateDisposition
+    reason: str
+
+    @property
+    def key(self) -> tuple[str, str]:
+        return (self.path, self.surface_id)
 
 
 @dataclass(frozen=True, slots=True)
@@ -119,7 +138,9 @@ class RegisteredConfigurationProvenanceSurface:
 
 
 __all__ = [
+    "ClassifiedDiscoveryCandidate",
     "ConfigurationProvenanceSurfaceKind",
+    "DiscoveryCandidateDisposition",
     "PolicyProvenanceSurfaceKind",
     "ProfileRevisionSurfaceKind",
     "ProvenanceDisposition",

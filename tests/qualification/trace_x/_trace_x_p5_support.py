@@ -4,13 +4,18 @@
 
 from __future__ import annotations
 
-import ast
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Final
 
+from tests.qualification.trace_x._trace_x_p5_discovery import (
+    discover_configuration_provenance_surfaces,
+    discover_policy_provenance_surfaces,
+    discover_profile_revision_surfaces,
+)
 from tests.qualification.trace_x._trace_x_p5_registry_types import (
+    ClassifiedDiscoveryCandidate,
     ConfigurationProvenanceSurfaceKind,
+    DiscoveryCandidateDisposition,
     PolicyProvenanceSurfaceKind,
     ProfileRevisionSurfaceKind,
     ProvenanceDisposition,
@@ -24,209 +29,102 @@ from tests.qualification.trace_x._trace_x_p5_registry_types import (
 )
 
 TRACE_X_P5_P0_START_HEAD: Final[str] = "0102eeabc6d1d59efbecff52737491c96b1d3f0c"
+TRACE_X_P5_P0_R1_START_HEAD: Final[str] = "9d48ca424e025888f7ac8ea61ed463f4284a0d29"
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-_PRODUCTION_SCAN_ROOTS: Final[tuple[str, ...]] = ("intergrax", "agents", "applications")
-_PRODUCTION_EXCLUDE_DIR_NAMES: Final[frozenset[str]] = frozenset(
-    {"tests", "docs", "examples", "__pycache__", "benchmarks", "model_runtime_proof"},
+_POLICY_DISCOVERY_CLASSIFICATIONS: Final[tuple[ClassifiedDiscoveryCandidate, ...]] = (
+    ClassifiedDiscoveryCandidate(
+        "intergrax/contracts/evaluated_policy_decision.py",
+        "EvaluatedPolicyDecision",
+        DiscoveryCandidateDisposition.NOT_PROVENANCE,
+        "Policy evaluation snapshot — boundary authority remains PolicyDecisionSection",
+    ),
+    ClassifiedDiscoveryCandidate(
+        "intergrax/runtime/evidence/obligation_derivation.py",
+        "_CanonicalSerializedRuleV1",
+        DiscoveryCandidateDisposition.NOT_PROVENANCE,
+        "Internal derivation serializer — not a policy provenance surface",
+    ),
+    ClassifiedDiscoveryCandidate(
+        "intergrax/qualification/trace_x_p5_r1_sentinels/policy_provenance_sentinel.py",
+        "SyntheticGovernanceRevisionTrace",
+        DiscoveryCandidateDisposition.TEST_OR_DIAGNOSTIC_ONLY,
+        "P5-P0-R1 negative sensitivity sentinel",
+    ),
 )
 
-_POLICY_CLASS_NAMES: Final[frozenset[str]] = frozenset(
-    {
-        "PolicyDecisionSection",
-        "GovernanceEvidenceSection",
-        "GovernanceEvidenceRef",
-        "PolicyRevisionReferenceV1",
-        "PolicyEvidenceBasisV1",
-        "RequirementOriginV1",
-        "RequireIndexedEvidencePolicyRuleV1",
-        "RequireLiveEvidencePolicyRuleV1",
-    },
+_PROFILE_DISCOVERY_CLASSIFICATIONS: Final[tuple[ClassifiedDiscoveryCandidate, ...]] = (
+    ClassifiedDiscoveryCandidate(
+        "intergrax/applications/_shared/profile_resolution/activation_store.py",
+        "decode_active_effective_profile_revision_binding",
+        DiscoveryCandidateDisposition.NOT_PROVENANCE,
+        "Persistence codec helper — not a revision provenance authority surface",
+    ),
+    ClassifiedDiscoveryCandidate(
+        "intergrax/applications/contracts/runtime_inspection/safe_views.py",
+        "SafeEffectiveProfileRevisionView",
+        DiscoveryCandidateDisposition.NOT_PROVENANCE,
+        "Inspection projection — not revision provenance authority",
+    ),
+    ClassifiedDiscoveryCandidate(
+        "intergrax/context/provider_lifecycle.py",
+        "ContextProviderExecutionPinningStore",
+        DiscoveryCandidateDisposition.NOT_PROVENANCE,
+        "Context provider lifecycle pinning — outside effective profile SSOT",
+    ),
+    ClassifiedDiscoveryCandidate(
+        "intergrax/context/provider_lifecycle.py",
+        "InMemoryContextProviderExecutionPinningStore",
+        DiscoveryCandidateDisposition.NOT_PROVENANCE,
+        "Context provider lifecycle pinning — outside effective profile SSOT",
+    ),
+    ClassifiedDiscoveryCandidate(
+        "intergrax/skills/execution_binding.py",
+        "SkillExecutionPinningStore",
+        DiscoveryCandidateDisposition.NOT_PROVENANCE,
+        "Skills execution pinning — outside effective profile revision SSOT",
+    ),
+    ClassifiedDiscoveryCandidate(
+        "intergrax/skills/execution_binding.py",
+        "InMemorySkillExecutionPinningStore",
+        DiscoveryCandidateDisposition.NOT_PROVENANCE,
+        "Skills execution pinning — outside effective profile revision SSOT",
+    ),
+    ClassifiedDiscoveryCandidate(
+        "intergrax/qualification/trace_x_p5_r1_sentinels/profile_revision_sentinel.py",
+        "Qx7PinnedTenantExecutionRevisionEvidence",
+        DiscoveryCandidateDisposition.TEST_OR_DIAGNOSTIC_ONLY,
+        "P5-P0-R1 negative sensitivity sentinel",
+    ),
 )
 
-_POLICY_FUNCTION_ANCHORS: Final[frozenset[tuple[str, str]]] = frozenset(
-    {
-        (
-            "intergrax/runtime/execution_evidence/compose.py",
-            "compose_execution_boundary_event",
-        ),
-        (
-            "intergrax/runtime/execution_evidence/compose.py",
-            "compose_execution_boundary_event_v2_from_result",
-        ),
-        (
-            "intergrax/runtime/governance/governance_policy_decision_evidence_recording.py",
-            "record_governance_policy_decision_evidence",
-        ),
-        (
-            "intergrax/runtime/governance/governance_policy_decision_evidence_recording.py",
-            "record_governance_policy_decision_evidence_for_active_identity",
-        ),
-        (
-            "intergrax/runtime/runtime_inspection/adapters/governance_read.py",
-            "GovernanceAuditInspectionAdapter.read_governance_decisions",
-        ),
-    },
-)
-
-_PROFILE_CLASS_NAMES: Final[frozenset[str]] = frozenset(
-    {
-        "EffectiveProfileRevision",
-        "EffectiveProfileRevisionScope",
-        "EffectiveProfileRevisionId",
-        "EffectiveProfileExecutionBinding",
-        "EffectiveProfileRevisionCheckpointEvidence",
-        "ActiveEffectiveProfileRevisionBinding",
-        "EffectiveProfileRevisionStore",
-        "EffectiveProfileExecutionPinningStore",
-        "EffectiveProfileRevisionAdmission",
-        "EffectiveProfileRevisionAdmissionPort",
-        "InMemoryEffectiveProfileRevisionStore",
-        "InMemoryEffectiveProfileExecutionPinningStore",
-        "EffectiveProfileRevisionIsolationView",
-    },
-)
-
-_PROFILE_METHOD_ANCHORS: Final[frozenset[tuple[str, str]]] = frozenset(
-    {
-        (
-            "intergrax/applications/_shared/profile_resolution/execution_admission.py",
-            "EffectiveProfileRevisionAdmission.admit_root_execution",
-        ),
-        (
-            "intergrax/applications/_shared/profile_resolution/execution_pinning.py",
-            "pin_effective_profile_revision_for_execution",
-        ),
-        (
-            "intergrax/applications/_shared/profile_resolution/activation_service.py",
-            "resolve_active_effective_profile_revision",
-        ),
-        (
-            "intergrax/applications/_shared/profile_resolution/materialize.py",
-            "materialize_effective_profile_revision",
-        ),
-    },
-)
-
-_CONFIG_CLASS_NAMES: Final[frozenset[str]] = frozenset(
-    {
-        "ConfiguredCapabilityBinding",
-        "ExistingCapabilityConfigurationRealizationRequest",
-        "ExistingCapabilityConfigurationRealizationResult",
-        "ExistingCapabilityIntegrationTarget",
-        "ExistingCapabilityConfigurationRealizationService",
-        "SQLiteRelationalStoreConfigurationRealizationStrategy",
-    },
-)
-
-_CONFIG_FUNCTION_ANCHORS: Final[frozenset[tuple[str, str]]] = frozenset(
-    {
-        (
-            "intergrax/integrations/contracts/existing_capability_configuration.py",
-            "validate_realization_request_invariants",
-        ),
-        (
-            "intergrax/integrations/existing_capability_configuration_service.py",
-            "ExistingCapabilityConfigurationRealizationService.realize_admitted",
-        ),
-    },
+_CONFIGURATION_DISCOVERY_CLASSIFICATIONS: Final[tuple[ClassifiedDiscoveryCandidate, ...]] = (
+    ClassifiedDiscoveryCandidate(
+        "intergrax/integrations/contracts/existing_capability_configuration.py",
+        "ExistingCapabilityConfigurationRealizationStrategy",
+        DiscoveryCandidateDisposition.NOT_PROVENANCE,
+        "Abstract strategy protocol — concrete strategies are inventoried separately",
+    ),
+    ClassifiedDiscoveryCandidate(
+        "intergrax/integrations/contracts/scoped_integration_adaptation.py",
+        "ScopedIntegrationAdaptationTarget",
+        DiscoveryCandidateDisposition.NOT_PROVENANCE,
+        "Scoped adaptation identity — not configured capability provenance",
+    ),
+    ClassifiedDiscoveryCandidate(
+        "intergrax/qualification/trace_x_p5_r1_sentinels/configuration_provenance_sentinel.py",
+        "ZetaScopedConfigurationIdentityTrace",
+        DiscoveryCandidateDisposition.TEST_OR_DIAGNOSTIC_ONLY,
+        "P5-P0-R1 negative sensitivity sentinel",
+    ),
 )
 
 
-def _production_path_excluded(rel_path: Path) -> bool:
-    parts = rel_path.parts
-    if _PRODUCTION_EXCLUDE_DIR_NAMES.intersection(parts):
-        return True
-    if "docker" in parts and "runtime-context" in parts:
-        return True
-    if "proofs" in parts:
-        return True
-    if "legacy" in parts:
-        return True
-    return False
-
-
-def _iter_production_py_files() -> list[Path]:
-    paths: list[Path] = []
-    for root_name in _PRODUCTION_SCAN_ROOTS:
-        root = _REPO_ROOT / root_name
-        if not root.is_dir():
-            continue
-        for py_path in root.rglob("*.py"):
-            rel = py_path.relative_to(_REPO_ROOT)
-            if _production_path_excluded(rel):
-                continue
-            paths.append(py_path)
-    return paths
-
-
-def _discover_class_surfaces(class_names: frozenset[str]) -> frozenset[tuple[str, str]]:
-    discovered: set[tuple[str, str]] = set()
-    for py_path in _iter_production_py_files():
-        rel = py_path.relative_to(_REPO_ROOT).as_posix()
-        try:
-            tree = ast.parse(py_path.read_text(encoding="utf-8"))
-        except SyntaxError:
-            continue
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ClassDef) and node.name in class_names:
-                discovered.add((rel, node.name))
-    return frozenset(discovered)
-
-
-def _discover_function_anchors(
-    anchors: frozenset[tuple[str, str]],
+def _discovery_keys_for_parity(
+    discovered: frozenset[tuple[str, str]],
+    classifications: tuple[ClassifiedDiscoveryCandidate, ...],
 ) -> frozenset[tuple[str, str]]:
-    discovered: set[tuple[str, str]] = set()
-    by_path: dict[str, set[str]] = {}
-    for path, fn in anchors:
-        by_path.setdefault(path, set()).add(fn)
-    method_anchors = {
-        path: {item for item in fns if "." in item}
-        for path, fns in by_path.items()
-        for _ in [None]
-    }
-    plain_anchors = {
-        path: {item for item in fns if "." not in item} for path, fns in by_path.items()
-    }
-    for py_path in _iter_production_py_files():
-        rel = py_path.relative_to(_REPO_ROOT).as_posix()
-        if rel not in by_path:
-            continue
-        try:
-            tree = ast.parse(py_path.read_text(encoding="utf-8"))
-        except SyntaxError:
-            continue
-        for node in tree.body:
-            if isinstance(node, ast.FunctionDef) and node.name in plain_anchors.get(rel, ()):
-                discovered.add((rel, node.name))
-            if not isinstance(node, ast.ClassDef):
-                continue
-            for child in node.body:
-                if not isinstance(child, ast.FunctionDef):
-                    continue
-                qualified = f"{node.name}.{child.name}"
-                if qualified in method_anchors.get(rel, ()):
-                    discovered.add((rel, qualified))
-    return frozenset(discovered)
-
-
-def discover_policy_provenance_surfaces() -> frozenset[tuple[str, str]]:
-    classes = _discover_class_surfaces(_POLICY_CLASS_NAMES)
-    anchors = _discover_function_anchors(_POLICY_FUNCTION_ANCHORS)
-    return frozenset(classes | anchors)
-
-
-def discover_profile_revision_surfaces() -> frozenset[tuple[str, str]]:
-    classes = _discover_class_surfaces(_PROFILE_CLASS_NAMES)
-    anchors = _discover_function_anchors(_PROFILE_METHOD_ANCHORS)
-    return frozenset(classes | anchors)
-
-
-def discover_configuration_provenance_surfaces() -> frozenset[tuple[str, str]]:
-    classes = _discover_class_surfaces(_CONFIG_CLASS_NAMES)
-    anchors = _discover_function_anchors(_CONFIG_FUNCTION_ANCHORS)
-    return frozenset(classes | anchors)
+    excluded = {row.key for row in classifications}
+    return frozenset(key for key in discovered if key not in excluded)
 
 
 POLICY_PROVENANCE_SURFACE_REGISTRY: Final[tuple[RegisteredPolicyProvenanceSurface, ...]] = (
@@ -441,6 +339,42 @@ PROFILE_REVISION_SURFACE_REGISTRY: Final[tuple[RegisteredProfileRevisionSurface,
         "test_txp5p0_q03_profile_discovery_registry_parity",
     ),
     RegisteredProfileRevisionSurface(
+        "intergrax/applications/_shared/profile_resolution/persistence.py",
+        "DocumentStoreEffectiveProfileRevisionStore",
+        ProfileRevisionSurfaceKind.PERSISTENCE,
+        "Profile resolution persistence",
+        "EffectiveProfileRevisionStore",
+        "durable document-store revision materialization",
+        "test_txp5p0_q03_profile_discovery_registry_parity",
+    ),
+    RegisteredProfileRevisionSurface(
+        "intergrax/applications/_shared/profile_resolution/persistence.py",
+        "KvEffectiveProfileRevisionStore",
+        ProfileRevisionSurfaceKind.PERSISTENCE,
+        "Profile resolution persistence",
+        "EffectiveProfileRevisionStore",
+        "durable KV revision materialization",
+        "test_txp5p0_q03_profile_discovery_registry_parity",
+    ),
+    RegisteredProfileRevisionSurface(
+        "intergrax/applications/_shared/profile_resolution/persistence.py",
+        "DocumentStoreEffectiveProfileExecutionPinningStore",
+        ProfileRevisionSurfaceKind.PERSISTENCE,
+        "Profile resolution persistence",
+        "EffectiveProfileExecutionPinningStore",
+        "durable document-store execution pinning",
+        "test_txp5p0_q03_profile_discovery_registry_parity",
+    ),
+    RegisteredProfileRevisionSurface(
+        "intergrax/applications/_shared/profile_resolution/persistence.py",
+        "KvEffectiveProfileExecutionPinningStore",
+        ProfileRevisionSurfaceKind.PERSISTENCE,
+        "Profile resolution persistence",
+        "EffectiveProfileExecutionPinningStore",
+        "durable KV execution pinning",
+        "test_txp5p0_q03_profile_discovery_registry_parity",
+    ),
+    RegisteredProfileRevisionSurface(
         "intergrax/applications/_shared/profile_resolution/materialize.py",
         "materialize_effective_profile_revision",
         ProfileRevisionSurfaceKind.MATERIALIZATION,
@@ -586,20 +520,22 @@ CONFIGURATION_PROVENANCE_SURFACE_REGISTRY: Final[
 def compare_policy_surfaces_to_registry(
     discovered: frozenset[tuple[str, str]],
 ) -> SurfaceParityResult:
-    keys = frozenset(row.key for row in POLICY_PROVENANCE_SURFACE_REGISTRY)
-    return compare_discovered_to_registry(discovered, POLICY_PROVENANCE_SURFACE_REGISTRY)
+    parity_keys = _discovery_keys_for_parity(discovered, _POLICY_DISCOVERY_CLASSIFICATIONS)
+    return compare_discovered_to_registry(parity_keys, POLICY_PROVENANCE_SURFACE_REGISTRY)
 
 
 def compare_profile_surfaces_to_registry(
     discovered: frozenset[tuple[str, str]],
 ) -> SurfaceParityResult:
-    return compare_discovered_to_registry(discovered, PROFILE_REVISION_SURFACE_REGISTRY)
+    parity_keys = _discovery_keys_for_parity(discovered, _PROFILE_DISCOVERY_CLASSIFICATIONS)
+    return compare_discovered_to_registry(parity_keys, PROFILE_REVISION_SURFACE_REGISTRY)
 
 
 def compare_configuration_surfaces_to_registry(
     discovered: frozenset[tuple[str, str]],
 ) -> SurfaceParityResult:
-    return compare_discovered_to_registry(discovered, CONFIGURATION_PROVENANCE_SURFACE_REGISTRY)
+    parity_keys = _discovery_keys_for_parity(discovered, _CONFIGURATION_DISCOVERY_CLASSIFICATIONS)
+    return compare_discovered_to_registry(parity_keys, CONFIGURATION_PROVENANCE_SURFACE_REGISTRY)
 
 
 PROVENANCE_JOINS: Final[tuple[ProvenanceJoin, ...]] = (
@@ -771,5 +707,45 @@ P5_P0_GATE_REGISTRY: Final[tuple[P5GateEvidence, ...]] = (
         "TXP5P0-Q12",
         "FRZ P5 dispositions remain OPEN (no PASS promotion)",
         "test_txp5p0_q12_frz_dispositions_not_pass",
+    ),
+    P5GateEvidence(
+        "TXP5P0-R1-Q01",
+        "R1 START_HEAD ancestry",
+        "test_txp5p0_r1_q01_start_head_ancestry",
+    ),
+    P5GateEvidence(
+        "TXP5P0-R1-Q02",
+        "Policy sentinel discovered (structural AST)",
+        "test_txp5p0_r1_q02_policy_sentinel_discovered_without_registry_union",
+    ),
+    P5GateEvidence(
+        "TXP5P0-R1-Q03",
+        "Profile sentinel discovered (structural AST)",
+        "test_txp5p0_r1_q03_profile_sentinel_discovered_without_registry_union",
+    ),
+    P5GateEvidence(
+        "TXP5P0-R1-Q04",
+        "Configuration sentinel discovered (structural AST)",
+        "test_txp5p0_r1_q04_config_sentinel_discovered_without_registry_union",
+    ),
+    P5GateEvidence(
+        "TXP5P0-R1-Q05",
+        "Renamed policy sentinel still discovered",
+        "test_txp5p0_r1_q05_renamed_policy_sentinel_still_discovered",
+    ),
+    P5GateEvidence(
+        "TXP5P0-R1-Q06",
+        "Registry row removal does not alter discovery",
+        "test_txp5p0_r1_q06_registry_removal_does_not_change_discovery",
+    ),
+    P5GateEvidence(
+        "TXP5P0-R1-Q07",
+        "Registry static — not discovery-derived",
+        "test_txp5p0_r1_q07_discovery_registry_is_static_not_discovery_derived",
+    ),
+    P5GateEvidence(
+        "TXP5P0-R1-Q08",
+        "Explicit typed discovery classifications",
+        "test_txp5p0_r1_q08_classifications_are_explicit_typed",
     ),
 )
