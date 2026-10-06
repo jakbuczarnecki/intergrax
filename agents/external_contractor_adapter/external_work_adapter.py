@@ -66,7 +66,7 @@ from intergrax.contracts.provider_invocation_dispatch import ProviderInvocationD
 from intergrax.contracts.provider_invocation_store import ProviderInvocationPersistenceError
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from intergrax.runtime.governance.mse_governance_evidence_projection import (
-    mse_governance_evidence_ref,
+    mse_governance_evidence_ref_from_persisted_outcome,
 )
 from intergrax.runtime.policy.meaningful_side_effect_authorization import (
     canonical_runtime_policy_decision,
@@ -1181,15 +1181,11 @@ class ExternalWorkAdapter:
         runtime_decision = authorized_snapshot.enforcement_result.composition.runtime_policy
         if isinstance(runtime_decision, PolicyDecision):
             decision = runtime_decision
-        governance_evidence: GovernanceEvidenceRef | None = None
-        if (
-            self._authorization_boundary is not None
-            and self._authorization_boundary.projects_governance_evidence_facts
-        ):
-            governance_evidence = mse_governance_evidence_ref(
-                enforcement_request,
-                evidence_decision,
-            )
+        governance_evidence = mse_governance_evidence_ref_from_persisted_outcome(
+            enforcement_request,
+            evidence_decision,
+            authorized_snapshot.governance_evidence_persistence,
+        )
         return _ExecutedSideEffect(
             value=boundary_result,
             decision=decision,

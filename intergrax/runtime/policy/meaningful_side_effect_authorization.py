@@ -34,6 +34,7 @@ from intergrax.runtime.governance.mse_governance_evidence_projection import (
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 from intergrax.contracts.governed_execution_governance_evidence import (
     GovernedExecutionEvaluationPoint,
+    GovernanceEvidencePersistenceOutcome,
     build_governance_fact_from_policy_decision,
     is_canonical_governance_evidence_policy_action,
 )
@@ -138,12 +139,12 @@ class MeaningfulSideEffectAuthorizationBoundary:
         self,
         request: CollaborativeWorkEnforcementRequest,
         decision: PolicyDecision,
-    ) -> None:
+    ) -> GovernanceEvidencePersistenceOutcome | None:
         recorder = self._governance_evidence_recorder
         if recorder is None or recorder.persistence is None:
-            return
+            return None
         if not is_canonical_governance_evidence_policy_action(decision.action):
-            return
+            return None
         side_effect = request.meaningful_side_effect_request
         tenant_id = request.tenant_id
         workspace_id = request.workspace_id
@@ -170,7 +171,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
             decision_material = side_effect.decision_governance_material
         idempotency_key = mse_governance_idempotency_key(request, decision)
         if idempotency_key is None:
-            return
+            return None
         digest_payload: dict[str, object] = {
             "tenant_id": tenant_id,
             "workspace_id": workspace_id,
@@ -210,7 +211,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
             decision_material_ref=decision_material,
             human_review_evidence_ref=human_review_evidence_ref,
         )
-        recorder.record(fact)
+        return recorder.record(fact)
 
     def _inner_enforcement_denied(
         self,
@@ -232,15 +233,15 @@ class MeaningfulSideEffectAuthorizationBoundary:
             authority_scope=request.resource_scope,
             composition=composition,
         )
-        result = MeaningfulSideEffectAuthorizationResult(
+        persistence = self._record_governance_evidence(request, deny)
+        return MeaningfulSideEffectAuthorizationResult(
             permitted=False,
             decision=deny,
             enforcement_result=enforcement_result,
             requires_governed_continuation=False,
             governed_continuation_request=None,
+            governance_evidence_persistence=persistence,
         )
-        self._record_governance_evidence(request, deny)
-        return result
 
     def _assert_inner_execution(
         self,
@@ -325,15 +326,15 @@ class MeaningfulSideEffectAuthorizationBoundary:
             source_agent_id=source_agent_id,
             source_step_id=source_step_id,
         )
-        result = MeaningfulSideEffectAuthorizationResult(
+        persistence = self._record_governance_evidence(request, evidence_decision)
+        return MeaningfulSideEffectAuthorizationResult(
             permitted=permitted,
             decision=decision,
             enforcement_result=enforcement_result,
             requires_governed_continuation=requires_continuation,
             governed_continuation_request=governed_continuation_request,
+            governance_evidence_persistence=persistence,
         )
-        self._record_governance_evidence(request, evidence_decision)
-        return result
 
     def authorize_and_execute(
         self,

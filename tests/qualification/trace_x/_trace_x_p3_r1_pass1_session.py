@@ -17,7 +17,7 @@ from tests.qualification.trace_x._trace_x_p3_r1_support import (
 
 PASS1_PASSED_NODEIDS: set[str] = set()
 
-PASS1_OBSERVED_MANIFEST = Path(".tmp/session/trace-x-p3-r1-r1-q2/pass1_observed_nodeids.json")
+PASS1_OBSERVED_MANIFEST = Path(".tmp/session/trace-x-p3-r1-r1-q3/pass1_observed_nodeids.json")
 
 
 def pytest_runtest_logreport(report: pytest.TestReport) -> None:

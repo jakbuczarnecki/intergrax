@@ -79,6 +79,7 @@ def test_gr10_r9_r1_result_frozen_dataclass() -> None:
         "enforcement_result",
         "requires_governed_continuation",
         "governed_continuation_request",
+        "governance_evidence_persistence",
     }
 
 

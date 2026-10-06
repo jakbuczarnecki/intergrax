@@ -8,6 +8,7 @@ from __future__ import annotations
 from intergrax.contracts.collaborative_work import CollaborativeWorkEnforcementRequest
 from intergrax.contracts.evaluated_policy_decision import request_digest_for_payload
 from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernanceEvidencePersistenceOutcome,
     governance_evidence_id_from_idempotency,
     is_canonical_governance_evidence_policy_action,
 )
@@ -80,11 +81,31 @@ def _scoped_mse_governance_idempotency_key(
     return base_key
 
 
+def mse_governance_evidence_ref_from_persisted_outcome(
+    request: CollaborativeWorkEnforcementRequest,
+    decision: PolicyDecision,
+    outcome: GovernanceEvidencePersistenceOutcome | None,
+) -> GovernanceEvidenceRef | None:
+    """Compose a proof ref only when persistence acknowledged ``persisted=True``."""
+    if outcome is None or not outcome.persisted:
+        return None
+    expected = mse_governance_evidence_ref(request, decision)
+    if expected is None:
+        return None
+    if outcome.evidence_id != expected.evidence_id:
+        return None
+    return GovernanceEvidenceRef(
+        kind=expected.kind,
+        evidence_id=outcome.evidence_id,
+        policy_decision_ref=expected.policy_decision_ref,
+    )
+
+
 def mse_governance_evidence_ref(
     request: CollaborativeWorkEnforcementRequest,
     decision: PolicyDecision,
 ) -> GovernanceEvidenceRef | None:
-    """Pointer to the GovernanceDecisionEvidenceFact for this MSE authorization."""
+    """Deterministic expected pointer for a persisted GovernanceDecisionEvidenceFact."""
     idempotency_key = mse_governance_idempotency_key(request, decision)
     if idempotency_key is None:
         return None
@@ -100,5 +121,6 @@ def mse_governance_evidence_ref(
 
 __all__ = [
     "mse_governance_evidence_ref",
+    "mse_governance_evidence_ref_from_persisted_outcome",
     "mse_governance_idempotency_key",
 ]

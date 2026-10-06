@@ -14,6 +14,12 @@ TRACE_X_P3_R1_START_HEAD: Final[str] = "72c1aca53663fe002faf2bb9bc4d5a14d2be92b1
 TRACE_X_P3_R1_R1_START_HEAD: Final[str] = "7bc5a7ec0fbacaf52558fdaf53384c20fa359e1b"
 TRACE_X_P3_R1_R1_Q1_START_HEAD: Final[str] = "22a0725fe397ffaf0d82a955a6bec4f0cf644a1b"
 TRACE_X_P3_R1_R1_Q2_START_HEAD: Final[str] = "8b448c5d99c02cc695b73fba2a5c1fa3830ac526"
+TRACE_X_P3_R1_R1_Q3_START_HEAD: Final[str] = "fa8a4656efb131a18a2c5f8d98c941bf53aa6572"
+
+P3_R1_R1_Q2_BLK_EVIDENCE_PERSIST_01: Final[str] = "P3-R1-R1-Q2-BLK-EVIDENCE-PERSIST-01"
+P3_R1_R1_Q2_BLK_EVIDENCE_PERSIST_01_RESOLUTION: Final[str] = (
+    "RESOLVED / pending independent audit"
+)
 
 P3_R1_R1_Q_BLK_02: Final[str] = "P3-R1-R1-Q-BLK-02"
 P3_R1_R1_Q_BLK_02_RESOLUTION: Final[str] = "RESOLVED / pending independent audit"
@@ -41,6 +47,7 @@ _GR7_A8_R1 = (
 _GER_UNIT = "tests/unit/contracts/test_governed_execution_result.py"
 _GOV_PROOF_UNIT = "tests/unit/contracts/test_governed_proof.py"
 _FRESH_AUTH = "tests/unit/runtime/tools/test_fresh_side_effect_authorization.py"
+_MSE_GOV_PROJECTION = "tests/unit/runtime/governance/test_mse_governance_evidence_projection.py"
 _ATTESTATION = "tests/unit/execution_evidence/test_host_attestation_and_receipt.py"
 _CANONICAL_SER = "tests/unit/execution_evidence/test_canonical_serialization.py"
 
@@ -311,6 +318,34 @@ P3_R1_R1_GATE_REGISTRY: Final[tuple[P3R1GateEvidence, ...]] = (
         P3R1R1EvidenceCategory.AUTHORIZATION_ATTRIBUTION,
     ),
     P3R1GateEvidence(
+        "TXP3R1R1-Q37",
+        "persisted governance fact produces exact ref",
+        _nid(_AUTH_EFFECT_BINDING, "test_exact_authorization_to_governed_effect_chain"),
+        ("FRZ-TRC-06",),
+        P3R1R1EvidenceCategory.AUTHORIZATION_ATTRIBUTION,
+    ),
+    P3R1GateEvidence(
+        "TXP3R1R1-Q38",
+        "failed governance fact persistence produces no ref",
+        _nid(
+            _AUTH_EFFECT_BINDING,
+            "test_governance_evidence_persistence_failure_allows_effect_without_dangling_ref",
+        ),
+        ("FRZ-TRC-06",),
+        P3R1R1EvidenceCategory.AUTHORIZATION_ATTRIBUTION,
+    ),
+    P3R1GateEvidence(
+        "TXP3R1R1-Q39",
+        "contradictory success evidence id fails closed",
+        _nid(
+            _MSE_GOV_PROJECTION,
+            "test_contradictory_success_evidence_id_fails_closed",
+        ),
+        ("FRZ-TRC-06",),
+        P3R1R1EvidenceCategory.AUTHORIZATION_ATTRIBUTION,
+        pass1_required=False,
+    ),
+    P3R1GateEvidence(
         "TXP3R1R1-Q25",
         "Governance ≠ Execution",
         _nid(_QUAL_ENTRY, "test_txp3r1r1_q25_governance_not_execution"),
@@ -375,6 +410,7 @@ PASS2_MECHANICAL_PATHS: Final[tuple[str, ...]] = (
     _ATTESTATION,
     _CANONICAL_SER,
     _FRESH_AUTH,
+    _MSE_GOV_PROJECTION,
     _QUAL_ENTRY,
 )
 
@@ -460,6 +496,9 @@ ENTERPRISE_AUDIT_MATRIX_GATE_IDS: Final[dict[str, tuple[str, ...]]] = {
         "TXP3R1R1-Q34",
         "TXP3R1R1-Q35",
         "TXP3R1R1-Q36",
+        "TXP3R1R1-Q37",
+        "TXP3R1R1-Q38",
+        "TXP3R1R1-Q39",
         "TXP3R1R1-Q06",
         "TXP3R1R1-Q16",
         "TXP3R1R1-Q17",
@@ -485,6 +524,9 @@ ENTERPRISE_AUDIT_MATRIX_ROW_GATES: Final[dict[str, tuple[str, ...]]] = {
         "TXP3R1R1-Q34",
         "TXP3R1R1-Q35",
         "TXP3R1R1-Q36",
+        "TXP3R1R1-Q37",
+        "TXP3R1R1-Q38",
+        "TXP3R1R1-Q39",
     ),
     "multi-execution isolation": ("TXP3R1R1-Q23",),
     "multi-attempt isolation": ("TXP3R1R1-Q23",),
@@ -508,8 +550,9 @@ TENANT_ISOLATION_AUDIT_P3_R1_R1: Final[dict[str, str]] = {
     "canonical_tenant_identity": "ActiveExecutionGovernanceIdentity.tenant_id",
     "tenant_owner": "existing Governance/runtime execution context",
     "propagation_path": (
-        "Governance context → governed host → GovernedExecutionResultV2 "
-        "→ ExecutionBoundaryEventV2 → ProofReceiptV2"
+        "Governance authorization → GovernanceDecisionEvidenceFact → persistence outcome "
+        "→ optional confirmed GovernanceEvidenceRef → GovernedProofProfile → "
+        "EBE v2 → Receipt v2"
     ),
     "cross_tenant_path": (
         _nid(_HOST_GATE, "test_cross_tenant_negative_no_provider_and_no_ger")

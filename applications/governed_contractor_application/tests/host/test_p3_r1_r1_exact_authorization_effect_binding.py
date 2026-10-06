@@ -106,6 +106,53 @@ def test_exact_authorization_to_governed_effect_chain() -> None:
     assert event.governance_evidence.evidence_id == fact.evidence_id
     assert ger.proof.governance_evidence.evidence_id == fact.evidence_id
 
+    allow_facts = [
+        f
+        for f in persistence.facts
+        if f.evaluation_point is GovernedExecutionEvaluationPoint.MEANINGFUL_SIDE_EFFECT
+        and f.decision is PolicyAction.ALLOW
+        and str(f.execution_id) == str(execution_id)
+    ]
+    assert len(allow_facts) == 1
+    persisted_id = allow_facts[0].evidence_id
+    assert persisted_id == fact.evidence_id
+    assert persisted_id == ger.proof.governance_evidence.evidence_id
+    assert persisted_id == event.governance_evidence.evidence_id
+
+
+def test_governance_evidence_persistence_failure_allows_effect_without_dangling_ref() -> None:
+    fake = DeterministicExternalWorkFake()
+    task_id, run_id, attempt_id, execution_id = default_gr3_identity_bundle()
+    persistence = InMemoryGovernanceEvidencePersistence()
+    persistence.fail_on_persist = True
+    runtime, _ = _build_runtime(
+        fake,
+        task_id,
+        governance_evidence_persistence=persistence,
+        attestor=build_deterministic_test_attestor(),
+    )
+    calls_before = fake.create_calls
+    step, _ = _create_step(
+        runtime, fake, task_id, run_id, attempt_id, execution_id,
+    )
+    calls_after = fake.create_calls
+    assert calls_after > calls_before, "provider effect should still execute under ALLOW"
+
+    assert step.governed_result is not None
+    assert step.receipt is not None
+    ger = step.governed_result
+    event = step.receipt.execution_boundary_event
+
+    assert ger.evaluated_policy_decision.decision.action is PolicyAction.ALLOW
+    assert event.policy.action is PolicyAction.ALLOW
+    assert len(persistence.facts) == 0
+
+    assert ger.proof is not None
+    assert ger.proof.governance_evidence is None
+    assert event.governance_evidence is None
+    receipt_json = step.receipt.model_dump_json()
+    assert "gov_ev_" not in receipt_json
+
 
 def test_cross_execution_authorization_does_not_bind_other_effect() -> None:
     fake = DeterministicExternalWorkFake()

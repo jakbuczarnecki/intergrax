@@ -76,6 +76,8 @@ from tests.qualification.trace_x._trace_x_p3_r1_support import (
     TENANT_ISOLATION_AUDIT_P3_R1_R1,
     TRACE_X_P3_R1_R1_Q1_START_HEAD,
     TRACE_X_P3_R1_R1_Q2_START_HEAD,
+    TRACE_X_P3_R1_R1_Q3_START_HEAD,
+    P3_R1_R1_Q2_BLK_EVIDENCE_PERSIST_01_RESOLUTION,
     TRACE_X_P3_R1_R1_START_HEAD,
     TRACE_X_P3_R1_START_HEAD,
     assert_nodeid_targets_test_function,
@@ -392,6 +394,17 @@ def test_txp3r1r1_q2_q2_start_head_provenance() -> None:
     start = TRACE_X_P3_R1_R1_Q2_START_HEAD
     subprocess.run(["git", "cat-file", "-e", f"{start}^{{commit}}"], cwd=_REPO, check=True)
     assert _git_is_ancestor(start, head)
+
+
+def test_txp3r1r1_q3_q3_start_head_provenance() -> None:
+    head = _git_head()
+    start = TRACE_X_P3_R1_R1_Q3_START_HEAD
+    subprocess.run(["git", "cat-file", "-e", f"{start}^{{commit}}"], cwd=_REPO, check=True)
+    assert _git_is_ancestor(start, head)
+
+
+def test_txp3r1r1_q3_evidence_persist_blocker_resolved() -> None:
+    assert P3_R1_R1_Q2_BLK_EVIDENCE_PERSIST_01_RESOLUTION.startswith("RESOLVED")
 
 
 def test_txp3r1r1_gate_registry_mechanical_integrity() -> None:
