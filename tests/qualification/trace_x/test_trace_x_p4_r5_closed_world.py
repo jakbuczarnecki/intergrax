@@ -23,6 +23,7 @@ from tests.qualification.trace_x._trace_x_p4_production_composition_registry imp
 from tests.qualification.trace_x._trace_x_p4_production_composition_types import (
     ProductionCompositionSiteClassification,
     ProductionCompositionSiteKind,
+    RegisteredProductionCompositionSite,
 )
 from tests.qualification.trace_x._trace_x_p4_registry_types import ModelCallSurfaceClassification
 from tests.qualification.trace_x._trace_x_p4_support import (
@@ -190,16 +191,13 @@ def test_txp4r5_q08_non_production_surfaces_have_reachability_proof() -> None:
 
 
 def sanctioned_inference_executor_injection_absent(
-    registry: tuple[object, ...],
+    registry: tuple[RegisteredProductionCompositionSite, ...],
 ) -> bool:
     return not production_composition_supplies_inference_executor(registry)
 
 
 def test_txp4r5_q09_r5_n1_synthetic_inference_executor_injection_fails() -> None:
     assert sanctioned_inference_executor_injection_absent(PRODUCTION_COMPOSITION_SITE_REGISTRY)
-    from tests.qualification.trace_x._trace_x_p4_production_composition_types import (
-        RegisteredProductionCompositionSite,
-    )
 
     synthetic_registry = PRODUCTION_COMPOSITION_SITE_REGISTRY + (
         RegisteredProductionCompositionSite(

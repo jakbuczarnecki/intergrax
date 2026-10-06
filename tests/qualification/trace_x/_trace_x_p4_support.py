@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Final
 
 from intergrax.contracts.runtime_event import RuntimeEvent
+from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.runtime.events.payload_registry import validate_payload_envelope
 from intergrax.runtime.events.payloads.canonical import (
     ContextAssemblyPayloadV3,
@@ -43,6 +44,7 @@ TRACE_X_P4_R2_START_HEAD: Final[str] = "54936ecf758e68d6b79f2b05604fca7c1fc79849
 TRACE_X_P4_R3_START_HEAD: Final[str] = "bb1b7fa76784f13c5f5c64d9962e136fc5e40701"
 TRACE_X_P4_R4_START_HEAD: Final[str] = "069315c5fe45afc4ed39c5b02900fd56889e3bb5"
 TRACE_X_P4_R5_START_HEAD: Final[str] = "bef997db3fd40eab7d47ca605f12dcd0145bcb0e"
+TRACE_X_P4_R6_START_HEAD: Final[str] = "c916c8fff0e772c6d09662be28f81318402b44b0"
 
 _REPO_ROOT = Path(__file__).resolve().parents[3]
 _PRODUCTION_SCAN_ROOTS: Final[tuple[str, ...]] = ("intergrax", "agents", "applications")
@@ -363,7 +365,7 @@ def classify_non_production_reachability_reason(
 
 
 def production_composition_supplies_inference_executor(
-    registry: tuple[RegisteredProductionCompositionSite, ...] | tuple[object, ...],
+    registry: tuple[RegisteredProductionCompositionSite, ...],
 ) -> bool:
     for row in registry:
         if row.inference_executor_supplied and row.classification in (
@@ -401,7 +403,7 @@ def discover_alternate_p4_attribution_seam_instantiations_ast() -> frozenset[tup
     return frozenset(discovered)
 
 
-def llm_adapter_has_canonical_p4_evidence_wrapper(adapter: object) -> bool:
+def llm_adapter_has_canonical_p4_evidence_wrapper(adapter: LLMAdapter) -> bool:
     from intergrax.runtime.llm.model_call_runtime_evidence_adapter import ModelCallRuntimeEvidenceAdapter
 
     return isinstance(adapter, ModelCallRuntimeEvidenceAdapter)
