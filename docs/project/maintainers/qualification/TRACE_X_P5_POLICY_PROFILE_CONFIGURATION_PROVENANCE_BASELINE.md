@@ -10,7 +10,7 @@
 
 **R1-R1 START_HEAD:** `a9fd88da1d5efa3fc61d668289c13f78e4d52b1d`
 
-**R1-R1 final commit:** `4630f0fa81d9ebc16f7b0331464431cadf9eafcb`
+**R1-R1 final commit:** `02c351ad868db731f933c8596964fc51b276f7cf`
 
 **Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p5_support.py` · discovery: `tests/qualification/trace_x/_trace_x_p5_discovery.py`
 
