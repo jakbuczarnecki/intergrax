@@ -123,6 +123,20 @@ class LlmCallPayloadV1(RuntimeEventPayload):
     label: str = ""
 
 
+class LlmCallPayloadV2(RuntimeEventPayload):
+    schema_id = "llm_call.v2"
+
+    model: str = ""
+    provider: str = ""
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    finish_reason: str | None = None
+    label: str = ""
+    model_input_messages_hash: str = ""
+    execution_scope: str = "primary_model_call"
+
+
 class TraceBridgePayloadV1(RuntimeEventPayload):
     """Wrapper for trace-bridged diagnostic detail."""
 
@@ -189,6 +203,25 @@ class ContextAssemblyPayloadV2(RuntimeEventPayload):
     step_kind: str | None = None
     fragment_token_cost: int = 0
     estimated_cost_microusd: int = 0
+
+
+class ContextAssemblyPayloadV3(RuntimeEventPayload):
+    schema_id = "context_assembly.v3"
+
+    node_id: str
+    summary_tier: str | None = None
+    context_original_chars: int
+    context_final_chars: int
+    trimmed: bool = False
+    engine_id: str = ""
+    step_index: int | None = None
+    step_kind: str | None = None
+    fragment_token_cost: int = 0
+    estimated_cost_microusd: int = 0
+    model_input_messages_hash: str = ""
+    token_counter_strategy_id: str = ""
+    compaction_strategy_id: str = ""
+    degradation_policy_id: str = ""
 
 
 class TaskLifecyclePayloadV1(RuntimeEventPayload):

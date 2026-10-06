@@ -24,6 +24,7 @@ from intergrax.contracts.runtime_event_recording import RuntimeEventRecorderPort
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
 from intergrax.runtime.events.payloads import (
     ContextAssemblyPayloadV2,
+    ContextAssemblyPayloadV3,
     ContextCandidatePayloadV1,
     SkillResolvedPayloadV1,
     ValidationPayloadV1,
@@ -281,6 +282,27 @@ def record_context_assembly(
         "engine_id": engine_id,
     }
     if emit_assembled:
+        model_hash = metadata.get("model_input_messages_hash")
+        model_hash_str = str(model_hash) if isinstance(model_hash, str) else ""
+        assembly_payload = ContextAssemblyPayloadV3(
+            node_id=node_id,
+            summary_tier=str(metadata.get("summary_tier"))
+            if metadata.get("summary_tier") is not None
+            else None,
+            context_original_chars=trim.original_chars,
+            context_final_chars=trim.final_chars,
+            trimmed=False,
+            engine_id=engine_id,
+            step_index=step_index,
+            step_kind=step_kind,
+            model_input_messages_hash=model_hash_str,
+            token_counter_strategy_id=str(metadata.get("token_counter_strategy_id") or ""),
+            compaction_strategy_id=str(metadata.get("compaction_strategy_id") or ""),
+            degradation_policy_id=str(metadata.get("degradation_policy_id") or ""),
+        )
+        promote = {**base_payload}
+        if model_hash_str:
+            promote["model_input_messages_hash"] = model_hash_str
         bus.record(
             runtime_event_with_payload(
                 RuntimeEvent(
@@ -295,19 +317,8 @@ def record_context_assembly(
                     phase=ExecutionPhase.CONTEXT_BUILDING,
                     correlation_id=task_id,
                 ),
-                ContextAssemblyPayloadV2(
-                    node_id=node_id,
-                    summary_tier=str(metadata.get("summary_tier"))
-                    if metadata.get("summary_tier") is not None
-                    else None,
-                    context_original_chars=trim.original_chars,
-                    context_final_chars=trim.final_chars,
-                    trimmed=False,
-                    engine_id=engine_id,
-                    step_index=step_index,
-                    step_kind=step_kind,
-                ),
-                promote_fields=base_payload,
+                assembly_payload,
+                promote_fields=promote,
             )
         )
     if trim.trimmed:
@@ -361,10 +372,12 @@ def record_context_assembled_from_engine(
         run_id=run_id,
     )
     from intergrax.context.tracking.assembly_cost import assembly_cost_from_assembled
+    from intergrax.llm.messages import compute_model_facing_messages_hash
 
     original_chars = sum(len(fragment.content) for fragment in assembled.fragments_included)
     final_chars = sum(len(msg.content or "") for msg in assembled.messages)
     cost = assembly_cost_from_assembled(assembled)
+    model_hash_str = compute_model_facing_messages_hash(assembled.messages)
     base_payload: dict[str, Any] = {
         "node_id": node_id,
         "context_original_chars": original_chars,
@@ -372,6 +385,7 @@ def record_context_assembled_from_engine(
         "engine_id": engine_id,
         "fragment_token_cost": cost.fragment_token_cost,
         "estimated_cost_microusd": cost.estimated_cost_microusd,
+        "model_input_messages_hash": model_hash_str,
     }
     bus.record(
         runtime_event_with_payload(
@@ -386,7 +400,7 @@ def record_context_assembled_from_engine(
                 phase=ExecutionPhase.CONTEXT_BUILDING,
                 correlation_id=task_id,
             ),
-            ContextAssemblyPayloadV2(
+            ContextAssemblyPayloadV3(
                 node_id=node_id,
                 context_original_chars=original_chars,
                 context_final_chars=final_chars,
@@ -396,6 +410,10 @@ def record_context_assembled_from_engine(
                 step_kind=step_kind,
                 fragment_token_cost=cost.fragment_token_cost,
                 estimated_cost_microusd=cost.estimated_cost_microusd,
+                model_input_messages_hash=model_hash_str,
+                token_counter_strategy_id=assembled.token_counter_strategy_id,
+                compaction_strategy_id=assembled.compaction_strategy_id,
+                degradation_policy_id=assembled.degradation_policy_id,
             ),
             promote_fields=base_payload,
         )
