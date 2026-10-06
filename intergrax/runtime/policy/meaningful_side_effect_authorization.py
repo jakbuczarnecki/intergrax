@@ -28,6 +28,9 @@ from intergrax.contracts.decision_requirement_policy import (
     DecisionRequirementPolicy,
 )
 from intergrax.contracts.evaluated_policy_decision import request_digest_for_payload
+from intergrax.runtime.governance.mse_governance_evidence_projection import (
+    mse_governance_idempotency_key,
+)
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
 from intergrax.contracts.governed_execution_governance_evidence import (
     GovernedExecutionEvaluationPoint,
@@ -63,6 +66,18 @@ from intergrax.runtime.task.task import Task
 from intergrax.runtime.task.task_lifecycle import TaskLifecycle, TaskState
 
 T = TypeVar("T")
+
+
+def canonical_runtime_policy_decision(
+    enforcement_result: CollaborativeWorkEnforcementResult,
+) -> PolicyDecision:
+    """Policy decision for GR-8 facts and governed proof refs (runtime bundle when present)."""
+    decision = enforcement_result.composition.decision
+    runtime_decision = enforcement_result.composition.runtime_policy
+    if isinstance(runtime_decision, PolicyDecision):
+        return runtime_decision
+    return decision
+
 
 def _resolve_human_review_evidence_ref_for_allow(
     request: CollaborativeWorkEnforcementRequest,
@@ -114,6 +129,11 @@ class MeaningfulSideEffectAuthorizationBoundary:
         )
         self._governance_evidence_recorder = governance_evidence_recorder
 
+    @property
+    def projects_governance_evidence_facts(self) -> bool:
+        recorder = self._governance_evidence_recorder
+        return recorder is not None and recorder.persistence is not None
+
     def _record_governance_evidence(
         self,
         request: CollaborativeWorkEnforcementRequest,
@@ -148,6 +168,9 @@ class MeaningfulSideEffectAuthorizationBoundary:
             resource_type = side_effect.kinds[0].value if side_effect.kinds else ""
             resource_scope = side_effect.side_effect_scope_id
             decision_material = side_effect.decision_governance_material
+        idempotency_key = mse_governance_idempotency_key(request, decision)
+        if idempotency_key is None:
+            return
         digest_payload: dict[str, object] = {
             "tenant_id": tenant_id,
             "workspace_id": workspace_id,
@@ -165,7 +188,6 @@ class MeaningfulSideEffectAuthorizationBoundary:
         if execution_id is not None:
             digest_payload["execution_id"] = str(execution_id)
         digest = request_digest_for_payload(digest_payload)
-        idempotency_key = f"mse:{digest}:{decision.action.value}"
         human_review_evidence_ref = _resolve_human_review_evidence_ref_for_allow(
             request,
             decision,
@@ -290,6 +312,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
             return inner_block
         enforcement_result = self._enforcement_gate.evaluate(request)
         decision = enforcement_result.composition.decision
+        evidence_decision = canonical_runtime_policy_decision(enforcement_result)
         action = decision.action
         permitted = action is PolicyAction.ALLOW
         requires_continuation = action in (PolicyAction.REQUIRE_HUMAN, PolicyAction.ESCALATE)
@@ -309,7 +332,7 @@ class MeaningfulSideEffectAuthorizationBoundary:
             requires_governed_continuation=requires_continuation,
             governed_continuation_request=governed_continuation_request,
         )
-        self._record_governance_evidence(request, decision)
+        self._record_governance_evidence(request, evidence_decision)
         return result
 
     def authorize_and_execute(

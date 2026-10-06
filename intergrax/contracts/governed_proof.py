@@ -118,6 +118,7 @@ class GovernedProofProfile(BaseModel):
 
 # Well-known evidence kinds (consumers may add their own strings).
 EVIDENCE_KIND_QUOTE_ACCEPTANCE: Final = "quote_acceptance_evidence"
+EVIDENCE_KIND_GOVERNANCE_DECISION_FACT: Final = "governance_decision_evidence_fact"
 
 
 def compose_governed_proof_profile(

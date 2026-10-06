@@ -56,6 +56,7 @@ from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOut
 from intergrax.contracts.enterprise_reliability.reliability_boundary import (
     ExternalEffectReliabilityInteraction,
 )
+from intergrax.contracts.execution_evidence.attestation import HostAttestor
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
 from intergrax.contracts.external_work import ExternalWorkErrorCode
 from intergrax.contracts.external_work_provider_capabilities import (
@@ -167,6 +168,8 @@ def _build_runtime(
     deny_create: bool = False,
     admission_port: RecordingAdmissionPort | None = None,
     capabilities: ExternalWorkProviderCapabilities | None = None,
+    governance_evidence_persistence: object | None = None,
+    attestor: HostAttestor | None = None,
 ):
     execution_store, receipt_store, bundle_store, continuation_store, invocation_store = (
         _stores()
@@ -194,6 +197,8 @@ def _build_runtime(
         continuation_store=continuation_store,
         provider_invocation_store=invocation_store,
         reliability_bridge=bridge,
+        governance_evidence_persistence=governance_evidence_persistence,
+        attestor=attestor,
     )
     return runtime, port
 

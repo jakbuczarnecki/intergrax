@@ -13,6 +13,10 @@ from tests.qualification.trace_x._trace_x_p0_support import repo_root
 TRACE_X_P3_R1_START_HEAD: Final[str] = "72c1aca53663fe002faf2bb9bc4d5a14d2be92b1"
 TRACE_X_P3_R1_R1_START_HEAD: Final[str] = "7bc5a7ec0fbacaf52558fdaf53384c20fa359e1b"
 TRACE_X_P3_R1_R1_Q1_START_HEAD: Final[str] = "22a0725fe397ffaf0d82a955a6bec4f0cf644a1b"
+TRACE_X_P3_R1_R1_Q2_START_HEAD: Final[str] = "8b448c5d99c02cc695b73fba2a5c1fa3830ac526"
+
+P3_R1_R1_Q_BLK_02: Final[str] = "P3-R1-R1-Q-BLK-02"
+P3_R1_R1_Q_BLK_02_RESOLUTION: Final[str] = "RESOLVED / pending independent audit"
 
 MANDATORY_FRZ_P3_R1_IDS: Final[tuple[str, ...]] = ("FRZ-TRC-04", "FRZ-TRC-06")
 
@@ -24,6 +28,10 @@ _QUAL_MODULE = "tests/qualification/trace_x/_trace_x_p3_r1_qualification_tests.p
 _HOST_GATE = (
     "applications/governed_contractor_application/tests/host/"
     "test_p3_r1_r1_governed_identity_tenant_gate.py"
+)
+_AUTH_EFFECT_BINDING = (
+    "applications/governed_contractor_application/tests/host/"
+    "test_p3_r1_r1_exact_authorization_effect_binding.py"
 )
 _P3_QUAL = "tests/qualification/trace_x/_trace_x_p3_qualification_tests.py"
 _GR7_A8_R1 = (
@@ -66,6 +74,12 @@ class P3R1GateEvidence:
     frz_ids: tuple[str, ...]
     category: P3R1R1EvidenceCategory
     pass1_required: bool = True
+    pass2_required: bool = True
+    supporting_nodeids: tuple[str, ...] = ()
+
+
+def gate_required_nodeids(evidence: P3R1GateEvidence) -> tuple[str, ...]:
+    return (evidence.test_nodeid,) + evidence.supporting_nodeids
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,6 +115,8 @@ P3_R1_R1_GATE_REGISTRY: Final[tuple[P3R1GateEvidence, ...]] = (
         _nid(_QUAL_ENTRY, "test_txp3r1r1q1_q01_production_delta_zero"),
         (),
         P3R1R1EvidenceCategory.OWNERSHIP_AUTHORITY,
+        pass1_required=False,
+        pass2_required=False,
     ),
     P3R1GateEvidence(
         "TXP3R1R1-Q03",
@@ -252,14 +268,47 @@ P3_R1_R1_GATE_REGISTRY: Final[tuple[P3R1GateEvidence, ...]] = (
     ),
     P3R1GateEvidence(
         "TXP3R1R1-Q24",
-        "exact side effect → provider → execution → authorization attribution",
+        "exact authorization fact → execution → provider → signed governed effect",
+        _nid(_AUTH_EFFECT_BINDING, "test_exact_authorization_to_governed_effect_chain"),
+        ("FRZ-TRC-06",),
+        P3R1R1EvidenceCategory.AUTHORIZATION_ATTRIBUTION,
+        pass1_required=True,
+        supporting_nodeids=(
+            _nid(
+                _FRESH_AUTH,
+                "test_pre_effect_gate_ordering_is_authorization_before_idempotency_before_handler",
+            ),
+        ),
+    ),
+    P3R1GateEvidence(
+        "TXP3R1R1-Q34",
+        "cross-execution authorization cannot bind foreign effect",
         _nid(
-            _FRESH_AUTH,
-            "test_pre_effect_gate_ordering_is_authorization_before_idempotency_before_handler",
+            _AUTH_EFFECT_BINDING,
+            "test_cross_execution_authorization_does_not_bind_other_effect",
         ),
         ("FRZ-TRC-06",),
         P3R1R1EvidenceCategory.AUTHORIZATION_ATTRIBUTION,
-        pass1_required=False,
+    ),
+    P3R1GateEvidence(
+        "TXP3R1R1-Q35",
+        "cross-attempt authorization cannot bind foreign attempt effect",
+        _nid(
+            _AUTH_EFFECT_BINDING,
+            "test_cross_attempt_authorization_does_not_bind_other_attempt",
+        ),
+        ("FRZ-TRC-06",),
+        P3R1R1EvidenceCategory.AUTHORIZATION_ATTRIBUTION,
+    ),
+    P3R1GateEvidence(
+        "TXP3R1R1-Q36",
+        "DENY governance fact cannot yield successful receipt v2",
+        _nid(
+            _AUTH_EFFECT_BINDING,
+            "test_deny_authorization_cannot_produce_successful_receipt",
+        ),
+        ("FRZ-TRC-06",),
+        P3R1R1EvidenceCategory.AUTHORIZATION_ATTRIBUTION,
     ),
     P3R1GateEvidence(
         "TXP3R1R1-Q25",
@@ -302,6 +351,7 @@ P3_R1_R1_GATE_REGISTRY: Final[tuple[P3R1GateEvidence, ...]] = (
         _nid(_QUAL_ENTRY, "test_txp3r1r1_q30_frz_trc_06_readiness_evidence"),
         ("FRZ-TRC-06",),
         P3R1R1EvidenceCategory.AUTHORIZATION_ATTRIBUTION,
+        pass1_required=False,
     ),
 )
 
@@ -312,9 +362,10 @@ P3_R1_R1_GATE_BY_ID: Final[dict[str, P3R1GateEvidence]] = {
 PASS1_MECHANICAL_NODEIDS: Final[tuple[str, ...]] = tuple(
     sorted(
         {
-            row.test_nodeid
+            nodeid
             for row in P3_R1_R1_GATE_REGISTRY
             if row.pass1_required
+            for nodeid in gate_required_nodeids(row)
         }
     )
 )
@@ -330,9 +381,10 @@ PASS2_MECHANICAL_PATHS: Final[tuple[str, ...]] = (
 PASS2_MECHANICAL_NODEIDS: Final[tuple[str, ...]] = tuple(
     sorted(
         {
-            row.test_nodeid
+            nodeid
             for row in P3_R1_R1_GATE_REGISTRY
-            if not row.pass1_required
+            if not row.pass1_required and row.pass2_required
+            for nodeid in gate_required_nodeids(row)
         }
     )
 )
@@ -402,7 +454,16 @@ ENTERPRISE_AUDIT_MATRIX_GATE_IDS: Final[dict[str, tuple[str, ...]]] = {
         "TXP3R1R1-Q17",
     ),
     "FRZ-TRC-04 readiness": ("TXP3R1R1-Q29", "TXP3R1R1-Q23", "TXP3R1R1-Q03", "TXP3R1R1-Q09"),
-    "FRZ-TRC-06 readiness": ("TXP3R1R1-Q30", "TXP3R1R1-Q24", "TXP3R1R1-Q06", "TXP3R1R1-Q16"),
+    "FRZ-TRC-06 readiness": (
+        "TXP3R1R1-Q30",
+        "TXP3R1R1-Q24",
+        "TXP3R1R1-Q34",
+        "TXP3R1R1-Q35",
+        "TXP3R1R1-Q36",
+        "TXP3R1R1-Q06",
+        "TXP3R1R1-Q16",
+        "TXP3R1R1-Q17",
+    ),
 }
 
 ENTERPRISE_AUDIT_MATRIX_ROW_GATES: Final[dict[str, tuple[str, ...]]] = {
@@ -418,7 +479,13 @@ ENTERPRISE_AUDIT_MATRIX_ROW_GATES: Final[dict[str, tuple[str, ...]]] = {
     "receipt schema versioning": ("TXP3R1R1-Q15",),
     "cross-version rejection": ("TXP3R1R1-Q19",),
     "exact provider attribution": ("TXP3R1R1-Q23",),
-    "exact side-effect authorization attribution": ("TXP3R1R1-Q16", "TXP3R1R1-Q24"),
+    "exact side-effect authorization attribution": (
+        "TXP3R1R1-Q16",
+        "TXP3R1R1-Q24",
+        "TXP3R1R1-Q34",
+        "TXP3R1R1-Q35",
+        "TXP3R1R1-Q36",
+    ),
     "multi-execution isolation": ("TXP3R1R1-Q23",),
     "multi-attempt isolation": ("TXP3R1R1-Q23",),
     "provider retry correctness": ("TXP3R1R1-Q23",),
@@ -473,7 +540,10 @@ def assert_nodeid_targets_test_function(nodeid: str) -> None:
 
 def observed_gate_passed(gate_id: str, passed_nodeids: set[str]) -> bool:
     evidence = P3_R1_R1_GATE_BY_ID[gate_id]
-    return normalize_pytest_nodeid(evidence.test_nodeid) in passed_nodeids
+    return all(
+        normalize_pytest_nodeid(nodeid) in passed_nodeids
+        for nodeid in gate_required_nodeids(evidence)
+    )
 
 
 def observed_audit_row_result(

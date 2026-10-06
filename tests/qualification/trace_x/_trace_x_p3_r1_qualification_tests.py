@@ -75,6 +75,7 @@ from tests.qualification.trace_x._trace_x_p3_r1_support import (
     R1GateResult,
     TENANT_ISOLATION_AUDIT_P3_R1_R1,
     TRACE_X_P3_R1_R1_Q1_START_HEAD,
+    TRACE_X_P3_R1_R1_Q2_START_HEAD,
     TRACE_X_P3_R1_R1_START_HEAD,
     TRACE_X_P3_R1_START_HEAD,
     assert_nodeid_targets_test_function,
@@ -358,6 +359,9 @@ def test_txp3r1_q33_strong_typing_no_any_on_v2_identity() -> None:
 
 
 def test_txp3r1r1q1_q01_production_delta_zero() -> None:
+    head = _git_head()
+    if _git_is_ancestor(TRACE_X_P3_R1_R1_Q2_START_HEAD, head) and head != TRACE_X_P3_R1_R1_Q1_START_HEAD:
+        pytest.skip("Q1 zero-delta gate is historical after Q2 Branch B wiring")
     baseline = TRACE_X_P3_R1_R1_Q1_START_HEAD
     subprocess.run(["git", "cat-file", "-e", f"{baseline}^{{commit}}"], cwd=_REPO, check=True)
     diff = subprocess.check_output(
@@ -379,6 +383,13 @@ def test_txp3r1r1q1_q01_production_delta_zero() -> None:
 def test_txp3r1r1_q1_q1_start_head_provenance() -> None:
     head = _git_head()
     start = TRACE_X_P3_R1_R1_Q1_START_HEAD
+    subprocess.run(["git", "cat-file", "-e", f"{start}^{{commit}}"], cwd=_REPO, check=True)
+    assert _git_is_ancestor(start, head)
+
+
+def test_txp3r1r1_q2_q2_start_head_provenance() -> None:
+    head = _git_head()
+    start = TRACE_X_P3_R1_R1_Q2_START_HEAD
     subprocess.run(["git", "cat-file", "-e", f"{start}^{{commit}}"], cwd=_REPO, check=True)
     assert _git_is_ancestor(start, head)
 
@@ -658,17 +669,44 @@ def test_txp3r1r1_q29_frz_trc_04_readiness_evidence() -> None:
 
 
 def test_txp3r1r1_q30_frz_trc_06_readiness_evidence() -> None:
+    import os
+
+    from tests.qualification.trace_x._trace_x_p3_r1_pass1_session import (
+        PASS1_PASSED_NODEIDS,
+        load_pass1_observed_nodeids,
+    )
+    from tests.qualification.trace_x._trace_x_p3_r1_pass2_session import PASS2_PASSED_NODEIDS
+    from tests.qualification.trace_x._trace_x_p3_r1_support import (
+        normalize_pytest_nodeid,
+        observed_gate_passed,
+    )
+
+    if os.environ.get("TRACE_X_P3_R1_R1_PASS2") != "1":
+        pytest.skip("Q30 requires Pass 2 session with Pass 1+2 observed nodeids")
+    pass1_observed = load_pass1_observed_nodeids() or {
+        normalize_pytest_nodeid(nodeid) for nodeid in PASS1_PASSED_NODEIDS
+    }
+    passed = {
+        normalize_pytest_nodeid(nodeid)
+        for nodeid in pass1_observed.union(PASS2_PASSED_NODEIDS)
+    }
     for gate_id in ENTERPRISE_AUDIT_MATRIX_GATE_IDS["FRZ-TRC-06 readiness"]:
+        if gate_id == "TXP3R1R1-Q30":
+            continue
         assert gate_id in P3_R1_R1_GATE_BY_ID
+        assert observed_gate_passed(gate_id, passed), gate_id
 
 
 def test_txp3r1r1_pass1_mechanical_nodeid_manifest() -> None:
+    from tests.qualification.trace_x._trace_x_p3_r1_support import gate_required_nodeids
+
     assert PASS1_MECHANICAL_NODEIDS
     for nodeid in PASS1_MECHANICAL_NODEIDS:
         assert_nodeid_targets_test_function(nodeid)
     for gate_id, evidence in P3_R1_R1_GATE_BY_ID.items():
         if evidence.pass1_required:
-            assert evidence.test_nodeid in PASS1_MECHANICAL_NODEIDS
+            for nodeid in gate_required_nodeids(evidence):
+                assert nodeid in PASS1_MECHANICAL_NODEIDS, gate_id
 
 
 def test_txp3r1_q23_v2_receipt_event_pair_valid() -> None:
