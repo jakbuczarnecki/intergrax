@@ -11,6 +11,7 @@ if TYPE_CHECKING:
 
 from intergrax.contracts.execution_identity import (
     AttemptId,
+    EventId,
     ExecutionId,
     RunId,
     TaskId,
@@ -25,6 +26,7 @@ from intergrax.runtime.events.payload_registry import runtime_event_with_payload
 from intergrax.runtime.events.payloads import (
     ContextAssemblyPayloadV2,
     ContextAssemblyPayloadV3,
+    ContextAssemblyPayloadV4,
     ContextCandidatePayloadV1,
     SkillResolvedPayloadV1,
     ValidationPayloadV1,
@@ -284,7 +286,15 @@ def record_context_assembly(
     if emit_assembled:
         model_hash = metadata.get("model_input_messages_hash")
         model_hash_str = str(model_hash) if isinstance(model_hash, str) else ""
-        assembly_payload = ContextAssemblyPayloadV3(
+        from intergrax.context.tracking.decision_evidence import (
+            compute_context_decision_evidence_fingerprint_from_metadata,
+        )
+
+        decision_fingerprint = compute_context_decision_evidence_fingerprint_from_metadata(
+            metadata,
+            degradation_steps=tuple(metadata.get("degradation_steps") or ()),
+        )
+        assembly_payload = ContextAssemblyPayloadV4(
             node_id=node_id,
             summary_tier=str(metadata.get("summary_tier"))
             if metadata.get("summary_tier") is not None
@@ -299,13 +309,13 @@ def record_context_assembly(
             token_counter_strategy_id=str(metadata.get("token_counter_strategy_id") or ""),
             compaction_strategy_id=str(metadata.get("compaction_strategy_id") or ""),
             degradation_policy_id=str(metadata.get("degradation_policy_id") or ""),
+            context_decision_evidence_fingerprint=decision_fingerprint,
         )
         promote = {**base_payload}
         if model_hash_str:
             promote["model_input_messages_hash"] = model_hash_str
-        bus.record(
-            runtime_event_with_payload(
-                RuntimeEvent(
+        promote["context_decision_evidence_fingerprint"] = decision_fingerprint
+        assembled_event = RuntimeEvent(
                     tenant_id=metadata.get("tenant_id") if isinstance(metadata.get("tenant_id"), str) else None,
                     task_id=resolved_task_id,
                     run_id=resolved_run_id,
@@ -316,11 +326,18 @@ def record_context_assembly(
                     event_type=RuntimeEventType.CONTEXT_ASSEMBLED,
                     phase=ExecutionPhase.CONTEXT_BUILDING,
                     correlation_id=task_id,
-                ),
-                assembly_payload,
-                promote_fields=promote,
-            )
+                )
+        recorded = runtime_event_with_payload(
+            assembled_event,
+            assembly_payload,
+            promote_fields=promote,
         )
+        bus.record(recorded)
+        from intergrax.runtime.llm.model_call_attribution import (
+            bind_pending_context_assembly_event_id,
+        )
+
+        bind_pending_context_assembly_event_id(recorded.event_id)
     if trim.trimmed:
         bus.record(
             runtime_event_with_payload(
@@ -363,7 +380,7 @@ def record_context_assembled_from_engine(
     engine_id: str = "",
     step_index: int | None = None,
     step_kind: str | None = None,
-) -> None:
+) -> EventId:
     """Record CONTEXT_ASSEMBLED with per-fragment cost attribution (CE-MAINT-02)."""
     if not run_id:
         raise RuntimeError("run_id required for context assembled events")
@@ -372,12 +389,23 @@ def record_context_assembled_from_engine(
         run_id=run_id,
     )
     from intergrax.context.tracking.assembly_cost import assembly_cost_from_assembled
+    from intergrax.context.tracking.decision_evidence import (
+        compute_context_decision_evidence_fingerprint,
+    )
     from intergrax.llm.messages import compute_model_facing_messages_hash
+    from intergrax.runtime.llm.model_call_attribution import (
+        bind_pending_context_assembly_event_id,
+    )
+    from intergrax.runtime.events.active_runtime_event_recorder import (
+        peek_active_runtime_event_tenant_id,
+    )
 
+    resolved_tenant = peek_active_runtime_event_tenant_id() or None
     original_chars = sum(len(fragment.content) for fragment in assembled.fragments_included)
     final_chars = sum(len(msg.content or "") for msg in assembled.messages)
     cost = assembly_cost_from_assembled(assembled)
     model_hash_str = compute_model_facing_messages_hash(assembled.messages)
+    decision_fingerprint = compute_context_decision_evidence_fingerprint(assembled)
     base_payload: dict[str, Any] = {
         "node_id": node_id,
         "context_original_chars": original_chars,
@@ -386,35 +414,40 @@ def record_context_assembled_from_engine(
         "fragment_token_cost": cost.fragment_token_cost,
         "estimated_cost_microusd": cost.estimated_cost_microusd,
         "model_input_messages_hash": model_hash_str,
+        "context_decision_evidence_fingerprint": decision_fingerprint,
     }
-    bus.record(
-        runtime_event_with_payload(
-            RuntimeEvent(
-                task_id=resolved_task_id,
-                run_id=resolved_run_id,
-                attempt_id=attempt_id,
-                execution_id=execution_id,
-                node_id=node_id,
-                agent_id=agent_id,
-                event_type=RuntimeEventType.CONTEXT_ASSEMBLED,
-                phase=ExecutionPhase.CONTEXT_BUILDING,
-                correlation_id=task_id,
-            ),
-            ContextAssemblyPayloadV3(
-                node_id=node_id,
-                context_original_chars=original_chars,
-                context_final_chars=final_chars,
-                trimmed=final_chars < original_chars or bool(assembled.degradation_steps),
-                engine_id=engine_id,
-                step_index=step_index,
-                step_kind=step_kind,
-                fragment_token_cost=cost.fragment_token_cost,
-                estimated_cost_microusd=cost.estimated_cost_microusd,
-                model_input_messages_hash=model_hash_str,
-                token_counter_strategy_id=assembled.token_counter_strategy_id,
-                compaction_strategy_id=assembled.compaction_strategy_id,
-                degradation_policy_id=assembled.degradation_policy_id,
-            ),
-            promote_fields=base_payload,
-        )
+    assembled_event = RuntimeEvent(
+        tenant_id=resolved_tenant,
+        task_id=resolved_task_id,
+        run_id=resolved_run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        node_id=node_id,
+        agent_id=agent_id,
+        event_type=RuntimeEventType.CONTEXT_ASSEMBLED,
+        phase=ExecutionPhase.CONTEXT_BUILDING,
+        correlation_id=task_id,
     )
+    recorded = runtime_event_with_payload(
+        assembled_event,
+        ContextAssemblyPayloadV4(
+            node_id=node_id,
+            context_original_chars=original_chars,
+            context_final_chars=final_chars,
+            trimmed=final_chars < original_chars or bool(assembled.degradation_steps),
+            engine_id=engine_id,
+            step_index=step_index,
+            step_kind=step_kind,
+            fragment_token_cost=cost.fragment_token_cost,
+            estimated_cost_microusd=cost.estimated_cost_microusd,
+            model_input_messages_hash=model_hash_str,
+            token_counter_strategy_id=assembled.token_counter_strategy_id,
+            compaction_strategy_id=assembled.compaction_strategy_id,
+            degradation_policy_id=assembled.degradation_policy_id,
+            context_decision_evidence_fingerprint=decision_fingerprint,
+        ),
+        promote_fields=base_payload,
+    )
+    bus.record(recorded)
+    bind_pending_context_assembly_event_id(recorded.event_id)
+    return recorded.event_id

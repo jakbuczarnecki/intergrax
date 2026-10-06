@@ -7,11 +7,14 @@ from __future__ import annotations
 
 from typing import Any
 
+from intergrax.contracts.execution_identity import validate_event_id
 from intergrax.contracts.execution_phase import ExecutionPhase
 from intergrax.contracts.runtime_event_recording import RuntimeEventRecorderPort
 from intergrax.runtime.llm.model_call_attribution import (
+    clear_pending_context_assembly_event_id,
     get_model_call_execution_scope,
     peek_model_call_attribution_ids,
+    peek_pending_context_assembly_event_id,
 )
 from intergrax.runtime.context_lifecycle.contracts import ModelCallExecutionScope
 from intergrax.runtime.events.active_runtime_event_recorder import (
@@ -20,7 +23,7 @@ from intergrax.runtime.events.active_runtime_event_recorder import (
 )
 from intergrax.runtime.events.context_skill_recording import _canonical_event_identity
 from intergrax.runtime.events.payload_registry import runtime_event_with_payload
-from intergrax.runtime.events.payloads.canonical import LlmCallPayloadV2
+from intergrax.runtime.events.payloads.canonical import LlmCallPayloadV3
 from intergrax.runtime.events.runtime_event import RuntimeEvent, RuntimeEventType
 
 
@@ -38,6 +41,7 @@ def record_llm_call_runtime_event(
     model_input_messages_hash: str,
     execution_scope: ModelCallExecutionScope,
     tenant_id: str | None = None,
+    context_assembly_event_id: str | None = None,
     node_id: str = "",
     agent_id: str | None = None,
     step_id: str = "",
@@ -55,6 +59,11 @@ def record_llm_call_runtime_event(
     resolved_agent_id = agent_id if agent_id is not None else (agent_id_attr or None)
     resolved_step_id = step_id or step_id_attr
     resolved_label = label or label_attr
+    resolved_context_event_id = (context_assembly_event_id or peek_pending_context_assembly_event_id()).strip()
+    if execution_scope == ModelCallExecutionScope.PRIMARY_MODEL_CALL and not resolved_context_event_id:
+        raise ValueError("context_assembly_event_id required for PRIMARY_MODEL_CALL LLM_CALL evidence")
+    if resolved_context_event_id:
+        validate_event_id(resolved_context_event_id)
     promote: dict[str, Any] = {
         "model": model,
         "provider": provider,
@@ -64,6 +73,8 @@ def record_llm_call_runtime_event(
         "model_input_messages_hash": model_input_messages_hash,
         "execution_scope": execution_scope.value,
     }
+    if resolved_context_event_id:
+        promote["context_assembly_event_id"] = resolved_context_event_id
     if finish_reason is not None:
         promote["finish_reason"] = finish_reason
     bus.record(
@@ -81,7 +92,7 @@ def record_llm_call_runtime_event(
                 phase=ExecutionPhase.STEP_EXECUTION,
                 correlation_id=task_id,
             ),
-            LlmCallPayloadV2(
+            LlmCallPayloadV3(
                 model=model,
                 provider=provider,
                 prompt_tokens=prompt_tokens,
@@ -90,11 +101,13 @@ def record_llm_call_runtime_event(
                 finish_reason=finish_reason,
                 label=resolved_label,
                 model_input_messages_hash=model_input_messages_hash,
-                execution_scope=execution_scope.value,
+                execution_scope=execution_scope,
+                context_assembly_event_id=resolved_context_event_id,
             ),
             promote_fields=promote,
         )
     )
+    clear_pending_context_assembly_event_id()
 
 
 def maybe_record_llm_call_from_usage_end(

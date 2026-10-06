@@ -493,7 +493,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
         finalization_token = None
         work_port_token = None
         evidence_token = None
-        runtime_event_recorder_token = None
+        runtime_event_recorder_binding = None
         governance_identity_token = None
         admitted = root_context.governance_identity
         if admitted is not None:
@@ -527,7 +527,7 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
             )
 
             if isinstance(self._failure_evidence_recorder, RuntimeEventExecutionFailureEvidenceRecorder):
-                runtime_event_recorder_token = bind_active_runtime_event_recorder(
+                runtime_event_recorder_binding = bind_active_runtime_event_recorder(
                     self._failure_evidence_recorder.event_bus,
                     tenant_id=root_context.tenant_id,
                 )
@@ -559,12 +559,12 @@ class ExecutionRuntime(Generic[RequestT, ResultT]):
                 reset_active_execution_continuation_state_store(continuation_token)
             if evidence_token is not None:
                 reset_active_execution_evidence_context(evidence_token)
-            if runtime_event_recorder_token is not None:
+            if runtime_event_recorder_binding is not None:
                 from intergrax.runtime.events.active_runtime_event_recorder import (
                     reset_active_runtime_event_recorder,
                 )
 
-                reset_active_runtime_event_recorder(runtime_event_recorder_token)
+                reset_active_runtime_event_recorder(runtime_event_recorder_binding)
             if governance_identity_token is not None:
                 reset_active_execution_governance_identity(governance_identity_token)
             if lineage_token is not None and degradation_token is not None:

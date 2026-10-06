@@ -14,6 +14,7 @@ from intergrax.contracts.application_observability_attributes import (
 from intergrax.contracts.execution_failure_evidence import ExecutionFailureKind
 from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
 from intergrax.contracts.external_operations.failure import ExternalOperationFailureKind
+from intergrax.runtime.context_lifecycle.contracts import ModelCallExecutionScope
 from intergrax.runtime.events.payloads.base import RuntimeEventPayload
 
 
@@ -137,6 +138,33 @@ class LlmCallPayloadV2(RuntimeEventPayload):
     execution_scope: str = "primary_model_call"
 
 
+class LlmCallPayloadV3(RuntimeEventPayload):
+    schema_id = "llm_call.v3"
+
+    model: str = ""
+    provider: str = ""
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    finish_reason: str | None = None
+    label: str = ""
+    model_input_messages_hash: str = ""
+    execution_scope: ModelCallExecutionScope = ModelCallExecutionScope.PRIMARY_MODEL_CALL
+    context_assembly_event_id: str = ""
+
+    @field_validator("execution_scope", mode="before")
+    @classmethod
+    def _validate_execution_scope(cls, value: object) -> ModelCallExecutionScope:
+        if isinstance(value, ModelCallExecutionScope):
+            return value
+        if isinstance(value, str):
+            try:
+                return ModelCallExecutionScope(value)
+            except ValueError as exc:
+                raise ValueError("execution_scope must be a known ModelCallExecutionScope") from exc
+        raise ValueError("execution_scope must be ModelCallExecutionScope")
+
+
 class TraceBridgePayloadV1(RuntimeEventPayload):
     """Wrapper for trace-bridged diagnostic detail."""
 
@@ -222,6 +250,26 @@ class ContextAssemblyPayloadV3(RuntimeEventPayload):
     token_counter_strategy_id: str = ""
     compaction_strategy_id: str = ""
     degradation_policy_id: str = ""
+
+
+class ContextAssemblyPayloadV4(RuntimeEventPayload):
+    schema_id = "context_assembly.v4"
+
+    node_id: str
+    summary_tier: str | None = None
+    context_original_chars: int
+    context_final_chars: int
+    trimmed: bool = False
+    engine_id: str = ""
+    step_index: int | None = None
+    step_kind: str | None = None
+    fragment_token_cost: int = 0
+    estimated_cost_microusd: int = 0
+    model_input_messages_hash: str = ""
+    token_counter_strategy_id: str = ""
+    compaction_strategy_id: str = ""
+    degradation_policy_id: str = ""
+    context_decision_evidence_fingerprint: str = ""
 
 
 class TaskLifecyclePayloadV1(RuntimeEventPayload):

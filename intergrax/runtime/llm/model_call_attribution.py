@@ -10,6 +10,7 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 
+from intergrax.contracts.execution_identity import EventId, validate_event_id
 from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.runtime.context_lifecycle.contracts import ModelCallExecutionScope
 
@@ -25,6 +26,10 @@ _attribution_node_id: ContextVar[str] = ContextVar("intergrax_model_call_node_id
 _attribution_agent_id: ContextVar[str] = ContextVar("intergrax_model_call_agent_id", default="")
 _attribution_step_id: ContextVar[str] = ContextVar("intergrax_model_call_step_id", default="")
 _attribution_label: ContextVar[str] = ContextVar("intergrax_model_call_label", default="")
+_pending_context_assembly_event_id: ContextVar[str] = ContextVar(
+    "intergrax_pending_context_assembly_event_id",
+    default="",
+)
 
 
 def get_model_call_execution_scope() -> ModelCallExecutionScope:
@@ -45,6 +50,19 @@ def bind_model_input_messages(messages: Sequence[ChatMessage]) -> None:
 
 def clear_pending_model_input_messages_hash() -> None:
     _pending_model_input_hash.set("")
+
+
+def bind_pending_context_assembly_event_id(event_id: EventId | str) -> None:
+    resolved = validate_event_id(event_id)
+    _pending_context_assembly_event_id.set(str(resolved))
+
+
+def peek_pending_context_assembly_event_id() -> str:
+    return _pending_context_assembly_event_id.get()
+
+
+def clear_pending_context_assembly_event_id() -> None:
+    _pending_context_assembly_event_id.set("")
 
 
 @dataclass(frozen=True, slots=True)
@@ -112,10 +130,13 @@ def peek_model_call_attribution_ids() -> tuple[str, str, str, str]:
 __all__ = [
     "ModelCallAttributionOverlay",
     "bind_model_input_messages",
+    "bind_pending_context_assembly_event_id",
+    "clear_pending_context_assembly_event_id",
     "clear_pending_model_input_messages_hash",
     "get_model_call_execution_scope",
     "model_call_attribution_scope",
     "peek_model_call_attribution_ids",
+    "peek_pending_context_assembly_event_id",
     "peek_pending_model_input_messages_hash",
     "set_pending_model_input_messages_hash",
 ]
