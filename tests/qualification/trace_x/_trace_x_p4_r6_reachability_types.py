@@ -16,6 +16,20 @@ class ReachabilityVerdict(enum.StrEnum):
     UNRESOLVED = "unresolved"
 
 
+class UnresolvedCompositionReason(enum.StrEnum):
+    AMBIGUOUS_CLASS_TARGET = "ambiguous_class_target"
+    IMPORT_BINDING_UNRESOLVED = "import_binding_unresolved"
+    COMPOSITION_RELEVANT_CALL_UNRESOLVED = "composition_relevant_call_unresolved"
+
+
+@dataclass(frozen=True, slots=True)
+class UnresolvedCompositionSite:
+    source_module_path: str
+    line_number: int
+    callee_symbol: str
+    reason: UnresolvedCompositionReason
+
+
 class ReachabilityReason(enum.StrEnum):
     TIER2_AGENT_MODULE = "tier2_agent_module"
     TIER3_APPLICATION_MODULE = "tier3_application_module"
@@ -68,6 +82,8 @@ class ProductionReachabilityGraphSnapshot:
     composition_edges: frozenset[CompositionEdge]
     production_reachable_modules: frozenset[str]
     lab_reachable_modules: frozenset[str]
+    unresolved_sites: tuple[UnresolvedCompositionSite, ...]
+    production_reachable_unresolved_sites: tuple[UnresolvedCompositionSite, ...]
     unresolved_modules: frozenset[str]
 
 
@@ -78,6 +94,7 @@ class ReachabilityExpectationParityResult:
     orphan: frozenset[tuple[str, str]]
     contradictions: frozenset[tuple[str, str]]
     unresolved: frozenset[tuple[str, str]]
+    production_reachability_proof_incomplete: bool = False
 
     @property
     def ok(self) -> bool:
@@ -87,6 +104,7 @@ class ReachabilityExpectationParityResult:
             and not self.duplicate_registry_keys
             and not self.contradictions
             and not self.unresolved
+            and not self.production_reachability_proof_incomplete
         )
 
 
@@ -98,4 +116,6 @@ __all__ = [
     "ReachabilityExpectationParityResult",
     "ReachabilityReason",
     "ReachabilityVerdict",
+    "UnresolvedCompositionReason",
+    "UnresolvedCompositionSite",
 ]

@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 import ast
+import contextvars
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
@@ -28,6 +29,8 @@ from tests.qualification.trace_x._trace_x_p4_r6_reachability_types import (
     ReachabilityExpectationParityResult,
     ReachabilityReason,
     ReachabilityVerdict,
+    UnresolvedCompositionReason,
+    UnresolvedCompositionSite,
 )
 from tests.qualification.trace_x._trace_x_p4_support import (
     _PRODUCTION_EXCLUDE_DIR_NAMES,
@@ -58,12 +61,21 @@ _COMPOSITION_FACTORY_CALLEES: Final[frozenset[str]] = frozenset(
 class ReachabilityEvaluationContext:
     production_composition_registry: tuple[RegisteredProductionCompositionSite, ...]
     extra_composition_edges: frozenset[CompositionEdge] = frozenset()
+    module_source_overrides: frozenset[tuple[str, str]] = frozenset()
 
 
 @dataclass(frozen=True, slots=True)
 class _ImportBinding:
     module_path: str
     symbol: str | None
+    import_dotted: str | None = None
+    in_scope_import_attempt: bool = False
+
+
+_MODULE_SOURCE_OVERRIDES: contextvars.ContextVar[dict[str, str]] = contextvars.ContextVar(
+    "_MODULE_SOURCE_OVERRIDES",
+    default={},
+)
 
 
 def _production_path_excluded(rel_path: Path) -> bool:
@@ -80,6 +92,12 @@ def _production_path_excluded(rel_path: Path) -> bool:
 
 
 def _parse_module(rel_posix: str) -> ast.Module | None:
+    overrides = _MODULE_SOURCE_OVERRIDES.get()
+    if rel_posix in overrides:
+        try:
+            return ast.parse(overrides[rel_posix])
+        except SyntaxError:
+            return None
     py_path = _REPO_ROOT / rel_posix
     if not py_path.is_file():
         return None
@@ -89,9 +107,39 @@ def _parse_module(rel_posix: str) -> ast.Module | None:
         return None
 
 
+def _module_dotted_from_posix(rel_posix: str) -> str:
+    dotted = rel_posix.replace("/", ".").removesuffix(".py")
+    if dotted.endswith(".__init__"):
+        dotted = dotted.removesuffix(".__init__")
+    return dotted
+
+
+def _resolve_attr_chain_to_module(
+    expr: ast.expr,
+    bindings: dict[str, _ImportBinding],
+) -> str | None:
+    if isinstance(expr, ast.Name):
+        binding = bindings.get(expr.id)
+        if binding is None:
+            return None
+        if binding.import_dotted:
+            return _resolve_import_to_path(binding.import_dotted, "") or None
+        if binding.module_path:
+            return binding.module_path
+        return _resolve_import_to_path(expr.id, "") or None
+    if isinstance(expr, ast.Attribute):
+        dotted = _attribute_chain_to_dotted(expr)
+        if dotted is None:
+            return None
+        return _resolve_import_to_path(dotted, "") or None
+    return None
+
+
 def _resolve_import_to_path(dotted: str, _current_pkg: str) -> str:
     dotted = dotted.strip(".")
-    if not dotted.startswith(("intergrax", "agents", "applications")):
+    if not dotted.startswith(
+        ("intergrax", "agents", "applications", "tests."),
+    ):
         return ""
     candidate = dotted.replace(".", "/") + ".py"
     if (_REPO_ROOT / candidate).is_file():
@@ -100,6 +148,20 @@ def _resolve_import_to_path(dotted: str, _current_pkg: str) -> str:
     if (_REPO_ROOT / init_candidate).is_file():
         return init_candidate
     return ""
+
+
+def _attribute_chain_to_dotted(expr: ast.expr) -> str | None:
+    segments: list[str] = []
+    node: ast.expr = expr
+    while isinstance(node, ast.Attribute):
+        segments.insert(0, node.attr)
+        node = node.value
+    if not isinstance(node, ast.Name):
+        return None
+    dotted = node.id
+    for segment in segments:
+        dotted = f"{dotted}.{segment}"
+    return dotted
 
 
 def _current_package(rel_posix: str) -> str:
@@ -144,9 +206,23 @@ def _import_bindings(rel_posix: str) -> dict[str, _ImportBinding]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                local = alias.asname or alias.name.split(".")[0]
-                path = _resolve_import_to_path(alias.name, current_pkg)
-                bindings[local] = _ImportBinding(module_path=path, symbol=None)
+                dotted = alias.name
+                if alias.asname:
+                    local = alias.asname
+                    path = _resolve_import_to_path(dotted, current_pkg)
+                    bindings[local] = _ImportBinding(
+                        module_path=path,
+                        symbol=None,
+                        import_dotted=dotted if "." in dotted else None,
+                    )
+                else:
+                    root = dotted.split(".")[0]
+                    path = _resolve_import_to_path(root, current_pkg)
+                    bindings[root] = _ImportBinding(
+                        module_path=path,
+                        symbol=None,
+                        import_dotted=None,
+                    )
         elif isinstance(node, ast.ImportFrom):
             if node.module is None:
                 continue
@@ -156,13 +232,21 @@ def _import_bindings(rel_posix: str) -> dict[str, _ImportBinding]:
                 parent = ".".join(pkg_parts[: max(0, len(pkg_parts) - (node.level - 1))])
                 base = f"{parent}.{node.module}" if parent else node.module
             base_path = _resolve_import_to_path(base, current_pkg)
+            in_scope = base.startswith(
+                ("intergrax", "agents", "applications", "tests.qualification.trace_x.r8_fixtures"),
+            )
             for alias in node.names:
                 if alias.name == "*":
                     continue
                 local = alias.asname or alias.name
                 symbol_path = _resolve_import_to_path(f"{base}.{alias.name}", current_pkg)
                 module_path = symbol_path or base_path
-                bindings[local] = _ImportBinding(module_path=module_path, symbol=alias.name)
+                bindings[local] = _ImportBinding(
+                    module_path=module_path,
+                    symbol=alias.name,
+                    import_dotted=None,
+                    in_scope_import_attempt=in_scope,
+                )
     return bindings
 
 
@@ -256,37 +340,32 @@ def _cached_bindings(rel_posix: str) -> dict[str, _ImportBinding]:
     return result
 
 
-def _class_name_index(
-    analysis_modules: frozenset[str],
-) -> dict[str, frozenset[str]]:
-    index: dict[str, set[str]] = {}
-    for module in analysis_modules:
-        for class_name in _class_names_in_module(module):
-            index.setdefault(class_name, set()).add(module)
-    return {name: frozenset(modules) for name, modules in index.items()}
+def _resolve_class_in_module(module_path: str, class_name: str) -> str | None:
+    if class_name not in _class_names_in_module(module_path):
+        return ""
+    return module_path
 
 
 def _resolve_class_target_module(
     rel_posix: str,
     name: str,
-    *,
-    analysis_modules: frozenset[str],
-    class_index: dict[str, frozenset[str]],
+    bindings: dict[str, _ImportBinding],
 ) -> str | None:
-    local_classes = class_index.get(name, frozenset())
-    in_closure = frozenset(module for module in local_classes if module in analysis_modules)
-    if len(in_closure) == 1:
-        return next(iter(in_closure))
-    if len(in_closure) > 1:
-        return None
     if name in _class_names_in_module(rel_posix):
         return rel_posix
-    for imported in _cached_imports(rel_posix):
-        if imported not in analysis_modules:
-            continue
-        if name in _class_names_in_module(imported):
-            return imported
-    return ""
+    if name not in bindings:
+        return ""
+    binding = bindings[name]
+    if not binding.module_path:
+        return None
+    if binding.symbol is None:
+        return ""
+    return _resolve_class_in_module(binding.module_path, binding.symbol)
+
+
+def _call_callee_symbol(call: ast.Call) -> str:
+    callee = _ast_call_callee_root_name(call)
+    return callee or ""
 
 
 def _resolve_factory_target_module(
@@ -309,9 +388,6 @@ def _resolve_factory_target_module(
 def _resolve_call_target_module(
     rel_posix: str,
     call: ast.Call,
-    *,
-    analysis_modules: frozenset[str],
-    class_index: dict[str, frozenset[str]],
 ) -> str | None:
     """Return target module path, empty if not a composition edge, None if ambiguous/unresolved."""
     bindings = _cached_bindings(rel_posix)
@@ -327,21 +403,13 @@ def _resolve_call_target_module(
         if name in bindings:
             binding = bindings[name]
             if not binding.module_path:
-                return None
+                if binding.in_scope_import_attempt and binding.symbol is not None:
+                    return None
+                return ""
             if binding.symbol is None:
                 return ""
-            return _resolve_class_target_module(
-                binding.module_path,
-                binding.symbol,
-                analysis_modules=analysis_modules,
-                class_index=class_index,
-            )
-        return _resolve_class_target_module(
-            rel_posix,
-            name,
-            analysis_modules=analysis_modules,
-            class_index=class_index,
-        )
+            return _resolve_class_in_module(binding.module_path, binding.symbol)
+        return _resolve_class_target_module(rel_posix, name, bindings)
 
     if isinstance(func, ast.Attribute):
         attr = func.attr
@@ -350,19 +418,12 @@ def _resolve_call_target_module(
             return None
         if factory_target:
             return factory_target
-        if isinstance(func.value, ast.Name):
-            base_name = func.value.id
-            if base_name in bindings:
-                binding = bindings[base_name]
-                if not binding.module_path:
-                    return None
-                return _resolve_class_target_module(
-                    binding.module_path,
-                    attr,
-                    analysis_modules=analysis_modules,
-                    class_index=class_index,
-                )
-        return ""
+        owner_module = _resolve_attr_chain_to_module(func.value, bindings)
+        if owner_module is None:
+            return None
+        if not owner_module:
+            return ""
+        return _resolve_class_in_module(owner_module, attr)
 
     callee = _ast_call_callee_root_name(call)
     if callee is None:
@@ -372,20 +433,50 @@ def _resolve_call_target_module(
         return None
     if factory_target:
         return factory_target
-    return _resolve_class_target_module(
-        rel_posix,
-        callee,
-        analysis_modules=analysis_modules,
-        class_index=class_index,
-    )
+    return _resolve_class_target_module(rel_posix, callee, bindings)
+
+
+def _composition_call_is_resolution_relevant(
+    rel_posix: str,
+    call: ast.Call,
+) -> bool:
+    bindings = _cached_bindings(rel_posix)
+    func = call.func
+    if isinstance(func, ast.Name):
+        name = func.id
+        if name in _COMPOSITION_FACTORY_CALLEES:
+            return True
+        if name in _class_names_in_module(rel_posix):
+            return True
+        if name in bindings:
+            binding = bindings[name]
+            if binding.symbol is None:
+                return False
+            if binding.in_scope_import_attempt or binding.module_path:
+                if binding.symbol in _COMPOSITION_FACTORY_CALLEES:
+                    return True
+                if binding.module_path and binding.symbol in _class_names_in_module(binding.module_path):
+                    return True
+                if binding.in_scope_import_attempt and not binding.module_path:
+                    return True
+        return False
+    if isinstance(func, ast.Attribute):
+        attr = func.attr
+        if attr in _COMPOSITION_FACTORY_CALLEES:
+            return True
+        owner_module = _resolve_attr_chain_to_module(func.value, bindings)
+        if owner_module and attr in _class_names_in_module(owner_module):
+            return True
+        return False
+    callee = _call_callee_symbol(call)
+    return callee in _COMPOSITION_FACTORY_CALLEES
 
 
 def _discover_composition_edges(
     analysis_modules: frozenset[str],
-) -> tuple[frozenset[CompositionEdge], frozenset[str]]:
-    class_index = _class_name_index(analysis_modules)
+) -> tuple[frozenset[CompositionEdge], tuple[UnresolvedCompositionSite, ...]]:
     edges: set[CompositionEdge] = set()
-    unresolved_modules: set[str] = set()
+    unresolved_sites: list[UnresolvedCompositionSite] = []
     for rel_posix in analysis_modules:
         tree = _parse_module(rel_posix)
         if tree is None:
@@ -393,21 +484,20 @@ def _discover_composition_edges(
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call):
                 continue
-            target = _resolve_call_target_module(
-                rel_posix,
-                node,
-                analysis_modules=analysis_modules,
-                class_index=class_index,
-            )
+            target = _resolve_call_target_module(rel_posix, node)
             if target is None:
-                callee = _ast_call_callee_root_name(node)
-                if callee in _COMPOSITION_FACTORY_CALLEES or (
-                    callee and callee in class_index
-                ):
-                    unresolved_modules.add(rel_posix)
+                if _composition_call_is_resolution_relevant(rel_posix, node):
+                    unresolved_sites.append(
+                        UnresolvedCompositionSite(
+                            source_module_path=rel_posix,
+                            line_number=node.lineno,
+                            callee_symbol=_call_callee_symbol(node),
+                            reason=UnresolvedCompositionReason.COMPOSITION_RELEVANT_CALL_UNRESOLVED,
+                        ),
+                    )
                 continue
             if target and target in analysis_modules:
-                callee = _ast_call_callee_root_name(node) or "call"
+                callee = _call_callee_symbol(node) or "call"
                 edges.add(
                     CompositionEdge(
                         source_module_path=rel_posix,
@@ -415,7 +505,7 @@ def _discover_composition_edges(
                         edge_kind=f"instantiate:{callee}",
                     ),
                 )
-    return frozenset(edges), frozenset(unresolved_modules)
+    return frozenset(edges), tuple(unresolved_sites)
 
 
 def _reachable_modules_bfs(
@@ -529,29 +619,53 @@ def _inference_executor_mechanically_unreachable(
 def build_production_reachability_graph(
     context: ReachabilityEvaluationContext,
 ) -> ProductionReachabilityGraphSnapshot:
-    sanctioned = _sanctioned_production_module_paths(context.production_composition_registry)
-    lab_seeds = _development_lab_module_paths(context.production_composition_registry)
-    import_closed = _import_closure(sanctioned)
-    discovered_edges, unresolved_from_parse = _discover_composition_edges(import_closed)
-    all_edges = discovered_edges | context.extra_composition_edges
-    unresolved_targets: set[str] = set(unresolved_from_parse)
-    for edge in context.extra_composition_edges:
-        if edge.edge_kind.startswith(_UNRESOLVED_EDGE_PREFIX):
-            unresolved_targets.add(edge.target_module_path)
-    module_universe = import_closed | frozenset(
-        edge.source_module_path for edge in all_edges
-    ) | frozenset(edge.target_module_path for edge in all_edges)
-    adjacency = _adjacency_from_edges(all_edges, module_universe)
-    production_reachable = _reachable_modules_bfs(sanctioned, adjacency)
-    lab_reachable = _reachable_modules_bfs(lab_seeds, adjacency) if lab_seeds else frozenset()
-    return ProductionReachabilityGraphSnapshot(
-        sanctioned_seed_modules=sanctioned,
-        import_closure_modules=import_closed,
-        composition_edges=all_edges,
-        production_reachable_modules=production_reachable,
-        lab_reachable_modules=lab_reachable,
-        unresolved_modules=frozenset(unresolved_targets),
-    )
+    override_map = dict(context.module_source_overrides)
+    override_token = _MODULE_SOURCE_OVERRIDES.set(override_map)
+    try:
+        sanctioned = _sanctioned_production_module_paths(context.production_composition_registry)
+        lab_seeds = _development_lab_module_paths(context.production_composition_registry)
+        import_closed = _import_closure(sanctioned)
+        edge_modules = frozenset(
+            edge.source_module_path for edge in context.extra_composition_edges
+        ) | frozenset(edge.target_module_path for edge in context.extra_composition_edges)
+        analysis_modules = import_closed | frozenset(override_map) | edge_modules
+        discovered_edges, unresolved_from_parse = _discover_composition_edges(analysis_modules)
+        all_edges = discovered_edges | context.extra_composition_edges
+        unresolved_sites: list[UnresolvedCompositionSite] = list(unresolved_from_parse)
+        for edge in context.extra_composition_edges:
+            if edge.edge_kind.startswith(_UNRESOLVED_EDGE_PREFIX):
+                unresolved_sites.append(
+                    UnresolvedCompositionSite(
+                        source_module_path=edge.source_module_path,
+                        line_number=0,
+                        callee_symbol=edge.edge_kind.removeprefix(_UNRESOLVED_EDGE_PREFIX),
+                        reason=UnresolvedCompositionReason.COMPOSITION_RELEVANT_CALL_UNRESOLVED,
+                    ),
+                )
+        module_universe = import_closed | frozenset(
+            edge.source_module_path for edge in all_edges
+        ) | frozenset(edge.target_module_path for edge in all_edges) | frozenset(override_map)
+        adjacency = _adjacency_from_edges(all_edges, module_universe)
+        production_reachable = _reachable_modules_bfs(sanctioned, adjacency)
+        lab_reachable = _reachable_modules_bfs(lab_seeds, adjacency) if lab_seeds else frozenset()
+        production_reachable_unresolved = tuple(
+            site
+            for site in unresolved_sites
+            if site.source_module_path in production_reachable
+        )
+        unresolved_modules = frozenset(site.source_module_path for site in unresolved_sites)
+        return ProductionReachabilityGraphSnapshot(
+            sanctioned_seed_modules=sanctioned,
+            import_closure_modules=import_closed,
+            composition_edges=all_edges,
+            production_reachable_modules=production_reachable,
+            lab_reachable_modules=lab_reachable,
+            unresolved_sites=tuple(unresolved_sites),
+            production_reachable_unresolved_sites=production_reachable_unresolved,
+            unresolved_modules=unresolved_modules,
+        )
+    finally:
+        _MODULE_SOURCE_OVERRIDES.reset(override_token)
 
 
 def _expectation_verdict_for_reason(
@@ -692,6 +806,8 @@ def evaluate_all_non_production_reachability(
 def compare_mechanical_reachability_to_expectations(
     mechanical: tuple[MechanicalReachabilityResult, ...],
     reachability_registry: tuple[RegisteredNonProductionModelReachability, ...],
+    *,
+    graph: ProductionReachabilityGraphSnapshot | None = None,
 ) -> ReachabilityExpectationParityResult:
     registry_by_key = {row.key: row for row in reachability_registry}
     mechanical_by_key = {result.surface.key: result for result in mechanical}
@@ -725,13 +841,30 @@ def compare_mechanical_reachability_to_expectations(
         ):
             unresolved.add(key)
 
+    proof_incomplete = bool(
+        graph is not None and graph.production_reachable_unresolved_sites,
+    )
     return ReachabilityExpectationParityResult(
         duplicate_registry_keys=frozenset(duplicate_registry_keys),
         unknown=unknown,
         orphan=orphan,
         contradictions=contradictions,
         unresolved=unresolved,
+        production_reachability_proof_incomplete=proof_incomplete,
     )
+
+
+def qualify_discover_composition_edges(
+    analysis_modules: frozenset[str],
+    *,
+    module_source_overrides: frozenset[tuple[str, str]] = frozenset(),
+) -> tuple[frozenset[CompositionEdge], tuple[UnresolvedCompositionSite, ...]]:
+    override_map = dict(module_source_overrides)
+    token = _MODULE_SOURCE_OVERRIDES.set(override_map)
+    try:
+        return _discover_composition_edges(analysis_modules | frozenset(override_map))
+    finally:
+        _MODULE_SOURCE_OVERRIDES.reset(token)
 
 
 def build_synthetic_inference_executor_production_edge(
@@ -751,4 +884,5 @@ __all__ = [
     "compare_mechanical_reachability_to_expectations",
     "evaluate_all_non_production_reachability",
     "evaluate_non_production_model_surface_reachability",
+    "qualify_discover_composition_edges",
 ]

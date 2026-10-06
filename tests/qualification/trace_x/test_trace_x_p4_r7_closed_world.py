@@ -73,9 +73,11 @@ def test_txp4r7_q03_mechanical_reachability_matches_non_production_expectations(
         MODEL_CALL_SURFACE_REGISTRY,
         _default_context(),
     )
+    graph = build_production_reachability_graph(_default_context())
     parity = compare_mechanical_reachability_to_expectations(
         mechanical,
         NON_PRODUCTION_MODEL_REACHABILITY_REGISTRY,
+        graph=graph,
     )
     assert parity.ok
     assert len(mechanical) == 29

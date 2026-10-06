@@ -32,6 +32,7 @@ from tests.qualification.trace_x._trace_x_p4_production_composition_types import
 )
 from tests.qualification.trace_x._trace_x_p4_r6_reachability_analysis import (
     ReachabilityEvaluationContext,
+    build_production_reachability_graph,
     build_synthetic_inference_executor_production_edge,
     compare_mechanical_reachability_to_expectations,
     evaluate_all_non_production_reachability,
@@ -86,9 +87,11 @@ def test_txp4r6_q03_mechanical_reachability_matches_non_production_expectations(
         MODEL_CALL_SURFACE_REGISTRY,
         _default_reachability_context(),
     )
+    graph = build_production_reachability_graph(_default_reachability_context())
     parity = compare_mechanical_reachability_to_expectations(
         mechanical,
         NON_PRODUCTION_MODEL_REACHABILITY_REGISTRY,
+        graph=graph,
     )
     assert parity.duplicate_registry_keys == frozenset()
     assert not parity.unknown

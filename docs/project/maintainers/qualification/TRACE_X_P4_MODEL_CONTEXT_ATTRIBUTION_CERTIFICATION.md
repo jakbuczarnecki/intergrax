@@ -1,8 +1,57 @@
 # TRACE-X-P4 — Model Call & Context Decision Attribution
 
-Status: **P4-R7 on `development`; READY FOR AUDIT** (not independently closed).
+Status: **P4-R8 on `development`; READY FOR AUDIT** (not independently closed).
 
 Primary freeze gate: **FRZ-TRC-05** → **OPEN** until independent audit on GitHub HEAD.
+
+## P4-R8 reachability resolver soundness & fail-closed closure (R7 blocker remediation)
+
+| Blocker | Status |
+|---------|--------|
+| P4-R7-Q-BLK-UNRESOLVED-INFORMATIONAL-01 | REMEDIATED in R8 (`UnresolvedCompositionSite` + `production_reachable_unresolved_sites`; `compare_mechanical_reachability_to_expectations(..., graph=)` fail-closed) |
+| P4-R7-Q-BLK-GLOBAL-CLASS-UNIQUENESS-02 | REMEDIATED in R8 (class targets require local or explicit import/module-qualified binding; no closure-wide unique-name edges) |
+
+**R8 evidence baseline**
+
+| Field | Value |
+|-------|-------|
+| START_HEAD | `e6597dba6ca61e15a12fcaf6e85c00f7a0c33f12` |
+| FINAL_COMMIT | *(set at push)* |
+
+### Resolver rules (R8)
+
+- **Class / factory edges:** only from lexical class in module, `from … import` (incl. alias), or module-qualified / `import … as` attribute chains within P4 import roots (+ qualification `r8_fixtures` for gate tests).
+- **Forbidden:** resolving a class solely because the name is unique somewhere in import closure; stdlib / out-of-scope imports are ignored (not `UNRESOLVED`).
+- **Unresolved:** in-scope import or composition-relevant call that cannot be resolved → `UnresolvedCompositionSite`; blocks qualification only when `source_module_path ∈ production_reachable_modules` (graph-level gate).
+
+### Reachability counts (mechanical at R8 START_HEAD)
+
+| Metric | R7 (before) | R8 (after) |
+|--------|------------:|-----------:|
+| Import closure modules | 3690 | 3690 |
+| Composition edges | 6161 | 5828 |
+| Production-reachable modules (BFS) | 109 | 77 |
+| Unresolved sites (global) | — | 0 |
+| Production-reachable unresolved sites | — | 0 |
+| NON_PRODUCTION model-call surfaces | 29 | 29 |
+| Mechanically `PRODUCTION_REACHABLE` among NON_PRODUCTION | 0 | 0 |
+| InferenceExecutor `generate_structured` | `NOT_REACHABLE_FROM_SANCTIONED_PRODUCTION_ROOT` | unchanged |
+
+### Negative sensitivity (R8)
+
+| Case | Gate |
+|------|------|
+| Parser-generated reachable unresolved | TXP4R8-Q03 |
+| Unreachable unresolved does not block | TXP4R8-Q04 |
+| Unimported same-name class (no edge) | TXP4R8-Q05 |
+| Explicit / alias / module-qualified import edges | TXP4R8-Q06–Q08 |
+| R7 two-hop InferenceExecutor regression | TXP4R8-Q09 |
+| 29 NON_PRODUCTION surfaces parity | TXP4R8-Q10 |
+
+```text
+uv run pytest tests/qualification/trace_x/test_trace_x_p4_r8_closed_world.py tests/qualification/trace_x/test_trace_x_p4_r7_closed_world.py tests/qualification/trace_x/test_trace_x_p4_r6_closed_world.py -p no:xdist -q
+uv run pytest tests/qualification/trace_x/ -k test_trace_x_p4 -p no:xdist -q
+```
 
 ## P4-R7 transitive production composition reachability (R6 blocker remediation)
 
