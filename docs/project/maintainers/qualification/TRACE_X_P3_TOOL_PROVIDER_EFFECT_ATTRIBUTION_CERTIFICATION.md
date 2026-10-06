@@ -2,7 +2,13 @@
 
 **Parent:** TRACE-X — End-to-End Traceability & Evidence Certification
 
-**START_HEAD:** `3572e6ed1c894859ac419770126e02d79e07208e`
+**START_HEAD:** `3572e6ed1c894859ac419770126e02d79e07208e` (P3 work baseline — ancestry anchor, not final evidence SHA)
+
+**P3 qualification evidence commit (initial):** `d92e78432d58bc9f77f70292c2c59bb2e2003534`
+
+**P3-Q1 remediation baseline:** `d92e78432d58bc9f77f70292c2c59bb2e2003534` (`TRACE_X_P3_Q1_START_HEAD`)
+
+**Qualification replayability defect:** `P3-Q-BLK-01` — TXP3-Q01 required `HEAD == START_HEAD` instead of `START_HEAD` ancestor of `HEAD` (fixed in TRACE-X-P3-Q1).
 
 **Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p3_support.py`
 
@@ -10,7 +16,7 @@
 
 **Production delta @ START_HEAD:** qualification-first — **no production code changes**
 
-**Status:** **TRACE-X-P3 = BLOCKED** (partial closure; see FRZ dispositions)
+**Status:** **TRACE-X-P3 = BLOCKED** (partial closure; see FRZ dispositions) · **TRACE-X-P3-Q1** — replayability + authorization-suite reconciliation (see §8)
 
 **Remediation track:** `TRACE-X-P3-R1` — architecture decision for execution-level identity on governed provider/boundary evidence
 
@@ -120,6 +126,19 @@ Unblock via **TRACE-X-P3-R1** (contract evolution decision), then re-run qualifi
 1. `tests/qualification/trace_x/test_trace_x_p3_tool_provider_effect_attribution.py`
 2. `tests/unit/runtime/tools/test_fresh_side_effect_authorization.py` (+ tool correlation / trace bridge unit tests)
 3. Boundary / governance evidence unit tests (`ExecutionBoundaryEvent`, `GovernanceDecisionEvidenceFact`, attestation emitter)
+
+---
+
+## 8. TRACE-X-P3-Q1 (replayability)
+
+| Item | State |
+|---|---|
+| P3-Q-BLK-01 | Remediated — provenance gate uses `merge-base --is-ancestor` semantics |
+| P3-B04-01 | **Open** — provider/boundary execution identity gap unchanged |
+| P3-B06-01 | **Open** — effect↔authorization exact chain still blocked |
+| Authorization suite | Stale fixture — tests bind `canonical_governed_execution_scope` + governance identity for declarative policy paths (`record_governance_policy_decision_evidence_for_active_identity`) |
+
+**Q1 final evidence commit:** recorded in repository `development` HEAD after push (not embedded here to avoid commit-loop).
 
 ---
 

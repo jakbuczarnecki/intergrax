@@ -11,6 +11,7 @@ from typing import Final
 from tests.qualification.trace_x._trace_x_p0_support import repo_root
 
 TRACE_X_P3_START_HEAD: Final[str] = "3572e6ed1c894859ac419770126e02d79e07208e"
+TRACE_X_P3_Q1_START_HEAD: Final[str] = "d92e78432d58bc9f77f70292c2c59bb2e2003534"
 
 MANDATORY_FRZ_P3_IDS: Final[tuple[str, ...]] = (
     "FRZ-TRC-03",

@@ -71,6 +71,25 @@ def _git_head() -> str:
     ).strip()
 
 
+def _git_merge_base(left: str, right: str) -> str:
+    return subprocess.check_output(
+        ["git", "merge-base", left, right],
+        cwd=_REPO_ROOT,
+        text=True,
+    ).strip()
+
+
+def _git_is_ancestor(ancestor: str, descendant: str) -> bool:
+    return (
+        subprocess.run(
+            ["git", "merge-base", "--is-ancestor", ancestor, descendant],
+            cwd=_REPO_ROOT,
+            check=False,
+        ).returncode
+        == 0
+    )
+
+
 def _task_with_identity() -> tuple[Task, str, str, str, str]:
     task_id = mint_task_id()
     run_id = mint_run_id()
@@ -107,14 +126,28 @@ def _tool_trace_event(
 
 
 def test_txp3_q01_correct_start_head_provenance() -> None:
+    """P3 baseline START_HEAD must exist, match SSOT, and be an ancestor of current HEAD."""
     head = _git_head()
-    assert head == TRACE_X_P3_START_HEAD
-    merge_base = subprocess.check_output(
-        ["git", "merge-base", TRACE_X_P3_START_HEAD, head],
+    start = TRACE_X_P3_START_HEAD
+    subprocess.run(
+        ["git", "cat-file", "-e", f"{start}^{{commit}}"],
         cwd=_REPO_ROOT,
-        text=True,
-    ).strip()
-    assert merge_base == TRACE_X_P3_START_HEAD
+        check=True,
+    )
+    assert start == "3572e6ed1c894859ac419770126e02d79e07208e"
+    assert _git_is_ancestor(start, head), (
+        f"P3 provenance broken: {start} is not an ancestor of HEAD {head}"
+    )
+    assert _git_merge_base(start, head) == start
+
+
+def test_txp3_q01_later_head_is_not_ancestor_of_start_baseline() -> None:
+    """Negative mechanical check: descendant HEAD must not invert ancestry vs START_HEAD."""
+    head = _git_head()
+    start = TRACE_X_P3_START_HEAD
+    if head == start:
+        pytest.skip("HEAD equals P3 START_HEAD; negative check not applicable")
+    assert not _git_is_ancestor(head, start)
 
 
 def test_txp3_q02_p3_scope_exactly_trc_03_04_06() -> None:
