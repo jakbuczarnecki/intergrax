@@ -510,6 +510,9 @@ def test_gr6_decision_flow_regression_on_injected_composition() -> None:
         attempt_id=mint_attempt_id(),
         execution_id=create_exec,
         task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         created = runtime.orchestrator.create(
             task_id=str(task_id),
@@ -541,6 +544,9 @@ def test_gr6_decision_flow_regression_on_injected_composition() -> None:
         attempt_id=attempt_id,
         execution_id=execution_id,
         task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         denied = runtime.orchestrator.accept(
             execution_id=execution_id,
@@ -566,6 +572,9 @@ def test_gr6_decision_flow_regression_on_injected_composition() -> None:
         attempt_id=attempt_id,
         execution_id=execution_id,
         task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         accepted = runtime.orchestrator.accept(
             execution_id=execution_id,
@@ -592,6 +601,9 @@ def test_gr6_decision_flow_regression_on_injected_composition() -> None:
         attempt_id=attempt_id,
         execution_id=execution_id,
         task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         lineage_denied = runtime.orchestrator.accept(
             execution_id=execution_id,

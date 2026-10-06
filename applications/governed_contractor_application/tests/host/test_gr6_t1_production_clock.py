@@ -191,6 +191,9 @@ def test_default_production_runtime_uses_dynamic_utc_not_fixed_fallback() -> Non
         attempt_id=mint_attempt_id(),
         execution_id=dynamic_exec,
         task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         step = runtime.orchestrator.create(
             task_id=str(task_id),
@@ -225,6 +228,9 @@ def test_injected_clock_is_shared_between_policy_evaluator_and_orchestrator() ->
         attempt_id=mint_attempt_id(),
         execution_id=shared_exec,
         task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         step = runtime.orchestrator.create(
             task_id=str(task_id),

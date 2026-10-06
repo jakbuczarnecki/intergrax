@@ -204,7 +204,7 @@ class ExecutionBoundaryEventV2(BaseModel):
 
     execution: ExecutionIdentitySection
 
-    tenant_id: str | None = None
+    tenant_id: str = _NON_EMPTY
     principal_id: str = _NON_EMPTY
     actor: str = ""
 
@@ -216,7 +216,7 @@ class ExecutionBoundaryEventV2(BaseModel):
     provider_invocation: ProviderInvocationSection
     governed_proof: GovernedProofSection
 
-    @field_validator("event_id", "principal_id", "provider_id", "action")
+    @field_validator("event_id", "principal_id", "provider_id", "action", "tenant_id")
     @classmethod
     def _strip_required(cls, value: str) -> str:
         normalized = value.strip()

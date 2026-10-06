@@ -327,6 +327,9 @@ def _create_with_runtime(runtime, task_id: TaskId, run_id: RunId):
         attempt_id=mint_attempt_id(),
         execution_id=create_exec,
         task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         return runtime.orchestrator.create(
             task_id=str(task_id),
@@ -353,6 +356,9 @@ def test_production_accept_denies_without_decision_material() -> None:
         attempt_id=attempt_id,
         execution_id=execution_id,
         task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         denied = runtime.orchestrator.accept(
             execution_id=execution_id,
@@ -389,6 +395,9 @@ def test_production_accept_allows_with_authoritative_decision() -> None:
         attempt_id=attempt_id,
         execution_id=execution_id,
         task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         accepted = runtime.orchestrator.accept(
             execution_id=execution_id,
@@ -428,6 +437,9 @@ def test_production_accept_denies_wrong_decision_action() -> None:
         attempt_id=attempt_id,
         execution_id=execution_id,
         task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         denied = runtime.orchestrator.accept(
             execution_id=execution_id,
@@ -463,6 +475,9 @@ def test_production_accept_denies_execution_lineage_mismatch() -> None:
         attempt_id=attempt_id,
         execution_id=execution_id,
         task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         denied = runtime.orchestrator.accept(
             execution_id=execution_id,
@@ -504,6 +519,9 @@ def test_production_composition_accepts_injected_decision_requirement_policy() -
         attempt_id=attempt_id,
         execution_id=execution_id,
         task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         accepted = runtime.orchestrator.accept(
             execution_id=execution_id,
@@ -572,8 +590,9 @@ def test_production_runtime_uses_injected_execution_store() -> None:
         provider_invocation_store=invocation_store,
         clock=lambda: _T0,
     )
-    _create_with_runtime(runtime, task_id, run_id)
-    assert execution_store.get_state("exec-gr6wire-create") is not None
+    step = _create_with_runtime(runtime, task_id, run_id)
+    assert step.execution_id is not None
+    assert execution_store.get_state(step.execution_id) is not None
 
 
 def test_strict_host_composition_wires_agent_boundary_and_integration(

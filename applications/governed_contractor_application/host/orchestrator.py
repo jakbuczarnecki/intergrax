@@ -64,6 +64,9 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
+from intergrax.runtime.governance.active_execution_governance_identity import (
+    require_active_execution_governance_identity,
+)
 from intergrax.contracts.external_work import QuoteAcceptanceEvidence
 from intergrax.contracts.external_work_provider_capabilities import (
     ExternalWorkProviderCapabilities,
@@ -154,6 +157,7 @@ class _CanonicalExecutionIdentity:
     run_id: RunId
     attempt_id: AttemptId
     execution_id: ExecutionId
+    tenant_id: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -228,7 +232,9 @@ class GovernedExternalWorkOrchestrator:
         requested_task = validate_task_id(task_id)
         requested_run = validate_run_id(run_id)
         active_task = peek_active_execution_task_id()
-        if active_task is not None and active_task != requested_task:
+        if active_task is None:
+            raise ValueError("canonical_task_id_required")
+        if active_task != requested_task:
             raise ValueError("task_id_mismatch")
         if requested_run != active_run:
             raise ValueError("run_id_mismatch")
@@ -238,13 +244,23 @@ class GovernedExternalWorkOrchestrator:
                 raise ValueError("execution_id_mismatch")
         else:
             resolved_exec = active_exec
-        if tenant_id is not None and not str(tenant_id).strip():
+        try:
+            governance = require_active_execution_governance_identity()
+        except RuntimeError as exc:
+            raise ValueError("canonical_governance_identity_required") from exc
+        if tenant_id is None:
             raise ValueError("tenant_id_required")
+        requested_tenant = str(tenant_id).strip()
+        if not requested_tenant:
+            raise ValueError("tenant_id_required")
+        if requested_tenant != governance.tenant_id:
+            raise ValueError("tenant_id_mismatch")
         return _CanonicalExecutionIdentity(
-            task_id=requested_task,
-            run_id=requested_run,
+            task_id=active_task,
+            run_id=active_run,
             attempt_id=active_attempt,
             execution_id=resolved_exec,
+            tenant_id=governance.tenant_id,
         )
 
     def _identity_gate_failure(
@@ -902,7 +918,7 @@ class GovernedExternalWorkOrchestrator:
             run_id=identity.run_id,
             attempt_id=identity.attempt_id,
             principal_id=principal_id,
-            tenant_id=tenant_id,
+            tenant_id=identity.tenant_id,
             correlation_id=corr,
             idempotency_key=idem,
             action=action,

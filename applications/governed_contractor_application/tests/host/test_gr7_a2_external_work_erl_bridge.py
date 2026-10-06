@@ -213,6 +213,9 @@ def _create_step(
         attempt_id=attempt_id,
         execution_id=execution_id,
         task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         step = runtime.orchestrator.create(
             task_id=str(task_id),
@@ -375,7 +378,7 @@ def test_admission_identity_binding() -> None:
     req = port.requests[0]
     assert req.correlation_id == f"corr-{task_id}"
     assert req.external_effect_ref == f"ext:external_work:{_CREATE_IDEMP}"
-    assert req.source_context.source_ref == "exec-gr7a2"
+    assert req.source_context.source_ref == str(execution_id)
 
 
 def test_erl_runtime_does_not_import_external_work_adapter() -> None:

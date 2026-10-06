@@ -228,7 +228,7 @@ class GovernedExecutionResultV2(BaseModel):
     attempt_id: AttemptId
     execution_id: ExecutionId
     principal_id: str = _NON_EMPTY
-    tenant_id: str | None = None
+    tenant_id: str = _NON_EMPTY
     correlation_id: str | None = None
     idempotency_key: str | None = None
     action: str = _NON_EMPTY
@@ -259,7 +259,7 @@ class GovernedExecutionResultV2(BaseModel):
     def _validate_execution_id(cls, value: object) -> ExecutionId:
         return validate_execution_id(value)
 
-    @field_validator("principal_id", "action")
+    @field_validator("principal_id", "action", "tenant_id")
     @classmethod
     def _strip_required(cls, value: str) -> str:
         normalized = value.strip()
@@ -311,9 +311,10 @@ class GovernedExecutionResultV2(BaseModel):
         expected_op = _ACTION_TO_OPERATION.get(self.action)
         if expected_op is not None and inv.operation != expected_op:
             raise ValueError("action_operation_mismatch")
-        if self.tenant_id is not None and proof.tenant_id is not None:
-            if self.tenant_id != proof.tenant_id:
-                raise ValueError("tenant_id_inconsistent")
+        if proof.tenant_id is None or not str(proof.tenant_id).strip():
+            raise ValueError("proof_tenant_id_required")
+        if self.tenant_id != proof.tenant_id:
+            raise ValueError("tenant_id_inconsistent")
         if self.correlation_id and inv.correlation_id and (
             self.correlation_id != inv.correlation_id
             or (

@@ -52,10 +52,23 @@ from intergrax.runtime.execution_evidence.verify import (
     verify_proof_receipt,
 )
 from tests.qualification.trace_x._trace_x_p0_support import repo_root
+from pydantic import ValidationError
+
+from intergrax.contracts.evaluated_policy_decision import EvaluatedPolicyDecision
+from intergrax.contracts.governed_proof import GovernedProofProfile
+from intergrax.contracts.provider_invocation import (
+    ProviderInvocation,
+    ProviderInvocationOutcome,
+    ProviderInvocationStatus,
+)
+from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 from tests.qualification.trace_x._trace_x_p3_r1_support import (
+    ENTERPRISE_AUDIT_MATRIX_GATE_IDS,
     ENTERPRISE_AUDIT_MATRIX_P3_R1,
     MANDATORY_FRZ_P3_R1_IDS,
     R1GateResult,
+    TENANT_ISOLATION_AUDIT_P3_R1_R1,
+    TRACE_X_P3_R1_R1_START_HEAD,
     TRACE_X_P3_R1_START_HEAD,
 )
 
@@ -199,6 +212,7 @@ def test_txp3r1_q24_cross_version_pair_rejected() -> None:
             attempt_id=mint_attempt_id(),
             execution_id=mint_execution_id(),
         ),
+        tenant_id="tenant-v2",
         principal_id="u",
         provider_id="p",
         action="external_work.create",
@@ -260,6 +274,7 @@ def test_txp3r1_q25_v2_attestation_schema_id() -> None:
             attempt_id=mint_attempt_id(),
             execution_id=mint_execution_id(),
         ),
+        tenant_id="tenant-v2",
         principal_id="u",
         provider_id="p",
         action="external_work.create",
@@ -315,6 +330,7 @@ def test_txp3r1_q26_persisted_event_parser_versioned() -> None:
             attempt_id=mint_attempt_id(),
             execution_id=mint_execution_id(),
         ),
+        tenant_id="tenant-v2",
         principal_id="u",
         provider_id="p",
         action="a",
@@ -334,7 +350,213 @@ def test_txp3r1_q33_strong_typing_no_any_on_v2_identity() -> None:
 
 
 def test_txp3r1_enterprise_audit_matrix_all_pass() -> None:
-    assert all(row.result is R1GateResult.PASS for row in ENTERPRISE_AUDIT_MATRIX_P3_R1)
+    for row in ENTERPRISE_AUDIT_MATRIX_P3_R1:
+        assert row.result is R1GateResult.PASS
+        if row.area in ENTERPRISE_AUDIT_MATRIX_GATE_IDS:
+            assert ENTERPRISE_AUDIT_MATRIX_GATE_IDS[row.area]
+
+
+def test_txp3r1r1_q01_r1_start_head_ancestry() -> None:
+    head = _git_head()
+    start = TRACE_X_P3_R1_R1_START_HEAD
+    subprocess.run(["git", "cat-file", "-e", f"{start}^{{commit}}"], cwd=_REPO, check=True)
+    assert _git_is_ancestor(start, head)
+    if head == start:
+        pending = subprocess.check_output(
+            ["git", "status", "--porcelain"], cwd=_REPO, text=True
+        ).strip()
+        assert pending, "R1-R1 corrective delta required when HEAD equals R1 START_HEAD"
+
+
+def test_txp3r1r1_q02_scope_task_tenant_blockers_only() -> None:
+    assert MANDATORY_FRZ_P3_R1_IDS == ("FRZ-TRC-04", "FRZ-TRC-06")
+
+
+def _policy_decision_v2() -> EvaluatedPolicyDecision:
+    decision = PolicyDecision(
+        action=PolicyAction.ALLOW,
+        policy_rule_id="r.create",
+        policy_bundle_id="b1",
+        policy_bundle_version="1",
+        policy_bundle_digest=_DIGEST,
+        decision_id="d1",
+    )
+    return EvaluatedPolicyDecision(
+        decision=decision,
+        bundle_id="b1",
+        bundle_version="1",
+        bundle_digest=_DIGEST,
+        matched_rule_id="r.create",
+        evaluated_at=_T0,
+        request_digest=_DIGEST,
+    )
+
+
+def _proof_v2(**overrides: object) -> GovernedProofProfile:
+    base = dict(
+        principal_id="u1",
+        tenant_id="ten-a",
+        task_id=str(mint_task_id()),
+        run_id=str(mint_run_id()),
+        action="external_work.create",
+        resource="scope",
+        provider_id="prov",
+        policy_action=PolicyAction.ALLOW,
+        policy_rule_id="r.create",
+        policy_reason="ok",
+        correlation_id="c1",
+        idempotency_key="i1",
+    )
+    base.update(overrides)
+    return GovernedProofProfile.model_validate(base)
+
+
+def _invocation_v2(task_id: str, run_id: str, **overrides: object) -> ProviderInvocation:
+    base = dict(
+        invocation_id="inv-1",
+        provider_id="prov",
+        operation="create_work",
+        task_id=task_id,
+        run_id=run_id,
+        correlation_id="c1",
+        idempotency_key="i1",
+        request_digest=_DIGEST,
+        started_at=_T0,
+    )
+    base.update(overrides)
+    return ProviderInvocation.model_validate(base)
+
+
+def _ger_v2(**overrides: object) -> GovernedExecutionResultV2:
+    task_id = overrides.get("task_id", mint_task_id())
+    run_id = overrides.get("run_id", mint_run_id())
+    attempt_id = overrides.get("attempt_id", mint_attempt_id())
+    execution_id = overrides.get("execution_id", mint_execution_id())
+    tenant_id = str(overrides.get("tenant_id", "ten-a"))
+    proof = overrides.get("proof")
+    if proof is None:
+        proof = _proof_v2(
+            task_id=str(task_id),
+            run_id=str(run_id),
+            tenant_id=tenant_id,
+        )
+    base = dict(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=attempt_id,
+        execution_id=execution_id,
+        principal_id="u1",
+        tenant_id=tenant_id,
+        correlation_id="c1",
+        idempotency_key="i1",
+        action="external_work.create",
+        evaluated_policy_decision=_policy_decision_v2(),
+        provider_invocation=_invocation_v2(str(task_id), str(run_id)),
+        provider_outcome=ProviderInvocationOutcome(
+            invocation_id="inv-1",
+            status=ProviderInvocationStatus.SUCCEEDED,
+            completed_at=_T0,
+        ),
+        proof=proof,
+        execution_started_at=_T0,
+        execution_completed_at=_T0,
+    )
+    for key, value in overrides.items():
+        if key not in {"proof", "task_id", "run_id", "attempt_id", "execution_id", "tenant_id"}:
+            base[key] = value
+    return GovernedExecutionResultV2.model_validate(base)
+
+
+def test_txp3r1r1_q10_ger_v2_tenant_mandatory() -> None:
+    with pytest.raises(ValidationError):
+        _ger_v2(tenant_id="")
+
+
+def test_txp3r1r1_q11_ger_proof_tenant_exact_equality_ok() -> None:
+    ger = _ger_v2(tenant_id="ten-a")
+    assert ger.tenant_id == "ten-a"
+    assert ger.proof.tenant_id == "ten-a"
+
+
+def test_txp3r1r1_q12_proof_tenant_absence_rejected() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    with pytest.raises(ValueError, match="proof_tenant_id_required"):
+        _ger_v2(
+            task_id=task_id,
+            run_id=run_id,
+            proof=_proof_v2(
+                task_id=str(task_id),
+                run_id=str(run_id),
+                tenant_id=None,
+            ),
+        )
+
+
+def test_txp3r1r1_q11_mismatch_rejected() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    with pytest.raises(ValueError, match="tenant_id_inconsistent"):
+        _ger_v2(
+            task_id=task_id,
+            run_id=run_id,
+            tenant_id="ten-a",
+            proof=_proof_v2(
+                task_id=str(task_id),
+                run_id=str(run_id),
+                tenant_id="ten-b",
+            ),
+        )
+
+
+def test_txp3r1r1_q13_ebe_v2_tenant_mandatory() -> None:
+    with pytest.raises(ValidationError):
+        ExecutionBoundaryEventV2(
+            event_id="ebe-v2",
+            occurred_at=_T0,
+            execution=ExecutionIdentitySection(
+                task_id=mint_task_id(),
+                run_id=mint_run_id(),
+                attempt_id=mint_attempt_id(),
+                execution_id=mint_execution_id(),
+            ),
+            tenant_id="",
+            principal_id="u",
+            provider_id="p",
+            action="external_work.create",
+            policy=PolicyDecisionSection(
+                bundle_id="b",
+                bundle_version="1",
+                bundle_digest=_DIGEST,
+                rule_id="r",
+                action=PolicyAction.ALLOW,
+            ),
+            provider_invocation=ProviderInvocationSection(
+                operation="create_work",
+                invocation_id="inv",
+                completed_at=_T0,
+            ),
+            governed_proof=GovernedProofSection(proof_id="p", proof_digest=_DIGEST),
+        )
+
+
+def test_txp3r1r1_q14_ebe_tenant_copied_from_ger() -> None:
+    ger = _ger_v2(tenant_id="tenant-copy")
+    event = compose_execution_boundary_event_v2_from_result(ger, event_id="ebe-copy")
+    assert event.tenant_id == "tenant-copy"
+
+
+def test_txp3r1r1_q15_receipt_preserves_tenant() -> None:
+    ger = _ger_v2(tenant_id="tenant-rcpt")
+    attestor = build_deterministic_test_attestor(clock=lambda: _T0)
+    event = compose_execution_boundary_event_v2_from_result(ger, event_id="ebe-rcpt")
+    receipt = produce_proof_receipt_v2(event=event, attestor=attestor)
+    assert receipt.execution_boundary_event.tenant_id == "tenant-rcpt"
+
+
+def test_txp3r1r1_tenant_isolation_audit_complete() -> None:
+    assert TENANT_ISOLATION_AUDIT_P3_R1_R1["tenant_scope_applicable"] == "YES"
+    assert TENANT_ISOLATION_AUDIT_P3_R1_R1["result"] == "PASS"
 
 
 def test_txp3r1_q23_v2_receipt_event_pair_valid() -> None:
@@ -348,6 +570,7 @@ def test_txp3r1_q23_v2_receipt_event_pair_valid() -> None:
             attempt_id=mint_attempt_id(),
             execution_id=mint_execution_id(),
         ),
+        tenant_id="tenant-v2",
         principal_id="u",
         provider_id="p",
         action="external_work.create",
