@@ -1,10 +1,11 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TRACE-X-P5-R1-R1-Q5: scope-aware import-provenance + unified canonical constructor reference discovery."""
+"""TRACE-X-P5-R1-R1-Q6: usage-context closure for canonical ChildExecutionRunner references."""
 
 from __future__ import annotations
 
 import ast
+import enum
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Final
@@ -19,6 +20,22 @@ _EXCLUDE_DIR_NAMES: Final[frozenset[str]] = frozenset(
 CANONICAL_CHILD_MODULE: Final[str] = "intergrax.runtime.execution.child"
 CANONICAL_CHILD_CLASS: Final[str] = "ChildExecutionRunner"
 EXECUTION_PACKAGE_MODULE: Final[str] = "intergrax.runtime.execution"
+
+
+class CanonicalConstructorUsageKind(enum.Enum):
+    DIRECT_CONSTRUCTOR_CALL = "DIRECT_CONSTRUCTOR_CALL"
+    TYPE_ANNOTATION = "TYPE_ANNOTATION"
+    IMPORT_BINDING = "IMPORT_BINDING"
+    FORBIDDEN_RUNTIME_ESCAPE = "FORBIDDEN_RUNTIME_ESCAPE"
+    UNKNOWN = "UNKNOWN"
+
+
+@dataclass(frozen=True, slots=True)
+class CanonicalConstructorUsageRecord:
+    rel_path: str
+    enclosing: str
+    lineno: int
+    kind: CanonicalConstructorUsageKind
 
 
 def _intergrax_path_excluded(rel_path: Path) -> bool:
@@ -63,6 +80,13 @@ def _call_callee_root(node: ast.Call) -> ast.expr:
     if isinstance(func, ast.Subscript):
         return func.value
     return func
+
+
+def _expr_contains(container: ast.AST, target: ast.expr) -> bool:
+    for node in ast.walk(container):
+        if node is target:
+            return True
+    return False
 
 
 @dataclass
@@ -196,6 +220,100 @@ def _is_canonical_constructor_call(node: ast.Call, prov: _ImportProvenance) -> b
     return _expr_is_canonical_constructor_ref(_call_callee_root(node), prov)
 
 
+def _is_direct_constructor_callee_expr(
+    expr: ast.expr,
+    parent_stack: tuple[ast.AST, ...],
+    prov: _ImportProvenance,
+) -> bool:
+    for ancestor in reversed(parent_stack):
+        if isinstance(ancestor, ast.Call):
+            callee = ancestor.func
+            if _expr_is_canonical_constructor_ref(_call_callee_root(ancestor), prov):
+                return callee is not None and _expr_contains(callee, expr)
+            return False
+    return False
+
+
+def classify_canonical_constructor_usage(
+    expr: ast.expr,
+    parent: ast.AST | None,
+    *,
+    in_annotation: bool,
+    parent_stack: tuple[ast.AST, ...],
+    prov: _ImportProvenance,
+) -> CanonicalConstructorUsageKind:
+    """Single usage-context authority for every canonical constructor reference."""
+    if not _expr_is_canonical_constructor_ref(expr, prov):
+        raise ValueError("classify_canonical_constructor_usage requires a canonical reference expression")
+
+    if in_annotation:
+        return CanonicalConstructorUsageKind.TYPE_ANNOTATION
+
+    if _is_direct_constructor_callee_expr(expr, parent_stack, prov):
+        return CanonicalConstructorUsageKind.DIRECT_CONSTRUCTOR_CALL
+
+    if parent is None:
+        return CanonicalConstructorUsageKind.UNKNOWN
+
+    if isinstance(
+        parent,
+        (
+            ast.Assign,
+            ast.AnnAssign,
+            ast.AugAssign,
+            ast.NamedExpr,
+            ast.Return,
+            ast.Yield,
+            ast.YieldFrom,
+            ast.arguments,
+            ast.ClassDef,
+            ast.List,
+            ast.Tuple,
+            ast.Set,
+            ast.Dict,
+            ast.ListComp,
+            ast.SetComp,
+            ast.DictComp,
+            ast.GeneratorExp,
+            ast.comprehension,
+            ast.IfExp,
+            ast.BoolOp,
+            ast.UnaryOp,
+            ast.BinOp,
+            ast.Compare,
+            ast.keyword,
+            ast.Starred,
+            ast.withitem,
+            ast.Match,
+            ast.Expr,
+            ast.If,
+            ast.For,
+            ast.While,
+            ast.Assert,
+            ast.Raise,
+            ast.Delete,
+            ast.FormattedValue,
+        ),
+    ):
+        return CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE
+
+    if isinstance(parent, ast.Subscript):
+        return CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE
+
+    if isinstance(parent, ast.Call):
+        return CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE
+
+    if isinstance(parent, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda)):
+        args = parent.args
+        if expr in args.defaults or expr in args.kw_defaults:
+            return CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE
+
+    if isinstance(parent, ast.ExceptHandler):
+        return CanonicalConstructorUsageKind.UNKNOWN
+
+    return CanonicalConstructorUsageKind.UNKNOWN
+
+
 def _iter_assignment_target_names(target: ast.expr) -> list[str]:
     if isinstance(target, ast.Name):
         return [target.id]
@@ -241,35 +359,14 @@ def _assignment_targets_canonical_rebind(
     return violations
 
 
-def _expr_has_forbidden_canonical_escape(expr: ast.expr, prov: _ImportProvenance) -> bool:
-    """True when a canonical constructor reference escapes outside a direct constructor call."""
-
-    def _scan(node: ast.AST) -> bool:
-        if isinstance(node, ast.Call):
-            if _is_canonical_constructor_call(node, prov):
-                for arg in node.args:
-                    if _scan(arg):
-                        return True
-                for keyword in node.keywords:
-                    if keyword.value is not None and _scan(keyword.value):
-                        return True
-                return False
-        if isinstance(node, ast.expr) and _expr_is_canonical_constructor_ref(node, prov):
-            return True
-        for child in ast.iter_child_nodes(node):
-            if isinstance(child, ast.expr) and _scan(child):
-                return True
-        return False
-
-    return _scan(expr)
-
-
 @dataclass
 class ChildRunnerDiscoveryResult:
     surfaces: set[str] = field(default_factory=set)
     rebind_violations: list[str] = field(default_factory=list)
     alias_escape_violations: list[str] = field(default_factory=list)
     class_body_import_violations: list[str] = field(default_factory=list)
+    unknown_usage_violations: list[str] = field(default_factory=list)
+    usage_records: list[CanonicalConstructorUsageRecord] = field(default_factory=list)
 
 
 class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
@@ -278,10 +375,76 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
         self._class_stack: list[str] = []
         self._function_stack: list[str] = []
         self._scope_stack: list[_ImportProvenance] = [module_prov.copy()]
+        self._parent_stack: list[ast.AST] = []
+        self._annotation_depth: int = 0
         self.result = ChildRunnerDiscoveryResult()
 
     def _current_prov(self) -> _ImportProvenance:
         return self._scope_stack[-1]
+
+    def _parent_tuple(self) -> tuple[ast.AST, ...]:
+        return tuple(self._parent_stack)
+
+    def _in_annotation(self) -> bool:
+        return self._annotation_depth > 0
+
+    def _record_usage(self, expr: ast.expr, kind: CanonicalConstructorUsageKind) -> None:
+        enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
+        record = CanonicalConstructorUsageRecord(
+            rel_path=self._rel_path,
+            enclosing=enclosing,
+            lineno=getattr(expr, "lineno", 0),
+            kind=kind,
+        )
+        self.result.usage_records.append(record)
+        if kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE:
+            self.result.alias_escape_violations.append(
+                f"{self._rel_path}::{enclosing}: alias-escape",
+            )
+        elif kind == CanonicalConstructorUsageKind.UNKNOWN:
+            self.result.unknown_usage_violations.append(
+                f"{self._rel_path}::{enclosing}: unknown-usage-context",
+            )
+
+    def _visit_with_parent(self, parent: ast.AST, child: ast.AST | None) -> None:
+        if child is None:
+            return
+        self._parent_stack.append(parent)
+        try:
+            self.visit(child)
+        finally:
+            self._parent_stack.pop()
+
+    def _maybe_classify_expr(self, node: ast.expr) -> None:
+        if not _expr_is_canonical_constructor_ref(node, self._current_prov()):
+            return
+        parent = self._parent_stack[-2] if len(self._parent_stack) >= 2 else None
+        kind = classify_canonical_constructor_usage(
+            node,
+            parent,
+            in_annotation=self._in_annotation(),
+            parent_stack=self._parent_tuple(),
+            prov=self._current_prov(),
+        )
+        self._record_usage(node, kind)
+
+    def visit(self, node: ast.AST) -> None:
+        if isinstance(node, ast.expr):
+            self._maybe_classify_expr(node)
+        self._parent_stack.append(node)
+        try:
+            super().visit(node)
+        finally:
+            self._parent_stack.pop()
+
+    def _visit_annotation_subtree(self, node: ast.AST | None) -> None:
+        if node is None:
+            return
+        self._annotation_depth += 1
+        try:
+            self.visit(node)
+        finally:
+            self._annotation_depth -= 1
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
         if node.name == CANONICAL_CHILD_CLASS:
@@ -292,19 +455,67 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
         else:
             self._scope_stack.append(self._current_prov().copy())
         self._class_stack.append(node.name)
-        self.generic_visit(node)
+        for base in node.bases:
+            self.visit(base)
+        for keyword in node.keywords:
+            self.visit(keyword)
+        for decorator in node.decorator_list:
+            self.visit(decorator)
+        for stmt in node.body:
+            self.visit(stmt)
         self._class_stack.pop()
         self._scope_stack.pop()
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
         self._scope_stack.append(self._current_prov().copy())
         self._function_stack.append(node.name)
-        self.generic_visit(node)
+        self._visit_annotation_subtree(node.returns)
+        for arg in (
+            *node.args.posonlyargs,
+            *node.args.args,
+            *node.args.kwonlyargs,
+        ):
+            self._visit_annotation_subtree(arg.annotation)
+        for default in (*node.args.defaults, *node.args.kw_defaults):
+            self._visit_with_parent(node, default)
+        for decorator in node.decorator_list:
+            self.visit(decorator)
+        for stmt in node.body:
+            self.visit(stmt)
         self._function_stack.pop()
         self._scope_stack.pop()
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self.visit_FunctionDef(node)  # type: ignore[arg-type]
+
+    def visit_Lambda(self, node: ast.Lambda) -> None:
+        for default in (*node.args.defaults, *node.args.kw_defaults):
+            self._visit_with_parent(node, default)
+        self._visit_with_parent(node, node.body)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        self._visit_annotation_subtree(node.annotation)
+        if node.value is not None:
+            prov = self._current_prov()
+            for name in _assignment_targets_canonical_rebind([node.target], node.value, prov):
+                enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
+                self.result.rebind_violations.append(f"{self._rel_path}::{enclosing}: rebind {name}")
+            self._visit_with_parent(node, node.value)
+        if isinstance(node.target, ast.Name):
+            self._record_constructor_shadow(node.target.id)
+        self._visit_with_parent(node, node.target)
+
+    def visit_Return(self, node: ast.Return) -> None:
+        self._visit_with_parent(node, node.value)
+
+    def visit_Yield(self, node: ast.Yield) -> None:
+        self._visit_with_parent(node, node.value)
+
+    def visit_YieldFrom(self, node: ast.YieldFrom) -> None:
+        self._visit_with_parent(node, node.value)
+
+    def visit_Expr(self, node: ast.Expr) -> None:
+        self._visit_with_parent(node, node.value)
 
     def _in_class_body_scope(self) -> bool:
         return bool(self._class_stack) and not self._function_stack
@@ -316,10 +527,6 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
         enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
         self.result.rebind_violations.append(f"{self._rel_path}::{enclosing}: shadow {name}")
         prov.shadowed_constructor_names.add(name)
-
-    def _record_alias_escape(self) -> None:
-        enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
-        self.result.alias_escape_violations.append(f"{self._rel_path}::{enclosing}: alias-escape")
 
     def visit_Import(self, node: ast.Import) -> None:
         if self._in_class_body_scope() and _import_binds_canonical_child(node):
@@ -346,65 +553,24 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
         for name in _assignment_targets_canonical_rebind(node.targets, node.value, prov):
             enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
             self.result.rebind_violations.append(f"{self._rel_path}::{enclosing}: rebind {name}")
-        if _expr_has_forbidden_canonical_escape(node.value, prov):
-            self._record_alias_escape()
+        self._visit_with_parent(node, node.value)
         for target in node.targets:
             if isinstance(target, ast.Name):
                 self._record_constructor_shadow(target.id)
             else:
                 for name in _iter_assignment_target_names(target):
                     self._record_constructor_shadow(name)
-        self.generic_visit(node)
-
-    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
-        if node.value is not None:
-            prov = self._current_prov()
-            for name in _assignment_targets_canonical_rebind([node.target], node.value, prov):
-                enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
-                self.result.rebind_violations.append(f"{self._rel_path}::{enclosing}: rebind {name}")
-            if _expr_has_forbidden_canonical_escape(node.value, prov):
-                self._record_alias_escape()
-        if isinstance(node.target, ast.Name):
-            self._record_constructor_shadow(node.target.id)
-        self.generic_visit(node)
-
-    def visit_Return(self, node: ast.Return) -> None:
-        if node.value is not None and _expr_has_forbidden_canonical_escape(
-            node.value,
-            self._current_prov(),
-        ):
-            self._record_alias_escape()
-        self.generic_visit(node)
-
-    def visit_Yield(self, node: ast.Yield) -> None:
-        if node.value is not None and _expr_has_forbidden_canonical_escape(
-            node.value,
-            self._current_prov(),
-        ):
-            self._record_alias_escape()
-        self.generic_visit(node)
-
-    def visit_YieldFrom(self, node: ast.YieldFrom) -> None:
-        if _expr_has_forbidden_canonical_escape(node.value, self._current_prov()):
-            self._record_alias_escape()
-        self.generic_visit(node)
+            self._visit_with_parent(node, target)
 
     def visit_Call(self, node: ast.Call) -> None:
-        prov = self._current_prov()
-        if not _is_canonical_constructor_call(node, prov):
-            for arg in node.args:
-                if _expr_has_forbidden_canonical_escape(arg, prov):
-                    self._record_alias_escape()
-            for keyword in node.keywords:
-                if keyword.value is not None and _expr_has_forbidden_canonical_escape(
-                    keyword.value,
-                    prov,
-                ):
-                    self._record_alias_escape()
+        self._visit_with_parent(node, node.func)
+        for arg in node.args:
+            self._visit_with_parent(node, arg)
+        for keyword in node.keywords:
+            self._visit_with_parent(node, keyword.value)
         if _is_canonical_constructor_call(node, self._current_prov()):
             enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
             self.result.surfaces.add(_surface_key(self._rel_path, enclosing))
-        self.generic_visit(node)
 
 
 def analyze_child_execution_runner_discovery(rel_path: str, source: str) -> ChildRunnerDiscoveryResult:
@@ -414,7 +580,8 @@ def analyze_child_execution_runner_discovery(rel_path: str, source: str) -> Chil
         return ChildRunnerDiscoveryResult()
     module_prov = _collect_module_import_provenance(tree)
     visitor = _ChildRunnerDiscoveryVisitor(normalized, module_prov)
-    visitor.visit(tree)
+    for stmt in tree.body:
+        visitor.visit(stmt)
     return visitor.result
 
 
@@ -441,6 +608,7 @@ def discover_canonical_constructor_rebinding_violations() -> list[str]:
         violations.extend(result.rebind_violations)
         violations.extend(result.alias_escape_violations)
         violations.extend(result.class_body_import_violations)
+        violations.extend(result.unknown_usage_violations)
     return violations
 
 
@@ -450,7 +618,30 @@ def discover_canonical_constructor_rebindings_in_source(rel_path: str, source: s
         *result.rebind_violations,
         *result.alias_escape_violations,
         *result.class_body_import_violations,
+        *result.unknown_usage_violations,
     ]
+
+
+def discover_canonical_constructor_usage_records_in_source(
+    rel_path: str,
+    source: str,
+) -> list[CanonicalConstructorUsageRecord]:
+    return list(analyze_child_execution_runner_discovery(rel_path, source).usage_records)
+
+
+def production_canonical_constructor_usage_inventory() -> tuple[
+    list[CanonicalConstructorUsageRecord],
+    frozenset[str],
+]:
+    records: list[CanonicalConstructorUsageRecord] = []
+    surfaces: set[str] = set()
+    for py_path in _iter_intergrax_production_py_files():
+        rel = str(py_path.relative_to(repo_root())).replace("\\", "/")
+        text = py_path.read_text(encoding="utf-8")
+        result = analyze_child_execution_runner_discovery(rel, text)
+        records.extend(result.usage_records)
+        surfaces |= result.surfaces
+    return records, frozenset(surfaces)
 
 
 class _WireHostProfileVisitor(ast.NodeVisitor):
@@ -533,13 +724,18 @@ def profile_aware_root_forwards_child_context_inheritance(source: str, root_surf
 __all__ = [
     "CANONICAL_CHILD_CLASS",
     "CANONICAL_CHILD_MODULE",
+    "CanonicalConstructorUsageKind",
+    "CanonicalConstructorUsageRecord",
     "ChildRunnerDiscoveryResult",
     "analyze_child_execution_runner_discovery",
+    "classify_canonical_constructor_usage",
     "discover_canonical_constructor_rebinding_violations",
     "discover_canonical_constructor_rebindings_in_source",
+    "discover_canonical_constructor_usage_records_in_source",
     "discover_child_execution_runner_constructor_surfaces",
     "discover_child_execution_runner_surfaces_in_source",
     "discover_wire_host_effective_profile_execution_roots",
     "discover_wire_host_roots_in_source",
+    "production_canonical_constructor_usage_inventory",
     "profile_aware_root_forwards_child_context_inheritance",
 ]

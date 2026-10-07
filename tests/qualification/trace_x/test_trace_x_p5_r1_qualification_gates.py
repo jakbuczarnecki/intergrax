@@ -15,12 +15,16 @@ from intergrax.runtime.execution.environment_host_task_execution import (
     build_environment_host_task_execution,
 )
 from tests.qualification.trace_x._trace_x_p5_r1_child_discovery import (
+    CanonicalConstructorUsageKind,
+    classify_canonical_constructor_usage,
     discover_canonical_constructor_rebinding_violations,
     discover_canonical_constructor_rebindings_in_source,
+    discover_canonical_constructor_usage_records_in_source,
     discover_child_execution_runner_constructor_surfaces,
     discover_child_execution_runner_surfaces_in_source,
     discover_wire_host_effective_profile_execution_roots,
     discover_wire_host_roots_in_source,
+    production_canonical_constructor_usage_inventory,
     profile_aware_root_forwards_child_context_inheritance,
 )
 from tests.qualification.trace_x._trace_x_p5_r1_child_registry import (
@@ -46,6 +50,7 @@ from tests.qualification.trace_x._trace_x_p5_r1_support import (
     TRACE_X_P5_R1_R1_Q3_START_HEAD,
     TRACE_X_P5_R1_R1_Q4_START_HEAD,
     TRACE_X_P5_R1_R1_Q5_START_HEAD,
+    TRACE_X_P5_R1_R1_Q6_START_HEAD,
     TRACE_X_P5_R1_START_HEAD,
     child_runner_profile_resolution_import_violations,
     discover_profile_aware_environment_host_roots,
@@ -967,4 +972,183 @@ def test_txp5r1_q73_q5_start_head_recorded_and_ancestry() -> None:
     assert TRACE_X_P5_R1_R1_Q5_START_HEAD == "274c5ff40e0c4f30764d13be65a00e3b463ec5e4"
     subprocess.check_call(
         ["git", "merge-base", "--is-ancestor", TRACE_X_P5_R1_R1_Q5_START_HEAD, "HEAD"],
+    )
+
+
+def test_txp5r1_q74_walrus_alias_escape_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_walrus_escape.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f():
+    if (Runner := ChildExecutionRunner):
+        return Runner()
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q75_positional_default_arg_escape_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_default_arg_escape.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f(factory=ChildExecutionRunner):
+    return factory()
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q76_kwonly_default_arg_escape_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_kwonly_default_escape.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f(*, factory=ChildExecutionRunner):
+    return factory()
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q77_lambda_default_escape_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_lambda_default_escape.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f():
+    factory = lambda ctor=ChildExecutionRunner: ctor()
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q78_boolean_expression_escape_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_boolean_escape.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+class Other:
+    pass
+
+def f(flag):
+    factory = ChildExecutionRunner or Other
+    factory2 = ChildExecutionRunner if flag else Other
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q79_comprehension_escape_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_comprehension_escape.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f():
+    factories = [x for x in (ChildExecutionRunner,)]
+    factory = next(x for x in [ChildExecutionRunner])
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q80_attribute_target_storage_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_attribute_storage.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+class Holder:
+    def f(self):
+        self.runner_factory = ChildExecutionRunner
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q81_subscript_target_storage_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_subscript_storage.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f(registry):
+    registry["child"] = ChildExecutionRunner
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q82_wrapper_call_argument_escape_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_wrapper_arg_escape.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def register_factory(factory):
+    pass
+
+def f():
+    register_factory(ChildExecutionRunner)
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q83_direct_instance_passed_to_wrapper_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_wrapper_instance_ok.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def consume(runner):
+    pass
+
+def f():
+    consume(ChildExecutionRunner())
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert f"{rel}::f" in discovered
+    assert not discover_canonical_constructor_rebindings_in_source(rel, source)
+
+
+def test_txp5r1_q84_annotation_vs_forbidden_default_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_annotation_default_split.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+from typing import TypeVar
+
+A = TypeVar("A")
+B = TypeVar("B")
+
+def f(
+    runner: ChildExecutionRunner[A, B] = ChildExecutionRunner,
+):
+    pass
+"""
+    records = discover_canonical_constructor_usage_records_in_source(rel, source)
+    kinds = {record.kind for record in records}
+    assert CanonicalConstructorUsageKind.TYPE_ANNOTATION in kinds
+    assert CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE in kinds
+    assert discover_canonical_constructor_rebindings_in_source(rel, source)
+
+
+def test_txp5r1_q85_unknown_runtime_context_fails_closed_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_unknown_usage_context.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f():
+    try:
+        pass
+    except ChildExecutionRunner:
+        pass
+"""
+    violations = discover_canonical_constructor_rebindings_in_source(rel, source)
+    assert any("unknown-usage-context" in v for v in violations)
+
+
+def test_txp5r1_q86_production_usage_inventory_zero_forbidden_unknown() -> None:
+    records, surfaces = production_canonical_constructor_usage_inventory()
+    assert len(surfaces) == 4
+    forbidden = [
+        r for r in records if r.kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE
+    ]
+    unknown = [r for r in records if r.kind == CanonicalConstructorUsageKind.UNKNOWN]
+    assert not forbidden, forbidden
+    assert not unknown, unknown
+
+
+def test_txp5r1_q87_q6_start_head_recorded_and_ancestry() -> None:
+    assert TRACE_X_P5_R1_R1_Q6_START_HEAD == "4aba36e50a474a0d6915a60f73f5a3b31e6f71c2"
+    subprocess.check_call(
+        ["git", "merge-base", "--is-ancestor", TRACE_X_P5_R1_R1_Q6_START_HEAD, "HEAD"],
     )

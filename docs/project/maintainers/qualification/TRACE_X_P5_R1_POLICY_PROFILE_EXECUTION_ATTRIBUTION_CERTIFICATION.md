@@ -13,16 +13,20 @@
 | P5-R1-R1-Q3 START_HEAD | `c51d04b7849d44d1adee78ad6d4e7eedd8b5ab68` |
 | P5-R1-R1-Q4 START_HEAD | `ea1e4947fe66c120bb502885dc912e5f98698339` |
 | P5-R1-R1-Q5 START_HEAD | `274c5ff40e0c4f30764d13be65a00e3b463ec5e4` |
+| P5-R1-R1-Q6 START_HEAD | `4aba36e50a474a0d6915a60f73f5a3b31e6f71c2` |
 | Q2 FINAL_COMMIT | _(placeholder until qualification commit)_ |
 | Q3 FINAL_COMMIT | `0146f6a862339e5c6eefbf53b5622bf3e8491db5` |
 | Q4 FINAL_COMMIT | `41c36b4ad8983fd0c90a4c9513d28de124a07538` |
 | Q5 FINAL_COMMIT | `a6e04f2c1959674c477d591b5a9d8012d16eb80a` |
+| Q6 FINAL_COMMIT | _(placeholder until qualification commit)_ |
+| Q6 implementation SHA | _(placeholder until qualification commit)_ |
 | FINAL_COMMIT | _(see git push output)_ |
 | TRACE-X-P5-R1-R1-Q1 | **READY FOR INDEPENDENT RE-AUDIT** (qualification remediation; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q2 | **READY FOR INDEPENDENT RE-AUDIT** (derived resume comparison; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q3 | **READY FOR INDEPENDENT RE-AUDIT** (scoped import-provenance closure; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q4 | **READY FOR INDEPENDENT RE-AUDIT** (canonical constructor alias-escape closure; not CLOSED) |
-| TRACE-X-P5-R1-R1-Q5 | **READY FOR AUDIT** (full-dotted canonical constructor reference closure; not CLOSED) |
+| TRACE-X-P5-R1-R1-Q5 | **READY FOR INDEPENDENT RE-AUDIT** (full-dotted canonical constructor reference closure; not CLOSED) |
+| TRACE-X-P5-R1-R1-Q6 | **READY FOR AUDIT** (canonical reference usage-context closure; not CLOSED) |
 | TRACE-X-P5-R1-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 | TRACE-X-P5-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 
@@ -60,6 +64,14 @@ Registry parity: `tests/qualification/trace_x/_trace_x_p5_r1_child_discovery.py`
 **Q5 qualification:** production parity unchanged (`discovered = 4`, `classified = 4`, `unknown = 0`, `orphan = 0`, `duplicate = 0`, alias escapes = 0, rebind/shadow/class-body violations = 0). Sentinels `test_txp5r1_q66`–`q72`; Q5 lineage `test_txp5r1_q73`. Q5 implementation evidence SHA `a6e04f2c1959674c477d591b5a9d8012d16eb80a`.
 
 Registry parity (Q5): gates `test_txp5r1_q12`–`q24`, `q31`–`q37`, `q45`–`q55`, `q56`–`q65`, `q66`–`q73`.
+
+**Q6 blocker (START_HEAD `4aba36e5…`):** `Q5-CANONICAL-REFERENCE-CONTEXT-COVERAGE-01` — forbidden-constructor detection remained syntax-handler-driven (assign/return/yield/call arguments), so walrus bindings, function defaults, lambda defaults, boolean/conditional runtime use, comprehension/container propagation, attribute/subscript storage, and wrapper-call arguments could evade closed-world classification.
+
+**Q6 remediation:** reference-centric pass with one authoritative `classify_canonical_constructor_usage` (`CanonicalConstructorUsageKind`: `DIRECT_CONSTRUCTOR_CALL`, `TYPE_ANNOTATION`, `IMPORT_BINDING`, `FORBIDDEN_RUNTIME_ESCAPE`, `UNKNOWN`); every provenance-resolved canonical reference is parent-context classified; direct callee allowance requires canonical root of `ast.Call` (optional generic subscript); annotation allowance is AST annotation-context only; `UNKNOWN` fails closed.
+
+**Q6 qualification:** production inventory unchanged (`legal constructor surfaces = 4`, `forbidden canonical runtime-reference usages = 0`, `unknown usage contexts = 0`; discovery parity `discovered = classified`, `unknown surfaces = 0`, `orphan = 0`, `duplicate = 0`). Sentinels `test_txp5r1_q74`–`q86`; Q6 lineage `test_txp5r1_q87`.
+
+Registry parity (Q6): gates `test_txp5r1_q12`–`q24`, `q31`–`q37`, `q45`–`q55`, `q56`–`q65`, `q66`–`q73`, `q74`–`q87`.
 
 ## Resume baseline evidence (@ Q2)
 
