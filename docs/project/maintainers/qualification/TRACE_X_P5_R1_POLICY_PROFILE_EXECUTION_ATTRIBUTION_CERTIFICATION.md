@@ -10,10 +10,13 @@
 | P5-R1-R1 START_HEAD | `65f7e1ef4832d99a19be7953734a42d5bd5cbb4f` |
 | P5-R1-R1-Q1 START_HEAD | `a452de39a721cd357be3ba5ecd0c3a6d41b630bd` |
 | P5-R1-R1-Q2 START_HEAD | `538af9ef51a6ca483f607988481ef2794deb87b9` |
+| P5-R1-R1-Q3 START_HEAD | `c51d04b7849d44d1adee78ad6d4e7eedd8b5ab68` |
 | Q2 FINAL_COMMIT | _(placeholder until qualification commit)_ |
+| Q3 FINAL_COMMIT | `b439b9e39a203b18227789e38819c33fbf9f599f` |
 | FINAL_COMMIT | _(see git push output)_ |
 | TRACE-X-P5-R1-R1-Q1 | **READY FOR INDEPENDENT RE-AUDIT** (qualification remediation; not CLOSED) |
-| TRACE-X-P5-R1-R1-Q2 | **READY FOR AUDIT** (import-provenance discovery + derived resume comparison; not CLOSED) |
+| TRACE-X-P5-R1-R1-Q2 | **READY FOR INDEPENDENT RE-AUDIT** (derived resume comparison; not CLOSED) |
+| TRACE-X-P5-R1-R1-Q3 | **READY FOR AUDIT** (scoped import-provenance closure; not CLOSED) |
 | TRACE-X-P5-R1-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 | TRACE-X-P5-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 
@@ -26,9 +29,17 @@
 | P5-R1-REVISION-REF-OWNERSHIP-03 | `EffectiveProfileRevisionProvenanceRef` is opaque (non-empty str only); no `effprof_rev_` / suffix grammar in neutral contract. |
 | P5-R1-RESUME-BASELINE-04 | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED / PRE-EXISTING** — committed machine evidence `docs/project/maintainers/qualification/TRACE_X_P5_R1_R1_Q1_RESUME_BASELINE_EVIDENCE.json` (baseline `98c0d9d7…`, Q1 head `a452de39…`, conclusion `PRE_EXISTING_NON_R1_REGRESSION`). Owner: Profile Resolution / checkpoint-resume qualification. |
 
-## Child execution inventory (import-provenance AST discovery @ Q2)
+## Child execution inventory (scope-aware import-provenance AST discovery @ Q3)
 
-Mechanical discovery resolves canonical `intergrax.runtime.execution.child.ChildExecutionRunner` from import provenance (direct import, `as` alias, `import … child as …`, and `from intergrax.runtime.execution import child`). Local class shadowing and canonical-constructor rebinding (`Runner = ChildExecutionRunner`) are rejected mechanically. Registry parity: `tests/qualification/trace_x/_trace_x_p5_r1_child_discovery.py`, `tests/qualification/trace_x/_trace_x_p5_r1_child_registry.py`, gates `test_txp5r1_q12`–`q24`, `q31`–`q37`.
+**Q3 blocker (START_HEAD `c51d04b7…`):** discovery collected import provenance only from module-level `tree.body`, so constructor calls after function-local / nested-scope imports could escape closed-world inventory.
+
+**Q3 remediation:** lexical traversal applies `visit_Import` / `visit_ImportFrom` in statement order per scope stack (module, function, async function, nested function); sibling scopes do not leak bindings; nested functions inherit enclosing provenance; local reassignment/shadowing of canonical constructor names fails closed; class-body canonical imports are mechanically forbidden (methods do not receive class-body aliases as unqualified locals); unaliased `import intergrax.runtime.execution.child` binds `intergrax` and resolves `intergrax.runtime.execution.child.ChildExecutionRunner()` only (not bogus `child.ChildExecutionRunner()`).
+
+Supported forms: direct `from … child import ChildExecutionRunner`, `as` alias, `import … child as …`, `from intergrax.runtime.execution import child`, and full dotted attribute call from `intergrax` after unaliased child-module import.
+
+**Q3 qualification:** production discovery parity unchanged (`discovered = 4`, `unknown = 0`, `orphan = 0`, `duplicate = 0`, rebind/shadow/class-body violations = 0 in `intergrax/`). Sentinels `test_txp5r1_q45`–`q54`; Q3 lineage `test_txp5r1_q55`.
+
+Registry parity: `tests/qualification/trace_x/_trace_x_p5_r1_child_discovery.py`, `tests/qualification/trace_x/_trace_x_p5_r1_child_registry.py`, gates `test_txp5r1_q12`–`q24`, `q31`–`q37`, `q45`–`q55`.
 
 ## Resume baseline evidence (@ Q2)
 

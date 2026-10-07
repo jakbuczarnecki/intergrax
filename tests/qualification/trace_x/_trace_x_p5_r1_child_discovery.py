@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TRACE-X-P5-R1-R1-Q2: import-provenance ChildExecutionRunner constructor AST discovery."""
+"""TRACE-X-P5-R1-R1-Q3: scope-aware import-provenance ChildExecutionRunner AST discovery."""
 
 from __future__ import annotations
 
@@ -67,16 +67,20 @@ def _call_callee_root(node: ast.Call) -> ast.expr:
 
 @dataclass
 class _ImportProvenance:
-    """Module-level and scoped bindings for canonical child constructor resolution."""
+    """Lexical-scope bindings for canonical child constructor resolution."""
 
     constructor_names: set[str] = field(default_factory=set)
     child_module_aliases: set[str] = field(default_factory=set)
+    intergrax_roots: set[str] = field(default_factory=set)
+    shadowed_constructor_names: set[str] = field(default_factory=set)
     local_child_execution_runner_class: bool = False
 
     def copy(self) -> _ImportProvenance:
         return _ImportProvenance(
             constructor_names=set(self.constructor_names),
             child_module_aliases=set(self.child_module_aliases),
+            intergrax_roots=set(self.intergrax_roots),
+            shadowed_constructor_names=set(self.shadowed_constructor_names),
             local_child_execution_runner_class=self.local_child_execution_runner_class,
         )
 
@@ -99,10 +103,46 @@ def _apply_import_from(node: ast.ImportFrom, prov: _ImportProvenance) -> None:
 
 def _apply_import(node: ast.Import, prov: _ImportProvenance) -> None:
     for alias in node.names:
-        if alias.name != CANONICAL_CHILD_MODULE:
+        if alias.name == CANONICAL_CHILD_MODULE:
+            if alias.asname:
+                prov.child_module_aliases.add(alias.asname)
+            else:
+                prov.intergrax_roots.add("intergrax")
             continue
-        bound = alias.asname or alias.name.split(".")[-1]
-        prov.child_module_aliases.add(bound)
+        if alias.name == "intergrax" or alias.name.startswith("intergrax."):
+            bound = alias.asname or "intergrax"
+            prov.intergrax_roots.add(bound)
+
+
+def _import_from_binds_canonical_child(node: ast.ImportFrom) -> bool:
+    if node.module == CANONICAL_CHILD_MODULE and node.level == 0:
+        return any(alias.name == CANONICAL_CHILD_CLASS for alias in node.names)
+    if node.module == EXECUTION_PACKAGE_MODULE and node.level == 0:
+        return any(alias.name == "child" for alias in node.names)
+    return False
+
+
+def _import_binds_canonical_child(node: ast.Import) -> bool:
+    return any(alias.name == CANONICAL_CHILD_MODULE for alias in node.names)
+
+
+def _dotted_expr_canonical_constructor(expr: ast.expr, prov: _ImportProvenance) -> bool:
+    parts: list[str] = []
+    cur: ast.expr = expr
+    while isinstance(cur, ast.Attribute):
+        parts.append(cur.attr)
+        cur = cur.value
+    if not isinstance(cur, ast.Name):
+        return False
+    parts.append(cur.id)
+    parts.reverse()
+    if len(parts) < 2 or parts[-1] != CANONICAL_CHILD_CLASS:
+        return False
+    module_path = ".".join(parts[:-1])
+    if module_path != CANONICAL_CHILD_MODULE:
+        return False
+    root = parts[0]
+    return root in prov.intergrax_roots
 
 
 def _collect_module_import_provenance(tree: ast.Module) -> _ImportProvenance:
@@ -120,6 +160,8 @@ def _collect_module_import_provenance(tree: ast.Module) -> _ImportProvenance:
 
 def _name_refers_to_canonical_constructor(name: str, prov: _ImportProvenance) -> bool:
     if prov.local_child_execution_runner_class and name == CANONICAL_CHILD_CLASS:
+        return False
+    if name in prov.shadowed_constructor_names:
         return False
     return name in prov.constructor_names
 
@@ -145,6 +187,8 @@ def _is_canonical_constructor_call(node: ast.Call, prov: _ImportProvenance) -> b
     if isinstance(root, ast.Name):
         return _name_refers_to_canonical_constructor(root.id, prov)
     if isinstance(root, ast.Attribute):
+        if _dotted_expr_canonical_constructor(root, prov):
+            return True
         return _attribute_is_canonical_constructor(root.value, root.attr, prov)
     return False
 
@@ -167,6 +211,7 @@ def _assignment_targets_canonical_rebind(
 class ChildRunnerDiscoveryResult:
     surfaces: set[str] = field(default_factory=set)
     rebind_violations: list[str] = field(default_factory=list)
+    class_body_import_violations: list[str] = field(default_factory=list)
 
 
 class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
@@ -203,11 +248,45 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self.visit_FunctionDef(node)  # type: ignore[arg-type]
 
+    def _in_class_body_scope(self) -> bool:
+        return bool(self._class_stack) and not self._function_stack
+
+    def _record_constructor_shadow(self, name: str) -> None:
+        prov = self._current_prov()
+        if name not in prov.constructor_names:
+            return
+        enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
+        self.result.rebind_violations.append(f"{self._rel_path}::{enclosing}: shadow {name}")
+        prov.shadowed_constructor_names.add(name)
+
+    def visit_Import(self, node: ast.Import) -> None:
+        if self._in_class_body_scope() and _import_binds_canonical_child(node):
+            enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
+            self.result.class_body_import_violations.append(
+                f"{self._rel_path}::{enclosing}: class-body canonical import",
+            )
+            return
+        _apply_import(node, self._current_prov())
+        self.generic_visit(node)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> None:
+        if self._in_class_body_scope() and _import_from_binds_canonical_child(node):
+            enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
+            self.result.class_body_import_violations.append(
+                f"{self._rel_path}::{enclosing}: class-body canonical import",
+            )
+            return
+        _apply_import_from(node, self._current_prov())
+        self.generic_visit(node)
+
     def visit_Assign(self, node: ast.Assign) -> None:
         prov = self._current_prov()
         for name in _assignment_targets_canonical_rebind(node.targets, node.value, prov):
             enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
             self.result.rebind_violations.append(f"{self._rel_path}::{enclosing}: rebind {name}")
+        for target in node.targets:
+            if isinstance(target, ast.Name):
+                self._record_constructor_shadow(target.id)
         self.generic_visit(node)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
@@ -216,6 +295,8 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
             for name in _assignment_targets_canonical_rebind([node.target], node.value, prov):
                 enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
                 self.result.rebind_violations.append(f"{self._rel_path}::{enclosing}: rebind {name}")
+        if isinstance(node.target, ast.Name):
+            self._record_constructor_shadow(node.target.id)
         self.generic_visit(node)
 
     def visit_Call(self, node: ast.Call) -> None:
@@ -255,12 +336,15 @@ def discover_canonical_constructor_rebinding_violations() -> list[str]:
     for py_path in _iter_intergrax_production_py_files():
         rel = str(py_path.relative_to(repo_root())).replace("\\", "/")
         text = py_path.read_text(encoding="utf-8")
-        violations.extend(analyze_child_execution_runner_discovery(rel, text).rebind_violations)
+        result = analyze_child_execution_runner_discovery(rel, text)
+        violations.extend(result.rebind_violations)
+        violations.extend(result.class_body_import_violations)
     return violations
 
 
 def discover_canonical_constructor_rebindings_in_source(rel_path: str, source: str) -> list[str]:
-    return analyze_child_execution_runner_discovery(rel_path, source).rebind_violations
+    result = analyze_child_execution_runner_discovery(rel_path, source)
+    return [*result.rebind_violations, *result.class_body_import_violations]
 
 
 class _WireHostProfileVisitor(ast.NodeVisitor):
