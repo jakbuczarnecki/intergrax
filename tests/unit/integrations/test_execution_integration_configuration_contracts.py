@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Any, cast
+
 import pytest
 
 from intergrax.integrations.contracts.base import IntegrationCategory
@@ -190,3 +193,100 @@ def test_adoption_retains_original_binding_instance() -> None:
     binding = _binding()
     adoption = _adoption(binding)
     assert adoption.configured_binding is binding
+
+
+def test_effective_reject_raw_string_integration_category() -> None:
+    with pytest.raises(ExecutionIntegrationConfigurationAdoptionError) as exc:
+        EffectiveIntegrationIdentity(
+            integration_category=cast(Any, "relational_store"),
+            provider_id="sqlite",
+            materialization_kind=IntegrationMaterializationKind.CATALOG_FACTORY,
+        )
+    assert (
+        exc.value.reason
+        == ExecutionIntegrationConfigurationAdoptionFailureReason.CONFIGURED_ADOPTION_CATEGORY_MISMATCH
+    )
+
+
+def test_effective_reject_raw_string_materialization_kind() -> None:
+    with pytest.raises(ExecutionIntegrationConfigurationAdoptionError) as exc:
+        EffectiveIntegrationIdentity(
+            integration_category=IntegrationCategory.RELATIONAL_STORE,
+            provider_id="sqlite",
+            materialization_kind=cast(Any, "catalog_factory"),
+        )
+    assert (
+        exc.value.reason
+        == ExecutionIntegrationConfigurationAdoptionFailureReason.EFFECTIVE_PROVIDER_IDENTITY_UNAVAILABLE
+    )
+
+
+def test_adoption_reject_raw_string_integration_category() -> None:
+    binding = _binding()
+    with pytest.raises(ExecutionIntegrationConfigurationAdoptionError) as exc:
+        ExecutionIntegrationConfigurationAdoption(
+            configured_binding=binding,
+            integration_category=cast(Any, "relational_store"),
+            resource_scope="scope-a",
+        )
+    assert (
+        exc.value.reason
+        == ExecutionIntegrationConfigurationAdoptionFailureReason.CONFIGURED_ADOPTION_CATEGORY_MISMATCH
+    )
+
+
+@dataclass
+class _BindingLookalike:
+    tenant_id: str
+    integration_category: IntegrationCategory
+    provider_id: str
+    resource_scope: str
+    configuration_type: str
+    configuration_version: str
+    configuration_fingerprint: str
+
+
+def test_adoption_reject_configured_binding_lookalike() -> None:
+    lookalike = _BindingLookalike(
+        tenant_id="tenant-a",
+        integration_category=IntegrationCategory.RELATIONAL_STORE,
+        provider_id="sqlite",
+        resource_scope="scope-a",
+        configuration_type="test.config.v1",
+        configuration_version="1",
+        configuration_fingerprint="fp-bind-1",
+    )
+    with pytest.raises(ExecutionIntegrationConfigurationAdoptionError) as exc:
+        ExecutionIntegrationConfigurationAdoption(
+            configured_binding=cast(Any, lookalike),
+            integration_category=IntegrationCategory.RELATIONAL_STORE,
+            resource_scope="scope-a",
+        )
+    assert (
+        exc.value.reason
+        == ExecutionIntegrationConfigurationAdoptionFailureReason.CONFIGURED_ADOPTION_REQUIRED_BUT_MISSING
+    )
+
+
+def test_adoption_reject_binding_raw_string_integration_category() -> None:
+    binding = ConfiguredCapabilityBinding(
+        tenant_id="tenant-a",
+        integration_category=cast(Any, "relational_store"),
+        provider_id="sqlite",
+        resource_scope="scope-a",
+        configuration_type="test.config.v1",
+        configuration_version="1",
+        configuration_fingerprint="fp-bind-1",
+    )
+    with pytest.raises(ExecutionIntegrationConfigurationAdoptionError) as exc:
+        validate_execution_integration_configuration_adoption(
+            ExecutionIntegrationConfigurationAdoption(
+                configured_binding=binding,
+                integration_category=IntegrationCategory.RELATIONAL_STORE,
+                resource_scope="scope-a",
+            )
+        )
+    assert (
+        exc.value.reason
+        == ExecutionIntegrationConfigurationAdoptionFailureReason.CONFIGURED_ADOPTION_CATEGORY_MISMATCH
+    )

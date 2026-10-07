@@ -4,6 +4,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+from typing import Any, cast
+
 import pytest
 
 from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
@@ -193,6 +196,105 @@ def test_subject_ordering_deterministic() -> None:
         configuration_type="t",
     )
     assert a < b
+
+
+def test_subject_reject_raw_string_integration_category() -> None:
+    with pytest.raises(ValueError, match="integration_category"):
+        IntegrationConfigurationSubject(
+            integration_category=cast(Any, "relational_store"),
+            provider_id="sqlite",
+            resource_scope="scope-a",
+            configuration_type="test.config.v1",
+        )
+
+
+def test_configured_slice_reject_raw_string_integration_category() -> None:
+    with pytest.raises(ValueError, match="integration_category"):
+        ConfiguredIntegrationProvenanceSlice(
+            tenant_id="tenant-a",
+            integration_category=cast(Any, "relational_store"),
+            provider_id="sqlite",
+            resource_scope="scope-a",
+            configuration_type="test.config.v1",
+            configuration_version="1",
+            configuration_fingerprint="fp-prov-1",
+        )
+
+
+def test_provenance_reject_raw_string_mode_configured_adopted() -> None:
+    with pytest.raises(ValueError, match="unknown provenance mode"):
+        ExecutionIntegrationConfigurationProvenance(
+            tenant_id="tenant-a",
+            execution_id=_EXEC,
+            mode=cast(Any, "configured_adopted"),
+            effective=_effective(),
+            configured=_configured_slice(),
+        )
+
+
+def test_provenance_reject_raw_string_mode_effective_only() -> None:
+    with pytest.raises(ValueError, match="unknown provenance mode"):
+        ExecutionIntegrationConfigurationProvenance(
+            tenant_id="tenant-a",
+            execution_id=_EXEC,
+            mode=cast(Any, "effective_only"),
+            effective=_effective(),
+            configured=None,
+        )
+
+
+@dataclass
+class _EffectiveLookalike:
+    integration_category: IntegrationCategory
+    provider_id: str
+    materialization_kind: IntegrationMaterializationKind
+
+
+@dataclass
+class _ConfiguredSliceLookalike:
+    tenant_id: str
+    integration_category: IntegrationCategory
+    provider_id: str
+    resource_scope: str
+    configuration_type: str
+    configuration_version: str
+    configuration_fingerprint: str
+
+
+def test_provenance_reject_effective_lookalike() -> None:
+    lookalike = _EffectiveLookalike(
+        integration_category=IntegrationCategory.RELATIONAL_STORE,
+        provider_id="sqlite",
+        materialization_kind=IntegrationMaterializationKind.CATALOG_FACTORY,
+    )
+    with pytest.raises(ValueError, match="effective identity invalid"):
+        ExecutionIntegrationConfigurationProvenance(
+            tenant_id="tenant-a",
+            execution_id=_EXEC,
+            mode=ExecutionIntegrationConfigurationProvenanceMode.EFFECTIVE_ONLY,
+            effective=cast(Any, lookalike),
+            configured=None,
+        )
+
+
+def test_provenance_reject_configured_lookalike() -> None:
+    lookalike = _ConfiguredSliceLookalike(
+        tenant_id="tenant-a",
+        integration_category=IntegrationCategory.RELATIONAL_STORE,
+        provider_id="sqlite",
+        resource_scope="scope-a",
+        configuration_type="test.config.v1",
+        configuration_version="1",
+        configuration_fingerprint="fp-prov-1",
+    )
+    with pytest.raises(ValueError, match="configured provenance slice invalid"):
+        ExecutionIntegrationConfigurationProvenance(
+            tenant_id="tenant-a",
+            execution_id=_EXEC,
+            mode=ExecutionIntegrationConfigurationProvenanceMode.CONFIGURED_ADOPTED,
+            effective=_effective(),
+            configured=cast(Any, lookalike),
+        )
 
 
 def test_record_validator_rejects_tenant_mismatch() -> None:

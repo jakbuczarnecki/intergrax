@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any, cast
 
 import pytest
 
@@ -216,3 +217,51 @@ def test_opportunity_has_no_permission_fields() -> None:
     opp = _opportunity()
     assert not hasattr(opp, "authorization_evidence")
     assert not hasattr(opp, "policy_action")
+
+
+def test_facts_reject_raw_string_integration_category() -> None:
+    with pytest.raises(ExistingCapabilityConfigurationOpportunityLookupError) as exc:
+        ExistingCapabilityConfigurationOpportunityFacts(
+            tenant_id="tenant-a",
+            integration_category=cast(Any, "relational_store"),
+            provider_id="sqlite",
+            resource_scope="scope-a",
+            current_revision="rev-1",
+            configuration=_payload(),
+            configuration_fingerprint="fp-test-001",
+        )
+    assert exc.value.reason == ExistingCapabilityConfigurationOpportunityLookupFailureReason.INVALID
+
+
+def test_opportunity_reject_raw_string_integration_category() -> None:
+    facts = _facts()
+    with pytest.raises(ExistingCapabilityConfigurationOpportunityLookupError) as exc:
+        ExistingCapabilityConfigurationOpportunity(
+            configuration_ref=validate_configuration_opportunity_ref("opp-ref-001"),
+            tenant_id=facts.tenant_id,
+            integration_category=cast(Any, "relational_store"),
+            provider_id=facts.provider_id,
+            resource_scope=facts.resource_scope,
+            current_revision=facts.current_revision,
+            configuration=facts.configuration,
+            configuration_fingerprint=facts.configuration_fingerprint,
+            risk_classification=ControlPlaneMutationRisk.HIGH,
+        )
+    assert exc.value.reason == ExistingCapabilityConfigurationOpportunityLookupFailureReason.INVALID
+
+
+def test_opportunity_reject_raw_string_risk_classification() -> None:
+    facts = _facts()
+    with pytest.raises(ExistingCapabilityConfigurationOpportunityLookupError) as exc:
+        ExistingCapabilityConfigurationOpportunity(
+            configuration_ref=validate_configuration_opportunity_ref("opp-ref-001"),
+            tenant_id=facts.tenant_id,
+            integration_category=facts.integration_category,
+            provider_id=facts.provider_id,
+            resource_scope=facts.resource_scope,
+            current_revision=facts.current_revision,
+            configuration=facts.configuration,
+            configuration_fingerprint=facts.configuration_fingerprint,
+            risk_classification=cast(Any, "low"),
+        )
+    assert exc.value.reason == ExistingCapabilityConfigurationOpportunityLookupFailureReason.INVALID

@@ -13,6 +13,7 @@ from intergrax.contracts.execution_identity import ExecutionId, validate_executi
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.execution_integration_configuration import (
     EffectiveIntegrationIdentity,
+    validate_effective_integration_identity,
 )
 
 
@@ -91,6 +92,9 @@ def require_tenant_id_for_integration_configuration_provenance(tenant_id: str) -
 def validate_integration_configuration_subject(
     subject: IntegrationConfigurationSubject,
 ) -> None:
+    category = subject.integration_category
+    if not isinstance(category, IntegrationCategory):
+        raise ValueError("integration configuration subject integration_category invalid")
     provider = subject.provider_id
     if type(provider) is not str or not provider or provider != provider.strip():
         raise ValueError("integration configuration subject provider_id invalid")
@@ -105,6 +109,9 @@ def validate_integration_configuration_subject(
 def validate_configured_integration_provenance_slice(
     slice_: ConfiguredIntegrationProvenanceSlice,
 ) -> None:
+    category = slice_.integration_category
+    if not isinstance(category, IntegrationCategory):
+        raise ValueError("configured provenance integration_category invalid")
     tenant = slice_.tenant_id
     if type(tenant) is not str or not tenant or tenant != tenant.strip():
         raise ValueError("configured provenance tenant_id invalid")
@@ -135,8 +142,17 @@ def validate_execution_integration_configuration_provenance(
     require_tenant_id_for_integration_configuration_provenance(provenance.tenant_id)
     validate_execution_id(provenance.execution_id)
     mode = provenance.mode
+    if not isinstance(mode, ExecutionIntegrationConfigurationProvenanceMode):
+        raise ValueError("unknown provenance mode")
     configured = provenance.configured
     effective = provenance.effective
+    if not isinstance(effective, EffectiveIntegrationIdentity):
+        raise ValueError("provenance effective identity invalid")
+    validate_effective_integration_identity(effective)
+    if configured is not None and not isinstance(
+        configured, ConfiguredIntegrationProvenanceSlice
+    ):
+        raise ValueError("configured provenance slice invalid")
     if mode == ExecutionIntegrationConfigurationProvenanceMode.CONFIGURED_ADOPTED:
         if configured is None:
             raise ValueError("CONFIGURED_ADOPTED requires configured slice")
@@ -150,8 +166,6 @@ def validate_execution_integration_configuration_provenance(
     elif mode == ExecutionIntegrationConfigurationProvenanceMode.EFFECTIVE_ONLY:
         if configured is not None:
             raise ValueError("EFFECTIVE_ONLY forbids configured slice")
-    else:
-        raise ValueError("unknown provenance mode")
 
 
 def validate_execution_integration_configuration_provenance_record(

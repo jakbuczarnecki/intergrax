@@ -93,6 +93,12 @@ class ExistingCapabilityConfigurationOpportunity:
 def validate_existing_capability_configuration_opportunity_facts(
     facts: ExistingCapabilityConfigurationOpportunityFacts,
 ) -> None:
+    category = facts.integration_category
+    if not isinstance(category, IntegrationCategory):
+        raise ExistingCapabilityConfigurationOpportunityLookupError(
+            ExistingCapabilityConfigurationOpportunityLookupFailureReason.INVALID,
+            detail="invalid integration_category",
+        )
     tenant = facts.tenant_id
     if type(tenant) is not str or not tenant or tenant != tenant.strip():
         raise ExistingCapabilityConfigurationOpportunityLookupError(
@@ -135,6 +141,18 @@ def validate_existing_capability_configuration_opportunity(
     opportunity: ExistingCapabilityConfigurationOpportunity,
 ) -> None:
     validate_configuration_opportunity_ref(opportunity.configuration_ref)
+    category = opportunity.integration_category
+    if not isinstance(category, IntegrationCategory):
+        raise ExistingCapabilityConfigurationOpportunityLookupError(
+            ExistingCapabilityConfigurationOpportunityLookupFailureReason.INVALID,
+            detail="invalid integration_category",
+        )
+    risk = opportunity.risk_classification
+    if not isinstance(risk, ControlPlaneMutationRisk):
+        raise ExistingCapabilityConfigurationOpportunityLookupError(
+            ExistingCapabilityConfigurationOpportunityLookupFailureReason.INVALID,
+            detail="invalid risk_classification",
+        )
     tenant = opportunity.tenant_id
     if type(tenant) is not str or not tenant or tenant != tenant.strip():
         raise ExistingCapabilityConfigurationOpportunityLookupError(

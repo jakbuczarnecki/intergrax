@@ -11,6 +11,7 @@ import subprocess
 import pytest
 
 from tests.qualification.trace_x._trace_x_p5_r2_p1_support import (
+    TRACE_X_P5_R2_P1_R1_START_HEAD,
     TRACE_X_P5_R2_P1_START_HEAD,
     a0_low_mapping_violations,
     category_value_fallback_violations,
@@ -19,6 +20,7 @@ from tests.qualification.trace_x._trace_x_p5_r2_p1_support import (
     neutral_provenance_import_violations,
     production_caller_migration_violations,
     reader_surface_violations,
+    semantic_enum_runtime_isinstance_violations,
 )
 
 pytestmark = [pytest.mark.qualification, pytest.mark.gate]
@@ -62,6 +64,17 @@ def test_txp5r2p1_q01_start_head_ancestry() -> None:
     subprocess.check_call(
         ["git", "merge-base", "--is-ancestor", TRACE_X_P5_R2_P1_START_HEAD, "HEAD"],
     )
+
+
+def test_txp5r2p1_r1_q01_start_head_ancestry() -> None:
+    subprocess.check_call(
+        ["git", "merge-base", "--is-ancestor", TRACE_X_P5_R2_P1_R1_START_HEAD, "HEAD"],
+    )
+
+
+def test_txp5r2p1_r1_q02_semantic_enum_runtime_isinstance_gates() -> None:
+    violations = semantic_enum_runtime_isinstance_violations()
+    assert not violations, violations
 
 
 def test_txp5r2p1_q02_required_contract_symbols_exist() -> None:

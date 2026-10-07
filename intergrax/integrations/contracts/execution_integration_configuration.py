@@ -72,6 +72,18 @@ class ExecutionIntegrationConfigurationAdoption:
 def validate_effective_integration_identity(
     identity: EffectiveIntegrationIdentity,
 ) -> None:
+    category = identity.integration_category
+    if not isinstance(category, IntegrationCategory):
+        raise ExecutionIntegrationConfigurationAdoptionError(
+            ExecutionIntegrationConfigurationAdoptionFailureReason.CONFIGURED_ADOPTION_CATEGORY_MISMATCH,
+            detail="invalid effective integration_category",
+        )
+    materialization = identity.materialization_kind
+    if not isinstance(materialization, IntegrationMaterializationKind):
+        raise ExecutionIntegrationConfigurationAdoptionError(
+            ExecutionIntegrationConfigurationAdoptionFailureReason.EFFECTIVE_PROVIDER_IDENTITY_UNAVAILABLE,
+            detail="invalid materialization_kind",
+        )
     provider = identity.provider_id
     if type(provider) is not str or not provider or provider != provider.strip():
         raise ExecutionIntegrationConfigurationAdoptionError(
@@ -123,12 +135,29 @@ def validate_configured_capability_binding_identity(
             ExecutionIntegrationConfigurationAdoptionFailureReason.CONFIGURED_ADOPTION_REQUIRED_BUT_MISSING,
             detail="invalid binding configuration_fingerprint",
         )
+    category = binding.integration_category
+    if not isinstance(category, IntegrationCategory):
+        raise ExecutionIntegrationConfigurationAdoptionError(
+            ExecutionIntegrationConfigurationAdoptionFailureReason.CONFIGURED_ADOPTION_CATEGORY_MISMATCH,
+            detail="invalid binding integration_category",
+        )
 
 
 def validate_execution_integration_configuration_adoption(
     adoption: ExecutionIntegrationConfigurationAdoption,
 ) -> None:
     binding = adoption.configured_binding
+    if not isinstance(binding, ConfiguredCapabilityBinding):
+        raise ExecutionIntegrationConfigurationAdoptionError(
+            ExecutionIntegrationConfigurationAdoptionFailureReason.CONFIGURED_ADOPTION_REQUIRED_BUT_MISSING,
+            detail="invalid configured_binding",
+        )
+    category = adoption.integration_category
+    if not isinstance(category, IntegrationCategory):
+        raise ExecutionIntegrationConfigurationAdoptionError(
+            ExecutionIntegrationConfigurationAdoptionFailureReason.CONFIGURED_ADOPTION_CATEGORY_MISMATCH,
+            detail="invalid adoption integration_category",
+        )
     validate_configured_capability_binding_identity(binding)
     if binding.integration_category != adoption.integration_category:
         raise ExecutionIntegrationConfigurationAdoptionError(
