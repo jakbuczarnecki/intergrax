@@ -1,7 +1,8 @@
 {
-  "schema_version": "trace_x_p5_r1_r1_q1_resume_baseline_v1",
+  "schema_version": "trace_x_p5_r1_r1_q2_resume_baseline_v2",
   "qualification_id": "TRACE-X-P5-R1-R1-Q1",
   "generated_from_q1_start_head": "a452de39a721cd357be3ba5ecd0c3a6d41b630bd",
+  "generated_from_q2_start_head": "538af9ef51a6ca483f607988481ef2794deb87b9",
   "python_version": "3.12.11",
   "pytest_version": "8.4.2",
   "baseline": {
@@ -15,13 +16,19 @@
       "tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed",
       "tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision"
     ],
-    "exception_types": [
-      "CheckpointResumeValidationError",
-      "CheckpointResumeValidationError"
-    ],
-    "stable_failure_signatures": [
-      "tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed|CheckpointResumeValidationError|checkpoint missing canonical runtime identity",
-      "tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision|CheckpointResumeValidationError|checkpoint task_id mismatch: 'task_<REDACTED>' != 'task_<REDACTED>'"
+    "failures": [
+      {
+        "node_id": "tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed",
+        "exception_type": "CheckpointResumeValidationError",
+        "semantic_message": "checkpoint missing canonical runtime identity",
+        "stable_signature": "tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed|CheckpointResumeValidationError|checkpoint missing canonical runtime identity"
+      },
+      {
+        "node_id": "tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision",
+        "exception_type": "CheckpointResumeValidationError",
+        "semantic_message": "checkpoint task_id mismatch: 'task_<REDACTED>' != 'task_<REDACTED>'",
+        "stable_signature": "tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision|CheckpointResumeValidationError|checkpoint task_id mismatch: 'task_<REDACTED>' != 'task_<REDACTED>'"
+      }
     ]
   },
   "current": {
@@ -34,13 +41,19 @@
       "tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed",
       "tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision"
     ],
-    "exception_types": [
-      "CheckpointResumeValidationError",
-      "CheckpointResumeValidationError"
-    ],
-    "stable_failure_signatures": [
-      "tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed|CheckpointResumeValidationError|checkpoint missing canonical runtime identity",
-      "tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision|CheckpointResumeValidationError|checkpoint task_id mismatch: 'task_<REDACTED>' != 'task_<REDACTED>'"
+    "failures": [
+      {
+        "node_id": "tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed",
+        "exception_type": "CheckpointResumeValidationError",
+        "semantic_message": "checkpoint missing canonical runtime identity",
+        "stable_signature": "tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed|CheckpointResumeValidationError|checkpoint missing canonical runtime identity"
+      },
+      {
+        "node_id": "tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision",
+        "exception_type": "CheckpointResumeValidationError",
+        "semantic_message": "checkpoint task_id mismatch: 'task_<REDACTED>' != 'task_<REDACTED>'",
+        "stable_signature": "tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision|CheckpointResumeValidationError|checkpoint task_id mismatch: 'task_<REDACTED>' != 'task_<REDACTED>'"
+      }
     ]
   },
   "comparison": {

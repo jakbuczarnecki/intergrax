@@ -15,6 +15,8 @@ from intergrax.runtime.execution.environment_host_task_execution import (
     build_environment_host_task_execution,
 )
 from tests.qualification.trace_x._trace_x_p5_r1_child_discovery import (
+    discover_canonical_constructor_rebinding_violations,
+    discover_canonical_constructor_rebindings_in_source,
     discover_child_execution_runner_constructor_surfaces,
     discover_child_execution_runner_surfaces_in_source,
     discover_wire_host_effective_profile_execution_roots,
@@ -31,13 +33,16 @@ from tests.qualification.trace_x._trace_x_p5_r1_child_registry import (
 )
 from tests.qualification.trace_x._trace_x_p5_r1_resume_evidence import (
     RESUME_BASELINE_SHA,
+    RESUME_EVIDENCE_SCHEMA_VERSION,
     RESUME_TEST_NODE_IDS,
+    derive_resume_comparison,
     load_resume_baseline_evidence,
     validate_resume_baseline_evidence,
     validate_resume_baseline_payload,
 )
 from tests.qualification.trace_x._trace_x_p5_r1_support import (
     TRACE_X_P5_R1_R1_Q1_START_HEAD,
+    TRACE_X_P5_R1_R1_Q2_START_HEAD,
     TRACE_X_P5_R1_START_HEAD,
     child_runner_profile_resolution_import_violations,
     discover_profile_aware_environment_host_roots,
@@ -137,6 +142,8 @@ def test_txp5r1_q13_child_runner_registry_classification_explicit() -> None:
 def test_txp5r1_q14_child_runner_new_surface_sentinel_fails_parity() -> None:
     rel = "intergrax/synthetic/child_runner_sentinel_module.py"
     source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
 class SyntheticChildHost:
     def __init__(self) -> None:
         self._new_runner = ChildExecutionRunner(ledger=None)
@@ -171,11 +178,15 @@ def test_txp5r1_q16_child_runner_duplicate_registry_key_sentinel() -> None:
 def test_txp5r1_q17_child_runner_rename_resilience_sentinel() -> None:
     rel = "intergrax/synthetic/renamed_child_runner_host.py"
     source_v1 = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
 class OriginalHost:
     def __init__(self) -> None:
         self._runner = ChildExecutionRunner()
 """
     source_v2 = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
 class RenamedHost:
     def boot(self) -> None:
         self._runner = ChildExecutionRunner()
@@ -265,11 +276,17 @@ def test_txp5r1_q25_tenant_isolation_unit_tests_present() -> None:
 
 
 def test_txp5r1_q26_resume_baseline_evidence_integrity() -> None:
-    violations = validate_resume_baseline_evidence(expected_q1_start_head=TRACE_X_P5_R1_R1_Q1_START_HEAD)
+    violations = validate_resume_baseline_evidence(
+        expected_q1_start_head=TRACE_X_P5_R1_R1_Q1_START_HEAD,
+        expected_q2_start_head=TRACE_X_P5_R1_R1_Q2_START_HEAD,
+    )
     assert not violations, violations
     payload = load_resume_baseline_evidence()
+    assert payload["schema_version"] == RESUME_EVIDENCE_SCHEMA_VERSION
     assert payload["baseline"]["sha"] == RESUME_BASELINE_SHA
-    assert payload["comparison"]["conclusion"] == "PRE_EXISTING_NON_R1_REGRESSION"
+    derived = derive_resume_comparison(payload["baseline"], payload["current"])
+    assert derived.conclusion == "PRE_EXISTING_NON_R1_REGRESSION"
+    assert payload["comparison"]["conclusion"] == derived.conclusion
     assert set(payload["baseline"]["failed_test_node_ids"]) == set(RESUME_TEST_NODE_IDS)
 
 
@@ -293,7 +310,7 @@ def test_txp5r1_q28_resume_evidence_missing_failed_node_sentinel() -> None:
         payload,
         expected_q1_start_head=TRACE_X_P5_R1_R1_Q1_START_HEAD,
     )
-    assert any("missing failed node id" in v for v in violations)
+    assert any("missing failed test node" in v for v in violations)
 
 
 def test_txp5r1_q29_resume_evidence_conclusion_signature_mismatch_sentinel() -> None:
@@ -302,16 +319,235 @@ def test_txp5r1_q29_resume_evidence_conclusion_signature_mismatch_sentinel() -> 
         **payload,
         "comparison": {
             **payload["comparison"],
-            "same_failure_signatures": False,
+            "same_failure_signatures": True,
+            "conclusion": "PRE_EXISTING_NON_R1_REGRESSION",
+        },
+        "current": {
+            **payload["current"],
+            "failures": [
+                {
+                    **payload["current"]["failures"][0],
+                    "stable_signature": "tampered|CheckpointResumeValidationError|message",
+                },
+                payload["current"]["failures"][1],
+            ],
+        },
+    }
+    violations = validate_resume_baseline_payload(
+        payload,
+        expected_q1_start_head=TRACE_X_P5_R1_R1_Q1_START_HEAD,
+        expected_q2_start_head=TRACE_X_P5_R1_R1_Q2_START_HEAD,
+    )
+    assert any("inconsistent with derived" in v for v in violations)
+
+
+def test_txp5r1_q30_q1_start_head_recorded() -> None:
+    assert TRACE_X_P5_R1_R1_Q1_START_HEAD == "a452de39a721cd357be3ba5ecd0c3a6d41b630bd"
+
+
+def test_txp5r1_q31_q2_start_head_ancestry() -> None:
+    subprocess.check_call(
+        ["git", "merge-base", "--is-ancestor", TRACE_X_P5_R1_R1_Q2_START_HEAD, "HEAD"],
+    )
+
+
+def test_txp5r1_q32_child_runner_no_production_rebinding() -> None:
+    violations = discover_canonical_constructor_rebinding_violations()
+    assert not violations, violations
+
+
+def test_txp5r1_q33_child_runner_alias_import_sentinel_unknown() -> None:
+    rel = "intergrax/synthetic/child_runner_alias_import.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner as CER
+
+class NewHost:
+    def __init__(self):
+        self.runner = CER()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    key = f"{rel}::NewHost.__init__"
+    assert key in discovered
+    result = compare_child_runner_surfaces_to_registry(discovered)
+    assert key in {f"{p}::{e}" for p, e in result.unknown}
+
+
+def test_txp5r1_q34_child_runner_qualified_module_import_sentinel_unknown() -> None:
+    rel = "intergrax/synthetic/child_runner_qualified_module.py"
+    source = """
+import intergrax.runtime.execution.child as child_exec
+
+def build_runner():
+    return child_exec.ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    key = f"{rel}::build_runner"
+    assert key in discovered
+    result = compare_child_runner_surfaces_to_registry(discovered)
+    assert key in {f"{p}::{e}" for p, e in result.unknown}
+
+
+def test_txp5r1_q35_child_runner_local_shadow_not_canonical() -> None:
+    rel = "intergrax/synthetic/child_runner_local_shadow.py"
+    source = """
+class ChildExecutionRunner:
+    pass
+
+class ShadowHost:
+    def __init__(self):
+        ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert not discovered
+
+
+def test_txp5r1_q36_child_runner_forbidden_rebind_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_rebind.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+class RebindHost:
+    def __init__(self):
+        Runner = ChildExecutionRunner
+        Runner()
+"""
+    violations = discover_canonical_constructor_rebindings_in_source(rel, source)
+    assert violations
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert not discovered
+
+
+def test_txp5r1_q37_child_runner_execution_subpackage_import_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_subpackage_import.py"
+    source = """
+from intergrax.runtime.execution import child
+
+def build_runner():
+    return child.ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert f"{rel}::build_runner" in discovered
+
+
+def test_txp5r1_q38_resume_evidence_baseline_extra_failed_sentinel() -> None:
+    payload = load_resume_baseline_evidence()
+    extra = "tests/unit/applications/test_effective_profile_revision_adoption.py::test_extra"
+    payload = {
+        **payload,
+        "baseline": {
+            **payload["baseline"],
+            "failed_test_node_ids": [*payload["baseline"]["failed_test_node_ids"], extra],
+            "failed": 3,
+        },
+    }
+    violations = validate_resume_baseline_payload(
+        payload,
+        expected_q1_start_head=TRACE_X_P5_R1_R1_Q1_START_HEAD,
+        expected_q2_start_head=TRACE_X_P5_R1_R1_Q2_START_HEAD,
+    )
+    assert any("extra failed" in v for v in violations)
+
+
+def test_txp5r1_q39_resume_evidence_current_missing_failed_sentinel() -> None:
+    payload = load_resume_baseline_evidence()
+    payload = {
+        **payload,
+        "current": {
+            **payload["current"],
+            "failed_test_node_ids": [RESUME_TEST_NODE_IDS[0]],
+            "failed": 1,
+        },
+    }
+    violations = validate_resume_baseline_payload(
+        payload,
+        expected_q1_start_head=TRACE_X_P5_R1_R1_Q1_START_HEAD,
+        expected_q2_start_head=TRACE_X_P5_R1_R1_Q2_START_HEAD,
+    )
+    assert any("missing failed" in v for v in violations)
+
+
+def test_txp5r1_q40_resume_evidence_failed_count_mismatch_sentinel() -> None:
+    payload = load_resume_baseline_evidence()
+    payload = {
+        **payload,
+        "baseline": {**payload["baseline"], "failed": 99},
+    }
+    violations = validate_resume_baseline_payload(
+        payload,
+        expected_q1_start_head=TRACE_X_P5_R1_R1_Q1_START_HEAD,
+        expected_q2_start_head=TRACE_X_P5_R1_R1_Q2_START_HEAD,
+    )
+    assert any("failed count mismatch" in v for v in violations)
+
+
+def test_txp5r1_q41_resume_evidence_exception_type_mismatch_sentinel() -> None:
+    payload = load_resume_baseline_evidence()
+    failures = list(payload["current"]["failures"])
+    failures[0] = {**failures[0], "exception_type": "RuntimeError"}
+    payload = {**payload, "current": {**payload["current"], "failures": failures}}
+    violations = validate_resume_baseline_payload(
+        payload,
+        expected_q1_start_head=TRACE_X_P5_R1_R1_Q1_START_HEAD,
+        expected_q2_start_head=TRACE_X_P5_R1_R1_Q2_START_HEAD,
+    )
+    assert any("unexpected exception" in v or "inconsistent with derived" in v for v in violations)
+
+
+def test_txp5r1_q42_resume_evidence_serialized_same_failed_tests_lie_sentinel() -> None:
+    payload = load_resume_baseline_evidence()
+    payload = {
+        **payload,
+        "current": {
+            **payload["current"],
+            "failed_test_node_ids": [RESUME_TEST_NODE_IDS[0]],
+            "failed": 1,
+        },
+        "comparison": {**payload["comparison"], "same_failed_tests": True},
+    }
+    violations = validate_resume_baseline_payload(
+        payload,
+        expected_q1_start_head=TRACE_X_P5_R1_R1_Q1_START_HEAD,
+        expected_q2_start_head=TRACE_X_P5_R1_R1_Q2_START_HEAD,
+    )
+    assert any("same_failed_tests inconsistent" in v for v in violations)
+
+
+def test_txp5r1_q43_resume_evidence_serialized_regression_lie_sentinel() -> None:
+    payload = load_resume_baseline_evidence()
+    failures = list(payload["current"]["failures"])
+    failures[0] = {**failures[0], "stable_signature": "x|y|z"}
+    payload = {
+        **payload,
+        "current": {**payload["current"], "failures": failures},
+        "comparison": {**payload["comparison"], "regression_detected": False},
+    }
+    violations = validate_resume_baseline_payload(
+        payload,
+        expected_q1_start_head=TRACE_X_P5_R1_R1_Q1_START_HEAD,
+        expected_q2_start_head=TRACE_X_P5_R1_R1_Q2_START_HEAD,
+    )
+    assert any("regression_detected inconsistent" in v for v in violations)
+
+
+def test_txp5r1_q44_resume_evidence_serialized_conclusion_lie_sentinel() -> None:
+    payload = load_resume_baseline_evidence()
+    failures = list(payload["current"]["failures"])
+    failures[0] = {**failures[0], "exception_type": "RuntimeError"}
+    payload = {
+        **payload,
+        "current": {**payload["current"], "failures": failures},
+        "comparison": {
+            **payload["comparison"],
             "conclusion": "PRE_EXISTING_NON_R1_REGRESSION",
         },
     }
     violations = validate_resume_baseline_payload(
         payload,
         expected_q1_start_head=TRACE_X_P5_R1_R1_Q1_START_HEAD,
+        expected_q2_start_head=TRACE_X_P5_R1_R1_Q2_START_HEAD,
     )
-    assert any("same_failure_signatures" in v for v in violations)
+    assert any("conclusion inconsistent" in v for v in violations)
 
 
-def test_txp5r1_q30_q1_start_head_recorded() -> None:
-    assert TRACE_X_P5_R1_R1_Q1_START_HEAD == "a452de39a721cd357be3ba5ecd0c3a6d41b630bd"
+def test_txp5r1_q45_q2_start_head_recorded() -> None:
+    assert TRACE_X_P5_R1_R1_Q2_START_HEAD == "538af9ef51a6ca483f607988481ef2794deb87b9"

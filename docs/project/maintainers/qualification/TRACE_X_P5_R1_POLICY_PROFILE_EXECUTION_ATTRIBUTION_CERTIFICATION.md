@@ -9,8 +9,11 @@
 | P5-R1 START_HEAD | `98c0d9d7ae9763bce931c60e19b6a91af3a2f4e9` |
 | P5-R1-R1 START_HEAD | `65f7e1ef4832d99a19be7953734a42d5bd5cbb4f` |
 | P5-R1-R1-Q1 START_HEAD | `a452de39a721cd357be3ba5ecd0c3a6d41b630bd` |
+| P5-R1-R1-Q2 START_HEAD | `538af9ef51a6ca483f607988481ef2794deb87b9` |
+| Q2 FINAL_COMMIT | _(placeholder until qualification commit)_ |
 | FINAL_COMMIT | _(see git push output)_ |
-| TRACE-X-P5-R1-R1-Q1 | **READY FOR AUDIT** (qualification remediation; not CLOSED) |
+| TRACE-X-P5-R1-R1-Q1 | **READY FOR INDEPENDENT RE-AUDIT** (qualification remediation; not CLOSED) |
+| TRACE-X-P5-R1-R1-Q2 | **READY FOR AUDIT** (import-provenance discovery + derived resume comparison; not CLOSED) |
 | TRACE-X-P5-R1-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 | TRACE-X-P5-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 
@@ -23,9 +26,13 @@
 | P5-R1-REVISION-REF-OWNERSHIP-03 | `EffectiveProfileRevisionProvenanceRef` is opaque (non-empty str only); no `effprof_rev_` / suffix grammar in neutral contract. |
 | P5-R1-RESUME-BASELINE-04 | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED / PRE-EXISTING** — committed machine evidence `docs/project/maintainers/qualification/TRACE_X_P5_R1_R1_Q1_RESUME_BASELINE_EVIDENCE.json` (baseline `98c0d9d7…`, Q1 head `a452de39…`, conclusion `PRE_EXISTING_NON_R1_REGRESSION`). Owner: Profile Resolution / checkpoint-resume qualification. |
 
-## Child execution inventory (closed-world AST discovery @ Q1)
+## Child execution inventory (import-provenance AST discovery @ Q2)
 
-Mechanical discovery + registry parity: `tests/qualification/trace_x/_trace_x_p5_r1_child_discovery.py`, `tests/qualification/trace_x/_trace_x_p5_r1_child_registry.py`, gates `test_txp5r1_q12`–`q24`.
+Mechanical discovery resolves canonical `intergrax.runtime.execution.child.ChildExecutionRunner` from import provenance (direct import, `as` alias, `import … child as …`, and `from intergrax.runtime.execution import child`). Local class shadowing and canonical-constructor rebinding (`Runner = ChildExecutionRunner`) are rejected mechanically. Registry parity: `tests/qualification/trace_x/_trace_x_p5_r1_child_discovery.py`, `tests/qualification/trace_x/_trace_x_p5_r1_child_registry.py`, gates `test_txp5r1_q12`–`q24`, `q31`–`q37`.
+
+## Resume baseline evidence (@ Q2)
+
+Committed artifact `TRACE_X_P5_R1_R1_Q1_RESUME_BASELINE_EVIDENCE.json` schema `trace_x_p5_r1_r1_q2_resume_baseline_v2`: structured `failures[]` per test node; comparison fields are derived from baseline/current and must match the serialized `comparison` projection (gates `test_txp5r1_q26`, `q38`–`q44`). R1-R1 implementation comparison SHA remains `a452de39…`; baseline SHA remains `98c0d9d7…`.
 
 | Surface key | Classification | Inheritance |
 |---|---|---|
