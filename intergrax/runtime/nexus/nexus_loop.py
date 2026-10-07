@@ -35,6 +35,9 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.execution.graph_builder import plan_to_execution_graph
+from intergrax.contracts.child_execution_context_inheritance import (
+    ChildExecutionContextInheritancePort,
+)
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.planning.nexus_planner_protocol import (
     NexusTaskPlannerProtocol,
@@ -275,6 +278,7 @@ class NexusLoop:
             ExecutionContinuationStateStore
         ] = None,
         disable_execution_continuation: bool = False,
+        child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -382,6 +386,7 @@ class NexusLoop:
             execution_identity=self._execution_identity,
             authority_policy=authority_policy,
             budget_allocation_policy=budget_allocation_policy,
+            child_context_inheritance=child_context_inheritance,
         )
         self._composer = FinalResponseComposer(merge_strategy=merge_strategy)
         self._lifecycle = lifecycle

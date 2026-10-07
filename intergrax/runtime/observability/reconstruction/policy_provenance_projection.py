@@ -14,6 +14,11 @@ from intergrax.contracts.execution_reconstruction_policy_provenance import (
 )
 from intergrax.contracts.positioned_runtime_event import PositionedRuntimeEvent
 from intergrax.contracts.runtime_event_type import RuntimeEventType
+from intergrax.runtime.events.payload_registry import (
+    RuntimeEventPayloadError,
+    UnknownPayloadSchemaError,
+    validate_payload_envelope,
+)
 from intergrax.runtime.events.payloads.spine_families import PolicyDecisionSpinePayloadV1
 from intergrax.runtime.events.spine_payload_codec import legacy_spine_payload_to_typed
 
@@ -39,14 +44,32 @@ def project_policy_decision_provenance(
             raise ExecutionReconstructionIntegrityError(
                 "policy decision event run scope mismatch in reconstruction boundary"
             )
-        typed, _promote = legacy_spine_payload_to_typed(
-            RuntimeEventType.POLICY_DECISION,
-            dict(event.payload),
-        )
-        if not isinstance(typed, PolicyDecisionSpinePayloadV1):
-            raise ExecutionReconstructionIntegrityError(
-                "policy decision payload could not be decoded to typed spine payload"
+        payload = dict(event.payload)
+        if payload.get("payload_schema_id") is not None:
+            try:
+                typed_envelope = validate_payload_envelope(payload)
+            except (RuntimeEventPayloadError, UnknownPayloadSchemaError) as exc:
+                raise ExecutionReconstructionIntegrityError(
+                    "policy decision typed payload envelope failed validation"
+                ) from exc
+            if typed_envelope is None:
+                raise ExecutionReconstructionIntegrityError(
+                    "policy decision payload_schema_id present without typed envelope"
+                )
+            if not isinstance(typed_envelope, PolicyDecisionSpinePayloadV1):
+                raise ExecutionReconstructionIntegrityError(
+                    "policy decision typed envelope is not PolicyDecisionSpinePayloadV1"
+                )
+            typed = typed_envelope
+        else:
+            typed, _promote = legacy_spine_payload_to_typed(
+                RuntimeEventType.POLICY_DECISION,
+                payload,
             )
+            if not isinstance(typed, PolicyDecisionSpinePayloadV1):
+                raise ExecutionReconstructionIntegrityError(
+                    "policy decision payload could not be decoded to typed spine payload"
+                )
         _require_non_empty(typed.evidence_id, field="evidence_id")
         _require_non_empty(typed.evaluation_point, field="evaluation_point")
         _require_non_empty(typed.policy_bundle_id, field="policy_bundle_id")

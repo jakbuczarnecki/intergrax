@@ -25,6 +25,9 @@ from intergrax.runtime.execution.budget.policy import (
     DefaultSharedPoolBudgetPolicy,
     ExecutionBudgetAllocationPolicy,
 )
+from intergrax.contracts.child_execution_context_inheritance import (
+    ChildExecutionContextInheritancePort,
+)
 from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.request import ExecutionRequest
 from intergrax.runtime.nexus.budget.budget_models import RunBudget
@@ -71,11 +74,15 @@ class ChildExecutionWorkPort(Generic[InputT, OutputT, ResultT]):
         delegate: ExecutionDelegate[ExecutionRequest[InputT, OutputT], ResultT],
         *,
         ledger: ExecutionBudgetLedger | None = None,
+        child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
     ) -> None:
         self._child_runner = ChildExecutionRunner[
             ExecutionRequest[InputT, OutputT],
             ResultT,
-        ](ledger=ledger)
+        ](
+            ledger=ledger,
+            child_context_inheritance=child_context_inheritance,
+        )
         self._delegate = delegate
 
     async def execute(
@@ -92,9 +99,14 @@ def child_execution_work_port(
     delegate: ExecutionDelegate[ExecutionRequest[InputT, OutputT], ResultT],
     *,
     ledger: ExecutionBudgetLedger | None = None,
+    child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
 ) -> ChildExecutionWorkPort[InputT, OutputT, ResultT]:
     """Build a child-work port backed by canonical child execution lineage."""
-    return ChildExecutionWorkPort(delegate, ledger=ledger)
+    return ChildExecutionWorkPort(
+        delegate,
+        ledger=ledger,
+        child_context_inheritance=child_context_inheritance,
+    )
 
 
 class _DelegatedSpecialistEnvelopeDelegate(
@@ -125,7 +137,12 @@ class DelegatedSubtaskChildExecutionWorkPort(
 
     __slots__ = ("_child_runner", "_delegate")
 
-    def __init__(self, *, ledger: ExecutionBudgetLedger | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        ledger: ExecutionBudgetLedger | None = None,
+        child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
+    ) -> None:
         self._delegate = _DelegatedSpecialistEnvelopeDelegate[
             DelegatedRequestT,
             DelegatedResultT,
@@ -138,7 +155,10 @@ class DelegatedSubtaskChildExecutionWorkPort(
                 DelegatedResultT,
             ],
             DelegatedResultT,
-        ](ledger=ledger)
+        ](
+            ledger=ledger,
+            child_context_inheritance=child_context_inheritance,
+        )
 
     async def execute(
         self,
@@ -171,9 +191,13 @@ class DelegatedSubtaskChildExecutionWorkPort(
 def delegated_subtask_child_execution_work_port(
     *,
     ledger: ExecutionBudgetLedger | None = None,
+    child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
 ) -> DelegatedSubtaskChildExecutionWorkPort[DelegatedRequestT, DelegatedResultT]:
     """Build canonical delegated-subtask child work port at composition root."""
-    return DelegatedSubtaskChildExecutionWorkPort(ledger=ledger)
+    return DelegatedSubtaskChildExecutionWorkPort(
+        ledger=ledger,
+        child_context_inheritance=child_context_inheritance,
+    )
 
 
 WorkT = TypeVar("WorkT")
@@ -195,6 +219,7 @@ class DelegatedProviderChildExecutionEngine(Generic[WorkT, ChildResultT]):
         ledger: ExecutionBudgetLedger | None = None,
         authority_policy: ExecutionAuthorityPolicy | None = None,
         budget_policy: ExecutionBudgetAllocationPolicy | None = None,
+        child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
     ) -> None:
         self._child_runner = ChildExecutionRunner[WorkT, ChildResultT](
             authority_policy=(
@@ -208,6 +233,7 @@ class DelegatedProviderChildExecutionEngine(Generic[WorkT, ChildResultT]):
                 else DefaultSharedPoolBudgetPolicy()
             ),
             ledger=ledger,
+            child_context_inheritance=child_context_inheritance,
         )
 
     async def execute(

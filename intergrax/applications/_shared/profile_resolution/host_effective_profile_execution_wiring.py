@@ -36,6 +36,12 @@ from intergrax.applications.contracts.profile_resolution.activation import (
 )
 from intergrax.distributed.contracts.kv_store import DistributedKVStore
 from intergrax.integrations.contracts.document_store import DocumentStore
+from intergrax.applications._shared.profile_resolution.profile_resolution_child_context_inheritance_adapter import (
+    build_profile_resolution_child_context_inheritance_adapter,
+)
+from intergrax.contracts.child_execution_context_inheritance import (
+    ChildExecutionContextInheritancePort,
+)
 from intergrax.runtime.execution.effective_profile_revision_admission import (
     EffectiveProfileRevisionAdmissionPort,
 )
@@ -49,6 +55,7 @@ class HostEffectiveProfileExecutionWiring:
     profile_resolution: ProfileResolution
     persistence: EffectiveProfilePersistenceWiring
     revision_admission: EffectiveProfileRevisionAdmissionPort
+    child_context_inheritance: ChildExecutionContextInheritancePort
 
 
 def wire_host_effective_profile_execution(
@@ -107,11 +114,16 @@ def wire_host_effective_profile_execution(
             scope=revision_scope,
         ),
     )
+    child_context_inheritance = build_profile_resolution_child_context_inheritance_adapter(
+        tenant_id=tenant_id,
+        pinning_store=persistence.pinning_store,
+    )
     return HostEffectiveProfileExecutionWiring(
         effective_environment=effective_environment,
         profile_resolution=profile_resolution,
         persistence=persistence,
         revision_admission=admission,
+        child_context_inheritance=child_context_inheritance,
     )
 
 

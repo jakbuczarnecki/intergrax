@@ -101,6 +101,7 @@ def materialize_host_orchestration_backend(
         execution_lineage_persistence=spec.execution_lineage_persistence,
         execution_continuation_state_store=spec.execution_continuation_state_store,
         governance_evidence_recorder=spec.governance_evidence_recorder,
+        child_context_inheritance=spec.child_context_inheritance,
     )
     if spec.application_wiring is not None:
         apply_host_orchestration_application_wiring_bundle(backend, spec.application_wiring)

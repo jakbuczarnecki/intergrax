@@ -481,6 +481,7 @@ def build_scenario_runtime_from_environment(
     orchestration_spec = build_host_orchestration_loop_init_spec_from_environment(
         registry,
         env=effective_environment,
+        child_context_inheritance=host_profile.child_context_inheritance,
         trace_store=observability.trace_store,
         idempotency_store=reliability_wiring.idempotency_store,
         declarative_tool_invoker=declarative_tool_invoker,

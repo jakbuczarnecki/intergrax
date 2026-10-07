@@ -14,6 +14,9 @@ from intergrax.runtime.execution.budget import (
 from intergrax.runtime.execution.delegated_subtask_child_port import (
     child_execution_port_from_work_port,
 )
+from intergrax.contracts.child_execution_context_inheritance import (
+    ChildExecutionContextInheritancePort,
+)
 from intergrax.runtime.execution.execution_work_port import (
     DelegatedSubtaskChildExecutionWorkPort,
     delegated_subtask_child_execution_work_port,
@@ -40,6 +43,7 @@ def build_production_delegated_subtask_child_execution_port(
     *,
     run_budget: RunBudget | None = None,
     ledger: ExecutionBudgetLedger | None = None,
+    child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
 ) -> ProductionDelegatedSubtaskChildExecutionPort:
     """
     Build canonical ``ChildExecutionPort`` at the production composition root.
@@ -50,7 +54,10 @@ def build_production_delegated_subtask_child_execution_port(
     resolved_ledger = (
         ledger if ledger is not None else create_execution_budget_ledger(run_budget)
     )
-    work_port = delegated_subtask_child_execution_work_port(ledger=resolved_ledger)
+    work_port = delegated_subtask_child_execution_work_port(
+        ledger=resolved_ledger,
+        child_context_inheritance=child_context_inheritance,
+    )
     return ProductionDelegatedSubtaskChildExecutionPort(_work_port=work_port)
 
 

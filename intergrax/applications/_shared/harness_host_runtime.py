@@ -517,10 +517,21 @@ def build_harness_host_runtime(
     resolved_compensation_queue_store = resolve_host_compensation_queue_store(
         checkpoints_db_path=checkpoints_db_path,
     )
+    from intergrax.applications._shared.profile_resolution.profile_resolution_child_context_inheritance_adapter import (
+        build_profile_resolution_child_context_inheritance_adapter,
+    )
+
+    profile_child_context_inheritance = (
+        build_profile_resolution_child_context_inheritance_adapter(
+            tenant_id=revision_scope.tenant_id,
+            pinning_store=profile_persistence.pinning_store,
+        )
+    )
     orchestration_spec = build_host_orchestration_loop_init_spec_from_environment(
         resolved_registry,
         env=effective_environment,
         governance_evidence_recorder=orchestration_governance_evidence_recorder,
+        child_context_inheritance=profile_child_context_inheritance,
         trace_store=observability.trace_store,
         checkpoint_store=checkpoint_store,
         agent_checkpoint_store=resolved_agent_checkpoint_store,

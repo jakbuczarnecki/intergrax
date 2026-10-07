@@ -15,6 +15,9 @@ from intergrax.runtime.task_memory.persistence_contract import TaskMemoryPersist
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
 from intergrax.applications._shared.adaptive_wiring import ApplicationAdaptiveWiring
+from intergrax.contracts.child_execution_context_inheritance import (
+    ChildExecutionContextInheritancePort,
+)
 from intergrax.runtime.execution.application_environment_context_composition import (
     resolve_context_manager_from_environment,
 )
@@ -153,6 +156,7 @@ def build_host_orchestration_loop_init_spec_from_environment(
     execution_lineage_persistence: ExecutionLineagePersistence | None = None,
     execution_continuation_state_store: ExecutionContinuationStateStore | None = None,
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None,
+    child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
 ) -> HostOrchestrationLoopInitSpec:
     """Resolve typed Execution Engine orchestration backend inputs from the environment."""
     validate_strict_host_execution_capacity(env)
@@ -305,6 +309,7 @@ def build_host_orchestration_loop_init_spec_from_environment(
         execution_continuation_state_store=execution_continuation_state_store,
         governance_evidence_recorder=governance_evidence_recorder,
         application_wiring=wiring_bundle,
+        child_context_inheritance=child_context_inheritance,
     )
 
 
