@@ -14,7 +14,7 @@
 | P5-R1-R1-Q4 START_HEAD | `ea1e4947fe66c120bb502885dc912e5f98698339` |
 | Q2 FINAL_COMMIT | _(placeholder until qualification commit)_ |
 | Q3 FINAL_COMMIT | `0146f6a862339e5c6eefbf53b5622bf3e8491db5` |
-| Q4 FINAL_COMMIT | _(see git push output)_ |
+| Q4 FINAL_COMMIT | `41c36b4ad8983fd0c90a4c9513d28de124a07538` |
 | FINAL_COMMIT | _(see git push output)_ |
 | TRACE-X-P5-R1-R1-Q1 | **READY FOR INDEPENDENT RE-AUDIT** (qualification remediation; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q2 | **READY FOR INDEPENDENT RE-AUDIT** (derived resume comparison; not CLOSED) |
