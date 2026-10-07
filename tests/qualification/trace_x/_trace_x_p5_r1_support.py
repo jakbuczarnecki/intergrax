@@ -14,6 +14,8 @@ from tests.qualification.trace_x._trace_x_p5_discovery import repo_root
 
 TRACE_X_P5_R1_START_HEAD: Final[str] = "98c0d9d7ae9763bce931c60e19b6a91af3a2f4e9"
 TRACE_X_P5_R1_AUDITED_HEAD: Final[str] = "65f7e1ef4832d99a19be7953734a42d5bd5cbb4f"
+TRACE_X_P5_R1_R1_AUDITED_SHA: Final[str] = "a452de39a721cd357be3ba5ecd0c3a6d41b630bd"
+TRACE_X_P5_R1_R1_Q1_START_HEAD: Final[str] = TRACE_X_P5_R1_R1_AUDITED_SHA
 
 _NEUTRAL_REVISION_REF_PATH = (
     repo_root() / "intergrax" / "contracts" / "effective_profile_revision_provenance_ref.py"
@@ -23,7 +25,7 @@ _CHILD_RUNNER_FORBIDDEN_IMPORT_PREFIXES: Final[tuple[str, ...]] = (
     "intergrax.applications.contracts.profile_resolution",
 )
 _CHILD_RUNNER_SCAN_ROOTS: Final[tuple[Path, ...]] = (
-    repo_root() / "intergrax" / "runtime" / "execution" / "child.py",
+    repo_root() / "intergrax" / "runtime" / "execution",
     repo_root() / "intergrax" / "runtime" / "nexus",
 )
 _PROFILE_CHILD_ADAPTER_PATH = (
@@ -134,6 +136,63 @@ def profile_aware_orchestration_spec_wiring_gaps() -> list[str]:
         if "child_context_inheritance" not in text:
             missing.append(str(path.relative_to(repo_root())))
     return missing
+
+
+def global_profile_child_inheritance_structural_chain_gaps() -> list[str]:
+    """Mechanical typed-parameter chain host spec → materialization → NexusLoop → GraphExecutor."""
+    checks: list[tuple[Path, str]] = [
+        (
+            repo_root() / "intergrax" / "runtime" / "execution" / "host_orchestration_loop_init_spec.py",
+            "child_context_inheritance",
+        ),
+        (
+            repo_root() / "intergrax" / "runtime" / "execution" / "environment_orchestration_materialization.py",
+            "spec.child_context_inheritance",
+        ),
+        (
+            repo_root() / "intergrax" / "runtime" / "nexus" / "nexus_loop.py",
+            "child_context_inheritance=child_context_inheritance",
+        ),
+        (
+            repo_root() / "intergrax" / "runtime" / "nexus" / "execution" / "graph_executor.py",
+            "child_context_inheritance=child_context_inheritance",
+        ),
+    ]
+    gaps: list[str] = []
+    for path, needle in checks:
+        text = path.read_text(encoding="utf-8")
+        if needle not in text:
+            gaps.append(f"{path.relative_to(repo_root())}: missing {needle}")
+    return gaps
+
+
+def production_child_identity_mint_surface_violations() -> list[str]:
+    """No extra production child minters beyond ChildExecutionRunner → default_execution_identity_authority."""
+    allowed_implementations = frozenset(
+        {
+            "intergrax/runtime/execution/child.py",
+            "intergrax/runtime/execution/identity_authority.py",
+            "intergrax/contracts/execution_identity_authority.py",
+        },
+    )
+    violations: list[str] = []
+    for root in (
+        repo_root() / "intergrax" / "runtime" / "execution",
+        repo_root() / "intergrax" / "runtime" / "nexus",
+    ):
+        for path in root.rglob("*.py"):
+            rel = str(path.relative_to(repo_root())).replace("\\", "/")
+            if rel in allowed_implementations:
+                continue
+            text = path.read_text(encoding="utf-8")
+            if "mint_child_execution_identity" in text:
+                violations.append(rel)
+    child_py = (repo_root() / "intergrax" / "runtime" / "execution" / "child.py").read_text(
+        encoding="utf-8",
+    )
+    if "default_execution_identity_authority.mint_child_execution_identity" not in child_py:
+        violations.append("child.py missing canonical default_execution_identity_authority mint path")
+    return violations
 
 
 def discover_profile_aware_environment_host_roots() -> list[str]:

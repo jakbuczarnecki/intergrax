@@ -1,0 +1,53 @@
+{
+  "schema_version": "trace_x_p5_r1_r1_q1_resume_baseline_v1",
+  "qualification_id": "TRACE-X-P5-R1-R1-Q1",
+  "generated_from_q1_start_head": "a452de39a721cd357be3ba5ecd0c3a6d41b630bd",
+  "python_version": "3.12.11",
+  "pytest_version": "8.4.2",
+  "baseline": {
+    "sha": "98c0d9d7ae9763bce931c60e19b6a91af3a2f4e9",
+    "command": "uv run pytest tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision -p no:xdist --tb=short -q",
+    "execution_method": "git archive extract to ephemeral directory; uv run pytest from extracted tree",
+    "exit_code": 1,
+    "passed": 0,
+    "failed": 2,
+    "failed_test_node_ids": [
+      "tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed",
+      "tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision"
+    ],
+    "exception_types": [
+      "CheckpointResumeValidationError",
+      "CheckpointResumeValidationError"
+    ],
+    "stable_failure_signatures": [
+      "tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed|CheckpointResumeValidationError|checkpoint missing canonical runtime identity",
+      "tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision|CheckpointResumeValidationError|checkpoint task_id mismatch: 'task_<REDACTED>' != 'task_<REDACTED>'"
+    ]
+  },
+  "current": {
+    "sha_or_worktree_head": "a452de39a721cd357be3ba5ecd0c3a6d41b630bd",
+    "command": "uv run pytest tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision -p no:xdist --tb=short -q",
+    "exit_code": 1,
+    "passed": 0,
+    "failed": 2,
+    "failed_test_node_ids": [
+      "tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed",
+      "tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision"
+    ],
+    "exception_types": [
+      "CheckpointResumeValidationError",
+      "CheckpointResumeValidationError"
+    ],
+    "stable_failure_signatures": [
+      "tests/unit/applications/test_effective_profile_revision_adoption.py::test_missing_binding_on_resume_fails_closed|CheckpointResumeValidationError|checkpoint missing canonical runtime identity",
+      "tests/unit/applications/test_effective_profile_revision_adoption.py::test_resume_preserves_pinned_revision_not_current_host_revision|CheckpointResumeValidationError|checkpoint task_id mismatch: 'task_<REDACTED>' != 'task_<REDACTED>'"
+    ]
+  },
+  "comparison": {
+    "same_failed_tests": true,
+    "same_exception_types": true,
+    "same_failure_signatures": true,
+    "regression_detected": false,
+    "conclusion": "PRE_EXISTING_NON_R1_REGRESSION"
+  }
+}

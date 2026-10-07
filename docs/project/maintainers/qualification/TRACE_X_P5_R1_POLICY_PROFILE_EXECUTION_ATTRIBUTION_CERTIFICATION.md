@@ -5,10 +5,13 @@
 | Field | Value |
 |---|---|
 | R1 audited SHA | `65f7e1ef4832d99a19be7953734a42d5bd5cbb4f` |
+| R1-R1 implementation SHA | `a452de39a721cd357be3ba5ecd0c3a6d41b630bd` |
 | P5-R1 START_HEAD | `98c0d9d7ae9763bce931c60e19b6a91af3a2f4e9` |
 | P5-R1-R1 START_HEAD | `65f7e1ef4832d99a19be7953734a42d5bd5cbb4f` |
+| P5-R1-R1-Q1 START_HEAD | `a452de39a721cd357be3ba5ecd0c3a6d41b630bd` |
 | FINAL_COMMIT | _(see git push output)_ |
-| TRACE-X-P5-R1-R1 | **READY FOR AUDIT** (remediation; not CLOSED) |
+| TRACE-X-P5-R1-R1-Q1 | **READY FOR AUDIT** (qualification remediation; not CLOSED) |
+| TRACE-X-P5-R1-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 | TRACE-X-P5-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 
 ## Independent audit findings (R1 @ `65f7e1ef…`) — R1-R1 remediation
@@ -18,19 +21,24 @@
 | P5-R1-POLICY-CANONICAL-READ-01 | `policy_provenance_projection` uses typed envelope via `validate_payload_envelope` when `payload_schema_id` is present; legacy path only when absent. E2E: governance fact → `ValidatingEvidencePersistencePort` → reconstruction. |
 | P5-R1-CHILD-PROFILE-PINNING-02 | Neutral `ChildExecutionContextInheritancePort` + `ProfileResolutionChildContextInheritanceAdapter` wired through `ChildExecutionRunner` → `GraphExecutor` → `NexusLoop` → profile-aware host/scenario spec. |
 | P5-R1-REVISION-REF-OWNERSHIP-03 | `EffectiveProfileRevisionProvenanceRef` is opaque (non-empty str only); no `effprof_rev_` / suffix grammar in neutral contract. |
-| P5-R1-RESUME-BASELINE-04 | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED / PRE-EXISTING** — same `CheckpointResumeValidationError` on `98c0d9d7…` archive and current HEAD (see `.tmp/session/trace-x-p5-r1-r1/resume-baseline-98c0.log`). Owner: Profile Resolution / checkpoint resume test harness alignment. |
+| P5-R1-RESUME-BASELINE-04 | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED / PRE-EXISTING** — committed machine evidence `docs/project/maintainers/qualification/TRACE_X_P5_R1_R1_Q1_RESUME_BASELINE_EVIDENCE.json` (baseline `98c0d9d7…`, Q1 head `a452de39…`, conclusion `PRE_EXISTING_NON_R1_REGRESSION`). Owner: Profile Resolution / checkpoint-resume qualification. |
 
-## Child execution inventory (production `ChildExecutionRunner` surfaces)
+## Child execution inventory (closed-world AST discovery @ Q1)
 
-| Surface | Classification | Inheritance wired |
+Mechanical discovery + registry parity: `tests/qualification/trace_x/_trace_x_p5_r1_child_discovery.py`, `tests/qualification/trace_x/_trace_x_p5_r1_child_registry.py`, gates `test_txp5r1_q12`–`q24`.
+
+| Surface key | Classification | Inheritance |
 |---|---|---|
-| `runtime/nexus/execution/graph_executor.py` | PROFILE-AWARE PRODUCTION (via host spec) | yes (`child_context_inheritance`) |
-| `runtime/execution/execution_work_port.py` (`ChildExecutionWorkPort`, delegated ports) | GENERIC PRODUCTION (optional param) | when composition supplies port |
-| `applications/_shared/production_delegated_subtask_child_execution_wiring.py` | GENERIC PRODUCTION (optional param) | when composition supplies port |
-| `runtime/execution/delegated_subtask_child_port.py` | INTERNAL SANCTIONED wrapper | via injected runner |
-| Tests / lab | TEST/QUALIFICATION | N/A |
+| `intergrax/runtime/nexus/execution/graph_executor.py::GraphExecutor.__init__` | PROFILE_AWARE_CAPABLE_PRODUCTION | forwards `child_context_inheritance` |
+| `intergrax/runtime/execution/execution_work_port.py::ChildExecutionWorkPort.__init__` | GENERIC_PRODUCTION | optional injection |
+| `intergrax/runtime/execution/execution_work_port.py::DelegatedSubtaskChildExecutionWorkPort.__init__` | GENERIC_PRODUCTION | optional injection |
+| `intergrax/runtime/execution/execution_work_port.py::DelegatedProviderChildExecutionEngine.__init__` | GENERIC_PRODUCTION | optional injection |
 
-Child identity owner unchanged: `ChildExecutionRunner` → `default_execution_identity_authority.mint_child_execution_identity()`.
+Profile-aware `wire_host_effective_profile_execution` root: `scenario_runtime_baseline.py::build_scenario_runtime_from_environment` (harness uses direct adapter wiring; gate `test_txp5r1_q09`).
+
+`ProductionAgentCapabilityRuntime` → `build_production_delegated_subtask_child_execution_port` → `DelegatedSubtaskChildExecutionWorkPort` → `ChildExecutionRunner`: **GENERIC_PRODUCTION** (no effective-profile host ownership; drift watch `test_txp5r1_q22`).
+
+Child identity owner unchanged: `ChildExecutionRunner` → `default_execution_identity_authority.mint_child_execution_identity()` (gate `test_txp5r1_q24`).
 
 ## Scope delivered
 
