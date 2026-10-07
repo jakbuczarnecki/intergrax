@@ -213,9 +213,13 @@ def build_diagnostic_read_service(
     elif overrides is not None and overrides.execution_reconstruction_reader is not None:
         reader = overrides.execution_reconstruction_reader
     else:
+        profile_reader = None
+        if overrides is not None:
+            profile_reader = overrides.execution_effective_profile_provenance_reader
         reader = build_default_execution_reconstruction_reader(
             dependencies.persistence,
             execution_lineage_reader=dependencies.execution_lineage_reader,
+            execution_effective_profile_provenance_reader=profile_reader,
         )
     return DiagnosticReadService(
         problem_persistence=dependencies.problem_persistence,

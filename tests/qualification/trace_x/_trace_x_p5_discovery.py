@@ -29,6 +29,9 @@ _PROFILE_REVISION_PAIR: Final[frozenset[str]] = frozenset({"revision_id", "finge
 _PROFILE_EXECUTION_BINDING: Final[frozenset[str]] = frozenset(
     {"tenant_id", "execution_id", "revision_id"},
 )
+_PROFILE_PROVENANCE_PROJECTION: Final[frozenset[str]] = frozenset(
+    {"tenant_id", "execution_id", "revision_ref", "fingerprint"},
+)
 _PROFILE_SCOPE_FIELDS: Final[frozenset[str]] = frozenset({"application_id", "tenant_id"})
 _CONFIG_FINGERPRINT_PAIR: Final[frozenset[str]] = frozenset(
     {"configuration_fingerprint", "configuration_version"},
@@ -152,6 +155,8 @@ def _is_profile_revision_class(class_def: ast.ClassDef, fields: frozenset[str]) 
         return True
     if _PROFILE_EXECUTION_BINDING <= fields:
         return True
+    if _PROFILE_PROVENANCE_PROJECTION <= fields:
+        return True
     if _PROFILE_SCOPE_FIELDS <= fields and fields <= _PROFILE_SCOPE_FIELDS | frozenset({"revision_id"}):
         return True
     if _PROFILE_SCOPE_FIELDS <= fields and len(fields) <= 2:
@@ -212,6 +217,12 @@ def _is_profile_revision_protocol(class_def: ast.ClassDef) -> bool:
                     return True
     if "admit_root_execution" in method_names:
         return True
+    if "read" in method_names:
+        for node in class_def.body:
+            if isinstance(node, ast.FunctionDef) and node.name == "read":
+                params = _method_param_names(node)
+                if {"tenant_id", "execution_id"} <= params:
+                    return True
     return False
 
 

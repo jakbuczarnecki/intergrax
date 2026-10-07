@@ -21,6 +21,9 @@ from intergrax.runtime.execution.application_host_orchestration_session import (
     ApplicationHostOrchestrationSession,
     HostOrchestrationTraceLifecycleControl,
 )
+from intergrax.runtime.execution.effective_profile_revision_admission import (
+    EffectiveProfileRevisionAdmissionPort,
+)
 from intergrax.runtime.execution.environment_host_task_execution import (
     build_environment_host_task_execution,
 )
@@ -42,6 +45,7 @@ def compose_application_host_orchestration_session(
     *,
     root_authority_admission: RootExecutionAuthorityAdmissionPort,
     admit_root_governance_identity: Callable[[Task], AdmittedRootGovernanceIdentity],
+    revision_admission: EffectiveProfileRevisionAdmissionPort,
     orchestration_triggers: frozenset[str] | None = None,
     pipeline_capability_suffix: str | None = None,
 ) -> tuple[ApplicationHostOrchestrationSession, EnvironmentOrchestrationMaterialization]:
@@ -58,6 +62,7 @@ def compose_application_host_orchestration_session(
         env,
         orchestration_triggers=orchestration_triggers,
         pipeline_capability_suffix=pipeline_capability_suffix,
+        revision_admission=revision_admission,
         root_authority_admission=root_authority_admission,
         admit_root_governance_identity=admit_root_governance_identity,
     )

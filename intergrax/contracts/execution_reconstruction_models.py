@@ -14,6 +14,13 @@ from intergrax.contracts.execution_reconstruction_lineage import (
     ExecutionLineageReadStatus,
     ReconstructedAttemptLineage,
 )
+from intergrax.contracts.execution_effective_profile_provenance import (
+    ExecutionEffectiveProfileProvenance,
+    ExecutionEffectiveProfileProvenanceReadStatus,
+)
+from intergrax.contracts.execution_reconstruction_policy_provenance import (
+    ReconstructedPolicyDecisionProvenance,
+)
 from intergrax.contracts.platform_causal_evidence import PlatformCausalEvidence
 from intergrax.contracts.positioned_runtime_event import PositionedRuntimeEvent
 
@@ -77,6 +84,11 @@ class ExecutionReconstruction:
     runtime_history_completeness: RuntimeHistoryCompleteness
     attempt_discovery_read_status: ExecutionAttemptDiscoveryReadStatus | None = None
     attempt_discovery_completeness: ExecutionAttemptDiscoveryCompleteness | None = None
+    policy_decision_provenance: tuple[ReconstructedPolicyDecisionProvenance, ...] = ()
+    execution_effective_profile_provenance: tuple[ExecutionEffectiveProfileProvenance, ...] = ()
+    effective_profile_provenance_read_status: (
+        ExecutionEffectiveProfileProvenanceReadStatus
+    ) = ExecutionEffectiveProfileProvenanceReadStatus.NOT_CONFIGURED
 
     @property
     def attempt_count(self) -> int:
@@ -126,4 +138,7 @@ __all__ = [
     "ExecutionReconstructionIntegrityError",
     "ReconstructedAttempt",
     "RuntimeHistoryCompleteness",
+    "ReconstructedPolicyDecisionProvenance",
+    "ExecutionEffectiveProfileProvenance",
+    "ExecutionEffectiveProfileProvenanceReadStatus",
 ]

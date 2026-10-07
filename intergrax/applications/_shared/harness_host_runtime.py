@@ -375,14 +375,32 @@ def build_harness_host_runtime(
         application_tool_registry=application_tool_registry,
         application_skill_registry=application_skill_registry,
     )
-    if diagnostic_composition_overrides is not None:
-        env_wiring = replace(
-            env_wiring,
-            composition=replace(
-                env_wiring.composition,
-                diagnostic_composition_overrides=diagnostic_composition_overrides,
-            ),
+    from intergrax.applications._shared.profile_resolution.execution_effective_profile_provenance_reader import (
+        PinningStoreExecutionEffectiveProfileProvenanceReader,
+    )
+
+    profile_provenance_reader = PinningStoreExecutionEffectiveProfileProvenanceReader(
+        profile_persistence.pinning_store,
+    )
+    merged_diagnostic_overrides = diagnostic_composition_overrides
+    if merged_diagnostic_overrides is None:
+        merged_diagnostic_overrides = DiagnosticCompositionOverrides(
+            execution_effective_profile_provenance_reader=profile_provenance_reader,
         )
+    elif (
+        merged_diagnostic_overrides.execution_effective_profile_provenance_reader is None
+    ):
+        merged_diagnostic_overrides = replace(
+            merged_diagnostic_overrides,
+            execution_effective_profile_provenance_reader=profile_provenance_reader,
+        )
+    env_wiring = replace(
+        env_wiring,
+        composition=replace(
+            env_wiring.composition,
+            diagnostic_composition_overrides=merged_diagnostic_overrides,
+        ),
+    )
     assembly_mode = resolve_registry_assembly_mode(
         effective_environment,
         explicit=registry_assembly_mode,
