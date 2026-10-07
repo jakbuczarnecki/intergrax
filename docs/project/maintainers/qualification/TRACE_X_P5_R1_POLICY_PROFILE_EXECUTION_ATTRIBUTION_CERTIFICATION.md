@@ -16,7 +16,7 @@
 | Q2 FINAL_COMMIT | _(placeholder until qualification commit)_ |
 | Q3 FINAL_COMMIT | `0146f6a862339e5c6eefbf53b5622bf3e8491db5` |
 | Q4 FINAL_COMMIT | `41c36b4ad8983fd0c90a4c9513d28de124a07538` |
-| Q5 FINAL_COMMIT | _(placeholder until qualification commit)_ |
+| Q5 FINAL_COMMIT | `a6e04f2c1959674c477d591b5a9d8012d16eb80a` |
 | FINAL_COMMIT | _(see git push output)_ |
 | TRACE-X-P5-R1-R1-Q1 | **READY FOR INDEPENDENT RE-AUDIT** (qualification remediation; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q2 | **READY FOR INDEPENDENT RE-AUDIT** (derived resume comparison; not CLOSED) |
@@ -57,7 +57,7 @@ Registry parity: `tests/qualification/trace_x/_trace_x_p5_r1_child_discovery.py`
 
 **Q5 remediation:** one authoritative `_expr_is_canonical_constructor_ref` (including generic subscript roots) shared with `_is_canonical_constructor_call`; full dotted paths require provenance `intergrax_roots` (suffix-only paths such as `other.runtime.execution.child.ChildExecutionRunner` remain false).
 
-**Q5 qualification:** production parity unchanged (`discovered = 4`, `classified = 4`, `unknown = 0`, `orphan = 0`, `duplicate = 0`, alias escapes = 0, rebind/shadow/class-body violations = 0). Sentinels `test_txp5r1_q66`–`q72`; Q5 lineage `test_txp5r1_q73`. Q5 implementation evidence SHA _(placeholder until commit)_.
+**Q5 qualification:** production parity unchanged (`discovered = 4`, `classified = 4`, `unknown = 0`, `orphan = 0`, `duplicate = 0`, alias escapes = 0, rebind/shadow/class-body violations = 0). Sentinels `test_txp5r1_q66`–`q72`; Q5 lineage `test_txp5r1_q73`. Q5 implementation evidence SHA `a6e04f2c1959674c477d591b5a9d8012d16eb80a`.
 
 Registry parity (Q5): gates `test_txp5r1_q12`–`q24`, `q31`–`q37`, `q45`–`q55`, `q56`–`q65`, `q66`–`q73`.
 
