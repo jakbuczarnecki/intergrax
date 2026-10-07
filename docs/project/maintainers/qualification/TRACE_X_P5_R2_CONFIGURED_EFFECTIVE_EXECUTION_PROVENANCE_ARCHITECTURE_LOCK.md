@@ -4,18 +4,20 @@
 
 | Field | Value |
 |---|---|
-| **Task** | `TRACE-X-P5-R2-P0` + **`TRACE-X-P5-R2-P0-R1`** + **`TRACE-X-P5-R2-P0-R1-R1`** (concrete adoption root) |
+| **Task** | `TRACE-X-P5-R2-P0` + **`TRACE-X-P5-R2-P0-R1`** + **`TRACE-X-P5-R2-P0-R1-R1`** + **`TRACE-X-P5-R2-P0-R1-R1-R1`** (configuration opportunity typing) |
 | **Parent** | `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
 | **P0 rejection baseline** | `982f945de67577865c1ade4ebbea519cf3a9b284` |
 | **P0-R1 START_HEAD** | `982f945de67577865c1ade4ebbea519cf3a9b284` |
 | **P0-R1-R1 START_HEAD / AUDIT_BASE** | `6b5b5f2e1fe2da8655e85173b24fd3221e65b602` (`development`) |
+| **P0-R1-R1-R1 START_HEAD** | `305ac4a0cb07e303ce2bb0b04c2c4520db35786b` (`development`) |
 | **Primary FRZ** | `FRZ-TRC-11` (**OPEN** — no PASS) |
 | **Blocker** | `P5-GAP-04` — no canonical global configured→effective→`ExecutionId`→evidence chain |
-| **Independent-audit blockers** | `R2-P0-EFFECTIVE-IDENTITY-PREBUILT-01` · `R2-P0-CONFIGURED-ADOPTION-AUTHORITY-02` = **RESOLVED IN DESIGN (R1)** · `R2-P0-CONCRETE-ADOPTION-ROOT-03` = **RESOLVED IN DESIGN (R1-R1)** |
+| **In-scope P0 blocker (R1-R1-R1)** | `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04` = **RESOLVED IN DESIGN (R1-R1-R1)** |
+| **Independent-audit blockers** | `R2-P0-EFFECTIVE-IDENTITY-PREBUILT-01` · `R2-P0-CONFIGURED-ADOPTION-AUTHORITY-02` = **RESOLVED IN DESIGN (R1)** · `R2-P0-CONCRETE-ADOPTION-ROOT-03` = **RESOLVED IN DESIGN (R1-R1)** · `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04` = **RESOLVED IN DESIGN (R1-R1-R1)** — pending independent audit |
 | **Production / runtime delta** | **0** (architecture + qualification design only) |
-| **Status** | **TRACE-X-P5-R2-P0-R1-R1 = READY FOR AUDIT** · **TRACE-X-P5-R2-P0-R1 = BLOCKED ON R1-R1 INDEPENDENT AUDIT** · **TRACE-X-P5-R2-P0 = BLOCKED** · **TRACE-X-P5-R2 = BLOCKED ON P0** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** |
+| **Status** | **TRACE-X-P5-R2-P0-R1-R1-R1 = READY FOR AUDIT** · **TRACE-X-P5-R2-P0-R1-R1 = BLOCKED ON R1-R1-R1 INDEPENDENT AUDIT** · **TRACE-X-P5-R2-P0-R1 = BLOCKED** · **TRACE-X-P5-R2-P0 = BLOCKED** · **TRACE-X-P5-R2 = BLOCKED ON P0** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** |
 
-**Steering sources revalidated @ P0-R1 START_HEAD:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md), [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md), [`TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md`](TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md), [`TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md`](TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md), [`INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md`](../architecture/INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md).
+**Steering sources revalidated @ P0-R1-R1-R1 START_HEAD (`305ac4a0…`):** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md), [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md), [`TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md`](TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md), [`TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md`](TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md), [`INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md`](../architecture/INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md).
 
 **Historical evidence (revalidated, not blindly trusted):** INT-CONFIG-REAL-X-CERT `a59744517b92847f55def1db22826d17d89ee155` · TRACE-X-P5-P0 `81fd1490f18d73eaf31ec94c2b93dbb525026ba2` · TRACE-X-P5-R1 `05fd5d9b2b97f9d85a534a949d882cd47d4a54c9` · P0 draft audited/rejected @ `982f945d…` (identity + adoption authority gaps).
 
@@ -339,22 +341,22 @@ provenance pin + canonical Execution
 
 `WorkerCapabilityCandidate` alone (`capability_ref`, `configuration_ref`) is **discovery/decision correlation only** — **not** a substitute for `ConfiguredCapabilityBinding` (§23).
 
-**Sanctioned enrichment (future P1 — fail closed until present):** Integrations-owned **`ExistingCapabilityConfigurationOpportunityResolver`** (name illustrative) resolves discovery refs to typed realization inputs. Autonomous Work **projects** request envelopes only; **never** parses opaque strings into provider semantics.
+**Sanctioned enrichment (future P1 — fail closed until present):** Integrations-owned **`ExistingCapabilityConfigurationOpportunityReadPort.read_exact(tenant_id, configuration_ref)`** (§1C) returns immutable **`ExistingCapabilityConfigurationOpportunity`**. Autonomous Work **projects** request envelopes only; **never** parses opaque `configuration_ref` into provider semantics.
 
 | AW / fulfillment source | INT-CONFIG `ExistingCapabilityConfigurationRealizationRequest` field | Validation | Owner |
 |---|---|---|---|
 | `WorkerCapabilityFulfillmentRequest.tenant_id` | `tenant_id` | must match principal.tenant_id | AW copy; INT-CONFIG validates |
 | `WorkerPrincipalBindingRepository` + episode context (same wiring as `build_worker_recovery_governed_fulfillment_wiring`) | `principal: RequestIdentity` | tenant match; **no AW synthesis** of admin/system identity | Applications composition supplies repository; AW reads admitted binding |
 | Derived deterministic id (fulfillment operation + decision id) | `request_id` | unique per logical attempt | AW |
-| Opportunity resolver output | `integration_category`, `provider_id`, `resource_scope`, `current_revision` | typed target; fail closed if missing | **Integrations** resolver |
-| Opportunity resolver output | `configuration: IntegrationConfigurationPayload` + `configuration_fingerprint` | fingerprint ≡ payload fingerprint | **Integrations** resolver |
-| `WorkerCapabilityCandidate.risk_class` | `risk_classification: ControlPlaneMutationRisk` | mapped enum only | AW projection (classification, not provider choice) |
+| Exact typed opportunity read | `integration_category`, `provider_id`, `resource_scope`, `current_revision` | typed target; fail closed if missing | **Integrations** read port |
+| Exact typed opportunity read | `configuration: IntegrationConfigurationPayload` + `configuration_fingerprint` | fingerprint ≡ payload fingerprint (§1C.23) | **Integrations** read port |
+| CONFIGURE_EXISTING disposition invariant (A0 only — §1C.20) | `risk_classification: ControlPlaneMutationRisk` | deterministic narrow mapping; Governance still authorizes | AW projection |
 | `WorkerCapabilityFulfillmentRequest.task_id` / `run_id` | `task_id` / `run_id` | optional correlation | AW |
 | recovery `discovery_correlation_id` | `correlation_ref` | optional | AW |
 
 **Forbidden:** infer `provider_id` / `resource_scope` / configuration body from `configuration_ref` or `capability_ref` without resolver; metadata dict gaps; latest-binding lookup.
 
-**STOP avoided:** enrichment boundary is explicit; @ `6b5b5f2e…` production discovery does not yet emit full opportunity typing — path **fails closed** until P1 resolver + contracts exist (not silent skip).
+**STOP avoided (opportunity typing):** enrichment boundary is explicit in **§1C**; @ `305ac4a0…` production has **no** Integrations-owned opportunity source — path **fails closed** until P1 contracts + read port exist (not silent skip).
 
 ### 1B.8 Principal / Governance
 
@@ -444,7 +446,9 @@ Exactly **one** sanctioned configured-adoption execution path; unknown duplicate
 | `intergrax/autonomous_work/worker_capability_fulfillment_coordinator.py` | Delegate CONFIGURE_EXISTING branch (edit in implementation wave) |
 | `intergrax/autonomous_work/worker_capability_fulfillment_composition.py` | Compose configured fulfillment + realization port |
 | `intergrax/autonomous_work/worker_recovery_governed_fulfillment_composition.py` | Wire INT-CONFIG facade + adoption consumer ports |
-| `intergrax/integrations/contracts/existing_capability_configuration_opportunity.py` (illustrative) | Opportunity resolver port + typed opportunity DTO |
+| `intergrax/integrations/contracts/existing_capability_configuration_opportunity.py` (illustrative) | `ExistingCapabilityConfigurationOpportunity` + `ExistingCapabilityConfigurationOpportunityReadPort` |
+| `intergrax/integrations/existing_capability_configuration_opportunity_service.py` (illustrative) | Integrations-owned opportunity registry/read (durable adapter optional P2) |
+| `intergrax/autonomous_work/integrations_configuration_opportunity_discovery_adapter.py` (illustrative) | AW projection: Integrations source → opaque `configuration_ref` candidates only |
 | `intergrax/integrations/execution_bound_integration_resolution.py` | Adoption consumer + provenance capture (§10.2) |
 
 Applications **wire only**; no configuration semantics in Tier-3.
@@ -471,7 +475,356 @@ Applications **wire only**; no configuration semantics in Tier-3.
 
 ### 1B.19 P0-R1-R1 STOP disposition
 
-**No STOP — ARCHITECTURE DECISION REQUIRED** for locked scope. Opportunity resolver + AW fulfillment contracts are **future P1** deliverables; enrichment boundary is named and fail-closed until implemented.
+**No STOP — ARCHITECTURE DECISION REQUIRED** for R1-R1 scope. Configuration opportunity typing was **in-scope blocker** `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04` — resolved in **§1C (R1-R1-R1)**.
+
+---
+
+## 1C. P0-R1-R1-R1 — configuration opportunity typing & exact-reference resolution (normative)
+
+**Blocker `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04`:** `WorkerCapabilityCandidate` for `EXISTING_CONFIGURATION` carries only generic discovery fields (`candidate_id`, `capability_ref`, optional `configuration_ref`, operations, `risk_class`, evidence refs) and **cannot** safely construct `ExistingCapabilityConfigurationRealizationRequest` without Integrations-owned typed opportunity facts. **Resolution:** lock Integrations-owned immutable **Configuration Opportunity** + tenant-scoped **exact read** contract; AW carries **opaque `configuration_ref` only**.
+
+**P0-R1-R1-R1 normative override:** where §1B.7 named a generic “opportunity resolver”, **§1C wins** on opportunity semantics, reference immutability, discovery ownership, and fulfillment read path. §1B orchestration graph unchanged except for the mandatory opportunity seam inserted below.
+
+### 1C.1 Architectural boundary (non-negotiable)
+
+```text
+Autonomous Work  →  selects among configuration opportunities (opaque ref)
+Integrations     →  owns opportunity contents + exact reference resolution
+```
+
+**Forbidden:** expanding `WorkerCapabilityCandidate` with `provider_id`, `integration_category`, `IntegrationConfigurationPayload`, `resource_scope`, `current_revision`, or any provider-specific configuration fields.
+
+### 1C.2 Canonical typed opportunity (future contract)
+
+Immutable Integrations-owned fact (names illustrative; semantics normative):
+
+```text
+ExistingCapabilityConfigurationOpportunity
+    configuration_ref          # Integrations-issued stable exact key
+    tenant_id
+    integration_category
+    provider_id                  # catalog identity — not effective proof
+    resource_scope
+    current_revision             # pinned at opportunity creation
+    configuration: IntegrationConfigurationPayload
+    configuration_fingerprint
+```
+
+**Excluded from opportunity (by design):** Governance authorization evidence; `RequestIdentity` / principal; materialized provider object; `ExistingCapabilityIntegrationTarget`; execution identity; effective `provider_id` observation.
+
+### 1C.3 Exact-reference read contract (future)
+
+```text
+ExistingCapabilityConfigurationOpportunityReadPort.read_exact(
+    tenant_id: str,
+    configuration_ref: str,
+) -> ExistingCapabilityConfigurationOpportunity
+```
+
+| Rule | Requirement |
+|---|---|
+| Addressing | `(tenant_id, configuration_ref)` — **not** `read(configuration_ref)` alone |
+| Cardinality | Exactly one opportunity; `0` → fail closed; `>1` → fail closed |
+| Immutability | Referenced opportunity content is immutable for that ref |
+| Opacity | AW treats `configuration_ref` as opaque; only Integrations interprets storage |
+| Latest/current | **Forbidden** — no `tenant + provider → latest` |
+
+### 1C.4 Semantic ownership
+
+| Concern | Owner |
+|---|---|
+| Opportunity contents + fingerprint/revision pinning | Integrations |
+| `configuration_ref` issuance + storage semantics | Integrations |
+| Exact read API | Integrations |
+| Capability selection among projected candidates | Autonomous Work |
+| Request envelope projection + orchestration | Autonomous Work fulfillment |
+| INT-CONFIG realization | Integrations (`ExistingCapabilityConfigurationRealizationPort`) |
+| Governance authorization on realize | Governance (façade `authorize`) |
+| Effective materialization + identity compare | Integrations (`ExecutionBoundIntegrationResolution`) |
+| Durable provenance | Provenance store + Applications adapters |
+| Reconstruction | Evidence / `ExecutionReconstructor` (neutral reader) |
+
+No second owner for opportunity truth.
+
+### 1C.5 Discovery projection (locked direction)
+
+```text
+Integrations Configuration Opportunity source (canonical — future P3)
+        ↓ typed opportunities
+AW configuration-opportunity discovery adapter (projection only)
+        ↓
+WorkerCapabilityCandidate (EXISTING_CONFIGURATION)
+        configuration_ref  (+ capability_ref, operations, risk_class, evidence_refs)
+```
+
+**AW candidate MAY retain:** `configuration_ref`, `capability_ref`, `operations`, `risk_class`, `evidence_refs`.
+
+**AW candidate MUST NOT copy:** full configuration payload or provider/category/resource_scope/revision fields.
+
+**Canonical source rule:** discovery and fulfillment **must** use the **same** Integrations opportunity authority (read port backs refs emitted by the opportunity source). Divergent dict/fixture sources → qualification **FAIL**.
+
+### 1C.6 Fulfillment resolution (after CONFIGURE_EXISTING)
+
+```text
+selected_candidate.configuration_ref
+        ↓
+ExistingCapabilityConfigurationOpportunityReadPort.read_exact(
+    WorkerCapabilityFulfillmentRequest.tenant_id,
+    configuration_ref,
+)
+        ↓
+ExistingCapabilityConfigurationOpportunity
+        ↓
+ExistingCapabilityConfigurationRealizationRequest (projected)
+        ↓
+ExistingCapabilityConfigurationRealizationPort.realize
+        ↓
+ConfiguredCapabilityBinding
+```
+
+AW orchestrates the read call; AW **does not** interpret provider/configuration payload semantics.
+
+**Forbidden pattern:**
+
+```python
+ExistingCapabilityConfigurationRealizationRequest(
+    provider_id=parse(candidate.capability_ref),
+    ...
+)
+```
+
+### 1C.7 Distinction from adjacent states / resolvers
+
+| Concept | Meaning |
+|---|---|
+| **Configuration Opportunity** | Configuration **could** be realized (input truth) |
+| **ConfiguredCapabilityBinding** | Configuration realization **succeeded** |
+| **EffectiveIntegrationIdentity.provider_id** | Observed effective provider after materialization |
+
+Flow: `Opportunity → INT-CONFIG → ConfiguredCapabilityBinding → adoption → effective identity` — preserves `proposed/configurable ≠ configured ≠ effective`.
+
+**`ExistingCapabilityIntegrationResolver`** remains **distinct**: it accepts a fully built `ExistingCapabilityConfigurationRealizationRequest` and resolves/validates an **existing integration target** — **after** the request exists. Opportunity read occurs **before** request construction. Both Integrations-owned; may share underlying typed catalogs/repositories; **must not** compete as truth owners.
+
+### 1C.8 No second Integration Catalog
+
+Opportunity source owns **configuration possibility/input**, not provider registration. Reuse canonical Integration Catalog identity contracts for `provider_id` / `integration_category`. Opportunity source **must not** register providers.
+
+### 1C.9 Opportunity lifecycle (locked — R2 reconstruction safe)
+
+| Question | Locked answer |
+|---|---|
+| Who creates? | **Integrations** — via future `ExistingCapabilityConfigurationOpportunityProvider` plugin contract (§1C.12) orchestrated by an Integrations opportunity owner service; **not** Autonomous Work |
+| When valid? | When Integrations publishes an immutable opportunity record (creation pins `current_revision` + fingerprint) |
+| Durable? | **Yes** when product requires historical exact refs; storage behind Integrations port (P2); **not** Evidence Plane SSOT |
+| Expire / revoke? | May mark opportunity **invalid/stale** for new realizes; **must not** silently remap old `configuration_ref` to newer revision |
+| After supersession | Exact old `configuration_ref` remains readable **or** read returns typed **stale/not-found** — **never** auto-substitute newer revision |
+| Payload retention | Opportunity stores typed `IntegrationConfigurationPayload` (or immutable reference resolved at read time with same fingerprint invariant) |
+
+Model **does not** rely on mutable “current configuration” for R2 attribution.
+
+### 1C.10 Persistence preference
+
+Configuration Opportunity is an Integrations **configuration-input fact**, not Evidence-owned truth. Applications may supply durable adapters behind the Integrations read port. **No** Evidence-owned opportunity repository; **no** second STATE-X semantic authority. **Not implemented in R1-R1-R1.**
+
+### 1C.11 Pluginability
+
+```text
+external provider plugin
+    → ExistingCapabilityConfigurationOpportunityProvider (platform contract)
+    → Integrations opportunity owner aggregates/providers
+    → read_exact
+```
+
+**Forbidden in core R2 logic:** `if provider_id == "sqlite": … elif …`. Provider-specific opportunity emission stays in provider plugins implementing the platform contract.
+
+### 1C.12 Opportunity creation owner (future — not implemented here)
+
+Preferred shape: Integrations service projects opportunities from **known integrations** + provider-specific configuration capability metadata via **`ExistingCapabilityConfigurationOpportunityProvider`** (typed plugin port). Core aggregates; **no** provider branches.
+
+Production @ `305ac4a0…`: **no** Integrations-owned Configuration Opportunity source exists.
+
+### 1C.13 Risk classification projection
+
+| Fact @ `305ac4a0…` | Disposition |
+|---|---|
+| Canonical `WorkerAutonomyLevel` → `ControlPlaneMutationRisk` map in production | **Absent** |
+| `CONFIGURE_EXISTING` decision invariant | Requires `WorkerAutonomyLevel.A0_KNOWN_CAPABILITY` (`validate_acquisition_decision_invariants`) |
+
+**Locked narrow mapping (P1 contract — no new policy authority):** for `CONFIGURE_EXISTING` fulfillment only, `risk_classification = ControlPlaneMutationRisk.LOW` because disposition already restricts executable configuration to **A0 known capability**; INT-CONFIG Governance `authorize` remains authoritative. **Not** derived from parsing `configuration_ref` or provider choice.
+
+### 1C.14 Tenant continuity (opportunity seam)
+
+```text
+WorkerCapabilityFulfillmentRequest.tenant_id
+== read_exact tenant argument
+== ExistingCapabilityConfigurationOpportunity.tenant_id
+== ExistingCapabilityConfigurationRealizationRequest.tenant_id
+== ConfiguredCapabilityBinding.tenant_id
+== adoption tenant
+== Execution tenant
+== provenance tenant
+```
+
+Tenant mismatch on read → fail closed (`CONFIGURATION_OPPORTUNITY_TENANT_MISMATCH`).
+
+### 1C.15 Integrity invariants (pre-request)
+
+Before constructing `ExistingCapabilityConfigurationRealizationRequest`:
+
+```text
+opportunity.configuration_fingerprint
+    == opportunity.configuration.configuration_fingerprint
+```
+
+Mismatch → `CONFIGURATION_OPPORTUNITY_FINGERPRINT_MISMATCH` (fail closed). `current_revision` is **pinned** on the opportunity; fulfillment **must not** fetch “latest revision” separately (stale → INT-CONFIG conflict / typed stale failure — **no auto-refresh**).
+
+### 1C.16 Idempotency
+
+`configuration_ref` identifies the **semantic opportunity**; INT-CONFIG `request_id` identifies one **realization operation** — do not conflate. Repeat realize follows existing INT-CONFIG idempotency only.
+
+### 1C.17 `MappingConfigurationOpportunityDiscoveryAdapter` classification (@ `305ac4a0…`)
+
+| Adapter | Production callers | Classification |
+|---|---|---|
+| `MappingConfigurationOpportunityDiscoveryAdapter` | **0** (`intergrax/`, `agents/`, `applications/` production) | **TEST / FIXTURE / NON-PRODUCTION** |
+| `NotConfiguredConfigurationOpportunityDiscovery` | Host wiring uses via tests/scaffold only in repo inventory | **FALLBACK / TEST WIRING** |
+| `UnavailableConfigurationOpportunityDiscovery` | Tests only | **FALLBACK / TEST WIRING** |
+
+Unit/integration tests: `tests/unit/autonomous_work/test_worker_capability_acquisition.py` (mapping adapter), `test_capability_catalog_discovery_adapters.py`, `test_uca6b_r_worker_capability_recovery.py`, `tests/integration/autonomous_work/test_aw_7b_ephemeral_capability_execution.py`.
+
+**Must not** become production authority by wiring a runtime dict. Future production discovery **projects** from Integrations opportunity source only.
+
+### 1C.18 Closed-world inventory — configuration opportunity surfaces (@ `305ac4a0…`)
+
+| Symbol / surface | Path | Production | Role |
+|---|---|---|---|
+| `configuration_ref` field | `intergrax/contracts/autonomous_work/capability_acquisition.py` (`WorkerCapabilityCandidate`) | Contract only | Optional opaque ref on `EXISTING_CONFIGURATION` candidates |
+| `configuration_ref` producers | — | **0** production writers | Only tests construct candidates with refs |
+| `WorkerCapabilityCandidateKind.EXISTING_CONFIGURATION` | `capability_acquisition.py` | Contract | Kind for CONFIGURE_EXISTING |
+| Kind emission | `WorkerCapabilityAcquisitionDecisionService` | **Conditional** | Emits disposition when discovery supplies kind |
+| `WorkerConfigurationOpportunityDiscoveryPort` | `capability_acquisition_ports.py` | Port | Implemented by host-composed adapters |
+| `WorkerCapabilityAcquisitionService` | `capability_acquisition_service.py` | **Production** | Invokes configuration discovery layer |
+| Production composition of configuration discovery | repo inventory | **0** | No production module wires `MappingConfigurationOpportunityDiscoveryAdapter` |
+| `MappingConfigurationOpportunityDiscoveryAdapter` | `capability_discovery_adapters.py` | **NON-PRODUCTION** | Test/fixture dict lookup by operations |
+| `ExistingCapabilityConfigurationRealizationRequest` | `integrations/contracts/existing_capability_configuration.py` | Contract | Full typed realize admission |
+| `ExistingCapabilityConfigurationRealizationPort` / façade | `existing_capability_configuration_facade.py` | **0** callers | Tests + qualification |
+| `ExistingCapabilityIntegrationResolver` | contracts + service | **Tests/qualification fakes only** | Target resolution **after** request exists |
+| `ExistingCapabilityConfigurationRealizationStrategy` | sqlite `configuration_realization.py` | Reference provider | `SQLiteRelationalStoreConfigurationRealizationStrategy` |
+| `IntegrationConfigurationPayload` | `existing_capability_configuration.py` (Protocol) | Contract | Provider payloads e.g. `SQLiteRelationalStoreConfigurationPayload` |
+| Catalog/provider registration | Integration registry / catalog | **Production** | Separate from opportunity — reuse identities only |
+
+### 1C.19 INT-CONFIG request field projection matrix (locked — no guessing)
+
+| Request field | Source |
+|---|---|
+| `request_id` | Deterministic fulfillment operation identity (AW) |
+| `tenant_id` | `WorkerCapabilityFulfillmentRequest.tenant_id` |
+| `principal` | Governed worker principal binding (Applications-wired repository; AW read) |
+| `integration_category` | `ExistingCapabilityConfigurationOpportunity` |
+| `provider_id` | `ExistingCapabilityConfigurationOpportunity` |
+| `resource_scope` | `ExistingCapabilityConfigurationOpportunity` |
+| `configuration` | `ExistingCapabilityConfigurationOpportunity.configuration` |
+| `configuration_fingerprint` | `ExistingCapabilityConfigurationOpportunity` (≡ payload fingerprint) |
+| `current_revision` | `ExistingCapabilityConfigurationOpportunity` (pinned) |
+| `risk_classification` | §1C.13 (`ControlPlaneMutationRisk.LOW` for CONFIGURE_EXISTING/A0) |
+| `task_id` / `run_id` | `WorkerCapabilityFulfillmentRequest` |
+| `correlation_ref` | Recovery provenance (`discovery_correlation_id` family) |
+
+### 1C.20 Typed failure families (future)
+
+`CONFIGURATION_OPPORTUNITY_NOT_FOUND` · `CONFIGURATION_OPPORTUNITY_TENANT_MISMATCH` · `CONFIGURATION_OPPORTUNITY_STALE` · `CONFIGURATION_OPPORTUNITY_AMBIGUOUS` · `CONFIGURATION_OPPORTUNITY_INVALID` · `CONFIGURATION_OPPORTUNITY_FINGERPRINT_MISMATCH` · `CONFIGURATION_OPPORTUNITY_PROVIDER_UNAVAILABLE` — exact enum names optional; semantics mandatory; all fail closed.
+
+### 1C.21 Before / after graph (opportunity seam)
+
+**Before (@ `305ac4a0…`):**
+
+```text
+WorkerCapabilityCandidate.configuration_ref (opaque, untyped)
+        X  (no Integrations exact read)
+ExistingCapabilityConfigurationRealizationRequest
+        X  (cannot be built safely from candidate alone)
+```
+
+**After (locked design):**
+
+```text
+Integrations Configuration Opportunity owner
+        ↓ exact typed opportunity
+AW discovery projection
+        ↓ opaque configuration_ref only
+WorkerCapabilityCandidate
+        ↓ CONFIGURE_EXISTING
+WorkerConfiguredCapabilityFulfillmentService
+        ↓ read_exact(tenant_id, configuration_ref)
+ExistingCapabilityConfigurationOpportunityReadPort
+        ↓ immutable opportunity
+ExistingCapabilityConfigurationRealizationRequest
+        ↓ … (§1B.6 / §3)
+```
+
+### 1C.22 Future qualification gates (R2-P5 — design)
+
+1. Production opportunities originate from exactly one Integrations-owned mechanism.
+2. AW candidate carries only exact opaque ref (no full config copy).
+3. No string parsing / prefix / regex / JSON-in-ref for provider semantics in AW.
+4. No current/latest opportunity lookup.
+5. No second provider registry.
+6. Tenant-scoped `read_exact` mandatory.
+7. Stale / fingerprint / revision violations fail closed.
+8. Unknown / ambiguous ref fail closed.
+9. `MappingConfigurationOpportunityDiscoveryAdapter` absent from production composition.
+10. Opportunity ≠ configured binding ≠ effective provider.
+11. Same binding continues through adoption unchanged.
+12. Provider plugin opportunity mechanism replaceable.
+
+### 1C.23 P0-R1-R1-R1 STOP disposition
+
+**No STOP — ARCHITECTURE DECISION REQUIRED** for locked scope. Opportunity contracts + read port + discovery projection are **P1**; durable store **P2**; production wiring **P3**.
+
+### 1C.24 P0-R1-R1-R1 exit questionnaire (locked)
+
+| # | Answer |
+|---|---|
+| 1 | **Configuration Opportunity owner?** Integrations |
+| 2 | **Who creates opportunities?** Integrations opportunity owner + `ExistingCapabilityConfigurationOpportunityProvider` plugins (§1C.12) |
+| 3 | **Typed fields?** §1C.2 |
+| 4 | **`configuration_ref` identifies?** Exactly one immutable tenant-scoped opportunity — not “latest for provider” |
+| 5 | **Ref immutable + tenant-scoped?** **Yes** |
+| 6 | **AW discovery obtains refs?** Projection adapter over Integrations opportunity source (§1C.5) |
+| 7 | **Fulfillment resolves ref?** `read_exact(tenant_id, configuration_ref)` (§1C.6) |
+| 8 | **Same canonical source for discovery + fulfillment?** **Yes** |
+| 9 | **provider/category/scope/payload/fingerprint/revision source?** Exact opportunity read (§1C.19) |
+| 10 | **AW parses provider semantics?** **NO** |
+| 11 | **Latest/current lookup?** **NO** |
+| 12 | **Second Integration Catalog?** **NO** |
+| 13 | **Opportunity ≠ configured binding?** **YES** |
+| 14 | **Configured binding ≠ effective identity?** **YES** |
+| 15 | **Stale refs silently refresh?** **NO** |
+| 16 | **Provider pluginability preserved?** **YES** (§1C.11) |
+| 17 | **Risk mapping new policy semantics?** **NO** (§1C.13) |
+| 18 | **Tenant continuity end-to-end?** **YES** (§1C.14) |
+
+### 1C.25 Implementation sequencing (post R1-R1-R1 audit)
+
+```text
+P0-R1-R1-R1  opportunity typing lock (this revision)
+      ↓
+P0           parent architecture closure / bookkeeping
+      ↓
+P1           opportunity + adoption/provenance contracts + validation
+      ↓
+P2           durable opportunity/provenance storage where locked
+      ↓
+P3           production discovery + fulfillment + adoption wiring
+      ↓
+P4           reconstruction
+      ↓
+P5           closed-world qualification
+      ↓
+CERT
+```
+
+**Do not enter P1 in R1-R1-R1 task.**
 
 ---
 
@@ -517,8 +870,12 @@ WorkerCapabilityAcquisitionDecisionService  →  CONFIGURE_EXISTING
 WorkerCapabilityFulfillmentCoordinator  (CONFIGURE_EXISTING branch)
         │
         ▼
+Integrations Configuration Opportunity source  (P3)
+        │
+        ▼
 WorkerConfiguredCapabilityFulfillmentService
-        │  (+ ExistingCapabilityConfigurationOpportunityResolver — P1)
+        │  read_exact(tenant_id, configuration_ref)  (P1 port)
+        │  → ExistingCapabilityConfigurationOpportunity
         ▼
 ExistingCapabilityConfigurationRealizationPort.realize
         │
@@ -772,7 +1129,10 @@ If product later requires inheritance, that is a **new** `ChildExecutionContextI
 Required continuity (implementation must enforce):
 
 ```text
-configured_binding.tenant_id
+WorkerCapabilityFulfillmentRequest.tenant_id
+== opportunity read tenant
+== ExistingCapabilityConfigurationOpportunity.tenant_id
+== configured_binding.tenant_id
 == composition tenant
 == execution tenant (ExecutionId context)
 == execution_provenance.tenant_id
@@ -863,6 +1223,9 @@ Configured provenance is **factual identity only** — no ALLOW, no admission, n
 | `tests/qualification/trace_x/_trace_x_p5_r2_discovery.py` | Closed-world discovery |
 | `tests/qualification/trace_x/_trace_x_p5_r2_support.py` | Registry + classifications |
 | `tests/qualification/trace_x/test_trace_x_p5_r2_qualification_gates.py` | Mechanical gates |
+| `intergrax/integrations/contracts/existing_capability_configuration_opportunity.py` | Opportunity DTO + `ExistingCapabilityConfigurationOpportunityReadPort` |
+| `intergrax/integrations/providers/*/configuration_opportunity.py` (illustrative) | Provider plugin opportunity emission |
+| `intergrax/autonomous_work/integrations_configuration_opportunity_discovery_adapter.py` | AW discovery projection (opaque refs only) |
 
 **Explicit non-goals in implementation:** modify `ConfiguredCapabilityBinding`, `IntegrationProfile`, `resolve_from_profile` semantics, Governance, or Execution identity minting.
 
@@ -892,6 +1255,10 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 18. Multiplicity deterministic; child rules per §12.
 19. R1 policy/profile provenance unchanged (regression gates).
 20. Adversarial: circular pre-built proof + catalog mismatch negatives (§1A.8).
+21. Configuration opportunities: single Integrations source; AW opaque ref only (§1C.22).
+22. No `configuration_ref` parsing in AW; no latest opportunity lookup.
+23. `MappingConfigurationOpportunityDiscoveryAdapter` production composition = 0.
+24. Opportunity ≠ binding ≠ effective identity preserved through adoption.
 
 ---
 
@@ -901,7 +1268,8 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 |---|---|
 | **P0-R1** (§1A) | Effective identity + configured adoption reconciliation |
 | **P0-R1-R1** (§1B) | Concrete CONFIGURE_EXISTING adoption root + AW fulfillment orchestration lock |
-| **P0** | Parent architecture lock closure after R1 + R1-R1 audit |
+| **P0-R1-R1-R1** (§1C) | Configuration opportunity typing + exact-reference read lock |
+| **P0** | Parent architecture lock closure after R1 + R1-R1 + R1-R1-R1 audit |
 | **P1** | Neutral contracts + validation helpers + adoption input |
 | **P2** | Pinning store port + in-memory + durable adapters |
 | **P3** | Execution-bound resolution wrapper + host composition wiring |
@@ -920,29 +1288,35 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 
 ---
 
-## 22. Enterprise audit matrix (@ P0-R1 lock)
+## 22. Enterprise audit matrix (@ P0-R1-R1-R1 lock)
 
 | Dimension | Grade | Notes |
 |---|---|---|
 | Boundaries | **PASS** | Tier rules preserved; reconstructor stays derived |
-| Semantic ownership | **PASS** | §8 + §1A.4 |
+| Semantic ownership | **PASS** | §8 + §1A.4 + §1C.4 |
+| Configuration opportunity ownership | **PASS** | Integrations-only typed opportunity + read port (§1C) |
+| Catalog ownership | **PASS** | No second registry; reuse catalog identities (§1C.8) |
+| Discovery ownership | **PASS** | Integrations source → AW projection; mapping adapter non-production (§1C.17) |
 | Composition ownership | **PASS** | Applications wire ports; AW fulfillment sequences; Integrations validate/capture (§1B) |
 | Orchestration ownership | **PASS** | `WorkerCapabilityFulfillmentCoordinator` + configured fulfillment service (§1B.6) |
 | Provider identity authority | **PASS** | §1A.3; P0 category/slug model rejected |
 | Configured adoption authority | **PASS** | Explicit handoff; no lookup |
-| Contracts | **PASS** | Adoption + provenance `mode` specified |
-| Strong typing | **PASS** | No category-as-provider; no sentinel identity strings |
-| Pluginability | **PASS** | Catalog tri-equality; no core provider branches |
-| Replaceability | **PASS** | Single factory; wrapper delegates |
-| Configured/effective separation | **PASS** | `CONFIGURED_ADOPTED` vs `EFFECTIVE_ONLY` |
-| Governance separation | **PASS** | Factual only |
+| Contracts | **PASS** | Adoption + provenance `mode` + opportunity read (§1C.3) |
+| Strong typing | **PASS** | No AW provider payload; `IntegrationConfigurationPayload` Protocol preserved |
+| Pluginability | **PASS** | Catalog tri-equality; opportunity provider contract (§1C.11) |
+| Replaceability | **PASS** | Single factory; wrapper delegates; replaceable opportunity providers |
+| Configured/effective separation | **PASS** | Opportunity ≠ binding ≠ effective (§1C.7) |
+| Revision/fingerprint integrity | **PASS** | Pinned revision; fingerprint invariant (§1C.15) |
+| Governance separation | **PASS** | Opportunity excludes principal; Governance authorizes realize |
 | Execution authority | **PASS** | ExecutionId unchanged |
-| Evidence non-authority | **PASS** | Readers/projections only |
-| Tenant continuity | **PASS** | §13 + §1A.5 |
-| Persistence suitability | **PASS** | Durable pin; subject uses `provider_id` |
-| Bypass resistance | **PARTIAL** | Until P3 — configured-required wrapper rule locked |
+| Evidence non-authority | **PASS** | Readers/projections only; opportunity not Evidence SSOT |
+| Tenant continuity | **PASS** | §13 + §1A.5 + §1C.14 |
+| Historical reconstruction suitability | **PASS** | Exact immutable refs; no latest lookup |
+| Fail-closed behavior | **PASS** | §1C.20 + §1C.15 |
+| Persistence suitability | **PASS** | Durable pin; Integrations-owned opportunity store optional P2 |
+| Bypass resistance | **PARTIAL** | Until P3 — wrapper + opportunity wiring |
 | Child semantics | **PASS** | §12 unchanged |
-| Closed-world qualification design | **PASS** | §19 + §1A.7 |
+| Closed-world qualification design | **PASS** | §19 + §1A.7 + §1C.22 |
 | Regression protection | **PASS** | R1 gates remain required |
 
 **IN-SCOPE BLOCKER (unchanged):** `P5-GAP-04` until implementation waves complete.
@@ -967,7 +1341,7 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 
 ---
 
-## 24. Current-HEAD test evidence (P0-R1-R1)
+## 24. Current-HEAD test evidence (P0-R1-R1-R1)
 
 Commands (sequential `-p no:xdist`):
 
@@ -981,27 +1355,27 @@ uv run pytest tests/qualification/existing_capability_configuration -p no:xdist 
 
 uv run pytest \
   tests/unit/autonomous_work/test_worker_capability_acquisition.py \
-  tests/unit/autonomous_work/test_worker_capability_fulfillment_intent_preparation_hook.py \
-  tests/unit/autonomous_work/test_uca6c_r6_r5_8_worker_consumer_e2e.py \
-  tests/unit/autonomous_work/test_uca6c_r6_r5_8_r2_h1_r1_production_composition_contract.py \
+  tests/unit/autonomous_work/test_capability_catalog_discovery_adapters.py \
+  -p no:xdist -q
+
+uv run pytest \
+  tests/unit/integrations/test_existing_capability_configuration_contracts.py \
+  tests/unit/integrations/test_existing_capability_configuration_service.py \
+  tests/unit/integrations/providers/relational_store/sqlite/test_configuration_realization.py \
   -p no:xdist -q
 ```
 
-@ P0-R1-R1 run (`6b5b5f2e…`):
+@ P0-R1-R1-R1 run (`305ac4a0…` + docs commit pending):
 
 ```text
-# trace P5 P0+R1 gates: 134 passed
-# INT-CONFIG qualification + AW inventory batch: 116 passed, 14 failed
-#   failures: CapabilityQualificationEvidence fixture drift (subject_kind/subject_id/subject_integrity_fingerprint)
-#   paths: test_worker_capability_fulfillment_intent_preparation_hook.py (10),
-#          test_uca6c_r6_r5_8_worker_consumer_e2e.py (1),
-#          test_uca6c_r6_r5_8_r2_h1_r1_production_composition_contract.py (3)
-# test_worker_capability_acquisition.py: passed (within batch)
+# trace P5 P0+R1 gates: 134 passed (202.95s)
+# INT-CONFIG qualification: 58 passed
+# AW discovery + INT-CONFIG unit batch: 119 passed
 ```
 
-Logs: `.tmp/session/trace-x-p5-r2-p0-r1-r1/pytest-trace.log`, `pytest-aw-int-config.log`.
+Logs: `.tmp/session/trace-x-p5-r2-p0-r1-r1-r1/pytest-trace.log`, `pytest-int-config.log`, `pytest-aw-int-config-unit.log`.
 
-**ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED:** `tests/unit/integrations/test_registry.py` — 4 pre-existing fake-factory failures if reproduced; not in P0-R1-R1 mandatory batch. AW fulfillment e2e/hook failures above — **TRACKED FREEZE DEBT** / fixture drift @ `6b5b5f2e…`; not R2-P0-R1-R1 architecture blockers (no production delta).
+**ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED:** `tests/unit/integrations/test_registry.py` — fake factory drift (`dict` vs `PlatformIntegrationContract`); not in mandatory batch. `CapabilityQualificationEvidence` fixture drift in AW fulfillment e2e/hook suites — **not** expanded in R1-R1-R1 batch; classify separately unless production impact proven.
 
 ---
 
@@ -1009,8 +1383,9 @@ Logs: `.tmp/session/trace-x-p5-r2-p0-r1-r1/pytest-trace.log`, `pytest-aw-int-con
 
 | Item | Status |
 |---|---|
-| TRACE-X-P5-R2-P0-R1-R1 | **READY FOR AUDIT** |
-| TRACE-X-P5-R2-P0-R1 | **BLOCKED ON R1-R1 INDEPENDENT AUDIT** |
+| TRACE-X-P5-R2-P0-R1-R1-R1 | **READY FOR AUDIT** |
+| TRACE-X-P5-R2-P0-R1-R1 | **BLOCKED ON R1-R1-R1 INDEPENDENT AUDIT** |
+| TRACE-X-P5-R2-P0-R1 | **BLOCKED** |
 | TRACE-X-P5-R2-P0 | **BLOCKED** |
 | TRACE-X-P5-R2 | **BLOCKED ON P0** |
 | TRACE-X-P5 | **CURRENT / BLOCKED ON R2** |
