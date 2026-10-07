@@ -6,7 +6,8 @@
 |---|---|
 | **Task** | `TRACE-X-P5-R2-P0` + **`TRACE-X-P5-R2-P0-R1`** + **`TRACE-X-P5-R2-P0-R1-R1`** + **`TRACE-X-P5-R2-P0-R1-R1-R1`** (configuration opportunity typing) + **`TRACE-X-P5-R2-P0-R1-R1-R1-R1`** (configuration mutation risk classification ownership) + **`TRACE-X-P5-R2-P0-FINAL`** (final architecture lock reconciliation) |
 | **P0-FINAL START_HEAD** | `33076146071dd5246691821905ddcba383ad5ee6` (`development` — independently accepted **P0-R1-R1-R1-R1** reconciliation) |
-| **P0-FINAL qualification evidence (docs only)** | `74b93fdf1617e90b19bf42b1658d674e215baba6` |
+| **P0-FINAL qualification evidence (docs only)** | `74b93fdf1617e90b19bf42b1658d674e215baba6` (**accepted architecture evidence**) |
+| **Post-reconciliation ledger tip (pre-P0-CLOSE)** | `ec92759af9714034536f7127d503188a8bba41a6` (bookkeeping — **not** architecture evidence) |
 | **P0-R1-R1-R1-R1 accepted reconciliation** | `33076146071dd5246691821905ddcba383ad5ee6` |
 | **Parent** | `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
 | **P0 rejection baseline** | `982f945de67577865c1ade4ebbea519cf3a9b284` |
@@ -18,9 +19,9 @@
 | **Blocker** | `P5-GAP-04` — **ARCHITECTURALLY SPECIFIED / IMPLEMENTATION OPEN** (no canonical global configured→effective→`ExecutionId`→evidence chain in production until **P1–P5/CERT**) |
 | **In-scope P0 blocker (R1-R1-R1)** | `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04` = **RESOLVED IN DESIGN (R1-R1-R1)** |
 | **In-scope P0 blocker (R1-R1-R1-R1)** | `R2-P0-CONTROL-PLANE-RISK-AUTHORITY-05` = **RESOLVED IN DESIGN (R1-R1-R1-R1)** |
-| **Independent-audit blockers** | `R2-P0-EFFECTIVE-IDENTITY-PREBUILT-01` · `R2-P0-CONFIGURED-ADOPTION-AUTHORITY-02` = **RESOLVED IN DESIGN (R1)** · `R2-P0-CONCRETE-ADOPTION-ROOT-03` = **RESOLVED IN DESIGN (R1-R1)** · `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04` = **RESOLVED IN DESIGN (R1-R1-R1)** · `R2-P0-CONTROL-PLANE-RISK-AUTHORITY-05` = **RESOLVED IN DESIGN (R1-R1-R1-R1)** @ `33076146…` — **P0-FINAL** reconciles normative precedence; pending **P0-FINAL** independent audit |
+| **Independent-audit blockers** | `R2-P0-EFFECTIVE-IDENTITY-PREBUILT-01` · `R2-P0-CONFIGURED-ADOPTION-AUTHORITY-02` = **RESOLVED IN DESIGN (R1)** · `R2-P0-CONCRETE-ADOPTION-ROOT-03` = **RESOLVED IN DESIGN (R1-R1)** · `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04` = **RESOLVED IN DESIGN (R1-R1-R1)** · `R2-P0-CONTROL-PLANE-RISK-AUTHORITY-05` = **RESOLVED IN DESIGN (R1-R1-R1-R1)** @ `33076146…` — **P0-FINAL** reconciles normative precedence; **P0-FINAL** + **P0** = **CLOSED / independently accepted** @ `74b93fdf…` |
 | **Production / runtime delta** | **0** (architecture + qualification design only) |
-| **Status** | **TRACE-X-P5-R2-P0-FINAL = READY FOR AUDIT** · **TRACE-X-P5-R2-P0 = READY FOR AUDIT** · **TRACE-X-P5-R2-P0-R1-R1-R1-R1 = independently accepted reconciliation @ `33076146…`** · **TRACE-X-P5-R2-P0 initial @ `982f945…` = REJECTED / SUPERSEDED** · **TRACE-X-P5-R2 = CURRENT / BLOCKED ON P0 FINAL INDEPENDENT AUDIT** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** |
+| **Status** | **TRACE-X-P5-R2-P0-FINAL = CLOSED / independently accepted** · **TRACE-X-P5-R2-P0 = CLOSED / independently accepted** · **accepted reconciliation evidence = `74b93fdf1617e90b19bf42b1658d674e215baba6`** · **TRACE-X-P5-R2-P0-R1-R1-R1-R1 = independently accepted reconciliation @ `33076146…`** · **TRACE-X-P5-R2-P0 initial @ `982f945…` = REJECTED / SUPERSEDED** · **TRACE-X-P5-R2 = CURRENT** · **TRACE-X-P5-R2-P1 = NEXT / REQUIRED / NOT ENTERED** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** · **FRZ-TRC-11 = OPEN** |
 
 **Steering sources revalidated @ P0-R1-R1-R1-R1 START_HEAD (`925bcae…`):** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md), [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md), [`TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md`](TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md), [`TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md`](TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md), [`INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md`](../architecture/INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md).
 
@@ -50,7 +51,7 @@ Read this subsection first. Earlier prose in §1–§3 without the markers below
 | P0-R1-R1 | `305ac4a0cb07e303ce2bb0b04c2c4520db35786b` | Remediation evidence; superseded |
 | P0-R1-R1-R1 | `925bcae17cbf1072297296378c9e28c8742f9c92` | Remediation + risk-ownership blocker exposed; superseded |
 | P0-R1-R1-R1-R1 | `33076146071dd5246691821905ddcba383ad5ee6` | **Independently accepted** child reconciliation |
-| P0-FINAL | qualification commit after reconciliation | **READY FOR AUDIT** |
+| P0-FINAL | `74b93fdf1617e90b19bf42b1658d674e215baba6` | **CLOSED / independently accepted** (accepted architecture evidence) |
 
 ### P0-FINAL exit questionnaire (25 locked answers)
 
@@ -1497,8 +1498,8 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 | **P0-R1-R1** (§1B) | Concrete CONFIGURE_EXISTING adoption root + AW fulfillment orchestration lock |
 | **P0-R1-R1-R1** (§1C) | Configuration opportunity typing + exact-reference read lock |
 | **P0-R1-R1-R1-R1** (§1C.26–§1C.31) | Configuration mutation risk classification ownership |
-| **P0-FINAL** | Final normative reconciliation + canonical tracker sync (**READY FOR AUDIT**) |
-| **P0** | Architecture lock complete after **P0-FINAL** independent audit → **P1** |
+| **P0-FINAL** | Final normative reconciliation + canonical tracker sync (**CLOSED / independently accepted** @ `74b93fdf…`) |
+| **P0** | Architecture lock **CLOSED / independently accepted** → **P1** next |
 | **P1** | Typed opportunity + risk policy + adoption/provenance contracts + validation |
 | **P2** | Pinning store port + in-memory + durable adapters |
 | **P3** | Execution-bound resolution wrapper + host composition wiring |
@@ -1610,18 +1611,20 @@ Logs: `.tmp/session/trace-x-p5-r2-p0-final/pytest-trace.log`, `pytest-int-config
 
 ---
 
-## 25. Roadmap status (recommended)
+## 25. Roadmap status (canonical)
 
 | Item | Status |
 |---|---|
-| TRACE-X-P5-R2-P0-FINAL | **READY FOR AUDIT** |
-| TRACE-X-P5-R2-P0 | **READY FOR AUDIT** |
+| TRACE-X-P5-R2-P0-FINAL | **CLOSED / independently accepted** @ `74b93fdf1617e90b19bf42b1658d674e215baba6` |
+| TRACE-X-P5-R2-P0 | **CLOSED / independently accepted** @ `74b93fdf1617e90b19bf42b1658d674e215baba6` |
+| TRACE-X-P5-R2-P0-CLOSE | **READY FOR AUDIT** (closure bookkeeping; ledger tip pre-close `ec92759a…`) |
 | TRACE-X-P5-R2-P0-R1-R1-R1-R1 | **independently accepted** @ `33076146…` |
 | TRACE-X-P5-R2-P0-R1-R1-R1 | remediation evidence @ `925bcae…` (superseded) |
 | TRACE-X-P5-R2-P0-R1-R1 | remediation evidence @ `305ac4a…` (superseded) |
 | TRACE-X-P5-R2-P0-R1 | remediation evidence @ `6b5b5f2…` (superseded) |
 | TRACE-X-P5-R2-P0 initial | **REJECTED** @ `982f945…` |
-| TRACE-X-P5-R2 | **CURRENT / BLOCKED ON P0 FINAL INDEPENDENT AUDIT** |
+| TRACE-X-P5-R2 | **CURRENT** |
+| TRACE-X-P5-R2-P1 | **NEXT / REQUIRED / NOT ENTERED** |
 | TRACE-X-P5 | **CURRENT / BLOCKED ON R2** |
 | P5-GAP-04 | **ARCHITECTURALLY SPECIFIED / IMPLEMENTATION OPEN** |
 | FRZ-TRC-11 | **OPEN** |
