@@ -15,6 +15,7 @@
 | P5-R1-R1-Q5 START_HEAD | `274c5ff40e0c4f30764d13be65a00e3b463ec5e4` |
 | P5-R1-R1-Q6 START_HEAD | `4aba36e50a474a0d6915a60f73f5a3b31e6f71c2` |
 | P5-R1-R1-Q7 START_HEAD | `5afc518a78fe5777d5f67934c1ecbd1ec6740e0a` |
+| P5-R1-R1-Q8 START_HEAD | `4bd430ae660dbc9f826c3b5ede0b92aefea36b07` |
 | Q2 FINAL_COMMIT | _(placeholder until qualification commit)_ |
 | Q3 FINAL_COMMIT | `0146f6a862339e5c6eefbf53b5622bf3e8491db5` |
 | Q4 FINAL_COMMIT | `41c36b4ad8983fd0c90a4c9513d28de124a07538` |
@@ -30,7 +31,8 @@
 | TRACE-X-P5-R1-R1-Q4 | **READY FOR INDEPENDENT RE-AUDIT** (canonical constructor alias-escape closure; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q5 | **READY FOR INDEPENDENT RE-AUDIT** (full-dotted canonical constructor reference closure; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q6 | **READY FOR INDEPENDENT RE-AUDIT** (canonical reference usage-context closure; not CLOSED) |
-| TRACE-X-P5-R1-R1-Q7 | **READY FOR AUDIT** (lexical binding authority closure; not CLOSED) |
+| TRACE-X-P5-R1-R1-Q7 | **READY FOR INDEPENDENT RE-AUDIT** (lexical binding authority closure; not CLOSED) |
+| TRACE-X-P5-R1-R1-Q8 | **READY FOR AUDIT** (definition-time scope evaluation closure; not CLOSED) |
 | TRACE-X-P5-R1-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 | TRACE-X-P5-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 
@@ -84,6 +86,14 @@ Registry parity (Q6): gates `test_txp5r1_q12`–`q24`, `q31`–`q37`, `q45`–`q
 **Q7 qualification:** production parity unchanged (`legal constructor surfaces = 4`, `classified registry surfaces = 4`, `unknown surfaces = 0`, `orphan = 0`, `duplicate = 0`, `forbidden canonical runtime usages = 0`, `unknown usage contexts = 0`, `canonical lexical-shadow violations = 0` in `intergrax/`). Production shadow inventory: none (gate `test_txp5r1_q100`). Sentinels `test_txp5r1_q88`–`q101`; Q7 lineage `test_txp5r1_q102`.
 
 Registry parity (Q7): gates `test_txp5r1_q12`–`q24`, `q31`–`q37`, `q45`–`q55`, `q56`–`q65`, `q66`–`q73`, `q74`–`q87`, `q88`–`q102`.
+
+**Q8 blocker (START_HEAD `4bd430ae…`):** `Q7-DEFINITION-TIME-SCOPE-01` — Q7 applied parameter lexical bindings before visiting function/lambda default expressions, so same-name defaults (e.g. `def f(ChildExecutionRunner=ChildExecutionRunner)`) incorrectly treated the RHS as parameter-shadowed instead of outer-scope canonical escape.
+
+**Q8 remediation:** one authoritative callable pipeline — `_visit_callable_definition_time_expressions` (decorators + defaults in enclosing provenance) → `_enter_callable_lexical_scope` (parameter binds) → annotations/body under child provenance → `_exit_callable_lexical_scope`; shared for `FunctionDef`, `AsyncFunctionDef`, and `Lambda`. Parameter names do not affect default RHS classification; body retains Q7 shadow semantics; local canonical import after parameter default shadow unchanged.
+
+**Q8 qualification:** production parity unchanged (`legal constructor surfaces = 4`, `classified registry surfaces = 4`, `unknown surfaces = 0`, `orphan = 0`, `duplicate = 0`, `forbidden canonical runtime usages = 0`, `unknown usage contexts = 0`, `canonical lexical-shadow violations = 0` in `intergrax/`). Sentinels `test_txp5r1_q103`–`q109`; Q8 lineage `test_txp5r1_q110`.
+
+Registry parity (Q8): gates `test_txp5r1_q12`–`q24`, `q31`–`q37`, `q45`–`q55`, `q56`–`q65`, `q66`–`q73`, `q74`–`q87`, `q88`–`q110`.
 
 ## Resume baseline evidence (@ Q2)
 

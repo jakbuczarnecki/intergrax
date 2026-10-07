@@ -22,6 +22,7 @@ TRACE_X_P5_R1_R1_Q4_START_HEAD: Final[str] = "ea1e4947fe66c120bb502885dc912e5f98
 TRACE_X_P5_R1_R1_Q5_START_HEAD: Final[str] = "274c5ff40e0c4f30764d13be65a00e3b463ec5e4"
 TRACE_X_P5_R1_R1_Q6_START_HEAD: Final[str] = "4aba36e50a474a0d6915a60f73f5a3b31e6f71c2"
 TRACE_X_P5_R1_R1_Q7_START_HEAD: Final[str] = "5afc518a78fe5777d5f67934c1ecbd1ec6740e0a"
+TRACE_X_P5_R1_R1_Q8_START_HEAD: Final[str] = "4bd430ae660dbc9f826c3b5ede0b92aefea36b07"
 
 _NEUTRAL_REVISION_REF_PATH = (
     repo_root() / "intergrax" / "contracts" / "effective_profile_revision_provenance_ref.py"

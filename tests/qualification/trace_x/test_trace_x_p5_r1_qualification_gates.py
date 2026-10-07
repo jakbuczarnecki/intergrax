@@ -52,6 +52,7 @@ from tests.qualification.trace_x._trace_x_p5_r1_support import (
     TRACE_X_P5_R1_R1_Q5_START_HEAD,
     TRACE_X_P5_R1_R1_Q6_START_HEAD,
     TRACE_X_P5_R1_R1_Q7_START_HEAD,
+    TRACE_X_P5_R1_R1_Q8_START_HEAD,
     TRACE_X_P5_R1_START_HEAD,
     child_runner_profile_resolution_import_violations,
     discover_profile_aware_environment_host_roots,
@@ -1339,4 +1340,112 @@ def test_txp5r1_q102_q7_start_head_recorded_and_ancestry() -> None:
     assert TRACE_X_P5_R1_R1_Q7_START_HEAD == "5afc518a78fe5777d5f67934c1ecbd1ec6740e0a"
     subprocess.check_call(
         ["git", "merge-base", "--is-ancestor", TRACE_X_P5_R1_R1_Q7_START_HEAD, "HEAD"],
+    )
+
+
+def test_txp5r1_q103_same_name_function_default_sees_outer_canonical_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_same_name_default_outer.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f(
+    ChildExecutionRunner=ChildExecutionRunner,
+):
+    pass
+"""
+    records = discover_canonical_constructor_usage_records_in_source(rel, source)
+    forbidden = [
+        r for r in records if r.kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE
+    ]
+    assert forbidden
+    violations = discover_canonical_constructor_rebindings_in_source(rel, source)
+    assert any("alias-escape" in v for v in violations)
+
+
+def test_txp5r1_q104_same_name_default_rhs_forbidden_body_shadow_non_canonical() -> None:
+    rel = "intergrax/synthetic/child_runner_same_name_default_body_shadow.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f(
+    ChildExecutionRunner=ChildExecutionRunner,
+):
+    return ChildExecutionRunner()
+"""
+    records = discover_canonical_constructor_usage_records_in_source(rel, source)
+    kinds = {r.kind for r in records}
+    assert CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE in kinds
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert not discovered
+
+
+def test_txp5r1_q105_same_name_lambda_default_outer_canonical_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_same_name_lambda_default.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+f = lambda ChildExecutionRunner=ChildExecutionRunner: ChildExecutionRunner()
+"""
+    records = discover_canonical_constructor_usage_records_in_source(rel, source)
+    forbidden = [
+        r for r in records if r.kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE
+    ]
+    assert forbidden
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert not discovered
+
+
+def test_txp5r1_q106_different_name_function_default_still_forbidden_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_different_name_default.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f(factory=ChildExecutionRunner):
+    pass
+"""
+    records = discover_canonical_constructor_usage_records_in_source(rel, source)
+    assert any(r.kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE for r in records)
+    assert discover_canonical_constructor_rebindings_in_source(rel, source)
+
+
+def test_txp5r1_q107_local_import_restores_provenance_after_parameter_default_shadow() -> None:
+    rel = "intergrax/synthetic/child_runner_default_shadow_then_import.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f(
+    ChildExecutionRunner=object(),
+):
+    ChildExecutionRunner()
+    from intergrax.runtime.execution.child import ChildExecutionRunner
+    ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert discovered == {f"{rel}::f"}
+
+
+def test_txp5r1_q108_production_usage_inventory_unchanged_q8() -> None:
+    records, surfaces = production_canonical_constructor_usage_inventory()
+    assert len(surfaces) == 4
+    forbidden = [
+        r for r in records if r.kind == CanonicalConstructorUsageKind.FORBIDDEN_RUNTIME_ESCAPE
+    ]
+    unknown = [r for r in records if r.kind == CanonicalConstructorUsageKind.UNKNOWN]
+    assert not forbidden, forbidden
+    assert not unknown, unknown
+
+
+def test_txp5r1_q109_constructor_registry_parity_unchanged_q8() -> None:
+    discovered = discover_child_execution_runner_constructor_surfaces()
+    result = compare_child_runner_surfaces_to_registry(discovered)
+    assert not result.unknown
+    assert not result.orphan
+    assert not result.duplicate_registry_keys
+    assert len(discovered) == len(CHILD_EXECUTION_RUNNER_SURFACE_REGISTRY)
+
+
+def test_txp5r1_q110_q8_start_head_recorded_and_ancestry() -> None:
+    assert TRACE_X_P5_R1_R1_Q8_START_HEAD == "4bd430ae660dbc9f826c3b5ede0b92aefea36b07"
+    subprocess.check_call(
+        ["git", "merge-base", "--is-ancestor", TRACE_X_P5_R1_R1_Q8_START_HEAD, "HEAD"],
     )

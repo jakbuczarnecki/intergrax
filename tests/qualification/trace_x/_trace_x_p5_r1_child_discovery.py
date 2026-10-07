@@ -554,12 +554,34 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
         self._scope_stack.pop()
         self._record_constructor_shadow(node.name)
 
-    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
-        for decorator in node.decorator_list:
-            self.visit(decorator)
+    def _visit_callable_definition_time_expressions(
+        self,
+        parent: ast.FunctionDef | ast.AsyncFunctionDef | ast.Lambda,
+        args: ast.arguments,
+    ) -> None:
+        """Defaults/kw-only defaults evaluate in the enclosing scope (before parameters bind)."""
+        for default in (*args.defaults, *args.kw_defaults):
+            if default is not None:
+                self._visit_with_parent(parent, default)
+
+    def _enter_callable_lexical_scope(
+        self,
+        function_name: str | None,
+        args: ast.arguments,
+    ) -> None:
         self._scope_stack.append(self._current_prov().copy())
-        self._function_stack.append(node.name)
-        self._apply_lexical_binds_from_site(node.args)
+        if function_name is not None:
+            self._function_stack.append(function_name)
+        self._apply_lexical_binds_from_site(args)
+
+    def _exit_callable_lexical_scope(self, function_name: str | None) -> None:
+        if function_name is not None:
+            self._function_stack.pop()
+        self._scope_stack.pop()
+        if function_name is not None:
+            self._record_constructor_shadow(function_name)
+
+    def _visit_function_lexical_body(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
         self._visit_annotation_subtree(node.returns)
         for arg in (
             *node.args.posonlyargs,
@@ -567,24 +589,30 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
             *node.args.kwonlyargs,
         ):
             self._visit_annotation_subtree(arg.annotation)
-        for default in (*node.args.defaults, *node.args.kw_defaults):
-            self._visit_with_parent(node, default)
         for stmt in node.body:
             self.visit(stmt)
-        self._function_stack.pop()
-        self._scope_stack.pop()
-        self._record_constructor_shadow(node.name)
+
+    def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        for decorator in node.decorator_list:
+            self.visit(decorator)
+        self._visit_callable_definition_time_expressions(node, node.args)
+        self._enter_callable_lexical_scope(node.name, node.args)
+        self._visit_function_lexical_body(node)
+        self._exit_callable_lexical_scope(node.name)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
-        self.visit_FunctionDef(node)  # type: ignore[arg-type]
+        for decorator in node.decorator_list:
+            self.visit(decorator)
+        self._visit_callable_definition_time_expressions(node, node.args)
+        self._enter_callable_lexical_scope(node.name, node.args)
+        self._visit_function_lexical_body(node)
+        self._exit_callable_lexical_scope(node.name)
 
     def visit_Lambda(self, node: ast.Lambda) -> None:
-        self._scope_stack.append(self._current_prov().copy())
-        self._apply_lexical_binds_from_site(node.args)
-        for default in (*node.args.defaults, *node.args.kw_defaults):
-            self._visit_with_parent(node, default)
+        self._visit_callable_definition_time_expressions(node, node.args)
+        self._enter_callable_lexical_scope(None, node.args)
         self._visit_with_parent(node, node.body)
-        self._scope_stack.pop()
+        self._exit_callable_lexical_scope(None)
 
     def visit_For(self, node: ast.For) -> None:
         self.visit(node.iter)
