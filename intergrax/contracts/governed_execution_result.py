@@ -9,10 +9,22 @@ object — not loose proof/decision/metadata fragments.
 
 from __future__ import annotations
 
+import json
 from datetime import datetime
-from typing import Final, Literal
+from typing import Final, Literal, TypeAlias
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    validate_attempt_id,
+    validate_execution_id,
+    validate_run_id,
+    validate_task_id,
+)
 
 from intergrax.contracts.decision_authorization import (
     DecisionExecutionActionKind,
@@ -28,6 +40,7 @@ from intergrax.contracts.provider_invocation import (
 from intergrax.contracts.runtime_policy import PolicyAction
 
 SCHEMA_GOVERNED_EXECUTION_RESULT_V1: Final = "governed_execution_result.v1"
+SCHEMA_GOVERNED_EXECUTION_RESULT_V2: Final = "governed_execution_result.v2"
 _NON_EMPTY = Field(min_length=1)
 
 _EXTERNAL_WORK_ACTION_CREATE: Final[DecisionExecutionActionKind] = (
@@ -200,3 +213,139 @@ class GovernedExecutionResult(BaseModel):
         if self.execution_completed_at < self.execution_started_at:
             raise ValueError("execution_timestamps_inverted")
         return self
+
+
+class GovernedExecutionResultV2(BaseModel):
+    """Atomic post-execution result with canonical typed execution identity (v2)."""
+
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["governed_execution_result.v2"] = (
+        SCHEMA_GOVERNED_EXECUTION_RESULT_V2
+    )
+    task_id: TaskId
+    run_id: RunId
+    attempt_id: AttemptId
+    execution_id: ExecutionId
+    principal_id: str = _NON_EMPTY
+    tenant_id: str = _NON_EMPTY
+    correlation_id: str | None = None
+    idempotency_key: str | None = None
+    action: str = _NON_EMPTY
+    evaluated_policy_decision: EvaluatedPolicyDecision
+    provider_invocation: ProviderInvocation
+    provider_outcome: ProviderInvocationOutcome
+    proof: GovernedProofProfile
+    execution_started_at: datetime
+    execution_completed_at: datetime
+
+    @field_validator("task_id", mode="before")
+    @classmethod
+    def _validate_task_id(cls, value: object) -> TaskId:
+        return validate_task_id(value)
+
+    @field_validator("run_id", mode="before")
+    @classmethod
+    def _validate_run_id(cls, value: object) -> RunId:
+        return validate_run_id(value)
+
+    @field_validator("attempt_id", mode="before")
+    @classmethod
+    def _validate_attempt_id(cls, value: object) -> AttemptId:
+        return validate_attempt_id(value)
+
+    @field_validator("execution_id", mode="before")
+    @classmethod
+    def _validate_execution_id(cls, value: object) -> ExecutionId:
+        return validate_execution_id(value)
+
+    @field_validator("principal_id", "action", "tenant_id")
+    @classmethod
+    def _strip_required(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("must be non-empty")
+        return normalized
+
+    @model_validator(mode="after")
+    def _assert_atomic_consistency(self) -> GovernedExecutionResultV2:
+        inv = self.provider_invocation
+        out = self.provider_outcome
+        proof = self.proof
+        ev = self.evaluated_policy_decision
+        decision = ev.decision
+        task_s = str(self.task_id)
+        run_s = str(self.run_id)
+
+        if inv.task_id != task_s or proof.task_id != task_s:
+            raise ValueError("task_id_inconsistent")
+        if inv.run_id != run_s or proof.run_id != run_s:
+            raise ValueError("run_id_inconsistent")
+        if proof.principal_id != self.principal_id:
+            raise ValueError("principal_id_inconsistent")
+        if proof.provider_id != inv.provider_id:
+            raise ValueError("provider_id_inconsistent")
+        if proof.action != self.action:
+            raise ValueError("action_inconsistent_with_proof")
+        if decision.action is not PolicyAction.ALLOW:
+            raise ValueError("governed_execution_requires_allow")
+        if proof.policy_action is not PolicyAction.ALLOW:
+            raise ValueError("proof_requires_allow")
+        if proof.policy_action is not decision.action:
+            raise ValueError("proof_policy_action_mismatch")
+        if (
+            proof.policy_rule_id.strip()
+            and proof.policy_rule_id != ev.matched_rule_id
+        ):
+            raise ValueError("proof_policy_rule_mismatch")
+        if (
+            decision.policy_bundle_id != ev.bundle_id
+            or decision.policy_bundle_version != ev.bundle_version
+            or decision.policy_bundle_digest != ev.bundle_digest
+        ):
+            raise ValueError("policy_bundle_identity_inconsistent")
+        if out.invocation_id != inv.invocation_id:
+            raise ValueError("invocation_id_outcome_mismatch")
+        if out.status is not ProviderInvocationStatus.SUCCEEDED:
+            raise ValueError("governed_execution_requires_succeeded_outcome")
+        expected_op = _ACTION_TO_OPERATION.get(self.action)
+        if expected_op is not None and inv.operation != expected_op:
+            raise ValueError("action_operation_mismatch")
+        if proof.tenant_id is None or not str(proof.tenant_id).strip():
+            raise ValueError("proof_tenant_id_required")
+        if self.tenant_id != proof.tenant_id:
+            raise ValueError("tenant_id_inconsistent")
+        if self.correlation_id and inv.correlation_id and (
+            self.correlation_id != inv.correlation_id
+            or (
+                proof.correlation_id
+                and proof.correlation_id != self.correlation_id
+            )
+        ):
+            raise ValueError("correlation_id_inconsistent")
+        if self.idempotency_key and inv.idempotency_key and (
+            self.idempotency_key != inv.idempotency_key
+            or (
+                proof.idempotency_key
+                and proof.idempotency_key != self.idempotency_key
+            )
+        ):
+            raise ValueError("idempotency_key_inconsistent")
+        if self.execution_completed_at < self.execution_started_at:
+            raise ValueError("execution_timestamps_inverted")
+        return self
+
+
+AnyGovernedExecutionResult: TypeAlias = GovernedExecutionResult | GovernedExecutionResultV2
+
+
+def parse_governed_execution_result_json(raw: str) -> AnyGovernedExecutionResult:
+    data = json.loads(raw)
+    if not isinstance(data, dict):
+        raise ValueError("governed_execution_result_must_be_object")
+    schema = data.get("schema_version")
+    if schema == SCHEMA_GOVERNED_EXECUTION_RESULT_V1:
+        return GovernedExecutionResult.model_validate(data)
+    if schema == SCHEMA_GOVERNED_EXECUTION_RESULT_V2:
+        return GovernedExecutionResultV2.model_validate(data)
+    raise ValueError("unsupported_governed_execution_result_schema")

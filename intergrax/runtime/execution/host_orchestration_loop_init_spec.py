@@ -11,6 +11,9 @@ from typing import TYPE_CHECKING
 
 from intergrax.agents.persistence.checkpoint_store import AgentCheckpointStore
 from intergrax.agents.persistence.compensation_queue_store import CompensationQueueStore
+from intergrax.contracts.child_execution_context_inheritance import (
+    ChildExecutionContextInheritancePort,
+)
 from intergrax.runtime.execution.host_orchestration_wiring_bundle import (
     HostOrchestrationApplicationWiringBundle,
 )
@@ -101,6 +104,7 @@ class HostOrchestrationLoopInitSpec:
     governance_evidence_recorder: GovernanceEvidenceRecorder | None = None
     event_bus: RuntimeEventBus | None = None
     application_wiring: HostOrchestrationApplicationWiringBundle | None = None
+    child_context_inheritance: ChildExecutionContextInheritancePort | None = None
 
 
 __all__ = [

@@ -65,6 +65,12 @@ from intergrax.contracts.provider_invocation import ProviderInvocation
 from intergrax.contracts.provider_invocation_dispatch import ProviderInvocationDispatchPort
 from intergrax.contracts.provider_invocation_store import ProviderInvocationPersistenceError
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
+from intergrax.runtime.governance.mse_governance_evidence_projection import (
+    mse_governance_evidence_ref_from_persisted_outcome,
+)
+from intergrax.runtime.policy.meaningful_side_effect_authorization import (
+    canonical_runtime_policy_decision,
+)
 from intergrax.integrations.contracts.external_work import (
     ExternalWorkError,
     ExternalWorkIntegration,
@@ -152,6 +158,7 @@ class _ExecutedSideEffect(NamedTuple):
     task_id: str
     run_id: str
     principal_id: str
+    governance_evidence: GovernanceEvidenceRef | None = None
 
 
 T = TypeVar("T")
@@ -405,6 +412,7 @@ class ExternalWorkAdapter:
                 idempotency_key=request.idempotency_key,
                 correlation_id=request.correlation_id
                 or snapshot.correlation.correlation_id,
+                governance_evidence=authorized.governance_evidence,
                 provider_mutation_dispatched=True,
             )
         except ExternalWorkError as exc:
@@ -1167,15 +1175,24 @@ class ExternalWorkAdapter:
             )
 
         decision = authorized_snapshot.decision
+        evidence_decision = canonical_runtime_policy_decision(
+            authorized_snapshot.enforcement_result,
+        )
         runtime_decision = authorized_snapshot.enforcement_result.composition.runtime_policy
         if isinstance(runtime_decision, PolicyDecision):
             decision = runtime_decision
+        governance_evidence = mse_governance_evidence_ref_from_persisted_outcome(
+            enforcement_request,
+            evidence_decision,
+            authorized_snapshot.governance_evidence_persistence,
+        )
         return _ExecutedSideEffect(
             value=boundary_result,
             decision=decision,
             task_id=resolved_task,
             run_id=resolved_run,
             principal_id=resolved_principal,
+            governance_evidence=governance_evidence,
         )
 
     def _authorization_result_to_adapter(

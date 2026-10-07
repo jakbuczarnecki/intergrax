@@ -20,6 +20,8 @@ from intergrax.runtime.events.payloads.canonical import (
     AgentSelectionPayloadV1,
     ContextAssemblyPayloadV1,
     ContextAssemblyPayloadV2,
+    ContextAssemblyPayloadV3,
+    ContextAssemblyPayloadV4,
     ContextCandidatePayloadV1,
     DecisionPayloadV1,
     DelegationGrantedPayloadV1,
@@ -30,6 +32,8 @@ from intergrax.runtime.events.payloads.canonical import (
     HumanPayloadV1,
     InterruptPayloadV1,
     LlmCallPayloadV1,
+    LlmCallPayloadV2,
+    LlmCallPayloadV3,
     SkillResolvedPayloadV1,
     TaskLifecyclePayloadV1,
     ToolPayloadV1,
@@ -126,6 +130,47 @@ def _context_assembly_v1_from_raw(raw: dict[str, Any]) -> ContextAssemblyPayload
         context_final_chars=_int_field(raw, "context_final_chars"),
         trimmed=bool(raw.get("trimmed", False)),
         engine_id=_str_field(raw, "engine_id"),
+    )
+
+
+def _context_assembly_v4_from_raw(raw: dict[str, Any]) -> ContextAssemblyPayloadV4:
+    typed_v3 = _context_assembly_v3_from_raw(raw)
+    return ContextAssemblyPayloadV4(
+        node_id=typed_v3.node_id,
+        summary_tier=typed_v3.summary_tier,
+        context_original_chars=typed_v3.context_original_chars,
+        context_final_chars=typed_v3.context_final_chars,
+        trimmed=typed_v3.trimmed,
+        engine_id=typed_v3.engine_id,
+        step_index=typed_v3.step_index,
+        step_kind=typed_v3.step_kind,
+        fragment_token_cost=typed_v3.fragment_token_cost,
+        estimated_cost_microusd=typed_v3.estimated_cost_microusd,
+        model_input_messages_hash=typed_v3.model_input_messages_hash,
+        token_counter_strategy_id=typed_v3.token_counter_strategy_id,
+        compaction_strategy_id=typed_v3.compaction_strategy_id,
+        degradation_policy_id=typed_v3.degradation_policy_id,
+        context_decision_evidence_fingerprint=_str_field(raw, "context_decision_evidence_fingerprint"),
+    )
+
+
+def _context_assembly_v3_from_raw(raw: dict[str, Any]) -> ContextAssemblyPayloadV3:
+    typed_v2 = _context_assembly_v2_from_raw(raw)
+    return ContextAssemblyPayloadV3(
+        node_id=typed_v2.node_id,
+        summary_tier=typed_v2.summary_tier,
+        context_original_chars=typed_v2.context_original_chars,
+        context_final_chars=typed_v2.context_final_chars,
+        trimmed=typed_v2.trimmed,
+        engine_id=typed_v2.engine_id,
+        step_index=typed_v2.step_index,
+        step_kind=typed_v2.step_kind,
+        fragment_token_cost=typed_v2.fragment_token_cost,
+        estimated_cost_microusd=typed_v2.estimated_cost_microusd,
+        model_input_messages_hash=_str_field(raw, "model_input_messages_hash"),
+        token_counter_strategy_id=_str_field(raw, "token_counter_strategy_id"),
+        compaction_strategy_id=_str_field(raw, "compaction_strategy_id"),
+        degradation_policy_id=_str_field(raw, "degradation_policy_id"),
     )
 
 
@@ -509,8 +554,23 @@ def legacy_spine_payload_to_typed(
         return typed, promote
 
     if event_type == RuntimeEventType.LLM_CALL:
-        typed = LlmCallPayloadV1(
+        schema_id = raw.get("payload_schema_id") or raw.get("schema_id")
+        if schema_id == LlmCallPayloadV1.schema_id and not raw.get("model_input_messages_hash"):
+            typed = LlmCallPayloadV1(
+                model=_str_field(raw, "model", _str_field(raw, "model_id")),
+                prompt_tokens=_int_field(raw, "prompt_tokens"),
+                completion_tokens=_int_field(raw, "completion_tokens"),
+                total_tokens=_int_field(raw, "total_tokens"),
+                finish_reason=raw.get("finish_reason")
+                if raw.get("finish_reason") is None or isinstance(raw.get("finish_reason"), str)
+                else None,
+                label=_str_field(raw, "label"),
+            )
+            return typed, dict(raw)
+        scope_raw = _str_field(raw, "execution_scope", "primary_model_call")
+        typed_v3 = LlmCallPayloadV3(
             model=_str_field(raw, "model", _str_field(raw, "model_id")),
+            provider=_str_field(raw, "provider"),
             prompt_tokens=_int_field(raw, "prompt_tokens"),
             completion_tokens=_int_field(raw, "completion_tokens"),
             total_tokens=_int_field(raw, "total_tokens"),
@@ -518,8 +578,11 @@ def legacy_spine_payload_to_typed(
             if raw.get("finish_reason") is None or isinstance(raw.get("finish_reason"), str)
             else None,
             label=_str_field(raw, "label"),
+            model_input_messages_hash=_str_field(raw, "model_input_messages_hash"),
+            execution_scope=scope_raw,
+            context_assembly_event_id=_str_field(raw, "context_assembly_event_id"),
         )
-        return typed, dict(raw)
+        return typed_v3, dict(raw)
 
     if event_type == RuntimeEventType.INTERRUPT_REQUESTED or event_type == RuntimeEventType.INTERRUPT_HANDLED:
         metadata_raw = raw.get("metadata")
@@ -563,7 +626,13 @@ def legacy_spine_payload_to_typed(
         return typed, dict(raw) if raw else None
 
     if event_type in {RuntimeEventType.CONTEXT_ASSEMBLED, RuntimeEventType.CONTEXT_TRIMMED}:
-        typed = _context_assembly_v2_from_raw(raw)
+        schema_id = raw.get("payload_schema_id") or raw.get("schema_id")
+        if event_type == RuntimeEventType.CONTEXT_ASSEMBLED:
+            typed = _context_assembly_v4_from_raw(raw)
+        elif schema_id == ContextAssemblyPayloadV3.schema_id or raw.get("model_input_messages_hash"):
+            typed = _context_assembly_v3_from_raw(raw)
+        else:
+            typed = _context_assembly_v2_from_raw(raw)
         return typed, dict(raw) if raw else None
 
     if event_type in {

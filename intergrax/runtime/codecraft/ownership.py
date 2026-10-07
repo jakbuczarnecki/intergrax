@@ -1,7 +1,7 @@
 # © Artur Czarnecki. All rights reserved.
 # Intergrax framework – proprietary and confidential.
 
-"""CodeCraft session ownership and canonical execution authorization (ECC-2)."""
+"""CodeCraft session ownership and local execution-gate results (ECC-2)."""
 
 from __future__ import annotations
 
@@ -9,8 +9,6 @@ from dataclasses import dataclass
 
 from intergrax.codecraft.profile import CodeCraftProfile
 from intergrax.contracts.execution_identity import peek_active_execution_identity
-from intergrax.runtime.human.models import HumanDecisionRecord, HumanResponseVerdict
-from intergrax.tools.registry.runtime_bindings import HumanDecisionStoreBinding
 from intergrax.tools.registry.wiring import ToolWiringContext
 
 CODECRAFT_EXEC_HITL_NOTES_PREFIX = "codecraft_exec:"
@@ -33,6 +31,15 @@ class CodeCraftSessionOwnership:
 
 @dataclass(frozen=True, slots=True)
 class CodeCraftExecAuthorization:
+    """
+    Local CodeCraft profile gate result only.
+
+    When ``authorized`` is True, the local supervised/HITL profile gate does not block
+    the attempt; it does **not** mean platform governance, MSE, or ToolRuntime
+    authorization exists. Does not mint platform execution permission and never reads
+    HumanDecisionPersistence as an authorization source.
+    """
+
     authorized: bool
     pending_hitl: bool = False
     denied: bool = False
@@ -102,22 +109,6 @@ def matches_session_ownership(
     return session_run_id == ownership.run_id
 
 
-def _decision_matches_craft_scope(
-    record: HumanDecisionRecord,
-    *,
-    ownership: CodeCraftSessionOwnership,
-    craft_id: str,
-) -> bool:
-    if record.tenant_id != ownership.tenant_id:
-        return False
-    if record.task_id != ownership.task_id:
-        return False
-    if record.run_id != ownership.run_id:
-        return False
-    expected = codecraft_exec_hitl_notes(craft_id)
-    return record.notes == expected or record.notes.startswith(f"{expected}:")
-
-
 def resolve_codecraft_exec_authorization(
     ctx: ToolWiringContext,
     *,
@@ -125,7 +116,16 @@ def resolve_codecraft_exec_authorization(
     ownership: CodeCraftSessionOwnership,
     craft_id: str,
 ) -> CodeCraftExecAuthorization:
-    """Shared HITL gate for iterate and codecraft.run execution paths."""
+    """
+    Shared supervised-profile gate for iterate and codecraft.run execution paths.
+
+    Persisted human decisions are evidence only; this gate never grants execution from
+    the human decision store as an authorization source. When HITL is required by the
+    profile, fail closed until a sanctioned typed canonical authority contract exists
+    (not implemented on CodeCraft wiring-bound paths in this release).
+    """
+    _ = ctx
+    _ = craft_id
     needs_hitl = profile.mode == "supervised" or profile.require_hitl_before_exec
     if not needs_hitl:
         return CodeCraftExecAuthorization(authorized=True)
@@ -133,24 +133,8 @@ def resolve_codecraft_exec_authorization(
     if ownership.run_id is None:
         return CodeCraftExecAuthorization(authorized=False, pending_hitl=True, error="hitl_pending")
 
-    store = ctx.human_decision_store
-    if store is None or not isinstance(store, HumanDecisionStoreBinding):
-        return CodeCraftExecAuthorization(authorized=False, pending_hitl=True, error="hitl_pending")
-
-    decisions = store.list_for_task(ownership.task_id, ownership.tenant_id)
-    scoped = [
-        item
-        for item in decisions
-        if isinstance(item, HumanDecisionRecord)
-        and _decision_matches_craft_scope(item, ownership=ownership, craft_id=craft_id)
-    ]
-
-    for record in scoped:
-        if record.verdict is HumanResponseVerdict.REJECT:
-            return CodeCraftExecAuthorization(authorized=False, denied=True, error="hitl_denied")
-
-    for record in scoped:
-        if record.verdict is HumanResponseVerdict.APPROVE:
-            return CodeCraftExecAuthorization(authorized=True)
-
-    return CodeCraftExecAuthorization(authorized=False, pending_hitl=True, error="hitl_pending")
+    return CodeCraftExecAuthorization(
+        authorized=False,
+        pending_hitl=True,
+        error="hitl_pending",
+    )

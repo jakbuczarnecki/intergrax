@@ -5,11 +5,12 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from typing import Optional
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
 
+from intergrax.contracts.structured_json_value import JsonObject
 from intergrax.runtime.notifications.models import NotificationMessage
 from intergrax.runtime.long_running.runtime_checkpoint import RuntimeCheckpoint
 from intergrax.runtime.task.task_state import TaskState
@@ -21,7 +22,7 @@ class TaskCheckpoint(BaseModel):
     tenant_id: str
     resume_token: str
     task_state: TaskState
-    task_snapshot: Dict[str, Any] = Field(default_factory=dict)
+    task_snapshot: JsonObject = Field(default_factory=dict)
     progress_message: str = ""
     notify_channel: Optional[str] = None
     created_at_utc: str = ""

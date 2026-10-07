@@ -277,6 +277,18 @@ class CheckpointStoreExecutionTerminalStore(ExecutionTerminalStore):
         return self._checkpoint_store.put_terminal_record_if_absent(record)
 
 
+def terminal_capability_from_task_checkpoint_store(
+    checkpoint_store: object | None,
+) -> ExecutionTerminalPersistenceCapability | None:
+    """Q2-D1: narrow TaskCheckpointPersistence to terminal capability when supported."""
+    if checkpoint_store is not None and isinstance(
+        checkpoint_store,
+        ExecutionTerminalPersistenceCapability,
+    ):
+        return checkpoint_store
+    return None
+
+
 def wire_execution_terminal_store(
     *,
     kv_store: DistributedKVStore | None = None,

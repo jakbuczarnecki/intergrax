@@ -78,7 +78,10 @@ def test_gr10_a3_execution_path_matrix(
         )
         metadata = dict(enricher(task).metadata)
         if session_enabled:
-            assert metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is store
+            from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY
+
+            assert metadata.get(ACP_HOST_CONTEXT_KEY) is None
+            assert metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
         else:
             assert metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
     assert _agent_engine_branch(metadata) == expected
@@ -112,7 +115,10 @@ def test_gr10_a3_checkpoint_enricher_wires_store_when_session_explicit() -> None
         metadata={AcpMetadataKey.SESSION_ENABLED: True},
     )
     enriched = enricher(task)
-    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is store
+    from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY
+
+    assert enriched.metadata.get(ACP_HOST_CONTEXT_KEY) is None
+    assert enriched.metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
 
 
 def test_gr10_a3_reliability_enricher_checkpoint_decoupled() -> None:

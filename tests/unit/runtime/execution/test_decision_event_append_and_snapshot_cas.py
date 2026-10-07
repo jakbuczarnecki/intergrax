@@ -260,8 +260,12 @@ def test_snapshot_cas_stale_writer_rejected(store_factory: str, tmp_path) -> Non
         )
     )
     save_decision_checkpoint(store, checkpoint=checkpoint, expected_revision=0)
-    assert store.materialized_revision(key=_key(identity)) == 1
+    materialized = store.load_materialized(key=_key(identity))
+    assert materialized is not None
+    assert materialized.snapshot_revision == 1
     save_decision_checkpoint(store, checkpoint=checkpoint, expected_revision=1)
     with pytest.raises(StaleDecisionCheckpointWriteError):
         save_decision_checkpoint(store, checkpoint=checkpoint, expected_revision=1)
-    assert store.materialized_revision(key=_key(identity)) == 2
+    materialized = store.load_materialized(key=_key(identity))
+    assert materialized is not None
+    assert materialized.snapshot_revision == 2

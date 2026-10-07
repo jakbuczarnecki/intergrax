@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from intergrax.contracts.human_approver import HumanApproverEvidence
 from intergrax.runtime.human.escalation import EscalationTarget
 from intergrax.runtime.human.models import HumanResponseVerdict, build_human_decision_record
 from intergrax.runtime.human.pause import HumanPauseCoordinator
@@ -57,7 +58,7 @@ def clear_consumed_human_input(task: Task) -> None:
     task.sync_metadata()
 
 
-def _approver_from_resolution(task: Task) -> object:
+def _approver_from_resolution(task: Task) -> HumanApproverEvidence:
     resolution = task.runtime.governance.hitl_resolution
     if resolution is None:
         raise HumanDecisionPersistenceError(
@@ -97,7 +98,7 @@ def persist_human_decision(
     record = build_human_decision_record(
         task_id=task.task_id,
         tenant_id=task.tenant_id,
-        approver=approver,  # type: ignore[arg-type]
+        approver=approver,
         verdict=verdict,
         response_text=response_text or str(task.options.human.response_text or ""),
         human_request_id=human_request.request_id if human_request else "",

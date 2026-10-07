@@ -29,6 +29,10 @@ class RuntimeEventExecutionFailureEvidenceRecorder:
     def __init__(self, bus: RuntimeEventBus) -> None:
         self._bus = bus
 
+    @property
+    def event_bus(self) -> RuntimeEventBus:
+        return self._bus
+
     def record_failure(
         self,
         request: ExecutionFailureEvidenceRequest,

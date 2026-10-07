@@ -5,9 +5,11 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Dict, Optional
 
+from intergrax.llm.messages import ChatMessage, compute_model_facing_messages_hash
 from intergrax.llm_adapters.contracts.llm_provider import llm_provider_slug
 from intergrax.llm_adapters.contracts.llm_usage_stats import (
     LLMRunStats,
@@ -38,6 +40,7 @@ class LLMAdapterUsageLog(LLMRunStatsReader):
         run_id: Optional[str] = None,
         *,
         adapter: Optional[LLMAdapter] = None,
+        messages: Sequence[ChatMessage] | None = None,
     ) -> LLMCallStats:
         """
         Begin one LLM call (not the whole runtime.run()).
@@ -57,6 +60,16 @@ class LLMAdapterUsageLog(LLMRunStatsReader):
         if adapter is not None:
             call.provider = llm_provider_slug(adapter.provider)
             call.model = str(adapter.model or "")
+        if messages is not None:
+            call.model_input_messages_hash = compute_model_facing_messages_hash(messages)
+        else:
+            from intergrax.runtime.llm.model_call_attribution import (
+                peek_pending_model_input_messages_hash,
+            )
+
+            pending = peek_pending_model_input_messages_hash()
+            if pending:
+                call.model_input_messages_hash = pending
         return call
 
     def end_call(
@@ -67,6 +80,7 @@ class LLMAdapterUsageLog(LLMRunStatsReader):
         output_tokens: int,
         success: bool = True,
         error_type: Optional[str] = None,
+        finish_reason: Optional[str] = None,
     ) -> None:
         """
         Finish one LLM call and aggregate into per-run stats.
@@ -82,6 +96,7 @@ class LLMAdapterUsageLog(LLMRunStatsReader):
 
         call.success = bool(success)
         call.error_type = error_type
+        call.finish_reason = finish_reason
 
         consume_llm_token_usage(
             input_tokens=call.input_tokens,
@@ -116,6 +131,19 @@ class LLMAdapterUsageLog(LLMRunStatsReader):
                 success=call.success,
                 error_type=call.error_type,
             )
+
+        from intergrax.runtime.events.llm_call_recording import maybe_record_llm_call_from_usage_end
+
+        maybe_record_llm_call_from_usage_end(
+            run_id=call.run_id,
+            provider=call.provider,
+            model=call.model or "",
+            input_tokens=call.input_tokens,
+            output_tokens=call.output_tokens,
+            success=call.success,
+            finish_reason=call.finish_reason,
+            model_input_messages_hash=call.model_input_messages_hash,
+        )
 
     def get_run_stats(self, run_id: Optional[str] = None) -> LLMRunStats | None:
         """
@@ -207,6 +235,8 @@ class LLMCallStats:
     # observability (set when begin_call(..., adapter=self))
     provider: str = ""
     model: str = ""
+    model_input_messages_hash: str = ""
+    finish_reason: Optional[str] = None
 
 
 __all__ = [

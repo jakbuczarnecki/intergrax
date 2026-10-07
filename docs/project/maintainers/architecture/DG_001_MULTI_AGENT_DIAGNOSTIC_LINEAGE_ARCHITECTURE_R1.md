@@ -532,6 +532,8 @@ ChildExecutionRunner child identity
 
 **Child entry must be durably admitted before child delegate work** when lineage persistence is active.
 
+**TRACE-X-P1-R1 invariant:** admission-time durable parent→child write is a **prerequisite** for child delegate execution. If durable child admission is unavailable, degradation may be recorded but the child delegate **must not** run (no non-durable executed-child fallback).
+
 ### Implementation boundary (logical — not implemented in this task)
 
 ```text

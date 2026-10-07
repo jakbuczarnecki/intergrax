@@ -9,7 +9,10 @@ import json
 import time
 from pathlib import Path
 
-from intergrax.contracts.decision_checkpoint import decision_checkpoint_state
+from intergrax.contracts.decision_checkpoint import (
+    decision_checkpoint_state,
+    restore_decision_checkpoint_state,
+)
 from intergrax.contracts.decision_finalization import (
     decision_finalization_key,
     guard_decision_finalization,
@@ -41,10 +44,17 @@ from intergrax.contracts.execution_identity import (
     mint_run_id,
     mint_task_id,
 )
-from intergrax.runtime.execution.decision_checkpoint_persistence import save_decision_checkpoint
+from intergrax.runtime.execution.decision_checkpoint_persistence import (
+    load_materialized_decision_checkpoint,
+    save_decision_checkpoint,
+)
 from intergrax.runtime.execution.decision_finalization_conformance import (
     IncidentDecisionPayload,
     conformance_artifact_payload_codec_registry,
+)
+from intergrax.runtime.execution.decision_checkpoint_persistence import (
+    ExpectedDecisionSnapshotAbsence,
+    ExistingMaterializedDecisionSnapshot,
 )
 from intergrax.runtime.execution.decision_recovery import persist_terminal_decision_state
 from testing_support.decision_e2e.canonical_decision_durable_resume import (
@@ -256,10 +266,16 @@ def authority_resume(db_dir: Path, result_path: Path) -> None:
     if loaded.finalization.authoritative_outcome is None:
         raise RuntimeError("authoritative outcome missing after resume")
     authority_id = str(loaded.finalization.authoritative_outcome.identity.decision_id)
+    materialized = load_materialized_decision_checkpoint(checkpoint_store, key=key)
+    if materialized is None:
+        write_expectation = ExpectedDecisionSnapshotAbsence(key=key)
+    else:
+        write_expectation = ExistingMaterializedDecisionSnapshot(materialized=materialized)
     terminal = persist_terminal_decision_state(
         checkpoint_persistence=checkpoint_store,
         finalization_persistence=finalization_store,
         checkpoint=loaded,
+        write_expectation=write_expectation,
     )
     _write_result(
         result_path,

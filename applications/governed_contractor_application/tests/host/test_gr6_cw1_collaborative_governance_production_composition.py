@@ -504,10 +504,15 @@ def test_gr6_decision_flow_regression_on_injected_composition() -> None:
         provider_invocation_store=invocation_store,
         clock=lambda: _T0,
     )
+    create_exec = mint_execution_id()
     with bound_gr3_active_execution(
         run_id=run_id,
         attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
+        execution_id=create_exec,
+        task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         created = runtime.orchestrator.create(
             task_id=str(task_id),
@@ -515,7 +520,7 @@ def test_gr6_decision_flow_regression_on_injected_composition() -> None:
             principal_id=_PRINCIPAL,
             tenant_id=_TENANT,
             metadata=_create_meta(str(task_id), str(run_id)),
-            execution_id="exec-gr6cw1-create",
+            execution_id=create_exec,
         )
     assert created.adapter_result is not None
     assert fake.create_calls == 1
@@ -538,9 +543,13 @@ def test_gr6_decision_flow_regression_on_injected_composition() -> None:
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
+        task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         denied = runtime.orchestrator.accept(
-            execution_id="exec-gr6cw1-accept-deny",
+            execution_id=execution_id,
             create_result=created.adapter_result,
             acceptance=acceptance,
             idempotency_key="idem-gr6cw1-accept",
@@ -562,9 +571,13 @@ def test_gr6_decision_flow_regression_on_injected_composition() -> None:
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
+        task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         accepted = runtime.orchestrator.accept(
-            execution_id="exec-gr6cw1-accept-ok",
+            execution_id=execution_id,
             create_result=created.adapter_result,
             acceptance=acceptance,
             idempotency_key="idem-gr6cw1-accept",
@@ -587,9 +600,13 @@ def test_gr6_decision_flow_regression_on_injected_composition() -> None:
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
+        task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         lineage_denied = runtime.orchestrator.accept(
-            execution_id="exec-gr6cw1-wrong-resource",
+            execution_id=execution_id,
             create_result=created.adapter_result,
             acceptance=acceptance,
             idempotency_key="idem-gr6cw1-accept-wrong",

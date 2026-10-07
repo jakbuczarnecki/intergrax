@@ -123,6 +123,9 @@ from intergrax.contracts.agent_execution_validation_engine import (
 )
 from intergrax.runtime.nexus.validation.validation_engine import NexusValidationEngine
 from intergrax.runtime.execution.agentic import AgentExecutor
+from intergrax.contracts.child_execution_context_inheritance import (
+    ChildExecutionContextInheritancePort,
+)
 from intergrax.runtime.execution.child import ChildExecutionRunner
 from intergrax.runtime.execution.request import ExecutionCapability, ExecutionRequest
 from intergrax.runtime.execution.strategy_router import StrategyExecutionRouter
@@ -234,6 +237,7 @@ class GraphExecutor:
         execution_identity: ActiveExecutionIdentity | None = None,
         authority_policy: ExecutionAuthorityPolicy | None = None,
         budget_allocation_policy: ExecutionBudgetAllocationPolicy | None = None,
+        child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
     ) -> None:
         del execution_identity
         self._registry = registry
@@ -247,7 +251,10 @@ class GraphExecutor:
         self._max_inflight_nodes = max_inflight_nodes
         self._max_delegation_depth = max_delegation_depth
         self._inflight_semaphore: asyncio.Semaphore | None = None
-        self._engine = engine or AgentEngine(registry)
+        self._engine = engine or AgentEngine(
+            registry,
+            agent_checkpoint_store=agent_checkpoint_store,
+        )
         self._router = router or AgentRouter(registry, event_bus=event_bus)
         self._validation_engine = validation_engine or NexusValidationEngine()
         self._retry_engine = retry_engine or RetryEngine(
@@ -265,6 +272,7 @@ class GraphExecutor:
         ](
             authority_policy=authority_policy,
             budget_policy=budget_allocation_policy,
+            child_context_inheritance=child_context_inheritance,
         )
         self._execution_tree_recorder: ExecutionTreeRecorder | None = None
         self._graph_node_child_delegate = _GraphNodeChildDelegate(self)

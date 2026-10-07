@@ -34,6 +34,7 @@ from intergrax.runtime.execution.budget.models import (
 from intergrax.runtime.execution.budget.persistence import (
     KvRunBudgetPersistence,
     RunBudgetPersistenceError,
+    StaleRunBudgetSnapshotWriteError,
     create_durable_run_budget_ledger_factory,
 )
 from intergrax.runtime.execution.budget.policy import DefaultSharedPoolBudgetPolicy
@@ -252,7 +253,7 @@ def test_parallel_workers_same_run_cannot_overspend() -> None:
             )
             ledger.consume_budget(child_id, BudgetUsageTotals(total_tokens=amount))
             ledger.release_child_budget(child_id)
-        except ExecutionBudgetError as exc:
+        except (ExecutionBudgetError, StaleRunBudgetSnapshotWriteError) as exc:
             failures.append(exc)
         else:
             successes.append(amount)

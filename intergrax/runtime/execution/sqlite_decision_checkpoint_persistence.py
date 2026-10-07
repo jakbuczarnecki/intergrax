@@ -17,6 +17,7 @@ from intergrax.runtime.execution.decision_artifact_payload_codec import (
     DecisionArtifactPayloadCodecRegistry,
 )
 from intergrax.runtime.execution.decision_checkpoint_persistence import (
+    MaterializedDecisionCheckpoint,
     StaleDecisionCheckpointWriteError,
 )
 from intergrax.runtime.execution.decision_durable_wire_codec import (
@@ -88,43 +89,53 @@ class SQLiteDecisionCheckpointPersistence:
                 "ALTER TABLE decision_checkpoints ADD COLUMN snapshot_revision INTEGER NOT NULL DEFAULT 0",
             )
 
-    def materialized_revision(self, *, key: DecisionFinalizationKey) -> int:
+    def _fetch_materialized_row(
+        self,
+        conn: sqlite3.Connection,
+        key: DecisionFinalizationKey,
+    ) -> sqlite3.Row | None:
+        return conn.execute(
+            """
+            SELECT checkpoint_blob, snapshot_revision
+            FROM decision_checkpoints
+            WHERE tenant_id = ? AND decision_id = ?
+              AND scope_namespace = ? AND scope_subject = ?
+            """,
+            _checkpoint_key_row(key),
+        ).fetchone()
+
+    def load_materialized(
+        self,
+        *,
+        key: DecisionFinalizationKey,
+    ) -> MaterializedDecisionCheckpoint[object] | None:
         with self._connection() as conn:
-            row = conn.execute(
-                """
-                SELECT snapshot_revision
-                FROM decision_checkpoints
-                WHERE tenant_id = ? AND decision_id = ?
-                  AND scope_namespace = ? AND scope_subject = ?
-                """,
-                _checkpoint_key_row(key),
-            ).fetchone()
+            row = self._fetch_materialized_row(conn, key)
         if row is None:
-            return 0
-        return int(row["snapshot_revision"])
+            return None
+        revision = int(row["snapshot_revision"])
+        if revision < 1:
+            return None
+        checkpoint = decode_checkpoint_blob(
+            row["checkpoint_blob"],
+            payload_codecs=self._payload_codecs,
+        )
+        restored = restore_decision_checkpoint_state(checkpoint)
+        return MaterializedDecisionCheckpoint(
+            key=key,
+            checkpoint=restored,
+            snapshot_revision=revision,
+        )
 
     def load(
         self,
         *,
         key: DecisionFinalizationKey,
     ) -> DecisionCheckpointState[object] | None:
-        with self._connection() as conn:
-            row = conn.execute(
-                """
-                SELECT checkpoint_blob
-                FROM decision_checkpoints
-                WHERE tenant_id = ? AND decision_id = ?
-                  AND scope_namespace = ? AND scope_subject = ?
-                """,
-                _checkpoint_key_row(key),
-            ).fetchone()
-        if row is None:
+        materialized = self.load_materialized(key=key)
+        if materialized is None:
             return None
-        checkpoint = decode_checkpoint_blob(
-            row["checkpoint_blob"],
-            payload_codecs=self._payload_codecs,
-        )
-        return restore_decision_checkpoint_state(checkpoint)
+        return materialized.checkpoint
 
     def save(
         self,

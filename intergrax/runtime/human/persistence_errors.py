@@ -11,8 +11,38 @@ from intergrax.contracts.human_approver import HumanApproverEvidence
 
 __all__ = [
     "HumanDecisionApproverProvenanceError",
+    "HumanDecisionPersistenceConflictError",
+    "HumanDecisionPersistenceValidationError",
     "deserialize_persisted_human_approver_evidence",
 ]
+
+
+class HumanDecisionPersistenceValidationError(ValueError):
+    """Semantic rejection at human decision persistence acceptance boundary."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        decision_id: str,
+        tenant_id: str,
+    ) -> None:
+        super().__init__(message)
+        self.decision_id = decision_id
+        self.tenant_id = tenant_id
+
+
+class HumanDecisionPersistenceConflictError(ValueError):
+    """Human decision record identity already exists; durable truth must not be overwritten."""
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        decision_id: str,
+    ) -> None:
+        super().__init__(message)
+        self.decision_id = decision_id
 
 
 class HumanDecisionApproverProvenanceError(ValueError):

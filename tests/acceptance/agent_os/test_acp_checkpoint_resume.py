@@ -12,7 +12,10 @@ import pytest
 
 from intergrax.agents.authoring.patterns.reference import PatternPlanExecuteProbe
 from intergrax.agents.persistence.checkpoint_store import InMemoryAgentCheckpointStore
-from intergrax.agents.persistence.checkpoint_wiring import wire_acp_run_request
+from testing_support.acp_checkpoint_test_wiring import (
+    run_acp_with_host_checkpoint_store,
+    wire_acp_run_request,
+)
 from intergrax.contracts.agent_run import AgentExecutionOptions, AgentRunRequest, RequestIdentity
 from intergrax.contracts.agent_run_enums import AgentRunStatus
 from intergrax.dev_support.execution_identity_scope import canonical_agent_run_smoke_scope
@@ -46,7 +49,8 @@ async def test_acceptance_05c_acp_checkpoint_resume() -> None:
             metadata={"run_id": str(run_id), "user_id": "u-acp"},
         )
 
-        await agent.run(
+        await run_acp_with_host_checkpoint_store(
+            agent,
             wire_acp_run_request(
                 base.model_copy(
                     update={
@@ -58,11 +62,13 @@ async def test_acceptance_05c_acp_checkpoint_resume() -> None:
                 ),
                 store,
             ),
+            store,
         )
         assert store.get_latest(run_id, "t-agent-os") is not None
         assert _CheckpointPlanProbe.perceive_calls == 1
 
-        result = await agent.run(
+        result = await run_acp_with_host_checkpoint_store(
+            agent,
             wire_acp_run_request(
                 base.model_copy(
                     update={
@@ -75,6 +81,8 @@ async def test_acceptance_05c_acp_checkpoint_resume() -> None:
                 store,
                 resume=True,
             ),
+            store,
+            resume=True,
         )
     assert result.status == AgentRunStatus.SUCCEEDED
     assert _CheckpointPlanProbe.perceive_calls == 3

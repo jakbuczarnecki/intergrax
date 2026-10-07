@@ -13,7 +13,6 @@ from intergrax.agents.persistence.checkpoint_store import (
     SQLiteAgentCheckpointStore,
 )
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
-from intergrax.contracts.agent_run import AgentRunRequest
 
 
 def open_agent_checkpoint_store(
@@ -31,30 +30,12 @@ def attach_checkpoint_wiring(
     *,
     resume: bool = False,
 ) -> dict[str, Any]:
-    """Return metadata with checkpoint store (and optional resume flag) attached."""
+    """Return metadata with resume intent only (store is host-composed, not request metadata)."""
+    _ = store
     wired = dict(metadata)
-    wired[AcpMetadataKey.CHECKPOINT_STORE] = store
     if resume:
         wired[AcpMetadataKey.RESUME_FROM_CHECKPOINT] = True
     return wired
-
-
-def wire_acp_run_request(
-    request: AgentRunRequest,
-    store: AgentCheckpointStore,
-    *,
-    resume: bool = False,
-) -> AgentRunRequest:
-    """Attach checkpoint store to a typed ``AgentRunRequest``."""
-    return request.model_copy(
-        update={
-            "metadata": attach_checkpoint_wiring(
-                dict(request.metadata),
-                store,
-                resume=resume,
-            ),
-        },
-    )
 
 
 def should_resume_acp_checkpoint(
@@ -66,8 +47,6 @@ def should_resume_acp_checkpoint(
 ) -> bool:
     """Whether an ACP session should load the latest agent checkpoint."""
     if metadata.get(AcpMetadataKey.RESUME_FROM_CHECKPOINT) in {True, "true", "1", 1}:
-        return True
-    if metadata.get("human_response") is not None:
         return True
     if store is None:
         return False
@@ -88,7 +67,6 @@ def inject_acp_checkpoint_metadata(
         return
     metadata.setdefault("run_id", run_id)
     metadata.setdefault("task_id", run_id)
-    metadata[AcpMetadataKey.CHECKPOINT_STORE] = store
     if should_resume_acp_checkpoint(
         metadata,
         store=store,

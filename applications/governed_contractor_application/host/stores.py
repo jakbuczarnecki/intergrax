@@ -8,9 +8,17 @@ import json
 from pathlib import Path
 from typing import Protocol, runtime_checkable
 
-from intergrax.contracts.execution_evidence.receipt import ProofReceipt
+from intergrax.contracts.execution_evidence.receipt import (
+    ExecutionEvidenceProofReceipt,
+    ProofReceipt,
+    parse_execution_evidence_proof_receipt_json,
+)
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
-from intergrax.contracts.governed_execution_result import GovernedExecutionResult
+from intergrax.contracts.governed_execution_result import (
+    AnyGovernedExecutionResult,
+    GovernedExecutionResult,
+    parse_governed_execution_result_json,
+)
 from intergrax.contracts.provider_invocation import (
     ProviderInvocation,
     ProviderInvocationOutcome,
@@ -29,9 +37,9 @@ from governed_contractor_application.host.lifecycle_states import (
 
 @runtime_checkable
 class GovernedExecutionStore(Protocol):
-    def put_result(self, result: GovernedExecutionResult) -> None: ...
+    def put_result(self, result: AnyGovernedExecutionResult) -> None: ...
 
-    def get_result(self, execution_id: str) -> GovernedExecutionResult | None: ...
+    def get_result(self, execution_id: str) -> AnyGovernedExecutionResult | None: ...
 
     def put_state(
         self,
@@ -48,9 +56,9 @@ class GovernedExecutionStore(Protocol):
 
 @runtime_checkable
 class ProofReceiptStore(Protocol):
-    def put_receipt(self, execution_id: str, receipt: ProofReceipt) -> None: ...
+    def put_receipt(self, execution_id: str, receipt: ExecutionEvidenceProofReceipt) -> None: ...
 
-    def get_receipt(self, execution_id: str) -> ProofReceipt | None: ...
+    def get_receipt(self, execution_id: str) -> ExecutionEvidenceProofReceipt | None: ...
 
 
 @runtime_checkable
@@ -73,14 +81,15 @@ class ContinuationStateStore(Protocol):
 
 class InMemoryGovernedExecutionStore:
     def __init__(self) -> None:
-        self._results: dict[str, GovernedExecutionResult] = {}
+        self._results: dict[str, AnyGovernedExecutionResult] = {}
         self._states: dict[str, GovernedExternalWorkHostState] = {}
         self._events: dict[str, str] = {}
 
-    def put_result(self, result: GovernedExecutionResult) -> None:
-        self._results[result.execution_id] = result
+    def put_result(self, result: AnyGovernedExecutionResult) -> None:
+        key = str(result.execution_id)
+        self._results[key] = result
 
-    def get_result(self, execution_id: str) -> GovernedExecutionResult | None:
+    def get_result(self, execution_id: str) -> AnyGovernedExecutionResult | None:
         return self._results.get(execution_id)
 
     def put_state(
@@ -102,12 +111,12 @@ class InMemoryGovernedExecutionStore:
 
 class InMemoryProofReceiptStore:
     def __init__(self) -> None:
-        self._receipts: dict[str, ProofReceipt] = {}
+        self._receipts: dict[str, ExecutionEvidenceProofReceipt] = {}
 
-    def put_receipt(self, execution_id: str, receipt: ProofReceipt) -> None:
+    def put_receipt(self, execution_id: str, receipt: ExecutionEvidenceProofReceipt) -> None:
         self._receipts[execution_id] = receipt
 
-    def get_receipt(self, execution_id: str) -> ProofReceipt | None:
+    def get_receipt(self, execution_id: str) -> ExecutionEvidenceProofReceipt | None:
         return self._receipts.get(execution_id)
 
 
@@ -192,16 +201,17 @@ class FilesystemHostStore:
         (self.root / "states").mkdir(exist_ok=True)
         (self.root / "events").mkdir(exist_ok=True)
 
-    def put_result(self, result: GovernedExecutionResult) -> None:
-        path = self.root / "executions" / f"{result.execution_id}.json"
+    def put_result(self, result: AnyGovernedExecutionResult) -> None:
+        key = str(result.execution_id)
+        path = self.root / "executions" / f"{key}.json"
         path.write_text(result.model_dump_json(indent=2), encoding="utf-8")
 
-    def get_result(self, execution_id: str) -> GovernedExecutionResult | None:
+    def get_result(self, execution_id: str) -> AnyGovernedExecutionResult | None:
         path = self.root / "executions" / f"{execution_id}.json"
         if not path.is_file():
             return None
         try:
-            return GovernedExecutionResult.model_validate_json(path.read_text(encoding="utf-8"))
+            return parse_governed_execution_result_json(path.read_text(encoding="utf-8"))
         except Exception as exc:  # noqa: BLE001
             raise ValueError(f"corrupted_execution_artifact:{execution_id}") from exc
 
@@ -229,16 +239,18 @@ class FilesystemHostStore:
             return None
         return path.read_text(encoding="utf-8")
 
-    def put_receipt(self, execution_id: str, receipt: ProofReceipt) -> None:
+    def put_receipt(self, execution_id: str, receipt: ExecutionEvidenceProofReceipt) -> None:
         path = self.root / "receipts" / f"{execution_id}.json"
         path.write_text(receipt.model_dump_json(indent=2), encoding="utf-8")
 
-    def get_receipt(self, execution_id: str) -> ProofReceipt | None:
+    def get_receipt(self, execution_id: str) -> ExecutionEvidenceProofReceipt | None:
         path = self.root / "receipts" / f"{execution_id}.json"
         if not path.is_file():
             return None
         try:
-            return ProofReceipt.model_validate_json(path.read_text(encoding="utf-8"))
+            return parse_execution_evidence_proof_receipt_json(
+                path.read_text(encoding="utf-8")
+            )
         except Exception as exc:  # noqa: BLE001
             raise ValueError(f"corrupted_receipt_artifact:{execution_id}") from exc
 

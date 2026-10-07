@@ -6,11 +6,29 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Self
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
+from intergrax.runtime.long_running.scheduled_resume_metadata import (
+    validate_scheduled_resume_metadata,
+)
+
+__all__ = [
+    "ScheduledResume",
+    "ScheduledResumePersistence",
+    "ScheduledResumeStatus",
+    "validate_scheduled_resume_for_persistence",
+]
+
+
+def validate_scheduled_resume_for_persistence(entry: ScheduledResume) -> ScheduledResume:
+    """Canonical persistence acceptance rule for all ScheduledResumePersistence providers."""
+    validate_scheduled_resume_metadata(entry.resume_metadata)
+    validated = ScheduledResume.model_validate(entry.model_dump(mode="json"))
+    validate_scheduled_resume_metadata(validated.resume_metadata)
+    return validated
 from intergrax.utils.time_provider import SystemTimeProvider
 
 if TYPE_CHECKING:
@@ -40,6 +58,11 @@ class ScheduledResume(BaseModel):
     owner_id: Optional[str] = None
     lease_expires_at_utc: Optional[str] = None
     fence: int = Field(default=0, ge=0)
+
+    @model_validator(mode="after")
+    def _reject_authority_bearing_metadata(self) -> Self:
+        validate_scheduled_resume_metadata(self.resume_metadata)
+        return self
 
 
 class ScheduledResumePersistence:

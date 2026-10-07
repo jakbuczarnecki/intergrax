@@ -35,3 +35,4 @@ def test_runtime_environment_host_task_execution_builder_requires_admit_dependen
     signature = inspect.signature(build_environment_host_task_execution)
     assert signature.parameters["admit_root_governance_identity"].default is inspect.Parameter.empty
     assert signature.parameters["root_authority_admission"].default is inspect.Parameter.empty
+    assert signature.parameters["revision_admission"].default is inspect.Parameter.empty

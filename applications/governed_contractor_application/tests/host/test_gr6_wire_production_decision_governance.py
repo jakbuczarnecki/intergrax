@@ -321,10 +321,15 @@ def _production_runtime(
 
 
 def _create_with_runtime(runtime, task_id: TaskId, run_id: RunId):
+    create_exec = mint_execution_id()
     with bound_gr3_active_execution(
         run_id=run_id,
         attempt_id=mint_attempt_id(),
-        execution_id=mint_execution_id(),
+        execution_id=create_exec,
+        task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         return runtime.orchestrator.create(
             task_id=str(task_id),
@@ -332,7 +337,7 @@ def _create_with_runtime(runtime, task_id: TaskId, run_id: RunId):
             principal_id=_PRINCIPAL,
             tenant_id=_TENANT,
             metadata=_create_meta(str(task_id), str(run_id)),
-            execution_id="exec-gr6wire-create",
+            execution_id=create_exec,
         )
 
 
@@ -350,9 +355,13 @@ def test_production_accept_denies_without_decision_material() -> None:
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
+        task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         denied = runtime.orchestrator.accept(
-            execution_id="exec-gr6wire-accept",
+            execution_id=execution_id,
             create_result=created.adapter_result,
             acceptance=acceptance,
             idempotency_key=_ACCEPT_IDEMP,
@@ -385,9 +394,13 @@ def test_production_accept_allows_with_authoritative_decision() -> None:
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
+        task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         accepted = runtime.orchestrator.accept(
-            execution_id="exec-gr6wire-accept-ok",
+            execution_id=execution_id,
             create_result=created.adapter_result,
             acceptance=acceptance,
             idempotency_key=_ACCEPT_IDEMP,
@@ -423,9 +436,13 @@ def test_production_accept_denies_wrong_decision_action() -> None:
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
+        task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         denied = runtime.orchestrator.accept(
-            execution_id="exec-gr6wire-wrong-action",
+            execution_id=execution_id,
             create_result=created.adapter_result,
             acceptance=acceptance,
             idempotency_key=_ACCEPT_IDEMP,
@@ -457,9 +474,13 @@ def test_production_accept_denies_execution_lineage_mismatch() -> None:
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
+        task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         denied = runtime.orchestrator.accept(
-            execution_id="exec-gr6wire-mismatch",
+            execution_id=execution_id,
             create_result=created.adapter_result,
             acceptance=acceptance,
             idempotency_key=_ACCEPT_IDEMP,
@@ -497,9 +518,13 @@ def test_production_composition_accepts_injected_decision_requirement_policy() -
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
+        task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         accepted = runtime.orchestrator.accept(
-            execution_id="exec-gr6wire-permissive",
+            execution_id=execution_id,
             create_result=created.adapter_result,
             acceptance=acceptance,
             idempotency_key="idem-gr6wire-permissive",
@@ -565,8 +590,9 @@ def test_production_runtime_uses_injected_execution_store() -> None:
         provider_invocation_store=invocation_store,
         clock=lambda: _T0,
     )
-    _create_with_runtime(runtime, task_id, run_id)
-    assert execution_store.get_state("exec-gr6wire-create") is not None
+    step = _create_with_runtime(runtime, task_id, run_id)
+    assert step.execution_id is not None
+    assert execution_store.get_state(step.execution_id) is not None
 
 
 def test_strict_host_composition_wires_agent_boundary_and_integration(

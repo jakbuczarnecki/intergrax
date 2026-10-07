@@ -13,6 +13,10 @@ from typing import Optional, Protocol, runtime_checkable
 from uuid import uuid4
 
 from intergrax.runtime.cancellation.resume_admission import is_checkpoint_resumable
+from intergrax.runtime.long_running.checkpoint_resume_validation import (
+    CheckpointResumeValidationError,
+    assert_checkpoint_resume_materialization_eligible,
+)
 from intergrax.runtime.execution.execution_terminal.service import (
     ExecutionTerminalService,
 )
@@ -174,11 +178,24 @@ class LongRunningScheduler:
             if checkpoint is None:
                 self._schedule_store.complete_claim(claim)
                 continue
+            if not self._can_materialize_checkpoint(
+                checkpoint,
+                target_task_id=entry.task_id,
+                target_tenant_id=entry.tenant_id,
+            ):
+                self._schedule_store.complete_claim(claim)
+                continue
             if not self._can_resume_checkpoint(checkpoint):
                 self._schedule_store.complete_claim(claim)
                 continue
 
-            task = build_scheduled_resume_task(checkpoint, entry)
+            latest = self._checkpoint_store.get_latest(entry.task_id, entry.tenant_id)
+            task = build_scheduled_resume_task(
+                checkpoint,
+                entry,
+                latest_checkpoint=latest,
+                execution_terminal=self._execution_terminal,
+            )
             await self._execute_resume(
                 task,
                 checkpoint,
@@ -194,6 +211,14 @@ class LongRunningScheduler:
         processed = 0
         for checkpoint in self._checkpoint_store.list_paused():
             ledger_key = f"{TIMEOUT_LEDGER_PREFIX}{checkpoint.checkpoint_id}"
+            if not self._can_materialize_checkpoint(
+                checkpoint,
+                target_task_id=checkpoint.task_id,
+                target_tenant_id=checkpoint.tenant_id,
+            ):
+                continue
+            if not self._can_resume_checkpoint(checkpoint):
+                continue
             task = Task.model_validate(checkpoint.task_snapshot)
             if not HumanTimeoutCoordinator.is_expired(task, now=now):
                 continue
@@ -220,14 +245,19 @@ class LongRunningScheduler:
                 continue
 
             verdict = timeout_action_to_verdict(action)
+            latest = self._checkpoint_store.get_latest(
+                checkpoint.task_id,
+                checkpoint.tenant_id,
+            )
             resume_task = build_timeout_resume_task(
                 checkpoint,
                 verdict=verdict,
                 action=action,
+                target_task_id=checkpoint.task_id,
+                target_tenant_id=checkpoint.tenant_id,
+                latest_checkpoint=latest,
+                execution_terminal=self._execution_terminal,
             )
-            if not self._can_resume_checkpoint(checkpoint):
-                self._ledger.complete_action(action_claim)
-                continue
             await self._execute_resume(
                 resume_task,
                 checkpoint,
@@ -241,6 +271,30 @@ class LongRunningScheduler:
             )
             processed += 1
         return processed
+
+    def _can_materialize_checkpoint(
+        self,
+        checkpoint: TaskCheckpoint,
+        *,
+        target_task_id: str,
+        target_tenant_id: str,
+    ) -> bool:
+        latest = self._checkpoint_store.get_latest(target_task_id, target_tenant_id)
+        try:
+            assert_checkpoint_resume_materialization_eligible(
+                checkpoint,
+                target_task_id=target_task_id,
+                target_tenant_id=target_tenant_id,
+                latest_checkpoint=latest,
+                execution_terminal=self._execution_terminal,
+            )
+        except CheckpointResumeValidationError:
+            logger.info(
+                "Skipping scheduler resume for task %s: checkpoint failed restore validation",
+                checkpoint.task_id,
+            )
+            return False
+        return True
 
     def _can_resume_checkpoint(self, checkpoint: TaskCheckpoint) -> bool:
         if not is_checkpoint_resumable(

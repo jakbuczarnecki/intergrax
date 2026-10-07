@@ -12,6 +12,9 @@ from intergrax.contracts.collaborative_work import (
     CollaborativeWorkEnforcementResult,
 )
 from intergrax.contracts.governed_continuation import GovernedContinuationRequest
+from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernanceEvidencePersistenceOutcome,
+)
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
 
 
@@ -24,6 +27,7 @@ class MeaningfulSideEffectAuthorizationResult:
     enforcement_result: CollaborativeWorkEnforcementResult
     requires_governed_continuation: bool
     governed_continuation_request: GovernedContinuationRequest | None = None
+    governance_evidence_persistence: GovernanceEvidencePersistenceOutcome | None = None
 
 
 class MeaningfulSideEffectAuthorizationConsistencyError(ValueError):

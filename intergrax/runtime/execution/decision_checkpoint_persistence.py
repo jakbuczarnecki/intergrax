@@ -9,7 +9,8 @@ No storage backend or runtime wiring in this slice.
 
 from __future__ import annotations
 
-from typing import Protocol, TypeVar
+from dataclasses import dataclass
+from typing import Generic, Protocol, TypeAlias, TypeVar
 
 from intergrax.contracts.decision_checkpoint import (
     DecisionCheckpointState,
@@ -24,6 +25,44 @@ class StaleDecisionCheckpointWriteError(RuntimeError):
     """Materialized decision checkpoint projection conflict on revision CAS."""
 
 
+@dataclass(frozen=True, slots=True)
+class MaterializedDecisionCheckpoint(Generic[T]):
+    """Read-for-update envelope: semantic snapshot and its concurrency token."""
+
+    key: DecisionFinalizationKey
+    checkpoint: DecisionCheckpointState[T]
+    snapshot_revision: int
+
+    def __post_init__(self) -> None:
+        if self.snapshot_revision < 1:
+            raise ValueError(
+                "snapshot_revision must be >= 1 for a materialized checkpoint",
+            )
+        if self.key != self.checkpoint.finalization.key:
+            raise ValueError(
+                "materialized key must match checkpoint finalization key",
+            )
+
+
+@dataclass(frozen=True, slots=True)
+class ExpectedDecisionSnapshotAbsence:
+    """Concurrency expectation: no materialized snapshot exists for this key."""
+
+    key: DecisionFinalizationKey
+
+
+@dataclass(frozen=True, slots=True)
+class ExistingMaterializedDecisionSnapshot(Generic[T]):
+    """Concurrency expectation: persist against one read-for-update envelope."""
+
+    materialized: MaterializedDecisionCheckpoint[T]
+
+
+DecisionSnapshotWriteExpectation: TypeAlias = (
+    ExpectedDecisionSnapshotAbsence | ExistingMaterializedDecisionSnapshot[T]
+)
+
+
 class DecisionCheckpointPersistence(Protocol[T]):
     """Execution-facing durability port keyed by stable finalization scope."""
 
@@ -33,6 +72,13 @@ class DecisionCheckpointPersistence(Protocol[T]):
         key: DecisionFinalizationKey,
     ) -> DecisionCheckpointState[T] | None:
         """Return a validated checkpoint or ``None`` when absent."""
+
+    def load_materialized(
+        self,
+        *,
+        key: DecisionFinalizationKey,
+    ) -> MaterializedDecisionCheckpoint[T] | None:
+        """Return checkpoint and revision token from one consistent store read."""
 
     def save(
         self,
@@ -47,16 +93,35 @@ class DecisionCheckpointPersistence(Protocol[T]):
         """
 
 
+def load_materialized_decision_checkpoint(
+    persistence: DecisionCheckpointPersistence[T],
+    *,
+    key: DecisionFinalizationKey,
+) -> MaterializedDecisionCheckpoint[T] | None:
+    """Load, validate, and return the materialized read-for-update envelope."""
+    loaded = persistence.load_materialized(key=key)
+    if loaded is None:
+        return None
+    validated_checkpoint = restore_decision_checkpoint_state(loaded.checkpoint)
+    if validated_checkpoint is loaded.checkpoint:
+        return loaded
+    return MaterializedDecisionCheckpoint(
+        key=loaded.key,
+        checkpoint=validated_checkpoint,
+        snapshot_revision=loaded.snapshot_revision,
+    )
+
+
 def load_decision_checkpoint(
     persistence: DecisionCheckpointPersistence[T],
     *,
     key: DecisionFinalizationKey,
 ) -> DecisionCheckpointState[T] | None:
     """Load and validate a checkpoint from Execution-hosted durability."""
-    loaded = persistence.load(key=key)
-    if loaded is None:
+    materialized = load_materialized_decision_checkpoint(persistence, key=key)
+    if materialized is None:
         return None
-    return restore_decision_checkpoint_state(loaded)
+    return materialized.checkpoint
 
 
 def save_decision_checkpoint(

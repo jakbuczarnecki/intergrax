@@ -32,6 +32,9 @@ from intergrax.runtime.long_running.checkpoint_builder import (
     resolve_task_runtime_checkpoint,
 )
 from intergrax.runtime.long_running.checkpoint_revision import StaleCheckpointWriteError
+from intergrax.runtime.long_running.checkpoint_resume_validation import (
+    validated_task_snapshot_from_checkpoint,
+)
 from intergrax.runtime.long_running.models import TaskCheckpoint
 from intergrax.runtime.long_running.persistence_contract import (
     TaskCheckpointPersistence,
@@ -308,7 +311,11 @@ class TaskAgentGovernanceGrantLifecycleAdapter(AgentGovernanceGrantLifecyclePort
         return self._task.tenant_id == tenant_id
 
     def _apply_checkpoint_to_task(self, checkpoint: TaskCheckpoint) -> None:
-        restored = Task.model_validate(checkpoint.task_snapshot)
+        restored = validated_task_snapshot_from_checkpoint(
+            checkpoint,
+            target_task_id=self._task.task_id,
+            target_tenant_id=self._task.tenant_id,
+        )
         self._task.runtime.governance = restored.runtime.governance
         self._task.runtime.orchestration.checkpoint_id = checkpoint.checkpoint_id
         self._task.runtime.orchestration.checkpoint_revision = checkpoint.revision

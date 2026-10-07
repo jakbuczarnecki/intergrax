@@ -155,7 +155,11 @@ def materialize_runtime_config(
         routing_context=routing_context,
         context_provider=context_provider,
     )
-    config.llm_adapter = resolved_llm
+    from intergrax.runtime.llm.model_call_runtime_evidence_adapter import (
+        wrap_model_call_runtime_evidence,
+    )
+
+    config.llm_adapter = wrap_model_call_runtime_evidence(resolved_llm)
     apply_memory_profile_to_runtime_config(config, env.memory_profile)
     apply_prompt_profiles_from_environment(config, env)
     apply_observability_profiles_from_environment(config, env)

@@ -108,7 +108,11 @@ def _load_task_from_durable_checkpoint(
 ) -> Task:
     checkpoint = checkpoint_store.get_latest(_TASK_ID, _TENANT)
     assert checkpoint is not None
-    return build_checkpoint_resume_task(checkpoint)
+    return build_checkpoint_resume_task(
+        checkpoint,
+        target_task_id=checkpoint.task_id,
+        target_tenant_id=checkpoint.tenant_id,
+    )
 
 
 def _reset_nested_identity_tokens(

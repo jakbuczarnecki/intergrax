@@ -80,6 +80,10 @@ from intergrax.contracts.decision_requirement_policy import DecisionRequirementP
 
 from intergrax.contracts.execution_evidence.attestation import HostAttestor
 
+from intergrax.contracts.governed_execution_governance_evidence import (
+    GovernanceEvidencePersistencePort,
+)
+
 from intergrax.contracts.external_work_provider_capabilities import (
 
     ExternalWorkProviderCapabilities,
@@ -230,6 +234,8 @@ def build_governed_external_work_production_runtime(
 
     reliability_evidence_observer: ProviderInvocationReliabilityEvidenceObserver | None = None,
 
+    governance_evidence_persistence: GovernanceEvidencePersistencePort | None = None,
+
 ) -> GovernedExternalWorkProductionRuntime:
 
     """Construct orchestrator + adapter wired through canonical governance boundary."""
@@ -277,6 +283,8 @@ def build_governed_external_work_production_runtime(
         decision_requirement_policy=resolved_policy,
 
         task_scope=task_scope,
+
+        governance_evidence_persistence=governance_evidence_persistence,
 
     )
 

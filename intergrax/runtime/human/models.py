@@ -9,7 +9,7 @@ from enum import Enum
 from typing import Optional
 from uuid import uuid4
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from intergrax.contracts.human_approver import HumanApproverEvidence
 from intergrax.utils.time_provider import SystemTimeProvider
@@ -53,6 +53,14 @@ class HumanDecisionRecord(BaseModel):
     created_at_utc: str
     # Legacy task-subject field — not approver attribution (IDT-FIX-C).
     user_id: str = ""
+
+    @model_validator(mode="after")
+    def _approver_tenant_matches_decision(self) -> HumanDecisionRecord:
+        if self.approver.tenant_id != self.tenant_id:
+            raise ValueError(
+                "human decision approver tenant must match decision tenant_id"
+            )
+        return self
 
 
 class EscalationOutcome(BaseModel):

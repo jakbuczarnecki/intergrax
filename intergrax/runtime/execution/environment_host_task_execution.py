@@ -42,7 +42,7 @@ def build_environment_host_task_execution(
     *,
     orchestration_triggers: frozenset[str] | None = None,
     pipeline_capability_suffix: str | None = None,
-    revision_admission: EffectiveProfileRevisionAdmissionPort | None = None,
+    revision_admission: EffectiveProfileRevisionAdmissionPort,
     root_authority_admission: RootExecutionAuthorityAdmissionPort,
     admit_root_governance_identity: Callable[[Task], AdmittedRootGovernanceIdentity],
     skill_host_wiring: HostSkillCatalogWiring | None = None,

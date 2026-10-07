@@ -27,7 +27,10 @@ from intergrax.runtime.long_running.persistence_contract import (
 from intergrax.runtime.human.governed_continuation_grant import (
     GovernedContinuationGrantCoordinator,
 )
-from intergrax.contracts.human_approver import human_approval_event_payload
+from intergrax.contracts.human_approver import (
+    HumanApproverEvidence,
+    human_approval_event_payload,
+)
 from intergrax.runtime.human.models import HumanResponseVerdict
 from intergrax.runtime.human.pause import HumanPauseCoordinator
 from intergrax.runtime.long_running.coordinator import LongRunningCoordinator
@@ -161,6 +164,11 @@ class NexusIntakeRunner:
                 )
             hitl_run_id, hitl_attempt_id = self.execution_identity.require()
         if verdict == HumanResponseVerdict.REJECT:
+            if approver is None:
+                raise HitlCheckpointRestoreError(
+                    "approver evidence missing during HITL intake"
+                )
+            reject_approver: HumanApproverEvidence = approver
             discard_prepared_suspended_work_resume_authority(
                 task,
                 transport=self.suspended_work_resume_authority_transport,
@@ -169,7 +177,7 @@ class NexusIntakeRunner:
             HumanPauseCoordinator.resolve_human_response_and_apply_canonical(
                 task,
                 HumanResponseVerdict.REJECT,
-                approver=approver,  # type: ignore[arg-type]
+                approver=reject_approver,
                 continuation=hitl.port,
                 projection_sink=hitl.projection_sink,
                 pause_id=response_pause_id,
@@ -197,6 +205,11 @@ class NexusIntakeRunner:
             clear_consumed_human_input(task)
             return IntakePhaseOutcome(early_result=result)
         if verdict == HumanResponseVerdict.ESCALATE:
+            if approver is None:
+                raise HitlCheckpointRestoreError(
+                    "approver evidence missing during HITL intake"
+                )
+            escalate_approver: HumanApproverEvidence = approver
             discard_prepared_suspended_work_resume_authority(
                 task,
                 transport=self.suspended_work_resume_authority_transport,
@@ -205,7 +218,7 @@ class NexusIntakeRunner:
             HumanPauseCoordinator.resolve_human_response_and_apply_canonical(
                 task,
                 HumanResponseVerdict.ESCALATE,
-                approver=approver,  # type: ignore[arg-type]
+                approver=escalate_approver,
                 continuation=hitl.port,
                 projection_sink=hitl.projection_sink,
                 pause_id=response_pause_id,
@@ -234,6 +247,11 @@ class NexusIntakeRunner:
             return IntakePhaseOutcome(early_result=result)
 
         if verdict == HumanResponseVerdict.APPROVE:
+            if approver is None:
+                raise HitlCheckpointRestoreError(
+                    "approver evidence missing during HITL intake"
+                )
+            approve_approver: HumanApproverEvidence = approver
             run_id = hitl_run_id
             attempt_id = hitl_attempt_id
             if run_id is None or attempt_id is None:
@@ -245,7 +263,7 @@ class NexusIntakeRunner:
                 HumanPauseCoordinator.resolve_human_response_and_apply_canonical(
                     task,
                     HumanResponseVerdict.APPROVE,
-                    approver=approver,  # type: ignore[arg-type]
+                    approver=approve_approver,
                     continuation=hitl.port,
                     projection_sink=hitl.projection_sink,
                     pause_id=response_pause_id,
@@ -279,7 +297,7 @@ class NexusIntakeRunner:
                 AgentGovernanceHumanApprovalGrantCoordinator.persist_available_grant_from_human_approve(
                     task,
                     checkpoint_store=self.task_checkpoint_store,
-                    approver=approver,  # type: ignore[arg-type]
+                    approver=approve_approver,
                 )
                 task.sync_metadata()
             if task.runtime.governance.human_request is not None:

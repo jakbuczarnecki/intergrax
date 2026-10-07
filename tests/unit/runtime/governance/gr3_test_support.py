@@ -24,6 +24,11 @@ from intergrax.contracts.meaningful_side_effect import (
     MeaningfulSideEffectKind,
     MeaningfulSideEffectRequest,
 )
+from intergrax.runtime.governance.active_execution_governance_identity import (
+    ActiveExecutionGovernanceIdentity,
+    bind_active_execution_governance_identity,
+    reset_active_execution_governance_identity,
+)
 from intergrax.runtime.governance.canonical_inner_execution_guard import (
     DefaultCanonicalInnerExecutionGuard,
 )
@@ -96,13 +101,29 @@ def bound_gr3_active_execution(
     run_id: RunId,
     attempt_id: AttemptId,
     execution_id: ExecutionId,
+    task_id: TaskId | None = None,
+    governance_tenant_id: str | None = None,
+    governance_workspace_id: str | None = None,
+    governance_principal_id: str | None = None,
 ) -> Iterator[None]:
     token = bind_active_execution_identity(
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
+        task_id=task_id,
     )
+    governance_token = None
+    if governance_tenant_id is not None:
+        governance_token = bind_active_execution_governance_identity(
+            ActiveExecutionGovernanceIdentity(
+                tenant_id=governance_tenant_id,
+                workspace_id=(governance_workspace_id or "workspace-test"),
+                principal_id=(governance_principal_id or "principal-test"),
+            ),
+        )
     try:
         yield
     finally:
         reset_active_execution_identity(token)
+        if governance_token is not None:
+            reset_active_execution_governance_identity(governance_token)

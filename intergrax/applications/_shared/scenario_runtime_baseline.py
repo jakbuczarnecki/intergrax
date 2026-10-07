@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -90,9 +90,19 @@ from intergrax.agents.agent_contract import Agent
 from intergrax.contracts.agent_contract_meta import AgentContract
 from intergrax.contracts.agent_execution_result import AgentExecutionResult
 from intergrax.runtime.decision_flow import DecisionFlowGate
+from intergrax.applications._shared.diagnostic_composition import (
+    DiagnosticCompositionOverrides,
+)
 from intergrax.applications._shared.harness_host_task_execution_wiring import (
     build_harness_host_task_execution_governance,
 )
+from intergrax.applications._shared.profile_resolution.execution_effective_profile_provenance_reader import (
+    PinningStoreExecutionEffectiveProfileProvenanceReader,
+)
+from intergrax.applications._shared.profile_resolution.host_effective_profile_execution_wiring import (
+    wire_host_effective_profile_execution,
+)
+from intergrax.integrations.contracts.document_store import DocumentStore
 from intergrax.runtime.governance.decision_requirement_policy import (
     PermissiveDecisionRequirementPolicy,
 )
@@ -385,18 +395,38 @@ def build_scenario_runtime_from_environment(
     """
     resolved_tenant_id = validate_scenario_tenant_id(tenant_id)
     resolved_manifest = _resolve_scenario_manifest(environment, manifest)
+    resolved_document_store = document_store if isinstance(document_store, DocumentStore) else None
+    host_profile = wire_host_effective_profile_execution(
+        environment,
+        application_id=resolved_manifest.app_id,
+        tenant_id=resolved_tenant_id,
+        document_store=resolved_document_store,
+    )
+    effective_environment = host_profile.effective_environment
 
     env_wiring = wire_application_environment(
         resolved_manifest,
-        environment,
+        effective_environment,
         settings=settings,
         tenant_id=resolved_tenant_id,
         document_store=document_store,
         conformance_check=conformance_check,
         application_tool_registry=application_tool_registry,
     )
+    profile_provenance_reader = PinningStoreExecutionEffectiveProfileProvenanceReader(
+        host_profile.persistence.pinning_store,
+    )
+    env_wiring = replace(
+        env_wiring,
+        composition=replace(
+            env_wiring.composition,
+            diagnostic_composition_overrides=DiagnosticCompositionOverrides(
+                execution_effective_profile_provenance_reader=profile_provenance_reader,
+            ),
+        ),
+    )
     observability = _resolve_observability_stores(
-        environment,
+        effective_environment,
         trace_db_path=trace_db_path,
         runtime_events_db_path=runtime_events_db_path,
         use_in_memory_trace=use_in_memory_trace,
@@ -407,30 +437,30 @@ def build_scenario_runtime_from_environment(
             "Provide runtime_events_db_path or enable observability runtime events."
         )
 
-    reliability_wiring = wire_application_reliability(environment)
-    assert_reliability_assembly_valid(reliability_wiring, environment)
-    cost_wiring = wire_application_cost(environment)
-    assert_cost_assembly_valid(cost_wiring, environment)
-    security_wiring = wire_application_security(environment)
-    assert_security_assembly_valid(security_wiring, environment)
-    guardrail_wiring = wire_application_guardrail(environment)
-    evaluation_wiring = wire_application_evaluation(environment)
-    assert_evaluation_assembly_valid(evaluation_wiring, environment)
-    decision_spec = application_decision_wiring_spec_from_environment(environment)
+    reliability_wiring = wire_application_reliability(effective_environment)
+    assert_reliability_assembly_valid(reliability_wiring, effective_environment)
+    cost_wiring = wire_application_cost(effective_environment)
+    assert_cost_assembly_valid(cost_wiring, effective_environment)
+    security_wiring = wire_application_security(effective_environment)
+    assert_security_assembly_valid(security_wiring, effective_environment)
+    guardrail_wiring = wire_application_guardrail(effective_environment)
+    evaluation_wiring = wire_application_evaluation(effective_environment)
+    assert_evaluation_assembly_valid(evaluation_wiring, effective_environment)
+    decision_spec = application_decision_wiring_spec_from_environment(effective_environment)
     decision_wiring = wire_application_decision(
         registry=registry,
-        agent_id=resolve_application_decision_agent_id(registry, environment),
+        agent_id=resolve_application_decision_agent_id(registry, effective_environment),
         spec=decision_spec,
-        environment=environment,
+        environment=effective_environment,
     )
-    task_memory = wire_task_memory_from_profile(environment)
+    task_memory = wire_task_memory_from_profile(effective_environment)
     scenario_collaborative_work = _scenario_collaborative_work_repositories(
-        environment,
+        effective_environment,
         runtime_events_db_path=runtime_events_db_path,
     )
     meaningful_side_effect_wiring = (
         resolve_harness_host_meaningful_side_effect_authorization_wiring(
-            environment,
+            effective_environment,
             collaborative_work_repositories=scenario_collaborative_work,
             decision_requirement_policy=PermissiveDecisionRequirementPolicy(),
             runtime_event_persistence=observability.runtime_event_store,
@@ -438,7 +468,7 @@ def build_scenario_runtime_from_environment(
     )
     declarative_tool_invoker = build_declarative_invoker_for_application_host(
         env_wiring.tool_wiring,
-        environment,
+        effective_environment,
         manifest=resolved_manifest,
         agent_registry=registry,
         tenant_id=resolved_tenant_id,
@@ -450,7 +480,8 @@ def build_scenario_runtime_from_environment(
 
     orchestration_spec = build_host_orchestration_loop_init_spec_from_environment(
         registry,
-        env=environment,
+        env=effective_environment,
+        child_context_inheritance=host_profile.child_context_inheritance,
         trace_store=observability.trace_store,
         idempotency_store=reliability_wiring.idempotency_store,
         declarative_tool_invoker=declarative_tool_invoker,
@@ -459,7 +490,10 @@ def build_scenario_runtime_from_environment(
         task_memory_db_path=task_memory.db_path,
         shadow_manager=env_wiring.shadow_manager,
         sandbox_manager=env_wiring.sandbox_manager,
-        llm_adapter=resolve_environment_llm_adapter(environment, tenant_id=resolved_tenant_id),
+        llm_adapter=resolve_environment_llm_adapter(
+            effective_environment,
+            tenant_id=resolved_tenant_id,
+        ),
         runtime_event_bus=env_wiring.composition.runtime_event_bus,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
@@ -468,30 +502,34 @@ def build_scenario_runtime_from_environment(
         validation_engine=validation_engine,
         document_store=document_store,
         execution_continuation_state_store=_scenario_execution_continuation_state_store(
-            environment,
+            effective_environment,
         ),
     )
     harness_execution_governance = build_harness_host_task_execution_governance()
     orchestration_session, materialization = compose_application_host_orchestration_session(
         registry,
         orchestration_spec,
-        environment,
+        effective_environment,
+        revision_admission=host_profile.revision_admission,
         root_authority_admission=harness_execution_governance.root_authority_admission,
         admit_root_governance_identity=harness_execution_governance.admit_root_governance_identity,
     )
     assert_host_orchestration_application_assembly(
         materialization,
-        env=environment,
+        env=effective_environment,
         security_wiring=security_wiring,
         guardrail_wiring=guardrail_wiring,
     )
-    apply_host_orchestration_application_runtime_wiring(materialization, env=environment)
+    apply_host_orchestration_application_runtime_wiring(
+        materialization,
+        env=effective_environment,
+    )
     host_execution = orchestration_session.host_execution
 
     try:
         diagnostic_wiring = wire_scenario_terminal_execution_diagnostics(
             materialization=materialization,
-            env=environment,
+            env=effective_environment,
             env_wiring=env_wiring,
             observability=observability,
             scenario_runtime_mode=runtime_mode,
@@ -500,7 +538,7 @@ def build_scenario_runtime_from_environment(
         raise ScenarioRuntimeBuildError(str(exc)) from exc
 
     return ScenarioRuntimeComposition(
-        environment=environment,
+        environment=effective_environment,
         env_wiring=env_wiring,
         observability=observability,
         registry=registry,

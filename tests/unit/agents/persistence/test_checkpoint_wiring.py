@@ -8,6 +8,7 @@ from intergrax.agents.persistence.checkpoint_wiring import (
     should_resume_acp_checkpoint,
 )
 from intergrax.agents.persistence.checkpoint_store import InMemoryAgentCheckpointStore, build_checkpoint
+from intergrax.agents.authoring.acp_session_host import ACP_HOST_CONTEXT_KEY
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 
 
@@ -22,7 +23,8 @@ def test_inject_acp_checkpoint_metadata_when_session_enabled() -> None:
         run_id="run-1",
         tenant_id="tenant-a",
     )
-    assert metadata[AcpMetadataKey.CHECKPOINT_STORE] is store
+    assert ACP_HOST_CONTEXT_KEY not in metadata
+    assert metadata.get(AcpMetadataKey.CHECKPOINT_STORE) is None
 
 
 @pytest.mark.unit

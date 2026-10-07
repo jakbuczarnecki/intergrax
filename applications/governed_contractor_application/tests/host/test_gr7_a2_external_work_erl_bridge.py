@@ -56,6 +56,7 @@ from intergrax.contracts.enterprise_reliability.outcome import ExternalEffectOut
 from intergrax.contracts.enterprise_reliability.reliability_boundary import (
     ExternalEffectReliabilityInteraction,
 )
+from intergrax.contracts.execution_evidence.attestation import HostAttestor
 from intergrax.contracts.execution_identity import mint_attempt_id, mint_execution_id
 from intergrax.contracts.external_work import ExternalWorkErrorCode
 from intergrax.contracts.external_work_provider_capabilities import (
@@ -167,6 +168,8 @@ def _build_runtime(
     deny_create: bool = False,
     admission_port: RecordingAdmissionPort | None = None,
     capabilities: ExternalWorkProviderCapabilities | None = None,
+    governance_evidence_persistence: object | None = None,
+    attestor: HostAttestor | None = None,
 ):
     execution_store, receipt_store, bundle_store, continuation_store, invocation_store = (
         _stores()
@@ -194,6 +197,8 @@ def _build_runtime(
         continuation_store=continuation_store,
         provider_invocation_store=invocation_store,
         reliability_bridge=bridge,
+        governance_evidence_persistence=governance_evidence_persistence,
+        attestor=attestor,
     )
     return runtime, port
 
@@ -212,6 +217,10 @@ def _create_step(
         run_id=run_id,
         attempt_id=attempt_id,
         execution_id=execution_id,
+        task_id=task_id,
+        governance_tenant_id=_TENANT,
+        governance_workspace_id=_WORKSPACE,
+        governance_principal_id=_PRINCIPAL,
     ):
         step = runtime.orchestrator.create(
             task_id=str(task_id),
@@ -219,7 +228,7 @@ def _create_step(
             principal_id=_PRINCIPAL,
             tenant_id=_TENANT,
             metadata=_create_meta(str(task_id), str(run_id), idempotency_key=idempotency_key),
-            execution_id="exec-gr7a2",
+            execution_id=execution_id,
         )
     return step, fake
 
@@ -374,7 +383,7 @@ def test_admission_identity_binding() -> None:
     req = port.requests[0]
     assert req.correlation_id == f"corr-{task_id}"
     assert req.external_effect_ref == f"ext:external_work:{_CREATE_IDEMP}"
-    assert req.source_context.source_ref == "exec-gr7a2"
+    assert req.source_context.source_ref == str(execution_id)
 
 
 def test_erl_runtime_does_not_import_external_work_adapter() -> None:

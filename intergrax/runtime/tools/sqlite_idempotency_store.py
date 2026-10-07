@@ -99,13 +99,19 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                     "ADD COLUMN external_effect_may_have_started INTEGER NOT NULL DEFAULT 0",
                 )
 
-    def _row_to_claim(self, row: sqlite3.Row) -> InvocationClaim | None:
+    def _row_to_claim(
+        self,
+        row: sqlite3.Row,
+        *,
+        tenant_id: str,
+        key: str,
+    ) -> InvocationClaim | None:
         if row["owner_id"] is None or row["lease_expires_at"] is None:
             return None
         operation_identity = self._row_operation_identity(row)
         return InvocationClaim(
-            tenant_id=row["tenant_id"],
-            key=row["key"],
+            tenant_id=tenant_id,
+            key=key,
             owner_id=row["owner_id"],
             lease_expires_at=datetime.fromisoformat(row["lease_expires_at"]),
             fence=int(row["fence"]),
@@ -218,7 +224,7 @@ class SQLiteIdempotencyStore(IdempotencyStore):
                 conn.commit()
                 return ClaimResult(outcome=ClaimOutcome.UNCERTAIN)
 
-            stored_claim = self._row_to_claim(row)
+            stored_claim = self._row_to_claim(row, tenant_id=tenant_id, key=key)
             if stored_claim is None:
                 raise RuntimeError(
                     f"Ledger inconsistency: STARTED without ownership for key={key}"

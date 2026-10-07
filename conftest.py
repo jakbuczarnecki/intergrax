@@ -23,6 +23,30 @@ def pytest_configure(config: pytest.Config) -> None:
     apply_invocation_pytest_basetemp(config, _REPO_ROOT)
 
 
+def pytest_runtest_logreport(report: pytest.TestReport) -> None:
+    from tests.qualification.trace_x._trace_x_p3_r1_pass1_session import (
+        pytest_runtest_logreport as _p3_r1_pass1_logreport,
+    )
+    from tests.qualification.trace_x._trace_x_p3_r1_pass2_session import (
+        pytest_runtest_logreport as _p3_r1_pass2_logreport,
+    )
+
+    _p3_r1_pass1_logreport(report)
+    _p3_r1_pass2_logreport(report)
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    from tests.qualification.trace_x._trace_x_p3_r1_pass1_session import (
+        pytest_sessionfinish as _p3_r1_pass1_sessionfinish,
+    )
+    from tests.qualification.trace_x._trace_x_p3_r1_pass2_session import (
+        pytest_sessionfinish as _p3_r1_pass2_sessionfinish,
+    )
+
+    _p3_r1_pass1_sessionfinish(session, exitstatus)
+    _p3_r1_pass2_sessionfinish(session, exitstatus)
+
+
 @pytest.fixture
 def harness_auth_headers() -> dict[str, str]:
     """Headers for product hosts with harness API-key middleware enabled."""

@@ -230,8 +230,8 @@ class _DelayedResumeAgent(HarnessReferenceAgent):
         ctx: RuntimeExecutionContext,
     ) -> AgentDecision:
         _ = step, output
-        if ctx.request and ctx.request.metadata.get("human_approved"):
-            return AgentDecision(type=AgentDecisionType.COMPLETE, reason="approved")
+        if ctx.request and ctx.request.metadata.get("scheduler_delayed_resume"):
+            return AgentDecision(type=AgentDecisionType.COMPLETE, reason="delayed resume")
         return AgentDecision(
             type=AgentDecisionType.REQUEST_HUMAN,
             reason="approval required",
@@ -334,7 +334,7 @@ async def test_scheduler_enforces_human_timeout_escalate(tmp_path) -> None:
 
 
 @pytest.mark.asyncio
-async def test_scheduler_delayed_resume_with_auto_approve(tmp_path) -> None:
+async def test_scheduler_delayed_resume_triggers_execution(tmp_path) -> None:
     scheduler, loop, store = _build_scheduler(tmp_path, _DelayedResumeAgent())
     run_id = mint_run_id()
     paused = await run_lab_nexus_task(
@@ -362,11 +362,7 @@ async def test_scheduler_delayed_resume_with_auto_approve(tmp_path) -> None:
         tenant_id="t1",
         resume_token=token,
         run_at_utc=run_at.isoformat(),
-        resume_metadata={
-            "human_approved": True,
-            "resume_token": token,
-            "attempt_id": checkpoint.runtime.attempt_id,
-        },
+        resume_metadata={"correlation": "delayed-lab"},
     )
 
     processed = await scheduler.tick(now=datetime.now(timezone.utc))

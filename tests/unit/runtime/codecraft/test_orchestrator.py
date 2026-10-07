@@ -149,7 +149,7 @@ def test_supervised_mode_requires_hitl(craft_ctx: ToolWiringContext) -> None:
             ctx,
             CodeCraftIterateToolInput(craft_id=craft_id, task_id="task-1", tenant_id="tenant-1"),
         )
-        assert iter_ok.result.error != "hitl_pending"
+        assert iter_ok.result.error == "hitl_pending"
     finally:
         from intergrax.contracts.execution_identity import reset_active_execution_identity
 

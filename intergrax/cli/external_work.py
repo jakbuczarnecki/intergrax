@@ -10,7 +10,10 @@ import json
 import sys
 from pathlib import Path
 
-from intergrax.contracts.execution_evidence.receipt import ProofReceipt
+from intergrax.contracts.execution_evidence.receipt import (
+    parse_execution_evidence_proof_receipt_json,
+)
+from intergrax.runtime.execution_evidence.verify import verify_execution_evidence_proof_receipt
 from intergrax.runtime.execution_evidence.attestor import (
     ALGORITHM_ED25519,
     build_deterministic_test_attestor,
@@ -536,7 +539,7 @@ def _verify_receipt_file(
             }
         )
         return 1
-    receipt = ProofReceipt.model_validate_json(
+    receipt = parse_execution_evidence_proof_receipt_json(
         receipt_path.read_text(encoding="utf-8")
     )
     receipt_key_id = receipt.host_attestation.key_id
@@ -574,7 +577,7 @@ def _verify_receipt_file(
                 }
             )
             return 1
-        result = verify_proof_receipt(
+        result = verify_execution_evidence_proof_receipt(
             receipt,
             key_resolver=resolver,  # type: ignore[arg-type]
             require_policy_bundle_artifact=receipt.policy_bundle_artifact is not None,

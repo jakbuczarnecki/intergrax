@@ -35,6 +35,9 @@ from intergrax.contracts.validation import ValidationResult
 from intergrax.runtime.nexus.agent_router import AgentRouter
 from intergrax.runtime.nexus.context.context_manager import ContextManager
 from intergrax.runtime.nexus.execution.graph_builder import plan_to_execution_graph
+from intergrax.contracts.child_execution_context_inheritance import (
+    ChildExecutionContextInheritancePort,
+)
 from intergrax.runtime.nexus.execution.graph_executor import GraphExecutor
 from intergrax.runtime.nexus.planning.nexus_planner_protocol import (
     NexusTaskPlannerProtocol,
@@ -155,6 +158,7 @@ from intergrax.runtime.execution.execution_terminal.durability_policy import (
 from intergrax.contracts.execution_terminal import (
     ExecutionTerminalConflictError,
     ExecutionTerminalError,
+    ExecutionTerminalPersistenceCapability,
 )
 from intergrax.runtime.execution.execution_terminal.persistence import (
     TerminalCommitResolution,
@@ -274,6 +278,7 @@ class NexusLoop:
             ExecutionContinuationStateStore
         ] = None,
         disable_execution_continuation: bool = False,
+        child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
     ) -> None:
         self._registry = registry
         self._runtime_event_store = resolve_runtime_event_persistence(
@@ -331,6 +336,7 @@ class NexusLoop:
         self._engine = AgentEngine(
             registry,
             production_mode=production_mode,
+            agent_checkpoint_store=agent_checkpoint_store,
             event_bus=self._event_bus,
             policy_engine=self._policy_engine,
             uaep_executor=UAEPExecutor(
@@ -380,6 +386,7 @@ class NexusLoop:
             execution_identity=self._execution_identity,
             authority_policy=authority_policy,
             budget_allocation_policy=budget_allocation_policy,
+            child_context_inheritance=child_context_inheritance,
         )
         self._composer = FinalResponseComposer(merge_strategy=merge_strategy)
         self._lifecycle = lifecycle
@@ -396,8 +403,17 @@ class NexusLoop:
         self._attempt_lifecycle = attempt_lifecycle or AttemptLifecycleService(
             InMemoryAttemptLifecycleStore(),
         )
+        from intergrax.runtime.execution.execution_terminal.persistence import (
+            terminal_capability_from_task_checkpoint_store,
+        )
+
+        terminal_checkpoint_capability = terminal_capability_from_task_checkpoint_store(
+            self._checkpoint_store,
+        )
         self._execution_terminal = execution_terminal or ExecutionTerminalService(
-            wire_execution_terminal_store(checkpoint_store=self._checkpoint_store),
+            wire_execution_terminal_store(
+                checkpoint_store=terminal_checkpoint_capability,
+            ),
         )
         validate_durable_attempt_lifecycle_for_composition(
             production_mode=production_mode,

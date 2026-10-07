@@ -7,6 +7,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 import pytest
+from pydantic import ValidationError
 
 from external_contractor_adapter.side_effect_actions import (
     ACTION_ACCEPT_QUOTE,
@@ -14,7 +15,16 @@ from external_contractor_adapter.side_effect_actions import (
     ACTION_CREATE_EXTERNAL_WORK,
 )
 from intergrax.contracts.evaluated_policy_decision import EvaluatedPolicyDecision
-from intergrax.contracts.governed_execution_result import GovernedExecutionResult
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
+from intergrax.contracts.governed_execution_result import (
+    GovernedExecutionResult,
+    GovernedExecutionResultV2,
+)
 from intergrax.contracts.governed_proof import GovernedProofProfile
 from intergrax.contracts.provider_invocation import (
     ProviderInvocation,
@@ -205,3 +215,62 @@ def test_neutral_contract_accepts_non_external_work_action_identity() -> None:
     )
     assert result.action == action
     assert result.provider_invocation.operation == "capture_payment"
+
+
+def _ger_v2(**overrides) -> GovernedExecutionResultV2:
+    task_id = overrides.get("task_id", mint_task_id())
+    run_id = overrides.get("run_id", mint_run_id())
+    proof = overrides.get(
+        "proof",
+        _proof(
+            task_id=str(task_id),
+            run_id=str(run_id),
+            action=ACTION_CREATE_EXTERNAL_WORK,
+        ),
+    )
+    base = dict(
+        task_id=task_id,
+        run_id=run_id,
+        attempt_id=overrides.get("attempt_id", mint_attempt_id()),
+        execution_id=overrides.get("execution_id", mint_execution_id()),
+        principal_id="u1",
+        tenant_id="ten1",
+        correlation_id="c1",
+        idempotency_key="i1",
+        action=ACTION_CREATE_EXTERNAL_WORK,
+        evaluated_policy_decision=_decision(),
+        provider_invocation=_invocation(
+            task_id=str(task_id),
+            run_id=str(run_id),
+            operation="create_work",
+        ),
+        provider_outcome=_outcome(),
+        proof=proof,
+        execution_started_at=_T0,
+        execution_completed_at=_T0,
+    )
+    for key, value in overrides.items():
+        if key not in {"task_id", "run_id", "attempt_id", "execution_id", "proof"}:
+            base[key] = value
+    return GovernedExecutionResultV2.model_validate(base)
+
+
+def test_ger_v2_rejects_blank_tenant() -> None:
+    with pytest.raises(ValidationError):
+        _ger_v2(tenant_id="  ")
+
+
+def test_ger_v2_rejects_proof_tenant_mismatch() -> None:
+    task_id = mint_task_id()
+    run_id = mint_run_id()
+    with pytest.raises(ValueError, match="tenant_id_inconsistent"):
+        _ger_v2(
+            task_id=task_id,
+            run_id=run_id,
+            proof=_proof(
+                task_id=str(task_id),
+                run_id=str(run_id),
+                tenant_id="other",
+                action=ACTION_CREATE_EXTERNAL_WORK,
+            ),
+        )

@@ -375,14 +375,32 @@ def build_harness_host_runtime(
         application_tool_registry=application_tool_registry,
         application_skill_registry=application_skill_registry,
     )
-    if diagnostic_composition_overrides is not None:
-        env_wiring = replace(
-            env_wiring,
-            composition=replace(
-                env_wiring.composition,
-                diagnostic_composition_overrides=diagnostic_composition_overrides,
-            ),
+    from intergrax.applications._shared.profile_resolution.execution_effective_profile_provenance_reader import (
+        PinningStoreExecutionEffectiveProfileProvenanceReader,
+    )
+
+    profile_provenance_reader = PinningStoreExecutionEffectiveProfileProvenanceReader(
+        profile_persistence.pinning_store,
+    )
+    merged_diagnostic_overrides = diagnostic_composition_overrides
+    if merged_diagnostic_overrides is None:
+        merged_diagnostic_overrides = DiagnosticCompositionOverrides(
+            execution_effective_profile_provenance_reader=profile_provenance_reader,
         )
+    elif (
+        merged_diagnostic_overrides.execution_effective_profile_provenance_reader is None
+    ):
+        merged_diagnostic_overrides = replace(
+            merged_diagnostic_overrides,
+            execution_effective_profile_provenance_reader=profile_provenance_reader,
+        )
+    env_wiring = replace(
+        env_wiring,
+        composition=replace(
+            env_wiring.composition,
+            diagnostic_composition_overrides=merged_diagnostic_overrides,
+        ),
+    )
     assembly_mode = resolve_registry_assembly_mode(
         effective_environment,
         explicit=registry_assembly_mode,
@@ -499,10 +517,21 @@ def build_harness_host_runtime(
     resolved_compensation_queue_store = resolve_host_compensation_queue_store(
         checkpoints_db_path=checkpoints_db_path,
     )
+    from intergrax.applications._shared.profile_resolution.profile_resolution_child_context_inheritance_adapter import (
+        build_profile_resolution_child_context_inheritance_adapter,
+    )
+
+    profile_child_context_inheritance = (
+        build_profile_resolution_child_context_inheritance_adapter(
+            tenant_id=revision_scope.tenant_id,
+            pinning_store=profile_persistence.pinning_store,
+        )
+    )
     orchestration_spec = build_host_orchestration_loop_init_spec_from_environment(
         resolved_registry,
         env=effective_environment,
         governance_evidence_recorder=orchestration_governance_evidence_recorder,
+        child_context_inheritance=profile_child_context_inheritance,
         trace_store=observability.trace_store,
         checkpoint_store=checkpoint_store,
         agent_checkpoint_store=resolved_agent_checkpoint_store,

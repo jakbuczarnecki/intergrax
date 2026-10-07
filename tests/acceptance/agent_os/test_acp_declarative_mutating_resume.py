@@ -15,7 +15,10 @@ from pydantic import BaseModel
 from intergrax.agents.authoring.base import IntergraxAgent
 from intergrax.agents.authoring.step_outcome import StepOutcome
 from intergrax.agents.persistence.checkpoint_store import InMemoryAgentCheckpointStore
-from intergrax.agents.persistence.checkpoint_wiring import wire_acp_run_request
+from testing_support.acp_checkpoint_test_wiring import (
+    run_acp_with_host_checkpoint_store,
+    wire_acp_run_request,
+)
 from intergrax.agents.persistence.declarative_tool_executor import (
     CallableDeclarativeToolInvoker,
     DeclarativeToolInvokeResult,
@@ -137,7 +140,8 @@ async def test_acceptance_05d_acp_declarative_mutating_resume() -> None:
         )
         base = wire_acp_run_request_with_tool_invoker(base, invoker)
 
-        await agent.run(
+        await run_acp_with_host_checkpoint_store(
+            agent,
             wire_acp_run_request(
                 base.model_copy(
                     update={
@@ -150,6 +154,7 @@ async def test_acceptance_05d_acp_declarative_mutating_resume() -> None:
                 ),
                 store,
             ),
+            store,
         )
         checkpoint = store.get_latest(run_id, "t-agent-os")
         assert checkpoint is not None
@@ -159,7 +164,8 @@ async def test_acceptance_05d_acp_declarative_mutating_resume() -> None:
             for record in checkpoint.side_effect_ledger
         )
 
-        result = await agent.run(
+        result = await run_acp_with_host_checkpoint_store(
+            agent,
             wire_acp_run_request(
                 base.model_copy(
                     update={
@@ -173,6 +179,8 @@ async def test_acceptance_05d_acp_declarative_mutating_resume() -> None:
                 store,
                 resume=True,
             ),
+            store,
+            resume=True,
         )
         assert result.status == AgentRunStatus.SUCCEEDED
     assert invoke_count == 1

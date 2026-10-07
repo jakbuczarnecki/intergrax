@@ -44,14 +44,37 @@ from intergrax.contracts.enterprise_reliability.provider_invocation_reliability_
     ProviderInvocationReliabilityEvidenceObserver,
 )
 from intergrax.contracts.execution_evidence.attestation import HostAttestor
-from intergrax.contracts.execution_evidence.boundary_event import ExecutionBoundaryEvent
-from intergrax.contracts.execution_evidence.receipt import ProofReceipt
+from intergrax.contracts.execution_evidence.boundary_event import (
+    ExecutionBoundaryEvent,
+    parse_governed_execution_boundary_event_json,
+)
+from intergrax.contracts.execution_evidence.receipt import (
+    ExecutionEvidenceProofReceipt,
+    ProofReceipt,
+)
+from intergrax.contracts.execution_identity import (
+    AttemptId,
+    ExecutionId,
+    RunId,
+    TaskId,
+    peek_active_execution_task_id,
+    require_active_execution_id,
+    require_active_execution_identity,
+    validate_execution_id,
+    validate_run_id,
+    validate_task_id,
+)
+from intergrax.runtime.governance.active_execution_governance_identity import (
+    require_active_execution_governance_identity,
+)
 from intergrax.contracts.external_work import QuoteAcceptanceEvidence
 from intergrax.contracts.external_work_provider_capabilities import (
     ExternalWorkProviderCapabilities,
 )
 from intergrax.contracts.governed_execution_result import (
+    AnyGovernedExecutionResult,
     GovernedExecutionResult,
+    GovernedExecutionResultV2,
     external_work_provider_operation_for_decision_action,
 )
 from intergrax.contracts.provider_invocation import (
@@ -69,7 +92,7 @@ from intergrax.runtime.attestation.canonical_json import stable_payload_hash
 from intergrax.runtime.execution_evidence.compose import (
     AttestationOutcome,
     attest_governed_execution_result,
-    compose_execution_boundary_event_from_result,
+    compose_execution_boundary_event_v2_from_result,
 )
 from intergrax.runtime.execution.decision_governed_side_effect import (
     DecisionGovernedSideEffectInputs,
@@ -129,15 +152,24 @@ def _workspace_from_metadata(metadata: Mapping[str, Any]) -> str | None:
 
 
 @dataclass(frozen=True, slots=True)
+class _CanonicalExecutionIdentity:
+    task_id: TaskId
+    run_id: RunId
+    attempt_id: AttemptId
+    execution_id: ExecutionId
+    tenant_id: str
+
+
+@dataclass(frozen=True, slots=True)
 class OrchestratorStepResult:
     """Outcome of one host lifecycle step."""
 
     state: GovernedExternalWorkHostState
     execution_id: str | None
     adapter_result: ExternalWorkAdapterResult | None
-    governed_result: GovernedExecutionResult | None
+    governed_result: AnyGovernedExecutionResult | None
     attestation: AttestationOutcome | None
-    receipt: ProofReceipt | None
+    receipt: ExecutionEvidenceProofReceipt | None
     reason: str
     external_effect_outcome: ExternalEffectOutcome | None = None
     reliability_admission: ExternalWorkReliabilityAdmissionOutcome | None = None
@@ -184,6 +216,72 @@ class GovernedExternalWorkOrchestrator:
     def capabilities(self) -> ExternalWorkProviderCapabilities:
         return self._capabilities
 
+    def _require_canonical_execution_identity(
+        self,
+        *,
+        task_id: str,
+        run_id: str,
+        execution_id: str | None,
+        tenant_id: str | None,
+    ) -> _CanonicalExecutionIdentity:
+        try:
+            active_run, active_attempt = require_active_execution_identity()
+            active_exec = require_active_execution_id()
+        except RuntimeError as exc:
+            raise ValueError("canonical_execution_identity_required") from exc
+        requested_task = validate_task_id(task_id)
+        requested_run = validate_run_id(run_id)
+        active_task = peek_active_execution_task_id()
+        if active_task is None:
+            raise ValueError("canonical_task_id_required")
+        if active_task != requested_task:
+            raise ValueError("task_id_mismatch")
+        if requested_run != active_run:
+            raise ValueError("run_id_mismatch")
+        if execution_id is not None:
+            resolved_exec = validate_execution_id(execution_id)
+            if resolved_exec != active_exec:
+                raise ValueError("execution_id_mismatch")
+        else:
+            resolved_exec = active_exec
+        try:
+            governance = require_active_execution_governance_identity()
+        except RuntimeError as exc:
+            raise ValueError("canonical_governance_identity_required") from exc
+        if tenant_id is None:
+            raise ValueError("tenant_id_required")
+        requested_tenant = str(tenant_id).strip()
+        if not requested_tenant:
+            raise ValueError("tenant_id_required")
+        if requested_tenant != governance.tenant_id:
+            raise ValueError("tenant_id_mismatch")
+        return _CanonicalExecutionIdentity(
+            task_id=active_task,
+            run_id=active_run,
+            attempt_id=active_attempt,
+            execution_id=resolved_exec,
+            tenant_id=governance.tenant_id,
+        )
+
+    def _identity_gate_failure(
+        self,
+        *,
+        reason: str,
+        execution_id: str | None = None,
+    ) -> OrchestratorStepResult:
+        failed = GovernedExternalWorkHostState.EXECUTION_FAILED
+        if execution_id:
+            self._execution_store.put_state(execution_id, failed)
+        return OrchestratorStepResult(
+            state=failed,
+            execution_id=execution_id,
+            adapter_result=None,
+            governed_result=None,
+            attestation=None,
+            receipt=None,
+            reason=reason,
+        )
+
     def create(
         self,
         *,
@@ -198,7 +296,16 @@ class GovernedExternalWorkOrchestrator:
     ) -> OrchestratorStepResult:
         if not self._capabilities.supports_create:
             raise ValueError("provider_capability_missing:supports_create")
-        exec_id = execution_id or f"exec-{uuid4().hex}"
+        try:
+            identity = self._require_canonical_execution_identity(
+                task_id=task_id,
+                run_id=run_id,
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+            )
+        except ValueError as exc:
+            return self._identity_gate_failure(reason=str(exc))
+        exec_id = str(identity.execution_id)
         self._execution_store.put_state(
             exec_id, GovernedExternalWorkHostState.REQUESTED
         )
@@ -339,6 +446,18 @@ class GovernedExternalWorkOrchestrator:
         accept_run_id = create_result.snapshot.correlation.run_id
         if not accept_run_id or not str(accept_run_id).strip():
             raise ValueError("accept_requires_run_id")
+        try:
+            self._require_canonical_execution_identity(
+                task_id=create_result.snapshot.correlation.task_id,
+                run_id=str(accept_run_id),
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+            )
+        except ValueError as exc:
+            return self._identity_gate_failure(
+                reason=str(exc),
+                execution_id=execution_id,
+            )
         invocation = self._new_invocation(
             action=ACTION_ACCEPT_QUOTE,
             task_id=create_result.snapshot.correlation.task_id,
@@ -419,6 +538,18 @@ class GovernedExternalWorkOrchestrator:
         cancel_run_id = create_result.snapshot.correlation.run_id
         if not cancel_run_id or not str(cancel_run_id).strip():
             raise ValueError("cancel_requires_run_id")
+        try:
+            self._require_canonical_execution_identity(
+                task_id=create_result.snapshot.correlation.task_id,
+                run_id=str(cancel_run_id),
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+            )
+        except ValueError as exc:
+            return self._identity_gate_failure(
+                reason=str(exc),
+                execution_id=execution_id,
+            )
         invocation = self._new_invocation(
             action=ACTION_CANCEL_EXTERNAL_WORK,
             task_id=create_result.snapshot.correlation.task_id,
@@ -499,7 +630,7 @@ class GovernedExternalWorkOrchestrator:
                     execution_succeeded=True,
                     attestation_succeeded=True,
                     receipt=existing,
-                    event=existing.execution_boundary_event,
+                    event=existing.execution_boundary_event,  # type: ignore[union-attr]
                     reason="attested_idempotent",
                     provider_invoked=False,
                 ),
@@ -516,17 +647,19 @@ class GovernedExternalWorkOrchestrator:
         }:
             raise ValueError("cannot_attest_failed_execution")
         # Prefer persisted event bytes for deterministic retry.
-        event: ExecutionBoundaryEvent | None = None
+        stored_parsed = None
         stored_event = self._execution_store.get_event_json(execution_id)
         if stored_event:
-            event = ExecutionBoundaryEvent.model_validate_json(stored_event)
+            stored_parsed = parse_governed_execution_boundary_event_json(stored_event)
         outcome = attest_governed_execution_result(
             result,
             attestor=self._attestor,
             policy_bundle_artifact=self._bundle,
             attestation_required=True,
             actor=self._actor,
-            event_id=event_id or (event.event_id if event is not None else None),
+            event_id=event_id or (
+                stored_parsed.event_id if stored_parsed is not None else None
+            ),
             receipt_id=receipt_id,
             occurred_at=result.execution_completed_at,
             require_first_class_invocation=True,
@@ -567,10 +700,10 @@ class GovernedExternalWorkOrchestrator:
     def get_state(self, execution_id: str) -> GovernedExternalWorkHostState | None:
         return self._execution_store.get_state(execution_id)
 
-    def get_result(self, execution_id: str) -> GovernedExecutionResult | None:
+    def get_result(self, execution_id: str) -> AnyGovernedExecutionResult | None:
         return self._execution_store.get_result(execution_id)
 
-    def get_receipt(self, execution_id: str) -> ProofReceipt | None:
+    def get_receipt(self, execution_id: str) -> ExecutionEvidenceProofReceipt | None:
         return self._receipt_store.get_receipt(execution_id)
 
     def _finalize_side_effect(
@@ -760,12 +893,32 @@ class GovernedExternalWorkOrchestrator:
                 action=action,
             )
         )
-        ger = GovernedExecutionResult(
-            execution_id=execution_id,
-            task_id=task_id,
-            run_id=run_id,
+        try:
+            identity = self._require_canonical_execution_identity(
+                task_id=task_id,
+                run_id=run_id,
+                execution_id=execution_id,
+                tenant_id=tenant_id,
+            )
+        except ValueError as exc:
+            failed = GovernedExternalWorkHostState.EXECUTION_FAILED
+            self._execution_store.put_state(execution_id, failed)
+            return OrchestratorStepResult(
+                state=failed,
+                execution_id=execution_id,
+                adapter_result=adapter_result,
+                governed_result=None,
+                attestation=None,
+                receipt=None,
+                reason=str(exc),
+            )
+        ger = GovernedExecutionResultV2(
+            execution_id=identity.execution_id,
+            task_id=identity.task_id,
+            run_id=identity.run_id,
+            attempt_id=identity.attempt_id,
             principal_id=principal_id,
-            tenant_id=tenant_id,
+            tenant_id=identity.tenant_id,
             correlation_id=corr,
             idempotency_key=idem,
             action=action,
@@ -783,7 +936,7 @@ class GovernedExternalWorkOrchestrator:
         )
         # Persist deterministic EBE before signing so retry can reuse it.
         try:
-            event = compose_execution_boundary_event_from_result(
+            event = compose_execution_boundary_event_v2_from_result(
                 ger,
                 event_id=event_id,
                 occurred_at=completed,

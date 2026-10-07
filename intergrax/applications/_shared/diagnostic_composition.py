@@ -21,6 +21,9 @@ from intergrax.applications._shared.diagnostic_cursor_secret import (
 )
 from intergrax.contracts.diagnostics.problem_persistence import ProblemPersistence
 from intergrax.contracts.execution_lineage import ExecutionLineageReader
+from intergrax.contracts.execution_effective_profile_provenance import (
+    ExecutionEffectiveProfileProvenanceReader,
+)
 from intergrax.contracts.execution_reconstruction import ExecutionReconstructionReader
 from intergrax.integrations.registry.bootstrap_conformance import assert_conditional_document_store
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
@@ -94,6 +97,9 @@ class DiagnosticCompositionOverrides:
     occurrence_persistence: ProblemOccurrencePersistence | None = None
     causal_evidence_persistence: CausalEvidencePersistence | None = None
     execution_reconstruction_reader: ExecutionReconstructionReader | None = None
+    execution_effective_profile_provenance_reader: (
+        ExecutionEffectiveProfileProvenanceReader | None
+    ) = None
     additional_grouping_strategies: tuple[ProblemGroupingStrategy, ...] = ()
 
 
@@ -229,12 +235,18 @@ def build_default_execution_reconstruction_reader(
     persistence: DiagnosticPersistenceComposition,
     *,
     execution_lineage_reader: ExecutionLineageReader | None = None,
+    execution_effective_profile_provenance_reader: (
+        ExecutionEffectiveProfileProvenanceReader | None
+    ) = None,
 ) -> ExecutionReconstructionReader:
     """Canonical Evidence-owned default for ``ExecutionReconstructionReader``."""
     return ExecutionReconstructor(
         runtime_events=persistence.runtime_event_persistence,
         causal_evidence=persistence.causal_evidence_persistence,
         execution_lineage=execution_lineage_reader,
+        execution_effective_profile_provenance_reader=(
+            execution_effective_profile_provenance_reader
+        ),
     )
 
 
@@ -269,6 +281,9 @@ def resolve_diagnostic_composition(
         reader = build_default_execution_reconstruction_reader(
             persistence,
             execution_lineage_reader=execution_lineage_reader,
+            execution_effective_profile_provenance_reader=(
+                overrides.execution_effective_profile_provenance_reader
+            ),
         )
         reconstruction_ownership = DiagnosticComponentOwnership.HOST_CREATED
     return ResolvedDiagnosticComposition(

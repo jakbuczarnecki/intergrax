@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
 
@@ -14,6 +15,10 @@ from intergrax.agents.persistence.checkpoint_store import (
 from intergrax.agents.persistence.side_effect_ledger import SideEffectLedger
 from intergrax.contracts.acp_metadata_keys import AcpMetadataKey
 from intergrax.contracts.agent_run import AgentRunRequest
+from intergrax.contracts.checkpoint_revision import (
+    CheckpointAgentIdentityConflictError,
+    CheckpointStreamIdentityConflictError,
+)
 
 @dataclass(frozen=True, slots=True)
 class SessionResumeState:
@@ -43,9 +48,11 @@ def resolve_session_persistence(
     *,
     run_id: str,
     tenant_id: str,
+    agent_id: str,
+    checkpoint_store: AgentCheckpointStore | None = None,
 ) -> tuple[AgentSessionPersistence, SessionResumeState | None]:
     metadata = request.metadata
-    store = resolve_checkpoint_store(metadata)
+    store = checkpoint_store
     resume_enabled = bool(metadata.get(AcpMetadataKey.RESUME_FROM_CHECKPOINT))
     ledger = SideEffectLedger()
 
@@ -55,6 +62,16 @@ def resolve_session_persistence(
     checkpoint = store.get_latest(run_id, tenant_id)
     if checkpoint is None:
         return AgentSessionPersistence(store, ledger, resume_enabled), None
+
+    if checkpoint.run_id != run_id or checkpoint.tenant_id != tenant_id:
+        raise CheckpointStreamIdentityConflictError(
+            "Checkpoint stream identity does not match current run/tenant context.",
+        )
+    if checkpoint.agent_id != agent_id:
+        raise CheckpointAgentIdentityConflictError(
+            f"Checkpoint agent_id={checkpoint.agent_id} does not match "
+            f"current effective agent_id={agent_id}.",
+        )
 
     ledger = SideEffectLedger(checkpoint.side_effect_ledger)
     resume = SessionResumeState(
@@ -71,8 +88,8 @@ def make_checkpoint_hook(
     run_id: str,
     tenant_id: str,
     agent_id: str,
-    trace_step_count_fn: Any,
-) -> Any:
+    trace_step_count_fn: Callable[[], int],
+) -> Callable[[dict[str, Any], int], Awaitable[None]] | None:
     store = persistence.checkpoint_store
     if store is None:
         return None

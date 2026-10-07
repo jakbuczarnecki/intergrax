@@ -27,7 +27,7 @@ from intergrax.tools.registry.wiring import ToolWiringContext
 from intergrax.runtime.tools.in_memory_idempotency_store import InMemoryIdempotencyStore
 from testing_support.builder import (
     build_runtime_state_for_tests,
-    canonical_execution_identity_scope,
+    canonical_governed_execution_scope,
     canonical_run_id_for_tests,
 )
 
@@ -150,7 +150,11 @@ def test_declarative_invoker_uses_wired_idempotency_store_for_side_effect_dedupe
         input=_DoubleIn(value=5),
         idempotency_key="platform-wiring-dedupe-key",
     )
-    with canonical_execution_identity_scope(_RUN_SEED):
+    with canonical_governed_execution_scope(
+        _RUN_SEED,
+        governance_tenant_id=state.tenant_id,
+        governance_principal_id="rel-decl-invoker-principal",
+    ):
         first = invoker.invoke(state=state, agent_id="agent-test", request=request)
         second = invoker.invoke(state=state, agent_id="agent-test", request=request)
     assert first.success and second.success
@@ -191,7 +195,11 @@ def test_declarative_invoker_without_store_fails_closed_when_idempotency_key_pre
         input=_DoubleIn(value=3),
         idempotency_key="no-store-key",
     )
-    with canonical_execution_identity_scope(_RUN_SEED):
+    with canonical_governed_execution_scope(
+        _RUN_SEED,
+        governance_tenant_id=state.tenant_id,
+        governance_principal_id="rel-decl-invoker-principal",
+    ):
         with pytest.raises(RuntimeError, match="pre-effect coordinator"):
             invoker.invoke(state=state, agent_id="agent-test", request=request)
     assert handler.calls == 0

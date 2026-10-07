@@ -12,10 +12,48 @@ from pathlib import Path
 from typing import Any
 
 from intergrax.contracts.checkpoint_revision import (
+    CheckpointAgentIdentityConflictError,
+    CheckpointDurableCorruptionError,
     CheckpointRevisionConflictError,
+    CheckpointSideEffectLineageError,
     CheckpointStepRegressionError,
+    CheckpointStreamIdentityConflictError,
 )
 from intergrax.contracts.side_effect import AgentRunCheckpoint, SideEffectRecord
+
+
+def validate_agent_checkpoint_for_persistence(
+    checkpoint: AgentRunCheckpoint,
+) -> AgentRunCheckpoint:
+    """Canonical persistence acceptance rule for all AgentCheckpointStore providers."""
+    validated = AgentRunCheckpoint.model_validate(checkpoint.model_dump(mode="json"))
+    for record in validated.side_effect_ledger:
+        if record.run_id != validated.run_id:
+            raise CheckpointSideEffectLineageError(
+                f"Side-effect run_id={record.run_id} does not match "
+                f"checkpoint run_id={validated.run_id}.",
+            )
+        if record.step_index > validated.step_index:
+            raise CheckpointSideEffectLineageError(
+                f"Side-effect step_index={record.step_index} exceeds "
+                f"checkpoint step_index={validated.step_index}.",
+            )
+    return validated
+
+
+def _assert_stream_agent_continuity(
+    current: AgentRunCheckpoint,
+    incoming: AgentRunCheckpoint,
+) -> None:
+    if current.run_id != incoming.run_id or current.tenant_id != incoming.tenant_id:
+        raise CheckpointStreamIdentityConflictError(
+            "Checkpoint stream identity (run_id, tenant_id) cannot change on update.",
+        )
+    if current.agent_id != incoming.agent_id:
+        raise CheckpointAgentIdentityConflictError(
+            f"Checkpoint agent_id cannot change for run_id={incoming.run_id}: "
+            f"stored={current.agent_id}, incoming={incoming.agent_id}.",
+        )
 
 
 class AgentCheckpointStore(ABC):
@@ -52,35 +90,37 @@ class InMemoryAgentCheckpointStore(AgentCheckpointStore):
         *,
         expected_revision: int | None = None,
     ) -> AgentRunCheckpoint:
-        key = (checkpoint.run_id, checkpoint.tenant_id)
+        validated = validate_agent_checkpoint_for_persistence(checkpoint)
+        key = (validated.run_id, validated.tenant_id)
         with self._lock:
             current = self._checkpoints.get(key)
             if current is None:
                 if expected_revision is not None:
                     raise CheckpointRevisionConflictError(
-                        f"No checkpoint for run_id={checkpoint.run_id}; "
+                        f"No checkpoint for run_id={validated.run_id}; "
                         f"expected_revision={expected_revision} is invalid for create.",
                     )
-                stored = checkpoint.model_copy(update={"revision": 1})
+                stored = validated.model_copy(update={"revision": 1})
                 self._checkpoints[key] = stored
                 return stored
 
             if expected_revision is None:
                 raise CheckpointRevisionConflictError(
-                    f"Checkpoint exists for run_id={checkpoint.run_id}; "
+                    f"Checkpoint exists for run_id={validated.run_id}; "
                     "expected_revision is required for update.",
                 )
             if expected_revision != current.revision:
                 raise CheckpointRevisionConflictError(
-                    f"Stale checkpoint writer for run_id={checkpoint.run_id}: "
+                    f"Stale checkpoint writer for run_id={validated.run_id}: "
                     f"expected_revision={expected_revision}, current={current.revision}.",
                 )
-            if checkpoint.step_index < current.step_index:
+            _assert_stream_agent_continuity(current, validated)
+            if validated.step_index < current.step_index:
                 raise CheckpointStepRegressionError(
-                    f"Checkpoint step regression for run_id={checkpoint.run_id}: "
-                    f"new step_index={checkpoint.step_index}, current={current.step_index}.",
+                    f"Checkpoint step regression for run_id={validated.run_id}: "
+                    f"new step_index={validated.step_index}, current={current.step_index}.",
                 )
-            stored = checkpoint.model_copy(update={"revision": current.revision + 1})
+            stored = validated.model_copy(update={"revision": current.revision + 1})
             self._checkpoints[key] = stored
             return stored
 
@@ -128,7 +168,8 @@ class SQLiteAgentCheckpointStore(AgentCheckpointStore):
         *,
         expected_revision: int | None = None,
     ) -> AgentRunCheckpoint:
-        payload = checkpoint.model_dump(mode="json")
+        validated = validate_agent_checkpoint_for_persistence(checkpoint)
+        payload = validated.model_dump(mode="json")
         with self._connect() as conn:
             conn.execute("BEGIN IMMEDIATE")
             row = conn.execute(
@@ -136,17 +177,17 @@ class SQLiteAgentCheckpointStore(AgentCheckpointStore):
                 SELECT revision, payload FROM agent_run_checkpoints
                 WHERE run_id = ? AND tenant_id = ?
                 """,
-                (checkpoint.run_id, checkpoint.tenant_id),
+                (validated.run_id, validated.tenant_id),
             ).fetchone()
 
             if row is None:
                 if expected_revision is not None:
                     conn.rollback()
                     raise CheckpointRevisionConflictError(
-                        f"No checkpoint for run_id={checkpoint.run_id}; "
+                        f"No checkpoint for run_id={validated.run_id}; "
                         f"expected_revision={expected_revision} is invalid for create.",
                     )
-                stored = checkpoint.model_copy(update={"revision": 1})
+                stored = validated.model_copy(update={"revision": 1})
                 payload["revision"] = 1
                 conn.execute(
                     """
@@ -155,10 +196,10 @@ class SQLiteAgentCheckpointStore(AgentCheckpointStore):
                     VALUES (?, ?, ?, ?, ?)
                     """,
                     (
-                        checkpoint.run_id,
-                        checkpoint.tenant_id,
+                        validated.run_id,
+                        validated.tenant_id,
                         json.dumps(payload),
-                        checkpoint.saved_at.isoformat(),
+                        validated.saved_at.isoformat(),
                         1,
                     ),
                 )
@@ -167,29 +208,33 @@ class SQLiteAgentCheckpointStore(AgentCheckpointStore):
 
             current_revision = int(row[0])
             current_payload = json.loads(row[1])
-            current_step_index = int(current_payload.get("step_index", 0))
+            current_checkpoint = validate_agent_checkpoint_for_persistence(
+                AgentRunCheckpoint.model_validate(current_payload),
+            )
+            current_step_index = current_checkpoint.step_index
 
             if expected_revision is None:
                 conn.rollback()
                 raise CheckpointRevisionConflictError(
-                    f"Checkpoint exists for run_id={checkpoint.run_id}; "
+                    f"Checkpoint exists for run_id={validated.run_id}; "
                     "expected_revision is required for update.",
                 )
             if expected_revision != current_revision:
                 conn.rollback()
                 raise CheckpointRevisionConflictError(
-                    f"Stale checkpoint writer for run_id={checkpoint.run_id}: "
+                    f"Stale checkpoint writer for run_id={validated.run_id}: "
                     f"expected_revision={expected_revision}, current={current_revision}.",
                 )
-            if checkpoint.step_index < current_step_index:
+            _assert_stream_agent_continuity(current_checkpoint, validated)
+            if validated.step_index < current_step_index:
                 conn.rollback()
                 raise CheckpointStepRegressionError(
-                    f"Checkpoint step regression for run_id={checkpoint.run_id}: "
-                    f"new step_index={checkpoint.step_index}, current={current_step_index}.",
+                    f"Checkpoint step regression for run_id={validated.run_id}: "
+                    f"new step_index={validated.step_index}, current={current_step_index}.",
                 )
 
             next_revision = current_revision + 1
-            stored = checkpoint.model_copy(update={"revision": next_revision})
+            stored = validated.model_copy(update={"revision": next_revision})
             payload["revision"] = next_revision
             updated = conn.execute(
                 """
@@ -199,17 +244,17 @@ class SQLiteAgentCheckpointStore(AgentCheckpointStore):
                 """,
                 (
                     json.dumps(payload),
-                    checkpoint.saved_at.isoformat(),
+                    validated.saved_at.isoformat(),
                     next_revision,
-                    checkpoint.run_id,
-                    checkpoint.tenant_id,
+                    validated.run_id,
+                    validated.tenant_id,
                     expected_revision,
                 ),
             )
             if updated.rowcount != 1:
                 conn.rollback()
                 raise CheckpointRevisionConflictError(
-                    f"Concurrent checkpoint CAS failure for run_id={checkpoint.run_id}.",
+                    f"Concurrent checkpoint CAS failure for run_id={validated.run_id}.",
                 )
             conn.commit()
             return stored
@@ -225,11 +270,25 @@ class SQLiteAgentCheckpointStore(AgentCheckpointStore):
             ).fetchone()
         if row is None:
             return None
-        checkpoint = AgentRunCheckpoint.model_validate(json.loads(row[0]))
+        try:
+            raw_payload = json.loads(row[0])
+        except json.JSONDecodeError as exc:
+            raise CheckpointDurableCorruptionError(
+                f"Invalid checkpoint JSON for run_id={run_id}, tenant_id={tenant_id}.",
+            ) from exc
+        checkpoint = AgentRunCheckpoint.model_validate(raw_payload)
         revision = int(row[1])
         if checkpoint.revision != revision:
-            return checkpoint.model_copy(update={"revision": revision})
-        return checkpoint
+            raise CheckpointDurableCorruptionError(
+                f"Checkpoint payload revision={checkpoint.revision} disagrees with "
+                f"authoritative column revision={revision} for run_id={run_id}.",
+            )
+        if checkpoint.run_id != run_id or checkpoint.tenant_id != tenant_id:
+            raise CheckpointStreamIdentityConflictError(
+                f"Stored checkpoint identity does not match lookup "
+                f"run_id={run_id}, tenant_id={tenant_id}.",
+            )
+        return validate_agent_checkpoint_for_persistence(checkpoint)
 
 
 def build_checkpoint(

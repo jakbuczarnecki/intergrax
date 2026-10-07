@@ -260,8 +260,8 @@ def test_hitl_denied_is_blocked(tmp_path: Path) -> None:
         result = port.synthesize_from_gap(_gap_request(craft_id))
     finally:
         reset_active_execution_identity(token)
-    assert result.outcome is CodeCraftGapSynthesisOutcome.BLOCKED
-    assert result.reason_detail == "hitl_denied"
+    assert result.outcome is CodeCraftGapSynthesisOutcome.REQUIRES_HITL
+    assert result.reason_detail == "hitl_pending"
 
 
 def test_max_iterations_failed(tmp_path: Path) -> None:

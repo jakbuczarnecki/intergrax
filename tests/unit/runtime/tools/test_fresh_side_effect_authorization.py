@@ -4,6 +4,8 @@
 
 from __future__ import annotations
 
+from contextlib import contextmanager
+
 import pytest
 from pydantic import BaseModel
 
@@ -13,7 +15,11 @@ from intergrax.applications.contracts.environment_profile import (
     PolicyRulesProfile,
 )
 from intergrax.contracts.declarative_hitl import DeclarativeHitlApprovalGrant
-from intergrax.contracts.execution_identity import mint_run_id, mint_task_id
+from testing_support.builder import (
+    canonical_governed_execution_scope,
+    canonical_run_id_for_tests,
+    canonical_task_id_for_tests,
+)
 from intergrax.runtime.nexus.errors.declarative_policy_violation_error import (
     DeclarativePolicyHitlRequiredError,
     DeclarativePolicyViolationError,
@@ -41,8 +47,9 @@ from intergrax.tools.registry import ToolRegistry
 
 pytestmark = [pytest.mark.unit, pytest.mark.gate]
 
-_TASK_ID = mint_task_id()
-_RUN_ID = mint_run_id()
+_P0_SAFETY_EXECUTION_SEED = "p0-safety-side-effect"
+_TASK_ID = canonical_task_id_for_tests(_P0_SAFETY_EXECUTION_SEED)
+_RUN_ID = canonical_run_id_for_tests(_P0_SAFETY_EXECUTION_SEED)
 _TOOL_ID = "p0.safety.side_effect"
 _RULE_ID = "p0.safety.rule"
 _PLUGIN_TOOL_ID = "plugin.custom.side_effect"
@@ -147,6 +154,13 @@ class RecordingPreEffectCoordinator:
             effect_may_have_started=effect_may_have_started,
         )
 
+    def admit_external_effect_may_have_started(
+        self,
+        *,
+        claim_context: PreEffectClaimContext,
+    ) -> None:
+        self._inner.admit_external_effect_may_have_started(claim_context=claim_context)
+
 
 class GovernanceDummyState:
     def __init__(
@@ -159,7 +173,7 @@ class GovernanceDummyState:
     ) -> None:
         self._tenant_id = tenant_id
         self.run_id = run_id
-        self.request = type("Req", (), {"task_id": task_id})()
+        self.request = type("Req", (), {"task_id": task_id, "metadata": {}})()
         self.declarative_hitl_grant: DeclarativeHitlApprovalGrant | None = None
         self._order = order
         self._governance_context = type(
@@ -289,6 +303,23 @@ def _hitl_grant(*, bundle: object, key: str, tool_id: str = _TOOL_ID) -> Declara
         pause_id="pause-p0-safety",
         approved_at="2026-08-30T00:00:00+00:00",
     )
+
+
+@contextmanager
+def invoke_under_active_execution():
+    """Bind canonical execution + governance identity for RuntimeToolInvoker policy paths."""
+    with canonical_governed_execution_scope(
+        _P0_SAFETY_EXECUTION_SEED,
+        governance_tenant_id="tenant_test",
+        governance_principal_id="principal-p0-safety",
+    ):
+        yield
+
+
+@pytest.fixture(autouse=True)
+def _active_execution_identity_for_p0_safety() -> None:
+    with invoke_under_active_execution():
+        yield
 
 
 def _invoker(

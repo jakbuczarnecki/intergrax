@@ -1,0 +1,228 @@
+# TRACE-X-P0 — Traceability Ownership, Evidence-Plane & Coverage Baseline
+
+**Parent:** TRACE-X — End-to-End Traceability & Evidence Certification
+
+**Stage:** TRACE-X-P0 (baseline lock — **production delta = 0**)
+
+**Task START_HEAD (original P0):** `9c68b47dcd30f328f1acd530af13bb32f860507f`
+
+**Initial P0 baseline commit:** `6be91ed91e3132dddd77d1fb14312bf23870e4e1`
+
+**Intermediate bookkeeping (HEAD-pin; superseded):** `fe0868254d2cf0b6cc5015dbd7e8640f756dc8fe`
+
+**R1 remediation START_HEAD:** `a2eb3d6e1e748e99a0f0430b32f6a44f25345696`
+
+**Final independent accepted P0 HEAD (evidence/code):** `3a6030deb2cd05f080efeee83a5d1060fa3704de`
+
+**P0 closure bookkeeping:** first `development` commit after evidence SHA `3a6030deb…` (docs-only; see task report — not P0 evidence baseline).
+
+**Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p0_support.py`
+
+**Status:** TRACE-X-P0-R1 = **CLOSED / INDEPENDENTLY ACCEPTED** · TRACE-X-P0 = **CLOSED / INDEPENDENTLY ACCEPTED**
+
+**Accepted evidence/code SHA:** `3a6030deb2cd05f080efeee83a5d1060fa3704de`
+
+**Independent closure reason:** (1) closed-world gate covers all sensitive categories; (2) SHA provenance separated from exact final independent audit SHA; (3) P1–P6 child mapping mechanically consistent.
+
+**Closed-world evidence @ accepted SHA:** sensitive categories Reconstructor, CausalEvidence, LineageReader, LineageWriter, LineagePersistence — discovered **17**, registry **17**, unclassified **0**, invalid surface refs **0**, unexplained orphans **0**. Sentinels: UnknownReconstructor / UnknownCausalEvidence / UnknownLineageReader / UnknownLineageWriter / UnknownLineagePersistence → **FAIL**.
+
+---
+
+## R1 remediation (TRACE-X-P0-R1)
+
+| Root cause | Before | After |
+|---|---|---|
+| Closed-world gate | Only unknown `*Reconstructor` blocked | Any discovered sensitive class (all suffix categories) must appear in `TRACE_MECHANISM_CLASS_REGISTRY` or gate **FAIL** |
+| HEAD / provenance | Q01 accepted any descendant of baseline SHA as “current head” | Q01 = task `START_HEAD` provenance only; exact `FINAL_COMMIT` via report + independent audit |
+| Child mapping | P3/P4 drift in reverse reconstruction notes | Canonical `FRZ_TO_CHILD` + typed `future_child_owner` on reverse rows; mechanical gates |
+
+**Sentinel suite:** `tests/qualification/trace_x/test_trace_x_p0_r1_soundness.py` (TXP0-R1-Q01..Q20).
+
+---
+
+## 1. Repository / HEAD
+
+| Field | Value |
+|---|---|
+| Branch | `development` |
+| P0 baseline commit | `6be91ed91e3132dddd77d1fb14312bf23870e4e1` |
+| R1 START_HEAD | `a2eb3d6e1e748e99a0f0430b32f6a44f25345696` |
+| Final independent accepted P0 HEAD | `3a6030deb2cd05f080efeee83a5d1060fa3704de` |
+| Production delta | **0** |
+
+---
+
+## 2. Scope
+
+**In scope:** closed-world traceability inventory (TX-S01..S19), architecture locks, semantic owner matrix, forward/reverse matrices, FRZ-TRC-01..12 P0 disposition (no PASS), TXP0-Q01..Q30 gates, TXP0-R1 soundness gates, tenant isolation P0 audit, child decomposition.
+
+**Out of scope:** production contract changes, CONFIG-X / COMPAT-X / TENANT-X / PROD-Q / QUAL-X implementation, FRZ-TRC PASS promotion, new global trace envelopes.
+
+---
+
+## 3. Architecture facts (locked @ HEAD)
+
+| Mechanism | Role |
+|---|---|
+| `RuntimeEvent` | Canonical execution event evidence |
+| `PlatformCausalEvidence` | Canonical transport→runtime relation evidence |
+| `ExecutionLineage` | Canonical parent/child topology truth |
+| `ExecutionReconstructor` | Exactly-one factual reconstruction owner |
+| `ExecutionReconstruction` | Derived read model — not persisted |
+| `TraceEvent` / `RunTraceStore` | Plane B diagnostic telemetry (run-scoped) |
+| `ExecutionBoundaryEvent` | Governed provider/governance evidence sections |
+| Diagnostics | Consumes `ExecutionReconstructionReader` only |
+| Observability | Projects/delivers facts — no truth minting |
+
+Full lock records: `ARCHITECTURE_LOCK` in SSOT.
+
+---
+
+## 4. Evidence-plane taxonomy
+
+Enum `EvidencePlaneClassification` — no `OTHER` / `MISC` / `UNKNOWN`. Every inventoried surface carries exactly one value.
+
+---
+
+## 5. Semantic owner matrix
+
+| Concern | Canonical semantic owner | Canonical contract |
+|---|---|---|
+| execution event truth | Evidence Plane / RuntimeEvent persistence | `RuntimeEvent` |
+| cross-transport causal relation | Platform causal evidence subsystem | `PlatformCausalEvidence` |
+| execution lineage | Execution Lineage subsystem | `ExecutionLineagePersistence` |
+| factual reconstruction | Evidence Plane / ExecutionReconstructor | `ExecutionReconstructionReader` |
+| diagnostic interpretation | Diagnostics orchestrator | `ExecutionReconstructionReader` (consumer) |
+| trace read model | Nexus tracing / RunTrace plane | `TraceEvent` |
+| governance evidence | Governance evidence persistence | `GovernanceEvidenceSection` |
+| provider-effect evidence | Execution boundary + external operations | `ExecutionBoundaryEvent` |
+
+**Invariant:** duplicate semantic owner for these concerns = **0** (mechanical gate TXP0-Q23).
+
+---
+
+## 6. Producer / persistence / reconstruction / consumer inventory
+
+Typed records: `TRACEABILITY_SURFACES` (`TraceabilitySurface`, surfaces **TX-S01..TX-S19**).
+
+---
+
+## 7. Forward traceability chain
+
+`FORWARD_CHAIN` (`ForwardChainTransition`, TX-FWD-01..09): each transition names source/target owners, joining identity, evidence contract, and producer paths. No narrative-only arrows.
+
+---
+
+## 8. Reverse reconstruction matrix
+
+`REVERSE_RECONSTRUCTION_MATRIX` covers: external effect, provider invocation, tool invocation, model call, failure, diagnostic finding, terminal outcome — with per-dimension status (`COMPLETE` / `PARTIAL` / `NOT_AVAILABLE` / `NOT_APPLICABLE`) and typed `future_child_owner` where applicable.
+
+**Canonical reverse child owners:** external effect / provider / tool → **TRACE-X-P3**; model call → **TRACE-X-P4**; failure / terminal → **TRACE-X-P6**.
+
+---
+
+## 9. FRZ-TRC-01..12 P0 matrix
+
+| Criterion | P0 status | Future child |
+|---|---|---|
+| FRZ-TRC-01 | SUPPORTED_CURRENT_HEAD | TRACE-X-P2 |
+| FRZ-TRC-02 | SUPPORTED_CURRENT_HEAD | TRACE-X-P1 |
+| FRZ-TRC-03 | PARTIAL_CURRENT_HEAD | TRACE-X-P3 |
+| FRZ-TRC-04 | PARTIAL_CURRENT_HEAD | TRACE-X-P3 |
+| FRZ-TRC-05 | PARTIAL_CURRENT_HEAD | TRACE-X-P4 |
+| FRZ-TRC-06 | PARTIAL_CURRENT_HEAD | TRACE-X-P3 |
+| FRZ-TRC-07 | PARTIAL_CURRENT_HEAD | TRACE-X-P5 |
+| FRZ-TRC-08 | GAP_REQUIRES_CHILD | TRACE-X-P5 |
+| FRZ-TRC-09 | PARTIAL_CURRENT_HEAD | TRACE-X-P6 |
+| FRZ-TRC-10 | PARTIAL_CURRENT_HEAD | TRACE-X-P6 |
+| FRZ-TRC-11 | PARTIAL_CURRENT_HEAD | TRACE-X-P5 |
+| FRZ-TRC-12 | SUPPORTED_CURRENT_HEAD | TRACE-X-P1 |
+
+Authoritative rows: `FRZ_TRC_P0_MATRIX` + `FRZ_TO_CHILD` in SSOT. **FRZ criteria remain OPEN** — no PASS.
+
+---
+
+## 10. Supporting FRZ-OBS mapping
+
+FRZ-OBS-01..07 remain **OPEN** supporting evidence only. P0 references OBS-TRACE-1, OBS-RECONSTRUCTION-1, OBS-DIAG-CONFORMANCE as architecture evidence for Plane B / reconstruction / diagnostics boundaries.
+
+---
+
+## 11. Historical evidence reconciliation
+
+`HISTORICAL_EVIDENCE` in SSOT maps HARNESS-W5/W6, CE-01, GOV-X1/X2, INT-CONFIG-REAL-X, STATE-X, OBS-* stages → what they prove, which FRZ-TRC they support, and what they **do not** prove (no automatic PASS).
+
+---
+
+## 12. Current gaps / blockers
+
+| ID | Classification | Owner child |
+|---|---|---|
+| TX-B01 | TRACKED FREEZE DEBT | TRACE-X-P5 (global profile revision trace SSOT — FRZ-TRC-08) |
+
+**IN-SCOPE BLOCKER count @ P0:** 0 (TX-B01 is tracked debt, not architecture STOP).
+
+---
+
+## 13. Mandatory child decomposition
+
+`TRACE_X_CHILD_DECOMPOSITION`: TRACE-X-P1 .. TRACE-X-P6 + TRACE-X-CERT (derived from inventory gaps, not invented scope).
+
+**Recommended parent:** TRACE-X = **CURRENT / MANDATORY** · P0 **CLOSED** · **NEXT CHILD = TRACE-X-P1**
+
+**Canonical child → FRZ mapping (steering baseline):** P1 → FRZ-TRC-02, FRZ-TRC-12; P2 → FRZ-TRC-01; P3 → FRZ-TRC-03, FRZ-TRC-04, FRZ-TRC-06; P4 → FRZ-TRC-05; P5 → FRZ-TRC-07, FRZ-TRC-08, FRZ-TRC-11; P6 → FRZ-TRC-09, FRZ-TRC-10; TRACE-X-CERT → FRZ-TRC-01..12. P2..P6 + CERT = **NOT ENTERED**.
+
+---
+
+## 14. Tenant Isolation Audit (P0)
+
+See `TENANT_ISOLATION_AUDIT` in SSOT. **Result:** PARTIAL — tenant_id propagation inventoried on canonical evidence; global TENANT-X not claimed.
+
+---
+
+## 15. Enterprise audit matrix
+
+`ENTERPRISE_AUDIT_MATRIX` in SSOT — inventory completeness **PASS**; tenant isolation row **PARTIAL**.
+
+---
+
+## 16. Mechanical gates
+
+TXP0-Q01..TXP0-Q30 in `tests/qualification/trace_x/_trace_x_p0_qualification_tests.py`; entrypoint `tests/qualification/trace_x/test_trace_x_p0_baseline.py`.
+
+TXP0-R1-Q01..Q20 in `tests/qualification/trace_x/test_trace_x_p0_r1_soundness.py`.
+
+Closed-world: `discover_sensitive_classes()` + `assert_sensitive_classes_explicitly_classified()` (all suffix categories); registry→surface integrity; registry orphan audit; forbidden global trace type names.
+
+---
+
+## 17. Tests @ R1 remediation
+
+```text
+Pass 1: uv run --with cryptography pytest tests/qualification/trace_x/test_trace_x_p0_r1_soundness.py -p no:xdist -q
+        → 20 passed
+
+Pass 2: uv run --with cryptography pytest tests/qualification/trace_x/test_trace_x_p0_baseline.py -p no:xdist -q
+        → 48 passed
+
+Pass 3: uv run --with cryptography pytest \
+          tests/unit/runtime/observability/test_obs_trace_1_qualification.py \
+          tests/unit/runtime/architecture/test_obs_reconstruction_1_architecture.py \
+          tests/unit/runtime/architecture/test_obs_diag_conformance_architecture.py \
+          -p no:xdist -q
+        → (see final task report)
+
+max concurrent uv = 1; max concurrent pytest = 1; parallel execution = NO; -p no:xdist
+```
+
+---
+
+## 18. Tracked freeze debt (future stages)
+
+| Debt | Future owner |
+|---|---|
+| Global provider activation / effective config | CONFIG-X |
+| Schema/plugin evolution | COMPAT-X |
+| Global tenant certification | TENANT-X |
+| Production transport/backend qualification | PROD-Q |
+| Qualification meta-certification | QUAL-X |

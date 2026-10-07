@@ -12,14 +12,26 @@ from typing import Any, Callable, Mapping
 from intergrax.contracts.execution_evidence.attestation import HostAttestor
 from intergrax.contracts.execution_evidence.boundary_event import (
     ExecutionBoundaryEvent,
+    ExecutionBoundaryEventV2,
+    ExecutionIdentitySection,
     GovernanceEvidenceSection,
+    GovernedExecutionBoundaryEvent,
     GovernedProofSection,
     PolicyDecisionSection,
     ProviderInvocationSection,
     SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V1,
+    SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V2,
 )
-from intergrax.contracts.execution_evidence.receipt import ProofReceipt
-from intergrax.contracts.governed_execution_result import GovernedExecutionResult
+from intergrax.contracts.execution_evidence.receipt import (
+    ExecutionEvidenceProofReceipt,
+    ProofReceipt,
+    ProofReceiptV2,
+)
+from intergrax.contracts.governed_execution_result import (
+    AnyGovernedExecutionResult,
+    GovernedExecutionResult,
+    GovernedExecutionResultV2,
+)
 from intergrax.contracts.governed_proof import GovernedProofProfile
 from intergrax.contracts.provider_invocation import ProviderInvocationStatus
 from intergrax.contracts.runtime_policy import PolicyAction, PolicyDecision
@@ -36,8 +48,8 @@ class AttestationOutcome:
 
     execution_succeeded: bool
     attestation_succeeded: bool
-    receipt: ProofReceipt | None
-    event: ExecutionBoundaryEvent | None
+    receipt: ExecutionEvidenceProofReceipt | None
+    event: GovernedExecutionBoundaryEvent | None
     reason: str
     provider_invoked: bool = True
 
@@ -123,6 +135,79 @@ def compose_execution_boundary_event(
     )
 
 
+def compose_execution_boundary_event_v2_from_result(
+    result: GovernedExecutionResultV2,
+    *,
+    event_id: str | None = None,
+    occurred_at: datetime | None = None,
+    actor: str = "",
+) -> ExecutionBoundaryEventV2:
+    if result.provider_outcome.status is not ProviderInvocationStatus.SUCCEEDED:
+        raise ValueError("boundary_event_requires_succeeded_outcome")
+    proof = result.proof
+    policy_decision = result.evaluated_policy_decision.decision
+    if policy_decision.action is not PolicyAction.ALLOW:
+        raise ValueError("boundary_event_requires_allow_decision")
+    if proof.policy_action is not PolicyAction.ALLOW:
+        raise ValueError("boundary_event_requires_allow_proof")
+    if not policy_decision.has_attested_policy_bundle_refs():
+        raise ValueError("policy_bundle_identity_missing")
+
+    inv = result.provider_invocation
+    if inv.task_id != str(result.task_id) or inv.run_id != str(result.run_id):
+        raise ValueError("provider_invocation_execution_identity_mismatch")
+
+    evidence_section: GovernanceEvidenceSection | None = None
+    if proof.governance_evidence is not None:
+        evidence_section = GovernanceEvidenceSection(
+            kind=proof.governance_evidence.kind,
+            evidence_id=proof.governance_evidence.evidence_id,
+        )
+
+    digest = proof_digest(proof)
+    proof_id = (
+        f"proof:{result.task_id}:{result.run_id}:{proof.action}:"
+        f"{digest.removeprefix('sha256:')[:16]}"
+    )
+
+    return ExecutionBoundaryEventV2(
+        event_id=event_id or f"ebe-{uuid.uuid4().hex}",
+        occurred_at=occurred_at or result.execution_completed_at,
+        execution=ExecutionIdentitySection(
+            task_id=result.task_id,
+            run_id=result.run_id,
+            attempt_id=result.attempt_id,
+            execution_id=result.execution_id,
+        ),
+        tenant_id=result.tenant_id,
+        principal_id=result.principal_id,
+        actor=actor,
+        provider_id=proof.provider_id,
+        action=proof.action,
+        policy=PolicyDecisionSection(
+            bundle_id=policy_decision.policy_bundle_id,
+            bundle_version=policy_decision.policy_bundle_version,
+            bundle_digest=policy_decision.policy_bundle_digest,
+            rule_id=policy_decision.policy_rule_id,
+            action=policy_decision.action,
+            decision_id=policy_decision.decision_id,
+            decision_ref=policy_decision.decision_id or policy_decision.policy_rule_id,
+        ),
+        governance_evidence=evidence_section,
+        provider_invocation=ProviderInvocationSection(
+            operation=inv.operation,
+            invocation_id=inv.invocation_id,
+            outcome="success",
+            completed_at=result.provider_outcome.completed_at,
+        ),
+        governed_proof=GovernedProofSection(
+            proof_id=proof_id,
+            proof_digest=digest,
+            proof=proof.model_dump(mode="json"),
+        ),
+    )
+
+
 def produce_proof_receipt(
     *,
     event: ExecutionBoundaryEvent,
@@ -137,6 +222,26 @@ def produce_proof_receipt(
         schema=SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V1,
     )
     return ProofReceipt(
+        receipt_id=receipt_id or f"rcpt-{uuid.uuid4().hex}",
+        execution_boundary_event=event,
+        host_attestation=attestation,
+        policy_bundle_artifact=policy_bundle_artifact,
+    )
+
+
+def produce_proof_receipt_v2(
+    *,
+    event: ExecutionBoundaryEventV2,
+    attestor: HostAttestor,
+    receipt_id: str | None = None,
+    policy_bundle_artifact: ImmutableRuntimePolicyBundle | None = None,
+) -> ProofReceiptV2:
+    payload = canonical_json_bytes(event.canonical_payload())
+    attestation = attestor.attest(
+        payload,
+        schema=SCHEMA_GOVERNED_EXECUTION_BOUNDARY_EVENT_V2,
+    )
+    return ProofReceiptV2(
         receipt_id=receipt_id or f"rcpt-{uuid.uuid4().hex}",
         execution_boundary_event=event,
         host_attestation=attestation,
@@ -168,7 +273,7 @@ def compose_execution_boundary_event_from_result(
 
 
 def attest_governed_execution_result(
-    result: GovernedExecutionResult,
+    result: AnyGovernedExecutionResult,
     *,
     attestor: HostAttestor | None,
     policy_bundle_artifact: ImmutableRuntimePolicyBundle | None = None,
@@ -180,6 +285,7 @@ def attest_governed_execution_result(
     require_first_class_invocation: bool = True,
 ) -> AttestationOutcome:
     """Host attestation from atomic GER — preferred production path (PC-4)."""
+    use_v2 = isinstance(result, GovernedExecutionResultV2)
     if require_first_class_invocation:
         inv_id = result.provider_invocation.invocation_id.strip()
         if not inv_id or inv_id == "invocation:unknown":
@@ -193,12 +299,20 @@ def attest_governed_execution_result(
             )
     if attestation_required and attestor is None:
         try:
-            event = compose_execution_boundary_event_from_result(
-                result,
-                event_id=event_id,
-                occurred_at=occurred_at,
-                actor=actor,
-            )
+            if use_v2:
+                event = compose_execution_boundary_event_v2_from_result(
+                    result,  # type: ignore[arg-type]
+                    event_id=event_id,
+                    occurred_at=occurred_at,
+                    actor=actor,
+                )
+            else:
+                event = compose_execution_boundary_event_from_result(
+                    result,  # type: ignore[arg-type]
+                    event_id=event_id,
+                    occurred_at=occurred_at,
+                    actor=actor,
+                )
         except ValueError:
             event = None
         return AttestationOutcome(
@@ -210,12 +324,20 @@ def attest_governed_execution_result(
             provider_invoked=True,
         )
     try:
-        event = compose_execution_boundary_event_from_result(
-            result,
-            event_id=event_id,
-            occurred_at=occurred_at,
-            actor=actor,
-        )
+        if use_v2:
+            event = compose_execution_boundary_event_v2_from_result(
+                result,  # type: ignore[arg-type]
+                event_id=event_id,
+                occurred_at=occurred_at,
+                actor=actor,
+            )
+        else:
+            event = compose_execution_boundary_event_from_result(
+                result,  # type: ignore[arg-type]
+                event_id=event_id,
+                occurred_at=occurred_at,
+                actor=actor,
+            )
     except ValueError as exc:
         return AttestationOutcome(
             execution_succeeded=True,
@@ -249,12 +371,20 @@ def attest_governed_execution_result(
             provider_invoked=True,
         )
     try:
-        receipt = produce_proof_receipt(
-            event=event,
-            attestor=attestor,
-            receipt_id=receipt_id,
-            policy_bundle_artifact=policy_bundle_artifact,
-        )
+        if use_v2:
+            receipt = produce_proof_receipt_v2(
+                event=event,  # type: ignore[arg-type]
+                attestor=attestor,
+                receipt_id=receipt_id,
+                policy_bundle_artifact=policy_bundle_artifact,
+            )
+        else:
+            receipt = produce_proof_receipt(
+                event=event,  # type: ignore[arg-type]
+                attestor=attestor,
+                receipt_id=receipt_id,
+                policy_bundle_artifact=policy_bundle_artifact,
+            )
     except Exception:  # noqa: BLE001 — never claim attested on signer failure
         return AttestationOutcome(
             execution_succeeded=True,

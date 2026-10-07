@@ -294,7 +294,7 @@ def test_adapter_hitl_deny_no_retry(tmp_path: Path) -> None:
     finally:
         reset_active_execution_identity(token)
 
-    assert result.status is WorkerEphemeralCapabilityExecutionStatus.DENIED
+    assert result.status is WorkerEphemeralCapabilityExecutionStatus.PENDING_HITL
 
 
 def test_service_with_adapter_boundary(tmp_path: Path) -> None:

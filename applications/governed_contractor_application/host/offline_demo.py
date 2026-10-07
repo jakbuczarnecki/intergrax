@@ -343,6 +343,7 @@ def run_offline_governed_contractor_demo(
         run_id=create_identity.run_id,
         attempt_id=create_identity.attempt_id,
         execution_id=create_identity.execution_id,
+        task_id=validate_task_id(task_id),
     )
     try:
         created = orch_create.create(
@@ -351,7 +352,7 @@ def run_offline_governed_contractor_demo(
             principal_id="offline-demo-user",
             tenant_id="offline-demo-tenant",
             metadata=meta,
-            execution_id="exec-offline-create",
+            execution_id=create_identity.execution_id,
             event_id="ebe-offline-create",
             receipt_id="rcpt-offline-create",
         )
@@ -363,7 +364,7 @@ def run_offline_governed_contractor_demo(
         raise RuntimeError(f"create_attestation_failed:{created.reason}")
 
     orch_create.surface_continuation(
-        execution_id=created.execution_id or "exec-offline-create",
+        execution_id=created.execution_id or str(create_identity.execution_id),
         adapter_result=created.adapter_result,
         run_id=demo_run_id,
     )
@@ -389,10 +390,11 @@ def run_offline_governed_contractor_demo(
         run_id=accept_identity.run_id,
         attempt_id=accept_identity.attempt_id,
         execution_id=accept_identity.execution_id,
+        task_id=validate_task_id(task_id),
     )
     try:
         accepted = orch_accept.accept(
-            execution_id="exec-offline-accept",
+            execution_id=accept_identity.execution_id,
             create_result=created.adapter_result,
             acceptance=acceptance,
             idempotency_key="idem-offline-accept",

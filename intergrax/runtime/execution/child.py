@@ -7,6 +7,9 @@ from __future__ import annotations
 
 from typing import Generic, TypeVar
 
+from intergrax.contracts.child_execution_context_inheritance import (
+    ChildExecutionContextInheritancePort,
+)
 from intergrax.contracts.execution_continuation_state_store import ExecutionContinuationStateStore
 from intergrax.contracts.execution_identity import (
     ExecutionId,
@@ -15,7 +18,6 @@ from intergrax.contracts.execution_identity import (
     require_active_execution_id,
     require_active_execution_identity,
 )
-from intergrax.contracts.execution_lineage import ExecutionLineageIntegrityError
 from intergrax.runtime.execution.identity_authority import (
     default_execution_identity_authority,
 )
@@ -74,6 +76,9 @@ from intergrax.runtime.execution.budget.policy import (
 from intergrax.runtime.execution.lineage.active_lineage import (
     peek_active_execution_lineage,
 )
+from intergrax.runtime.execution.child_context_inheritance_admission import (
+    build_child_context_inheritance_admission_hook,
+)
 from intergrax.runtime.execution.lineage.admission import (
     build_child_lineage_admission_hook,
 )
@@ -102,6 +107,7 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
         "_budget_policy",
         "_ledger",
         "_continuation_state_store",
+        "_child_context_inheritance",
         "_utc_clock",
         "_monotonic_clock",
     )
@@ -113,6 +119,7 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
         ledger: ExecutionBudgetLedger | None = None,
         continuation_state_store: ExecutionContinuationStateStore | None = None,
         *,
+        child_context_inheritance: ChildExecutionContextInheritancePort | None = None,
         utc_clock: UtcClockPort | None = None,
         monotonic_clock: MonotonicClockPort | None = None,
     ) -> None:
@@ -128,6 +135,7 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
         )
         self._ledger = ledger
         self._continuation_state_store = continuation_state_store
+        self._child_context_inheritance = child_context_inheritance
         self._utc_clock = utc_clock if utc_clock is not None else SystemUtcClock()
         self._monotonic_clock = (
             monotonic_clock if monotonic_clock is not None else SystemMonotonicClock()
@@ -145,13 +153,6 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
         parent_run_id, parent_attempt_id = require_active_execution_identity()
         parent_execution_id = require_active_execution_id()
         lineage_state = peek_active_execution_lineage()
-        if (
-            lineage_state is not None
-            and parent_execution_id in lineage_state.non_durable_execution_ids
-        ):
-            raise ExecutionLineageIntegrityError(
-                "non-durable lineage parent cannot admit nested child",
-            )
         parent_authority = require_active_execution_authority()
 
         resolution = self._authority_policy.resolve_child_authority(
@@ -259,6 +260,13 @@ class ChildExecutionRunner(Generic[RequestT, ResultT]):
                 parent_execution_id=parent_execution_id,
             )
             resolved_hooks = (lineage_hook, *admission_hooks)
+        if self._child_context_inheritance is not None:
+            context_hook = build_child_context_inheritance_admission_hook(
+                self._child_context_inheritance,
+                parent_execution_id=parent_execution_id,
+                child_execution_id=child_execution_id,
+            )
+            resolved_hooks = (*resolved_hooks, context_hook)
         boundary = ExecutionBoundary[RequestT, ResultT](
             wrap_execution_delegate_for_failure_evidence(delegate),
             admission_hooks=resolved_hooks,

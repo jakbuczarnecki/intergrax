@@ -15,6 +15,9 @@ import pytest
 from testing_support.nexus_loop_from_environment import (
     build_nexus_loop_from_environment,
 )
+from testing_support.reference_root_execution_authority_admission import (
+    REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
+)
 from intergrax.applications.contracts.environment_profile import (
     ApplicationEnvironmentProfile,
     OrchestrationProfile,
@@ -387,7 +390,7 @@ async def test_r1_2_bridge_restore_with_fake_reader() -> None:
     stub_event = MagicMock()
     stub_event.model_copy.return_value = stub_event
     with patch(
-        "intergrax.runtime.nexus.orchestration.long_running_bridge.runtime_event_from_task_state",
+        "intergrax.runtime.nexus.orchestration.long_running_bridge.runtime_event_from_task_notification",
         return_value=stub_event,
     ):
         await maybe_restore_long_running(
@@ -422,7 +425,7 @@ async def test_r1_3_bridge_checkpoint_with_fake_persistence() -> None:
     )
     try:
         with patch(
-            "intergrax.runtime.nexus.orchestration.long_running_bridge.runtime_event_from_task_state",
+            "intergrax.runtime.nexus.orchestration.long_running_bridge.runtime_event_from_task_notification",
             return_value=stub_event,
         ):
             await maybe_checkpoint_long_running(

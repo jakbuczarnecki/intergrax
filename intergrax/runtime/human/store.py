@@ -16,8 +16,10 @@ from intergrax.integrations.providers.relational_store.sqlite.paths import (
     resolve_human_decisions_db_path,
 )
 from intergrax.runtime.human.persistence_errors import (
+    HumanDecisionPersistenceConflictError,
     deserialize_persisted_human_approver_evidence,
 )
+from intergrax.runtime.human.persistence_validation import validate_human_decision_for_persistence
 from intergrax.runtime.human.models import (
     EscalationTarget,
     HumanDecisionRecord,
@@ -92,34 +94,41 @@ class SQLiteHumanDecisionStore(HumanDecisionPersistence):
             )
 
     def record(self, record: HumanDecisionRecord) -> HumanDecisionRecord:
+        validate_human_decision_for_persistence(record)
         with self._connection() as conn:
-            conn.execute(
-                """
-                INSERT INTO human_decisions (
-                    decision_id, task_id, tenant_id, user_id, human_request_id,
-                    verdict, response_text, escalation_level, escalation_target,
-                    agent_id, run_id, notes, created_at_utc, approver_json
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    record.decision_id,
-                    record.task_id,
-                    record.tenant_id,
-                    record.user_id,
-                    record.human_request_id,
-                    record.verdict.value,
-                    record.response_text,
-                    record.escalation_level,
-                    record.escalation_target.value
-                    if record.escalation_target
-                    else None,
-                    record.agent_id,
-                    record.run_id,
-                    record.notes,
-                    record.created_at_utc,
-                    record.approver.model_dump_json(),
-                ),
-            )
+            try:
+                conn.execute(
+                    """
+                    INSERT INTO human_decisions (
+                        decision_id, task_id, tenant_id, user_id, human_request_id,
+                        verdict, response_text, escalation_level, escalation_target,
+                        agent_id, run_id, notes, created_at_utc, approver_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        record.decision_id,
+                        record.task_id,
+                        record.tenant_id,
+                        record.user_id,
+                        record.human_request_id,
+                        record.verdict.value,
+                        record.response_text,
+                        record.escalation_level,
+                        record.escalation_target.value
+                        if record.escalation_target
+                        else None,
+                        record.agent_id,
+                        record.run_id,
+                        record.notes,
+                        record.created_at_utc,
+                        record.approver.model_dump_json(),
+                    ),
+                )
+            except sqlite3.IntegrityError as exc:
+                raise HumanDecisionPersistenceConflictError(
+                    "human decision record already exists",
+                    decision_id=record.decision_id,
+                ) from exc
         return record
 
     def list_for_task(self, task_id: str, tenant_id: str) -> List[HumanDecisionRecord]:
@@ -128,7 +137,7 @@ class SQLiteHumanDecisionStore(HumanDecisionPersistence):
                 """
                 SELECT * FROM human_decisions
                 WHERE task_id = ? AND tenant_id = ?
-                ORDER BY created_at_utc ASC
+                ORDER BY created_at_utc ASC, decision_id ASC
                 """,
                 (task_id, tenant_id),
             ).fetchall()
@@ -145,7 +154,7 @@ class SQLiteHumanDecisionStore(HumanDecisionPersistence):
                 """
                 SELECT * FROM human_decisions
                 WHERE tenant_id = ? AND verdict = ?
-                ORDER BY created_at_utc DESC
+                ORDER BY created_at_utc DESC, decision_id ASC
                 LIMIT ?
                 """,
                 (tenant_id, HumanResponseVerdict.ESCALATE.value, limit),

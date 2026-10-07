@@ -53,6 +53,10 @@ class RunBudgetPersistenceError(RuntimeError):
     """Raised when durable budget state cannot be loaded or stored safely."""
 
 
+class StaleRunBudgetSnapshotWriteError(RunBudgetPersistenceError):
+    """Raised when durable budget CAS rejects a stale snapshot write."""
+
+
 class RunBudgetPersistence(ABC):
     """Platform-owned durable per-Run budget ledger snapshots."""
 
@@ -485,17 +489,18 @@ class DurableExecutionBudgetLedger:
 
     def _persist_current_state(self) -> None:
         snapshot = self._inner.export_snapshot(self._attempt_id)
-        while True:
-            if self._persistence.compare_and_swap_snapshot(
-                tenant_id=self._tenant_id,
-                run_id=self._run_id,
-                expected=self._last_known_raw,
-                snapshot=snapshot,
-            ):
-                self._last_known_raw = encode_run_budget_snapshot(snapshot)
-                return
-            self._reload_from_storage()
-
+        if self._persistence.compare_and_swap_snapshot(
+            tenant_id=self._tenant_id,
+            run_id=self._run_id,
+            expected=self._last_known_raw,
+            snapshot=snapshot,
+        ):
+            self._last_known_raw = encode_run_budget_snapshot(snapshot)
+            return
+        self._reload_from_storage()
+        raise StaleRunBudgetSnapshotWriteError(
+            f"stale run budget snapshot write for run {self._run_id}",
+        )
 
     def _reload_from_storage(self) -> None:
         raw = self._persistence.load_snapshot(tenant_id=self._tenant_id, run_id=self._run_id)
@@ -540,52 +545,87 @@ class DurableRunBudgetLedgerFactory:
         if raw is None:
             inner = create_execution_budget_ledger(limits)
             snapshot = inner.export_snapshot(scoped_attempt_id)
-            if not self.persistence.compare_and_swap_snapshot(
+            if self.persistence.compare_and_swap_snapshot(
                 tenant_id=tenant_id,
                 run_id=scoped_run_id,
                 expected=None,
                 snapshot=snapshot,
             ):
-                return self.create_ledger(
-                    run_budget,
+                return DurableExecutionBudgetLedger(
+                    inner=inner,
+                    persistence=self.persistence,
                     tenant_id=tenant_id,
                     run_id=scoped_run_id,
                     attempt_id=scoped_attempt_id,
+                    last_known_raw=encode_run_budget_snapshot(snapshot),
                 )
-            return DurableExecutionBudgetLedger(
-                inner=inner,
-                persistence=self.persistence,
+            raw = self.persistence.load_snapshot(
                 tenant_id=tenant_id,
                 run_id=scoped_run_id,
-                attempt_id=scoped_attempt_id,
-                last_known_raw=encode_run_budget_snapshot(snapshot),
             )
+            if raw is None:
+                raise RunBudgetPersistenceError(
+                    "run budget create race left no durable state",
+                )
+        return self._ledger_from_loaded_raw(
+            raw=raw,
+            tenant_id=tenant_id,
+            run_id=scoped_run_id,
+            attempt_id=scoped_attempt_id,
+        )
 
+    def _ledger_from_loaded_raw(
+        self,
+        *,
+        raw: bytes,
+        tenant_id: str,
+        run_id: RunId,
+        attempt_id: AttemptId,
+    ) -> ExecutionBudgetLedger:
         snapshot = _decode_or_fail(raw)
         inner = create_execution_budget_ledger(snapshot.root_limits)
         inner.restore_snapshot(snapshot)
-        if snapshot.attempt_id != scoped_attempt_id:
+        if snapshot.attempt_id != attempt_id:
             inner.prepare_for_attempt_redelivery()
-            settled = inner.export_snapshot(scoped_attempt_id)
+            settled = inner.export_snapshot(attempt_id)
             if not self.persistence.compare_and_swap_snapshot(
                 tenant_id=tenant_id,
-                run_id=scoped_run_id,
+                run_id=run_id,
                 expected=raw,
                 snapshot=settled,
             ):
-                return self.create_ledger(
-                    run_budget,
+                current_raw = self.persistence.load_snapshot(
                     tenant_id=tenant_id,
-                    run_id=scoped_run_id,
-                    attempt_id=scoped_attempt_id,
+                    run_id=run_id,
+                )
+                if current_raw is None:
+                    raise RunBudgetPersistenceError(
+                        "run budget state disappeared during redelivery settlement",
+                    )
+                current_snapshot = _decode_or_fail(current_raw)
+                if current_snapshot.attempt_id == attempt_id:
+                    winner_inner = create_execution_budget_ledger(
+                        current_snapshot.root_limits,
+                    )
+                    winner_inner.restore_snapshot(current_snapshot)
+                    return DurableExecutionBudgetLedger(
+                        inner=winner_inner,
+                        persistence=self.persistence,
+                        tenant_id=tenant_id,
+                        run_id=run_id,
+                        attempt_id=attempt_id,
+                        last_known_raw=current_raw,
+                    )
+                raise StaleRunBudgetSnapshotWriteError(
+                    f"stale run budget redelivery settlement for run {run_id}",
                 )
             raw = encode_run_budget_snapshot(settled)
         return DurableExecutionBudgetLedger(
             inner=inner,
             persistence=self.persistence,
             tenant_id=tenant_id,
-            run_id=scoped_run_id,
-            attempt_id=scoped_attempt_id,
+            run_id=run_id,
+            attempt_id=attempt_id,
             last_known_raw=raw,
         )
 

@@ -61,6 +61,9 @@ from intergrax.runtime.nexus.budget.budget_models import RunBudget
 from intergrax.runtime.task.nexus_worker_execution import NexusWorkerRuntime
 from intergrax.llm_adapters.contracts.llm_adapter import LLMAdapter
 from intergrax.llm_adapters.base.base_llm_adapter import BaseLLMAdapter
+from testing_support.reference_root_execution_authority_admission import (
+    REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
+)
 
 pytestmark = pytest.mark.unit
 
@@ -350,7 +353,7 @@ def test_q19_from_registry_requires_deadline_resolver_with_durable_budget() -> N
             deadline_authority_resolver=None,
             production_mode=False,
             admit_root_governance_identity=_admit,
-        root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
+            root_authority_admission=REFERENCE_ROOT_EXECUTION_AUTHORITY_ADMISSION,
         )
 
 
@@ -430,19 +433,20 @@ def test_q11_llm_execute_passes_bounded_timeout_to_resilience() -> None:
     adapter = _ProbeAdapter()
     adapter.call_config = adapter.call_config.__class__(timeout_sec=30.0)
 
+    import intergrax.llm_adapters.base.base_llm_adapter as adapter_mod
+
+    original = adapter_mod.execute_with_resilience
+
     def _spy_execute_with_resilience(physical_attempt, *, provider, config, retry_fn, tenant_id):
         captured.append(config.timeout_sec)
         return physical_attempt()
 
     try:
-        import intergrax.llm_adapters.contracts.llm_adapter as mod
-
-        original = mod.execute_with_resilience
-        mod.execute_with_resilience = _spy_execute_with_resilience
+        adapter_mod.execute_with_resilience = _spy_execute_with_resilience
         adapter._execute(lambda: "ok")
         assert captured == [4.0]
     finally:
-        mod.execute_with_resilience = original
+        adapter_mod.execute_with_resilience = original
         reset_active_execution_deadline_scope(*tokens)
 
 

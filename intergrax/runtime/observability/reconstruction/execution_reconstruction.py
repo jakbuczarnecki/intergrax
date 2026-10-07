@@ -18,6 +18,11 @@ from intergrax.contracts.execution_identity import (
     validate_run_id,
     validate_task_id,
 )
+from intergrax.contracts.execution_effective_profile_provenance import (
+    ExecutionEffectiveProfileProvenance,
+    ExecutionEffectiveProfileProvenanceReadStatus,
+    ExecutionEffectiveProfileProvenanceReader,
+)
 from intergrax.contracts.execution_reconstruction_models import (
     ExecutionAttemptDiscoveryCompleteness,
     ExecutionAttemptDiscoveryReadStatus,
@@ -25,6 +30,12 @@ from intergrax.contracts.execution_reconstruction_models import (
     ExecutionReconstructionIntegrityError,
     ReconstructedAttempt,
     RuntimeHistoryCompleteness,
+)
+from intergrax.runtime.observability.reconstruction.policy_provenance_projection import (
+    project_policy_decision_provenance,
+)
+from intergrax.runtime.observability.reconstruction.profile_provenance_projection import (
+    project_execution_effective_profile_provenance,
 )
 from intergrax.contracts.execution_lineage import (
     ExecutionLineageAsOfReader,
@@ -38,6 +49,7 @@ from intergrax.contracts.execution_lineage import (
     build_execution_lineage_run_scope,
 )
 from intergrax.contracts.execution_reconstruction_lineage import (
+    ExecutionLineageCompleteness,
     ExecutionLineageReadStatus,
     ReconstructedAttemptLineage,
 )
@@ -99,11 +111,17 @@ class ExecutionReconstructor:
         max_attempt_discovery_records: int = 10_000,
         max_attempt_discovery_snapshot_retries: int = 8,
         max_lineage_snapshot_retries: int = 8,
+        execution_effective_profile_provenance_reader: (
+            ExecutionEffectiveProfileProvenanceReader | None
+        ) = None,
     ) -> None:
         if max_attempt_discovery_snapshot_retries <= 0:
             raise ValueError("max_attempt_discovery_snapshot_retries must be > 0")
         self._runtime_events = runtime_events
         self._causal_evidence = causal_evidence
+        self._execution_effective_profile_provenance_reader = (
+            execution_effective_profile_provenance_reader
+        )
         self._execution_lineage = execution_lineage
         self._execution_lineage_as_of = execution_lineage_as_of
         self._initial_lineage_page_limit = initial_lineage_page_limit
@@ -212,6 +230,23 @@ class ExecutionReconstructor:
         )
         discovery_read_status = attempt_build.discovery_read_status
         discovery_completeness = attempt_build.discovery_completeness
+        policy_provenance = project_policy_decision_provenance(
+            positioned,
+            tenant_id=tenant_id,
+            task_id=task_id,
+            run_id=run_id,
+        )
+        profile_reader = self._execution_effective_profile_provenance_reader
+        if profile_reader is None:
+            profile_provenance: tuple[ExecutionEffectiveProfileProvenance, ...] = ()
+            profile_status = ExecutionEffectiveProfileProvenanceReadStatus.NOT_CONFIGURED
+        else:
+            profile_provenance = project_execution_effective_profile_provenance(
+                positioned,
+                tenant_id=tenant_id,
+                profile_reader=profile_reader,
+            )
+            profile_status = ExecutionEffectiveProfileProvenanceReadStatus.CONFIGURED
         return ExecutionReconstruction(
             tenant_id=tenant_id,
             task_id=task_id,
@@ -222,6 +257,9 @@ class ExecutionReconstructor:
             runtime_history_completeness=completeness,
             attempt_discovery_read_status=discovery_read_status,
             attempt_discovery_completeness=discovery_completeness,
+            policy_decision_provenance=policy_provenance,
+            execution_effective_profile_provenance=profile_provenance,
+            effective_profile_provenance_read_status=profile_status,
         )
 
 
@@ -724,12 +762,72 @@ def _build_reconstructed_attempt(
                     discovery_contract_version=lineage.discovery_contract_version,
                     discovery_position=discovery_record.discovery_position,
                 )
-    return ReconstructedAttempt(
-        attempt_id=attempt_id,
-        causal_evidence=tuple(causal_by_attempt.get(attempt_id, ())),
-        positioned_events=tuple(events_by_attempt.get(attempt_id, ())),
+    causal_rows = tuple(causal_by_attempt.get(attempt_id, ()))
+    event_rows = tuple(events_by_attempt.get(attempt_id, ()))
+    _validate_cross_source_execution_identity_coherence(
+        causal_evidence=causal_rows,
+        positioned_events=event_rows,
         lineage=lineage,
     )
+    return ReconstructedAttempt(
+        attempt_id=attempt_id,
+        causal_evidence=causal_rows,
+        positioned_events=event_rows,
+        lineage=lineage,
+    )
+
+
+def _lineage_execution_membership_provable(
+    lineage: ReconstructedAttemptLineage,
+) -> bool:
+    if lineage.read_status is not ExecutionLineageReadStatus.AVAILABLE:
+        return False
+    if lineage.completeness is None:
+        return False
+    if lineage.completeness in (
+        ExecutionLineageCompleteness.PARTIAL,
+        ExecutionLineageCompleteness.TRUNCATED,
+    ):
+        return False
+    return lineage.completeness in (
+        ExecutionLineageCompleteness.OPEN,
+        ExecutionLineageCompleteness.COMPLETE,
+    )
+
+
+def _collect_lineage_execution_ids(
+    lineage: ReconstructedAttemptLineage,
+) -> frozenset[str]:
+    ids: set[str] = set()
+    for segment in lineage.segments:
+        for admission in segment.admissions:
+            ids.add(str(admission.execution_id))
+    return frozenset(ids)
+
+
+def _validate_cross_source_execution_identity_coherence(
+    *,
+    causal_evidence: tuple[PlatformCausalEvidence, ...],
+    positioned_events: tuple[PositionedRuntimeEvent, ...],
+    lineage: ReconstructedAttemptLineage | None,
+) -> None:
+    if lineage is None or not _lineage_execution_membership_provable(lineage):
+        return
+    membership = _collect_lineage_execution_ids(lineage)
+    if not membership:
+        return
+    for evidence in causal_evidence:
+        if str(evidence.target.execution_id) not in membership:
+            raise ExecutionReconstructionIntegrityError(
+                "causal evidence target.execution_id is not present in "
+                "complete attempt lineage topology",
+            )
+    for row in positioned_events:
+        if str(row.event.execution_id) not in membership:
+            raise ExecutionReconstructionIntegrityError(
+                "runtime event execution_id is not present in "
+                "complete attempt lineage topology",
+            )
 
 
 def _validate_post_v1_discovery_requirements(
