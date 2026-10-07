@@ -1,20 +1,22 @@
-# TRACE-X-P5-R2-P0 — Configured→Effective Execution Provenance Architecture Lock
+# TRACE-X-P5-R2 — Configured→Effective Execution Provenance Architecture Lock
 
 ## Revision record
 
 | Field | Value |
 |---|---|
-| **Task** | `TRACE-X-P5-R2-P0` |
+| **Task** | `TRACE-X-P5-R2-P0` + **`TRACE-X-P5-R2-P0-R1`** (normative reconciliation) |
 | **Parent** | `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
-| **START_HEAD** | `16be5fdfe4bcde804eef51a3b34b4ebc5cd45dad` |
-| **Primary FRZ** | `FRZ-TRC-11` (**OPEN** — no PASS in P0) |
+| **P0 rejection baseline** | `982f945de67577865c1ade4ebbea519cf3a9b284` |
+| **P0-R1 START_HEAD** | `982f945de67577865c1ade4ebbea519cf3a9b284` |
+| **Primary FRZ** | `FRZ-TRC-11` (**OPEN** — no PASS) |
 | **Blocker** | `P5-GAP-04` — no canonical global configured→effective→`ExecutionId`→evidence chain |
+| **Independent-audit blockers addressed in R1** | `R2-P0-EFFECTIVE-IDENTITY-PREBUILT-01` · `R2-P0-CONFIGURED-ADOPTION-AUTHORITY-02` |
 | **Production / runtime delta** | **0** (architecture + qualification design only) |
-| **Status** | **TRACE-X-P5-R2-P0 = READY FOR AUDIT** · **TRACE-X-P5-R2 = BLOCKED ON P0 INDEPENDENT AUDIT** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** |
+| **Status** | **TRACE-X-P5-R2-P0-R1 = READY FOR AUDIT** · **TRACE-X-P5-R2-P0 = BLOCKED ON R1 INDEPENDENT AUDIT** · **TRACE-X-P5-R2 = BLOCKED ON P0** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** |
 
-**Steering sources revalidated @ START_HEAD:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md), [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md), [`TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md`](TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md), [`TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md`](TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md), [`INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md`](../architecture/INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md).
+**Steering sources revalidated @ P0-R1 START_HEAD:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md), [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md), [`TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md`](TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md), [`TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md`](TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md), [`INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md`](../architecture/INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md).
 
-**Historical evidence (revalidated, not blindly trusted):** INT-CONFIG-REAL-X-CERT `a59744517b92847f55def1db22826d17d89ee155` · TRACE-X-P5-P0 `81fd1490f18d73eaf31ec94c2b93dbb525026ba2` · TRACE-X-P5-R1 `05fd5d9b2b97f9d85a534a949d882cd47d4a54c9`.
+**Historical evidence (revalidated, not blindly trusted):** INT-CONFIG-REAL-X-CERT `a59744517b92847f55def1db22826d17d89ee155` · TRACE-X-P5-P0 `81fd1490f18d73eaf31ec94c2b93dbb525026ba2` · TRACE-X-P5-R1 `05fd5d9b2b97f9d85a534a949d882cd47d4a54c9` · P0 draft audited/rejected @ `982f945d…` (identity + adoption authority gaps).
 
 ---
 
@@ -29,11 +31,192 @@ At START_HEAD there is **no** production surface that simultaneously holds:
 3. tenant identity,
 4. canonical `ExecutionId`.
 
-Therefore P0 locks a **minimum typed seam** (R1-analogous pattern) without implementing it. **No STOP — ARCHITECTURE DECISION REQUIRED** remains for the locked design: one capture owner, one store semantic owner, one neutral read contract, one reconstructor projection path.
+Therefore P0 locks a **minimum typed seam** (R1-analogous pattern) without implementing it.
+
+**P0-R1 normative override:** P0 @ `982f945d…` was rejected for (1) unsound effective identity (`slug + materialization_kind + category`, including `category.value` as provider stand-in for pre-built `IntegrationBinding(instance=…)`), and (2) missing configured-adoption handoff contract. **§1A** reconciles both. Where §1A conflicts with earlier P0 prose below, **§1A wins**.
 
 ---
 
-## 2. Before graph (@ START_HEAD)
+## 1A. P0-R1 — effective identity & configured adoption (normative)
+
+### 1A.1 Rejected P0 identity model
+
+| Rejected | Reason |
+|---|---|
+| `effective provider slug = category.value` for pre-built profile slots | `category` is integration kind, not provider identity; `IntegrationBinding.resolved_slug()` → `None` when `instance` is set (`intergrax/integrations/contracts/binding.py`) |
+| `slug + materialization_kind + category` without canonical `provider_id` | Collapses distinct pre-built providers sharing a category; unsound for provenance |
+| `configuration_fingerprint` as effective provider proof | Fingerprint is configured payload identity only |
+
+**Invariant:** `category ≠ provider identity` always. Unprovable provider identity → **fail closed** for configured-adoption provenance (`EFFECTIVE_PROVIDER_IDENTITY_UNAVAILABLE`).
+
+### 1A.2 `EffectiveIntegrationIdentity` (typed conceptual model — future contract)
+
+Minimum fields (no duplicate provider ID registry):
+
+| Field | Semantics |
+|---|---|
+| `integration_category` | `IntegrationCategory` |
+| `provider_id` | Canonical provider identity (see matrix §1A.3) |
+| `materialization_kind` | `CATALOG_FACTORY` \| `PROFILE_PREBUILT` — **does not** substitute for `provider_id` |
+
+Same logical provider via different legal composition paths may differ in `materialization_kind` but **must** preserve the same `provider_id`.
+
+### 1A.3 Materialization-path identity matrix (@ `982f945d…`)
+
+| Path | `materialization_kind` | Authoritative `provider_id` | Validation |
+|---|---|---|---|
+| **A — Catalog factory** (`resolve` → `get_entry` → factory → `PlatformIntegrationContract`) | `CATALOG_FACTORY` | Normalized catalog identity: **`entry.slug` == `IntegrationContractSpec.provider_id` == materialized `PlatformIntegrationContract.provider_id`** where all are exposed (`intergrax/integrations/registry/contract_spec.py` `validate_contract_spec_identity`) | Mismatch at registration or at adoption pin → fail closed (`CONFIGURED_ADOPTION_PROVIDER_MISMATCH`) |
+| **B — Pre-built `PlatformIntegrationContract`** (`resolve_from_profile` → `instance_for_category` → instance) | `PROFILE_PREBUILT` | **`instance.provider_id`** (precedent: `intergrax/core/qualification/execution.py::resolve_integration_provider_id`) | Must pass `contract_for_category` typing; independent compare to configured `provider_id` — **never** assign `effective.provider_id = configured.provider_id` |
+| **C — DI-only `ExternalWorkIntegration`** (`CategoryIntegrationInstance` union) | — | **No canonical static `provider_id` on Protocol** (`intergrax/integrations/contracts/external_work.py`) | **Option C1 — locked:** excluded from `CONFIGURED_ADOPTED` in R2 v1; effective-only / profile-only; **cannot** close FRZ-TRC-11 configured→effective proof. `discover()` descriptor is runtime I/O — **not** adoption identity authority without contract change (**STOP** if required — separate child; not P0-R1) |
+
+**Forbidden identity sources (all paths):** Python class/module name, `repr`, memory address, `category.value`, reflection, env slug alone without post-materialization `provider_id` check on catalog path.
+
+### 1A.4 Configured adoption authority & handoff
+
+```text
+INT-CONFIG realization
+      ↓
+ConfiguredCapabilityBinding (immutable)
+      ↓
+explicit host/application composition handoff (caller-owned choice of binding)
+      ↓
+Integrations execution-bound resolution wrapper
+      ↓
+existing resolve / resolve_from_profile (unchanged semantics)
+      ↓
+effective identity extraction + configured/effective match
+      ↓
+execution provenance pin (ExecutionId owner unchanged)
+```
+
+| Concern | Owner |
+|---|---|
+| Emit configured binding | Integrations / INT-CONFIG |
+| Decide **whether** and **which** binding is adopted | Sanctioned **Applications composition root** |
+| Validate binding vs effective materialization | Integrations execution-bound wrapper |
+| Materialize provider | Existing Integrations factory (**sole** resolver) |
+| `ExecutionId` | Execution |
+| Durable provenance | Provenance store (port) + Applications adapters |
+| Reconstruction | Evidence / `ExecutionReconstructor` (neutral reader only) |
+
+**Wrapper MUST NOT look up configured state** (no current/latest store, global registry, task/run metadata, `RuntimeConfig`, `IntegrationProfile.options`, timestamps, provider lookup, environment). Adoption input is **explicit DI**, not service location.
+
+**Future input contract (Integrations-owned, name illustrative):** `ExecutionIntegrationConfigurationAdoption` — encapsulates exactly one immutable `ConfiguredCapabilityBinding` (reuse preferred over field duplication) plus minimum typed resolution subject context (at minimum: `integration_category`, `resource_scope` for the wiring target). No permission semantics; no `ExecutionId` minting.
+
+### 1A.5 Adoption match invariants (fail closed)
+
+Before provenance pin:
+
+```text
+configured.tenant_id == composition tenant == execution tenant == provenance tenant
+configured.integration_category == requested effective category
+configured.provider_id == effective.provider_id   # independent observation on pre-built/catalog
+configured.resource_scope == adoption context resource_scope   # composition-supplied; no string heuristics
+configured.configuration_type / configuration_version / configuration_fingerprint retained as configured truth
+```
+
+**Missing adoption** on a caller classified `EXECUTION_CONFIGURED_ADOPTION_REQUIRED` → `CONFIGURED_ADOPTION_REQUIRED_BUT_MISSING` — **no** silent downgrade to `EFFECTIVE_ONLY`.
+
+**Conflicting adoption** for same execution + subject → fail closed (no last/latest/first wins).
+
+### 1A.6 Provenance record shape (reconciled — not implemented)
+
+```text
+ExecutionIntegrationConfigurationProvenance
+    tenant_id
+    execution_id
+    mode: CONFIGURED_ADOPTED | EFFECTIVE_ONLY
+
+    effective: EffectiveIntegrationIdentity
+
+    configured: ConfiguredIntegrationProvenanceSlice | None
+        # tenant_id, integration_category, provider_id, resource_scope,
+        # configuration_type, configuration_version, configuration_fingerprint,
+        # optional realization_evidence_refs (factual linkage only)
+```
+
+| `mode` | Rules |
+|---|---|
+| `CONFIGURED_ADOPTED` | `configured` **required**; fields match `effective` per §1A.5; counts toward FRZ-TRC-11 when path is classified configured-required |
+| `EFFECTIVE_ONLY` | `configured` **absent**; valid runtime on many surfaces today; **does not** close configured→effective traceability; track CONFIG-X if platform must later adopt INT-CONFIG on that surface |
+
+Persistence key remains `(tenant_id, execution_id, IntegrationConfigurationSubject)` with subject dimensions reconciled to **`provider_id`** (not category-as-slug). Effective-only records **do not fabricate** `resource_scope` / `configuration_type`.
+
+### 1A.7 Production caller disposition registry (@ `982f945d…`)
+
+Mechanical inventory of **direct** `resolve` / `resolve_from_profile` in `intergrax/` production modules (tests/scaffold excluded). **Zero** production `ConfiguredCapabilityBinding` consumers outside INT-CONFIG pipeline (false positive: `production_delegated_subtask_plans.configured_binding` = package binding id).
+
+| Module | Disposition | R2 v1 notes |
+|---|---|---|
+| `applications/_shared/notification_wiring.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | No ExecutionId at wire time |
+| `applications/_shared/identity_wiring.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | |
+| `applications/_shared/security_runtime_bridge.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | |
+| `applications/_shared/sandbox_host_wiring.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | |
+| `applications/_shared/integration_tool_wiring.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | |
+| `applications/_shared/adaptive_feature_flag_gate.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | |
+| `runtime/persistence/integration_profile_wiring.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | |
+| `runtime/sandbox/hosted_resolver.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | |
+| `runtime/codecraft/substrate.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | |
+| `runtime/vendor_knowledge/resolver.py` | `NON_EXECUTION` | Knowledge source routing |
+| `tools/registry/wiring.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | |
+| `speech_adapters/registry/profile.py`, `resolver.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | |
+| `rag/bootstrap/rag_stack_bootstrap.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | |
+| `rag/vectorstore/bootstrap/integration_vectorstore.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | uses `resolve` |
+| `rag/rerankers/integration/resolver.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | uses `resolve` |
+| `rag/document_loaders/integration/resolver.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | |
+| `integrations/_shared/health.py` | `BOOTSTRAP_OR_INFRASTRUCTURE` | Health probe |
+| *(none @ baseline)* | `EXECUTION_CONFIGURED_ADOPTION_REQUIRED` | **Reserved** for post–P3 surfaces that adopt INT-CONFIG bindings |
+
+**Post-P3 rule:** `EXECUTION_CONFIGURED_ADOPTION_REQUIRED` callers **must not** call `resolve` / `resolve_from_profile` directly; wrapper bypass → qualification **FAIL**. `EXECUTION_EFFECTIVE_ONLY` / `BOOTSTRAP_OR_INFRASTRUCTURE` may still call factory directly when classification proves non-adoption.
+
+**Resource scope @ execution seam:** Today’s bootstrap callers often lack a platform-wide typed `ExecutionResourceScope` on the composition root. Safe configured adoption therefore requires the **composition root to pass explicit `resource_scope`** alongside adoption (must equal `ConfiguredCapabilityBinding.resource_scope`). Without that typed context, configured adoption for scoped bindings is **illegal** (fail closed), not guessed from profile.
+
+### 1A.8 Failure semantics (future typed errors)
+
+`CONFIGURED_ADOPTION_TENANT_MISMATCH` · `CONFIGURED_ADOPTION_CATEGORY_MISMATCH` · `CONFIGURED_ADOPTION_PROVIDER_MISMATCH` · `CONFIGURED_ADOPTION_RESOURCE_SCOPE_MISMATCH` · `EFFECTIVE_PROVIDER_IDENTITY_UNAVAILABLE` · `CONFIGURED_ADOPTION_REQUIRED_BUT_MISSING` — no free-form-only boundary.
+
+**Adversarial qualification (future):** pre-built `provider-a` configured vs `provider-b` effective must fail; catalog sqlite configured vs postgres effective must fail; missing adoption on configured-required path must not degrade.
+
+### 1A.9 P0-R1 exit questionnaire (locked answers)
+
+| # | Answer |
+|---|---|
+| 1 | Catalog: tri-equality `slug` / spec `provider_id` / contract `provider_id` |
+| 2 | Pre-built contract: `PlatformIntegrationContract.provider_id` |
+| 3 | `ExternalWorkIntegration`: **no** `CONFIGURED_ADOPTED` in R2 v1 (C1) |
+| 4 | Specific binding via composition → wrapper `ExecutionIntegrationConfigurationAdoption` |
+| 5 | Handoff owner: Applications composition; validation: Integrations wrapper |
+| 6 | Wrapper lookup of configured state? **NO** |
+| 7 | Match: §1A.5 independent `provider_id` observation |
+| 8 | `CONFIGURED_ADOPTED` vs `EFFECTIVE_ONLY` via caller registry + explicit adoption input |
+| 9 | Missing adoption downgrade? **NO** |
+| 10 | Wrapper mandatory for `EXECUTION_CONFIGURED_ADOPTION_REQUIRED` only |
+| 11 | Fail closed: §1A.5, §1A.8, identity unavailable, mismatch, conflict |
+| 12 | Second resolver/lifecycle? **NO** |
+
+### 1A.10 Implementation sequencing (post-R1)
+
+```text
+P0-R1  architecture reconciliation (this revision)
+   ↓
+P0     parent lock closure / bookkeeping after R1 audit
+   ↓
+P1     neutral provenance/adoption contracts + validators
+   ↓
+P2     pinning store + durable adapters
+   ↓
+P3     execution-bound wrapper + composition migration
+   ↓
+P4     reconstruction
+   ↓
+P5     closed-world / adversarial qualification
+   ↓
+CERT
+```
+
+---
+
+## 2. Before graph (@ P0-R1 START_HEAD)
 
 ```text
 Governance authorize
@@ -67,14 +250,15 @@ ExecutionReconstructor  (no execution-config provenance reader)
 
 ---
 
-## 3. Proposed after graph (locked design — not implemented in P0)
+## 3. Proposed after graph (locked design — not implemented)
 
 ```text
-ConfiguredCapabilityBinding (optional adoption input)
+ConfiguredCapabilityBinding (explicit adoption input only — from composition)
         │
-        │  execution-bound sanctioned wrapper (calls existing factory only)
+        │  ExecutionIntegrationConfigurationAdoption (future)
+        │  execution-bound sanctioned wrapper (no configured lookup)
         ▼
-resolve_from_profile / resolve  →  effective materialization facts
+resolve_from_profile / resolve  →  effective materialization + EffectiveIntegrationIdentity
         │
         │  atomic pin @ execution-bound composition (tenant + ExecutionId known)
         ▼
@@ -238,14 +422,15 @@ All sanctioned effective paths consume **`IntegrationProfile`** (or explicit slu
 
 | Contract | Purpose |
 |---|---|
-| `IntegrationConfigurationSubject` | Deterministic subject key: `integration_category`, `provider_id`, `resource_scope`, `configuration_type` (aligned with `ConfiguredCapabilityBinding` dimensions where INT-CONFIG applies) |
-| `ConfiguredIntegrationProvenanceSlice` | `configuration_version`, `configuration_fingerprint` (+ optional `realization_request_id` correlation) |
-| `EffectiveIntegrationMaterializationProvenance` | `integration_category`, `integration_slug` (catalog slug from `resolve_slug` / profile slot), `materialization_kind` ∈ `{catalog_factory, profile_prebuilt_instance}` |
-| `ExecutionIntegrationConfigurationProvenance` | `tenant_id`, `execution_id`, `subject`, configured slice (optional when path is profile-only non-INT-CONFIG), effective slice — **immutable** |
-| `ExecutionIntegrationConfigurationProvenanceReadStatus` | `not_configured` \| `configured` \| `required_missing` (fail-closed when path claims binding) |
+| `IntegrationConfigurationSubject` | Deterministic subject key: `integration_category`, `provider_id`, `resource_scope`, `configuration_type` — **`provider_id` from §1A.3, never `category.value`** |
+| `ExecutionIntegrationConfigurationAdoption` | Exactly one immutable `ConfiguredCapabilityBinding` + minimum subject context; Integrations contracts owner |
+| `ConfiguredIntegrationProvenanceSlice` | Full configured identity dimensions + `configuration_fingerprint` (not effective proof); optional `realization_evidence_refs` |
+| `EffectiveIntegrationIdentity` / materialization slice | `integration_category`, `provider_id`, `materialization_kind` ∈ `{CATALOG_FACTORY, PROFILE_PREBUILT}` per §1A.3 |
+| `ExecutionIntegrationConfigurationProvenance` | `tenant_id`, `execution_id`, `mode` (`CONFIGURED_ADOPTED` \| `EFFECTIVE_ONLY`), `effective`, optional `configured` — **immutable** (§1A.6) |
+| `ExecutionIntegrationConfigurationProvenanceReadStatus` | Typed read outcomes; `required_missing` fail-closed for configured-required paths |
 | `ExecutionIntegrationConfigurationProvenanceReader` | `read_all(tenant_id, execution_id) -> tuple[...]` and/or `read_one(..., subject)` |
 
-**Effective identity fields** are derived only from sanctioned factory outcomes — **not** provider instance reflection, options dicts, or `RuntimeConfig` hashing.
+**Effective `provider_id`** is derived only from §1A.3 canonical sources — **not** `category.value`, class names, `discover()` on DI-only paths, options dicts, or `RuntimeConfig`.
 
 **Configured fingerprint ≠ effective proof:** both slices mandatory on INT-CONFIG adoption paths; effective slice required on all configuration-aware execution paths.
 
@@ -254,8 +439,8 @@ All sanctioned effective paths consume **`IntegrationProfile`** (or explicit slu
 | Element | Locked choice |
 |---|---|
 | **Owner** | Integrations: `ExecutionBoundIntegrationResolution` (new module) wrapping **only** existing `resolve_from_profile` / `resolve` |
-| **Composition invoker** | Applications host execution wiring (same class of roots as `revision_admission` on `build_environment_host_task_execution` / scenario runtime) |
-| **Timing** | Immediately after successful sanctioned materialization, **with** `tenant_id` + `ExecutionId` + optional `ConfiguredCapabilityBinding` adoption input — **before** downstream work relies on the instance where feasible |
+| **Composition invoker** | Applications host execution wiring — passes **explicit** `ExecutionIntegrationConfigurationAdoption` when adopting INT-CONFIG (never wrapper-side lookup) |
+| **Timing** | Immediately after successful sanctioned materialization, **with** `tenant_id` + `ExecutionId` + optional explicit adoption — **before** downstream work relies on the instance where feasible |
 | **Semantics change** | **Forbidden** in wrapper — delegate to factory unchanged |
 
 **Atomicity note:** bootstrap-time resolves (no `ExecutionId`) are **not** provenance-complete; qualification must either migrate them behind execution-bound wrapper or classify as non-configuration-aware. Residual window without migration = **qualification failure**, not silent NOT_FOUND.
@@ -320,7 +505,8 @@ Required continuity (implementation must enforce):
 
 ```text
 configured_binding.tenant_id
-== effective_resolution.tenant_id
+== composition tenant
+== execution tenant (ExecutionId context)
 == execution_provenance.tenant_id
 == ExecutionReconstruction tenant context
 ```
@@ -377,14 +563,14 @@ Configured provenance is **factual identity only** — no ALLOW, no admission, n
 | Multiple plausible effective-resolution owners | **Clear** — single catalog factory owner |
 | No point to observe effective + ExecutionId | **Addressed** by execution-bound wrapper seam (future) |
 | Linking binding requires changing binding semantics | **Not required** — optional adoption input |
-| No stable effective identity | **Clear** — slug + materialization_kind + category |
+| No stable effective identity | **Addressed in P0-R1** — canonical `provider_id` per §1A.3 (P0 slug+category model **rejected**) |
 | Second semantic truth store | **Avoided** — provenance store is evidence-only, R1-isomorphic |
 | Child propagation needs new execution authority | **Deferred** — no inheritance in v1 lock |
 | Tenant absent at capture | **Addressed** — mandatory in API |
 | Neutral contract leaks provider instances | **Forbidden** by design |
 | Governance semantics change | **Not required** |
 
-**P0 does not emit STOP — ARCHITECTURE DECISION REQUIRED.**
+**P0-R1:** no STOP — ARCHITECTURE DECISION REQUIRED for locked scope. **ExternalWork `CONFIGURED_ADOPTED`** deferred via C1 (contract change would be separate child).
 
 ---
 
@@ -393,7 +579,8 @@ Configured provenance is **factual identity only** — no ALLOW, no admission, n
 | File | Role |
 |---|---|
 | `intergrax/contracts/integration_configuration_subject.py` | Subject key |
-| `intergrax/contracts/execution_integration_configuration_provenance.py` | Neutral DTOs + reader Protocol |
+| `intergrax/integrations/contracts/execution_integration_configuration_adoption.py` (or equivalent) | Explicit adoption input |
+| `intergrax/contracts/execution_integration_configuration_provenance.py` | Neutral DTOs + reader Protocol + provenance `mode` |
 | `intergrax/integrations/execution_bound_integration_resolution.py` | Wrap factory; emit capture events |
 | `intergrax/applications/contracts/integrations/execution_configuration_binding.py` | Pinning store Protocol |
 | `intergrax/applications/_shared/integrations/execution_configuration_pinning.py` | Pin helpers |
@@ -418,20 +605,25 @@ Configured provenance is **factual identity only** — no ALLOW, no admission, n
 Independent discovery + registry parity (seed **not** from registry), minimum gates:
 
 1. All configured-binding production producers known.
-2. All configured-binding production consumers known (**expect zero** outside INT-CONFIG @ baseline).
+2. All configured-binding production consumers known (**expect zero** outside INT-CONFIG @ baseline; post-P3 → exactly sanctioned adoption flow).
 3. All sanctioned effective resolution/materialization paths known.
-4. Every **configuration-aware** execution path records R2 provenance.
-5. Unknown production effective path → qualification **FAIL**.
-6. Registry orphan/duplicate → **FAIL**.
-7. Alternate provenance store count = 0.
-8. Heuristic join count = 0.
-9. Timestamp/latest/current fallback = 0.
-10. Diagnostics cannot act as provenance authority.
-11. Reconstruction imports no Integrations implementation.
-12. Configured fingerprint alone ≠ effective proof.
-13.–17. Tenant / execution / provider / subject mismatch + missing required provenance → fail closed.
+4. Every resolver/materialization **production caller** classified (§1A.7 disposition).
+5. Every `EXECUTION_CONFIGURED_ADOPTION_REQUIRED` caller routes through wrapper; direct `resolve` / `resolve_from_profile` bypass = 0.
+6. Pre-built effective identity = canonical `provider_id`, not category fallback.
+7. Category fallback cannot pass as provider ID.
+8. Configured/effective `provider_id` mismatch fails; missing adoption cannot downgrade to `EFFECTIVE_ONLY`.
+9. `EFFECTIVE_ONLY` records cannot count as FRZ-TRC-11 configured/effective closure.
+10. Adoption input explicit from composition; no current/latest configured binding access.
+11. No second provider resolver; no second activation lifecycle.
+12. `ExternalWorkIntegration` / DI-only classification explicit (C1).
+13. Unknown pre-built type without canonical `provider_id` → fail closed.
+14. Unknown production effective path / unknown adoption path → **FAIL**.
+15. Heuristic join / timestamp / latest / diagnostics-as-authority = 0.
+16. Reconstruction imports no Integrations implementation.
+17. Tenant / execution / subject / resource_scope mismatch → fail closed.
 18. Multiplicity deterministic; child rules per §12.
 19. R1 policy/profile provenance unchanged (regression gates).
+20. Adversarial: circular pre-built proof + catalog mismatch negatives (§1A.8).
 
 ---
 
@@ -439,8 +631,9 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 
 | Wave | Deliverable |
 |---|---|
-| **P0** (this document) | Architecture lock + qualification design |
-| **P1** | Neutral contracts + validation helpers |
+| **P0-R1** (§1A) | Effective identity + configured adoption reconciliation |
+| **P0** | Parent architecture lock closure after R1 audit |
+| **P1** | Neutral contracts + validation helpers + adoption input |
 | **P2** | Pinning store port + in-memory + durable adapters |
 | **P3** | Execution-bound resolution wrapper + host composition wiring |
 | **P4** | Reconstructor projection + diagnostic injection |
@@ -458,26 +651,28 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 
 ---
 
-## 22. Enterprise audit matrix (@ P0 lock)
+## 22. Enterprise audit matrix (@ P0-R1 lock)
 
 | Dimension | Grade | Notes |
 |---|---|---|
 | Boundaries | **PASS** | Tier rules preserved; reconstructor stays derived |
-| Semantic ownership | **PASS** | Single owner per row §8 |
-| Composition ownership | **PASS** | Applications invoke; Integrations capture |
-| Contracts | **PASS** | Neutral DTO design specified |
-| Strong typing | **PASS** | No options-dict / RuntimeConfig provenance |
-| Pluginability | **PASS** | Slug + materialization_kind; no provider branches in core |
-| Replaceability | **PASS** | Wrapper delegates to existing factory |
-| Configured/effective separation | **PASS** | Explicit slices |
+| Semantic ownership | **PASS** | §8 + §1A.4 |
+| Composition ownership | **PASS** | Applications supply adoption; Integrations validate/capture |
+| Provider identity authority | **PASS** | §1A.3; P0 category/slug model rejected |
+| Configured adoption authority | **PASS** | Explicit handoff; no lookup |
+| Contracts | **PASS** | Adoption + provenance `mode` specified |
+| Strong typing | **PASS** | No category-as-provider; no sentinel identity strings |
+| Pluginability | **PASS** | Catalog tri-equality; no core provider branches |
+| Replaceability | **PASS** | Single factory; wrapper delegates |
+| Configured/effective separation | **PASS** | `CONFIGURED_ADOPTED` vs `EFFECTIVE_ONLY` |
 | Governance separation | **PASS** | Factual only |
 | Execution authority | **PASS** | ExecutionId unchanged |
-| Observability non-authority | **PASS** | Consumers read-only |
-| Tenant continuity | **PASS** | Local audit §13 |
-| Evidence timing | **PASS** | Post-materialization @ execution boundary |
-| Persistence/recovery | **PASS** | Durable store mandated |
-| Bypass resistance | **PARTIAL** | Until P3 wiring — **IN-SCOPE BLOCKER** for R2 impl |
-| Reconstruction purity | **PASS** | Reader/projection pattern locked |
+| Evidence non-authority | **PASS** | Readers/projections only |
+| Tenant continuity | **PASS** | §13 + §1A.5 |
+| Persistence suitability | **PASS** | Durable pin; subject uses `provider_id` |
+| Bypass resistance | **PARTIAL** | Until P3 — configured-required wrapper rule locked |
+| Child semantics | **PASS** | §12 unchanged |
+| Closed-world qualification design | **PASS** | §19 + §1A.7 |
 | Regression protection | **PASS** | R1 gates remain required |
 
 **IN-SCOPE BLOCKER (unchanged):** `P5-GAP-04` until implementation waves complete.
@@ -502,26 +697,37 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 
 ---
 
-## 24. Current-HEAD test evidence (P0)
+## 24. Current-HEAD test evidence (P0-R1)
+
+Commands (sequential `-p no:xdist`):
 
 ```text
 uv run pytest \
   tests/qualification/trace_x/test_trace_x_p5_p0_qualification_gates.py \
   tests/qualification/trace_x/test_trace_x_p5_r1_qualification_gates.py \
   -p no:xdist -q
-# 192 passed (includes existing_capability_configuration qualification modules in run batch)
 
 uv run pytest tests/qualification/existing_capability_configuration -p no:xdist -q
-# (included above — green)
 
 uv run pytest \
   tests/unit/integrations/test_registry.py \
+  tests/unit/integrations/test_profile.py \
+  tests/unit/core/qualification/test_provider_qualification_execution_runner.py \
   tests/unit/runtime/integrations/test_canonical_registry_projection.py \
   -p no:xdist -q
-# 17 passed, 4 failed — test_registry fake factory contract mismatch (pre-existing)
 ```
 
-Log: `.tmp/session/trace-x-p5-r2-p0/pytest.log`, `pytest-integrations.log`.
+@ P0-R1 run (`982f945d…` worktree):
+
+```text
+# trace P5 P0+R1 gates: 134 passed
+# INT-CONFIG qualification: 58 passed
+# identity/profile/registry projection batch: 57 passed, 4 failed (test_registry fake dict factories)
+```
+
+Logs: `.tmp/session/trace-x-p5-r2-p0-r1/pytest-trace.log`, `pytest-int-config.log`, `pytest-identity.log`.
+
+**ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED:** `tests/unit/integrations/test_registry.py` — 4 failures (fake factories return `dict` vs `PlatformIntegrationContract`); pre-existing; not P0-R1 scope.
 
 ---
 
@@ -529,7 +735,8 @@ Log: `.tmp/session/trace-x-p5-r2-p0/pytest.log`, `pytest-integrations.log`.
 
 | Item | Status |
 |---|---|
-| TRACE-X-P5-R2-P0 | **READY FOR AUDIT** |
-| TRACE-X-P5-R2 | **BLOCKED ON P0 INDEPENDENT AUDIT** |
+| TRACE-X-P5-R2-P0-R1 | **READY FOR AUDIT** |
+| TRACE-X-P5-R2-P0 | **BLOCKED ON R1 INDEPENDENT AUDIT** |
+| TRACE-X-P5-R2 | **BLOCKED ON P0** |
 | TRACE-X-P5 | **CURRENT / BLOCKED ON R2** |
 | FRZ-TRC-11 | **OPEN** |
