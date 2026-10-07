@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TRACE-X-P5-R1-R1-Q6: usage-context closure for canonical ChildExecutionRunner references."""
+"""TRACE-X-P5-R1-R1-Q7: lexical binding authority + Q6 usage-context closure."""
 
 from __future__ import annotations
 
@@ -116,6 +116,7 @@ def _apply_import_from(node: ast.ImportFrom, prov: _ImportProvenance) -> None:
                 continue
             bound = alias.asname or alias.name
             prov.constructor_names.add(bound)
+            prov.shadowed_constructor_names.discard(bound)
         return
     if node.module == EXECUTION_PACKAGE_MODULE and node.level == 0:
         for alias in node.names:
@@ -314,17 +315,102 @@ def classify_canonical_constructor_usage(
     return CanonicalConstructorUsageKind.UNKNOWN
 
 
-def _iter_assignment_target_names(target: ast.expr) -> list[str]:
+class LexicalBindingFormError(ValueError):
+    """Unsupported binding-site AST shape — qualification fails closed."""
+
+
+def lexical_bound_names(node: ast.AST) -> set[str]:
+    """Single authority for Python lexical binders (parameters, imports, defs, …)."""
+    if isinstance(node, ast.arguments):
+        names: set[str] = set()
+        for arg in (
+            *node.posonlyargs,
+            *node.args,
+            *node.kwonlyargs,
+        ):
+            names.add(arg.arg)
+        if node.vararg is not None:
+            names.add(node.vararg.arg)
+        if node.kwarg is not None:
+            names.add(node.kwarg.arg)
+        return names
+    if isinstance(node, ast.Import):
+        bound: set[str] = set()
+        for alias in node.names:
+            bound.add(alias.asname or alias.name.split(".")[0])
+        return bound
+    if isinstance(node, ast.ImportFrom):
+        bound = set()
+        for alias in node.names:
+            bound.add(alias.asname or alias.name)
+        return bound
+    if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+        return {node.name}
+    if isinstance(node, ast.ExceptHandler) and node.name is not None:
+        return {node.name}
+    if isinstance(node, ast.withitem) and node.optional_vars is not None:
+        return lexical_bound_names_from_target(node.optional_vars)
+    if isinstance(node, (ast.For, ast.AsyncFor)):
+        return lexical_bound_names_from_target(node.target)
+    if isinstance(node, ast.NamedExpr):
+        return lexical_bound_names_from_target(node.target)
+    raise LexicalBindingFormError(f"unsupported lexical binding site: {type(node).__name__}")
+
+
+def lexical_bound_names_from_target(target: ast.expr) -> set[str]:
     if isinstance(target, ast.Name):
-        return [target.id]
+        return {target.id}
     if isinstance(target, (ast.Tuple, ast.List)):
-        names: list[str] = []
+        names: set[str] = set()
         for elt in target.elts:
-            names.extend(_iter_assignment_target_names(elt))
+            names |= lexical_bound_names_from_target(elt)
         return names
     if isinstance(target, ast.Starred):
-        return _iter_assignment_target_names(target.value)
-    return []
+        return lexical_bound_names_from_target(target.value)
+    if isinstance(target, (ast.Subscript, ast.Attribute)):
+        return set()
+    raise LexicalBindingFormError(f"unsupported binding target: {type(target).__name__}")
+
+
+def lexical_bound_names_from_match_pattern(pattern: ast.AST) -> set[str]:
+    names: set[str] = set()
+    if isinstance(pattern, ast.MatchAs):
+        if pattern.name is not None:
+            names.add(pattern.name)
+        if pattern.pattern is not None:
+            names |= lexical_bound_names_from_match_pattern(pattern.pattern)
+        return names
+    if isinstance(pattern, ast.MatchStar):
+        if pattern.name is not None:
+            names.add(pattern.name)
+        return names
+    if isinstance(pattern, ast.MatchSequence):
+        for sub in pattern.patterns:
+            names |= lexical_bound_names_from_match_pattern(sub)
+        return names
+    if isinstance(pattern, ast.MatchMapping):
+        for key in pattern.keys:
+            if isinstance(key, ast.MatchAs) or isinstance(key, ast.MatchStar):
+                names |= lexical_bound_names_from_match_pattern(key)
+        if pattern.rest is not None:
+            names.add(pattern.rest)
+        return names
+    if isinstance(pattern, ast.MatchClass):
+        for sub in pattern.patterns:
+            names |= lexical_bound_names_from_match_pattern(sub)
+        for name in pattern.kwd_attrs:
+            names.add(name)
+        if pattern.kwd_patterns:
+            for sub in pattern.kwd_patterns:
+                names |= lexical_bound_names_from_match_pattern(sub)
+        return names
+    if isinstance(pattern, (ast.MatchValue, ast.MatchSingleton)):
+        return set()
+    raise LexicalBindingFormError(f"unsupported match pattern: {type(pattern).__name__}")
+
+
+def _iter_assignment_target_names(target: ast.expr) -> list[str]:
+    return list(lexical_bound_names_from_target(target))
 
 
 def _parallel_unpack_rebind_names(
@@ -366,6 +452,7 @@ class ChildRunnerDiscoveryResult:
     alias_escape_violations: list[str] = field(default_factory=list)
     class_body_import_violations: list[str] = field(default_factory=list)
     unknown_usage_violations: list[str] = field(default_factory=list)
+    lexical_binding_violations: list[str] = field(default_factory=list)
     usage_records: list[CanonicalConstructorUsageRecord] = field(default_factory=list)
 
 
@@ -447,6 +534,8 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
             self._annotation_depth -= 1
 
     def visit_ClassDef(self, node: ast.ClassDef) -> None:
+        for decorator in node.decorator_list:
+            self.visit(decorator)
         if node.name == CANONICAL_CHILD_CLASS:
             scoped = self._current_prov().copy()
             scoped.local_child_execution_runner_class = True
@@ -459,16 +548,18 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
             self.visit(base)
         for keyword in node.keywords:
             self.visit(keyword)
-        for decorator in node.decorator_list:
-            self.visit(decorator)
         for stmt in node.body:
             self.visit(stmt)
         self._class_stack.pop()
         self._scope_stack.pop()
+        self._record_constructor_shadow(node.name)
 
     def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+        for decorator in node.decorator_list:
+            self.visit(decorator)
         self._scope_stack.append(self._current_prov().copy())
         self._function_stack.append(node.name)
+        self._apply_lexical_binds_from_site(node.args)
         self._visit_annotation_subtree(node.returns)
         for arg in (
             *node.args.posonlyargs,
@@ -478,20 +569,79 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
             self._visit_annotation_subtree(arg.annotation)
         for default in (*node.args.defaults, *node.args.kw_defaults):
             self._visit_with_parent(node, default)
-        for decorator in node.decorator_list:
-            self.visit(decorator)
         for stmt in node.body:
             self.visit(stmt)
         self._function_stack.pop()
         self._scope_stack.pop()
+        self._record_constructor_shadow(node.name)
 
     def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
         self.visit_FunctionDef(node)  # type: ignore[arg-type]
 
     def visit_Lambda(self, node: ast.Lambda) -> None:
+        self._scope_stack.append(self._current_prov().copy())
+        self._apply_lexical_binds_from_site(node.args)
         for default in (*node.args.defaults, *node.args.kw_defaults):
             self._visit_with_parent(node, default)
         self._visit_with_parent(node, node.body)
+        self._scope_stack.pop()
+
+    def visit_For(self, node: ast.For) -> None:
+        self.visit(node.iter)
+        self._apply_lexical_binds_from_target(node.target)
+        self._visit_with_parent(node, node.target)
+        for stmt in node.body:
+            self.visit(stmt)
+        for stmt in node.orelse:
+            self.visit(stmt)
+
+    def visit_AsyncFor(self, node: ast.AsyncFor) -> None:
+        self.visit_For(node)  # type: ignore[arg-type]
+
+    def visit_With(self, node: ast.With) -> None:
+        for item in node.items:
+            self.visit(item.context_expr)
+            if item.optional_vars is not None:
+                self._apply_lexical_binds_from_target(item.optional_vars)
+                self._visit_with_parent(node, item.optional_vars)
+        for stmt in node.body:
+            self.visit(stmt)
+
+    def visit_AsyncWith(self, node: ast.AsyncWith) -> None:
+        self.visit_With(node)  # type: ignore[arg-type]
+
+    def visit_Try(self, node: ast.Try) -> None:
+        for stmt in node.body:
+            self.visit(stmt)
+        for handler in node.handlers:
+            if handler.type is not None:
+                self.visit(handler.type)
+            if handler.name is not None:
+                self._record_constructor_shadow(handler.name)
+            for stmt in handler.body:
+                self.visit(stmt)
+        for stmt in node.orelse:
+            self.visit(stmt)
+        for stmt in node.finalbody:
+            self.visit(stmt)
+
+    def visit_Match(self, node: ast.Match) -> None:
+        self.visit(node.subject)
+        for case in node.cases:
+            self._apply_lexical_binds_from_match_pattern(case.pattern)
+            if case.guard is not None:
+                self.visit(case.guard)
+            for stmt in case.body:
+                self.visit(stmt)
+
+    def visit_NamedExpr(self, node: ast.NamedExpr) -> None:
+        prov = self._current_prov()
+        for name in _assignment_targets_canonical_rebind([node.target], node.value, prov):
+            enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
+            self.result.rebind_violations.append(f"{self._rel_path}::{enclosing}: rebind {name}")
+        self._visit_with_parent(node, node.value)
+        self._apply_lexical_binds_from_target(node.target)
+        self._visit_with_parent(node, node.target)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
         self._visit_annotation_subtree(node.annotation)
@@ -527,6 +677,37 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
         enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
         self.result.rebind_violations.append(f"{self._rel_path}::{enclosing}: shadow {name}")
         prov.shadowed_constructor_names.add(name)
+
+    def _apply_lexical_binds(self, names: set[str]) -> None:
+        for name in names:
+            self._record_constructor_shadow(name)
+
+    def _apply_lexical_binds_from_site(self, site: ast.AST) -> None:
+        try:
+            self._apply_lexical_binds(lexical_bound_names(site))
+        except LexicalBindingFormError as exc:
+            enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
+            self.result.lexical_binding_violations.append(
+                f"{self._rel_path}::{enclosing}: {exc}",
+            )
+
+    def _apply_lexical_binds_from_target(self, target: ast.expr) -> None:
+        try:
+            self._apply_lexical_binds(lexical_bound_names_from_target(target))
+        except LexicalBindingFormError as exc:
+            enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
+            self.result.lexical_binding_violations.append(
+                f"{self._rel_path}::{enclosing}: {exc}",
+            )
+
+    def _apply_lexical_binds_from_match_pattern(self, pattern: ast.AST) -> None:
+        try:
+            self._apply_lexical_binds(lexical_bound_names_from_match_pattern(pattern))
+        except LexicalBindingFormError as exc:
+            enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
+            self.result.lexical_binding_violations.append(
+                f"{self._rel_path}::{enclosing}: {exc}",
+            )
 
     def visit_Import(self, node: ast.Import) -> None:
         if self._in_class_body_scope() and _import_binds_canonical_child(node):
@@ -609,6 +790,7 @@ def discover_canonical_constructor_rebinding_violations() -> list[str]:
         violations.extend(result.alias_escape_violations)
         violations.extend(result.class_body_import_violations)
         violations.extend(result.unknown_usage_violations)
+        violations.extend(result.lexical_binding_violations)
     return violations
 
 
@@ -619,6 +801,7 @@ def discover_canonical_constructor_rebindings_in_source(rel_path: str, source: s
         *result.alias_escape_violations,
         *result.class_body_import_violations,
         *result.unknown_usage_violations,
+        *result.lexical_binding_violations,
     ]
 
 
@@ -728,7 +911,11 @@ __all__ = [
     "CanonicalConstructorUsageRecord",
     "ChildRunnerDiscoveryResult",
     "analyze_child_execution_runner_discovery",
+    "LexicalBindingFormError",
     "classify_canonical_constructor_usage",
+    "lexical_bound_names",
+    "lexical_bound_names_from_match_pattern",
+    "lexical_bound_names_from_target",
     "discover_canonical_constructor_rebinding_violations",
     "discover_canonical_constructor_rebindings_in_source",
     "discover_canonical_constructor_usage_records_in_source",

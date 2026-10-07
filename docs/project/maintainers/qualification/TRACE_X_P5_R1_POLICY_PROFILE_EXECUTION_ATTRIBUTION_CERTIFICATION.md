@@ -14,19 +14,23 @@
 | P5-R1-R1-Q4 START_HEAD | `ea1e4947fe66c120bb502885dc912e5f98698339` |
 | P5-R1-R1-Q5 START_HEAD | `274c5ff40e0c4f30764d13be65a00e3b463ec5e4` |
 | P5-R1-R1-Q6 START_HEAD | `4aba36e50a474a0d6915a60f73f5a3b31e6f71c2` |
+| P5-R1-R1-Q7 START_HEAD | `5afc518a78fe5777d5f67934c1ecbd1ec6740e0a` |
 | Q2 FINAL_COMMIT | _(placeholder until qualification commit)_ |
 | Q3 FINAL_COMMIT | `0146f6a862339e5c6eefbf53b5622bf3e8491db5` |
 | Q4 FINAL_COMMIT | `41c36b4ad8983fd0c90a4c9513d28de124a07538` |
 | Q5 FINAL_COMMIT | `a6e04f2c1959674c477d591b5a9d8012d16eb80a` |
 | Q6 FINAL_COMMIT | `41b158ccd2a80453269a7026d3d8e12a11c0088d` |
 | Q6 implementation SHA | `41b158ccd2a80453269a7026d3d8e12a11c0088d` |
+| Q7 FINAL_COMMIT | `c8ec80a0da5936fd304a3694a1162365a21ceb12` |
+| Q7 implementation SHA | `c8ec80a0da5936fd304a3694a1162365a21ceb12` |
 | FINAL_COMMIT | _(see git push output)_ |
 | TRACE-X-P5-R1-R1-Q1 | **READY FOR INDEPENDENT RE-AUDIT** (qualification remediation; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q2 | **READY FOR INDEPENDENT RE-AUDIT** (derived resume comparison; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q3 | **READY FOR INDEPENDENT RE-AUDIT** (scoped import-provenance closure; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q4 | **READY FOR INDEPENDENT RE-AUDIT** (canonical constructor alias-escape closure; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q5 | **READY FOR INDEPENDENT RE-AUDIT** (full-dotted canonical constructor reference closure; not CLOSED) |
-| TRACE-X-P5-R1-R1-Q6 | **READY FOR AUDIT** (canonical reference usage-context closure; not CLOSED) |
+| TRACE-X-P5-R1-R1-Q6 | **READY FOR INDEPENDENT RE-AUDIT** (canonical reference usage-context closure; not CLOSED) |
+| TRACE-X-P5-R1-R1-Q7 | **READY FOR AUDIT** (lexical binding authority closure; not CLOSED) |
 | TRACE-X-P5-R1-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 | TRACE-X-P5-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 
@@ -72,6 +76,14 @@ Registry parity (Q5): gates `test_txp5r1_q12`–`q24`, `q31`–`q37`, `q45`–`q
 **Q6 qualification:** production inventory unchanged (`legal constructor surfaces = 4`, `forbidden canonical runtime-reference usages = 0`, `unknown usage contexts = 0`; discovery parity `discovered = classified`, `unknown surfaces = 0`, `orphan = 0`, `duplicate = 0`). Sentinels `test_txp5r1_q74`–`q86`; Q6 lineage `test_txp5r1_q87`.
 
 Registry parity (Q6): gates `test_txp5r1_q12`–`q24`, `q31`–`q37`, `q45`–`q55`, `q56`–`q65`, `q66`–`q73`, `q74`–`q87`.
+
+**Q7 blocker (START_HEAD `5afc518a…`):** `Q6-LEXICAL-BINDING-SHADOW-01` — import provenance treated module-level constructor names as canonical at every expression site; Python lexical binders (parameters, `for`/`with`/`except as`, walrus, nested `def`/`class`, pattern captures, destructuring) could shadow/rebind without updating effective provenance, yielding false-positive canonical constructor surfaces (e.g. parameter named `ChildExecutionRunner`).
+
+**Q7 remediation:** one authoritative `lexical_bound_names` / `lexical_bound_names_from_target` / `lexical_bound_names_from_match_pattern` layer applied in statement order on the scope stack before Q6 `classify_canonical_constructor_usage`; canonical `from … import ChildExecutionRunner` restores provenance after shadow (`shadowed_constructor_names.discard`); unsupported binding shapes fail closed via `lexical_binding_violations`. Pipeline: import provenance → lexical binding resolution → canonical reference identification → `CanonicalConstructorUsageKind` → fail-closed usage policy.
+
+**Q7 qualification:** production parity unchanged (`legal constructor surfaces = 4`, `classified registry surfaces = 4`, `unknown surfaces = 0`, `orphan = 0`, `duplicate = 0`, `forbidden canonical runtime usages = 0`, `unknown usage contexts = 0`, `canonical lexical-shadow violations = 0` in `intergrax/`). Production shadow inventory: none (gate `test_txp5r1_q100`). Sentinels `test_txp5r1_q88`–`q101`; Q7 lineage `test_txp5r1_q102`.
+
+Registry parity (Q7): gates `test_txp5r1_q12`–`q24`, `q31`–`q37`, `q45`–`q55`, `q56`–`q65`, `q66`–`q73`, `q74`–`q87`, `q88`–`q102`.
 
 ## Resume baseline evidence (@ Q2)
 

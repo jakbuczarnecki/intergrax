@@ -51,6 +51,7 @@ from tests.qualification.trace_x._trace_x_p5_r1_support import (
     TRACE_X_P5_R1_R1_Q4_START_HEAD,
     TRACE_X_P5_R1_R1_Q5_START_HEAD,
     TRACE_X_P5_R1_R1_Q6_START_HEAD,
+    TRACE_X_P5_R1_R1_Q7_START_HEAD,
     TRACE_X_P5_R1_START_HEAD,
     child_runner_profile_resolution_import_violations,
     discover_profile_aware_environment_host_roots,
@@ -1151,4 +1152,191 @@ def test_txp5r1_q87_q6_start_head_recorded_and_ancestry() -> None:
     assert TRACE_X_P5_R1_R1_Q6_START_HEAD == "4aba36e50a474a0d6915a60f73f5a3b31e6f71c2"
     subprocess.check_call(
         ["git", "merge-base", "--is-ancestor", TRACE_X_P5_R1_R1_Q6_START_HEAD, "HEAD"],
+    )
+
+
+def test_txp5r1_q88_parameter_shadow_not_canonical_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_param_shadow.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def build(ChildExecutionRunner):
+    return ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert not discovered
+
+
+def test_txp5r1_q89_kwonly_parameter_shadow_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_kwonly_param_shadow.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def build(*, ChildExecutionRunner):
+    return ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert not discovered
+
+
+def test_txp5r1_q90_parameter_then_local_import_only_post_import_canonical() -> None:
+    rel = "intergrax/synthetic/child_runner_param_then_import.py"
+    source = """
+def f(ChildExecutionRunner):
+    ChildExecutionRunner()
+    from intergrax.runtime.execution.child import ChildExecutionRunner
+    ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert discovered == {f"{rel}::f"}
+
+
+def test_txp5r1_q91_for_target_shadow_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_for_target_shadow.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+for ChildExecutionRunner in factories:
+    ChildExecutionRunner()
+"""
+    violations = discover_canonical_constructor_rebindings_in_source(rel, source)
+    assert any("shadow" in v for v in violations)
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert not discovered
+
+
+def test_txp5r1_q92_with_as_shadow_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_with_as_shadow.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+with provider() as ChildExecutionRunner:
+    ChildExecutionRunner()
+"""
+    violations = discover_canonical_constructor_rebindings_in_source(rel, source)
+    assert any("shadow" in v for v in violations)
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert not discovered
+
+
+def test_txp5r1_q93_except_as_shadow_not_canonical_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_except_as_shadow.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+try:
+    pass
+except Exception as ChildExecutionRunner:
+    ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert not discovered
+
+
+def test_txp5r1_q94_nested_function_name_shadow_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_nested_fn_name_shadow.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def ChildExecutionRunner():
+    pass
+
+ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert not discovered
+
+
+def test_txp5r1_q95_nested_class_name_shadow_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_nested_class_name_shadow.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+class ChildExecutionRunner:
+    pass
+
+ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert not discovered
+
+
+def test_txp5r1_q96_destructuring_target_shadow_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_destructure_shadow.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f():
+    x, ChildExecutionRunner = object(), object()
+    ChildExecutionRunner()
+"""
+    violations = discover_canonical_constructor_rebindings_in_source(rel, source)
+    assert any("shadow" in v for v in violations)
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert f"{rel}::f" not in discovered
+
+
+def test_txp5r1_q97_nested_scope_shadow_does_not_leak_to_parent_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_nested_scope_no_leak.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def outer():
+    def inner(ChildExecutionRunner):
+        ChildExecutionRunner()
+    ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert f"{rel}::outer" in discovered
+    assert f"{rel}::inner" not in discovered
+
+
+def test_txp5r1_q98_parent_canonical_inherited_until_child_shadow_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_inherit_until_shadow.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def outer():
+    def inner():
+        ChildExecutionRunner()
+    ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert f"{rel}::inner" in discovered
+    assert f"{rel}::outer" in discovered
+
+
+def test_txp5r1_q99_pattern_capture_shadow_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_match_capture_shadow.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f(value):
+    match value:
+        case ChildExecutionRunner:
+            ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert f"{rel}::f" not in discovered
+
+
+def test_txp5r1_q100_production_lexical_shadow_violations_zero() -> None:
+    violations = discover_canonical_constructor_rebinding_violations()
+    shadow = [v for v in violations if "shadow" in v]
+    assert not shadow, shadow
+
+
+def test_txp5r1_q101_constructor_registry_parity_unchanged() -> None:
+    discovered = discover_child_execution_runner_constructor_surfaces()
+    result = compare_child_runner_surfaces_to_registry(discovered)
+    assert not result.unknown
+    assert not result.orphan
+    assert not result.duplicate_registry_keys
+    assert len(discovered) == len(CHILD_EXECUTION_RUNNER_SURFACE_REGISTRY)
+
+
+def test_txp5r1_q102_q7_start_head_recorded_and_ancestry() -> None:
+    assert TRACE_X_P5_R1_R1_Q7_START_HEAD == "5afc518a78fe5777d5f67934c1ecbd1ec6740e0a"
+    subprocess.check_call(
+        ["git", "merge-base", "--is-ancestor", TRACE_X_P5_R1_R1_Q7_START_HEAD, "HEAD"],
     )
