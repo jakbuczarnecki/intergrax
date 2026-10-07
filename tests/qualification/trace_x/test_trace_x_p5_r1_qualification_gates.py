@@ -44,6 +44,7 @@ from tests.qualification.trace_x._trace_x_p5_r1_support import (
     TRACE_X_P5_R1_R1_Q1_START_HEAD,
     TRACE_X_P5_R1_R1_Q2_START_HEAD,
     TRACE_X_P5_R1_R1_Q3_START_HEAD,
+    TRACE_X_P5_R1_R1_Q4_START_HEAD,
     TRACE_X_P5_R1_START_HEAD,
     child_runner_profile_resolution_import_violations,
     discover_profile_aware_environment_host_roots,
@@ -712,4 +713,146 @@ def test_txp5r1_q55_q3_start_head_recorded_and_ancestry() -> None:
     assert TRACE_X_P5_R1_R1_Q3_START_HEAD == "c51d04b7849d44d1adee78ad6d4e7eedd8b5ab68"
     subprocess.check_call(
         ["git", "merge-base", "--is-ancestor", TRACE_X_P5_R1_R1_Q3_START_HEAD, "HEAD"],
+    )
+
+
+def _alias_escape_violations(rel: str, source: str) -> list[str]:
+    return [
+        v
+        for v in discover_canonical_constructor_rebindings_in_source(rel, source)
+        if "alias-escape" in v or "rebind" in v
+    ]
+
+
+def test_txp5r1_q56_tuple_destructuring_alias_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_tuple_unpack_alias.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f():
+    Runner, x = ChildExecutionRunner, object()
+    Runner()
+"""
+    assert _alias_escape_violations(rel, source)
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert f"{rel}::f" not in discovered
+
+
+def test_txp5r1_q57_list_destructuring_alias_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_list_unpack_alias.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f():
+    [Runner, x] = [ChildExecutionRunner, object()]
+    Runner()
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q58_container_escape_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_list_container_escape.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f():
+    factories = [ChildExecutionRunner]
+"""
+    assert any(
+        "alias-escape" in v
+        for v in discover_canonical_constructor_rebindings_in_source(rel, source)
+    )
+
+
+def test_txp5r1_q59_dict_escape_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_dict_escape.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f():
+    factories = {"child": ChildExecutionRunner}
+"""
+    assert any(
+        "alias-escape" in v
+        for v in discover_canonical_constructor_rebindings_in_source(rel, source)
+    )
+
+
+def test_txp5r1_q60_conditional_alias_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_conditional_alias.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+class Other:
+    pass
+
+def f(flag):
+    Runner = ChildExecutionRunner if flag else Other
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q61_qualified_reference_alias_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_qualified_alias.py"
+    source = """
+import intergrax.runtime.execution.child as child_exec
+
+def f():
+    Runner = child_exec.ChildExecutionRunner
+    Runner()
+"""
+    assert _alias_escape_violations(rel, source)
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert f"{rel}::f" not in discovered
+
+
+def test_txp5r1_q62_direct_call_remains_allowed_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_direct_call.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+
+def f():
+    ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert f"{rel}::f" in discovered
+    assert not discover_canonical_constructor_rebindings_in_source(rel, source)
+
+
+def test_txp5r1_q63_generic_direct_call_remains_allowed_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_generic_direct_call.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+from typing import TypeVar
+
+A = TypeVar("A")
+B = TypeVar("B")
+
+def f():
+    ChildExecutionRunner[A, B]()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert f"{rel}::f" in discovered
+    assert not discover_canonical_constructor_rebindings_in_source(rel, source)
+
+
+def test_txp5r1_q64_type_annotation_remains_legal_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_type_annotation.py"
+    source = """
+from intergrax.runtime.execution.child import ChildExecutionRunner
+from typing import TypeVar
+
+RequestT = TypeVar("RequestT")
+ResultT = TypeVar("ResultT")
+
+def accept(runner: ChildExecutionRunner[RequestT, ResultT]) -> None:
+    pass
+"""
+    assert not discover_canonical_constructor_rebindings_in_source(rel, source)
+
+
+def test_txp5r1_q65_q4_start_head_recorded_and_ancestry() -> None:
+    assert TRACE_X_P5_R1_R1_Q4_START_HEAD == "ea1e4947fe66c120bb502885dc912e5f98698339"
+    subprocess.check_call(
+        ["git", "merge-base", "--is-ancestor", TRACE_X_P5_R1_R1_Q4_START_HEAD, "HEAD"],
     )

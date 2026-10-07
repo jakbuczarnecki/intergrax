@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TRACE-X-P5-R1-R1-Q3: scope-aware import-provenance ChildExecutionRunner AST discovery."""
+"""TRACE-X-P5-R1-R1-Q4: scope-aware import-provenance + alias-escape ChildExecutionRunner AST discovery."""
 
 from __future__ import annotations
 
@@ -193,24 +193,79 @@ def _is_canonical_constructor_call(node: ast.Call, prov: _ImportProvenance) -> b
     return False
 
 
+def _iter_assignment_target_names(target: ast.expr) -> list[str]:
+    if isinstance(target, ast.Name):
+        return [target.id]
+    if isinstance(target, (ast.Tuple, ast.List)):
+        names: list[str] = []
+        for elt in target.elts:
+            names.extend(_iter_assignment_target_names(elt))
+        return names
+    if isinstance(target, ast.Starred):
+        return _iter_assignment_target_names(target.value)
+    return []
+
+
+def _parallel_unpack_rebind_names(
+    target: ast.expr,
+    value: ast.expr,
+    prov: _ImportProvenance,
+) -> list[str]:
+    if isinstance(target, ast.Starred):
+        return []
+    if isinstance(target, (ast.Tuple, ast.List)) and isinstance(value, (ast.Tuple, ast.List)):
+        names: list[str] = []
+        for target_elt, value_elt in zip(target.elts, value.elts, strict=False):
+            names.extend(_parallel_unpack_rebind_names(target_elt, value_elt, prov))
+        return names
+    if isinstance(target, ast.Name) and _expr_is_canonical_constructor_ref(value, prov):
+        return [target.id]
+    return []
+
+
 def _assignment_targets_canonical_rebind(
     targets: list[ast.expr],
     value: ast.expr,
     prov: _ImportProvenance,
 ) -> list[str]:
-    if not _expr_is_canonical_constructor_ref(value, prov):
-        return []
     violations: list[str] = []
+    if _expr_is_canonical_constructor_ref(value, prov):
+        for target in targets:
+            violations.extend(_iter_assignment_target_names(target))
+        return violations
     for target in targets:
-        if isinstance(target, ast.Name):
-            violations.append(target.id)
+        violations.extend(_parallel_unpack_rebind_names(target, value, prov))
     return violations
+
+
+def _expr_has_forbidden_canonical_escape(expr: ast.expr, prov: _ImportProvenance) -> bool:
+    """True when a canonical constructor reference escapes outside a direct constructor call."""
+
+    def _scan(node: ast.AST) -> bool:
+        if isinstance(node, ast.Call):
+            if _is_canonical_constructor_call(node, prov):
+                for arg in node.args:
+                    if _scan(arg):
+                        return True
+                for keyword in node.keywords:
+                    if keyword.value is not None and _scan(keyword.value):
+                        return True
+                return False
+        if isinstance(node, ast.expr) and _expr_is_canonical_constructor_ref(node, prov):
+            return True
+        for child in ast.iter_child_nodes(node):
+            if isinstance(child, ast.expr) and _scan(child):
+                return True
+        return False
+
+    return _scan(expr)
 
 
 @dataclass
 class ChildRunnerDiscoveryResult:
     surfaces: set[str] = field(default_factory=set)
     rebind_violations: list[str] = field(default_factory=list)
+    alias_escape_violations: list[str] = field(default_factory=list)
     class_body_import_violations: list[str] = field(default_factory=list)
 
 
@@ -259,6 +314,10 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
         self.result.rebind_violations.append(f"{self._rel_path}::{enclosing}: shadow {name}")
         prov.shadowed_constructor_names.add(name)
 
+    def _record_alias_escape(self) -> None:
+        enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
+        self.result.alias_escape_violations.append(f"{self._rel_path}::{enclosing}: alias-escape")
+
     def visit_Import(self, node: ast.Import) -> None:
         if self._in_class_body_scope() and _import_binds_canonical_child(node):
             enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
@@ -284,9 +343,14 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
         for name in _assignment_targets_canonical_rebind(node.targets, node.value, prov):
             enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
             self.result.rebind_violations.append(f"{self._rel_path}::{enclosing}: rebind {name}")
+        if _expr_has_forbidden_canonical_escape(node.value, prov):
+            self._record_alias_escape()
         for target in node.targets:
             if isinstance(target, ast.Name):
                 self._record_constructor_shadow(target.id)
+            else:
+                for name in _iter_assignment_target_names(target):
+                    self._record_constructor_shadow(name)
         self.generic_visit(node)
 
     def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
@@ -295,11 +359,45 @@ class _ChildRunnerDiscoveryVisitor(ast.NodeVisitor):
             for name in _assignment_targets_canonical_rebind([node.target], node.value, prov):
                 enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
                 self.result.rebind_violations.append(f"{self._rel_path}::{enclosing}: rebind {name}")
+            if _expr_has_forbidden_canonical_escape(node.value, prov):
+                self._record_alias_escape()
         if isinstance(node.target, ast.Name):
             self._record_constructor_shadow(node.target.id)
         self.generic_visit(node)
 
+    def visit_Return(self, node: ast.Return) -> None:
+        if node.value is not None and _expr_has_forbidden_canonical_escape(
+            node.value,
+            self._current_prov(),
+        ):
+            self._record_alias_escape()
+        self.generic_visit(node)
+
+    def visit_Yield(self, node: ast.Yield) -> None:
+        if node.value is not None and _expr_has_forbidden_canonical_escape(
+            node.value,
+            self._current_prov(),
+        ):
+            self._record_alias_escape()
+        self.generic_visit(node)
+
+    def visit_YieldFrom(self, node: ast.YieldFrom) -> None:
+        if _expr_has_forbidden_canonical_escape(node.value, self._current_prov()):
+            self._record_alias_escape()
+        self.generic_visit(node)
+
     def visit_Call(self, node: ast.Call) -> None:
+        prov = self._current_prov()
+        if not _is_canonical_constructor_call(node, prov):
+            for arg in node.args:
+                if _expr_has_forbidden_canonical_escape(arg, prov):
+                    self._record_alias_escape()
+            for keyword in node.keywords:
+                if keyword.value is not None and _expr_has_forbidden_canonical_escape(
+                    keyword.value,
+                    prov,
+                ):
+                    self._record_alias_escape()
         if _is_canonical_constructor_call(node, self._current_prov()):
             enclosing = _enclosing_symbol(self._class_stack, self._function_stack)
             self.result.surfaces.add(_surface_key(self._rel_path, enclosing))
@@ -338,13 +436,18 @@ def discover_canonical_constructor_rebinding_violations() -> list[str]:
         text = py_path.read_text(encoding="utf-8")
         result = analyze_child_execution_runner_discovery(rel, text)
         violations.extend(result.rebind_violations)
+        violations.extend(result.alias_escape_violations)
         violations.extend(result.class_body_import_violations)
     return violations
 
 
 def discover_canonical_constructor_rebindings_in_source(rel_path: str, source: str) -> list[str]:
     result = analyze_child_execution_runner_discovery(rel_path, source)
-    return [*result.rebind_violations, *result.class_body_import_violations]
+    return [
+        *result.rebind_violations,
+        *result.alias_escape_violations,
+        *result.class_body_import_violations,
+    ]
 
 
 class _WireHostProfileVisitor(ast.NodeVisitor):
