@@ -40,7 +40,7 @@
 | TRACE-X-P5-R1-R1 | **CLOSED / independently accepted** |
 | TRACE-X-P5-R1 | **CLOSED / independently accepted** |
 | TRACE-X-P5 | **CURRENT / BLOCKED ON R2** |
-| TRACE-X-P5-R2 | **NEXT / REQUIRED / NOT ENTERED** (**P5-GAP-04** / **FRZ-TRC-11**) |
+| TRACE-X-P5-R2 | **BLOCKED ON P0 INDEPENDENT AUDIT** (**P5-GAP-04** / **FRZ-TRC-11**) — architecture lock [`TRACE_X_P5_R2_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE_ARCHITECTURE_LOCK.md`](TRACE_X_P5_R2_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE_ARCHITECTURE_LOCK.md) @ `16be5fdfe4bcde804eef51a3b34b4ebc5cd45dad` |
 
 ## Independent audit findings (R1 @ `65f7e1ef…`) — R1-R1 remediation
 
