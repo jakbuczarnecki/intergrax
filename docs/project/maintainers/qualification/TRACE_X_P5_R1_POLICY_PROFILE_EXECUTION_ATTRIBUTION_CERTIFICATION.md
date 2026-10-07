@@ -12,14 +12,17 @@
 | P5-R1-R1-Q2 START_HEAD | `538af9ef51a6ca483f607988481ef2794deb87b9` |
 | P5-R1-R1-Q3 START_HEAD | `c51d04b7849d44d1adee78ad6d4e7eedd8b5ab68` |
 | P5-R1-R1-Q4 START_HEAD | `ea1e4947fe66c120bb502885dc912e5f98698339` |
+| P5-R1-R1-Q5 START_HEAD | `274c5ff40e0c4f30764d13be65a00e3b463ec5e4` |
 | Q2 FINAL_COMMIT | _(placeholder until qualification commit)_ |
 | Q3 FINAL_COMMIT | `0146f6a862339e5c6eefbf53b5622bf3e8491db5` |
 | Q4 FINAL_COMMIT | `41c36b4ad8983fd0c90a4c9513d28de124a07538` |
+| Q5 FINAL_COMMIT | _(placeholder until qualification commit)_ |
 | FINAL_COMMIT | _(see git push output)_ |
 | TRACE-X-P5-R1-R1-Q1 | **READY FOR INDEPENDENT RE-AUDIT** (qualification remediation; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q2 | **READY FOR INDEPENDENT RE-AUDIT** (derived resume comparison; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q3 | **READY FOR INDEPENDENT RE-AUDIT** (scoped import-provenance closure; not CLOSED) |
-| TRACE-X-P5-R1-R1-Q4 | **READY FOR AUDIT** (canonical constructor alias-escape closure; not CLOSED) |
+| TRACE-X-P5-R1-R1-Q4 | **READY FOR INDEPENDENT RE-AUDIT** (canonical constructor alias-escape closure; not CLOSED) |
+| TRACE-X-P5-R1-R1-Q5 | **READY FOR AUDIT** (full-dotted canonical constructor reference closure; not CLOSED) |
 | TRACE-X-P5-R1-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 | TRACE-X-P5-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
 
@@ -49,6 +52,14 @@ Supported forms: direct `from … child import ChildExecutionRunner`, `as` alias
 **Q4 qualification:** production parity unchanged (`discovered = 4`, `classified = 4`, `unknown = 0`, `orphan = 0`, `duplicate = 0`, canonical constructor alias escapes = 0, rebind/shadow/class-body violations = 0). Production non-call inventory: import bindings, direct/generic constructor calls, and typed parameter annotations only (`delegated_subtask_child_port.py`). Sentinels `test_txp5r1_q56`–`q64`; Q4 lineage `test_txp5r1_q65`.
 
 Registry parity: `tests/qualification/trace_x/_trace_x_p5_r1_child_discovery.py`, `tests/qualification/trace_x/_trace_x_p5_r1_child_registry.py`, gates `test_txp5r1_q12`–`q24`, `q31`–`q37`, `q45`–`q55`, `q56`–`q65`.
+
+**Q5 blocker (START_HEAD `274c5ff4…`):** `Q4-DOTTED-CONSTRUCTOR-ESCAPE-01` — direct-call discovery recognized full dotted `intergrax.runtime.execution.child.ChildExecutionRunner` via `_dotted_expr_canonical_constructor`, but alias-escape used `_expr_is_canonical_constructor_ref` limited to `ast.Name` and single-level module-alias attributes, so full-dotted assignment/container/return/argument escapes could evade qualification.
+
+**Q5 remediation:** one authoritative `_expr_is_canonical_constructor_ref` (including generic subscript roots) shared with `_is_canonical_constructor_call`; full dotted paths require provenance `intergrax_roots` (suffix-only paths such as `other.runtime.execution.child.ChildExecutionRunner` remain false).
+
+**Q5 qualification:** production parity unchanged (`discovered = 4`, `classified = 4`, `unknown = 0`, `orphan = 0`, `duplicate = 0`, alias escapes = 0, rebind/shadow/class-body violations = 0). Sentinels `test_txp5r1_q66`–`q72`; Q5 lineage `test_txp5r1_q73`. Q5 implementation evidence SHA _(placeholder until commit)_.
+
+Registry parity (Q5): gates `test_txp5r1_q12`–`q24`, `q31`–`q37`, `q45`–`q55`, `q56`–`q65`, `q66`–`q73`.
 
 ## Resume baseline evidence (@ Q2)
 

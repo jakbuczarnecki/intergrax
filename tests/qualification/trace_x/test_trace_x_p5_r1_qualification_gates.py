@@ -45,6 +45,7 @@ from tests.qualification.trace_x._trace_x_p5_r1_support import (
     TRACE_X_P5_R1_R1_Q2_START_HEAD,
     TRACE_X_P5_R1_R1_Q3_START_HEAD,
     TRACE_X_P5_R1_R1_Q4_START_HEAD,
+    TRACE_X_P5_R1_R1_Q5_START_HEAD,
     TRACE_X_P5_R1_START_HEAD,
     child_runner_profile_resolution_import_violations,
     discover_profile_aware_environment_host_roots,
@@ -855,4 +856,115 @@ def test_txp5r1_q65_q4_start_head_recorded_and_ancestry() -> None:
     assert TRACE_X_P5_R1_R1_Q4_START_HEAD == "ea1e4947fe66c120bb502885dc912e5f98698339"
     subprocess.check_call(
         ["git", "merge-base", "--is-ancestor", TRACE_X_P5_R1_R1_Q4_START_HEAD, "HEAD"],
+    )
+
+
+def test_txp5r1_q66_full_dotted_assignment_alias_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_full_dotted_alias.py"
+    source = """
+import intergrax.runtime.execution.child
+
+Runner = intergrax.runtime.execution.child.ChildExecutionRunner
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q67_full_dotted_container_escape_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_full_dotted_list.py"
+    source = """
+import intergrax.runtime.execution.child
+
+factories = [
+    intergrax.runtime.execution.child.ChildExecutionRunner
+]
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q68_full_dotted_dict_escape_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_full_dotted_dict.py"
+    source = """
+import intergrax.runtime.execution.child
+
+factories = {
+    "child": intergrax.runtime.execution.child.ChildExecutionRunner
+}
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q69_full_dotted_argument_escape_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_full_dotted_arg.py"
+    source = """
+import intergrax.runtime.execution.child
+
+def register(factory):
+    pass
+
+register(
+    intergrax.runtime.execution.child.ChildExecutionRunner
+)
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q70_full_dotted_return_escape_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_full_dotted_return.py"
+    source = """
+import intergrax.runtime.execution.child
+
+def factory():
+    return intergrax.runtime.execution.child.ChildExecutionRunner
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q71_full_dotted_direct_call_remains_allowed_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_full_dotted_direct_call.py"
+    source = """
+import intergrax.runtime.execution.child
+
+def f():
+    intergrax.runtime.execution.child.ChildExecutionRunner()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert f"{rel}::f" in discovered
+    assert not discover_canonical_constructor_rebindings_in_source(rel, source)
+
+
+def test_txp5r1_q71b_full_dotted_generic_direct_call_remains_allowed_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_full_dotted_generic_direct_call.py"
+    source = """
+import intergrax.runtime.execution.child
+from typing import TypeVar
+
+A = TypeVar("A")
+B = TypeVar("B")
+
+def f():
+    intergrax.runtime.execution.child.ChildExecutionRunner[A, B]()
+"""
+    discovered = discover_child_execution_runner_surfaces_in_source(rel, source)
+    assert f"{rel}::f" in discovered
+    assert not discover_canonical_constructor_rebindings_in_source(rel, source)
+
+
+def test_txp5r1_q72_full_dotted_generic_subscript_alias_sentinel() -> None:
+    rel = "intergrax/synthetic/child_runner_full_dotted_generic_alias.py"
+    source = """
+import intergrax.runtime.execution.child
+from typing import TypeVar
+
+A = TypeVar("A")
+B = TypeVar("B")
+
+Runner = intergrax.runtime.execution.child.ChildExecutionRunner[A, B]
+"""
+    assert _alias_escape_violations(rel, source)
+
+
+def test_txp5r1_q73_q5_start_head_recorded_and_ancestry() -> None:
+    assert TRACE_X_P5_R1_R1_Q5_START_HEAD == "274c5ff40e0c4f30764d13be65a00e3b463ec5e4"
+    subprocess.check_call(
+        ["git", "merge-base", "--is-ancestor", TRACE_X_P5_R1_R1_Q5_START_HEAD, "HEAD"],
     )

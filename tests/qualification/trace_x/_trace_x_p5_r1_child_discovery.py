@@ -1,6 +1,6 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""TRACE-X-P5-R1-R1-Q4: scope-aware import-provenance + alias-escape ChildExecutionRunner AST discovery."""
+"""TRACE-X-P5-R1-R1-Q5: scope-aware import-provenance + unified canonical constructor reference discovery."""
 
 from __future__ import annotations
 
@@ -174,16 +174,15 @@ def _attribute_is_canonical_constructor(value: ast.expr, attr: str, prov: _Impor
     return False
 
 
+def _canonical_constructor_reference_root(expr: ast.expr) -> ast.expr:
+    if isinstance(expr, ast.Subscript):
+        return _canonical_constructor_reference_root(expr.value)
+    return expr
+
+
 def _expr_is_canonical_constructor_ref(expr: ast.expr, prov: _ImportProvenance) -> bool:
-    if isinstance(expr, ast.Name):
-        return _name_refers_to_canonical_constructor(expr.id, prov)
-    if isinstance(expr, ast.Attribute):
-        return _attribute_is_canonical_constructor(expr.value, expr.attr, prov)
-    return False
-
-
-def _is_canonical_constructor_call(node: ast.Call, prov: _ImportProvenance) -> bool:
-    root = _call_callee_root(node)
+    """Authoritative canonical ChildExecutionRunner reference (call sites and alias-escape)."""
+    root = _canonical_constructor_reference_root(expr)
     if isinstance(root, ast.Name):
         return _name_refers_to_canonical_constructor(root.id, prov)
     if isinstance(root, ast.Attribute):
@@ -191,6 +190,10 @@ def _is_canonical_constructor_call(node: ast.Call, prov: _ImportProvenance) -> b
             return True
         return _attribute_is_canonical_constructor(root.value, root.attr, prov)
     return False
+
+
+def _is_canonical_constructor_call(node: ast.Call, prov: _ImportProvenance) -> bool:
+    return _expr_is_canonical_constructor_ref(_call_callee_root(node), prov)
 
 
 def _iter_assignment_target_names(target: ast.expr) -> list[str]:
