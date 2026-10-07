@@ -12,6 +12,8 @@
 
 **R1-R1 accepted implementation/evidence candidate (baseline — do not supersede):** `81fd1490f18d73eaf31ec94c2b93dbb525026ba2`
 
+**TRACE-X-P5-P0-R1-R1-Q1 bookkeeping/provenance reconciliation:** `c60b8e3564d7cfed9d17596ee22d141175bd747d` (docs-only; **not** the R1-R1 implementation/evidence baseline)
+
 **Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p5_support.py` · discovery: `tests/qualification/trace_x/_trace_x_p5_discovery.py`
 
 **Status:** TRACE-X-P5-P0-R1-R1-Q1 = **READY FOR AUDIT** · TRACE-X-P5-P0-R1-R1 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5-P0-R1 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5-P0 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5 = **BLOCKED** · **FRZ-TRC-07 / 08 / 11** remain **OPEN** (Cursor must not mark P5-P0 CLOSED)
