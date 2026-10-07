@@ -6,6 +6,7 @@
 |---|---|
 | **Task** | `TRACE-X-P5-R2-P0` + **`TRACE-X-P5-R2-P0-R1`** + **`TRACE-X-P5-R2-P0-R1-R1`** + **`TRACE-X-P5-R2-P0-R1-R1-R1`** (configuration opportunity typing) + **`TRACE-X-P5-R2-P0-R1-R1-R1-R1`** (configuration mutation risk classification ownership) + **`TRACE-X-P5-R2-P0-FINAL`** (final architecture lock reconciliation) |
 | **P0-FINAL START_HEAD** | `33076146071dd5246691821905ddcba383ad5ee6` (`development` — independently accepted **P0-R1-R1-R1-R1** reconciliation) |
+| **P0-FINAL qualification evidence (docs only)** | `74b93fdf1617e90b19bf42b1658d674e215baba6` |
 | **P0-R1-R1-R1-R1 accepted reconciliation** | `33076146071dd5246691821905ddcba383ad5ee6` |
 | **Parent** | `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
 | **P0 rejection baseline** | `982f945de67577865c1ade4ebbea519cf3a9b284` |
