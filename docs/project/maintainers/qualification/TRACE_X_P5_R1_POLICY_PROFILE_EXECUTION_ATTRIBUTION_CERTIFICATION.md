@@ -18,8 +18,8 @@
 | Q3 FINAL_COMMIT | `0146f6a862339e5c6eefbf53b5622bf3e8491db5` |
 | Q4 FINAL_COMMIT | `41c36b4ad8983fd0c90a4c9513d28de124a07538` |
 | Q5 FINAL_COMMIT | `a6e04f2c1959674c477d591b5a9d8012d16eb80a` |
-| Q6 FINAL_COMMIT | _(placeholder until qualification commit)_ |
-| Q6 implementation SHA | _(placeholder until qualification commit)_ |
+| Q6 FINAL_COMMIT | `41b158ccd2a80453269a7026d3d8e12a11c0088d` |
+| Q6 implementation SHA | `41b158ccd2a80453269a7026d3d8e12a11c0088d` |
 | FINAL_COMMIT | _(see git push output)_ |
 | TRACE-X-P5-R1-R1-Q1 | **READY FOR INDEPENDENT RE-AUDIT** (qualification remediation; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q2 | **READY FOR INDEPENDENT RE-AUDIT** (derived resume comparison; not CLOSED) |
