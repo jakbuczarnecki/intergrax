@@ -1,4 +1,4 @@
-# TRACE-X-P5-R1 — Policy & Effective Profile Execution Attribution (candidate certification)
+# TRACE-X-P5-R1 — Policy & Effective Profile Execution Attribution
 
 ## Revision record
 
@@ -16,7 +16,8 @@
 | P5-R1-R1-Q6 START_HEAD | `4aba36e50a474a0d6915a60f73f5a3b31e6f71c2` |
 | P5-R1-R1-Q7 START_HEAD | `5afc518a78fe5777d5f67934c1ecbd1ec6740e0a` |
 | P5-R1-R1-Q8 START_HEAD | `4bd430ae660dbc9f826c3b5ede0b92aefea36b07` |
-| Q2 FINAL_COMMIT | _(placeholder until qualification commit)_ |
+| Q1 FINAL_COMMIT | `538af9ef51a6ca483f607988481ef2794deb87b9` |
+| Q2 FINAL_COMMIT | `c51d04b7849d44d1adee78ad6d4e7eedd8b5ab68` |
 | Q3 FINAL_COMMIT | `0146f6a862339e5c6eefbf53b5622bf3e8491db5` |
 | Q4 FINAL_COMMIT | `41c36b4ad8983fd0c90a4c9513d28de124a07538` |
 | Q5 FINAL_COMMIT | `a6e04f2c1959674c477d591b5a9d8012d16eb80a` |
@@ -26,17 +27,20 @@
 | Q7 implementation SHA | `5bb6699948b7281e95e03cc3521c568db7899ab5` |
 | Q8 FINAL_COMMIT | `b6e18b83d578b1bd62a4739a697e0622d0fa7142` |
 | Q8 implementation SHA | `8b9cdbcd5281176bb19528e7c9789f2b2e7d4063` |
-| FINAL_COMMIT | `b6e18b83d578b1bd62a4739a697e0622d0fa7142` |
-| TRACE-X-P5-R1-R1-Q1 | **READY FOR INDEPENDENT RE-AUDIT** (qualification remediation; not CLOSED) |
-| TRACE-X-P5-R1-R1-Q2 | **READY FOR INDEPENDENT RE-AUDIT** (derived resume comparison; not CLOSED) |
-| TRACE-X-P5-R1-R1-Q3 | **READY FOR INDEPENDENT RE-AUDIT** (scoped import-provenance closure; not CLOSED) |
-| TRACE-X-P5-R1-R1-Q4 | **READY FOR INDEPENDENT RE-AUDIT** (canonical constructor alias-escape closure; not CLOSED) |
-| TRACE-X-P5-R1-R1-Q5 | **READY FOR INDEPENDENT RE-AUDIT** (full-dotted canonical constructor reference closure; not CLOSED) |
-| TRACE-X-P5-R1-R1-Q6 | **READY FOR INDEPENDENT RE-AUDIT** (canonical reference usage-context closure; not CLOSED) |
-| TRACE-X-P5-R1-R1-Q7 | **READY FOR INDEPENDENT RE-AUDIT** (lexical binding authority closure; not CLOSED) |
-| TRACE-X-P5-R1-R1-Q8 | **READY FOR AUDIT** (definition-time scope evaluation closure; not CLOSED) |
-| TRACE-X-P5-R1-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
-| TRACE-X-P5-R1 | **READY FOR INDEPENDENT RE-AUDIT** (not CLOSED) |
+| Q8 accepted evidence bookkeeping | `b6e18b83d578b1bd62a4739a697e0622d0fa7142` |
+| Accepted current evidence tip | `05fd5d9b2b97f9d85a534a949d882cd47d4a54c9` |
+| TRACE-X-P5-R1-R1-Q1 | **CLOSED / independently accepted** |
+| TRACE-X-P5-R1-R1-Q2 | **CLOSED / independently accepted** |
+| TRACE-X-P5-R1-R1-Q3 | **CLOSED / independently accepted** |
+| TRACE-X-P5-R1-R1-Q4 | **CLOSED / independently accepted** |
+| TRACE-X-P5-R1-R1-Q5 | **CLOSED / independently accepted** |
+| TRACE-X-P5-R1-R1-Q6 | **CLOSED / independently accepted** |
+| TRACE-X-P5-R1-R1-Q7 | **CLOSED / independently accepted** |
+| TRACE-X-P5-R1-R1-Q8 | **CLOSED / independently accepted** |
+| TRACE-X-P5-R1-R1 | **CLOSED / independently accepted** |
+| TRACE-X-P5-R1 | **CLOSED / independently accepted** |
+| TRACE-X-P5 | **CURRENT / BLOCKED ON R2** |
+| TRACE-X-P5-R2 | **NEXT / REQUIRED / NOT ENTERED** (**P5-GAP-04** / **FRZ-TRC-11**) |
 
 ## Independent audit findings (R1 @ `65f7e1ef…`) — R1-R1 remediation
 
@@ -45,7 +49,7 @@
 | P5-R1-POLICY-CANONICAL-READ-01 | `policy_provenance_projection` uses typed envelope via `validate_payload_envelope` when `payload_schema_id` is present; legacy path only when absent. E2E: governance fact → `ValidatingEvidencePersistencePort` → reconstruction. |
 | P5-R1-CHILD-PROFILE-PINNING-02 | Neutral `ChildExecutionContextInheritancePort` + `ProfileResolutionChildContextInheritanceAdapter` wired through `ChildExecutionRunner` → `GraphExecutor` → `NexusLoop` → profile-aware host/scenario spec. |
 | P5-R1-REVISION-REF-OWNERSHIP-03 | `EffectiveProfileRevisionProvenanceRef` is opaque (non-empty str only); no `effprof_rev_` / suffix grammar in neutral contract. |
-| P5-R1-RESUME-BASELINE-04 | **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED / PRE-EXISTING** — committed machine evidence `docs/project/maintainers/qualification/TRACE_X_P5_R1_R1_Q1_RESUME_BASELINE_EVIDENCE.json` (baseline `98c0d9d7…`, Q1 head `a452de39…`, conclusion `PRE_EXISTING_NON_R1_REGRESSION`). Owner: Profile Resolution / checkpoint-resume qualification. |
+| P5-R1-RESUME-BASELINE-04 | **PRE_EXISTING_NON_R1_REGRESSION** — committed machine evidence `docs/project/maintainers/qualification/TRACE_X_P5_R1_R1_Q1_RESUME_BASELINE_EVIDENCE.json` (baseline `98c0d9d7…`, Q1 head `a452de39…`, conclusion `PRE_EXISTING_NON_R1_REGRESSION`). Exact-baseline comparison proves failures predate R1; **does not block** R1 attribution closure. Owner: Profile Resolution / checkpoint-resume qualification. R1 does **not** claim these independent resume tests were fixed. |
 
 ## Child execution inventory (scope-aware import-provenance AST discovery @ Q3)
 
@@ -134,25 +138,27 @@ Child identity owner unchanged: `ChildExecutionRunner` → `default_execution_id
 | Profile revision truth | Profile Resolution | `EffectiveProfileExecutionPinningStore` | Application profile_resolution | Host admission |
 | Profile reconstruction read | Evidence Plane (projection) | `ExecutionEffectiveProfileProvenanceReader` | Pinning store adapter | Diagnostic / reconstructor wiring |
 
-## FRZ disposition (no self-closure)
+## FRZ disposition (independent acceptance @ `05fd5d9b2b97f9d85a534a949d882cd47d4a54c9`)
 
-| Criterion | Evidence produced | Remaining | Proposed disposition |
-|---|---|---|---|
-| FRZ-TRC-07 | Typed policy fields in `ExecutionReconstruction` | Independent audit of all production reconstruction entrypoints | **CANDIDATE / OPEN** |
-| FRZ-TRC-08 | Mandatory admission + neutral reader + fail-closed reconstruction | Scenario/harness durability audit at scale | **CANDIDATE / OPEN** |
-| FRZ-TRC-11 | — | Configured→effective provenance (P5-R2) | **OPEN** |
-| FRZ-TEN-02/05/07 | Tenant-scoped reader lookup + negative tests | Full TENANT-X program | **OPEN** |
+| Criterion | Primary closer | Disposition |
+|---|---|---|
+| FRZ-TRC-07 | **TRACE-X-P5-R1** | **PASS** — canonical typed policy envelope; execution reconstruction; malformed typed payload fails closed; no fallback from malformed typed to legacy; closed-world qualification. |
+| FRZ-TRC-08 | **TRACE-X-P5-R1** | **PASS** — canonical Profile Resolution truth; mandatory profile-aware admission; exact `ExecutionId` binding; neutral read-only reconstruction contract; child execution profile continuity; tenant-aware fail-closed lookup; closed-world production `ChildExecutionRunner` inventory; no alternate profile truth owner. |
+| FRZ-TRC-09 | **TRACE-X-P6** (future) | **OPEN** |
+| FRZ-TRC-10 | **TRACE-X-P6** (future) | **OPEN** |
+| FRZ-TRC-11 | **TRACE-X-P5-R2** | **OPEN** — configured→effective→`ExecutionId`→evidence chain (**P5-GAP-04**). |
+| FRZ-TEN-02/05/07 | **TENANT-X** | **OPEN** — local P5-R1 tenant audit PASS only; no **FRZ-TEN** promotion. |
 
 ## Tenant isolation audit (roadmap §2.0.1)
 
-**Verdict: PASS (candidate)** — reconstruction tenant, runtime event tenant, and profile reader tenant are aligned; cross-tenant binding lookup fails closed when reader is configured.
+**Verdict: PASS** — reconstruction tenant, runtime event tenant, and profile reader tenant are aligned; cross-tenant binding lookup fails closed when reader is configured. **Global TENANT-X** remains **OPEN**.
 
 ## Unresolved findings
 
 | ID | Class |
 |---|---|
 | P5-R2 configured→effective join | TRACKED FREEZE DEBT (P5-R2 / FRZ-TRC-11) |
-| Resume adoption tests (`test_missing_binding_on_resume_fails_closed`, `test_resume_preserves_pinned_revision_not_current_host_revision`) | ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED / PRE-EXISTING |
+| Resume adoption tests (`test_missing_binding_on_resume_fails_closed`, `test_resume_preserves_pinned_revision_not_current_host_revision`) | **PRE_EXISTING_NON_R1_REGRESSION** — see **P5-R1-RESUME-BASELINE-04**; non-blocking for R1 closure |
 
 ---
 
