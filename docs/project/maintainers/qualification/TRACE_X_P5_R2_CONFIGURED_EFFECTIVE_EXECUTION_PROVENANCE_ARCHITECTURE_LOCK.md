@@ -4,20 +4,22 @@
 
 | Field | Value |
 |---|---|
-| **Task** | `TRACE-X-P5-R2-P0` + **`TRACE-X-P5-R2-P0-R1`** + **`TRACE-X-P5-R2-P0-R1-R1`** + **`TRACE-X-P5-R2-P0-R1-R1-R1`** (configuration opportunity typing) |
+| **Task** | `TRACE-X-P5-R2-P0` + **`TRACE-X-P5-R2-P0-R1`** + **`TRACE-X-P5-R2-P0-R1-R1`** + **`TRACE-X-P5-R2-P0-R1-R1-R1`** (configuration opportunity typing) + **`TRACE-X-P5-R2-P0-R1-R1-R1-R1`** (configuration mutation risk classification ownership) |
 | **Parent** | `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
 | **P0 rejection baseline** | `982f945de67577865c1ade4ebbea519cf3a9b284` |
 | **P0-R1 START_HEAD** | `982f945de67577865c1ade4ebbea519cf3a9b284` |
 | **P0-R1-R1 START_HEAD / AUDIT_BASE** | `6b5b5f2e1fe2da8655e85173b24fd3221e65b602` (`development`) |
 | **P0-R1-R1-R1 START_HEAD** | `305ac4a0cb07e303ce2bb0b04c2c4520db35786b` (`development`) |
+| **P0-R1-R1-R1-R1 START_HEAD** | `925bcae17cbf1072297296378c9e28c8742f9c92` (`development`) |
 | **Primary FRZ** | `FRZ-TRC-11` (**OPEN** — no PASS) |
 | **Blocker** | `P5-GAP-04` — no canonical global configured→effective→`ExecutionId`→evidence chain |
 | **In-scope P0 blocker (R1-R1-R1)** | `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04` = **RESOLVED IN DESIGN (R1-R1-R1)** |
-| **Independent-audit blockers** | `R2-P0-EFFECTIVE-IDENTITY-PREBUILT-01` · `R2-P0-CONFIGURED-ADOPTION-AUTHORITY-02` = **RESOLVED IN DESIGN (R1)** · `R2-P0-CONCRETE-ADOPTION-ROOT-03` = **RESOLVED IN DESIGN (R1-R1)** · `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04` = **RESOLVED IN DESIGN (R1-R1-R1)** — pending independent audit |
+| **In-scope P0 blocker (R1-R1-R1-R1)** | `R2-P0-CONTROL-PLANE-RISK-AUTHORITY-05` = **RESOLVED IN DESIGN (R1-R1-R1-R1)** |
+| **Independent-audit blockers** | `R2-P0-EFFECTIVE-IDENTITY-PREBUILT-01` · `R2-P0-CONFIGURED-ADOPTION-AUTHORITY-02` = **RESOLVED IN DESIGN (R1)** · `R2-P0-CONCRETE-ADOPTION-ROOT-03` = **RESOLVED IN DESIGN (R1-R1)** · `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04` = **RESOLVED IN DESIGN (R1-R1-R1)** · `R2-P0-CONTROL-PLANE-RISK-AUTHORITY-05` = **RESOLVED IN DESIGN (R1-R1-R1-R1)** — pending independent audit |
 | **Production / runtime delta** | **0** (architecture + qualification design only) |
-| **Status** | **TRACE-X-P5-R2-P0-R1-R1-R1 = READY FOR AUDIT** · **TRACE-X-P5-R2-P0-R1-R1 = BLOCKED ON R1-R1-R1 INDEPENDENT AUDIT** · **TRACE-X-P5-R2-P0-R1 = BLOCKED** · **TRACE-X-P5-R2-P0 = BLOCKED** · **TRACE-X-P5-R2 = BLOCKED ON P0** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** |
+| **Status** | **TRACE-X-P5-R2-P0-R1-R1-R1-R1 = READY FOR AUDIT** · **TRACE-X-P5-R2-P0-R1-R1-R1 = BLOCKED ON R1-R1-R1-R1 INDEPENDENT AUDIT** · **TRACE-X-P5-R2-P0-R1-R1 = BLOCKED ON R1-R1-R1 INDEPENDENT AUDIT** · **TRACE-X-P5-R2-P0-R1 = BLOCKED** · **TRACE-X-P5-R2-P0 = BLOCKED** · **TRACE-X-P5-R2 = BLOCKED ON P0** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** |
 
-**Steering sources revalidated @ P0-R1-R1-R1 START_HEAD (`305ac4a0…`):** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md), [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md), [`TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md`](TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md), [`TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md`](TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md), [`INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md`](../architecture/INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md).
+**Steering sources revalidated @ P0-R1-R1-R1-R1 START_HEAD (`925bcae…`):** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md), [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md), [`TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md`](TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md), [`TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md`](TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md), [`INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md`](../architecture/INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md).
 
 **Historical evidence (revalidated, not blindly trusted):** INT-CONFIG-REAL-X-CERT `a59744517b92847f55def1db22826d17d89ee155` · TRACE-X-P5-P0 `81fd1490f18d73eaf31ec94c2b93dbb525026ba2` · TRACE-X-P5-R1 `05fd5d9b2b97f9d85a534a949d882cd47d4a54c9` · P0 draft audited/rejected @ `982f945d…` (identity + adoption authority gaps).
 
@@ -350,7 +352,7 @@ provenance pin + canonical Execution
 | Derived deterministic id (fulfillment operation + decision id) | `request_id` | unique per logical attempt | AW |
 | Exact typed opportunity read | `integration_category`, `provider_id`, `resource_scope`, `current_revision` | typed target; fail closed if missing | **Integrations** read port |
 | Exact typed opportunity read | `configuration: IntegrationConfigurationPayload` + `configuration_fingerprint` | fingerprint ≡ payload fingerprint (§1C.23) | **Integrations** read port |
-| CONFIGURE_EXISTING disposition invariant (A0 only — §1C.20) | `risk_classification: ControlPlaneMutationRisk` | deterministic narrow mapping; Governance still authorizes | AW projection |
+| Exact typed opportunity read | `risk_classification: ControlPlaneMutationRisk` | must equal `opportunity.risk_classification`; **no** AW / A0 derivation | **Integrations** (opportunity owner + mutation-risk policy) |
 | `WorkerCapabilityFulfillmentRequest.task_id` / `run_id` | `task_id` / `run_id` | optional correlation | AW |
 | recovery `discovery_correlation_id` | `correlation_ref` | optional | AW |
 
@@ -643,14 +645,71 @@ Preferred shape: Integrations service projects opportunities from **known integr
 
 Production @ `305ac4a0…`: **no** Integrations-owned Configuration Opportunity source exists.
 
-### 1C.13 Risk classification projection
+### 1C.13 Configuration mutation risk classification (locked — R1-R1-R1-R1)
 
-| Fact @ `305ac4a0…` | Disposition |
+**Normatively rejected:** `WorkerAutonomyLevel` (including `A0_KNOWN_CAPABILITY`) → `ControlPlaneMutationRisk` (including `LOW`). Autonomy class is owned by Autonomous Work capability acquisition (`A0`…`A4`); `ControlPlaneMutationRisk` is the cross-domain conservative vocabulary on `ControlPlaneMutationRequest` (`intergrax/contracts/control_plane_mutation.py`). They answer different questions and **must not** be conflated or cross-derived.
+
+| Fact @ `925bcae…` | Disposition |
 |---|---|
-| Canonical `WorkerAutonomyLevel` → `ControlPlaneMutationRisk` map in production | **Absent** |
-| `CONFIGURE_EXISTING` decision invariant | Requires `WorkerAutonomyLevel.A0_KNOWN_CAPABILITY` (`validate_acquisition_decision_invariants`) |
+| Canonical `WorkerAutonomyLevel` → `ControlPlaneMutationRisk` map in production | **Absent** — must remain absent |
+| `CONFIGURE_EXISTING` acquisition invariant | Requires `A0_KNOWN_CAPABILITY` (`validate_acquisition_decision_invariants`) — **does not** determine mutation risk |
+| Production control-plane pattern | Domain mutation owner constructs `ControlPlaneMutationRequest` with `risk_classification` → `ControlPlaneMutationAuthorizationBoundary.authorize` → Governance `PolicyAction` — boundary **evaluates** risk; it **does not** classify Integrations configuration semantics |
 
-**Locked narrow mapping (P1 contract — no new policy authority):** for `CONFIGURE_EXISTING` fulfillment only, `risk_classification = ControlPlaneMutationRisk.LOW` because disposition already restricts executable configuration to **A0 known capability**; INT-CONFIG Governance `authorize` remains authoritative. **Not** derived from parsing `configuration_ref` or provider choice.
+**Ownership lock:**
+
+```text
+configuration-mutation risk semantics → Integrations / INT-CONFIG
+permission decision               → Governance (ControlPlaneMutationAuthorizationPort)
+```
+
+Integrations classifies; Governance authorizes using that classification. **Never:** AW autonomy class → Governance risk. **Never:** Governance → configuration realization semantics.
+
+**Canonical INT-CONFIG flow (future P1 — design only):**
+
+```text
+provider configuration facts
+        ↓
+Integrations Configuration Opportunity owner
+        ↓
+ExistingCapabilityConfigurationMutationRiskPolicy  (Integrations-owned; name illustrative)
+        ↓
+ControlPlaneMutationRisk
+        ↓
+immutable ExistingCapabilityConfigurationOpportunity.risk_classification
+        ↓
+ExistingCapabilityConfigurationRealizationRequest.risk_classification  (copy only)
+        ↓
+project_control_plane_mutation_request(...)
+        ↓
+ControlPlaneMutationAuthorizationPort
+        ↓
+Governance decision
+```
+
+Autonomous Work orchestrates only: select opportunity ref → `read_exact` → carry fields — **must not** classify, override, or lower `ControlPlaneMutationRisk`; **must not** translate `A0`/`A1`/… into `LOW`/`MEDIUM`/…; **must not** call Governance risk logic.
+
+`WorkerCapabilityCandidate.risk_class` remains AW acquisition semantics only — **no** projection to `risk_classification`.
+
+**Risk policy inputs (typed only):** `ExistingCapabilityConfigurationOpportunity` or a narrow projection (`integration_category`, canonical `provider_id`, `resource_scope`, configuration type/version, pinned `current_revision`, configuration fingerprint, platform-defined typed provider/configuration risk metadata if present). **Forbidden inputs:** `WorkerAutonomyLevel`, free-form metadata, `dict[str, Any]`, provider class name, opaque `configuration_ref` parsing, reflection, arbitrary string rules.
+
+**Fail closed:** risk cannot be classified → opportunity is not executable / CONFIGURE_EXISTING cannot build a realization request. No silent `unknown → LOW` or `missing classifier → LOW`. Conceptual failures (exact enum names optional until P1): `CONFIGURATION_MUTATION_RISK_UNAVAILABLE` · `CONFIGURATION_MUTATION_RISK_AMBIGUOUS` · `CONFIGURATION_MUTATION_RISK_INVALID`.
+
+**Immutability:** one `configuration_ref` → one opportunity → one `risk_classification`; policy changes require new opportunity/ref or invalidation — no reinterpretation of historical refs.
+
+**Continuity invariant:**
+
+```text
+opportunity.risk_classification
+== realization_request.risk_classification
+== ControlPlaneMutationRequest.risk_classification
+== authorization evidence risk (digest-bound)
+```
+
+**Provider plugin boundary:** `ExistingCapabilityConfigurationOpportunityProvider` may supply provider-specific **configuration facts**; it **must not** be final authority over `ControlPlaneMutationRisk`. Provider-supplied risk hints may increase context or raise floor later; they **cannot** unilaterally lower Integrations platform classification. No “lowest risk wins” among multiple classifiers — exactly one Integrations composition owner per opportunity creation.
+
+**No second Governance engine:** Integrations mutation-risk policy outputs **only** `ControlPlaneMutationRisk`, not `ALLOW` / `DENY` / `REQUIRE_HUMAN` / `ESCALATE` / `MODIFY`.
+
+**Reuse:** single cross-domain enum `ControlPlaneMutationRisk` — do not introduce parallel `ConfigurationRisk` / `IntegrationRisk` vocabularies.
 
 ### 1C.14 Tenant continuity (opportunity seam)
 
@@ -726,7 +785,7 @@ Unit/integration tests: `tests/unit/autonomous_work/test_worker_capability_acqui
 | `configuration` | `ExistingCapabilityConfigurationOpportunity.configuration` |
 | `configuration_fingerprint` | `ExistingCapabilityConfigurationOpportunity` (≡ payload fingerprint) |
 | `current_revision` | `ExistingCapabilityConfigurationOpportunity` (pinned) |
-| `risk_classification` | §1C.13 (`ControlPlaneMutationRisk.LOW` for CONFIGURE_EXISTING/A0) |
+| `risk_classification` | `ExistingCapabilityConfigurationOpportunity.risk_classification` (Integrations-owned; §1C.13) |
 | `task_id` / `run_id` | `WorkerCapabilityFulfillmentRequest` |
 | `correlation_ref` | Recovery provenance (`discovery_correlation_id` family) |
 
@@ -801,7 +860,7 @@ ExistingCapabilityConfigurationRealizationRequest
 | 14 | **Configured binding ≠ effective identity?** **YES** |
 | 15 | **Stale refs silently refresh?** **NO** |
 | 16 | **Provider pluginability preserved?** **YES** (§1C.11) |
-| 17 | **Risk mapping new policy semantics?** **NO** (§1C.13) |
+| 17 | **AW derives mutation risk from A0?** **NO** — Integrations opportunity only (§1C.13) |
 | 18 | **Tenant continuity end-to-end?** **YES** (§1C.14) |
 
 ### 1C.25 Implementation sequencing (post R1-R1-R1 audit)
@@ -825,6 +884,113 @@ CERT
 ```
 
 **Do not enter P1 in R1-R1-R1 task.**
+
+### 1C.26 Closed-world `ControlPlaneMutationRequest` producer inventory (@ `925bcae…`)
+
+Production request builders (tests excluded). **Governance classifier?** = whether the shared boundary derives `risk_classification` from domain semantics (expected **NO** everywhere).
+
+| Domain | Mutation (representative) | Risk source | Constant / derived | Owner | Governance classifier? |
+|---|---|---|---|---|---|
+| Task control | cancel / resume / autonomy (`intergrax/applications/_shared/task_control_governance.py`) | Domain builder | `MEDIUM` (constant per mutation builder) | Applications / task control | **NO** |
+| ECP capacity | scale up/down (`intergrax/runtime/capacity/control_plane_governance.py`) | Domain builder | `MEDIUM` (constant) | Runtime / capacity | **NO** |
+| Adaptive (AHI) | control-plane mutations (`intergrax/runtime/adaptive/control_plane_governance.py`) | Domain builder | `MEDIUM` / `HIGH` (per mutation kind) | Runtime / adaptive | **NO** |
+| Integration catalog | hot reload (`intergrax/applications/_shared/catalog_hot_reload_governance.py`) | Domain builder | `HIGH` (constant) | Applications / catalog | **NO** |
+| Vector index admin | prepare (`intergrax/applications/_shared/vector_index_admin_governance.py`) | Domain builder | `HIGH` (constant) | Applications / vector index | **NO** |
+| Agent Distribution | admin mutations (`intergrax/agent_distribution/control_plane_governance.py`) | Domain builder | `HIGH` (constant per builder) | Agent Distribution | **NO** |
+| INT-CONFIG | `integration_configuration.realize.v1` (`project_control_plane_mutation_request` in `intergrax/integrations/contracts/existing_capability_configuration.py`) | Realization request field | **Derived @ P1** from `ExistingCapabilityConfigurationOpportunity.risk_classification` (Integrations policy); today callers/tests supply typed request | **Integrations** (classification owner) | **NO** |
+
+Evaluation path (all domains): `ControlPlaneMutationAuthorizationBoundary` (`intergrax/runtime/governance/control_plane_mutation_authorization.py`) + `ControlPlaneMutationPolicyEvaluator` (`intergrax/runtime/governance/control_plane_mutation_policy.py`) consume `request.risk_classification` — they do **not** invent Integrations configuration-domain risk.
+
+### 1C.27 Integrations mutation-risk policy vs Governance policy
+
+| Policy | Owner | Output |
+|---|---|---|
+| **Integrations mutation-risk policy** (`ExistingCapabilityConfigurationMutationRiskPolicy` — future) | Integrations / INT-CONFIG | `ControlPlaneMutationRisk` for the typed configuration mutation candidate |
+| **Governance control-plane policy** | Governance | `PolicyAction` for principal / tenant / resource / revisions / **supplied** risk / bundle |
+
+Complementary authorities — not duplicate engines.
+
+### 1C.28 Tenant Isolation Audit (R1-R1-R1-R1)
+
+**Verdict: PASS** (local invariant design; global `FRZ-TEN-*` remains **OPEN**).
+
+```text
+opportunity.tenant_id
+== read_exact tenant argument
+== risk-classification input tenant scope
+== ExistingCapabilityConfigurationRealizationRequest.tenant_id
+== ControlPlaneMutationRequest.principal.tenant_id
+== authorization evidence.tenant_id
+== ConfiguredCapabilityBinding.tenant_id
+```
+
+Risk classification **must not** perform cross-tenant lookup or reuse opportunity from tenant A for tenant B.
+
+### 1C.29 Governance audit (R1-R1-R1-R1)
+
+| Proposition | Locked |
+|---|---|
+| `risk_classification` ≠ permission | **YES** — risk is policy **input**; `PolicyAction` is separate |
+| `CONFIGURE_EXISTING` ≠ permission | **YES** — acquisition disposition only |
+| Configuration Opportunity ≠ permission | **YES** — input truth only |
+| Authorization invocation owner | **`ControlPlaneMutationAuthorizationPort` / boundary only** |
+
+### 1C.30 Before / after ownership graph (risk seam)
+
+**Before (rejected @ R1-R1-R1-R1 audit):**
+
+```text
+CONFIGURE_EXISTING + A0_KNOWN_CAPABILITY
+        → (implied) ControlPlaneMutationRisk.LOW
+        → realization request
+```
+
+**After (locked):**
+
+```text
+ExistingCapabilityConfigurationOpportunity
+        (risk_classification from Integrations mutation-risk policy)
+        ↓
+AW: opaque ref + orchestration only
+        ↓
+ExistingCapabilityConfigurationRealizationRequest.risk_classification  (copy)
+        ↓
+project_control_plane_mutation_request
+        ↓
+Governance authorize
+```
+
+### 1C.31 P0-R1-R1-R1-R1 exit questionnaire (locked)
+
+| # | Answer |
+|---|---|
+| 1 | **Who owns configuration mutation risk classification?** Integrations / INT-CONFIG |
+| 2 | **Does AW classify it?** **NO** |
+| 3 | **Does `A0 → LOW` remain?** **NO** |
+| 4 | **Does Governance authorize using the classification?** **YES** |
+| 5 | **Must Governance classify Integrations domain semantics?** **NO** (evidence: §1C.26) |
+| 6 | **Where is final `ControlPlaneMutationRisk` stored before realization?** On immutable `ExistingCapabilityConfigurationOpportunity.risk_classification` |
+| 7 | **Who creates it?** Integrations opportunity owner via `ExistingCapabilityConfigurationMutationRiskPolicy` |
+| 8 | **Can provider plugin lower it directly?** **NO** |
+| 9 | **Undetermined risk?** Fail closed — no realization request |
+| 10 | **Immutable per opportunity ref?** **YES** |
+| 11 | **Same risk through realization → control-plane → evidence?** **YES** (§1C.13 continuity) |
+| 12 | **Exactly one classification owner?** **YES** — Integrations composition owner |
+| 13 | **Second Governance engine for classification?** **NO** |
+| 14 | **Second provider/configuration registry for risk?** **NO** |
+| 15 | **Tenant continuity explicit?** **YES** (§1C.28) |
+| 16 | **Global control-plane risk architecture unchanged?** **YES** — reuse `ControlPlaneMutationRisk`; other domains unchanged |
+
+### 1C.32 P0-R1-R1-R1-R1 STOP disposition
+
+**No STOP — ARCHITECTURE DECISION REQUIRED** for locked scope. Production @ `925bcae…` matches domain-supplied risk + Governance evaluation; INT-CONFIG opportunity risk field + Integrations policy are **P1** only.
+
+### 1C.33 Future P1 contracts (shape only — no implementation in R1-R1-R1-R1)
+
+- `ExistingCapabilityConfigurationMutationRiskPolicy` — typed opportunity/mutation facts → `ControlPlaneMutationRisk`
+- `ExistingCapabilityConfigurationOpportunity.risk_classification: ControlPlaneMutationRisk` — immutable, Integrations-produced
+
+Placement follows existing Integrations contracts organization (`intergrax/integrations/contracts/…`).
 
 ---
 
@@ -1288,12 +1454,20 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 
 ---
 
-## 22. Enterprise audit matrix (@ P0-R1-R1-R1 lock)
+## 22. Enterprise audit matrix (@ P0-R1-R1-R1-R1 lock)
 
 | Dimension | Grade | Notes |
 |---|---|---|
 | Boundaries | **PASS** | Tier rules preserved; reconstructor stays derived |
 | Semantic ownership | **PASS** | §8 + §1A.4 + §1C.4 |
+| Configuration mutation risk ownership | **PASS** | Integrations classifies; Governance authorizes (§1C.13, §1C.26–§1C.27) |
+| Governance ownership (permission) | **PASS** | `ControlPlaneMutationAuthorizationBoundary` only; no domain risk derivation |
+| AW boundary (no risk classification) | **PASS** | §1C.13; `risk_class` ≠ `risk_classification` |
+| Provider/plugin risk boundary | **PASS** | Facts only; no plugin-final LOW (§1C.13) |
+| Fail-closed classification | **PASS** | No silent LOW; undetermined → no realize |
+| Immutable opportunity risk | **PASS** | §1C.13 immutability + continuity invariant |
+| Policy/evidence continuity | **PASS** | opportunity → request → mutation → evidence |
+| Exactly-one risk classifier | **PASS** | Integrations composition owner |
 | Configuration opportunity ownership | **PASS** | Integrations-only typed opportunity + read port (§1C) |
 | Catalog ownership | **PASS** | No second registry; reuse catalog identities (§1C.8) |
 | Discovery ownership | **PASS** | Integrations source → AW projection; mapping adapter non-production (§1C.17) |
@@ -1341,7 +1515,7 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 
 ---
 
-## 24. Current-HEAD test evidence (P0-R1-R1-R1)
+## 24. Current-HEAD test evidence (P0-R1-R1-R1-R1)
 
 Commands (sequential `-p no:xdist`):
 
@@ -1354,26 +1528,20 @@ uv run pytest \
 uv run pytest tests/qualification/existing_capability_configuration -p no:xdist -q
 
 uv run pytest \
-  tests/unit/autonomous_work/test_worker_capability_acquisition.py \
-  tests/unit/autonomous_work/test_capability_catalog_discovery_adapters.py \
-  -p no:xdist -q
-
-uv run pytest \
-  tests/unit/integrations/test_existing_capability_configuration_contracts.py \
-  tests/unit/integrations/test_existing_capability_configuration_service.py \
-  tests/unit/integrations/providers/relational_store/sqlite/test_configuration_realization.py \
+  tests/unit/runtime/governance/test_control_plane_mutation_authorization.py \
+  tests/unit/contracts/test_control_plane_mutation_contract.py \
   -p no:xdist -q
 ```
 
-@ P0-R1-R1-R1 run (`305ac4a0…` + docs commit pending):
+@ P0-R1-R1-R1-R1 run (`925bcae…` + docs commit pending):
 
 ```text
-# trace P5 P0+R1 gates: 134 passed (202.95s)
-# INT-CONFIG qualification: 58 passed
-# AW discovery + INT-CONFIG unit batch: 119 passed
+# trace P5 P0+R1 gates: 134 passed (306.97s)
+# INT-CONFIG qualification: 58 passed (1.19s)
+# control-plane authorization + contract: 27 passed (0.33s)
 ```
 
-Logs: `.tmp/session/trace-x-p5-r2-p0-r1-r1-r1/pytest-trace.log`, `pytest-int-config.log`, `pytest-aw-int-config-unit.log`.
+Logs: `.tmp/session/trace-x-p5-r2-p0-r1-r1-r1-r1/pytest-trace.log`, `pytest-int-config.log`, `pytest-governance.log`.
 
 **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED:** `tests/unit/integrations/test_registry.py` — fake factory drift (`dict` vs `PlatformIntegrationContract`); not in mandatory batch. `CapabilityQualificationEvidence` fixture drift in AW fulfillment e2e/hook suites — **not** expanded in R1-R1-R1 batch; classify separately unless production impact proven.
 
@@ -1383,7 +1551,8 @@ Logs: `.tmp/session/trace-x-p5-r2-p0-r1-r1-r1/pytest-trace.log`, `pytest-int-con
 
 | Item | Status |
 |---|---|
-| TRACE-X-P5-R2-P0-R1-R1-R1 | **READY FOR AUDIT** |
+| TRACE-X-P5-R2-P0-R1-R1-R1-R1 | **READY FOR AUDIT** |
+| TRACE-X-P5-R2-P0-R1-R1-R1 | **BLOCKED ON R1-R1-R1-R1 INDEPENDENT AUDIT** |
 | TRACE-X-P5-R2-P0-R1-R1 | **BLOCKED ON R1-R1-R1 INDEPENDENT AUDIT** |
 | TRACE-X-P5-R2-P0-R1 | **BLOCKED** |
 | TRACE-X-P5-R2-P0 | **BLOCKED** |
