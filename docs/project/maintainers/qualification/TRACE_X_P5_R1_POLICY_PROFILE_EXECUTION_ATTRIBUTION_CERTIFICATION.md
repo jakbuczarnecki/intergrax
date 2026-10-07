@@ -24,9 +24,9 @@
 | Q6 implementation SHA | `41b158ccd2a80453269a7026d3d8e12a11c0088d` |
 | Q7 FINAL_COMMIT | `306ec1d9661a9d979028b34ac23b7ac1fd98ecd1` |
 | Q7 implementation SHA | `5bb6699948b7281e95e03cc3521c568db7899ab5` |
-| Q8 FINAL_COMMIT | `f6c93b4f9429ff51acd4f020b82163d4a112a074` |
+| Q8 FINAL_COMMIT | `bfee5b236633cf6fa437573960279da598c93e7c` |
 | Q8 implementation SHA | `8b9cdbcd5281176bb19528e7c9789f2b2e7d4063` |
-| FINAL_COMMIT | _(see git push output)_ |
+| FINAL_COMMIT | `bfee5b236633cf6fa437573960279da598c93e7c` |
 | TRACE-X-P5-R1-R1-Q1 | **READY FOR INDEPENDENT RE-AUDIT** (qualification remediation; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q2 | **READY FOR INDEPENDENT RE-AUDIT** (derived resume comparison; not CLOSED) |
 | TRACE-X-P5-R1-R1-Q3 | **READY FOR INDEPENDENT RE-AUDIT** (scoped import-provenance closure; not CLOSED) |
