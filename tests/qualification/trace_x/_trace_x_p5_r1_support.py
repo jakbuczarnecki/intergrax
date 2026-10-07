@@ -17,6 +17,12 @@ TRACE_X_P5_R1_AUDITED_HEAD: Final[str] = "65f7e1ef4832d99a19be7953734a42d5bd5cbb
 TRACE_X_P5_R1_R1_AUDITED_SHA: Final[str] = "a452de39a721cd357be3ba5ecd0c3a6d41b630bd"
 TRACE_X_P5_R1_R1_Q1_START_HEAD: Final[str] = TRACE_X_P5_R1_R1_AUDITED_SHA
 TRACE_X_P5_R1_R1_Q2_START_HEAD: Final[str] = "538af9ef51a6ca483f607988481ef2794deb87b9"
+TRACE_X_P5_R1_R1_Q3_START_HEAD: Final[str] = "c51d04b7849d44d1adee78ad6d4e7eedd8b5ab68"
+TRACE_X_P5_R1_R1_Q4_START_HEAD: Final[str] = "ea1e4947fe66c120bb502885dc912e5f98698339"
+TRACE_X_P5_R1_R1_Q5_START_HEAD: Final[str] = "274c5ff40e0c4f30764d13be65a00e3b463ec5e4"
+TRACE_X_P5_R1_R1_Q6_START_HEAD: Final[str] = "4aba36e50a474a0d6915a60f73f5a3b31e6f71c2"
+TRACE_X_P5_R1_R1_Q7_START_HEAD: Final[str] = "5afc518a78fe5777d5f67934c1ecbd1ec6740e0a"
+TRACE_X_P5_R1_R1_Q8_START_HEAD: Final[str] = "4bd430ae660dbc9f826c3b5ede0b92aefea36b07"
 
 _NEUTRAL_REVISION_REF_PATH = (
     repo_root() / "intergrax" / "contracts" / "effective_profile_revision_provenance_ref.py"

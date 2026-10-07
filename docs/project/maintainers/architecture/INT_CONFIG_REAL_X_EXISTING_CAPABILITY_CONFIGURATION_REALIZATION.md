@@ -439,7 +439,7 @@ realization strategy may run
 | `resource_id` | exact target provider/integration identity |
 | `current_revision` | actual current configured state/revision for target scope |
 | `target_revision` | requested configuration identity/fingerprint |
-| `risk_classification` | supplied/derived per Governance-owned policy contract |
+| `risk_classification` | supplied by **Integrations / INT-CONFIG** mutation-domain classification (`ControlPlaneMutationRisk`); Governance **consumes** it for authorization — Governance does **not** own configuration-domain risk semantics |
 | `approval_evidence_ref` | optional provenance only |
 | `task_id` / `run_id` | preserved when execution/work context exists |
 
