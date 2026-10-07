@@ -2,7 +2,7 @@
 
 **Parent:** TRACE-X — End-to-End Traceability & Evidence Certification
 
-**Stage:** TRACE-X-P5-P0-R1-R1 (qualification sentinel package isolation — **production delta = 0**)
+**Stage:** TRACE-X-P5-P0-R1-R1-Q1 (exact-SHA provenance reconciliation — **production delta = 0** · docs-only)
 
 **P0 START_HEAD:** `0102eeabc6d1d59efbecff52737491c96b1d3f0c`
 
@@ -10,11 +10,11 @@
 
 **R1-R1 START_HEAD:** `a9fd88da1d5efa3fc61d668289c13f78e4d52b1d`
 
-**R1-R1 final commit:** `02c351ad868db731f933c8596964fc51b276f7cf`
+**R1-R1 accepted implementation/evidence candidate (baseline — do not supersede):** `81fd1490f18d73eaf31ec94c2b93dbb525026ba2`
 
 **Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p5_support.py` · discovery: `tests/qualification/trace_x/_trace_x_p5_discovery.py`
 
-**Status:** TRACE-X-P5-P0-R1-R1 = **READY FOR AUDIT** · TRACE-X-P5-P0-R1 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5-P0 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5 = **BLOCKED** · **FRZ-TRC-07 / 08 / 11** remain **OPEN** (Cursor must not mark P5-P0 CLOSED)
+**Status:** TRACE-X-P5-P0-R1-R1-Q1 = **READY FOR AUDIT** · TRACE-X-P5-P0-R1-R1 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5-P0-R1 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5-P0 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5 = **BLOCKED** · **FRZ-TRC-07 / 08 / 11** remain **OPEN** (Cursor must not mark P5-P0 CLOSED)
 
 ---
 
@@ -165,7 +165,7 @@ configuration payload (configuration_type/version/fingerprint)
 | P5-GAP-04 | IN-SCOPE BLOCKER | No global config fingerprint → execution evidence chain | TRACE-X-P5-R2 |
 | P5-GAP-05 | TRACKED FREEZE DEBT | TXP1R1-Q02 / TXP1R1-Q23 | — |
 
-**Recommendation:** **TRACE-X-P5 = BLOCKED** for independent closure until children remediate blockers; **TRACE-X-P5-P0-R1-R1 = READY FOR AUDIT**; **TRACE-X-P5-P0-R1 / P5-P0 = READY FOR INDEPENDENT CLOSURE REVIEW** (inventory only — FRZ criteria still OPEN).
+**Recommendation:** **TRACE-X-P5 = BLOCKED** for independent closure until children remediate blockers; **TRACE-X-P5-P0-R1-R1-Q1 = READY FOR AUDIT**; **TRACE-X-P5-P0-R1-R1 / P5-P0-R1 / P5-P0 = READY FOR INDEPENDENT CLOSURE REVIEW** (inventory only — FRZ criteria still OPEN).
 
 ---
 
