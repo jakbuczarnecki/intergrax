@@ -2,21 +2,25 @@
 
 **Parent:** TRACE-X — End-to-End Traceability & Evidence Certification
 
-**Stage:** TRACE-X-P5-P0-R1-R1-Q1 (exact-SHA provenance reconciliation — **production delta = 0** · docs-only)
+**Stage:** TRACE-X-P5-P0 — **CLOSED / independently accepted** (closure bookkeeping — **production delta = 0** · docs-only)
 
-**P0 START_HEAD:** `0102eeabc6d1d59efbecff52737491c96b1d3f0c`
+**P0 START_HEAD:** `0102eeabc6d1d59efbecff52737491c96b1d3f0c` (original P5-P0 entry — **not** the accepted qualification/code evidence baseline)
 
-**R1 START_HEAD:** `9d48ca424e025888f7ac8ea61ed463f4284a0d29`
+**Initial P5-P0 implementation:** `9d48ca424e025888f7ac8ea61ed463f4284a0d29`
+
+**R1 START_HEAD:** `a9fd88da1d5efa3fc61d668289c13f78e4d52b1d`
 
 **R1-R1 START_HEAD:** `a9fd88da1d5efa3fc61d668289c13f78e4d52b1d`
 
-**R1-R1 accepted implementation/evidence candidate (baseline — do not supersede):** `81fd1490f18d73eaf31ec94c2b93dbb525026ba2`
+**Accepted P5-P0 evidence/code baseline:** `81fd1490f18d73eaf31ec94c2b93dbb525026ba2`
 
-**TRACE-X-P5-P0-R1-R1-Q1 bookkeeping/provenance reconciliation:** `c60b8e3564d7cfed9d17596ee22d141175bd747d` (docs-only; **not** the R1-R1 implementation/evidence baseline)
+**TRACE-X-P5-P0-R1-R1-Q1 bookkeeping/provenance reconciliation:** `c60b8e3564d7cfed9d17596ee22d141175bd747d` (docs-only; **not** the qualification/code baseline)
+
+**Post-Q1 docs-only tip (bookkeeping):** `c7412d94d510a7cd23aaa65c2e0ae9823db2a2f0` (docs-only; **not** the qualification/code baseline)
 
 **Mechanical SSOT:** `tests/qualification/trace_x/_trace_x_p5_support.py` · discovery: `tests/qualification/trace_x/_trace_x_p5_discovery.py`
 
-**Status:** TRACE-X-P5-P0-R1-R1-Q1 = **READY FOR AUDIT** · TRACE-X-P5-P0-R1-R1 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5-P0-R1 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5-P0 = **READY FOR INDEPENDENT CLOSURE REVIEW** · TRACE-X-P5 = **BLOCKED** · **FRZ-TRC-07 / 08 / 11** remain **OPEN** (Cursor must not mark P5-P0 CLOSED)
+**Status:** TRACE-X-P5-P0-R1-R1-Q1 = **CLOSED / independently accepted** · TRACE-X-P5-P0-R1-R1 = **CLOSED / independently accepted** · TRACE-X-P5-P0-R1 = **CLOSED / independently accepted** · TRACE-X-P5-P0 = **CLOSED / independently accepted** @ `81fd1490f18d73eaf31ec94c2b93dbb525026ba2` · TRACE-X-P5 = **CURRENT / BLOCKED** · **TRACE-X-P5-R1** = **NEXT / REQUIRED / NOT ENTERED** · **TRACE-X-P5-R2** = **REQUIRED / NOT ENTERED** · **FRZ-TRC-07 / 08 / 11** remain **OPEN**
 
 ---
 
@@ -143,6 +147,15 @@ configuration payload (configuration_type/version/fingerprint)
 | Profile pinning tenant | pinning store keyed by `(tenant_id, execution_id)` | cross-tenant read returns None (TXP5P0-Q11) |
 | Policy / inspection | governance read adapters enforce scope tenant + task/run/attempt/execution | fail-closed on mismatch |
 
+```text
+tenant scope applicable: YES
+runtime tenant behavior changed: NO
+local P5-P0 tenant evidence: PASS
+global TENANT-X closed: NO
+new FRZ-TEN PASS: 0
+result: PASS — LOCAL P5-P0 SCOPE
+```
+
 **Global FRZ-TEN:** not claimed.
 
 ---
@@ -167,7 +180,7 @@ configuration payload (configuration_type/version/fingerprint)
 | P5-GAP-04 | IN-SCOPE BLOCKER | No global config fingerprint → execution evidence chain | TRACE-X-P5-R2 |
 | P5-GAP-05 | TRACKED FREEZE DEBT | TXP1R1-Q02 / TXP1R1-Q23 | — |
 
-**Recommendation:** **TRACE-X-P5 = BLOCKED** for independent closure until children remediate blockers; **TRACE-X-P5-P0-R1-R1-Q1 = READY FOR AUDIT**; **TRACE-X-P5-P0-R1-R1 / P5-P0-R1 / P5-P0 = READY FOR INDEPENDENT CLOSURE REVIEW** (inventory only — FRZ criteria still OPEN).
+**Recommendation:** **TRACE-X-P5 = CURRENT / BLOCKED** until **TRACE-X-P5-R1** / **TRACE-X-P5-R2** remediate runtime blockers; **TRACE-X-P5-P0** independently accepted (inventory/discovery baseline only — **FRZ-TRC-07 / 08 / 11** remain **OPEN**).
 
 ---
 
@@ -179,13 +192,31 @@ Negative sensitivity: qualification fixture sentinels TXP5P0-Q06..Q08 (fail pari
 
 ---
 
-## 10. Tests (@ P5-P0 implementation)
+## 10. Tests
 
 ```text
 uv run pytest tests/qualification/trace_x/test_trace_x_p5_p0*.py -p no:xdist -q
 ```
 
-**Result:** 41 passed @ R1 implementation (P5 gates + P0-R1 soundness regression).
+**Historical (R1 implementation):** 41 passed — P5 gates + P0-R1 soundness regression @ R1 evidence chain (not overwritten).
+
+**Latest accepted post-R1-R1 regression (Cursor-reported; not re-audited as independent re-execution in this closure):** P5-P0 + P0-R1 combined — **66 passed**, `-p no:xdist`.
+
+---
+
+## 10.1 Qualification properties proved (@ accepted baseline `81fd1490…`)
+
+- registry-independent structural AST discovery;
+- classification registry independent from discovery;
+- unknown relevant production surface → fail;
+- orphan registry row → fail;
+- duplicate registry key → fail;
+- source-level negative sentinels (qualification fixtures);
+- rename sensitivity; registry-removal sensitivity;
+- qualification fixtures outside distributable `intergrax` package; production imports of fixtures = 0;
+- durable DocumentStore/KV profile revision and execution-pinning stores in production inventory;
+- typed explicit candidate classifications (`DiscoveryCandidateDisposition`);
+- heuristic provenance joins = 0.
 
 ---
 
