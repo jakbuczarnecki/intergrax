@@ -99,6 +99,18 @@ _CONFIGURATION_DISCOVERY_CLASSIFICATIONS: Final[tuple[ClassifiedDiscoveryCandida
         DiscoveryCandidateDisposition.NOT_PROVENANCE,
         "Scoped adaptation identity — not configured capability provenance",
     ),
+    ClassifiedDiscoveryCandidate(
+        "intergrax/integrations/contracts/existing_capability_configuration_opportunity.py",
+        "ExistingCapabilityConfigurationOpportunityFacts",
+        DiscoveryCandidateDisposition.NOT_PROVENANCE,
+        "Configuration opportunity facts — pre-realization discovery, not provenance slice",
+    ),
+    ClassifiedDiscoveryCandidate(
+        "intergrax/integrations/contracts/existing_capability_configuration_opportunity.py",
+        "ExistingCapabilityConfigurationOpportunity",
+        DiscoveryCandidateDisposition.NOT_PROVENANCE,
+        "Configuration opportunity DTO — could-be-realized, not execution provenance",
+    ),
 )
 
 
@@ -531,6 +543,15 @@ CONFIGURATION_PROVENANCE_SURFACE_REGISTRY: Final[
         "Integrations strategy",
         "ConfiguredCapabilityBinding",
         "strategy-emitted configured binding",
+        "test_txp5p0_q04_config_discovery_registry_parity",
+    ),
+    RegisteredConfigurationProvenanceSurface(
+        "intergrax/contracts/execution_integration_configuration_provenance.py",
+        "ConfiguredIntegrationProvenanceSlice",
+        ConfigurationProvenanceSurfaceKind.CONTRACT_DEFINITION,
+        "Neutral execution integration configuration provenance (TRACE-X-P5-R2-P1)",
+        "ConfiguredIntegrationProvenanceSlice",
+        "configured fingerprint projection — not effective provider proof",
         "test_txp5p0_q04_config_discovery_registry_parity",
     ),
 )
