@@ -4,15 +4,16 @@
 
 | Field | Value |
 |---|---|
-| **Task** | `TRACE-X-P5-R2-P0` + **`TRACE-X-P5-R2-P0-R1`** (normative reconciliation) |
+| **Task** | `TRACE-X-P5-R2-P0` + **`TRACE-X-P5-R2-P0-R1`** + **`TRACE-X-P5-R2-P0-R1-R1`** (concrete adoption root) |
 | **Parent** | `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
 | **P0 rejection baseline** | `982f945de67577865c1ade4ebbea519cf3a9b284` |
 | **P0-R1 START_HEAD** | `982f945de67577865c1ade4ebbea519cf3a9b284` |
+| **P0-R1-R1 START_HEAD / AUDIT_BASE** | `6b5b5f2e1fe2da8655e85173b24fd3221e65b602` (`development`) |
 | **Primary FRZ** | `FRZ-TRC-11` (**OPEN** — no PASS) |
 | **Blocker** | `P5-GAP-04` — no canonical global configured→effective→`ExecutionId`→evidence chain |
-| **Independent-audit blockers addressed in R1** | `R2-P0-EFFECTIVE-IDENTITY-PREBUILT-01` · `R2-P0-CONFIGURED-ADOPTION-AUTHORITY-02` |
+| **Independent-audit blockers** | `R2-P0-EFFECTIVE-IDENTITY-PREBUILT-01` · `R2-P0-CONFIGURED-ADOPTION-AUTHORITY-02` = **RESOLVED IN DESIGN (R1)** · `R2-P0-CONCRETE-ADOPTION-ROOT-03` = **RESOLVED IN DESIGN (R1-R1)** |
 | **Production / runtime delta** | **0** (architecture + qualification design only) |
-| **Status** | **TRACE-X-P5-R2-P0-R1 = READY FOR AUDIT** · **TRACE-X-P5-R2-P0 = BLOCKED ON R1 INDEPENDENT AUDIT** · **TRACE-X-P5-R2 = BLOCKED ON P0** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** |
+| **Status** | **TRACE-X-P5-R2-P0-R1-R1 = READY FOR AUDIT** · **TRACE-X-P5-R2-P0-R1 = BLOCKED ON R1-R1 INDEPENDENT AUDIT** · **TRACE-X-P5-R2-P0 = BLOCKED** · **TRACE-X-P5-R2 = BLOCKED ON P0** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** |
 
 **Steering sources revalidated @ P0-R1 START_HEAD:** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md), [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md), [`TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md`](TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md), [`TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md`](TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md), [`INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md`](../architecture/INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md).
 
@@ -216,23 +217,280 @@ CERT
 
 ---
 
-## 2. Before graph (@ P0-R1 START_HEAD)
+## 1B. P0-R1-R1 — concrete CONFIGURE_EXISTING adoption root (normative)
+
+**Blocker `R2-P0-CONCRETE-ADOPTION-ROOT-03`:** at `6b5b5f2e…` there is no production path from `CapabilityAcquisitionDisposition.CONFIGURE_EXISTING` through INT-CONFIG realization to execution-bound effective resolution. **Resolution:** lock exactly one future orchestration root under Autonomous Work fulfillment (parallel to DIRECT_REUSE), wired from Applications composition only.
+
+**P0-R1-R1 normative override:** where §1A.4 implied Applications as the **sequencing** owner for CONFIGURE_EXISTING, **§1B wins for orchestration**: Applications **wires** ports; **Autonomous Work fulfillment** sequences CONFIGURE_EXISTING after an acquisition decision is already made. §1A.3–§1A.6 (identity, adoption input, provenance) remain authoritative.
+
+### 1B.1 Closed-world inventory — CONFIGURE_EXISTING producers (@ `6b5b5f2e…`)
+
+| Surface | Path | Role |
+|---|---|---|
+| **Decision producer (sole production)** | `WorkerCapabilityAcquisitionDecisionService.decide` | `intergrax/autonomous_work/capability_acquisition_service.py` |
+| **Disposition rule** | same | `CONFIGURE_EXISTING` iff selected `WorkerCapabilityCandidateKind.EXISTING_CONFIGURATION` (A0) |
+| **Candidate kind producer** | `WorkerConfigurationOpportunityDiscoveryPort.discover` | Port only; production adapters are host-composed (`MappingConfigurationOpportunityDiscoveryAdapter` in tests/scaffold patterns) |
+| **Contract invariants** | `validate_acquisition_decision_invariants` | `intergrax/contracts/autonomous_work/capability_acquisition.py` |
+
+**Producer inputs (typed):** `WorkerCapabilityAcquisitionRequest` (need, recovery correlation, profile ref); discovery layers supply `WorkerCapabilityCandidate` (`capability_ref`, optional `configuration_ref`, operations, evidence).
+
+**Tenant:** acquisition request need / fulfillment — **not** on candidate; fulfillment uses `WorkerCapabilityFulfillmentRequest.tenant_id`.
+
+**Recovery correlation:** `recovery_decision_id`, `discovery_correlation_id` via recovery provenance (fulfillment path).
+
+**No other production module emits `CONFIGURE_EXISTING`.**
+
+### 1B.2 Closed-world inventory — CONFIGURE_EXISTING consumers (@ `6b5b5f2e…`)
+
+| Search target | Production consumer branching on `CONFIGURE_EXISTING` |
+|---|---|
+| `WorkerCapabilityAcquisitionResult` / `WorkerCapabilityAcquisitionDecision` | **None** in fulfillment, recovery, or execution modules |
+| `WorkerCapabilityFulfillmentCoordinator` | Routes `DIRECT_REUSE` / `REALIZATION_REQUIRED` (UCA) / `QUALIFICATION_COMPLETE` only — **no** CONFIGURE_EXISTING branch |
+| `WorkerCapabilityRecoveryCoordinator` | Canonical recovery never maps CONFIGURE_EXISTING to a phase |
+| `WorkerCapabilityDirectReuseFulfillmentService` | DIRECT_REUSE only |
+
+**Confirmed:** no complete realization→execution path exists today. **No alternate canonical path to reuse** beyond the locked future graph below.
+
+### 1B.3 INT-CONFIG public entry (@ `6b5b5f2e…`)
+
+| Artifact | Path | Production callers |
+|---|---|---|
+| `ExistingCapabilityConfigurationRealizationPort` | `intergrax/integrations/contracts/existing_capability_configuration.py` | **0** |
+| `ExistingCapabilityConfigurationRealizationFacade` | `intergrax/integrations/existing_capability_configuration_facade.py` | **0** (tests + qualification only) |
+| Pure core | `ExistingCapabilityConfigurationRealizationService` | internal to facade |
+
+Flow today: **INT-CONFIG realization → `ConfiguredCapabilityBinding` → STOP** (unchanged from §4.3).
+
+### 1B.4 Fulfillment / execution precedents
+
+| Precedent | Path | Reuse for CONFIGURE_EXISTING |
+|---|---|---|
+| **DIRECT_REUSE** | `WorkerCapabilityDirectReuseFulfillmentService` | **Structural only** — host-available binding → `WorkerHostAvailableCapabilityExecutionPort` → Execution; **not** semantic owner |
+| **Generic realization** | `WorkerCapabilityFulfillmentCoordinator._fulfill_realization_required` | **UCA** `CapabilityRealizationCoordinatorPort` — **must not** absorb INT-CONFIG (semantic owner stays Integrations) |
+| **Qualified execution** | `WorkerQualifiedCapabilityResumeCoordinator` + governed dispatch | **Post-adoption** execution handoff target (same Execution authority as today) |
+
+**Host-available flow (locked precedent, do not duplicate):**
 
 ```text
-Governance authorize
-        │
-        ▼
-INT-CONFIG realize_admitted
-        │
-        ▼
-ConfiguredCapabilityBinding  ──X──►  (no production consumer)
+recovery / DIRECT_REUSE
+      → HostAvailableCapabilityBindingPort
+      → typed execution target
+      → WorkerHostAvailableCapabilityExecutionPort
+      → canonical Execution
+```
+
+### 1B.5 Host / application composition roots (@ `6b5b5f2e…`)
+
+| Root | Path | Classification |
+|---|---|---|
+| `build_harness_host_runtime` | `intergrax/applications/_shared/harness_host_runtime.py` | `STATIC_HOST_COMPOSITION` — may wire ports; **not** CONFIGURE_EXISTING adoption owner |
+| `build_environment_host_task_execution` | runtime execution composition | `EXECUTION_TIME_COMPOSITION` — Execution admission; **not** INT-CONFIG orchestration owner |
+| `compose_application_host_orchestration_session` / scenario baselines | applications shared | `STATIC_HOST_COMPOSITION` / wiring |
+| `build_worker_recovery_governed_fulfillment_wiring` | `intergrax/autonomous_work/worker_recovery_governed_fulfillment_composition.py` | **Sanctioned EXECUTION_TIME_COMPOSITION** for worker recovery fulfillment — inject future configured-fulfillment port + INT-CONFIG facade here (wiring only) |
+
+**Forbidden:** adding `ConfiguredCapabilityBinding` to `build_harness_host_runtime` as the primary CONFIGURE_EXISTING activation mechanism.
+
+### 1B.6 Exactly-one orchestration owner (R2 v1)
+
+```text
+CONFIGURE_EXISTING sequencing
+→ Autonomous Work fulfillment layer (future narrow service under WorkerCapabilityFulfillmentCoordinator)
+```
+
+**Future production components (names illustrative; ownership normative):**
+
+| Step | Owner module (future) |
+|---|---|
+| 1. Consume acquisition decision with `CONFIGURE_EXISTING` | `WorkerCapabilityFulfillmentCoordinator` (new branch — **not** DIRECT_REUSE, **not** UCA realization) |
+| 2. Project + invoke INT-CONFIG | `WorkerConfiguredCapabilityFulfillmentService` implementing `WorkerConfiguredCapabilityFulfillmentPort` |
+| 3. Realization | `ExistingCapabilityConfigurationRealizationFacade` via injected `ExistingCapabilityConfigurationRealizationPort` |
+| 4. Build adoption handoff | `WorkerConfiguredCapabilityFulfillmentService` — wraps exact `configured_binding` in `ExecutionIntegrationConfigurationAdoption` |
+| 5. Effective resolution + identity compare | `ExecutionBoundIntegrationResolution` (Integrations — §10.2) |
+| 6. Execution dispatch | existing `WorkerQualifiedCapabilityResumeCoordinator` / governed dispatch — **same Execution authority**; no provider business call from AW |
+| 7. Provenance pin | `ExecutionBoundIntegrationResolution` at `tenant_id` + `ExecutionId` + adoption (P1–P4 waves) |
+
+**Coordinator delegation (preferred):**
+
+```text
+WorkerCapabilityFulfillmentCoordinator
+       ↓
+WorkerConfiguredCapabilityFulfillmentPort
+       ↓
+WorkerConfiguredCapabilityFulfillmentService
+       ↓
+ExistingCapabilityConfigurationRealizationPort
+       ↓
+ConfiguredCapabilityBinding
+       ↓
+ExecutionIntegrationConfigurationAdoption
+       ↓
+ExecutionBoundIntegrationResolution
+       ↓
+resolve / resolve_from_profile (unchanged)
+       ↓
+effective provider_id (independent observation)
+       ↓
+provenance pin + canonical Execution
+```
+
+**MUST NOT (orchestration service):** implement provider configuration; choose provider implementation; inspect provider objects; mutate `ConfiguredCapabilityBinding`; authorize provider use; mint `ExecutionId`; call provider business APIs.
+
+### 1B.7 Typed request projection (AW → INT-CONFIG)
+
+`WorkerCapabilityCandidate` alone (`capability_ref`, `configuration_ref`) is **discovery/decision correlation only** — **not** a substitute for `ConfiguredCapabilityBinding` (§23).
+
+**Sanctioned enrichment (future P1 — fail closed until present):** Integrations-owned **`ExistingCapabilityConfigurationOpportunityResolver`** (name illustrative) resolves discovery refs to typed realization inputs. Autonomous Work **projects** request envelopes only; **never** parses opaque strings into provider semantics.
+
+| AW / fulfillment source | INT-CONFIG `ExistingCapabilityConfigurationRealizationRequest` field | Validation | Owner |
+|---|---|---|---|
+| `WorkerCapabilityFulfillmentRequest.tenant_id` | `tenant_id` | must match principal.tenant_id | AW copy; INT-CONFIG validates |
+| `WorkerPrincipalBindingRepository` + episode context (same wiring as `build_worker_recovery_governed_fulfillment_wiring`) | `principal: RequestIdentity` | tenant match; **no AW synthesis** of admin/system identity | Applications composition supplies repository; AW reads admitted binding |
+| Derived deterministic id (fulfillment operation + decision id) | `request_id` | unique per logical attempt | AW |
+| Opportunity resolver output | `integration_category`, `provider_id`, `resource_scope`, `current_revision` | typed target; fail closed if missing | **Integrations** resolver |
+| Opportunity resolver output | `configuration: IntegrationConfigurationPayload` + `configuration_fingerprint` | fingerprint ≡ payload fingerprint | **Integrations** resolver |
+| `WorkerCapabilityCandidate.risk_class` | `risk_classification: ControlPlaneMutationRisk` | mapped enum only | AW projection (classification, not provider choice) |
+| `WorkerCapabilityFulfillmentRequest.task_id` / `run_id` | `task_id` / `run_id` | optional correlation | AW |
+| recovery `discovery_correlation_id` | `correlation_ref` | optional | AW |
+
+**Forbidden:** infer `provider_id` / `resource_scope` / configuration body from `configuration_ref` or `capability_ref` without resolver; metadata dict gaps; latest-binding lookup.
+
+**STOP avoided:** enrichment boundary is explicit; @ `6b5b5f2e…` production discovery does not yet emit full opportunity typing — path **fails closed** until P1 resolver + contracts exist (not silent skip).
+
+### 1B.8 Principal / Governance
+
+INT-CONFIG façade requires `RequestIdentity` on the realization request. Reuse **existing** worker principal binding read path (`WorkerPrincipalBindingRepository` already composed for governed fulfillment). Autonomous Work **must not** mint configuration-service or system-admin principal. `CONFIGURE_EXISTING` decision **≠** Governance permission; façade `authorize` **≠** provider execution permission (§27).
+
+### 1B.9 Tenant continuity (locked)
+
+```text
+WorkerCapabilityFulfillmentRequest.tenant_id
+== ExistingCapabilityConfigurationRealizationRequest.tenant_id
+== ConfiguredCapabilityBinding.tenant_id
+== ExecutionIntegrationConfigurationAdoption (via binding)
+== ExecutionBoundIntegrationResolution tenant
+== Execution tenant
+== provenance tenant
+```
+
+Any mismatch → fail closed. No tenant from `configuration_ref`, provider, environment, or host defaults.
+
+### 1B.10 Configuration result handling
+
+Only `ExistingCapabilityConfigurationRealizationResult.configured_binding` proceeds. Forbidden: discard-then-lookup; reconstruct binding from `configuration_ref` after realize.
+
+### 1B.11 Recovery semantics — **Option A (locked)**
+
+After successful INT-CONFIG realization, configuration is **directly adoptable** via explicit `ExecutionIntegrationConfigurationAdoption` + execution-bound resolution; execution continues on the configured-adoption path.
+
+**Not Option B** (mandatory recovery rediscovery as gate) for R2 v1: INT-CONFIG does not imply host-catalog visibility; rediscovery would invite `configuration_ref` / latest lookup substitutes.
+
+**Not** generic UCA `_fulfill_realization_required` reconcile loop for INT-CONFIG: that path owns **catalog capability realization**, not Integrations configuration realization.
+
+**Post-realization:** optional **non-authoritative** recovery reconcile for telemetry only — **must not** replace binding identity or select a different configured fact.
+
+### 1B.12 ExecutionId timing & provenance pin
+
+| Milestone | When |
+|---|---|
+| CONFIGURE_EXISTING decision | Before fulfillment branch; **no** `ExecutionId` required |
+| INT-CONFIG realization | Correlation via `task_id` / `run_id` / `correlation_ref` only |
+| `ExecutionId` | Minted at **canonical Execution admission** on qualified/governed dispatch (same family as `WorkerCapabilityDirectReuseFulfillmentService` + `WorkerExecutionAdmissionPort` / governed task-scoped dispatch) |
+| Provider effective | After `ExecutionBoundIntegrationResolution` delegates to `resolve` / `resolve_from_profile` and extracts `EffectiveIntegrationIdentity` |
+| Provenance pin | When **both** canonical `ExecutionId` and independent effective `provider_id` are known, with exact `ConfiguredCapabilityBinding` on adoption path (§10.2) |
+
+No `task_id` / `run_id` substitution for `ExecutionId` in provenance records.
+
+### 1B.13 Idempotency / retry
+
+Reuse INT-CONFIG **`request_id`** determinism: same logical fulfillment operation + decision + opportunity fingerprint → same `request_id`; repeated compatible realize returns consistent binding facts; conflicting retry → `CONFIGURATION_REALIZATION_FAILED` / fail closed (no second idempotency system).
+
+### 1B.14 Failure families (future typed)
+
+`CONFIGURATION_REALIZATION_UNAVAILABLE` · `CONFIGURATION_REALIZATION_DENIED` · `CONFIGURATION_REALIZATION_FAILED` · `CONFIGURED_BINDING_MISMATCH` · `CONFIGURED_ADOPTION_UNAVAILABLE` · `EFFECTIVE_RESOLUTION_FAILED` · `EXECUTION_ADMISSION_FAILED` — semantic distinctions mandatory.
+
+### 1B.15 DIRECT_REUSE vs CONFIGURE_EXISTING (precedent table)
+
+| Concern | DIRECT_REUSE (`WorkerCapabilityDirectReuseFulfillmentService`) | CONFIGURE_EXISTING future path |
+|---|---|---|
+| Decision owner | Acquisition / recovery (host key match) | `WorkerCapabilityAcquisitionDecisionService` → CONFIGURE_EXISTING |
+| Binding owner | `HostAvailableCapabilityBindingPort` (host-visible) | INT-CONFIG → `ConfiguredCapabilityBinding` |
+| Provider materialization | Pre-existing host binding | `ExecutionBoundIntegrationResolution` after adoption |
+| Governance | Execution admission | INT-CONFIG façade authorize + execution admission |
+| Execution dispatch | `WorkerHostAvailableCapabilityExecutionPort` | Qualified resume / governed dispatch (shared Execution engine) |
+| Tenant | `WorkerCapabilityFulfillmentRequest.tenant_id` | Same chain §1B.9 |
+| Evidence | Direct reuse operation ids | Realization evidence refs + execution-config provenance pin |
+
+**No duplicated Execution engine** — same governed dispatch/admission family; different binding/adoption seam only.
+
+### 1B.16 Closed-world future classification (additions)
+
+| Class | R2 v1 instance |
+|---|---|
+| `CONFIGURATION_DECISION_ROOT` | `WorkerCapabilityAcquisitionDecisionService` |
+| `CONFIGURATION_REALIZATION_ROOT` | `ExistingCapabilityConfigurationRealizationFacade` |
+| `CONFIGURED_ADOPTION_ROOT` | `ExecutionBoundIntegrationResolution` + explicit adoption input |
+| `EXECUTION_CONFIGURED_ADOPTION_REQUIRED` | Future worker integration execution surfaces using INT-CONFIG bindings |
+| `BOOTSTRAP_OR_INFRASTRUCTURE` | `build_harness_host_runtime`, profile wiring, RAG/bootstrap resolvers (§1A.7) |
+| `NON_EXECUTION` | vendor knowledge, diagnostics |
+
+Exactly **one** sanctioned configured-adoption execution path; unknown duplicate → qualification **FAIL**.
+
+### 1B.17 Future file map (P0-R1-R1 additions to §18)
+
+| File (future) | Role |
+|---|---|
+| `intergrax/contracts/autonomous_work/worker_configured_capability_fulfillment.py` | `WorkerConfiguredCapabilityFulfillmentPort` + request/result |
+| `intergrax/autonomous_work/worker_configured_capability_fulfillment_service.py` | Narrow fulfillment: decision → INT-CONFIG → adoption DTO |
+| `intergrax/autonomous_work/worker_capability_fulfillment_coordinator.py` | Delegate CONFIGURE_EXISTING branch (edit in implementation wave) |
+| `intergrax/autonomous_work/worker_capability_fulfillment_composition.py` | Compose configured fulfillment + realization port |
+| `intergrax/autonomous_work/worker_recovery_governed_fulfillment_composition.py` | Wire INT-CONFIG facade + adoption consumer ports |
+| `intergrax/integrations/contracts/existing_capability_configuration_opportunity.py` (illustrative) | Opportunity resolver port + typed opportunity DTO |
+| `intergrax/integrations/execution_bound_integration_resolution.py` | Adoption consumer + provenance capture (§10.2) |
+
+Applications **wire only**; no configuration semantics in Tier-3.
+
+### 1B.18 P0-R1-R1 exit questionnaire (locked)
+
+| # | Answer |
+|---|---|
+| 1 | **Consumer:** future `WorkerCapabilityFulfillmentCoordinator` branch on `CONFIGURE_EXISTING` (today: **zero** production consumers) |
+| 2 | **Invoker of realization port:** `WorkerConfiguredCapabilityFulfillmentService` |
+| 3 | **Forward object:** `ExistingCapabilityConfigurationRealizationResult` → exact `configured_binding` only |
+| 4 | **Constructs `ExecutionIntegrationConfigurationAdoption`:** `WorkerConfiguredCapabilityFulfillmentService` |
+| 5 | **Consumes adoption:** `ExecutionBoundIntegrationResolution` |
+| 6 | **Recovery rediscovery required?** **No** (Option A — §1B.11) |
+| 7 | **Effective `provider_id` observed:** post-`resolve` / `resolve_from_profile` inside `ExecutionBoundIntegrationResolution` (§1A.3) |
+| 8 | **`ExecutionId` available:** canonical Execution admission on governed qualified dispatch (§1B.12) |
+| 9 | **Provenance pin:** `ExecutionBoundIntegrationResolution` capture hook with `ExecutionId` + adoption (§10.2) |
+| 10 | **Step owners:** §1B.6 table |
+| 11 | **Static host roots:** composition/wiring only (§1B.5) |
+| 12 | **Exactly one adoption path?** **Yes** — §1B.6 |
+| 13 | **Fail-closed mismatches?** **Yes** — §1A.5, §1B.9, §1B.14 |
+| 14 | **Tenant end-to-end?** **Yes** — §1B.9 |
+| 15 | **New authority required?** **NO** — reuse principal binding + existing Governance/Execution ports |
+
+### 1B.19 P0-R1-R1 STOP disposition
+
+**No STOP — ARCHITECTURE DECISION REQUIRED** for locked scope. Opportunity resolver + AW fulfillment contracts are **future P1** deliverables; enrichment boundary is named and fail-closed until implemented.
+
+---
+
+## 2. Before graph (@ P0-R1-R1 AUDIT_BASE `6b5b5f2e…`)
+
+```text
+AW CONFIGURE_EXISTING decision (WorkerCapabilityAcquisitionDecisionService)
+        X  (no production fulfillment consumer)
+INT-CONFIG facade (0 production callers)
+        ↓
+ConfiguredCapabilityBinding
+        X  (no production consumer)
         │
         │   parallel universe
         ▼
-IntegrationProfile + resolve_from_profile / resolve
+IntegrationProfile + resolve_from_profile / resolve (bootstrap / effective-only)
         │
         ▼
-effective provider instance  ──X──►  ExecutionId
+effective provider instance  ──X──►  ExecutionId (no config provenance join)
         │
         ▼
 ExecutionReconstructor  (no execution-config provenance reader)
@@ -253,27 +511,36 @@ ExecutionReconstructor  (no execution-config provenance reader)
 ## 3. Proposed after graph (locked design — not implemented)
 
 ```text
-ConfiguredCapabilityBinding (explicit adoption input only — from composition)
-        │
-        │  ExecutionIntegrationConfigurationAdoption (future)
-        │  execution-bound sanctioned wrapper (no configured lookup)
-        ▼
-resolve_from_profile / resolve  →  effective materialization + EffectiveIntegrationIdentity
-        │
-        │  atomic pin @ execution-bound composition (tenant + ExecutionId known)
-        ▼
-ExecutionIntegrationConfigurationProvenance (immutable, per subject)
-        │
-        ├── durable ExecutionIntegrationConfigurationPinningStore
+WorkerCapabilityAcquisitionDecisionService  →  CONFIGURE_EXISTING
         │
         ▼
-ExecutionIntegrationConfigurationProvenanceReader (neutral Protocol)
+WorkerCapabilityFulfillmentCoordinator  (CONFIGURE_EXISTING branch)
         │
         ▼
-ExecutionReconstructor (projection only)
+WorkerConfiguredCapabilityFulfillmentService
+        │  (+ ExistingCapabilityConfigurationOpportunityResolver — P1)
+        ▼
+ExistingCapabilityConfigurationRealizationPort.realize
         │
         ▼
-ExecutionReconstruction (+ typed collection + read status)
+ConfiguredCapabilityBinding (immutable)
+        │
+        ▼
+ExecutionIntegrationConfigurationAdoption  (built by configured fulfillment service)
+        │
+        ▼
+ExecutionBoundIntegrationResolution  (Integrations — no configured lookup)
+        │
+        ▼
+resolve_from_profile / resolve  →  EffectiveIntegrationIdentity (independent provider_id)
+        │
+        ├── provenance pin (tenant + ExecutionId + binding + effective)
+        │
+        ▼
+WorkerQualifiedCapabilityResumeCoordinator / governed dispatch  →  canonical Execution
+        │
+        ▼
+ExecutionIntegrationConfigurationProvenance → store → ExecutionReconstructor
 ```
 
 ---
@@ -439,7 +706,8 @@ All sanctioned effective paths consume **`IntegrationProfile`** (or explicit slu
 | Element | Locked choice |
 |---|---|
 | **Owner** | Integrations: `ExecutionBoundIntegrationResolution` (new module) wrapping **only** existing `resolve_from_profile` / `resolve` |
-| **Composition invoker** | Applications host execution wiring — passes **explicit** `ExecutionIntegrationConfigurationAdoption` when adopting INT-CONFIG (never wrapper-side lookup) |
+| **Orchestration sequencer** | `WorkerConfiguredCapabilityFulfillmentService` — builds and passes **explicit** `ExecutionIntegrationConfigurationAdoption` into `ExecutionBoundIntegrationResolution` |
+| **Composition invoker** | `build_worker_recovery_governed_fulfillment_wiring` / `worker_capability_fulfillment_composition` — **wires** realization port + configured fulfillment + execution-bound resolver (no semantic ownership) |
 | **Timing** | Immediately after successful sanctioned materialization, **with** `tenant_id` + `ExecutionId` + optional explicit adoption — **before** downstream work relies on the instance where feasible |
 | **Semantics change** | **Forbidden** in wrapper — delegate to factory unchanged |
 
@@ -632,7 +900,8 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 | Wave | Deliverable |
 |---|---|
 | **P0-R1** (§1A) | Effective identity + configured adoption reconciliation |
-| **P0** | Parent architecture lock closure after R1 audit |
+| **P0-R1-R1** (§1B) | Concrete CONFIGURE_EXISTING adoption root + AW fulfillment orchestration lock |
+| **P0** | Parent architecture lock closure after R1 + R1-R1 audit |
 | **P1** | Neutral contracts + validation helpers + adoption input |
 | **P2** | Pinning store port + in-memory + durable adapters |
 | **P3** | Execution-bound resolution wrapper + host composition wiring |
@@ -657,7 +926,8 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 |---|---|---|
 | Boundaries | **PASS** | Tier rules preserved; reconstructor stays derived |
 | Semantic ownership | **PASS** | §8 + §1A.4 |
-| Composition ownership | **PASS** | Applications supply adoption; Integrations validate/capture |
+| Composition ownership | **PASS** | Applications wire ports; AW fulfillment sequences; Integrations validate/capture (§1B) |
+| Orchestration ownership | **PASS** | `WorkerCapabilityFulfillmentCoordinator` + configured fulfillment service (§1B.6) |
 | Provider identity authority | **PASS** | §1A.3; P0 category/slug model rejected |
 | Configured adoption authority | **PASS** | Explicit handoff; no lookup |
 | Contracts | **PASS** | Adoption + provenance `mode` specified |
@@ -697,7 +967,7 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 
 ---
 
-## 24. Current-HEAD test evidence (P0-R1)
+## 24. Current-HEAD test evidence (P0-R1-R1)
 
 Commands (sequential `-p no:xdist`):
 
@@ -710,24 +980,28 @@ uv run pytest \
 uv run pytest tests/qualification/existing_capability_configuration -p no:xdist -q
 
 uv run pytest \
-  tests/unit/integrations/test_registry.py \
-  tests/unit/integrations/test_profile.py \
-  tests/unit/core/qualification/test_provider_qualification_execution_runner.py \
-  tests/unit/runtime/integrations/test_canonical_registry_projection.py \
+  tests/unit/autonomous_work/test_worker_capability_acquisition.py \
+  tests/unit/autonomous_work/test_worker_capability_fulfillment_intent_preparation_hook.py \
+  tests/unit/autonomous_work/test_uca6c_r6_r5_8_worker_consumer_e2e.py \
+  tests/unit/autonomous_work/test_uca6c_r6_r5_8_r2_h1_r1_production_composition_contract.py \
   -p no:xdist -q
 ```
 
-@ P0-R1 run (`982f945d…` worktree):
+@ P0-R1-R1 run (`6b5b5f2e…`):
 
 ```text
 # trace P5 P0+R1 gates: 134 passed
-# INT-CONFIG qualification: 58 passed
-# identity/profile/registry projection batch: 57 passed, 4 failed (test_registry fake dict factories)
+# INT-CONFIG qualification + AW inventory batch: 116 passed, 14 failed
+#   failures: CapabilityQualificationEvidence fixture drift (subject_kind/subject_id/subject_integrity_fingerprint)
+#   paths: test_worker_capability_fulfillment_intent_preparation_hook.py (10),
+#          test_uca6c_r6_r5_8_worker_consumer_e2e.py (1),
+#          test_uca6c_r6_r5_8_r2_h1_r1_production_composition_contract.py (3)
+# test_worker_capability_acquisition.py: passed (within batch)
 ```
 
-Logs: `.tmp/session/trace-x-p5-r2-p0-r1/pytest-trace.log`, `pytest-int-config.log`, `pytest-identity.log`.
+Logs: `.tmp/session/trace-x-p5-r2-p0-r1-r1/pytest-trace.log`, `pytest-aw-int-config.log`.
 
-**ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED:** `tests/unit/integrations/test_registry.py` — 4 failures (fake factories return `dict` vs `PlatformIntegrationContract`); pre-existing; not P0-R1 scope.
+**ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED:** `tests/unit/integrations/test_registry.py` — 4 pre-existing fake-factory failures if reproduced; not in P0-R1-R1 mandatory batch. AW fulfillment e2e/hook failures above — **TRACKED FREEZE DEBT** / fixture drift @ `6b5b5f2e…`; not R2-P0-R1-R1 architecture blockers (no production delta).
 
 ---
 
@@ -735,8 +1009,9 @@ Logs: `.tmp/session/trace-x-p5-r2-p0-r1/pytest-trace.log`, `pytest-int-config.lo
 
 | Item | Status |
 |---|---|
-| TRACE-X-P5-R2-P0-R1 | **READY FOR AUDIT** |
-| TRACE-X-P5-R2-P0 | **BLOCKED ON R1 INDEPENDENT AUDIT** |
+| TRACE-X-P5-R2-P0-R1-R1 | **READY FOR AUDIT** |
+| TRACE-X-P5-R2-P0-R1 | **BLOCKED ON R1-R1 INDEPENDENT AUDIT** |
+| TRACE-X-P5-R2-P0 | **BLOCKED** |
 | TRACE-X-P5-R2 | **BLOCKED ON P0** |
 | TRACE-X-P5 | **CURRENT / BLOCKED ON R2** |
 | FRZ-TRC-11 | **OPEN** |
