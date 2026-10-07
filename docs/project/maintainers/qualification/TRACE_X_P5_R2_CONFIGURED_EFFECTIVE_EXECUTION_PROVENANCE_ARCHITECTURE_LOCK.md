@@ -4,7 +4,9 @@
 
 | Field | Value |
 |---|---|
-| **Task** | `TRACE-X-P5-R2-P0` + **`TRACE-X-P5-R2-P0-R1`** + **`TRACE-X-P5-R2-P0-R1-R1`** + **`TRACE-X-P5-R2-P0-R1-R1-R1`** (configuration opportunity typing) + **`TRACE-X-P5-R2-P0-R1-R1-R1-R1`** (configuration mutation risk classification ownership) |
+| **Task** | `TRACE-X-P5-R2-P0` + **`TRACE-X-P5-R2-P0-R1`** + **`TRACE-X-P5-R2-P0-R1-R1`** + **`TRACE-X-P5-R2-P0-R1-R1-R1`** (configuration opportunity typing) + **`TRACE-X-P5-R2-P0-R1-R1-R1-R1`** (configuration mutation risk classification ownership) + **`TRACE-X-P5-R2-P0-FINAL`** (final architecture lock reconciliation) |
+| **P0-FINAL START_HEAD** | `33076146071dd5246691821905ddcba383ad5ee6` (`development` — independently accepted **P0-R1-R1-R1-R1** reconciliation) |
+| **P0-R1-R1-R1-R1 accepted reconciliation** | `33076146071dd5246691821905ddcba383ad5ee6` |
 | **Parent** | `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
 | **P0 rejection baseline** | `982f945de67577865c1ade4ebbea519cf3a9b284` |
 | **P0-R1 START_HEAD** | `982f945de67577865c1ade4ebbea519cf3a9b284` |
@@ -12,16 +14,74 @@
 | **P0-R1-R1-R1 START_HEAD** | `305ac4a0cb07e303ce2bb0b04c2c4520db35786b` (`development`) |
 | **P0-R1-R1-R1-R1 START_HEAD** | `925bcae17cbf1072297296378c9e28c8742f9c92` (`development`) |
 | **Primary FRZ** | `FRZ-TRC-11` (**OPEN** — no PASS) |
-| **Blocker** | `P5-GAP-04` — no canonical global configured→effective→`ExecutionId`→evidence chain |
+| **Blocker** | `P5-GAP-04` — **ARCHITECTURALLY SPECIFIED / IMPLEMENTATION OPEN** (no canonical global configured→effective→`ExecutionId`→evidence chain in production until **P1–P5/CERT**) |
 | **In-scope P0 blocker (R1-R1-R1)** | `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04` = **RESOLVED IN DESIGN (R1-R1-R1)** |
 | **In-scope P0 blocker (R1-R1-R1-R1)** | `R2-P0-CONTROL-PLANE-RISK-AUTHORITY-05` = **RESOLVED IN DESIGN (R1-R1-R1-R1)** |
-| **Independent-audit blockers** | `R2-P0-EFFECTIVE-IDENTITY-PREBUILT-01` · `R2-P0-CONFIGURED-ADOPTION-AUTHORITY-02` = **RESOLVED IN DESIGN (R1)** · `R2-P0-CONCRETE-ADOPTION-ROOT-03` = **RESOLVED IN DESIGN (R1-R1)** · `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04` = **RESOLVED IN DESIGN (R1-R1-R1)** · `R2-P0-CONTROL-PLANE-RISK-AUTHORITY-05` = **RESOLVED IN DESIGN (R1-R1-R1-R1)** — pending independent audit |
+| **Independent-audit blockers** | `R2-P0-EFFECTIVE-IDENTITY-PREBUILT-01` · `R2-P0-CONFIGURED-ADOPTION-AUTHORITY-02` = **RESOLVED IN DESIGN (R1)** · `R2-P0-CONCRETE-ADOPTION-ROOT-03` = **RESOLVED IN DESIGN (R1-R1)** · `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04` = **RESOLVED IN DESIGN (R1-R1-R1)** · `R2-P0-CONTROL-PLANE-RISK-AUTHORITY-05` = **RESOLVED IN DESIGN (R1-R1-R1-R1)** @ `33076146…` — **P0-FINAL** reconciles normative precedence; pending **P0-FINAL** independent audit |
 | **Production / runtime delta** | **0** (architecture + qualification design only) |
-| **Status** | **TRACE-X-P5-R2-P0-R1-R1-R1-R1 = READY FOR AUDIT** · **TRACE-X-P5-R2-P0-R1-R1-R1 = BLOCKED ON R1-R1-R1-R1 INDEPENDENT AUDIT** · **TRACE-X-P5-R2-P0-R1-R1 = BLOCKED ON R1-R1-R1 INDEPENDENT AUDIT** · **TRACE-X-P5-R2-P0-R1 = BLOCKED** · **TRACE-X-P5-R2-P0 = BLOCKED** · **TRACE-X-P5-R2 = BLOCKED ON P0** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** |
+| **Status** | **TRACE-X-P5-R2-P0-FINAL = READY FOR AUDIT** · **TRACE-X-P5-R2-P0 = READY FOR AUDIT** · **TRACE-X-P5-R2-P0-R1-R1-R1-R1 = independently accepted reconciliation @ `33076146…`** · **TRACE-X-P5-R2-P0 initial @ `982f945…` = REJECTED / SUPERSEDED** · **TRACE-X-P5-R2 = CURRENT / BLOCKED ON P0 FINAL INDEPENDENT AUDIT** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** |
 
 **Steering sources revalidated @ P0-R1-R1-R1-R1 START_HEAD (`925bcae…`):** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md), [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md), [`TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md`](TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md), [`TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md`](TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md), [`INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md`](../architecture/INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md).
 
-**Historical evidence (revalidated, not blindly trusted):** INT-CONFIG-REAL-X-CERT `a59744517b92847f55def1db22826d17d89ee155` · TRACE-X-P5-P0 `81fd1490f18d73eaf31ec94c2b93dbb525026ba2` · TRACE-X-P5-R1 `05fd5d9b2b97f9d85a534a949d882cd47d4a54c9` · P0 draft audited/rejected @ `982f945d…` (identity + adoption authority gaps).
+**Historical evidence (revalidated, not blindly trusted):** INT-CONFIG-REAL-X-CERT `a59744517b92847f55def1db22826d17d89ee155` · TRACE-X-P5-P0 `81fd1490f18d73eaf31ec94c2b93dbb525026ba2` · TRACE-X-P5-R1 accepted evidence tip `05fd5d9b2b97f9d85a534a949d882cd47d4a54c9` (docs/bookkeeping lineage e.g. `16be5fdfe4bcde804eef51a3b34b4ebc5cd45dad` — **not** R1 implementation evidence) · P0 draft audited/rejected @ `982f945d…` (identity + adoption authority gaps).
+
+### FINAL NORMATIVE RECONCILIATION (P0-FINAL — authoritative precedence)
+
+Read this subsection first. Earlier prose in §1–§3 without the markers below is **historical context** unless it matches this map.
+
+| Precedence (later wins within P0 chain) | Scope |
+|---|---|
+| **§1A** | Effective `provider_id` + configured adoption input + provenance modes (`CONFIGURED_ADOPTED` / `EFFECTIVE_ONLY`) + caller disposition (§1A.7) |
+| **§1B** | CONFIGURE_EXISTING orchestration owner = Autonomous Work fulfillment; Applications = composition/wiring only; explicit adoption handoff; no binding lookup |
+| **§1C** | Integrations-owned `ExistingCapabilityConfigurationOpportunity`; opaque `configuration_ref`; exact `read_exact`; discovery projection; risk continuity (§1C.13) |
+| **§1C.26–§1C.31** | Configuration mutation risk: Integrations classifies; Governance authorizes only — rejects `A0 → LOW` and `WorkerCapabilityCandidate.risk_class` → `risk_classification` |
+
+**Superseded / non-normative (audit lineage only):** P0 initial @ `982f945…` (REJECTED); pre-§1A effective identity (`category.value`, slug+category); implicit configured binding discovery; Applications as CONFIGURE_EXISTING sequencer; generic “opportunity resolver” without §1C semantics; `ExternalWorkIntegration` in `CONFIGURED_ADOPTED` v1 (C1 exclusion).
+
+**Single after graph (§3):** opportunity provider → Integrations opportunity owner → mutation risk policy → immutable opportunity → opaque ref → AW discovery → CONFIGURE_EXISTING → fulfillment coordinator → configured fulfillment → `read_exact` → realization request/port → Governance **ALLOW** → `ConfiguredCapabilityBinding` → `ExecutionIntegrationConfigurationAdoption` → execution-bound resolution → effective identity → configured/effective validation → pin (`tenant_id` + `ExecutionId` + subject) → durable store → neutral reader → `ExecutionReconstructor`. No unexplained semantic jump.
+
+**P0-FINAL child history (evidence, not all independently CLOSED as final stages):**
+
+| Child | SHA | Disposition |
+|---|---|---|
+| P0 initial | `982f945de67577865c1ade4ebbea519cf3a9b284` | **REJECTED / SUPERSEDED** |
+| P0-R1 | `6b5b5f2e1fe2da8655e85173b24fd3221e65b602` | Remediation evidence; superseded by later reconciliation |
+| P0-R1-R1 | `305ac4a0cb07e303ce2bb0b04c2c4520db35786b` | Remediation evidence; superseded |
+| P0-R1-R1-R1 | `925bcae17cbf1072297296378c9e28c8742f9c92` | Remediation + risk-ownership blocker exposed; superseded |
+| P0-R1-R1-R1-R1 | `33076146071dd5246691821905ddcba383ad5ee6` | **Independently accepted** child reconciliation |
+| P0-FINAL | qualification commit after reconciliation | **READY FOR AUDIT** |
+
+### P0-FINAL exit questionnaire (25 locked answers)
+
+| # | Answer |
+|---|---|
+| 1 | Configuration Opportunity owner: **Integrations** (§1C) |
+| 2 | `configuration_ref` identifies: **immutable Integrations-owned opportunity instance** (exact tenant + ref; no latest) |
+| 3 | Configuration mutation risk owner: **Integrations / INT-CONFIG** (§1C.13) |
+| 4 | Configuration realization authorization: **Governance only** |
+| 5 | Configuration realization executor: **Integrations / INT-CONFIG** (`ExistingCapabilityConfigurationRealizationPort`) |
+| 6 | Effective provider materialization: **existing Integrations resolver** (`resolve` / `resolve_from_profile`) inside execution-bound wrapper |
+| 7 | Effective provider identity observed: **§1A.3** (catalog tri-equality or `instance.provider_id`; never `category.value`) |
+| 8 | Configured binding adoption selection: **explicit `ExecutionIntegrationConfigurationAdoption`** (AW fulfillment path) |
+| 9 | Binding lookup forbidden? **YES** |
+| 10 | Latest/current fallback forbidden? **YES** |
+| 11 | Canonical `ExecutionId` enters: **Execution admission** on governed qualified dispatch (§1B.12) before pin |
+| 12 | Provenance pinned: **`ExecutionIntegrationConfigurationPinningStore`** per `tenant_id` + `ExecutionId` + `IntegrationConfigurationSubject` |
+| 13 | Persistence durable? **YES** (mandatory for FRZ-TRC-11 path; P2 implements store) |
+| 14 | Reconstruction owner: **`ExecutionReconstructor`** via neutral reader only |
+| 15 | Evidence creates configuration truth? **NO** |
+| 16 | AW owns provider configuration semantics? **NO** (opaque ref only) |
+| 17 | Provider plugin owns final risk? **NO** |
+| 18 | Governance classifies configuration-domain risk? **NO** |
+| 19 | `ExternalWorkIntegration` in CONFIGURED_ADOPTED v1? **NO** (C1) |
+| 20 | Child implicit config provenance inheritance? **NO** (§12) |
+| 21 | Missing adoption degrades to EFFECTIVE_ONLY? **NO** |
+| 22 | Second resolver/catalog/activation lifecycle? **NO** |
+| 23 | Tenant identity continuous end-to-end? **YES** (§13, §1B.9, §1C.14) |
+| 24 | All five P0 blockers resolved in normative design? **YES** (§1A–§1C.31) |
+| 25 | Semantic decisions deferred to P1? **NO** (P1 implements contracts only; file-level choices OK) |
+
+**Tenant isolation audit (P0-FINAL):** **PASS — local R2 architecture scope** (fulfillment → opportunity → INT-CONFIG → adoption → resolution → Execution → pin → reconstruction share one `tenant_id` chain; no global **FRZ-TEN-*** promotion).
 
 ---
 
@@ -1435,8 +1495,10 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 | **P0-R1** (§1A) | Effective identity + configured adoption reconciliation |
 | **P0-R1-R1** (§1B) | Concrete CONFIGURE_EXISTING adoption root + AW fulfillment orchestration lock |
 | **P0-R1-R1-R1** (§1C) | Configuration opportunity typing + exact-reference read lock |
-| **P0** | Parent architecture lock closure after R1 + R1-R1 + R1-R1-R1 audit |
-| **P1** | Neutral contracts + validation helpers + adoption input |
+| **P0-R1-R1-R1-R1** (§1C.26–§1C.31) | Configuration mutation risk classification ownership |
+| **P0-FINAL** | Final normative reconciliation + canonical tracker sync (**READY FOR AUDIT**) |
+| **P0** | Architecture lock complete after **P0-FINAL** independent audit → **P1** |
+| **P1** | Typed opportunity + risk policy + adoption/provenance contracts + validation |
 | **P2** | Pinning store port + in-memory + durable adapters |
 | **P3** | Execution-bound resolution wrapper + host composition wiring |
 | **P4** | Reconstructor projection + diagnostic injection |
@@ -1515,7 +1577,7 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 
 ---
 
-## 24. Current-HEAD test evidence (P0-R1-R1-R1-R1)
+## 24. Current-HEAD test evidence (P0-FINAL)
 
 Commands (sequential `-p no:xdist`):
 
@@ -1533,15 +1595,15 @@ uv run pytest \
   -p no:xdist -q
 ```
 
-@ P0-R1-R1-R1-R1 run (`925bcae…` + docs commit pending):
+@ P0-FINAL (`33076146…` START_HEAD + qualification reconciliation commit):
 
 ```text
-# trace P5 P0+R1 gates: 134 passed (306.97s)
-# INT-CONFIG qualification: 58 passed (1.19s)
-# control-plane authorization + contract: 27 passed (0.33s)
+# trace P5 P0+R1 gates: 134 passed (339.65s)
+# INT-CONFIG qualification: 58 passed (0.46s)
+# control-plane authorization + contract: 27 passed (0.21s)
 ```
 
-Logs: `.tmp/session/trace-x-p5-r2-p0-r1-r1-r1-r1/pytest-trace.log`, `pytest-int-config.log`, `pytest-governance.log`.
+Logs: `.tmp/session/trace-x-p5-r2-p0-final/pytest-trace.log`, `pytest-int-config.log`, `pytest-governance.log`.
 
 **ENVIRONMENT/TEST ISSUE — EVIDENCE REQUIRED:** `tests/unit/integrations/test_registry.py` — fake factory drift (`dict` vs `PlatformIntegrationContract`); not in mandatory batch. `CapabilityQualificationEvidence` fixture drift in AW fulfillment e2e/hook suites — **not** expanded in R1-R1-R1 batch; classify separately unless production impact proven.
 
@@ -1551,11 +1613,14 @@ Logs: `.tmp/session/trace-x-p5-r2-p0-r1-r1-r1-r1/pytest-trace.log`, `pytest-int-
 
 | Item | Status |
 |---|---|
-| TRACE-X-P5-R2-P0-R1-R1-R1-R1 | **READY FOR AUDIT** |
-| TRACE-X-P5-R2-P0-R1-R1-R1 | **BLOCKED ON R1-R1-R1-R1 INDEPENDENT AUDIT** |
-| TRACE-X-P5-R2-P0-R1-R1 | **BLOCKED ON R1-R1-R1 INDEPENDENT AUDIT** |
-| TRACE-X-P5-R2-P0-R1 | **BLOCKED** |
-| TRACE-X-P5-R2-P0 | **BLOCKED** |
-| TRACE-X-P5-R2 | **BLOCKED ON P0** |
+| TRACE-X-P5-R2-P0-FINAL | **READY FOR AUDIT** |
+| TRACE-X-P5-R2-P0 | **READY FOR AUDIT** |
+| TRACE-X-P5-R2-P0-R1-R1-R1-R1 | **independently accepted** @ `33076146…` |
+| TRACE-X-P5-R2-P0-R1-R1-R1 | remediation evidence @ `925bcae…` (superseded) |
+| TRACE-X-P5-R2-P0-R1-R1 | remediation evidence @ `305ac4a…` (superseded) |
+| TRACE-X-P5-R2-P0-R1 | remediation evidence @ `6b5b5f2…` (superseded) |
+| TRACE-X-P5-R2-P0 initial | **REJECTED** @ `982f945…` |
+| TRACE-X-P5-R2 | **CURRENT / BLOCKED ON P0 FINAL INDEPENDENT AUDIT** |
 | TRACE-X-P5 | **CURRENT / BLOCKED ON R2** |
+| P5-GAP-04 | **ARCHITECTURALLY SPECIFIED / IMPLEMENTATION OPEN** |
 | FRZ-TRC-11 | **OPEN** |
