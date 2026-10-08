@@ -25,15 +25,6 @@ from intergrax.contracts.execution_identity import (
 from intergrax.runtime.execution.execution_terminal_outcome_by_execution_id import (
     record_delegate_terminal_disposition,
 )
-from intergrax.integrations.contracts.execution_integration_configuration import (
-    ExecutionIntegrationConfigurationAdoptionError,
-)
-from intergrax.integrations.contracts.execution_integration_configuration_pinning import (
-    ExecutionIntegrationConfigurationPinningError,
-)
-from intergrax.runtime.execution.execution_integration_configuration_pinning_ports import (
-    ExecutionIntegrationConfigurationExecutionPinningPort,
-)
 from intergrax.runtime.execution.qualified_capability_execution_handlers import (
     QualifiedCapabilityExecutionBindingHandlerRegistry,
 )
@@ -47,13 +38,9 @@ class QualifiedCapabilityExecutionRuntimeDelegate:
         *,
         handler_registry: QualifiedCapabilityExecutionBindingHandlerRegistry,
         terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None,
-        integration_configuration_pinning: (
-            ExecutionIntegrationConfigurationExecutionPinningPort | None
-        ) = None,
     ) -> None:
         self._handlers = handler_registry
         self._terminal_outcome_store = terminal_outcome_store
-        self._integration_configuration_pinning = integration_configuration_pinning
         self.execute_calls = 0
 
     async def execute(
@@ -82,32 +69,12 @@ class QualifiedCapabilityExecutionRuntimeDelegate:
                 disposition=QualifiedCapabilityExecutionDispatchDisposition.FAILED,
                 reason_detail="active_execution_id_missing",
             )
-        adoption = request.integration_configuration_adoption
-        if adoption is not None:
-            if self._integration_configuration_pinning is None:
-                return QualifiedCapabilityExecutionDelegateResult(
-                    disposition=QualifiedCapabilityExecutionDispatchDisposition.FAILED,
-                    reason_detail="integration_configuration_pinning_unavailable",
-                )
-            try:
-                self._integration_configuration_pinning.pin_configured_adoption_for_execution(
-                    tenant_id=request.tenant_id,
-                    execution_id=execution_id,
-                    adoption=adoption,
-                )
-            except (
-                ExecutionIntegrationConfigurationAdoptionError,
-                ExecutionIntegrationConfigurationPinningError,
-            ):
-                return QualifiedCapabilityExecutionDelegateResult(
-                    disposition=QualifiedCapabilityExecutionDispatchDisposition.FAILED,
-                    reason_detail="integration_configuration_pinning_failed",
-                )
         result = handler.dispatch_once(
             dispatch_request,
             run_id=run_id,
             attempt_id=attempt_id,
             execution_id=execution_id,
+            integration_configuration_adoption=request.integration_configuration_adoption,
         )
         record_delegate_terminal_disposition(
             self._terminal_outcome_store,

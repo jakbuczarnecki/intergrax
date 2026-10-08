@@ -3,27 +3,41 @@
 
 from __future__ import annotations
 
-from typing import Any
+from pydantic import BaseModel, ConfigDict, Field
 
-from pydantic import BaseModel, Field
+from intergrax.integrations.contracts.sql_scalar import SqlScalar
 
 
 class DatabaseQueryInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     sql: str = Field(..., min_length=1, description="Parameterized SELECT query.")
-    params: list[Any] = Field(default_factory=list, description="Positional bind parameters.")
+    params: list[SqlScalar] = Field(
+        default_factory=list,
+        description="Positional bind parameters.",
+    )
 
 
 class DatabaseQueryOutput(BaseModel):
-    rows: list[dict[str, Any]] = Field(default_factory=list)
+    model_config = ConfigDict(extra="forbid")
+
+    rows: list[dict[str, SqlScalar]] = Field(default_factory=list)
     row_count: int = 0
 
 
 class DatabaseExecuteInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     sql: str = Field(..., min_length=1, description="Parameterized INSERT/UPDATE/DELETE/DDL statement.")
-    params: list[Any] = Field(default_factory=list, description="Positional bind parameters.")
+    params: list[SqlScalar] = Field(
+        default_factory=list,
+        description="Positional bind parameters.",
+    )
 
 
 class DatabaseExecuteOutput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     executed: bool = True
 
 

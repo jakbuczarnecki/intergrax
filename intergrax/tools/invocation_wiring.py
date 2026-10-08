@@ -17,6 +17,9 @@ from intergrax.runtime.workspace.execution_port import WorkspaceExecutionPort
 from intergrax.tools.invocation_wiring_requirements import (
     ToolInvocationWiringRequirements,
 )
+from intergrax.integrations.contracts.configured_relational_store_execution import (
+    ConfiguredRelationalStoreExecutionPort,
+)
 from intergrax.tools.registry.runtime_bindings import (
     RunTraceReaderBinding,
     TaskMemoryViewBinding,
@@ -57,6 +60,9 @@ class ToolInvocationWiring:
     cost_quotas: tuple[ResourceQuota, ...] | None = None
     sandbox_session: SandboxExecCapable | None = None
     task_metadata: Mapping[str, str] | None = None
+    configured_relational_store_execution: ConfiguredRelationalStoreExecutionPort | None = (
+        None
+    )
 
     @classmethod
     def empty(cls) -> ToolInvocationWiring:

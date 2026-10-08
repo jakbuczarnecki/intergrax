@@ -35,9 +35,6 @@ from intergrax.runtime.execution.qualified_capability_execution_dispatch_service
 from intergrax.runtime.execution.qualified_capability_execution_handlers import (
     QualifiedCapabilityExecutionBindingHandlerRegistry,
 )
-from intergrax.runtime.execution.execution_integration_configuration_pinning_ports import (
-    ExecutionIntegrationConfigurationExecutionPinningPort,
-)
 from intergrax.runtime.execution.qualified_capability_execution_runtime_delegate import (
     QualifiedCapabilityExecutionRuntimeDelegate,
 )
@@ -55,9 +52,6 @@ def build_qualified_capability_execution_dispatch_service(
     handler_registry: QualifiedCapabilityExecutionBindingHandlerRegistry,
     runtime_policy_admission: RuntimeExecutionPolicyAdmissionPort,
     terminal_outcome_store: ExecutionTerminalOutcomeByExecutionIdStore | None = None,
-    integration_configuration_pinning: (
-        ExecutionIntegrationConfigurationExecutionPinningPort | None
-    ) = None,
 ) -> tuple[
     QualifiedCapabilityExecutionDispatchService,
     QualifiedCapabilityExecutionRuntimeDelegate,
@@ -70,7 +64,6 @@ def build_qualified_capability_execution_dispatch_service(
     delegate = QualifiedCapabilityExecutionRuntimeDelegate(
         handler_registry=handler_registry,
         terminal_outcome_store=terminal_outcome_store,
-        integration_configuration_pinning=integration_configuration_pinning,
     )
     runtime = ExecutionRuntime(
         delegate,

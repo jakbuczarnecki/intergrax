@@ -14,6 +14,9 @@ from intergrax.contracts.execution.qualified_capability_execution_intake import 
     QualifiedCapabilityExecutionDelegateResult,
 )
 from intergrax.contracts.execution_identity import AttemptId, ExecutionId, RunId
+from intergrax.integrations.contracts.execution_integration_configuration import (
+    ExecutionIntegrationConfigurationAdoption,
+)
 
 
 @runtime_checkable
@@ -30,6 +33,9 @@ class QualifiedCapabilityExecutionBindingHandler(Protocol):
         run_id: RunId,
         attempt_id: AttemptId,
         execution_id: ExecutionId,
+        integration_configuration_adoption: (
+            ExecutionIntegrationConfigurationAdoption | None
+        ) = None,
     ) -> QualifiedCapabilityExecutionDelegateResult: ...
 
 

@@ -5,7 +5,13 @@ from __future__ import annotations
 
 import re
 
+from intergrax.integrations.contracts.configured_relational_store_execution import (
+    ConfiguredRelationalStoreExecutionPort,
+    RelationalExecuteRequest,
+    RelationalQueryRequest,
+)
 from intergrax.integrations.contracts.relational_store import RelationalStore
+from intergrax.integrations.contracts.sql_scalar import SqlScalar
 from intergrax.tools.providers.database.contracts import (
     DatabaseDescribeSchemaInput,
     DatabaseDescribeSchemaOutput,
@@ -32,22 +38,44 @@ def _validated_table_name(name: str) -> str:
     return cleaned
 
 
+def _require_relational_store_execution(
+    ctx: ToolWiringContext,
+) -> ConfiguredRelationalStoreExecutionPort:
+    port = ctx.relational_store_execution
+    if port is None:
+        raise RuntimeError("relational_store_execution_not_configured")
+    return port
+
+
+def _sql_params(params: list[SqlScalar]) -> tuple[SqlScalar, ...]:
+    return tuple(params)
+
+
+def database_query(ctx: ToolWiringContext, params: DatabaseQueryInput) -> DatabaseQueryOutput:
+    result = _require_relational_store_execution(ctx).query(
+        RelationalQueryRequest(sql=params.sql.strip(), params=_sql_params(params.params)),
+    )
+    return DatabaseQueryOutput(
+        rows=[dict(row) for row in result.rows],
+        row_count=result.row_count,
+    )
+
+
+def database_execute(
+    ctx: ToolWiringContext,
+    params: DatabaseExecuteInput,
+) -> DatabaseExecuteOutput:
+    _require_relational_store_execution(ctx).execute(
+        RelationalExecuteRequest(sql=params.sql.strip(), params=_sql_params(params.params)),
+    )
+    return DatabaseExecuteOutput(executed=True)
+
+
 def _require_relational_store(ctx: ToolWiringContext) -> RelationalStore:
     store = ctx.relational_store
     if store is None:
         raise RuntimeError("relational_store_not_configured")
     return store
-
-
-def database_query(ctx: ToolWiringContext, params: DatabaseQueryInput) -> DatabaseQueryOutput:
-    rows = _require_relational_store(ctx).fetch_all(params.sql.strip(), tuple(params.params))
-    normalized = [dict(row) for row in rows]
-    return DatabaseQueryOutput(rows=normalized, row_count=len(normalized))
-
-
-def database_execute(ctx: ToolWiringContext, params: DatabaseExecuteInput) -> DatabaseExecuteOutput:
-    _require_relational_store(ctx).execute(params.sql.strip(), tuple(params.params))
-    return DatabaseExecuteOutput(executed=True)
 
 
 def database_describe_schema(

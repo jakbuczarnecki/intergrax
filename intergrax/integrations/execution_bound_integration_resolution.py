@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Mapping, Protocol, runtime_checkable
+from typing import Protocol, runtime_checkable
 
 from intergrax.contracts.execution_identity import ExecutionId
 from intergrax.contracts.execution_integration_configuration_provenance import (
@@ -15,7 +15,7 @@ from intergrax.contracts.execution_integration_configuration_provenance import (
     ExecutionIntegrationConfigurationProvenanceMode,
     IntegrationConfigurationSubject,
 )
-from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.base import IntegrationCategory, UnknownIntegrationError
 from intergrax.integrations.contracts.execution_integration_configuration import (
     EffectiveIntegrationIdentity,
     ExecutionIntegrationConfigurationAdoption,
@@ -33,6 +33,7 @@ from intergrax.integrations.contracts.integration_profile import IntegrationProf
 from intergrax.integrations.registry.catalog import get_entry
 from intergrax.integrations.registry.contract_spec import validate_contract_spec_identity
 from intergrax.integrations.registry.factory import resolve, resolve_from_profile
+from intergrax.runtime.integrations.contract_metadata import CategoryIntegrationInstance
 from intergrax.runtime.integrations.contracts import PlatformIntegrationContract
 
 
@@ -46,17 +47,14 @@ class ExecutionBoundIntegrationMaterializationPort(Protocol):
         *,
         slug: str,
         profile: IntegrationProfile | None = None,
-        config: Mapping[str, object] | None = None,
-    ) -> PlatformIntegrationContract:
+    ) -> CategoryIntegrationInstance:
         ...
 
     def resolve_from_profile(
         self,
         profile: IntegrationProfile,
         category: IntegrationCategory,
-        *,
-        config: Mapping[str, object] | None = None,
-    ) -> object:
+    ) -> CategoryIntegrationInstance:
         ...
 
 
@@ -69,18 +67,21 @@ class _DefaultExecutionBoundIntegrationMaterialization(
         *,
         slug: str,
         profile: IntegrationProfile | None = None,
-        config: Mapping[str, object] | None = None,
-    ) -> PlatformIntegrationContract:
-        return resolve(category, slug=slug, profile=profile, config=config)
+    ) -> CategoryIntegrationInstance:
+        return resolve(category, slug=slug, profile=profile, config=None)
 
     def resolve_from_profile(
         self,
         profile: IntegrationProfile,
         category: IntegrationCategory,
-        *,
-        config: Mapping[str, object] | None = None,
-    ) -> object:
-        return resolve_from_profile(profile, category, config=config)
+    ) -> CategoryIntegrationInstance:
+        instance = resolve_from_profile(profile, category, config=None)
+        if not isinstance(instance, PlatformIntegrationContract):
+            raise ExecutionIntegrationConfigurationAdoptionError(
+                ExecutionIntegrationConfigurationAdoptionFailureReason.EFFECTIVE_PROVIDER_IDENTITY_UNAVAILABLE,
+                detail="profile materialization is not PlatformIntegrationContract",
+            )
+        return instance
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,7 +91,6 @@ class ExecutionBoundIntegrationResolutionRequest:
     adoption: ExecutionIntegrationConfigurationAdoption
     integration_profile: IntegrationProfile | None = None
     catalog_slug: str | None = None
-    resolve_config: Mapping[str, object] | None = None
     resource_scope: str | None = None
 
 
@@ -101,8 +101,13 @@ class ExecutionBoundIntegrationResolutionResult:
     subject: IntegrationConfigurationSubject
 
 
+@dataclass(frozen=True, slots=True)
+class ExecutionBoundIntegrationMaterializedResult(ExecutionBoundIntegrationResolutionResult):
+    materialized: CategoryIntegrationInstance
+
+
 class ExecutionBoundIntegrationResolution:
-    """Observe effective provider identity, validate adoption, pin provenance."""
+    """Pattern A lifecycle — materialize, validate, pin; retain materialized instance."""
 
     def __init__(
         self,
@@ -117,6 +122,17 @@ class ExecutionBoundIntegrationResolution:
         self,
         request: ExecutionBoundIntegrationResolutionRequest,
     ) -> ExecutionBoundIntegrationResolutionResult:
+        materialized = self.materialize_validate_and_pin(request)
+        return ExecutionBoundIntegrationResolutionResult(
+            effective=materialized.effective,
+            provenance=materialized.provenance,
+            subject=materialized.subject,
+        )
+
+    def materialize_validate_and_pin(
+        self,
+        request: ExecutionBoundIntegrationResolutionRequest,
+    ) -> ExecutionBoundIntegrationMaterializedResult:
         adoption = request.adoption
         binding = adoption.configured_binding
         category = adoption.integration_category
@@ -124,12 +140,16 @@ class ExecutionBoundIntegrationResolution:
             raise ExecutionIntegrationConfigurationAdoptionError(
                 ExecutionIntegrationConfigurationAdoptionFailureReason.CONFIGURED_ADOPTION_TENANT_MISMATCH,
             )
-        effective = self._observe_effective_identity(
+        materialized, profile_used = self._materialize_instance(
             category=category,
             configured_provider_id=binding.provider_id,
             profile=request.integration_profile,
             catalog_slug=request.catalog_slug,
-            resolve_config=request.resolve_config,
+        )
+        effective = _effective_identity_from_materialized(
+            category=category,
+            materialized=materialized,
+            profile_used=profile_used,
         )
         scope = request.resource_scope if request.resource_scope is not None else adoption.resource_scope
         validate_configured_adoption_match(
@@ -172,50 +192,44 @@ class ExecutionBoundIntegrationResolution:
             self._pinning_store.pin(subject=subject, provenance=provenance)
         except ExecutionIntegrationConfigurationPinningError:
             raise
-        return ExecutionBoundIntegrationResolutionResult(
+        return ExecutionBoundIntegrationMaterializedResult(
             effective=effective,
             provenance=provenance,
             subject=subject,
+            materialized=materialized,
         )
 
-    def _observe_effective_identity(
+    def _materialize_instance(
         self,
         *,
         category: IntegrationCategory,
         configured_provider_id: str,
         profile: IntegrationProfile | None,
         catalog_slug: str | None,
-        resolve_config: Mapping[str, object] | None,
-    ) -> EffectiveIntegrationIdentity:
+    ) -> tuple[CategoryIntegrationInstance, bool]:
         if category is IntegrationCategory.EXTERNAL_WORK:
             raise ExecutionIntegrationConfigurationAdoptionError(
                 ExecutionIntegrationConfigurationAdoptionFailureReason.EFFECTIVE_PROVIDER_IDENTITY_UNAVAILABLE,
                 detail="external_work configured adoption unsupported",
             )
         if profile is not None:
-            instance = self._materialization.resolve_from_profile(
-                profile,
-                category,
-                config=resolve_config,
-            )
-            if not isinstance(instance, PlatformIntegrationContract):
-                raise ExecutionIntegrationConfigurationAdoptionError(
-                    ExecutionIntegrationConfigurationAdoptionFailureReason.EFFECTIVE_PROVIDER_IDENTITY_UNAVAILABLE,
-                    detail="profile materialization is not PlatformIntegrationContract",
-                )
-            return EffectiveIntegrationIdentity(
-                integration_category=category,
-                provider_id=instance.provider_id,
-                materialization_kind=IntegrationMaterializationKind.PROFILE_PREBUILT,
-            )
+            instance = self._materialization.resolve_from_profile(profile, category)
+            return instance, True
         slug = catalog_slug if catalog_slug is not None else configured_provider_id
         materialized = self._materialization.resolve_catalog(
             category,
             slug=slug,
             profile=profile,
-            config=resolve_config,
         )
-        entry = get_entry(slug)
+        try:
+            entry = get_entry(slug)
+        except UnknownIntegrationError:
+            if materialized.provider_id != configured_provider_id:
+                raise ExecutionIntegrationConfigurationAdoptionError(
+                    ExecutionIntegrationConfigurationAdoptionFailureReason.EFFECTIVE_PROVIDER_IDENTITY_UNAVAILABLE,
+                    detail="catalog slug unavailable for configured provider validation",
+                ) from None
+            return materialized, False
         for spec in entry.contract_specs:
             if spec.category == category:
                 validate_contract_spec_identity(
@@ -224,15 +238,29 @@ class ExecutionBoundIntegrationResolution:
                     observed_provider_id=materialized.provider_id,
                 )
                 break
-        return EffectiveIntegrationIdentity(
-            integration_category=category,
-            provider_id=materialized.provider_id,
-            materialization_kind=IntegrationMaterializationKind.CATALOG_FACTORY,
-        )
+        return materialized, False
+
+
+def _effective_identity_from_materialized(
+    *,
+    category: IntegrationCategory,
+    materialized: PlatformIntegrationContract,
+    profile_used: bool,
+) -> EffectiveIntegrationIdentity:
+    return EffectiveIntegrationIdentity(
+        integration_category=category,
+        provider_id=materialized.provider_id,
+        materialization_kind=(
+            IntegrationMaterializationKind.PROFILE_PREBUILT
+            if profile_used
+            else IntegrationMaterializationKind.CATALOG_FACTORY
+        ),
+    )
 
 
 __all__ = [
     "ExecutionBoundIntegrationMaterializationPort",
+    "ExecutionBoundIntegrationMaterializedResult",
     "ExecutionBoundIntegrationResolution",
     "ExecutionBoundIntegrationResolutionRequest",
     "ExecutionBoundIntegrationResolutionResult",

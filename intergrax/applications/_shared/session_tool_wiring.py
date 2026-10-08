@@ -28,6 +28,7 @@ def wire_session_storage_tool_binding(
         observability_backends=dict(ctx.observability_backends),
         object_storage=ctx.object_storage,
         relational_store=ctx.relational_store,
+        relational_store_execution=ctx.relational_store_execution,
         document_store=ctx.document_store,
         browser_automation=ctx.browser_automation,
         document_parser=ctx.document_parser,

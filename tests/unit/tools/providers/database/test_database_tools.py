@@ -9,8 +9,18 @@ import pytest
 import sqlite3
 
 from intergrax.tools.providers.database.contracts import DatabaseDescribeSchemaInput, DatabaseExecuteInput, DatabaseQueryInput
+from intergrax.integrations.relational_store_execution_adapter import (
+    RelationalStoreExecutionAdapter,
+)
 from intergrax.tools.providers.database.service import database_describe_schema, database_execute, database_query
 from intergrax.tools.registry.wiring import ToolWiringContext
+
+
+def _ctx_with_store(store: InMemoryRelationalStore) -> ToolWiringContext:
+    return ToolWiringContext(
+        relational_store=store,
+        relational_store_execution=RelationalStoreExecutionAdapter(store),
+    )
 
 pytestmark = pytest.mark.unit
 
@@ -37,7 +47,7 @@ class InMemoryRelationalStore:
 
 
 def test_database_query_returns_rows() -> None:
-    ctx = ToolWiringContext(relational_store=InMemoryRelationalStore())
+    ctx = _ctx_with_store(InMemoryRelationalStore())
     database_execute(ctx, DatabaseExecuteInput(sql="INSERT INTO items (id, name) VALUES (?, ?)", params=[1, "alpha"]))
     out = database_query(ctx, DatabaseQueryInput(sql="SELECT * FROM items"))
     assert out.row_count == 1
@@ -46,7 +56,7 @@ def test_database_query_returns_rows() -> None:
 
 def test_database_execute_inserts_row() -> None:
     store = InMemoryRelationalStore()
-    ctx = ToolWiringContext(relational_store=store)
+    ctx = _ctx_with_store(store)
     database_execute(ctx, DatabaseExecuteInput(sql="INSERT INTO items (id, name) VALUES (?, ?)", params=[1, "alpha"]))
     database_execute(ctx, DatabaseExecuteInput(sql="INSERT INTO items (id, name) VALUES (?, ?)", params=[2, "beta"]))
     out = database_query(ctx, DatabaseQueryInput(sql="SELECT * FROM items"))
@@ -54,7 +64,7 @@ def test_database_execute_inserts_row() -> None:
 
 
 def test_database_not_configured() -> None:
-    with pytest.raises(RuntimeError, match="relational_store_not_configured"):
+    with pytest.raises(RuntimeError, match="relational_store_execution_not_configured"):
         database_query(ToolWiringContext(), DatabaseQueryInput(sql="SELECT 1"))
 
 

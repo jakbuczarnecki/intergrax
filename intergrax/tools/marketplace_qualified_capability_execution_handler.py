@@ -34,9 +34,17 @@ from intergrax.contracts.tools.qualified_tool_invocation import (
     QualifiedToolInvocationMaterialRequest,
     QualifiedToolInvocationResolver,
 )
+from intergrax.integrations.contracts.execution_integration_configuration import (
+    ExecutionIntegrationConfigurationAdoption,
+)
 from intergrax.runtime.execution.qualified_capability_execution_handlers import (
     QualifiedCapabilityExecutionBindingHandler,
 )
+from intergrax.tools.configured_integration_tool_invocation_projection import (
+    ConfiguredIntegrationToolInvocationProjectionError,
+    ConfiguredIntegrationToolInvocationProjectionPort,
+)
+from intergrax.tools.invocation_wiring import ToolInvocationWiringResolver
 from intergrax.runtime.execution.suspended_operation.pause_required import (
     ExecutionSuspendedWorkPauseRequired,
 )
@@ -64,6 +72,9 @@ class MarketplaceToolQualifiedCapabilityExecutionHandler(
         material_provider: QualifiedToolInvocationMaterialProvider,
         invocation_resolver: QualifiedToolInvocationResolver,
         catalog_tool_invoker: ExecutionBoundCatalogToolInvoker,
+        configured_invocation_projection: (
+            ConfiguredIntegrationToolInvocationProjectionPort | None
+        ) = None,
     ) -> None:
         self._intent_repository = intent_repository
         self._stage_repository = stage_repository
@@ -71,6 +82,7 @@ class MarketplaceToolQualifiedCapabilityExecutionHandler(
         self._material_provider = material_provider
         self._invocation_resolver = invocation_resolver
         self._catalog_tool_invoker = catalog_tool_invoker
+        self._configured_invocation_projection = configured_invocation_projection
 
     @property
     def binding_provider_id(self) -> str:
@@ -83,6 +95,9 @@ class MarketplaceToolQualifiedCapabilityExecutionHandler(
         run_id: RunId,
         attempt_id: AttemptId,
         execution_id: ExecutionId,
+        integration_configuration_adoption: (
+            ExecutionIntegrationConfigurationAdoption | None
+        ) = None,
     ) -> QualifiedCapabilityExecutionDelegateResult:
         _ = attempt_id
         target = request.execution_target
@@ -173,6 +188,20 @@ class MarketplaceToolQualifiedCapabilityExecutionHandler(
         if material is None:
             return _failed("material_missing")
 
+        wiring_resolver: ToolInvocationWiringResolver | None = None
+        if integration_configuration_adoption is not None:
+            if self._configured_invocation_projection is None:
+                return _failed("configured_invocation_projection_unavailable")
+            try:
+                wiring_resolver = self._configured_invocation_projection.project(
+                    tenant_id=request.tenant_id,
+                    execution_id=execution_id,
+                    adoption=integration_configuration_adoption,
+                    activated_tool_id=registry_tool_id,
+                )
+            except ConfiguredIntegrationToolInvocationProjectionError:
+                return _failed("configured_invocation_projection_failed")
+
         step_id = f"qmte:{request.execution_request_id}"
         invoke_request = self._invocation_resolver.resolve(
             activated_tool_id=registry_tool_id,
@@ -186,6 +215,7 @@ class MarketplaceToolQualifiedCapabilityExecutionHandler(
             execution_request_id=request.execution_request_id,
             correlation_request_id=str(execution_id),
             idempotency_key=f"qmte:{request.execution_request_id}:{intent.selected_operation}",
+            wiring_resolver=wiring_resolver,
         )
 
         try:
