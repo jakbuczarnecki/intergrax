@@ -10,6 +10,10 @@ import inspect
 import subprocess
 from pathlib import Path
 
+from testing_support.integration_configuration_payload_codecs import (
+    qualification_integration_configuration_payload_codec_registry,
+)
+
 import pytest
 
 from tests.qualification.state_x._state_x_closed_world_durable_state_support import (
@@ -99,11 +103,60 @@ def test_txp5r2p2_q07_in_memory_adapters_marked_non_durable() -> None:
         "InMemoryExecutionIntegrationConfigurationPinningStore",
     ):
         cls = getattr(persistence, cls_name)
-        instance = cls(payload_codecs=persistence.default_integration_configuration_payload_codec_registry()) if cls_name.startswith("InMemoryExisting") else cls()
+        instance = (
+            cls(payload_codecs=qualification_integration_configuration_payload_codec_registry())
+            if cls_name.startswith("InMemoryExisting")
+            else cls()
+        )
         assert instance.is_durable is False
 
 
 def test_txp5r2p2_q08_state_x_current_head_delta_classification() -> None:
     assert_durable_state_discovery_fully_classified()
     assert_family_inventory_closed_world()
+
+
+def test_txp5r2p2_q09_shared_persistence_has_no_sqlite_codec_import() -> None:
+    source = _PERSISTENCE_MODULE.read_text(encoding="utf-8")
+    assert "sqlite.configuration_payload_codec" not in source
+    assert "relational_store.sqlite" not in source
+
+
+def test_txp5r2p2_q10_wire_requires_explicit_payload_codecs() -> None:
+    persistence = importlib.import_module(
+        "intergrax.applications._shared.integrations.persistence",
+    )
+    signature = inspect.signature(persistence.wire_existing_capability_configuration_opportunity_store)
+    assert signature.parameters["payload_codecs"].default is inspect.Parameter.empty
+    assert not hasattr(persistence, "default_integration_configuration_payload_codec_registry")
+
+
+def test_txp5r2p2_q11_codec_registry_is_mapping_proxy_immutable() -> None:
+    codec_module = importlib.import_module(
+        "intergrax.integrations.contracts.integration_configuration_payload_codec",
+    )
+    registry_cls = codec_module.IntegrationConfigurationPayloadCodecRegistry
+    field = registry_cls.__dataclass_fields__["_codecs"]
+    assert "Mapping" in str(field.type)
+
+
+def test_txp5r2p2_q12_kv_crash_repair_regression_present() -> None:
+    unit_tests = (
+        _REPO_ROOT / "tests/unit/applications/integrations/test_trace_x_p5_r2_p2_persistence.py"
+    ).read_text(encoding="utf-8")
+    assert "test_kv_provenance_crash_after_index_before_record_fails_closed_then_repair" in unit_tests
+    assert "test_kv_provenance_legacy_orphan_record_without_index_repaired_on_retry" in unit_tests
+
+
+def test_txp5r2p2_q13_state_x_atomicity_does_not_claim_multi_record_transaction() -> None:
+    from tests.qualification.state_x._state_x_explicit_mechanism_classifications import (
+        EXPLICIT_MECHANISM_CLASSIFICATIONS,
+    )
+
+    entry = EXPLICIT_MECHANISM_CLASSIFICATIONS[
+        "path:intergrax/applications/_shared/integrations/persistence.py"
+    ]
+    text = entry.atomicity_semantics.lower()
+    assert "no distributed transaction" in text
+    assert "index" in text and "record" in text
 

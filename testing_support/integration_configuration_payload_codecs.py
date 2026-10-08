@@ -65,9 +65,20 @@ def qualification_integration_configuration_payload_codec_registry():
     )
 
 
+def sqlite_integration_configuration_payload_codec_registry():
+    from intergrax.integrations.providers.relational_store.sqlite.configuration_payload_codec import (
+        sqlite_relational_store_configuration_payload_codec,
+    )
+
+    return integration_configuration_payload_codec_registry(
+        codecs=(sqlite_relational_store_configuration_payload_codec(),),
+    )
+
+
 __all__ = [
     "TEST_CONFIGURATION_PAYLOAD_TYPE",
     "QualificationIntegrationConfigurationPayload",
     "QualificationIntegrationConfigurationPayloadCodec",
     "qualification_integration_configuration_payload_codec_registry",
+    "sqlite_integration_configuration_payload_codec_registry",
 ]

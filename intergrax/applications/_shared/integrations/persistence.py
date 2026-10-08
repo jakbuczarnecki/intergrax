@@ -46,12 +46,6 @@ from intergrax.integrations.contracts.document_store import (
     DocumentRecord,
     DocumentStore,
 )
-from intergrax.integrations.providers.relational_store.sqlite.configuration_payload_codec import (
-    sqlite_relational_store_configuration_payload_codec,
-)
-from intergrax.integrations.contracts.integration_configuration_payload_codec import (
-    integration_configuration_payload_codec_registry,
-)
 
 _OPPORTUNITY_KV_PREFIX = "configuration_opportunity"
 _OPPORTUNITY_DOCUMENT_PARTITION_PREFIX = "intergrax.configuration_opportunity.v1"
@@ -61,14 +55,6 @@ _PROVENANCE_KV_PREFIX = "integration_config_provenance"
 _PROVENANCE_INDEX_KV_PREFIX = "integration_config_provenance_index"
 _PROVENANCE_DOCUMENT_PARTITION_PREFIX = "intergrax.integration_config_provenance_pinning.v1"
 _PROVENANCE_SCHEMA_VERSION = 1
-
-
-def default_integration_configuration_payload_codec_registry() -> (
-    IntegrationConfigurationPayloadCodecRegistry
-):
-    return integration_configuration_payload_codec_registry(
-        codecs=(sqlite_relational_store_configuration_payload_codec(),),
-    )
 
 
 def _opportunity_kv_key(configuration_ref: ConfigurationOpportunityRef) -> str:
@@ -519,7 +505,7 @@ def _append_provenance_index_entry(
             )
         if subject_key in existing:
             return
-        updated = sorted(existing + [subject_key])
+        updated = sorted(set(existing + [subject_key]))
         new_raw = json.dumps(updated, separators=(",", ":")).encode("utf-8")
         if kv_store.compare_and_set(
             tenant_id=tenant_id,
@@ -534,6 +520,23 @@ def _sorted_provenance_records(
     records: list[ExecutionIntegrationConfigurationProvenance],
 ) -> tuple[ExecutionIntegrationConfigurationProvenance, ...]:
     return tuple(records)
+
+
+def _parse_provenance_index_subject_keys(
+    subject_keys: list[object],
+) -> tuple[str, ...]:
+    if not all(type(x) is str for x in subject_keys):
+        raise ExecutionIntegrationConfigurationPinningError(
+            ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+            detail="invalid provenance index entry",
+        )
+    typed = [x for x in subject_keys if type(x) is str]
+    if len(typed) != len(set(typed)):
+        raise ExecutionIntegrationConfigurationPinningError(
+            ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+            detail="duplicate provenance index subject key",
+        )
+    return tuple(sorted(typed))
 
 
 def _subject_sort_key(subject: IntegrationConfigurationSubject) -> tuple[str, str, str, str]:
@@ -566,24 +569,34 @@ class KvExecutionIntegrationConfigurationPinningStore:
         execution_id = validate_execution_id(provenance.execution_id)
         encoded = encode_integration_configuration_provenance(provenance, subject=subject)
         key = _provenance_kv_key(execution_id, subject)
+        subject_key = _subject_row_key(subject)
+        _append_provenance_index_entry(
+            self._kv_store,
+            tenant_id=tenant,
+            execution_id=execution_id,
+            subject_key=subject_key,
+        )
         if self._kv_store.compare_and_set(
             tenant_id=tenant,
             key=key,
             expected=None,
             new_value=encoded,
         ):
-            _append_provenance_index_entry(
-                self._kv_store,
-                tenant_id=tenant,
-                execution_id=execution_id,
-                subject_key=_subject_row_key(subject),
-            )
             return
         existing_raw = self._kv_store.get(tenant_id=tenant, key=key)
         if existing_raw is None:
+            if self._kv_store.compare_and_set(
+                tenant_id=tenant,
+                key=key,
+                expected=None,
+                new_value=encoded,
+            ):
+                return
+            existing_raw = self._kv_store.get(tenant_id=tenant, key=key)
+        if existing_raw is None:
             raise ExecutionIntegrationConfigurationPinningError(
                 ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
-                detail="provenance compare-and-set failed",
+                detail="provenance record missing after index marker",
             )
         _, existing = decode_integration_configuration_provenance(existing_raw)
         if existing != provenance:
@@ -618,12 +631,7 @@ class KvExecutionIntegrationConfigurationPinningStore:
                 detail="invalid provenance index shape",
             )
         pairs: list[tuple[IntegrationConfigurationSubject, ExecutionIntegrationConfigurationProvenance]] = []
-        for subject_key in sorted(subject_keys):
-            if type(subject_key) is not str:
-                raise ExecutionIntegrationConfigurationPinningError(
-                    ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
-                    detail="invalid provenance index entry",
-                )
+        for subject_key in _parse_provenance_index_subject_keys(subject_keys):
             pin_key = f"{_PROVENANCE_KV_PREFIX}:{validated_execution_id}:{subject_key}"
             raw = self._kv_store.get(tenant_id=tenant, key=pin_key)
             if raw is None:
@@ -820,11 +828,11 @@ class InMemoryExecutionIntegrationConfigurationPinningStore:
 
 def wire_existing_capability_configuration_opportunity_store(
     *,
+    payload_codecs: IntegrationConfigurationPayloadCodecRegistry,
     kv_store: DistributedKVStore | None = None,
     document_store: DocumentStore | None = None,
-    payload_codecs: IntegrationConfigurationPayloadCodecRegistry | None = None,
 ) -> ExistingCapabilityConfigurationOpportunityStore:
-    codecs = payload_codecs or default_integration_configuration_payload_codec_registry()
+    codecs = payload_codecs
     if kv_store is not None and document_store is not None:
         raise ValueError(
             "wire_existing_capability_configuration_opportunity_store accepts one backing store",
@@ -876,7 +884,6 @@ __all__ = [
     "KvExecutionIntegrationConfigurationPinningStore",
     "decode_configuration_opportunity",
     "decode_integration_configuration_provenance",
-    "default_integration_configuration_payload_codec_registry",
     "encode_configuration_opportunity",
     "encode_integration_configuration_provenance",
     "wire_existing_capability_configuration_opportunity_store",

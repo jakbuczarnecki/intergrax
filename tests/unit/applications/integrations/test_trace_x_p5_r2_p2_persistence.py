@@ -55,9 +55,12 @@ from intergrax.applications._shared.integrations.persistence import (
     InMemoryExecutionIntegrationConfigurationPinningStore,
     KvExistingCapabilityConfigurationOpportunityStore,
     KvExecutionIntegrationConfigurationPinningStore,
+    _provenance_index_kv_key,
+    _provenance_kv_key,
     decode_configuration_opportunity,
     encode_configuration_opportunity,
     encode_integration_configuration_provenance,
+    wire_existing_capability_configuration_opportunity_store,
 )
 from intergrax.applications._shared.integrations.integration_configuration_provenance_reader import (
     PinningStoreExecutionIntegrationConfigurationProvenanceReader,
@@ -73,9 +76,14 @@ pytestmark = pytest.mark.unit
 _EXEC = validate_execution_id("exec_01234567890123456789012345678901")
 
 
+class SimulatedProcessCrash(RuntimeError):
+    """Deterministic crash injection for KV provenance pinning tests."""
+
+
 class InMemoryKVStore(DistributedKVStore):
     def __init__(self) -> None:
         self._data: dict[tuple[str, str], bytes] = {}
+        self.abort_before_provenance_record_cas = False
 
     def get(self, tenant_id: str, key: str) -> bytes | None:
         return self._data.get((tenant_id, key))
@@ -104,6 +112,12 @@ class InMemoryKVStore(DistributedKVStore):
         ttl_seconds: int | None = None,
     ) -> bool:
         del ttl_seconds
+        if (
+            self.abort_before_provenance_record_cas
+            and key.startswith("integration_config_provenance:")
+            and expected is None
+        ):
+            raise SimulatedProcessCrash("simulated crash before provenance record CAS")
         current = self._data.get((tenant_id, key))
         if current != expected:
             return False
@@ -421,3 +435,50 @@ def test_in_memory_stores_are_non_durable() -> None:
         payload_codecs=_test_codecs(),
     ).is_durable is False
     assert InMemoryExecutionIntegrationConfigurationPinningStore().is_durable is False
+
+
+def test_kv_provenance_crash_after_index_before_record_fails_closed_then_repair() -> None:
+    backing = InMemoryKVStore()
+    backing.abort_before_provenance_record_cas = True
+    store_a = KvExecutionIntegrationConfigurationPinningStore(backing)
+    subject = _subject()
+    record = _provenance_configured_adopted()
+    with pytest.raises(SimulatedProcessCrash):
+        store_a.pin(subject=subject, provenance=record)
+    store_b = KvExecutionIntegrationConfigurationPinningStore(backing)
+    with pytest.raises(ExecutionIntegrationConfigurationPinningError) as incomplete:
+        store_b.read_all(tenant_id="tenant-a", execution_id=_EXEC)
+    assert incomplete.value.reason == ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD
+    backing.abort_before_provenance_record_cas = False
+    store_c = KvExecutionIntegrationConfigurationPinningStore(backing)
+    store_c.pin(subject=subject, provenance=record)
+    store_d = KvExecutionIntegrationConfigurationPinningStore(backing)
+    assert store_d.read_all(tenant_id="tenant-a", execution_id=_EXEC) == (record,)
+
+
+def test_kv_provenance_legacy_orphan_record_without_index_repaired_on_retry() -> None:
+    backing = InMemoryKVStore()
+    subject = _subject()
+    record = _provenance_configured_adopted()
+    encoded = encode_integration_configuration_provenance(record, subject=subject)
+    backing.set(
+        tenant_id="tenant-a",
+        key=_provenance_kv_key(_EXEC, subject),
+        value=encoded,
+    )
+    assert backing.get(tenant_id="tenant-a", key=_provenance_index_kv_key(_EXEC)) is None
+    store = KvExecutionIntegrationConfigurationPinningStore(backing)
+    assert store.read_all(tenant_id="tenant-a", execution_id=_EXEC) == ()
+    store.pin(subject=subject, provenance=record)
+    restarted = KvExecutionIntegrationConfigurationPinningStore(backing)
+    assert restarted.read_all(tenant_id="tenant-a", execution_id=_EXEC) == (record,)
+
+
+def test_wire_opportunity_store_requires_explicit_payload_codecs() -> None:
+    with pytest.raises(TypeError):
+        wire_existing_capability_configuration_opportunity_store(kv_store=InMemoryKVStore())
+    wired = wire_existing_capability_configuration_opportunity_store(
+        payload_codecs=_test_codecs(),
+        kv_store=InMemoryKVStore(),
+    )
+    assert wired.is_durable is True

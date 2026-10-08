@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | **START_HEAD** | `9351cd7ff8697e38a169afb24b14865b2206a98a` |
-| **Status** | **READY FOR AUDIT** |
+| **Status** | **BLOCKED ON P2-R1 INDEPENDENT AUDIT** |
 | **Owner** | TRACE-X-P5-R2-P2 |
 
 ## Closed-world inventory (pre-edit)
@@ -79,3 +79,13 @@ Gate: `tests/qualification/trace_x/test_trace_x_p5_r2_p2_persistence_gates.py::t
 
 - `tests/unit/applications/integrations/test_trace_x_p5_r2_p2_persistence.py`
 - `tests/qualification/trace_x/test_trace_x_p5_r2_p2_persistence_gates.py`
+
+## TRACE-X-P5-R2-P2-R1 — Durable atomicity & codec registry hardening
+
+| Blocker | Root cause | Before | Remediation | Tests | Status |
+|---|---|---|---|---|---|
+| **R2-P2-KV-PROVENANCE-ATOMICITY-01** | Record CAS before index CAS allowed durable orphan records invisible to `read_all()` | `pin`: record → index | Index marker first, then record CAS; incomplete index-without-record fails closed; retry completes; legacy record-without-index healed on retry | `test_kv_provenance_crash_after_index_before_record_fails_closed_then_repair`, `test_kv_provenance_legacy_orphan_record_without_index_repaired_on_retry`, gates `q12` | **READY FOR AUDIT** |
+| **R2-P2-CODEC-DEFAULT-SELECTION-02** | `wire_*` accepted `payload_codecs=None` and imported SQLite codec in shared persistence | Implicit `default_integration_configuration_payload_codec_registry()` | Mandatory `payload_codecs`; SQLite import removed from shared persistence; test helpers compose SQLite explicitly | `test_wire_opportunity_store_requires_explicit_payload_codecs`, gates `q09`–`q10` | **READY FOR AUDIT** |
+| **R2-P2-CODEC-REGISTRY-MUTABILITY-03** | Registry held mutable `dict` | Frozen dataclass with mutable dict field | `MappingProxyType` + construction validation; encode/decode identity checks | `tests/unit/integrations/test_integration_configuration_payload_codec_registry.py`, gate `q11` | **READY FOR AUDIT** |
+
+**P2 remains not CLOSED.** `R2-P2-STATE-X-DELTA-CLASSIFICATION-01` = **READY FOR AUDIT** (atomicity text updated; discovery gate `q08`).

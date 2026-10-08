@@ -1773,10 +1773,20 @@ EXPLICIT_MECHANISM_CLASSIFICATIONS: dict[str, ExplicitMechanismClassification] =
             "provenance: tenant_id+ExecutionId+IntegrationConfigurationSubject"
         ),
         authority_semantics="stores immutable facts only; cannot mint governance or execution authority",
-        atomicity_semantics="per-record CAS (KV) or put_if_absent (document store)",
+        atomicity_semantics=(
+            "Opportunity: single immutable CAS / put_if_absent; "
+            "Document provenance: single subject record + partition-query discovery; "
+            "KV provenance: idempotent index/discovery marker then immutable subject-record CAS "
+            "(no distributed transaction between index and record); incomplete marker/record state "
+            "fails closed on read_all; idempotent pin retry converges/repairs including legacy "
+            "record-without-index orphans"
+        ),
         stale_conflict_behavior="identical re-write idempotent; conflicting immutable content fail closed",
         corruption_behavior="typed CORRUPT_RECORD / UNSUPPORTED_SCHEMA_VERSION on decode",
-        restart_restore_behavior="new adapter instance over same backing reads identical typed records",
+        restart_restore_behavior=(
+            "new adapter instance over same backing reads identical typed records; "
+            "KV partial pin (index without record) fails closed until retry completes record"
+        ),
         backup_restore_responsibility="BACKEND/OPERATOR WITH PLATFORM CONSISTENCY",
         owner_stage="TRACE-X-P5-R2-P2",
         evidence=("intergrax/applications/_shared/integrations/persistence.py",),
