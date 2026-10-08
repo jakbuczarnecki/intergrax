@@ -89,3 +89,15 @@ Gate: `tests/qualification/trace_x/test_trace_x_p5_r2_p2_persistence_gates.py::t
 | **R2-P2-CODEC-REGISTRY-MUTABILITY-03** | Registry held mutable `dict` | Frozen dataclass with mutable dict field | `MappingProxyType` + construction validation; encode/decode identity checks | `tests/unit/integrations/test_integration_configuration_payload_codec_registry.py`, gate `q11` | **READY FOR AUDIT** |
 
 **P2 remains not CLOSED.** `R2-P2-STATE-X-DELTA-CLASSIFICATION-01` = **READY FOR AUDIT** (atomicity text updated; discovery gate `q08`).
+
+## TRACE-X-P5-R2-P2-R2 — DocumentStore provenance pagination completeness
+
+| Blocker | Root cause | Before | Remediation | Tests | Status |
+|---|---|---|---|---|---|
+| **R2-P2-DOCUMENT-PROVENANCE-PAGINATION-04** | `DocumentStoreExecutionIntegrationConfigurationPinningStore.read_all()` issued one `query(..., limit=1000)` and ignored `DocumentQueryPageV1.next_cursor`, returning only the first storage page | Single-page truncation for partitions &gt; 1000 rows (or provider-capped pages) | Bounded `while` traversal using opaque `cursor=` + `next_cursor`; fail-closed on repeated/cyclic cursors; duplicate row-key/subject guards; row-key ↔ decoded-subject integrity; deterministic sort unchanged | `test_document_provenance_read_all_paginates_all_records`, `test_document_provenance_provider_caps_page_below_requested_limit`, `test_document_provenance_read_all_matches_kv_with_pagination`, cursor adversarial + corruption tests, gates `q14`–`q15` | **READY FOR AUDIT** |
+
+**Cursor safety:** `next_cursor == cursor` or any repeated cursor token → `CORRUPT_RECORD` (no partial provenance). Empty `documents` with `next_cursor` continues traversal.
+
+**Backend parity:** KV `read_all()` semantics preserved; DocumentStore adapter now returns the complete subject set with the same deterministic ordering.
+
+**Operational note (&gt;1000 rows):** Multi-page proof uses provider-capped pages (`max_page_size=2`, five records) rather than materializing 1001 heavyweight rows; default adapter page size remains `1000`.

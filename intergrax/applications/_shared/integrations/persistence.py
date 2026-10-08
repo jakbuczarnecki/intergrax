@@ -55,6 +55,7 @@ _PROVENANCE_KV_PREFIX = "integration_config_provenance"
 _PROVENANCE_INDEX_KV_PREFIX = "integration_config_provenance_index"
 _PROVENANCE_DOCUMENT_PARTITION_PREFIX = "intergrax.integration_config_provenance_pinning.v1"
 _PROVENANCE_SCHEMA_VERSION = 1
+_PROVENANCE_DOCUMENT_QUERY_PAGE_SIZE = 1000
 
 
 def _opportunity_kv_key(configuration_ref: ConfigurationOpportunityRef) -> str:
@@ -708,19 +709,62 @@ class DocumentStoreExecutionIntegrationConfigurationPinningStore:
         tenant = require_tenant_id_for_integration_configuration_provenance(tenant_id)
         validated_execution_id = validate_execution_id(execution_id)
         partition = _provenance_document_partition(tenant, validated_execution_id)
-        page = self._document_store.query(partition, limit=1000)
         pairs: list[tuple[IntegrationConfigurationSubject, ExecutionIntegrationConfigurationProvenance]] = []
-        for document in page.documents:
-            subject, record = decode_integration_configuration_provenance(
-                _provenance_record_to_bytes(document),
+        seen_row_keys: set[str] = set()
+        seen_subjects: set[tuple[str, str, str, str]] = set()
+        seen_cursors: set[str] = set()
+        cursor: str | None = None
+        while True:
+            if cursor is not None:
+                if cursor in seen_cursors:
+                    raise ExecutionIntegrationConfigurationPinningError(
+                        ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+                        detail="non-progressing document provenance query cursor",
+                    )
+                seen_cursors.add(cursor)
+            page = self._document_store.query(
+                partition,
+                limit=_PROVENANCE_DOCUMENT_QUERY_PAGE_SIZE,
+                cursor=cursor,
             )
-            validate_execution_integration_configuration_provenance_record(
-                record,
-                expected_tenant_id=tenant,
-                expected_execution_id=validated_execution_id,
-            )
-            pairs.append((subject, record))
-        pairs.sort(key=lambda item: (_subject_sort_key(item[0]), item[1].execution_id))
+            for document in page.documents:
+                if document.row_key in seen_row_keys:
+                    raise ExecutionIntegrationConfigurationPinningError(
+                        ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+                        detail="duplicate provenance document row key",
+                    )
+                seen_row_keys.add(document.row_key)
+                subject, record = decode_integration_configuration_provenance(
+                    _provenance_record_to_bytes(document),
+                )
+                if document.row_key != _subject_row_key(subject):
+                    raise ExecutionIntegrationConfigurationPinningError(
+                        ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+                        detail="provenance document row key does not match decoded subject",
+                    )
+                validate_execution_integration_configuration_provenance_record(
+                    record,
+                    expected_tenant_id=tenant,
+                    expected_execution_id=validated_execution_id,
+                )
+                subject_identity = _subject_sort_key(subject)
+                if subject_identity in seen_subjects:
+                    raise ExecutionIntegrationConfigurationPinningError(
+                        ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+                        detail="duplicate provenance subject in document query result",
+                    )
+                seen_subjects.add(subject_identity)
+                pairs.append((subject, record))
+            next_cursor = page.next_cursor
+            if next_cursor is None:
+                break
+            if next_cursor == cursor:
+                raise ExecutionIntegrationConfigurationPinningError(
+                    ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD,
+                    detail="non-progressing document provenance query cursor",
+                )
+            cursor = next_cursor
+        pairs.sort(key=lambda item: _subject_sort_key(item[0]))
         return _sorted_provenance_records([record for _, record in pairs])
 
 

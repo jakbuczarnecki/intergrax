@@ -148,6 +148,43 @@ def test_txp5r2p2_q12_kv_crash_repair_regression_present() -> None:
     assert "test_kv_provenance_legacy_orphan_record_without_index_repaired_on_retry" in unit_tests
 
 
+def test_txp5r2p2_q14_document_provenance_read_all_traverses_next_cursor() -> None:
+    source = _PERSISTENCE_MODULE.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    document_read_all = None
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ClassDef) and node.name == (
+            "DocumentStoreExecutionIntegrationConfigurationPinningStore"
+        ):
+            for item in node.body:
+                if isinstance(item, ast.FunctionDef) and item.name == "read_all":
+                    document_read_all = item
+    assert document_read_all is not None
+    body_source = ast.get_source_segment(source, document_read_all) or ""
+    assert "next_cursor" in body_source
+    assert "cursor=" in body_source.replace(" ", "")
+    assert "while " in body_source
+
+
+def test_txp5r2p2_q15_document_provenance_read_all_pagination_behavioral() -> None:
+    from intergrax.contracts.execution_identity import validate_execution_id
+    from intergrax.applications._shared.integrations.persistence import (
+        DocumentStoreExecutionIntegrationConfigurationPinningStore,
+    )
+    from tests.unit.applications.integrations.test_trace_x_p5_r2_p2_persistence import (
+        InMemoryConditionalDocumentStore,
+        _pin_distinct_provenance_records,
+    )
+
+    execution_id = validate_execution_id("exec_01234567890123456789012345678901")
+    backing = InMemoryConditionalDocumentStore(max_page_size=2)
+    store = DocumentStoreExecutionIntegrationConfigurationPinningStore(backing)
+    expected = _pin_distinct_provenance_records(store, 5)
+    read = store.read_all(tenant_id="tenant-a", execution_id=execution_id)
+    assert read == tuple(expected)
+    assert backing.query_call_count >= 3
+
+
 def test_txp5r2p2_q13_state_x_atomicity_does_not_claim_multi_record_transaction() -> None:
     from tests.qualification.state_x._state_x_explicit_mechanism_classifications import (
         EXPLICIT_MECHANISM_CLASSIFICATIONS,

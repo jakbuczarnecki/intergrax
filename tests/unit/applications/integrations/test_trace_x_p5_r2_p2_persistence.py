@@ -57,6 +57,7 @@ from intergrax.applications._shared.integrations.persistence import (
     KvExecutionIntegrationConfigurationPinningStore,
     _provenance_index_kv_key,
     _provenance_kv_key,
+    _subject_row_key,
     decode_configuration_opportunity,
     encode_configuration_opportunity,
     encode_integration_configuration_provenance,
@@ -126,8 +127,10 @@ class InMemoryKVStore(DistributedKVStore):
 
 
 class InMemoryConditionalDocumentStore(ConditionalDocumentStore):
-    def __init__(self) -> None:
+    def __init__(self, *, max_page_size: int | None = None) -> None:
         self._records: dict[tuple[str, str], DocumentRecord] = {}
+        self._max_page_size = max_page_size
+        self.query_call_count = 0
 
     def get(self, partition_key: str, row_key: str) -> DocumentRecord | None:
         return self._records.get((partition_key, row_key))
@@ -149,7 +152,8 @@ class InMemoryConditionalDocumentStore(ConditionalDocumentStore):
         data_equalities=(),
         sort=(),
     ) -> DocumentQueryPageV1:
-        del cursor, row_key_upper_bound, data_equalities, sort
+        del row_key_upper_bound, data_equalities, sort
+        self.query_call_count += 1
         docs = [
             record
             for (partition, _), record in self._records.items()
@@ -157,7 +161,18 @@ class InMemoryConditionalDocumentStore(ConditionalDocumentStore):
             and (row_key_prefix is None or record.row_key.startswith(row_key_prefix))
         ]
         docs.sort(key=lambda d: d.row_key)
-        return DocumentQueryPageV1(documents=tuple(docs[:limit]))
+        start = 0
+        if cursor is not None:
+            if not cursor.startswith("offset:"):
+                raise ValueError(f"unsupported test cursor: {cursor}")
+            start = int(cursor.split(":", 1)[1])
+        page_size = limit
+        if self._max_page_size is not None:
+            page_size = min(page_size, self._max_page_size)
+        page_docs = docs[start : start + page_size]
+        next_offset = start + len(page_docs)
+        next_cursor = f"offset:{next_offset}" if next_offset < len(docs) else None
+        return DocumentQueryPageV1(documents=tuple(page_docs), next_cursor=next_cursor)
 
     def close(self) -> None:
         return None
@@ -172,6 +187,89 @@ class InMemoryConditionalDocumentStore(ConditionalDocumentStore):
     def replace_if_match(self, *, expected: DocumentRecord, replacement: DocumentRecord) -> bool:
         del expected, replacement
         return False
+
+
+class ScriptedQueryDocumentStore(InMemoryConditionalDocumentStore):
+    """Test double that can return scripted query pages before falling back to storage."""
+
+    def __init__(
+        self,
+        *,
+        scripted_pages: tuple[DocumentQueryPageV1, ...] = (),
+        share_records_from: InMemoryConditionalDocumentStore | None = None,
+    ) -> None:
+        super().__init__()
+        if share_records_from is not None:
+            self._records = share_records_from._records
+        self._scripted_pages = list(scripted_pages)
+        self._scripted_page_index = 0
+
+    def query(
+        self,
+        partition_key: str,
+        *,
+        limit: int = 100,
+        row_key_prefix: str | None = None,
+        cursor: str | None = None,
+        row_key_upper_bound: str | None = None,
+        data_equalities=(),
+        sort=(),
+    ) -> DocumentQueryPageV1:
+        if self._scripted_page_index < len(self._scripted_pages):
+            page = self._scripted_pages[self._scripted_page_index]
+            self._scripted_page_index += 1
+            del partition_key, limit, row_key_prefix, cursor, row_key_upper_bound, data_equalities, sort
+            self.query_call_count += 1
+            return page
+        return super().query(
+            partition_key,
+            limit=limit,
+            row_key_prefix=row_key_prefix,
+            cursor=cursor,
+            row_key_upper_bound=row_key_upper_bound,
+            data_equalities=data_equalities,
+            sort=sort,
+        )
+
+
+def _pin_distinct_provenance_records(
+    store: DocumentStoreExecutionIntegrationConfigurationPinningStore | KvExecutionIntegrationConfigurationPinningStore,
+    count: int,
+    *,
+    tenant_id: str = "tenant-a",
+) -> list[ExecutionIntegrationConfigurationProvenance]:
+    base = _provenance_configured_adopted()
+    if tenant_id != "tenant-a":
+        base = replace(base, tenant_id=tenant_id, configured=_configured_slice(tenant_id=tenant_id))
+    records: list[ExecutionIntegrationConfigurationProvenance] = []
+    for index in range(count):
+        provider_id = f"prov-{index:04d}"
+        subject = _subject(provider_id=provider_id)
+        record = replace(
+            base,
+            configured=_configured_slice(provider_id=provider_id, tenant_id=tenant_id),
+            effective=EffectiveIntegrationIdentity(
+                integration_category=IntegrationCategory.RELATIONAL_STORE,
+                provider_id=provider_id,
+                materialization_kind=IntegrationMaterializationKind.CATALOG_FACTORY,
+            ),
+        )
+        store.pin(subject=subject, provenance=record)
+        records.append(record)
+    def _configured_sort_key(
+        item: ExecutionIntegrationConfigurationProvenance,
+    ) -> tuple[str, str, str, str]:
+        configured = item.configured
+        assert configured is not None
+        return (
+            configured.integration_category.value,
+            configured.provider_id,
+            configured.resource_scope,
+            configured.configuration_type,
+        )
+
+    records.sort(key=_configured_sort_key)
+    return records
 
 
 def _test_codecs():
@@ -472,6 +570,163 @@ def test_kv_provenance_legacy_orphan_record_without_index_repaired_on_retry() ->
     store.pin(subject=subject, provenance=record)
     restarted = KvExecutionIntegrationConfigurationPinningStore(backing)
     assert restarted.read_all(tenant_id="tenant-a", execution_id=_EXEC) == (record,)
+
+
+def test_document_provenance_read_all_paginates_all_records() -> None:
+    backing = InMemoryConditionalDocumentStore(max_page_size=2)
+    store = DocumentStoreExecutionIntegrationConfigurationPinningStore(backing)
+    expected = _pin_distinct_provenance_records(store, 5)
+    read = store.read_all(tenant_id="tenant-a", execution_id=_EXEC)
+    assert read == tuple(expected)
+    assert backing.query_call_count >= 3
+
+
+def test_document_provenance_provider_caps_page_below_requested_limit() -> None:
+    backing = InMemoryConditionalDocumentStore(max_page_size=2)
+    store = DocumentStoreExecutionIntegrationConfigurationPinningStore(backing)
+    expected = _pin_distinct_provenance_records(store, 5)
+    read = store.read_all(tenant_id="tenant-a", execution_id=_EXEC)
+    assert read == tuple(expected)
+    assert backing.query_call_count >= 3
+
+
+def test_document_provenance_read_all_matches_kv_with_pagination() -> None:
+    kv_backing = InMemoryKVStore()
+    doc_backing = InMemoryConditionalDocumentStore(max_page_size=2)
+    kv_store = KvExecutionIntegrationConfigurationPinningStore(kv_backing)
+    doc_store = DocumentStoreExecutionIntegrationConfigurationPinningStore(doc_backing)
+    expected = _pin_distinct_provenance_records(kv_store, 5)
+    _pin_distinct_provenance_records(doc_store, 5)
+    assert doc_store.read_all(tenant_id="tenant-a", execution_id=_EXEC) == kv_store.read_all(
+        tenant_id="tenant-a",
+        execution_id=_EXEC,
+    )
+    assert expected  # records were pinned
+
+
+def test_document_provenance_pagination_cross_tenant_isolation() -> None:
+    backing = InMemoryConditionalDocumentStore(max_page_size=2)
+    store = DocumentStoreExecutionIntegrationConfigurationPinningStore(backing)
+    tenant_a = _pin_distinct_provenance_records(store, 3, tenant_id="tenant-a")
+    tenant_b = _pin_distinct_provenance_records(store, 3, tenant_id="tenant-b")
+    assert store.read_all(tenant_id="tenant-a", execution_id=_EXEC) == tuple(tenant_a)
+    assert store.read_all(tenant_id="tenant-b", execution_id=_EXEC) == tuple(tenant_b)
+
+
+def test_document_provenance_empty_partition() -> None:
+    store = DocumentStoreExecutionIntegrationConfigurationPinningStore(
+        InMemoryConditionalDocumentStore(),
+    )
+    assert store.read_all(tenant_id="tenant-a", execution_id=_EXEC) == ()
+
+
+def test_document_provenance_empty_intermediate_page_continues() -> None:
+    backing = InMemoryConditionalDocumentStore(max_page_size=2)
+    store = DocumentStoreExecutionIntegrationConfigurationPinningStore(backing)
+    expected = _pin_distinct_provenance_records(store, 2)
+    scripted = ScriptedQueryDocumentStore(
+        scripted_pages=(
+            DocumentQueryPageV1(documents=(), next_cursor="offset:0"),
+        ),
+        share_records_from=backing,
+    )
+    reader = DocumentStoreExecutionIntegrationConfigurationPinningStore(scripted)
+    assert reader.read_all(tenant_id="tenant-a", execution_id=_EXEC) == tuple(expected)
+
+
+def test_document_provenance_repeated_cursor_fail_closed() -> None:
+    store = DocumentStoreExecutionIntegrationConfigurationPinningStore(
+        ScriptedQueryDocumentStore(
+            scripted_pages=(
+                DocumentQueryPageV1(documents=(), next_cursor="cursor-a"),
+                DocumentQueryPageV1(documents=(), next_cursor="cursor-a"),
+            ),
+        ),
+    )
+    with pytest.raises(ExecutionIntegrationConfigurationPinningError) as exc:
+        store.read_all(tenant_id="tenant-a", execution_id=_EXEC)
+    assert exc.value.reason == ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD
+
+
+def test_document_provenance_cursor_cycle_fail_closed() -> None:
+    store = DocumentStoreExecutionIntegrationConfigurationPinningStore(
+        ScriptedQueryDocumentStore(
+            scripted_pages=(
+                DocumentQueryPageV1(documents=(), next_cursor="cursor-a"),
+                DocumentQueryPageV1(documents=(), next_cursor="cursor-b"),
+                DocumentQueryPageV1(documents=(), next_cursor="cursor-a"),
+            ),
+        ),
+    )
+    with pytest.raises(ExecutionIntegrationConfigurationPinningError) as exc:
+        store.read_all(tenant_id="tenant-a", execution_id=_EXEC)
+    assert exc.value.reason == ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD
+
+
+def test_document_provenance_duplicate_row_key_across_pages_fail_closed() -> None:
+    subject = _subject()
+    record = _provenance_configured_adopted()
+    row_key = _subject_row_key(subject)
+    partition = f"intergrax.integration_config_provenance_pinning.v1:tenant-a:{_EXEC}"
+    payload = encode_integration_configuration_provenance(record, subject=subject).decode("utf-8")
+    document = DocumentRecord(partition_key=partition, row_key=row_key, data={"provenance": payload})
+    store = DocumentStoreExecutionIntegrationConfigurationPinningStore(
+        ScriptedQueryDocumentStore(
+            scripted_pages=(
+                DocumentQueryPageV1(documents=(document,), next_cursor="more"),
+                DocumentQueryPageV1(documents=(document,), next_cursor=None),
+            ),
+        ),
+    )
+    with pytest.raises(ExecutionIntegrationConfigurationPinningError) as exc:
+        store.read_all(tenant_id="tenant-a", execution_id=_EXEC)
+    assert exc.value.reason == ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD
+
+
+def test_document_provenance_row_key_subject_mismatch_fail_closed() -> None:
+    subject = _subject()
+    record = _provenance_configured_adopted()
+    partition = f"intergrax.integration_config_provenance_pinning.v1:tenant-a:{_EXEC}"
+    payload = encode_integration_configuration_provenance(record, subject=subject).decode("utf-8")
+    document = DocumentRecord(
+        partition_key=partition,
+        row_key="mismatched-row-key",
+        data={"provenance": payload},
+    )
+    store = DocumentStoreExecutionIntegrationConfigurationPinningStore(
+        ScriptedQueryDocumentStore(scripted_pages=(DocumentQueryPageV1(documents=(document,), next_cursor=None),)),
+    )
+    with pytest.raises(ExecutionIntegrationConfigurationPinningError) as exc:
+        store.read_all(tenant_id="tenant-a", execution_id=_EXEC)
+    assert exc.value.reason == ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD
+
+
+def test_document_provenance_corrupt_record_on_later_page_fail_closed() -> None:
+    subject = _subject()
+    record = _provenance_configured_adopted()
+    partition = f"intergrax.integration_config_provenance_pinning.v1:tenant-a:{_EXEC}"
+    valid = DocumentRecord(
+        partition_key=partition,
+        row_key=_subject_row_key(subject),
+        data={
+            "provenance": encode_integration_configuration_provenance(record, subject=subject).decode("utf-8"),
+        },
+    )
+    corrupt = DocumentRecord(
+        partition_key=partition,
+        row_key=_subject_row_key(_subject(provider_id="other")),
+        data={"provenance": "not-valid-json"},
+    )
+    store = DocumentStoreExecutionIntegrationConfigurationPinningStore(
+        ScriptedQueryDocumentStore(
+            scripted_pages=(
+                DocumentQueryPageV1(documents=(valid,), next_cursor="more"),
+                DocumentQueryPageV1(documents=(corrupt,), next_cursor=None),
+            ),
+        ),
+    )
+    with pytest.raises(ExecutionIntegrationConfigurationPinningError):
+        store.read_all(tenant_id="tenant-a", execution_id=_EXEC)
 
 
 def test_wire_opportunity_store_requires_explicit_payload_codecs() -> None:
