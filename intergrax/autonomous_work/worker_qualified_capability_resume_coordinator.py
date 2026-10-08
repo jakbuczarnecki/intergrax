@@ -257,6 +257,7 @@ class WorkerQualifiedCapabilityResumeCoordinator:
             collaborative_authority_scopes=authority_context.collaborative_authority_scopes,
             run_id=request.run_id,
             attempt_id=request.attempt_id,
+            integration_configuration_adoption=request.integration_configuration_adoption,
         )
         return _QualifiedExecutionHandoff(
             resume_id=resume_id,

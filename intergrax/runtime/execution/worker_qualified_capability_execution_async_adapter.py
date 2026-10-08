@@ -66,6 +66,7 @@ class WorkerQualifiedCapabilityExecutionEngineAsyncAdapter:
             collaborative_authority_scopes=request.collaborative_authority_scopes,
             run_id=request.run_id,
             attempt_id=request.attempt_id,
+            integration_configuration_adoption=request.integration_configuration_adoption,
         )
         dispatch_result = await self._dispatch.dispatch_async(dispatch_request)
         if (

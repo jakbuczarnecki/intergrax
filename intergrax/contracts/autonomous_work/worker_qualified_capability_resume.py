@@ -37,6 +37,9 @@ from intergrax.contracts.capability_qualification.qualified_capability_binding i
     QualifiedCapabilityBindingResult,
     QualifiedCapabilityExecutionTarget,
 )
+from intergrax.integrations.contracts.execution_integration_configuration import (
+    ExecutionIntegrationConfigurationAdoption,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -121,6 +124,9 @@ class WorkerQualifiedCapabilityResumeRequest:
     requested_authority_scopes: tuple[str, ...]
     run_id: RunId | None = None
     attempt_id: AttemptId | None = None
+    integration_configuration_adoption: ExecutionIntegrationConfigurationAdoption | None = (
+        None
+    )
 
     def __post_init__(self) -> None:
         validate_worker_instance_id(self.worker_instance_id)
@@ -171,6 +177,15 @@ class WorkerQualifiedCapabilityResumeRequest:
             validate_run_id(self.run_id)
         if self.attempt_id is not None:
             validate_attempt_id(self.attempt_id)
+        if self.integration_configuration_adoption is not None:
+            if (
+                type(self.integration_configuration_adoption)
+                is not ExecutionIntegrationConfigurationAdoption
+            ):
+                raise TypeError(
+                    "integration_configuration_adoption must be "
+                    "ExecutionIntegrationConfigurationAdoption",
+                )
         acquisition = self.acquisition_result
         qualification = self.qualification_result
         if qualification.acquisition_request_id != acquisition.request_id:
@@ -224,6 +239,9 @@ class WorkerQualifiedCapabilityExecutionRequest:
     collaborative_authority_scopes: tuple[str, ...]
     run_id: RunId | None = None
     attempt_id: AttemptId | None = None
+    integration_configuration_adoption: ExecutionIntegrationConfigurationAdoption | None = (
+        None
+    )
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -309,6 +327,15 @@ class WorkerQualifiedCapabilityExecutionRequest:
             validate_run_id(self.run_id)
         if self.attempt_id is not None:
             validate_attempt_id(self.attempt_id)
+        if self.integration_configuration_adoption is not None:
+            if (
+                type(self.integration_configuration_adoption)
+                is not ExecutionIntegrationConfigurationAdoption
+            ):
+                raise TypeError(
+                    "integration_configuration_adoption must be "
+                    "ExecutionIntegrationConfigurationAdoption",
+                )
         if (
             type(self.admitted_governance_identity)
             is not AdmittedRootGovernanceIdentity

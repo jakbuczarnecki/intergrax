@@ -12,6 +12,7 @@ from intergrax.autonomous_work.worker_capability_fulfillment_ports import (
     CapabilityRealizationCoordinatorPort,
     WorkerCapabilityDirectReuseFulfillmentPort,
     WorkerCapabilityRecoveryPort,
+    WorkerConfiguredCapabilityFulfillmentPort,
     WorkerQualifiedCapabilityResumePort,
 )
 from intergrax.contracts.tools.qualified_capability_execution_intent_preparation import (
@@ -25,6 +26,7 @@ def build_worker_capability_fulfillment_coordinator(
     resume: WorkerQualifiedCapabilityResumePort,
     direct_reuse: WorkerCapabilityDirectReuseFulfillmentPort,
     realization: CapabilityRealizationCoordinatorPort | None = None,
+    configured_fulfillment: WorkerConfiguredCapabilityFulfillmentPort | None = None,
     intent_preparation: QualifiedCapabilityExecutionIntentPreparationPort | None = None,
 ) -> WorkerCapabilityFulfillmentCoordinator:
     """Construct fulfillment coordinator with explicit port dependencies only."""
@@ -33,6 +35,7 @@ def build_worker_capability_fulfillment_coordinator(
         resume=resume,
         direct_reuse=direct_reuse,
         realization=realization,
+        configured_fulfillment=configured_fulfillment,
         intent_preparation=intent_preparation,
     )
 

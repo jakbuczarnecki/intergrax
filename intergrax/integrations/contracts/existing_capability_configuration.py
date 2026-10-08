@@ -156,6 +156,29 @@ class ExistingCapabilityConfigurationRealizationPort(Protocol):
     ) -> ExistingCapabilityConfigurationRealizationResult: ...
 
 
+def derive_existing_capability_configuration_realization_request_id(
+    *,
+    recovery_decision_id: str,
+    configuration_ref: str,
+) -> str:
+    """Deterministic INT-CONFIG request identity for idempotent CONFIGURE_EXISTING fulfillment."""
+    decision_id = recovery_decision_id.strip()
+    if not decision_id:
+        raise ExistingCapabilityConfigurationRealizationError(
+            ExistingCapabilityConfigurationRealizationFailureReason.IDENTITY_MISMATCH,
+            detail="missing recovery_decision_id",
+        )
+    ref = configuration_ref.strip()
+    if not ref:
+        raise ExistingCapabilityConfigurationRealizationError(
+            ExistingCapabilityConfigurationRealizationFailureReason.IDENTITY_MISMATCH,
+            detail="missing configuration_ref",
+        )
+    return (
+        f"existing-capability-configuration-realization:{decision_id}:{ref}"
+    )
+
+
 def validate_realization_request_invariants(
     request: ExistingCapabilityConfigurationRealizationRequest,
 ) -> None:
