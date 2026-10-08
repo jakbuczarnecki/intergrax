@@ -45,14 +45,13 @@ def test_txp5r2p3r1r1r1r1r1_q01_start_head_ancestry() -> None:
     )
 
 
-def test_txp5r2p3r1r1r1r1r1_q02_tool_convergence_lock_ready_for_audit() -> None:
+def test_txp5r2p3r1r1r1r1r1_q02_tool_convergence_lock_superseded_by_binding_reconciliation() -> None:
     assert _LOCK_DOC.is_file()
     text = _LOCK_DOC.read_text(encoding="utf-8")
-    assert "READY FOR AUDIT" in text
+    assert "BLOCKED / SUPERSEDED BY CHILD" in text
     assert "R2-P3-CAPABILITY-IDENTITY-TO-TOOL-TARGET-RESOLUTION-16" in text
     assert "R2-P3-MARKETPLACE-EXECUTION-LINEAGE-CONVERGENCE-17" in text
-    assert "FRZ-TRC-11" in text and "OPEN" in text
-    assert "NEW SEMANTIC MECHANISM = 0" in text or "new semantic mechanisms:** **0**" in text
+    assert "MARKETPLACE_BINDING_TARGET_INTENT_RECONCILIATION_LOCK" in text
 
 
 def test_txp5r2p3r1r1r1r1r1_q03_prior_lock_points_to_tool_convergence_child() -> None:
@@ -143,7 +142,7 @@ def test_txp5r2p3r1r1r1r1r1_q15_dup_x_roadmap_singleton() -> None:
     assert "**`DUP-X` = CLOSED**" in roadmap
 
 
-def test_txp5r2p3r1r1r1r1r1_q16_roadmap_lists_current_child() -> None:
+def test_txp5r2p3r1r1r1r1r1_q16_roadmap_lists_binding_reconciliation_child() -> None:
     roadmap = _ROADMAP.read_text(encoding="utf-8")
-    assert "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1" in roadmap
-    assert "CANONICAL_TOOL_EXECUTION_CONVERGENCE_LOCK" in roadmap
+    assert "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1" in roadmap
+    assert "MARKETPLACE_BINDING_TARGET_INTENT_RECONCILIATION_LOCK" in roadmap
