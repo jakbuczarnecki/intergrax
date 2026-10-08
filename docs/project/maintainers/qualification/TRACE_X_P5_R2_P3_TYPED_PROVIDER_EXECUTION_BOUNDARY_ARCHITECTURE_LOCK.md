@@ -5,11 +5,13 @@
 | Field | Value |
 |---|---|
 | **Task** | `TRACE-X-P5-R2-P3-R1-R2` — Typed Provider Execution Boundary Architecture Lock |
-| **Child reconciliation** | `TRACE-X-P5-R2-P3-R1-R3` — Governance + typed resolution reconciliation @ `63ba8a237449ce7e78043c480dff97ed1f96918e` (§O) · `TRACE-X-P5-R2-P3-R1-R4` — Configured-Adoption Pilot Admission @ `fcfa59797c86f5933a7e53cb6784768a4f1d1787` (§P) |
+| **Child reconciliation** | `TRACE-X-P5-R2-P3-R1-R3` — Governance + typed resolution reconciliation @ `63ba8a237449ce7e78043c480dff97ed1f96918e` (§O) · `TRACE-X-P5-R2-P3-R1-R4` — Configured-Adoption Pilot Admission @ `fcfa59797c86f5933a7e53cb6784768a4f1d1787` (§P) · `TRACE-X-P5-R2-P3-R1-R5` — Deferred Configured Provider Dependency Projection @ `62ec2457268ac7287be9c643d7d3cf1b97f32f07` (§Q) |
 | **START_HEAD (R1-R2)** | `d39b39ee94982d74acc7042c4dfa63a887a97c05` (`development` = `origin/development` @ R1-R2 task start) |
 | **START_HEAD (R1-R3)** | `63ba8a237449ce7e78043c480dff97ed1f96918e` (`development` = `origin/development` @ R1-R3 task start) |
 | **START_HEAD (R1-R4)** | `fcfa59797c86f5933a7e53cb6784768a4f1d1787` (`development` = `origin/development` @ R1-R4 task start) |
+| **START_HEAD (R1-R5)** | `62ec2457268ac7287be9c643d7d3cf1b97f32f07` (`development` = `origin/development` @ R1-R5 task start) |
 | **Audited HEAD (R1-R4)** | `fcfa59797c86f5933a7e53cb6784768a4f1d1787` (docs amendment follows in same task commit) |
+| **Audited HEAD (R1-R5)** | docs amendment in same task commit after `62ec2457268ac7287be9c643d7d3cf1b97f32f07` |
 | **Parent** | `TRACE-X-P5-R2-P3` → `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
 | **Steering authority** | [`TRACE_X_P5_R2_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE_ARCHITECTURE_LOCK.md`](TRACE_X_P5_R2_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE_ARCHITECTURE_LOCK.md) (P0) · [`TRACE_X_P5_R2_P3_R1_ACTUAL_USE_JOIN_POINT_ARCHITECTURE_RECONCILIATION.md`](TRACE_X_P5_R2_P3_R1_ACTUAL_USE_JOIN_POINT_ARCHITECTURE_RECONCILIATION.md) (P3-R1 / R1-R1) |
 | **Primary FRZ** | `FRZ-TRC-11` — **OPEN** (no PASS) |
@@ -706,12 +708,466 @@ Legend: **PASS** = PASS WITH CODE EVIDENCE · **FAIL** = FAIL WITH CODE EVIDENCE
 
 | Stage | Status |
 |---|---|
-| `TRACE-X-P5-R2-P3-R1-R4` | **STOP — ARCHITECTURE DECISION REQUIRED** (`R2-P3-CONFIGURED-ADOPTION-PILOT-ADMISSION-06`; §P) |
+| `TRACE-X-P5-R2-P3-R1-R5` | **READY FOR AUDIT** (§Q) |
+| `TRACE-X-P5-R2-P3-R1-R4` | **SUPERSEDED @ architecture** for admission-06 — historical §P STOP |
 | `TRACE-X-P5-R2-P3-R1-R3` | **READY FOR AUDIT** |
 | `TRACE-X-P5-R2-P3-R1-R2` | Architecture base — governance/typing superseded by R1-R3 §O |
-| `TRACE-X-P5-R2-P3` | **BLOCKED** — pilot admission **06** + implementation (§P.10) |
-| `TRACE-X-P5-R2` | **CURRENT / BLOCKED ON P3** |
+| `TRACE-X-P5-R2-P3` | **BLOCKED PENDING R1-R5 AUDIT / IMPLEMENTATION** |
+| `TRACE-X-P5-R2` | **CURRENT / P3 NEXT** |
 | `P5-GAP-04` | **IMPLEMENTATION IN PROGRESS** |
 | `FRZ-TRC-11` | **OPEN** |
 
 Do **not** mark P3 CLOSED. Do **not** enter P4.
+
+---
+
+## Q. TRACE-X-P5-R2-P3-R1-R5 — Deferred Configured Provider Dependency Projection Architecture Lock
+
+**START_HEAD:** `62ec2457268ac7287be9c643d7d3cf1b97f32f07` · **Production delta:** 0 · **Supersedes:** R1-R4 disposition on **`R2-P3-CONFIGURED-ADOPTION-PILOT-ADMISSION-06`** at architecture level only (§P.11 historical STOP → §Q architecture lock).
+
+### Q.1 START_HEAD and steering alignment
+
+| Field | Value |
+|---|---|
+| **START_HEAD** | `62ec2457268ac7287be9c643d7d3cf1b97f32f07` |
+| **Parent** | `TRACE-X-P5-R2-P3` → `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
+| **TRACE-X-P5-R2** | **CURRENT / P3 NEXT** |
+| **TRACE-X-P5-R2-P3** | **NEXT / REQUIRED / NOT ENTERED** (architecture unblocked for implementation wave; parent not CLOSED) |
+| **P5-GAP-04** | **IMPLEMENTATION IN PROGRESS** |
+| **FRZ-TRC-11** | **OPEN** — no PASS |
+| **P4** | **NOT ENTERED** |
+
+Canonical trackers @ START_HEAD match expected: `development` = `origin/development` = `62ec2457268ac7287be9c643d7d3cf1b97f32f07`.
+
+### Q.2 Selected architecture (mandatory — not open for rediscovery)
+
+**Deferred, post-Governance, invocation-scoped typed category dependency projection.**
+
+```text
+qualified Execution
+  → handler receives factual adoption (separate from neutral catalog invoke request)
+  → ExecutionBoundCatalogToolInvokeRequest carries per-invocation ToolInvocationWiringResolver
+  → ToolRuntime: canonical Governance (inner guard → agent runtime → declarative policy → MSE when applicable)
+  → ToolRuntime: invocation dependency projection (_apply_invocation_wiring)
+  → ToolExecutor
+  → database tool consumes ONE typed relational execution port
+  → port invokes Integrations Pattern A lazily on first category operation
+  → materialize provider P ONCE per bound port lifecycle
+  → effective identity(P) from SAME P
+  → validate configured/effective
+  → pin
+  → SAME P performs category operation
+```
+
+**Hard invariant:** provider object **NEVER** crosses Execution contracts, `ExecutionBoundCatalogToolInvokeRequest`, or `ToolInvocationWiring`.
+
+**Resolves §P minimum next decision:** typed execution-scoped port + sanctioned projection bridge — **without** ToolRuntime configuration authority and **without** promoting weak `RelationalStore` to the semantic boundary.
+
+### Q.3 RuntimeToolInvoker ordering evidence (@ `62ec2457268ac7287be9c643d7d3cf1b97f32f07`)
+
+Production structure (code-bounded):
+
+```text
+RuntimeToolInvoker.invoke
+  → _prepare_invocation
+      → registry bind
+      → _require_canonical_inner_execution_guard
+      → _require_current_attempt_authorization
+          → _require_agent_runtime_governance
+          → scope policy
+          → [sandbox: optional invocation_context.wiring_resolver.resolve — see Q.4]
+          → declarative policy / meaningful side-effect authorization paths
+      → input validation
+  → idempotency / protected-work admission (when applicable)
+  → _execute_external_effect
+  → _execute_with_policy (retries re-call _require_current_attempt_authorization when attempt > 1)
+  → _execute_once
+      → _apply_invocation_wiring (invocation_wiring_resolver.resolve)
+      → ToolExecutor.execute
+```
+
+**Evidence:** `intergrax/runtime/nexus/tools/invoker.py` — `invoke` @ L301–408; `_prepare_invocation` @ L411–488; `_require_current_attempt_authorization` @ L566+; `_execute_once` @ L1674+ with `_apply_invocation_wiring` @ L1613+ before executor.
+
+**Consequence:** invocation-scoped configured dependency may legally reach tool execution **after** canonical operation authorization on the success path. Pattern A provider business I/O remains **downstream** of Governance when the port is only invoked from `ToolExecutor` / tool handler.
+
+### Q.4 Resolver early-call constraint (HARD RULE)
+
+`ToolInvocationWiringResolver.resolve(...)` **MUST** be:
+
+- side-effect free;
+- provider-I/O free;
+- materialization-free;
+- pin-free;
+- authorization-free.
+
+It **MAY** create/project a lightweight typed execution-scoped port object (e.g. `ExecutionBoundConfiguredRelationalStorePort`).
+
+It **MUST NOT**:
+
+- call Integrations `resolve` / `resolve_from_profile`;
+- instantiate external provider connections;
+- validate configured/effective provider by materialization;
+- pin provenance;
+- perform provider business I/O.
+
+**Early invocation evidence:** when `contract.requires_sandbox_isolation`, `_require_current_attempt_authorization` calls `invocation_context.wiring_resolver.resolve` **before** sandbox admission completes (`invoker.py` L612–639). Configured projection implementations must remain safe under **multiple** `resolve()` calls (Q.9).
+
+Actual Pattern A starts only when the projected category execution port method (`query` / `execute`) is invoked on the ToolExecutor path **after** Governance.
+
+### Q.5 Selected pilot
+
+| Field | Lock |
+|---|---|
+| **Integration category** | `IntegrationCategory.RELATIONAL_STORE` |
+| **Reference configured realization** | `sqlite` (reference only — not semantic owner) |
+| **Admitted tool operations** | `database.query`, `database.execute` |
+| **Explicitly excluded** | `database.describe_schema` (SQLite-specific `PRAGMA` / `sqlite_master` — not replaceability proof for generic category contract) |
+
+Pilot proves vertical slice only; alternate provider replaceability remains mandatory (Q.14).
+
+### Q.6 Typed relational execution contract (Integrations-owned)
+
+Do **not** expose weak transport `RelationalStore` (`Sequence[Any]`, `Mapping[str, Any]`) as the configured-provider semantic execution boundary.
+
+**Lock (conceptual name; repository naming may vary):** `ConfiguredRelationalStoreExecutionPort`
+
+Category operations (no universal `execute(operation: object)`):
+
+```text
+query(typed relational query request) → typed relational query result
+execute(typed relational execute request) → typed relational execute result
+```
+
+**Forbidden on semantic port:** arbitrary operation strings; Tools `BaseModel` as Integrations semantic payload; Tools-layer DTO dependency from Integrations.
+
+**Transport adapter (internal during P3):**
+
+```text
+ConfiguredRelationalStoreExecutionPort
+  → Integrations category adapter
+  → existing RelationalStore transport (legacy weak typing contained behind adapter)
+```
+
+Does **not** promote global **FRZ-TYP** PASS; `Any` on legacy transport remains tracked debt outside the new boundary.
+
+### Q.7 Typed SQL scalar / value model
+
+Explicit closed scalar domain on the new contract (no `Any`):
+
+```text
+SqlScalar = str | int | float | bool | bytes | None
+```
+
+(Expand only if repository/provider evidence requires another scalar — not for compatibility widening.)
+
+- Query parameters: immutable sequence/tuple of `SqlScalar`.
+- Query row: typed mapping/record with values from the same domain.
+- Adapter **fail-closed** if provider returns unsupported runtime values — **no** widen-to-`Any`.
+
+### Q.8 Lazy bound-port lifecycle
+
+Project into ToolRuntime wiring — **not** the provider:
+
+**`ExecutionBoundConfiguredRelationalStorePort`** (conceptual) holds only:
+
+- `tenant_id`;
+- canonical `ExecutionId`;
+- `ExecutionIntegrationConfigurationAdoption`;
+- Integrations-owned coordinator / resolution dependency;
+- typed materialization selectors allowed by R1-R3 (§O.4).
+
+**MUST NOT** materialize provider in constructor or in `ToolInvocationWiringResolver.resolve`.
+
+**First** `query` / `execute` on the port:
+
+```text
+ConfiguredRelationalStoreExecutionPort operation
+  → Integrations configured-provider coordinator (Pattern A)
+  → tenant/adoption checks
+  → materialize P (once per bound port — Q.9)
+  → EffectiveIntegrationIdentity from SAME P
+  → validate configured/effective
+  → build provenance/subject → pin
+  → SAME P executes relational-store operation via category adapter
+```
+
+No second resolution; no provider handoff to Tools.
+
+### Q.9 Retry / multiple resolver invocation semantics
+
+ToolRuntime may:
+
+- call wiring resolver during sandbox/governance preparation (Q.4);
+- call again in `_apply_invocation_wiring`;
+- retry physical tool execution (`_execute_with_policy`).
+
+**Required semantics:**
+
+| Phase | Provider materializations |
+|---|---|
+| Many `ToolInvocationWiringResolver.resolve()` | **0** — same logical execution-scoped category port instance (or equivalent idempotent projection) |
+| First category business operation on bound port | **1** — validate → pin → operation |
+| ToolRuntime retry of same invocation | **reuse** validated/pinned provider on same bound port — **no** second materialization |
+
+Process-local bound instance is **not** durable authority; restart/reconstruction = **P4** scope — **not** solved in R1-R5.
+
+### Q.10 ToolInvocationWiring projection model
+
+Extend invocation-scoped wiring with **one** typed pilot slot:
+
+```text
+ToolInvocationWiring.configured_relational_store_execution: ConfiguredRelationalStoreExecutionPort | None
+```
+
+(+ registration/effective context projection required for database tools.)
+
+**Forbidden inside `ToolInvocationWiring`:** provider object; `PlatformIntegrationContract`; `RelationalStore`; adoption; config dict.
+
+Only the typed execution port crosses this boundary.
+
+### Q.11 Projection owner and qualified invocation pass-through
+
+**Sanctioned composition surface (single owner):** `ConfiguredIntegrationToolInvocationProjectionPort`
+
+Given factual `tenant_id`, `ExecutionId`, `ExecutionIntegrationConfigurationAdoption`, target tool identity → produce `ToolInvocationWiringResolver` **only** when category/tool pair is admitted (Q.5).
+
+- Validate admission; fail closed on mismatch.
+- No provider creation; no authorization; no registry/provider selection authority.
+- MAY dispatch by `IntegrationCategory` to category-specific projection implementations (dependency projection, **not** provider selection).
+
+**Handler adoption propagation (architecture):** extend qualified handler dispatch so Marketplace (and future configured paths) receive `integration_configuration_adoption` as a **factual typed argument** on `dispatch_once` (or repository-conformant equivalent) — **not** on `ExecutionBoundCatalogToolInvokeRequest`.
+
+**`QualifiedToolInvocationResolver`:** smallest extension — optional caller-supplied `ToolInvocationWiringResolver` passed through to `ExecutionBoundCatalogToolInvokeRequest.wiring_resolver`. Resolver remains mapping-only (no Integrations calls).
+
+**Permanent forbidden pattern:** `if adoption.category == RELATIONAL_STORE` embedded in generic Marketplace handler business logic as the long-term architecture.
+
+### Q.12 Single consumer + invocation overlay precedence
+
+Database tools converge on **one** semantic dependency: typed relational execution port.
+
+| Composition path | Source |
+|---|---|
+| Ordinary non-adoption | adapter around registration-time `RelationalStore` |
+| CONFIGURED_ADOPTED + admitted tool | invocation overlay replaces adapter with execution-scoped configured port |
+
+**Forbidden permanently:**
+
+```text
+if configured_port: ... else: use old relational_store  # two semantic mechanisms
+```
+
+**Forbidden:**
+
+```text
+adoption present + admitted tool + projection missing → silent profile relational_store fallback
+```
+
+**Required:**
+
+```text
+adoption present + admitted tool → configured projection mandatory → failure = fail closed
+```
+
+Closes R1-R4 second-resolution / profile bypass gap (§P.3).
+
+### Q.13 Governance ordering (successful path)
+
+```text
+Execution admission
+  → qualified handler (+ adoption as factual arg)
+  → ToolRuntime canonical inner Governance
+  → agent runtime Governance
+  → declarative policy
+  → MSE authorization when side-effecting
+  → invocation dependency projection
+  → ToolExecutor
+  → typed configured relational port (lazy Pattern A)
+  → materialize → validate → pin → SAME provider I/O
+```
+
+- `database.execute` **MUST** prove MSE/side-effect authorization before provider write.
+- `database.query` behind normal applicable ToolRuntime Governance; MSE may not apply.
+- Integrations: **no** ALLOW/DENY policy decisions (§O.2).
+
+**Note @ HEAD:** delegate `pin_configured_adoption_for_execution` before handler (§P) may still materialize for identity observation — implementation wave must align configured-required paths with **lazy** port Pattern A after ToolRuntime Governance for category business I/O (`R2-P3-GOVERNANCE-CONTINUITY-05`).
+
+### Q.14 Tenant continuity
+
+```text
+qualified execution tenant
+  == Tool invocation tenant
+  == adoption.binding.tenant_id
+  == Pattern A request tenant
+  == provenance tenant
+```
+
+`ExecutionId` only from active canonical Execution — no new minting; correlation/request ID is **not** execution authority.
+
+Wrong tenant → materialize **0**, pin **0**, provider I/O **0**.
+
+### Q.15 Pluginability / replaceability
+
+Semantic contract **MUST NOT** depend on SQLite concrete class, path/config types, or SQLite module imports in generic coordinator/tool consumer.
+
+Qualification must include alternate in-memory/fake structural provider implementing relational category transport; proof:
+
+```text
+sqlite provider ↔ alternate relational provider
+```
+
+swapped via canonical Integrations configuration/materialization **without** changing database tool, Execution, Governance, or Marketplace handler. No global provider migration.
+
+### Q.16 Ownership lock
+
+| Concern | Owner |
+|---|---|
+| CONFIGURE_EXISTING decision | AW acquisition |
+| configuration realization | Integrations / INT-CONFIG |
+| configuration realization permission | Governance |
+| explicit adoption | AW fulfillment using Integrations binding |
+| Execution lifecycle / ExecutionId | Execution |
+| operation authorization | ToolRuntime Governance |
+| invocation dependency projection | sanctioned Tools/Integrations composition bridge (`ConfiguredIntegrationToolInvocationProjectionPort`) |
+| provider materialization | Integrations |
+| effective identity | Integrations |
+| configured/effective validation | Integrations |
+| provenance pin | Integrations |
+| relational category execution contract | Integrations |
+| provider business implementation | external/provider plugin |
+| tool ABI | Tools |
+| diagnostics | Observability only |
+
+### Q.17 Failure matrix
+
+| Condition | Materialize | Pin | Provider I/O |
+|---|---:|---:|---:|
+| Governance DENY | 0 | 0 | 0 |
+| MSE required but unavailable | 0 | 0 | 0 |
+| sandbox/pre-auth `resolve()` only | 0 | 0 | 0 |
+| adoption missing on admitted configured path | 0 | 0 | 0 |
+| category/tool mismatch | 0 | 0 | 0 |
+| tenant mismatch | 0 | 0 | 0 |
+| provider identity mismatch | ≤1 | 0 | 0 |
+| pin failure | ≤1 | attempted/failed | 0 |
+| invocation wiring resolution failure | 0 | 0 | 0 |
+| success | 1 | 1 | same provider |
+| ToolRuntime retry | no second materialization | same prior pin | same provider instance |
+
+**Pin semantics:** pin = configured/effective fact for execution — not permission, not successful effect, not successful tool outcome. If provider business I/O occurs: `provider_object_used.provider_id == pinned provenance.effective.provider_id`.
+
+### Q.18 Blocker mapping
+
+| Blocker | R1-R5 resolution |
+|---|---|
+| **`R2-P3-CONFIGURED-ADOPTION-PILOT-ADMISSION-06`** | **Architecture RESOLVED** — RELATIONAL_STORE/sqlite `database.query` + `database.execute` vertical slice + §Q projection model |
+| **`R2-P3-EFFECTIVE-USE-CAUSALITY-03`** | Same bound port; lazy Pattern A; same provider instance for pin and I/O |
+| **`R2-P3-GOVERNANCE-CONTINUITY-05`** | Category business I/O only after ToolRuntime Governance; resolver/pre-auth calls materialization-free |
+| **`R2-P3-PINNING-COMPOSITION-CONTINUITY-02`** | Configured port via same `wiring_resolver` / `_apply_invocation_wiring` path ToolExecutor consumes |
+| **`R2-P3-MATERIALIZATION-PORT-TYPING-04`** | **Implementation OPEN** — remove `resolve_config` / weak materialization typing per R1-R3 §O.4 |
+| **`R2-P3-CONFIGURE-EXISTING-REACHABILITY-01`** | AW CONFIGURE_EXISTING + adoption chain remains sole upstream source |
+
+### Q.19 Bounded implementation wave (after independent audit)
+
+**One consolidated wave** — do not split into independent semantic authorities:
+
+1. handler adoption propagation;
+2. `ConfiguredIntegrationToolInvocationProjectionPort`;
+3. `QualifiedToolInvocationResolver` wiring_resolver pass-through;
+4. `ToolInvocationWiring.configured_relational_store_execution`;
+5. single typed relational execution consumer for database tools;
+6. lazy Pattern A bound port/coordinator;
+7. execution-bound materialization typing cleanup (typing-04);
+8. production composition continuity;
+9. P3 qualification/adversarial gates.
+
+### Q.20 Qualification plan
+
+Extend `tests/qualification/trace_x/test_trace_x_p5_r2_p3_production_flow_gates.py` family with:
+
+- admitted vs non-admitted tool/category fail-closed;
+- resolver called twice before executor — materialization count 0;
+- Governance DENY / MSE deny — no materialize/pin/I/O;
+- tenant mismatch adversarial;
+- sqlite ↔ alternate provider swap without tool/handler change;
+- retry reuses same provider instance;
+- no silent profile fallback when adoption present.
+
+Relevant ToolRuntime invocation-wiring / database-tool unit tests as identified during implementation — not broad suite discovery.
+
+### Q.21 STOP conditions
+
+**STOP — ARCHITECTURE DECISION REQUIRED** if design requires any of:
+
+- provider in Execution DTO / `ExecutionBoundCatalogToolInvokeRequest` / `ToolInvocationWiring`;
+- materialization inside wiring resolver;
+- provider I/O before Governance;
+- ToolRuntime deciding provider ID/configuration;
+- generic `execute(object)` or generic operation registry replacing category contracts;
+- permanent database-tool dual semantic path;
+- second integration resolver/catalog;
+- Governance core modification;
+- all-provider migration;
+- ExternalWork admission in CONFIGURED_ADOPTED v1;
+- provider re-materialization per retry;
+- correlation/request ID as canonical `ExecutionId`.
+
+§Q design **does not** trigger these STOP conditions.
+
+### Q.22 Recommended status
+
+| Stage | Status |
+|---|---|
+| **`TRACE-X-P5-R2-P3-R1-R5`** | **READY FOR AUDIT** |
+| **`TRACE-X-P5-R2-P3-R1-R4`** | **SUPERSEDED @ architecture** for admission-06 (historical STOP in §P preserved) |
+| **`TRACE-X-P5-R2-P3`** | **BLOCKED PENDING R1-R5 AUDIT / IMPLEMENTATION** |
+| **`TRACE-X-P5-R2`** | **CURRENT / P3 NEXT** |
+| **`P5-GAP-04`** | **IMPLEMENTATION IN PROGRESS** |
+| **`FRZ-TRC-11`** | **OPEN** |
+| **P4** | **NOT ENTERED** |
+
+### Q.23 Unresolved findings (R1-R5 classification)
+
+| Finding | Class |
+|---|---|
+| No production implementation of §Q projection @ HEAD | **IN-SCOPE BLOCKER** (implementation wave) |
+| `R2-P3-MATERIALIZATION-PORT-TYPING-04` | **IN-SCOPE BLOCKER** (implementation) |
+| Delegate pin-before-handler may pre-materialize for identity @ HEAD | **IN-SCOPE BLOCKER** — align with lazy port + Governance continuity in implementation |
+| Legacy `RelationalStore` `Any` behind adapter | **TRACKED FREEZE DEBT** |
+| Restart/reconstruction of pinned provider | **TRACKED FREEZE DEBT** (P4) |
+
+### Q.24 Applicable FRZ (R1-R5)
+
+| FRZ | Role |
+|---|---|
+| **FRZ-TRC-11** | Primary — **OPEN** |
+| FRZ-OWN-* | Supporting — Q.16 |
+| FRZ-CTR-01, FRZ-CTR-02 | Supporting — neutral vs typed contracts |
+| FRZ-TYP-01..04 | Supporting — Q.6–Q.7 |
+| FRZ-PLG-01..05, FRZ-RPL-01/02/04 | Supporting — Q.14–Q.15 |
+| FRZ-GOV-05 | Supporting — Q.13 |
+| FRZ-EXE-01 | Supporting — ExecutionId authority |
+| Relevant FRZ-TEN-* | Supporting — Q.14 |
+
+**No global FRZ PASS promotion.**
+
+### Q.25 Before / after call graph (configured pilot target)
+
+**Before @ HEAD (§P.3 — discontinuous):**
+
+```text
+Adoption + pin (delegate, may discard materialized instance)
+  ‖ parallel
+database.* → ToolWiringContext.from_integration_profile → RelationalStore
+```
+
+**After (architecture lock):**
+
+```text
+Qualified execution (+ adoption to handler)
+  → ConfiguredIntegrationToolInvocationProjectionPort → ToolInvocationWiringResolver
+  → ExecutionBoundCatalogToolInvokeRequest.wiring_resolver
+  → ToolRuntime Governance → _apply_invocation_wiring
+  → ToolInvocationWiring.configured_relational_store_execution
+  → database.query | database.execute → ONE typed port
+  → lazy Pattern A → pin → SAME provider I/O
+```
