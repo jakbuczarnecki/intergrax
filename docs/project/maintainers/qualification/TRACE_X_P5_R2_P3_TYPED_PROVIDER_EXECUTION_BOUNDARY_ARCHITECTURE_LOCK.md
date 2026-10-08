@@ -5,13 +5,15 @@
 | Field | Value |
 |---|---|
 | **Task** | `TRACE-X-P5-R2-P3-R1-R2` — Typed Provider Execution Boundary Architecture Lock |
-| **START_HEAD** | `d39b39ee94982d74acc7042c4dfa63a887a97c05` (`development` = `origin/development` @ task start) |
+| **Child reconciliation** | `TRACE-X-P5-R2-P3-R1-R3` — Governance + typed resolution reconciliation @ `63ba8a237449ce7e78043c480dff97ed1f96918e` (§O) |
+| **START_HEAD (R1-R2)** | `d39b39ee94982d74acc7042c4dfa63a887a97c05` (`development` = `origin/development` @ R1-R2 task start) |
+| **START_HEAD (R1-R3)** | `63ba8a237449ce7e78043c480dff97ed1f96918e` (`development` = `origin/development` @ R1-R3 task start) |
 | **Parent** | `TRACE-X-P5-R2-P3` → `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
 | **Steering authority** | [`TRACE_X_P5_R2_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE_ARCHITECTURE_LOCK.md`](TRACE_X_P5_R2_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE_ARCHITECTURE_LOCK.md) (P0) · [`TRACE_X_P5_R2_P3_R1_ACTUAL_USE_JOIN_POINT_ARCHITECTURE_RECONCILIATION.md`](TRACE_X_P5_R2_P3_R1_ACTUAL_USE_JOIN_POINT_ARCHITECTURE_RECONCILIATION.md) (P3-R1 / R1-R1) |
 | **Primary FRZ** | `FRZ-TRC-11` — **OPEN** (no PASS) |
 | **Primary blocker** | `P5-GAP-04` — **IMPLEMENTATION IN PROGRESS**; causality owned by **`R2-P3-EFFECTIVE-USE-CAUSALITY-03`** |
 | **Production delta (this child)** | **0** — architecture lock only |
-| **Recommended disposition** | **`TRACE-X-P5-R2-P3-R1-R2` = READY FOR AUDIT** |
+| **Recommended disposition** | **`TRACE-X-P5-R2-P3-R1-R3` = READY FOR AUDIT** (supersedes R1-R2 audit line only for governance + resolution typing) |
 | **Parent P3** | **BLOCKED PENDING ARCHITECTURE AUDIT / IMPLEMENTATION** — not CLOSED |
 | **TRACE-X-P5-R2** | **CURRENT / BLOCKED ON P3** (roadmap: **P3 NEXT**) |
 | **P4** | **NOT ENTERED** — forbidden in this task |
@@ -61,7 +63,7 @@ domain / application / qualified execution caller
   → Integrations-owned Configured Provider Execution Boundary
         │
         ├─ inputs: tenant_id, ExecutionId, ExecutionIntegrationConfigurationAdoption
-        │          (+ category resolution hints: profile / catalog_slug / resolve_config — Integrations-owned)
+        │          (+ Integrations-owned materialization selectors: IntegrationProfile | catalog_slug — §O.4)
         │
         ├─ single materialization (resolve / resolve_from_profile) — ONCE per adoption subject
         ├─ EffectiveIntegrationIdentity from SAME local instance
@@ -72,8 +74,9 @@ domain / application / qualified execution caller
               (no second resolve / resolve_from_profile for that subject)
 
 Execution layer supplies: ExecutionId, tenant, execution target, optional adoption on **qualified** surfaces only.
-Governance: authorization only — never materializes or executes integration providers on this path.
+Governance: **operation-level permission only** — never materializes providers, never substitutes Execution admission, never infers permission from pin/adoption (§O).
 AW: opaque configuration_ref + adoption handoff — not provider execution owner.
+Integrations: **no** ALLOW/DENY policy decisions; **no** synthesized governance evidence; configured binding ≠ operation permission (§O.2).
 Reconstruction: ExecutionReconstructor + neutral provenance reader only — no live provider.
 ```
 
@@ -120,7 +123,7 @@ same object reference (local continuity inside Integrations/category boundary)
 | `execution_id` | Execution (`ExecutionId`) | Already canonical; not re-minted here. |
 | `adoption` | `ExecutionIntegrationConfigurationAdoption` | Required on CONFIGURED_ADOPTED paths; carries `ConfiguredCapabilityBinding`. |
 | `category_operation` | Category-specific typed request | **Not** `object`, `Any`, or string dispatch — per-category port. |
-| Resolution hints | Optional `IntegrationProfile`, `catalog_slug`, `resolve_config`, `resource_scope` | Owned by Integrations semantics; caller supplies only what P0 §1B already allows on fulfillment handoff. |
+| Materialization selectors | Optional `IntegrationProfile`, `catalog_slug`; `resource_scope` from adoption unless explicitly overridden in boundary request | **Integrations-owned** typed selectors only — see §O.4. **No** `resolve_config` / generic config bag on the semantic contract. |
 
 **`ConfiguredProviderExecutionResult` (conceptual)**
 
@@ -146,6 +149,7 @@ same object reference (local continuity inside Integrations/category boundary)
 
 ```text
 COMMON (Integrations — ConfiguredProviderExecutionCoordinator / extended resolution):
+  (operation-level Governance authorization on canonical path — §O.3 — before first governed provider business I/O)
   adopt? → tenant check → materialize ONCE → EffectiveIntegrationIdentity(instance)
   → validate_configured_adoption_match
   → provenance + subject
@@ -162,6 +166,23 @@ CATEGORY-SPECIFIC (provider implementation via platform category contract):
 ---
 
 ## F. Exactly-one ownership matrix
+
+### F.1 Governance / authority stages (R1-R3 — no inferred permission)
+
+| Stage | Owner | Meaning |
+|---|---|---|
+| `CONFIGURE_EXISTING` decision | AW acquisition (`WorkerCapabilityAcquisitionDecisionService`) | Proposal / selection only — not permission |
+| INT-CONFIG realization authorization | Governance (control-plane mutation) | Permission to **mutate/configure** binding — **not** provider business operation |
+| Execution admission | Execution (`ExecutionRuntime`, active `ExecutionId`) | Legal execution lifecycle — **not** operation-level side-effect permission |
+| Operation-level authorization | Canonical execution-time Governance boundary (existing ports on the normal handler/domain path — e.g. agent runtime governance, meaningful side-effect authorization, canonical inner guard where wired) | Permission for the **actual governed operation** before provider business I/O |
+| Provider materialization | Integrations (`ExecutionBoundIntegrationResolution` / coordinator) | Provider selection + instance creation for configured adoption — **not** policy owner |
+| Configured/effective validation | Integrations (`validate_configured_adoption_match`) | Factual match — **not** permission |
+| Provenance pin | Integrations (`ExecutionIntegrationConfigurationPinningStore`) | **Evidence** of configured/effective facts — **pinning creates evidence; pinning does NOT create permission** |
+| Provider business operation | Category-specific typed port / `PlatformIntegrationContract` implementation | First governed external/mutating I/O |
+
+**Non-inference (locked):** configuration mutation ALLOW ≠ execution admission ≠ operation authorization ≠ provider invocation. No authority may be inferred across these stages.
+
+### F.2 Composition ownership (unchanged from R1-R2)
 
 | Concern | Owner |
 |---|---|
@@ -232,7 +253,12 @@ Integrations coordinator → registry factory, pinning store, adoption validator
 | 7 | Subject/provenance validation failure | **0** | **0** |
 | 8 | Pin store failure | **0** | **0** |
 | 9 | Adoption required but missing on configured-required handler path | **0** | **0** |
-| 10 | Success path | **1** (same local instance) | **1** (before first external/mutating call) |
+| 10 | Operation-level Governance **DENY** (canonical boundary) | **0** | **0** — pin/adoption confer **no** authority |
+| 11 | Required operation authorization **unavailable** (fail closed) | **0** | **0** |
+| 12 | Config typing / materialization selector contract violation (§O.4) | **0** | **0** — **no** generic payload fallback |
+| 13 | Success path | **1** (same local instance) | **1** (before first external/mutating call; after required operation authorization — §O.3) |
+
+**Structural impossibility (locked):** pin success **without** required operation authorization when that authorization is a prerequisite for provider business I/O → qualification **FAIL** (must be enforced by call ordering, not prose).
 
 **Second resolve** after successful pin for the same adoption subject → **architecture FAIL** (qualification gate).
 
@@ -316,7 +342,7 @@ Stop with **`STOP — ARCHITECTURE DECISION REQUIRED`** if:
 | **Q6 Operation typing** | Yes — per-category typed operations; no generic semantic contract. |
 | **Q7 Causality** | Single materialize → identity from instance → validate → pin → same reference → category port call (§C, §E). |
 | **Q8 Failure ordering** | §I. |
-| **Q9 Governance** | Realization ALLOW only; no provider selection/execution (§F). |
+| **Q9 Governance** | INT-CONFIG ALLOW ≠ operation permission; operation authorization on existing canonical boundary before provider business I/O; Integrations never ALLOW/DENY (§O). |
 | **Q10 Execution** | No new identity minting; ExecutionId consumed from active context only (§C). |
 
 ---
@@ -328,7 +354,136 @@ Stop with **`STOP — ARCHITECTURE DECISION REQUIRED`** if:
 | `R2-P3-CONFIGURE-EXISTING-REACHABILITY-01` | Unchanged — `WorkerCapabilityAcquisitionDecisionService` remains sole decision owner; fulfillment propagates adoption only. |
 | `R2-P3-PINNING-COMPOSITION-CONTINUITY-02` | Single wiring: store → resolution/coordinator → handler path in use. |
 | `R2-P3-EFFECTIVE-USE-CAUSALITY-03` | **Owned here** — Pattern A coordinator + same-instance operation (§C). |
-| `R2-P3-MATERIALIZATION-PORT-TYPING-04` | Typed `CategoryIntegrationInstance` / contract branch on materialization port (§D.1). |
+| `R2-P3-MATERIALIZATION-PORT-TYPING-04` | Typed `CategoryIntegrationInstance` / contract branch; **remove** semantic `resolve_config` / `Mapping[str, object]` from execution-bound request + port (§O.4). |
+| `R2-P3-GOVERNANCE-CONTINUITY-05` | **Owned in R1-R3** — operation authorization before provider business I/O; demote delegate-only pin-before-handler for configured-required paths (§O.3). |
+
+---
+
+## O. TRACE-X-P5-R2-P3-R1-R3 — Governance continuity + `resolve_config` typing reconciliation
+
+**START_HEAD:** `63ba8a237449ce7e78043c480dff97ed1f96918e` · **Production delta:** 0 · **Pattern A:** preserved (§C–E).
+
+### O.1 Audit closure scope
+
+Independent audit @ `63ba8a23…` accepts Pattern A (single materialization → effective identity → validate → pin → **same** local provider → category-specific typed operation) but requires:
+
+1. execution-time **Governance authorization continuity** before provider business I/O;
+2. **strong typing** of provider resolution configuration — no semantic `resolve_config` / generic mapping at the configured-provider execution boundary.
+
+This section reconciles those items **without** reopening Pattern A, single materialization owner, same-instance continuity, or ToolRuntime/configuration authority separation.
+
+### O.2 Four-way permission distinction (locked)
+
+| # | Stage | Not the same as |
+|---|---|---|
+| 1 | Configuration mutation authorization (INT-CONFIG Governance ALLOW) | Operation permission or execution admission |
+| 2 | Execution admission (`ExecutionId` active) | Operation permission or configured binding |
+| 3 | Operation-level Governance authorization (canonical execution-time boundary) | INT-CONFIG ALLOW, adoption, or pin |
+| 4 | Provider invocation (typed category operation) | Any prior stage |
+
+**Integrations MUST NOT:** make ALLOW/DENY decisions; synthesize Governance evidence; treat configured binding or pin as permission; bypass ToolRuntime/domain authorization; become a second Governance owner.
+
+### O.3 Locked execution ordering (configured-adoption provider path)
+
+**Target shape (ownership/call ordering @ `63ba8a23…` evidence):**
+
+```text
+canonical Execution admission (ExecutionId available)
+  → qualified handler / domain operation path entry
+  → applicable canonical operation-level Governance authorization
+        (existing ports on the normal path — no new Integrations mechanism)
+  → Configured Provider Execution Boundary (Pattern A coordinator)
+        materialize ONCE
+        → EffectiveIntegrationIdentity (same local instance)
+        → validate_configured_adoption_match
+        → provenance + subject
+        → pin (evidence only)
+        → SAME local instance → category-specific typed operation (first provider business I/O)
+```
+
+**Invariant constraints (all admitted categories):**
+
+| Constraint | Rule |
+|---|---|
+| ExecutionId | Available before boundary materialization on configured-required paths |
+| Operation authorization | Applicable canonical authorization **MUST succeed** before the **first** governed provider **business** I/O (external/mutating call on the category contract) |
+| Pin | Evidence only — **never** substitutes operation authorization |
+| Materialization side effects | If materialization performs external/mutating I/O, it **MUST NOT** run before required operation authorization (category may place authorization earlier, never later) |
+| Post-pin | No re-resolution between successful pin and provider call; pin failure ⇒ provider call = 0 |
+| Authority widening | No downstream stage may widen permission implied by an earlier stage |
+
+**Before graph @ `63ba8a23…` (production gap — not audit PASS for FRZ-TRC-11):**
+
+```text
+Execution admission
+  → QualifiedCapabilityExecutionRuntimeDelegate.execute
+  → pin_configured_adoption_for_execution (materialize + validate + pin)  ← before handler
+  → handler.dispatch_once (e.g. Marketplace tool path)
+  → ExecutionBoundCatalogToolInvoker / ToolRuntime
+  → agent_runtime_governance + meaningful_side_effect_authorization (inside tool invoker composition)
+  → first tool/provider effect
+```
+
+**After graph (architecture lock):** handler (or domain path) reaches **operation-level authorization** before the coordinator performs any materialization that is not strictly non-mutating identity observation, then coordinator stack as in §C with same-instance operation. Delegate-only pin-before-handler is **demoted** for configured-required paths (`R2-P3-GOVERNANCE-CONTINUITY-05`).
+
+**Pilot category:** R1-R2 did **not** certify a `CONFIGURED_ADOPTION_EXECUTION_SUPPORTED` category where integration category == provider operation category. **No pilot name is locked here.** Future admission requires proof per §K; Marketplace qualified tool handler is **not** evidence of configured integration adoption alignment (tool I/O ≠ `ExecutionIntegrationConfigurationAdoption.integration_category` without explicit admission).
+
+**Bounded code evidence (governance ports exist on tool path, not on Integrations pin):**
+
+- `intergrax/runtime/execution/execution_bound_catalog_tool_composition.py` — wires `AgentRuntimeGovernanceBoundary`, `MeaningfulSideEffectAuthorizationPort`, `CanonicalInnerExecutionGuardPort` into production tool invoker.
+- `intergrax/tools/marketplace_qualified_capability_execution_handler.py` — `catalog_tool_invoker.invoke` after handler-local validation; does not consume adoption on `dispatch_once`.
+- `intergrax/runtime/execution/qualified_capability_execution_runtime_delegate.py` — pins when adoption present **before** `handler.dispatch_once`.
+
+### O.4 Configuration typing decision — `resolve_config` removed from semantic contract
+
+**Architecture outcome:** **Option B** (binding/profile capture) **+** **Option A** (existing typed profile contract) — **not** Option C.
+
+| Semantic boundary input | Typed owner | Role |
+|---|---|---|
+| `ExecutionIntegrationConfigurationAdoption` | Integrations contracts (`execution_integration_configuration.py`) | `ConfiguredCapabilityBinding` + category + `resource_scope` — configured identity |
+| `IntegrationProfile` (optional) | Integrations contracts (`integration_profile.py`) | Declarative per-category `IntegrationBinding` slots; per-slug factory options via **`IntegrationProfile.options_for_slug`** (profile-internal; not a separate execution-bound bag) |
+| `catalog_slug` (optional) | Integrations registry semantics | Catalog factory path when profile slot absent |
+| INT-CONFIG realization payload | `IntegrationConfigurationPayload` (+ codecs) | **Configuration-time only** — fingerprinted in binding; **not** re-exposed as `Mapping[str, object]` on execution boundary |
+
+**Removed from configured-provider **semantic** contract:** `resolve_config`, `Mapping[str, object]`, `Mapping[str, Any]`, `dict[str, Any]`, and any arbitrary metadata bag at the Pattern A coordinator / `ConfiguredProviderExecutionRequest` envelope.
+
+**Implementation debt @ `63ba8a23…` (internal only until `R2-P3-MATERIALIZATION-PORT-TYPING-04`):**
+
+- `ExecutionBoundIntegrationResolutionRequest.resolve_config: Mapping[str, object] | None`
+- `ExecutionBoundIntegrationMaterializationPort.resolve_*` `config: Mapping[str, object] | None`
+- `intergrax/integrations/registry/factory.py` `config: Optional[Mapping[str, Any]]`
+
+**Exact typed target for port typing-04:** delete execution-bound `resolve_config` field; materialization port accepts **`IntegrationProfile | None`**, **`catalog_slug: str | None`**, and category from adoption — factory `config` merge, when needed, is derived **inside Integrations** from `IntegrationProfile.options_for_slug` for the resolved slug, not from a caller-supplied generic mapping. Pinning adapter @ `63ba8a23…` already omits `resolve_config` (composition-injected profile/slug only).
+
+### O.5 R1-R3 enterprise self-audit (incremental)
+
+| Criterion | R1-R3 result |
+|---|---|
+| Governance continuity | **PASS @ lock** — §O.3 invariants + §F.1 matrix |
+| Pin ≠ permission | **PASS @ lock** — explicit §F.1 |
+| Strong typing @ semantic boundary | **PASS @ lock** — §O.4; **OPEN @ code** until typing-04 |
+| Bypass resistance | **PASS @ lock** — Integrations forbidden policy role §O.2 |
+| Production ordering | **OPEN** — `R2-P3-GOVERNANCE-CONTINUITY-05` |
+
+### O.6 Applicable FRZ (R1-R3)
+
+| FRZ | Role |
+|---|---|
+| **FRZ-TRC-11** | **OPEN** — governance ordering + typing must be **implemented** to close |
+| FRZ-GOV-* (permission vs execution) | Supporting — §O.2, §F.1 |
+| FRZ-EXE-01 | Supporting — ExecutionId authority unchanged |
+| FRZ-CTR-01, FRZ-CTR-02 | Supporting |
+| FRZ-TYP-01..04 | Supporting — §O.4 |
+| FRZ-PLG-01..05, FRZ-RPL-01/02/04 | Supporting — §H |
+
+### O.7 R1-R3 disposition
+
+| Item | Status |
+|---|---|
+| `TRACE-X-P5-R2-P3-R1-R3` | **READY FOR AUDIT** |
+| `TRACE-X-P5-R2-P3-R1-R2` | Superseded for governance/typing closure only — Pattern A unchanged |
+| `TRACE-X-P5-R2-P3` | **BLOCKED PENDING ARCHITECTURE AUDIT / IMPLEMENTATION** |
+| P4 | **NOT ENTERED** |
 
 ---
 
@@ -344,13 +499,21 @@ Stop with **`STOP — ARCHITECTURE DECISION REQUIRED`** if:
 | Strong typing | **PASS** — explicit bans §H |
 | Pluginability / replaceability | **PASS** — §H |
 | Fail-closed / bypass resistance | **PASS** — §I, §G |
-| Governance separation | **PASS** |
+| Governance separation | **PASS** — §O.2–O.3; production ordering **OPEN** (`R2-P3-GOVERNANCE-CONTINUITY-05`) |
+| Governance continuity (operation before I/O) | **PASS @ lock** — §O.3 |
+| Semantic boundary typing (`resolve_config`) | **PASS @ lock** — §O.4; code debt typing-04 |
 | Execution authority | **PASS** — no new lifecycle |
 | Tenant continuity | **PASS** — §J |
 | Traceability | **OPEN** until implementation proves FRZ-TRC-11 |
 | Regression protection | **PLANNED** — §M |
 
-**Unresolved (implementation, not lock):** `IN-SCOPE BLOCKER` — no production `resolve_materialize_validate_pin` or category port @ START_HEAD; delegate still pins without handler coupling.
+**Unresolved (implementation, not lock):**
+
+| Finding | Class |
+|---|---|
+| No production coordinator + category port @ `63ba8a23…` | `IN-SCOPE BLOCKER` |
+| Delegate pin-before-handler; materialization may precede operation governance | `IN-SCOPE BLOCKER` (`R2-P3-GOVERNANCE-CONTINUITY-05`) |
+| `resolve_config` / `Mapping[str, object]` on execution-bound request + port | `TRACKED FREEZE DEBT` (`R2-P3-MATERIALIZATION-PORT-TYPING-04`) |
 
 ---
 
@@ -363,6 +526,7 @@ Stop with **`STOP — ARCHITECTURE DECISION REQUIRED`** if:
 | FRZ-TYP-01..04 | Supporting — typing rules §H |
 | FRZ-PLG-01..05, FRZ-RPL-01,02,04 | Supporting — §H |
 | FRZ-EXE-01 | Supporting — Execution identity unchanged |
+| FRZ-GOV-* (as cited in P0 / INT-CONFIG) | Supporting — §O.2 permission separation |
 
 **No global FRZ PASS promotion.**
 
@@ -372,7 +536,8 @@ Stop with **`STOP — ARCHITECTURE DECISION REQUIRED`** if:
 
 | Stage | Status |
 |---|---|
-| `TRACE-X-P5-R2-P3-R1-R2` | **READY FOR AUDIT** |
+| `TRACE-X-P5-R2-P3-R1-R3` | **READY FOR AUDIT** |
+| `TRACE-X-P5-R2-P3-R1-R2` | Architecture base — governance/typing superseded by R1-R3 §O |
 | `TRACE-X-P5-R2-P3` | **BLOCKED PENDING ARCHITECTURE AUDIT / IMPLEMENTATION** |
 | `TRACE-X-P5-R2` | **CURRENT / BLOCKED ON P3** |
 | `P5-GAP-04` | **IMPLEMENTATION IN PROGRESS** |
