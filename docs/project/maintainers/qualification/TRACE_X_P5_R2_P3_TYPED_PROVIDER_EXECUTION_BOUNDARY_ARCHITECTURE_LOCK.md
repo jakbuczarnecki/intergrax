@@ -5,9 +5,11 @@
 | Field | Value |
 |---|---|
 | **Task** | `TRACE-X-P5-R2-P3-R1-R2` — Typed Provider Execution Boundary Architecture Lock |
-| **Child reconciliation** | `TRACE-X-P5-R2-P3-R1-R3` — Governance + typed resolution reconciliation @ `63ba8a237449ce7e78043c480dff97ed1f96918e` (§O) |
+| **Child reconciliation** | `TRACE-X-P5-R2-P3-R1-R3` — Governance + typed resolution reconciliation @ `63ba8a237449ce7e78043c480dff97ed1f96918e` (§O) · `TRACE-X-P5-R2-P3-R1-R4` — Configured-Adoption Pilot Admission @ `fcfa59797c86f5933a7e53cb6784768a4f1d1787` (§P) |
 | **START_HEAD (R1-R2)** | `d39b39ee94982d74acc7042c4dfa63a887a97c05` (`development` = `origin/development` @ R1-R2 task start) |
 | **START_HEAD (R1-R3)** | `63ba8a237449ce7e78043c480dff97ed1f96918e` (`development` = `origin/development` @ R1-R3 task start) |
+| **START_HEAD (R1-R4)** | `fcfa59797c86f5933a7e53cb6784768a4f1d1787` (`development` = `origin/development` @ R1-R4 task start) |
+| **Audited HEAD (R1-R4)** | `fcfa59797c86f5933a7e53cb6784768a4f1d1787` (docs amendment follows in same task commit) |
 | **Parent** | `TRACE-X-P5-R2-P3` → `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
 | **Steering authority** | [`TRACE_X_P5_R2_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE_ARCHITECTURE_LOCK.md`](TRACE_X_P5_R2_CONFIGURED_EFFECTIVE_EXECUTION_PROVENANCE_ARCHITECTURE_LOCK.md) (P0) · [`TRACE_X_P5_R2_P3_R1_ACTUAL_USE_JOIN_POINT_ARCHITECTURE_RECONCILIATION.md`](TRACE_X_P5_R2_P3_R1_ACTUAL_USE_JOIN_POINT_ARCHITECTURE_RECONCILIATION.md) (P3-R1 / R1-R1) |
 | **Primary FRZ** | `FRZ-TRC-11` — **OPEN** (no PASS) |
@@ -487,6 +489,174 @@ Execution admission
 
 ---
 
+## P. TRACE-X-P5-R2-P3-R1-R4 — Configured-Adoption Pilot Admission
+
+**START_HEAD:** `fcfa59797c86f5933a7e53cb6784768a4f1d1787` · **Production delta:** 0 · **Pattern A (R1-R3):** not reopened.
+
+### P.1 Required question — answer **B (NO)**
+
+> Does current HEAD already contain one legal category/provider/caller combination that can satisfy the accepted Pattern A without introducing a new cross-layer semantic contract, new authority, new ToolRuntime wiring mechanism, or broad typing redesign?
+
+**Answer: NO.** No candidate in the bounded closed-world inventory (§P.2) passes **all** admission gates PA-01..PA-10 with code evidence.
+
+**Disposition:** **`STOP — ARCHITECTURE DECISION REQUIRED`**
+
+**Architecture blocker:** **`R2-P3-CONFIGURED-ADOPTION-PILOT-ADMISSION-06`** — Pattern A is locked (R1-R3), but @ `fcfa59797c86f5933a7e53cb6784768a4f1d1787` there is **no** existing production vertical slice that simultaneously proves configured category alignment, strong typed provider operation, Governance continuity on the category business call, and same-instance provider causality from configured adoption through pin to business I/O.
+
+**Admitted pilot:** **none** — silent promotion of Marketplace tool execution or profile-resolved database tools is **forbidden**.
+
+**Minimum next architecture decision (design only — not chosen here):** introduce an explicit typed mechanism so an **already materialized** category provider instance from the Pattern A coordinator can reach an **existing governed** category operation consumer (e.g. typed configured-provider execution port and/or typed dependency projection from pin/coordinator into that caller) **without** ToolRuntime becoming configuration authority and **without** weakening `RelationalStore` or generic tool transport into the semantic boundary.
+
+### P.2 Bounded candidate inventory (@ `fcfa59797c86f5933a7e53cb6784768a4f1d1787`)
+
+| Candidate | Role @ HEAD | Pre-audit disposition |
+|---|---|---|
+| **CodeCraft** | `CodeCraftQualifiedCapabilityExecutionHandler` → `CodeCraftBoundCapabilityExecutionPort.execute` | **N/A** — not Integrations configured-provider execution |
+| **Marketplace qualified tool** | `MarketplaceToolQualifiedCapabilityExecutionHandler` → intent/stage/material → `ExecutionBoundCatalogToolInvoker` → ToolRuntime | **NOT ADMITTED** — no typed relation `adoption.integration_category` → integration provider used by tool |
+| **`RELATIONAL_STORE` / `sqlite`** | CONFIGURE_EXISTING: `SQLiteRelationalStoreConfigurationRealizationStrategy` + `WorkerConfiguredCapabilityFulfillmentService` adoption; separate consumer: `database.*` tools via `ToolWiringContext.relational_store` from `ToolWiringContext.from_integration_profile` | **CANDIDATE ONLY** — fails PA-02, PA-04, PA-05, PA-08 (and related gates) |
+
+**Qualified handler registry @ HEAD:** two real binding handlers — CodeCraft (`intergrax/runtime/codecraft/qualified_capability_execution_handler.py`), Marketplace tool (`intergrax/tools/marketplace_qualified_capability_execution_handler.py`). Neither implements a category-specific configured-provider operation port for `ExecutionIntegrationConfigurationAdoption.integration_category`.
+
+**CONFIGURE_EXISTING → Execution (partial chain exists):** `WorkerCapabilityFulfillmentCoordinator` passes `integration_configuration_adoption` into qualified execution intake (`worker_capability_fulfillment_coordinator.py`); `QualifiedCapabilityExecutionRuntimeDelegate` calls `pin_configured_adoption_for_execution` before `handler.dispatch_once` (`qualified_capability_execution_runtime_delegate.py`); pin adapter delegates to `ExecutionBoundIntegrationResolution.resolve_and_pin` (`execution_bound_integration_pinning_adapter.py`). **Gap:** pin path observes effective **identity** and stores provenance; it does **not** retain or forward the materialized `PlatformIntegrationContract` instance to any category business operation (`execution_bound_integration_resolution.py` — `materialized` used only for `provider_id`, instance discarded).
+
+### P.3 Call graphs (code-bounded)
+
+**CodeCraft**
+
+```text
+QualifiedCapabilityExecutionRuntimeDelegate.execute
+  → [optional pin — adoption not consumed by handler]
+  → CodeCraftQualifiedCapabilityExecutionHandler.dispatch_once
+  → CodeCraftBoundCapabilityExecutionPort.execute(CodeCraftBoundCapabilityExecutionRequest)
+```
+
+No `ExecutionIntegrationConfigurationAdoption`, no Integrations category, no `CONFIGURED_ADOPTION_EXECUTION_SUPPORTED` path.
+
+**Marketplace qualified tool**
+
+```text
+WorkerCapabilityFulfillmentCoordinator (may attach adoption)
+  → QualifiedCapabilityExecutionRuntimeDelegate.execute
+  → pin_configured_adoption_for_execution (ExecutionBoundIntegrationResolution.resolve_and_pin)
+  → MarketplaceToolQualifiedCapabilityExecutionHandler.dispatch_once
+  → intent / stage / activation / material / invocation resolution
+  → ExecutionBoundCatalogToolInvoker.invoke
+  → ToolRuntime (governance wired in tool invoker composition)
+  → tool operation
+```
+
+`MarketplaceToolQualifiedCapabilityExecutionHandler.dispatch_once` does not read `integration_configuration_adoption` or `integration_category` (handler API is `BoundCapabilityExecutionDispatchRequest` only). Tool identity is marketplace/catalog semantics, not adoption category proof.
+
+**`RELATIONAL_STORE` / `sqlite` (discontinuous)**
+
+```text
+CONFIGURE_EXISTING path:
+  WorkerConfiguredCapabilityFulfillmentService
+    → ExecutionIntegrationConfigurationAdoption(integration_category=opportunity.integration_category, …)
+  → coordinator → qualified execution + pin (as above)
+
+Database tool path (independent):
+  ToolWiringContext.from_integration_profile
+    → profile.slug_for_category(RELATIONAL_STORE) / resolve_from_profile
+    → ctx.relational_store
+  → database_query | database_execute | database_describe_schema
+    → RelationalStore.fetch_all | execute
+```
+
+No code edge proves `ctx.relational_store` is the **same object** materialized during `resolve_and_pin` for the execution carrying the adoption.
+
+### P.4 Typed contracts found (candidate-relevant)
+
+| Surface | Location | P3 pilot relevance |
+|---|---|---|
+| `RelationalStore` | `intergrax/integrations/contracts/relational_store.py` | `execute(..., params: Sequence[Any])`, `fetch_all` → `Sequence[Mapping[str, Any]]` — **fails PA-08** for category business seam |
+| Database tool DTOs | `intergrax/tools/providers/database/contracts.py` (via `service.py`) | Strongly typed **tool** inputs/outputs; tool layer ≠ configured-provider category port |
+| `ExecutionIntegrationConfigurationAdoption` | Integrations contracts | Neutral adoption envelope — not a category operation port |
+| `ExecutionBoundIntegrationResolutionResult` | `execution_bound_integration_resolution.py` | Returns `effective` identity + provenance — **no** pinned provider instance handle for consumers |
+| CodeCraft / Marketplace dispatch | qualified handlers | Typed **execution** dispatch — not category provider operations |
+
+### P.5 Governance boundary found
+
+| Path | Governance | Pilot relevance |
+|---|---|---|
+| Marketplace → ToolRuntime | `AgentRuntimeGovernanceBoundary` + meaningful side-effect authorization on catalog tool invoker composition (`execution_bound_catalog_tool_composition.py` per §O.3) | **Does not** tie authorization to adoption category or materialized integration provider instance |
+| Pin / `resolve_and_pin` | Validates adoption vs effective identity; pins provenance — **not** operation-level Governance before category business I/O on a retained provider | Materialization for identity observation can occur in pin path before handler (§O.3 **OPEN** `R2-P3-GOVERNANCE-CONTINUITY-05`) |
+| Database tools | ToolRuntime governance when invoked as tools | **Separate** from configured-adoption execution port; profile-based store resolution is not adoption causality |
+
+### P.6 Same-instance continuity — **FAIL @ HEAD (all candidates)**
+
+- **Pin path:** `resolve_and_pin` materializes via `ExecutionBoundIntegrationMaterializationPort` but returns only `EffectiveIntegrationIdentity` / provenance — **no** consumer receives the materialized instance (`execution_bound_integration_resolution.py`).
+- **Tool wiring:** `ToolWiringContext.from_integration_profile` may call `resolve_from_profile` / `resolve` again for `RELATIONAL_STORE` (`wiring.py`) — **second resolution**, not pin-projected instance (**PA-05**).
+
+### P.7 Tenant continuity
+
+| Candidate | Result |
+|---|---|
+| CodeCraft | **N/A** (no configured adoption path) |
+| Marketplace | Fulfillment/adoption tenant checks exist on fulfillment and handler intent (`intent.tenant_id != request.tenant_id`); **cannot** prove provider-operation tenant equals adoption tenant for integration category — tool path lacks adoption category/provider binding |
+| `RELATIONAL_STORE` / `sqlite` | Fulfillment validates binding tenant/category/provider (`worker_configured_capability_fulfillment_service.py`); database tools use execution/tool tenant via ToolRuntime — **no proof** same configured binding drives the `RelationalStore` instance used in SQL I/O |
+
+**FRZ-TEN-*:** no global PASS; tenant alignment on adoption creation does **not** admit pilot without operation causality.
+
+### P.8 Pluginability / replaceability
+
+| Candidate | PA-09 |
+|---|---|
+| CodeCraft | **N/A** |
+| Marketplace | **FAIL** — replaceability of integration provider behind adoption is **unproven**; tool catalog slug ≠ configured `provider_id` causality |
+| `RELATIONAL_STORE` / `sqlite` | **FAIL @ pilot** — sqlite could be replaced in principle via Integrations registry, but **without** admitted same-instance port, replaceability does not satisfy Pattern A vertical slice |
+
+### P.9 Pilot admission gate matrix (PA-01..PA-10)
+
+Legend: **PASS** = PASS WITH CODE EVIDENCE · **FAIL** = FAIL WITH CODE EVIDENCE · **N/A**
+
+| Gate | CodeCraft | Marketplace tool | `RELATIONAL_STORE` / `sqlite` + database tool |
+|---|---|---|---|
+| **PA-01** Same semantic category | N/A | **FAIL** — handler/tool path has no `adoption.integration_category` ≡ tool integration category proof | **FAIL** — adoption category `RELATIONAL_STORE` not wired to tool store instance |
+| **PA-02** Existing typed category operation | N/A | **FAIL** — tool ops typed as tool contracts, not integration category port | **FAIL** — `RelationalStore` uses `Any` / `Mapping[str, Any]` |
+| **PA-03** Existing governed caller | N/A | **PASS** — ToolRuntime governance on invoke | **PASS** — tool path governed; **FAIL** as configured-adoption category caller (discontinuous) |
+| **PA-04** Same-instance continuity | N/A | **FAIL** — pin does not pass provider; tool resolves independently | **FAIL** — `from_integration_profile` vs pin materialization |
+| **PA-05** No second resolver | N/A | **FAIL** — tool/materialization chain re-resolves tool wiring | **FAIL** — `_optional(RELATIONAL_STORE)` re-resolve |
+| **PA-06** No ToolRuntime authority mutation | N/A | **PASS** — ToolRuntime does not select adoption | **FAIL** — profile slug selection is ToolRuntime wiring authority, not adoption-projected instance |
+| **PA-07** No Governance bypass | N/A | **FAIL** — pin/materialization ordering vs operation auth (§O.3 OPEN) for configured-required story | **FAIL** — SQL via profile wiring bypasses configured-provider coordinator operation auth |
+| **PA-08** Strong typing | N/A | **PASS** on tool DTOs; **FAIL** on adoption→provider category seam | **FAIL** — `relational_store.py` `Any` |
+| **PA-09** Pluginability | N/A | **FAIL** — unproven adoption-aligned replaceability | **FAIL** — no admitted port |
+| **PA-10** Bounded P3 implementation | N/A | **FAIL** — would require new adoption↔tool semantic edge | **FAIL** — requires typed port + instance projection and/or coordinator consumer |
+
+### P.10 Impact on P3 · FRZ · tenant
+
+| Item | Status |
+|---|---|
+| `TRACE-X-P5-R2-P3` | **NEXT / REQUIRED / NOT ENTERED** — blocked on **`R2-P3-CONFIGURED-ADOPTION-PILOT-ADMISSION-06`** before first `CONFIGURED_ADOPTION_EXECUTION_SUPPORTED` implementation wave |
+| `TRACE-X-P5-R2` | **CURRENT / P3 NEXT** (unchanged) |
+| `P5-GAP-04` | **IMPLEMENTATION IN PROGRESS** |
+| **FRZ-TRC-11** | **OPEN** — no pilot ⇒ no production configured→effective→operation causality proof |
+| FRZ-CTR-01/02, FRZ-TYP-01..04, FRZ-PLG-01..05, FRZ-RPL-01/02/04, FRZ-EXE-01, FRZ-GOV-* | Supporting — pilot admission **does not** promote PASS |
+| **FRZ-TEN-*** | **OPEN** — tenant checks on fulfillment insufficient without admitted operation path |
+
+**Why no silent promotion:** Marketplace success at governed **tool** execution does not prove `ExecutionIntegrationConfigurationAdoption` category alignment; database tools using `RelationalStore` from **IntegrationProfile** do not prove configured-adoption materialization continuity; CodeCraft is outside Integrations configured-provider scope.
+
+### P.11 R1-R4 disposition
+
+| Item | Status |
+|---|---|
+| **`TRACE-X-P5-R2-P3-R1-R4`** | **`STOP — ARCHITECTURE DECISION REQUIRED`** (`R2-P3-CONFIGURED-ADOPTION-PILOT-ADMISSION-06`) |
+| Admitted pilot | **none** |
+| `TRACE-X-P5-R2-P3-R1-R3` | **READY FOR AUDIT** (unchanged — Pattern A) |
+| P4 | **NOT ENTERED** |
+
+### P.12 Unresolved findings (R1-R4 classification)
+
+| Finding | Class |
+|---|---|
+| `R2-P3-CONFIGURED-ADOPTION-PILOT-ADMISSION-06` | **IN-SCOPE BLOCKER** |
+| No production Pattern A coordinator + category port @ HEAD | **IN-SCOPE BLOCKER** (carried from §O) |
+| `R2-P3-GOVERNANCE-CONTINUITY-05` | **IN-SCOPE BLOCKER** |
+| `R2-P3-MATERIALIZATION-PORT-TYPING-04` | **TRACKED FREEZE DEBT** |
+| `RelationalStore` `Any` on operation seam | **IN-SCOPE BLOCKER** for sqlite-as-pilot without new typed contract |
+
+---
+
 ## Enterprise self-audit matrix (@ lock design)
 
 | Criterion | Result |
@@ -536,9 +706,10 @@ Execution admission
 
 | Stage | Status |
 |---|---|
+| `TRACE-X-P5-R2-P3-R1-R4` | **STOP — ARCHITECTURE DECISION REQUIRED** (`R2-P3-CONFIGURED-ADOPTION-PILOT-ADMISSION-06`; §P) |
 | `TRACE-X-P5-R2-P3-R1-R3` | **READY FOR AUDIT** |
 | `TRACE-X-P5-R2-P3-R1-R2` | Architecture base — governance/typing superseded by R1-R3 §O |
-| `TRACE-X-P5-R2-P3` | **BLOCKED PENDING ARCHITECTURE AUDIT / IMPLEMENTATION** |
+| `TRACE-X-P5-R2-P3` | **BLOCKED** — pilot admission **06** + implementation (§P.10) |
 | `TRACE-X-P5-R2` | **CURRENT / BLOCKED ON P3** |
 | `P5-GAP-04` | **IMPLEMENTATION IN PROGRESS** |
 | `FRZ-TRC-11` | **OPEN** |
