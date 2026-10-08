@@ -5,7 +5,7 @@
 | **Task** | `TRACE-X-P5-R2-P3-R1-R1-R1` |
 | **Parent** | `TRACE-X-P5-R2-P3-R1-R1` → `TRACE-X-P5-R2-P3-R1` → `TRACE-X-P5-R2-P3` → `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
 | **START_HEAD** | `f517fd787d0e10488eed9a0da97c1ea1c5166f0c` |
-| **Disposition** | **READY FOR AUDIT** (not CLOSED) |
+| **Disposition** | **SUPERSEDED (duplicate-prone sections)** — see [`TRACE_X_P5_R2_P3_R1_R1_R1_R1_EXISTING_MECHANISM_REUSE_AND_CONVERGENCE_LOCK.md`](TRACE_X_P5_R2_P3_R1_R1_R1_R1_EXISTING_MECHANISM_REUSE_AND_CONVERGENCE_LOCK.md) for execution ingress, business identity, intent, and implementation-map convergence. Non-superseded: Variant B ∩ UCA = ∅, subject reference shape, governance ordering, tenant continuity. |
 | **Production delta** | **0** (architecture / qualification gates only) |
 | **FRZ-TRC-11** | **OPEN** (scoped evidence; no PASS promotion) |
 | **P5-GAP-04** | **IMPLEMENTATION IN PROGRESS** |
