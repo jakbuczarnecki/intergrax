@@ -5,7 +5,7 @@
 | **Task** | `TRACE-X-P5-R2-P3-R1-R1-R1-R1` |
 | **Parent** | `TRACE-X-P5-R2-P3-R1-R1-R1` → `TRACE-X-P5-R2-P3-R1-R1` → `TRACE-X-P5-R2-P3-R1` → `TRACE-X-P5-R2-P3` → `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
 | **START_HEAD** | `2cfcac2907428ac6d634671913cb6958dbc82929` |
-| **Disposition** | **READY FOR AUDIT** (not CLOSED) |
+| **Disposition** | **READY FOR AUDIT** (not CLOSED) — target/activation/intent/handler convergence superseded by [`TRACE_X_P5_R2_P3_R1_R1_R1_R1_R1_CANONICAL_TOOL_EXECUTION_CONVERGENCE_LOCK.md`](TRACE_X_P5_R2_P3_R1_R1_R1_R1_R1_CANONICAL_TOOL_EXECUTION_CONVERGENCE_LOCK.md) (§8–10, blockers 16–17). Ingress + `CapabilityIdentityKey` identity reuse remain authoritative here. |
 | **Production delta** | **0** |
 | **FRZ-TRC-11** | **OPEN** |
 | **P5-GAP-04** | **IMPLEMENTATION IN PROGRESS** |
