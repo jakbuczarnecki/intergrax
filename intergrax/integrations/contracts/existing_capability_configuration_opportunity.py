@@ -25,6 +25,10 @@ class ExistingCapabilityConfigurationOpportunityLookupFailureReason(StrEnum):
     AMBIGUOUS = "AMBIGUOUS"
     INVALID = "INVALID"
     FINGERPRINT_MISMATCH = "FINGERPRINT_MISMATCH"
+    CONFLICT = "CONFLICT"
+    CORRUPT_RECORD = "CORRUPT_RECORD"
+    UNSUPPORTED_SCHEMA_VERSION = "UNSUPPORTED_SCHEMA_VERSION"
+    UNSUPPORTED_PAYLOAD_TYPE = "UNSUPPORTED_PAYLOAD_TYPE"
 
 
 class ExistingCapabilityConfigurationOpportunityLookupError(Exception):
@@ -226,6 +230,20 @@ class ExistingCapabilityConfigurationOpportunityReadPort(Protocol):
 
 
 @runtime_checkable
+class ExistingCapabilityConfigurationOpportunityStore(
+    ExistingCapabilityConfigurationOpportunityReadPort,
+    Protocol,
+):
+    """Integrations-owned durable opportunity store — immutable first-write semantics."""
+
+    def persist(
+        self,
+        opportunity: ExistingCapabilityConfigurationOpportunity,
+    ) -> None:
+        ...
+
+
+@runtime_checkable
 class ExistingCapabilityConfigurationOpportunityProvider(Protocol):
     """Plugin supplies factual candidates — Integrations owns final opportunity and risk."""
 
@@ -257,6 +275,7 @@ __all__ = [
     "ExistingCapabilityConfigurationOpportunityLookupFailureReason",
     "ExistingCapabilityConfigurationOpportunityProvider",
     "ExistingCapabilityConfigurationOpportunityReadPort",
+    "ExistingCapabilityConfigurationOpportunityStore",
     "validate_configuration_opportunity_ref",
     "validate_existing_capability_configuration_opportunity",
     "validate_existing_capability_configuration_opportunity_facts",
