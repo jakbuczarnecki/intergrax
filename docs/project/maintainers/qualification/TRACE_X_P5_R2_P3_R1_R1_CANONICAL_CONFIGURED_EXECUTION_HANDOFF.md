@@ -86,6 +86,8 @@ WorkerCapabilityFulfillmentCoordinator.fulfill(request)
 
 ## Q3 — Acquisition / qualification facts
 
+> **SUPERSEDED / REJECTED** — independent exact-SHA audit @ `f517fd787d0e10488eed9a0da97c1ea1c5166f0c` conflated Variant B (pure CONFIGURE_EXISTING) with UCA acquisition/qualification reuse. **Normative replacement:** [`TRACE_X_P5_R2_P3_R1_R1_R1_CONFIGURED_EXECUTION_SUBJECT_ARCHITECTURE_LOCK.md`](TRACE_X_P5_R2_P3_R1_R1_R1_CONFIGURED_EXECUTION_SUBJECT_ARCHITECTURE_LOCK.md). **Historical draft below is audit lineage only.**
+
 **Pilot / sanctioned P3-R5 vertical slice (Marketplace `database.*` + RELATIONAL_STORE CONFIGURE_EXISTING):**
 
 | Fact | Source | Contract |
