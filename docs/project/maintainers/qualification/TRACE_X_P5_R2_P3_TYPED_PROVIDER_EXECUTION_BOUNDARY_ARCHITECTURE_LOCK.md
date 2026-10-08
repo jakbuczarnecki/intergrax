@@ -5,11 +5,12 @@
 | Field | Value |
 |---|---|
 | **Task** | `TRACE-X-P5-R2-P3-R1-R2` — Typed Provider Execution Boundary Architecture Lock |
-| **Child reconciliation** | `TRACE-X-P5-R2-P3-R1-R3` — Governance + typed resolution reconciliation @ `63ba8a237449ce7e78043c480dff97ed1f96918e` (§O) · `TRACE-X-P5-R2-P3-R1-R4` — Configured-Adoption Pilot Admission @ `fcfa59797c86f5933a7e53cb6784768a4f1d1787` (§P) · `TRACE-X-P5-R2-P3-R1-R5` — Deferred Configured Provider Dependency Projection @ `62ec2457268ac7287be9c643d7d3cf1b97f32f07` (§Q) |
+| **Child reconciliation** | `TRACE-X-P5-R2-P3-R1-R3` — Governance + typed resolution reconciliation @ `63ba8a237449ce7e78043c480dff97ed1f96918e` (§O) · `TRACE-X-P5-R2-P3-R1-R4` — Configured-Adoption Pilot Admission @ `fcfa59797c86f5933a7e53cb6784768a4f1d1787` (§P) · `TRACE-X-P5-R2-P3-R1-R5` — Deferred Configured Provider Dependency Projection @ `62ec2457268ac7287be9c643d7d3cf1b97f32f07` (§Q) · `TRACE-X-P5-R2-P3-R1-R5-R1` — Invocation-Bound Port Lifetime and Retry Ownership @ `072264dbb94fd6239d209f244c41ee1c28e21fc3` (§R) |
 | **START_HEAD (R1-R2)** | `d39b39ee94982d74acc7042c4dfa63a887a97c05` (`development` = `origin/development` @ R1-R2 task start) |
 | **START_HEAD (R1-R3)** | `63ba8a237449ce7e78043c480dff97ed1f96918e` (`development` = `origin/development` @ R1-R3 task start) |
 | **START_HEAD (R1-R4)** | `fcfa59797c86f5933a7e53cb6784768a4f1d1787` (`development` = `origin/development` @ R1-R4 task start) |
 | **START_HEAD (R1-R5)** | `62ec2457268ac7287be9c643d7d3cf1b97f32f07` (`development` = `origin/development` @ R1-R5 task start) |
+| **START_HEAD (R1-R5-R1)** | `072264dbb94fd6239d209f244c41ee1c28e21fc3` (`development` = `origin/development` @ R1-R5-R1 task start) |
 | **Audited HEAD (R1-R4)** | `fcfa59797c86f5933a7e53cb6784768a4f1d1787` (docs amendment follows in same task commit) |
 | **Audited HEAD (R1-R5)** | docs amendment in same task commit after `62ec2457268ac7287be9c643d7d3cf1b97f32f07` |
 | **Parent** | `TRACE-X-P5-R2-P3` → `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
@@ -708,7 +709,8 @@ Legend: **PASS** = PASS WITH CODE EVIDENCE · **FAIL** = FAIL WITH CODE EVIDENCE
 
 | Stage | Status |
 |---|---|
-| `TRACE-X-P5-R2-P3-R1-R5` | **READY FOR AUDIT** (§Q) |
+| `TRACE-X-P5-R2-P3-R1-R5-R1` | **READY FOR AUDIT** (§R) |
+| `TRACE-X-P5-R2-P3-R1-R5` | **BLOCKED PENDING R5-R1 AUDIT** (§Q) |
 | `TRACE-X-P5-R2-P3-R1-R4` | **SUPERSEDED @ architecture** for admission-06 — historical §P STOP |
 | `TRACE-X-P5-R2-P3-R1-R3` | **READY FOR AUDIT** |
 | `TRACE-X-P5-R2-P3-R1-R2` | Architecture base — governance/typing superseded by R1-R3 §O |
@@ -1117,9 +1119,10 @@ Relevant ToolRuntime invocation-wiring / database-tool unit tests as identified 
 
 | Stage | Status |
 |---|---|
-| **`TRACE-X-P5-R2-P3-R1-R5`** | **READY FOR AUDIT** |
+| **`TRACE-X-P5-R2-P3-R1-R5-R1`** | **READY FOR AUDIT** (§R) |
+| **`TRACE-X-P5-R2-P3-R1-R5`** | **BLOCKED PENDING R5-R1 AUDIT** |
 | **`TRACE-X-P5-R2-P3-R1-R4`** | **SUPERSEDED @ architecture** for admission-06 (historical STOP in §P preserved) |
-| **`TRACE-X-P5-R2-P3`** | **BLOCKED PENDING R1-R5 AUDIT / IMPLEMENTATION** |
+| **`TRACE-X-P5-R2-P3`** | **BLOCKED PENDING ARCHITECTURE AUDIT / IMPLEMENTATION** |
 | **`TRACE-X-P5-R2`** | **CURRENT / P3 NEXT** |
 | **`P5-GAP-04`** | **IMPLEMENTATION IN PROGRESS** |
 | **`FRZ-TRC-11`** | **OPEN** |
@@ -1130,6 +1133,7 @@ Relevant ToolRuntime invocation-wiring / database-tool unit tests as identified 
 | Finding | Class |
 |---|---|
 | No production implementation of §Q projection @ HEAD | **IN-SCOPE BLOCKER** (implementation wave) |
+| `R2-P3-INVOCATION-BOUND-PORT-LIFETIME-07` | **Architecture RESOLVED** @ §R — implementation wave must prove §R.28 gates |
 | `R2-P3-MATERIALIZATION-PORT-TYPING-04` | **IN-SCOPE BLOCKER** (implementation) |
 | Delegate pin-before-handler may pre-materialize for identity @ HEAD | **IN-SCOPE BLOCKER** — align with lazy port + Governance continuity in implementation |
 | Legacy `RelationalStore` `Any` behind adapter | **TRACKED FREEZE DEBT** |
@@ -1171,3 +1175,282 @@ Qualified execution (+ adoption to handler)
   → database.query | database.execute → ONE typed port
   → lazy Pattern A → pin → SAME provider I/O
 ```
+
+---
+
+## R. TRACE-X-P5-R2-P3-R1-R5-R1 — Invocation-Bound Port Lifetime and Retry Ownership Reconciliation
+
+**START_HEAD:** `072264dbb94fd6239d209f244c41ee1c28e21fc3` · **Production delta:** 0 · **Scope:** lifetime/retry ownership only — **does not** reopen §O–§Q R1-R5 decisions.
+
+### R.1 Canonical stage snapshot (@ START_HEAD)
+
+| Stage | Status |
+|---|---|
+| **`TRACE-X-P5-R2`** | **CURRENT / P3 NEXT** |
+| **`TRACE-X-P5-R2-P3`** | **NEXT / REQUIRED / NOT ENTERED** |
+| **`TRACE-X-P5-R2-P3-R1-R5`** | **BLOCKED PENDING R5-R1 AUDIT** (§Q architecture accepted pending §R) |
+| **`TRACE-X-P5-R2-P3-R1-R5-R1`** | **READY FOR AUDIT** (this §) |
+| **`P5-GAP-04`** | **IMPLEMENTATION IN PROGRESS** |
+| **`FRZ-TRC-11`** | **OPEN** |
+| **P4** | **NOT ENTERED** |
+
+**Primary blocker reconciled in architecture:** `R2-P3-INVOCATION-BOUND-PORT-LIFETIME-07`.
+
+### R.2 Exact current retry mechanics (@ `072264db…`)
+
+`ToolExecutionRequest` is **frozen** (`intergrax/tools/execution_models.py`); the retry loop in `RuntimeToolInvoker._execute_with_policy` passes the **same** `request` reference on every physical attempt.
+
+Per attempt, `_execute_once` calls `_apply_invocation_wiring`, which:
+
+1. Returns immediately only if `request.effective_wiring is not None` (not updated on the loop variable — each attempt re-enters from the original request unless an outer layer mutates it).
+2. Otherwise calls `invocation_context.wiring_resolver.resolve(...)` and returns `replace(request, effective_wiring=…)` **only inside** `_execute_once` (local variable — **not** propagated to `_execute_with_policy`).
+
+Therefore, for the default path without pre-set `effective_wiring`:
+
+```text
+_execute_with_policy(request)
+  for attempt in 1..N:
+      _execute_once(request)          # same outer request
+        request' = _apply_invocation_wiring(request)
+          → wiring_resolver.resolve()   # every attempt
+```
+
+Sandbox/governance preparation may call `wiring_resolver.resolve` **additionally** (`invoker.py` L612–639 when `requires_sandbox_isolation`).
+
+**Root cause:** §Q.9 requires the same bound port and same provider across resolver calls and physical retries, but without an explicit **invocation-bound lifetime owner**, implementation could treat each `resolve()` as permission to construct a **new** category port → second materialization on retry.
+
+### R.3 Locked solution — invocation-bound resolver capture
+
+**Owner** of process-local bound-port lifetime: the **invocation-specific wiring resolver** created exactly once by **`ConfiguredIntegrationToolInvocationProjectionPort.project(...)`** (single composition owner — §Q.11).
+
+```text
+ConfiguredIntegrationToolInvocationProjectionPort.project(...)
+  → creates exactly one execution-bound category port A (inert at construction)
+  → creates exactly one InvocationBoundConfiguredIntegrationWiringResolver R
+        R captures direct reference to A
+
+QualifiedToolInvocationResolver → ExecutionBoundCatalogToolInvokeRequest.wiring_resolver = R
+ToolRuntime → repeated R.resolve(...) → ToolInvocationWiring(configured_relational_store_execution=A)
+```
+
+**R MUST NOT:** materialize, pin, call provider APIs, mutate durable execution truth, or perform Governance.
+
+**R MAY:** validate immutable invocation identity consistency (tool id, tenant equality, admission already established by projection owner).
+
+Each `resolve()` may allocate a new `ToolInvocationWiring` object; **`wiring.configured_relational_store_execution` MUST be the same object identity as every prior resolve from this R**.
+
+### R.4 Lifetime scopes
+
+| Scope | Definition | Bound port |
+|---|---|---|
+| **Logical catalog-tool invocation** | One `ExecutionBoundCatalogToolInvokeRequest` / one ToolRuntime invocation | **One** A, **one** R |
+| **Physical attempt** | One iteration inside `_execute_with_policy` | **Same** A (via **same** R) |
+| **Separate logical invocation** | Distinct tool call even under same `ExecutionId`, tenant, task, run, adoption | **New** A and **new** R — **no** reuse by `ExecutionId` |
+
+### R.5 Creation ordering (locked)
+
+```text
+qualified handler
+  → factual adoption available
+  → admitted tool known
+  → ConfiguredIntegrationToolInvocationProjectionPort.project(...)
+        ONE category bound port A (inert)
+        ONE resolver R(A)
+  → QualifiedToolInvocationResolver passes R
+  → ExecutionBoundCatalogToolInvokeRequest.wiring_resolver = R
+  → ToolRuntime
+```
+
+**Constructor of A:** materialize = 0, pin = 0, provider I/O = 0, authorization = 0.
+
+**Forbidden constructors of A:** Marketplace handler, `QualifiedToolInvocationResolver`, ToolRuntime, database tool.
+
+### R.6 Bound port A — process-local state owner
+
+A owns **only** lazy provider continuity for **one** logical invocation:
+
+```text
+UNMATERIALIZED
+  → (first post-Governance category operation)
+MATERIALIZED_VALIDATED_PINNED(provider P)
+```
+
+A is **not:** configuration authority, durable provenance authority, provider registry, global cache, or reconstruction owner. Pin store remains durable evidence authority; Integrations remains materialization authority.
+
+**Lazy init (first `query` / `execute` after applicable Governance):** tenant/adoption validation → materialize P (≤1) → effective identity from P → configured/effective validate → pin → retain P → invoke.
+
+**Subsequent operations on same A (including physical retries):** use P — no second `resolve` for provider selection, no second materialization.
+
+**Initialization failure (fail closed):**
+
+| Failure | materialize | pin | I/O | Same A on retry |
+|---|---|---|---|---|
+| tenant/adoption | 0 | 0 | 0 | no silent re-resolution via new port |
+| materialization | ≤1 attempted | 0 | 0 | no alternate provider via new resolver |
+| configured/effective mismatch | ≤1 | 0 | 0 | fail closed |
+| pin failure | ≤1 | attempted | 0 | fail closed |
+
+Do **not** invent initialization retry contracts in this task.
+
+### R.7 ToolRuntime retry + Governance separation
+
+```text
+logical invocation owns R and A
+
+attempt k:
+  ToolRuntime retry authorization (attempt > 1: _require_current_attempt_authorization)
+  → R.resolve → A
+  → ToolExecutor → A reuses P if already MATERIALIZED
+  → provider I/O only after applicable Governance for this attempt
+```
+
+**Provider reuse ≠ permission reuse:** reusing P is same dependency identity only. ToolRuntime **must** repeat attempt-scoped authorization; pin is **not** authorization.
+
+**Uncertain effect / non-retry-safe operations:** existing ToolRuntime retry-safety rules unchanged — §R only requires that **if** another physical attempt occurs for the same logical invocation, it reuses A/P.
+
+### R.8 Concurrency
+
+No cross-invocation shared cache. If concurrent first access to the same A is possible, **at most one** successful materialization (exactly-once / thread-safe guard **inside** A only). No global locks, no Execution-wide mutable provider maps, no registry mutation for continuity.
+
+### R.9 Terminal lifetime and restart
+
+A and R die with the logical invocation (terminal result/exception, no further retry). No lookup by `ExecutionId`, no registry retention, no durable serialization of A/P/R.
+
+```text
+in-process physical retry     → reuse A/P (§R)
+process restart / P4 reconstruct → no live A/P continuity claim
+```
+
+### R.10 Provider resource cleanup — no new ownership
+
+```text
+bound-port reference lifetime ≠ provider resource ownership lifetime
+```
+
+§R does **not** require `A.close(P)` merely because A retained P. Disposal follows existing materialization/lease contracts. New lease ownership → **STOP — ARCHITECTURE DECISION REQUIRED** (not triggered here).
+
+### R.11 Explicit prohibitions
+
+- `dict[ExecutionId, provider]` / `dict[ExecutionId, bound_port]` / tenant+ExecutionId live-object maps.
+- ToolRuntime as owner/cache of configured integration providers.
+- Resolver lookup of A from shared maps keyed by run/step/ExecutionId/correlation id (preferred: **direct typed reference** on R).
+
+### R.12 Blocker resolution
+
+**`R2-P3-INVOCATION-BOUND-PORT-LIFETIME-07` — Architecture RESOLVED:**
+
+> One `ConfiguredIntegrationToolInvocationProjectionPort.project(...)` creates one process-local category bound port and one immutable invocation-specific wiring resolver capturing that exact port. Every resolver call and every ToolRuntime physical retry for that logical invocation projects the same port object. No shared lookup/cache is used. The bound port lazily materializes and retains at most one provider instance after Governance; retries reuse that instance but repeat applicable ToolRuntime authorization.
+
+**R1-R5 architecture-complete** only after independent audit of §Q **and** §R.
+
+### R.13 Before / after graph
+
+**Before (ambiguity @ HEAD):**
+
+```text
+attempt 1 → resolver.resolve() → port A? → materialize P1?
+attempt 2 → resolver.resolve() → port A or B? → materialize P2?
+```
+
+**Locked after:**
+
+```text
+projection owner → create A once → create R(A) once
+
+sandbox resolve        → R → A (materialize 0)
+attempt 1 auth         → R → A → lazy P once → pin → operation
+attempt 2 auth         → R → SAME A → SAME P → operation
+```
+
+### R.14 Implementation implications (post-audit only — not in R5-R1)
+
+Prefer immutable resolver shape:
+
+```text
+InvocationBoundConfiguredIntegrationWiringResolver
+  configured_relational_store_execution: A  # captured at construction
+
+resolve(...) → ToolInvocationWiring(configured_relational_store_execution=A)
+```
+
+No global map; no ToolRuntime configured-provider cache.
+
+### R.15 Future qualification gates (implementation wave)
+
+| Gate | Required evidence |
+|---|---|
+| Resolver identity | `resolve(#1).port is resolve(#2).port` |
+| Pre-Governance `resolve` | materialization count = 0 |
+| First business operation | materialization count = 1 |
+| Physical retry | same provider; materialization remains 1 |
+| Separate logical invocation | `port2 is not port1` |
+| Global cache absence | structural — no ExecutionId/provider live-object map |
+| Governance denial before executor | materialize = 0, pin = 0, I/O = 0 |
+| Init failure | no second resolver/provider fallback on later attempt |
+
+### R.16 Enterprise self-audit (@ lock)
+
+| Criterion | Outcome |
+|---|---|
+| Contracts over implementations | **PASS** |
+| Layer boundaries | **PASS** |
+| Single projection owner | **PASS** |
+| Single provider/materialization owner | **PASS** |
+| Strong typing | **PASS** |
+| No provider leakage | **PASS** |
+| No shared live-object cache | **PASS** |
+| Retry same-instance continuity | **PASS @ lock** |
+| Governance repeated per retry | **PASS** |
+| Fail closed | **PASS** |
+| Pluginability / replaceability / execution authority / durable evidence | **unchanged** |
+| Observability authority | **none added** |
+| Restart semantics | **deferred to P4** |
+
+### R.17 Applicable FRZ
+
+| FRZ | Role |
+|---|---|
+| **FRZ-TRC-11** | Primary — **OPEN** |
+| FRZ-OWN-* | Supporting — ownership table §R.5–R.6 |
+| FRZ-CTR-01, FRZ-CTR-02 | Supporting |
+| FRZ-TYP-01..04 | Supporting |
+| FRZ-PLG-01..05, FRZ-RPL-01/02/04 | Supporting |
+| FRZ-GOV-05 | Supporting — §R.7 |
+| FRZ-EXE-01 | Supporting |
+| Relevant FRZ-TEN-* | Supporting |
+
+**No global FRZ PASS promotion.** R5-R1 = architecture evidence only.
+
+### R.18 Ownership summary
+
+| Concern | Owner |
+|---|---|
+| Composition / creation of A + R | `ConfiguredIntegrationToolInvocationProjectionPort` |
+| Resolver R lifetime | One logical invocation (captures A) |
+| Bound port A state | A (lazy P continuity) |
+| Provider materialization / selection | Integrations (Pattern A) |
+| Retry authorization | ToolRuntime |
+| Durable pin / provenance | Existing pinning store (P2) |
+| Live-object continuity across restart | **None** — P4 reconstructs evidence only |
+
+### R.19 Recommended roadmap status
+
+| Stage | Status |
+|---|---|
+| **`TRACE-X-P5-R2-P3-R1-R5-R1`** | **READY FOR AUDIT** |
+| **`TRACE-X-P5-R2-P3-R1-R5`** | **BLOCKED PENDING R5-R1 AUDIT** |
+| **`TRACE-X-P5-R2-P3`** | **BLOCKED PENDING ARCHITECTURE AUDIT / IMPLEMENTATION** |
+| **`TRACE-X-P5-R2`** | **CURRENT / P3 NEXT** |
+| **`P5-GAP-04`** | **IMPLEMENTATION IN PROGRESS** |
+| **`FRZ-TRC-11`** | **OPEN** |
+| **P4** | **NOT ENTERED** |
+
+### R.20 Unresolved findings (R5-R1 classification)
+
+| Finding | Class |
+|---|---|
+| No `InvocationBoundConfiguredIntegrationWiringResolver` @ HEAD | **IN-SCOPE BLOCKER** (implementation) |
+| §Q projection not in production @ HEAD | **IN-SCOPE BLOCKER** (carried) |
+| `R2-P3-MATERIALIZATION-PORT-TYPING-04` | **IN-SCOPE BLOCKER** (carried) |
+| Delegate pin-before-handler pre-materialization | **IN-SCOPE BLOCKER** (carried — align with §R lazy port) |
+| P4 live provider reconstruction | **TRACKED FREEZE DEBT** |
