@@ -18,7 +18,7 @@
 |---|---|
 | **Disposition** | **READY FOR AUDIT** (after correction tests green on GitHub `development`) |
 | **Blocker remediated** | **R2-P3-CONFIGURED-TARGET-OPAQUE-CORRELATION-VIOLATION-23** — configured handler no longer parses `binding_operation_id` from `execution_target_reference`; validates `intent.execution_target_correlation == target.execution_target_reference`; opaque SHA-256 digest correlation in `marketplace_tool_execution_routing.py`; `parse_marketplace_configured_tool_execution_target_reference` removed |
-| **CORRECTION_COMMIT** | *(set at session close — must match `origin/development`)* |
+| **CORRECTION_COMMIT** | `5a361688e` (full SHA recorded in roadmap ledger after push) |
 
 ## Changed scope (P3-R2 production)
 
