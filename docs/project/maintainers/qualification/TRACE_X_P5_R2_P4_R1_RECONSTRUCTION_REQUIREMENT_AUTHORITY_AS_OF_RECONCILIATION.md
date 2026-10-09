@@ -2,7 +2,8 @@
 
 | Field | Value |
 |---|---|
-| **Status** | **READY FOR AUDIT** |
+| **Status** | **BLOCKED ON R1-R1** (emitter boundary superseded — see child lock) |
+| **Child reconciliation** | [`TRACE_X_P5_R2_P4_R1_R1_REQUIREMENT_EVIDENCE_EMISSION_BOUNDARY_DUAL_WRITE_RECONCILIATION.md`](TRACE_X_P5_R2_P4_R1_R1_REQUIREMENT_EVIDENCE_EMISSION_BOUNDARY_DUAL_WRITE_RECONCILIATION.md) |
 | **Rejected P4 baseline** | `055ed448cb890026c8c34e336e7baf7422daa2f6` (lineage only — do not extend) |
 | **Parent** | **TRACE-X-P5-R2-P4** = **BLOCKED ON R1** |
 | **Production delta @ R1 lock** | **0** |
@@ -16,6 +17,8 @@
 |---|---|---|
 | Magic payload requirement authority | `R2-P4-PROVENANCE-REQUIREMENT-AUTHORITY-24` | **RESOLVED IN DESIGN** — reject sole authority; lock typed spine evidence + production emitter |
 | As-of pin future leak | `R2-P4-AS-OF-CONFIG-PROVENANCE-FUTURE-LEAK-25` | **RESOLVED IN DESIGN** — Option B; no timestamp heuristics |
+| Integrations-owned spine emit | `R2-P4-REQUIREMENT-EVIDENCE-EMITTER-BOUNDARY-26` | **SUPERSEDED** — P4-R1-R1 runtime emitter boundary |
+| Pin → spine dual-write | `R2-P4-PIN-REQUIREMENT-EVIDENCE-DUAL-WRITE-27` | **SUPERSEDED** — P4-R1-R1 dual-write state machine |
 
 ---
 
@@ -56,7 +59,7 @@ Mechanical audit @ rejected P4 baseline (`055ed448…`) and parent locks (P0–P
 | No provider lookup | Adoption already resolved at emit point |
 | No magic string payload key | `execution_integration_configuration_provenance_required` **authority = 0** |
 
-**Single production emitter (locked):** `ExecutionBoundIntegrationResolution.materialize_validate_and_pin` — emit **once per subject obligation** immediately **after** successful `pinning_store.pin(...)` (same failure domain: failed pin ⇒ no event). Adoption must be non-null (`CONFIGURED_ADOPTED` path). Optional mirror on shared ingress is **forbidden** as a second emitter.
+**Single production emitter (locked @ R1-R1):** runtime execution spine recorder on existing `RuntimeEventBus.record` chain (template: `RuntimeEventExecutionFailureEvidenceRecorder`) — **not** Integrations. Semantic source remains successful pin handoff from `ExecutionBoundIntegrationResolution.materialize_validate_and_pin` via `ExecutionBoundIntegrationMaterializedResult` + `ExecutionIntegrationConfigurationProvenanceRequirementCommitPort`. Dual-write sequencing and fail-closed rules: P4-R1-R1 §5–§8. Optional mirror on shared ingress is **forbidden** as a second emitter.
 
 **Reconstruction consumer:** `integration_configuration_provenance_projection` discovers required `ExecutionId` set **only** from typed spine events in **positioned history** (including as-of-truncated history). Magic payload key may remain **only** as deprecated test shim with **zero semantic authority**.
 
@@ -150,7 +153,8 @@ Semantics: `execution_as_of` was set; durable pin projection intentionally withh
 |---|---|---|
 | P2 pinning store schema | **0** | **0** (no temporal shadow store) |
 | Runtime spine / `RuntimeEventType` | **0** | **+1 event type + typed payload contract** |
-| Production emitter in `ExecutionBoundIntegrationResolution` | **0** | **Required** |
+| Production emitter in Integrations resolution | **0** | **Forbidden** |
+| Runtime spine recorder + commit port sequencing | **0** | **Required** |
 | Reconstruction projection | **0** | Replace magic payload; branch on `execution_as_of`; extend status enum |
 | Second provenance store | **Forbidden** | **Forbidden** |
 
@@ -160,7 +164,7 @@ Semantics: `execution_as_of` was set; durable pin projection intentionally withh
 
 | Concern | Owner | R1 |
 |---|---|---|
-| Requirement fact emit | Integrations — `ExecutionBoundIntegrationResolution` | Lock |
+| Requirement fact emit | Runtime — spine recorder + commit port; Integrations pin handoff only | Lock @ R1-R1 |
 | Requirement fact contract | `intergrax/contracts/` | Lock |
 | Spine persistence | Existing runtime evidence chain | Reuse |
 | Provenance pin write | P2 pinning store (unchanged) | Lock |
@@ -186,7 +190,7 @@ Semantics: `execution_as_of` was set; durable pin projection intentionally withh
 ## 9. Expected implementation delta (corrected P4 — not in R1 commit)
 
 1. **Contracts:** `ExecutionIntegrationConfigurationProvenanceRequirementEvidence` + `RuntimeEventType` spine value; extend `ExecutionIntegrationConfigurationProvenanceReadStatus`.
-2. **P3 emit:** After successful pin in `ExecutionBoundIntegrationResolution`, append typed spine event to execution evidence (tenant + execution_id + subject keys + adoption fingerprint).
+2. **P3/P4 emit:** After successful pin, runtime commit port appends typed spine event (handoff: tenant + execution_id + subject + mode); Integrations does not touch the bus (P4-R1-R1).
 3. **P4 projection:** Remove magic payload discovery; parse typed spine events; pass `execution_as_of` into projection from `ExecutionReconstructor`; Option B branch skips `reader.read_all` when boundary set.
 4. **Fail closed:** `required_ids` from spine ∧ `execution_as_of is None` ∧ empty/conflicting pins → `ExecutionReconstructionIntegrityError` / `REQUIRED_MISSING` as appropriate.
 5. **Tests:** Unit gates updated; **mandatory Docker durable restart E2E** (§10).
@@ -239,7 +243,8 @@ Semantics: `execution_as_of` was set; durable pin projection intentionally withh
 | ID | Status after R1 push |
 |---|---|
 | TRACE-X-P5-R2-P4 | **BLOCKED ON R1** until corrected implementation; rejected audit baseline superseded |
-| TRACE-X-P5-R2-P4-R1 | **READY FOR AUDIT** @ `FINAL_COMMIT` |
+| TRACE-X-P5-R2-P4-R1 | **BLOCKED ON R1-R1** |
+| TRACE-X-P5-R2-P4-R1-R1 | **READY FOR AUDIT** @ `FINAL_COMMIT` |
 | FRZ-TRC-11 | **OPEN** |
 | P5 | **NOT ENTERED** |
 | CERT | **NOT ENTERED** |
