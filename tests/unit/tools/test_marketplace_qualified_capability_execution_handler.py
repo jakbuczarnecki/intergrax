@@ -18,8 +18,11 @@ from intergrax.contracts.capability_qualification.qualified_capability_binding i
     QualifiedCapabilityExecutionTarget,
 )
 from intergrax.contracts.execution_identity import AttemptId, ExecutionId, RunId, TaskId
-from intergrax.contracts.tools.qualified_marketplace_tool_execution_intent import (
-    QualifiedMarketplaceToolExecutionIntent,
+from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
+from intergrax.contracts.capability_catalog.kind import CapabilityKind
+from intergrax.contracts.tools.marketplace_tool_execution_intent import (
+    MarketplaceToolExecutionIntent,
+    UcaMarketplaceToolExecutionProvenance,
 )
 from intergrax.contracts.tools.qualified_tool_invocation import (
     QualifiedToolInvocationMaterialOutcome,
@@ -34,6 +37,9 @@ from intergrax.tools.execution_models import ToolExecutionError, ToolExecutionRe
 from intergrax.tools.marketplace_qualified_capability_binding_provider import (
     MARKETPLACE_TOOL_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID,
     execution_target_reference_for_marketplace_qualified_tool,
+)
+from intergrax.tools.marketplace_tool_execution_routing import (
+    build_marketplace_tool_execution_target,
 )
 from intergrax.tools.marketplace_qualified_capability_execution_handler import (
     MarketplaceToolQualifiedCapabilityExecutionHandler,
@@ -111,7 +117,7 @@ class _ActivationResolver:
 
 def _handler(
     *,
-    intent: QualifiedMarketplaceToolExecutionIntent | None,
+    intent: MarketplaceToolExecutionIntent | None,
     activation: _ActivationResolver | None = None,
     invoker: _Invoker | None = None,
 ) -> tuple[MarketplaceToolQualifiedCapabilityExecutionHandler, _Invoker]:
@@ -129,7 +135,7 @@ def _handler(
 
         stage_repo.stage(
             MarketplaceQualifiedToolStage(
-                handoff_id=intent.handoff_id,
+                handoff_id=intent.provenance.handoff_id,
                 tenant_id=intent.tenant_id,
                 selected_release=_release(),
                 discovery_correlation_id="discovery-1",
@@ -151,17 +157,24 @@ def _handler(
     return handler, inv
 
 
-def _intent() -> QualifiedMarketplaceToolExecutionIntent:
-    return QualifiedMarketplaceToolExecutionIntent(
+def _intent() -> MarketplaceToolExecutionIntent:
+    subject = "qualified-capability-subject:q:domain_handoff_reference:h"
+    return MarketplaceToolExecutionIntent(
         execution_request_id="exec-req-1",
         binding_operation_id="bind-1",
-        resume_operation_id="resume-1",
         tenant_id="tenant-1",
         task_id=str(_TASK_ID),
         worker_need_id="worker-need-1",
-        qualified_subject_reference="qualified-capability-subject:q:domain_handoff_reference:h",
-        handoff_id="handoff-1",
+        subject_reference=subject,
+        capability_identity=CapabilityIdentityKey.from_discovery_identity(
+            _release().discovery,
+        ),
         selected_operation="invoke",
+        provenance=UcaMarketplaceToolExecutionProvenance(
+            handoff_id="handoff-1",
+            resume_operation_id="resume-1",
+            uca_qualified_subject_reference=subject,
+        ),
     )
 
 
@@ -175,7 +188,7 @@ def _dispatch(target: QualifiedCapabilityExecutionTarget) -> BoundCapabilityExec
 
 
 def test_success_dispatched_invoker_called_once() -> None:
-    target = QualifiedCapabilityExecutionTarget(
+    target = build_marketplace_tool_execution_target(
         execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
             "handoff-1",
         ),
@@ -194,7 +207,7 @@ def test_success_dispatched_invoker_called_once() -> None:
 
 
 def test_intent_missing_failed() -> None:
-    target = QualifiedCapabilityExecutionTarget(
+    target = build_marketplace_tool_execution_target(
         execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
             "handoff-1",
         ),
@@ -213,7 +226,7 @@ def test_intent_missing_failed() -> None:
 
 
 def test_suspension_propagates() -> None:
-    target = QualifiedCapabilityExecutionTarget(
+    target = build_marketplace_tool_execution_target(
         execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
             "handoff-1",
         ),

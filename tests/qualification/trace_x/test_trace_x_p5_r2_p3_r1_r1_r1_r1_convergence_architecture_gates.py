@@ -89,10 +89,11 @@ def test_txp5r2p3r1r1r1r1_q06_capability_identity_key_exists() -> None:
     assert "class CapabilityIdentityKey" in source
 
 
-def test_txp5r2p3r1r1r1r1_q07_candidate_lacks_capability_identity_key() -> None:
+def test_txp5r2p3r1r1r1r1_q07_candidate_capability_identity_typed_for_existing_configuration() -> None:
     source = _CANDIDATE_CONTRACT.read_text(encoding="utf-8")
     assert "class WorkerCapabilityCandidate" in source
-    assert "CapabilityIdentityKey" not in source
+    assert "capability_identity: CapabilityIdentityKey | None" in source
+    assert "EXISTING_CONFIGURATION candidate requires capability_identity" in source
 
 
 def test_txp5r2p3r1r1r1r1_q08_no_production_configured_dispatch_service() -> None:

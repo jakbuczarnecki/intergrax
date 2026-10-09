@@ -31,6 +31,7 @@ from intergrax.tools.qualified_marketplace_tool_activation_resolver import (
 from intergrax.tools.configured_integration_tool_invocation_projection import (
     ConfiguredIntegrationToolInvocationProjectionPort,
 )
+from intergrax.tools.known_capability_realization import ToolPackageResolutionForIdentityPort
 from intergrax.tools.qualified_tool_invocation_resolver import (
     DefaultQualifiedToolInvocationResolver,
 )
@@ -49,6 +50,7 @@ def build_marketplace_tool_qualified_capability_execution_handler(
     configured_invocation_projection: (
         ConfiguredIntegrationToolInvocationProjectionPort | None
     ) = None,
+    package_resolver: ToolPackageResolutionForIdentityPort | None = None,
 ) -> MarketplaceToolQualifiedCapabilityExecutionHandler:
     activation_resolver = QualifiedMarketplaceToolActivationResolver(
         activation_read=activation_read,
@@ -63,6 +65,7 @@ def build_marketplace_tool_qualified_capability_execution_handler(
         invocation_resolver=invocation_resolver or DefaultQualifiedToolInvocationResolver(),
         catalog_tool_invoker=catalog_tool_invoker,
         configured_invocation_projection=configured_invocation_projection,
+        package_resolver=package_resolver,
     )
 
 

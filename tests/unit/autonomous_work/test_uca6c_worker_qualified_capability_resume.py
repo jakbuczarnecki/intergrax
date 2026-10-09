@@ -56,6 +56,10 @@ from intergrax.contracts.capability_qualification.qualification_reason_code impo
 from intergrax.contracts.capability_qualification.qualification_result import (
     CapabilityQualificationResult,
 )
+from intergrax.contracts.capability_qualification.qualification_subject import (
+    CapabilityQualificationSubjectKind,
+    derive_acquisition_subject_integrity_fingerprint,
+)
 from intergrax.contracts.capability_qualification.qualified_capability_binding import (
     QualifiedCapabilityBindingOutcome,
     QualifiedCapabilityBindingReasonCode,
@@ -121,6 +125,7 @@ class _RecordingBindingProvider:
         target = QualifiedCapabilityExecutionTarget(
             execution_target_reference=f"execution-target:{request.binding_operation_id}",
             binding_provider_id=self.provider_id,
+            execution_handler_id=self.provider_id,
             qualified_subject_reference=request.qualified_subject.qualified_subject_reference,
         )
         result = QualifiedCapabilityBindingResult(
@@ -222,11 +227,28 @@ def _qualification(
 ) -> CapabilityQualificationResult:
     evidence = None
     provider_id = None
+    subject_fingerprint = derive_acquisition_subject_integrity_fingerprint(
+        acquisition_request_id=_ACQ_REQUEST,
+        gap_id=_GAP,
+        strategy_id="custom.external.v1",
+        artifact_reference=_ARTIFACT,
+        domain_handoff_reference=None,
+        correlation_id=None,
+        causation_id=None,
+    )
+    subject_fields = {
+        "subject_kind": CapabilityQualificationSubjectKind.ACQUIRED_CAPABILITY,
+        "subject_id": _ARTIFACT,
+        "subject_integrity_fingerprint": subject_fingerprint,
+    }
     if outcome is CapabilityQualificationOutcome.QUALIFIED:
         provider_id = "custom.external.qualification"
         evidence = CapabilityQualificationEvidence(
             provider_id=provider_id,
             qualification_request_id=_QUAL_REQUEST,
+            subject_kind=subject_fields["subject_kind"],
+            subject_id=subject_fields["subject_id"],
+            subject_integrity_fingerprint=subject_fields["subject_integrity_fingerprint"],
             acquisition_request_id=_ACQ_REQUEST,
             acquisition_strategy_id="custom.external.v1",
             gap_id=_GAP,
@@ -243,6 +265,7 @@ def _qualification(
         started_at=_NOW,
         completed_at=_NOW,
         evidence=evidence,
+        **subject_fields,
     )
 
 

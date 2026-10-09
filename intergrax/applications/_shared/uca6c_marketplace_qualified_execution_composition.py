@@ -37,8 +37,27 @@ from intergrax.integrations.execution_bound_integration_resolution import (
     ExecutionBoundIntegrationMaterializationPort,
     ExecutionBoundIntegrationResolution,
 )
+from intergrax.autonomous_work.execution_authority_admission import (
+    WorkerExecutionAdmissionPort,
+)
+from intergrax.autonomous_work.worker_configured_capability_execution_fulfillment_service import (
+    WorkerConfiguredCapabilityExecutionFulfillmentService,
+)
+from intergrax.runtime.execution.execution_bound_capability_execution_dispatch_service import (
+    ExecutionBoundCapabilityExecutionDispatchService,
+)
 from intergrax.runtime.execution.qualified_capability_execution_composition import (
+    build_execution_bound_capability_execution_dispatch_service,
     build_qualified_capability_execution_dispatch_service,
+)
+from intergrax.runtime.execution.worker_configured_capability_execution_adapter import (
+    WorkerConfiguredCapabilityExecutionEngineAdapter,
+)
+from intergrax.tools.marketplace_configured_capability_binding_provider import (
+    MarketplaceConfiguredCapabilityBindingProvider,
+)
+from intergrax.tools.marketplace_configured_tool_execution_intent_preparation import (
+    MarketplaceConfiguredToolExecutionIntentPreparation,
 )
 from intergrax.runtime.execution.qualified_capability_execution_dispatch_service import (
     QualifiedCapabilityExecutionDispatchService,
@@ -62,6 +81,7 @@ from intergrax.tools.marketplace_qualified_capability_execution_composition impo
 from intergrax.tools.marketplace_qualified_capability_execution_handler import (
     MarketplaceToolQualifiedCapabilityExecutionHandler,
 )
+from intergrax.tools.known_capability_realization import ToolPackageResolutionForIdentityPort
 from intergrax.tools.qualified_marketplace_tool_activation_resolver import (
     QualifiedMarketplaceToolActivationResolver,
 )
@@ -120,6 +140,7 @@ def build_production_marketplace_configured_execution_composition(
     invocation_resolver: QualifiedToolInvocationResolver | None = None,
     materialization: ExecutionBoundIntegrationMaterializationPort | None = None,
     activation_resolver: QualifiedMarketplaceToolActivationResolver | None = None,
+    package_resolver: ToolPackageResolutionForIdentityPort | None = None,
 ) -> ProductionMarketplaceConfiguredExecutionComposition:
     """Wire durable P2 pinning → Pattern A → relational binding → configured projection → handler."""
     _require_exactly_one_pinning_backing(
@@ -151,6 +172,7 @@ def build_production_marketplace_configured_execution_composition(
             catalog_tool_invoker=catalog_tool_invoker,
             invocation_resolver=invocation_resolver,
             configured_invocation_projection=projection,
+            package_resolver=package_resolver,
         )
     else:
         handler = MarketplaceToolQualifiedCapabilityExecutionHandler(
@@ -162,6 +184,7 @@ def build_production_marketplace_configured_execution_composition(
             or DefaultQualifiedToolInvocationResolver(),
             catalog_tool_invoker=catalog_tool_invoker,
             configured_invocation_projection=projection,
+            package_resolver=package_resolver,
         )
     return ProductionMarketplaceConfiguredExecutionComposition(
         handler=handler,
@@ -201,6 +224,45 @@ def build_production_marketplace_qualified_capability_execution_handler(
     ).handler
 
 
+def build_production_marketplace_configured_execution_bound_dispatch(
+    *,
+    composition: ProductionMarketplaceConfiguredExecutionComposition,
+    runtime_policy_admission: RuntimeExecutionPolicyAdmissionPort,
+) -> tuple[
+    ExecutionBoundCapabilityExecutionDispatchService,
+    object,
+]:
+    """Shared ExecutionBound ingress for CONFIGURE_EXISTING — same handler registry."""
+    registry = QualifiedCapabilityExecutionBindingHandlerRegistry(
+        (composition.handler,),
+    )
+    dispatch, delegate, _launcher = build_execution_bound_capability_execution_dispatch_service(
+        handler_registry=registry,
+        runtime_policy_admission=runtime_policy_admission,
+    )
+    return dispatch, delegate
+
+
+def build_production_marketplace_configured_execution_fulfillment(
+    *,
+    intent_repository: QualifiedMarketplaceToolExecutionIntentRepository,
+    execution_bound_dispatch: ExecutionBoundCapabilityExecutionDispatchService,
+    authority_admission: WorkerExecutionAdmissionPort | None = None,
+) -> WorkerConfiguredCapabilityExecutionFulfillmentService:
+    """Wire configured binding, intent preparation, and ExecutionBound execution."""
+    execution = WorkerConfiguredCapabilityExecutionEngineAdapter(
+        dispatch=execution_bound_dispatch,
+    )
+    return WorkerConfiguredCapabilityExecutionFulfillmentService(
+        binding=MarketplaceConfiguredCapabilityBindingProvider(),
+        intent_preparation=MarketplaceConfiguredToolExecutionIntentPreparation(
+            intent_repository=intent_repository,
+        ),
+        execution=execution,
+        authority_admission=authority_admission,
+    )
+
+
 def build_production_marketplace_qualified_capability_execution_dispatch(
     *,
     composition: ProductionMarketplaceConfiguredExecutionComposition,
@@ -223,7 +285,9 @@ def build_production_marketplace_qualified_capability_execution_dispatch(
 __all__ = [
     "ProductionMarketplaceConfiguredExecutionComposition",
     "Uca6cMarketplaceQualifiedExecutionCompositionError",
+    "build_production_marketplace_configured_execution_bound_dispatch",
     "build_production_marketplace_configured_execution_composition",
+    "build_production_marketplace_configured_execution_fulfillment",
     "build_production_marketplace_qualified_capability_execution_dispatch",
     "build_production_marketplace_qualified_capability_execution_handler",
 ]

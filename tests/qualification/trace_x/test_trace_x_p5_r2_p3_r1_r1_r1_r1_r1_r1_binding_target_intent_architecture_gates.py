@@ -75,7 +75,7 @@ def test_txp5r2p3r1r1r1r1r1r1r1_q03_prior_tool_lock_superseded() -> None:
     assert "MARKETPLACE_BINDING_TARGET_INTENT_RECONCILIATION_LOCK" in prior
 
 
-def test_txp5r2p3r1r1r1r1r1r1r1_q04_registry_resolves_by_binding_provider_id() -> None:
+def test_txp5r2p3r1r1r1r1r1r1r1_q04_registry_resolves_by_execution_handler_id() -> None:
     tree = ast.parse(_HANDLER_REGISTRY.read_text(encoding="utf-8"))
     registry_cls = next(
         node
@@ -89,12 +89,12 @@ def test_txp5r2p3r1r1r1r1r1r1r1_q04_registry_resolves_by_binding_provider_id() -
         if isinstance(inner, ast.FunctionDef) and inner.name == "resolve"
     )
     assert len(resolve_fn.args.args) >= 2
-    assert resolve_fn.args.args[1].arg == "binding_provider_id"
+    assert resolve_fn.args.args[1].arg == "execution_handler_id"
     source = _RUNTIME_DELEGATE.read_text(encoding="utf-8")
-    assert "execution_target.binding_provider_id" in source
+    assert "execution_target.execution_handler_id" in source
 
 
-def test_txp5r2p3r1r1r1r1r1r1r1_q05_handler_protocol_binding_provider_id_property() -> None:
+def test_txp5r2p3r1r1r1r1r1r1r1_q05_handler_protocol_execution_handler_id_property() -> None:
     tree = ast.parse(_HANDLER_REGISTRY.read_text(encoding="utf-8"))
     protocol = next(
         node
@@ -105,14 +105,14 @@ def test_txp5r2p3r1r1r1r1r1r1r1_q05_handler_protocol_binding_provider_id_propert
     props = [
         node
         for node in protocol.body
-        if isinstance(node, ast.FunctionDef) and node.name == "binding_provider_id"
+        if isinstance(node, ast.FunctionDef) and node.name == "execution_handler_id"
     ]
     assert props
     handler_src = _MARKETPLACE_HANDLER.read_text(encoding="utf-8")
-    assert "def binding_provider_id" in handler_src
+    assert "def execution_handler_id" in handler_src
 
 
-def test_txp5r2p3r1r1r1r1r1r1r1_q06_target_v1_has_no_execution_handler_id() -> None:
+def test_txp5r2p3r1r1r1r1r1r1r1_q06_target_v2_requires_execution_handler_id() -> None:
     tree = ast.parse(_TARGET_CONTRACT.read_text(encoding="utf-8"))
     target_cls = next(
         node
@@ -125,7 +125,7 @@ def test_txp5r2p3r1r1r1r1r1r1r1_q06_target_v1_has_no_execution_handler_id() -> N
         if isinstance(stmt, ast.AnnAssign) and isinstance(stmt.target, ast.Name)
     }
     assert "binding_provider_id" in field_names
-    assert "execution_handler_id" not in field_names
+    assert "execution_handler_id" in field_names
 
 
 def test_txp5r2p3r1r1r1r1r1r1r1_q07_qualified_binding_provider_id_is_uca_constant() -> None:

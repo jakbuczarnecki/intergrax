@@ -11,6 +11,7 @@ from intergrax.autonomous_work.worker_capability_fulfillment_ports import (
     CapabilityRealizationCoordinatorPort,
     WorkerCapabilityDirectReuseFulfillmentPort,
     WorkerCapabilityRecoveryPort,
+    WorkerConfiguredCapabilityExecutionFulfillmentPort,
     WorkerConfiguredCapabilityFulfillmentPort,
     WorkerQualifiedCapabilityResumePort,
 )
@@ -79,6 +80,9 @@ class WorkerCapabilityFulfillmentCoordinator:
         direct_reuse: WorkerCapabilityDirectReuseFulfillmentPort,
         realization: CapabilityRealizationCoordinatorPort | None = None,
         configured_fulfillment: WorkerConfiguredCapabilityFulfillmentPort | None = None,
+        configured_execution: (
+            WorkerConfiguredCapabilityExecutionFulfillmentPort | None
+        ) = None,
         intent_preparation: QualifiedCapabilityExecutionIntentPreparationPort | None = None,
     ) -> None:
         self._recovery = recovery
@@ -86,6 +90,7 @@ class WorkerCapabilityFulfillmentCoordinator:
         self._direct_reuse = direct_reuse
         self._realization = realization
         self._configured_fulfillment = configured_fulfillment
+        self._configured_execution = configured_execution
         self._intent_preparation = intent_preparation
 
     def fulfill(
@@ -263,6 +268,13 @@ class WorkerCapabilityFulfillmentCoordinator:
             recovery,
             decision,
         )
+        if decision.disposition is not CapabilityAcquisitionDisposition.CONFIGURE_EXISTING:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
         if configured_result.adoption is None:
             disposition = WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED
             if configured_result.failure_reason in {
@@ -283,10 +295,18 @@ class WorkerCapabilityFulfillmentCoordinator:
                 decided_at=decided_at,
                 integration_configuration_adoption=configured_result.adoption,
             )
-        return WorkerCapabilityFulfillmentResult(
-            disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
-            provenance=provenance,
-            recovery_outcome=recovery,
+        if self._configured_execution is None:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        return self._configured_execution.fulfill_after_adoption(
+            request,
+            recovery=recovery,
+            decision=decision,
+            adoption=configured_result.adoption,
             decided_at=decided_at,
         )
 

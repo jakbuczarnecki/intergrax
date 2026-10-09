@@ -98,16 +98,19 @@ def test_txp5r2p3r1r1r1r1r1r1r1r1_q07_no_target_v1_v2_runtime_adapter_in_product
     forbidden_fragments = (
         "QualifiedCapabilityExecutionTargetMigration",
         "ExecutionTargetCompatibility",
-        "qualified_capability_execution_target.v2",
+    )
+    allowed_v2_contract = (
+        _INTERGRAX_ROOT / "contracts/capability_qualification/qualified_capability_binding.py"
     )
     scoped_roots = (
-        _INTERGRAX_ROOT / "contracts/capability_qualification",
         _INTERGRAX_ROOT / "contracts/execution",
         _INTERGRAX_ROOT / "runtime/execution",
         _INTERGRAX_ROOT / "tools",
         _INTERGRAX_ROOT / "autonomous_work",
     )
     hits: list[str] = []
+    binding = allowed_v2_contract.read_text(encoding="utf-8")
+    assert "qualified_capability_execution_target.v2" in binding
     for root in scoped_roots:
         if not root.is_dir():
             continue

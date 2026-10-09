@@ -14,6 +14,9 @@ from intergrax.contracts.tools.qualified_marketplace_tool_operation_selection im
     QualifiedMarketplaceToolOperationSelectionResult,
     QualifiedMarketplaceToolOperationSelector,
 )
+from intergrax.tools.marketplace_tool_operation_selection_core import (
+    select_marketplace_tool_operation,
+)
 
 
 class DefaultQualifiedMarketplaceToolOperationSelector(
@@ -38,15 +41,9 @@ class DefaultQualifiedMarketplaceToolOperationSelector(
         handoff_id: str,
     ) -> QualifiedMarketplaceToolOperationSelectionResult:
         count = len(required_operations)
-        if count == 0:
-            return QualifiedMarketplaceToolOperationSelectionResult(
-                outcome=QualifiedMarketplaceToolOperationSelectionOutcome.INVALID_OPERATION,
-                reason_detail="no required operations",
-            )
-        if count == 1:
-            return QualifiedMarketplaceToolOperationSelectionResult(
-                outcome=QualifiedMarketplaceToolOperationSelectionOutcome.SELECTED,
-                selected_operation=required_operations[0],
+        if count <= 1:
+            return select_marketplace_tool_operation(
+                required_operations=required_operations,
             )
         if self._multi_operation_policy is None:
             return QualifiedMarketplaceToolOperationSelectionResult(

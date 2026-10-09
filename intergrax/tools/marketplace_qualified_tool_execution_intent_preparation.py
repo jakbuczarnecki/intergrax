@@ -30,11 +30,15 @@ from intergrax.contracts.tools.qualified_capability_execution_intent_preparation
     QualifiedCapabilityExecutionIntentPreparationRequest,
     QualifiedCapabilityExecutionIntentPreparationResult,
 )
+from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
+from intergrax.contracts.tools.marketplace_tool_execution_intent import (
+    MarketplaceToolExecutionIntent,
+    UcaMarketplaceToolExecutionProvenance,
+)
 from intergrax.contracts.tools.qualified_marketplace_tool_execution_intent import (
-    QualifiedMarketplaceToolExecutionIntent,
     QualifiedMarketplaceToolExecutionIntentConflictError,
     QualifiedMarketplaceToolExecutionIntentIntegrityError,
-    QualifiedMarketplaceToolExecutionIntentRepository,
+    MarketplaceToolExecutionIntentRepository,
     QualifiedMarketplaceToolExecutionIntentUnavailableError,
     QualifiedMarketplaceToolExecutionIntentWriteOutcome,
 )
@@ -73,7 +77,7 @@ class MarketplaceQualifiedToolExecutionIntentPreparation:
     def __init__(
         self,
         *,
-        intent_repository: QualifiedMarketplaceToolExecutionIntentRepository,
+        intent_repository: MarketplaceToolExecutionIntentRepository,
         stage_repository: MarketplaceQualifiedToolStageRepository,
         context_resolver: MarketplaceQualifiedToolStageContextResolver,
         operation_selector: QualifiedMarketplaceToolOperationSelector | None = None,
@@ -99,11 +103,19 @@ class MarketplaceQualifiedToolExecutionIntentPreparation:
         assert subject is not None
         subject_ref = subject.subject_reference
 
+        acquisition_request_id = qualification.acquisition_request_id
+        strategy_id = qualification.strategy_id
+        if acquisition_request_id is None or strategy_id is None:
+            return QualifiedCapabilityExecutionIntentPreparationResult(
+                outcome=QualifiedCapabilityExecutionIntentPreparationOutcome.UNAVAILABLE,
+                reason_detail="qualification lineage incomplete",
+            )
+
         try:
             ctx = self._context_resolver.resolve_for_qualification(
-                acquisition_request_id=qualification.acquisition_request_id,
+                acquisition_request_id=acquisition_request_id,
                 domain_handoff_reference=subject_ref,
-                strategy_id=qualification.strategy_id,
+                strategy_id=strategy_id,
             )
         except MarketplaceQualifiedToolStageContextResolverNotSupportedError:
             return QualifiedCapabilityExecutionIntentPreparationResult(
@@ -171,16 +183,23 @@ class MarketplaceQualifiedToolExecutionIntentPreparation:
                 reason_detail=selection.reason_detail or "invalid operation",
             )
 
-        intent = QualifiedMarketplaceToolExecutionIntent(
+        capability_identity = CapabilityIdentityKey.from_discovery_identity(
+            stage.selected_release.discovery,
+        )
+        intent = MarketplaceToolExecutionIntent(
             execution_request_id=request.execution_request_id,
             binding_operation_id=request.binding_operation_id,
-            resume_operation_id=request.resume_operation_id,
             tenant_id=request.tenant_id,
             task_id=str(request.task_id),
             worker_need_id=request.worker_need_id,
-            qualified_subject_reference=subject.qualified_subject_reference,
-            handoff_id=ctx.handoff_id,
+            subject_reference=subject.qualified_subject_reference,
+            capability_identity=capability_identity,
             selected_operation=selection.selected_operation,
+            provenance=UcaMarketplaceToolExecutionProvenance(
+                handoff_id=ctx.handoff_id,
+                resume_operation_id=request.resume_operation_id,
+                uca_qualified_subject_reference=subject.qualified_subject_reference,
+            ),
         )
 
         try:

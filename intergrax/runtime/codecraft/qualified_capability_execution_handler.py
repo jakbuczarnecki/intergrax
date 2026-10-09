@@ -53,7 +53,7 @@ class CodeCraftQualifiedCapabilityExecutionHandler(
         self._side_effects = side_effect_recorder
 
     @property
-    def binding_provider_id(self) -> str:
+    def execution_handler_id(self) -> str:
         return CODECRAFT_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID
 
     def dispatch_once(

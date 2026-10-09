@@ -140,6 +140,7 @@ class CodeCraftQualifiedCapabilityBindingProvider:
         target = QualifiedCapabilityExecutionTarget(
             execution_target_reference=target_ref,
             binding_provider_id=self.provider_id,
+            execution_handler_id=self.provider_id,
             qualified_subject_reference=request.qualified_subject.qualified_subject_reference,
         )
         result = QualifiedCapabilityBindingResult(

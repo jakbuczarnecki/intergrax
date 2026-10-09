@@ -13,8 +13,17 @@ from pydantic import BaseModel, ConfigDict
 
 from intergrax.applications._shared.uca6c_marketplace_qualified_execution_composition import (
     Uca6cMarketplaceQualifiedExecutionCompositionError,
+    build_production_marketplace_configured_execution_bound_dispatch,
     build_production_marketplace_configured_execution_composition,
+    build_production_marketplace_configured_execution_fulfillment,
     build_production_marketplace_qualified_capability_execution_dispatch,
+)
+from intergrax.autonomous_work.worker_capability_fulfillment_coordinator import (
+    WorkerCapabilityFulfillmentCoordinator,
+)
+from intergrax.contracts.autonomous_work.worker_capability_fulfillment import (
+    WorkerCapabilityFulfillmentDisposition,
+    WorkerCapabilityFulfillmentRequest,
 )
 from intergrax.autonomous_work.worker_configured_capability_fulfillment_service import (
     WorkerConfiguredCapabilityFulfillmentService,
@@ -35,6 +44,8 @@ from intergrax.contracts.autonomous_work.capability_acquisition import (
     WorkerCapabilityCandidateKind,
     derive_worker_capability_candidate_id,
 )
+from intergrax.contracts.capability_catalog import CapabilityKind, CapabilitySourceKind
+from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
 from intergrax.contracts.autonomous_work.ids import mint_worker_instance_id
 from intergrax.contracts.autonomous_work.profile_reference import initial_profile_version
 from intergrax.contracts.autonomous_work.worker_capability_recovery import (
@@ -79,8 +90,9 @@ from intergrax.runtime.governance.active_execution_governance_identity import (
 from intergrax.contracts.execution_integration_configuration_provenance import (
     ExecutionIntegrationConfigurationProvenanceMode,
 )
-from intergrax.contracts.tools.qualified_marketplace_tool_execution_intent import (
-    QualifiedMarketplaceToolExecutionIntent,
+from intergrax.contracts.tools.marketplace_tool_execution_intent import (
+    MarketplaceToolExecutionIntent,
+    UcaMarketplaceToolExecutionProvenance,
 )
 from intergrax.contracts.tools.qualified_tool_invocation import (
     QualifiedToolInvocationMaterialOutcome,
@@ -126,6 +138,9 @@ from intergrax.tools.marketplace_qualified_capability_binding_provider import (
     MarketplaceToolQualifiedCapabilityBindingProvider,
     execution_target_reference_for_marketplace_qualified_tool,
 )
+from intergrax.tools.marketplace_tool_execution_routing import (
+    build_marketplace_tool_execution_target,
+)
 from intergrax.tools.marketplace_qualified_capability_staging import (
     DocumentStoreMarketplaceQualifiedToolStageRepository,
 )
@@ -155,7 +170,12 @@ from tests.unit.applications.integrations.test_trace_x_p5_r2_p2_persistence impo
     InMemoryKVStore,
 )
 from tests.unit.autonomous_work.test_uca6c_r_production_resume import (
-    _authority_admission,
+    _READ,
+    _PRINCIPAL,
+    _WORKSPACE,
+)
+from tests.unit.autonomous_work.uca6c_worker_authority_fixtures import (
+    build_worker_execution_admission_for_uca6c,
 )
 from tests.unit.autonomous_work.test_uca6c_worker_qualified_capability_resume import (
     _TENANT,
@@ -294,6 +314,19 @@ class _DatabaseActivationResolver:
             registry_tool_id=DATABASE_QUERY_TOOL_ID,
         )
 
+    def ensure_exact_active_for_identity(
+        self,
+        *,
+        capability_identity: CapabilityIdentityKey,
+        execution_request_id: str,
+        package_resolver: object,
+    ):
+        _ = capability_identity, execution_request_id, package_resolver
+        return QualifiedMarketplaceToolActivationResult(
+            outcome=QualifiedMarketplaceToolActivationOutcome.ALREADY_ACTIVE_EXACT,
+            registry_tool_id=DATABASE_QUERY_TOOL_ID,
+        )
+
 
 @dataclass
 class _MarketplaceDeps:
@@ -382,6 +415,7 @@ def _production_composition(
         materialization=materialization,
         invocation_resolver=DefaultQualifiedToolInvocationResolver(),
         activation_resolver=_DatabaseActivationResolver(),
+        package_resolver=MagicMock(),
     )
 
 
@@ -428,7 +462,7 @@ def _record_marketplace_intent(
     *,
     tenant: str = _TENANT,
     task_id: TaskId = _TASK_ID,
-) -> QualifiedMarketplaceToolExecutionIntent:
+) -> MarketplaceToolExecutionIntent:
     subject_ref = (
         "qualified-capability-subject:q:"
         f"{deps.domain_ref}:h:{deps.handoff_id}"
@@ -436,18 +470,6 @@ def _record_marketplace_intent(
     resume_id = "resume-p3-r1"
     binding_id = "bind-p3-r1"
     execution_request_id = "exec-req-p3-r1"
-    intent = QualifiedMarketplaceToolExecutionIntent(
-        execution_request_id=execution_request_id,
-        binding_operation_id=binding_id,
-        resume_operation_id=resume_id,
-        tenant_id=tenant,
-        task_id=str(task_id),
-        worker_need_id="worker-need-p3-r1",
-        qualified_subject_reference=subject_ref,
-        handoff_id=deps.handoff_id,
-        selected_operation="query",
-    )
-    deps.intent_repo.record(intent)
     from intergrax.contracts.marketplace.handoff_traceability import (
         CapabilityHandoffConsumerTarget,
     )
@@ -455,11 +477,12 @@ def _record_marketplace_intent(
         MarketplaceQualifiedToolStage,
     )
 
+    release = _release()
     deps.stage_repo.stage(
         MarketplaceQualifiedToolStage(
             handoff_id=deps.handoff_id,
             tenant_id=tenant,
-            selected_release=_release(),
+            selected_release=release,
             discovery_correlation_id="discovery-p3-r1",
             selection_id="selection-p3-r1",
             consumer_target=CapabilityHandoffConsumerTarget.TOOL_DOMAIN,
@@ -467,6 +490,25 @@ def _record_marketplace_intent(
             recorded_at=_NOW,
         ),
     )
+    capability_identity = CapabilityIdentityKey.from_discovery_identity(
+        release.discovery,
+    )
+    intent = MarketplaceToolExecutionIntent(
+        execution_request_id=execution_request_id,
+        binding_operation_id=binding_id,
+        tenant_id=tenant,
+        task_id=str(task_id),
+        worker_need_id="worker-need-p3-r1",
+        subject_reference=subject_ref,
+        capability_identity=capability_identity,
+        selected_operation="query",
+        provenance=UcaMarketplaceToolExecutionProvenance(
+            handoff_id=deps.handoff_id,
+            resume_operation_id=resume_id,
+            uca_qualified_subject_reference=subject_ref,
+        ),
+    )
+    deps.intent_repo.record(intent)
     return intent
 
 
@@ -523,13 +565,9 @@ def test_configured_adoption_durable_pin_and_same_provider_instance() -> None:
     intent = _record_marketplace_intent(deps)
     execution_id = mint_execution_id()
     target = intent.qualified_subject_reference
-    from intergrax.contracts.capability_qualification.qualified_capability_binding import (
-        QualifiedCapabilityExecutionTarget,
-    )
-
     dispatch_request = BoundCapabilityExecutionDispatchRequest(
         execution_request_id=intent.execution_request_id,
-        execution_target=QualifiedCapabilityExecutionTarget(
+        execution_target=build_marketplace_tool_execution_target(
             execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
                 deps.handoff_id,
             ),
@@ -584,7 +622,7 @@ def test_governance_scope_deny_zero_materialization_and_pin() -> None:
 
     dispatch_request = BoundCapabilityExecutionDispatchRequest(
         execution_request_id=intent.execution_request_id,
-        execution_target=QualifiedCapabilityExecutionTarget(
+        execution_target=build_marketplace_tool_execution_target(
             execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
                 deps.handoff_id,
             ),
@@ -632,7 +670,7 @@ def test_tenant_mismatch_blocks_materialization_pin_and_io() -> None:
 
     dispatch_request = BoundCapabilityExecutionDispatchRequest(
         execution_request_id=intent.execution_request_id,
-        execution_target=QualifiedCapabilityExecutionTarget(
+        execution_target=build_marketplace_tool_execution_target(
             execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
                 deps.handoff_id,
             ),
@@ -686,7 +724,7 @@ def test_ordinary_non_configured_marketplace_execution_still_works() -> None:
 
     dispatch_request = BoundCapabilityExecutionDispatchRequest(
         execution_request_id=intent.execution_request_id,
-        execution_target=QualifiedCapabilityExecutionTarget(
+        execution_target=build_marketplace_tool_execution_target(
             execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
                 deps.handoff_id,
             ),
@@ -805,6 +843,12 @@ def test_configure_existing_adoption_reaches_production_handler() -> None:
                 evidence_refs=(),
                 discovered_at=_NOW,
                 configuration_ref=str(_CONFIG_REF),
+                capability_identity=CapabilityIdentityKey(
+                    kind=CapabilityKind.TOOL,
+                    source_id="official.marketplace",
+                    source_kind=CapabilitySourceKind.OFFICIAL,
+                    logical_id="tools.database.relational",
+                ),
             ),
             autonomy_level=WorkerAutonomyLevel.A0_KNOWN_CAPABILITY,
             decided_at=_NOW,
@@ -820,7 +864,7 @@ def test_configure_existing_adoption_reaches_production_handler() -> None:
 
     dispatch_request = BoundCapabilityExecutionDispatchRequest(
         execution_request_id=intent.execution_request_id,
-        execution_target=QualifiedCapabilityExecutionTarget(
+        execution_target=build_marketplace_tool_execution_target(
             execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
                 deps.handoff_id,
             ),
@@ -891,3 +935,143 @@ def test_alternate_provider_materialization_without_composition_edit() -> None:
     )
     assert composition.resolution is not None
     assert materialization.instance is alt
+
+
+def test_configure_existing_e2e_execution_bound_fulfillment() -> None:
+    token = object()
+    integration = _FakeRelationalIntegration(token)
+    materialization = _CountingMaterialization(integration)
+    deps = _marketplace_database_deps()
+    composition = _production_composition(
+        materialization=materialization,
+        catalog_invoker=_governed_database_catalog_invoker(),
+        deps=deps,
+    )
+    bound_dispatch, bound_delegate = (
+        build_production_marketplace_configured_execution_bound_dispatch(
+            composition=composition,
+            runtime_policy_admission=AllowingRuntimeExecutionPolicyAdmission(),
+        )
+    )
+    worker = mint_worker_instance_id()
+    configured_execution = build_production_marketplace_configured_execution_fulfillment(
+        intent_repository=deps.intent_repo,
+        execution_bound_dispatch=bound_dispatch,
+        authority_admission=build_worker_execution_admission_for_uca6c(
+            worker_instance_id=worker,
+            tenant_id=_TENANT,
+            workspace_id=_WORKSPACE,
+            principal_id=_PRINCIPAL,
+        ),
+    )
+    binding = ConfiguredCapabilityBinding(
+        tenant_id=_TENANT,
+        integration_category=IntegrationCategory.RELATIONAL_STORE,
+        provider_id="sqlite",
+        resource_scope="default",
+        configuration_type="test",
+        configuration_version="v1",
+        configuration_fingerprint="fp",
+        realization_evidence_refs=("evidence-1",),
+    )
+    opportunity = ExistingCapabilityConfigurationOpportunity(
+        configuration_ref=_CONFIG_REF,
+        tenant_id=_TENANT,
+        integration_category=IntegrationCategory.RELATIONAL_STORE,
+        provider_id="sqlite",
+        resource_scope="default",
+        current_revision="rev-1",
+        configuration=MagicMock(
+            configuration_type="test",
+            configuration_version="v1",
+            configuration_fingerprint="fp",
+        ),
+        configuration_fingerprint="fp",
+        risk_classification=ControlPlaneMutationRisk.LOW,
+    )
+    read = MagicMock()
+    read.read_exact.return_value = opportunity
+    realize = MagicMock()
+    realize.realize.return_value = ExistingCapabilityConfigurationRealizationResult(
+        request_id="req-e2e",
+        configured_binding=binding,
+        authorization_evidence=MagicMock(),
+    )
+    principal = MagicMock()
+    principal.tenant_id = _TENANT
+    principal.principal_id = "principal-1"
+    resolver = MagicMock()
+    resolver.resolve.return_value = principal
+    configured_fulfillment = WorkerConfiguredCapabilityFulfillmentService(
+        opportunity_read=read,
+        realization=realize,
+        principal_binding_resolver=resolver,
+    )
+    decision = WorkerCapabilityAcquisitionDecision(
+        decision_id="decision-e2e",
+        worker_instance_id=worker,
+        obstacle_id="obs",
+        recovery_decision_id="recovery-e2e",
+        need_id="need-1",
+        capability_profile_ref=CapabilityProfileRef(
+            profile_id="profile/default",
+            version=initial_profile_version(),
+        ),
+        disposition=CapabilityAcquisitionDisposition.CONFIGURE_EXISTING,
+        reason_code=CapabilityAcquisitionReasonCode.EXISTING_CONFIGURATION_SELECTED,
+        selected_candidate=WorkerCapabilityCandidate(
+            candidate_id=derive_worker_capability_candidate_id(
+                candidate_kind=WorkerCapabilityCandidateKind.EXISTING_CONFIGURATION,
+                capability_ref="integration:sqlite",
+                configuration_ref=str(_CONFIG_REF),
+            ),
+            candidate_kind=WorkerCapabilityCandidateKind.EXISTING_CONFIGURATION,
+            capability_ref="integration:sqlite",
+            source_domain="integrations",
+            operations=("database.query",),
+            risk_class=WorkerAutonomyLevel.A0_KNOWN_CAPABILITY,
+            evidence_refs=(),
+            discovered_at=_NOW,
+            configuration_ref=str(_CONFIG_REF),
+            capability_identity=CapabilityIdentityKey(
+                kind=CapabilityKind.TOOL,
+                source_id="official.marketplace",
+                source_kind=CapabilitySourceKind.OFFICIAL,
+                logical_id="tools.database.relational",
+            ),
+        ),
+        autonomy_level=WorkerAutonomyLevel.A0_KNOWN_CAPABILITY,
+        decided_at=_NOW,
+        decision_policy_version="v1",
+        evidence_refs=(),
+    )
+    recovery = WorkerCapabilityRecoveryOutcome(
+        phase=WorkerCapabilityRecoveryPhase.CONFIGURE_EXISTING_REQUIRED,
+        provenance=_provenance(),
+        worker_acquisition_decision=decision,
+    )
+    coordinator = WorkerCapabilityFulfillmentCoordinator(
+        recovery=MagicMock(coordinate_recovery=MagicMock(return_value=recovery)),
+        resume=MagicMock(),
+        direct_reuse=MagicMock(),
+        configured_fulfillment=configured_fulfillment,
+        configured_execution=configured_execution,
+    )
+    need = MagicMock()
+    need.recovery_decision_id = "recovery-e2e"
+    need.required_operations = ("database.query",)
+    request = WorkerCapabilityFulfillmentRequest(
+        worker_instance_id=worker,
+        tenant_id=_TENANT,
+        task_id=_TASK_ID,
+        acquisition_request=MagicMock(need=need),
+        requested_at=_NOW,
+        requested_authority_scopes=(_READ,),
+        run_id=_RUN_ID,
+        attempt_id=_ATTEMPT_ID,
+    )
+    result = coordinator.fulfill(request, decided_at=_NOW)
+    assert result.disposition is WorkerCapabilityFulfillmentDisposition.EXECUTION_DISPATCHED
+    assert bound_delegate.execute_calls == 1
+    assert materialization.count == 1
+    assert integration.io_calls == 1

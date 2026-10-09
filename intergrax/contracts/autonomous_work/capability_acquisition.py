@@ -33,6 +33,7 @@ from intergrax.contracts.autonomous_work.profile_reference import (
     validate_capability_profile_ref,
     validate_codecraft_profile_ref,
 )
+from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
 from intergrax.contracts.autonomous_work.references import (
     ProblemReference,
     validate_problem_reference,
@@ -313,6 +314,7 @@ class WorkerCapabilityCandidate:
     version: str | None = None
     operation_coverage: CapabilityOperationCoverage = CapabilityOperationCoverage.EXACT
     configuration_ref: str | None = None
+    capability_identity: CapabilityIdentityKey | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -364,6 +366,16 @@ class WorkerCapabilityCandidate:
                 self,
                 "configuration_ref",
                 require_non_empty_text(self.configuration_ref, label="configuration_ref"),
+            )
+        if self.capability_identity is not None:
+            if type(self.capability_identity) is not CapabilityIdentityKey:
+                raise TypeError("capability_identity must be CapabilityIdentityKey")
+        if (
+            self.candidate_kind is WorkerCapabilityCandidateKind.EXISTING_CONFIGURATION
+            and self.capability_identity is None
+        ):
+            raise ValueError(
+                "EXISTING_CONFIGURATION candidate requires capability_identity",
             )
         if self.risk_class is WorkerAutonomyLevel.A4_AUTHORITY_CHANGE:
             raise ValueError("A4 candidates are not executable acquisition candidates")

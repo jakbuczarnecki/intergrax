@@ -12,10 +12,31 @@ from typing import NewType, Protocol, runtime_checkable
 from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRisk
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.existing_capability_configuration import (
+    ExistingCapabilityConfigurationCatalogCorrelationKey,
     IntegrationConfigurationPayload,
 )
 
 ConfigurationOpportunityRef = NewType("ConfigurationOpportunityRef", str)
+
+
+def derive_configuration_catalog_correlation_key_from_opportunity(
+    opportunity: ExistingCapabilityConfigurationOpportunity,
+) -> ExistingCapabilityConfigurationCatalogCorrelationKey:
+    return ExistingCapabilityConfigurationCatalogCorrelationKey(
+        integration_category=opportunity.integration_category,
+        provider_id=opportunity.provider_id,
+        resource_scope=opportunity.resource_scope,
+    )
+
+
+def derive_configuration_catalog_correlation_key_from_opportunity_facts(
+    facts: ExistingCapabilityConfigurationOpportunityFacts,
+) -> ExistingCapabilityConfigurationCatalogCorrelationKey:
+    return ExistingCapabilityConfigurationCatalogCorrelationKey(
+        integration_category=facts.integration_category,
+        provider_id=facts.provider_id,
+        resource_scope=facts.resource_scope,
+    )
 
 
 class ExistingCapabilityConfigurationOpportunityLookupFailureReason(StrEnum):
@@ -268,6 +289,9 @@ class ExistingCapabilityConfigurationMutationRiskPolicy(Protocol):
 
 __all__ = [
     "ConfigurationOpportunityRef",
+    "ExistingCapabilityConfigurationCatalogCorrelationKey",
+    "derive_configuration_catalog_correlation_key_from_opportunity",
+    "derive_configuration_catalog_correlation_key_from_opportunity_facts",
     "ExistingCapabilityConfigurationMutationRiskPolicy",
     "ExistingCapabilityConfigurationOpportunity",
     "ExistingCapabilityConfigurationOpportunityFacts",

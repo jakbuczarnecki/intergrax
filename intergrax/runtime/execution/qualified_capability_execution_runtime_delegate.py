@@ -55,7 +55,7 @@ class QualifiedCapabilityExecutionRuntimeDelegate:
             task_id=request.task_id,
         )
         handler = self._handlers.resolve(
-            request.execution_target.binding_provider_id,
+            request.execution_target.execution_handler_id,
         )
         if handler is None:
             return QualifiedCapabilityExecutionDelegateResult(

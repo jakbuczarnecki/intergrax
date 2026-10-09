@@ -26,6 +26,9 @@ from intergrax.autonomous_work.worker_capability_fulfillment_ports import (
     WorkerCapabilityDirectReuseFulfillmentPort,
     WorkerCapabilityRecoveryPort,
 )
+from intergrax.autonomous_work.worker_capability_fulfillment_ports import (
+    WorkerConfiguredCapabilityExecutionFulfillmentPort,
+)
 from intergrax.autonomous_work.worker_configured_capability_fulfillment_service import (
     WorkerConfiguredCapabilityFulfillmentService,
 )
@@ -112,6 +115,7 @@ def build_worker_recovery_governed_fulfillment_wiring(
     realization: CapabilityRealizationCoordinatorPort | None = None,
     opportunity_read: ExistingCapabilityConfigurationOpportunityReadPort | None = None,
     configuration_realization: ExistingCapabilityConfigurationRealizationPort | None = None,
+    configured_execution: WorkerConfiguredCapabilityExecutionFulfillmentPort | None = None,
     authority_admission: WorkerExecutionAdmissionPort | None = None,
 ) -> WorkerRecoveryGovernedFulfillmentWiring:
     """Wire production builder, sync/async fulfillment, governed dispatch, and resume coordinator."""
@@ -152,6 +156,7 @@ def build_worker_recovery_governed_fulfillment_wiring(
         direct_reuse=direct_reuse,
         realization=realization,
         configured_fulfillment=configured_fulfillment,
+        configured_execution=configured_execution,
     )
     request_builder = WorkerRecoveryCapabilityFulfillmentRequestBuilder(
         episode_context=episode_context,

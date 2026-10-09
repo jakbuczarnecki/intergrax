@@ -27,6 +27,8 @@ from intergrax.contracts.autonomous_work.capability_acquisition import (
     WorkerCapabilityCandidateKind,
     derive_worker_capability_candidate_id,
 )
+from intergrax.contracts.capability_catalog import CapabilityKind, CapabilitySourceKind
+from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
 from intergrax.contracts.autonomous_work.ids import mint_worker_instance_id
 from intergrax.contracts.autonomous_work.profile_reference import initial_profile_version
 from intergrax.contracts.autonomous_work.worker_capability_recovery import (
@@ -51,6 +53,15 @@ from intergrax.integrations.providers.relational_store.sqlite.configuration_real
 _NOW = datetime(2026, 1, 1, tzinfo=UTC)
 _TENANT = "tenant-a"
 _CONFIG_REF = ConfigurationOpportunityRef("cfg/opportunity-1")
+
+
+def _capability_identity() -> CapabilityIdentityKey:
+    return CapabilityIdentityKey(
+        kind=CapabilityKind.TOOL,
+        source_id="official.marketplace",
+        source_kind=CapabilitySourceKind.OFFICIAL,
+        logical_id="tools.database.relational",
+    )
 
 
 def _payload() -> SQLiteRelationalStoreConfigurationPayload:
@@ -161,6 +172,7 @@ def test_coordinator_routes_configure_existing_not_generic_realization() -> None
         evidence_refs=(),
         discovered_at=_NOW,
         configuration_ref=str(_CONFIG_REF),
+        capability_identity=_capability_identity(),
     )
     acquisition_decision = WorkerCapabilityAcquisitionDecision(
         decision_id="decision-1",

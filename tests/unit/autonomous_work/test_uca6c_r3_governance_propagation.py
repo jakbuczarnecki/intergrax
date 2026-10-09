@@ -280,6 +280,7 @@ def test_forged_tenant_on_dispatch_request_rejected_at_construction() -> None:
     target = QualifiedCapabilityExecutionTarget(
         execution_target_reference="execution-target:fixture",
         binding_provider_id="fixture.provider",
+        execution_handler_id="fixture.provider",
         qualified_subject_reference=_subject().qualified_subject_reference,
     )
     with pytest.raises(ValueError, match="tenant_id must match"):

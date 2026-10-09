@@ -6,8 +6,13 @@ import threading
 
 import pytest
 
+from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
+from intergrax.contracts.capability_catalog.kind import CapabilityKind
+from intergrax.contracts.tools.marketplace_tool_execution_intent import (
+    MarketplaceToolExecutionIntent,
+    UcaMarketplaceToolExecutionProvenance,
+)
 from intergrax.contracts.tools.qualified_marketplace_tool_execution_intent import (
-    QualifiedMarketplaceToolExecutionIntent,
     QualifiedMarketplaceToolExecutionIntentConflictError,
     QualifiedMarketplaceToolExecutionIntentIntegrityError,
     QualifiedMarketplaceToolExecutionIntentUnavailableError,
@@ -22,17 +27,27 @@ from intergrax.tools.qualified_marketplace_tool_execution_intent_repository impo
 pytestmark = pytest.mark.unit
 
 
-def _intent(**updates: object) -> QualifiedMarketplaceToolExecutionIntent:
-    base = QualifiedMarketplaceToolExecutionIntent(
+def _intent(**updates: object) -> MarketplaceToolExecutionIntent:
+    base = MarketplaceToolExecutionIntent(
         execution_request_id="exec-req-1",
         binding_operation_id="bind-1",
-        resume_operation_id="resume-1",
         tenant_id="tenant-a",
         task_id="task_00000000000000000000000000000001",
         worker_need_id="worker-need-1",
-        qualified_subject_reference="qualified-capability-subject:q:domain_handoff_reference:h",
-        handoff_id="handoff-1",
+        subject_reference="qualified-capability-subject:q:domain_handoff_reference:h",
+        capability_identity=CapabilityIdentityKey(
+            kind=CapabilityKind.TOOL,
+            source_id="tools.catalog",
+            logical_id="tools.bind",
+        ),
         selected_operation="invoke",
+        provenance=UcaMarketplaceToolExecutionProvenance(
+            handoff_id="handoff-1",
+            resume_operation_id="resume-1",
+            uca_qualified_subject_reference=(
+                "qualified-capability-subject:q:domain_handoff_reference:h"
+            ),
+        ),
     )
     if updates:
         return base.model_copy(update=updates)

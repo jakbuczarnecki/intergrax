@@ -89,6 +89,7 @@ class ExecutionBoundCapabilityExecutionDispatchService(
                 admitted_governance_identity=request.admitted_governance_identity,
                 effective_authority_decision=request.effective_authority_decision,
                 collaborative_authority_scopes=request.collaborative_authority_scopes,
+                integration_configuration_adoption=request.integration_configuration_adoption,
             )
             try:
                 launch_result = run_async(
