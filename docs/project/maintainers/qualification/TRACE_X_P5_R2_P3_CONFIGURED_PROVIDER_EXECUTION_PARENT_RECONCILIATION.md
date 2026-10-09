@@ -7,7 +7,7 @@
 | **Disposition (Cursor)** | **READY FOR INDEPENDENT PARENT CLOSURE** — not independently **CLOSED** |
 | **Branch** | `development` |
 | **START_HEAD (implementation tip)** | `8c61eb62b9741285e539ec2079aae5e5c6313162` |
-| **PARENT_RECONCILIATION_EVIDENCE (bookkeeping)** | `6e37e73a47e1da986752953697e80278124bd97a` |
+| **PARENT_RECONCILIATION_EVIDENCE (bookkeeping)** | `d66fdef8d9e69903374b83ecfeee1458d5706f89` |
 | **Accepted P3-R2 baseline** | `b7efe6b980ba010572f9acc68f8d3db4493733e8` |
 | **Accepted P3-R2-R1 correction** | `5a361688e78928d23b6e8ffa161bcaf41b4c6ad3` |
 | **Production delta (reconciliation)** | **0** (qualification + test classification for P3 replay only) |
