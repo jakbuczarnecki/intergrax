@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | **READY FOR AUDIT** |
 | **Production delta** | **0** |
-| **FINAL_COMMIT** | `TBD_AT_PUSH` |
+| **FINAL_COMMIT** | `fcfd59e3727163a9e67d61498a293e6002d41159` |
 | **Parent** | [`TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_P2_PIN_RECOVERY_STAGING_CONTRACT_LOCK.md`](TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_P2_PIN_RECOVERY_STAGING_CONTRACT_LOCK.md) |
 | **Rejected design baseline** | `2e337c4b04c112d118aa0a4817be2ea13c08ef39` — §8 treated `same provenance + different staging` as unconditional **`CONFLICT`**, breaking safe retry after lost pin acknowledgement; §4 named `requirement_boundary_recorded_at` as pin-success instant while staging is built **before** first durable accept |
 | **Blocker** | `R2-P4-P2-PIN-AMBIGUOUS-COMMIT-OUTCOME-31` — **RESOLVED IN DESIGN** (this artifact) |
