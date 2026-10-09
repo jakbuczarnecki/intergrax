@@ -5,7 +5,7 @@
 | **Task** | `TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1` |
 | **Parent** | `TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1` → `TRACE-X-P5-R2-P3-R1-R1-R1-R1` → `TRACE-X-P5-R2-P3-R1-R1-R1` → `TRACE-X-P5-R2-P3-R1-R1` → `TRACE-X-P5-R2-P3-R1` → `TRACE-X-P5-R2-P3` → `TRACE-X-P5-R2` → `TRACE-X-P5` → `TRACE-X` |
 | **START_HEAD** | `dc8795043e08ff57af51fac7b88177a31d8f9194` |
-| **Disposition** | **READY FOR AUDIT** (not CLOSED) |
+| **Disposition** | **BLOCKED / SUPERSEDED BY CHILD** — independent audit @ `5f348257e7ff506f57a2b8f381c131ee0e62599f` rejected blockers **R2-P3-EXECUTION-TARGET-COMPATIBILITY-WITHOUT-EVIDENCE-21** and **R2-P3-INTENT-CAPABILITY-IDENTITY-DUPLICATION-22**; see [`TRACE_X_P5_R2_P3_R1_R1_R1_R1_R1_R1_R1_TARGET_COMPATIBILITY_AND_INTENT_IDENTITY_FINAL_RECONCILIATION.md`](TRACE_X_P5_R2_P3_R1_R1_R1_R1_R1_R1_R1_R1_TARGET_COMPATIBILITY_AND_INTENT_IDENTITY_FINAL_RECONCILIATION.md) |
 | **Production delta** | **0** |
 | **FRZ-TRC-11** | **OPEN** |
 | **P5-GAP-04** | **IMPLEMENTATION IN PROGRESS** |
@@ -21,7 +21,8 @@
 | TRACE-X-P5-R2-P3 | BLOCKED |
 | TRACE-X-P5-R2-P3-R1-R1-R1-R1 | BLOCKED / PARTIALLY SUPERSEDED |
 | TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1 | BLOCKED / SUPERSEDED BY CHILD (this lock) |
-| TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1 | **CURRENT** (this lock) |
+| TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1 | BLOCKED / SUPERSEDED BY CHILD |
+| TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1-R1 | **CURRENT** (final reconciliation lock) |
 | P4 | NOT ENTERED |
 | DUP-X | FINAL / MANDATORY (roadmap §3.0.3) |
 
@@ -118,14 +119,7 @@ Applications **compose** handler instances only; they do not own handler id stri
 
 ## 7 — Execution target v1 / v2
 
-| Version | Policy |
-|---|---|
-| **v1** @ HEAD | `qualified_capability_execution_target.v1` — retain **read** compatibility for historical records |
-| **v2** (canonical write) | `qualified_capability_execution_target.v2` with required `execution_handler_id` + truthful `binding_provider_id` |
-
-**Forbidden:** nullable `execution_handler_id` on v1 with fallback routing through `binding_provider_id` (permanent dual resolution).
-
-**Migration:** bounded read projection v1→v2 only where historical targets had 1:1 provider/handler mapping; Marketplace UCA v1 targets project `execution_handler_id = marketplace.tool.execution.v1` while preserving truthful UCA `binding_provider_id`. CONFIGURE_EXISTING writes **only** v2.
+**Partial supersession:** runtime v1→v2 target compatibility in this section is **superseded** by [`TRACE_X_P5_R2_P3_R1_R1_R1_R1_R1_R1_R1_TARGET_COMPATIBILITY_AND_INTENT_IDENTITY_FINAL_RECONCILIATION.md`](TRACE_X_P5_R2_P3_R1_R1_R1_R1_R1_R1_R1_R1_TARGET_COMPATIBILITY_AND_INTENT_IDENTITY_FINAL_RECONCILIATION.md) §5–6 (atomic migration; no runtime adapter). **Still authoritative here:** v2 requires `execution_handler_id` + truthful `binding_provider_id`; forbid permanent dual routing through `binding_provider_id`.
 
 ---
 

@@ -58,7 +58,8 @@ def test_txp5r2p3r1r1r1r1r1r1r1_q01_start_head_ancestry() -> None:
 def test_txp5r2p3r1r1r1r1r1r1r1_q02_reconciliation_lock_ready_for_audit() -> None:
     assert _LOCK_DOC.is_file()
     text = _LOCK_DOC.read_text(encoding="utf-8")
-    assert "READY FOR AUDIT" in text
+    assert "BLOCKED / SUPERSEDED BY CHILD" in text
+    assert "TARGET_COMPATIBILITY_AND_INTENT_IDENTITY_FINAL_RECONCILIATION" in text
     assert "R2-P3-BINDING-PROVIDER-IDENTITY-CONFLATION-18" in text
     assert "R2-P3-EXECUTION-TARGET-STRING-CONTRACT-19" in text
     assert "R2-P3-TOOL-INTENT-PROVENANCE-CONFLATION-20" in text
@@ -191,6 +192,8 @@ def test_txp5r2p3r1r1r1r1r1r1r1_q14_roadmap_current_child_ready_for_audit() -> N
     roadmap = _ROADMAP.read_text(encoding="utf-8")
     assert "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1" in roadmap
     assert "MARKETPLACE_BINDING_TARGET_INTENT_RECONCILIATION_LOCK" in roadmap
+    assert "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1-R1-R1" in roadmap
+    assert "TARGET_COMPATIBILITY_AND_INTENT_IDENTITY_FINAL_RECONCILIATION" in roadmap
     assert "TRACE-X-P5-R2-P3-R1-R1-R1-R1-R1" in roadmap
     assert "BLOCKED / SUPERSEDED BY CHILD" in roadmap
 
