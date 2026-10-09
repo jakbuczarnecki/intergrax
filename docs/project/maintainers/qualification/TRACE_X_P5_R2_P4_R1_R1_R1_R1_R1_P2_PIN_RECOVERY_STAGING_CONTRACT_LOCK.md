@@ -4,7 +4,7 @@
 |---|---|
 | **Status** | **READY FOR AUDIT** |
 | **Production delta** | **0** |
-| **FINAL_COMMIT** | `2e337c4b04c112d118aa0a4817be2ea13c08ef39` |
+| **FINAL_COMMIT** | `eb63212ffffb6479bc09a29d1600d958dff6c87d` |
 | **Parent** | [`TRACE_X_P5_R2_P4_R1_R1_R1_R1_DURABLE_REQUIREMENT_FACT_RECOVERY_LOCK.md`](TRACE_X_P5_R2_P4_R1_R1_R1_R1_DURABLE_REQUIREMENT_FACT_RECOVERY_LOCK.md) |
 | **Rejected design baseline** | `2c1fccf4b611afcdd7407e37c4ba33e76f81ce9a` — parent lock assumed `requirement_recovery_staging.v1` inside the pin envelope **without** a canonical typed `ExecutionIntegrationConfigurationPinningStore` write/read contract |
 | **Blocker** | `R2-P4-P2-PIN-RECOVERY-STAGING-CONTRACT-30` — **RESOLVED IN DESIGN** (this artifact) |
