@@ -204,6 +204,7 @@ Minimum planned linkage:
 | **TENANT-X** | **TEN** | **TEN (primary cross-platform closer)** |
 | PROD-Q | PRD, SEC, REL | TEN |
 | QUAL-X | REG | TEN |
+| **DIST-SCALE-X** | **REL, PRD, STA, REC, REG** (cross-platform scale/resilience qualification evidence; complements Harness W4 — does not substitute) | TEN |
 | EBH-5 | PLG, RPL | TEN |
 | EBH-6 | all applicable architecture families | TEN |
 | **DUP-X** | **OWN, CTR, BND, TYP, PLG, RPL, EXE, GOV, STA, TRC, REG** — cross-architecture duplicate/shadow/bypass closure | TEN |
@@ -344,15 +345,16 @@ If a new blocker is discovered:
 | COMPAT-X | Contract, Schema & Evolution Certification | Identify frozen public/stable vs internal contracts and certify versioning/evolution rules for APIs, events, persisted schemas, plugin/provider contracts and serialization. Verify backward/forward compatibility policy, migrations, deprecation/removal rules and no compatibility shim becoming a permanent parallel authority. | [ ] PLANNED / MANDATORY |
 | **TENANT-X** | Cross-Platform Tenant Isolation Certification | First complete cross-platform tenant isolation certification after individual recertification of Governance, Execution, Control Plane, State/Recovery, Traceability, Configuration and Compatibility. Certifies tenant isolation across the entire platform with no tenant-boundary bypass across subsystem composition. **Closed-world domains (minimum):** identity; execution; governance; tool invocation; provider invocation; integration resolution; configuration/profile resolution; state; durable persistence; cache; memory; RAG/vector/graph indexes; events; observability; traceability; evidence; recovery/resume; queues/background work; retries; external operations; credentials/secrets references; plugins; provider extensions; compatibility assessment; control plane. **Required proof classes:** (A) identity continuity through canonical request/subject/envelope/state/evidence contracts; (B) authority isolation — tenant A authority cannot authorize tenant B; (C) state isolation — no cross-tenant read/write of state/durable records/checkpoints/cache/memory/index material without explicit governed cross-tenant semantics; (D) provider/config isolation; (E) evidence/trace isolation; (F) async continuity through queue/retry/background/child/resume/recovery; (G) fail closed — missing/invalid tenant must not silently select global/shared state or widen access; (H) adversarial proof — tenant A request → tenant B state = DENIED; tenant A evidence → tenant B assessment = REJECTED; tenant A credential ref → tenant B provider = REJECTED; tenant A checkpoint → tenant B recovery = REJECTED; tenant A child execution → tenant B scope = REJECTED. Full scope: §3.0.2. **Depends on:** `COMPAT-X`. **Next:** `PROD-Q`. | [ ] PLANNED / MANDATORY |
 | PROD-Q | Platform Production Qualification | Prove production readiness rather than harness/lab maturity: provider/plugin admission and qualification, startup/shutdown/resource lifecycle, strict-vs-lab mode separation, unsupported configuration handling, production bypass prevention, secrets/tenant isolation, degraded operation and fail-closed materialization. Historical `implementation complete` or harness qualification is not sufficient. **Capacity / overload:** capacity/overload behavior known; bounded resource behavior; backpressure or explicit rejection semantics; provider throttling handling; no silent infinite retry/fallback. **Operability:** health semantics; readiness semantics; degraded-state visibility; terminal failure visibility; operator-actionable failure classification; critical recovery responsibility/procedure; startup failure visibility; shutdown/resource-cleanup visibility. Platform-level enterprise requirements only — no mandated deployment technology or vendor observability stack. Overlapping Security/Reliability proof may reference evidence from `CTRL-X`, `HARNESS-W4` and `STATE-X` without duplicating semantic criteria. | [ ] PLANNED / MANDATORY |
-| **QUAL-X** | Enterprise Qualification & Regression Infrastructure Certification | Answers: *Are qualification/regression mechanisms that protect frozen architecture complete, credible, deterministic and correctly built?* Certifies architecture gates, regression gates, negative tests, allowlists, inventories, deterministic qualification, clean-checkout reproducibility, environment failure classification, and protection of frozen invariants—not a substitute for a full-platform enterprise audit (`ENT-AUDIT-X`). Verify: every frozen invariant has qualification evidence; corrected blockers have regression gates; architecture gates scan current closed-world surface; allowlists minimal and evidence-backed; stale inventories = 0; negative tests detect violations; critical invariants not docs-only; qualification tests deterministic; clean-checkout reproducibility; environment failure cannot auto-classify as architecture PASS; flaky tests cannot be freeze evidence; tests cannot assert names/other tests instead of invariants; qualification records match current code; mandatory architecture suite runnable as one defined freeze-oriented qualification set. | [ ] PLANNED / MANDATORY |
-| EBH-5 | Replaceability & E2E Certification | Practical E2E proof that key providers, strategies and implementations can be replaced through platform contracts without modifying core mechanisms; verify real pluginability rather than test-only monkeypatching. | [ ] PLANNED |
+| **QUAL-X** | Enterprise Qualification & Regression Infrastructure Certification | Answers: *Are qualification/regression mechanisms that protect frozen architecture complete, credible, deterministic and correctly built?* Certifies architecture gates, regression gates, negative tests, allowlists, inventories, deterministic qualification, clean-checkout reproducibility, environment failure classification, and protection of frozen invariants—not a substitute for a full-platform enterprise audit (`ENT-AUDIT-X`). Verify: every frozen invariant has qualification evidence; corrected blockers have regression gates; architecture gates scan current closed-world surface; allowlists minimal and evidence-backed; stale inventories = 0; negative tests detect violations; critical invariants not docs-only; qualification tests deterministic; clean-checkout reproducibility; environment failure cannot auto-classify as architecture PASS; flaky tests cannot be freeze evidence; tests cannot assert names/other tests instead of invariants; qualification records match current code; mandatory architecture suite runnable as one defined freeze-oriented qualification set. **Depends on:** `PROD-Q`. **Next:** `DIST-SCALE-X`. | [ ] PLANNED / MANDATORY |
+| **DIST-SCALE-X** | Data-Intensive Distributed Systems Scale & Resilience Certification | **Mandatory late-stage cross-platform certification** (not a performance benchmark alone). Answers: *Does the whole platform remain correct, predictable and resilient under real data-intensive / distributed-system load?* Certifies correctness under load; durability under failure; recovery under partial failure; predictable degradation; horizontal scalability; absence of hidden single-node assumptions; absence of unsafe retry / duplicate side effects; queue and backpressure behavior; distributed-state integrity. **Closed-world scope, certification dimensions A–N, workload models, real backends, vendor matrix, capacity/failure envelopes, evidence, and exit criteria:** §3.0.4. **Relationship to Harness:** `HARNESS-W4` = harness-scoped scale/resilience/cancellation recertification (CLOSED evidence); **`DIST-SCALE-X`** = whole-platform mandatory certification — complementary, not a duplicate or substitute. **Depends on:** `QUAL-X` (and all prior mandatory stages including `CONFIG-X`, `COMPAT-X`, `TENANT-X`, `PROD-Q`). **Next:** `EBH-5`. **Implementation status:** docs/plan only until independently CLOSED — **production delta = 0** until implementation waves are explicitly opened. | **[ ] PLANNED / MANDATORY** |
+| EBH-5 | Replaceability & E2E Certification | Practical E2E proof that key providers, strategies and implementations can be replaced through platform contracts without modifying core mechanisms; verify real pluginability rather than test-only monkeypatching. **Entered after** **`DIST-SCALE-X`** closure on current HEAD. | [ ] PLANNED |
 | EBH-6 | Final Architecture Recertification | **Current-HEAD cross-platform recertification** after all local, Harness, Governance, control-plane, state, compatibility and production-qualification work: boundaries, ownership, communication, composition, evidence, fail-closed behavior, typing and regression protection — **including every `FRZ-*` criterion and invariant added to the freeze program after historical `EBH-2*` local hardening.** Historical `EBH-2*` closure is **not** sufficient alone for final `TYP`, `BND`, `OWN`, `CTR`, `PLG` PASS if later stages changed the audited surface. **EBH-2\*** = primary/local hardening and evidence; **EBH-6** = final current-HEAD architecture-family recertification. | [ ] PLANNED |
 | **DUP-X** | Cross-Architecture Duplicate Mechanism & Bypass Certification | **FINAL PRE-REPLAY / MANDATORY** — brutal closed-world current-HEAD audit focused exclusively on semantic duplication, parallel mechanisms and bypass risk across the whole platform. Build a responsibility-level inventory and prove **exactly one semantic owner + exactly one canonical contract/registry/resolver/dispatcher/store/selection/materialization/admission/composition owner wherever the responsibility is singular**. Detect and remediate duplicate/near-duplicate execution ingresses, dispatchers, handler registries, provider/config resolvers, factories, registries, policy/admission engines, retry/recovery loops, schedulers, state/persistence stores, caches, provenance/evidence stores, intent mechanisms, selectors, target resolvers, compatibility branches, legacy shims, observability/diagnostic truth paths and per-domain copies of cross-platform mechanisms. Legitimate source-specific typed adapters are allowed only when they converge immediately into one shared semantic core and do not own parallel truth/authority. **No finding may be waived as historical CLOSED evidence.** Every suspected duplicate must be classified as: canonical owner, thin typed adapter, legitimate distinct responsibility, remediation blocker, or proven N/A with evidence. `DUP-X` cannot close with unresolved duplicate/shadow/bypass findings. **Depends on:** `EBH-6`. **Next:** `ROADMAP-REPLAY-X`. | **[ ] FINAL / MANDATORY** |
 | **ROADMAP-REPLAY-X** | Full Program Current-HEAD Revalidation | **FINAL / MANDATORY** — Re-run the complete enterprise roadmap from the earliest relevant stage to current HEAD and prove that later changes have not invalidated earlier certifications or reopened architecture drift. Every historical CLOSED stage is evidence, not automatic current PASS; revalidate original invariants and exit criteria; later changes must not invalidate earlier ownership/boundaries/contracts/authority; stale evidence and stale assumptions must be detected; a real violation reopens the affected historical semantic parent; replay remains BLOCKED while any reopened stage is unresolved. **Mechanical prerequisites:** `reopened historical stages` = 0; `unresolved replay blockers` = 0; `roadmap drift` = 0; `historical evidence invalidated by later changes` = 0; `unclassified replay findings` = 0. **Depends on:** `DUP-X`. **Next:** `EBH-7`. | **[ ] FINAL / MANDATORY** |
 | **EBH-7** | Comprehensive Platform Enterprise Architecture Certification | Final certification of Integrax as one enterprise platform: hard boundaries, exactly-one ownership, canonical contracts, pluginability/replaceability, zero bypasses, zero duplicated mechanisms, correct Governance/Execution separation, validated E2E behavior, **and end-to-end tenant isolation proven on current HEAD across subsystem boundaries — not inferred from individual component closure alone**. **EBH-7** = final whole-platform enterprise certification on current HEAD after **EBH-6** and **`ROADMAP-REPLAY-X` = CLOSED**; complements **EBH-2\*** local evidence and **EBH-6** architecture-family recertification — neither substitutes for the other at freeze. | **[ ] FINAL / MANDATORY** |
 | **ENT-AUDIT-X** | Continuous Enterprise Architecture Audit System | Build and independently certify a **durable, executable full-platform enterprise audit system** before `ARCH-FREEZE` (after final enterprise certification, not before). Answers: *Run the whole platform as one audit—does current state still satisfy enterprise invariants, where is drift, and what was violated?* Reuses existing qualification/gates instead of duplicating them; adds cross-cutting static/structural checks; one actionable report; baseline vs accepted enterprise baseline; remains in use after scenario development begins. **Not** an alias of `QUAL-X`. Full scope, architecture, modes, reporting and post-freeze policy: §3.1. | **[ ] FINAL / MANDATORY** |
-| **ARCH-FREEZE** | Architecture Freeze Certification | Formal freeze gate after **`ENT-AUDIT-X`** (requires `EBH-7` and **`ENT-AUDIT-X` = CLOSED**). Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **`ARCH-FREEZE` cannot close while any applicable `FRZ-TEN-*` criterion remains `OPEN` or `BLOCKED`.** Allowed final tenant criterion states: `PASS` or `N/A — WITH EVIDENCE` only. **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0; **`DUP-X` = CLOSED**; **`ROADMAP-REPLAY-X` = CLOSED**; **`reopened historical stages` = 0**; **`unresolved replay findings` = 0**; **`ENT-AUDIT-X` independently CLOSED**; **exact-freeze-SHA enterprise audit:** enterprise audit completed = yes; audit internal failure = 0; new enterprise violations = 0; unclassified findings = 0; expired debt = 0; unresolved enterprise BLOCKER findings = 0; **enterprise audit baseline SHA recorded** (reference for post-freeze scenario development). A complete freeze checklist additionally requires explicit resolution of **data lifecycle/security responsibilities**, **capacity/overload/resource boundedness**, **backup/restore responsibility** and **production operability** (via applicable `FRZ-SEC-*`, `FRZ-REL-*`, `FRZ-REC-*`, `FRZ-PRD-*`, **`FRZ-TEN-*`** — not a second freeze gate). Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification + scenario-wave drift audit per §3.1). | **[ ] FINAL / MANDATORY** |
-| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formal Go/No-Go to shift from platform hardening to full scenario focus. **Remains BLOCKED while `ARCH-FREEZE` ≠ CLOSED** or **`ROADMAP-REPLAY-X` ≠ CLOSED**. `ARCH-FREEZE` = CLOSED alone is **insufficient**: also requires **`ROADMAP-REPLAY-X` = CLOSED**, **`ENT-AUDIT-X` = CLOSED**, **canonical enterprise audit baseline exists**, and **freeze-SHA enterprise audit = PASS**. Scenarios must not compensate for unfrozen architecture gaps. Gate CLOSED only when all mandatory rows above—including `ARCH-FREEZE`, `DUP-X`, `ROADMAP-REPLAY-X`, and audit baseline evidence—are CLOSED with independent SHA evidence and no known enterprise blocker. Transferred Scenario #24 capabilities remain **OPEN for Scenario #24** until each satisfies the cross-session return contract in §1.1. | **[ ] BLOCKED** |
+| **ARCH-FREEZE** | Architecture Freeze Certification | Formal freeze gate after **`ENT-AUDIT-X`** (requires `EBH-7` and **`ENT-AUDIT-X` = CLOSED**). Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **`ARCH-FREEZE` cannot close while any applicable `FRZ-TEN-*` criterion remains `OPEN` or `BLOCKED`.** Allowed final tenant criterion states: `PASS` or `N/A — WITH EVIDENCE` only. **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0; **`DIST-SCALE-X` = CLOSED** (independent exact-SHA evidence; certified capacity/failure envelopes documented per §3.0.4); **`DUP-X` = CLOSED**; **`ROADMAP-REPLAY-X` = CLOSED**; **`reopened historical stages` = 0**; **`unresolved replay findings` = 0**; **`ENT-AUDIT-X` independently CLOSED**; **exact-freeze-SHA enterprise audit:** enterprise audit completed = yes; audit internal failure = 0; new enterprise violations = 0; unclassified findings = 0; expired debt = 0; unresolved enterprise BLOCKER findings = 0; **enterprise audit baseline SHA recorded** (reference for post-freeze scenario development). **Enterprise / data-intensive production readiness must not be claimed without `DIST-SCALE-X` = CLOSED.** A complete freeze checklist additionally requires explicit resolution of **data lifecycle/security responsibilities**, **capacity/overload/resource boundedness**, **backup/restore responsibility** and **production operability** (via applicable `FRZ-SEC-*`, `FRZ-REL-*`, `FRZ-REC-*`, `FRZ-PRD-*`, **`FRZ-TEN-*`** — not a second freeze gate). Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification + scenario-wave drift audit per §3.1). | **[ ] FINAL / MANDATORY** |
+| **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formal Go/No-Go to shift from platform hardening to full scenario focus. **Remains BLOCKED while `ARCH-FREEZE` ≠ CLOSED** or **`ROADMAP-REPLAY-X` ≠ CLOSED**. `ARCH-FREEZE` = CLOSED alone is **insufficient**: also requires **`ROADMAP-REPLAY-X` = CLOSED**, **`DIST-SCALE-X` = CLOSED**, **`ENT-AUDIT-X` = CLOSED**, **canonical enterprise audit baseline exists**, and **freeze-SHA enterprise audit = PASS**. Scenarios must not compensate for unfrozen architecture gaps. Gate CLOSED only when all mandatory rows above—including `DIST-SCALE-X`, `ARCH-FREEZE`, `DUP-X`, `ROADMAP-REPLAY-X`, and audit baseline evidence—are CLOSED with independent SHA evidence and no known enterprise blocker. Transferred Scenario #24 capabilities remain **OPEN for Scenario #24** until each satisfies the cross-session return contract in §1.1. | **[ ] BLOCKED** |
 
 ### 3.0.1 Transferred Scenario #24 capabilities — mandatory order before EBH-3 / EBH-4
 
@@ -454,6 +456,243 @@ GOV-X1
 - independent exact-SHA audit accepted.
 
 `ROADMAP-REPLAY-X` must not start until `DUP-X = CLOSED`.
+
+### 3.0.4 `DIST-SCALE-X` — Data-Intensive Distributed Systems Scale & Resilience Certification
+
+**Status:** **`PLANNED / MANDATORY`** — not started; not CLOSED. This section is roadmap/plan authority only until independent exact-SHA closure.
+
+**Position:** after **`QUAL-X`**, before **`EBH-5`**. Mandatory before final enterprise architecture freeze / release certification (`EBH-7`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
+
+**Canonical late-stage dependency chain (adapted to §3 order):**
+
+```text
+CONFIG-X → COMPAT-X → TENANT-X → PROD-Q → QUAL-X
+→ DIST-SCALE-X
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-GATE
+```
+
+**Primary business / platform question:**
+
+> Does the whole platform remain **correct**, **predictable**, and **resilient** under real load characteristic of **data-intensive / distributed systems**?
+
+This is **not** a throughput benchmark alone. The stage certifies:
+
+- correctness under load;
+- durability under failure;
+- recovery under partial failure;
+- predictable degradation;
+- horizontal scalability;
+- absence of hidden single-node assumptions;
+- absence of unsafe retry / duplicate side effects;
+- queue and backpressure behavior;
+- distributed-state integrity.
+
+**Relationship to `HARNESS-W4`:** W4 closed harness-scoped scale/resilience/cancellation recertification on historical exact-SHA evidence. **`DIST-SCALE-X`** owns **cross-platform**, **closed-world**, **production-adapter** scale and resilience certification for enterprise/data-intensive readiness. W4 evidence may be referenced; it does **not** satisfy **`DIST-SCALE-X`**.
+
+#### Closed-world scope (cross-platform; no subsystem excluded for passing unit/standard integration tests alone)
+
+Minimum surfaces:
+
+- ExecutionRuntime;
+- task/run/attempt/execution lifecycle;
+- queues / background workers;
+- retry / recovery / resume;
+- state and checkpoint persistence;
+- RuntimeEvent / evidence persistence;
+- configuration/provenance stores;
+- idempotency stores;
+- distributed KV;
+- DocumentStore;
+- relational providers;
+- cache;
+- RAG/vector/graph/search stores when production-capable;
+- tool/provider execution;
+- external work;
+- governance decision paths;
+- tenant isolation under load;
+- plugin/provider composition;
+- control-plane mutations;
+- async workflows;
+- child executions;
+- event delivery;
+- observability/diagnostics.
+
+#### Certification dimension groups
+
+**A — Throughput and concurrency.** Test: increasing concurrent executions; tasks/sec; provider calls; parallel tenants; concurrent reads/writes; contention on shared resources; fan-out/fan-in. Measure: throughput; p50/p95/p99 latency; error rate; saturation point; queue depth; retry amplification.
+
+**B — Horizontal scaling.** Prove: adding workers increases useful capacity; no hidden process-local authority blocks scale-out; no correctness dependency on one process; routing/state remain correct across nodes; multiple workers on different executions; same-execution races fail closed or reconcile. Required scenarios:
+
+```text
+1 worker → N workers → same workload → expected throughput growth
+```
+
+```text
+multiple workers → same logical work race → no duplicate external effect
+```
+
+**C — Backpressure and overload.** Deliberate overload. Verify: bounded queues; no unbounded memory growth; no uncontrolled thread/task creation; explicit rejection/defer/backpressure; priority where supported; critical control/evidence paths not starved by bulk traffic. **Required:** predictable degradation, not chaotic collapse.
+
+**D — Hot partitions / hot keys.** Concentrate traffic on: one tenant; one execution; one task; one provider; one cache key family; one persistence partition; one configuration identity; one idempotency identity family. Detect: lock contention; partition hotspots; queue starvation; throughput collapse; tail-latency explosion. Document mitigation or certified limits.
+
+**E — Retry storms.** Inject transient failures causing mass retry. Verify: bounded retry amplification; jitter/backoff where applicable; no synchronized thundering herd; idempotency holds; no duplicated external side effects; queues recover after dependency restoration.
+
+**F — Partial failure.** Inject independently: storage unavailable; provider unavailable; event persistence unavailable; one worker crash; multiple worker crash; network timeout; slow dependency; response lost after successful write; connection reset; process restart. Verify fail-open/fail-closed behavior matches architecture.
+
+**G — Crash consistency.** Exercise crash points around:
+
+```text
+read → decision → pin → event persist → side effect → checkpoint → acknowledgement
+```
+
+For every distributed multi-step protocol: safe replay; no duplicate semantic action; no lost required evidence; no authority reconstruction from incomplete state.
+
+**H — Durable restart.** Real durable backends:
+
+```text
+load → write state → hard process termination → fresh process → recover → continue
+```
+
+Verify: exact durable state survives; no hidden in-memory dependency; deterministic recovery.
+
+**I — Network partitions / unavailable nodes.** Where architecture supports multi-node/distributed backends: node unavailable; stale connection; timeout; partition-like failure; delayed acknowledgement. Verify: no split-brain authority; no duplicate ownership; bounded unavailability; safe retry. **Do not** claim consensus/partition tolerance for mechanisms that do not implement it.
+
+**J — Ordering and concurrency anomalies.** Test: duplicate delivery; reordered delivery; concurrent update; stale read where backend permits; lost acknowledgement; retry after commit; delayed event. Validate **invariants**, not assumed ordering.
+
+**K — Tenant isolation under stress.** Simultaneous high-volume multi-tenant workloads; adversarial cross-tenant interference. Verify: no data/authority/cache contamination; no shared mutable tenant state; one noisy tenant cannot corrupt another. Measure noisy-neighbor degradation.
+
+**L — Resource exhaustion.** Bounded pressure on: memory; CPU; connection pools; threads; async tasks; file descriptors where applicable; DB pool; queue capacity. Verify controlled behavior and recovery after pressure removal.
+
+**M — Soak testing.** Mandatory long-running representative workload: memory/handle leaks; slow queue growth; orphan state; retry amplification; cache growth; degrading latency; background-task buildup. Soak duration defined in later implementation plan (CI vs dedicated qualification environment) — **do not** hard-code a fake short duration for convenience.
+
+**N — Chaos / fault injection.** Controlled failure matrix across runtime; stores; provider boundaries; queues; evidence persistence; external calls. Deterministic/reproducible where possible; record exact seed/scenario/evidence.
+
+#### Real backends / containers
+
+Final **`DIST-SCALE-X` = PASS** cannot rely solely on mocks, fakes, or in-memory stores. Mandatory use of real supported adapters/backends in containerized test environments where feasible:
+
+```text
+Docker / Testcontainers → real database/store → production adapter → multi-process / multi-worker workload
+```
+
+If a production vendor cannot be containerized, use a real sandbox/service qualification where justified.
+
+#### Vendor / backend matrix
+
+Define a representative production matrix. Classify every backend/provider at minimum as:
+
+- mandatory scale qualification;
+- representative-equivalence coverage;
+- functional-only;
+- external sandbox certification required;
+- unsupported for distributed production.
+
+Do not assume one in-memory adapter proves all implementations.
+
+#### Workload models (explicit definitions required)
+
+Each workload must define: request rate; concurrency; read/write ratio; payload size; tenant count; key distribution; fan-out; external dependency latency; retry/failure percentage; test duration.
+
+| ID | Workload |
+|---|---|
+| WL-1 | Many independent executions — high parallel independent tasks |
+| WL-2 | Hot tenant — large traffic on one tenant |
+| WL-3 | Hot key / hot execution family — contention-heavy |
+| WL-4 | Provider-heavy — external/provider I/O dominates |
+| WL-5 | Persistence-heavy — state/evidence/checkpoint writes dominate |
+| WL-6 | Retry storm — high transient failure rate |
+| WL-7 | Long-running soak — mixed representative production load |
+
+#### Invariants before performance
+
+A benchmark is **PASS** only if correctness invariants remain true. **Automatic FAIL** regardless of throughput if any of: duplicate side effect; lost state; lost evidence; tenant leakage; wrong recovery; stale authority; corruption. **Correctness > throughput.**
+
+#### Quantitative acceptance
+
+Measurable thresholds required at implementation time (examples: throughput target; p95/p99 latency; max queue depth; max retry amplification; recovery time; max acceptable error rate; horizontal scaling efficiency; memory-growth ceiling during soak). Where canonical product SLOs do not yet exist, mark:
+
+```text
+TO BE LOCKED FROM PRODUCT/PRODUCTION SLO
+```
+
+Do not invent final numeric thresholds in this roadmap unless canonical product SLOs already exist.
+
+#### Capacity envelope (certified operating envelope)
+
+Document dimensions such as:
+
+```text
+max tested tenants
+max concurrent executions
+max worker count
+max event rate
+max state writes/sec
+max provider calls/sec
+max tested dataset
+```
+
+Classify each as: **tested/certified**; **expected**; **unsupported/unknown**. No marketing claims beyond measured evidence.
+
+#### Failure envelope
+
+Document: supported dependency outage duration; retry limits; recovery behavior; max backlog tested; restart/recovery characteristics; degraded-mode behavior.
+
+#### Evidence (every scale/resilience test)
+
+Reproducible evidence must include: exact code SHA; environment definition; container/service versions; workload config; topology; test duration; metrics; faults injected; pass/fail; logs/artifacts for diagnosis. **No screenshots as sole evidence.**
+
+#### Qualification environment layers
+
+```text
+CI: small deterministic distributed tests
+
+qualification pipeline: multi-container / multi-process stress
+
+dedicated environment: large-scale soak / chaos / vendor sandbox
+```
+
+Some **`DIST-SCALE-X`** qualification may require an environment separate from normal unit CI.
+
+#### Security / Governance under load
+
+Overload must not bypass: Governance; authorization; tenant validation; ToolRuntime checks; provider selection rules; audit/evidence requirements. No “fast path” may skip authority checks under load.
+
+#### Observability under scale
+
+Under high event volume certify: metrics remain usable; mandatory evidence not silently dropped; logging not the bottleneck; sampling only on permitted classes; critical evidence durable; diagnostics can identify saturation cause.
+
+#### Degraded operation
+
+Where architecture permits degraded mode:
+
+```text
+dependency partially unavailable → declared degraded behavior → no correctness violation → recovery after restoration
+```
+
+No silent fallback to unsafe provider/store.
+
+#### Exit criteria (`DIST-SCALE-X` = PASS only when all hold)
+
+1. representative workloads defined;
+2. production adapters exercised;
+3. multi-worker scale tested;
+4. overload/backpressure tested;
+5. retry storms tested;
+6. hot partition/key scenarios tested;
+7. crash/restart tested;
+8. partial failures tested;
+9. tenant stress isolation tested;
+10. resource exhaustion tested;
+11. soak completed;
+12. chaos matrix completed;
+13. no correctness invariant violated;
+14. certified capacity envelope documented;
+15. certified failure/recovery envelope documented;
+16. unresolved scale blockers = 0 or explicitly release-blocking.
+
+#### Implementation boundary (this roadmap revision)
+
+**`production delta = 0`** until explicit implementation waves are opened. Do not add load-test dependencies, Docker configs, benchmarks, chaos tooling, or production runtime changes as part of roadmap documentation alone.
 
 ### 3.1 `ENT-AUDIT-X` — Continuous Enterprise Architecture Audit System
 
@@ -693,7 +932,8 @@ Update this section only after independent exact-SHA audit.
 | COMPAT-X | — | PLANNED / MANDATORY — contract/schema/event/plugin evolution certification before tenant cross-platform certification (`CONFIG-X` → `COMPAT-X` → `TENANT-X` → `PROD-Q`). |
 | TENANT-X | — | PLANNED / MANDATORY — cross-platform tenant isolation certification on current HEAD after `COMPAT-X`; primary closer for `FRZ-TEN-*`; precedes `PROD-Q`. |
 | PROD-Q | — | PLANNED / MANDATORY — explicit production qualification before final enterprise certification; follows `TENANT-X`; includes ensuring the SQLite bootstrap finding cannot mask production startup correctness. |
-| QUAL-X | — | PLANNED / MANDATORY — qualification/regression infrastructure certification (`PROD-Q` → `QUAL-X` → `EBH-5`); `R1-SQLITE-ENV-01` is an explicit evidence item for `FRZ-REG-08` and cannot be treated as a false PASS. |
+| QUAL-X | — | PLANNED / MANDATORY — qualification/regression infrastructure certification (`PROD-Q` → `QUAL-X` → `DIST-SCALE-X`); `R1-SQLITE-ENV-01` is an explicit evidence item for `FRZ-REG-08` and cannot be treated as a false PASS. |
+| DIST-SCALE-X | — | PLANNED / MANDATORY — cross-platform data-intensive distributed scale & resilience certification (`QUAL-X` → `DIST-SCALE-X` → `EBH-5`); full scope §3.0.4; mandatory before `ARCH-FREEZE`; **production delta = 0** until implementation opened; not started. |
 | ENT-AUDIT-X | — | FINAL / MANDATORY — Build and independently certify the reusable full-platform enterprise architecture audit system before ARCH-FREEZE; exact-SHA implementation, coverage, baseline/drift and reporting evidence required. |
 | ARCH-FREEZE | — | FINAL / MANDATORY — formal architecture freeze gate after `ENT-AUDIT-X`; requires checklist complete per mechanical entry requirements in §3 including freeze-SHA enterprise audit PASS and recorded audit baseline. |
 | remaining mandatory stages | — | Fill on closure. |
@@ -795,6 +1035,7 @@ Bring the whole Integrax platform to a fully, independently recertified and form
 - cross-platform tenant isolation certified on current HEAD (`TENANT-X` after `COMPAT-X`);
 - production qualification proven independently from harness/lab maturity (`PROD-Q` after `TENANT-X`);
 - qualification/regression infrastructure certified (`QUAL-X`);
+- cross-platform data-intensive scale and resilience certified on real adapters (`DIST-SCALE-X` after `QUAL-X`);
 - final enterprise closure through `EBH-7`;
 - reusable full-platform enterprise audit system certified before freeze (`ENT-AUDIT-X`);
 - exact-SHA enterprise audit baseline recorded at `ARCH-FREEZE`;
