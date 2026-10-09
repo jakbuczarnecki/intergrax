@@ -117,6 +117,16 @@ class HumanTimeoutPayloadV1(RuntimeEventPayload):
     elapsed_ms: int = 0
 
 
+class IntegrationConfigurationProvenanceRequirementPayloadV1(RuntimeEventPayload):
+    schema_id = "integration_configuration_provenance_requirement.v1"
+
+    integration_category: str = ""
+    provider_id: str = ""
+    resource_scope: str = ""
+    configuration_type: str = ""
+    provenance_mode: str = ""
+
+
 class PolicyDecisionSpinePayloadV1(RuntimeEventPayload):
     schema_id = "policy_decision_spine.v1"
 

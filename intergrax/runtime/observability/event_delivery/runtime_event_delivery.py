@@ -84,6 +84,9 @@ _RUNTIME_EVENT_DELIVERY_PRIORITY: dict[RuntimeEventType, EventPriority] = {
     RuntimeEventType.BUDGET_THRESHOLD: EventPriority.IMPORTANT,
     RuntimeEventType.BUDGET_EXCEEDED: EventPriority.CRITICAL,
     RuntimeEventType.DOMAIN_SIGNAL: EventPriority.BEST_EFFORT,
+    RuntimeEventType.INTEGRATION_CONFIGURATION_PROVENANCE_REQUIREMENT_COMMITTED: (
+        EventPriority.CRITICAL
+    ),
 }
 
 _missing_types = set(RuntimeEventType) - set(_RUNTIME_EVENT_DELIVERY_PRIORITY)

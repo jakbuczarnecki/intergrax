@@ -43,6 +43,7 @@ from intergrax.runtime.events.payloads.spine_families import (
     OperationalAlertPayloadV1,
     PauseLifecyclePayloadV1,
     PlanLifecyclePayloadV1,
+    IntegrationConfigurationProvenanceRequirementPayloadV1,
     PolicyDecisionSpinePayloadV1,
     RetryLifecyclePayloadV1,
     TaskProgressPayloadV1,
@@ -131,6 +132,9 @@ _RUNTIME_EVENT_PAYLOAD_POLICY: dict[RuntimeEventType, RuntimeEventPayloadPolicyE
     RuntimeEventType.RUNTIME_HANDLER_FAILED: _strict(OperationalAlertPayloadV1.schema_id),
     RuntimeEventType.LLM_CALL: _strict(LlmCallPayloadV3.schema_id),
     RuntimeEventType.POLICY_DECISION: _strict(PolicyDecisionSpinePayloadV1.schema_id),
+    RuntimeEventType.INTEGRATION_CONFIGURATION_PROVENANCE_REQUIREMENT_COMMITTED: _strict(
+        IntegrationConfigurationProvenanceRequirementPayloadV1.schema_id,
+    ),
     RuntimeEventType.GRAPH_BACKPRESSURE: _strict(GraphBackpressurePayloadV1.schema_id),
     RuntimeEventType.GUARDRAIL_BLOCKED: _strict(GuardrailBlockedPayloadV1.schema_id),
     RuntimeEventType.BUDGET_THRESHOLD: _strict(BudgetSignalPayloadV1.schema_id),

@@ -44,6 +44,7 @@ from intergrax.runtime.events.payloads.spine_families import (
     CancellationLifecyclePayloadV1,
     GraphBackpressurePayloadV1,
     GuardrailBlockedPayloadV1,
+    IntegrationConfigurationProvenanceRequirementPayloadV1,
     HumanTimeoutPayloadV1,
     MemoryAccessPayloadV1,
     OperationalAlertPayloadV1,
@@ -671,6 +672,16 @@ def legacy_spine_payload_to_typed(
             typed = _validation_payload_from_raw(raw, default_valid=False)
             if typed.error_count == 0 and not typed.valid:
                 typed = typed.model_copy(update={"error_count": 1})
+        return typed, dict(raw) if raw else None
+
+    if event_type == RuntimeEventType.INTEGRATION_CONFIGURATION_PROVENANCE_REQUIREMENT_COMMITTED:
+        typed = IntegrationConfigurationProvenanceRequirementPayloadV1(
+            integration_category=_str_field(raw, "integration_category"),
+            provider_id=_str_field(raw, "provider_id"),
+            resource_scope=_str_field(raw, "resource_scope"),
+            configuration_type=_str_field(raw, "configuration_type"),
+            provenance_mode=_str_field(raw, "provenance_mode"),
+        )
         return typed, dict(raw) if raw else None
 
     if event_type == RuntimeEventType.EXECUTION_FAILED:

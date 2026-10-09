@@ -24,10 +24,18 @@ from intergrax.integrations.contracts.execution_integration_configuration import
     IntegrationMaterializationKind,
     validate_configured_adoption_match,
 )
+from intergrax.integrations.contracts.execution_integration_configuration_pin_record import (
+    ExecutionIntegrationConfigurationPinRecord,
+    ExecutionIntegrationConfigurationRequirementRecoveryStaging,
+    find_pin_record_for_subject,
+)
 from intergrax.integrations.contracts.execution_integration_configuration_pinning import (
     ExecutionIntegrationConfigurationPinningError,
     ExecutionIntegrationConfigurationPinningStore,
     validate_pin_subject_against_provenance,
+)
+from intergrax.integrations.execution_integration_configuration_pin_reconciliation import (
+    pin_with_reconcile,
 )
 from intergrax.integrations.contracts.integration_profile import IntegrationProfile
 from intergrax.integrations.registry.catalog import get_entry
@@ -92,6 +100,9 @@ class ExecutionBoundIntegrationResolutionRequest:
     integration_profile: IntegrationProfile | None = None
     catalog_slug: str | None = None
     resource_scope: str | None = None
+    requirement_recovery_staging: (
+        ExecutionIntegrationConfigurationRequirementRecoveryStaging | None
+    ) = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,6 +128,19 @@ class ExecutionBoundIntegrationResolution:
     ) -> None:
         self._pinning_store = pinning_store
         self._materialization = materialization or _DefaultExecutionBoundIntegrationMaterialization()
+
+    def read_pin_record_for_subject(
+        self,
+        *,
+        tenant_id: str,
+        execution_id: ExecutionId,
+        subject: IntegrationConfigurationSubject,
+    ) -> ExecutionIntegrationConfigurationPinRecord | None:
+        records = self._pinning_store.read_pin_records(
+            tenant_id=tenant_id,
+            execution_id=execution_id,
+        )
+        return find_pin_record_for_subject(records, subject)
 
     def resolve_and_pin(
         self,
@@ -189,7 +213,12 @@ class ExecutionBoundIntegrationResolution:
             provenance=provenance,
         )
         try:
-            self._pinning_store.pin(subject=subject, provenance=provenance)
+            pin_with_reconcile(
+                pinning_store=self._pinning_store,
+                subject=subject,
+                provenance=provenance,
+                candidate_staging=request.requirement_recovery_staging,
+            )
         except ExecutionIntegrationConfigurationPinningError:
             raise
         return ExecutionBoundIntegrationMaterializedResult(

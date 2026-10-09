@@ -276,6 +276,7 @@ class ExecutionReconstructor:
                     positioned,
                     tenant_id=tenant_id,
                     reader=integration_reader,
+                    execution_as_of=execution_as_of,
                 )
             )
         return ExecutionReconstruction(

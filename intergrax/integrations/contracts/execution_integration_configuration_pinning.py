@@ -17,6 +17,10 @@ from intergrax.contracts.execution_integration_configuration_provenance import (
     validate_integration_configuration_subject,
 )
 from intergrax.integrations.contracts.base import IntegrationCategory
+from intergrax.integrations.contracts.execution_integration_configuration_pin_record import (
+    ExecutionIntegrationConfigurationPinRecord,
+    ExecutionIntegrationConfigurationRequirementRecoveryStaging,
+)
 
 
 class ExecutionIntegrationConfigurationPinningFailureReason(StrEnum):
@@ -27,6 +31,7 @@ class ExecutionIntegrationConfigurationPinningFailureReason(StrEnum):
     TENANT_MISMATCH = "TENANT_MISMATCH"
     SUBJECT_MISMATCH = "SUBJECT_MISMATCH"
     INVALID = "INVALID"
+    RECOVERY_STAGING_UNAVAILABLE = "RECOVERY_STAGING_UNAVAILABLE"
 
 
 class ExecutionIntegrationConfigurationPinningError(Exception):
@@ -114,7 +119,18 @@ class ExecutionIntegrationConfigurationPinningStore(Protocol):
         *,
         subject: IntegrationConfigurationSubject,
         provenance: ExecutionIntegrationConfigurationProvenance,
+        requirement_recovery_staging: (
+            ExecutionIntegrationConfigurationRequirementRecoveryStaging | None
+        ) = None,
     ) -> None:
+        ...
+
+    def read_pin_records(
+        self,
+        *,
+        tenant_id: str,
+        execution_id: ExecutionId,
+    ) -> tuple[ExecutionIntegrationConfigurationPinRecord, ...]:
         ...
 
     def read_all(
@@ -127,8 +143,10 @@ class ExecutionIntegrationConfigurationPinningStore(Protocol):
 
 
 __all__ = [
+    "ExecutionIntegrationConfigurationPinRecord",
     "ExecutionIntegrationConfigurationPinningError",
     "ExecutionIntegrationConfigurationPinningFailureReason",
     "ExecutionIntegrationConfigurationPinningStore",
+    "ExecutionIntegrationConfigurationRequirementRecoveryStaging",
     "validate_pin_subject_against_provenance",
 ]

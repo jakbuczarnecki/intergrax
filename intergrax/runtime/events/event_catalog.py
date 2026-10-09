@@ -118,6 +118,9 @@ _SPINE_PHASE: dict[RuntimeEventType, ExecutionPhase] = {
     RuntimeEventType.BUDGET_THRESHOLD: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.BUDGET_EXCEEDED: ExecutionPhase.STEP_EXECUTION,
     RuntimeEventType.DOMAIN_SIGNAL: ExecutionPhase.STEP_EXECUTION,
+    RuntimeEventType.INTEGRATION_CONFIGURATION_PROVENANCE_REQUIREMENT_COMMITTED: (
+        ExecutionPhase.STEP_EXECUTION
+    ),
 }
 
 

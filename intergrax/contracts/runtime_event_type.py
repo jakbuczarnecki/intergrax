@@ -67,6 +67,9 @@ class RuntimeEventType(str, Enum):
     BUDGET_THRESHOLD = "budget_threshold"
     BUDGET_EXCEEDED = "budget_exceeded"
     DOMAIN_SIGNAL = "domain_signal"
+    INTEGRATION_CONFIGURATION_PROVENANCE_REQUIREMENT_COMMITTED = (
+        "integration_configuration_provenance_requirement_committed"
+    )
 
 
 __all__ = ["RuntimeEventType"]

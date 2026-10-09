@@ -5,12 +5,22 @@
 from __future__ import annotations
 
 from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
 from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRisk
-from intergrax.contracts.execution_identity import ExecutionId, validate_execution_id
+from intergrax.contracts.execution_identity import (
+    ExecutionId,
+    mint_attempt_id,
+    mint_run_id,
+    mint_task_id,
+    validate_execution_id,
+)
+from intergrax.integrations.contracts.execution_integration_configuration_pin_record import (
+    ExecutionIntegrationConfigurationRequirementRecoveryStaging,
+)
 from intergrax.contracts.execution_integration_configuration_provenance import (
     ConfiguredIntegrationProvenanceSlice,
     ExecutionIntegrationConfigurationProvenance,
@@ -254,7 +264,7 @@ def _pin_distinct_provenance_records(
                 materialization_kind=IntegrationMaterializationKind.CATALOG_FACTORY,
             ),
         )
-        store.pin(subject=subject, provenance=record)
+        _pin_configured(store, subject=subject, provenance=record)
         records.append(record)
     def _configured_sort_key(
         item: ExecutionIntegrationConfigurationProvenance,
@@ -323,6 +333,29 @@ def _configured_slice(**overrides: str) -> ConfiguredIntegrationProvenanceSlice:
         configuration_type=overrides.get("configuration_type", TEST_CONFIGURATION_PAYLOAD_TYPE),
         configuration_version="1",
         configuration_fingerprint=overrides.get("configuration_fingerprint", "fp-test-001"),
+    )
+
+
+def _recovery_staging() -> ExecutionIntegrationConfigurationRequirementRecoveryStaging:
+    return ExecutionIntegrationConfigurationRequirementRecoveryStaging(
+        requirement_boundary_prepared_at=datetime(2026, 6, 1, 12, 0, 0, tzinfo=timezone.utc),
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
+
+
+def _pin_configured(
+    store: object,
+    *,
+    subject: IntegrationConfigurationSubject,
+    provenance: ExecutionIntegrationConfigurationProvenance,
+) -> None:
+    pin = getattr(store, "pin")
+    pin(
+        subject=subject,
+        provenance=provenance,
+        requirement_recovery_staging=_recovery_staging(),
     )
 
 
@@ -459,8 +492,9 @@ def test_provenance_pin_restart_and_idempotent(use_kv: bool) -> None:
         store_b = DocumentStoreExecutionIntegrationConfigurationPinningStore(backing_doc)
     subject = _subject()
     record = _provenance_configured_adopted()
-    store_a.pin(subject=subject, provenance=record)
-    store_a.pin(subject=subject, provenance=record)
+    staging = _recovery_staging()
+    store_a.pin(subject=subject, provenance=record, requirement_recovery_staging=staging)
+    store_a.pin(subject=subject, provenance=record, requirement_recovery_staging=staging)
     read = store_b.read_all(tenant_id="tenant-a", execution_id=_EXEC)
     assert read == (record,)
 
@@ -478,8 +512,8 @@ def test_provenance_multiple_subjects_deterministic_order() -> None:
             materialization_kind=IntegrationMaterializationKind.CATALOG_FACTORY,
         ),
     )
-    store.pin(subject=_subject(), provenance=base)
-    store.pin(subject=subject_b, provenance=record_b)
+    _pin_configured(store, subject=_subject(), provenance=base)
+    _pin_configured(store, subject=subject_b, provenance=record_b)
     records = store.read_all(tenant_id="tenant-a", execution_id=_EXEC)
     assert records == (record_b, base)
 
@@ -488,13 +522,13 @@ def test_provenance_conflict_and_invalid_execution_id() -> None:
     store = InMemoryExecutionIntegrationConfigurationPinningStore()
     subject = _subject()
     record = _provenance_configured_adopted()
-    store.pin(subject=subject, provenance=record)
+    _pin_configured(store, subject=subject, provenance=record)
     conflicting = replace(
         record,
         configured=_configured_slice(configuration_fingerprint="fp-changed"),
     )
     with pytest.raises(ExecutionIntegrationConfigurationPinningError) as exc:
-        store.pin(subject=subject, provenance=conflicting)
+        _pin_configured(store, subject=subject, provenance=conflicting)
     assert exc.value.reason == ExecutionIntegrationConfigurationPinningFailureReason.CONFLICT
     with pytest.raises(ValueError):
         store.read_all(tenant_id="tenant-a", execution_id=ExecutionId("bad"))
@@ -514,7 +548,7 @@ def test_provenance_effective_only_survives_codec() -> None:
         ),
         configured=None,
     )
-    store.pin(subject=subject, provenance=record)
+    _pin_configured(store, subject=subject, provenance=record)
     assert store.read_all(tenant_id="tenant-a", execution_id=_EXEC) == (record,)
 
 
@@ -522,7 +556,7 @@ def test_neutral_reader_is_read_only_projection() -> None:
     pinning = InMemoryExecutionIntegrationConfigurationPinningStore()
     subject = _subject()
     record = _provenance_configured_adopted()
-    pinning.pin(subject=subject, provenance=record)
+    _pin_configured(pinning, subject=subject, provenance=record)
     reader = PinningStoreExecutionIntegrationConfigurationProvenanceReader(pinning)
     assert reader.read_all(tenant_id="tenant-a", execution_id=_EXEC) == (record,)
     assert not hasattr(reader, "pin")
@@ -542,14 +576,14 @@ def test_kv_provenance_crash_after_index_before_record_fails_closed_then_repair(
     subject = _subject()
     record = _provenance_configured_adopted()
     with pytest.raises(SimulatedProcessCrash):
-        store_a.pin(subject=subject, provenance=record)
+        _pin_configured(store_a, subject=subject, provenance=record)
     store_b = KvExecutionIntegrationConfigurationPinningStore(backing)
     with pytest.raises(ExecutionIntegrationConfigurationPinningError) as incomplete:
         store_b.read_all(tenant_id="tenant-a", execution_id=_EXEC)
     assert incomplete.value.reason == ExecutionIntegrationConfigurationPinningFailureReason.CORRUPT_RECORD
     backing.abort_before_provenance_record_cas = False
     store_c = KvExecutionIntegrationConfigurationPinningStore(backing)
-    store_c.pin(subject=subject, provenance=record)
+    _pin_configured(store_c, subject=subject, provenance=record)
     store_d = KvExecutionIntegrationConfigurationPinningStore(backing)
     assert store_d.read_all(tenant_id="tenant-a", execution_id=_EXEC) == (record,)
 
@@ -567,7 +601,7 @@ def test_kv_provenance_legacy_orphan_record_without_index_repaired_on_retry() ->
     assert backing.get(tenant_id="tenant-a", key=_provenance_index_kv_key(_EXEC)) is None
     store = KvExecutionIntegrationConfigurationPinningStore(backing)
     assert store.read_all(tenant_id="tenant-a", execution_id=_EXEC) == ()
-    store.pin(subject=subject, provenance=record)
+    store.pin(subject=subject, provenance=record, requirement_recovery_staging=None)
     restarted = KvExecutionIntegrationConfigurationPinningStore(backing)
     assert restarted.read_all(tenant_id="tenant-a", execution_id=_EXEC) == (record,)
 

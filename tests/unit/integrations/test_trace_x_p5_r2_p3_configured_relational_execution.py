@@ -5,11 +5,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any, Mapping, Sequence
 
 import pytest
 
-from intergrax.contracts.execution_identity import mint_execution_id
+from intergrax.contracts.execution_identity import (
+    mint_attempt_id,
+    mint_execution_id,
+    mint_run_id,
+    mint_task_id,
+)
+from intergrax.integrations.contracts.execution_integration_configuration_pin_record import (
+    ExecutionIntegrationConfigurationPinRecord,
+    ExecutionIntegrationConfigurationRequirementRecoveryStaging,
+)
 from intergrax.integrations.contracts.existing_capability_configuration import (
     ConfiguredCapabilityBinding,
 )
@@ -38,12 +48,33 @@ from intergrax.runtime.integrations.categories.data import RelationalStoreIntegr
 from intergrax.tools.invocation_wiring import ToolInvocationContext, ToolRegistrationWiringView
 
 
+def _test_staging() -> ExecutionIntegrationConfigurationRequirementRecoveryStaging:
+    return ExecutionIntegrationConfigurationRequirementRecoveryStaging(
+        requirement_boundary_prepared_at=datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+        task_id=mint_task_id(),
+        run_id=mint_run_id(),
+        attempt_id=mint_attempt_id(),
+    )
+
+
 @dataclass
 class _RecordingPinningStore(ExecutionIntegrationConfigurationPinningStore):
-    pins: list[tuple[object, object]] = field(default_factory=list)
+    pins: list[ExecutionIntegrationConfigurationPinRecord] = field(default_factory=list)
 
-    def pin(self, *, subject, provenance) -> None:
-        self.pins.append((subject, provenance))
+    def pin(self, *, subject, provenance, requirement_recovery_staging=None) -> None:
+        self.pins.append(
+            ExecutionIntegrationConfigurationPinRecord(
+                subject=subject,
+                provenance=provenance,
+                requirement_recovery_staging=requirement_recovery_staging,
+            ),
+        )
+
+    def read_pin_records(self, *, tenant_id, execution_id):
+        return tuple(self.pins)
+
+    def read_all(self, *, tenant_id, execution_id):
+        return tuple(record.provenance for record in self.pins)
 
 
 class _FakeRelationalClient:
@@ -153,6 +184,7 @@ def test_lazy_port_materializes_once_and_reuses_same_provider() -> None:
         adoption=_adoption(),
         resolution=resolution,
         catalog_slug="sqlite",
+        requirement_recovery_staging=_test_staging(),
     )
     resolver = InvocationBoundConfiguredRelationalStoreWiringResolver(
         configured_relational_store_execution=port,
