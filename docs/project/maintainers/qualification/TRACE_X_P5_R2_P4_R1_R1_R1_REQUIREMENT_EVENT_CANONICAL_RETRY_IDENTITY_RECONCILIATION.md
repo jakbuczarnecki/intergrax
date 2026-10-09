@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| **Status** | **READY FOR AUDIT** |
+| **Status** | **BLOCKED ON R1-R1-R1-R1** (durable fact recovery — child lock) |
 | **Production delta** | **0** |
 | **Rejected R1-R1 baseline** | `7093bea7f65553f1f1f1cfc56dba75664a99a7b31c` |
 | **Parent** | [`TRACE_X_P5_R2_P4_R1_R1_REQUIREMENT_EVIDENCE_EMISSION_BOUNDARY_DUAL_WRITE_RECONCILIATION.md`](TRACE_X_P5_R2_P4_R1_R1_REQUIREMENT_EVIDENCE_EMISSION_BOUNDARY_DUAL_WRITE_RECONCILIATION.md) |
@@ -332,7 +332,8 @@ specified; an in-memory-only proof is insufficient.
 | `TRACE-X-P5-R2-P4` | **BLOCKED** |
 | `TRACE-X-P5-R2-P4-R1` | **BLOCKED ON R1-R1** |
 | `TRACE-X-P5-R2-P4-R1-R1` | **BLOCKED ON R1-R1-R1** |
-| `TRACE-X-P5-R2-P4-R1-R1-R1` | **READY FOR AUDIT** |
+| `TRACE-X-P5-R2-P4-R1-R1-R1` | **BLOCKED ON R1-R1-R1-R1** |
+| `TRACE-X-P5-R2-P4-R1-R1-R1-R1` | **READY FOR AUDIT** (see child qualification doc) |
 | `FRZ-TRC-11` | **OPEN** |
 | `P5` | **NOT ENTERED** |
 | `CERT` | **NOT ENTERED** |
