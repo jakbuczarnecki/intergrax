@@ -2,9 +2,10 @@
 
 | Field | Value |
 |---|---|
-| **Status** | **READY FOR AUDIT** |
+| **Status** | **BLOCKED ON R1-R1-R1-R1-R1** (P2 typed pin/staging API — child lock) |
 | **Production delta** | **0** |
-| **FINAL_COMMIT** | `2c1fccf4b611afcdd7407e37c4ba33e76f81ce9a` |
+| **FINAL_COMMIT** | `2c1fccf4b611afcdd7407e37c4ba33e76f81ce9a` (superseded for staging contract by child) |
+| **Child** | [`TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_P2_PIN_RECOVERY_STAGING_CONTRACT_LOCK.md`](TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_P2_PIN_RECOVERY_STAGING_CONTRACT_LOCK.md) |
 | **Rejected R1-R1-R1 baseline** | `3f37a80cea783fad4ca6b75ce8199ee8ed9c888d` |
 | **Parent** | [`TRACE_X_P5_R2_P4_R1_R1_R1_REQUIREMENT_EVENT_CANONICAL_RETRY_IDENTITY_RECONCILIATION.md`](TRACE_X_P5_R2_P4_R1_R1_R1_REQUIREMENT_EVENT_CANONICAL_RETRY_IDENTITY_RECONCILIATION.md) |
 | **Blocker** | `R2-P4-REQUIREMENT-FACT-DURABLE-RECOVERY-29` — **RESOLVED IN DESIGN** (this artifact) |
@@ -133,9 +134,9 @@ reverse index scan). Lineage admission under
 
 For `tenant_id` + `ExecutionId`:
 
-1. `ExecutionIntegrationConfigurationProvenanceReader.read_all` / pin store `read_all`.
-2. For each decoded `(subject, provenance)` with `mode == CONFIGURED_ADOPTED`, treat as one
-   independent obligation.
+1. Pin store **`read_pin_records`** (sanctioned typed read — see child lock R1-R1-R1-R1-R1);
+   `read_all` is provenance-only and does **not** carry subject or staging.
+2. For each pin record with `mode == CONFIGURED_ADOPTED`, treat as one independent obligation.
 3. Never collapse subjects; never guess subject from catalog or adoption binding.
 
 Pin-only subject set is **complete** for configured-adopted obligations pinned for that execution.
@@ -245,7 +246,8 @@ After audit acceptance, corrected P4 must prove (Docker-backed where noted):
 | `TRACE-X-P5-R2-P4-R1` | **BLOCKED** |
 | `TRACE-X-P5-R2-P4-R1-R1` | **BLOCKED** |
 | `TRACE-X-P5-R2-P4-R1-R1-R1` | **BLOCKED ON R1-R1-R1-R1** (implementation) |
-| `TRACE-X-P5-R2-P4-R1-R1-R1-R1` | **READY FOR AUDIT** |
+| `TRACE-X-P5-R2-P4-R1-R1-R1-R1` | **BLOCKED ON R1-R1-R1-R1-R1** |
+| `TRACE-X-P5-R2-P4-R1-R1-R1-R1-R1` | **READY FOR AUDIT** (child qualification doc) |
 | `FRZ-TRC-11` | **OPEN** |
 | `P5` | **NOT ENTERED** |
 | `CERT` | **NOT ENTERED** |
