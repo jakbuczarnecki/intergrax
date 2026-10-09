@@ -1,13 +1,23 @@
 # TRACE-X-P5-R2-P4 — Configured / Effective Reconstruction Projection
 
-**Status:** **READY FOR AUDIT**  
-**START_HEAD:** `5c47154066915820cd150d4fd370bc8b1ae8f85c`  
+**Status:** **BLOCKED ON R1** (architecture reconciliation required before implementation audit)  
+**Rejected implementation baseline:** `055ed448cb890026c8c34e336e7baf7422daa2f6`  
+**R1 reconciliation:** [`TRACE_X_P5_R2_P4_R1_RECONSTRUCTION_REQUIREMENT_AUTHORITY_AS_OF_RECONCILIATION.md`](TRACE_X_P5_R2_P4_R1_RECONSTRUCTION_REQUIREMENT_AUTHORITY_AS_OF_RECONCILIATION.md)  
 **Parent:** **TRACE-X-P5-R2** = **CURRENT**  
-**P5-GAP-04** = **IMPLEMENTATION IN PROGRESS**  
+**P5-GAP-04** = **IMPLEMENTATION IN PROGRESS** (P4 wave blocked)  
 **FRZ-TRC-11** = **OPEN**  
 **P5 / CERT:** **NOT ENTERED**
 
-## Inventory @ implementation
+## Blockers (independent audit)
+
+| ID | Summary |
+|---|---|
+| `R2-P4-PROVENANCE-REQUIREMENT-AUTHORITY-24` | Magic runtime payload requirement — no production emitter; fail-closed not mechanical |
+| `R2-P4-AS-OF-CONFIG-PROVENANCE-FUTURE-LEAK-25` | `read_all` against non-temporal P2 store under `execution_as_of` |
+
+**Do not** treat this document as audit PASS until **P4-R1** is independently accepted and corrected P4 lands per R1 §9.
+
+## Inventory @ rejected baseline (lineage only)
 
 | Artifact | Path |
 |---|---|
@@ -19,39 +29,14 @@
 | Diagnostic composition | `intergrax/applications/_shared/diagnostic_composition.py`, `diagnostic_read_wiring.py` |
 | Host wiring | `harness_host_runtime.py`, `scenario_runtime_baseline.py` |
 
-## Reader adapter
+## Superseded claims (rejected baseline)
 
-`PinningStoreExecutionIntegrationConfigurationProvenanceReader` delegates to `ExecutionIntegrationConfigurationPinningStore.read_all` only; validates tenant + `ExecutionId` per record (fail closed). `resolve_pinning_store_integration_configuration_provenance_reader` binds the same KV/DocumentStore backend as P2/P3 writes.
+- Runtime payload `execution_integration_configuration_provenance_required` as requirement authority — **rejected** in P4-R1.
+- “Unresolved / ADR: None” — **incorrect**; blockers 24–25 require R1 reconciliation.
 
-## Projection semantics
-
-- Execution IDs from `discover_execution_ids_in_positioned_history` (positioned runtime evidence only).
-- Optional requirement classification: runtime payload `execution_integration_configuration_provenance_required: true` (no heuristic join).
-- Multiplicity: all subjects per execution preserved; stable ordering from store + sorted execution IDs.
-- Child executions: no parent provenance inheritance.
-- As-of: integration provenance is **not** temporally versioned in P2 store; `execution_as_of` limits **which execution IDs appear** via truncated positioned history only — **no timestamp filtering of pins**.
-
-## Duplicate audit
-
-| Check | Result |
-|---|---|
-| `ExecutionReconstructor` count | 1 |
-| Integration provenance reader semantic owner | 1 (adapter) |
-| Pinning store semantic owner | 1 (unchanged P2) |
-| Reconstruction projection core | 1 |
-| Diagnostics truth owner | 0 |
-| Provider resolver in reconstruction | 0 |
-
-## Tests
+## Tests (rejected baseline — not audit evidence)
 
 - Unit: `tests/unit/runtime/observability/reconstruction/test_trace_x_p5_r2_p4_integration_configuration_provenance.py`
 - Gates: `tests/qualification/trace_x/test_trace_x_p5_r2_p4_reconstruction_gates.py`
-- Regression replay: P2 persistence, P4 gates, P5-R1 profile provenance reconstruction, diagnostic composition (see pytest log in session).
 
-## Pyright
-
-Targeted surfaces: contracts reconstruction models, projection, reconstructor, reader adapter, diagnostic composition — **0 errors** expected.
-
-## Unresolved / ADR
-
-None — no STOP conditions triggered.
+Corrected P4 must add Docker durable restart E2E per P4-R1 §10.
