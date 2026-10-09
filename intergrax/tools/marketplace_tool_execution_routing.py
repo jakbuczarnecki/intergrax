@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import hashlib
 from typing import Final
 
 from intergrax.contracts.capability_catalog._validation import require_non_empty_text
@@ -19,32 +20,33 @@ MARKETPLACE_TOOL_CONFIGURED_CAPABILITY_BINDING_PROVIDER_ID: Final = (
 )
 
 _CONFIGURED_TARGET_PREFIX: Final = "marketplace-configured-tool:v1:"
+_CONFIGURED_TARGET_CORRELATION_DIGEST_SCOPE: Final = (
+    "marketplace-configured-tool-execution-target-correlation:v1"
+)
+
+
+def _derive_configured_tool_execution_opaque_correlation(
+    binding_operation_id: str,
+) -> str:
+    normalized = require_non_empty_text(binding_operation_id, label="binding_operation_id")
+    digest = hashlib.sha256(
+        f"{_CONFIGURED_TARGET_CORRELATION_DIGEST_SCOPE}\0{normalized}".encode("utf-8"),
+    ).hexdigest()
+    return f"{_CONFIGURED_TARGET_PREFIX}{digest}"
 
 
 def derive_marketplace_configured_tool_execution_target_reference(
     binding_operation_id: str,
 ) -> str:
-    normalized = require_non_empty_text(binding_operation_id, label="binding_operation_id")
-    return f"{_CONFIGURED_TARGET_PREFIX}{normalized}"
+    """Deterministic opaque execution-target correlation — not reversible binding identity."""
+    return _derive_configured_tool_execution_opaque_correlation(binding_operation_id)
 
 
 def derive_marketplace_configured_tool_execution_intent_target_correlation(
     binding_operation_id: str,
 ) -> str:
     """Opaque durable intent link to configured binding — not capability identity."""
-    return derive_marketplace_configured_tool_execution_target_reference(binding_operation_id)
-
-
-def parse_marketplace_configured_tool_execution_target_reference(
-    reference: str,
-) -> str | None:
-    if not reference.startswith(_CONFIGURED_TARGET_PREFIX):
-        return None
-    binding_operation_id = reference[len(_CONFIGURED_TARGET_PREFIX) :]
-    try:
-        return require_non_empty_text(binding_operation_id, label="binding_operation_id")
-    except (TypeError, ValueError):
-        return None
+    return _derive_configured_tool_execution_opaque_correlation(binding_operation_id)
 
 
 def build_marketplace_tool_execution_target(
@@ -67,5 +69,4 @@ __all__ = [
     "build_marketplace_tool_execution_target",
     "derive_marketplace_configured_tool_execution_intent_target_correlation",
     "derive_marketplace_configured_tool_execution_target_reference",
-    "parse_marketplace_configured_tool_execution_target_reference",
 ]

@@ -73,6 +73,7 @@ from intergrax.tools.marketplace_tool_execution_routing import (
     MARKETPLACE_TOOL_CONFIGURED_CAPABILITY_BINDING_PROVIDER_ID,
     MARKETPLACE_TOOL_EXECUTION_HANDLER_ID,
     build_marketplace_tool_execution_target,
+    derive_marketplace_configured_tool_execution_intent_target_correlation,
     derive_marketplace_configured_tool_execution_target_reference,
 )
 
@@ -267,6 +268,9 @@ def configured_intent(
         subject_reference=subject_ref,
         capability_identity=subject.capability_identity,
         selected_operation="database.query",
+        execution_target_correlation=derive_marketplace_configured_tool_execution_intent_target_correlation(
+            binding_operation_id,
+        ),
         provenance=provenance,
     )
 

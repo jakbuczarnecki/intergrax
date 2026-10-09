@@ -3,12 +3,22 @@
 | Field | Value |
 |---|---|
 | **Task** | TRACE-X-P5-R2-P3-R2 |
-| **Disposition** | **READY FOR AUDIT** |
+| **Disposition** | **BLOCKED ON R1** (independent audit blocker **R2-P3-CONFIGURED-TARGET-OPAQUE-CORRELATION-VIOLATION-23**) |
+| **Child correction** | **TRACE-X-P5-R2-P3-R2-R1** — see § R1 correction below |
 | **Parent** | TRACE-X-P5-R2-P3 = **BLOCKED** |
 | **FRZ-TRC-11** | **OPEN** |
 | **P4** | **NOT ENTERED** |
 | **START_HEAD** | `215f82f855bd6ed5316c1c23f8d35ff076be3526` |
-| **FINAL_COMMIT** | `b7efe6b980ba010572f9acc68f8d3db4493733e8` |
+| **P3-R2 implementation baseline (accepted scope)** | `b7efe6b980ba010572f9acc68f8d3db4493733e8` |
+| **FINAL_COMMIT (P3-R2 baseline only)** | `b7efe6b980ba010572f9acc68f8d3db4493733e8` |
+
+## TRACE-X-P5-R2-P3-R2-R1 — Opaque configured target correlation correction
+
+| Field | Value |
+|---|---|
+| **Disposition** | **READY FOR AUDIT** (after correction tests green on GitHub `development`) |
+| **Blocker remediated** | **R2-P3-CONFIGURED-TARGET-OPAQUE-CORRELATION-VIOLATION-23** — configured handler no longer parses `binding_operation_id` from `execution_target_reference`; validates `intent.execution_target_correlation == target.execution_target_reference`; opaque SHA-256 digest correlation in `marketplace_tool_execution_routing.py`; `parse_marketplace_configured_tool_execution_target_reference` removed |
+| **CORRECTION_COMMIT** | *(set at session close — must match `origin/development`)* |
 
 ## Changed scope (P3-R2 production)
 
@@ -99,6 +109,7 @@ Configured adoption does **not** imply execution authority. Activation does **no
 
 | Suite | Path |
 |---|---|
+| R1 opaque correlation unit | `tests/unit/tools/test_marketplace_tool_execution_routing.py`, `tests/unit/tools/test_marketplace_configured_execution_target_correlation_handler.py` |
 | Negative E2E (15) | `tests/qualification/trace_x/test_trace_x_p5_r2_p3_r2_configured_negative_e2e.py` |
 | No-bypass gates | `tests/qualification/trace_x/test_trace_x_p5_r2_p3_r2_no_bypass_gates.py` |
 | Implementation gates | `tests/qualification/trace_x/test_trace_x_p5_r2_p3_r2_implementation_gates.py` |
@@ -122,4 +133,6 @@ Session logs: `.tmp/session/p3-r2-qual/final-qualification-replay.log`, `pyright
 
 ## Disposition
 
-**TRACE-X-P5-R2-P3-R2 = READY FOR AUDIT** — does **not** close parent **TRACE-X-P5-R2-P3**; does **not** promote **FRZ-TRC-11**; **P4 = NOT ENTERED**.
+**TRACE-X-P5-R2-P3-R2 = BLOCKED ON R1** until independent audit accepts **TRACE-X-P5-R2-P3-R2-R1** on GitHub. Historical P3-R2 implementation evidence at baseline `b7efe6b980ba010572f9acc68f8d3db4493733e8` remains valid; blocker **23** applies to opaque target correlation only.
+
+**TRACE-X-P5-R2-P3-R2-R1 = READY FOR AUDIT** (correction) — does **not** close parent **TRACE-X-P5-R2-P3** or **P3-R2**; does **not** promote **FRZ-TRC-11**; **P4 = NOT ENTERED**.

@@ -61,7 +61,6 @@ from intergrax.tools.marketplace_qualified_capability_binding_provider import (
 from intergrax.tools.marketplace_tool_execution_routing import (
     MARKETPLACE_TOOL_CONFIGURED_CAPABILITY_BINDING_PROVIDER_ID,
     MARKETPLACE_TOOL_EXECUTION_HANDLER_ID,
-    parse_marketplace_configured_tool_execution_target_reference,
 )
 from intergrax.tools.qualified_marketplace_tool_activation_resolver import (
     QualifiedMarketplaceToolActivationOutcome,
@@ -176,13 +175,9 @@ class MarketplaceToolQualifiedCapabilityExecutionHandler(
                 return _failed("binding_provider_provenance_mismatch")
             configured = provenance
             assert isinstance(configured, ConfiguredMarketplaceToolExecutionProvenance)
-            binding_from_target = parse_marketplace_configured_tool_execution_target_reference(
-                target.execution_target_reference,
-            )
-            if binding_from_target is None:
-                return _failed("invalid_execution_target_reference")
-            if configured.configured_binding_operation_id != binding_from_target:
-                return _failed("configured_binding_target_mismatch")
+            correlation = intent.execution_target_correlation
+            if correlation is None or correlation != target.execution_target_reference:
+                return _failed("configured_execution_target_correlation_mismatch")
             if integration_configuration_adoption is None:
                 return _failed("configured_adoption_required")
             if self._package_resolver is None:

@@ -123,6 +123,15 @@ def test_txp5r2p3r2_nb12_adoption_not_from_global_registry() -> None:
     assert "opportunity_read" in fulfillment
 
 
+def test_txp5r2p3r2_nb14_configured_handler_does_not_parse_target_reference() -> None:
+    handler = (_TOOLS / "marketplace_qualified_capability_execution_handler.py").read_text(
+        encoding="utf-8",
+    )
+    assert "parse_marketplace_configured_tool_execution_target_reference" not in handler
+    routing = (_TOOLS / "marketplace_tool_execution_routing.py").read_text(encoding="utf-8")
+    assert "def parse_marketplace_configured_tool_execution_target_reference" not in routing
+
+
 def test_txp5r2p3r2_nb13_forbidden_duplicate_class_names_absent() -> None:
     patterns = (
         "ConfiguredCapabilityExecutionDispatchService",
