@@ -60,6 +60,7 @@ class WorkerQualifiedCapabilityExecutionEngineAdapter:
             collaborative_authority_scopes=request.collaborative_authority_scopes,
             run_id=request.run_id,
             attempt_id=request.attempt_id,
+            integration_configuration_adoption=request.integration_configuration_adoption,
         )
         dispatch_result = self._dispatch.dispatch(dispatch_request)
         return map_qualified_dispatch_result(dispatch_result)

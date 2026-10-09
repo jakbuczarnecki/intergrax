@@ -38,6 +38,9 @@ from intergrax.contracts.tools.marketplace_qualified_tool_stage_context import (
     MarketplaceQualifiedToolStageContextResolverNotSupportedError,
     MarketplaceQualifiedToolStageContextResolverUnavailableError,
 )
+from intergrax.tools.marketplace_tool_execution_routing import (
+    build_marketplace_tool_execution_target,
+)
 
 MARKETPLACE_TOOL_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID: Final = (
     "marketplace.tool.qualified_binding.v1"
@@ -121,11 +124,21 @@ class MarketplaceToolQualifiedCapabilityBindingProvider:
                 started_at=started_at,
             )
 
+        acquisition_request_id = qualification.acquisition_request_id
+        strategy_id = qualification.strategy_id
+        if acquisition_request_id is None or strategy_id is None:
+            return _terminal(
+                request=request,
+                outcome=QualifiedCapabilityBindingOutcome.CONFLICT,
+                reason_code=QualifiedCapabilityBindingReasonCode.SUBJECT_MISMATCH,
+                started_at=started_at,
+            )
+
         try:
             ctx = self._context_resolver.resolve_for_qualification(
-                acquisition_request_id=qualification.acquisition_request_id,
+                acquisition_request_id=acquisition_request_id,
                 domain_handoff_reference=subject_ref,
-                strategy_id=qualification.strategy_id,
+                strategy_id=strategy_id,
             )
         except MarketplaceQualifiedToolStageContextResolverNotSupportedError:
             return _terminal(
@@ -214,7 +227,7 @@ class MarketplaceToolQualifiedCapabilityBindingProvider:
             )
 
         completed_at = datetime.now(tz=UTC)
-        target = QualifiedCapabilityExecutionTarget(
+        target = build_marketplace_tool_execution_target(
             execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
                 ctx.handoff_id,
             ),

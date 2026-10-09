@@ -28,6 +28,9 @@ from intergrax.contracts.autonomous_work.ids import (
 from intergrax.contracts.capability_qualification.qualified_capability_binding import (
     QualifiedCapabilityExecutionTarget,
 )
+from intergrax.integrations.contracts.execution_integration_configuration import (
+    ExecutionIntegrationConfigurationAdoption,
+)
 from intergrax.contracts.execution_identity import (
     AttemptId,
     ExecutionId,
@@ -70,6 +73,9 @@ class QualifiedCapabilityExecutionDispatchRequest:
     collaborative_authority_scopes: tuple[str, ...]
     run_id: RunId | None = None
     attempt_id: AttemptId | None = None
+    integration_configuration_adoption: ExecutionIntegrationConfigurationAdoption | None = (
+        None
+    )
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -142,6 +148,15 @@ class QualifiedCapabilityExecutionDispatchRequest:
             raise ValueError(
                 "tenant_id must match admitted_governance_identity.tenant_id",
             )
+        if self.integration_configuration_adoption is not None:
+            if (
+                type(self.integration_configuration_adoption)
+                is not ExecutionIntegrationConfigurationAdoption
+            ):
+                raise TypeError(
+                    "integration_configuration_adoption must be "
+                    "ExecutionIntegrationConfigurationAdoption",
+                )
 
 
 @dataclass(frozen=True, slots=True)

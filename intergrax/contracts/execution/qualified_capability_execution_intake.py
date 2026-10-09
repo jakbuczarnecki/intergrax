@@ -29,6 +29,9 @@ from intergrax.contracts.capability_qualification.qualified_capability_binding i
 from intergrax.contracts.execution.qualified_capability_execution_dispatch import (
     QualifiedCapabilityExecutionDispatchDisposition,
 )
+from intergrax.integrations.contracts.execution_integration_configuration import (
+    ExecutionIntegrationConfigurationAdoption,
+)
 from intergrax.contracts.execution_identity import TaskId, validate_task_id
 
 
@@ -51,6 +54,9 @@ class QualifiedCapabilityExecutionIntakePayload:
     admitted_governance_identity: AdmittedRootGovernanceIdentity
     effective_authority_decision: EffectiveAuthorityDecision
     collaborative_authority_scopes: tuple[str, ...]
+    integration_configuration_adoption: ExecutionIntegrationConfigurationAdoption | None = (
+        None
+    )
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -114,6 +120,15 @@ class QualifiedCapabilityExecutionIntakePayload:
             raise ValueError(
                 "tenant_id must match admitted_governance_identity.tenant_id",
             )
+        if self.integration_configuration_adoption is not None:
+            if (
+                type(self.integration_configuration_adoption)
+                is not ExecutionIntegrationConfigurationAdoption
+            ):
+                raise TypeError(
+                    "integration_configuration_adoption must be "
+                    "ExecutionIntegrationConfigurationAdoption",
+                )
 
 
 @dataclass(frozen=True, slots=True)

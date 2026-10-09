@@ -24,6 +24,8 @@ from intergrax.tools.errors import (
     DynamicToolAcquisitionResolutionError,
 )
 from intergrax.tools.identity import ToolDiscoveryCandidateIdentity, ToolPackageCandidate
+from intergrax.tools.catalog import ToolPackageResolution
+from intergrax.tools.known_capability_realization import ToolPackageResolutionForIdentityPort
 from intergrax.tools.registry.provenance import ToolRuntimeActivationMetadata
 
 
@@ -186,6 +188,99 @@ class QualifiedMarketplaceToolActivationResolver:
             return QualifiedMarketplaceToolActivationResult(
                 outcome=QualifiedMarketplaceToolActivationOutcome.ACTIVATION_FAILURE,
                 reason_detail="activated release does not match staged release",
+            )
+        if acquisition_result.registry_tool_id != logical_tool_id:
+            return QualifiedMarketplaceToolActivationResult(
+                outcome=QualifiedMarketplaceToolActivationOutcome.ACTIVATION_FAILURE,
+                reason_detail="registry_tool_id mismatch",
+            )
+        return QualifiedMarketplaceToolActivationResult(
+            outcome=QualifiedMarketplaceToolActivationOutcome.ACTIVATED_EXACT,
+            registry_tool_id=acquisition_result.registry_tool_id,
+        )
+
+    def ensure_exact_active_for_identity(
+        self,
+        *,
+        capability_identity: CapabilityIdentityKey,
+        execution_request_id: str,
+        package_resolver: ToolPackageResolutionForIdentityPort,
+    ) -> QualifiedMarketplaceToolActivationResult:
+        if self._host_profile_id != self._activation_read.host_profile_id:
+            return QualifiedMarketplaceToolActivationResult(
+                outcome=QualifiedMarketplaceToolActivationOutcome.INTEGRITY_FAILURE,
+                reason_detail="host_profile_id mismatch",
+            )
+        try:
+            resolution = package_resolver.resolve_for_identity(capability_identity)
+        except (LookupError, ValueError, TypeError) as exc:
+            return QualifiedMarketplaceToolActivationResult(
+                outcome=QualifiedMarketplaceToolActivationOutcome.RESOLUTION_FAILURE,
+                reason_detail=str(exc),
+            )
+        package = resolution.package_candidate
+        package_digest = package.package_digest
+        if package_digest is None:
+            return QualifiedMarketplaceToolActivationResult(
+                outcome=QualifiedMarketplaceToolActivationOutcome.INTEGRITY_FAILURE,
+                reason_detail="package_digest missing",
+            )
+        expected = ToolRuntimeActivationMetadata(
+            catalog_source_id=capability_identity.source_id,
+            logical_tool_id=capability_identity.logical_id,
+            package_reference=package.package_reference,
+            version_label=package.package_version,
+            content_digest=package_digest,
+        )
+        logical_tool_id = expected.logical_tool_id
+        if self._activation_read.is_active(logical_tool_id):
+            active_meta = self._activation_read.activation_metadata(logical_tool_id)
+            if active_meta is None:
+                return QualifiedMarketplaceToolActivationResult(
+                    outcome=QualifiedMarketplaceToolActivationOutcome.INTEGRITY_FAILURE,
+                    reason_detail="active tool missing activation metadata",
+                )
+            if not _metadata_matches_release(active_meta, expected):
+                return QualifiedMarketplaceToolActivationResult(
+                    outcome=QualifiedMarketplaceToolActivationOutcome.RELEASE_CONFLICT,
+                    reason_detail="release_identity_conflict",
+                )
+            return QualifiedMarketplaceToolActivationResult(
+                outcome=QualifiedMarketplaceToolActivationOutcome.ALREADY_ACTIVE_EXACT,
+                registry_tool_id=logical_tool_id,
+            )
+        selected_identity = ToolDiscoveryCandidateIdentity(
+            catalog_source_id=expected.catalog_source_id,
+            package=package,
+        )
+        request = DynamicToolAcquisitionRequest(
+            operation_id=f"marketplace-configured-tool-activation:{execution_request_id}",
+            host_profile_id=self._host_profile_id,
+            capability_identity_key=capability_identity,
+            selected_identity=selected_identity,
+        )
+        try:
+            acquisition_result = self._acquisition.acquire(request)
+        except DynamicToolAcquisitionConflictError as exc:
+            return QualifiedMarketplaceToolActivationResult(
+                outcome=QualifiedMarketplaceToolActivationOutcome.RELEASE_CONFLICT,
+                reason_detail=str(exc),
+            )
+        except DynamicToolAcquisitionResolutionError as exc:
+            return QualifiedMarketplaceToolActivationResult(
+                outcome=QualifiedMarketplaceToolActivationOutcome.RESOLUTION_FAILURE,
+                reason_detail=str(exc),
+            )
+        except DynamicToolAcquisitionActivationError as exc:
+            return QualifiedMarketplaceToolActivationResult(
+                outcome=QualifiedMarketplaceToolActivationOutcome.ACTIVATION_FAILURE,
+                reason_detail=str(exc),
+            )
+        active_meta = acquisition_result.activation
+        if not _metadata_matches_release(active_meta, expected):
+            return QualifiedMarketplaceToolActivationResult(
+                outcome=QualifiedMarketplaceToolActivationOutcome.ACTIVATION_FAILURE,
+                reason_detail="activated release does not match resolved package",
             )
         if acquisition_result.registry_tool_id != logical_tool_id:
             return QualifiedMarketplaceToolActivationResult(

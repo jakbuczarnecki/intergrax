@@ -64,6 +64,11 @@ def merge_invocation_into_handler_context(
         merged_extras = dict(registration.extras)
         merged_extras["task_metadata"] = dict(invocation.task_metadata)
         effective = replace(effective, extras=merged_extras)
+    if invocation.configured_relational_store_execution is not None:
+        effective = replace(
+            effective,
+            relational_store_execution=invocation.configured_relational_store_execution,
+        )
     return effective
 
 

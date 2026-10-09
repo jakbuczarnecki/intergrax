@@ -21,7 +21,7 @@
 | **In-scope P0 blocker (R1-R1-R1-R1)** | `R2-P0-CONTROL-PLANE-RISK-AUTHORITY-05` = **RESOLVED IN DESIGN (R1-R1-R1-R1)** |
 | **Independent-audit blockers** | `R2-P0-EFFECTIVE-IDENTITY-PREBUILT-01` · `R2-P0-CONFIGURED-ADOPTION-AUTHORITY-02` = **RESOLVED IN DESIGN (R1)** · `R2-P0-CONCRETE-ADOPTION-ROOT-03` = **RESOLVED IN DESIGN (R1-R1)** · `R2-P0-CONFIGURATION-OPPORTUNITY-TYPING-04` = **RESOLVED IN DESIGN (R1-R1-R1)** · `R2-P0-CONTROL-PLANE-RISK-AUTHORITY-05` = **RESOLVED IN DESIGN (R1-R1-R1-R1)** @ `33076146…` — **P0-FINAL** reconciles normative precedence; **P0-FINAL** + **P0** = **CLOSED / independently accepted** @ `74b93fdf…` |
 | **Production / runtime delta** | **0** (architecture + qualification design only) |
-| **Status** | **TRACE-X-P5-R2-P0-FINAL = CLOSED / independently accepted** · **TRACE-X-P5-R2-P0 = CLOSED / independently accepted** · **accepted reconciliation evidence = `74b93fdf1617e90b19bf42b1658d674e215baba6`** · **TRACE-X-P5-R2-P0-R1-R1-R1-R1 = independently accepted reconciliation @ `33076146…`** · **TRACE-X-P5-R2-P0 initial @ `982f945…` = REJECTED / SUPERSEDED** · **TRACE-X-P5-R2 = CURRENT** · **TRACE-X-P5-R2-P1 = NEXT / REQUIRED / NOT ENTERED** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** · **FRZ-TRC-11 = OPEN** |
+| **Status** | **TRACE-X-P5-R2-P0-FINAL = CLOSED / independently accepted** · **TRACE-X-P5-R2-P0 = CLOSED / independently accepted** · **accepted reconciliation evidence = `74b93fdf1617e90b19bf42b1658d674e215baba6`** · **TRACE-X-P5-R2-P0-R1-R1-R1-R1 = independently accepted reconciliation @ `33076146…`** · **TRACE-X-P5-R2-P0 initial @ `982f945…` = REJECTED / SUPERSEDED** · **TRACE-X-P5-R2-P1 + TRACE-X-P5-R2-P1-R1 = CLOSED / independently accepted** @ `0d2bdbfbd7ca19c118ca786201ba6374baaec2d9` · **TRACE-X-P5-R2-P2 + P2-R1 + P2-R2 = CLOSED / independently accepted** @ `660d9d9cd237ca91a6c4e662389b3ec0cf9fd20c` (P2-R1 @ `e0d52098…`) · **`R2-P2-STATE-X-DELTA-CLASSIFICATION-01` = SATISFIED** @ `660d9d9c…` · **TRACE-X-P5-R2 = CURRENT / P3 NEXT** · **TRACE-X-P5-R2-P3 = NEXT / REQUIRED / NOT ENTERED** · **TRACE-X-P5 = CURRENT / BLOCKED ON R2** · **P5-GAP-04 = IMPLEMENTATION IN PROGRESS** · **FRZ-TRC-11 = OPEN** |
 
 **Steering sources revalidated @ P0-R1-R1-R1-R1 START_HEAD (`925bcae…`):** [`PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md`](../plans/PLATFORM_ENTERPRISE_COMPLETION_ROADMAP.md), [`PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md`](PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md), [`TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md`](TRACE_X_P5_POLICY_PROFILE_CONFIGURATION_PROVENANCE_BASELINE.md), [`TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md`](TRACE_X_P5_R1_POLICY_PROFILE_EXECUTION_ATTRIBUTION_CERTIFICATION.md), [`INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md`](../architecture/INT_CONFIG_REAL_X_EXISTING_CAPABILITY_CONFIGURATION_REALIZATION.md).
 
@@ -1500,8 +1500,8 @@ Independent discovery + registry parity (seed **not** from registry), minimum ga
 | **P0-R1-R1-R1-R1** (§1C.26–§1C.31) | Configuration mutation risk classification ownership |
 | **P0-FINAL** | Final normative reconciliation + canonical tracker sync (**CLOSED / independently accepted** @ `74b93fdf…`) |
 | **P0** | Architecture lock **CLOSED / independently accepted** → **P1** next |
-| **P1** | Typed opportunity + risk policy + adoption/provenance contracts + validation |
-| **P2** | Pinning store port + in-memory + durable adapters |
+| **P1** | Typed opportunity + risk policy + adoption/provenance contracts + validation (**CLOSED / independently accepted** @ `0d2bdbfbd7ca19c118ca786201ba6374baaec2d9`; **P1-R1** runtime strong-typing) |
+| **P2** | **Durable Opportunity & Provenance State** — pinning/persistence contracts; durable Opportunity + execution-scoped provenance; tenant/exact identity; conflict semantics; crash/restart; **STATE-X closed-world delta classification** (`R2-P2-STATE-X-DELTA-CLASSIFICATION-01` mandatory exit); no duplicate truth owner; **no** ambient latest stores |
 | **P3** | Execution-bound resolution wrapper + host composition wiring |
 | **P4** | Reconstructor projection + diagnostic injection |
 | **P5** | Closed-world qualification gates + adversarial certification |
@@ -1623,8 +1623,14 @@ Logs: `.tmp/session/trace-x-p5-r2-p0-final/pytest-trace.log`, `pytest-int-config
 | TRACE-X-P5-R2-P0-R1-R1 | remediation evidence @ `305ac4a…` (superseded) |
 | TRACE-X-P5-R2-P0-R1 | remediation evidence @ `6b5b5f2…` (superseded) |
 | TRACE-X-P5-R2-P0 initial | **REJECTED** @ `982f945…` |
-| TRACE-X-P5-R2 | **CURRENT** |
-| TRACE-X-P5-R2-P1 | **NEXT / REQUIRED / NOT ENTERED** |
+| TRACE-X-P5-R2 | **CURRENT / P3 NEXT** |
+| TRACE-X-P5-R2-P1 | **CLOSED / independently accepted** @ `0d2bdbfbd7ca19c118ca786201ba6374baaec2d9` |
+| TRACE-X-P5-R2-P1-R1 | **CLOSED / independently accepted** @ `0d2bdbfbd7ca19c118ca786201ba6374baaec2d9` |
+| TRACE-X-P5-R2-P2 | **CLOSED / independently accepted** @ `660d9d9cd237ca91a6c4e662389b3ec0cf9fd20c` |
+| TRACE-X-P5-R2-P2-R1 | **CLOSED / independently accepted** @ `e0d5209825de532363b62f0e1e58f53e1ac30e47` |
+| TRACE-X-P5-R2-P2-R2 | **CLOSED / independently accepted** @ `660d9d9cd237ca91a6c4e662389b3ec0cf9fd20c` |
+| TRACE-X-P5-R2-P3 | **NEXT / REQUIRED / NOT ENTERED** |
+| R2-P2-STATE-X-DELTA-CLASSIFICATION-01 | **SATISFIED / independently accepted** @ `660d9d9cd237ca91a6c4e662389b3ec0cf9fd20c` |
 | TRACE-X-P5 | **CURRENT / BLOCKED ON R2** |
-| P5-GAP-04 | **ARCHITECTURALLY SPECIFIED / IMPLEMENTATION OPEN** |
+| P5-GAP-04 | **IMPLEMENTATION IN PROGRESS** |
 | FRZ-TRC-11 | **OPEN** |

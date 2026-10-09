@@ -12,10 +12,31 @@ from typing import NewType, Protocol, runtime_checkable
 from intergrax.contracts.control_plane_mutation import ControlPlaneMutationRisk
 from intergrax.integrations.contracts.base import IntegrationCategory
 from intergrax.integrations.contracts.existing_capability_configuration import (
+    ExistingCapabilityConfigurationCatalogCorrelationKey,
     IntegrationConfigurationPayload,
 )
 
 ConfigurationOpportunityRef = NewType("ConfigurationOpportunityRef", str)
+
+
+def derive_configuration_catalog_correlation_key_from_opportunity(
+    opportunity: ExistingCapabilityConfigurationOpportunity,
+) -> ExistingCapabilityConfigurationCatalogCorrelationKey:
+    return ExistingCapabilityConfigurationCatalogCorrelationKey(
+        integration_category=opportunity.integration_category,
+        provider_id=opportunity.provider_id,
+        resource_scope=opportunity.resource_scope,
+    )
+
+
+def derive_configuration_catalog_correlation_key_from_opportunity_facts(
+    facts: ExistingCapabilityConfigurationOpportunityFacts,
+) -> ExistingCapabilityConfigurationCatalogCorrelationKey:
+    return ExistingCapabilityConfigurationCatalogCorrelationKey(
+        integration_category=facts.integration_category,
+        provider_id=facts.provider_id,
+        resource_scope=facts.resource_scope,
+    )
 
 
 class ExistingCapabilityConfigurationOpportunityLookupFailureReason(StrEnum):
@@ -25,6 +46,10 @@ class ExistingCapabilityConfigurationOpportunityLookupFailureReason(StrEnum):
     AMBIGUOUS = "AMBIGUOUS"
     INVALID = "INVALID"
     FINGERPRINT_MISMATCH = "FINGERPRINT_MISMATCH"
+    CONFLICT = "CONFLICT"
+    CORRUPT_RECORD = "CORRUPT_RECORD"
+    UNSUPPORTED_SCHEMA_VERSION = "UNSUPPORTED_SCHEMA_VERSION"
+    UNSUPPORTED_PAYLOAD_TYPE = "UNSUPPORTED_PAYLOAD_TYPE"
 
 
 class ExistingCapabilityConfigurationOpportunityLookupError(Exception):
@@ -226,6 +251,20 @@ class ExistingCapabilityConfigurationOpportunityReadPort(Protocol):
 
 
 @runtime_checkable
+class ExistingCapabilityConfigurationOpportunityStore(
+    ExistingCapabilityConfigurationOpportunityReadPort,
+    Protocol,
+):
+    """Integrations-owned durable opportunity store — immutable first-write semantics."""
+
+    def persist(
+        self,
+        opportunity: ExistingCapabilityConfigurationOpportunity,
+    ) -> None:
+        ...
+
+
+@runtime_checkable
 class ExistingCapabilityConfigurationOpportunityProvider(Protocol):
     """Plugin supplies factual candidates — Integrations owns final opportunity and risk."""
 
@@ -250,6 +289,9 @@ class ExistingCapabilityConfigurationMutationRiskPolicy(Protocol):
 
 __all__ = [
     "ConfigurationOpportunityRef",
+    "ExistingCapabilityConfigurationCatalogCorrelationKey",
+    "derive_configuration_catalog_correlation_key_from_opportunity",
+    "derive_configuration_catalog_correlation_key_from_opportunity_facts",
     "ExistingCapabilityConfigurationMutationRiskPolicy",
     "ExistingCapabilityConfigurationOpportunity",
     "ExistingCapabilityConfigurationOpportunityFacts",
@@ -257,6 +299,7 @@ __all__ = [
     "ExistingCapabilityConfigurationOpportunityLookupFailureReason",
     "ExistingCapabilityConfigurationOpportunityProvider",
     "ExistingCapabilityConfigurationOpportunityReadPort",
+    "ExistingCapabilityConfigurationOpportunityStore",
     "validate_configuration_opportunity_ref",
     "validate_existing_capability_configuration_opportunity",
     "validate_existing_capability_configuration_opportunity_facts",

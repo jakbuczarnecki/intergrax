@@ -231,10 +231,18 @@ def test_custom_binding_handler_without_aw_changes() -> None:
             self.runtime_execution_calls = 0
 
         @property
-        def binding_provider_id(self) -> str:
+        def execution_handler_id(self) -> str:
             return "custom.provider.v1"
 
-        def dispatch_once(self, request, *, run_id, attempt_id, execution_id):
+        def dispatch_once(
+            self,
+            request,
+            *,
+            run_id,
+            attempt_id,
+            execution_id,
+            integration_configuration_adoption=None,
+        ):
             self.runtime_execution_calls += 1
             from intergrax.contracts.execution.qualified_capability_execution_intake import (
                 QualifiedCapabilityExecutionDelegateResult,
@@ -266,6 +274,7 @@ def test_custom_binding_handler_without_aw_changes() -> None:
     target = QualifiedCapabilityExecutionTarget(
         execution_target_reference="custom:target:1",
         binding_provider_id="custom.provider.v1",
+        execution_handler_id="custom.provider.v1",
         qualified_subject_reference=_subject().qualified_subject_reference,
     )
     WorkerQualifiedCapabilityExecutionEngineAdapter(dispatch=dispatch).execute(
@@ -298,6 +307,11 @@ def test_production_wiring_port_requires_active_execution_id(tmp_path: Path) -> 
         mint_execution_id,
         mint_run_id,
         reset_active_execution_identity,
+    )
+    from intergrax.runtime.governance.active_execution_governance_identity import (
+        ActiveExecutionGovernanceIdentity,
+        bind_active_execution_governance_identity,
+        reset_active_execution_governance_identity,
     )
     from intergrax.runtime.codecraft.ownership import CodeCraftSessionOwnership
     from intergrax.runtime.codecraft.session_manager import CodeCraftSessionManager
@@ -361,6 +375,13 @@ def test_production_wiring_port_requires_active_execution_id(tmp_path: Path) -> 
         attempt_id=attempt_id,
         execution_id=execution_id,
     )
+    gov_token = bind_active_execution_governance_identity(
+        ActiveExecutionGovernanceIdentity(
+            tenant_id=_TENANT,
+            workspace_id="workspace-r4",
+            principal_id="principal-r4",
+        ),
+    )
     try:
         result = port.execute(
             CodeCraftBoundCapabilityExecutionRequest(
@@ -373,6 +394,7 @@ def test_production_wiring_port_requires_active_execution_id(tmp_path: Path) -> 
             ),
         )
     finally:
+        reset_active_execution_governance_identity(gov_token)
         reset_active_execution_identity(token)
     assert result.outcome is CodeCraftBoundCapabilityExecutionOutcome.SUCCEEDED
     assert port.runtime_execution_calls == 1

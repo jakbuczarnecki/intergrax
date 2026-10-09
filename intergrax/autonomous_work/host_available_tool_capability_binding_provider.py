@@ -55,6 +55,7 @@ class HostAvailableToolCapabilityBindingProvider:
                 request.capability_identity.sort_key,
             ),
             binding_provider_id=self.provider_id,
+            execution_handler_id=self.provider_id,
             qualified_subject_reference=subject_ref,
         )
         return HostAvailableCapabilityBindingResult(

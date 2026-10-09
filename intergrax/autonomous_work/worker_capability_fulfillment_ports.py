@@ -25,6 +25,12 @@ from intergrax.contracts.autonomous_work.worker_qualified_capability_resume impo
 from intergrax.contracts.capability_acquisition.request import (
     CapabilityRealizationRequest,
 )
+from intergrax.autonomous_work.worker_configured_capability_execution_fulfillment_service import (
+    WorkerConfiguredCapabilityExecutionFulfillmentPort,
+)
+from intergrax.contracts.autonomous_work.worker_configured_capability_fulfillment import (
+    WorkerConfiguredCapabilityFulfillmentPort,
+)
 from intergrax.contracts.capability_acquisition.result import (
     CapabilityRealizationResult,
 )
@@ -100,5 +106,7 @@ __all__ = [
     "WorkerCapabilityDirectReuseFulfillmentPort",
     "WorkerCapabilityFulfillmentPort",
     "WorkerCapabilityRecoveryPort",
+    "WorkerConfiguredCapabilityExecutionFulfillmentPort",
+    "WorkerConfiguredCapabilityFulfillmentPort",
     "WorkerQualifiedCapabilityResumePort",
 ]

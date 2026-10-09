@@ -479,6 +479,24 @@ EXPLICIT_MECHANISM_CLASSIFICATIONS: dict[str, ExplicitMechanismClassification] =
         owner_stage="MARKETPLACE-X",
         evidence=("intergrax/contracts/tools/qualified_marketplace_tool_execution_intent.py"),
     ),
+    "class:intergrax/contracts/tools/qualified_marketplace_tool_execution_intent.py::MarketplaceToolExecutionIntentRepository": ExplicitMechanismClassification(
+        classification="outside_state_x",
+        family_id=None,
+        semantic_owner="source-neutral marketplace tool execution intent repository SPI; intent ledger not STATE-X",
+        composition_owner="intergrax/contracts/tools",
+        durability="N/A",
+        canonical_truth=False,
+        tenant_semantics="N/A",
+        identity_semantics="N/A",
+        authority_semantics="cannot become execution/recovery truth",
+        atomicity_semantics="N/A",
+        stale_conflict_behavior="N/A",
+        corruption_behavior="N/A",
+        restart_restore_behavior="N/A",
+        backup_restore_responsibility="N/A",
+        owner_stage="MARKETPLACE-X",
+        evidence=("intergrax/contracts/tools/qualified_marketplace_tool_execution_intent.py"),
+    ),
     "class:intergrax/runtime/adaptive/bandit_state_store.py::BanditStateStore": ExplicitMechanismClassification(
         classification="outside_state_x",
         family_id=None,
@@ -1756,6 +1774,76 @@ EXPLICIT_MECHANISM_CLASSIFICATIONS: dict[str, ExplicitMechanismClassification] =
         backup_restore_responsibility="N/A",
         owner_stage="APPLICATION",
         evidence=("intergrax/applications/_shared/profile_resolution/activation_store.py",),
+    ),
+    "path:intergrax/applications/_shared/integrations/persistence.py": ExplicitMechanismClassification(
+        classification="outside_state_x",
+        family_id=None,
+        semantic_owner=(
+            "Integrations semantic contracts own opportunity/provenance truth; "
+            "intergrax/applications/_shared/integrations/persistence.py is composition-only provider"
+        ),
+        composition_owner="intergrax/applications/_shared/integrations/persistence.py",
+        durability="provider-qualified durable adapters + explicit in-memory reference stores",
+        canonical_truth=False,
+        tenant_semantics="tenant_id required on every read/write; KV tenant partition + decoded tenant validation",
+        identity_semantics=(
+            "opportunity: tenant_id+configuration_ref; "
+            "provenance: tenant_id+ExecutionId+IntegrationConfigurationSubject"
+        ),
+        authority_semantics="stores immutable facts only; cannot mint governance or execution authority",
+        atomicity_semantics=(
+            "Opportunity: single immutable CAS / put_if_absent; "
+            "Document provenance: single subject record + partition-query discovery; "
+            "KV provenance: idempotent index/discovery marker then immutable subject-record CAS "
+            "(no distributed transaction between index and record); incomplete marker/record state "
+            "fails closed on read_all; idempotent pin retry converges/repairs including legacy "
+            "record-without-index orphans"
+        ),
+        stale_conflict_behavior="identical re-write idempotent; conflicting immutable content fail closed",
+        corruption_behavior="typed CORRUPT_RECORD / UNSUPPORTED_SCHEMA_VERSION on decode",
+        restart_restore_behavior=(
+            "new adapter instance over same backing reads identical typed records; "
+            "KV partial pin (index without record) fails closed until retry completes record"
+        ),
+        backup_restore_responsibility="BACKEND/OPERATOR WITH PLATFORM CONSISTENCY",
+        owner_stage="TRACE-X-P5-R2-P2",
+        evidence=("intergrax/applications/_shared/integrations/persistence.py",),
+    ),
+    "class:intergrax/applications/_shared/integrations/persistence.py::InMemoryExistingCapabilityConfigurationOpportunityStore": ExplicitMechanismClassification(
+        classification="non_durable_reference_only",
+        family_id=None,
+        semantic_owner="Integrations ExistingCapabilityConfigurationOpportunityStore (reference adapter)",
+        composition_owner="intergrax/applications/_shared/integrations/persistence.py",
+        durability="in-process / test reference",
+        canonical_truth=False,
+        tenant_semantics="tenant_id+configuration_ref in-memory key",
+        identity_semantics="tenant_id+configuration_ref",
+        authority_semantics="non-authoritative reference only",
+        atomicity_semantics="single-process dict",
+        stale_conflict_behavior="conflict fail closed",
+        corruption_behavior="N/A",
+        restart_restore_behavior="not production durable truth",
+        backup_restore_responsibility="NOT_DURABLE_REFERENCE_ONLY",
+        owner_stage="TRACE-X-P5-R2-P2",
+        evidence=("InMemoryExistingCapabilityConfigurationOpportunityStore",),
+    ),
+    "class:intergrax/applications/_shared/integrations/persistence.py::InMemoryExecutionIntegrationConfigurationPinningStore": ExplicitMechanismClassification(
+        classification="non_durable_reference_only",
+        family_id=None,
+        semantic_owner="Integrations ExecutionIntegrationConfigurationPinningStore (reference adapter)",
+        composition_owner="intergrax/applications/_shared/integrations/persistence.py",
+        durability="in-process / test reference",
+        canonical_truth=False,
+        tenant_semantics="tenant_id+ExecutionId+subject tuple key",
+        identity_semantics="tenant_id+ExecutionId+IntegrationConfigurationSubject",
+        authority_semantics="non-authoritative reference only",
+        atomicity_semantics="single-process dict",
+        stale_conflict_behavior="conflict fail closed",
+        corruption_behavior="N/A",
+        restart_restore_behavior="not production durable truth",
+        backup_restore_responsibility="NOT_DURABLE_REFERENCE_ONLY",
+        owner_stage="TRACE-X-P5-R2-P2",
+        evidence=("InMemoryExecutionIntegrationConfigurationPinningStore",),
     ),
     "path:intergrax/applications/_shared/profile_resolution/persistence.py": ExplicitMechanismClassification(
         classification="outside_state_x",

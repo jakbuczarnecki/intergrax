@@ -30,6 +30,9 @@ from intergrax.runtime.codecraft.qualified_capability_binding_provider import (
 from intergrax.runtime.execution.suspended_operation.pause_required import (
     ExecutionSuspendedWorkPauseRequired,
 )
+from intergrax.integrations.contracts.execution_integration_configuration import (
+    ExecutionIntegrationConfigurationAdoption,
+)
 from intergrax.runtime.execution.qualified_capability_execution_handlers import (
     QualifiedCapabilityExecutionBindingHandler,
 )
@@ -50,7 +53,7 @@ class CodeCraftQualifiedCapabilityExecutionHandler(
         self._side_effects = side_effect_recorder
 
     @property
-    def binding_provider_id(self) -> str:
+    def execution_handler_id(self) -> str:
         return CODECRAFT_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID
 
     def dispatch_once(
@@ -60,7 +63,15 @@ class CodeCraftQualifiedCapabilityExecutionHandler(
         run_id: RunId,
         attempt_id: AttemptId,
         execution_id: ExecutionId,
+        integration_configuration_adoption: (
+            ExecutionIntegrationConfigurationAdoption | None
+        ) = None,
     ) -> QualifiedCapabilityExecutionDelegateResult:
+        if integration_configuration_adoption is not None:
+            return QualifiedCapabilityExecutionDelegateResult(
+                disposition=QualifiedCapabilityExecutionDispatchDisposition.FAILED,
+                reason_detail="integration_configuration_adoption_unsupported",
+            )
         craft_id = parse_codecraft_execution_target_reference(
             request.execution_target.execution_target_reference,
         )

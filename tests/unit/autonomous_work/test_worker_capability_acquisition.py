@@ -59,6 +59,8 @@ from intergrax.contracts.autonomous_work.capability_acquisition import (
     operation_allowed,
     derive_worker_capability_candidate_id,
 )
+from intergrax.contracts.capability_catalog import CapabilityKind, CapabilitySourceKind
+from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
 from intergrax.contracts.autonomous_work.obstacle_recovery import (
     RecoveryDecisionReasonCode,
     RecoveryStrategy,
@@ -367,6 +369,12 @@ def test_existing_configuration_selected() -> None:
         evidence_refs=(_EVIDENCE,),
         discovered_at=_NOW,
         configuration_ref="workspace/config/csv_parser",
+        capability_identity=CapabilityIdentityKey(
+            kind=CapabilityKind.TOOL,
+            source_id="integrations",
+            source_kind=CapabilitySourceKind.LOCAL,
+            logical_id="csv_parser",
+        ),
     )
     service = WorkerCapabilityAcquisitionDecisionService(
         profile_resolver=StaticWorkerCapabilityProfileResolver(

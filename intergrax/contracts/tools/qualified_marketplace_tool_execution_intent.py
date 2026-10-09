@@ -11,6 +11,9 @@ from typing import Final, Literal, Protocol, runtime_checkable
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 from intergrax.contracts.capability_catalog._validation import require_non_empty_text
+from intergrax.contracts.tools.marketplace_tool_execution_intent import (
+    MarketplaceToolExecutionIntent,
+)
 
 SCHEMA_QUALIFIED_MARKETPLACE_TOOL_EXECUTION_INTENT_V1: Final = (
     "qualified_marketplace_tool_execution_intent.v1"
@@ -85,27 +88,32 @@ class QualifiedMarketplaceToolExecutionIntent(BaseModel):
 
 
 @runtime_checkable
-class QualifiedMarketplaceToolExecutionIntentRepository(Protocol):
-    """SPI for durable pre-EE marketplace tool execution intent."""
+class MarketplaceToolExecutionIntentRepository(Protocol):
+    """SPI for durable pre-EE marketplace tool execution intent (source-neutral)."""
 
     def record(
         self,
-        intent: QualifiedMarketplaceToolExecutionIntent,
+        intent: MarketplaceToolExecutionIntent,
     ) -> QualifiedMarketplaceToolExecutionIntentWriteResult: ...
 
     def get(
         self,
         *,
         execution_request_id: str,
-    ) -> QualifiedMarketplaceToolExecutionIntent | None: ...
+    ) -> MarketplaceToolExecutionIntent | None: ...
+
+
+QualifiedMarketplaceToolExecutionIntentRepository = MarketplaceToolExecutionIntentRepository
 
 
 __all__ = [
+    "MarketplaceToolExecutionIntentRepository",
     "SCHEMA_QUALIFIED_MARKETPLACE_TOOL_EXECUTION_INTENT_V1",
     "QualifiedMarketplaceToolExecutionIntent",
     "QualifiedMarketplaceToolExecutionIntentConflictError",
     "QualifiedMarketplaceToolExecutionIntentIntegrityError",
     "QualifiedMarketplaceToolExecutionIntentRepository",
+    "MarketplaceToolExecutionIntent",
     "QualifiedMarketplaceToolExecutionIntentUnavailableError",
     "QualifiedMarketplaceToolExecutionIntentWriteOutcome",
     "QualifiedMarketplaceToolExecutionIntentWriteResult",

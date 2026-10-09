@@ -28,8 +28,12 @@ from intergrax.contracts.tools.marketplace_qualified_capability import (
     MarketplaceQualifiedToolStageIntegrityError,
     MarketplaceQualifiedToolStageUnavailableError,
 )
+from intergrax.contracts.capability_catalog.identity_key import CapabilityIdentityKey
+from intergrax.contracts.tools.marketplace_tool_execution_intent import (
+    MarketplaceToolExecutionIntent,
+    UcaMarketplaceToolExecutionProvenance,
+)
 from intergrax.contracts.tools.qualified_marketplace_tool_execution_intent import (
-    QualifiedMarketplaceToolExecutionIntent,
     QualifiedMarketplaceToolExecutionIntentIntegrityError,
     QualifiedMarketplaceToolExecutionIntentUnavailableError,
     QualifiedMarketplaceToolExecutionIntentWriteOutcome,
@@ -47,6 +51,10 @@ from intergrax.tools.host_lifecycle import ToolHostLifecycleService
 from intergrax.tools.marketplace_qualified_capability_binding_provider import (
     MARKETPLACE_TOOL_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID,
     execution_target_reference_for_marketplace_qualified_tool,
+)
+from intergrax.tools.marketplace_tool_execution_routing import (
+    MARKETPLACE_TOOL_EXECUTION_HANDLER_ID,
+    build_marketplace_tool_execution_target,
 )
 from intergrax.tools.marketplace_qualified_capability_execution_handler import (
     MarketplaceToolQualifiedCapabilityExecutionHandler,
@@ -83,17 +91,25 @@ _EXECUTION_ID = ExecutionId("execution_" + "c" * 24)
 _HOST = "host-gates-me14"
 
 
-def _intent(**overrides) -> QualifiedMarketplaceToolExecutionIntent:
-    base = QualifiedMarketplaceToolExecutionIntent(
+def _intent(**overrides) -> MarketplaceToolExecutionIntent:
+    release = _release()
+    subject_ref = "qualified-capability-subject:q:domain_handoff_reference:h"
+    base = MarketplaceToolExecutionIntent(
         execution_request_id="exec-req-1",
         binding_operation_id="bind-1",
-        resume_operation_id="resume-1",
         tenant_id="tenant-1",
         task_id=str(_TASK_ID),
         worker_need_id="worker-need-1",
-        qualified_subject_reference="qualified-capability-subject:q:domain_handoff_reference:h",
-        handoff_id="handoff-1",
+        subject_reference=subject_ref,
+        capability_identity=CapabilityIdentityKey.from_discovery_identity(
+            release.discovery,
+        ),
         selected_operation="invoke",
+        provenance=UcaMarketplaceToolExecutionProvenance(
+            handoff_id="handoff-1",
+            resume_operation_id="resume-1",
+            uca_qualified_subject_reference=subject_ref,
+        ),
     )
     if overrides:
         return base.model_copy(update=overrides)
@@ -101,7 +117,7 @@ def _intent(**overrides) -> QualifiedMarketplaceToolExecutionIntent:
 
 
 def _target(**overrides) -> QualifiedCapabilityExecutionTarget:
-    base = QualifiedCapabilityExecutionTarget(
+    base = build_marketplace_tool_execution_target(
         execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
             "handoff-1",
         ),
@@ -175,7 +191,7 @@ class _RecordingInvocationResolver:
 
 def _handler_with(
     *,
-    intent: QualifiedMarketplaceToolExecutionIntent | None,
+    intent: MarketplaceToolExecutionIntent | None,
     intent_repo=None,
     stage_repo=None,
     activation: _CountingActivation | QualifiedMarketplaceToolActivationResolver | None = None,
@@ -188,21 +204,24 @@ def _handler_with(
     _CountingActivation | QualifiedMarketplaceToolActivationResolver,
 ]:
     store = InMemoryDocumentStore()
+    stage_repository = stage_repo or DocumentStoreMarketplaceQualifiedToolStageRepository(store)
     intent_repository = intent_repo or DocumentStoreQualifiedMarketplaceToolExecutionIntentRepository(
         store,
+        stage_repository=stage_repository,
     )
-    stage_repository = stage_repo or DocumentStoreMarketplaceQualifiedToolStageRepository(store)
     if intent is not None and intent_repo is None:
-        intent_repository.record(intent)
         from intergrax.contracts.marketplace.handoff_traceability import (
             CapabilityHandoffConsumerTarget,
         )
 
+        release = _release()
+        provenance = intent.provenance
+        assert isinstance(provenance, UcaMarketplaceToolExecutionProvenance)
         stage_repository.stage(
             MarketplaceQualifiedToolStage(
-                handoff_id=intent.handoff_id,
+                handoff_id=provenance.handoff_id,
                 tenant_id=intent.tenant_id,
-                selected_release=_release(),
+                selected_release=release,
                 discovery_correlation_id="discovery-1",
                 selection_id="selection-1",
                 consumer_target=CapabilityHandoffConsumerTarget.TOOL_DOMAIN,
@@ -210,6 +229,7 @@ def _handler_with(
                 recorded_at=datetime(2026, 3, 26, 12, 0, tzinfo=UTC),
             ),
         )
+        intent_repository.record(intent)
     activation_resolver = activation or _CountingActivation()
     inv = invoker or _Invoker()
     handler = MarketplaceToolQualifiedCapabilityExecutionHandler(
@@ -244,9 +264,9 @@ def _me14_activation_resolver() -> QualifiedMarketplaceToolActivationResolver:
     )
 
 
-def test_wrong_binding_provider_id() -> None:
+def test_wrong_execution_handler_id() -> None:
     handler, invoker, activation = _handler_with(intent=_intent())
-    target = _target(binding_provider_id="wrong.provider")
+    target = _target(execution_handler_id="wrong.handler.v1")
     result = handler.dispatch_once(
         _dispatch(target),
         run_id=_RUN_ID,
@@ -545,7 +565,7 @@ def test_active_different_release_failed_no_tool_runtime() -> None:
         invocation_resolver=DefaultQualifiedToolInvocationResolver(),
         catalog_tool_invoker=invoker,
     )
-    target = QualifiedCapabilityExecutionTarget(
+    target = build_marketplace_tool_execution_target(
         execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
             handoff_id,
         ),

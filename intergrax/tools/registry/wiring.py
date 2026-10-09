@@ -27,7 +27,13 @@ from intergrax.integrations.contracts.message_bus import MessageBus
 from intergrax.integrations.contracts.notification_channel import NotificationChannel
 from intergrax.integrations.contracts.object_storage import ObjectStorage
 from intergrax.integrations.contracts.observability_backend import ObservabilityBackend
+from intergrax.integrations.contracts.configured_relational_store_execution import (
+    ConfiguredRelationalStoreExecutionPort,
+)
 from intergrax.integrations.contracts.relational_store import RelationalStore
+from intergrax.integrations.relational_store_execution_adapter import (
+    RelationalStoreExecutionAdapter,
+)
 from intergrax.integrations.contracts.sandbox_host import SandboxHostBackend
 from intergrax.integrations.contracts.search_provider import SearchProvider
 from intergrax.tools.providers.websearch.executor_contract import WebSearchQueryExecutor
@@ -80,6 +86,7 @@ class ToolWiringContext:
     )
     object_storage: ObjectStorage | None = None
     relational_store: RelationalStore | None = None
+    relational_store_execution: ConfiguredRelationalStoreExecutionPort | None = None
     document_store: DocumentStore | None = None
     source_operation_coordinator: SourceOperationCoordinator | None = None
     browser_automation: BrowserAutomation | None = None
@@ -198,6 +205,13 @@ class ToolWiringContext:
             except Exception:
                 continue
 
+        relational_store = _optional(IntegrationCategory.RELATIONAL_STORE)
+        relational_store_execution = (
+            RelationalStoreExecutionAdapter(relational_store)
+            if relational_store is not None
+            else None
+        )
+
         return cls(
             issue_tracker=_optional(IntegrationCategory.ISSUE_TRACKER),
             search_provider=_optional(IntegrationCategory.SEARCH_PROVIDER),
@@ -207,7 +221,8 @@ class ToolWiringContext:
             observability_backend=primary_obs,
             observability_backends=obs_backends,
             object_storage=_optional(IntegrationCategory.OBJECT_STORAGE),
-            relational_store=_optional(IntegrationCategory.RELATIONAL_STORE),
+            relational_store=relational_store,
+            relational_store_execution=relational_store_execution,
             document_store=_optional(IntegrationCategory.DOCUMENT_STORE),
             browser_automation=_optional(IntegrationCategory.BROWSER_AUTOMATION),
             document_parser=_optional(IntegrationCategory.DOCUMENT_PARSER),

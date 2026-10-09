@@ -26,6 +26,21 @@ from intergrax.autonomous_work.worker_capability_fulfillment_ports import (
     WorkerCapabilityDirectReuseFulfillmentPort,
     WorkerCapabilityRecoveryPort,
 )
+from intergrax.autonomous_work.worker_capability_fulfillment_ports import (
+    WorkerConfiguredCapabilityExecutionFulfillmentPort,
+)
+from intergrax.autonomous_work.worker_configured_capability_fulfillment_service import (
+    WorkerConfiguredCapabilityFulfillmentService,
+)
+from intergrax.autonomous_work.principal_binding_resolver import (
+    WorkerPrincipalBindingResolver,
+)
+from intergrax.integrations.contracts.existing_capability_configuration import (
+    ExistingCapabilityConfigurationRealizationPort,
+)
+from intergrax.integrations.contracts.existing_capability_configuration_opportunity import (
+    ExistingCapabilityConfigurationOpportunityReadPort,
+)
 from intergrax.autonomous_work.worker_qualified_capability_resume_composition import (
     build_worker_qualified_capability_resume_coordinator,
 )
@@ -98,6 +113,9 @@ def build_worker_recovery_governed_fulfillment_wiring(
     principal_binding_repository: WorkerPrincipalBindingRepository,
     capability_profile_resolver: WorkerCapabilityProfileResolver,
     realization: CapabilityRealizationCoordinatorPort | None = None,
+    opportunity_read: ExistingCapabilityConfigurationOpportunityReadPort | None = None,
+    configuration_realization: ExistingCapabilityConfigurationRealizationPort | None = None,
+    configured_execution: WorkerConfiguredCapabilityExecutionFulfillmentPort | None = None,
     authority_admission: WorkerExecutionAdmissionPort | None = None,
 ) -> WorkerRecoveryGovernedFulfillmentWiring:
     """Wire production builder, sync/async fulfillment, governed dispatch, and resume coordinator."""
@@ -123,11 +141,22 @@ def build_worker_recovery_governed_fulfillment_wiring(
         async_execution=async_execution,
         authority_admission=authority_admission,
     )
+    configured_fulfillment = None
+    if opportunity_read is not None and configuration_realization is not None:
+        configured_fulfillment = WorkerConfiguredCapabilityFulfillmentService(
+            opportunity_read=opportunity_read,
+            realization=configuration_realization,
+            principal_binding_resolver=WorkerPrincipalBindingResolver(
+                principal_binding_repository,
+            ),
+        )
     fulfillment_coordinator = build_worker_capability_fulfillment_coordinator(
         recovery=recovery,
         resume=resume_coordinator,
         direct_reuse=direct_reuse,
         realization=realization,
+        configured_fulfillment=configured_fulfillment,
+        configured_execution=configured_execution,
     )
     request_builder = WorkerRecoveryCapabilityFulfillmentRequestBuilder(
         episode_context=episode_context,

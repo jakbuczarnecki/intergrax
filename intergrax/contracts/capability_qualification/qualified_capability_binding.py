@@ -26,8 +26,8 @@ SCHEMA_QUALIFIED_CAPABILITY_BINDING_REQUEST_V1: Final = (
 SCHEMA_QUALIFIED_CAPABILITY_BINDING_RESULT_V1: Final = (
     "qualified_capability_binding_result.v1"
 )
-SCHEMA_QUALIFIED_CAPABILITY_EXECUTION_TARGET_V1: Final = (
-    "qualified_capability_execution_target.v1"
+SCHEMA_QUALIFIED_CAPABILITY_EXECUTION_TARGET_V2: Final = (
+    "qualified_capability_execution_target.v2"
 )
 _NON_EMPTY = Field(min_length=1)
 
@@ -76,11 +76,12 @@ class QualifiedCapabilityExecutionTarget(BaseModel):
 
     model_config = ConfigDict(extra="forbid", frozen=True)
 
-    schema_version: Literal["qualified_capability_execution_target.v1"] = (
-        SCHEMA_QUALIFIED_CAPABILITY_EXECUTION_TARGET_V1
+    schema_version: Literal["qualified_capability_execution_target.v2"] = (
+        SCHEMA_QUALIFIED_CAPABILITY_EXECUTION_TARGET_V2
     )
     execution_target_reference: str = _NON_EMPTY
     binding_provider_id: str = _NON_EMPTY
+    execution_handler_id: str = _NON_EMPTY
     qualified_subject_reference: str = _NON_EMPTY
 
     @model_validator(mode="after")
@@ -218,7 +219,7 @@ class QualifiedCapabilityBindingProvider(Protocol):
 __all__ = [
     "SCHEMA_QUALIFIED_CAPABILITY_BINDING_REQUEST_V1",
     "SCHEMA_QUALIFIED_CAPABILITY_BINDING_RESULT_V1",
-    "SCHEMA_QUALIFIED_CAPABILITY_EXECUTION_TARGET_V1",
+    "SCHEMA_QUALIFIED_CAPABILITY_EXECUTION_TARGET_V2",
     "QualifiedCapabilityBindingOutcome",
     "QualifiedCapabilityBindingProvider",
     "QualifiedCapabilityBindingReasonCode",

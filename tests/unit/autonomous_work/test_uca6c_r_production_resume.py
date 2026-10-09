@@ -52,6 +52,10 @@ from intergrax.contracts.capability_qualification.qualification_reason_code impo
 from intergrax.contracts.capability_qualification.qualification_result import (
     CapabilityQualificationResult,
 )
+from intergrax.contracts.capability_qualification.qualification_subject import (
+    CapabilityQualificationSubjectKind,
+    derive_acquisition_subject_integrity_fingerprint,
+)
 from intergrax.contracts.capability_qualification.qualified_capability_binding import (
     QualifiedCapabilityBindingOutcome,
     QualifiedCapabilityBindingRequest,
@@ -159,6 +163,16 @@ def _subject(*, artifact: str = _ARTIFACT) -> QualifiedCapabilitySubject:
 
 
 def _qualification(*, artifact: str = _ARTIFACT) -> CapabilityQualificationResult:
+    subject_fingerprint = derive_acquisition_subject_integrity_fingerprint(
+        acquisition_request_id=_ACQ_REQUEST,
+        gap_id=_GAP,
+        strategy_id="codecraft.synthesis.v1",
+        artifact_reference=artifact,
+        domain_handoff_reference=None,
+        correlation_id=None,
+        causation_id=None,
+    )
+    subject_kind = CapabilityQualificationSubjectKind.ACQUIRED_CAPABILITY
     return CapabilityQualificationResult(
         qualification_request_id=_QUAL_REQUEST,
         acquisition_request_id=_ACQ_REQUEST,
@@ -169,9 +183,15 @@ def _qualification(*, artifact: str = _ARTIFACT) -> CapabilityQualificationResul
         reason_code=CapabilityQualificationReasonCode.NONE,
         started_at=_NOW,
         completed_at=_NOW,
+        subject_kind=subject_kind,
+        subject_id=artifact,
+        subject_integrity_fingerprint=subject_fingerprint,
         evidence=CapabilityQualificationEvidence(
             provider_id="codecraft.qualification",
             qualification_request_id=_QUAL_REQUEST,
+            subject_kind=subject_kind,
+            subject_id=artifact,
+            subject_integrity_fingerprint=subject_fingerprint,
             acquisition_request_id=_ACQ_REQUEST,
             acquisition_strategy_id="codecraft.synthesis.v1",
             gap_id=_GAP,

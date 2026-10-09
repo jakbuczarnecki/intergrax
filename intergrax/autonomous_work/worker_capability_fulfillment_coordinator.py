@@ -11,11 +11,18 @@ from intergrax.autonomous_work.worker_capability_fulfillment_ports import (
     CapabilityRealizationCoordinatorPort,
     WorkerCapabilityDirectReuseFulfillmentPort,
     WorkerCapabilityRecoveryPort,
+    WorkerConfiguredCapabilityExecutionFulfillmentPort,
+    WorkerConfiguredCapabilityFulfillmentPort,
     WorkerQualifiedCapabilityResumePort,
 )
 from intergrax.contracts.autonomous_work.capability_acquisition import (
+    CapabilityAcquisitionDisposition,
+    WorkerCapabilityAcquisitionDecision,
     WorkerCapabilityNeed,
     derive_worker_capability_need_id,
+)
+from intergrax.contracts.autonomous_work.worker_configured_capability_fulfillment import (
+    WorkerConfiguredCapabilityFulfillmentFailureReason,
 )
 from intergrax.contracts.autonomous_work.worker_capability_fulfillment import (
     WorkerCapabilityFulfillmentDisposition,
@@ -62,8 +69,6 @@ from intergrax.contracts.tools.qualified_capability_execution_intent_preparation
     QualifiedCapabilityExecutionIntentPreparationPort,
     QualifiedCapabilityExecutionIntentPreparationRequest,
 )
-
-
 class WorkerCapabilityFulfillmentCoordinator:
     """Requester/orchestrator — routes to canonical discovery, UCA, qualification, execution."""
 
@@ -74,12 +79,18 @@ class WorkerCapabilityFulfillmentCoordinator:
         resume: WorkerQualifiedCapabilityResumePort,
         direct_reuse: WorkerCapabilityDirectReuseFulfillmentPort,
         realization: CapabilityRealizationCoordinatorPort | None = None,
+        configured_fulfillment: WorkerConfiguredCapabilityFulfillmentPort | None = None,
+        configured_execution: (
+            WorkerConfiguredCapabilityExecutionFulfillmentPort | None
+        ) = None,
         intent_preparation: QualifiedCapabilityExecutionIntentPreparationPort | None = None,
     ) -> None:
         self._recovery = recovery
         self._resume = resume
         self._direct_reuse = direct_reuse
         self._realization = realization
+        self._configured_fulfillment = configured_fulfillment
+        self._configured_execution = configured_execution
         self._intent_preparation = intent_preparation
 
     def fulfill(
@@ -161,6 +172,25 @@ class WorkerCapabilityFulfillmentCoordinator:
         if recovery.phase is WorkerCapabilityRecoveryPhase.DIRECT_REUSE:
             return self._direct_reuse.fulfill_direct_reuse(request, recovery)
 
+        configure_decision = _configure_existing_decision(recovery)
+        if recovery.phase is WorkerCapabilityRecoveryPhase.CONFIGURE_EXISTING_REQUIRED:
+            return self._fulfill_configure_existing(
+                request,
+                recovery=recovery,
+                decision=configure_decision,
+                decided_at=decided_at,
+            )
+        if (
+            recovery.phase is WorkerCapabilityRecoveryPhase.REALIZATION_REQUIRED
+            and configure_decision is not None
+        ):
+            return self._fulfill_configure_existing(
+                request,
+                recovery=recovery,
+                decision=configure_decision,
+                decided_at=decided_at,
+            )
+
         if recovery.phase is WorkerCapabilityRecoveryPhase.REALIZATION_REQUIRED:
             if after_realization:
                 return WorkerCapabilityFulfillmentResult(
@@ -208,6 +238,78 @@ class WorkerCapabilityFulfillmentCoordinator:
             decided_at=decided_at,
         )
 
+    def _fulfill_configure_existing(
+        self,
+        request: WorkerCapabilityFulfillmentRequest,
+        *,
+        recovery,
+        decision: WorkerCapabilityAcquisitionDecision | None,
+        decided_at: datetime,
+    ) -> WorkerCapabilityFulfillmentResult:
+        provenance = recovery.provenance
+        if self._configured_fulfillment is None:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        if decision is None:
+            decision = recovery.worker_acquisition_decision
+        if decision is None:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        configured_result = self._configured_fulfillment.fulfill_configure_existing(
+            request,
+            recovery,
+            decision,
+        )
+        if decision.disposition is not CapabilityAcquisitionDisposition.CONFIGURE_EXISTING:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        if configured_result.adoption is None:
+            disposition = WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED
+            if configured_result.failure_reason in {
+                WorkerConfiguredCapabilityFulfillmentFailureReason.REALIZATION_DENIED,
+                WorkerConfiguredCapabilityFulfillmentFailureReason.REALIZATION_FAILED,
+            }:
+                disposition = WorkerCapabilityFulfillmentDisposition.REALIZATION_FAILED
+            return WorkerCapabilityFulfillmentResult(
+                disposition=disposition,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        if recovery.phase is WorkerCapabilityRecoveryPhase.QUALIFICATION_COMPLETE:
+            return self._fulfill_qualified(
+                request,
+                recovery=recovery,
+                decided_at=decided_at,
+                integration_configuration_adoption=configured_result.adoption,
+            )
+        if self._configured_execution is None:
+            return WorkerCapabilityFulfillmentResult(
+                disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
+                provenance=provenance,
+                recovery_outcome=recovery,
+                decided_at=decided_at,
+            )
+        return self._configured_execution.fulfill_after_adoption(
+            request,
+            recovery=recovery,
+            decision=decision,
+            adoption=configured_result.adoption,
+            decided_at=decided_at,
+        )
+
     def _fulfill_realization_required(
         self,
         request: WorkerCapabilityFulfillmentRequest,
@@ -215,6 +317,13 @@ class WorkerCapabilityFulfillmentCoordinator:
         recovery,
         decided_at: datetime,
     ) -> WorkerCapabilityFulfillmentResult:
+        if _configure_existing_decision(recovery) is not None:
+            return self._fulfill_configure_existing(
+                request,
+                recovery=recovery,
+                decision=recovery.worker_acquisition_decision,
+                decided_at=decided_at,
+            )
         if self._realization is None:
             return WorkerCapabilityFulfillmentResult(
                 disposition=WorkerCapabilityFulfillmentDisposition.FAIL_CLOSED,
@@ -287,6 +396,7 @@ class WorkerCapabilityFulfillmentCoordinator:
         *,
         recovery,
         decided_at: datetime,
+        integration_configuration_adoption=None,
     ) -> WorkerCapabilityFulfillmentResult:
         acquisition = recovery.acquisition_result
         qualification = recovery.qualification_result
@@ -335,6 +445,7 @@ class WorkerCapabilityFulfillmentCoordinator:
             requested_authority_scopes=request.requested_authority_scopes,
             run_id=request.run_id,
             attempt_id=request.attempt_id,
+            integration_configuration_adoption=integration_configuration_adoption,
         )
         resume_result = self._resume.resume(resume_request, decided_at=decided_at)
         return self._map_resume(
@@ -349,6 +460,7 @@ class WorkerCapabilityFulfillmentCoordinator:
         *,
         recovery,
         decided_at: datetime,
+        integration_configuration_adoption=None,
     ) -> WorkerCapabilityFulfillmentResult:
         acquisition = recovery.acquisition_result
         qualification = recovery.qualification_result
@@ -397,6 +509,7 @@ class WorkerCapabilityFulfillmentCoordinator:
             requested_authority_scopes=request.requested_authority_scopes,
             run_id=request.run_id,
             attempt_id=request.attempt_id,
+            integration_configuration_adoption=integration_configuration_adoption,
         )
         resume_result = await self._resume.resume_async(
             resume_request,
@@ -579,6 +692,17 @@ class WorkerCapabilityFulfillmentCoordinator:
             recovery_outcome=recovery,
             decided_at=decided_at,
         )
+
+
+def _configure_existing_decision(
+    recovery,
+) -> WorkerCapabilityAcquisitionDecision | None:
+    decision = recovery.worker_acquisition_decision
+    if decision is None:
+        return None
+    if decision.disposition is CapabilityAcquisitionDisposition.CONFIGURE_EXISTING:
+        return decision
+    return None
 
 
 __all__ = ["WorkerCapabilityFulfillmentCoordinator"]

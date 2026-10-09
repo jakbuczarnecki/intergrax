@@ -24,6 +24,9 @@ from intergrax.contracts.execution_lineage import ExecutionLineageReader
 from intergrax.contracts.execution_effective_profile_provenance import (
     ExecutionEffectiveProfileProvenanceReader,
 )
+from intergrax.contracts.execution_integration_configuration_provenance import (
+    ExecutionIntegrationConfigurationProvenanceReader,
+)
 from intergrax.contracts.execution_reconstruction import ExecutionReconstructionReader
 from intergrax.integrations.registry.bootstrap_conformance import assert_conditional_document_store
 from intergrax.runtime.diagnostics.deterministic_problem_grouping import (
@@ -99,6 +102,9 @@ class DiagnosticCompositionOverrides:
     execution_reconstruction_reader: ExecutionReconstructionReader | None = None
     execution_effective_profile_provenance_reader: (
         ExecutionEffectiveProfileProvenanceReader | None
+    ) = None
+    execution_integration_configuration_provenance_reader: (
+        ExecutionIntegrationConfigurationProvenanceReader | None
     ) = None
     additional_grouping_strategies: tuple[ProblemGroupingStrategy, ...] = ()
 
@@ -238,6 +244,9 @@ def build_default_execution_reconstruction_reader(
     execution_effective_profile_provenance_reader: (
         ExecutionEffectiveProfileProvenanceReader | None
     ) = None,
+    execution_integration_configuration_provenance_reader: (
+        ExecutionIntegrationConfigurationProvenanceReader | None
+    ) = None,
 ) -> ExecutionReconstructionReader:
     """Canonical Evidence-owned default for ``ExecutionReconstructionReader``."""
     return ExecutionReconstructor(
@@ -246,6 +255,9 @@ def build_default_execution_reconstruction_reader(
         execution_lineage=execution_lineage_reader,
         execution_effective_profile_provenance_reader=(
             execution_effective_profile_provenance_reader
+        ),
+        execution_integration_configuration_provenance_reader=(
+            execution_integration_configuration_provenance_reader
         ),
     )
 
@@ -283,6 +295,9 @@ def resolve_diagnostic_composition(
             execution_lineage_reader=execution_lineage_reader,
             execution_effective_profile_provenance_reader=(
                 overrides.execution_effective_profile_provenance_reader
+            ),
+            execution_integration_configuration_provenance_reader=(
+                overrides.execution_integration_configuration_provenance_reader
             ),
         )
         reconstruction_ownership = DiagnosticComponentOwnership.HOST_CREATED

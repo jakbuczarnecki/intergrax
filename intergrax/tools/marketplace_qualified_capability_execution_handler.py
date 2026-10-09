@@ -23,26 +23,44 @@ from intergrax.contracts.tools.marketplace_qualified_capability import (
     MarketplaceQualifiedToolStageRepository,
     MarketplaceQualifiedToolStageUnavailableError,
 )
+from intergrax.contracts.tools.marketplace_tool_execution_intent import (
+    ConfiguredMarketplaceToolExecutionProvenance,
+    MarketplaceToolExecutionProvenanceKind,
+    UcaMarketplaceToolExecutionProvenance,
+)
 from intergrax.contracts.tools.qualified_marketplace_tool_execution_intent import (
+    MarketplaceToolExecutionIntentRepository,
     QualifiedMarketplaceToolExecutionIntentIntegrityError,
-    QualifiedMarketplaceToolExecutionIntentRepository,
     QualifiedMarketplaceToolExecutionIntentUnavailableError,
 )
+from intergrax.tools.known_capability_realization import ToolPackageResolutionForIdentityPort
 from intergrax.contracts.tools.qualified_tool_invocation import (
     QualifiedToolInvocationMaterialOutcome,
     QualifiedToolInvocationMaterialProvider,
     QualifiedToolInvocationMaterialRequest,
     QualifiedToolInvocationResolver,
 )
+from intergrax.integrations.contracts.execution_integration_configuration import (
+    ExecutionIntegrationConfigurationAdoption,
+)
 from intergrax.runtime.execution.qualified_capability_execution_handlers import (
     QualifiedCapabilityExecutionBindingHandler,
 )
+from intergrax.tools.configured_integration_tool_invocation_projection import (
+    ConfiguredIntegrationToolInvocationProjectionError,
+    ConfiguredIntegrationToolInvocationProjectionPort,
+)
+from intergrax.tools.invocation_wiring import ToolInvocationWiringResolver
 from intergrax.runtime.execution.suspended_operation.pause_required import (
     ExecutionSuspendedWorkPauseRequired,
 )
 from intergrax.tools.marketplace_qualified_capability_binding_provider import (
     MARKETPLACE_TOOL_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID,
     parse_marketplace_qualified_tool_execution_target_reference,
+)
+from intergrax.tools.marketplace_tool_execution_routing import (
+    MARKETPLACE_TOOL_CONFIGURED_CAPABILITY_BINDING_PROVIDER_ID,
+    MARKETPLACE_TOOL_EXECUTION_HANDLER_ID,
 )
 from intergrax.tools.qualified_marketplace_tool_activation_resolver import (
     QualifiedMarketplaceToolActivationOutcome,
@@ -58,12 +76,16 @@ class MarketplaceToolQualifiedCapabilityExecutionHandler(
     def __init__(
         self,
         *,
-        intent_repository: QualifiedMarketplaceToolExecutionIntentRepository,
+        intent_repository: MarketplaceToolExecutionIntentRepository,
         stage_repository: MarketplaceQualifiedToolStageRepository,
         activation_resolver: QualifiedMarketplaceToolActivationResolver,
         material_provider: QualifiedToolInvocationMaterialProvider,
         invocation_resolver: QualifiedToolInvocationResolver,
         catalog_tool_invoker: ExecutionBoundCatalogToolInvoker,
+        configured_invocation_projection: (
+            ConfiguredIntegrationToolInvocationProjectionPort | None
+        ) = None,
+        package_resolver: ToolPackageResolutionForIdentityPort | None = None,
     ) -> None:
         self._intent_repository = intent_repository
         self._stage_repository = stage_repository
@@ -71,10 +93,12 @@ class MarketplaceToolQualifiedCapabilityExecutionHandler(
         self._material_provider = material_provider
         self._invocation_resolver = invocation_resolver
         self._catalog_tool_invoker = catalog_tool_invoker
+        self._configured_invocation_projection = configured_invocation_projection
+        self._package_resolver = package_resolver
 
     @property
-    def binding_provider_id(self) -> str:
-        return MARKETPLACE_TOOL_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID
+    def execution_handler_id(self) -> str:
+        return MARKETPLACE_TOOL_EXECUTION_HANDLER_ID
 
     def dispatch_once(
         self,
@@ -83,17 +107,14 @@ class MarketplaceToolQualifiedCapabilityExecutionHandler(
         run_id: RunId,
         attempt_id: AttemptId,
         execution_id: ExecutionId,
+        integration_configuration_adoption: (
+            ExecutionIntegrationConfigurationAdoption | None
+        ) = None,
     ) -> QualifiedCapabilityExecutionDelegateResult:
         _ = attempt_id
         target = request.execution_target
-        if target.binding_provider_id != self.binding_provider_id:
-            return _failed("binding_provider_mismatch")
-
-        handoff_id = parse_marketplace_qualified_tool_execution_target_reference(
-            target.execution_target_reference,
-        )
-        if handoff_id is None:
-            return _failed("invalid_execution_target_reference")
+        if target.execution_handler_id != self.execution_handler_id:
+            return _failed("execution_handler_mismatch")
 
         try:
             intent = self._intent_repository.get(
@@ -111,28 +132,62 @@ class MarketplaceToolQualifiedCapabilityExecutionHandler(
             return _failed("intent_tenant_mismatch")
         if intent.task_id != str(request.task_id):
             return _failed("intent_task_mismatch")
-        if intent.qualified_subject_reference != target.qualified_subject_reference:
+        if intent.subject_reference != target.qualified_subject_reference:
             return _failed("intent_subject_mismatch")
-        if intent.handoff_id != handoff_id:
-            return _failed("intent_handoff_mismatch")
 
-        try:
-            stage = self._stage_repository.get(
-                tenant_id=request.tenant_id,
-                handoff_id=handoff_id,
+        provenance = intent.provenance
+        handoff_id = ""
+        if provenance.provenance_kind is MarketplaceToolExecutionProvenanceKind.UCA:
+            if (
+                target.binding_provider_id
+                != MARKETPLACE_TOOL_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID
+            ):
+                return _failed("binding_provider_provenance_mismatch")
+            uca = provenance
+            assert isinstance(uca, UcaMarketplaceToolExecutionProvenance)
+            handoff_id = parse_marketplace_qualified_tool_execution_target_reference(
+                target.execution_target_reference,
             )
-        except MarketplaceQualifiedToolStageUnavailableError:
-            return _unavailable("stage_store_unavailable")
-        except MarketplaceQualifiedToolStageIntegrityError:
-            return _failed("stage_corrupt")
-
-        if stage is None:
-            return _failed("stage_missing")
-
-        activation = self._activation_resolver.ensure_exact_active(
-            stage=stage,
-            execution_request_id=request.execution_request_id,
-        )
+            if handoff_id is None:
+                return _failed("invalid_execution_target_reference")
+            if uca.handoff_id != handoff_id:
+                return _failed("intent_handoff_mismatch")
+            try:
+                stage = self._stage_repository.get(
+                    tenant_id=request.tenant_id,
+                    handoff_id=handoff_id,
+                )
+            except MarketplaceQualifiedToolStageUnavailableError:
+                return _unavailable("stage_store_unavailable")
+            except MarketplaceQualifiedToolStageIntegrityError:
+                return _failed("stage_corrupt")
+            if stage is None:
+                return _failed("stage_missing")
+            activation = self._activation_resolver.ensure_exact_active(
+                stage=stage,
+                execution_request_id=request.execution_request_id,
+            )
+        else:
+            if (
+                target.binding_provider_id
+                != MARKETPLACE_TOOL_CONFIGURED_CAPABILITY_BINDING_PROVIDER_ID
+            ):
+                return _failed("binding_provider_provenance_mismatch")
+            configured = provenance
+            assert isinstance(configured, ConfiguredMarketplaceToolExecutionProvenance)
+            correlation = intent.execution_target_correlation
+            if correlation is None or correlation != target.execution_target_reference:
+                return _failed("configured_execution_target_correlation_mismatch")
+            if integration_configuration_adoption is None:
+                return _failed("configured_adoption_required")
+            if self._package_resolver is None:
+                return _failed("package_resolver_unavailable")
+            activation = self._activation_resolver.ensure_exact_active_for_identity(
+                capability_identity=intent.capability_identity,
+                execution_request_id=request.execution_request_id,
+                package_resolver=self._package_resolver,
+            )
+            handoff_id = configured.configured_execution_operation_id
         activation_outcome = activation.outcome
         if activation_outcome is QualifiedMarketplaceToolActivationOutcome.UNAVAILABLE:
             return _unavailable(activation.reason_detail or "activation_unavailable")
@@ -159,8 +214,8 @@ class MarketplaceToolQualifiedCapabilityExecutionHandler(
                 tenant_id=request.tenant_id,
                 task_id=request.task_id,
                 selected_operation=intent.selected_operation,
-                qualified_subject_reference=intent.qualified_subject_reference,
-                handoff_id=intent.handoff_id,
+                qualified_subject_reference=intent.subject_reference,
+                handoff_id=handoff_id,
                 worker_need_id=intent.worker_need_id,
                 activated_tool_id=registry_tool_id,
             ),
@@ -172,6 +227,20 @@ class MarketplaceToolQualifiedCapabilityExecutionHandler(
         material = material_result.material
         if material is None:
             return _failed("material_missing")
+
+        wiring_resolver: ToolInvocationWiringResolver | None = None
+        if integration_configuration_adoption is not None:
+            if self._configured_invocation_projection is None:
+                return _failed("configured_invocation_projection_unavailable")
+            try:
+                wiring_resolver = self._configured_invocation_projection.project(
+                    tenant_id=request.tenant_id,
+                    execution_id=execution_id,
+                    adoption=integration_configuration_adoption,
+                    activated_tool_id=registry_tool_id,
+                )
+            except ConfiguredIntegrationToolInvocationProjectionError:
+                return _failed("configured_invocation_projection_failed")
 
         step_id = f"qmte:{request.execution_request_id}"
         invoke_request = self._invocation_resolver.resolve(
@@ -186,6 +255,7 @@ class MarketplaceToolQualifiedCapabilityExecutionHandler(
             execution_request_id=request.execution_request_id,
             correlation_request_id=str(execution_id),
             idempotency_key=f"qmte:{request.execution_request_id}:{intent.selected_operation}",
+            wiring_resolver=wiring_resolver,
         )
 
         try:

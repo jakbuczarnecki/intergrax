@@ -47,7 +47,7 @@ class ExecutionBoundCapabilityExecutionRuntimeDelegate:
             task_id=request.task_id,
         )
         handler = self._handlers.resolve(
-            request.execution_target.binding_provider_id,
+            request.execution_target.execution_handler_id,
         )
         if handler is None:
             return ExecutionBoundCapabilityExecutionDelegateResult(
@@ -61,11 +61,16 @@ class ExecutionBoundCapabilityExecutionRuntimeDelegate:
                 disposition=QualifiedCapabilityExecutionDispatchDisposition.FAILED,
                 reason_detail="active_execution_id_missing",
             )
-        return handler.dispatch_once(
+        handler_result = handler.dispatch_once(
             handler_request,
             run_id=run_id,
             attempt_id=attempt_id,
             execution_id=execution_id,
+            integration_configuration_adoption=request.integration_configuration_adoption,
+        )
+        return ExecutionBoundCapabilityExecutionDelegateResult(
+            disposition=handler_result.disposition,
+            reason_detail=handler_result.reason_detail,
         )
 
 

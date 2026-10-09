@@ -79,6 +79,35 @@ class ExistingCapabilityIntegrationTarget:
     current_revision: str
 
 
+@dataclass(frozen=True, slots=True)
+class ExistingCapabilityConfigurationCatalogCorrelationKey:
+    """Deterministic catalog↔configuration-opportunity join — no opaque ref parsing."""
+
+    integration_category: IntegrationCategory
+    provider_id: str
+    resource_scope: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.integration_category, IntegrationCategory):
+            raise TypeError("integration_category must be IntegrationCategory")
+        provider = self.provider_id
+        if type(provider) is not str or not provider or provider != provider.strip():
+            raise ValueError("provider_id must be non-empty")
+        scope = self.resource_scope
+        if type(scope) is not str or not scope or scope != scope.strip():
+            raise ValueError("resource_scope must be non-empty")
+
+
+def derive_configuration_catalog_correlation_key_from_integration_target(
+    target: ExistingCapabilityIntegrationTarget,
+) -> ExistingCapabilityConfigurationCatalogCorrelationKey:
+    return ExistingCapabilityConfigurationCatalogCorrelationKey(
+        integration_category=target.integration_category,
+        provider_id=target.provider_id,
+        resource_scope=target.resource_scope,
+    )
+
+
 @dataclass(frozen=True)
 class ConfiguredCapabilityBinding:
     """Strategy output — typed configured capability identity/reference."""
@@ -154,6 +183,29 @@ class ExistingCapabilityConfigurationRealizationPort(Protocol):
         self,
         request: ExistingCapabilityConfigurationRealizationRequest,
     ) -> ExistingCapabilityConfigurationRealizationResult: ...
+
+
+def derive_existing_capability_configuration_realization_request_id(
+    *,
+    recovery_decision_id: str,
+    configuration_ref: str,
+) -> str:
+    """Deterministic INT-CONFIG request identity for idempotent CONFIGURE_EXISTING fulfillment."""
+    decision_id = recovery_decision_id.strip()
+    if not decision_id:
+        raise ExistingCapabilityConfigurationRealizationError(
+            ExistingCapabilityConfigurationRealizationFailureReason.IDENTITY_MISMATCH,
+            detail="missing recovery_decision_id",
+        )
+    ref = configuration_ref.strip()
+    if not ref:
+        raise ExistingCapabilityConfigurationRealizationError(
+            ExistingCapabilityConfigurationRealizationFailureReason.IDENTITY_MISMATCH,
+            detail="missing configuration_ref",
+        )
+    return (
+        f"existing-capability-configuration-realization:{decision_id}:{ref}"
+    )
 
 
 def validate_realization_request_invariants(

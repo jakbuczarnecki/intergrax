@@ -297,11 +297,18 @@ class _ArtifactQualification:
 
     def qualify(self, request):
         self.calls += 1
+        subject = request.subject
+        lineage = subject.acquisition_lineage
+        if lineage is None:
+            raise ValueError("acquisition lineage required for artifact qualification stub")
         return CapabilityQualificationResult(
             qualification_request_id=request.qualification_request_id,
-            acquisition_request_id=request.acquisition_request_id,
-            gap_id=request.gap_id,
-            strategy_id=request.strategy_id,
+            subject_kind=subject.subject_kind,
+            subject_id=subject.subject_id,
+            subject_integrity_fingerprint=subject.subject_integrity_fingerprint,
+            acquisition_request_id=lineage.acquisition_request_id,
+            gap_id=lineage.gap_id,
+            strategy_id=lineage.strategy_id,
             provider_id="codecraft.qualification",
             outcome=CapabilityQualificationOutcome.QUALIFIED,
             reason_code=CapabilityQualificationReasonCode.NONE,
@@ -310,9 +317,12 @@ class _ArtifactQualification:
             evidence=CapabilityQualificationEvidence(
                 provider_id="codecraft.qualification",
                 qualification_request_id=request.qualification_request_id,
-                acquisition_request_id=request.acquisition_request_id,
-                acquisition_strategy_id=request.strategy_id,
-                gap_id=request.gap_id,
+                subject_kind=subject.subject_kind,
+                subject_id=subject.subject_id,
+                subject_integrity_fingerprint=subject.subject_integrity_fingerprint,
+                acquisition_request_id=lineage.acquisition_request_id,
+                acquisition_strategy_id=lineage.strategy_id,
+                gap_id=lineage.gap_id,
                 artifact_reference=self.artifact,
             ),
             correlation_id=request.correlation_id,

@@ -426,7 +426,11 @@ def test_c18_provider_registry_deterministic_resolve() -> None:
     registry = QualifiedCapabilityExecutionBindingHandlerRegistry(
         (marketplace_handler, codecraft_handler),
     )
-    handler = registry.resolve(MARKETPLACE_TOOL_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID)
+    from intergrax.tools.marketplace_tool_execution_routing import (
+        MARKETPLACE_TOOL_EXECUTION_HANDLER_ID,
+    )
+
+    handler = registry.resolve(MARKETPLACE_TOOL_EXECUTION_HANDLER_ID)
     assert isinstance(handler, MarketplaceToolQualifiedCapabilityExecutionHandler)
     with pytest.raises(ValueError, match="duplicate"):
         QualifiedCapabilityExecutionBindingHandlerRegistry(

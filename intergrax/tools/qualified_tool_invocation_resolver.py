@@ -12,6 +12,7 @@ from intergrax.contracts.execution_bound_catalog_tool_invocation import (
     ExecutionBoundCatalogToolInvokeRequest,
 )
 from intergrax.contracts.execution_identity import TaskId
+from intergrax.tools.invocation_wiring import ToolInvocationWiringResolver
 
 
 class DefaultQualifiedToolInvocationResolver:
@@ -31,6 +32,7 @@ class DefaultQualifiedToolInvocationResolver:
         execution_request_id: str,
         correlation_request_id: str | None,
         idempotency_key: str | None,
+        wiring_resolver: ToolInvocationWiringResolver | None = None,
     ) -> ExecutionBoundCatalogToolInvokeRequest:
         # Atomic runtime callable is selected by activated_tool_id; selected_operation
         # remains semantic execution intent, not a ToolRuntime sub-operation selector.
@@ -62,6 +64,7 @@ class DefaultQualifiedToolInvocationResolver:
             step_id=cleaned_step,
             correlation_request_id=correlation_request_id,
             idempotency_key=resolved_idempotency,
+            wiring_resolver=wiring_resolver,
         )
 
 

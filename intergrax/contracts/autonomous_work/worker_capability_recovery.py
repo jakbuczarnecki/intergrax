@@ -18,6 +18,9 @@ from intergrax.contracts.autonomous_work.references import (
     ProblemReference,
     validate_problem_reference,
 )
+from intergrax.contracts.autonomous_work.capability_acquisition import (
+    WorkerCapabilityAcquisitionDecision,
+)
 from intergrax.contracts.capability_acquisition.acquisition_result import (
     CapabilityAcquisitionResult,
 )
@@ -33,6 +36,7 @@ class WorkerCapabilityRecoveryPhase(StrEnum):
     """High-level worker recovery phase after canonical coordination."""
 
     DIRECT_REUSE = "DIRECT_REUSE"
+    CONFIGURE_EXISTING_REQUIRED = "CONFIGURE_EXISTING_REQUIRED"
     REALIZATION_REQUIRED = "REALIZATION_REQUIRED"
     PENDING_QUALIFICATION = "PENDING_QUALIFICATION"
     QUALIFICATION_COMPLETE = "QUALIFICATION_COMPLETE"
@@ -117,6 +121,7 @@ class WorkerCapabilityRecoveryOutcome:
     discovery_completion: DiscoveryCompletion | None = None
     acquisition_result: CapabilityAcquisitionResult | None = None
     qualification_result: CapabilityQualificationResult | None = None
+    worker_acquisition_decision: WorkerCapabilityAcquisitionDecision | None = None
     decided_at: datetime | None = None
 
     def __post_init__(self) -> None:
@@ -124,6 +129,14 @@ class WorkerCapabilityRecoveryOutcome:
             raise TypeError("phase must be WorkerCapabilityRecoveryPhase")
         if type(self.provenance) is not WorkerCapabilityRecoveryProvenance:
             raise TypeError("provenance must be WorkerCapabilityRecoveryProvenance")
+        if self.worker_acquisition_decision is not None:
+            if (
+                type(self.worker_acquisition_decision)
+                is not WorkerCapabilityAcquisitionDecision
+            ):
+                raise TypeError(
+                    "worker_acquisition_decision must be WorkerCapabilityAcquisitionDecision",
+                )
         if self.decided_at is not None:
             object.__setattr__(
                 self,
