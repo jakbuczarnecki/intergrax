@@ -8,7 +8,7 @@
 | **FRZ-TRC-11** | **OPEN** |
 | **P4** | **NOT ENTERED** |
 | **START_HEAD** | `215f82f855bd6ed5316c1c23f8d35ff076be3526` |
-| **FINAL_COMMIT** | `6538f915f0e3ec95c45096865b555512ea214115` |
+| **FINAL_COMMIT** | `b7efe6b980ba010572f9acc68f8d3db4493733e8` |
 
 ## Changed scope (P3-R2 production)
 
