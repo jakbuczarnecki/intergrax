@@ -96,6 +96,9 @@ from intergrax.applications._shared.diagnostic_composition import (
 from intergrax.applications._shared.harness_host_task_execution_wiring import (
     build_harness_host_task_execution_governance,
 )
+from intergrax.applications._shared.integrations.integration_configuration_provenance_reader import (
+    resolve_pinning_store_integration_configuration_provenance_reader,
+)
 from intergrax.applications._shared.profile_resolution.execution_effective_profile_provenance_reader import (
     PinningStoreExecutionEffectiveProfileProvenanceReader,
 )
@@ -416,12 +419,21 @@ def build_scenario_runtime_from_environment(
     profile_provenance_reader = PinningStoreExecutionEffectiveProfileProvenanceReader(
         host_profile.persistence.pinning_store,
     )
+    integration_provenance_reader = (
+        resolve_pinning_store_integration_configuration_provenance_reader(
+            kv_store=None,
+            document_store=document_store,
+        )
+    )
     env_wiring = replace(
         env_wiring,
         composition=replace(
             env_wiring.composition,
             diagnostic_composition_overrides=DiagnosticCompositionOverrides(
                 execution_effective_profile_provenance_reader=profile_provenance_reader,
+                execution_integration_configuration_provenance_reader=(
+                    integration_provenance_reader
+                ),
             ),
         ),
     )

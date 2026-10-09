@@ -23,6 +23,11 @@ from intergrax.contracts.execution_effective_profile_provenance import (
     ExecutionEffectiveProfileProvenanceReadStatus,
     ExecutionEffectiveProfileProvenanceReader,
 )
+from intergrax.contracts.execution_integration_configuration_provenance import (
+    ExecutionIntegrationConfigurationProvenance,
+    ExecutionIntegrationConfigurationProvenanceReadStatus,
+    ExecutionIntegrationConfigurationProvenanceReader,
+)
 from intergrax.contracts.execution_reconstruction_models import (
     ExecutionAttemptDiscoveryCompleteness,
     ExecutionAttemptDiscoveryReadStatus,
@@ -33,6 +38,9 @@ from intergrax.contracts.execution_reconstruction_models import (
 )
 from intergrax.runtime.observability.reconstruction.policy_provenance_projection import (
     project_policy_decision_provenance,
+)
+from intergrax.runtime.observability.reconstruction.integration_configuration_provenance_projection import (
+    project_execution_integration_configuration_provenance,
 )
 from intergrax.runtime.observability.reconstruction.profile_provenance_projection import (
     project_execution_effective_profile_provenance,
@@ -114,6 +122,9 @@ class ExecutionReconstructor:
         execution_effective_profile_provenance_reader: (
             ExecutionEffectiveProfileProvenanceReader | None
         ) = None,
+        execution_integration_configuration_provenance_reader: (
+            ExecutionIntegrationConfigurationProvenanceReader | None
+        ) = None,
     ) -> None:
         if max_attempt_discovery_snapshot_retries <= 0:
             raise ValueError("max_attempt_discovery_snapshot_retries must be > 0")
@@ -121,6 +132,9 @@ class ExecutionReconstructor:
         self._causal_evidence = causal_evidence
         self._execution_effective_profile_provenance_reader = (
             execution_effective_profile_provenance_reader
+        )
+        self._execution_integration_configuration_provenance_reader = (
+            execution_integration_configuration_provenance_reader
         )
         self._execution_lineage = execution_lineage
         self._execution_lineage_as_of = execution_lineage_as_of
@@ -247,6 +261,23 @@ class ExecutionReconstructor:
                 profile_reader=profile_reader,
             )
             profile_status = ExecutionEffectiveProfileProvenanceReadStatus.CONFIGURED
+        integration_reader = self._execution_integration_configuration_provenance_reader
+        if integration_reader is None:
+            integration_provenance: tuple[
+                ExecutionIntegrationConfigurationProvenance,
+                ...
+            ] = ()
+            integration_status = (
+                ExecutionIntegrationConfigurationProvenanceReadStatus.NOT_CONFIGURED
+            )
+        else:
+            integration_provenance, integration_status = (
+                project_execution_integration_configuration_provenance(
+                    positioned,
+                    tenant_id=tenant_id,
+                    reader=integration_reader,
+                )
+            )
         return ExecutionReconstruction(
             tenant_id=tenant_id,
             task_id=task_id,
@@ -260,6 +291,8 @@ class ExecutionReconstructor:
             policy_decision_provenance=policy_provenance,
             execution_effective_profile_provenance=profile_provenance,
             effective_profile_provenance_read_status=profile_status,
+            execution_integration_configuration_provenance=integration_provenance,
+            integration_configuration_provenance_read_status=integration_status,
         )
 
 

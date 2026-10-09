@@ -382,18 +382,44 @@ def build_harness_host_runtime(
     profile_provenance_reader = PinningStoreExecutionEffectiveProfileProvenanceReader(
         profile_persistence.pinning_store,
     )
+    from intergrax.applications._shared.integrations.integration_configuration_provenance_reader import (
+        resolve_pinning_store_integration_configuration_provenance_reader,
+    )
+
+    integration_provenance_reader = (
+        resolve_pinning_store_integration_configuration_provenance_reader(
+            kv_store=kv_store,
+            document_store=doc_store,
+        )
+    )
     merged_diagnostic_overrides = diagnostic_composition_overrides
     if merged_diagnostic_overrides is None:
         merged_diagnostic_overrides = DiagnosticCompositionOverrides(
             execution_effective_profile_provenance_reader=profile_provenance_reader,
+            execution_integration_configuration_provenance_reader=(
+                integration_provenance_reader
+            ),
         )
-    elif (
-        merged_diagnostic_overrides.execution_effective_profile_provenance_reader is None
-    ):
-        merged_diagnostic_overrides = replace(
-            merged_diagnostic_overrides,
-            execution_effective_profile_provenance_reader=profile_provenance_reader,
-        )
+    else:
+        if (
+            merged_diagnostic_overrides.execution_effective_profile_provenance_reader
+            is None
+        ):
+            merged_diagnostic_overrides = replace(
+                merged_diagnostic_overrides,
+                execution_effective_profile_provenance_reader=profile_provenance_reader,
+            )
+        if (
+            merged_diagnostic_overrides.execution_integration_configuration_provenance_reader
+            is None
+            and integration_provenance_reader is not None
+        ):
+            merged_diagnostic_overrides = replace(
+                merged_diagnostic_overrides,
+                execution_integration_configuration_provenance_reader=(
+                    integration_provenance_reader
+                ),
+            )
     env_wiring = replace(
         env_wiring,
         composition=replace(

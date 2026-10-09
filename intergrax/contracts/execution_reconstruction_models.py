@@ -18,6 +18,10 @@ from intergrax.contracts.execution_effective_profile_provenance import (
     ExecutionEffectiveProfileProvenance,
     ExecutionEffectiveProfileProvenanceReadStatus,
 )
+from intergrax.contracts.execution_integration_configuration_provenance import (
+    ExecutionIntegrationConfigurationProvenance,
+    ExecutionIntegrationConfigurationProvenanceReadStatus,
+)
 from intergrax.contracts.execution_reconstruction_policy_provenance import (
     ReconstructedPolicyDecisionProvenance,
 )
@@ -89,6 +93,13 @@ class ExecutionReconstruction:
     effective_profile_provenance_read_status: (
         ExecutionEffectiveProfileProvenanceReadStatus
     ) = ExecutionEffectiveProfileProvenanceReadStatus.NOT_CONFIGURED
+    execution_integration_configuration_provenance: tuple[
+        ExecutionIntegrationConfigurationProvenance,
+        ...
+    ] = ()
+    integration_configuration_provenance_read_status: (
+        ExecutionIntegrationConfigurationProvenanceReadStatus
+    ) = ExecutionIntegrationConfigurationProvenanceReadStatus.NOT_CONFIGURED
 
     @property
     def attempt_count(self) -> int:
