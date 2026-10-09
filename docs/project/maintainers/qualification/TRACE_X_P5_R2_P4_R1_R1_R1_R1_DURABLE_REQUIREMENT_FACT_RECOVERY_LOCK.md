@@ -4,6 +4,7 @@
 |---|---|
 | **Status** | **READY FOR AUDIT** |
 | **Production delta** | **0** |
+| **FINAL_COMMIT** | `2c1fccf4b611afcdd7407e37c4ba33e76f81ce9a` |
 | **Rejected R1-R1-R1 baseline** | `3f37a80cea783fad4ca6b75ce8199ee8ed9c888d` |
 | **Parent** | [`TRACE_X_P5_R2_P4_R1_R1_R1_REQUIREMENT_EVENT_CANONICAL_RETRY_IDENTITY_RECONCILIATION.md`](TRACE_X_P5_R2_P4_R1_R1_R1_REQUIREMENT_EVENT_CANONICAL_RETRY_IDENTITY_RECONCILIATION.md) |
 | **Blocker** | `R2-P4-REQUIREMENT-FACT-DURABLE-RECOVERY-29` — **RESOLVED IN DESIGN** (this artifact) |
