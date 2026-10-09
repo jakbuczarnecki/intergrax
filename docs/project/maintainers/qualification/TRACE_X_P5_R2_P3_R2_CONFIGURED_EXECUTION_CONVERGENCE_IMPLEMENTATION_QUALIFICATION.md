@@ -3,9 +3,9 @@
 | Field | Value |
 |---|---|
 | **Task** | TRACE-X-P5-R2-P3-R2 |
-| **Disposition** | **BLOCKED ON R1** (independent audit blocker **R2-P3-CONFIGURED-TARGET-OPAQUE-CORRELATION-VIOLATION-23**) |
+| **Disposition** | **CLOSED / independently accepted** @ `b7efe6b980ba010572f9acc68f8d3db4493733e8` (+ **R1** @ `5a361688e78928d23b6e8ffa161bcaf41b4c6ad3`) |
 | **Child correction** | **TRACE-X-P5-R2-P3-R2-R1** — see § R1 correction below |
-| **Parent** | TRACE-X-P5-R2-P3 = **BLOCKED** |
+| **Parent** | TRACE-X-P5-R2-P3 = **READY FOR INDEPENDENT PARENT CLOSURE** (see [`TRACE_X_P5_R2_P3_CONFIGURED_PROVIDER_EXECUTION_PARENT_RECONCILIATION.md`](TRACE_X_P5_R2_P3_CONFIGURED_PROVIDER_EXECUTION_PARENT_RECONCILIATION.md)) |
 | **FRZ-TRC-11** | **OPEN** |
 | **P4** | **NOT ENTERED** |
 | **START_HEAD** | `215f82f855bd6ed5316c1c23f8d35ff076be3526` |
@@ -133,6 +133,4 @@ Session logs: `.tmp/session/p3-r2-qual/final-qualification-replay.log`, `pyright
 
 ## Disposition
 
-**TRACE-X-P5-R2-P3-R2 = BLOCKED ON R1** until independent audit accepts **TRACE-X-P5-R2-P3-R2-R1** on GitHub. Historical P3-R2 implementation evidence at baseline `b7efe6b980ba010572f9acc68f8d3db4493733e8` remains valid; blocker **23** applies to opaque target correlation only.
-
-**TRACE-X-P5-R2-P3-R2-R1 = READY FOR AUDIT** (correction) — does **not** close parent **TRACE-X-P5-R2-P3** or **P3-R2**; does **not** promote **FRZ-TRC-11**; **P4 = NOT ENTERED**.
+**TRACE-X-P5-R2-P3-R2 = CLOSED / independently accepted** @ `b7efe6b980ba010572f9acc68f8d3db4493733e8`. **TRACE-X-P5-R2-P3-R2-R1 = CLOSED / independently accepted** @ `5a361688e78928d23b6e8ffa161bcaf41b4c6ad3`. Parent reconciliation: [`TRACE_X_P5_R2_P3_CONFIGURED_PROVIDER_EXECUTION_PARENT_RECONCILIATION.md`](TRACE_X_P5_R2_P3_CONFIGURED_PROVIDER_EXECUTION_PARENT_RECONCILIATION.md). Does **not** promote **FRZ-TRC-11**; **P4 wave = NOT ENTERED**.

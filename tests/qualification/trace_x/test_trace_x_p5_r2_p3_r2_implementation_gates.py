@@ -64,8 +64,9 @@ def test_txp5r2p3r2_impl02_qualification_artifact_exists() -> None:
     assert _QUAL_DOC.is_file()
     text = _QUAL_DOC.read_text(encoding="utf-8")
     assert "TRACE-X-P5-R2-P3-R2-R1" in text
-    assert "BLOCKED ON R1" in text
+    assert "CLOSED / independently accepted" in text
     assert "R2-P3-CONFIGURED-TARGET-OPAQUE-CORRELATION-VIOLATION-23" in text
+    assert "TRACE_X_P5_R2_P3_CONFIGURED_PROVIDER_EXECUTION_PARENT_RECONCILIATION.md" in text
     assert "IN PROGRESS / NOT READY FOR AUDIT" not in text
     assert TRACE_X_P5_R2_P3_R2_START_HEAD in text
     assert "b7efe6b980ba010572f9acc68f8d3db4493733e8" in text
