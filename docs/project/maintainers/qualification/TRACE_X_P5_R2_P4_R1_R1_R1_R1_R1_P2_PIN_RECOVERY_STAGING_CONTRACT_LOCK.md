@@ -2,9 +2,10 @@
 
 | Field | Value |
 |---|---|
-| **Status** | **READY FOR AUDIT** |
+| **Status** | **BLOCKED / SUPERSEDED BY CHILD** (ambiguous outcome + timestamp — see child) |
 | **Production delta** | **0** |
 | **FINAL_COMMIT** | `2e337c4b04c112d118aa0a4817be2ea13c08ef39` |
+| **Child** | [`TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_R1_AMBIGUOUS_PIN_OUTCOME_STAGING_TIMESTAMP_SEMANTICS.md`](TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_R1_AMBIGUOUS_PIN_OUTCOME_STAGING_TIMESTAMP_SEMANTICS.md) |
 | **Parent** | [`TRACE_X_P5_R2_P4_R1_R1_R1_R1_DURABLE_REQUIREMENT_FACT_RECOVERY_LOCK.md`](TRACE_X_P5_R2_P4_R1_R1_R1_R1_DURABLE_REQUIREMENT_FACT_RECOVERY_LOCK.md) |
 | **Rejected design baseline** | `2c1fccf4b611afcdd7407e37c4ba33e76f81ce9a` — parent lock assumed `requirement_recovery_staging.v1` inside the pin envelope **without** a canonical typed `ExecutionIntegrationConfigurationPinningStore` write/read contract |
 | **Blocker** | `R2-P4-P2-PIN-RECOVERY-STAGING-CONTRACT-30` — **RESOLVED IN DESIGN** (this artifact) |
@@ -62,7 +63,7 @@ Minimum fields (aligned with parent R1-R1-R1-R1 §4 — field names normalized t
 
 | Field | Required | Notes |
 |---|---|---|
-| `requirement_boundary_recorded_at` | Yes | timezone-aware UTC; pin-success instant for Case C timestamp canon |
+| `requirement_boundary_prepared_at` | Yes | timezone-aware UTC; **pre-first-pin** staging preparation instant (canonical after row accept) — see child lock for ambiguous-outcome semantics |
 | `task_id` | Yes | |
 | `run_id` | Yes | |
 | `attempt_id` | Yes | |
@@ -142,17 +143,19 @@ read_pin_records(
 
 ## 8. Idempotency and conflict semantics
 
+**Superseded for ambiguous first-write retry and staging timestamp meaning** by child [`TRACE-X-P5-R2-P4-R1-R1-R1-R1-R1-R1`](TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_R1_AMBIGUOUS_PIN_OUTCOME_STAGING_TIMESTAMP_SEMANTICS.md) (blocker `R2-P4-P2-PIN-AMBIGUOUS-COMMIT-OUTCOME-31`). Baseline table below remains authoritative for **overwrite attempts**; reconcile-after-read is defined in the child.
+
 Let `R = (subject, provenance, staging_normalized)` where `staging_normalized` is canonical equality on `ExecutionIntegrationConfigurationRequirementRecoveryStaging` or both sides `None`.
 
 | Situation | Result |
 |---|---|
 | Row absent | Write complete pin record → **success** |
 | Row present; `R` equal to stored | **Idempotent success** (no overwrite) |
-| Row present; same `subject` + same `provenance`; staging differs (including `None` vs non-`None`) | **`CONFLICT`** |
+| Row present; same `subject` + same `provenance`; staging differs (including `None` vs non-`None`) on **pin() write** | **`CONFLICT`** |
 | Row present; same staging; `provenance` differs | **`CONFLICT`** |
 | Row present; same staging; `subject` differs | **`CONFLICT`** (distinct row keys per subject) |
 
-Do **not** silently accept changed staging or provenance. Do **not** backfill staging on idempotent retry.
+Do **not** silently accept changed staging or provenance on **write**. Do **not** backfill staging on idempotent retry. After uncertain outcome, **read** stored staging before calling `pin()` (child §7).
 
 ### 8.1 Legacy rows without staging
 
@@ -278,7 +281,8 @@ If spine event already exists: full stored `RuntimeEvent` remains equality sourc
 | `TRACE-X-P5-R2-P4-R1-R1` | **BLOCKED** |
 | `TRACE-X-P5-R2-P4-R1-R1-R1` | **BLOCKED ON R1-R1-R1-R1-R1** (P4 implementation) |
 | `TRACE-X-P5-R2-P4-R1-R1-R1-R1` | **BLOCKED ON R1-R1-R1-R1-R1** (staging contract superseded by child closure; durable field inventory remains authoritative) |
-| `TRACE-X-P5-R2-P4-R1-R1-R1-R1-R1` | **READY FOR AUDIT** |
+| `TRACE-X-P5-R2-P4-R1-R1-R1-R1-R1` | **BLOCKED ON R1-R1-R1-R1-R1-R1** — child ambiguous-outcome lock |
+| `TRACE-X-P5-R2-P4-R1-R1-R1-R1-R1-R1` | **READY FOR AUDIT** — [`TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_R1_AMBIGUOUS_PIN_OUTCOME_STAGING_TIMESTAMP_SEMANTICS.md`](TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_R1_AMBIGUOUS_PIN_OUTCOME_STAGING_TIMESTAMP_SEMANTICS.md) |
 | `FRZ-TRC-11` | **OPEN** |
 | `P5` | **NOT ENTERED** |
 | `CERT` | **NOT ENTERED** |

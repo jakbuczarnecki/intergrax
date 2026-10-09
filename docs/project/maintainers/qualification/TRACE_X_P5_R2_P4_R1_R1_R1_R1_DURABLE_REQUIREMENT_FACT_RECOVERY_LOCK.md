@@ -5,7 +5,7 @@
 | **Status** | **BLOCKED ON R1-R1-R1-R1-R1** (P2 typed pin/staging API — child lock) |
 | **Production delta** | **0** |
 | **FINAL_COMMIT** | `2c1fccf4b611afcdd7407e37c4ba33e76f81ce9a` (superseded for staging contract by child) |
-| **Child** | [`TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_P2_PIN_RECOVERY_STAGING_CONTRACT_LOCK.md`](TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_P2_PIN_RECOVERY_STAGING_CONTRACT_LOCK.md) |
+| **Child** | [`TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_P2_PIN_RECOVERY_STAGING_CONTRACT_LOCK.md`](TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_P2_PIN_RECOVERY_STAGING_CONTRACT_LOCK.md) · ambiguous outcome: [`TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_R1_AMBIGUOUS_PIN_OUTCOME_STAGING_TIMESTAMP_SEMANTICS.md`](TRACE_X_P5_R2_P4_R1_R1_R1_R1_R1_R1_AMBIGUOUS_PIN_OUTCOME_STAGING_TIMESTAMP_SEMANTICS.md) |
 | **Rejected R1-R1-R1 baseline** | `3f37a80cea783fad4ca6b75ce8199ee8ed9c888d` |
 | **Parent** | [`TRACE_X_P5_R2_P4_R1_R1_R1_REQUIREMENT_EVENT_CANONICAL_RETRY_IDENTITY_RECONCILIATION.md`](TRACE_X_P5_R2_P4_R1_R1_R1_REQUIREMENT_EVENT_CANONICAL_RETRY_IDENTITY_RECONCILIATION.md) |
 | **Blocker** | `R2-P4-REQUIREMENT-FACT-DURABLE-RECOVERY-29` — **RESOLVED IN DESIGN** (this artifact) |
@@ -80,7 +80,7 @@ Production locus names refer to code @ rejected R1-R1-R1 baseline `3f37a80c…` 
 
 ```text
 record.requirement_recovery_staging.v1
-  requirement_boundary_recorded_at   # timezone-aware UTC, pin success instant
+  requirement_boundary_prepared_at   # timezone-aware UTC; pre-first-pin staging prep (child R1-R1-R1-R1-R1-R1)
   requirement_execution_correlation
     task_id
     run_id
@@ -107,7 +107,7 @@ logical key before append.
 
 | Case | Canonical field | Record |
 |---|---|---|
-| **C** (no spine fact) | `requirement_boundary_recorded_at` | P2 pin JSON envelope `record.requirement_recovery_staging.v1` in `encode_integration_configuration_provenance` / `KvExecutionIntegrationConfigurationPinningStore.pin` |
+| **C** (no spine fact) | `requirement_boundary_prepared_at` | P2 pin JSON envelope `record.requirement_recovery_staging.v1` in `encode_integration_configuration_provenance` / `KvExecutionIntegrationConfigurationPinningStore.pin` |
 | **D** (spine accepted) | `timestamp` | Positioned `RuntimeEvent` for `integration_configuration_provenance_requirement_committed` |
 
 Forbidden on all retry paths: `datetime.now(...)`, min/max spine heuristics, intent
