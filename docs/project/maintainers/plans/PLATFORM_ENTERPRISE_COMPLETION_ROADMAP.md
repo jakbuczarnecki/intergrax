@@ -204,7 +204,8 @@ Minimum planned linkage:
 | **TENANT-X** | **TEN** | **TEN (primary cross-platform closer)** |
 | PROD-Q | PRD, SEC, REL | TEN |
 | QUAL-X | REG | TEN |
-| **DIST-SCALE-X** | **REL, PRD, STA, REC, REG** (cross-platform scale/resilience qualification evidence; complements Harness W4 — does not substitute) | TEN |
+| **TOOL-LIFE-X** | **EXE, REL, TRC, GOV, OBS** (canonical Tool invocation lifecycle — timeout, deadline, cancellation, retry budget, abandonment; complements Harness W4 / TRACE-X tool paths — does not substitute) | TEN |
+| **DIST-SCALE-X** | **REL, PRD, STA, REC, REG** (cross-platform scale/resilience qualification evidence; complements Harness W4 — does not substitute; **depends on `TOOL-LIFE-X`**) | TEN |
 | EBH-5 | PLG, RPL | TEN |
 | EBH-6 | all applicable architecture families | TEN |
 | **DUP-X** | **OWN, CTR, BND, TYP, PLG, RPL, EXE, GOV, STA, TRC, REG** — cross-architecture duplicate/shadow/bypass closure | TEN |
@@ -345,15 +346,16 @@ If a new blocker is discovered:
 | COMPAT-X | Contract, Schema & Evolution Certification | Identify frozen public/stable vs internal contracts and certify versioning/evolution rules for APIs, events, persisted schemas, plugin/provider contracts and serialization. Verify backward/forward compatibility policy, migrations, deprecation/removal rules and no compatibility shim becoming a permanent parallel authority. | [ ] PLANNED / MANDATORY |
 | **TENANT-X** | Cross-Platform Tenant Isolation Certification | First complete cross-platform tenant isolation certification after individual recertification of Governance, Execution, Control Plane, State/Recovery, Traceability, Configuration and Compatibility. Certifies tenant isolation across the entire platform with no tenant-boundary bypass across subsystem composition. **Closed-world domains (minimum):** identity; execution; governance; tool invocation; provider invocation; integration resolution; configuration/profile resolution; state; durable persistence; cache; memory; RAG/vector/graph indexes; events; observability; traceability; evidence; recovery/resume; queues/background work; retries; external operations; credentials/secrets references; plugins; provider extensions; compatibility assessment; control plane. **Required proof classes:** (A) identity continuity through canonical request/subject/envelope/state/evidence contracts; (B) authority isolation — tenant A authority cannot authorize tenant B; (C) state isolation — no cross-tenant read/write of state/durable records/checkpoints/cache/memory/index material without explicit governed cross-tenant semantics; (D) provider/config isolation; (E) evidence/trace isolation; (F) async continuity through queue/retry/background/child/resume/recovery; (G) fail closed — missing/invalid tenant must not silently select global/shared state or widen access; (H) adversarial proof — tenant A request → tenant B state = DENIED; tenant A evidence → tenant B assessment = REJECTED; tenant A credential ref → tenant B provider = REJECTED; tenant A checkpoint → tenant B recovery = REJECTED; tenant A child execution → tenant B scope = REJECTED. Full scope: §3.0.2. **Depends on:** `COMPAT-X`. **Next:** `PROD-Q`. | [ ] PLANNED / MANDATORY |
 | PROD-Q | Platform Production Qualification | Prove production readiness rather than harness/lab maturity: provider/plugin admission and qualification, startup/shutdown/resource lifecycle, strict-vs-lab mode separation, unsupported configuration handling, production bypass prevention, secrets/tenant isolation, degraded operation and fail-closed materialization. Historical `implementation complete` or harness qualification is not sufficient. **Capacity / overload:** capacity/overload behavior known; bounded resource behavior; backpressure or explicit rejection semantics; provider throttling handling; no silent infinite retry/fallback. **Operability:** health semantics; readiness semantics; degraded-state visibility; terminal failure visibility; operator-actionable failure classification; critical recovery responsibility/procedure; startup failure visibility; shutdown/resource-cleanup visibility. Platform-level enterprise requirements only — no mandated deployment technology or vendor observability stack. Overlapping Security/Reliability proof may reference evidence from `CTRL-X`, `HARNESS-W4` and `STATE-X` without duplicating semantic criteria. | [ ] PLANNED / MANDATORY |
-| **QUAL-X** | Enterprise Qualification & Regression Infrastructure Certification | Answers: *Are qualification/regression mechanisms that protect frozen architecture complete, credible, deterministic and correctly built?* Certifies architecture gates, regression gates, negative tests, allowlists, inventories, deterministic qualification, clean-checkout reproducibility, environment failure classification, and protection of frozen invariants—not a substitute for a full-platform enterprise audit (`ENT-AUDIT-X`). Verify: every frozen invariant has qualification evidence; corrected blockers have regression gates; architecture gates scan current closed-world surface; allowlists minimal and evidence-backed; stale inventories = 0; negative tests detect violations; critical invariants not docs-only; qualification tests deterministic; clean-checkout reproducibility; environment failure cannot auto-classify as architecture PASS; flaky tests cannot be freeze evidence; tests cannot assert names/other tests instead of invariants; qualification records match current code; mandatory architecture suite runnable as one defined freeze-oriented qualification set. **Depends on:** `PROD-Q`. **Next:** `DIST-SCALE-X`. | [ ] PLANNED / MANDATORY |
-| **DIST-SCALE-X** | Data-Intensive Distributed Systems Scale & Resilience Certification | **Mandatory late-stage cross-platform certification** (not a performance benchmark alone). Answers: *Does the whole platform remain correct, predictable and resilient under real data-intensive / distributed-system load?* Certifies correctness under load; durability under failure; recovery under partial failure; predictable degradation; horizontal scalability; absence of hidden single-node assumptions; absence of unsafe retry / duplicate side effects; queue and backpressure behavior; distributed-state integrity. **Closed-world scope, certification dimensions A–N, workload models, real backends, vendor matrix, capacity/failure envelopes, evidence, and exit criteria:** §3.0.4. **Relationship to Harness:** `HARNESS-W4` = harness-scoped scale/resilience/cancellation recertification (CLOSED evidence); **`DIST-SCALE-X`** = whole-platform mandatory certification — complementary, not a duplicate or substitute. **Depends on:** `QUAL-X` (and all prior mandatory stages including `CONFIG-X`, `COMPAT-X`, `TENANT-X`, `PROD-Q`). **Next:** `EBH-5`. **Implementation status:** docs/plan only until independently CLOSED — **production delta = 0** until implementation waves are explicitly opened. | **[ ] PLANNED / MANDATORY** |
+| **QUAL-X** | Enterprise Qualification & Regression Infrastructure Certification | Answers: *Are qualification/regression mechanisms that protect frozen architecture complete, credible, deterministic and correctly built?* Certifies architecture gates, regression gates, negative tests, allowlists, inventories, deterministic qualification, clean-checkout reproducibility, environment failure classification, and protection of frozen invariants—not a substitute for a full-platform enterprise audit (`ENT-AUDIT-X`). Verify: every frozen invariant has qualification evidence; corrected blockers have regression gates; architecture gates scan current closed-world surface; allowlists minimal and evidence-backed; stale inventories = 0; negative tests detect violations; critical invariants not docs-only; qualification tests deterministic; clean-checkout reproducibility; environment failure cannot auto-classify as architecture PASS; flaky tests cannot be freeze evidence; tests cannot assert names/other tests instead of invariants; qualification records match current code; mandatory architecture suite runnable as one defined freeze-oriented qualification set. **Depends on:** `PROD-Q`. **Next:** `TOOL-LIFE-X`. | [ ] PLANNED / MANDATORY |
+| **TOOL-LIFE-X** | Tool Execution Lifecycle, Timeout, Cancellation & Retry Certification | **Mandatory late-stage cross-platform certification.** Answers: *Does every Tool invocation have an unambiguous, bounded, controlled lifecycle so that a Tool cannot hang Execution, an agent, a worker, or the platform indefinitely?* Closes the **canonical Tool invocation lifecycle** (reuse canonical Tool invocation / Execution lifecycle owner — no competing lifecycle model): `CREATED → ADMITTED → STARTED → RUNNING` with terminals `SUCCEEDED`, `FAILED`, `TIMED_OUT`, `CANCELLED`, `ABANDONED` and optional `RETRY_SCHEDULED` when sanctioned. Certifies timeout vs deadline hierarchy, cancellation propagation, bounded retry/retry budget, unknown-outcome semantics, abandonment, lease/ownership, stuck-invocation detection, SQL/DB/MCP/HTTP/browser safety, result-size/resource budgets, queue-wait vs execution time, worker shutdown, late results, child executions, observability/metrics, governance/idempotency audit, and real-infrastructure failure matrix. **Full scope, invariants, test matrix, and exit criteria:** §3.0.4. **Relationship to Harness:** `HARNESS-W4` = harness-scoped scale/resilience/cancellation recertification (CLOSED evidence); **`TOOL-LIFE-X`** = whole-platform **correctness of Tool lifecycle semantics** — complementary, not a duplicate. **`DIST-SCALE-X`** later stress-tests these mechanisms under scale; **`TOOL-LIFE-X`** owns lifecycle correctness, not throughput. **Depends on:** `QUAL-X` (and all prior mandatory stages including `CONFIG-X`, `COMPAT-X`, `TENANT-X`, `PROD-Q`). **Next:** `DIST-SCALE-X`. **Implementation status:** docs/plan only — **not started**; **production delta = 0** until implementation waves are explicitly opened. | **[ ] PLANNED / MANDATORY** |
+| **DIST-SCALE-X** | Data-Intensive Distributed Systems Scale & Resilience Certification | **Mandatory late-stage cross-platform certification** (not a performance benchmark alone). Answers: *Does the whole platform remain correct, predictable and resilient under real data-intensive / distributed-system load?* Certifies correctness under load; durability under failure; recovery under partial failure; predictable degradation; horizontal scalability; absence of hidden single-node assumptions; absence of unsafe retry / duplicate side effects; queue and backpressure behavior; distributed-state integrity. **Closed-world scope, certification dimensions A–N, workload models, real backends, vendor matrix, capacity/failure envelopes, evidence, and exit criteria:** §3.0.5. **Relationship to Harness:** `HARNESS-W4` = harness-scoped scale/resilience/cancellation recertification (CLOSED evidence); **`DIST-SCALE-X`** = whole-platform mandatory certification — complementary, not a duplicate or substitute. **`TOOL-LIFE-X`** must be **CLOSED** first — scale certification is not credible while Tool invocations may block resources without bounded lifecycle semantics (§3.0.4). **Depends on:** **`TOOL-LIFE-X`** (and `QUAL-X` and all prior mandatory stages including `CONFIG-X`, `COMPAT-X`, `TENANT-X`, `PROD-Q`). **Next:** `EBH-5`. **Implementation status:** docs/plan only until independently CLOSED — **production delta = 0** until implementation waves are explicitly opened. | **[ ] PLANNED / MANDATORY** |
 | EBH-5 | Replaceability & E2E Certification | Practical E2E proof that key providers, strategies and implementations can be replaced through platform contracts without modifying core mechanisms; verify real pluginability rather than test-only monkeypatching. **Entered after** **`DIST-SCALE-X`** closure on current HEAD. | [ ] PLANNED |
 | EBH-6 | Final Architecture Recertification | **Current-HEAD cross-platform recertification** after all local, Harness, Governance, control-plane, state, compatibility and production-qualification work: boundaries, ownership, communication, composition, evidence, fail-closed behavior, typing and regression protection — **including every `FRZ-*` criterion and invariant added to the freeze program after historical `EBH-2*` local hardening.** Historical `EBH-2*` closure is **not** sufficient alone for final `TYP`, `BND`, `OWN`, `CTR`, `PLG` PASS if later stages changed the audited surface. **EBH-2\*** = primary/local hardening and evidence; **EBH-6** = final current-HEAD architecture-family recertification. | [ ] PLANNED |
 | **DUP-X** | Cross-Architecture Duplicate Mechanism & Bypass Certification | **FINAL PRE-REPLAY / MANDATORY** — brutal closed-world current-HEAD audit focused exclusively on semantic duplication, parallel mechanisms and bypass risk across the whole platform. Build a responsibility-level inventory and prove **exactly one semantic owner + exactly one canonical contract/registry/resolver/dispatcher/store/selection/materialization/admission/composition owner wherever the responsibility is singular**. Detect and remediate duplicate/near-duplicate execution ingresses, dispatchers, handler registries, provider/config resolvers, factories, registries, policy/admission engines, retry/recovery loops, schedulers, state/persistence stores, caches, provenance/evidence stores, intent mechanisms, selectors, target resolvers, compatibility branches, legacy shims, observability/diagnostic truth paths and per-domain copies of cross-platform mechanisms. Legitimate source-specific typed adapters are allowed only when they converge immediately into one shared semantic core and do not own parallel truth/authority. **No finding may be waived as historical CLOSED evidence.** Every suspected duplicate must be classified as: canonical owner, thin typed adapter, legitimate distinct responsibility, remediation blocker, or proven N/A with evidence. `DUP-X` cannot close with unresolved duplicate/shadow/bypass findings. **Depends on:** `EBH-6`. **Next:** `ROADMAP-REPLAY-X`. | **[ ] FINAL / MANDATORY** |
 | **ROADMAP-REPLAY-X** | Full Program Current-HEAD Revalidation | **FINAL / MANDATORY** — Re-run the complete enterprise roadmap from the earliest relevant stage to current HEAD and prove that later changes have not invalidated earlier certifications or reopened architecture drift. Every historical CLOSED stage is evidence, not automatic current PASS; revalidate original invariants and exit criteria; later changes must not invalidate earlier ownership/boundaries/contracts/authority; stale evidence and stale assumptions must be detected; a real violation reopens the affected historical semantic parent; replay remains BLOCKED while any reopened stage is unresolved. **Mechanical prerequisites:** `reopened historical stages` = 0; `unresolved replay blockers` = 0; `roadmap drift` = 0; `historical evidence invalidated by later changes` = 0; `unclassified replay findings` = 0. **Depends on:** `DUP-X`. **Next:** `EBH-7`. | **[ ] FINAL / MANDATORY** |
 | **EBH-7** | Comprehensive Platform Enterprise Architecture Certification | Final certification of Integrax as one enterprise platform: hard boundaries, exactly-one ownership, canonical contracts, pluginability/replaceability, zero bypasses, zero duplicated mechanisms, correct Governance/Execution separation, validated E2E behavior, **and end-to-end tenant isolation proven on current HEAD across subsystem boundaries — not inferred from individual component closure alone**. **EBH-7** = final whole-platform enterprise certification on current HEAD after **EBH-6** and **`ROADMAP-REPLAY-X` = CLOSED**; complements **EBH-2\*** local evidence and **EBH-6** architecture-family recertification — neither substitutes for the other at freeze. | **[ ] FINAL / MANDATORY** |
 | **ENT-AUDIT-X** | Continuous Enterprise Architecture Audit System | Build and independently certify a **durable, executable full-platform enterprise audit system** before `ARCH-FREEZE` (after final enterprise certification, not before). Answers: *Run the whole platform as one audit—does current state still satisfy enterprise invariants, where is drift, and what was violated?* Reuses existing qualification/gates instead of duplicating them; adds cross-cutting static/structural checks; one actionable report; baseline vs accepted enterprise baseline; remains in use after scenario development begins. **Not** an alias of `QUAL-X`. Full scope, architecture, modes, reporting and post-freeze policy: §3.1. | **[ ] FINAL / MANDATORY** |
-| **ARCH-FREEZE** | Architecture Freeze Certification | Formal freeze gate after **`ENT-AUDIT-X`** (requires `EBH-7` and **`ENT-AUDIT-X` = CLOSED**). Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **`ARCH-FREEZE` cannot close while any applicable `FRZ-TEN-*` criterion remains `OPEN` or `BLOCKED`.** Allowed final tenant criterion states: `PASS` or `N/A — WITH EVIDENCE` only. **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0; **`DIST-SCALE-X` = CLOSED** (independent exact-SHA evidence; certified capacity/failure envelopes documented per §3.0.4); **`DUP-X` = CLOSED**; **`ROADMAP-REPLAY-X` = CLOSED**; **`reopened historical stages` = 0**; **`unresolved replay findings` = 0**; **`ENT-AUDIT-X` independently CLOSED**; **exact-freeze-SHA enterprise audit:** enterprise audit completed = yes; audit internal failure = 0; new enterprise violations = 0; unclassified findings = 0; expired debt = 0; unresolved enterprise BLOCKER findings = 0; **enterprise audit baseline SHA recorded** (reference for post-freeze scenario development). **Enterprise / data-intensive production readiness must not be claimed without `DIST-SCALE-X` = CLOSED.** A complete freeze checklist additionally requires explicit resolution of **data lifecycle/security responsibilities**, **capacity/overload/resource boundedness**, **backup/restore responsibility** and **production operability** (via applicable `FRZ-SEC-*`, `FRZ-REL-*`, `FRZ-REC-*`, `FRZ-PRD-*`, **`FRZ-TEN-*`** — not a second freeze gate). Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification + scenario-wave drift audit per §3.1). | **[ ] FINAL / MANDATORY** |
+| **ARCH-FREEZE** | Architecture Freeze Certification | Formal freeze gate after **`ENT-AUDIT-X`** (requires `EBH-7` and **`ENT-AUDIT-X` = CLOSED**). Governed by [Platform Enterprise Freeze Acceptance Checklist](../qualification/PLATFORM_ENTERPRISE_FREEZE_ACCEPTANCE_CHECKLIST.md). **`ARCH-FREEZE` cannot close while any applicable `FRZ-TEN-*` criterion remains `OPEN` or `BLOCKED`.** Allowed final tenant criterion states: `PASS` or `N/A — WITH EVIDENCE` only. **Mechanical entry requirements (all must hold; `N/A` only with evidence):** mandatory roadmap `OPEN` = 0; mandatory roadmap `BLOCKED` = 0; freeze checklist `OPEN` = 0; freeze checklist `BLOCKED` = 0; unresolved architecture debt inside frozen scope = 0; unresolved Harness invariant = 0; unresolved Top-Tier frozen-scope gap = 0; failing mandatory architecture gate = 0; docs/code semantic discrepancy = 0; unversioned frozen public contract = 0; unclassified compatibility seam = 0; **`TOOL-LIFE-X` = CLOSED** (independent exact-SHA evidence; lifecycle scope per §3.0.4); **`DIST-SCALE-X` = CLOSED** (independent exact-SHA evidence; certified capacity/failure envelopes documented per §3.0.5); **`DUP-X` = CLOSED**; **`ROADMAP-REPLAY-X` = CLOSED**; **`reopened historical stages` = 0**; **`unresolved replay findings` = 0**; **`ENT-AUDIT-X` independently CLOSED**; **exact-freeze-SHA enterprise audit:** enterprise audit completed = yes; audit internal failure = 0; new enterprise violations = 0; unclassified findings = 0; expired debt = 0; unresolved enterprise BLOCKER findings = 0; **enterprise audit baseline SHA recorded** (reference for post-freeze scenario development). **Enterprise / data-intensive production readiness must not be claimed without `DIST-SCALE-X` = CLOSED.** A complete freeze checklist additionally requires explicit resolution of **data lifecycle/security responsibilities**, **capacity/overload/resource boundedness**, **backup/restore responsibility** and **production operability** (via applicable `FRZ-SEC-*`, `FRZ-REL-*`, `FRZ-REC-*`, `FRZ-PRD-*`, **`FRZ-TEN-*`** — not a second freeze gate). Additionally: canonical contract/layer/ownership/composition manifests frozen; mandatory qualification suite green; non-blocking debt register frozen; post-freeze change policy (ADR + architecture review + freeze exception + targeted recertification + scenario-wave drift audit per §3.1). | **[ ] FINAL / MANDATORY** |
 | **SCENARIO-GATE** | Enterprise → Scenario transition gate | Formal Go/No-Go to shift from platform hardening to full scenario focus. **Remains BLOCKED while `ARCH-FREEZE` ≠ CLOSED** or **`ROADMAP-REPLAY-X` ≠ CLOSED**. `ARCH-FREEZE` = CLOSED alone is **insufficient**: also requires **`ROADMAP-REPLAY-X` = CLOSED**, **`DIST-SCALE-X` = CLOSED**, **`ENT-AUDIT-X` = CLOSED**, **canonical enterprise audit baseline exists**, and **freeze-SHA enterprise audit = PASS**. Scenarios must not compensate for unfrozen architecture gaps. Gate CLOSED only when all mandatory rows above—including `DIST-SCALE-X`, `ARCH-FREEZE`, `DUP-X`, `ROADMAP-REPLAY-X`, and audit baseline evidence—are CLOSED with independent SHA evidence and no known enterprise blocker. Transferred Scenario #24 capabilities remain **OPEN for Scenario #24** until each satisfies the cross-session return contract in §1.1. | **[ ] BLOCKED** |
 
 ### 3.0.1 Transferred Scenario #24 capabilities — mandatory order before EBH-3 / EBH-4
@@ -457,16 +459,225 @@ GOV-X1
 
 `ROADMAP-REPLAY-X` must not start until `DUP-X = CLOSED`.
 
-### 3.0.4 `DIST-SCALE-X` — Data-Intensive Distributed Systems Scale & Resilience Certification
+### 3.0.4 `TOOL-LIFE-X` — Tool Execution Lifecycle, Timeout, Cancellation & Retry Certification
+
+**Status:** **`PLANNED / MANDATORY`** — not started; not CLOSED; do **not** mark PASS until independent exact-SHA closure. Roadmap/plan authority only until then.
+
+**Position:** after **`QUAL-X`**, before **`DIST-SCALE-X`**. Mandatory before cross-platform scale certification and before final enterprise architecture freeze / release certification (`EBH-7`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
+
+**Canonical late-stage dependency chain (adapted to §3 order):**
+
+```text
+earlier correctness / production certifications
+→ CONFIG-X → COMPAT-X → TENANT-X → PROD-Q → QUAL-X
+→ TOOL-LIFE-X
+→ DIST-SCALE-X
+→ EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-GATE
+```
+
+**Primary platform question:**
+
+> Does every Tool invocation have an unambiguous, bounded, controlled lifecycle such that a Tool cannot suspend Execution, an agent, a worker, or the platform for an unbounded time?
+
+**Representative failure modes (non-exhaustive):** very large SQL; full-table scan; blocked database; vendor API responding for hours; hung MCP server; browser/tool waiting forever; dead connection; stalled streaming response; worker lost during invocation; request accepted by vendor with response lost.
+
+#### Canonical lifecycle (single owner — no competing model)
+
+Reuse the canonical **Tool invocation / Execution lifecycle** semantic owner. Do not introduce a parallel Tool-only state machine that diverges from sanctioned Execution/tool contracts.
+
+**Minimum states:**
+
+```text
+CREATED → ADMITTED → STARTED → RUNNING
+```
+
+**Terminal states:**
+
+```text
+SUCCEEDED | FAILED | TIMED_OUT | CANCELLED | ABANDONED
+```
+
+**Optional intermediate (only when platform has sanctioned retry lifecycle):**
+
+```text
+RETRY_SCHEDULED
+```
+
+#### Timeout vs deadline
+
+| Concept | Meaning |
+|---|---|
+| **Timeout** | Maximum duration of a **single attempt** (e.g. SQL tool attempt `max_execution_time = 60s`). |
+| **Deadline** | Absolute limit for the **whole operation / Execution** (e.g. agent step deadline `5 min`). Retries must **not** reset the global deadline without bound. |
+
+**Required invariant:**
+
+```text
+remaining_budget = execution_deadline - now
+```
+
+Every subsequent attempt must fit within `remaining_budget`.
+
+#### Timeout hierarchy (certification required)
+
+```text
+Execution deadline
+  ↓ Step deadline
+  ↓ Tool invocation deadline
+  ↓ individual attempt timeout
+  ↓ transport / socket / query timeout
+```
+
+Child timeout must not exceed parent deadline. No infinite timeout at a lower layer when a higher layer defines a deadline.
+
+#### Cancellation propagation
+
+Prove propagation where underlying technology allows:
+
+```text
+Execution cancelled → Step cancelled → Tool invocation cancelled → provider / DB / MCP / HTTP request cancelled
+```
+
+When physical downstream cancellation is impossible: runtime must stop waiting; late results must not be auto-accepted as current; late-result semantics must be explicit and typed.
+
+**Cancellation sources (each → unambiguous terminal/transition):** user cancellation; parent Execution cancellation; agent decides result no longer needed; platform shutdown; policy cancellation; timeout cancellation; resource-pressure cancellation.
+
+#### Distributed-systems invariant: timeout ≠ definite failure
+
+```text
+caller timeout ≠ operation definitely failed
+```
+
+Example: `POST /create_invoice` — vendor executed, response lost, caller timed out; blind retry may duplicate. **Mandatory Tool classification** for retry policy: read-only; idempotent write; non-idempotent write; externally deduplicated; compensatable; unknown outcome. Retry policy depends on class.
+
+**Unknown outcome:** require explicit `UNKNOWN_OUTCOME` (or canonical typed equivalent). Examples: DB timeout after possible `COMMIT`; HTTP POST timeout after server accepted request. Do not auto-retry non-idempotent side effects.
+
+#### Retry policy and retry budget
+
+No unbounded retry. Each retry path: max attempts; retry deadline within `remaining_budget`; backoff; jitter where applicable; retryable vs non-retryable classification; idempotency safety.
+
+Example flow:
+
+```text
+attempt 1 → timeout → backoff → attempt 2 → transient failure → backoff → attempt 3 → exhausted → ABANDONED / FAILED
+```
+
+**Global retry budget** (certify amplification): per-execution limit; per-tool limit; optional per-provider budget; bounded concurrent retries — `1000 parallel tools × 5 retries` must not turn a small outage into a retry storm.
+
+#### Abandonment
+
+**`ABANDONED`** is mandatory for: cannot safely retry; downstream outcome unknown; retry budget exhausted; cancellation cannot confirm remote stop; worker lost ownership and invocation cannot be safely taken over. **`ABANDONED` ≠ `FAILED`** when outcome is unknown.
+
+#### Lease / ownership and heartbeats (certification requirements)
+
+Long-running Tool executions: certify ownership/lease — e.g. worker A owns invocation, lease expires, worker A dead → system must decide: take over, retry, mark **ABANDONED**, or wait for reconciliation. No eternal **`RUNNING`** without a live owner.
+
+Where architecture requires it: canonical heartbeat/progress semantics (`STARTED → heartbeat → progress → …`); missing heartbeat beyond threshold → **STALLED** → cancel / timeout / abandon / recover. Do not implement heartbeat in this roadmap revision — certification requirement only.
+
+#### Stuck invocation detection
+
+Watchdog/reconciliation invariants:
+
+```text
+RUNNING + deadline exceeded → terminal/recovery decision
+RUNNING + owner missing + lease expired → recovery decision
+```
+
+No Tool invocation may remain **RUNNING** without end.
+
+#### Queue wait vs execution time
+
+Distinguish **queued time** from **execution time**. Invocation must not wait in queue for hours then receive a full execution timeout as if queue delay did not count. Global deadline must include queue delay when canonical policy says so.
+
+#### Resource and result bounds
+
+Lifecycle includes **size** not only time: max rows; max bytes; max response tokens / normalized payload size; pagination; truncation semantics; continuation tokens. Fast completion with unbounded payload is still bounded-execution failure.
+
+**Budget dimensions (applicable limits per production Tool class):** time; rows; bytes; memory; external requests; retry count; cost.
+
+#### Domain-specific certification surfaces
+
+| Surface | Minimum certification |
+|---|---|
+| **SQL / `database.query` / `database.execute`** | query/statement/connection/lock/pool-acquisition timeouts; cancellation; result-size/row limits; pagination/streaming; huge-result protection. |
+| **External HTTP/API** | connect/read/total timeout; slow streaming; connection reset; 429/5xx; DNS/network; accepted request + lost response; retry per operation semantics. |
+| **MCP tools** | server offline; accept-never-respond; hung process; partial response; mid-operation disconnect; restart; duplicate after timeout — MCP cannot bypass canonical Tool lifecycle. |
+| **Browser / long-running automation** | deadline; cancellation; retry; resource limits; abandonment — no infinite lifecycle outside canonical Runtime. |
+| **Worker shutdown** | running tool + worker shutdown → cancel / persist resumable state / abandon / safe retry — no permanent **RUNNING**. |
+| **Late results** | timed out at T, result at T+60s → rejected / reconciled / stale per architecture — must not resurrect terminal Execution. |
+| **Child executions** | parent cancel/deadline semantics explicit; test `parent cancelled → child?` — no assumed cascade without canonical rule. |
+
+#### Long-running jobs
+
+Prefer `submit → job_id → async polling/callback → bounded wait` over multi-hour open HTTP. **`TOOL-LIFE-X`** must identify Tool implementations that should convert to async job semantics.
+
+#### Default and per-tool policy
+
+**Forbidden production default:** `timeout = None` for Tool invocation unless an explicitly approved long-running lifecycle policy exists. Missing configuration must not mean wait forever.
+
+Per-tool limits are allowed (e.g. `database.query 30s`, `web_search 20s`, `browser_task 120s`, `long_batch_job` async lifecycle) — all must respect canonical policy / deadline hierarchy.
+
+#### Governance and idempotency (audit requirements — design not in this revision)
+
+Tool timeout/retry policy must not bypass Governance: `retry ≠ new authorization automatically` — audit when retry reuses authority vs requires fresh decision.
+
+Closed-world idempotency audit for side-effect Tools: idempotency key presence; generator; scope; retry key reuse; dedup retention; behavior on ambiguous timeout. Compensation/reconciliation required only where retry is unsafe — but unknown-outcome side effects need explicit recovery semantics.
+
+#### Observability and metrics
+
+Typed evidence preferred over log text alone. Each invocation diagnosable: start time; deadline; attempt number; elapsed; timeout/cancellation reason; retry decision; final state; unknown outcome; abandoned reason.
+
+Metrics (minimum): active invocations; duration; timeout/cancellation/abandonment counts; retry count/exhaustion; stalled invocations; late results; result-size rejection; unknown outcome count.
+
+#### Test matrix (minimum scenarios)
+
+1. normal success; 2. fast failure; 3. connection timeout; 4. execution timeout; 5. lock timeout; 6. cancellation; 7. user abort; 8. parent abort; 9. retryable error; 10. non-retryable error; 11. retry exhaustion; 12. lost acknowledgement; 13. duplicate response; 14. late response; 15. process crash; 16. worker lost; 17. provider unavailable; 18. stalled operation; 19. huge response; 20. huge database result; 21. queue wait deadline exceeded; 22. unknown outcome; 23. abandonment; 24. successful recovery.
+
+#### Real infrastructure
+
+Do not certify lifecycle correctness through mocks alone where real behavior matters: Docker database; real query cancellation; locks; connection termination; slow queries; network fault injection; real MCP server process; real HTTP test service.
+
+#### Interaction with `DIST-SCALE-X`
+
+**Explicit dependency:** **`TOOL-LIFE-X` → `DIST-SCALE-X`**.
+
+**`DIST-SCALE-X`** later stresses certified mechanisms under load (e.g. 10k tool calls + timeout storm + retries + slow DB + vendor degradation). **`TOOL-LIFE-X`** owns **lifecycle semantics correctness**; **`DIST-SCALE-X`** owns **behavior under scale** — do not duplicate ownership.
+
+**Relationship to `HARNESS-W4`:** W4 evidence may be referenced; it does **not** satisfy **`TOOL-LIFE-X`**.
+
+#### Exit criteria (`TOOL-LIFE-X` = PASS only when all hold)
+
+1. no unbounded production Tool wait without explicit sanctioned long-running policy;
+2. timeout/deadline hierarchy certified;
+3. cancellation propagation certified;
+4. retry budget bounded;
+5. unknown-outcome semantics certified;
+6. side-effect retries idempotent or explicitly prevented;
+7. abandoned/stalled executions detectable;
+8. worker crash recovery certified;
+9. late results cannot corrupt terminal executions;
+10. database query/result limits certified;
+11. MCP lifecycle certified;
+12. external HTTP/provider lifecycle certified;
+13. real infrastructure failure tests green;
+14. no Tool-specific bypass of canonical lifecycle;
+15. unresolved lifecycle blockers = 0.
+
+#### Implementation boundary (this roadmap revision)
+
+**`production delta = 0`** until explicit implementation waves are opened. Do not implement timeouts, cancellation, retry, watchdogs, or production runtime changes as part of roadmap documentation alone.
+
+### 3.0.5 `DIST-SCALE-X` — Data-Intensive Distributed Systems Scale & Resilience Certification
 
 **Status:** **`PLANNED / MANDATORY`** — not started; not CLOSED. This section is roadmap/plan authority only until independent exact-SHA closure.
 
-**Position:** after **`QUAL-X`**, before **`EBH-5`**. Mandatory before final enterprise architecture freeze / release certification (`EBH-7`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
+**Position:** after **`TOOL-LIFE-X`**, before **`EBH-5`**. Mandatory before final enterprise architecture freeze / release certification (`EBH-7`, `ENT-AUDIT-X`, `ARCH-FREEZE`).
 
 **Canonical late-stage dependency chain (adapted to §3 order):**
 
 ```text
 CONFIG-X → COMPAT-X → TENANT-X → PROD-Q → QUAL-X
+→ TOOL-LIFE-X
 → DIST-SCALE-X
 → EBH-5 → EBH-6 → DUP-X → ROADMAP-REPLAY-X → EBH-7 → ENT-AUDIT-X → ARCH-FREEZE → SCENARIO-GATE
 ```
@@ -488,6 +699,8 @@ This is **not** a throughput benchmark alone. The stage certifies:
 - distributed-state integrity.
 
 **Relationship to `HARNESS-W4`:** W4 closed harness-scoped scale/resilience/cancellation recertification on historical exact-SHA evidence. **`DIST-SCALE-X`** owns **cross-platform**, **closed-world**, **production-adapter** scale and resilience certification for enterprise/data-intensive readiness. W4 evidence may be referenced; it does **not** satisfy **`DIST-SCALE-X`**.
+
+**Relationship to `TOOL-LIFE-X`:** **`TOOL-LIFE-X` = CLOSED** is a hard prerequisite. **`DIST-SCALE-X`** stress-tests lifecycle mechanisms certified in §3.0.4 (timeouts, retries, cancellation under load); it does **not** substitute for **`TOOL-LIFE-X`** lifecycle correctness.
 
 #### Closed-world scope (cross-platform; no subsystem excluded for passing unit/standard integration tests alone)
 
@@ -932,8 +1145,9 @@ Update this section only after independent exact-SHA audit.
 | COMPAT-X | — | PLANNED / MANDATORY — contract/schema/event/plugin evolution certification before tenant cross-platform certification (`CONFIG-X` → `COMPAT-X` → `TENANT-X` → `PROD-Q`). |
 | TENANT-X | — | PLANNED / MANDATORY — cross-platform tenant isolation certification on current HEAD after `COMPAT-X`; primary closer for `FRZ-TEN-*`; precedes `PROD-Q`. |
 | PROD-Q | — | PLANNED / MANDATORY — explicit production qualification before final enterprise certification; follows `TENANT-X`; includes ensuring the SQLite bootstrap finding cannot mask production startup correctness. |
-| QUAL-X | — | PLANNED / MANDATORY — qualification/regression infrastructure certification (`PROD-Q` → `QUAL-X` → `DIST-SCALE-X`); `R1-SQLITE-ENV-01` is an explicit evidence item for `FRZ-REG-08` and cannot be treated as a false PASS. |
-| DIST-SCALE-X | — | PLANNED / MANDATORY — cross-platform data-intensive distributed scale & resilience certification (`QUAL-X` → `DIST-SCALE-X` → `EBH-5`); full scope §3.0.4; mandatory before `ARCH-FREEZE`; **production delta = 0** until implementation opened; not started. |
+| QUAL-X | — | PLANNED / MANDATORY — qualification/regression infrastructure certification (`PROD-Q` → `QUAL-X` → `TOOL-LIFE-X`); `R1-SQLITE-ENV-01` is an explicit evidence item for `FRZ-REG-08` and cannot be treated as a false PASS. |
+| TOOL-LIFE-X | — | PLANNED / MANDATORY — Tool execution lifecycle, timeout, cancellation & retry certification (`QUAL-X` → `TOOL-LIFE-X` → `DIST-SCALE-X`); full scope §3.0.4; **not started**; **production delta = 0** until implementation opened. |
+| DIST-SCALE-X | — | PLANNED / MANDATORY — cross-platform data-intensive distributed scale & resilience certification (`TOOL-LIFE-X` → `DIST-SCALE-X` → `EBH-5`); full scope §3.0.5; mandatory before `ARCH-FREEZE`; **production delta = 0** until implementation opened; not started. |
 | ENT-AUDIT-X | — | FINAL / MANDATORY — Build and independently certify the reusable full-platform enterprise architecture audit system before ARCH-FREEZE; exact-SHA implementation, coverage, baseline/drift and reporting evidence required. |
 | ARCH-FREEZE | — | FINAL / MANDATORY — formal architecture freeze gate after `ENT-AUDIT-X`; requires checklist complete per mechanical entry requirements in §3 including freeze-SHA enterprise audit PASS and recorded audit baseline. |
 | remaining mandatory stages | — | Fill on closure. |
@@ -1035,7 +1249,8 @@ Bring the whole Integrax platform to a fully, independently recertified and form
 - cross-platform tenant isolation certified on current HEAD (`TENANT-X` after `COMPAT-X`);
 - production qualification proven independently from harness/lab maturity (`PROD-Q` after `TENANT-X`);
 - qualification/regression infrastructure certified (`QUAL-X`);
-- cross-platform data-intensive scale and resilience certified on real adapters (`DIST-SCALE-X` after `QUAL-X`);
+- canonical Tool invocation lifecycle certified (`TOOL-LIFE-X` after `QUAL-X`);
+- cross-platform data-intensive scale and resilience certified on real adapters (`DIST-SCALE-X` after `TOOL-LIFE-X`);
 - final enterprise closure through `EBH-7`;
 - reusable full-platform enterprise audit system certified before freeze (`ENT-AUDIT-X`);
 - exact-SHA enterprise audit baseline recorded at `ARCH-FREEZE`;
