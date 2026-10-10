@@ -69,6 +69,9 @@ class ClassVersionFieldSignal:
     class_name: str
     field_name: str
     version_literal: str | None
+    resolved_via_constant: str | None
+    static_version_conflict: bool
+    unresolved_static_reference: bool
     signal: str
 
 
@@ -119,7 +122,86 @@ def _literal_version(node: ast.AST | None) -> str | None:
         return str(node.value)
     if isinstance(node, ast.Subscript):
         return _literal_version(node.slice)
+    if isinstance(node, ast.Tuple) and len(node.elts) == 1:
+        return _literal_version(node.elts[0])
     return None
+
+
+def _literal_from_type_annotation(annotation: ast.expr | None) -> str | None:
+    if annotation is None:
+        return None
+    if isinstance(annotation, ast.Subscript):
+        value = annotation.value
+        if isinstance(value, ast.Name) and value.id == "Literal":
+            return _literal_version(annotation.slice)
+    return None
+
+
+def build_module_version_constant_map(tree: ast.Module) -> dict[str, str]:
+    """Same-module statically known version constants (compiler-like symbol table)."""
+    symbols: dict[str, str] = {}
+    for node in tree.body:
+        target: ast.expr | None = None
+        value: ast.AST | None = None
+        name: str | None = None
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            name = node.targets[0].id
+            value = node.value
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            name = node.target.id
+            value = node.value
+        if name is None or value is None or not _is_version_constant_name(name):
+            continue
+        version = _literal_version(value)
+        if version is not None:
+            symbols[name] = version
+    return symbols
+
+
+def _resolve_version_expression(
+    node: ast.AST | None,
+    version_constants: dict[str, str],
+) -> tuple[str | None, str | None]:
+    """Resolve a version expression to a literal and optional same-module constant name."""
+    if node is None:
+        return None, None
+    direct = _literal_version(node)
+    if direct is not None:
+        return direct, None
+    if isinstance(node, ast.Name):
+        bound = version_constants.get(node.id)
+        if bound is not None:
+            return bound, node.id
+    return None, None
+
+
+def _merge_class_field_version_evidence(
+    annotation: ast.expr | None,
+    value_node: ast.AST | None,
+    version_constants: dict[str, str],
+) -> tuple[str | None, str | None, bool]:
+    annotation_version = _literal_from_type_annotation(annotation)
+    default_version, via_constant = _resolve_version_expression(value_node, version_constants)
+    if annotation_version is not None and default_version is not None:
+        if annotation_version != default_version:
+            return None, None, True
+        return annotation_version, via_constant, False
+    if annotation_version is not None:
+        return annotation_version, via_constant, False
+    return default_version, via_constant, False
+
+
+def _value_is_unresolved_version_reference(
+    value_node: ast.AST | None,
+    version_constants: dict[str, str],
+    resolved_version: str | None,
+    conflict: bool,
+) -> bool:
+    if conflict or resolved_version is not None or value_node is None:
+        return False
+    if isinstance(value_node, ast.Name):
+        return value_node.id not in version_constants
+    return not isinstance(value_node, ast.Constant)
 
 
 def _is_version_constant_name(name: str) -> bool:
@@ -163,53 +245,86 @@ def extract_module_version_constants(
 
 
 def _class_field_from_annassign(
-    module_path: str, class_name: str, node: ast.AnnAssign
+    module_path: str,
+    class_name: str,
+    node: ast.AnnAssign,
+    version_constants: dict[str, str],
 ) -> ClassVersionFieldSignal | None:
     if not isinstance(node.target, ast.Name):
         return None
     field_name = node.target.id
     if field_name not in _VERSION_FIELD_NAMES and not field_name.endswith("_version"):
         return None
-    version = _literal_version(node.value)
+    version, via_constant, conflict = _merge_class_field_version_evidence(
+        node.annotation, node.value, version_constants
+    )
+    unresolved = _value_is_unresolved_version_reference(
+        node.value, version_constants, version, conflict
+    )
+    signal_detail = f"class_field:{class_name}.{field_name}"
+    if via_constant is not None and version is not None:
+        signal_detail = f"{signal_detail} via {via_constant}"
+    if conflict:
+        signal_detail = f"{signal_detail}:static_conflict"
     return ClassVersionFieldSignal(
         module_path=module_path,
         class_name=class_name,
         field_name=field_name,
         version_literal=version,
-        signal=f"class_field:{class_name}.{field_name}",
+        resolved_via_constant=via_constant,
+        static_version_conflict=conflict,
+        unresolved_static_reference=unresolved,
+        signal=signal_detail,
     )
 
 
 def _class_field_from_assign(
-    module_path: str, class_name: str, node: ast.Assign
+    module_path: str,
+    class_name: str,
+    node: ast.Assign,
+    version_constants: dict[str, str],
 ) -> ClassVersionFieldSignal | None:
     if len(node.targets) != 1 or not isinstance(node.targets[0], ast.Name):
         return None
     field_name = node.targets[0].id
     if field_name not in _VERSION_FIELD_NAMES:
         return None
-    version = _literal_version(node.value)
+    version, via_constant, conflict = _merge_class_field_version_evidence(
+        None, node.value, version_constants
+    )
+    unresolved = _value_is_unresolved_version_reference(
+        node.value, version_constants, version, conflict
+    )
+    signal_detail = f"class_field:{class_name}.{field_name}"
+    if via_constant is not None and version is not None:
+        signal_detail = f"{signal_detail} via {via_constant}"
+    if conflict:
+        signal_detail = f"{signal_detail}:static_conflict"
     return ClassVersionFieldSignal(
         module_path=module_path,
         class_name=class_name,
         field_name=field_name,
         version_literal=version,
-        signal=f"class_field:{class_name}.{field_name}",
+        resolved_via_constant=via_constant,
+        static_version_conflict=conflict,
+        unresolved_static_reference=unresolved,
+        signal=signal_detail,
     )
 
 
 def extract_class_version_fields(module_path: str, tree: ast.Module) -> list[ClassVersionFieldSignal]:
+    version_constants = build_module_version_constant_map(tree)
     found: list[ClassVersionFieldSignal] = []
     for node in tree.body:
         if not isinstance(node, ast.ClassDef):
             continue
         for item in node.body:
             if isinstance(item, ast.AnnAssign):
-                signal = _class_field_from_annassign(module_path, node.name, item)
+                signal = _class_field_from_annassign(module_path, node.name, item, version_constants)
                 if signal is not None:
                     found.append(signal)
             elif isinstance(item, ast.Assign):
-                signal = _class_field_from_assign(module_path, node.name, item)
+                signal = _class_field_from_assign(module_path, node.name, item, version_constants)
                 if signal is not None:
                     found.append(signal)
     return found

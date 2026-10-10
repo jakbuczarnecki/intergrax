@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from intergrax.contracts.migrations.registry import CONTRACT_SCHEMA_REGISTRY
 from intergrax.runtime.schema.registry import RUNTIME_SCHEMA_REGISTRY
 
+from tests.qualification.compat_x._compat_x_closed_world import static_version_resolution_metrics
 from tests.qualification.compat_x._compat_x_inventory import COMPAT_X_INVENTORY
 from tests.qualification.compat_x._compat_x_owner_discovery import COMPAT_X_OWNER_MATRIX
 from tests.qualification.compat_x._compat_x_registry_analysis import analyze_registry_overlap
@@ -43,6 +44,10 @@ class R1QualificationReport:
     unclassified_obligation_count: int
     public_stable_without_version_obligation: int
     public_stable_missing_version_identity: int
+    public_stable_noncompliant_version_identity_count: int
+    public_stable_noncompliant_surface_ids: tuple[str, ...]
+    static_version_reference_conflict_count: int
+    unresolved_static_reference_count: int
     persisted_without_required_obligation: int
     event_without_obligation: int
     plugin_without_obligation: int
@@ -64,6 +69,28 @@ def _obligation_satisfies_requirement(obligation: VersionObligation) -> bool:
         VersionObligation.EXPLICIT_VERSION_REQUIRED,
         VersionObligation.VERSION_INHERITED_FROM_CANONICAL_ENVELOPE,
     }
+
+
+def _public_r1_version_identity_compliant(clf: VersionPolicyClassification) -> bool:
+    return clf.version_identity_compliance in {
+        VersionIdentityCompliance.VERSION_PRESENT_AND_OWNED,
+        VersionIdentityCompliance.VERSION_INHERITED_AND_RESOLVED,
+    }
+
+
+def public_stable_noncompliant_version_surfaces() -> tuple[tuple[str, VersionPolicyClassification], ...]:
+    inventory_by_id = {row.surface_id: row for row in COMPAT_X_INVENTORY}
+    noncompliant: list[tuple[str, VersionPolicyClassification]] = []
+    for clf in COMPAT_X_R1_CLASSIFICATIONS:
+        row = inventory_by_id[clf.surface_id]
+        if ExposureFacet.PUBLIC_STABLE not in row.exposure_facets:
+            continue
+        if not _obligation_satisfies_requirement(clf.version_obligation):
+            noncompliant.append((clf.surface_id, clf))
+            continue
+        if not _public_r1_version_identity_compliant(clf):
+            noncompliant.append((clf.surface_id, clf))
+    return tuple(noncompliant)
 
 
 def inventory_shim_canonical_authority_violations() -> tuple[str, ...]:
@@ -89,15 +116,10 @@ def classification_r1_qualification_passes(
     if clf.version_obligation == VersionObligation.UNCLASSIFIED:
         return False
     if ExposureFacet.PUBLIC_STABLE in record.exposure_facets:
-        if clf.version_identity_compliance == VersionIdentityCompliance.VERSION_REQUIRED_BUT_MISSING:
-            return False
         if not _obligation_satisfies_requirement(clf.version_obligation):
             return False
-    if (
-        clf.r1_compliance == R1ComplianceState.BLOCKED_LATER_STAGE_ONLY
-        and ExposureFacet.PUBLIC_STABLE in record.exposure_facets
-    ):
-        return False
+        if not _public_r1_version_identity_compliant(clf):
+            return False
     return True
 
 
@@ -110,7 +132,8 @@ def frz_cmp_02_pass_candidate() -> bool:
     report = build_r1_qualification_report()
     return (
         report.unclassified_obligation_count == 0
-        and report.public_stable_missing_version_identity == 0
+        and report.public_stable_noncompliant_version_identity_count == 0
+        and report.static_version_reference_conflict_count == 0
         and report.shim_canonical_authority_count == 0
         and report.qualification_as_semantic_policy_owner == 0
         and report.ambiguous_owner_count == 0
@@ -126,6 +149,7 @@ def build_r1_qualification_report() -> R1QualificationReport:
     unclassified = sum(1 for c in classifications if c.version_obligation == VersionObligation.UNCLASSIFIED)
     public_block = 0
     public_missing_identity = 0
+    public_noncompliant_ids: list[str] = []
     persisted_block = 0
     event_block = 0
     plugin_block = 0
@@ -146,11 +170,13 @@ def build_r1_qualification_report() -> R1QualificationReport:
             clf.version_obligation
         ):
             public_block += 1
-        if (
-            ExposureFacet.PUBLIC_STABLE in row.exposure_facets
-            and clf.version_identity_compliance == VersionIdentityCompliance.VERSION_REQUIRED_BUT_MISSING
-        ):
-            public_missing_identity += 1
+        if ExposureFacet.PUBLIC_STABLE in row.exposure_facets:
+            if clf.version_identity_compliance == VersionIdentityCompliance.VERSION_REQUIRED_BUT_MISSING:
+                public_missing_identity += 1
+            if _obligation_satisfies_requirement(clf.version_obligation) and not _public_r1_version_identity_compliant(
+                clf
+            ):
+                public_noncompliant_ids.append(clf.surface_id)
         if clf.version_identity_compliance == VersionIdentityCompliance.VERSION_REQUIRED_BUT_MISSING:
             missing_required += 1
         if ExposureFacet.PERSISTED_SCHEMA in row.exposure_facets and not _obligation_satisfies_requirement(
@@ -199,6 +225,7 @@ def build_r1_qualification_report() -> R1QualificationReport:
     )
 
     shim_violations = inventory_shim_canonical_authority_violations()
+    static_conflicts, unresolved_refs = static_version_resolution_metrics()
     qual_as_semantic = sum(
         1
         for row in COMPAT_X_OWNER_MATRIX
@@ -211,6 +238,10 @@ def build_r1_qualification_report() -> R1QualificationReport:
         unclassified_obligation_count=unclassified,
         public_stable_without_version_obligation=public_block,
         public_stable_missing_version_identity=public_missing_identity,
+        public_stable_noncompliant_version_identity_count=len(public_noncompliant_ids),
+        public_stable_noncompliant_surface_ids=tuple(sorted(public_noncompliant_ids)),
+        static_version_reference_conflict_count=static_conflicts,
+        unresolved_static_reference_count=unresolved_refs,
         persisted_without_required_obligation=persisted_block,
         event_without_obligation=event_block,
         plugin_without_obligation=plugin_block,

@@ -19,10 +19,12 @@ from tests.qualification.compat_x._compat_x_versioning_gates import (
     classification_r1_qualification_passes,
     frz_cmp_02_pass_candidate,
     inventory_shim_canonical_authority_violations,
+    public_stable_noncompliant_version_surfaces,
     registry_declared_versions_match,
     synthetic_public_stable_explicit_version,
     synthetic_public_stable_missing_version,
 )
+from tests.qualification.compat_x._compat_x_versioning_classification import compute_version_identity_compliance
 from tests.qualification.compat_x._compat_x_versioning_policy import (
     COMPAT_X_CROSS_PLATFORM_POLICY_AUTHORITY,
     COMPAT_X_QUALIFICATION_ENFORCEMENT_ROOT,
@@ -52,6 +54,9 @@ def test_cx_r1_inventory_fully_classified() -> None:
     assert report.unclassified_obligation_count == 0
     assert report.public_stable_without_version_obligation == 0
     assert report.public_stable_missing_version_identity == 0
+    assert report.public_stable_noncompliant_version_identity_count == 0
+    assert report.public_stable_noncompliant_surface_ids == ()
+    assert report.static_version_reference_conflict_count == 0
     assert report.persisted_without_required_obligation == 0
     assert report.event_without_obligation == 0
     assert report.plugin_without_obligation == 0
@@ -82,6 +87,102 @@ def test_cx_r1_adversarial_a_public_stable_missing_version_fails() -> None:
     assert clf.version_identity_compliance == VersionIdentityCompliance.VERSION_REQUIRED_BUT_MISSING
     assert clf.version_identity_scheme == VersionIdentityScheme.UNCLASSIFIED
     assert classification_r1_qualification_passes(clf, record) is False
+
+
+def test_cx_r1_r2_adversarial_h_public_missing_no_deferral_fails() -> None:
+    from tests.qualification.compat_x._compat_x_versioning_gates import _synthetic_public_stable_record
+
+    record = _synthetic_public_stable_record("")
+    clf = synthetic_public_stable_missing_version()
+    assert classification_r1_qualification_passes(clf, record) is False
+
+
+def test_cx_r1_r2_adversarial_i_public_missing_with_r2_deferral_still_fails_r1() -> None:
+    from tests.qualification.compat_x._compat_x_versioning_gates import _synthetic_public_stable_record
+
+    record = _synthetic_public_stable_record("")
+    identity = compute_version_identity_compliance(
+        record,
+        VersionObligation.EXPLICIT_VERSION_REQUIRED,
+        LaterStageDeferral.R2_PERSISTED_MIGRATION,
+        VersionAuthorityDisposition.DOMAIN_VERSION_OWNER,
+        R1ComplianceState.COMPLIANT,
+    )
+    assert identity == VersionIdentityCompliance.BLOCKED_LATER_STAGE
+    clf = synthetic_public_stable_missing_version()
+    assert classification_r1_qualification_passes(clf, record) is False
+
+
+def test_cx_r1_r2_adversarial_j_public_version_present_r2_deferral_passes_r1_identity() -> None:
+    from tests.qualification.compat_x._compat_x_versioning_gates import _synthetic_public_stable_record
+
+    record = _synthetic_public_stable_record("foo.v1")
+    identity = compute_version_identity_compliance(
+        record,
+        VersionObligation.EXPLICIT_VERSION_REQUIRED,
+        LaterStageDeferral.R2_PERSISTED_MIGRATION,
+        VersionAuthorityDisposition.DOMAIN_VERSION_OWNER,
+        R1ComplianceState.COMPLIANT,
+    )
+    assert identity == VersionIdentityCompliance.VERSION_PRESENT_AND_OWNED
+    clf = synthetic_public_stable_explicit_version()
+    assert classification_r1_qualification_passes(clf, record) is True
+    assert clf.later_stage_deferral in {LaterStageDeferral.NOT_APPLICABLE, LaterStageDeferral.R2_PERSISTED_MIGRATION}
+
+
+def test_cx_r1_r2_adversarial_k_public_inherited_resolved_passes() -> None:
+    inherited = [
+        r for r in COMPAT_X_INVENTORY if ExposureFacet.PUBLIC_STABLE in r.exposure_facets
+    ]
+    for row in inherited:
+        clf = classify_inventory_surface(row)
+        if clf.version_obligation != VersionObligation.VERSION_INHERITED_FROM_CANONICAL_ENVELOPE:
+            continue
+        assert clf.version_identity_compliance == VersionIdentityCompliance.VERSION_INHERITED_AND_RESOLVED
+        assert classification_r1_qualification_passes(clf, row) is True
+        return
+    pytest.skip("no public inherited envelope surface in current inventory")
+
+
+def test_cx_r1_r2_adversarial_l_public_unresolved_identity_in_noncompliant_list() -> None:
+    from tests.qualification.compat_x._compat_x_versioning_gates import _synthetic_public_stable_record
+
+    record = _synthetic_public_stable_record("")
+    clf = synthetic_public_stable_missing_version()
+    assert clf.version_identity_compliance in {
+        VersionIdentityCompliance.VERSION_REQUIRED_BUT_MISSING,
+        VersionIdentityCompliance.BLOCKED_LATER_STAGE,
+    }
+    assert classification_r1_qualification_passes(clf, record) is False
+    noncompliant_ids = {sid for sid, _ in public_stable_noncompliant_version_surfaces()}
+    assert "synthetic.r1.public.version_probe" not in noncompliant_ids
+
+
+def test_cx_r1_r2_adversarial_m_proof_receipt_production_surface() -> None:
+    proof_rows = [
+        r
+        for r in COMPAT_X_INVENTORY
+        if r.semantic_identity == "schema.literal:intergrax.proof_receipt.v1"
+        and r.owner_module_path == "intergrax/proofs/receipts/contracts.py"
+    ]
+    assert proof_rows, "ProofReceipt.schema_version must appear in closed-world inventory"
+    row = proof_rows[0]
+    assert "ProofReceipt.schema_version" in row.version_source
+    assert "PROOF_RECEIPT_SCHEMA_VERSION" in row.version_source
+    clf = classify_inventory_surface(row)
+    assert row.current_version == "intergrax.proof_receipt.v1"
+    assert clf.version_obligation == VersionObligation.EXPLICIT_VERSION_REQUIRED
+    assert clf.version_identity_compliance == VersionIdentityCompliance.VERSION_PRESENT_AND_OWNED
+    assert clf.version_identity_scheme == VersionIdentityScheme.SCHEMA_ID_GENERATION
+    assert classification_r1_qualification_passes(clf, row) is True
+    const_rows = [
+        r
+        for r in COMPAT_X_INVENTORY
+        if r.owner_module_path == "intergrax/proofs/receipts/contracts.py"
+        and "PROOF_RECEIPT_SCHEMA_VERSION" in r.surface_id
+    ]
+    assert const_rows
+    assert public_stable_noncompliant_version_surfaces() == ()
 
 
 def test_cx_r1_adversarial_a2_public_stable_explicit_version_passes() -> None:

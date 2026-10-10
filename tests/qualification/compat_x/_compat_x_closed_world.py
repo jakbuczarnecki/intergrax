@@ -15,7 +15,6 @@ from intergrax.runtime.events.payload_registry import list_registered_payload_sc
 from intergrax.runtime.schema.registry import RUNTIME_SCHEMA_REGISTRY
 
 from tests.qualification.compat_x._compat_x_ast_signals import (
-    ClassVersionFieldSignal,
     build_compatibility_candidate_context,
     class_has_schema_version_field,
     extract_class_version_fields,
@@ -204,6 +203,9 @@ def _ast_candidates_for_module(module_path: str, source: str) -> list[DiscoveryC
         identity = f"class.field:{module_path}:{signal.class_name}:{signal.field_name}"
         if signal.version_literal:
             identity = f"schema.literal:{signal.version_literal}"
+        version_source = f"{module_path}:{signal.class_name}.{signal.field_name}"
+        if signal.resolved_via_constant is not None:
+            version_source = f"{module_path}:{signal.resolved_via_constant}→{version_source}"
         found.append(
             _candidate(
                 candidate_id=f"class.{module_path.replace('/', '.')}::{signal.class_name}.{signal.field_name}",
@@ -212,7 +214,7 @@ def _ast_candidates_for_module(module_path: str, source: str) -> list[DiscoveryC
                 discovered_signal=signal.signal,
                 semantic_identity=identity,
                 current_version=signal.version_literal,
-                version_source=f"{module_path}:{signal.class_name}.{signal.field_name}",
+                version_source=version_source,
             )
         )
     wire_index = 0
@@ -368,6 +370,41 @@ def _mechanism_candidates() -> list[DiscoveryCandidate]:
             )
         )
     return found
+
+
+@lru_cache(maxsize=1)
+def static_version_resolution_metrics() -> tuple[int, int]:
+    """Count static version-reference conflicts and unresolved references across discovery roots."""
+    conflicts = 0
+    unresolved = 0
+    seen_modules: set[str] = set()
+    for rel_root in _DISCOVERY_ROOT_REL_PATHS:
+        root = _REPO_ROOT / rel_root
+        if not root.exists():
+            continue
+        for path in root.rglob("*.py"):
+            if not _is_candidate_file(path):
+                continue
+            module_path = _normalize_repo_path(path)
+            if module_path in seen_modules:
+                continue
+            seen_modules.add(module_path)
+            if module_path.endswith("registry.py") and "migrations/registry.py" in module_path:
+                continue
+            try:
+                source = path.read_text(encoding="utf-8")
+            except OSError:
+                continue
+            try:
+                tree = parse_module(module_path, source)
+            except SyntaxError:
+                continue
+            for signal in extract_class_version_fields(module_path, tree):
+                if signal.static_version_conflict:
+                    conflicts += 1
+                if signal.unresolved_static_reference:
+                    unresolved += 1
+    return conflicts, unresolved
 
 
 def discover_ast_candidates_from_repo() -> list[DiscoveryCandidate]:
