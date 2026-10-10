@@ -7,11 +7,12 @@
 | **Certification subject** | Every supported production **CONFIGURED_ADOPTED** execution proves exact, durable, tenant-preserving, historically reconstructable configured/effective provenance — fail-closed under missing/corrupt/ambiguous evidence; no alternate semantic owner; no production bypass |
 | **START_HEAD** | `53265fa6dbe3975359967f0db8c7581b55fa4632` (audited branch tip at CERT entry) |
 | **FINAL_COMMIT** | `69d8b111e8d2f6717b75d866d3738a0106d00304` |
-| **TRACE-X-CERT** | **READY FOR AUDIT** |
+| **Bookkeeping tip** | `f4c42c79928ac7fb8568591fe06ab71c2ff3aa15` (audited branch tip @ CERT closure sync) |
+| **TRACE-X-CERT** | **CLOSED / independently accepted** |
 | **TRACE-X-P5-R2** | **CLOSED / independently accepted** (P0–P4 + closed-world + R1 evidence incorporated) |
 | **TRACE-X-P5-R2-R1** | **CLOSED / independently accepted** @ `831011d9c92bb6478f672d295792fc36eb0d4f73` |
 | **TRACE-X-P5-R2-CLOSED-WORLD** | **CLOSED / independently accepted** (parent baseline `c74c8e0005a85ccb0d302df64e1798e0a8e6e632`; R1 evidence `831011d9…`) |
-| **FRZ-TRC-11** | **OPEN / PASS CANDIDATE** (Cursor does **not** declare PASS) |
+| **FRZ-TRC-11** | **PASS** (independent exact-SHA audit @ `69d8b111e8d2f6717b75d866d3738a0106d00304`) |
 | **FRZ-TRC-09** / **FRZ-TRC-10** | **OPEN** (scoped evidence only; primary closer remains **TRACE-X-P6**) |
 | **Production delta** | **0** |
 
@@ -19,7 +20,7 @@
 
 > Can the platform prove that every supported production CONFIGURED_ADOPTED execution has exact, durable, tenant-preserving and historically reconstructable configured/effective provenance, with no alternate semantic owner, no production bypass and fail-closed behavior under missing/corrupt/ambiguous evidence?
 
-**Cursor verdict:** evidence consolidated and replayed on current HEAD — **READY FOR INDEPENDENT EXACT-SHA AUDIT**. This document is **not** freeze PASS evidence.
+**Independent audit verdict:** current-HEAD replay = **PASS**; **160** pytest = **PASS**; closed-world **32/32**; **unclassified = 0**; **production bypass = 0**; **duplicate semantic owner = 0**; **E2E-A..H = PASS**; local Tenant Isolation Audit = **PASS**; unresolved CERT blockers = **0**. **TRACE-X-CERT = CLOSED / independently accepted** @ evidence `69d8b111e8d2f6717b75d866d3738a0106d00304`. **FRZ-TRC-11 = PASS**.
 
 ## 2. Accepted SHA lineage (not erased)
 
@@ -27,7 +28,9 @@
 |---|---|---|
 | P5-R2 closed-world parent baseline | `c74c8e0005a85ccb0d302df64e1798e0a8e6e632` | Independent closed-world parent |
 | P5-R2-R1 accepted evidence | `831011d9c92bb6478f672d295792fc36eb0d4f73` | Blockers **36** / **37** closed; adversarial E2E-A/H semantics |
-| Bookkeeping / audit tip @ CERT entry | `53265fa6dbe3975359967f0db8c7581b55fa4632` | Current HEAD at CERT replay |
+| Bookkeeping / audit tip @ CERT entry | `53265fa6dbe3975359967f0db8c7581b55fa4632` | START_HEAD at CERT entry |
+| **TRACE-X-CERT accepted evidence** | `69d8b111e8d2f6717b75d866d3738a0106d00304` | Independent audit closure |
+| Bookkeeping tip @ CERT closure sync | `f4c42c79928ac7fb8568591fe06ab71c2ff3aa15` | Docs-only sync; **production delta = 0** |
 | P5-R2-P0 initial | `982f945de67577865c1ade4ebbea519cf3a9b284` | **REJECTED / SUPERSEDED** (historical mapping rejection preserved) |
 | P5-R2-P0 accepted architecture | `74b93fdf1617e90b19bf42b1658d674e215baba6` | Architecture lock evidence |
 | P5-R2-P1 | `0d2bdbfbd7ca19c118ca786201ba6374baaec2d9` | Typed contracts |
@@ -174,37 +177,40 @@ Log: `.tmp/session/trace-x-cert/pyright-p5-provenance.log`
 | New unclassified production surface | **0** |
 | New production bypass | **0** |
 
-## 17. FRZ-TRC-11 recommendation
+## 17. FRZ-TRC-11 PASS — accepted evidence chain
 
-When independent audit confirms on exact GitHub SHA:
+Primary final certification evidence: `69d8b111e8d2f6717b75d866d3738a0106d00304`.
 
 ```text
-unclassified = 0
-production bypass = 0
-duplicate owner = 0
-E2E-A…H = PASS
-tenant local = PASS
-current-head replay = PASS
+P0 architecture
+→ P1 typed contracts
+→ P2 durable provenance
+→ P3 configured production execution
+→ P4 historical reconstruction
+→ P4-R2 requirement spine / recovery
+→ P5 closed-world
+→ TRACE-X-CERT
 ```
 
-→ **FRZ-TRC-11 = READY FOR INDEPENDENT PASS PROMOTION** (audit assigns PASS; Cursor stays **OPEN / PASS CANDIDATE**).
+**FRZ-TRC-11 = PASS** on independent audit metrics: **unclassified = 0**; **production bypass = 0**; **duplicate semantic owner = 0**; **E2E-A..H = PASS**; tenant local = **PASS**; current-head replay = **PASS**.
 
 ## 18. TRACE-X parent / next mandatory stage
 
-- **TRACE-X** remains **CURRENT** — **FRZ-TRC-09** + **FRZ-TRC-10** **OPEN**; global TRACE-X closure **not** claimed.
-- **Next mandatory TRACE-X work after CERT audit:** **TRACE-X-P6** (terminal outcome / restart-resume continuity per P0 decomposition and checklist mapping for **FRZ-TRC-09** / **FRZ-TRC-10**).
-- Program order after TRACE-X parent closure: **CONFIG-X** → **COMPAT-X** → **TENANT-X** → …
+- **TRACE-X** remains **CURRENT** — **FRZ-TRC-09** + **FRZ-TRC-10** **OPEN** (sole remaining TRACE-X FRZ criteria); global TRACE-X parent closure **not** claimed until **TRACE-X-P6** independent closure.
+- **Canonical TRACE-X sequence:** P0 → P1 → P2 → P3 → P4 → P5 → **TRACE-X-CERT** (FRZ-TRC-11) → **TRACE-X-P6** → final TRACE-X parent closure.
+- **TRACE-X-P6** = **NEXT / REQUIRED / NOT ENTERED** — Restart/Resume Continuity & Terminal Outcome Causality Certification (**FRZ-TRC-09** + **FRZ-TRC-10**); P0 decomposition owner restored in canonical roadmap (no implementation SHA until P6 entered).
+- **CONFIG-X** = **PLANNED / MANDATORY** — **not entered** before P6 and TRACE-X parent closure.
 
 ## 19. Post-step enterprise discovery
 
 | Item | Finding |
 |---|---|
 | New current blockers | **0** |
-| New future mandatory debt | Non–Pattern-A CONFIGURED_ADOPTED categories remain explicitly unsupported until future architecture |
-| New candidate roadmap stages | None (CERT was planned) |
-| FRZ coverage gaps | **FRZ-TRC-09**, **FRZ-TRC-10** remain **OPEN** |
-| Ownership / boundary concerns | **0** |
-| Roadmap amendment required | **NO** |
+| New future mandatory debt | Non–Pattern-A CONFIGURED_ADOPTED categories remain explicitly unsupported until future architecture; **TOOL-LIFE-X** remains later (not absorbed into P6) |
+| New candidate roadmap stages | **TRACE-X-P6** canonical row restored (mandatory child from P0 — not a new architecture decision) |
+| FRZ coverage gaps | **FRZ-TRC-09**, **FRZ-TRC-10** only |
+| Ownership / boundary concerns | **0** — P6 roadmap owner restored |
+| Roadmap amendment required | **NO** (restoration sync only) |
 
 ## 20. Companion qualification records
 
