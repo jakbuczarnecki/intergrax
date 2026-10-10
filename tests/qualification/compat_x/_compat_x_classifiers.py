@@ -9,7 +9,8 @@ from typing import Final
 
 from tests.qualification.compat_x._compat_x_ast_signals import (
     extract_migration_signals,
-    module_defines_resolve_provider,
+    module_exhibits_parallel_authority,
+    module_is_translation_only_compat_adapter,
     parse_module,
 )
 from tests.qualification.compat_x._compat_x_types import MigrationMechanismClass, ShimClass
@@ -61,8 +62,10 @@ def classify_migration_module(module_path: str, source: str) -> MigrationMechani
 def classify_shim_module(module_path: str, source: str) -> ShimClass:
     normalized = module_path.replace("\\", "/")
     tree = parse_module(module_path, source)
-    if module_defines_resolve_provider(tree) or "class LegacyResolver" in source:
+    if module_exhibits_parallel_authority(tree, module_path):
         return ShimClass.PARALLEL_AUTHORITY
+    if module_is_translation_only_compat_adapter(tree, module_path):
+        return ShimClass.TRANSLATION_ONLY
     lowered = source.lower()
     if "from_langchain" in lowered or "to_langchain" in lowered:
         return ShimClass.READ_COMPATIBILITY_ONLY

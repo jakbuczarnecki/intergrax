@@ -345,6 +345,108 @@ def module_defines_resolve_provider(tree: ast.Module) -> bool:
     return False
 
 
+_AUTHORITY_CLASS_MARKERS: Final[tuple[str, ...]] = (
+    "selector",
+    "registry",
+    "executor",
+    "authorizer",
+    "resolver",
+    "dispatcher",
+    "backend",
+    "provider",
+    "authority",
+)
+
+_AUTHORITY_METHOD_PREFIXES: Final[tuple[str, ...]] = (
+    "resolve",
+    "select",
+    "dispatch",
+    "execute",
+    "invoke",
+    "authorize",
+    "admit",
+    "register",
+    "persist",
+    "save",
+)
+
+
+def compat_adapter_module_scope(module_path: str) -> bool:
+    normalized = module_path.replace("\\", "/")
+    if normalized.startswith("intergrax/compat/"):
+        return True
+    if normalized.startswith("synthetic/qualification/"):
+        return True
+    return False
+
+
+def is_sanctioned_translation_callable(name: str) -> bool:
+    lowered = name.lower()
+    if lowered.startswith(("from_", "to_")):
+        return True
+    if lowered.startswith(("decode_", "normalize_")):
+        return True
+    if lowered in {"translate", "convert"} or lowered.startswith(("translate_", "convert_")):
+        return True
+    return False
+
+
+def _method_name_suggests_parallel_authority(name: str) -> bool:
+    if is_sanctioned_translation_callable(name):
+        return False
+    lowered = name.lower()
+    return any(lowered.startswith(prefix) for prefix in _AUTHORITY_METHOD_PREFIXES)
+
+
+def _class_name_suggests_authority_carrier(class_name: str) -> bool:
+    lowered = class_name.lower()
+    return any(marker in lowered for marker in _AUTHORITY_CLASS_MARKERS)
+
+
+def module_exhibits_parallel_authority(tree: ast.Module, module_path: str) -> bool:
+    """Bounded AST gate: parallel authority only inside compatibility adapter scope."""
+    if not compat_adapter_module_scope(module_path):
+        return False
+    for node in tree.body:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        class_carrier = _class_name_suggests_authority_carrier(node.name)
+        authority_methods: list[str] = []
+        for item in node.body:
+            if isinstance(item, ast.FunctionDef | ast.AsyncFunctionDef):
+                if _method_name_suggests_parallel_authority(item.name):
+                    authority_methods.append(item.name)
+        if not authority_methods:
+            continue
+        if class_carrier:
+            return True
+        if any(
+            name.startswith(("select_", "resolve_", "dispatch_", "execute_", "invoke_", "authorize_", "admit_"))
+            for name in authority_methods
+        ):
+            return True
+    if module_defines_resolve_provider(tree):
+        return True
+    return False
+
+
+def module_is_translation_only_compat_adapter(tree: ast.Module, module_path: str) -> bool:
+    if not compat_adapter_module_scope(module_path):
+        return False
+    callables: list[str] = []
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef):
+            callables.append(node.name)
+        elif isinstance(node, ast.ClassDef):
+            for item in node.body:
+                if isinstance(item, ast.FunctionDef | ast.AsyncFunctionDef):
+                    callables.append(f"{node.name}.{item.name}")
+    if not callables:
+        return False
+    simple_names = [name.split(".")[-1] for name in callables]
+    return all(is_sanctioned_translation_callable(name) for name in simple_names)
+
+
 def extract_public_export_signals(module_path: str, tree: ast.Module) -> list[PublicExportSignal]:
     if not module_path.endswith("__init__.py"):
         return []

@@ -1,16 +1,16 @@
-# COMPAT-X — Contract, Schema & Evolution Certification (P0-R1 baseline)
+# COMPAT-X — Contract, Schema & Evolution Certification (P0-R2 baseline)
 
-**Status:** COMPAT-X-P0-R1 — **READY FOR AUDIT** (Cursor implementation; not COMPAT-X parent closure)
+**Status:** COMPAT-X-P0-R2 — **READY FOR AUDIT** (Cursor implementation; not COMPAT-X parent closure)
 
 **Branch:** `development`
 
-**START_HEAD (P0-R1 session):** `88b2844f565f1869e61b3bb97305b623eb10f295`
+**START_HEAD (P0-R2 session):** `237a7341a9be0e017e23dfb7ed2efe05543fda53`
 
-**IMPLEMENTATION_COMMIT (P0-R1 Cursor):** `065a0dcd875f8b985792e70f4e1f1b20bd8de094`
+**Bookkeeping tip (pre-R2):** `237a7341a9be0e017e23dfb7ed2efe05543fda53`
 
-**Rejected / incomplete P0 evidence (do not use as closure baseline):** `cea6393775c8b92a2cefb165fc9930511c776169`
+**Rejected P0-R1 implementation (do not use as closure baseline):** `065a0dcd875f8b985792e70f4e1f1b20bd8de094`
 
-**P0-R1 reason:** Independent audit rejected P0 closed-world proof (AST-only constants, hard-coded migration/shim lists, tautological adversarial tests, owner matrix overstated). R1 repairs qualification/discovery only (**production delta = 0**).
+**P0-R2 reason:** Independent audit rejected weak adversarial gates (tautological version-removal test, narrow parallel-authority classifier). R2 strengthens qualification/discovery only (**production delta = 0**).
 
 **Production delta:** `0`
 
@@ -36,7 +36,7 @@ Mechanical closed-world inventory of compatibility-relevant platform surfaces on
 
 **Discovery / parity:** `tests/qualification/compat_x/_compat_x_closed_world.py` (`build_closed_world_report`)
 
-**Gate:** `tests/qualification/compat_x/test_compat_x_inventory_gates.py` — parity + adversarial suite
+**Gate:** `tests/qualification/compat_x/test_compat_x_inventory_gates.py` — parity + adversarial suite (P0-R2 version-removal mutation probe; bounded AST parallel-authority probes)
 
 ### Discovery counts by mechanism (raw signals)
 
@@ -53,6 +53,20 @@ Mechanical closed-world inventory of compatibility-relevant platform surfaces on
 | `compat.shim` | 463 |
 | `mechanism.policy_owner` | 2 |
 | `defect.persisted_without_version` | 5 |
+
+## Five `PERSISTED_SCHEMA_WITHOUT_VERSION` findings (preserved — COMPAT-X-R2)
+
+Classification: **CHILD TASK REQUIRED — blocks COMPAT-X** (not P0 inventory closure). Not remediated in P0-R2.
+
+| Path | Class | Semantic identity | Assessment |
+| --- | --- | --- | --- |
+| `intergrax/agent_distribution/agent_contract_authority.py` | `AgentPackageContractAuthorityService` | `persisted.without_version:intergrax/agent_distribution/agent_contract_authority.py:AgentPackageContractAuthorityService` | requires R2 validation (likely heuristic false positive — authority service, not wire contract) |
+| `intergrax/agent_distribution/agent_contract_authority.py` | `PackageAgentContractAuthorityError` | `persisted.without_version:intergrax/agent_distribution/agent_contract_authority.py:PackageAgentContractAuthorityError` | requires R2 validation (likely heuristic false positive — exception type) |
+| `intergrax/agent_distribution/runtime_revision_service.py` | `RuntimeRevisionService` | `persisted.without_version:intergrax/agent_distribution/runtime_revision_service.py:RuntimeRevisionService` | requires R2 validation |
+| `intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py` | `DocumentStoreSuspendedExecutionOperationStore` | `persisted.without_version:intergrax/runtime/execution/suspended_operation/document_store_suspended_operation_store.py:DocumentStoreSuspendedExecutionOperationStore` | requires R2 validation (may be real persisted boundary) |
+| `intergrax/runtime/nexus/orchestration/long_running_bridge.py` | `RuntimeEventPublisher` | `persisted.without_version:intergrax/runtime/nexus/orchestration/long_running_bridge.py:RuntimeEventPublisher` | requires R2 validation (may be real event wire boundary) |
+
+Discovery evidence kind: `defect.persisted_without_version` / signal `missing_schema_version:<class>` from wire+persist heuristic in `_compat_x_closed_world.py`.
 
 ## Canonical registries (complementary owners)
 
@@ -80,18 +94,18 @@ See `tests/qualification/compat_x/_compat_x_owner_discovery.py` (`COMPAT_X_OWNER
 | Deprecation/removal | FRAGMENTED_UNOWNED |
 | Compatibility adapters (langchain bridge) | CURRENT_CONFIRMED_OWNER (translation-only evidence) |
 
-## FRZ-CMP candidate state (P0-R1)
+## FRZ-CMP candidate state (P0-R2)
 
 | Criterion | Candidate | Blocker IDs |
 | --- | --- | --- |
 | FRZ-CMP-01 | **PASS CANDIDATE** | — (closed-world parity + semantic inventory) |
 | FRZ-CMP-02 | **BLOCKED** | CMP-P0-B02 → COMPAT-X-R1 |
-| FRZ-CMP-03 | **BLOCKED** | CMP-P0-B03 (+ 5 `PERSISTED_SCHEMA_WITHOUT_VERSION` heuristic findings — **CHILD TASK REQUIRED** for validation) → COMPAT-X-R2 |
+| FRZ-CMP-03 | **BLOCKED** | CMP-P0-B03 (+ 5 `PERSISTED_SCHEMA_WITHOUT_VERSION` — **CHILD TASK REQUIRED**) → COMPAT-X-R2 |
 | FRZ-CMP-04 | **BLOCKED** | CMP-P0-B04 → COMPAT-X-R3 |
 | FRZ-CMP-05 | **BLOCKED** | CMP-P0-B05 → COMPAT-X-R4 |
 | FRZ-CMP-06 | **BLOCKED** | CMP-P0-B06 → COMPAT-X-R2 |
 | FRZ-CMP-07 | **BLOCKED** | CMP-P0-B07 → COMPAT-X-R5 |
-| FRZ-CMP-08 | **PASS CANDIDATE** | — (0 `PARALLEL_AUTHORITY` in production inventory; synthetic classifier probe) |
+| FRZ-CMP-08 | **PASS CANDIDATE** | — (0 `PARALLEL_AUTHORITY` production; AST bounded classifier + multi-shape synthetic probes) |
 
 ## Proposed remediation grouping (re-derived from corrected discovery)
 
@@ -101,7 +115,7 @@ See `tests/qualification/compat_x/_compat_x_owner_discovery.py` (`COMPAT_X_OWNER
 4. **COMPAT-X-R4** — Plugin/Provider Compatibility (FRZ-CMP-05)
 5. **COMPAT-X-R5** — Deprecation / Compatibility Shim Closure (FRZ-CMP-07, FRZ-CMP-08 hardening)
 
-## Tenant isolation audit (local COMPAT-X-P0-R1)
+## Tenant isolation audit (local COMPAT-X-P0-R2)
 
 **Verdict:** **PASS** (local scope; not global **TENANT-X**)
 
@@ -119,11 +133,13 @@ uv run pytest -p no:xdist tests/qualification/external_contract_compatibility/te
 uv run pyright tests/qualification/compat_x
 ```
 
-P0-R1 session: **22** compat_x tests **PASS**; related registry + extcomp **34** **PASS**; pyright compat_x **0** errors.
+P0-R2 adversarial additions: `test_cx_p0_r2_adversarial_12_version_removal_regression_probe`; parallel-authority probes `test_cx_p0_r2_parallel_authority_*`; sanctioned translation probes `test_cx_p0_r2_translation_only_*` / `test_cx_p0_r2_legacy_decode_*`.
 
-## Unresolved findings (inventory blockers, not remediated in P0-R1)
+## Unresolved findings (inventory blockers, not remediated in P0-R2)
 
-- **5** `PERSISTED_SCHEMA_WITHOUT_VERSION` surfaces from mechanical wire/persist heuristic (may include false positives — requires COMPAT-X-R2 validation).
-- All surfaces still carry `VERSIONED_POLICY_MISSING` until **COMPAT-X-R1**.
+- **5** `PERSISTED_SCHEMA_WITHOUT_VERSION` surfaces (table above) — **CHILD TASK REQUIRED** for COMPAT-X-R2 validation.
+- All versioned surfaces still carry `VERSIONED_POLICY_MISSING` until **COMPAT-X-R1**.
 
-**COMPAT-X parent:** **OPEN** — blocked on P0-R1 independent audit, then remediation waves.
+**COMPAT-X parent:** **OPEN** — blocked on P0-R2 independent audit, then remediation waves.
+
+**Roadmap:** `COMPAT-X-P0-R1` = **REJECTED / superseded by R2**; `COMPAT-X-P0` = **BLOCKED ON P0-R2 AUDIT**; `COMPAT-X` = **BLOCKED ON P0 CLOSURE**; `TENANT-X` = **NOT ENTERED**.

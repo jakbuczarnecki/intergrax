@@ -27,13 +27,24 @@ from tests.qualification.compat_x._compat_x_inventory import COMPAT_X_INVENTORY,
 from tests.qualification.compat_x._compat_x_owner_discovery import COMPAT_X_OWNER_MATRIX, owner_matrix_paths_exist
 from tests.qualification.compat_x._compat_x_registry_analysis import analyze_registry_overlap
 from tests.qualification.compat_x._compat_x_synthetic import (
+    SYNTHETIC_DECODE_NORMALIZATION_SOURCE,
     SYNTHETIC_MODULE_PATH_MIGRATION,
     SYNTHETIC_MODULE_PATH_PARALLEL,
+    SYNTHETIC_MODULE_PATH_PARALLEL_PROBES,
     SYNTHETIC_MODULE_PATH_PERSISTED,
+    SYNTHETIC_MODULE_PATH_PERSISTED_CONTRACT_UNVERSIONED,
+    SYNTHETIC_MODULE_PATH_PERSISTED_CONTRACT_VERSIONED,
     SYNTHETIC_MODULE_PATH_PUBLIC,
     SYNTHETIC_PARALLEL_AUTHORITY_SOURCE,
+    SYNTHETIC_PARALLEL_AUTHORIZER_SOURCE,
+    SYNTHETIC_PARALLEL_EXECUTOR_SOURCE,
+    SYNTHETIC_PARALLEL_PROVIDER_SELECTOR_SOURCE,
+    SYNTHETIC_PARALLEL_REGISTRY_SOURCE,
+    SYNTHETIC_PERSISTED_CONTRACT_VERSION_REMOVED_SOURCE,
+    SYNTHETIC_PERSISTED_CONTRACT_VERSIONED_SOURCE,
     SYNTHETIC_PERSISTED_WITHOUT_VERSION_SOURCE,
     SYNTHETIC_PUBLIC_CONTRACT_SOURCE,
+    SYNTHETIC_TRANSLATION_ONLY_SOURCE,
     SYNTHETIC_UNSANCTIONED_MIGRATION_SOURCE,
 )
 from tests.qualification.compat_x._compat_x_types import (
@@ -197,11 +208,84 @@ def test_cx_p0_r1_adversarial_11_tenant_invariant_reuse_extcomp() -> None:
     test_cert_22_resolver_tenant_isolation()
 
 
-def test_cx_p0_r1_adversarial_12_removal_of_version_metadata_would_fail_inventory() -> None:
-    rows = [r for r in COMPAT_X_INVENTORY if r.current_version not in {"unknown", "MISSING", "policy", "mechanism"}]
-    assert rows
-    if not rows:
-        pytest.fail("inventory must contain versioned surfaces")
+def test_cx_p0_r2_adversarial_12_version_removal_regression_probe() -> None:
+    from tests.qualification.compat_x._compat_x_closed_world import discover_candidates_from_source
+    from tests.qualification.compat_x._compat_x_inventory import _record_from_surface
+    from tests.qualification.compat_x._compat_x_closed_world import _defect_surface, _semantic_surface_from_candidate
+
+    versioned = discover_candidates_from_source(
+        SYNTHETIC_MODULE_PATH_PERSISTED_CONTRACT_VERSIONED,
+        SYNTHETIC_PERSISTED_CONTRACT_VERSIONED_SOURCE,
+    )
+    version_removed = discover_candidates_from_source(
+        SYNTHETIC_MODULE_PATH_PERSISTED_CONTRACT_UNVERSIONED,
+        SYNTHETIC_PERSISTED_CONTRACT_VERSION_REMOVED_SOURCE,
+    )
+    assert any(c.discovery_kind == "class.field.version" for c in versioned)
+    assert not any(c.discovery_kind == "defect.persisted_without_version" for c in versioned)
+    defects = [c for c in version_removed if c.discovery_kind == "defect.persisted_without_version"]
+    assert len(defects) == 1
+    assert "PersistedContract" in defects[0].semantic_identity
+    defect_surface = _defect_surface(defects[0])
+    assert defect_surface is not None
+    record = _record_from_surface(defect_surface)
+    assert EvolutionState.PERSISTED_SCHEMA_WITHOUT_VERSION in record.evolution_states
+    versioned_surfaces = [
+        _semantic_surface_from_candidate(c)
+        for c in versioned
+        if c.discovery_kind == "class.field.version"
+    ]
+    assert versioned_surfaces
+    versioned_record = _record_from_surface(versioned_surfaces[0])
+    assert EvolutionState.PERSISTED_SCHEMA_WITHOUT_VERSION not in versioned_record.evolution_states
+
+
+def test_cx_p0_r2_parallel_authority_provider_selection_probe() -> None:
+    assert (
+        classify_shim_module(SYNTHETIC_MODULE_PATH_PARALLEL_PROBES, SYNTHETIC_PARALLEL_PROVIDER_SELECTOR_SOURCE)
+        == ShimClass.PARALLEL_AUTHORITY
+    )
+
+
+def test_cx_p0_r2_parallel_authority_registry_ownership_probe() -> None:
+    assert (
+        classify_shim_module(SYNTHETIC_MODULE_PATH_PARALLEL_PROBES, SYNTHETIC_PARALLEL_REGISTRY_SOURCE)
+        == ShimClass.PARALLEL_AUTHORITY
+    )
+
+
+def test_cx_p0_r2_parallel_authority_execution_probe() -> None:
+    assert (
+        classify_shim_module(SYNTHETIC_MODULE_PATH_PARALLEL_PROBES, SYNTHETIC_PARALLEL_EXECUTOR_SOURCE)
+        == ShimClass.PARALLEL_AUTHORITY
+    )
+
+
+def test_cx_p0_r2_parallel_authority_authorization_probe() -> None:
+    assert (
+        classify_shim_module(SYNTHETIC_MODULE_PATH_PARALLEL_PROBES, SYNTHETIC_PARALLEL_AUTHORIZER_SOURCE)
+        == ShimClass.PARALLEL_AUTHORITY
+    )
+
+
+def test_cx_p0_r2_translation_only_sanctioned_probe() -> None:
+    assert (
+        classify_shim_module(SYNTHETIC_MODULE_PATH_PARALLEL_PROBES, SYNTHETIC_TRANSLATION_ONLY_SOURCE)
+        == ShimClass.TRANSLATION_ONLY
+    )
+
+
+def test_cx_p0_r2_legacy_decode_sanctioned_probe() -> None:
+    assert (
+        classify_shim_module(SYNTHETIC_MODULE_PATH_PARALLEL_PROBES, SYNTHETIC_DECODE_NORMALIZATION_SOURCE)
+        == ShimClass.TRANSLATION_ONLY
+    )
+
+
+def test_cx_p0_r2_frz_cmp_08_pass_candidate_scope() -> None:
+    shims = [r for r in COMPAT_X_INVENTORY if r.shim_class != ShimClass.NOT_APPLICABLE]
+    assert shims
+    assert all(r.shim_class != ShimClass.PARALLEL_AUTHORITY for r in shims)
 
 
 def test_cx_p0_r1_migration_mechanism_mechanically_discovered() -> None:
@@ -228,7 +312,3 @@ def test_cx_p0_r1_inventory_counts_reportable() -> None:
     assert shims >= 1
 
 
-def test_cx_p0_r1_frz_cmp_08_shim_pass_candidate_scope() -> None:
-    shims = [r for r in COMPAT_X_INVENTORY if r.shim_class != ShimClass.NOT_APPLICABLE]
-    assert shims
-    assert all(r.shim_class != ShimClass.PARALLEL_AUTHORITY for r in shims)
