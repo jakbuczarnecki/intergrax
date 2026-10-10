@@ -13,19 +13,21 @@
 | **FINAL_COMMIT (R1-R1)** | `cd1f6fbbb0991c02dba95e07433fa999e61260cf` |
 | **Qualification mechanics (R1-R1, accepted)** | `cd1f6fbbb0991c02dba95e07433fa999e61260cf` — independent discovery `discovered == expected`; duplicate sensitivity **03R** |
 | **FINAL_COMMIT (R1-R1-R1)** | `86db8f11d98637dda5829d04623a357ac37bc095` |
-| **Independent verdict (initial P6)** | **REJECTED / BLOCKED** (permissive classification + non-mechanical owner matrix) |
+| **Accepted qualification evidence (R1-R1-R1 taxonomy)** | `a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2` |
+| **Bookkeeping / audited tip** | `270e57a70630d3df959fd2b4431ec0fa3cc944b0` |
+| **Independent verdict (initial P6)** | **REJECTED / BLOCKED** (permissive classification + non-mechanical owner matrix) — historical; preserved @ `51b1f26a7a473658f6f83d0d8dbfd66ab62f4516` |
 | **R1 blockers closed** | `P6-CLOSED-WORLD-PERMISSIVE-RESTART-CLASSIFICATION-01`, `P6-CLOSED-WORLD-PERMISSIVE-TERMINAL-CLASSIFICATION-02`, `P6-SEMANTIC-OWNER-MATRIX-NON-MECHANICAL-03` (partially remediated in R1; residual **03R** closed in R1-R1) |
 | **R1-R1 blockers closed** | `P6-SEMANTIC-OWNER-DUPLICATE-DISCOVERY-03R` |
 | **R1-R1-R1 blockers closed** | `P6-RESUME-OWNER-TAXONOMY-04`, `P6-RETRY-OWNER-TAXONOMY-05` |
 | **R1-R1-R1 residual blockers** | none (taxonomy decomposition only; no production semantic collision exposed) |
-| **FRZ-TRC-09** | **OPEN / PASS CANDIDATE** (no self-PASS) |
-| **FRZ-TRC-10** | **OPEN / PASS CANDIDATE** (no self-PASS) |
-| **TRACE-X-P6-R1-R1-R1** | **READY FOR AUDIT** |
-| **TRACE-X-P6-R1-R1** | **BLOCKED ON R1-R1-R1 AUDIT** |
-| **TRACE-X-P6-R1** | **BLOCKED ON R1-R1-R1 AUDIT** |
-| **TRACE-X-P6** | **BLOCKED** |
-| **TRACE-X** | **CURRENT** |
-| **CONFIG-X** | **NOT ENTERED** |
+| **FRZ-TRC-09** | **PASS** @ **TRACE-X-P6** (independently accepted evidence `a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2`) |
+| **FRZ-TRC-10** | **PASS** @ **TRACE-X-P6** (independently accepted evidence `a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2`) |
+| **TRACE-X-P6-R1-R1-R1** | **CLOSED / independently accepted** @ `a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2` |
+| **TRACE-X-P6-R1-R1** | **CLOSED / superseded-and-accepted through R1-R1-R1** @ `cd1f6fbbb0991c02dba95e07433fa999e61260cf` |
+| **TRACE-X-P6-R1** | **CLOSED / superseded-and-accepted through descendants** — fail-closed R1 @ `0ce1469f440f58938ceeeb0f7c9be347091206be` |
+| **TRACE-X-P6** | **CLOSED / independently accepted** |
+| **TRACE-X** | **CLOSED / independently accepted** (parent closure on accepted P6 chain; bookkeeping tip `270e57a70630d3df959fd2b4431ec0fa3cc944b0`) |
+| **CONFIG-X** | **NEXT / REQUIRED / NOT ENTERED** |
 | **Production delta** | **0** |
 
 ## 0. Historical initial P6 evidence (preserved)
@@ -106,7 +108,7 @@ Unchanged matrix; replayed in R1 Pass1 session (`.tmp/session/trace-x-p6/pass1_o
 
 ## 6. Tenant isolation audit (P6-local)
 
-**PASS** — P6-F, P6-G + supporting STATE-X / TRACE-X negatives (no global FRZ-TEN promotion).
+**PASS** — P6-F, P6-G + supporting STATE-X / TRACE-X negatives. **Tenant Isolation Audit = N/A — WITH EVIDENCE** for global **TENANT-X** / **FRZ-TEN-*** promotion (P6 scoped evidence only; runtime tenant semantics unchanged).
 
 ## 7. Tests (R1-R1-R1 Cursor session)
 
@@ -123,13 +125,19 @@ Command: `pytest -p no:xdist` on closed-world gates + adversarial bundle + P6-A�
 
 **Production delta = 0** (qualification/support modules only).
 
-## 9. Post-step enterprise discovery (R1-R1-R1)
+## 9. Post-step enterprise discovery (P6 parent closure)
 
 | Item | Finding |
 |---|---|
-| New current blockers | none beyond **BLOCKED ON R1-R1-R1 AUDIT** |
-| New future mandatory debt | none from qualification-only R1 |
-| New candidate roadmap stages | none |
-| FRZ coverage gaps | **FRZ-TRC-09** / **FRZ-TRC-10** await independent PASS |
+| New current blockers | **0** (**TRACE-X** blockers = **0**) |
+| New mandatory debt | none from P6 qualification chain |
+| FRZ coverage gaps | **TRACE-X FRZ gaps = 0** — **FRZ-TRC-01..12** = **PASS** @ parent closure |
+| Roadmap completeness | canonical sequence preserved: **PROD-Q** → **QUAL-X** → **SKILL-X** → **TOOL-LIFE-X** → **DIST-SCALE-X**; **SKILL-X** = **PLANNED / MANDATORY** |
 | Ownership/boundary concerns | none exposed by fail-closed reclassification |
-| Roadmap amendment required | no |
+| Next mandatory stage | **CONFIG-X** |
+
+## 10. TRACE-X parent closure & final invariant
+
+**Accepted evidence chain (implementation / qualification SHAs):** **TRACE-X-P0** `3a6030deb2cd05f080efeee83a5d1060fa3704de` → **P1** `2643d36edb7e90fb2e68b4dd88dc146aca1b58af` → **P2** `4c6b7d05e2e45048c2a5e0cf609b910339d2dcb6` → **P3** `3799b2d974369e6002ac5326e62c8c8b381e7944` → **P4** `95fd906215b789bde8a0d04f718ff21cb144833e` → **P5** wave (incl. **P5-R1** `05fd5d9b2b97f9d85a534a949d882cd47d4a54c9`) → **TRACE-X-CERT** `69d8b111e8d2f6717b75d866d3738a0106d00304` → **TRACE-X-P6** `a3203d7994bdfd3c1dde2f741aaefcc3896a5cc2` → **TRACE-X** parent closure (bookkeeping tip `270e57a70630d3df959fd2b4431ec0fa3cc944b0`).
+
+**TRACE-X** now certifies forward and reverse **causal traceability** including: transport → runtime identity; Execution / Run / Attempt / Task; parent-child lineage; strategy/agent/model/context attribution; tool/governance/effect evidence; policy/profile revisions; configured/effective provenance; restart/resume continuity; terminal outcome causality; diagnostics/reconstruction boundaries. No new architecture is introduced by this docs closure.
