@@ -25,6 +25,9 @@ class ImageSmartParser(BaseDocumentParser):
         text_mode: str,
         caption_llm,
         both_joiner: str,
+        tenant_id: str,
+        namespace: str | None = None,
+        workspace_id: str | None = None,
     ):
 
         self._ocr_lang = ocr_lang
@@ -35,6 +38,9 @@ class ImageSmartParser(BaseDocumentParser):
         self._text_mode = text_mode
         self._caption_llm = caption_llm
         self._both_joiner = both_joiner
+        self._tenant_id = tenant_id
+        self._namespace = namespace
+        self._workspace_id = workspace_id
 
     @classmethod
     def parser_id(cls) -> str:
@@ -55,6 +61,9 @@ class ImageSmartParser(BaseDocumentParser):
             text_mode=self._text_mode,
             caption_llm=self._caption_llm,
             both_joiner=self._both_joiner,
+            tenant_id=self._tenant_id,
+            namespace=self._namespace,
+            workspace_id=self._workspace_id,
         )
 
         docs = loader.load()

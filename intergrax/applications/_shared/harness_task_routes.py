@@ -46,7 +46,7 @@ from intergrax.contracts.execution_identity import mint_task_id
 
 
 class HarnessAsyncRunRequest(BaseModel):
-    tenant_id: str = "default"
+    tenant_id: str | None = None
     user_id: str = "user"
     message: str = Field(min_length=1)
     capability: str = Field(min_length=1)
@@ -121,11 +121,15 @@ def _task_control_response(result) -> HarnessTaskControlResponse:
     )
 
 
-def task_from_harness_async_run_request(body: HarnessAsyncRunRequest) -> Task:
+def task_from_harness_async_run_request(
+    body: HarnessAsyncRunRequest,
+    *,
+    tenant_id: str,
+) -> Task:
     """Map harness HTTP async-run body to canonical platform Task."""
     return Task(
         task_id=mint_task_id(),
-        tenant_id=body.tenant_id,
+        tenant_id=tenant_id,
         user_id=body.user_id,
         message=body.message,
         context=TaskContext(capability=body.capability),
@@ -153,8 +157,27 @@ def mount_canonical_harness_task_routes(
     )
 
     @router.post("/run-async")
-    async def run_async_route(body: HarnessAsyncRunRequest) -> dict[str, Any]:
-        task = task_from_harness_async_run_request(body)
+    async def run_async_route(
+        body: HarnessAsyncRunRequest,
+        _request: Request,
+        principal=Depends(resolve_harness_authenticated_principal),
+    ) -> dict[str, Any]:
+        if principal is not None:
+            identity = harness_principal_to_request_identity(principal)
+            reject_identity_assertion_conflicts(
+                canonical=identity,
+                asserted_tenant_id=body.tenant_id,
+                asserted_user_id=None,
+            )
+            resolved_tenant_id = identity.tenant_id
+        elif body.tenant_id is None or not body.tenant_id.strip():
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="tenant_id_required",
+            )
+        else:
+            resolved_tenant_id = body.tenant_id.strip()
+        task = task_from_harness_async_run_request(body, tenant_id=resolved_tenant_id)
         if task_enricher is not None:
             task = task_enricher(task)
         return await run_async_task_executor(task_executor, task, index=async_index)

@@ -35,7 +35,7 @@ def create_default_tokenizer_engine(
 ) -> TokenizerEngine:
 
     if registry is None:
-        registry = TokenizerRegistry()
+        registry = TokenizerRegistry(default_tokenizer_id="tiktoken")
 
         registry.register(SimpleTokenizer())
         registry.register(TiktokenTokenizer())

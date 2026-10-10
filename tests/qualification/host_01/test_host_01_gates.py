@@ -180,7 +180,10 @@ async def test_host_q1_production_surfaces_use_host_task_execution_port() -> Non
         capability="demo.cap",
         metadata={"channel": "http"},
     )
-    harness_task = task_from_harness_async_run_request(harness_body)
+    harness_task = task_from_harness_async_run_request(
+        harness_body,
+        tenant_id=harness_body.tenant_id or "tenant-q1",
+    )
     executor = HostTaskExecutionExecutor(port)
     index = InMemoryAsyncTaskIndex()
     await run_async_task_executor(executor, harness_task, index=index)
@@ -390,7 +393,10 @@ def test_host_q10_mcp_and_http_harness_map_equivalent_task_semantics() -> None:
         capability="demo.cap",
         metadata={"source": "http"},
     )
-    harness_task = task_from_harness_async_run_request(harness_body)
+    harness_task = task_from_harness_async_run_request(
+        harness_body,
+        tenant_id=harness_body.tenant_id or "tenant-q1",
+    )
     mcp_task = task_from_mcp_agent_intake(
         message="hello",
         capability="demo.cap",

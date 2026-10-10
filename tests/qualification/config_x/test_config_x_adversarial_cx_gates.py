@@ -95,3 +95,24 @@ def test_cx_tokenizer_missing_registration_fails_closed() -> None:
     registry = TokenizerRegistry()
     with pytest.raises(ValueError, match="No tokenizer registered"):
         registry.default()
+
+
+def test_cx_d_tokenizer_registered_without_explicit_default_not_effective() -> None:
+    from intergrax.tokenizers.providers.simple_tokenizer import SimpleTokenizer
+    from intergrax.tokenizers.providers.tiktoken_tokenizer import TiktokenTokenizer
+
+    registry = TokenizerRegistry()
+    registry.register(SimpleTokenizer())
+    registry.register(TiktokenTokenizer())
+    with pytest.raises(ValueError, match="No default tokenizer configured"):
+        registry.get(None)
+
+
+def test_cx_observability_role_missing_sanctioned_backend_fails_closed() -> None:
+    class _Unsanctioned:
+        def query_traces(self, *, limit: int = 20, name=None):
+            return None
+
+    ctx = ToolWiringContext(observability_backends={"only_custom": _Unsanctioned()})
+    with pytest.raises(RuntimeError, match="observability_role_backend_not_configured"):
+        resolve_observability_backend(ctx, role="traces")

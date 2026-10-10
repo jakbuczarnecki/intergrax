@@ -24,7 +24,7 @@ def _backends(ctx: ToolWiringContext) -> dict[str, Any]:
     return {}
 
 
-def _first_matching(
+def _sanctioned_slug_backend(
     backends: dict[str, Any],
     slug_order: tuple[str, ...],
     *,
@@ -34,10 +34,11 @@ def _first_matching(
         candidate = backends.get(slug)
         if candidate is not None and attribute_access.optional(candidate, attr, None) is not None:
             return candidate
-    for candidate in backends.values():
-        if attribute_access.optional(candidate, attr, None) is not None:
-            return candidate
     return None
+
+
+def _raise_role_not_configured(role: str) -> None:
+    raise RuntimeError(f"observability_role_backend_not_configured:{role}")
 
 
 def resolve_observability_backend(ctx: ToolWiringContext, *, role: str = "default") -> Any:
@@ -45,34 +46,37 @@ def resolve_observability_backend(ctx: ToolWiringContext, *, role: str = "defaul
     Pick an observability backend for a tool capability.
 
     Roles:
-    - ``errors`` — Sentry-like ``capture_message`` (prefers ``sentry`` slug)
-    - ``traces`` — ``query_traces`` (prefers ``langsmith``, ``langfuse``, …)
-    - ``logs`` — ``rest_client`` for log search (prefers elasticsearch/opensearch)
-    - ``default`` — primary ``observability_backend`` or first registered backend
+    - ``errors`` — Sentry-like ``capture_message`` (sanctioned slugs only)
+    - ``traces`` — ``query_traces`` (sanctioned slugs only)
+    - ``logs`` — ``rest_client`` for log search (sanctioned slugs only)
+    - ``eval`` — ``log_eval`` (sanctioned slugs only)
+    - ``default`` — explicit ``observability_backend`` only (no registration-order fallback)
     """
     backends = _backends(ctx)
+    if not backends and ctx.observability_backend is None:
+        raise RuntimeError("observability_backend_not_configured")
+
     if role == "errors":
-        backend = _first_matching(backends, _ERRORS_SLUGS, attr="capture_message")
+        backend = _sanctioned_slug_backend(backends, _ERRORS_SLUGS, attr="capture_message")
         if backend is not None:
             return backend
+        _raise_role_not_configured(role)
     if role == "traces":
-        backend = _first_matching(backends, _TRACES_SLUGS, attr="query_traces")
+        backend = _sanctioned_slug_backend(backends, _TRACES_SLUGS, attr="query_traces")
         if backend is not None:
             return backend
+        _raise_role_not_configured(role)
     if role == "logs":
-        backend = _first_matching(backends, _LOGS_SLUGS, attr="rest_client")
+        backend = _sanctioned_slug_backend(backends, _LOGS_SLUGS, attr="rest_client")
         if backend is not None:
             return backend
-        for candidate in backends.values():
-            if attribute_access.optional(candidate, "rest_client", None) is not None:
-                return candidate
+        _raise_role_not_configured(role)
     if role == "eval":
-        backend = _first_matching(backends, _EVAL_SLUGS, attr="log_eval")
+        backend = _sanctioned_slug_backend(backends, _EVAL_SLUGS, attr="log_eval")
         if backend is not None:
             return backend
+        _raise_role_not_configured(role)
 
     if ctx.observability_backend is not None:
         return ctx.observability_backend
-    if backends:
-        return next(iter(backends.values()))
     raise RuntimeError("observability_backend_not_configured")

@@ -158,7 +158,7 @@ def create_inmemory_vector_store(
     def _open() -> VectorStore:
         from intergrax.integrations.providers.vector_store.inmemory.rag_store import InMemoryVectorStore
 
-        return InMemoryVectorStore(tenant_id=config.tenant_id)
+        return InMemoryVectorStore(tenant_id=config.require_tenant_id())
 
     inner = store if store is not None else (store_factory() if store_factory else _open())
     return RestVectorStoreIntegration(config, inner)

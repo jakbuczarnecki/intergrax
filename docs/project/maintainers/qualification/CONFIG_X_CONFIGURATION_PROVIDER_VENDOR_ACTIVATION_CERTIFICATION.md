@@ -2,14 +2,18 @@
 
 | Field | Value |
 |---|---|
-| **Stage** | `CONFIG-X` |
+| **Stage** | `CONFIG-X` (parent) · `CONFIG-X-R1` (remediation wave) |
 | **Parent** | Whole-program enterprise architecture roadmap |
 | **Prior stage** | `TRACE-X` = **CLOSED / independently accepted** @ `c53d10bb7ec643ba6b444214cc8eb20111553296` (audited HEAD at CONFIG-X entry) |
 | **START_HEAD** | `c53d10bb7ec643ba6b444214cc8eb20111553296` |
 | **FINAL_COMMIT (wave-1 evidence)** | `4dc5d15cbdad36c2b8e3fa588740ce8521896792` |
+| **CONFIG-X-R1 START_HEAD** | `4de636c3812853245f3d0a8290388980cce94e62` |
+| **CONFIG-X-R1 FINAL_COMMIT** | *(set at push — independent audit required)* |
 | **Bookkeeping tip** | `2dcdc9519bebd9e4fdcedb46ee34c295e714bf13` (`origin/development`) |
-| **Production delta** | **0** (qualification/tests only) |
-| **CONFIG-X status** | **BLOCKED** on in-scope production blockers (see §8) |
+| **Production delta (wave-1)** | **0** (qualification/tests only) |
+| **Production delta (R1)** | **Narrow** — five blocker paths + scoped RAG image handler/parser wiring |
+| **CONFIG-X-R1 status** | **READY FOR AUDIT** (remediation + gates; parent not closed) |
+| **CONFIG-X status** | **BLOCKED ON R1 AUDIT** (wave-1 blockers remediated pending independent acceptance) |
 | **Next mandatory stage (program order)** | `COMPAT-X` (not enterable until CONFIG-X closure) |
 
 ## 1. Certification question (current-HEAD closed-world)
@@ -157,11 +161,46 @@ Command: `pyright` on `factory.py`, `execution_bound_integration_resolution.py`,
 ## 14. Program status
 
 ```text
-CONFIG-X = BLOCKED ON CONFIG-X-BLK-OBS-TOOL-01, CONFIG-X-BLK-TOK-01,
-           CONFIG-X-BLK-HARNESS-HTTP-01, CONFIG-X-BLK-MM-01, CONFIG-X-BLK-INT-P3-01
+CONFIG-X-R1 = READY FOR AUDIT
+CONFIG-X    = BLOCKED ON R1 AUDIT
+FRZ-CFG-01..08 = OPEN (candidate per evidence; global closure requires parent PASS)
+COMPAT-X    = NOT ENTERED
 ```
 
 **Next mandatory step after CONFIG-X closure:** `COMPAT-X`.
+
+## 15. CONFIG-X-R1 blocker remediation (wave-1 → R1)
+
+Wave-1 originally found **five** production blockers (**I=3**, **J=2**). R1 remediates each without new configuration authority.
+
+| Blocker | Initial evidence (wave-1) | Remediation (R1) | Test evidence | Final classification (R1) |
+|---|---|---|---|---|
+| CONFIG-X-BLK-OBS-TOOL-01 | `resolve.py` slug scan + `next(iter(backends.values()))` | Sanctioned slug map only; explicit `observability_backend` for `default`; role fail-closed | `test_o1_*`…`test_o4_*`, `test_composite_observability.py`, CX adversarial | **Remediated — audit pending** |
+| CONFIG-X-BLK-TOK-01 | `TokenizerRegistry.default()` first registered | Explicit `_default_tokenizer_id`; bootstrap `tiktoken` | `test_tokenizer_registry.py`, `test_cx_d_tokenizer_*` | **Remediated — audit pending** |
+| CONFIG-X-BLK-HARNESS-HTTP-01 | Ambient `tenant_id="default"` on harness/trace HTTP | Principal-scoped harness async-run; required trace `tenant_id` query | `test_config_x_r1_remediation_gates.py` T1–T2 | **Remediated — audit pending** |
+| CONFIG-X-BLK-MM-01 | `ImageSmartLoader` default tenant | Required `tenant_id`; handler passes `KnowledgeDocumentScope` | `test_image_smart_loader.py`, T4 gate | **Remediated — audit pending** |
+| CONFIG-X-BLK-INT-P3-01 | `VectorIntegrationConfig` default tenant | `require_tenant_id()`; `from_env` fails without `{prefix}_TENANT_ID` | T5 gate, CX-G reuse | **Remediated — audit pending** |
+
+### 15.1 Tenant isolation audit (CONFIG-X surfaces, R1)
+
+| Gate | Result |
+|---|---|
+| T1 Harness without authoritative tenant | **PASS** (`tenant_id_required` / principal resolution) |
+| T2 Trace Explorer missing tenant | **PASS** (422) |
+| T3 Cross-tenant trace read | **PASS** (existing trace store semantics; explicit tenant required) |
+| T4 ImageSmartLoader implicit default | **PASS** |
+| T5 Vector integration missing tenant | **PASS** |
+
+### 15.2 Post-R1 enterprise discovery
+
+| Item | Finding |
+|---|---|
+| New current blockers | **0** identified in R1 scope |
+| New mandatory future debt | Ops surfaces still require authenticated tenant wiring in product hosts (not new authority) |
+| New configuration authority concerns | **None** — owner discovery unchanged |
+| New provider/vendor coupling | **None** |
+| Tenant isolation | R1 CONFIG-X surfaces **PASS** (§15.1); global **FRZ-TEN-*** not promoted |
+| Roadmap amendment | **No** |
 
 ---
 

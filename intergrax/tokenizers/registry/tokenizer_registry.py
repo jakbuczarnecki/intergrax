@@ -17,8 +17,14 @@ class TokenizerRegistry:
     - runtime independent
     """
 
-    def __init__(self, tokenizers: Iterable[Tokenizer] | None = None) -> None:
+    def __init__(
+        self,
+        tokenizers: Iterable[Tokenizer] | None = None,
+        *,
+        default_tokenizer_id: str | None = None,
+    ) -> None:
         self._tokenizers: Dict[str, Tokenizer] = {}
+        self._default_tokenizer_id: str | None = default_tokenizer_id
 
         if tokenizers:
             for tokenizer in tokenizers:
@@ -59,13 +65,20 @@ class TokenizerRegistry:
 
     def default(self) -> Tokenizer:
         """
-        Return default tokenizer (first registered).
+        Return explicitly configured default tokenizer (never registration-order implicit).
         """
 
         if not self._tokenizers:
             raise ValueError("No tokenizer registered")
 
-        return next(iter(self._tokenizers.values()))
+        if self._default_tokenizer_id is None:
+            raise ValueError("No default tokenizer configured")
+
+        tokenizer = self._tokenizers.get(self._default_tokenizer_id)
+        if tokenizer is None:
+            raise ValueError(f"Default tokenizer not found: {self._default_tokenizer_id}")
+
+        return tokenizer
 
 
     def available(self) -> Dict[str, Tokenizer]:

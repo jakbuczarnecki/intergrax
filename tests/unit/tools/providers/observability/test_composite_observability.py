@@ -103,3 +103,11 @@ def test_harness_profile_options_resolve_observability_backends(monkeypatch: pyt
     assert "langsmith" in ctx.observability_backends
     assert resolve_observability_backend(ctx, role="errors") is sentry
     assert resolve_observability_backend(ctx, role="traces") is langsmith
+
+
+def test_default_role_requires_explicit_observability_backend() -> None:
+    ctx = ToolWiringContext(
+        observability_backends={"langsmith": _LangSmithBackend()},
+    )
+    with pytest.raises(RuntimeError, match="observability_backend_not_configured"):
+        resolve_observability_backend(ctx, role="default")

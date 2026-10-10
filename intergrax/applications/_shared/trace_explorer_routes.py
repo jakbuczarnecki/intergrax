@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 
 from intergrax.debug.formatters import build_trace_payload
 from intergrax.debug.store import resolve_trace_reader
@@ -21,7 +21,10 @@ def create_trace_explorer_router(
     router = APIRouter(prefix="/ops/trace", tags=["trace-explorer"])
 
     @router.get("/runs/{run_id}")
-    def get_run_trace(run_id: str, tenant_id: str = "default") -> dict[str, object]:
+    def get_run_trace(
+        run_id: str,
+        tenant_id: str = Query(..., min_length=1),
+    ) -> dict[str, object]:
         if not enabled:
             raise HTTPException(status_code=404, detail="trace explorer disabled")
         reader = resolve_trace_reader(db_path=db_path)

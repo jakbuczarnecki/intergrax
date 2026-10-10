@@ -40,26 +40,26 @@ _COMPOSITION_ROOT_SUFFIXES: Final[tuple[str, ...]] = (
 _BLOCKER_PATH_MARKERS: Final[dict[str, tuple[str, ...]]] = {
     "intergrax/tools/providers/observability/resolve.py": (
         "resolve_observability_backend",
-        "next(iter(backends.values()))",
+        "observability_role_backend_not_configured",
     ),
     "intergrax/tokenizers/registry/tokenizer_registry.py": (
         "class TokenizerRegistry",
-        "Return default tokenizer (first registered)",
+        "_default_tokenizer_id",
     ),
     "intergrax/applications/_shared/harness_task_routes.py": (
-        'tenant_id: str = "default"',
+        "tenant_id_required",
         "HarnessAsyncRunRequest",
     ),
     "intergrax/applications/_shared/trace_explorer_routes.py": (
-        'tenant_id: str = "default"',
+        "Query(..., min_length=1)",
         "create_trace_explorer_router",
     ),
     "intergrax/multimedia/image_smart_loader.py": (
-        'tenant_id: str = "default"',
+        "tenant_id: str,",
         "ImageSmartLoader",
     ),
     "intergrax/integrations/_shared/p3/configs.py": (
-        'tenant_id: str = "default"',
+        "require_tenant_id",
         "class VectorIntegrationConfig",
     ),
 }
