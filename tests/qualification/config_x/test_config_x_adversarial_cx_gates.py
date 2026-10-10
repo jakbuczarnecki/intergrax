@@ -35,10 +35,8 @@ def test_cx_b_invalid_provider_slug_rejected() -> None:
 
 
 def test_cx_c_unsupported_backend_category_mismatch() -> None:
-    profile = IntegrationProfile(
-        relational_store="sqlite",
-    )
-    with pytest.raises(Exception):
+    profile = IntegrationProfile(relational_store="sqlite")
+    with pytest.raises(IntegrationConfigurationError, match="vector_store"):
         resolve(IntegrationCategory.VECTOR_STORE, profile=profile)
 
 
@@ -55,8 +53,11 @@ def test_cx_e_configured_integration_slug_materializes() -> None:
 
 
 def test_cx_f_configuration_change_does_not_imply_resolver_owner_change() -> None:
-    """Historical configured/effective provenance remains TRACE-X-owned (no second model)."""
-    assert "execution_bound_integration_resolution" in CONFIG_X_OWNER_EXPECTATIONS
+    """Configured/effective provenance owner remains TRACE-X execution-bound resolution."""
+    from tests.qualification.config_x._config_x_owner_discovery import compare_owner_gate
+
+    discovered, expected = compare_owner_gate("execution_bound_integration_resolution")
+    assert discovered == expected
 
 
 def test_cx_g_cross_tenant_provider_config_rejected_by_realization_guards() -> None:

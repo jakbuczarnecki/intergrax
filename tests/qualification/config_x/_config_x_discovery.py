@@ -37,7 +37,7 @@ _COMPOSITION_ROOT_SUFFIXES: Final[tuple[str, ...]] = (
     "host/factory.py",
 )
 
-_BLOCKER_PATH_MARKERS: Final[dict[str, tuple[str, ...]]] = {
+_HISTORICAL_BLOCKER_EVIDENCE_MARKERS: Final[dict[str, tuple[str, ...]]] = {
     "intergrax/tools/providers/observability/resolve.py": (
         "resolve_observability_backend",
         "observability_role_backend_not_configured",
@@ -61,6 +61,35 @@ _BLOCKER_PATH_MARKERS: Final[dict[str, tuple[str, ...]]] = {
     "intergrax/integrations/_shared/p3/configs.py": (
         "require_tenant_id",
         "class VectorIntegrationConfig",
+    ),
+}
+
+# Forbidden production patterns: presence ⇒ blocker still active (not merely path exists).
+_ACTIVE_BLOCKER_FORBIDDEN_MARKERS: Final[dict[str, tuple[str, ...]]] = {
+    "intergrax/tools/providers/observability/resolve.py": (
+        "next(iter(backends.values()))",
+        "_TRACES_SLUGS",
+        "_ERRORS_SLUGS",
+        "_LOGS_SLUGS",
+        "_EVAL_SLUGS",
+        "_sanctioned_slug_backend",
+    ),
+    "intergrax/tokenizers/registry/tokenizer_registry.py": (
+        "next(iter(self._tokenizers",
+    ),
+    "intergrax/applications/_shared/harness_task_routes.py": (
+        'tenant_id: str = "default"',
+        'PREFIX_TENANT_ID", "default")',
+    ),
+    "intergrax/applications/_shared/trace_explorer_routes.py": (
+        'tenant_id: str = "default"',
+    ),
+    "intergrax/multimedia/image_smart_loader.py": (
+        'tenant_id: str = "default"',
+    ),
+    "intergrax/integrations/_shared/p3/configs.py": (
+        'tenant_id: str = "default"',
+        'PREFIX_TENANT_ID", "default")',
     ),
 }
 
@@ -98,9 +127,10 @@ def discover_composition_root_paths() -> frozenset[str]:
     return frozenset(paths)
 
 
-def discover_blocker_path_keys() -> frozenset[str]:
+def discover_historical_blocker_evidence_paths() -> frozenset[str]:
+    """Post-remediation evidence markers on wave-1 paths (history — not active blocker proof)."""
     keys: set[str] = set()
-    for rel_path, markers in _BLOCKER_PATH_MARKERS.items():
+    for rel_path, markers in _HISTORICAL_BLOCKER_EVIDENCE_MARKERS.items():
         path = _REPO_ROOT / rel_path
         if not path.is_file():
             continue
@@ -108,6 +138,24 @@ def discover_blocker_path_keys() -> frozenset[str]:
         if all(marker in text for marker in markers):
             keys.add(rel_path)
     return frozenset(keys)
+
+
+def discover_active_blocker_path_keys() -> frozenset[str]:
+    """Paths where forbidden wave-1 defect patterns are still present (unresolved blockers)."""
+    keys: set[str] = set()
+    for rel_path, forbidden in _ACTIVE_BLOCKER_FORBIDDEN_MARKERS.items():
+        path = _REPO_ROOT / rel_path
+        if not path.is_file():
+            continue
+        text = path.read_text(encoding="utf-8")
+        if any(marker in text for marker in forbidden):
+            keys.add(rel_path)
+    return frozenset(keys)
+
+
+def discover_blocker_path_keys() -> frozenset[str]:
+    """Deprecated alias — use discover_active_blocker_path_keys for exit gates."""
+    return discover_active_blocker_path_keys()
 
 
 @lru_cache(maxsize=1)

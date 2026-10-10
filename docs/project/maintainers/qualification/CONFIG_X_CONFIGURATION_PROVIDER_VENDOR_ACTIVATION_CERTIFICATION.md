@@ -22,8 +22,10 @@
 | **CONFIG-X-R1-R1-R1 status** | **CLOSED / independently accepted** |
 | **CONFIG-X-R1-R1 status** | **BLOCKED ON PARENT RECONCILIATION** |
 | **CONFIG-X-R1 status** | **BLOCKED ON PARENT RECONCILIATION** |
-| **CONFIG-X status** | **CURRENT / FINAL RECONCILIATION** |
-| **Next mandatory stage (program order)** | **CONFIG-X FINAL RECONCILIATION** — then `COMPAT-X` (not enterable until CONFIG-X closure) |
+| **CONFIG-X FINAL RECONCILIATION START_HEAD** | `25c49f42b093bb673d1c1b5dd111c51387fd4874` |
+| **CONFIG-X status** | **READY FOR FINAL AUDIT** (reconciliation evidence prepared — not independently CLOSED) |
+| **Production delta (final reconciliation)** | **0** (qualification/tests/docs only) |
+| **Next mandatory stage (program order)** | Independent exact-SHA audit of CONFIG-X parent — then `COMPAT-X` (not enterable until CONFIG-X closure) |
 
 ## 1. Certification question (current-HEAD closed-world)
 
@@ -31,14 +33,15 @@
 
 **Wave-1 verdict (historical @ `4dc5d15c…`):** **NO** — five mechanical production blockers (**I=3**, **J=2**). Evidence preserved in §5 and §15.
 
-### 1.1 Current state (post R1 / R1-R1 implementation — audit pending)
+### 1.1 Current state (final reconciliation @ `25c49f42…` — ready for independent audit)
 
 | Item | Status |
 |---|---|
-| Wave-1 blocker inventory | **Historical** — five IDs in §5; R1 closed four; **CONFIG-X-BLK-OBS-TOOL-01** required **R1-R1** (sanctioned slug ordering in `resolve.py` rejected on independent audit) |
-| **CONFIG-X-BLK-OBS-TOOL-01** | **Remediated in R1-R1** — `IntegrationProfile.observability_roles` + `ToolWiringContext.observability_role_backends`; `resolve_observability_backend` uses explicit materialized roles only |
-| Other R1 blockers (TOK, harness HTTP, MM, INT-P3) | **Remediated in R1** — gates in `test_config_x_r1_remediation_gates.py` (audit pending) |
-| Parent **CONFIG-X** closure | **BLOCKED** — independent reconciliation of R1 + R1-R1 required |
+| **Historical wave-1 blockers** | **5** (`CONFIG_X_HISTORICAL_BLOCKER_RECORDS`) — lineage preserved in §5 |
+| **Active production blockers** | **0** (`CONFIG_X_ACTIVE_BLOCKER_RECORDS`; `discover_active_blocker_path_keys()` empty) |
+| **Active I / J / K / L** | **0 / 0 / 0 / 0** (`test_cx_q15_active_blocker_exit_counts_zero`) |
+| Wave-1 five IDs | **REMEDIATED / NO LONGER ACTIVE** — regression in `test_config_x_r1_remediation_gates.py` + `test_config_x_final_reconciliation_gates.py` |
+| Parent **CONFIG-X** closure | **READY FOR FINAL AUDIT** — Cursor reconciliation complete; independent exact-SHA audit required for CLOSED |
 
 ## 2. Core invariants (evidence)
 
@@ -56,7 +59,7 @@
 | Integration categories (`integration.*`) | **35** (= `IntegrationCategory` enum parity) |
 | Platform concerns (LLM, persistence, observability, activation, env, lab) | **19** |
 | Composition-root discovery candidates | **≥20** (mechanical `discover_composition_root_paths`) |
-| Concern classifications **I/J/K/L inside inventory** | **0** (blockers isolated in `CONFIG_X_BLOCKER_RECORDS`) |
+| Concern classifications **I/J/K/L inside inventory** | **0** (active blockers isolated in `CONFIG_X_ACTIVE_BLOCKER_RECORDS`; history in `CONFIG_X_HISTORICAL_BLOCKER_RECORDS`) |
 | **Unclassified concerns (L)** | **0** |
 | **Duplicate configuration authority (K)** | **0** (owner discovery gates) |
 
@@ -87,22 +90,20 @@ Mechanical discovery (`discovered == expected`):
 
 **Configured vs effective provenance:** reuse **TRACE-X-CERT** / **TRACE-X-P5-R2** — no second provenance subsystem.
 
-## 5. Production blockers (wave-1 discovery — **historical inventory**)
+## 5. Blocker inventory — historical vs active
 
-> **Current:** §1.1. Wave-1 listed five blockers; R1 + R1-R1 remediation paths are in §15–§16. Exit gate **I=J=K=L=0** not met at parent **CONFIG-X** until independent audit.
+> **Historical (wave-1):** five findings below — counts **I=3**, **J=2** at discovery time (`test_cx_q14_historical_blocker_inventory_documented`).  
+> **Active (current HEAD):** **0** blockers — forbidden-pattern discovery empty (`discover_active_blocker_path_keys`; `test_cx_q05b_*`, `test_cx_q15_*`).
 
-| ID | Class | Path(s) | Summary |
+| ID | Class (wave-1) | Path(s) | Current result |
 |---|---|---|---|
-| CONFIG-X-BLK-OBS-TOOL-01 | **J** | `intergrax/tools/providers/observability/resolve.py` | Wave-1: slug-order / implicit backend selection; **R1-R1:** explicit `observability_roles` (audit pending) |
-| CONFIG-X-BLK-TOK-01 | **J** | `intergrax/tokenizers/registry/tokenizer_registry.py` | `name=None` / `default()` → first registered tokenizer |
-| CONFIG-X-BLK-HARNESS-HTTP-01 | **I** | `harness_task_routes.py`, `trace_explorer_routes.py` | Harness HTTP defaults `tenant_id="default"` (EBH-4 tracked debt) |
-| CONFIG-X-BLK-MM-01 | **I** | `intergrax/multimedia/image_smart_loader.py` | Default `tenant_id="default"` |
-| CONFIG-X-BLK-INT-P3-01 | **I** | `intergrax/integrations/_shared/p3/configs.py` | `VectorIntegrationConfig.tenant_id` literal default |
+| CONFIG-X-BLK-OBS-TOOL-01 | **J** | `resolve.py` | **REMEDIATED / NO LONGER ACTIVE** (R1-R1 / R1-R1-R1) |
+| CONFIG-X-BLK-TOK-01 | **J** | `tokenizer_registry.py` | **REMEDIATED / NO LONGER ACTIVE** (R1) |
+| CONFIG-X-BLK-HARNESS-HTTP-01 | **I** | harness/trace routes | **REMEDIATED / NO LONGER ACTIVE** (R1) |
+| CONFIG-X-BLK-MM-01 | **I** | `image_smart_loader.py` | **REMEDIATED / NO LONGER ACTIVE** (R1) |
+| CONFIG-X-BLK-INT-P3-01 | **I** | `p3/configs.py` | **REMEDIATED / NO LONGER ACTIVE** (R1) |
 
-**Hard-coded production selection (I):** **3**  
-**Silent fallback (J):** **2**  
-**Duplicate authority (K):** **0**  
-**Unclear (L):** **0**
+**Historical I/J/K/L:** 3 / 2 / 0 / 0 · **Active I/J/K/L:** 0 / 0 / 0 / 0
 
 ## 6. Adversarial matrix CX-A … CX-H
 
@@ -121,9 +122,20 @@ Additional: missing observability backend → `RuntimeError` (`test_cx_observabi
 
 ## 7. Tenant isolation audit (CONFIG-X scope)
 
-**Wave-1 result:** **BLOCKED** (ambient `tenant_id="default"` on three surfaces — historical §5).
-
-**R1 / R1-R1 result (CONFIG-X surfaces in task scope):** **PASS** — §15.1 gates T1–T5 green on R1-R1 HEAD; harness/trace/image/P3 tenant literals remediated in R1. **No global `FRZ-TEN-*` PASS promotion** · **TENANT-X** remains mandatory later.
+| Field | Value |
+|---|---|
+| tenant scope applicable | **YES** |
+| canonical tenant identity | principal / explicit `tenant_id` on CONFIG-X surfaces |
+| tenant owner | harness principal resolution; trace `tenant_id` query; P3 `require_tenant_id` |
+| propagation path | HTTP principal → task; trace query param; multimedia scope |
+| state isolation | INT-CONFIG `TENANT_MISMATCH` (CX-G) |
+| provider/config isolation | `VectorIntegrationConfig.require_tenant_id` |
+| evidence/trace isolation | trace explorer requires `tenant_id` (422 when missing) |
+| async/recovery continuity | out of CONFIG-X closed-world — **TENANT-X** later |
+| cross-tenant path | CX-G adversarial mismatch rejected |
+| fail-closed behavior | missing tenant → 422 / `IntegrationConfigurationError` |
+| adversarial evidence | `test_config_x_r1_remediation_gates.py` T1–T5; `test_cx_g_*`; `test_config_x_tenant_isolation_audit_local_pass` |
+| **result** | **PASS** (CONFIG-X local — **no global `FRZ-TEN-*` PASS**) |
 
 ## 8. Tests (sequential `pytest -p no:xdist`)
 
@@ -145,46 +157,55 @@ Command: `pyright` on `factory.py`, `execution_bound_integration_resolution.py`,
 - **STOP — ARCHITECTURE DECISION REQUIRED:** **not triggered** (no second global resolver/registry proposed).
 - **No new** configuration framework, provider resolver, or effective-state cache added.
 
-## 11. FRZ-CFG candidate states (contribution only — global OPEN)
+## 11. FRZ-CFG candidate states (freeze checklist — status OPEN until independent audit)
 
-| ID | CONFIG-X wave-1 |
-|---|---|
-| FRZ-CFG-01..04, 07..08 | **OPEN** — scoped INT-CONFIG / EBH-2G evidence preserved; global closure requires CONFIG-X parent **PASS** |
-| FRZ-CFG-05..06 | **OPEN** — blockers §5 prevent PASS |
+| ID | Reconciliation evidence @ `25c49f42…` | Candidate |
+|---|---|---|
+| FRZ-CFG-01 | Closed-world `CONFIG_X_CONCERN_INVENTORY` + `test_frz_cfg_01_*` | **PASS CANDIDATE / READY FOR INDEPENDENT AUDIT** |
+| FRZ-CFG-02 | CX-A + `test_frz_cfg_02_*` + adversarial fail-closed gates | **PASS CANDIDATE** |
+| FRZ-CFG-03 | CX-D/E + LLM registry + TRACE-X provenance reuse (CX-F) | **PASS CANDIDATE** |
+| FRZ-CFG-04 | Owner discovery gates Q06–Q10 + `test_frz_cfg_04_*` | **PASS CANDIDATE** |
+| FRZ-CFG-05 | Wave-1 forbidden-pattern scan empty + active I=0 (`test_frz_cfg_05_*`) — closed-world scope only | **PASS CANDIDATE** (not global literal/secret audit) |
+| FRZ-CFG-06 | CX-D + observability/tokenizer bypass gates (`test_frz_cfg_06_*`) | **PASS CANDIDATE** |
+| FRZ-CFG-07 | Deterministic `resolve_slug` + INT-CONFIG continuity evidence | **PASS CANDIDATE** |
+| FRZ-CFG-08 | R1 remediation + active forbidden markers (`test_frz_cfg_08_*`) | **PASS CANDIDATE** (QUAL-X certifies infra quality later) |
 
-**new global FRZ PASS = 0** · **new FRZ-TEN PASS = 0**
+**Freeze checklist row status remains `OPEN` until independent audit** · **new global FRZ PASS = 0** · **new FRZ-TEN PASS = 0**
 
 ## 12. Post-Step Enterprise Discovery
 
 | Item | Finding |
 |---|---|
-| New current blockers | **5** (§5) |
-| New mandatory future debt | Remaining production `os.getenv` dispersion audit (136+ files); full literal vendor/model scan beyond wave-1 blockers |
+| New current blockers | **0** (active discovery empty) |
+| New mandatory future debt | Remaining production `os.getenv` dispersion audit (136+ files); full literal vendor/model scan beyond CONFIG-X closed-world |
 | New candidate roadmap stages | None |
-| FRZ coverage gaps | FRZ-CFG-05/06 without evidence until blockers close |
-| Configuration authority concerns | Tool observability resolve + tokenizer default order |
+| FRZ coverage gaps | Global FRZ-CFG PASS pending independent audit (candidate evidence §11) |
+| Configuration authority concerns | **None** — owner discovery unchanged |
 | Provider/vendor coupling concerns | Localized; Integrations spine certified fail-closed |
-| Tenant isolation concerns | Harness/multimedia/P3 default tenant literals |
-| Roadmap amendment required | **No** (blockers fit existing CONFIG-X child pattern) |
+| Tenant isolation concerns | CONFIG-X local **PASS** (§7); global **TENANT-X** later |
+| Roadmap amendment required | **No** |
 
 ## 13. Qualification SSOT (code)
 
 | Artifact | Role |
 |---|---|
 | `tests/qualification/config_x/_config_x_concern_inventory.py` | Concern inventory |
-| `tests/qualification/config_x/_config_x_blockers.py` | Blocker SSOT |
+| `tests/qualification/config_x/_config_x_blockers.py` | Historical + active blocker SSOT |
 | `tests/qualification/config_x/_config_x_owner_discovery.py` | Owner discovery |
-| `tests/qualification/config_x/_config_x_discovery.py` | Blocker path + composition discovery |
+| `tests/qualification/config_x/_config_x_discovery.py` | Historical evidence + active forbidden-pattern discovery |
 | `tests/qualification/config_x/test_config_x_qualification_gates.py` | Closed-world gates |
 | `tests/qualification/config_x/test_config_x_adversarial_cx_gates.py` | CX-A…H |
+| `tests/qualification/config_x/test_config_x_final_reconciliation_gates.py` | Final reconciliation + FRZ-CFG parent evidence |
+| `tests/qualification/config_x/test_config_x_r1_remediation_gates.py` | Wave-1 blocker exit + tenant gates |
 
 ## 14. Program status
 
 ```text
+CONFIG-X FINAL RECONCILIATION = READY FOR AUDIT
 CONFIG-X-R1-R1-R1 = CLOSED / independently accepted
-CONFIG-X-R1-R1    = BLOCKED ON PARENT RECONCILIATION
-CONFIG-X-R1       = BLOCKED ON PARENT RECONCILIATION
-CONFIG-X          = CURRENT / FINAL RECONCILIATION
+CONFIG-X-R1-R1    = BLOCKED ON PARENT FINAL AUDIT
+CONFIG-X-R1       = BLOCKED ON PARENT FINAL AUDIT
+CONFIG-X          = READY FOR FINAL AUDIT
 COMPAT-X          = NOT ENTERED
 ```
 
@@ -247,7 +268,31 @@ Wave-1 originally found **five** production blockers (**I=3**, **J=2**). R1 reme
 
 **Independent audit verdict @ `e405b71a91b6652334a407c997a1c3a46c7eadc9`:** **CLOSED / independently accepted** — explicit invalid observability role binding no longer becomes `None`; role materialization delegates only to canonical Integration `resolve(...)`; no redundant `get_entry()` preflight in Tools; unknown slug follows canonical public resolver error semantics; wrong category propagates `IntegrationCategoryMismatchError`; no vendor ranking; no implicit role fallback; no new configuration authority; no new resolver/catalog; no bypass.
 
-**CONFIG-X-R1-R1-R1 = CLOSED / independently accepted** (production correction `4fa6f42f2cc24e9edd5c043a352b70f2668687bf`). **CONFIG-X** / **CONFIG-X-R1** / **CONFIG-X-R1-R1** / **FRZ-CFG-\*** remain open pending final parent reconciliation.
+**CONFIG-X-R1-R1-R1 = CLOSED / independently accepted** (production correction `4fa6f42f2cc24e9edd5c043a352b70f2668687bf`).
+
+## 18. CONFIG-X final reconciliation ledger
+
+| Field | Value |
+|---|---|
+| **START_HEAD** | `25c49f42b093bb673d1c1b5dd111c51387fd4874` |
+| **FINAL_COMMIT** | *(set at push — reconciliation commit on `development`)* |
+| **historical blockers** | **5** |
+| **active blockers** | **0** |
+| **active I / J / K / L** | **0 / 0 / 0 / 0** |
+| **concern inventory** | **54** |
+| **unclassified (L) in inventory** | **0** |
+| **duplicate authorities (K) active** | **0** |
+| **owner discovery** | mandatory matrix **PASS** (Q06–Q10) |
+| **CX-A…H** | **PASS** (adversarial suite) |
+| **wave-1 blocker remediation** | **PASS** (R1 + R1-R1 gates) |
+| **tenant-local audit** | **PASS** (§7) |
+| **FRZ-CFG-01..08** | **PASS CANDIDATE** (§11 — checklist `OPEN` until audit) |
+| **production delta** | **0** |
+| **new blockers** | **0** |
+
+```text
+CONFIG-X FINAL RECONCILIATION = READY FOR AUDIT
+```
 
 ---
 

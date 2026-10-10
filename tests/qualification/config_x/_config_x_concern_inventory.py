@@ -197,18 +197,29 @@ _PLATFORM_CONCERNS: Final[tuple[ConfigConcernRecord, ...]] = (
         concern_id="tokenizer.selection",
         domain="LLM_AI",
         classification=ConfigClassification.A_CANONICAL_CONFIGURATION_CONTRACT,
-        configuration_contract="Tokenizer / TokenizerRegistry",
+        configuration_contract="Tokenizer / TokenizerRegistry.default_tokenizer_id",
         composition_owner="intergrax/tokenizers/registry/tokenizer_registry.py",
-        effective_resolution_owner="Explicit tokenizer id (CONFIG-X-BLK-TOK-01 open)",
+        effective_resolution_owner=(
+            "Explicit tokenizer id or configured default_tokenizer_id "
+            "(CONFIG-X-BLK-TOK-01 remediated — not active)"
+        ),
         provider_surface="intergrax/tokenizers/registry/tokenizer_registry.py",
     ),
     ConfigConcernRecord(
         concern_id="tool.observability_backend",
         domain="OBSERVABILITY",
         classification=ConfigClassification.A_CANONICAL_CONFIGURATION_CONTRACT,
-        configuration_contract="ToolWiringContext.observability_backends",
-        composition_owner="intergrax/tools/providers/observability/resolve.py",
-        effective_resolution_owner="Explicit role wiring (CONFIG-X-BLK-OBS-TOOL-01 open)",
+        configuration_contract=(
+            "IntegrationProfile.observability_roles (ObservabilityRoleBindings)"
+        ),
+        composition_owner=(
+            "intergrax/tools/registry/wiring.py "
+            "(ToolWiringContext.from_integration_profile → observability_role_backends)"
+        ),
+        effective_resolution_owner=(
+            "resolve_observability_backend — role → observability_role_backends; "
+            "default → observability_backend only (CONFIG-X-BLK-OBS-TOOL-01 remediated)"
+        ),
         provider_surface="intergrax/tools/providers/observability/resolve.py",
     ),
 )

@@ -11,7 +11,10 @@ import pytest
 from intergrax.integrations.contracts.base import IntegrationCategory
 
 from tests.qualification.config_x._config_x_blockers import (
-    CONFIG_X_BLOCKER_RECORDS,
+    CONFIG_X_ACTIVE_BLOCKER_RECORDS,
+    CONFIG_X_HISTORICAL_BLOCKER_RECORDS,
+    historical_blocker_counts_by_classification,
+    active_blocker_counts_by_classification,
     blocker_counts_by_classification,
 )
 from tests.qualification.config_x._config_x_concern_inventory import (
@@ -20,7 +23,8 @@ from tests.qualification.config_x._config_x_concern_inventory import (
 )
 from tests.qualification.config_x._config_x_discovery import (
     classify_synthetic_unknown_surface,
-    discover_blocker_path_keys,
+    discover_active_blocker_path_keys,
+    discover_historical_blocker_evidence_paths,
     discover_composition_root_paths,
     discover_integration_category_enum_size,
 )
@@ -68,17 +72,21 @@ def test_cx_q03_composition_roots_discovered_subset_of_production_tree() -> None
 
 
 def test_cx_q04_blocker_paths_exist_on_disk() -> None:
-    for row in CONFIG_X_BLOCKER_RECORDS:
+    for row in CONFIG_X_HISTORICAL_BLOCKER_RECORDS:
         for path in row.paths:
             assert (_REPO_ROOT / path).is_file(), path
 
 
-def test_cx_q05_blocker_inventory_parity() -> None:
-    discovered = discover_blocker_path_keys()
+def test_cx_q05_historical_blocker_evidence_parity() -> None:
+    discovered = discover_historical_blocker_evidence_paths()
     expected: set[str] = set()
-    for row in CONFIG_X_BLOCKER_RECORDS:
+    for row in CONFIG_X_HISTORICAL_BLOCKER_RECORDS:
         expected.update(row.paths)
     assert discovered == expected
+
+
+def test_cx_q05b_active_blocker_discovery_empty() -> None:
+    assert discover_active_blocker_path_keys() == frozenset()
 
 
 def test_cx_q06_owner_discovery_integration_provider_selection() -> None:
@@ -125,10 +133,18 @@ def test_cx_q13_inventory_reload_stable() -> None:
     assert config_x_concern_inventory() == CONFIG_X_CONCERN_INVENTORY
 
 
-def test_cx_q14_blocker_exit_counts_documented() -> None:
-    counts = blocker_counts_by_classification()
+def test_cx_q14_historical_blocker_inventory_documented() -> None:
+    counts = historical_blocker_counts_by_classification()
     assert counts[ConfigClassification.I_HARD_CODED_PRODUCTION_SELECTION] == 3
     assert counts[ConfigClassification.J_SILENT_FALLBACK] == 2
+    assert len(CONFIG_X_HISTORICAL_BLOCKER_RECORDS) == 5
+
+
+def test_cx_q15_active_blocker_exit_counts_zero() -> None:
+    counts = active_blocker_counts_by_classification()
+    assert counts[ConfigClassification.I_HARD_CODED_PRODUCTION_SELECTION] == 0
+    assert counts[ConfigClassification.J_SILENT_FALLBACK] == 0
     assert counts[ConfigClassification.K_DUPLICATE_CONFIGURATION_AUTHORITY] == 0
     assert counts[ConfigClassification.L_UNCLEAR] == 0
-    assert len(CONFIG_X_BLOCKER_RECORDS) == 5
+    assert len(CONFIG_X_ACTIVE_BLOCKER_RECORDS) == 0
+    assert blocker_counts_by_classification() == counts
