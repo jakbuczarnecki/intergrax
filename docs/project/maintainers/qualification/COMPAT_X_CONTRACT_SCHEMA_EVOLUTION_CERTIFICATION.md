@@ -6,7 +6,7 @@
 
 **START_HEAD (P0-R1 session):** `88b2844f565f1869e61b3bb97305b623eb10f295`
 
-**IMPLEMENTATION_COMMIT (P0-R1 Cursor):** `3c8f7ba76d1c2600fcb7a1891b4cc9223efa23f8`
+**IMPLEMENTATION_COMMIT (P0-R1 Cursor):** `065a0dcd875f8b985792e70f4e1f1b20bd8de094`
 
 **Rejected / incomplete P0 evidence (do not use as closure baseline):** `cea6393775c8b92a2cefb165fc9930511c776169`
 
