@@ -203,13 +203,10 @@ class ToolWiringContext:
                     slug = manifest.slug
             if slug is None:
                 return None
-            try:
-                return cast(
-                    ObservabilityBackend,
-                    resolve(obs_category, slug=slug, profile=profile),
-                )
-            except Exception:
-                return None
+            return cast(
+                ObservabilityBackend,
+                resolve(obs_category, slug=slug, profile=profile),
+            )
 
         def _optional(category: IntegrationCategory) -> Any | None:
             instance = profile.instance_for_category(category)

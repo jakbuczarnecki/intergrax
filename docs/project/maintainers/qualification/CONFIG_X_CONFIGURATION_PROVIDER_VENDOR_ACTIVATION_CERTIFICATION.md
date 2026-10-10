@@ -2,7 +2,7 @@
 
 | Field | Value |
 |---|---|
-| **Stage** | `CONFIG-X` (parent) · `CONFIG-X-R1` (remediation wave) · `CONFIG-X-R1-R1` (OBS explicit role binding) |
+| **Stage** | `CONFIG-X` (parent) · `CONFIG-X-R1` (remediation wave) · `CONFIG-X-R1-R1` (OBS explicit role binding) · `CONFIG-X-R1-R1-R1` (OBS role materialization fail-closed) |
 | **Parent** | Whole-program enterprise architecture roadmap |
 | **Prior stage** | `TRACE-X` = **CLOSED / independently accepted** @ `c53d10bb7ec643ba6b444214cc8eb20111553296` (audited HEAD at CONFIG-X entry) |
 | **START_HEAD** | `c53d10bb7ec643ba6b444214cc8eb20111553296` |
@@ -10,13 +10,16 @@
 | **CONFIG-X-R1 START_HEAD** | `4de636c3812853245f3d0a8290388980cce94e62` |
 | **CONFIG-X-R1 FINAL_COMMIT** | `d7183eb31d19967330687a5bc5345774c230e3aa` |
 | **CONFIG-X-R1-R1 START_HEAD** | `0a9eaf4d3b992fde3643ec44a8a62182e5fc155a` |
-| **CONFIG-X-R1-R1 FINAL_COMMIT** | *(pending commit — audit on GitHub)* |
-| **Bookkeeping tip** | `0a9eaf4d3b992fde3643ec44a8a62182e5fc155a` (`origin/development` @ R1-R1 entry) |
+| **CONFIG-X-R1-R1 FINAL_COMMIT** | `4b8961e4a4376a95969384f76083d019eede9903` |
+| **CONFIG-X-R1-R1-R1 START_HEAD** | `4b8961e4a4376a95969384f76083d019eede9903` |
+| **CONFIG-X-R1-R1-R1 FINAL_COMMIT** | *(pending commit — audit on GitHub)* |
+| **Bookkeeping tip** | `4b8961e4a4376a95969384f76083d019eede9903` (R1-R1 implementation-under-audit) |
 | **Production delta (wave-1)** | **0** (qualification/tests only) |
 | **Production delta (R1)** | **Narrow** — five blocker paths + scoped RAG image handler/parser wiring |
-| **CONFIG-X-R1-R1 status** | **READY FOR AUDIT** (explicit `IntegrationProfile.observability_roles` + resolver; independent audit pending) |
-| **CONFIG-X-R1 status** | **BLOCKED ON R1-R1 AUDIT / parent reconciliation** (four non-OBS blockers remediated in R1; OBS reopened for R1-R1) |
-| **CONFIG-X status** | **BLOCKED** pending independent R1 reconciliation |
+| **CONFIG-X-R1-R1-R1 status** | **READY FOR AUDIT** (invalid explicit `observability_roles` bindings propagate catalog/configuration errors; independent audit pending) |
+| **CONFIG-X-R1-R1 status** | **BLOCKED ON R1-R1-R1 AUDIT** (implementation @ `4b8961e4…`; fail-closed materialization correction pending audit) |
+| **CONFIG-X-R1 status** | **BLOCKED ON INDEPENDENT RECONCILIATION** (four non-OBS blockers remediated in R1; OBS path gated on R1-R1-R1) |
+| **CONFIG-X status** | **BLOCKED** |
 | **Next mandatory stage (program order)** | `COMPAT-X` (not enterable until CONFIG-X closure) |
 
 ## 1. Certification question (current-HEAD closed-world)
@@ -175,11 +178,12 @@ Command: `pyright` on `factory.py`, `execution_bound_integration_resolution.py`,
 ## 14. Program status
 
 ```text
-CONFIG-X-R1-R1 = READY FOR AUDIT
-CONFIG-X-R1    = BLOCKED ON R1-R1 AUDIT / parent reconciliation
-CONFIG-X       = BLOCKED pending independent R1 reconciliation
-FRZ-CFG-01..08 = OPEN (candidate per evidence; global closure requires parent PASS)
-COMPAT-X       = NOT ENTERED
+CONFIG-X-R1-R1-R1 = READY FOR AUDIT
+CONFIG-X-R1-R1    = BLOCKED ON R1-R1-R1 AUDIT
+CONFIG-X-R1       = BLOCKED ON INDEPENDENT RECONCILIATION
+CONFIG-X          = BLOCKED
+FRZ-CFG-01..08    = OPEN (candidate per evidence; global closure requires parent PASS)
+COMPAT-X          = NOT ENTERED
 ```
 
 **Next mandatory step after CONFIG-X closure:** `COMPAT-X`.
@@ -227,7 +231,17 @@ Wave-1 originally found **five** production blockers (**I=3**, **J=2**). R1 reme
 | Harness preset | `IntegrationProfile.harness_lab()` — `errors`/`default` → Sentry; `traces` → LangSmith (explicit bindings, not slug order) |
 | Tests | `test_composite_observability.py` (explicit langfuse/langsmith traces, ambiguity fail-closed, structural gate); CONFIG-X `tests/qualification/config_x/` |
 
-**CONFIG-X-R1-R1 = READY FOR AUDIT** (Cursor does not close).
+**CONFIG-X-R1-R1 = BLOCKED ON R1-R1-R1 AUDIT** (implementation accepted for architecture @ `4b8961e4…`; materialization swallow corrected in R1-R1-R1).
+
+## 17. CONFIG-X-R1-R1-R1 — explicit observability role materialization fail-closed
+
+| Item | Evidence |
+|---|---|
+| Finding | Invalid explicit `observability_roles` binding was swallowed in `_materialize_observability_binding` (`resolve` → `None`) |
+| Correction | Catalog/configuration errors (`UnknownIntegrationError`, `IntegrationCategoryMismatchError`, `IntegrationConfigurationError`, canonical `resolve` failures) propagate from `ToolWiringContext.from_integration_profile` |
+| Tests | `tests/unit/tools/registry/test_wiring.py` (unknown slug; wrong-category slug) |
+
+**CONFIG-X-R1-R1-R1 = READY FOR AUDIT** (Cursor does not close).
 
 ---
 
