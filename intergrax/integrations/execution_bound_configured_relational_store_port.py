@@ -53,6 +53,7 @@ class ExecutionBoundConfiguredRelationalStorePort(ConfiguredRelationalStoreExecu
         "_init_failed",
         "_init_lock",
         "_integration_profile",
+        "_require_configured_adopted_requirement_evidence",
         "_requirement_commit_port",
         "_requirement_recovery_staging",
         "_resolution",
@@ -75,6 +76,7 @@ class ExecutionBoundConfiguredRelationalStorePort(ConfiguredRelationalStoreExecu
         requirement_commit_port: (
             ExecutionIntegrationConfigurationProvenanceRequirementCommitPort | None
         ) = None,
+        require_configured_adopted_requirement_evidence: bool = False,
     ) -> None:
         self._tenant_id = tenant_id
         self._execution_id = execution_id
@@ -84,6 +86,9 @@ class ExecutionBoundConfiguredRelationalStorePort(ConfiguredRelationalStoreExecu
         self._catalog_slug = catalog_slug
         self._requirement_recovery_staging = requirement_recovery_staging
         self._requirement_commit_port = requirement_commit_port
+        self._require_configured_adopted_requirement_evidence = (
+            require_configured_adopted_requirement_evidence
+        )
         self._typed_adapter: RelationalStoreExecutionAdapter | None = None
         self._init_failed = False
         self._init_lock = threading.Lock()
@@ -119,6 +124,17 @@ class ExecutionBoundConfiguredRelationalStorePort(ConfiguredRelationalStoreExecu
             raise ExecutionIntegrationConfigurationAdoptionError(
                 ExecutionIntegrationConfigurationAdoptionFailureReason.CONFIGURED_ADOPTION_CATEGORY_MISMATCH,
             )
+        if self._require_configured_adopted_requirement_evidence:
+            if self._requirement_commit_port is None:
+                raise ExecutionIntegrationConfigurationAdoptionError(
+                    ExecutionIntegrationConfigurationAdoptionFailureReason.EFFECTIVE_PROVIDER_IDENTITY_UNAVAILABLE,
+                    detail="requirement commit port required for production configured execution",
+                )
+            if self._requirement_recovery_staging is None:
+                raise ExecutionIntegrationConfigurationAdoptionError(
+                    ExecutionIntegrationConfigurationAdoptionFailureReason.EFFECTIVE_PROVIDER_IDENTITY_UNAVAILABLE,
+                    detail="requirement recovery staging required for production configured execution",
+                )
         materialized_result = self._resolution.materialize_validate_and_pin(
             ExecutionBoundIntegrationResolutionRequest(
                 tenant_id=self._tenant_id,

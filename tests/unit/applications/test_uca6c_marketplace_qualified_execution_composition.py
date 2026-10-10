@@ -11,6 +11,8 @@ from typing import Any, Mapping, Sequence
 import pytest
 from pydantic import BaseModel, ConfigDict
 
+from intergrax.runtime.events.event_bus import RuntimeEventBus
+from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
 from intergrax.applications._shared.uca6c_marketplace_qualified_execution_composition import (
     Uca6cMarketplaceQualifiedExecutionCompositionError,
     build_production_marketplace_configured_execution_bound_dispatch,
@@ -397,11 +399,16 @@ def _marketplace_database_deps() -> _MarketplaceDeps:
     )
 
 
+def _production_runtime_event_bus() -> RuntimeEventBus:
+    return RuntimeEventBus(persistence=InMemoryRuntimeEventStore())
+
+
 def _production_composition(
     *,
     materialization: _CountingMaterialization,
     catalog_invoker: object,
     deps: _MarketplaceDeps,
+    runtime_event_bus: RuntimeEventBus | None = None,
 ):
     return build_production_marketplace_configured_execution_composition(
         intent_repository=deps.intent_repo,
@@ -416,6 +423,7 @@ def _production_composition(
         invocation_resolver=DefaultQualifiedToolInvocationResolver(),
         activation_resolver=_DatabaseActivationResolver(),
         package_resolver=MagicMock(),
+        runtime_event_bus=runtime_event_bus or _production_runtime_event_bus(),
     )
 
 
@@ -424,6 +432,7 @@ def _with_active_execution_identity(execution_id: ExecutionId, fn: object):
         run_id=_RUN_ID,
         attempt_id=_ATTEMPT_ID,
         execution_id=execution_id,
+        task_id=_TASK_ID,
     )
     governance_token = bind_active_execution_governance_identity(
         ActiveExecutionGovernanceIdentity(
@@ -547,6 +556,7 @@ def test_production_builder_rejects_non_conditional_document_store() -> None:
         build_production_marketplace_configured_execution_composition(
             **_minimal_marketplace_handler_kwargs(deps),
             configuration_pinning_document_store=_NonConditionalDocumentStore(),
+            runtime_event_bus=_production_runtime_event_bus(),
         )
 
 
@@ -932,6 +942,7 @@ def test_alternate_provider_materialization_without_composition_edit() -> None:
         catalog_tool_invoker=_governed_database_catalog_invoker(),
         configuration_pinning_kv_store=InMemoryKVStore(),
         materialization=materialization,
+        runtime_event_bus=_production_runtime_event_bus(),
     )
     assert composition.resolution is not None
     assert materialization.instance is alt

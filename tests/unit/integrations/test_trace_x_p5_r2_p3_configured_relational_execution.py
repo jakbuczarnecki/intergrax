@@ -45,7 +45,25 @@ from intergrax.integrations.invocation_bound_configured_relational_wiring_resolv
     InvocationBoundConfiguredRelationalStoreWiringResolver,
 )
 from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
+from intergrax.contracts.execution_integration_configuration_provenance_requirement import (
+    ExecutionIntegrationConfigurationProvenanceRequirementCommitPort,
+    ExecutionIntegrationConfigurationProvenanceRequirementCommitResult,
+    ExecutionIntegrationConfigurationProvenanceRequirementCommitStatus,
+    ExecutionIntegrationConfigurationProvenanceRequirementFact,
+)
 from intergrax.tools.invocation_wiring import ToolInvocationContext, ToolRegistrationWiringView
+
+
+class _CommittedRequirementPort(
+    ExecutionIntegrationConfigurationProvenanceRequirementCommitPort,
+):
+    def commit_configured_adopted_requirement(
+        self,
+        fact: ExecutionIntegrationConfigurationProvenanceRequirementFact,
+    ) -> ExecutionIntegrationConfigurationProvenanceRequirementCommitResult:
+        return ExecutionIntegrationConfigurationProvenanceRequirementCommitResult(
+            status=ExecutionIntegrationConfigurationProvenanceRequirementCommitStatus.COMMITTED,
+        )
 
 
 def _test_staging() -> ExecutionIntegrationConfigurationRequirementRecoveryStaging:
@@ -185,6 +203,7 @@ def test_lazy_port_materializes_once_and_reuses_same_provider() -> None:
         resolution=resolution,
         catalog_slug="sqlite",
         requirement_recovery_staging=_test_staging(),
+        requirement_commit_port=_CommittedRequirementPort(),
     )
     resolver = InvocationBoundConfiguredRelationalStoreWiringResolver(
         configured_relational_store_execution=port,

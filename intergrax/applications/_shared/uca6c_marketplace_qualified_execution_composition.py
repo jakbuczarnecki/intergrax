@@ -6,6 +6,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from intergrax.applications._shared.integrations.active_execution_requirement_recovery_staging import (
+    ActiveExecutionIdentityRequirementRecoveryStagingSource,
+)
+from intergrax.applications._shared.integrations.integration_configuration_provenance_requirement_commit import (
+    RuntimeEventBusIntegrationConfigurationProvenanceRequirementCommitPort,
+)
 from intergrax.applications._shared.integrations.persistence import (
     wire_execution_integration_configuration_pinning_store,
 )
@@ -88,6 +94,7 @@ from intergrax.tools.qualified_marketplace_tool_activation_resolver import (
 from intergrax.tools.qualified_tool_invocation_resolver import (
     DefaultQualifiedToolInvocationResolver,
 )
+from intergrax.runtime.events.event_bus import RuntimeEventBus
 
 
 class Uca6cMarketplaceQualifiedExecutionCompositionError(RuntimeError):
@@ -124,6 +131,7 @@ class ProductionMarketplaceConfiguredExecutionComposition:
     handler: MarketplaceToolQualifiedCapabilityExecutionHandler
     pinning_store: ExecutionIntegrationConfigurationPinningStore
     resolution: ExecutionBoundIntegrationResolution
+    runtime_event_bus: RuntimeEventBus
 
 
 def build_production_marketplace_configured_execution_composition(
@@ -141,12 +149,17 @@ def build_production_marketplace_configured_execution_composition(
     materialization: ExecutionBoundIntegrationMaterializationPort | None = None,
     activation_resolver: QualifiedMarketplaceToolActivationResolver | None = None,
     package_resolver: ToolPackageResolutionForIdentityPort | None = None,
+    runtime_event_bus: RuntimeEventBus | None = None,
 ) -> ProductionMarketplaceConfiguredExecutionComposition:
     """Wire durable P2 pinning → Pattern A → relational binding → configured projection → handler."""
     _require_exactly_one_pinning_backing(
         configuration_pinning_kv_store=configuration_pinning_kv_store,
         configuration_pinning_document_store=configuration_pinning_document_store,
     )
+    if runtime_event_bus is None:
+        raise Uca6cMarketplaceQualifiedExecutionCompositionError(
+            "production marketplace configured execution requires runtime_event_bus",
+        )
     pinning_store = wire_execution_integration_configuration_pinning_store(
         kv_store=configuration_pinning_kv_store,
         document_store=configuration_pinning_document_store,
@@ -155,8 +168,15 @@ def build_production_marketplace_configured_execution_composition(
         pinning_store=pinning_store,
         materialization=materialization,
     )
+    requirement_commit_port = RuntimeEventBusIntegrationConfigurationProvenanceRequirementCommitPort(
+        runtime_event_bus,
+    )
+    requirement_recovery_staging_source = ActiveExecutionIdentityRequirementRecoveryStagingSource()
     relational_binding = build_default_configured_relational_store_execution_binding(
         resolution=resolution,
+        requirement_commit_port=requirement_commit_port,
+        requirement_recovery_staging_source=requirement_recovery_staging_source,
+        require_configured_adopted_requirement_evidence=True,
     )
     projection = DefaultConfiguredIntegrationToolInvocationProjectionPort(
         relational_binding=relational_binding,
@@ -190,6 +210,7 @@ def build_production_marketplace_configured_execution_composition(
         handler=handler,
         pinning_store=pinning_store,
         resolution=resolution,
+        runtime_event_bus=runtime_event_bus,
     )
 
 
@@ -207,6 +228,7 @@ def build_production_marketplace_qualified_capability_execution_handler(
     invocation_resolver: QualifiedToolInvocationResolver | None = None,
     materialization: ExecutionBoundIntegrationMaterializationPort | None = None,
     activation_resolver: QualifiedMarketplaceToolActivationResolver | None = None,
+    runtime_event_bus: RuntimeEventBus | None = None,
 ) -> MarketplaceToolQualifiedCapabilityExecutionHandler:
     return build_production_marketplace_configured_execution_composition(
         intent_repository=intent_repository,
@@ -221,6 +243,7 @@ def build_production_marketplace_qualified_capability_execution_handler(
         invocation_resolver=invocation_resolver,
         materialization=materialization,
         activation_resolver=activation_resolver,
+        runtime_event_bus=runtime_event_bus,
     ).handler
 
 
