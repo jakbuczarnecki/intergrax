@@ -154,20 +154,26 @@ def test_txp6_q15_negative_sensitivity_terminal_truth_duplicate_owner() -> None:
     assert not failed.ok
 
 
-def test_txp6_q16_negative_sensitivity_resume_coordination_duplicate_owner() -> None:
-    concern = "resume coordination owner"
-    baseline = compare_semantic_owner_gate(concern)
-    assert baseline.ok
-    synthetic = frozenset({"intergrax/runtime/synthetic_p6_duplicate_resume_coordinator.py"})
-    failed = compare_semantic_owner_gate(concern, extra_discovered=synthetic)
-    assert not failed.ok
+def test_txp6_q16_negative_sensitivity_scheduled_resume_and_restoration_duplicate_owner() -> None:
+    synthetic = frozenset({"intergrax/runtime/synthetic_p6_duplicate_resume_surface.py"})
+    for concern in (
+        "scheduled resume trigger owner",
+        "resume restoration / recovery coordination owner",
+    ):
+        baseline = compare_semantic_owner_gate(concern)
+        assert baseline.ok
+        failed = compare_semantic_owner_gate(concern, extra_discovered=synthetic)
+        assert synthetic.issubset(failed.discovered_owner_set)
+        assert not failed.ok
 
 
-def test_txp6_q17_negative_sensitivity_retry_orchestration_duplicate_owner() -> None:
-    concern = "retry orchestration owner"
+def test_txp6_q17_negative_sensitivity_execution_attempt_retry_authority_duplicate_owner() -> None:
+    concern = "execution-attempt retry authority owner"
     baseline = compare_semantic_owner_gate(concern)
     assert baseline.ok
-    synthetic = frozenset({"intergrax/runtime/synthetic_p6_duplicate_retry_orchestrator.py"})
+    synthetic = frozenset(
+        {"intergrax/runtime/synthetic_p6_duplicate_execution_attempt_retry_authority.py"},
+    )
     failed = compare_semantic_owner_gate(concern, extra_discovered=synthetic)
     assert not failed.ok
 

@@ -42,19 +42,33 @@ P6_CANONICAL_OWNER_EXPECTATIONS: Final[dict[str, frozenset[str]]] = {
     "Attempt identity owner": frozenset(
         {"intergrax/runtime/execution/attempt_lifecycle/service.py"},
     ),
-    "checkpoint persistence owner": frozenset({"intergrax/runtime/long_running/store.py"}),
+    "checkpoint persistence semantic contract owner": frozenset(
+        {"intergrax/runtime/long_running/persistence_contract.py"},
+    ),
     "resumability decision owner": frozenset(
         {"intergrax/runtime/cancellation/resume_admission.py"},
     ),
-    "resume coordination owner": frozenset({"intergrax/runtime/long_running/scheduler.py"}),
-    "resume admission tenant/identity validation owner": frozenset(
+    "scheduled resume trigger owner": frozenset(
+        {"intergrax/runtime/long_running/scheduler.py"},
+    ),
+    "resume restoration / recovery coordination owner": frozenset(
+        {"intergrax/runtime/long_running/coordinator.py"},
+    ),
+    "resume admission validation owner": frozenset(
         {
             "intergrax/runtime/cancellation/resume_admission.py",
             "intergrax/runtime/background_execution/reentry_admission.py",
         },
     ),
-    "retry policy owner": frozenset({"intergrax/runtime/execution/retry/policy.py"}),
-    "retry orchestration owner": frozenset({"intergrax/runtime/nexus/retry/coordinator.py"}),
+    "execution retry eligibility policy owner": frozenset(
+        {"intergrax/runtime/execution/retry/policy.py"},
+    ),
+    "execution-attempt retry authority owner": frozenset(
+        {"intergrax/runtime/execution/retry/service.py"},
+    ),
+    "run/graph retry scheduling facade owner": frozenset(
+        {"intergrax/runtime/nexus/retry/coordinator.py"},
+    ),
     "terminal state truth owner": frozenset(
         {"intergrax/runtime/execution/execution_terminal/service.py"},
     ),
@@ -138,6 +152,17 @@ def _class_defines_method(tree: ast.Module, class_name: str, method_name: str) -
     return False
 
 
+def _class_defines_methods(
+    tree: ast.Module,
+    class_name: str,
+    method_names: frozenset[str],
+) -> bool:
+    return all(
+        _class_defines_method(tree, class_name, method_name)
+        for method_name in method_names
+    )
+
+
 def _class_inherits_name(tree: ast.Module, class_name: str, base_name: str) -> bool:
     for node in tree.body:
         if not isinstance(node, ast.ClassDef) or node.name != class_name:
@@ -180,24 +205,46 @@ def _register_candidates(
         index["run identity owner"].add(repo_path)
     if "AttemptLifecycleService" in classes:
         index["attempt identity owner"].add(repo_path)
-    if _class_inherits_name(tree, "SQLiteTaskCheckpointStore", "TaskCheckpointPersistence"):
-        index["checkpoint persistence owner"].add(repo_path)
+    if _class_inherits_name(tree, "TaskCheckpointPersistence", "ABC"):
+        index["checkpoint persistence semantic contract owner"].add(repo_path)
     if "assert_checkpoint_resumable" in functions:
         index["resumability decision owner"].add(repo_path)
-    if "LongRunningScheduler" in classes:
-        index["resume coordination owner"].add(repo_path)
+    if _class_defines_methods(
+        tree,
+        "LongRunningScheduler",
+        frozenset({"schedule_resume", "_process_due_schedules", "tick"}),
+    ):
+        index["scheduled resume trigger owner"].add(repo_path)
+    if _class_defines_methods(
+        tree,
+        "LongRunningCoordinator",
+        frozenset(
+            {
+                "restore_if_resuming",
+                "recovery_admission_request_for_checkpoint",
+                "admit_task_resume_recovery_handoff",
+            },
+        ),
+    ):
+        index["resume restoration / recovery coordination owner"].add(repo_path)
     if "BackgroundExecutionReentryAdmissionError" in classes:
-        index["resume admission tenant/identity validation owner"].add(repo_path)
+        index["resume admission validation owner"].add(repo_path)
     if "assert_checkpoint_resumable" in functions and _function_body_references_attribute(
         tree,
         "assert_checkpoint_resumable",
         "tenant_id",
     ):
-        index["resume admission tenant/identity validation owner"].add(repo_path)
+        index["resume admission validation owner"].add(repo_path)
     if "evaluate_execution_retry_eligibility" in functions:
-        index["retry policy owner"].add(repo_path)
-    if "RetryCoordinator" in classes:
-        index["retry orchestration owner"].add(repo_path)
+        index["execution retry eligibility policy owner"].add(repo_path)
+    if _class_defines_method(tree, "ExecutionAttemptRetryService", "transition_for_retry"):
+        index["execution-attempt retry authority owner"].add(repo_path)
+    if _class_defines_methods(
+        tree,
+        "RetryCoordinator",
+        frozenset({"should_retry_run", "build_scheduled_event"}),
+    ):
+        index["run/graph retry scheduling facade owner"].add(repo_path)
     if _class_defines_method(tree, "ExecutionTerminalService", "commit_terminal_outcome"):
         index["terminal state truth owner"].add(repo_path)
     if "trace_event_to_runtime_event" in functions:
