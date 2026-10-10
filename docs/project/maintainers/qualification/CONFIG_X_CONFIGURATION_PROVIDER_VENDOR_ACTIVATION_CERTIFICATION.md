@@ -8,7 +8,7 @@
 | **START_HEAD** | `c53d10bb7ec643ba6b444214cc8eb20111553296` |
 | **FINAL_COMMIT (wave-1 evidence)** | `4dc5d15cbdad36c2b8e3fa588740ce8521896792` |
 | **CONFIG-X-R1 START_HEAD** | `4de636c3812853245f3d0a8290388980cce94e62` |
-| **CONFIG-X-R1 FINAL_COMMIT** | *(set at push — independent audit required)* |
+| **CONFIG-X-R1 FINAL_COMMIT** | `d7183eb31d19967330687a5bc5345774c230e3aa` |
 | **Bookkeeping tip** | `2dcdc9519bebd9e4fdcedb46ee34c295e714bf13` (`origin/development`) |
 | **Production delta (wave-1)** | **0** (qualification/tests only) |
 | **Production delta (R1)** | **Narrow** — five blocker paths + scoped RAG image handler/parser wiring |
