@@ -9,7 +9,7 @@
 | **Audited implementation (initial)** | `51b1f26a7a473658f6f83d0d8dbfd66ab62f4516` |
 | **Audited R1 qualification tip** | `96e70c354a5805953c85031c707f115e8dcd1129` |
 | **Audited R1 qualification (independent)** | `0ce1469f440f58938ceeeb0f7c9be347091206be` — **BLOCKED** (`P6-SEMANTIC-OWNER-DUPLICATE-DISCOVERY-03R`) |
-| **FINAL_COMMIT (R1-R1)** | `7522d6215b237a591991843a4e65969b96a94c51` |
+| **FINAL_COMMIT (R1-R1)** | `cd1f6fbbb0991c02dba95e07433fa999e61260cf` |
 | **Independent verdict (initial P6)** | **REJECTED / BLOCKED** (permissive classification + non-mechanical owner matrix) |
 | **R1 blockers closed** | `P6-CLOSED-WORLD-PERMISSIVE-RESTART-CLASSIFICATION-01`, `P6-CLOSED-WORLD-PERMISSIVE-TERMINAL-CLASSIFICATION-02`, `P6-SEMANTIC-OWNER-MATRIX-NON-MECHANICAL-03` (partially remediated in R1; residual **03R** closed in R1-R1) |
 | **R1-R1 blockers closed** | `P6-SEMANTIC-OWNER-DUPLICATE-DISCOVERY-03R` |
