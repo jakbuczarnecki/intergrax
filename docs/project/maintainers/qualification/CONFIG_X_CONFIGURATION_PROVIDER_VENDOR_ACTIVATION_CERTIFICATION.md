@@ -14,15 +14,16 @@
 | **CONFIG-X-R1-R1-R1 START_HEAD** | `4b8961e4a4376a95969384f76083d019eede9903` |
 | **CONFIG-X-R1-R1-R1 FINAL_COMMIT** | `4fa6f42f2cc24e9edd5c043a352b70f2668687bf` |
 | **Remediation roadmap (SHA chain)** | R1 → `d7183eb31d19967330687a5bc5345774c230e3aa` · R1-R1 → `4b8961e4a4376a95969384f76083d019eede9903` · R1-R1-R1 → `4fa6f42f2cc24e9edd5c043a352b70f2668687bf` |
-| **R1-R1-R1 audit note** | Exact-SHA independent audit **accepted** production correction @ `4fa6f42f…`; final parent CONFIG-X reconciliation remains **separate** (CONFIG-X not CLOSED). |
+| **R1-R1-R1 audit note** | Exact-SHA independent audit **CLOSED / independently accepted** @ accepted current-HEAD `e405b71a91b6652334a407c997a1c3a46c7eadc9` (production correction `4fa6f42f2cc24e9edd5c043a352b70f2668687bf`; bookkeeping `7b5be489ff9a2fec2857eb3f379b258c9dd513e3`). Parent **CONFIG-X** final reconciliation remains **separate** (CONFIG-X / CONFIG-X-R1 / CONFIG-X-R1-R1 not CLOSED). |
 | **Production delta (wave-1)** | **0** (qualification/tests only) |
 | **Production delta (R1)** | **Narrow** — five blocker paths + scoped RAG image handler/parser wiring |
+| **CONFIG-X-R1-R1-R1 accepted current-HEAD** | `e405b71a91b6652334a407c997a1c3a46c7eadc9` |
 | **CONFIG-X-R1-R1-R1 bookkeeping** | `7b5be489ff9a2fec2857eb3f379b258c9dd513e3` (test alignment; ownership reconciliation in follow-up) |
-| **CONFIG-X-R1-R1-R1 status** | **READY FOR FINAL AUDIT** (production correction @ `4fa6f42f…`; bookkeeping @ `7b5be489…`) |
+| **CONFIG-X-R1-R1-R1 status** | **CLOSED / independently accepted** |
 | **CONFIG-X-R1-R1 status** | **BLOCKED ON PARENT RECONCILIATION** |
 | **CONFIG-X-R1 status** | **BLOCKED ON PARENT RECONCILIATION** |
-| **CONFIG-X status** | **BLOCKED ON FINAL RECONCILIATION** |
-| **Next mandatory stage (program order)** | `COMPAT-X` (not enterable until CONFIG-X closure) |
+| **CONFIG-X status** | **CURRENT / FINAL RECONCILIATION** |
+| **Next mandatory stage (program order)** | **CONFIG-X FINAL RECONCILIATION** — then `COMPAT-X` (not enterable until CONFIG-X closure) |
 
 ## 1. Certification question (current-HEAD closed-world)
 
@@ -180,14 +181,16 @@ Command: `pyright` on `factory.py`, `execution_bound_integration_resolution.py`,
 ## 14. Program status
 
 ```text
-CONFIG-X-R1-R1-R1 = READY FOR FINAL AUDIT
+CONFIG-X-R1-R1-R1 = CLOSED / independently accepted
 CONFIG-X-R1-R1    = BLOCKED ON PARENT RECONCILIATION
 CONFIG-X-R1       = BLOCKED ON PARENT RECONCILIATION
-CONFIG-X          = BLOCKED ON FINAL RECONCILIATION
+CONFIG-X          = CURRENT / FINAL RECONCILIATION
 COMPAT-X          = NOT ENTERED
 ```
 
-**Next mandatory step after CONFIG-X closure:** `COMPAT-X`.
+**Accepted current-HEAD (R1-R1-R1):** `e405b71a91b6652334a407c997a1c3a46c7eadc9` · **production correction:** `4fa6f42f2cc24e9edd5c043a352b70f2668687bf` · **bookkeeping:** `7b5be489ff9a2fec2857eb3f379b258c9dd513e3`.
+
+**Next mandatory step:** **CONFIG-X FINAL RECONCILIATION** (not another R1 remediation wave). After CONFIG-X closure: `COMPAT-X`.
 
 ## 15. CONFIG-X-R1 blocker remediation (wave-1 → R1)
 
@@ -242,7 +245,9 @@ Wave-1 originally found **five** production blockers (**I=3**, **J=2**). R1 reme
 | Correction | Invalid explicit role binding propagates canonical integration-resolution failure; no exception is swallowed into `None` (unknown slug → canonical `ValueError` from `resolve_ref_to_slug`; wrong category → `IntegrationCategoryMismatchError`) |
 | Tests | `tests/unit/tools/registry/test_wiring.py` (unknown slug; wrong-category slug) |
 
-**CONFIG-X-R1-R1-R1 = READY FOR FINAL AUDIT** (Cursor does not close CONFIG-X).
+**Independent audit verdict @ `e405b71a91b6652334a407c997a1c3a46c7eadc9`:** **CLOSED / independently accepted** — explicit invalid observability role binding no longer becomes `None`; role materialization delegates only to canonical Integration `resolve(...)`; no redundant `get_entry()` preflight in Tools; unknown slug follows canonical public resolver error semantics; wrong category propagates `IntegrationCategoryMismatchError`; no vendor ranking; no implicit role fallback; no new configuration authority; no new resolver/catalog; no bypass.
+
+**CONFIG-X-R1-R1-R1 = CLOSED / independently accepted** (production correction `4fa6f42f2cc24e9edd5c043a352b70f2668687bf`). **CONFIG-X** / **CONFIG-X-R1** / **CONFIG-X-R1-R1** / **FRZ-CFG-\*** remain open pending final parent reconciliation.
 
 ---
 
