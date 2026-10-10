@@ -27,6 +27,7 @@ def wire_scheduled_notification_tool_binding(ctx: ToolWiringContext) -> ToolWiri
         notification_channel=ctx.notification_channel,
         observability_backend=ctx.observability_backend,
         observability_backends=dict(ctx.observability_backends),
+        observability_role_backends=ctx.observability_role_backends,
         object_storage=ctx.object_storage,
         relational_store=ctx.relational_store,
         document_store=ctx.document_store,

@@ -32,6 +32,7 @@ def wire_integration_tool_context(
         notification_channel=ctx.notification_channel,
         observability_backend=ctx.observability_backend,
         observability_backends=dict(ctx.observability_backends),
+        observability_role_backends=ctx.observability_role_backends,
         object_storage=ctx.object_storage or _resolve_optional(integration_profile, IntegrationCategory.OBJECT_STORAGE),
         relational_store=ctx.relational_store
         or _resolve_optional(integration_profile, IntegrationCategory.RELATIONAL_STORE),

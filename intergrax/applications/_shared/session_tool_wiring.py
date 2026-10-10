@@ -26,6 +26,7 @@ def wire_session_storage_tool_binding(
         notification_channel=ctx.notification_channel,
         observability_backend=ctx.observability_backend,
         observability_backends=dict(ctx.observability_backends),
+        observability_role_backends=ctx.observability_role_backends,
         object_storage=ctx.object_storage,
         relational_store=ctx.relational_store,
         relational_store_execution=ctx.relational_store_execution,

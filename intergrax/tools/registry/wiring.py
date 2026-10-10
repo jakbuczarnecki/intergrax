@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Mapping, Optional
+from typing import TYPE_CHECKING, Any, Mapping, Optional, cast
 
 from intergrax.integrations.contracts.billing_meter import BillingMeterBackend
 from intergrax.integrations.contracts.browser_automation import BrowserAutomation
@@ -65,6 +65,14 @@ if TYPE_CHECKING:
     from intergrax.distributed.source_operation import SourceOperationCoordinator
 
 
+@dataclass(frozen=True)
+class ObservabilityRoleBackends:
+    errors: ObservabilityBackend | None = None
+    traces: ObservabilityBackend | None = None
+    logs: ObservabilityBackend | None = None
+    eval: ObservabilityBackend | None = None
+
+
 @dataclass
 class ToolWiringContext:
     """
@@ -83,6 +91,9 @@ class ToolWiringContext:
     observability_backend: ObservabilityBackend | None = None
     observability_backends: dict[str, ObservabilityBackend] = field(
         default_factory=dict
+    )
+    observability_role_backends: ObservabilityRoleBackends = field(
+        default_factory=ObservabilityRoleBackends,
     )
     object_storage: ObjectStorage | None = None
     relational_store: RelationalStore | None = None
@@ -163,10 +174,42 @@ class ToolWiringContext:
             UnknownIntegrationError,
         )
         from intergrax.integrations.registry.catalog import get_entry
+        from intergrax.integrations.contracts.binding import IntegrationBinding
+        from intergrax.integrations.contracts.prebuilt_category_guard import (
+            validated_prebuilt_instance_for_category,
+        )
         from intergrax.integrations.registry.factory import (
             resolve,
             resolve_from_profile,
         )
+
+        obs_category = IntegrationCategory.OBSERVABILITY_BACKEND
+
+        def _materialize_observability_binding(
+            binding: IntegrationBinding | None,
+        ) -> ObservabilityBackend | None:
+            if binding is None:
+                return None
+            instance = binding.instance
+            if instance is not None:
+                return cast(
+                    ObservabilityBackend,
+                    validated_prebuilt_instance_for_category(obs_category, instance),
+                )
+            slug = binding.resolved_slug()
+            if slug is None:
+                manifest = binding.catalog_manifest()
+                if manifest is not None:
+                    slug = manifest.slug
+            if slug is None:
+                return None
+            try:
+                return cast(
+                    ObservabilityBackend,
+                    resolve(obs_category, slug=slug, profile=profile),
+                )
+            except Exception:
+                return None
 
         def _optional(category: IntegrationCategory) -> Any | None:
             instance = profile.instance_for_category(category)
@@ -205,6 +248,14 @@ class ToolWiringContext:
             except Exception:
                 continue
 
+        role_bindings = profile.observability_roles
+        observability_role_backends = ObservabilityRoleBackends(
+            errors=_materialize_observability_binding(role_bindings.errors),
+            traces=_materialize_observability_binding(role_bindings.traces),
+            logs=_materialize_observability_binding(role_bindings.logs),
+            eval=_materialize_observability_binding(role_bindings.eval),
+        )
+
         relational_store = _optional(IntegrationCategory.RELATIONAL_STORE)
         relational_store_execution = (
             RelationalStoreExecutionAdapter(relational_store)
@@ -220,6 +271,7 @@ class ToolWiringContext:
             notification_channel=_optional(IntegrationCategory.NOTIFICATION_CHANNEL),
             observability_backend=primary_obs,
             observability_backends=obs_backends,
+            observability_role_backends=observability_role_backends,
             object_storage=_optional(IntegrationCategory.OBJECT_STORAGE),
             relational_store=relational_store,
             relational_store_execution=relational_store_execution,

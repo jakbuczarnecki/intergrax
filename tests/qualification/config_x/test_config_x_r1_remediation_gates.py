@@ -107,6 +107,14 @@ def test_blocker_exit_no_arbitrary_observability_backend_selection() -> None:
         _REPO_ROOT / "intergrax/tools/providers/observability/resolve.py"
     ).read_text(encoding="utf-8")
     assert "next(iter(backends.values()))" not in text
+    for forbidden in (
+        "_TRACES_SLUGS",
+        "_ERRORS_SLUGS",
+        "_LOGS_SLUGS",
+        "_EVAL_SLUGS",
+        "_sanctioned_slug_backend",
+    ):
+        assert forbidden not in text
 
 
 def test_blocker_exit_tokenizer_registry_no_first_registered_default() -> None:

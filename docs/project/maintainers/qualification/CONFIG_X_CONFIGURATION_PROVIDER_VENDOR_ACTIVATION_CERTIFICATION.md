@@ -2,25 +2,37 @@
 
 | Field | Value |
 |---|---|
-| **Stage** | `CONFIG-X` (parent) · `CONFIG-X-R1` (remediation wave) |
+| **Stage** | `CONFIG-X` (parent) · `CONFIG-X-R1` (remediation wave) · `CONFIG-X-R1-R1` (OBS explicit role binding) |
 | **Parent** | Whole-program enterprise architecture roadmap |
 | **Prior stage** | `TRACE-X` = **CLOSED / independently accepted** @ `c53d10bb7ec643ba6b444214cc8eb20111553296` (audited HEAD at CONFIG-X entry) |
 | **START_HEAD** | `c53d10bb7ec643ba6b444214cc8eb20111553296` |
 | **FINAL_COMMIT (wave-1 evidence)** | `4dc5d15cbdad36c2b8e3fa588740ce8521896792` |
 | **CONFIG-X-R1 START_HEAD** | `4de636c3812853245f3d0a8290388980cce94e62` |
 | **CONFIG-X-R1 FINAL_COMMIT** | `d7183eb31d19967330687a5bc5345774c230e3aa` |
-| **Bookkeeping tip** | `2dcdc9519bebd9e4fdcedb46ee34c295e714bf13` (`origin/development`) |
+| **CONFIG-X-R1-R1 START_HEAD** | `0a9eaf4d3b992fde3643ec44a8a62182e5fc155a` |
+| **CONFIG-X-R1-R1 FINAL_COMMIT** | *(pending commit — audit on GitHub)* |
+| **Bookkeeping tip** | `0a9eaf4d3b992fde3643ec44a8a62182e5fc155a` (`origin/development` @ R1-R1 entry) |
 | **Production delta (wave-1)** | **0** (qualification/tests only) |
 | **Production delta (R1)** | **Narrow** — five blocker paths + scoped RAG image handler/parser wiring |
-| **CONFIG-X-R1 status** | **READY FOR AUDIT** (remediation + gates; parent not closed) |
-| **CONFIG-X status** | **BLOCKED ON R1 AUDIT** (wave-1 blockers remediated pending independent acceptance) |
+| **CONFIG-X-R1-R1 status** | **READY FOR AUDIT** (explicit `IntegrationProfile.observability_roles` + resolver; independent audit pending) |
+| **CONFIG-X-R1 status** | **BLOCKED ON R1-R1 AUDIT / parent reconciliation** (four non-OBS blockers remediated in R1; OBS reopened for R1-R1) |
+| **CONFIG-X status** | **BLOCKED** pending independent R1 reconciliation |
 | **Next mandatory stage (program order)** | `COMPAT-X` (not enterable until CONFIG-X closure) |
 
 ## 1. Certification question (current-HEAD closed-world)
 
 > Does every configurable production capability become effective only through explicit, validated, deterministic configuration and canonical composition/provider-resolution mechanisms, without hard-coded provider/vendor/model/backend activation or silent fallback?
 
-**Wave-1 verdict:** **NO** — five mechanical production blockers remain (**I=3**, **J=2**). Canonical integration/LLM/configuration-realization paths are largely fail-closed and single-owner on audited seams; defects are localized and enumerated (not unclassified).
+**Wave-1 verdict (historical @ `4dc5d15c…`):** **NO** — five mechanical production blockers (**I=3**, **J=2**). Evidence preserved in §5 and §15.
+
+### 1.1 Current state (post R1 / R1-R1 implementation — audit pending)
+
+| Item | Status |
+|---|---|
+| Wave-1 blocker inventory | **Historical** — five IDs in §5; R1 closed four; **CONFIG-X-BLK-OBS-TOOL-01** required **R1-R1** (sanctioned slug ordering in `resolve.py` rejected on independent audit) |
+| **CONFIG-X-BLK-OBS-TOOL-01** | **Remediated in R1-R1** — `IntegrationProfile.observability_roles` + `ToolWiringContext.observability_role_backends`; `resolve_observability_backend` uses explicit materialized roles only |
+| Other R1 blockers (TOK, harness HTTP, MM, INT-P3) | **Remediated in R1** — gates in `test_config_x_r1_remediation_gates.py` (audit pending) |
+| Parent **CONFIG-X** closure | **BLOCKED** — independent reconciliation of R1 + R1-R1 required |
 
 ## 2. Core invariants (evidence)
 
@@ -69,11 +81,13 @@ Mechanical discovery (`discovered == expected`):
 
 **Configured vs effective provenance:** reuse **TRACE-X-CERT** / **TRACE-X-P5-R2** — no second provenance subsystem.
 
-## 5. Production blockers (exit gate **I=J=K=L=0** not met)
+## 5. Production blockers (wave-1 discovery — **historical inventory**)
+
+> **Current:** §1.1. Wave-1 listed five blockers; R1 + R1-R1 remediation paths are in §15–§16. Exit gate **I=J=K=L=0** not met at parent **CONFIG-X** until independent audit.
 
 | ID | Class | Path(s) | Summary |
 |---|---|---|---|
-| CONFIG-X-BLK-OBS-TOOL-01 | **J** | `intergrax/tools/providers/observability/resolve.py` | Slug-order / `next(iter(backends.values()))` implicit backend selection |
+| CONFIG-X-BLK-OBS-TOOL-01 | **J** | `intergrax/tools/providers/observability/resolve.py` | Wave-1: slug-order / implicit backend selection; **R1-R1:** explicit `observability_roles` (audit pending) |
 | CONFIG-X-BLK-TOK-01 | **J** | `intergrax/tokenizers/registry/tokenizer_registry.py` | `name=None` / `default()` → first registered tokenizer |
 | CONFIG-X-BLK-HARNESS-HTTP-01 | **I** | `harness_task_routes.py`, `trace_explorer_routes.py` | Harness HTTP defaults `tenant_id="default"` (EBH-4 tracked debt) |
 | CONFIG-X-BLK-MM-01 | **I** | `intergrax/multimedia/image_smart_loader.py` | Default `tenant_id="default"` |
@@ -101,9 +115,9 @@ Additional: missing observability backend → `RuntimeError` (`test_cx_observabi
 
 ## 7. Tenant isolation audit (CONFIG-X scope)
 
-**Result:** **BLOCKED**
+**Wave-1 result:** **BLOCKED** (ambient `tenant_id="default"` on three surfaces — historical §5).
 
-**Evidence:** CONFIG-X blockers **CONFIG-X-BLK-HARNESS-HTTP-01**, **CONFIG-X-BLK-MM-01**, **CONFIG-X-BLK-INT-P3-01** embed ambient `tenant_id="default"` literals in production-adjacent surfaces. Positive tenant fail-closed evidence: CX-G / INT-CONFIG-REAL-X-CERT (historical @ `a597445…`, revalidated via CX-G on current HEAD). **No global `FRZ-TEN-*` PASS promotion** · **TENANT-X** remains mandatory later.
+**R1 / R1-R1 result (CONFIG-X surfaces in task scope):** **PASS** — §15.1 gates T1–T5 green on R1-R1 HEAD; harness/trace/image/P3 tenant literals remediated in R1. **No global `FRZ-TEN-*` PASS promotion** · **TENANT-X** remains mandatory later.
 
 ## 8. Tests (sequential `pytest -p no:xdist`)
 
@@ -161,10 +175,11 @@ Command: `pyright` on `factory.py`, `execution_bound_integration_resolution.py`,
 ## 14. Program status
 
 ```text
-CONFIG-X-R1 = READY FOR AUDIT
-CONFIG-X    = BLOCKED ON R1 AUDIT
+CONFIG-X-R1-R1 = READY FOR AUDIT
+CONFIG-X-R1    = BLOCKED ON R1-R1 AUDIT / parent reconciliation
+CONFIG-X       = BLOCKED pending independent R1 reconciliation
 FRZ-CFG-01..08 = OPEN (candidate per evidence; global closure requires parent PASS)
-COMPAT-X    = NOT ENTERED
+COMPAT-X       = NOT ENTERED
 ```
 
 **Next mandatory step after CONFIG-X closure:** `COMPAT-X`.
@@ -175,7 +190,7 @@ Wave-1 originally found **five** production blockers (**I=3**, **J=2**). R1 reme
 
 | Blocker | Initial evidence (wave-1) | Remediation (R1) | Test evidence | Final classification (R1) |
 |---|---|---|---|---|
-| CONFIG-X-BLK-OBS-TOOL-01 | `resolve.py` slug scan + `next(iter(backends.values()))` | Sanctioned slug map only; explicit `observability_backend` for `default`; role fail-closed | `test_o1_*`…`test_o4_*`, `test_composite_observability.py`, CX adversarial | **Remediated — audit pending** |
+| CONFIG-X-BLK-OBS-TOOL-01 | `resolve.py` slug scan + `next(iter(backends.values()))` | **R1 (rejected):** sanctioned slug map; **R1-R1:** `IntegrationProfile.observability_roles` → `ToolWiringContext.observability_role_backends`; resolver role-only | `test_o1_*`…`test_o4_*`, `test_composite_observability.py`, CX adversarial | **R1-R1 remediated — audit pending** |
 | CONFIG-X-BLK-TOK-01 | `TokenizerRegistry.default()` first registered | Explicit `_default_tokenizer_id`; bootstrap `tiktoken` | `test_tokenizer_registry.py`, `test_cx_d_tokenizer_*` | **Remediated — audit pending** |
 | CONFIG-X-BLK-HARNESS-HTTP-01 | Ambient `tenant_id="default"` on harness/trace HTTP | Principal-scoped harness async-run; required trace `tenant_id` query | `test_config_x_r1_remediation_gates.py` T1–T2 | **Remediated — audit pending** |
 | CONFIG-X-BLK-MM-01 | `ImageSmartLoader` default tenant | Required `tenant_id`; handler passes `KnowledgeDocumentScope` | `test_image_smart_loader.py`, T4 gate | **Remediated — audit pending** |
@@ -201,6 +216,18 @@ Wave-1 originally found **five** production blockers (**I=3**, **J=2**). R1 reme
 | New provider/vendor coupling | **None** |
 | Tenant isolation | R1 CONFIG-X surfaces **PASS** (§15.1); global **FRZ-TEN-*** not promoted |
 | Roadmap amendment | **No** |
+
+## 16. CONFIG-X-R1-R1 — explicit observability role binding (OBS-TOOL-01)
+
+| Item | Evidence |
+|---|---|
+| Configuration owner | `IntegrationProfile.observability_roles` (`ObservabilityRoleBindings`: `errors` / `traces` / `logs` / `eval` → `IntegrationBinding`) |
+| Materialization | `ToolWiringContext.from_integration_profile` → `ObservabilityRoleBackends` via catalog `resolve` + `validated_prebuilt_instance_for_category` |
+| Resolution owner | `resolve_observability_backend` — `default` → `observability_backend` only; roles → materialized role backends only; unknown role fail-closed |
+| Harness preset | `IntegrationProfile.harness_lab()` — `errors`/`default` → Sentry; `traces` → LangSmith (explicit bindings, not slug order) |
+| Tests | `test_composite_observability.py` (explicit langfuse/langsmith traces, ambiguity fail-closed, structural gate); CONFIG-X `tests/qualification/config_x/` |
+
+**CONFIG-X-R1-R1 = READY FOR AUDIT** (Cursor does not close).
 
 ---
 
