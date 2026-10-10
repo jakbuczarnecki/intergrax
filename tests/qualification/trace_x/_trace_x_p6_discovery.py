@@ -1,6 +1,10 @@
 # © Artur Czarnecki. All rights reserved.
 
-"""Closed-world discovery for TRACE-X-P6 restart/resume and terminal producers."""
+"""Closed-world discovery for TRACE-X-P6 restart/resume and terminal producers.
+
+Marker discovery identifies candidate surfaces only. Classification modules must
+positively establish semantics; unknown candidates fail qualification (fail-closed).
+"""
 
 from __future__ import annotations
 

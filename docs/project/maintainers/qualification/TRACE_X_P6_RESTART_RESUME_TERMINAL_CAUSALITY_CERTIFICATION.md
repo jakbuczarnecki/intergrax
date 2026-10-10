@@ -2,138 +2,117 @@
 
 | Field | Value |
 |---|---|
-| **Stage** | `TRACE-X-P6` |
+| **Stage** | `TRACE-X-P6` / **`TRACE-X-P6-R1`** (fail-closed correction) |
 | **Parent** | `TRACE-X` |
 | **START_HEAD** | `e2deaee3efd7ee4e7d43414be3e76fe024a85408` |
-| **FINAL_COMMIT** | `51b1f26a7a473658f6f83d0d8dbfd66ab62f4516` |
-| **FRZ-TRC-09** | **OPEN / PASS CANDIDATE** (Cursor: **READY FOR PASS AUDIT**) |
-| **FRZ-TRC-10** | **OPEN / PASS CANDIDATE** (Cursor: **READY FOR PASS AUDIT**) |
-| **TRACE-X-P6** | **READY FOR AUDIT** |
-| **TRACE-X** | **CURRENT / P6 AUDIT-GATED** |
+| **Audited implementation (initial)** | `51b1f26a7a473658f6f83d0d8dbfd66ab62f4516` |
+| **FINAL_COMMIT** | *(set at R1 push — see session report)* |
+| **Independent verdict (initial P6)** | **REJECTED / BLOCKED** (permissive classification + non-mechanical owner matrix) |
+| **R1 blockers closed** | `P6-CLOSED-WORLD-PERMISSIVE-RESTART-CLASSIFICATION-01`, `P6-CLOSED-WORLD-PERMISSIVE-TERMINAL-CLASSIFICATION-02`, `P6-SEMANTIC-OWNER-MATRIX-NON-MECHANICAL-03` |
+| **FRZ-TRC-09** | **OPEN / PASS CANDIDATE** (Cursor: **READY FOR PASS AUDIT** — no self-PASS) |
+| **FRZ-TRC-10** | **OPEN / PASS CANDIDATE** (Cursor: **READY FOR PASS AUDIT** — no self-PASS) |
+| **TRACE-X-P6-R1** | **READY FOR AUDIT** |
+| **TRACE-X-P6** | **BLOCKED ON R1 AUDIT** |
+| **TRACE-X** | **CURRENT** |
 | **CONFIG-X** | **NOT ENTERED** |
 | **Production delta** | **0** |
 
+## 0. Historical initial P6 evidence (preserved)
+
+Initial qualification on `51b1f26a7a473658f6f83d0d8dbfd66ab62f4516` reported closed-world parity with **permissive defaults**:
+
+- restart/resume: default `A_CANONICAL_RESUME` when no rule matched;
+- terminal producers: default `CANONICAL_TERMINAL_DELEGATE` + filename substring heuristics;
+- semantic owner matrix: prose owners with `assert count == 1` only.
+
+Independent audit **REJECTED** that bundle; R1 corrects classification and owner evidence without production architecture changes.
+
 ## 1. Certification scope (FRZ-TRC-09 / FRZ-TRC-10)
 
-Prove on current HEAD:
+Prove on R1 HEAD:
 
-- **FRZ-TRC-09:** supported restart/resume/recovery preserves attributable causal continuity (`tenant`, `TaskId`, `RunId`, `AttemptId`, `ExecutionId`, parent/child, governance and provenance where applicable).
-- **FRZ-TRC-10:** terminal execution outcomes have exactly-one semantic truth owner and reverse-link to causal evidence (`ExecutionReconstructor` + `ExecutionTerminalService` + `RuntimeEvent` spine).
+- **FRZ-TRC-09:** supported restart/resume/recovery preserves attributable causal continuity.
+- **FRZ-TRC-10:** terminal outcomes have exactly-one semantic truth owner and non-authoritative projections are classified.
 
-No new recovery store, execution identity authority, or terminal truth owner introduced (STATE-X + existing execution contracts reused).
+**Discovery model:** marker scan identifies **candidate** surfaces; classification must **positively** establish semantics. Unknown candidate ⇒ qualification failure (fail-closed).
 
 ## 2. Closed-world inventories (mechanical parity)
 
-| Inventory | Count | unclassified | production bypass |
+| Inventory | Count | G / UNCLEAR | F / forbidden bypass |
 |---|---:|---:|---:|
-| Restart/resume/recovery production modules | **159** | **0** | **0** |
+| Restart/resume/recovery modules | **159** | **0** | **0** |
 | Terminal outcome producer modules | **50** | **0** | **0** |
 
-**Restart/resume classification (159):** A=146 · B=2 · C=2 · D=1 · E=8 · F=0 · G=0.
+**Restart/resume classification (159):** A=144 · B=2 · C=2 · D=1 · E=10 · F=0 · G=0.
 
-**Registry SSOT:** derived registry `RESTART_RESUME_REGISTRY` in `tests/qualification/trace_x/_trace_x_p6_restart_resume_classification.py`  
-**Gate:** `test_txp6_q02_restart_resume_closed_world_parity`
+**Terminal producer roles (50):** `CANONICAL_TERMINAL_TRUTH`=1 · `CANONICAL_TERMINAL_DELEGATE`=4 · `COMPATIBILITY_ADAPTER`=43 · `DIAGNOSTIC_PROJECTION`=2 · `FORBIDDEN_BYPASS`=0 · `UNCLEAR`=0.
 
-**Terminal producer SSOT:** `TERMINAL_PRODUCER_REGISTRY` in `tests/qualification/trace_x/_trace_x_p6_terminal_producer_classification.py`  
-**Gate:** `test_txp6_q03_terminal_producer_closed_world_parity`  
-**Canonical terminal truth owner count:** **1** (`ExecutionTerminalService`) — `test_txp6_q04_exactly_one_terminal_truth_owner`
+**SSOT:** `RESTART_RESUME_REGISTRY` / `TERMINAL_PRODUCER_REGISTRY` (rebuilt at import; fail-closed classifiers).  
+**Gates:** `test_txp6_q02` … `test_txp6_q09`, `test_txp6_q04`.
 
-## 3. Resume / retry / new Execution matrix
+## 3. Fail-closed classification (R1)
 
-See `P6_RESUME_SEMANTIC_MATRIX` in `tests/qualification/trace_x/_trace_x_p6_adversarial_matrix.py`.
-
-## 4. Semantic owner matrix (duplicate count = 0)
-
-`P6_SEMANTIC_OWNER_MATRIX` — gated by `test_txp6_q10_semantic_owner_matrix_counts`.
-
-## 5. Diagnostics non-authority
-
-- `diagnostics terminal authority = 0` — `test_txp6_q05_diagnostics_terminal_authority_zero`
-- `diagnostics resume authority = 0` — `test_txp6_q06_diagnostics_resume_authority_zero`
-
-## 6. Reverse reconstruction matrix (P6 scope)
-
-| Subject | Status |
-|---|---|
-| failure | COMPLETE |
-| terminal success | COMPLETE |
-| terminal failure | COMPLETE |
-| cancelled | COMPLETE |
-| timeout | N/A — WITH EVIDENCE (Execution terminal lifecycle; tool invocation timeout deferred to future TOOL-LIFE-X) |
-| recovered/resumed execution | COMPLETE |
-
-## 7. Adversarial bundle P6-A … P6-H
-
-| ID | Scenario | test_module | test_id | Status |
-|---|---|---|---|---|
-| P6-A | Durable identity across fresh composition (restart semantics) | `tests/conformance/runtime/durability/test_identity_continuity.py` | `test_redelivery_preserves_identity_after_restart` | PASS (session) |
-| P6-B | Retry without premature terminal FAILED | `tests/unit/runtime/execution/test_p0c6_terminal_outcome_convergence.py` | `test_retryable_failure_does_not_commit_failed` | PASS (session) |
-| P6-C | Terminal success durable | same | `test_completed_terminal_is_durable` | PASS (session) |
-| P6-D | Terminal failure durable + conflict guard | same | `test_terminal_state_survives_process_restart` | PASS (session) |
-| P6-E | Conflicting terminalization → one winner | same | `test_concurrent_different_terminal_outcomes_have_one_winner` | PASS (session) |
-| P6-F | Tenant checkpoint/resume attack | `tests/qualification/state_x/_r4_task_checkpoint_restore_qualification_tests.py` | `test_r4_q14_tenant_a_checkpoint_tenant_b_resume_denied` | PASS (session) |
-| P6-G | Tenant terminal isolation | `tests/unit/runtime/background_execution/test_p0c7a_background_terminal_durability.py` | `test_terminal_store_tenant_isolation` | PASS (session) |
-| P6-H | Current-state mutation; historical reconstruction | `tests/unit/runtime/observability/reconstruction/test_trace_x_p5_r2_p4_integration_configuration_provenance.py` | `test_historical_restart_ignores_changed_current_configuration_state` | PASS (session) |
-
-Session manifest: `.tmp/session/trace-x-p6/pass1_observed_nodeids.json` (env `TRACE_X_P6_PASS1=1`).
-
-## 8. Durable restart proof
-
-- **Terminal:** `CheckpointStoreExecutionTerminalStore` + fresh `ExecutionTerminalService` after `SQLiteTaskCheckpointStore` reopen (P6-D / P0C-6).
-- **Admission identity:** `fresh_admission_composition` conformance pattern (P6-A / P0C-1).
-- **Checkpoint resume validation:** STATE-X R4 qualification (P6-F).
-
-## 9. Tenant isolation audit (P6-local)
-
-| Case | Evidence |
-|---|---|
-| A — tenant A checkpoint → tenant B resume | P6-F / `test_r4_q14_*` |
-| B — tenant A terminal → tenant B lookup | P6-G / `test_terminal_store_tenant_isolation` |
-| C — tenant A retry state → tenant B attempt | STATE-X R6 `test_r6_q29_cross_tenant_resume_denied` (supporting; not global FRZ-TEN) |
-| D — tenant A child → tenant B parent resume | TRACE-X-P1-R1 strict lineage negatives (supporting) |
-
-**Verdict:** **PASS** (P6-local adversarial matrix).
-
-## 10. Tests (Cursor session)
-
-| Batch | Command scope | Result |
+| Surface | Forbidden default | R1 default |
 |---|---|---|
-| P6 closed-world gates | `tests/qualification/trace_x/test_trace_x_p6_closed_world_gates.py` | **11 passed** |
-| P6 adversarial bundle | `tests/qualification/trace_x/test_trace_x_p6_adversarial_bundle.py` + PASS1 manifest | **3 passed** (adv03 with manifest) |
-| Restart/resume E2E | P6-A, P6-F + conformance durability identity | **PASS** (in PASS1 batch) |
-| Terminal E2E | P6-C..E, P6-D | **PASS** (in PASS1 batch) |
-| Tenant adversarial | P6-F, P6-G | **PASS** |
-| STATE-X regression | R4 tenant resume negative (qualification) | **PASS** |
-| TRACE-X reconstruction regression | P6-H historical reconstruction | **PASS** |
-| Governance continuity regression | Reuse GOV-X2 CLOSED evidence; no P6 governance redesign | **N/A — WITH EVIDENCE** (no regression signal on P6 delta) |
+| Restart/resume | `A_CANONICAL_RESUME` | `G_UNCLEAR` |
+| Terminal producer | `CANONICAL_TERMINAL_DELEGATE` | `UNCLEAR` |
 
-## 11. Pyright
+Terminal roles use **module evidence** (`path` + AST/marker facts via `_trace_x_p6_module_evidence.py`), not filename substring inference.
 
-**Production modules touched:** none (**production delta = 0**).  
-**Qualification modules:** no new pyright errors introduced on P6 test/support tree (targeted run optional).
+**Negative sensitivity:** `test_txp6_q11`–`test_txp6_q14` (registry unknown + classifier fail-closed for synthetic paths).
 
-## 12. FRZ recommendations (Cursor only)
+## 4. Semantic owner matrix (mechanical)
 
-| Criterion | Recommendation |
+`discover_semantic_owners(concern)` in `_trace_x_p6_semantic_owner_discovery.py` — gated by `test_txp6_q10`:
+
+| Concern | Expected owners |
+|---|---:|
+| Execution identity owner | 1 |
+| Run identity owner | 1 |
+| Attempt identity owner | 1 |
+| checkpoint persistence owner | 1 |
+| resumability decision owner | 1 |
+| resume coordination owner | 1 |
+| resume admission tenant/identity validation owner | 2 |
+| retry policy owner | 1 |
+| retry orchestration owner | 1 |
+| terminal state truth owner | 1 |
+| terminal RuntimeEvent/evidence owner | 1 |
+| failure reconstruction owner | 1 |
+| parent-child causality owner | 1 |
+
+Resume checkpoint persistence vs coordination vs admission validation are **distinct** concerns (not collapsed into a single prose owner).
+
+## 5. Adversarial bundle P6-A … P6-H
+
+Unchanged matrix; replayed in R1 Pass1 session (`.tmp/session/trace-x-p6/pass1_observed_nodeids.json`, `TRACE_X_P6_PASS1=1`).
+
+## 6. Tenant isolation audit (P6-local)
+
+**PASS** — P6-F, P6-G + supporting STATE-X / TRACE-X negatives (no global FRZ-TEN promotion).
+
+## 7. Tests (R1 Cursor session)
+
+| Batch | Result |
 |---|---|
-| **FRZ-TRC-09** | **READY FOR PASS AUDIT** |
-| **FRZ-TRC-10** | **READY FOR PASS AUDIT** |
+| P6 closed-world gates (`test_trace_x_p6_closed_world_gates.py`) | **14 passed** |
+| P6 adversarial bundle + PASS1 manifest | **3 passed** |
+| P6-A … P6-H nodeids (targeted PASS1 batch) | **8 passed** |
+| Tenant negatives (P6-F, P6-G) | **PASS** |
 
-## 13. Blockers
+Command: `pytest -p no:xdist` on qualification gates + targeted P6-A…H nodeids.
 
-**Current blockers:** none identified in P6 scope on qualification replay.
+## 8. Pyright
 
-## 14. Next mandatory stage
+**Production delta = 0** (qualification/support modules only).
 
-Independent audit of **FINAL_COMMIT** on `origin/development` → if accepted, promote **FRZ-TRC-09** / **FRZ-TRC-10** to **PASS**, close **TRACE-X-P6**, keep **TRACE-X** **CURRENT** until parent closure gate; then **CONFIG-X** (not entered until TRACE-X parent closes).
-
-## 15. Post-step enterprise discovery
+## 9. Post-step enterprise discovery (R1)
 
 | Item | Finding |
 |---|---|
-| New current blockers | none |
-| New future mandatory debt | none introduced by P6 qualification-only delta |
+| New current blockers | none beyond **BLOCKED ON R1 AUDIT** |
+| New future mandatory debt | none from qualification-only R1 |
 | New candidate roadmap stages | none |
 | FRZ coverage gaps | **FRZ-TRC-09** / **FRZ-TRC-10** await independent PASS |
-| Ownership/boundary concerns | none — single terminal truth + STATE-X recovery reuse confirmed |
+| Ownership/boundary concerns | none exposed by fail-closed reclassification |
 | Roadmap amendment required | no |

@@ -21,10 +21,15 @@ from tests.qualification.trace_x._trace_x_p6_discovery import (
 )
 from tests.qualification.trace_x._trace_x_p6_restart_resume_classification import (
     RESTART_RESUME_REGISTRY,
+    classify_restart_resume_path,
     compare_restart_resume_registry,
+)
+from tests.qualification.trace_x._trace_x_p6_semantic_owner_discovery import (
+    discover_semantic_owners,
 )
 from tests.qualification.trace_x._trace_x_p6_terminal_producer_classification import (
     TERMINAL_PRODUCER_REGISTRY,
+    classify_terminal_producer,
     compare_terminal_producer_registry,
 )
 from tests.qualification.trace_x._trace_x_p6_types import (
@@ -127,9 +132,10 @@ def test_txp6_q09_no_production_bypass_restart_resume() -> None:
 
 
 def test_txp6_q10_semantic_owner_matrix_counts() -> None:
-    for concern, owner, count in P6_SEMANTIC_OWNER_MATRIX:
-        assert count == 1, concern
-        assert owner.strip()
+    for concern, expected_count in P6_SEMANTIC_OWNER_MATRIX:
+        actual = discover_semantic_owners(concern)
+        assert len(actual) == expected_count, (concern, actual)
+        assert all(owner.strip() for owner in actual)
 
 
 def test_txp6_q11_negative_sensitivity_unregistered_restart_path() -> None:
@@ -142,6 +148,31 @@ def test_txp6_q11_negative_sensitivity_unregistered_restart_path() -> None:
     failed = compare_restart_resume_registry(
         discover_restart_resume_path_keys() | {synthetic},
         RESTART_RESUME_REGISTRY,
+    )
+    assert synthetic in failed.unknown
+    assert not failed.ok
+
+
+def test_txp6_q12_restart_classifier_fail_closed_without_explicit_rule() -> None:
+    synthetic_path = "intergrax/runtime/synthetic_p6_restart_classifier_probe.py"
+    assert classify_restart_resume_path(synthetic_path) is RestartResumePathClass.G_UNCLEAR
+
+
+def test_txp6_q13_terminal_classifier_fail_closed_without_explicit_rule() -> None:
+    synthetic_path = "intergrax/runtime/synthetic_p6_terminal_classifier_probe.py"
+    assert classify_terminal_producer(synthetic_path) is TerminalProducerRole.UNCLEAR
+
+
+def test_txp6_q14_negative_sensitivity_unregistered_terminal_surface() -> None:
+    baseline = compare_terminal_producer_registry(
+        discover_terminal_producer_keys(),
+        TERMINAL_PRODUCER_REGISTRY,
+    )
+    assert baseline.ok
+    synthetic = ("intergrax/runtime/example_p6_terminal_surface.py", "module")
+    failed = compare_terminal_producer_registry(
+        discover_terminal_producer_keys() | {synthetic},
+        TERMINAL_PRODUCER_REGISTRY,
     )
     assert synthetic in failed.unknown
     assert not failed.ok

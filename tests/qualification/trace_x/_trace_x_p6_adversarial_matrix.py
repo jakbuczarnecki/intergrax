@@ -6,6 +6,9 @@ from __future__ import annotations
 
 from typing import Final
 
+from tests.qualification.trace_x._trace_x_p6_semantic_owner_discovery import (
+    P6_SEMANTIC_OWNER_MATRIX,
+)
 from tests.qualification.trace_x._trace_x_p6_types import AdversarialBundleRow
 
 TRACE_X_P6_START_HEAD: Final[str] = "e2deaee3efd7ee4e7d43414be3e76fe024a85408"
@@ -75,27 +78,6 @@ P6_ADVERSARIAL_MATRIX: Final[tuple[AdversarialBundleRow, ...]] = (
         "tests/unit/runtime/observability/reconstruction/test_trace_x_p5_r2_p4_integration_configuration_provenance.py",
         "test_historical_restart_ignores_changed_current_configuration_state",
     ),
-)
-
-P6_SEMANTIC_OWNER_MATRIX: Final[tuple[tuple[str, str, int], ...]] = (
-    ("Execution identity owner", "intergrax/contracts/execution_identity.py + admission spine", 1),
-    ("Run identity owner", "canonical RunId minting at governed admission", 1),
-    ("Attempt identity owner", "AttemptId lifecycle at run retry / segment admission", 1),
-    ("checkpoint/recovery state owner", "STATE-X TaskCheckpoint + ExecutionContinuation stores", 1),
-    ("resume decision/coordination owner", "LongRunningScheduler + resume admission validators", 1),
-    ("retry relation owner", "RetryCoordinator + execution retry policy contracts", 1),
-    (
-        "terminal state truth owner",
-        "ExecutionTerminalService @ intergrax/runtime/execution/execution_terminal/service.py",
-        1,
-    ),
-    (
-        "terminal RuntimeEvent/evidence owner",
-        "RuntimeEvent bus + spine payloads (non-authoritative projection of terminal facts)",
-        1,
-    ),
-    ("failure reconstruction owner", "ExecutionReconstructor (derived, non-persisted)", 1),
-    ("parent-child causality owner", "ExecutionLineage persistence (TRACE-X-P1)", 1),
 )
 
 P6_RESUME_SEMANTIC_MATRIX: Final[tuple[tuple[str, str, str], ...]] = (
