@@ -613,6 +613,60 @@ def test_configured_adoption_durable_pin_and_same_provider_instance() -> None:
     assert pin.effective.provider_id == "sqlite"
 
 
+def test_production_marketplace_configured_path_pin_requirement_spine_then_io() -> None:
+    event_store = InMemoryRuntimeEventStore()
+    runtime_bus = RuntimeEventBus(persistence=event_store)
+    token = object()
+    integration = _FakeRelationalIntegration(token)
+    materialization = _CountingMaterialization(integration)
+    deps = _marketplace_database_deps()
+    composition = _production_composition(
+        materialization=materialization,
+        catalog_invoker=_governed_database_catalog_invoker(),
+        deps=deps,
+        runtime_event_bus=runtime_bus,
+    )
+    intent = _record_marketplace_intent(deps)
+    execution_id = mint_execution_id()
+    dispatch_request = BoundCapabilityExecutionDispatchRequest(
+        execution_request_id=intent.execution_request_id,
+        execution_target=build_marketplace_tool_execution_target(
+            execution_target_reference=execution_target_reference_for_marketplace_qualified_tool(
+                deps.handoff_id,
+            ),
+            binding_provider_id=MARKETPLACE_TOOL_QUALIFIED_CAPABILITY_BINDING_PROVIDER_ID,
+            qualified_subject_reference=intent.qualified_subject_reference,
+        ),
+        tenant_id=_TENANT,
+        task_id=_TASK_ID,
+    )
+    _with_active_execution_identity(
+        execution_id,
+        lambda: composition.handler.dispatch_once(
+            dispatch_request,
+            run_id=_RUN_ID,
+            attempt_id=_ATTEMPT_ID,
+            execution_id=execution_id,
+            integration_configuration_adoption=_adoption(),
+        ),
+    )
+    assert integration.io_calls == 1
+    pin_records = composition.pinning_store.read_pin_records(
+        tenant_id=_TENANT,
+        execution_id=execution_id,
+    )
+    assert len(pin_records) == 1
+    assert pin_records[0].requirement_recovery_staging is not None
+    from intergrax.contracts.runtime_event_type import RuntimeEventType
+
+    spine = event_store.list_positioned_for_run(_RUN_ID, tenant_id=_TENANT)
+    assert len(spine) == 1
+    assert (
+        spine[0].event.event_type
+        is RuntimeEventType.INTEGRATION_CONFIGURATION_PROVENANCE_REQUIREMENT_COMMITTED
+    )
+
+
 def test_governance_scope_deny_zero_materialization_and_pin() -> None:
     token = object()
     integration = _FakeRelationalIntegration(token)

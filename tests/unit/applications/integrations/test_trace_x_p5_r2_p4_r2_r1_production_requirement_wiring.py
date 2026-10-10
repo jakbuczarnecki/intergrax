@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timezone
+from pathlib import Path
 from typing import Any, Mapping, Sequence
-
 import pytest
 
 from intergrax.applications._shared.integrations.active_execution_requirement_recovery_staging import (
@@ -60,6 +60,12 @@ from intergrax.integrations.execution_bound_integration_resolution import (
 from intergrax.runtime.events.event_bus import RuntimeEventBus
 from intergrax.runtime.events.persistence_contract import MandatoryEvidencePersistenceError
 from intergrax.runtime.events.stores.memory_runtime_event_store import InMemoryRuntimeEventStore
+from intergrax.runtime.events.stores.sqlite_runtime_event_store import SQLiteRuntimeEventStore
+from intergrax.runtime.governance.active_execution_governance_identity import (
+    ActiveExecutionGovernanceIdentity,
+    bind_active_execution_governance_identity,
+    reset_active_execution_governance_identity,
+)
 from intergrax.runtime.integrations.categories.data import RelationalStoreIntegrationContract
 from tests.unit.applications.integrations.test_trace_x_p5_r2_p2_persistence import (
     _EXEC,
@@ -123,9 +129,9 @@ class _Materialization(ExecutionBoundIntegrationMaterializationPort):
         return self.integration
 
 
-def _adoption() -> ExecutionIntegrationConfigurationAdoption:
+def _adoption(tenant: str = _TENANT) -> ExecutionIntegrationConfigurationAdoption:
     binding = ConfiguredCapabilityBinding(
-        tenant_id=_TENANT,
+        tenant_id=tenant,
         integration_category=IntegrationCategory.RELATIONAL_STORE,
         provider_id="sqlite",
         resource_scope="default",
@@ -141,14 +147,26 @@ def _adoption() -> ExecutionIntegrationConfigurationAdoption:
     )
 
 
-def _identity_scope(execution_id: ExecutionId):
-    token = bind_active_execution_identity(
+def _identity_scope(execution_id: ExecutionId, *, tenant_id: str = _TENANT):
+    identity_token = bind_active_execution_identity(
         run_id=_RUN,
         attempt_id=_ATTEMPT,
         execution_id=execution_id,
         task_id=_TASK,
     )
-    return token
+    governance_token = bind_active_execution_governance_identity(
+        ActiveExecutionGovernanceIdentity(
+            tenant_id=tenant_id,
+            workspace_id="workspace-1",
+            principal_id="principal-1",
+        ),
+    )
+    return identity_token, governance_token
+
+
+def _reset_identity_scope(identity_token, governance_token) -> None:
+    reset_active_execution_governance_identity(governance_token)
+    reset_active_execution_identity(identity_token)
 
 
 def _production_binding(
@@ -226,7 +244,7 @@ def test_case_c_spine_failure_blocks_io_then_recovery_allows_io() -> None:
         event_bus=failing_bus,
         counter=counter,
     )
-    token = _identity_scope(execution_id)
+    identity_token, governance_token = _identity_scope(execution_id)
     try:
         port = binding.create_bound_port(
             tenant_id=_TENANT,
@@ -241,7 +259,7 @@ def test_case_c_spine_failure_blocks_io_then_recovery_allows_io() -> None:
         prepared = pins[0].requirement_recovery_staging
         assert prepared is not None
     finally:
-        reset_active_execution_identity(token)
+        _reset_identity_scope(identity_token, governance_token)
 
     counter2 = _IoCounter()
     binding2 = _production_binding(
@@ -249,7 +267,7 @@ def test_case_c_spine_failure_blocks_io_then_recovery_allows_io() -> None:
         event_bus=RuntimeEventBus(persistence=InMemoryRuntimeEventStore()),
         counter=counter2,
     )
-    token2 = _identity_scope(execution_id)
+    identity_token2, governance_token2 = _identity_scope(execution_id)
     try:
         port2 = binding2.create_bound_port(
             tenant_id=_TENANT,
@@ -262,7 +280,7 @@ def test_case_c_spine_failure_blocks_io_then_recovery_allows_io() -> None:
         assert len(pins2) == 1
         assert pins2[0].requirement_recovery_staging == prepared
     finally:
-        reset_active_execution_identity(token2)
+        _reset_identity_scope(identity_token2, governance_token2)
 
 
 def test_case_d_idempotent_spine_then_single_io() -> None:
@@ -272,7 +290,7 @@ def test_case_d_idempotent_spine_then_single_io() -> None:
     counter = _IoCounter()
     pinning = KvExecutionIntegrationConfigurationPinningStore(InMemoryKVStore())
     binding = _production_binding(pinning_store=pinning, event_bus=bus, counter=counter)
-    token = _identity_scope(execution_id)
+    identity_token, governance_token = _identity_scope(execution_id)
     try:
         port = binding.create_bound_port(
             tenant_id=_TENANT,
@@ -304,79 +322,27 @@ def test_case_d_idempotent_spine_then_single_io() -> None:
         assert events[0].position.value == 1
         assert pins[0].requirement_recovery_staging == prepared
     finally:
-        reset_active_execution_identity(token)
+        _reset_identity_scope(identity_token, governance_token)
 
 
-@pytest.mark.docker
-def test_case_d_docker_redis_idempotent_spine_single_io() -> None:
-    try:
-        import redis
-    except ModuleNotFoundError:
-        pytest.skip("redis package not installed")
-    from intergrax.distributed.providers.redis_kv_store import RedisKVStore
-
-    try:
-        client = redis.Redis(host="localhost", port=6379, db=15)
-        client.ping()
-    except Exception as exc:
-        pytest.skip(f"Redis unavailable: {exc}")
-    client.flushdb()
-    execution_id = mint_execution_id()
-    store = InMemoryRuntimeEventStore()
-    bus = RuntimeEventBus(persistence=store)
-    counter = _IoCounter()
-    pinning = KvExecutionIntegrationConfigurationPinningStore(
-        RedisKVStore(client=client, key_prefix="p4r2r1d"),
-    )
-    binding = _production_binding(pinning_store=pinning, event_bus=bus, counter=counter)
-    token = _identity_scope(execution_id)
-    try:
-        port = binding.create_bound_port(
-            tenant_id=_TENANT,
-            execution_id=execution_id,
-            adoption=_adoption(),
-        )
-        port._initialize_adapter()  # noqa: SLF001
-        pins = pinning.read_pin_records(tenant_id=_TENANT, execution_id=execution_id)
-        event_id = derive_integration_configuration_provenance_requirement_event_id(
-            tenant_id=_TENANT,
-            execution_id=execution_id,
-            subject=pins[0].subject,
-        )
-        assert counter.calls == 0
-        assert len(store.list_positioned_for_run(_RUN, tenant_id=_TENANT)) == 1
-        port.query(RelationalQueryRequest(sql="SELECT 1"))
-        assert counter.calls == 1
-        events = store.list_positioned_for_run(_RUN, tenant_id=_TENANT)
-        assert len(events) == 1
-        assert events[0].event.event_id == event_id
-        assert events[0].position.value == 1
-    finally:
-        reset_active_execution_identity(token)
+def _fresh_sqlite_event_store(db_path: Path) -> SQLiteRuntimeEventStore:
+    return SQLiteRuntimeEventStore(db_path=db_path)
 
 
-@pytest.mark.docker
-def test_case_c_docker_redis_pin_and_spine_recovery() -> None:
-    try:
-        import redis
-    except ModuleNotFoundError:
-        pytest.skip("redis package not installed")
-    from intergrax.distributed.providers.redis_kv_store import RedisKVStore
-
-    try:
-        client = redis.Redis(host="localhost", port=6379, db=15)
-        client.ping()
-    except Exception as exc:
-        pytest.skip(f"Redis unavailable: {exc}")
-    client.flushdb()
+def test_case_c_durable_sqlite_pin_restart_spine_recovery(tmp_path: Path) -> None:
+    """Unit durable restart: fresh SQLite spine adapter after pin-only phase (blocker 33)."""
+    db_path = tmp_path / "runtime_events.sqlite"
     execution_id = mint_execution_id()
     counter = _IoCounter()
-    pinning = KvExecutionIntegrationConfigurationPinningStore(
-        RedisKVStore(client=client, key_prefix="p4r2r1"),
-    )
+    kv = InMemoryKVStore()
+    pinning = KvExecutionIntegrationConfigurationPinningStore(kv)
     failing_bus = RuntimeEventBus(persistence=_FailingOncePersistence())
-    binding = _production_binding(pinning_store=pinning, event_bus=failing_bus, counter=counter)
-    token = _identity_scope(execution_id)
+    binding = _production_binding(
+        pinning_store=pinning,
+        event_bus=failing_bus,
+        counter=counter,
+    )
+    identity_token, governance_token = _identity_scope(execution_id)
     try:
         port = binding.create_bound_port(
             tenant_id=_TENANT,
@@ -386,19 +352,23 @@ def test_case_c_docker_redis_pin_and_spine_recovery() -> None:
         with pytest.raises(ExecutionIntegrationConfigurationAdoptionError):
             port.query(RelationalQueryRequest(sql="SELECT 1"))
         assert counter.calls == 0
+        pins = pinning.read_pin_records(tenant_id=_TENANT, execution_id=execution_id)
+        assert len(pins) == 1
+        prepared = pins[0].requirement_recovery_staging
+        assert prepared is not None
+        assert pins[0].provenance.execution_id == execution_id
     finally:
-        reset_active_execution_identity(token)
+        _reset_identity_scope(identity_token, governance_token)
 
     counter2 = _IoCounter()
-    pinning2 = KvExecutionIntegrationConfigurationPinningStore(
-        RedisKVStore(client=client, key_prefix="p4r2r1"),
-    )
+    pinning2 = KvExecutionIntegrationConfigurationPinningStore(kv)
+    durable_store_b = _fresh_sqlite_event_store(db_path)
     binding2 = _production_binding(
         pinning_store=pinning2,
-        event_bus=RuntimeEventBus(persistence=InMemoryRuntimeEventStore()),
+        event_bus=RuntimeEventBus(persistence=durable_store_b),
         counter=counter2,
     )
-    token2 = _identity_scope(execution_id)
+    identity_token2, governance_token2 = _identity_scope(execution_id)
     try:
         port2 = binding2.create_bound_port(
             tenant_id=_TENANT,
@@ -407,9 +377,195 @@ def test_case_c_docker_redis_pin_and_spine_recovery() -> None:
         )
         port2.query(RelationalQueryRequest(sql="SELECT 1"))
         assert counter2.calls == 1
-        assert len(pinning2.read_pin_records(tenant_id=_TENANT, execution_id=execution_id)) == 1
+        pins2 = pinning2.read_pin_records(tenant_id=_TENANT, execution_id=execution_id)
+        assert len(pins2) == 1
+        assert pins2[0].requirement_recovery_staging == prepared
+        assert len(durable_store_b.list_positioned_for_run(_RUN, tenant_id=_TENANT)) == 1
     finally:
-        reset_active_execution_identity(token2)
+        _reset_identity_scope(identity_token2, governance_token2)
+
+
+def test_case_d_durable_sqlite_restart_idempotent_spine_single_io(tmp_path: Path) -> None:
+    """Unit durable restart: requirement event survives fresh bus + store adapter (blocker 33)."""
+    db_path = tmp_path / "runtime_events.sqlite"
+    execution_id = mint_execution_id()
+    pin_kv = InMemoryKVStore()
+    store_a = _fresh_sqlite_event_store(db_path)
+    bus_a = RuntimeEventBus(persistence=store_a)
+    counter = _IoCounter()
+    pinning_a = KvExecutionIntegrationConfigurationPinningStore(pin_kv)
+    binding_a = _production_binding(pinning_store=pinning_a, event_bus=bus_a, counter=counter)
+    identity_token, governance_token = _identity_scope(execution_id)
+    try:
+        port_a = binding_a.create_bound_port(
+            tenant_id=_TENANT,
+            execution_id=execution_id,
+            adoption=_adoption(),
+        )
+        port_a._initialize_adapter()  # noqa: SLF001
+        assert counter.calls == 0
+        pins = pinning_a.read_pin_records(tenant_id=_TENANT, execution_id=execution_id)
+        event_id = derive_integration_configuration_provenance_requirement_event_id(
+            tenant_id=_TENANT,
+            execution_id=execution_id,
+            subject=pins[0].subject,
+        )
+        assert len(store_a.list_positioned_for_run(_RUN, tenant_id=_TENANT)) == 1
+    finally:
+        _reset_identity_scope(identity_token, governance_token)
+
+    store_b = _fresh_sqlite_event_store(db_path)
+    bus_b = RuntimeEventBus(persistence=store_b)
+    counter_b = _IoCounter()
+    pinning_b = KvExecutionIntegrationConfigurationPinningStore(pin_kv)
+    binding_b = _production_binding(pinning_store=pinning_b, event_bus=bus_b, counter=counter_b)
+    identity_token2, governance_token2 = _identity_scope(execution_id)
+    try:
+        port_b = binding_b.create_bound_port(
+            tenant_id=_TENANT,
+            execution_id=execution_id,
+            adoption=_adoption(),
+        )
+        port_b.query(RelationalQueryRequest(sql="SELECT 1"))
+        assert counter_b.calls == 1
+        events = store_b.list_positioned_for_run(_RUN, tenant_id=_TENANT)
+        assert len(events) == 1
+        assert events[0].event.event_id == event_id
+        assert events[0].position.value == 1
+    finally:
+        _reset_identity_scope(identity_token2, governance_token2)
+
+
+@pytest.mark.docker
+def test_case_d_docker_redis_idempotent_spine_single_io(tmp_path: Path) -> None:
+    try:
+        import redis
+    except ModuleNotFoundError:
+        pytest.skip("redis package not installed")
+    from intergrax.distributed.providers.redis_kv_store import RedisKVStore
+
+    try:
+        client = redis.Redis(host="localhost", port=6379, db=15)
+        client.ping()
+    except Exception as exc:
+        pytest.skip(f"Redis unavailable: {exc}")
+    client.flushdb()
+    db_path = tmp_path / "docker_runtime_events.sqlite"
+    execution_id = mint_execution_id()
+    store_a = _fresh_sqlite_event_store(db_path)
+    bus_a = RuntimeEventBus(persistence=store_a)
+    counter = _IoCounter()
+    pinning_a = KvExecutionIntegrationConfigurationPinningStore(
+        RedisKVStore(client=client, key_prefix="p4r2r1d"),
+    )
+    binding_a = _production_binding(pinning_store=pinning_a, event_bus=bus_a, counter=counter)
+    identity_token, governance_token = _identity_scope(execution_id)
+    try:
+        port_a = binding_a.create_bound_port(
+            tenant_id=_TENANT,
+            execution_id=execution_id,
+            adoption=_adoption(),
+        )
+        port_a._initialize_adapter()  # noqa: SLF001
+        pins = pinning_a.read_pin_records(tenant_id=_TENANT, execution_id=execution_id)
+        event_id = derive_integration_configuration_provenance_requirement_event_id(
+            tenant_id=_TENANT,
+            execution_id=execution_id,
+            subject=pins[0].subject,
+        )
+        assert counter.calls == 0
+        assert len(store_a.list_positioned_for_run(_RUN, tenant_id=_TENANT)) == 1
+    finally:
+        _reset_identity_scope(identity_token, governance_token)
+
+    store_b = _fresh_sqlite_event_store(db_path)
+    bus_b = RuntimeEventBus(persistence=store_b)
+    counter_b = _IoCounter()
+    pinning_b = KvExecutionIntegrationConfigurationPinningStore(
+        RedisKVStore(client=client, key_prefix="p4r2r1d"),
+    )
+    binding_b = _production_binding(pinning_store=pinning_b, event_bus=bus_b, counter=counter_b)
+    identity_token2, governance_token2 = _identity_scope(execution_id)
+    try:
+        port_b = binding_b.create_bound_port(
+            tenant_id=_TENANT,
+            execution_id=execution_id,
+            adoption=_adoption(),
+        )
+        port_b.query(RelationalQueryRequest(sql="SELECT 1"))
+        assert counter_b.calls == 1
+        events = store_b.list_positioned_for_run(_RUN, tenant_id=_TENANT)
+        assert len(events) == 1
+        assert events[0].event.event_id == event_id
+        assert events[0].position.value == 1
+    finally:
+        _reset_identity_scope(identity_token2, governance_token2)
+
+
+@pytest.mark.docker
+def test_case_c_docker_redis_pin_and_spine_recovery(tmp_path: Path) -> None:
+    try:
+        import redis
+    except ModuleNotFoundError:
+        pytest.skip("redis package not installed")
+    from intergrax.distributed.providers.redis_kv_store import RedisKVStore
+
+    try:
+        client = redis.Redis(host="localhost", port=6379, db=15)
+        client.ping()
+    except Exception as exc:
+        pytest.skip(f"Redis unavailable: {exc}")
+    client.flushdb()
+    db_path = tmp_path / "docker_runtime_events_case_c.sqlite"
+    execution_id = mint_execution_id()
+    counter = _IoCounter()
+    pinning = KvExecutionIntegrationConfigurationPinningStore(
+        RedisKVStore(client=client, key_prefix="p4r2r1"),
+    )
+    failing_bus = RuntimeEventBus(persistence=_FailingOncePersistence())
+    binding = _production_binding(pinning_store=pinning, event_bus=failing_bus, counter=counter)
+    identity_token, governance_token = _identity_scope(execution_id)
+    prepared = None
+    try:
+        port = binding.create_bound_port(
+            tenant_id=_TENANT,
+            execution_id=execution_id,
+            adoption=_adoption(),
+        )
+        with pytest.raises(ExecutionIntegrationConfigurationAdoptionError):
+            port.query(RelationalQueryRequest(sql="SELECT 1"))
+        assert counter.calls == 0
+        pins = pinning.read_pin_records(tenant_id=_TENANT, execution_id=execution_id)
+        assert len(pins) == 1
+        prepared = pins[0].requirement_recovery_staging
+    finally:
+        _reset_identity_scope(identity_token, governance_token)
+
+    counter2 = _IoCounter()
+    pinning2 = KvExecutionIntegrationConfigurationPinningStore(
+        RedisKVStore(client=client, key_prefix="p4r2r1"),
+    )
+    durable_store_b = _fresh_sqlite_event_store(db_path)
+    binding2 = _production_binding(
+        pinning_store=pinning2,
+        event_bus=RuntimeEventBus(persistence=durable_store_b),
+        counter=counter2,
+    )
+    identity_token2, governance_token2 = _identity_scope(execution_id)
+    try:
+        port2 = binding2.create_bound_port(
+            tenant_id=_TENANT,
+            execution_id=execution_id,
+            adoption=_adoption(),
+        )
+        port2.query(RelationalQueryRequest(sql="SELECT 1"))
+        assert counter2.calls == 1
+        pins2 = pinning2.read_pin_records(tenant_id=_TENANT, execution_id=execution_id)
+        assert len(pins2) == 1
+        assert pins2[0].requirement_recovery_staging == prepared
+        assert len(durable_store_b.list_positioned_for_run(_RUN, tenant_id=_TENANT)) == 1
+    finally:
+        _reset_identity_scope(identity_token2, governance_token2)
 
 
 def test_cross_tenant_pin_scope_isolation() -> None:
@@ -435,6 +591,54 @@ def test_integrity_matrix_timezone_invalid_staging_rejected() -> None:
             task_id=_TASK,
             run_id=_RUN,
             attempt_id=_ATTEMPT,
+        )
+
+
+def test_active_execution_tenant_mismatch_rejects_pin_spine_and_io() -> None:
+    execution_id = mint_execution_id()
+    counter = _IoCounter()
+    store = InMemoryRuntimeEventStore()
+    pinning = KvExecutionIntegrationConfigurationPinningStore(InMemoryKVStore())
+    binding = _production_binding(
+        pinning_store=pinning,
+        event_bus=RuntimeEventBus(persistence=store),
+        counter=counter,
+    )
+    identity_token, governance_token = _identity_scope(execution_id, tenant_id=_TENANT)
+    try:
+        with pytest.raises(ValueError, match="active execution tenant"):
+            binding.create_bound_port(
+                tenant_id="tenant-b",
+                execution_id=execution_id,
+                adoption=_adoption(tenant="tenant-b"),
+            )
+        assert counter.calls == 0
+        assert len(store.list_positioned_for_run(_RUN, tenant_id="tenant-b")) == 0
+        assert len(pinning.read_pin_records(tenant_id="tenant-b", execution_id=execution_id)) == 0
+    finally:
+        _reset_identity_scope(identity_token, governance_token)
+
+
+def test_integrity_matrix_first_pin_requires_candidate_staging() -> None:
+    from intergrax.applications._shared.integrations.persistence import (
+        InMemoryExecutionIntegrationConfigurationPinningStore,
+    )
+    from intergrax.integrations.contracts.execution_integration_configuration_pinning import (
+        ExecutionIntegrationConfigurationPinningError,
+    )
+    from intergrax.integrations.execution_integration_configuration_pin_reconciliation import (
+        pin_with_reconcile,
+    )
+
+    store = InMemoryExecutionIntegrationConfigurationPinningStore()
+    subject = _subject()
+    provenance = _provenance_configured_adopted()
+    with pytest.raises(ExecutionIntegrationConfigurationPinningError, match="staging required"):
+        pin_with_reconcile(
+            pinning_store=store,
+            subject=subject,
+            provenance=provenance,
+            candidate_staging=None,
         )
 
 

@@ -18,6 +18,9 @@ from intergrax.integrations.contracts.execution_integration_configuration_requir
 from intergrax.integrations.contracts.execution_integration_configuration_pin_record import (
     ExecutionIntegrationConfigurationRequirementRecoveryStaging,
 )
+from intergrax.runtime.governance.active_execution_governance_identity import (
+    require_active_execution_governance_identity,
+)
 
 
 class ActiveExecutionIdentityRequirementRecoveryStagingSource(
@@ -31,7 +34,14 @@ class ActiveExecutionIdentityRequirementRecoveryStagingSource(
         tenant_id: str,
         execution_id: ExecutionId,
     ) -> ExecutionIntegrationConfigurationRequirementRecoveryStaging:
-        _ = tenant_id
+        invocation_tenant = tenant_id.strip()
+        if not invocation_tenant:
+            raise ValueError("configured invocation tenant_id required")
+        active_tenant = require_active_execution_governance_identity().tenant_id
+        if invocation_tenant != active_tenant:
+            raise ValueError(
+                "configured invocation tenant_id does not match active execution tenant",
+            )
         validated_execution_id = validate_execution_id(execution_id)
         active_execution_id = require_active_execution_id()
         if active_execution_id != validated_execution_id:
