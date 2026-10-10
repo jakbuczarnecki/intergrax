@@ -5,7 +5,7 @@
 | **Stage** | `TRACE-X-P6` |
 | **Parent** | `TRACE-X` |
 | **START_HEAD** | `e2deaee3efd7ee4e7d43414be3e76fe024a85408` |
-| **FINAL_COMMIT** | *(set at commit — independent audit uses GitHub SHA)* |
+| **FINAL_COMMIT** | `51b1f26a7a473658f6f83d0d8dbfd66ab62f4516` |
 | **FRZ-TRC-09** | **OPEN / PASS CANDIDATE** (Cursor: **READY FOR PASS AUDIT**) |
 | **FRZ-TRC-10** | **OPEN / PASS CANDIDATE** (Cursor: **READY FOR PASS AUDIT**) |
 | **TRACE-X-P6** | **READY FOR AUDIT** |
